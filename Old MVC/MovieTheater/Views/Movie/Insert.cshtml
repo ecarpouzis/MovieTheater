@@ -1,0 +1,182 @@
+﻿
+@{
+    ViewBag.Title = "Insert";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+@section Head{
+    <script>
+        $(function () {
+            $("#insertMovie").click(function () {
+                var giventitle = $("#movieTitle").val();
+                var givenrated = $("#movieRating").val();
+                var givenreleased = $("#movieReleaseDate").val();
+                var givenruntime = $("#movieRuntime").val();
+                var givengenre = $("#movieGenre").val();
+                var givendirector = $("#movieDirector").val();
+                var givenwriter = $("#movieWriter").val();
+                var givenactors = $("#movieActors").val();
+                var givenmovieplot = $("#moviePlot").val();
+                var givenmovieposter = $("#moviePosterLink").val();
+                var givenimdbrating = $("#movieimdbRating").val();
+                var givenimdbid = $("#movieimdbID").val();
+                var giventomatorating = $("#movietomatoRating").val();
+                if (giventitle != "") {
+                    $.post('/Movie/InsertMovie', {
+                        title: giventitle, rated: givenrated, released: givenreleased, runtime: givenruntime, genre: givengenre, director: givendirector,
+                        writer: givenwriter, actors: givenactors, plot: givenmovieplot, poster: givenmovieposter, imdbrating: givenimdbrating, imdbid: givenimdbid, tomatorating: giventomatorating
+                    }, function () {
+                        $("input").val("");
+                        window.location.reload();
+                    });
+                }
+            });
+
+
+            $("#ManualScrape").click(function () {
+                var getID = $("#movieimdbID").val();
+                $.getJSON("/Movie/ImdbScrape", { givenID: getID }, function (movie) {
+                    $("#movieTitle").val(movie["movieName"]);
+                    $("#movieRating").val(movie["movieRating"]);
+                    $("#movieReleaseDate").val(movie["movieReleased"]);
+                    $("#movieRuntime").val(movie["movieRuntime"]);
+                    $("#movieGenre").val(movie["movieGenres"]);
+                    $("#movieDirector").val(movie["movieDirector"]);
+                    $("#movieWriter").val(movie["movieWriter"]);
+                    $("#movieActors").val(movie["movieActor"]);
+                    $("#moviePlot").val(movie["moviePlot"]);
+                    $("#moviePosterLink").val(movie["moviePoster"]);
+                    $("#movieimdbRating").val(movie["movieIMDBRating"]);
+                    $("#movieimdbID").val(movie["movieIMDBID"]);
+                    $("#movietomatoRating").val(movie["movieRottenRating"]);
+                    $("#posterImage").attr("src", movie["moviePoster"]);
+                });
+            });
+
+            $("#imdbScrape").click(function () {
+                var id = $("#movieimdbID").val();
+                var title = $("#movieTitle").val();
+                var url = "http://www.omdbapi.com/?tomatoes=true&"
+                if ($("#movietomatoRating").val() == "false") {
+                    url = "http://www.omdbapi.com/?tomatoes=false&"
+                }
+                if (id != "") {
+                    url += 't=&i=' + id;
+                }
+                else if (title != "") {
+                    url += 't=' + title;
+                }
+                if (title == "" && id == "") {
+                    alert("Title or IMDB ID required");
+                }
+                else {
+                    $.get(url, function (data) {
+                        var movie = data;
+                        if (movie["Response"] != "False") {
+                            $("#movieTitle").val(movie["Title"]);
+                            $("#movieRating").val(movie["Rated"]);
+                            $("#movieReleaseDate").val(movie["Released"]);
+                            $("#movieRuntime").val(movie["Runtime"]);
+                            $("#movieGenre").val(movie["Genre"]);
+                            $("#movieDirector").val(movie["Director"]);
+                            $("#movieWriter").val(movie["Writer"]);
+                            $("#movieActors").val(movie["Actors"]);
+                            $("#moviePlot").val(movie["Plot"]);
+                            $("#moviePosterLink").val(movie["Poster"]);
+                            $("#movieimdbRating").val(movie["imdbRating"]);
+                            $("#movieimdbID").val(movie["imdbID"]);
+                            $("#movietomatoRating").val(movie["tomatoMeter"]);
+                            $("#posterImage").attr("src", movie["Poster"]);
+                        }
+                        else {
+                            url = url.replace("tomatoes=true&", "");
+                            $.get(url, function (data) {
+                                movie = data;
+                                $("#movieTitle").val(movie["Title"]);
+                                $("#movieRating").val(movie["Rated"]);
+                                $("#movieReleaseDate").val(movie["Released"]);
+                                $("#movieRuntime").val(movie["Runtime"]);
+                                $("#movieGenre").val(movie["Genre"]);
+                                $("#movieDirector").val(movie["Director"]);
+                                $("#movieWriter").val(movie["Writer"]);
+                                $("#movieActors").val(movie["Actors"]);
+                                $("#moviePlot").val(movie["Plot"]);
+                                $("#moviePosterLink").val(movie["Poster"]);
+                                $("#movieimdbRating").val(movie["imdbRating"]);
+                                $("#movieimdbID").val(movie["imdbID"]);
+                                $("#posterImage").attr("src", movie["Poster"]);
+                            });
+                        }
+                        $.get("/Movie/ImdbYearScrape", { givenID: id }, function (scrapeYear) {
+                            if (scrapeYear != "" && (scrapeYear.indexOf("[") < 0)) {
+                                $("#movieReleaseDate").val(scrapeYear);
+                            }
+                        });
+                    });
+                }
+            });
+        });
+    </script>
+    <style>
+        .UpdateControlInfo {
+            width: 100px;
+            display: block;
+            float: left;
+            clear: both;
+        }
+
+        .movieField {
+            width: 600px;
+            clear: right;
+        }
+    </style>
+}
+
+@section Body{
+    <input type="button" ID="imdbScrape" name="imdbScrape" value="Attempt IMDB Retrieval" />
+    <br />
+    <input type="button" ID="ManualScrape" name="ManualScrape" value="Attempt IMDB Scrape" />
+    <br />
+    <span class="UpdateControlInfo">Title:</span>
+    <input type="text" ID="movieTitle" class="movieTitle movieField" name="movieTitle" value="" />
+    <br />
+    <span class="UpdateControlInfo">Rating:</span>
+    <input type="text" ID="movieRating" class="movieRating movieField" name="movieRating" value="" />
+    <br />
+    <span class="UpdateControlInfo">ReleaseDate:</span>
+    <input type="text" ID="movieReleaseDate" class="movieReleaseDate movieField" name="movieReleaseDate" value="" />
+    <br />
+    <span class="UpdateControlInfo">Runtime:</span>
+    <input type="text" ID="movieRuntime" class="movieRuntime movieField" name="movieRuntime" value="" />
+    <br />
+    <span class="UpdateControlInfo">Genre:</span>
+    <input type="text" ID="movieGenre" class="movieGenre movieField" name="movieGenre" value="" />
+    <br />
+    <span class="UpdateControlInfo">Director:</span>
+    <input type="text" ID="movieDirector" class="movieDirector movieField" name="movieDirector" value="" />
+    <br />
+    <span class="UpdateControlInfo">Writer:</span>
+    <input type="text" ID="movieWriter" class="movieWriter movieField" name="movieWriter" value="" />
+    <br />
+    <span class="UpdateControlInfo">Actors:</span>
+    <input type="text" ID="movieActors" class="movieActors movieField" name="movieActors" value="" />
+    <br />
+    <span class="UpdateControlInfo">Plot:</span>
+    <input type="text" ID="moviePlot" class="moviePlot movieField" name="moviePlot" value="" />
+    <br />
+    <span class="UpdateControlInfo">PosterLink:</span>
+    <input type="text" ID="moviePosterLink" class="moviePosterLink movieField" name="moviePosterLink" value="" />
+    <br />
+    <span class="UpdateControlInfo">imdbRating:</span>
+    <input type="text" ID="movieimdbRating" class="movieimdbRating movieField" name="movieimdbRating" value="" />
+    <br />
+    <span class="UpdateControlInfo">imdbID:</span>
+    <input type="text" ID="movieimdbID" class="movieimdbID movieField" name="movieimdbID" value="" />
+    <br />
+    <span class="UpdateControlInfo">tomatoRating:</span>
+    <input type="text" ID="movietomatoRating" class="movietomatoRating movieField" name="movietomatoRating" value="" />
+    <br />
+    <input type="button" ID="insertMovie" name="insertButton" value="Insert" />
+    <div id="imgContainer"><img id="posterImage" src="" /></div>
+}

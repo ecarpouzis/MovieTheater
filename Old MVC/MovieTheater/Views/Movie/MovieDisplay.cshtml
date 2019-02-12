@@ -1,0 +1,256 @@
+﻿
+@{
+    Layout = null;
+}
+
+<script>
+    $(function () {
+
+        var movieID = $(".moviePage").attr("id").split("_")[1];
+
+        $("#slider").slider({
+            min: 0,
+            max: 100,
+            slide: function (event, ui) {
+                $("#amount").val(ui.value);
+            },
+            change: function (event, ui) {
+
+                if (ui.value > 69) {
+                    $("#slider").css("background-color", "#bfd9bf");
+                }
+                if (ui.value < 70) {
+                    $("#slider").css("background-color", "#f2bfbf");
+                }
+
+                if (ui.value == "" || ui.value == 0) {
+                    $("#slider").css("background-color", "white");
+                }
+                $.post("/Movie/SaveRate", { "rating": ui.value, "movieID": movieID });
+            }
+        });
+
+        $("#amount").change(function () {
+            var rateVal = $("#amount").val();
+            if (rateVal > 100) {
+                rateVal = 100;
+            }
+            if (rateVal < 0) {
+                rateVal = 0;
+            }
+            $("#slider").slider("value", rateVal);
+        });
+
+        $("#suggestName").autocomplete({
+            source: loginBox_AutoComplete
+        });
+
+        function loginBox_AutoComplete(request, response) {
+            $.ajax({
+                url: "/Movie/UserList",
+                data: { "descript": request.term },
+                success: function (data) {
+                    response(data);
+                }
+            });
+        }
+
+        function suggestBoxSlide() {
+            var leftVal = $("#suggestBox").css("left");
+            if (parseInt(leftVal) < 0) {
+                $("#suggestBox").show();
+                $("#suggestBox").stop().animate({ left: '0px' }, 1000);
+            }
+            else {
+                $("#suggestBox").stop().animate({ left: '-42%' }, 1000, function () { $("#suggestBox").hide(); });
+            }
+        }
+
+        $(".suggestButton").click(function () {
+            suggestBoxSlide();
+        });
+
+        var watched = $("#watched").attr("checked");
+        var watchList = $("#watchList").attr("checked");
+
+        if (watched) {
+            $("#watchedButton").attr("src", "../Content/Watched.png");
+        }
+        if (watchList) {
+            $("#watchlistButton").attr("src", "../Content/Watchlist.png");
+        }
+
+        $("#watchlistButton").click(function () {
+            if (!watchList) {
+                $(this).attr("src", "../Content/Watchlist.png");
+                $("#watchList").attr("checked", true);
+                watchList = true;
+                $.post("/Movie/SaveWatchlist", { "watchList": "on", "movieID": movieID });
+            } else {
+                $(this).attr("src", "../Content/Unwatchlist.png");
+                $("#watchList").attr("checked", false);
+                watchList = false;
+                $.post("/Movie/SaveWatchlist", { "watchList": "off", "movieID": movieID });
+            }
+        });
+
+        $("#watchedButton").click(function () {
+            if (!watched) {
+                $(this).attr("src", "../Content/Watched.png");
+                $("#watched").attr("checked", true);
+                watched = true;
+                $.post("/Movie/SaveWatched", { "watched": "on", "movieID": movieID });
+            } else {
+                $(this).attr("src", "../Content/Unwatched.png");
+                $("#watched").attr("checked", false);
+                watched = false;
+                $.post("/Movie/SaveWatched", { "watched": "off", "movieID": movieID });
+            }
+        });
+
+        $("#suggestSubmit").click(function () {
+            $.post("/Movie/SaveSuggestion", { "suggested": $("#suggestName").val(), "comments": $("#suggestComment").val(), "movieID": movieID });
+            suggestBoxSlide();
+        });
+
+        $("#slider").slider("value", $("#amount").val());
+    });
+</script>
+@{     var givenID = Convert.ToInt32(Request.QueryString["ID"]);
+    var userID = Convert.ToInt32(Session["UserID"]);
+    MovieTheater.Models.movieDB db = new MovieTheater.Models.movieDB();
+    MovieTheater.Models.Movie movie = (from m in db.Movies
+                                       where m.id == givenID
+                                       select m).Single();
+
+    MovieTheater.Models.Viewing previousWatch = (from v in db.Viewings
+                                                 where v.MovieID == movie.id &&
+                                                 v.UserID == userID &&
+                                                 v.ViewingType == "w"
+                                                 select v).FirstOrDefault();
+
+    MovieTheater.Models.Viewing previousSuggest = (from v in db.Viewings
+                                                   where v.MovieID == movie.id &&
+                                                   v.UserID == userID &&
+                                                   v.ViewingType == "s"
+                                                   select v).FirstOrDefault();
+
+    MovieTheater.Models.Viewing previousRated = (from v in db.Viewings
+                                                 where v.MovieID == movie.id &&
+                                                 v.UserID == userID &&
+                                                 v.ViewingType == "r"
+                                                 select v).FirstOrDefault(); }
+<div class="moviePage" id="moviePage_@movie.id">
+    <img class="moviePosterImage" src="/Movie/ImageHandler?ID=@movie.id" />
+    <span class="movieTitle">
+        @movie.Title
+    </span><span class="movieReleaseDate">(@DateTime.Parse(movie.ReleaseDate.ToString()).Year)</span>
+    <br />
+    <span class="movieRating">
+        @movie.Rating
+    </span> <span class="movieRuntime">
+        @movie.Runtime
+    </span> <span class="movieGenre">
+        @movie.Genre
+    </span>
+    <br />
+    <br />
+    <span class="infoLabel">Director:</span><span class="movieDirector">
+        @movie.Director
+    </span>
+    <br />
+    <span class="infoLabel">Writer:</span><span class="movieWriter">
+        @movie.Writer
+    </span>
+    <br />
+    <br />
+    <span class="movieActors">
+        @{
+            var actorString = "";
+            foreach (var m in movie.Actors.Split(','))
+            {
+                actorString += "<a href='browse?sort=Actor&actor=" + m.Trim() + "'>" + m + "</a><br />";
+            }
+            Html.Raw(actorString);
+        }
+    </span>
+    <br />
+    <br />
+    <span class="moviePlot">
+        @movie.Plot
+    </span>
+    <br />
+    <br />
+    <center>
+        <table>
+            <tr>
+                <td class="ratingTag">
+                    <a target="_blank" href="http://www.imdb.com/title/@movie.imdbID">
+                        <img src="../Content/IMDbTag.png" />
+                    </a>
+                </td>
+                <td class="ratingTag">
+                    <img src="../Content/RTTag.png" />
+                </td>
+            </tr>
+            <tr>
+                <td class="ratingCell">
+                    <span class="movieimdbRating">
+                        @movie.imdbRating
+                    </span>
+                </td>
+                <td class="ratingCell">
+                    <span class="movietomatoRating">
+                        @movie.tomatoRating
+                    </span>
+                </td>
+            </tr>
+        </table>
+    </center>
+    @if (userID > 0)
+    {
+        <div id="UserOptions">
+            <div class="movieOptionContainer">
+                <div id="rateWrapper">
+                    <div id="rateLabel">
+                        <label for="amount">
+                            Rated:
+                        </label>
+                        <input type="text" name="rated" id="amount" style="border: 0; color: #f6931f; font-weight: bold;
+                        width: 30px;"
+                               @if (previousRated != null) { @: value="@previousRated.ViewingData"
+                                                              } />
+                    </div>
+                    <div id="slider">
+                    </div>
+                </div>
+                <br style="margin-top: 20px" />
+                <img id="watchedButton" src="../Content/Unwatched.png" style="cursor: pointer;" />
+                <input type="checkbox" id="watched" name="watched"
+                       @if (previousWatch != null) { @: checked="checked"
+                                              } />
+                <img id="watchlistButton" src="../Content/Unwatchlist.png" style="cursor: pointer;" />
+                <input type="checkbox" id="watchList" name="watchList"
+                       @if (previousSuggest != null) { @: checked="checked"
+                                              } />
+                <div class="suggestButton">
+                </div>
+            </div>
+            <br />
+            <div id="suggestBox" style="">
+                <br />
+                <span id="suggestUserLabel">SUGGEST TO USER</span><br />
+                <input type="text" class="inputBox" id="suggestName" name="suggestName" value="" /><br />
+                <br />
+                <span id="suggestCommentLabel">COMMENT</span><br />
+                <textarea id="suggestComment" name="suggestComment"></textarea><br />
+                <br />
+                <input type="button" id="suggestSubmit" name="suggestSubmit" value="Suggest" />
+            </div>
+        </div>
+        <br style="clear: both" />
+        <a class="movieEdit" target="_blank" href="Update?ID=@movie.id">
+            <img src="../Content/tool.png" />
+        </a>
+    }
+</div>

@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <link rel="shortcut icon" href="~/Content/favicon.ico" />
+    <link href="~/Content/Site.css" rel="stylesheet" type="text/css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <link href="~/Content/ui-lightness/jquery-ui-1.8.21.slider.css" rel="stylesheet" type="text/css" />
+    <script src="~/Scripts/jquery.watermark.min.js"></script>
+    <script src="~/Scripts/cookies.js"></script>
+    @RenderSection("Head", required: false)  
+</head>
+<body>
+    <form id="form1" runat="server" onsubmit="return false;">
+        <div id="pageContainer">
+            <div id="leftSidebar">
+            </div>
+            <div id="centerContent">
+                @Html.Partial("_Navigation")
+                @RenderSection("Body", required: false)
+            </div>
+            <div id="rightSidebar">
+            </div>
+            <div id="stage">
+            </div>
+        </div>
+    </form>
+       
+</body>
+</html>

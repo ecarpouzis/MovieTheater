@@ -1,0 +1,82 @@
+﻿@model IEnumerable<MovieTheater.Models.Movie>
+
+@{
+    ViewBag.Title = "Home";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+@section Head{ 
+<script>
+        $(function () {
+            $('#movieWrapper').delay(800)
+              .queue(function () {
+                  $("#movieWrapper").show();
+              });
+
+            $(".movieTitle").click(function () {
+                $("#movieModalScreen").show();
+                $("#movieModal").prepend("<img style='position:absolute;left:50%;top:40%;margin-left:-62px;margin-top:-62px;' src='../Content/Loading.gif' />");
+                $.get("/Movie/MovieDisplay?ID=" + $(this).parent().parent().attr("id").split("_")[1], function (data) {
+                    $("#movieModal").append(data);
+                    $(".moviePage").prepend("<span id='closeModal'>X</span>");
+                    $("#closeModal").click(function () {
+                        $("#movieModal").empty();
+                        $("#movieModalScreen").hide();
+                    });
+
+                });
+                return false;
+            });
+        });
+</script>
+<style>
+    .innerMovieWrapper {
+        height: auto !important;
+    }
+</style>
+}
+
+@section Body{
+    <div id="movieWrapper">
+    @foreach (var item in Model)
+    {
+    <div class="movieContainer" id="movie_@item.id">
+        <div class="innerMovieWrapper">
+            <img class="moviePosterImage" src="/Movie/ImageHandler?ID=@item.id" />
+            <a href="" class="movieTitle">
+                @Html.Raw(item.Title + " (" + DateTime.Parse(item.ReleaseDate.ToString()).Year + ")")
+            </a>
+            <span class="movieRating">
+                @item.Rating
+            </span>
+            <br />
+            <span class="movieTime">
+                @item.Runtime
+            </span>
+            <div class='actorSpacer'>
+            </div>
+            <span class="movieActors">
+                @{var actorString = ""; }
+                @foreach (var m in item.Actors.Split(','))
+                {
+                    actorString += "<a href='browse?sort=Actor&actor=" + m.Trim() + "'>" + m + "</a><div class='actorSpacer'></div>";
+                }
+                @Html.Raw(actorString)
+            </span>
+            <div class='actorSpacer'>
+            </div>
+            <div class='actorSpacer'>
+            </div>
+            <span class="moviePlot">
+                @item.Plot
+            </span>
+        </div>
+    </div>
+    }
+</div>
+<div id="movieModalScreen">
+    <div id="movieModal">
+    </div>
+</div>
+    }
