@@ -1,0 +1,290 @@
+﻿<script>
+    $(function () {
+        $(".inputBox").val("");
+        $("#titleSearch").watermark("Title");
+        $("#actorSearch").watermark("Actor");
+        $("#loginBox").watermark("User");
+
+        $("#loginBox").autocomplete({
+            source: loginBox_AutoComplete
+        });
+
+        function loginBox_AutoComplete(request, response) {
+            $.ajax({
+                url: "/Movie/UserList",
+                data: { "descript": request.term },
+                success: function (data) {
+                    response(data);
+                }
+            });
+        }
+
+        $.post('/Movie/CountWatched', function (data) {
+            $('#watchedCount').html(data);
+        });
+
+        $.post('/Movie/CountWatchlist', function (data) {
+            $('#watchlistCount').html(data);
+        });
+
+        $("#logoutLink").click(function () {
+            $.get("/Movie/Logout", function () {
+                window.location.reload();
+            });
+        });
+
+        $("#loginButton").click(function () { login(); });
+
+        $("#loginBox").keypress(function (event) {
+            if (event.which == 13) {
+                event.preventDefault();
+                login();
+            }
+        });
+
+        $("#searchButton").click(function () { search(); });
+
+        $("#titleSearch,#actorSearch").keypress(function (event) {
+            if (event.which == 13) {
+                event.preventDefault();
+                search();
+            }
+        });
+
+        function login() {
+            var givenName = $("#loginBox").val();
+            $.post("/Movie/Login", { Username: givenName }, function () {
+                window.location.reload();
+            })
+        };
+
+        function search() {
+            var titleText = $("#titleSearch").val().trim();
+            var actorText = $("#actorSearch").val().trim();
+            if (titleText != "") {
+                location.href = "Browse?Sort=Title&Title=" + titleText;
+            }
+            if (actorText != "") {
+                location.href = "Browse?Sort=Actor&Actor=" + actorText;
+            }
+        };
+
+    });
+</script>
+<style>
+    #navbar {
+        left: 50%;
+        margin-left: -315px;
+        position: relative;
+        height: 50px;
+        min-width: 650px;
+        float: left;
+    }
+
+    #alphaNav {
+        background-color: White;
+        border-radius: 0px 0px 9px 9px;
+        box-shadow: 3px 3px 3px black;
+        float: left;
+        font-size: 0.8em;
+        height: 30px;
+        letter-spacing: 0.2em;
+        padding: 3px 0 4px 10px;
+        width: 160px;
+    }
+
+    #alphaNavList {
+        padding: 5px;
+        display: inline;
+        vertical-align: top;
+    }
+
+        #alphaNavList li {
+            float: left;
+            text-decoration: none;
+            list-style: none;
+        }
+
+            #alphaNavList li a {
+                text-decoration: none;
+                color: #4169e1;
+            }
+
+    #searchNav {
+        float: left;
+        margin-left: 10px;
+        margin-top: 5px;
+    }
+
+    #searchButton {
+        margin-left: 5px;
+    }
+
+    #loginNav {
+        margin-top: 5px;
+    }
+
+    #loginButton {
+        margin-left: 5px;
+    }
+
+    #userMessage {
+        color: white;
+        font-family: verdana;
+        font-size: 0.8em;
+        font-weight: bold;
+        text-shadow: 2px 2px 2px black;
+    }
+
+    #loginBox, #titleSearch, #actorSearch, #suggestName {
+        border-radius: 5px 5px 5px 5px;
+        box-shadow: 3px 3px 2px black;
+        font-family: verdana;
+        font-size: 0.7em;
+        padding: 2px;
+        margin-left: 5px;
+        text-align: center;
+        width: 100px;
+    }
+
+    #welcomeNav {
+        float: left;
+        margin-top: 5px;
+    }
+
+    #watchedNav, #watchlistNav {
+        float: left;
+        margin-left: 7px;
+    }
+
+    .countLink {
+        color: white;
+        font-family: arial;
+        font-size: 0.9em;
+        font-weight: bold;
+        margin-left: 2px;
+        position: relative;
+        text-decoration: none;
+        top: 7px;
+        vertical-align: top;
+    }
+
+    #logoutLink {
+        color: white;
+        font-size: 0.7em;
+        font-weight: bold;
+        padding: 1px 2px;
+        text-decoration: none;
+    }
+
+    #aquireLink, #insertLink {
+        border: 2px solid white;
+        border-radius: 3px 3px 3px 3px;
+        box-shadow: 2px 2px 2px black;
+        color: white;
+        cursor: pointer;
+        font-family: Verdana;
+        margin-left: 6px;
+        font-size: 0.9em;
+        font-weight: bold;
+        padding: 1px 2px;
+        position: relative;
+        text-decoration: none;
+        top: 7px;
+    }
+
+    #loggedInNav {
+        float: left;
+        left: -10px;
+        top: 3px;
+        position: relative;
+    }
+
+    .ui-menu-item {
+        background-color: #DEDEDE;
+        left: -38px;
+        border: 1px solid black;
+        text-align: center;
+        list-style: none outside none;
+        padding: 3px;
+        position: relative;
+        width: 100px;
+        cursor: pointer;
+        font-size: .9em;
+    }
+
+        .ui-menu-item a {
+            width: 100%;
+            display: block;
+        }
+</style>
+<div id="navbar">
+    @if (User.Identity.IsAuthenticated)
+    {
+        <div id="loggedInNav">
+            <div id="welcomeNav">
+                <span id="userMessage">
+                    @User.Identity.Name
+                </span><a id="logoutLink" href="" onclick="return false;">X</a>
+            </div>
+            <div id="watchedNav">
+                <a href="Browse?sort=Watched"><img src="/Content/Watched.png" /></a><a id="watchedCount" class="countLink" href="Browse?sort=Watched"></a>
+            </div>
+            <div id="watchlistNav">
+                <a href="Browse?sort=Watchlist"><img src="/Content/Watchlist.png" /></a><a id="watchlistCount" class="countLink" href="Browse?sort=Watchlist"></a>
+            </div>
+        </div>
+    }
+    <div id="alphaNav">
+        <ul id="alphaNavList">
+            <li><a href="Browse?sort=Letter&letter=1">#</a></li>
+            <li><a href="Browse?sort=Letter&letter=A">A</a></li>
+            <li><a href="Browse?sort=Letter&letter=B">B</a></li>
+            <li><a href="Browse?sort=Letter&letter=C">C</a></li>
+            <li><a href="Browse?sort=Letter&letter=D">D</a></li>
+            <li><a href="Browse?sort=Letter&letter=E">E</a></li>
+            <li><a href="Browse?sort=Letter&letter=F">F</a></li>
+            <li><a href="Browse?sort=Letter&letter=G">G</a></li>
+            <li><a href="Browse?sort=Letter&letter=H">H</a></li>
+            <li><a href="Browse?sort=Letter&letter=I">I</a></li>
+            <li><a href="Browse?sort=Letter&letter=J">J</a></li>
+            <li><a href="Browse?sort=Letter&letter=K">K</a></li>
+            <li><a href="Browse?sort=Letter&letter=L">L</a></li>
+            <li><a href="Browse?sort=Letter&letter=M">M</a></li>
+            <li><a href="Browse?sort=Letter&letter=N">N</a></li>
+            <li><a href="Browse?sort=Letter&letter=O">O</a></li>
+            <li><a href="Browse?sort=Letter&letter=P">P</a></li>
+            <li><a href="Browse?sort=Letter&letter=Q">Q</a></li>
+            <li><a href="Browse?sort=Letter&letter=R">R</a></li>
+            <li><a href="Browse?sort=Letter&letter=S">S</a></li>
+            <li><a href="Browse?sort=Letter&letter=T">T</a></li>
+            <li><a href="Browse?sort=Letter&letter=U">U</a></li>
+            <li><a href="Browse?sort=Letter&letter=V">V</a></li>
+            <li><a href="Browse?sort=Letter&letter=W">W</a></li>
+            <li><a href="Browse?sort=Letter&letter=X">X</a></li>
+            <li><a href="Browse?sort=Letter&letter=Y">Y</a></li>
+            <li><a href="Browse?sort=Letter&letter=Z">Z</a></li>
+        </ul>
+    </div>
+    <div id="searchNav">
+        <input type="text" class="inputBox" id="titleSearch" name="titleSearch" value="" />
+        <input type="text" class="inputBox" id="actorSearch" name="actorSearch" value="" />
+        <input type="submit" id="searchButton" value="Go" />
+    </div>
+    @if (!User.Identity.IsAuthenticated)
+    {
+        <div id="loginNav">
+            <input type="text" class="inputBox" id="loginBox" name="loginName" />
+            <input type="button" id="loginButton" value="Login" />
+        </div>
+    }
+    else
+    {
+        <a id="aquireLink">!</a>
+        if (User.Identity.Name == "Eric")
+        {
+            <a id="insertLink" href="Insert">+</a>
+        }
+    }
+</div>
+<br style="clear: both" />

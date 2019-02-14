@@ -1,0 +1,316 @@
+body, html, form {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  padding: 0px;
+  border: 0px;
+  margin: 0px;
+  background-color: #222222; }
+
+form {
+  overflow-y: auto; }
+
+#pageContainer {
+  background-image: url("/Content/VelvetCarpet.png");
+  overflow: hidden;
+  height: 100%;
+  position: relative; }
+  #pageContainer #leftSidebar {
+    height: 90%;
+    width: 10%;
+    background-image: url("/Content/LeftCurtain.jpg");
+    float: left;
+    position: relative;
+    z-index: 3; }
+  #pageContainer #centerContent {
+    width: 80%;
+    float: left;
+    height: 90%;
+    overflow-y: auto; }
+  #pageContainer #leftCurtain {
+    background-image: url("/Content/LeftCurtain.jpg");
+    height: 90%;
+    width: 50%;
+    position: absolute;
+    z-index: 2;
+    top: 0px; }
+  #pageContainer #rightCurtain {
+    background-image: url("/Content/RightCurtain.jpg");
+    height: 90%;
+    width: 50%;
+    left: 50%;
+    position: absolute;
+    z-index: 2;
+    top: 0px; }
+  #pageContainer #rightSidebar {
+    height: 90%;
+    width: 10%;
+    background-image: url("/Content/RightCurtain.jpg");
+    float: Right;
+    position: relative;
+    z-index: 3; }
+  #pageContainer #stage {
+    clear: both;
+    width: 1400px;
+    width: 100%;
+    background-image: url("/Content/stage.png");
+    height: 10%; }
+
+#movieWrapper {
+  text-align: center !important; }
+
+.movieButtonContainer {
+  width: 75px;
+  margin: 5px auto auto;
+  display: block; }
+
+.watchListInput, .watchedInput {
+  display: none; }
+
+.watchedButton {
+  padding-top: 2px;
+  float: left;
+  margin-right: 10px; }
+
+.innerMovieWrapper {
+  height: 260px;
+  overflow-y: auto;
+  position: relative;
+  margin-left: -6px;
+  margin-top: -6px;
+  padding-top: 6px; }
+
+.movieContainer {
+  background-color: #DEDEDE;
+  border-radius: 5px 5px 5px 5px;
+  box-shadow: 3px 3px 4px #000000;
+  display: inline-block;
+  height: 300px;
+  margin: 10px;
+  max-width: 250px;
+  vertical-align: top;
+  overflow-y: hidden;
+  padding: 5px;
+  width: 250px;
+  text-align: left;
+  position: relative; }
+
+.movieTitle {
+  color: #5E5E5E;
+  font-family: arial;
+  font-size: 0.9em;
+  text-decoration: none;
+  font-weight: bold; }
+
+.movieRating {
+  font-family: georgia;
+  font-weight: bold;
+  padding-left: 5px; }
+
+.movieTime {
+  font-family: georgia;
+  font-size: 0.8em; }
+
+.movieActors a {
+  color: Black;
+  font-family: verdana;
+  font-size: 0.7em;
+  line-height: 1.5em;
+  font-style: italic;
+  text-decoration: underline; }
+
+.actorSpacer {
+  height: 5px; }
+
+.moviePlot {
+  font-family: verdana;
+  font-size: 0.7em;
+  font-weight: bold;
+  display: block;
+  margin-left: 10px; }
+
+.moviePosterImage {
+  height: 200px;
+  margin-right: 5px;
+  max-width: 150px;
+  float: left;
+  margin-top: -6px; }
+
+.suggestionsWrapper {
+  display: inline-block;
+  margin: 0 10px 10px;
+  padding: 5px;
+  position: relative;
+  text-align: left;
+  vertical-align: top; }
+
+.suggestionsWrapper .movieContainer {
+  float: left !important;
+  margin-top: 6px; }
+
+.suggestion {
+  max-width: 150px;
+  margin-bottom: 15px; }
+
+.suggestionName {
+  color: white;
+  float: left;
+  font-family: arial;
+  margin-right: 10px; }
+
+.suggestionComment {
+  color: White; }
+
+.suggestionContainer {
+  float: right;
+  height: 320px;
+  overflow: auto; }
+
+#movieModal {
+  height: 70%; }
+
+#movieModalScreen {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  z-index: 4;
+  height: 100%;
+  display: none;
+  overflow: auto;
+  background-image: url("/Content/ModalBackground.png"); }
+
+#closeModal {
+  border: 2px solid black;
+  border-radius: 3px 3px 3px 3px;
+  box-shadow: 2px 2px 2px black;
+  color: black;
+  cursor: pointer;
+  float: right;
+  font-size: 0.7em;
+  font-weight: bold;
+  height: 10px;
+  left: 20px;
+  padding: 3px 2px 6px 4px;
+  position: relative;
+  text-decoration: none;
+  top: -30px;
+  width: 10px; }
+
+.moviePage {
+  background-color: #EFEFEF;
+  border-radius: 5px 5px 5px 5px;
+  box-shadow: 3px 3px 4px #000000;
+  height: 100%;
+  min-height: 490px;
+  margin: 30px auto auto;
+  max-width: 60%;
+  padding: 40px;
+  overflow-y: auto;
+  position: relative; }
+  .moviePage #suggestBox {
+    font-family: verdana;
+    color: White;
+    font-size: 0.7em;
+    background-image: url("/Content/ModalBackground.png");
+    border-radius: 0 5px 5px 0;
+    display: none;
+    height: 100%;
+    left: -42%;
+    margin-top: 0;
+    position: absolute;
+    z-index: 3;
+    top: 0;
+    width: 42%; }
+    .moviePage #suggestBox #suggestUserLabel, .moviePage #suggestBox #suggestCommentLabel {
+      margin-left: 5px; }
+    .moviePage #suggestBox #suggestName {
+      font-size: 1em !important; }
+    .moviePage #suggestBox #suggestComment {
+      border-radius: 0 5px 5px 0;
+      width: 90%;
+      height: 50%; }
+    .moviePage #suggestBox #suggestSubmit {
+      float: right;
+      margin-right: 10%; }
+  .moviePage .suggestButton {
+    background-image: url("/Content/suggest.png");
+    cursor: pointer;
+    display: inline-block;
+    height: 30px;
+    vertical-align: top;
+    width: 35px; }
+  .moviePage .moviePosterImage {
+    border: 1px solid black;
+    box-shadow: 3px 3px 4px black;
+    float: left;
+    max-height: 490px;
+    height: auto;
+    margin-right: 15px;
+    max-width: 40%; }
+  .moviePage .movieTitle, .moviePage .movieReleaseDate {
+    color: #5E5E5E;
+    font-family: arial;
+    font-size: 0.9em;
+    text-decoration: none;
+    font-weight: bold; }
+  .moviePage .movieRating {
+    border: 1px solid black;
+    border-radius: 2px 2px 2px 2px;
+    font-family: georgia;
+    font-weight: bold;
+    padding: 1px; }
+  .moviePage .movieRuntime {
+    color: #666666;
+    font-size: 0.8em;
+    letter-spacing: 0.01em; }
+  .moviePage .movieTime {
+    font-family: georgia;
+    font-size: 0.8em; }
+  .moviePage .movieActors a {
+    color: black;
+    font-family: verdana;
+    font-size: 0.7em;
+    font-style: italic;
+    font-weight: bold;
+    line-height: 1.9em;
+    text-decoration: underline; }
+  .moviePage .movieGenre {
+    font-family: Arial;
+    font-size: 0.8em;
+    font-variant: small-caps;
+    font-weight: bold;
+    margin-left: 10px; }
+  .moviePage .infoLabel {
+    color: #666666;
+    font-size: 0.9em;
+    font-weight: bold; }
+  .moviePage .movieDirector, .moviePage .movieWriter {
+    font-family: verdana;
+    font-size: 0.8em; }
+  .moviePage .movieOptionContainer {
+    text-align: center; }
+  .moviePage .moviePlot {
+    font-family: verdana;
+    font-size: 0.7em;
+    font-weight: bold; }
+  .moviePage .ratingTag img {
+    border-radius: 5px; }
+  .moviePage .ratingCell {
+    font-size: 0.9em;
+    font-weight: bold;
+    text-align: center; }
+  .moviePage .movieEdit {
+    float: right;
+    margin-bottom: 10px;
+    margin-top: -80px; }
+  .moviePage #rateLabel {
+    float: left; }
+  .moviePage #watchList, .moviePage #watched {
+    display: none; }
+
+#rateWrapper {
+  margin-top: 8px;
+  display: inline-block;
+  height: 40px;
+  text-align: center; }
