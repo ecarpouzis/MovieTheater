@@ -485,7 +485,7 @@ namespace MovieTheater.Controllers
                     movieDb.SaveChanges();
                 }
                 
-                posterInsert.Poster = potentialPoster;
+                //posterInsert.Poster = potentialPoster;
                 posterInsert.MovieID = givenID;
                 movieDb.SaveChanges();
             }
@@ -979,11 +979,11 @@ namespace MovieTheater.Controllers
                     var posterInsertion = new MoviePoster();
                     try
                     {
-                        posterInsertion.Poster = client.DownloadData(poster);
+                        //posterInsertion.Poster = client.DownloadData(poster);
                     }
                     catch
                     {
-                        posterInsertion.Poster = client.DownloadData("http://" + poster);
+                        //posterInsertion.Poster = client.DownloadData("http://" + poster);
                     }
                     posterInsertion.MovieID = newMovie.id;
 
@@ -1308,9 +1308,9 @@ namespace MovieTheater.Controllers
                 return NotFound();
             }
 
-            var imageData = poster.Poster;
+            //var imageData = poster.Poster;
 
-            return File(imageData, "image/jpeg");
+            return File(new byte[] { }, "image/jpeg");
         }
 
         //public static byte[] ImageToByte(Image img)

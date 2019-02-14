@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -19,6 +15,7 @@ namespace MovieTheater
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+
         }
 
         public IConfiguration Configuration { get; }
@@ -33,7 +30,20 @@ namespace MovieTheater
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddDbContext<MovieDb>(opt => opt.UseInMemoryDatabase(databaseName: "Add_writes_to_database"));
+            services.AddDbContext<MovieDb>(opt =>
+            {
+                var server = Environment.GetEnvironmentVariable("MOVIE_DBSERVER");
+                var database = Environment.GetEnvironmentVariable("MOVIE_DATABASE");
+                var username = Environment.GetEnvironmentVariable("MOVIE_DBUSER");
+                var password = Environment.GetEnvironmentVariable("MOVIE_DBPASSWORD");
+
+                if(server == null || database == null || username == null || password == null)
+                {
+                    throw new NullReferenceException("One of your database environment variables is set incorrectly. Ensure these are set to the proper connection details.");
+                }
+
+                opt.UseSqlServer($"Server={server};Database={database};User Id={username};Password={password};Encrypt=yes;TrustServerCertificate=true;");
+            });
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
         }

@@ -15,12 +15,5 @@ namespace MovieTheater.Db
         {
 
         }
-
-        protected override void OnModelCreating(ModelBuilder builder)
-        {
-            base.OnModelCreating(builder);
-
-            builder.Entity<MoviePoster>().HasKey(d => new { d.MovieID, d.PosterIndex });
-        }
     }
 }
