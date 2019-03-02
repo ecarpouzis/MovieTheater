@@ -7,15 +7,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MovieTheater.Db;
+using MovieTheater.Services;
 
 namespace MovieTheater
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IHostingEnvironment env)
         {
-            Configuration = configuration;
-
+            IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath);
+            builder.AddJsonFile("appsettings.json");
         }
 
         public IConfiguration Configuration { get; }
@@ -23,6 +24,16 @@ namespace MovieTheater
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.Configure<AzureImageHandlerOptions>(options => {
+                var connectionString = Environment.GetEnvironmentVariable("MOVIE_BLOBCONNECTIONSTRING");
+                if (connectionString==null)
+                {
+                    throw new NullReferenceException("Blob Storage connection string environment variable not found!");
+                }
+                options.BlobStorageConnectionString = connectionString;
+            });
+
+            services.AddTransient<IImageHandler, AzureImageHandler>();
             services.Configure<CookiePolicyOptions>(options =>
             {
                 // This lambda determines whether user consent for non-essential cookies is needed for a given request.
@@ -36,8 +47,9 @@ namespace MovieTheater
                 var database = Environment.GetEnvironmentVariable("MOVIE_DATABASE");
                 var username = Environment.GetEnvironmentVariable("MOVIE_DBUSER");
                 var password = Environment.GetEnvironmentVariable("MOVIE_DBPASSWORD");
+                
 
-                if(server == null || database == null || username == null || password == null)
+                if (server == null || database == null || username == null || password == null)
                 {
                     throw new NullReferenceException("One of your database environment variables is set incorrectly. Ensure these are set to the proper connection details.");
                 }

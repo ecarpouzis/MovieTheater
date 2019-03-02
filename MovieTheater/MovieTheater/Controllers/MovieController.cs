@@ -8,6 +8,8 @@ using System.Net.Http;
 using Microsoft.AspNetCore.Mvc;
 using MovieTheater.Db;
 using Newtonsoft.Json.Linq;
+using MovieTheater.Services;
+using System.Threading.Tasks;
 
 namespace MovieTheater.Controllers
 {
@@ -30,12 +32,14 @@ namespace MovieTheater.Controllers
          * */
 
         private readonly MovieDb movieDb;
+        private readonly IImageHandler imageHandler;
 
         private IActionResult JsonSuccess => Json(new { success = true });
 
-        public MovieController(MovieDb movieDb)
+        public MovieController(MovieDb movieDb, IImageHandler imageHandler)
         {
             this.movieDb = movieDb;
+            this.imageHandler = imageHandler;
         }
 
 
@@ -1299,18 +1303,16 @@ namespace MovieTheater.Controllers
         //}
 
         [HttpGet("/Image/{id}")]
-        public IActionResult ImageHandler(int id)
+        public async Task<IActionResult> ImageHandler(int id)
         {
-            var poster = movieDb.MoviePosters.FirstOrDefault(d => d.MovieID == id);
-
+            var poster = await imageHandler.GetPosterImageFromID(id);
+            
             if (poster == null)
             {
                 return NotFound();
             }
-
-            //var imageData = poster.Poster;
-
-            return File(new byte[] { }, "image/jpeg");
+            
+            return File(poster, "image/png");
         }
 
         //public static byte[] ImageToByte(Image img)
