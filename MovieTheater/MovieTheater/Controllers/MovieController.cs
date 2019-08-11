@@ -186,25 +186,25 @@ namespace MovieTheater.Controllers
             var viewModel = new BrowseViewModel();
 
             viewModel.Movies = await movies.Select(d => new BrowseViewModel.MovieItem
-                {
-                    Title = d.Title,
-                    Actors = d.Actors,
-                    Director = d.Director,
-                    Genre = d.Genre,
-                    MovieID = d.id,
-                    imdbID = d.imdbID,
-                    imdbRating = d.imdbRating,
-                    Plot = d.Plot,
-                    PosterLink = d.PosterLink,
-                    Rating = d.Rating,
-                    ReleaseDate = d.ReleaseDate,
-                    Runtime = d.Runtime,
-                    SimpleTitle = d.SimpleTitle,
-                    tomatoRating = d.tomatoRating,
-                    Writer = d.Writer,
-                    isWatched = false,
-                    isWatchlist = false
-                })
+            {
+                Title = d.Title,
+                Actors = d.Actors,
+                Director = d.Director,
+                Genre = d.Genre,
+                MovieID = d.id,
+                imdbID = d.imdbID,
+                imdbRating = d.imdbRating,
+                Plot = d.Plot,
+                PosterLink = d.PosterLink,
+                Rating = d.Rating,
+                ReleaseDate = d.ReleaseDate,
+                Runtime = d.Runtime,
+                SimpleTitle = d.SimpleTitle,
+                tomatoRating = d.tomatoRating,
+                Writer = d.Writer,
+                isWatched = false,
+                isWatchlist = false
+            })
                 .ToListAsync();
 
             return View("Browse", viewModel);
@@ -243,58 +243,19 @@ namespace MovieTheater.Controllers
         //    }
         //}
 
-        //public IQueryable<UserMovies> MovieCollectionToMovie(IQueryable<Movie> givenMovies)
-        //{
-        //    movieDB db = new movieDB();
-        //    var userID = Convert.ToInt32(Session["UserID"]);
-        //    var movieCollectionList = givenMovies.ToList();
-        //    var movieList = new List<UserMovies>();
-        //    foreach (Movie movie in movieCollectionList)
-        //    {
-        //        UserMovies newMovie = UserMovieSetup(movie);
-        //        newMovie.isWatched = (from m in db.Viewings
-        //                              where m.UserID == userID
-        //                              && m.ViewingType == "w"
-        //                              && m.MovieID == newMovie.id
-        //                              select "1").FirstOrDefault();
-        //        newMovie.isWatchlist = (from m in db.Viewings
-        //                                where m.UserID == userID
-        //                                && m.ViewingType == "s"
-        //                                && m.MovieID == newMovie.id
-        //                                select "1").FirstOrDefault();
-        //        movieList.Add(newMovie);
-        //    }
-        //    return movieList.AsQueryable();
-        //}
-
-        //UserMovies UserMovieSetup(Movie givenMovie)
-        //{
-        //    UserMovies newMovie = new UserMovies();
-
-        //    newMovie.Title = givenMovie.Title;
-        //    newMovie.Actors = givenMovie.Actors;
-        //    newMovie.Director = givenMovie.Director;
-        //    newMovie.Genre = givenMovie.Genre;
-        //    newMovie.id = givenMovie.id;
-        //    newMovie.imdbID = givenMovie.imdbID;
-        //    newMovie.imdbRating = givenMovie.imdbRating;
-        //    newMovie.Plot = givenMovie.Plot;
-        //    newMovie.PosterLink = givenMovie.PosterLink;
-        //    newMovie.Rating = givenMovie.Rating;
-        //    newMovie.ReleaseDate = givenMovie.ReleaseDate;
-        //    newMovie.Runtime = givenMovie.Runtime;
-        //    newMovie.SimpleTitle = givenMovie.SimpleTitle;
-        //    newMovie.tomatoRating = givenMovie.tomatoRating;
-        //    newMovie.Writer = givenMovie.Writer;
-
-        //    return newMovie;
-        //}
-
         [HttpGet("/Movie/Update/{id}")]
         public ActionResult Update(int id)
         {
             var movie = movieDb.Movies.SingleOrDefault(d => d.id == id);
-            return View(movie);
+
+            if (movie == null)
+            {
+                return NotFound();
+            }
+            else
+            {
+                return View(movie);
+            }
         }
 
         public IActionResult UpdateMovie(int givenID, string title, string simpletitle, string rated, string released, string runtime, string genre, string director,
@@ -395,7 +356,6 @@ namespace MovieTheater.Controllers
 
             return JsonSuccess;
         }
-
 
         [HttpGet("/Insert")]
         public IActionResult Insert()
