@@ -13,10 +13,14 @@ namespace MovieTheater
 {
     public class Startup
     {
+        private IHostingEnvironment currentEnv;
+
         public Startup(IHostingEnvironment env)
         {
             IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath);
             builder.AddJsonFile("appsettings.json");
+
+            currentEnv = env;
         }
 
         public IConfiguration Configuration { get; }
@@ -24,6 +28,7 @@ namespace MovieTheater
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            
             services.Configure<AzureImageHandlerOptions>(options => {
                 var connectionString = Environment.GetEnvironmentVariable("MOVIE_BLOBCONNECTIONSTRING");
                 if (connectionString==null)
@@ -33,7 +38,21 @@ namespace MovieTheater
                 options.BlobStorageConnectionString = connectionString;
             });
 
-            services.AddTransient<IImageHandler, AzureImageHandler>();
+
+            if (currentEnv.IsProduction())
+            {
+                services.AddTransient<IImageHandler, AzureImageHandler>();
+            }
+            else
+            {
+                services.Configure<LocalImageHandlerOptions>(options =>
+                {
+                    options.LocalStorageFileDirectory = @"H:\Work\MovieTheater\MovieTheater\MovieTheater\Posters";
+                });
+                services.AddTransient<IImageHandler, LocalImageHandler>();
+                services.AddTransient<AzureImageHandler>();
+            }
+
             services.Configure<CookiePolicyOptions>(options =>
             {
                 // This lambda determines whether user consent for non-essential cookies is needed for a given request.
