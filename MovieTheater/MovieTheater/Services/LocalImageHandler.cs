@@ -21,6 +21,12 @@ namespace MovieTheater.Services
         public async Task<byte[]> GetPosterImageFromID(int movieID)
         {
             DirectoryInfo posterDir = new DirectoryInfo(localFileDirectory);
+
+            if (!posterDir.Exists)
+            {
+                return null;
+            }
+
             FileInfo poster = new FileInfo(Path.Combine(posterDir.FullName, movieID + ".png"));
 
             if (poster.Exists)

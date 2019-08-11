@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MovieTheater.Db;
 using MovieTheater.Services;
+using MovieTheater.ViewModels;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -1136,6 +1137,33 @@ namespace MovieTheater.Controllers
             {
                 return new JsonResult(new { count = 0 });
             }
+        }
+
+        [HttpGet("/Movie/Display/{movieID}")]
+        public async Task<IActionResult> Display(int movieID)
+        {
+            var movie = await movieDb.Movies.SingleOrDefaultAsync(d => d.id == movieID);
+
+            if (movie == null)
+            {
+                return NotFound();
+            }
+
+            var vm = new MovieDisplayViewModel
+            {
+                Movie = movie
+            };
+
+            if (User.Identity.IsAuthenticated)
+            {
+                var userId = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
+
+                vm.PreviousWatchedMovie = await movieDb.Viewings.SingleOrDefaultAsync(v => v.MovieID == movie.id && v.UserID == userId && v.ViewingType == "w");
+                vm.PreviousSuggest = await movieDb.Viewings.SingleOrDefaultAsync(v => v.MovieID == movie.id && v.UserID == userId && v.ViewingType == "s");
+                vm.PreviousRated = await movieDb.Viewings.SingleOrDefaultAsync(v => v.MovieID == movie.id && v.UserID == userId && v.ViewingType == "r");
+            }
+
+            return PartialView("Display", vm);
         }
 
         //public string ScrapeMultiple(string urls)
