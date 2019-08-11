@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -25,5 +26,7 @@ namespace MovieTheater.Db
 
         [Key]
         public int id { get; set; }
+
+        public List<Viewing> Viewings { get; }
     }
 }

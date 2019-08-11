@@ -14,5 +14,8 @@ namespace MovieTheater.Db
         public int ViewingID { get; set; }
 
         public string ViewingData { get; set; }
+
+        [ForeignKey(nameof(MovieID))]
+        public Movie Movie { get; set; }
     }
 }

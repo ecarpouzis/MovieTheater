@@ -19,7 +19,6 @@ using System.Web;
 
 namespace MovieTheater.Controllers
 {
-
     public class MovieController : Controller
     {
         /* Viewing information:
@@ -82,258 +81,136 @@ namespace MovieTheater.Controllers
             return View(movie);
         }
 
-        //[HttpGet("/Browse")]
-        //public ActionResult Browse(string sort)
-        //{
-        //    IQueryable<Movie> movies = movieDb.Movies;
+        [HttpGet("/Browse")]
+        public IActionResult Browse()
+        {
+            int? userId;
 
-        //    /*
-        //    if (sort == "Letter")
-        //    {
-        //        String givenLetter = Request.QueryString["Letter"];
-        //        if (givenLetter == "1")
-        //        {
-        //            string allLetters = "abcdefghijklmnopqrstuvwxyz";
-        //            movies = from m in db.Movies
-        //                    where !allLetters.Contains(m.SimpleTitle.Substring(0, 1))
-        //                    orderby m.SimpleTitle
-        //                    select m;
-        //        }
-        //        else
-        //        {
-        //            movies = from m in db.Movies
-        //                    where m.SimpleTitle.Substring(0, 1) == givenLetter
-        //                    orderby m.SimpleTitle
-        //                    select m;
-        //        }
-        //    }
-
-        //    if (givenSort == "Title")
-        //    {
-        //        String givenTitle = Request.QueryString["Title"];
-        //        movies = from m in db.Movies
-        //                where m.SimpleTitle.Contains(givenTitle) ||
-        //                m.Title.Contains(givenTitle)
-        //                orderby m.SimpleTitle
-        //                select m;
-        //    }
-
-        //    if (givenSort == "Actor")
-        //    {
-        //        String givenActor = Request.QueryString["Actor"];
-        //        movies = from m in db.Movies
-        //                where m.Actors.Contains(givenActor)
-        //                orderby m.SimpleTitle
-        //                select m;
-        //    }
-
-        //    if (givenSort == "Watched")
-        //    {
-        //        var userID = Convert.ToInt32(Session["UserID"]);
-        //        if (userID > 0)
-        //        {
-        //            var viewings = (from v in db.Viewings
-        //                            where v.UserID == userID
-        //                            && v.ViewingType == "w"
-        //                            select v.MovieID);
-
-        //            movies = (from m in db.Movies
-        //                     where viewings.Contains(m.id)
-        //                     select m);
-        //        }
-
-        //    }
-
-        //    if (givenSort == "Watchlist")
-        //    {
-
-        //        var userID = Convert.ToInt32(Session["UserID"]);
-        //        if (userID != 0)
-        //        {
-        //            var viewings = (from v in db.Viewings
-        //                            where v.UserID == userID
-        //                            && v.ViewingType == "s"
-        //                            select v.MovieID);
-
-        //            movies = (from m in db.Movies
-        //                     where viewings.Contains(m.id)
-        //                     orderby m.SimpleTitle
-        //                     select m);
-        //        }
-
-        //    }
-
-        //    if (givenSort == "Overwatchlist")
-        //    {
-        //        var viewings = (from v in db.Viewings
-        //                        where v.ViewingType == "s"
-        //                        select v.MovieID);
-
-        //        movies = (from m in db.Movies
-        //                 where viewings.Contains(m.id)
-        //                 select m);
-        //    }
-
-        //    if (givenSort == "Uploaded")
-        //    {
-        //        DateTime minDate = new DateTime(2000, 1, 1);
-        //        DateTime dateFrom = Convert.ToDateTime(Request.QueryString["dateFrom"]);
-        //        if (dateFrom < minDate)
-        //        {
-        //            dateFrom = minDate;
-        //        }
-        //        movies = (from m in db.Movies
-        //                 where m.UploadedDate > dateFrom
-        //                 orderby m.UploadedDate
-        //                 select m);
-        //    }
-
-        //    if (givenSort == "Rank")
-        //    {
-        //        int top = Convert.ToInt32(Request.QueryString["Top"]);
-        //        decimal toplimit = Convert.ToDecimal(Request.QueryString["Topscore"]);
-        //        decimal bottomlimit = Convert.ToDecimal(Request.QueryString["Bottomscore"]);
-        //        movies = (from m in db.Movies
-        //                 orderby m.imdbRating descending
-        //                 where toplimit > m.imdbRating && m.imdbRating > bottomlimit
-        //                 select m).Take(top);
-        //    }
-
-        //    if (givenSort == "Watchability")
-        //    {
-        //        //It prefers newer movies over older movies
-        //        //30% older than 1990 starts a drop off          
-
-        //        List<String> actors = db.Movies.Select(x => x.Actors).ToList();
-        //        List<String> allActors = new List<String>();
-        //        foreach (String actor in actors)
-        //        {
-        //            foreach (String actorName in actor.Split(','))
-        //            {
-        //                allActors.Add(actorName.Trim());
-        //            }
-        //        }
+            if (User.Identity.IsAuthenticated)
+            {
+                userId = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
+            }
+            else
+            {
+                userId = null;
+            }
 
 
-        //        var actorProto =
-        //        from actor in allActors
-        //        group actor by actor into g
-        //        select new actorCount { actorName = g.Key, count = g.Count() };
+            IQueryable<Movie> movies = movieDb.Movies;
 
-        //        List<String> directors = db.Movies.Select(x => x.Director).ToList();
-        //        List<String> allDirectors = new List<String>();
-        //        foreach (String director in directors.Where(o => o != null))
-        //        {
-        //            if (director.Contains(','))
-        //            {
-        //                foreach (String directorName in director.Split(','))
-        //                {
-        //                    allDirectors.Add(directorName.Trim());
-        //                }
-        //            }
-        //            else
-        //            {
-        //                allDirectors.Add(director.Trim());
-        //            }
-        //        }
+            string sort = Request.Query["sort"];
 
-        //        var directorProto =
-        //        from director in allDirectors
-        //        group director by director into g
-        //        select new actorCount { actorName = g.Key, count = g.Count() };
+            if (sort == "Letter")
+            {
+                string givenLetter = Request.Query["Letter"];
+                if (givenLetter == "1")
+                {
+                    string allLetters = "abcdefghijklmnopqrstuvwxyz";
+                    movies = movieDb.Movies.Where(m => !allLetters.Contains(m.SimpleTitle.Substring(0, 1)));
+                }
+                else
+                {
+                    movies = movieDb.Movies.Where(m => m.SimpleTitle.Substring(0, 1) == givenLetter);
+                }
+            }
 
-        //        var actorCount = actorProto.ToList();
-        //        var directorCount = directorProto.ToList();
-        //        List<rankedMovie> movieList = new List<rankedMovie>();
+            if (sort == "Title")
+            {
+                String givenTitle = Request.Query["Title"];
+                movies = movieDb.Movies.Where(m => m.SimpleTitle.Contains(givenTitle) || m.Title.Contains(givenTitle));
+            }
 
-        //        List<minorMovie> allMovies = db.Movies.Select(x => new minorMovie() { id = x.id, movieName = x.Title, releaseDate = x.ReleaseDate, imdbRating = x.imdbRating, rtRating = x.tomatoRating, Actors = x.Actors, Directors = x.Director }).ToList();
+            if (sort == "Actor")
+            {
+                string givenActor = Request.Query["Actor"];
+                movies = movieDb.Movies.Where(m => m.Actors.Contains(givenActor));
+            }
 
+            if (sort == "Watched")
+            {
+                if (User.Identity.IsAuthenticated)
+                {
+                    movies = movieDb.Viewings
+                        .Include(d => d.Movie)
+                        .Where(d => d.UserID == userId && d.ViewingType == "w")
+                        .Select(d => d.Movie)
+                        .Distinct();
+                }
+                else
+                {
+                    movies = movieDb.Movies.Take(0);
+                }
+            }
 
-        //        foreach (minorMovie movie in allMovies)
-        //        {
-        //            movieList.Add(new rankedMovie(movie));
-        //        }
-        //        var givenYear = 2000;
-        //        var yearModifier = .2;
-        //        int FavoredYear = givenYear;
-        //        foreach (rankedMovie m in movieList)
-        //        {
-        //            var yearDifference = m.movie.releaseDate.Value.Year - FavoredYear;
-        //            var givenRank = yearDifference * yearModifier;
-        //            m.rating += 30 - Math.Abs(givenRank);
+            if (sort == "Watchlist")
+            {
+                if (User.Identity.IsAuthenticated)
+                {
+                    movies = movieDb.Viewings
+                        .Include(d => d.Movie)
+                        .Where(d => d.UserID == userId && d.ViewingType == "s")
+                        .Select(d => d.Movie)
+                        .Distinct();
+                }
+                else
+                {
+                    movies = movieDb.Movies.Take(0);
+                }
+            }
 
-        //            double pointValues = 0.2857;
-        //            decimal imdbPoints = 0;
-        //            if (m.movie.imdbRating.HasValue)
-        //            {
-        //                imdbPoints = (m.movie.imdbRating.Value * 10);
-        //                if (imdbPoints > 69)
-        //                {
-        //                    imdbPoints += 10;
-        //                }
-        //                imdbPoints = imdbPoints * (decimal)pointValues;
-        //            }
-        //            double rtPoints = 0;
-        //            if (m.movie.rtRating.HasValue)
-        //            {
-        //                rtPoints = m.movie.rtRating.Value;
-        //                if (rtPoints > 69)
-        //                {
-        //                    rtPoints += 10;
-        //                }
-        //                rtPoints = rtPoints * pointValues;
+            if (sort == "Uploaded")
+            {
+                DateTime minDate = new DateTime(2000, 1, 1);
 
-        //                var pointAverage = ((decimal)rtPoints + imdbPoints) / 2;
+                DateTime dateFrom = Convert.ToDateTime(Request.Query["dateFrom"]);
 
-        //                m.rating += (double)pointAverage;
-        //            }
-        //            else
-        //            {
-        //                m.rating += (double)imdbPoints;
-        //            }
+                if (dateFrom < minDate)
+                {
+                    dateFrom = minDate;
+                }
 
+                movies = movieDb.Movies.Where(d => d.UploadedDate > dateFrom);
+            }
 
-        //            var actorPoints = 0;
-        //            foreach (String actorName in m.movie.Actors.Split(','))
-        //            {
-        //                var actorAdd = actorCount.Where(o => o.actorName == actorName.Trim()).FirstOrDefault();
-        //                actorPoints += actorAdd.count;
-        //            }
+            if (sort == "Rank")
+            {
+                int top = Convert.ToInt32(Request.Query["Top"]);
+                decimal toplimit = Convert.ToDecimal(Request.Query["Topscore"]);
+                decimal bottomlimit = Convert.ToDecimal(Request.Query["Bottomscore"]);
 
-        //            m.rating += (actorPoints / 3);
+                movies = movieDb.Movies.OrderByDescending(d => d.imdbRating)
+                    .Where(m => toplimit > m.imdbRating && m.imdbRating > bottomlimit)
+                    .Take(top);
+            }
 
-        //            var directorPoints = 0;
-        //            if (m.movie.Directors != null)
-        //            {
-        //                foreach (String directorName in m.movie.Directors.Split(','))
-        //                {
-        //                    var directorAdd = directorCount.Where(o => o.actorName == directorName.Trim()).FirstOrDefault();
-        //                    directorPoints += directorAdd.count;
-        //                }
-        //            }
-        //            m.rating += (directorPoints / 5);
+            var viewModel = new BrowseViewModel();
 
-        //        }
+            viewModel.Movies = movies.Include(d => d.Viewings)
+                .Select(d => new BrowseViewModel.MovieItem
+                {
+                    Title = d.Title,
+                    Actors = d.Actors,
+                    Director = d.Director,
+                    Genre = d.Genre,
+                    MovieID = d.id,
+                    imdbID = d.imdbID,
+                    imdbRating = d.imdbRating,
+                    Plot = d.Plot,
+                    PosterLink = d.PosterLink,
+                    Rating = d.Rating,
+                    ReleaseDate = d.ReleaseDate,
+                    Runtime = d.Runtime,
+                    SimpleTitle = d.SimpleTitle,
+                    tomatoRating = d.tomatoRating,
+                    Writer = d.Writer,
+                    isWatched = d.Viewings.Any(e => e.UserID == userId && e.ViewingData == "w"),
+                    isWatchlist = d.Viewings.Any(e => e.UserID == userId && e.ViewingData == "s")
+                })
+                .ToList();
 
+            return View("Browse", viewModel);
+        }
 
-
-        //        movieList = movieList.OrderByDescending(m => m.rating).ToList();
-
-        //        List<int> rankedMovieIDList = new List<int>();
-        //        foreach (rankedMovie movie in movieList)
-        //        {
-        //            rankedMovieIDList.Add(movie.movie.id);
-        //        }
-
-        //        movies = db.Movies.ToList().OrderBy(i => rankedMovieIDList.IndexOf(i.id)).Take(100).AsQueryable();
-
-        //    }
-
-        //    return View(MovieCollectionToMovie(movies));
-        //    */
-
-        //    return View();
-        //}
         //public class minorMovie
         //{
         //    public int id;
@@ -1039,8 +916,6 @@ namespace MovieTheater.Controllers
             return new JsonResult(movieReleased.Trim());
         }
 
-
-
         [HttpPost("/Movie/Login")]
         public async Task<IActionResult> Login(string username)
         {
@@ -1079,26 +954,6 @@ namespace MovieTheater.Controllers
             return Ok();
         }
 
-        //public void AutoLogin()
-        //{
-        //    var givenUsername = Request.Cookies["Username"];
-        //    var givenID = Request.Cookies["UserID"];
-        //    if (givenUsername != null)
-        //    {
-        //        if (givenUsername.Value.Trim() != "")
-        //        {
-        //            Session["User"] = givenUsername.Value;
-        //            Session["UserID"] = givenID.Value;
-        //        }
-        //    }
-        //}
-
-        //public ActionResult Navigation()
-        //{
-        //    AutoLogin();
-        //    return View();
-        //}
-
         [HttpGet("/Movie/UserList/{descript}")]
         public IActionResult UserList(string descript)
         {
@@ -1121,7 +976,6 @@ namespace MovieTheater.Controllers
                 return new JsonResult(new { count = 0 });
             }
         }
-
 
         [HttpGet("/Movie/CountWatchlist")]
         public async Task<IActionResult> CountWatchlist()
@@ -1366,7 +1220,6 @@ namespace MovieTheater.Controllers
 
             return File(poster, "image/png");
         }
-
 
         //public ActionResult PosterCollage()
         //{

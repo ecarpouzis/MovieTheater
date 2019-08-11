@@ -1,8 +1,7 @@
-﻿@model IEnumerable<MovieTheater.Db.UserMovies>
+﻿@model BrowseViewModel
 
 @{
     ViewBag.Title = "Browse";
-    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 
@@ -111,70 +110,67 @@
 
 @section Body{
     <div id="movieWrapper">
-        @if (Model != null)
+        @foreach (var item in Model.Movies)
         {
-            foreach (var item in Model)
-            {
-                <div class="movieContainer" id="movie_@item.id">
-                    <div class="innerMovieWrapper">
-                        <img class="moviePosterImage" src="/Movie/Image/@item.id" />
-                        <a href="" class="movieTitle">
-                            @Html.Raw(item.Title + " (" + DateTime.Parse(item.ReleaseDate.ToString()).Year + ")")
-                        </a>
-                        <span class="movieRating">
-                            @item.Rating
-                        </span>
-                        <br />
-                        <span class="movieTime">
-                            @item.Runtime
-                        </span>
-                        <div class='actorSpacer'>
-                        </div>
-                        <span class="movieActors">
-                            @{
-                                var actorString = ""; }
-                            @foreach (var m in item.Actors.Split(','))
-                            {
-                                actorString += "<a href='browse?sort=Actor&actor=" + m.Trim() + "'>" + m + "</a><div class='actorSpacer'></div>";
-                            }
-                            @Html.Raw(actorString)
-                        </span>
-                        <div class='actorSpacer'>
-                        </div>
-                        <div class='actorSpacer'>
-                        </div>
-                        <span class="moviePlot">
-                            @item.Plot
-                        </span>
+            <div class="movieContainer" id="movie_@item.MovieID">
+                <div class="innerMovieWrapper">
+                    <img class="moviePosterImage" src="/Movie/Image/@item.MovieID" />
+                    <a href="" class="movieTitle">
+                        @Html.Raw(item.Title + " (" + DateTime.Parse(item.ReleaseDate.ToString()).Year + ")")
+                    </a>
+                    <span class="movieRating">
+                        @item.Rating
+                    </span>
+                    <br />
+                    <span class="movieTime">
+                        @item.Runtime
+                    </span>
+                    <div class='actorSpacer'>
                     </div>
-                    @if (User.Identity.IsAuthenticated)
-                    {
-                        <div class="movieButtonContainer">
-                            <img class="watchedButton"
-                                 @if (item.isWatched == "1") { @: src="/Content/Watched.png"
-                                 } else { @: src="/Content/Unwatched.png"
-                                 }
-                                 style="cursor: pointer;" />
-                            <input type="checkbox" class="watchedInput" name="watched"
-                                   @if (item.isWatched == "1") { @: checked="checked"
-                                   } />
-                            <img class="watchlistButton"
-                                 @if (item.isWatchlist == "1") { @: src="/Content/Watchlist.png"
-                                 } else { @: src="/Content/Unwatchlist.png"
-                                 }
-                                 style="cursor: pointer;" />
-                            <input type="checkbox" class="watchListInput" name="watchList"
-                                   @if (item.isWatchlist == "1") { @: checked="checked"
-                                   } />
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="movieButtonContainer">
-                        </div>
-                    }
+                    <span class="movieActors">
+                        @{
+                            var actorString = ""; }
+                        @foreach (var m in item.Actors.Split(','))
+                        {
+                            actorString += "<a href='browse?sort=Actor&actor=" + m.Trim() + "'>" + m + "</a><div class='actorSpacer'></div>";
+                        }
+                        @Html.Raw(actorString)
+                    </span>
+                    <div class='actorSpacer'>
+                    </div>
+                    <div class='actorSpacer'>
+                    </div>
+                    <span class="moviePlot">
+                        @item.Plot
+                    </span>
                 </div>
-            }
+                @if (User.Identity.IsAuthenticated)
+                {
+                    <div class="movieButtonContainer">
+                        <img class="watchedButton"
+                             @if (item.isWatched) { @: src="/Content/Watched.png"
+                             } else { @: src="/Content/Unwatched.png"
+                             }
+                             style="cursor: pointer;" />
+                        <input type="checkbox" class="watchedInput" name="watched"
+                               @if (item.isWatched) { @: checked="checked"
+                               } />
+                        <img class="watchlistButton"
+                             @if (item.isWatchlist) { @: src="/Content/Watchlist.png"
+                             } else { @: src="/Content/Unwatchlist.png"
+                             }
+                             style="cursor: pointer;" />
+                        <input type="checkbox" class="watchListInput" name="watchList"
+                               @if (item.isWatchlist) { @: checked="checked"
+                               } />
+                    </div>
+                }
+                else
+                {
+                    <div class="movieButtonContainer">
+                    </div>
+                }
+            </div>
         }
     </div>
     <div id="movieModalScreen">
