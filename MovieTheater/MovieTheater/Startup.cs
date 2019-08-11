@@ -29,31 +29,12 @@ namespace MovieTheater
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
-            services.Configure<AzureImageHandlerOptions>(options =>
+            services.Configure<LocalImageHandlerOptions>(options =>
             {
-                var connectionString = Environment.GetEnvironmentVariable("MOVIE_BLOBCONNECTIONSTRING");
-                if (connectionString == null)
-                {
-                    throw new NullReferenceException("Blob Storage connection string environment variable not found!");
-                }
-                options.BlobStorageConnectionString = connectionString;
+                options.LocalStorageFileDirectory = @"H:\Work\MovieTheater\MovieTheater\MovieTheater\Posters";
             });
 
-
-            if (currentEnv.IsProduction())
-            {
-                services.AddTransient<IImageHandler, AzureImageHandler>();
-            }
-            else
-            {
-                services.Configure<LocalImageHandlerOptions>(options =>
-                {
-                    options.LocalStorageFileDirectory = @"H:\Work\MovieTheater\MovieTheater\MovieTheater\Posters";
-                });
-                services.AddTransient<IImageHandler, LocalImageHandler>();
-                services.AddTransient<AzureImageHandler>();
-            }
+            services.AddTransient<IImageHandler, LocalImageHandler>();
 
             services.Configure<CookiePolicyOptions>(options =>
             {

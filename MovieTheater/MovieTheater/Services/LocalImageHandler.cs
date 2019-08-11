@@ -11,11 +11,10 @@ namespace MovieTheater.Services
     public class LocalImageHandler : IImageHandler
     {
         private readonly string localFileDirectory;
-        private readonly AzureImageHandler azureImageHandler;
-        public LocalImageHandler(IOptions<LocalImageHandlerOptions> option, AzureImageHandler injectedImageHandler)
+
+        public LocalImageHandler(IOptions<LocalImageHandlerOptions> option)
         {
             localFileDirectory = option.Value.LocalStorageFileDirectory;
-            azureImageHandler = injectedImageHandler;
         }
 
         public async Task<byte[]> GetPosterImageFromID(int movieID)
@@ -35,15 +34,7 @@ namespace MovieTheater.Services
             }
             else
             {
-                var azureDownloadedPoster = await azureImageHandler.GetPosterImageFromID(movieID);
-                if (azureDownloadedPoster == null)
-                {
-                    return null;
-                }
-
-                await File.WriteAllBytesAsync(poster.FullName, azureDownloadedPoster);
-
-                return azureDownloadedPoster;
+                return null;
             }
         }
     }
