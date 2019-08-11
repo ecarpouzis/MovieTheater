@@ -82,7 +82,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpGet("/Browse")]
-        public IActionResult Browse()
+        public async Task<IActionResult> Browse()
         {
             int? userId;
 
@@ -185,8 +185,7 @@ namespace MovieTheater.Controllers
 
             var viewModel = new BrowseViewModel();
 
-            viewModel.Movies = movies.Include(d => d.Viewings)
-                .Select(d => new BrowseViewModel.MovieItem
+            viewModel.Movies = await movies.Select(d => new BrowseViewModel.MovieItem
                 {
                     Title = d.Title,
                     Actors = d.Actors,
@@ -203,10 +202,10 @@ namespace MovieTheater.Controllers
                     SimpleTitle = d.SimpleTitle,
                     tomatoRating = d.tomatoRating,
                     Writer = d.Writer,
-                    isWatched = d.Viewings.Any(e => e.UserID == userId && e.ViewingData == "w"),
-                    isWatchlist = d.Viewings.Any(e => e.UserID == userId && e.ViewingData == "s")
+                    isWatched = false,
+                    isWatchlist = false
                 })
-                .ToList();
+                .ToListAsync();
 
             return View("Browse", viewModel);
         }

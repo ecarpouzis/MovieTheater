@@ -37,46 +37,43 @@
     </style>
 }
 
-@section Body{
-    <div id="movieWrapper">
-        @foreach (var item in Model)
-        {
-            <div class="movieContainer" id="movie_@item.id">
-                <div class="innerMovieWrapper">
-                    <img class="moviePosterImage" src="/Image/@item.id" />
-                    <a href="" class="movieTitle">
-                        @Html.Raw(item.Title + " (" + DateTime.Parse(item.ReleaseDate.ToString()).Year + ")")
-                    </a>
-                    <span class="movieRating">
-                        @item.Rating
-                    </span>
-                    <br />
-                    <span class="movieTime">
-                        @item.Runtime
-                    </span>
-                    <div class='actorSpacer'>
-                    </div>
-                    <span class="movieActors">
-                        @{var actorString = ""; }
-                        @foreach (var m in item.Actors.Split(','))
-                        {
-                            actorString += "<a href='browse?sort=Actor&actor=" + m.Trim() + "'>" + m + "</a><div class='actorSpacer'></div>";
-                        }
-                        @Html.Raw(actorString)
-                    </span>
-                    <div class='actorSpacer'>
-                    </div>
-                    <div class='actorSpacer'>
-                    </div>
-                    <span class="moviePlot">
-                        @item.Plot
-                    </span>
+<div id="movieWrapper">
+    @foreach (var item in Model)
+    {
+        <div class="movieContainer" id="movie_@item.id">
+            <div class="innerMovieWrapper">
+                <img class="moviePosterImage" src="/Image/@item.id" />
+                <a href="" class="movieTitle">
+                    @Html.Raw(item.Title + " (" + DateTime.Parse(item.ReleaseDate.ToString()).Year + ")")
+                </a>
+                <span class="movieRating">
+                    @item.Rating
+                </span>
+                <br />
+                <span class="movieTime">
+                    @item.Runtime
+                </span>
+                <div class='actorSpacer'>
                 </div>
+                <span class="movieActors">
+                    @foreach (var m in item.Actors.Split(','))
+                    {
+                        <a href="/browse?sort=Actor&actor=@m.Trim()">@m</a>
+                        <div class="actorSpacer"></div>
+                    }
+                </span>
+                <div class='actorSpacer'>
+                </div>
+                <div class='actorSpacer'>
+                </div>
+                <span class="moviePlot">
+                    @item.Plot
+                </span>
             </div>
-        }
-    </div>
-    <div id="movieModalScreen">
-        <div id="movieModal">
         </div>
+    }
+</div>
+<div id="movieModalScreen">
+    <div id="movieModal">
     </div>
-}
+</div>

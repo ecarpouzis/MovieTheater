@@ -25,7 +25,7 @@
         }
 
         .foundMovie {
-            margin-top:25px;
+            margin-top: 25px;
             height: 421px;
             width: 100%;
         }
@@ -39,7 +39,7 @@
             float: left;
             height: 400px;
             padding-right: 10px;
-            width:500px;
+            width: 500px;
             background-color: #dedede;
         }
 
@@ -68,11 +68,11 @@
             width: 200px;
         }
 
-        .searchedMovieName{
+        .searchedMovieName {
             font-family: Verdana;
             font-size: 14px;
             font-weight: bold;
-            margin-left:5px;
+            margin-left: 5px;
         }
 
         .foundPosterImage {
@@ -91,61 +91,61 @@
             function getNewMovie(m, searchedMovie, index) {
 
                 var foundMovieHtml = `
-                <div class ="foundMovie" id= "foundMovie_` + index + `" >
-                    <span class ="searchedMovieName"> `+ searchedMovie + ` </span>
-                    <br style="clear:both;"/>
-                    <div class="foundMoviePoster">
-                        <img class="foundPosterImage" src="`+ m.moviePoster + `" />
-                    </div>
-                    <div class="foundMovieFields">
-                        <br/>
-                        <span class="UpdateControlInfo">Title:</span>
-                        <input type="text" class="movieTitleField movieField" name="movieTitle" value="`+ m.movieName + `" />
-                        <br />
-                        <span class="UpdateControlInfo">Rating:</span>
-                        <input type="text" class="movieRatingField movieField" name="movieRating" value="`+ m.movieRating + `" />
-                        <br />
-                        <span class="UpdateControlInfo">ReleaseDate:</span>
-                        <input type="text" class="movieReleaseDateField movieField" name="movieReleaseDate" value="`+ m.movieReleased + `" />
-                        <br />
-                        <span class="UpdateControlInfo">Runtime:</span>
-                        <input type="text" class="movieRuntimeField movieField" name="movieRuntime" value="`+ m.movieRuntime + `" />
-                        <br />
-                        <span class="UpdateControlInfo">Genre:</span>
-                        <input type="text" class="movieGenreField movieField" name="movieGenre" value="`+ m.movieGenres + `" />
-                        <br />
-                        <span class="UpdateControlInfo">Director:</span>
-                        <input type="text" class="movieDirectorField movieField" name="movieDirector" value="`+ m.movieDirector + `" />
-                        <br />
-                        <span class="UpdateControlInfo">Writer:</span>
-                        <input type="text" class="movieWriterField movieField" name="movieWriter" value="`+ m.movieWriter + `" />
-                        <br />
-                        <span class="UpdateControlInfo">Actors:</span>
-                        <input type="text" class="movieActorsField movieField" name="movieActors" value="`+ m.movieActor + `" />
-                        <br />
-                        <span class="UpdateControlInfo">Plot:</span>
-                        <input type="text" class="moviePlotField movieField" name="moviePlot" value="`+ m.moviePlot + `" />
-                        <br />
-                        <span class="UpdateControlInfo">PosterLink:</span>
-                        <input type="text" class="moviePosterLinkField movieField" name="moviePosterLink" value="`+ m.moviePoster + `" />
-                        <br />
-                        <span class="UpdateControlInfo">imdbRating:</span>
-                        <input type="text" class="movieimdbRatingField movieField" name="movieimdbRating" value="`+ m.movieIMDBRating + `" />
-                        <br />
-                        <span class="UpdateControlInfo">imdbID:</span>
-                        <input type="text" class="movieimdbIDField movieField" name="movieimdbID" value="`+ m.movieIMDBID + `" />
-                        <br />
-                        <span class="UpdateControlInfo">tomatoRating:</span>
-                        <input type="text" class ="movietomatoRatingField movieField" name="movietomatoRating" value= "`+ m.movieRottenRating + `" />
-                        <br style="clear:both;" />
-                        <div class ="foundMovieControls">
+                    <div class ="foundMovie" id= "foundMovie_` + index + `" >
+                        <span class ="searchedMovieName"> `+ searchedMovie + ` </span>
+                        <br style="clear:both;"/>
+                        <div class="foundMoviePoster">
+                            <img class="foundPosterImage" src="`+ m.moviePoster + `" />
+                        </div>
+                        <div class="foundMovieFields">
+                            <br/>
+                            <span class="UpdateControlInfo">Title:</span>
+                            <input type="text" class="movieTitleField movieField" name="movieTitle" value="`+ m.movieName + `" />
                             <br />
-                            <input type="button" class ="insertMovieButton" id= "insertMovie_`+ index + `" value="Insert" />
-                            <input type="button" class="deleteMovieButton" id= "deleteMovie_`+ index + `" value="Delete" />
+                            <span class="UpdateControlInfo">Rating:</span>
+                            <input type="text" class="movieRatingField movieField" name="movieRating" value="`+ m.movieRating + `" />
+                            <br />
+                            <span class="UpdateControlInfo">ReleaseDate:</span>
+                            <input type="text" class="movieReleaseDateField movieField" name="movieReleaseDate" value="`+ m.movieReleased + `" />
+                            <br />
+                            <span class="UpdateControlInfo">Runtime:</span>
+                            <input type="text" class="movieRuntimeField movieField" name="movieRuntime" value="`+ m.movieRuntime + `" />
+                            <br />
+                            <span class="UpdateControlInfo">Genre:</span>
+                            <input type="text" class="movieGenreField movieField" name="movieGenre" value="`+ m.movieGenres + `" />
+                            <br />
+                            <span class="UpdateControlInfo">Director:</span>
+                            <input type="text" class="movieDirectorField movieField" name="movieDirector" value="`+ m.movieDirector + `" />
+                            <br />
+                            <span class="UpdateControlInfo">Writer:</span>
+                            <input type="text" class="movieWriterField movieField" name="movieWriter" value="`+ m.movieWriter + `" />
+                            <br />
+                            <span class="UpdateControlInfo">Actors:</span>
+                            <input type="text" class="movieActorsField movieField" name="movieActors" value="`+ m.movieActor + `" />
+                            <br />
+                            <span class="UpdateControlInfo">Plot:</span>
+                            <input type="text" class="moviePlotField movieField" name="moviePlot" value="`+ m.moviePlot + `" />
+                            <br />
+                            <span class="UpdateControlInfo">PosterLink:</span>
+                            <input type="text" class="moviePosterLinkField movieField" name="moviePosterLink" value="`+ m.moviePoster + `" />
+                            <br />
+                            <span class="UpdateControlInfo">imdbRating:</span>
+                            <input type="text" class="movieimdbRatingField movieField" name="movieimdbRating" value="`+ m.movieIMDBRating + `" />
+                            <br />
+                            <span class="UpdateControlInfo">imdbID:</span>
+                            <input type="text" class="movieimdbIDField movieField" name="movieimdbID" value="`+ m.movieIMDBID + `" />
+                            <br />
+                            <span class="UpdateControlInfo">tomatoRating:</span>
+                            <input type="text" class ="movietomatoRatingField movieField" name="movietomatoRating" value= "`+ m.movieRottenRating + `" />
+                            <br style="clear:both;" />
+                            <div class ="foundMovieControls">
+                                <br />
+                                <input type="button" class ="insertMovieButton" id= "insertMovie_`+ index + `" value="Insert" />
+                                <input type="button" class="deleteMovieButton" id= "deleteMovie_`+ index + `" value="Delete" />
+                            </div>
                         </div>
                     </div>
-                </div>
-                <br style="clear:both" />`;
+                    <br style="clear:both" />`;
 
                 $("#foundMovieContainer").append(foundMovieHtml);
 
@@ -201,15 +201,12 @@
 
 }
 
-@section Body{
-    <div id="batchMovieContainer">
-        <textarea id="batchMovieList"></textarea>
-        <br />
-        <input type="button" ID="processBatch" name="processBatch" value="Process" />
-    </div>
-
+<div id="batchMovieContainer">
+    <textarea id="batchMovieList"></textarea>
     <br />
-    <div id="foundMovieContainer">
+    <input type="button" ID="processBatch" name="processBatch" value="Process" />
+</div>
 
-    </div>
-}
+<br />
+<div id="foundMovieContainer">
+</div>
