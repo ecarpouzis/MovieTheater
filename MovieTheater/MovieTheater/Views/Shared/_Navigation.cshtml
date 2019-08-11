@@ -11,8 +11,7 @@
 
         function loginBox_AutoComplete(request, response) {
             $.ajax({
-                url: "/Movie/UserList",
-                data: { "descript": request.term },
+                url: "/Movie/UserList/"+request.term,
                 success: function (data) {
                     response(data);
                 }

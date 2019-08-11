@@ -16,7 +16,7 @@
 
             $(".movieTitle").click(function () {
                 $("#movieModalScreen").show();
-                $("#movieModal").prepend("<img style='position:absolute;left:50%;top:40%;margin-left:-62px;margin-top:-62px;' src='../Content/Loading.gif' />");
+                $("#movieModal").prepend("<img style='position:absolute;left:50%;top:40%;margin-left:-62px;margin-top:-62px;' src='/Content/Loading.gif' />");
                 $.get("/Movie/MovieDisplay?ID=" + $(this).parent().parent().attr("id").split("_")[1], function (data) {
                     $("#movieModal").append(data);
                     $(".moviePage").prepend("<span id='closeModal'>X</span>");

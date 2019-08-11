@@ -42,7 +42,7 @@ namespace MovieTheater.Controllers
             this.imageHandler = imageHandler;
         }
 
-
+        [HttpGet("/")]
         public IActionResult Home()
         {
             Random rnd = new Random();
@@ -527,6 +527,7 @@ namespace MovieTheater.Controllers
             return View();
         }
 
+        [HttpGet("/BatchGetMovie")]
         public IActionResult BatchGetMovie(string foundMovie)
         {
             //First remove any quality (720p) designation from the final portion of the folder name
@@ -600,6 +601,7 @@ namespace MovieTheater.Controllers
 
         }
 
+        [HttpGet("/Movie/ImdbScrape")]
         public ActionResult ImdbScrape(string givenID)
         {
             var urlId = givenID;
@@ -846,7 +848,8 @@ namespace MovieTheater.Controllers
             return Json(thisMovie);
         }
 
-        public string RTLookup(MovieInfo givenMovie)
+        [HttpGet("/Movie/RTLookup")]
+        public ActionResult RTLookup(MovieInfo givenMovie)
         {
             var foundRating = "";
             try
@@ -878,14 +881,11 @@ namespace MovieTheater.Controllers
 
             }
 
-            if (String.IsNullOrEmpty(foundRating))
-            {
-
-            }
-            return foundRating.Trim();
+            return new JsonResult(foundRating.Trim());
             //Movie IMDB Rating is setup
         }
 
+        [HttpGet("/Movie/InsertMovie/{descript}")]
         public IActionResult InsertMovie(string title, string rated, string released, string runtime, string genre, string director,
             string writer, string actors, string plot, string poster, string imdbrating, string imdbid, string tomatorating)
         {
@@ -999,7 +999,8 @@ namespace MovieTheater.Controllers
             return JsonSuccess;
         }
 
-        public string ImdbYearScrape(string givenID)
+        [HttpGet("/Movie/ImdbYearScrape")]
+        public IActionResult ImdbYearScrape(string givenID)
         {
             var urlId = givenID;
             var constructedUrl = "http://www.imdb.com/title/" + urlId + "/releaseinfo";
@@ -1025,7 +1026,41 @@ namespace MovieTheater.Controllers
 
             }
 
-            return movieReleased.Trim();
+            return new JsonResult(movieReleased.Trim());
+        }
+
+
+
+        public void Login(string Username)
+        {
+            String givenUser = Username.Trim();
+            movieDB db = new movieDB();
+            if (givenUser != "")
+            {
+                Session["User"] = givenUser;
+                var user = (from u in db.Users
+                            where u.Username == givenUser
+                            select u).FirstOrDefault();
+                HttpCookie cookie = new HttpCookie("Username", givenUser);
+                cookie.Expires = DateTime.Now.AddYears(1);
+                Response.Cookies.Add(cookie);
+                if (user == null)
+                {
+                    User newUser = new User();
+                    newUser.Username = givenUser;
+                    db.Users.Add(newUser);
+                    //db.Users.AddObject(newUser);
+                    db.SaveChanges();
+                }
+
+                if (user != null)
+                {
+                    Session["UserID"] = user.UserID;
+                    HttpCookie cookie2 = new HttpCookie("UserID", user.UserID.ToString());
+                    cookie2.Expires = DateTime.Now.AddYears(1);
+                    Response.Cookies.Add(cookie2);
+                }
+            }
         }
 
         //public void AutoLogin()
@@ -1042,63 +1077,51 @@ namespace MovieTheater.Controllers
         //    }
         //}
 
-        //public void Login(string Username)
-        //{
-        //    String givenUser = Username.Trim();
-        //    movieDB db = new movieDB();
-        //    if (givenUser != "")
-        //    {
-        //        Session["User"] = givenUser;
-        //        var user = (from u in db.Users
-        //                    where u.Username == givenUser
-        //                    select u).FirstOrDefault();
-        //        HttpCookie cookie = new HttpCookie("Username", givenUser);
-        //        cookie.Expires = DateTime.Now.AddYears(1);
-        //        Response.Cookies.Add(cookie);
-        //        if (user == null)
-        //        {
-        //            User newUser = new User();
-        //            newUser.Username = givenUser;
-        //            db.Users.Add(newUser);
-        //            //db.Users.AddObject(newUser);
-        //            db.SaveChanges();
-        //        }
-
-        //        if (user != null)
-        //        {
-        //            Session["UserID"] = user.UserID;
-        //            HttpCookie cookie2 = new HttpCookie("UserID", user.UserID.ToString());
-        //            cookie2.Expires = DateTime.Now.AddYears(1);
-        //            Response.Cookies.Add(cookie2);
-        //        }
-        //    }
-        //}
-
         //public ActionResult Navigation()
         //{
         //    AutoLogin();
         //    return View();
         //}
 
+
+        [HttpGet("/Movie/UserList/{descript}")]
         public ActionResult UserList(string descript)
         {
             var userList = movieDb.Users.Where(d => d.Username.Contains(descript)).Select(d => d.Username).ToList();
             return Json(userList);
         }
 
-        //public ActionResult CountWatched()
-        //{
-        //    var userID = Convert.ToInt32(Session["UserID"]);
-        //    int watchedCount = 0;
-        //    if (userID > 0)
-        //    {
-        //        watchedCount = (from v in db.Viewings
-        //                        where v.UserID == userID
-        //                        && v.ViewingType == "w"
-        //                        select v.MovieID).Count();
-        //    }
-        //    return Json(watchedCount, JsonRequestBehavior.AllowGet);
-        //}
+        [HttpGet("/Movie/CountWatched")]
+        public ActionResult CountWatched()
+        {
+            var userID = Convert.ToInt32(Session["UserID"]);
+            int watchedCount = 0;
+            if (userID > 0)
+            {
+                watchedCount = (from v in db.Viewings
+                                where v.UserID == userID
+                                && v.ViewingType == "w"
+                                select v.MovieID).Count();
+            }
+            return Json(watchedCount, JsonRequestBehavior.AllowGet);
+        }
+
+
+        [HttpGet("/Movie/CountWatchlist")]
+        public ActionResult CountWatchlist()
+        {
+            movieDB db = new movieDB();
+            var userID = Convert.ToInt32(Session["UserID"]);
+            int watchedCount = 0;
+            if (userID > 0)
+            {
+                watchedCount = (from v in db.Viewings
+                                where v.UserID == userID
+                                && v.ViewingType == "s"
+                                select v.MovieID).Count();
+            }
+            return Json(watchedCount, JsonRequestBehavior.AllowGet);
+        }
 
         //public string ScrapeMultiple(string urls)
         //{
@@ -1265,20 +1288,6 @@ namespace MovieTheater.Controllers
         //    return null;
         //}
 
-        //public ActionResult CountWatchlist()
-        //{
-        //    movieDB db = new movieDB();
-        //    var userID = Convert.ToInt32(Session["UserID"]);
-        //    int watchedCount = 0;
-        //    if (userID > 0)
-        //    {
-        //        watchedCount = (from v in db.Viewings
-        //                        where v.UserID == userID
-        //                        && v.ViewingType == "s"
-        //                        select v.MovieID).Count();
-        //    }
-        //    return Json(watchedCount, JsonRequestBehavior.AllowGet);
-        //}
 
         //public ActionResult FetchSuggestData()
         //{
@@ -1315,18 +1324,6 @@ namespace MovieTheater.Controllers
             return File(poster, "image/png");
         }
 
-        //public static byte[] ImageToByte(Image img)
-        //{
-        //    byte[] byteArray = new byte[0];
-        //    using (MemoryStream stream = new MemoryStream())
-        //    {
-        //        img.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
-        //        stream.Close();
-
-        //        byteArray = stream.ToArray();
-        //    }
-        //    return byteArray;
-        //}
 
         //public ActionResult PosterCollage()
         //{
