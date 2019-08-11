@@ -31,7 +31,21 @@ namespace MovieTheater
         {
             services.Configure<LocalImageHandlerOptions>(options =>
             {
-                options.LocalStorageFileDirectory = @"H:\Work\MovieTheater\MovieTheater\MovieTheater\Posters";
+                string posterImagesPath = Environment.GetEnvironmentVariable("MOVIE_POSTERSDIR");
+
+                if (string.IsNullOrEmpty(posterImagesPath))
+                {
+                    throw new System.IO.DirectoryNotFoundException("Movie posters directory is invalid. Should be set via environment variable `MOVIE_POSTERSDIR`");
+                }
+
+                System.IO.DirectoryInfo postersDir = new System.IO.DirectoryInfo(posterImagesPath);
+
+                if (!postersDir.Exists)
+                {
+                    throw new System.IO.DirectoryNotFoundException("Movie posters directory is invalid. Should be set via environment variable `MOVIE_POSTERSDIR`");
+                }
+
+                options.LocalStorageFileDirectory = postersDir.FullName;
             });
 
             services.AddTransient<IImageHandler, LocalImageHandler>();
