@@ -1,15 +1,20 @@
-﻿using System;
-using System.Linq;
-using System.Web;
-using System.Net;
-using System.Text.RegularExpressions;
-using HtmlAgilityPack;
-using System.Net.Http;
+﻿using HtmlAgilityPack;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MovieTheater.Db;
-using Newtonsoft.Json.Linq;
 using MovieTheater.Services;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace MovieTheater.Controllers
 {
@@ -408,10 +413,10 @@ namespace MovieTheater.Controllers
         //    return newMovie;
         //}
 
-            [HttpGet("/Movie/Update/{id}")]
+        [HttpGet("/Movie/Update/{id}")]
         public ActionResult Update(int id)
         {
-            var movie = movieDb.Movies.SingleOrDefault(d => d.id == id);            
+            var movie = movieDb.Movies.SingleOrDefault(d => d.id == id);
             return View(movie);
         }
 
@@ -488,7 +493,7 @@ namespace MovieTheater.Controllers
                     movieDb.MoviePosters.Add(posterInsert);
                     movieDb.SaveChanges();
                 }
-                
+
                 //posterInsert.Poster = potentialPoster;
                 posterInsert.MovieID = givenID;
                 movieDb.SaveChanges();
@@ -598,7 +603,6 @@ namespace MovieTheater.Controllers
             public string movieIMDBID;
             public string moviePlot;
             public string movieRottenRating;
-
         }
 
         [HttpGet("/Movie/ImdbScrape")]
@@ -631,7 +635,7 @@ namespace MovieTheater.Controllers
             var moviePoster = "";
             var movieIMDBRating = "";
             var moviePlot = "";
-            
+
             try
             {
                 foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//h1[@itemprop='name']/text()[1]"))
@@ -842,14 +846,20 @@ namespace MovieTheater.Controllers
 
             }
 
-            thisMovie.movieRottenRating = RTLookup(thisMovie);
-
+            thisMovie.movieRottenRating = GetRottenTomatoesRating(thisMovie);
 
             return Json(thisMovie);
         }
 
         [HttpGet("/Movie/RTLookup")]
-        public ActionResult RTLookup(MovieInfo givenMovie)
+        public IActionResult RTLookup(MovieInfo givenMovie)
+        {
+            var rating = GetRottenTomatoesRating(givenMovie);
+
+            return new JsonResult(rating.Trim());
+        }
+
+        private string GetRottenTomatoesRating(MovieInfo givenMovie)
         {
             var foundRating = "";
             try
@@ -881,8 +891,7 @@ namespace MovieTheater.Controllers
 
             }
 
-            return new JsonResult(foundRating.Trim());
-            //Movie IMDB Rating is setup
+            return foundRating;
         }
 
         [HttpGet("/Movie/InsertMovie/{descript}")]
@@ -1031,36 +1040,42 @@ namespace MovieTheater.Controllers
 
 
 
-        public void Login(string Username)
+        [HttpPost("/Movie/Login")]
+        public async Task<IActionResult> Login(string username)
         {
-            String givenUser = Username.Trim();
-            movieDB db = new movieDB();
-            if (givenUser != "")
-            {
-                Session["User"] = givenUser;
-                var user = (from u in db.Users
-                            where u.Username == givenUser
-                            select u).FirstOrDefault();
-                HttpCookie cookie = new HttpCookie("Username", givenUser);
-                cookie.Expires = DateTime.Now.AddYears(1);
-                Response.Cookies.Add(cookie);
-                if (user == null)
-                {
-                    User newUser = new User();
-                    newUser.Username = givenUser;
-                    db.Users.Add(newUser);
-                    //db.Users.AddObject(newUser);
-                    db.SaveChanges();
-                }
+            String givenUser = username.Trim();
 
-                if (user != null)
-                {
-                    Session["UserID"] = user.UserID;
-                    HttpCookie cookie2 = new HttpCookie("UserID", user.UserID.ToString());
-                    cookie2.Expires = DateTime.Now.AddYears(1);
-                    Response.Cookies.Add(cookie2);
-                }
+            if (string.IsNullOrEmpty(givenUser))
+            {
+                return NotFound();
             }
+
+            var user = await movieDb.Users.SingleOrDefaultAsync(d => d.Username == username);
+
+            if (user == null)
+            {
+                user = new User()
+                {
+                    Username = username
+                };
+
+                await movieDb.Users.AddAsync(user);
+                await movieDb.SaveChangesAsync();
+            }
+
+            var claims = new List<System.Security.Claims.Claim>()
+            {
+                new Claim(ClaimTypes.Name, username),
+                new Claim("UserID", user.UserID.ToString())
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+            var authProperties = new AuthenticationProperties { };
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), authProperties);
+
+            return Ok();
         }
 
         //public void AutoLogin()
@@ -1083,44 +1098,44 @@ namespace MovieTheater.Controllers
         //    return View();
         //}
 
-
         [HttpGet("/Movie/UserList/{descript}")]
-        public ActionResult UserList(string descript)
+        public IActionResult UserList(string descript)
         {
             var userList = movieDb.Users.Where(d => d.Username.Contains(descript)).Select(d => d.Username).ToList();
             return Json(userList);
         }
 
         [HttpGet("/Movie/CountWatched")]
-        public ActionResult CountWatched()
+        public async Task<IActionResult> CountWatched()
         {
-            var userID = Convert.ToInt32(Session["UserID"]);
-            int watchedCount = 0;
-            if (userID > 0)
+            if (User.Identity.IsAuthenticated)
             {
-                watchedCount = (from v in db.Viewings
-                                where v.UserID == userID
-                                && v.ViewingType == "w"
-                                select v.MovieID).Count();
+                var userID = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
+
+                var count = await movieDb.Viewings.CountAsync(d => d.UserID == userID && d.ViewingType == "w");
+                return new JsonResult(new { count = count });
             }
-            return Json(watchedCount, JsonRequestBehavior.AllowGet);
+            else
+            {
+                return new JsonResult(new { count = 0 });
+            }
         }
 
 
         [HttpGet("/Movie/CountWatchlist")]
-        public ActionResult CountWatchlist()
+        public async Task<IActionResult> CountWatchlist()
         {
-            movieDB db = new movieDB();
-            var userID = Convert.ToInt32(Session["UserID"]);
-            int watchedCount = 0;
-            if (userID > 0)
+            if (User.Identity.IsAuthenticated)
             {
-                watchedCount = (from v in db.Viewings
-                                where v.UserID == userID
-                                && v.ViewingType == "s"
-                                select v.MovieID).Count();
+                var userID = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
+
+                var count = await movieDb.Viewings.CountAsync(d => d.UserID == userID && d.ViewingType == "s");
+                return new JsonResult(new { count = count });
             }
-            return Json(watchedCount, JsonRequestBehavior.AllowGet);
+            else
+            {
+                return new JsonResult(new { count = 0 });
+            }
         }
 
         //public string ScrapeMultiple(string urls)
@@ -1315,12 +1330,12 @@ namespace MovieTheater.Controllers
         public async Task<IActionResult> ImageHandler(int id)
         {
             var poster = await imageHandler.GetPosterImageFromID(id);
-            
+
             if (poster == null)
             {
                 return NotFound();
             }
-            
+
             return File(poster, "image/png");
         }
 

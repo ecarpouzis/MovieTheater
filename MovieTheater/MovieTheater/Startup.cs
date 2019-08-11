@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -28,10 +29,11 @@ namespace MovieTheater
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            
-            services.Configure<AzureImageHandlerOptions>(options => {
+
+            services.Configure<AzureImageHandlerOptions>(options =>
+            {
                 var connectionString = Environment.GetEnvironmentVariable("MOVIE_BLOBCONNECTIONSTRING");
-                if (connectionString==null)
+                if (connectionString == null)
                 {
                     throw new NullReferenceException("Blob Storage connection string environment variable not found!");
                 }
@@ -60,13 +62,15 @@ namespace MovieTheater
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
+
             services.AddDbContext<MovieDb>(opt =>
             {
                 var server = Environment.GetEnvironmentVariable("MOVIE_DBSERVER");
                 var database = Environment.GetEnvironmentVariable("MOVIE_DATABASE");
                 var username = Environment.GetEnvironmentVariable("MOVIE_DBUSER");
                 var password = Environment.GetEnvironmentVariable("MOVIE_DBPASSWORD");
-                
+
 
                 if (server == null || database == null || username == null || password == null)
                 {
@@ -95,6 +99,7 @@ namespace MovieTheater
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
+            app.UseAuthentication();
             app.UseMvcWithDefaultRoute();
         }
     }

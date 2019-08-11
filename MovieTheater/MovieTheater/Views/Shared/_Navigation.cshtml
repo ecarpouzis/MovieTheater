@@ -10,20 +10,15 @@
         });
 
         function loginBox_AutoComplete(request, response) {
-            $.ajax({
-                url: "/Movie/UserList/"+request.term,
-                success: function (data) {
-                    response(data);
-                }
-            });
+            $.get("/Movie/UserList/" + request.term, response);
         }
 
-        $.post('/Movie/CountWatched', function (data) {
-            $('#watchedCount').html(data);
+        $.get('/Movie/CountWatched', function (data) {
+            $('#watchedCount').html(data.count);
         });
 
-        $.post('/Movie/CountWatchlist', function (data) {
-            $('#watchlistCount').html(data);
+        $.get('/Movie/CountWatchlist', function (data) {
+            $('#watchlistCount').html(data.count);
         });
 
         $("#logoutLink").click(function () {
@@ -52,7 +47,7 @@
 
         function login() {
             var givenName = $("#loginBox").val();
-            $.post("/Movie/Login", { Username: givenName }, function () {
+            $.post("/Movie/Login", { username: givenName }, function () {
                 window.location.reload();
             })
         };

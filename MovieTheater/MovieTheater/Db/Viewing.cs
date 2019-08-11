@@ -1,7 +1,8 @@
-﻿using System;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MovieTheater.Db
 {
+    [Table("Viewing")]
     public class Viewing
     {
         public int? MovieID { get; set; }
