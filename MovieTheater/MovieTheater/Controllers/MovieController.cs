@@ -9,6 +9,7 @@ using MovieTheater.ViewModels;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -79,6 +80,31 @@ namespace MovieTheater.Controllers
             }
 
             return View(movie);
+        }
+
+        [HttpGet("/PosterNumberFix")]
+        public IActionResult PosterNumberFix()
+        {
+            var movies = movieDb.Movies;
+            return View(movies);
+        }
+
+        [HttpGet("/BumpPoster/{id}")]
+        public IActionResult BumpPoster(int id)
+        {
+            var dir = Environment.GetEnvironmentVariable("MOVIE_POSTERSDIR");
+            var files = Directory.GetFiles(dir).ToList();
+
+            //When I need to subtract picture IDs, I need to do it smallest to largest so I don't overwrite posters.
+            var subFiles = files.OrderBy(g => int.Parse(Path.GetFileNameWithoutExtension(g))).ToList();
+
+            //When I need to increment picture IDs, I need to do it largest to smallest so I don't overwrite posters.
+            var bumpFiles = files.OrderByDescending(g => int.Parse(Path.GetFileNameWithoutExtension(g))).ToList();
+
+
+
+            return Json("ok");
+            
         }
 
         [HttpGet("/Browse")]
@@ -369,7 +395,7 @@ namespace MovieTheater.Controllers
             return View();
         }
 
-        [HttpGet("/BatchGetMovie")]
+        [HttpGet("/Movie/BatchGetMovie")]
         public IActionResult BatchGetMovie(string foundMovie)
         {
             //First remove any quality (720p) designation from the final portion of the folder name
@@ -390,7 +416,7 @@ namespace MovieTheater.Controllers
                 //Search using Google:         
                 string GoogleRT = "http://www.google.com/search?num=1&q=" + HttpUtility.UrlEncode(foundMovie) + " IMDB";
                 var result = new HtmlWeb().Load(GoogleRT);
-                HtmlNode googleNode = result.DocumentNode.SelectNodes("//html//body//div[@class='g']//a/@href").First();
+                HtmlNode googleNode = result.DocumentNode.SelectNodes("//html//body//a[contains(@href,'imdb')]")[0];
 
                 HtmlAgilityPack.HtmlDocument doc3 = new HtmlAgilityPack.HtmlDocument();
                 HtmlAgilityPack.HtmlWeb docHFile3 = new HtmlWeb();
@@ -447,7 +473,10 @@ namespace MovieTheater.Controllers
         {
             var urlId = givenID;
             var constructedUrl1 = "http://www.imdb.com/title/" + urlId + "/";
+            //URL for Release Dates:
             var constructedUrl2 = "http://www.imdb.com/title/" + urlId + "/releaseinfo";
+            //URL for Actors:
+            var constructedUrl3 = "https://www.imdb.com/title/" + urlId + "/fullcredits/";
 
             MovieInfo thisMovie = new MovieInfo();
             thisMovie.movieIMDBID = urlId;
@@ -460,6 +489,9 @@ namespace MovieTheater.Controllers
             HtmlAgilityPack.HtmlWeb docHFile2 = new HtmlWeb();
             doc2 = docHFile2.Load(constructedUrl2);
 
+            HtmlAgilityPack.HtmlDocument doc3 = new HtmlAgilityPack.HtmlDocument();
+            HtmlAgilityPack.HtmlWeb docHFile3 = new HtmlWeb();
+            doc3 = docHFile3.Load(constructedUrl3);
 
             var movieName = "";
             var movieReleased = "";
@@ -475,7 +507,7 @@ namespace MovieTheater.Controllers
 
             try
             {
-                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//h1[@itemprop='name']/text()[1]"))
+                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//div[@class='title_wrapper']//h1/text()[1]"))
                 {
                     movieName = node.InnerText;
                 }
@@ -490,7 +522,7 @@ namespace MovieTheater.Controllers
 
             try
             {
-                foreach (HtmlNode node in doc2.DocumentNode.SelectNodes("(//td[@class='release_date'])[1]/text()"))
+                foreach (HtmlNode node in doc2.DocumentNode.SelectNodes("(//td[@class='release-date-item__date'])[1]/text()"))
                 {
                     movieReleased += node.InnerText;
                 }
@@ -506,12 +538,12 @@ namespace MovieTheater.Controllers
 
             try
             {
-                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//meta[@itemprop='contentRating']"))
+                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//div[@class='subtext'][1]/text()"))
                 {
-                    movieRating += node.Attributes["content"].Value;
-                    //movieRating += node.InnerText;
+                    //movieRating += node.Attributes["content"].Value;
+                    movieRating += node.InnerText;
                 }
-                thisMovie.movieRating = movieRating.Trim().Replace("_", " ");
+                thisMovie.movieRating = movieRating.Replace(",","").Trim().Replace("_", " ");
             }
             catch
             {
@@ -525,7 +557,7 @@ namespace MovieTheater.Controllers
 
             try
             {
-                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//span[@itemprop='genre']/text()"))
+                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//div[@class='subtext']//a[contains(@href,'genre')]/text()"))
                 {
                     movieGenres += node.InnerText + ", ";
                 }
@@ -544,7 +576,7 @@ namespace MovieTheater.Controllers
 
             try
             {
-                string thisLookup = "//div[@class='title_wrapper']//time[@itemprop='duration']/text()";
+                string thisLookup = "//div[@class='subtext']//time/text()";
 
                 foreach (HtmlNode node in doc1.DocumentNode.SelectNodes(thisLookup))
                 {
@@ -571,9 +603,9 @@ namespace MovieTheater.Controllers
 
             try
             {
-                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//div[@class='main'][1]//span[@itemprop='director']//span[@itemprop='name']/text()"))
+                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//div[@class='plot_summary_wrapper']//div[@class='credit_summary_item'][1]//a/text()"))
                 {
-                    if (node.InnerText != "")
+                    if (node.InnerText != "" && !node.InnerText.Contains(" more credit"))
                     {
                         movieDirector += node.InnerText + ", ";
                     }
@@ -593,9 +625,9 @@ namespace MovieTheater.Controllers
 
             try
             {
-                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//div[@class='main'][1]//span[@itemprop='creator']//span[@itemprop='name']/text()"))
+                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//div[@class='plot_summary_wrapper']//div[@class='credit_summary_item'][2]//a/text()"))
                 {
-                    if (node.InnerText != "")
+                    if (node.InnerText != "" && !node.InnerText.Contains(" more credit"))
                     {
                         movieWriter += node.InnerText + ", ";
                     }
@@ -617,11 +649,15 @@ namespace MovieTheater.Controllers
             {
                 int actorsToInclude = 4;
                 int actorsIncluded = 0;
-                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//td[@itemprop='actor']//span/text()"))
+                foreach (HtmlNode node in doc3.DocumentNode.SelectNodes("//table[@class='cast_list']//tr//td[2]/a[contains(@href,'name')]/text()"))
                 {
+                    if (actorsIncluded >= actorsToInclude)
+                    {
+                        break;
+                    }
                     if (node.InnerText != "" && actorsIncluded < actorsToInclude)
                     {
-                        movieActor += node.InnerText + ", ";
+                        movieActor += node.InnerText.Trim() + ", ";
                         actorsIncluded++;
                     }
                 }
@@ -640,12 +676,12 @@ namespace MovieTheater.Controllers
 
             try
             {
-                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//div[@class='poster']//img[@itemprop='image']"))
+                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//div[@class='poster']//img"))
                 {
                     moviePoster = node.Attributes["src"].Value;
                 }
                 moviePoster = moviePoster.Trim();
-                var moviePosterStart = "http://ia.media-imdb.com/images/M/";
+                var moviePosterStart = "https://m.media-amazon.com/images/M/";
                 var moviePosterEnd = "._V1._SX1000_SY1000_.jpg";
                 moviePoster = moviePoster.Split('/')[5].Split('.')[0];
                 thisMovie.moviePoster = moviePosterStart + moviePoster + moviePosterEnd;
@@ -704,22 +740,22 @@ namespace MovieTheater.Controllers
                 ////Try Rotten Tomatoes lookup.
                 //No clear way to turn IMDB ID into Rotten Tomatoes ID.
                 //Tried searching film name on Rotten Tomatoes, search page is dynamic. Instead, I search through Google:         
-                string GoogleRT = "http://www.google.com/search?num=1&q=" + HttpUtility.UrlEncode(givenMovie.movieName) + " " + givenMovie.movieReleased + " Rotten Tomatoes Score";
+                string GoogleRT = "http://www.google.com/search?num=10&q=" + HttpUtility.UrlEncode(givenMovie.movieName) + " " + givenMovie.movieReleased + " Rotten Tomatoes Score";
                 var result = new HtmlWeb().Load(GoogleRT);
-                HtmlNode googleNode = result.DocumentNode.SelectNodes("//html//body//div[@class='g']//a/@href").First();
+                HtmlNode googleNode = result.DocumentNode.SelectNodes("//html//body//a[contains(@href,'rottentomatoes')]")[0];
 
-                HtmlAgilityPack.HtmlDocument doc3 = new HtmlAgilityPack.HtmlDocument();
-                HtmlAgilityPack.HtmlWeb docHFile3 = new HtmlWeb();
+                HtmlAgilityPack.HtmlDocument doc4 = new HtmlAgilityPack.HtmlDocument();
+                HtmlAgilityPack.HtmlWeb docHFile4 = new HtmlWeb();
                 //I notice URLs returned this way have additional text. Split on = and remove the extra "&amp" from the href
-                doc3 = docHFile3.Load(HttpUtility.HtmlDecode(HttpUtility.UrlDecode(googleNode.Attributes["href"].Value.Split('=')[1])).Replace("&sa", ""));
+                doc4 = docHFile4.Load(HttpUtility.HtmlDecode(HttpUtility.UrlDecode(googleNode.Attributes["href"].Value.Split('=')[1])).Replace("&sa", ""));
 
                 //Oddly enough, when I hit the direct movie page from Google, I don't get a properly formatted Rotten Tomatoes page.
                 //Instead, there's a JSON object in a script tag with the jsonLdSchema id. I can serialize that object for the information I need.
-                foreach (HtmlNode node in doc3.DocumentNode.SelectNodes("//script[@id='jsonLdSchema']/text()"))
+                var node = doc4.DocumentNode.SelectNodes("//a[@id='tomato_meter_link']//span[contains(@class,percentage)]/text()").First();
                 {
-                    JToken item = JToken.Parse(node.InnerHtml);
-                    string rating = item["aggregateRating"]["ratingValue"].Value<string>();
-
+                    //JToken item = JToken.Parse(node.InnerHtml);
+                    //string rating = item["aggregateRating"]["ratingValue"].Value<string>();
+                    string rating = node.InnerHtml.Trim().Replace("%","");
                     foundRating = rating;
                 }
             }

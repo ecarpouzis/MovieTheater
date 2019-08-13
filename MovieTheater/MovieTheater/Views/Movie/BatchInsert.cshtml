@@ -189,7 +189,7 @@
                 $(movieList).each(function (index, movie) {
 
                     $.get("/Movie/BatchGetMovie", { foundMovie: movie }, function (returnedData) {
-                        getNewMovie(returnedData.Data, movie, index);
+                        getNewMovie(returnedData.value, movie, index);
                     });
 
 

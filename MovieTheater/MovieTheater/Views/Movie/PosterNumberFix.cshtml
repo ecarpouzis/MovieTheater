@@ -1,0 +1,33 @@
+﻿@model IEnumerable<MovieTheater.Db.Movie>
+
+@{
+    ViewData["Title"] = "PosterNumberFix";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<table class="table">
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Title)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.SimpleTitle)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.UploadedDate)
+            </td>
+            <td>@item.id</td>
+            <td>
+                <a asp-action="BumpPoster" asp-route-id="@item.id">Bump</a> |
+                <a asp-action="SubPoster" asp-route-id="@item.id">Subtract</a>
+            </td>
+            <td>
+                <img src="/Image/@item.id"/>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
