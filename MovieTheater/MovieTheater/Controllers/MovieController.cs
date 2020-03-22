@@ -82,31 +82,6 @@ namespace MovieTheater.Controllers
             return View(movie);
         }
 
-        [HttpGet("/PosterNumberFix")]
-        public IActionResult PosterNumberFix()
-        {
-            var movies = movieDb.Movies;
-            return View(movies);
-        }
-
-        [HttpGet("/BumpPoster/{id}")]
-        public IActionResult BumpPoster(int id)
-        {
-            var dir = Environment.GetEnvironmentVariable("MOVIE_POSTERSDIR");
-            var files = Directory.GetFiles(dir).ToList();
-
-            //When I need to subtract picture IDs, I need to do it smallest to largest so I don't overwrite posters.
-            var subFiles = files.OrderBy(g => int.Parse(Path.GetFileNameWithoutExtension(g))).ToList();
-
-            //When I need to increment picture IDs, I need to do it largest to smallest so I don't overwrite posters.
-            var bumpFiles = files.OrderByDescending(g => int.Parse(Path.GetFileNameWithoutExtension(g))).ToList();
-
-
-
-            return Json("ok");
-            
-        }
-
         [HttpGet("/Browse")]
         public async Task<IActionResult> Browse()
         {
@@ -184,6 +159,14 @@ namespace MovieTheater.Controllers
                 }
             }
 
+            //At this point, all sorts have been alphabetical
+            if (movies != null)
+            {
+                movies = movies.OrderBy(m => m.SimpleTitle);
+            }
+
+            //All future sorts are non-alphabetical
+
             if (sort == "Uploaded")
             {
                 DateTime minDate = new DateTime(2000, 1, 1);
@@ -198,6 +181,7 @@ namespace MovieTheater.Controllers
                 movies = movieDb.Movies.Where(d => d.UploadedDate > dateFrom);
             }
 
+
             if (sort == "Rank")
             {
                 int top = Convert.ToInt32(Request.Query["Top"]);
@@ -210,6 +194,16 @@ namespace MovieTheater.Controllers
             }
 
             var viewModel = new BrowseViewModel();
+
+            viewModel.seenMovieIDs = movieDb.Viewings.Where(v => v.UserID == userId
+                                                       && v.ViewingType == "w").Select(m => m.MovieID).ToList();
+
+
+            viewModel.watchlistMovieIDs = movieDb.Viewings.Where(v => v.UserID == userId
+                                                       && v.ViewingType == "s").Select(m => m.MovieID).ToList();
+
+            viewModel.ratedMovieData = movieDb.Viewings.Where(v => v.UserID == userId
+                                                 && v.ViewingType == "r").ToDictionary(m => m.MovieID, m => Int32.Parse(m.ViewingData));
 
             viewModel.Movies = await movies.Select(d => new BrowseViewModel.MovieItem
             {
@@ -227,28 +221,13 @@ namespace MovieTheater.Controllers
                 Runtime = d.Runtime,
                 SimpleTitle = d.SimpleTitle,
                 tomatoRating = d.tomatoRating,
-                Writer = d.Writer,
-                isWatched = false,
-                isWatchlist = false
+                Writer = d.Writer
             })
                 .ToListAsync();
 
             return View("Browse", viewModel);
         }
 
-        //public class minorMovie
-        //{
-        //    public int id;
-        //    public string movieName;
-        //    public DateTime? releaseDate;
-        //    public decimal? imdbRating;
-        //    public int? rtRating;
-        //    public string Actors;
-        //    public string Directors;
-        //    public minorMovie()
-        //    {
-        //    }
-        //}
 
         //public class actorCount
         //{
@@ -269,7 +248,7 @@ namespace MovieTheater.Controllers
         //    }
         //}
 
-        [HttpGet("/Movie/Update/{id}")]
+        [HttpGet("/Update/{id}")]
         public ActionResult Update(int id)
         {
             var movie = movieDb.Movies.SingleOrDefault(d => d.id == id);
@@ -284,22 +263,21 @@ namespace MovieTheater.Controllers
             }
         }
 
+
+        [HttpPost("/Movie/UpdateMovie")]
         public IActionResult UpdateMovie(int givenID, string title, string simpletitle, string rated, string released, string runtime, string genre, string director,
        string writer, string actors, string plot, string givenPosterLink, string imdbrating, string imdbid, string tomatorating)
         {
             Movie updateMovie = movieDb.Movies.SingleOrDefault(d => d.id == givenID);
 
-            WebClient client = new WebClient();
-            byte[] potentialPoster = new byte[0];
-
             if (title != null)
             {
-                updateMovie.Title = title;
+                updateMovie.Title = title.Trim();
             }
 
             if (simpletitle.Trim() != "")
             {
-                updateMovie.SimpleTitle = simpletitle;
+                updateMovie.SimpleTitle = simpletitle.Trim();
             }
 
             if (rated.Trim() != "")
@@ -347,20 +325,7 @@ namespace MovieTheater.Controllers
                 //If there's a poster link, then set the Movie Posterlink
                 updateMovie.PosterLink = givenPosterLink;
                 //Download the image at the Posterlink
-                potentialPoster = client.DownloadData(givenPosterLink);
-                //Create a MoviePoster object for MoviePoster table insertion
-                MoviePoster posterInsert = movieDb.MoviePosters.FirstOrDefault(m => m.MovieID == givenID);
-                if (posterInsert == null)
-                {
-                    posterInsert = new MoviePoster();
-                    posterInsert.MovieID = givenID;
-                    movieDb.MoviePosters.Add(posterInsert);
-                    movieDb.SaveChanges();
-                }
-
-                //posterInsert.Poster = potentialPoster;
-                posterInsert.MovieID = givenID;
-                movieDb.SaveChanges();
+                imageHandler.SavePosterImageFromLink(givenID, updateMovie.PosterLink);
             }
 
             if (imdbrating.Trim() != "")
@@ -373,9 +338,12 @@ namespace MovieTheater.Controllers
                 updateMovie.imdbID = imdbid;
             }
 
-            if (tomatorating.Trim() != "")
+            if (tomatorating != null)
             {
-                updateMovie.tomatoRating = Convert.ToInt32(tomatorating);
+                if (tomatorating.Trim() != "")
+                {
+                    updateMovie.tomatoRating = Convert.ToInt32(tomatorating);
+                }
             }
 
             movieDb.SaveChanges();
@@ -398,57 +366,60 @@ namespace MovieTheater.Controllers
         [HttpGet("/Movie/BatchGetMovie")]
         public IActionResult BatchGetMovie(string foundMovie)
         {
-            //First remove any quality (720p) designation from the final portion of the folder name
-            string qual = foundMovie.Split(' ').Last<string>().ToLower();
-            if (qual.Last<char>() == 'p')
+            if (foundMovie != null)
             {
-                foundMovie = foundMovie.Replace(qual, "");
-            }
+                //First remove any quality (720p) designation from the final portion of the folder name
+                string qual = foundMovie.Split(' ').Last<string>().ToLower();
+                if (qual.Last<char>() == 'p')
+                {
+                    foundMovie = foundMovie.Replace(qual, "");
+                }
 
-            //Next remove any tags between square brackets in movie name
-            foundMovie = Regex.Replace(foundMovie, @"\[.*?\]", "");
+                //Next remove any tags between square brackets in movie name
+                foundMovie = Regex.Replace(foundMovie, @"\[.*?\]", "");
 
-            foundMovie = foundMovie.Trim();
-            ActionResult scrapedMovie = null;
-            try
-            {
-                ////Try IMDB page lookup.
-                //Search using Google:         
-                string GoogleRT = "http://www.google.com/search?num=1&q=" + HttpUtility.UrlEncode(foundMovie) + " IMDB";
-                var result = new HtmlWeb().Load(GoogleRT);
-                HtmlNode googleNode = result.DocumentNode.SelectNodes("//html//body//a[contains(@href,'imdb')]")[0];
-
-                HtmlAgilityPack.HtmlDocument doc3 = new HtmlAgilityPack.HtmlDocument();
-                HtmlAgilityPack.HtmlWeb docHFile3 = new HtmlWeb();
-                //I notice URLs returned this way have additional text. Split on = and remove the extra "&amp" from the href
-                string[] imdbLink = googleNode.Attributes["href"].Value.Split('=')[1].Split(new string[] { "&amp;" }, StringSplitOptions.None)[0].Split('/');
-                string imdbID = imdbLink[imdbLink.Length - 2];
-                scrapedMovie = ImdbScrape(imdbID);
-            }
-            catch
-            {
-                //Google may have temporarily blocked us, try DuckDuckGo
+                foundMovie = foundMovie.Trim();
+                ActionResult scrapedMovie = null;
                 try
                 {
                     ////Try IMDB page lookup.
                     //Search using Google:         
+                    string GoogleRT = "http://www.google.com/search?num=1&q=" + HttpUtility.UrlEncode(foundMovie) + " IMDB";
+                    var result = new HtmlWeb().Load(GoogleRT);
+                    HtmlNode googleNode = result.DocumentNode.SelectNodes("//html//body//a[contains(@href,'imdb')]")[0];
 
-                    var baseAddress = new Uri("http://www.google.com/search?num=1&q=" + HttpUtility.UrlEncode(foundMovie) + " IMDB");
-                    var cookieContainer = new CookieContainer();
-                    using (var handler = new HttpClientHandler() { CookieContainer = cookieContainer })
-                    using (var client = new HttpClient(handler) { BaseAddress = baseAddress })
-                    {
-                        var result = client.GetAsync("/").Result;
-                    }
+                    HtmlAgilityPack.HtmlDocument doc3 = new HtmlAgilityPack.HtmlDocument();
+                    HtmlAgilityPack.HtmlWeb docHFile3 = new HtmlWeb();
+                    //I notice URLs returned this way have additional text. Split on = and remove the extra "&amp" from the href
+                    string imdbLink = googleNode.Attributes["href"].Value;
+                    string imdbID = imdbLink.Split("/")[4];
+                    scrapedMovie = ImdbScrape(imdbID);
                 }
                 catch
                 {
+                    //Google may have temporarily blocked us, try DuckDuckGo
+                    try
+                    {
+                        ////Try IMDB page lookup.
+                        //Search using Google:         
+
+                        var baseAddress = new Uri("http://www.google.com/search?num=1&q=" + HttpUtility.UrlEncode(foundMovie) + " IMDB");
+                        var cookieContainer = new CookieContainer();
+                        using (var handler = new HttpClientHandler() { CookieContainer = cookieContainer })
+                        using (var client = new HttpClient(handler) { BaseAddress = baseAddress })
+                        {
+                            var result = client.GetAsync("/").Result;
+                        }
+                    }
+                    catch
+                    {
+
+                    }
 
                 }
-
+                return Json(scrapedMovie);
             }
-
-            return Json(scrapedMovie);
+            return null;
         }
 
         public class MovieInfo
@@ -543,7 +514,7 @@ namespace MovieTheater.Controllers
                     //movieRating += node.Attributes["content"].Value;
                     movieRating += node.InnerText;
                 }
-                thisMovie.movieRating = movieRating.Replace(",","").Trim().Replace("_", " ");
+                thisMovie.movieRating = movieRating.Replace(",", "").Trim().Replace("_", " ");
             }
             catch
             {
@@ -747,7 +718,12 @@ namespace MovieTheater.Controllers
                 HtmlAgilityPack.HtmlDocument doc4 = new HtmlAgilityPack.HtmlDocument();
                 HtmlAgilityPack.HtmlWeb docHFile4 = new HtmlWeb();
                 //I notice URLs returned this way have additional text. Split on = and remove the extra "&amp" from the href
-                doc4 = docHFile4.Load(HttpUtility.HtmlDecode(HttpUtility.UrlDecode(googleNode.Attributes["href"].Value.Split('=')[1])).Replace("&sa", ""));
+                string rtLink = googleNode.Attributes["href"].Value;
+
+                doc4 = docHFile4.Load(HttpUtility.HtmlDecode(HttpUtility.UrlDecode(rtLink)).Replace("&sa", ""));
+
+                //This seems to be failing:
+                //doc4 = docHFile4.Load(HttpUtility.HtmlDecode(HttpUtility.UrlDecode(googleNode.Attributes["href"].Value.Split('=')[1])).Replace("&sa", ""));
 
                 //Oddly enough, when I hit the direct movie page from Google, I don't get a properly formatted Rotten Tomatoes page.
                 //Instead, there's a JSON object in a script tag with the jsonLdSchema id. I can serialize that object for the information I need.
@@ -755,7 +731,7 @@ namespace MovieTheater.Controllers
                 {
                     //JToken item = JToken.Parse(node.InnerHtml);
                     //string rating = item["aggregateRating"]["ratingValue"].Value<string>();
-                    string rating = node.InnerHtml.Trim().Replace("%","");
+                    string rating = node.InnerHtml.Trim().Replace("%", "");
                     foundRating = rating;
                 }
             }
@@ -767,7 +743,7 @@ namespace MovieTheater.Controllers
             return foundRating;
         }
 
-        [HttpGet("/Movie/InsertMovie/{descript}")]
+        [HttpPost("/Movie/InsertMovie")]
         public IActionResult InsertMovie(string title, string rated, string released, string runtime, string genre, string director,
             string writer, string actors, string plot, string poster, string imdbrating, string imdbid, string tomatorating)
         {
@@ -781,13 +757,13 @@ namespace MovieTheater.Controllers
 
                 if (title.Trim() != "")
                 {
-                    newMovie.Title = title;
-                    newMovie.SimpleTitle = title;
+                    newMovie.Title = title.Trim();
+                    newMovie.SimpleTitle = title.Trim();
                 }
 
                 if (rated.Trim() != "")
                 {
-                    newMovie.Rating = rated;
+                    newMovie.Rating = rated.Trim();
                 }
 
                 if (released.Trim() != "")
@@ -851,9 +827,12 @@ namespace MovieTheater.Controllers
                     newMovie.imdbID = imdbid;
                 }
 
-                if (tomatorating.Trim() != "" && tomatorating.Trim() != "N/A")
+                if (tomatorating != null)
                 {
-                    newMovie.tomatoRating = Convert.ToInt32(tomatorating);
+                    if (tomatorating.Trim() != "" && tomatorating.Trim() != "N/A")
+                    {
+                        newMovie.tomatoRating = Convert.ToInt32(tomatorating);
+                    }
                 }
                 newMovie.UploadedDate = DateTime.Now;
 
@@ -862,19 +841,7 @@ namespace MovieTheater.Controllers
 
                 if (poster.Trim() != "")
                 {
-                    var posterInsertion = new MoviePoster();
-                    try
-                    {
-                        //posterInsertion.Poster = client.DownloadData(poster);
-                    }
-                    catch
-                    {
-                        //posterInsertion.Poster = client.DownloadData("http://" + poster);
-                    }
-                    posterInsertion.MovieID = newMovie.id;
-
-                    movieDb.MoviePosters.Add(posterInsertion);
-                    movieDb.SaveChanges();
+                    var loc = imageHandler.SavePosterImageFromLink(newMovie.id, newMovie.PosterLink);
                 }
             }
 
@@ -1007,9 +974,9 @@ namespace MovieTheater.Controllers
             {
                 var userId = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
 
-                vm.PreviousWatchedMovie = await movieDb.Viewings.SingleOrDefaultAsync(v => v.MovieID == movie.id && v.UserID == userId && v.ViewingType == "w");
-                vm.PreviousSuggest = await movieDb.Viewings.SingleOrDefaultAsync(v => v.MovieID == movie.id && v.UserID == userId && v.ViewingType == "s");
-                vm.PreviousRated = await movieDb.Viewings.SingleOrDefaultAsync(v => v.MovieID == movie.id && v.UserID == userId && v.ViewingType == "r");
+                //vm.PreviousWatchedMovie = await movieDb.Viewings.SingleOrDefaultAsync(v => v.MovieID == movie.id && v.UserID == userId && v.ViewingType == "w");
+                //vm.PreviousSuggest = await movieDb.Viewings.SingleOrDefaultAsync(v => v.MovieID == movie.id && v.UserID == userId && v.ViewingType == "s");
+                //vm.PreviousRated = await movieDb.Viewings.SingleOrDefaultAsync(v => v.MovieID == movie.id && v.UserID == userId && v.ViewingType == "r");
             }
 
             return PartialView("Display", vm);
@@ -1077,72 +1044,46 @@ namespace MovieTheater.Controllers
         //    return null;
         //}
 
-        //public ActionResult SaveWatchlist(string watchList, int movieID)
-        //{
-        //    movieDB db = new movieDB();
-        //    var userID = Convert.ToInt32(Session["UserID"]);
+        int GetID()
+        {
 
-        //    var isSuggested = false;
-        //    Viewing previousSuggest = (from v in db.Viewings
-        //                               where v.MovieID == movieID &&
-        //                               v.UserID == userID &&
-        //                               v.ViewingType == "s"
-        //                               select v).FirstOrDefault();
+            if (User.Identity.IsAuthenticated)
+            {
+                return Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
+            }
+            else
+            {
+                return 0;
+            }
+        }
 
-        //    if (previousSuggest != null)
-        //    {
-        //        isSuggested = true;
-        //    }
+        [HttpPost("/Movie/SaveStatus")]
+        public ActionResult SaveStatus(bool newStatus, int movieID, string statusType)
+        {
+            int userId = GetID();
+            if (userId > 0)
+            {
+                Viewing previousStatus = movieDb.Viewings.Where(o => o.ViewingType == statusType && o.UserID == userId && o.MovieID == movieID).FirstOrDefault();
 
-        //    if (watchList != "on" && isSuggested)
-        //    {
-        //        db.Viewings.Remove(previousSuggest);
-        //        //db.Viewings.DeleteObject(previousSuggest);
-        //    }
+                if (previousStatus != null)
+                {
 
-        //    if (watchList == "on" && !isSuggested)
-        //    {
-        //        Viewing suggestedView = new Viewing();
-        //        suggestedView.MovieID = movieID;
-        //        suggestedView.UserID = userID;
-        //        suggestedView.ViewingType = "s";
-        //        //db.Viewings.AddObject(suggestedView);
-        //    }
-        //    db.SaveChanges();
-        //    return null;
-        //}
+                    movieDb.Viewings.Remove(previousStatus);
+                }
 
-        //public ActionResult SaveWatched(string watched, int movieID)
-        //{
-        //    int givenID = Convert.ToInt32(Request.QueryString["ID"]);
-        //    movieDB db = new movieDB();
-        //    var userID = Convert.ToInt32(Session["UserID"]);
+                if (newStatus)
+                {
+                    Viewing newView = new Viewing();
+                    newView.MovieID = movieID;
+                    newView.UserID = userId;
+                    newView.ViewingType = statusType;
+                    movieDb.Viewings.Add(newView);
+                }
 
-        //    Viewing previousWatch = (from v in db.Viewings
-        //                             where v.MovieID == movieID &&
-        //                             v.UserID == userID &&
-        //                             v.ViewingType == "w"
-        //                             select v).FirstOrDefault();
-
-        //    if (previousWatch != null)
-        //    {
-
-        //        db.Viewings.Remove(previousWatch);
-        //        //db.Viewings.DeleteObject(previousWatch);
-        //    }
-
-        //    if (watched == "on")
-        //    {
-        //        Viewing watchedView = new Viewing();
-        //        watchedView.MovieID = movieID;
-        //        watchedView.UserID = userID;
-        //        watchedView.ViewingType = "w";
-        //        db.Viewings.Add(watchedView);
-        //    }
-
-        //    db.SaveChanges();
-        //    return null;
-        //}
+                movieDb.SaveChanges();
+            }
+            return null;
+        }
 
         //public ActionResult SaveSuggestion(string suggested, string comments, int movieID)
         //{

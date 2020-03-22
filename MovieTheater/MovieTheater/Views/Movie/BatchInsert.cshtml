@@ -38,8 +38,7 @@
         .foundMovieFields {
             float: left;
             height: 400px;
-            padding-right: 10px;
-            width: 500px;
+            width: 420px;
             background-color: #dedede;
         }
 
@@ -55,17 +54,17 @@
             }
 
         .UpdateControlInfo {
-            margin-left: 20px;
+            margin-left: 5px;
             font-family: Verdana;
             font-size: 14px;
             font-weight: bold;
-            width: 200px;
+            width: 105px;
             display: inline-block;
         }
 
         .movieField {
-            padding-left: 0px;
-            width: 200px;
+            margin-left: 5px;
+            width: 250px;
         }
 
         .searchedMovieName {
@@ -100,7 +99,7 @@
                         <div class="foundMovieFields">
                             <br/>
                             <span class="UpdateControlInfo">Title:</span>
-                            <input type="text" class="movieTitleField movieField" name="movieTitle" value="`+ m.movieName + `" />
+                            <input type="text" class="movieTitleField movieField" name="movieTitle" value="`+ $.trim(m.movieName) + `" />
                             <br />
                             <span class="UpdateControlInfo">Rating:</span>
                             <input type="text" class="movieRatingField movieField" name="movieRating" value="`+ m.movieRating + `" />
@@ -150,7 +149,7 @@
                 $("#foundMovieContainer").append(foundMovieHtml);
 
                 $("#insertMovie_" + index).click(function () {
-                    var giventitle = $("#foundMovie_" + index + " .movieTitleField").val();
+                    var giventitle = $("#foundMovie_" + index + " .movieTitleField").val().trim();
                     var givenrated = $("#foundMovie_" + index + " .movieRatingField").val();
                     var givenreleased = $("#foundMovie_" + index + " .movieReleaseDateField").val();
                     var givenruntime = $("#foundMovie_" + index + " .movieRuntimeField").val();

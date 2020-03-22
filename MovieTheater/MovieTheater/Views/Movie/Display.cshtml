@@ -82,12 +82,12 @@
                 $(this).attr("src", "/Content/Watchlist.png");
                 $("#watchList").attr("checked", true);
                 watchList = true;
-                $.post("/Movie/SaveWatchlist", { "watchList": "on", "movieID": movieID });
+                $.post("/Movie/SaveStatus", { "newStatus": true, "movieID": movieID, "statusType" : "s" });
             } else {
                 $(this).attr("src", "/Content/Unwatchlist.png");
                 $("#watchList").attr("checked", false);
                 watchList = false;
-                $.post("/Movie/SaveWatchlist", { "watchList": "off", "movieID": movieID });
+                $.post("/Movie/SaveStatus", { "newStatus": false, "movieID": movieID, "statusType" : "s" });
             }
         });
 
@@ -96,17 +96,17 @@
                 $(this).attr("src", "/Content/Watched.png");
                 $("#watched").attr("checked", true);
                 watched = true;
-                $.post("/Movie/SaveWatched", { "watched": "on", "movieID": movieID });
+                $.post("/Movie/SaveStatus", { "newStatus": true, "movieID": movieID, "statusType" : "w" });
             } else {
                 $(this).attr("src", "/Content/Unwatched.png");
                 $("#watched").attr("checked", false);
                 watched = false;
-                $.post("/Movie/SaveWatched", { "watched": "off", "movieID": movieID });
+                $.post("/Movie/SaveStatus", { "newStatus": false, "movieID": movieID, "statusType" : "w" });
             }
         });
 
         $("#suggestSubmit").click(function () {
-            $.post("/Movie/SaveSuggestion", { "suggested": $("#suggestName").val(), "comments": $("#suggestComment").val(), "movieID": movieID });
+            $.post("/Movie/SaveStatus", { "suggested": $("#suggestName").val(), "comments": $("#suggestComment").val(), "movieID": movieID });
             suggestBoxSlide();
         });
 
@@ -180,7 +180,7 @@
             </tr>
         </table>
     </center>
-    @if (false)
+    @if (User.Identity.IsAuthenticated)
     {
         <div id="UserOptions">
             <div class="movieOptionContainer">
@@ -220,7 +220,7 @@
             </div>
         </div>
         <br style="clear: both" />
-        <a class="movieEdit" target="_blank" href="Update?ID=@Model.Movie.id">
+        <a class="movieEdit" target="_blank" href="Update/@Model.Movie.id">
             <img src="/Content/tool.png" />
         </a>
     }

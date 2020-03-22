@@ -23,12 +23,12 @@
                     $(this).attr("src", "/Content/Watchlist.png");
                     $(myInput).attr("checked", true);
                     watchList = true;
-                    $.post("/Movie/SaveWatchlist", { "watchList": "on", "movieID": movieID });
+                    $.post("/Movie/SaveStatus", { "newStatus": true, "movieID": movieID, "statusType" : "s" });
                 } else {
                     $(this).attr("src", "/Content/Unwatchlist.png");
                     $(myInput).attr("checked", false);
                     watchList = false;
-                    $.post("/Movie/SaveWatchlist", { "watchList": "off", "movieID": movieID });
+                    $.post("/Movie/SaveStatus", { "newStatus": false, "movieID": movieID,  "statusType" : "s"  });
                 }
             });
 
@@ -41,12 +41,12 @@
                     $(this).attr("src", "/Content/Watched.png");
                     $(myInput).attr("checked", true);
                     watched = true;
-                    $.post("/Movie/SaveWatched", { "watched": "on", "movieID": movieID });
+                    $.post("/Movie/SaveStatus", {  "newStatus": true, "movieID": movieID, "statusType" : "w"  });
                 } else {
                     $(this).attr("src", "/Content/Unwatched.png");
                     $(myInput).attr("checked", false);
                     watched = false;
-                    $.post("/Movie/SaveWatched", { "watched": "off", "movieID": movieID });
+                    $.post("/Movie/SaveStatus", {  "newStatus": false, "movieID": movieID, "statusType" : "w"  });
                 }
             });
 
@@ -109,25 +109,25 @@
 }
 
 <div id="movieWrapper">
-    @foreach (var item in Model.Movies)
+    @foreach (var movie in Model.Movies)
     {
-        <div class="movieContainer" id="movie_@item.MovieID">
+        <div class="movieContainer" id="movie_@movie.MovieID">
             <div class="innerMovieWrapper">
-                <img class="moviePosterImage" src="/Image/@item.MovieID" />
+                <img class="moviePosterImage" src="/Image/@movie.MovieID" />
                 <a href="" class="movieTitle">
-                    @Html.Raw(item.Title + " (" + DateTime.Parse(item.ReleaseDate.ToString()).Year + ")")
+                    @Html.Raw(movie.Title + " (" + DateTime.Parse(movie.ReleaseDate.ToString()).Year + ")")
                 </a>
                 <span class="movieRating">
-                    @item.Rating
+                    @movie.Rating
                 </span>
                 <br />
                 <span class="movieTime">
-                    @item.Runtime
+                    @movie.Runtime
                 </span>
                 <div class='actorSpacer'>
                 </div>
                 <span class="movieActors">
-                    @foreach (var m in item.Actors.Split(','))
+                    @foreach (var m in movie.Actors.Split(','))
                     {
                         <a href="/browse?sort=Actor&actor=@m.Trim()">@m</a>
                         <div class="actorSpacer"></div>
@@ -138,13 +138,13 @@
                 <div class='actorSpacer'>
                 </div>
                 <span class="moviePlot">
-                    @item.Plot
+                    @movie.Plot
                 </span>
             </div>
             @if (User.Identity.IsAuthenticated)
             {
                 <div class="movieButtonContainer">
-                    @if (item.isWatched)
+                    @if (Model.seenMovieIDs.Contains(movie.MovieID))
                     {
                         <img class="watchedButton" src="/Content/Watched.png" />
                         <input type="checkbox" class="watchedInput" name="watched" checked="checked" />
@@ -155,7 +155,7 @@
                         <input type="checkbox" class="watchedInput" name="watched" />
                     }
 
-                    @if (item.isWatched)
+                    @if (Model.watchlistMovieIDs.Contains(movie.MovieID))
                     {
                         <img class="watchlistButton" src="/Content/Watchlist.png" />
                         <input type="checkbox" class="watchListInput" name="watchList" checked="checked" />

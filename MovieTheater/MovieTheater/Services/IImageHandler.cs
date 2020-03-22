@@ -14,5 +14,7 @@ namespace MovieTheater.Services
         /// <param name="movieID"></param>
         /// <returns></returns>
         Task<byte[]> GetPosterImageFromID(int movieID);
+
+        Task<string> SavePosterImageFromLink(int movieID, string url);
     }
 }

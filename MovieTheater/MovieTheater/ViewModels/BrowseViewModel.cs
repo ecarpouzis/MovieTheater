@@ -7,6 +7,10 @@ namespace MovieTheater.ViewModels
     {
         public IEnumerable<MovieItem> Movies { get; set; }
 
+        public List<int> seenMovieIDs { get; set; }
+        public List<int> watchlistMovieIDs { get; set; }
+        public Dictionary<int, int> ratedMovieData { get; set; }
+
         public class MovieItem
         {
             public int MovieID { get; set; }

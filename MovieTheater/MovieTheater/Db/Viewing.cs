@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MovieTheater.Db
 {
@@ -11,6 +13,7 @@ namespace MovieTheater.Db
 
         public string ViewingType { get; set; }
 
+        [Key]
         public int ViewingID { get; set; }
 
         public string ViewingData { get; set; }
