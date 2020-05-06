@@ -9,6 +9,9 @@ using MovieTheater.ViewModels;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -82,6 +85,19 @@ namespace MovieTheater.Controllers
             return View(movie);
         }
 
+
+        [HttpGet("/ShrinkAllPosters")]
+        public async Task<IActionResult> ShrinkOldPosters()
+        {
+            int[] movieIDs = movieDb.Movies.Select(m => m.id).ToArray();
+            foreach (int id in movieIDs)
+            {
+                await imageHandler.ShrinkPosterFromID(id);
+            }
+
+            return null;
+        }
+
         [HttpGet("/Browse")]
         public async Task<IActionResult> Browse()
         {
@@ -95,7 +111,6 @@ namespace MovieTheater.Controllers
             {
                 userId = null;
             }
-
 
             IQueryable<Movie> movies = movieDb.Movies;
 
@@ -227,26 +242,6 @@ namespace MovieTheater.Controllers
 
             return View("Browse", viewModel);
         }
-
-
-        //public class actorCount
-        //{
-        //    public string actorName;
-        //    public int count;
-        //    public actorCount()
-        //    {
-        //    }
-        //}
-
-        //public class rankedMovie
-        //{
-        //    public double rating = 0;
-        //    public minorMovie movie;
-        //    public rankedMovie(minorMovie givenMovie)
-        //    {
-        //        this.movie = givenMovie;
-        //    }
-        //}
 
         [HttpGet("/Update/{id}")]
         public ActionResult Update(int id)
@@ -916,6 +911,14 @@ namespace MovieTheater.Controllers
             return Ok();
         }
 
+
+        [HttpGet("/Movie/Logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync();
+            return Ok();
+        }
+
         [HttpGet("/Movie/UserList/{descript}")]
         public IActionResult UserList(string descript)
         {
@@ -973,46 +976,11 @@ namespace MovieTheater.Controllers
             if (User.Identity.IsAuthenticated)
             {
                 var userId = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
-
-                //vm.PreviousWatchedMovie = await movieDb.Viewings.SingleOrDefaultAsync(v => v.MovieID == movie.id && v.UserID == userId && v.ViewingType == "w");
-                //vm.PreviousSuggest = await movieDb.Viewings.SingleOrDefaultAsync(v => v.MovieID == movie.id && v.UserID == userId && v.ViewingType == "s");
-                //vm.PreviousRated = await movieDb.Viewings.SingleOrDefaultAsync(v => v.MovieID == movie.id && v.UserID == userId && v.ViewingType == "r");
             }
 
             return PartialView("Display", vm);
         }
 
-        //public string ScrapeMultiple(string urls)
-        //{
-        //    var allLinks = urls.Split('-');
-        //    var allHtml = "";
-        //    foreach (string link in allLinks)
-        //    {
-        //        allHtml += ScrapeGiven(link);
-        //    }
-        //    return allHtml;
-        //}
-
-        //public string ScrapeGiven(string url)
-        //{
-        //    string data = "";
-        //    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-        //    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-        //    if (response.StatusCode == HttpStatusCode.OK)
-        //    {
-        //        Stream receiveStream = response.GetResponseStream();
-        //        StreamReader readStream = null;
-        //        if (response.CharacterSet == null)
-        //            readStream = new StreamReader(receiveStream);
-        //        else
-        //            readStream = new StreamReader(receiveStream, Encoding.GetEncoding(response.CharacterSet));
-        //        data = readStream.ReadToEnd();
-        //        response.Close();
-        //        readStream.Close();
-        //    }
-
-        //    return data;
-        //}
 
         //public ActionResult SaveRate(string rating, int movieID)
         //{
@@ -1157,79 +1125,96 @@ namespace MovieTheater.Controllers
             return File(poster, "image/png");
         }
 
-        //public ActionResult PosterCollage()
-        //{
-        //    //This is my attempt at a webpage to return one massive image of all my posters
+        [HttpGet("/ImageThumb/{id}")]
+        public async Task<IActionResult> ImageThumbHandler(int id)
+        {
+            var poster = await imageHandler.GetPosterImageFromID(id, true);
 
-        //    movieDB db = new movieDB();
-        //    //Get the max number of movies for my batching routines
-        //    int movieCount = db.Movies.OrderByDescending(m => m.id).FirstOrDefault().id;
-        //    //allMovies will hold the results of each batch
-        //    List<Movie> allMovies = new List<Movie>();
+            if (poster == null)
+            {
+                return NotFound();
+            }
 
-        //    //We're starting on the 0th query, getting 100 movies each time. Increasing this number
-        //    //introduces instability from closed connections.
+            return File(poster, "image/png");
+        }
 
-        //    int queryNumber = 0;
-        //    int queryCount = 100;
-        //    int queryMin = 0;
 
-        //    //queryMin is the movie ID we're starting at, collecting queryCount movies from there.
-        //    while (queryMin < movieCount)
-        //    {
-        //        queryMin = queryNumber * queryCount;
-        //        List<Movie> movies = (from v in db.Movies
-        //                              where v.id > queryMin &&
-        //                              v.id <= queryMin + queryCount
-        //                              select v).ToList();
-        //        allMovies.AddRange(movies);
-        //        queryNumber++;
-        //    }
-        //    //Take all my movies and order them by their simple title
-        //    allMovies = allMovies.OrderBy(x => x.SimpleTitle).ToList();
+        [HttpGet("/PosterCollage")]
+        public IActionResult PosterCollage()
+        {
+            //This is my attempt at a webpage to return one massive image of all my posters
 
-        //    //Posters in the collage should be 75 x 100. Increasing these numbers makes the poster too large.
-        //    int posterWidth = 75;
-        //    int posterHeight = 100;
+            //Get the max number of movies for my batching routines
+            int movieCount = movieDb.Movies.Count();
+            //allMovies will hold the results of each batch
+            List<Movie> allMovies = new List<Movie>();
 
-        //    //How many posters per row, and how does that effect the height/width of the final image:
-        //    int rowLength = 25;
-        //    int totalWidth = rowLength * posterWidth;
-        //    int totalHeight = (int)(Math.Ceiling((double)movieCount / (double)rowLength) * posterHeight);
+            //We're starting on the 0th query, getting 100 movies each time. Increasing this number
+            //introduces instability from closed connections.
 
-        //    //Create a new Bitmap of the calculated final size
-        //    Bitmap combinedBitmap = new Bitmap(totalWidth, totalHeight);
-        //    //Create a Graphics object from the bitmap so we can draw
-        //    Graphics combinedGraphics = Graphics.FromImage(combinedBitmap);
-        //    int drawingPosition = 0;
-        //    int drawingHeight = 0;
-        //    int rowCounter = 0;
-        //    List<Bitmap> allPosters = new List<Bitmap>();
-        //    //COMMENTED UNTIL I CAN FIX:
-        //    //foreach (Movie movie in allMovies)
-        //    //{
-        //    //    TypeConverter tc = TypeDescriptor.GetConverter(typeof(Bitmap));
-        //    //    Bitmap originalBitmap = (Bitmap)tc.ConvertFrom(movie.Poster);
-        //    //    Bitmap resizeBitmap = new Bitmap(posterWidth, posterHeight);
-        //    //    Graphics resizeGraphic = Graphics.FromImage(resizeBitmap);
-        //    //    resizeGraphic.InterpolationMode = InterpolationMode.High;
-        //    //    resizeGraphic.CompositingQuality = CompositingQuality.HighQuality;
-        //    //    resizeGraphic.SmoothingMode = SmoothingMode.AntiAlias;
-        //    //    resizeGraphic.DrawImage(originalBitmap, new Rectangle(0, 0, posterWidth, posterHeight));
-        //    //    if (rowCounter == rowLength)
-        //    //    {
-        //    //        rowCounter = 0;
-        //    //        drawingPosition = 0;
-        //    //        drawingHeight += posterHeight;
-        //    //    }
-        //    //    combinedGraphics.DrawImage(resizeBitmap, new Point(drawingPosition, drawingHeight));
-        //    //    drawingPosition += posterWidth;
-        //    //    rowCounter++;
-        //    //}
+            //int queryNumber = 0;
+            //int queryCount = 100;
+            //int queryMin = 0;
 
-        //    byte[] posterBits = ImageToByte(combinedBitmap);
-        //    return File(posterBits, "image/jpeg");
-        //}
+            ////queryMin is the movie ID we're starting at, collecting queryCount movies from there.
+            //while (queryMin < movieCount)
+            //{
+            //    queryMin = queryNumber * queryCount;
+            //    List<Movie> movies = (from v in movieDb.Movies
+            //                          where v.id > queryMin &&
+            //                          v.id <= queryMin + queryCount
+            //                          select v).ToList();
+            //    allMovies.AddRange(movies);
+            //    queryNumber++;
+            //}
+            //Take all my movies and order them by their simple title
+            allMovies = movieDb.Movies.OrderBy(x => x.SimpleTitle).ToList();
+
+            //Posters in the collage should be 75 x 100. Increasing these numbers makes the poster too large.
+            int posterWidth = 75;
+            int posterHeight = 100;
+
+            //How many posters per row, and how does that effect the height/width of the final image:
+            int rowLength = 25;
+            int totalWidth = rowLength * posterWidth;
+            int totalHeight = (int)(Math.Ceiling((double)movieCount / (double)rowLength) * posterHeight);
+
+            //Create a new Bitmap of the calculated final size
+            Bitmap combinedBitmap = new Bitmap(totalWidth, totalHeight);
+            //Create a Graphics object from the bitmap so we can draw
+            Graphics combinedGraphics = Graphics.FromImage(combinedBitmap);
+            int drawingPosition = 0;
+            int drawingHeight = 0;
+            int rowCounter = 0;
+            List<Bitmap> allPosters = new List<Bitmap>();
+            //COMMENTED UNTIL I CAN FIX:
+            foreach (Movie movie in allMovies)
+            {
+                TypeConverter tc = TypeDescriptor.GetConverter(typeof(Bitmap));
+                //Bitmap originalBitmap = (Bitmap)tc.ConvertFrom(imageHandler.GetPosterImageFromID(movie.id,true).Result);
+                
+                Bitmap originalBitmap = (Bitmap)Bitmap.FromStream(new MemoryStream(imageHandler.GetPosterImageFromID(movie.id, true).Result));
+                Bitmap resizeBitmap = new Bitmap(posterWidth, posterHeight);
+                Graphics resizeGraphic = Graphics.FromImage(resizeBitmap);
+                resizeGraphic.InterpolationMode = InterpolationMode.High;
+                resizeGraphic.CompositingQuality = CompositingQuality.HighQuality;
+                resizeGraphic.SmoothingMode = SmoothingMode.AntiAlias;
+                resizeGraphic.DrawImage(originalBitmap, new Rectangle(0, 0, posterWidth, posterHeight));
+                if (rowCounter == rowLength)
+                {
+                    rowCounter = 0;
+                    drawingPosition = 0;
+                    drawingHeight += posterHeight;
+                }
+                combinedGraphics.DrawImage(resizeBitmap, new Point(drawingPosition, drawingHeight));
+                drawingPosition += posterWidth;
+                rowCounter++;
+            }
+
+            MemoryStream memoryStream = new MemoryStream();
+            combinedBitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
+            return File(memoryStream,"image/png");
+        }
 
     }
 }
