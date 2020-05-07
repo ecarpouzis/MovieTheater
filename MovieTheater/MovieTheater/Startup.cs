@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MovieTheater.Db;
 using MovieTheater.Services;
+using Serilog;
 
 namespace MovieTheater
 {
@@ -87,7 +88,12 @@ namespace MovieTheater
                 opt.UseSqlServer($"Server={server};Database={database};User Id={username};Password={password};Encrypt=yes;TrustServerCertificate=true;");
             });
 
-            services.AddLogging(log => log.AddConsole());
+            var serilog = new LoggerConfiguration()
+                .WriteTo.Console(outputTemplate: "[{SourceContext}][{Timestamp:HH:mm:ss}][{Level:u3}] {Message:l}{NewLine}{Exception}")
+                .CreateLogger();
+
+            services.AddLogging(log => log.AddSerilog(logger: serilog));
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
         }
 

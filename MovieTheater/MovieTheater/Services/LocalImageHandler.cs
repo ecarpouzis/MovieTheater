@@ -192,15 +192,14 @@ namespace MovieTheater.Services
 
 
             WebClient client = new WebClient();
-            byte[] potentialPoster = new byte[0];
+            byte[] potentialPoster = client.DownloadData(url);
 
-            potentialPoster = client.DownloadData(url);
             FileInfo posterLoc = new FileInfo(Path.Combine(posterDir.FullName, movieID + ".png"));
 
             try
             {
                 await File.WriteAllBytesAsync(posterLoc.FullName, potentialPoster);
-                await ShrinkPosterFromID(movieID);
+                CreateShrunkImageFile(movieID);
             }
             catch
             {
