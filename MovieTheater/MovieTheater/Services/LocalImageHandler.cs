@@ -72,7 +72,7 @@ namespace MovieTheater.Services
                 }
                 catch
                 {
-                    run_cmd("PILResaveImage.py", poster.FullName);
+                    run_cmd("python", "PILResaveImage.py", poster.FullName);
                     ImageMagicResizeImage(poster.FullName, shrunkPoster.FullName);
                     return null;
                 }
@@ -83,11 +83,11 @@ namespace MovieTheater.Services
             }
         }
 
-        public void run_cmd(string cmd, string args)
+        public void run_cmd(string cmd, string scriptName, string args)
         {
             ProcessStartInfo start = new ProcessStartInfo();
             start.FileName = cmd;
-            start.Arguments = string.Format("\"{0}\"", args);
+            start.Arguments = string.Format("{0} \"{1}\"", scriptName, args);
             start.UseShellExecute = true;// Do not use OS shell
             start.CreateNoWindow = true; // We don't need new window
             Process.Start(start).WaitForExit();
