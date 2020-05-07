@@ -94,6 +94,7 @@ namespace MovieTheater.Controllers
             {
                 await imageHandler.ShrinkPosterFromID(id);
             }
+            
             return null;
         }
 
