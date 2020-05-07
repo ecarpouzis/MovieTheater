@@ -1,25 +1,28 @@
-using System;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MovieTheater.Db;
+using SixLabors.ImageSharp.Processing;
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using SixLabors.ImageSharp.Processing;
-using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace MovieTheater.Services
 {
     public class LocalImageHandler : IImageHandler
     {
+        private readonly string pyPath;
+
         private readonly string localFileDirectory;
 
-        public LocalImageHandler(IOptions<LocalImageHandlerOptions> option)
+        private readonly ILogger<LocalImageHandler> logger;
+
+        public LocalImageHandler(IOptions<LocalImageHandlerOptions> options, ILogger<LocalImageHandler> logger)
         {
-            localFileDirectory = option.Value.LocalStorageFileDirectory;
+            pyPath = options.Value.PyPath;
+            localFileDirectory = options.Value.LocalStorageFileDirectory;
+
+            this.logger = logger;
         }
 
         public async Task<byte[]> GetPosterImageFromID(int movieID, bool getThumb = false)
@@ -52,42 +55,52 @@ namespace MovieTheater.Services
             }
         }
 
-        public async Task<byte[]> ShrinkPosterFromID(int movieID)
+        public void CreateShrunkImageFile(int movieID)
         {
             DirectoryInfo posterDir = new DirectoryInfo(localFileDirectory);
 
             if (!posterDir.Exists)
             {
-                return null;
+                return;
             }
 
             FileInfo poster = new FileInfo(Path.Combine(posterDir.FullName, movieID + ".png"));
             FileInfo shrunkPoster = new FileInfo(Path.Combine(posterDir.FullName, movieID + "_s.png"));
-            if (poster.Exists)
+
+            if (!poster.Exists)
             {
+                logger.LogWarning("No poster exists for movieID={movieId}", movieID);
+                return;
+            }
+
+            logger.LogInformation("Resizing poster for movieId={movieId}", movieID);
+
+            try
+            {
+                ImageMagicResizeImage(poster.FullName, shrunkPoster.FullName);
+                return;
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Error attempting to resize image. Running python image shrink...");
+
                 try
                 {
+                    PythonShrinkImage(poster.FullName);
                     ImageMagicResizeImage(poster.FullName, shrunkPoster.FullName);
-                    return null;
                 }
-                catch
+                catch (Exception e2)
                 {
-                    run_cmd("python", "PILResaveImage.py", poster.FullName);
-                    ImageMagicResizeImage(poster.FullName, shrunkPoster.FullName);
-                    return null;
+                    logger.LogError(e2, "Error attempting to resize image after python image shrink.");
                 }
-            }
-            else
-            {
-                return null;
             }
         }
 
-        public void run_cmd(string cmd, string scriptName, string args)
+        private void PythonShrinkImage(string filePath)
         {
             ProcessStartInfo start = new ProcessStartInfo();
-            start.FileName = cmd;
-            start.Arguments = string.Format("{0} \"{1}\"", scriptName, args);
+            start.FileName = pyPath;
+            start.Arguments = $"PILResaveImage.py \"{filePath}\"";
             start.UseShellExecute = true;// Do not use OS shell
             start.CreateNoWindow = true; // We don't need new window
             Process.Start(start).WaitForExit();
@@ -193,7 +206,7 @@ namespace MovieTheater.Services
             {
                 return null;
             }
-                
+
             return posterLoc.FullName;
         }
 

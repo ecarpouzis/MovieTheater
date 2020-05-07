@@ -46,6 +46,17 @@ namespace MovieTheater
                     throw new System.IO.DirectoryNotFoundException("Movie posters directory is invalid. Should be set via environment variable `MOVIE_POSTERSDIR`");
                 }
 
+                string pyPath = Environment.GetEnvironmentVariable("PY_PATH");
+
+                if (!string.IsNullOrEmpty(pyPath))
+                {
+                    options.PyPath = pyPath;
+                }
+                else
+                {
+                    options.PyPath = "python";
+                }
+
                 options.LocalStorageFileDirectory = postersDir.FullName;
             });
 

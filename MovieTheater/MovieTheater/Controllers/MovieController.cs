@@ -92,7 +92,7 @@ namespace MovieTheater.Controllers
             int[] movieIDs = movieDb.Movies.Select(m => m.id).ToArray();
             foreach (int id in movieIDs)
             {
-                await imageHandler.ShrinkPosterFromID(id);
+                await imageHandler.CreateShrunkImageFile(id);
             }
             
             return null;
