@@ -86,7 +86,7 @@ namespace MovieTheater.Controllers
         }
 
 
-        [HttpGet("/ShrinkAllPosters")]
+        [HttpGet("/Movie/ShrinkAllPosters")]
         public async Task<IActionResult> ShrinkOldPosters()
         {
             int[] movieIDs = movieDb.Movies.Select(m => m.id).ToArray();
