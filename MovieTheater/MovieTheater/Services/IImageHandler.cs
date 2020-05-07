@@ -1,11 +1,14 @@
-using System;
+using System.IO;
 using System.Threading.Tasks;
-using MovieTheater.Db;
 
 namespace MovieTheater.Services
 {
     public interface IImageHandler
     {
+        FileInfo GetPosterFile(int movieId);
+
+        FileInfo GetShrunkPosterFile(int movieId);
+
         /// <summary>
         /// Pass in a movie ID and get the contents of the poster's image.
         /// 

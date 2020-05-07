@@ -25,6 +25,10 @@ namespace MovieTheater.Services
             this.logger = logger;
         }
 
+        public FileInfo GetPosterFile(int movieId) => new FileInfo(Path.Combine(localFileDirectory, movieId + ".png"));
+
+        public FileInfo GetShrunkPosterFile(int movieId) => new FileInfo(Path.Combine(localFileDirectory, movieId + "_s.png"));
+
         public async Task<byte[]> GetPosterImageFromID(int movieID, bool getThumb = false)
         {
             DirectoryInfo posterDir = new DirectoryInfo(localFileDirectory);
@@ -210,4 +214,4 @@ namespace MovieTheater.Services
         }
 
     }
-}
+};

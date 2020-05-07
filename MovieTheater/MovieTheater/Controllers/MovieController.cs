@@ -1190,10 +1190,14 @@ namespace MovieTheater.Controllers
             //COMMENTED UNTIL I CAN FIX:
             foreach (Movie movie in allMovies)
             {
-                TypeConverter tc = TypeDescriptor.GetConverter(typeof(Bitmap));
-                //Bitmap originalBitmap = (Bitmap)tc.ConvertFrom(imageHandler.GetPosterImageFromID(movie.id,true).Result);
-                
-                Bitmap originalBitmap = (Bitmap)Bitmap.FromStream(new MemoryStream(imageHandler.GetPosterImageFromID(movie.id, true).Result));
+                var posterFile = imageHandler.GetShrunkPosterFile(movie.id);
+
+                if (!posterFile.Exists)
+                {
+                    continue;
+                }
+
+                Image originalBitmap = Image.FromFile(posterFile.FullName);
                 Bitmap resizeBitmap = new Bitmap(posterWidth, posterHeight);
                 Graphics resizeGraphic = Graphics.FromImage(resizeBitmap);
                 resizeGraphic.InterpolationMode = InterpolationMode.High;
