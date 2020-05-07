@@ -1216,8 +1216,9 @@ namespace MovieTheater.Controllers
             }
 
             MemoryStream memoryStream = new MemoryStream();
-            combinedBitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
-            return File(memoryStream,"image/png");
+            HttpContext.Response.ContentType = "image/png";
+            combinedBitmap.Save(HttpContext.Response.Body, System.Drawing.Imaging.ImageFormat.Png);
+            return Ok();
         }
 
     }
