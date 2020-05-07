@@ -87,7 +87,7 @@ namespace MovieTheater.Controllers
 
 
         [HttpGet("/Movie/ShrinkAllPosters")]
-        public async Task<IActionResult> ShrinkOldPosters()
+        public IActionResult ShrinkOldPosters()
         {
             int[] movieIDs = movieDb.Movies.Select(m => m.id).ToArray();
             foreach (int id in movieIDs)
@@ -95,7 +95,7 @@ namespace MovieTheater.Controllers
                 imageHandler.CreateShrunkImageFile(id);
             }
             
-            return null;
+            return Ok();
         }
 
         [HttpGet("/Browse")]
