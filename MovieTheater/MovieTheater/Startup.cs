@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -24,6 +25,7 @@ namespace MovieTheater
             builder.AddJsonFile("appsettings.json");
 
             currentEnv = env;
+
         }
 
         public IConfiguration Configuration { get; }
@@ -95,6 +97,14 @@ namespace MovieTheater
             services.AddLogging(log => log.AddSerilog(logger: serilog));
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
+            if (currentEnv.IsDevelopment())
+            {
+                //Disable server cert validation so we can connect and download posters from theater.carpouzis.com which has no cert installed
+                ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+
+                //Want to add call to LocalImageHandler.Initialize here.
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

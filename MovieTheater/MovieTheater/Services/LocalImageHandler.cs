@@ -1,9 +1,13 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MovieTheater.Db;
+using Serilog;
 using SixLabors.ImageSharp.Processing;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -11,18 +15,26 @@ namespace MovieTheater.Services
 {
     public class LocalImageHandler : IImageHandler
     {
+        private readonly string serverImageURL = "http://theater.carpouzis.com/Image/";
+
+        private readonly MovieDb movieDb;
+
         private readonly string pyPath;
 
         private readonly string localFileDirectory;
 
         private readonly ILogger<LocalImageHandler> logger;
 
-        public LocalImageHandler(IOptions<LocalImageHandlerOptions> options, ILogger<LocalImageHandler> logger)
+        public LocalImageHandler(IOptions<LocalImageHandlerOptions> options, ILogger<LocalImageHandler> logger, MovieDb movieDb)
         {
             pyPath = options.Value.PyPath;
             localFileDirectory = options.Value.LocalStorageFileDirectory;
 
             this.logger = logger;
+
+            this.movieDb = movieDb;
+            //Realize this should be called from Startup when in dev environment:
+            Initialize().Wait();
         }
 
         public FileInfo GetPosterFile(int movieId) => new FileInfo(Path.Combine(localFileDirectory, movieId + ".png"));
@@ -58,6 +70,49 @@ namespace MovieTheater.Services
                 return null;
             }
         }
+
+        public async Task<string> Initialize()
+        {
+            await CheckForServerPosters();
+            return null;
+        }
+
+        public async Task<string> CheckForServerPosters()
+        {
+            DirectoryInfo posterDir = new DirectoryInfo(localFileDirectory);
+            string[] localPosters = posterDir.GetFiles().Select(p => p.Name).Where( p=>!p.Contains("_s")).ToArray();
+            List<int> localPosterIds = new List<int>();
+            //Convert array of local poster names into a list of Ids
+            foreach (string localPosterName in localPosters)
+            {
+                //If the filename can be turned into an int, it's a movie ID
+                if (Int32.TryParse(Path.GetFileNameWithoutExtension(localPosterName), out int localPosterID))
+                {
+                    localPosterIds.Add(localPosterID);
+                }
+            }
+
+            int[] serverPosterIDs = movieDb.Movies.Select(m => m.id).ToArray();
+
+            //For each poster found on the server
+            foreach (int serverPosterID in serverPosterIDs)
+            {
+                //If I do not see this poster locally, download it
+                if (!localPosterIds.Contains(serverPosterID))
+                {
+                    try
+                    {
+                        await SavePosterImageFromLink(serverPosterID, serverImageURL+ serverPosterID);
+                    }
+                    catch(Exception e)
+                    {
+                        Log.Error("Error: could not save poster from server:" +serverPosterID);
+                    }
+                }
+            }
+            return null;
+        }
+        
 
         public void CreateShrunkImageFile(int movieID)
         {
@@ -184,7 +239,6 @@ namespace MovieTheater.Services
         //    }
         //}
 
-
         public async Task<string> SavePosterImageFromLink(int movieID, string url)
         {
             DirectoryInfo posterDir = new DirectoryInfo(localFileDirectory);
@@ -196,6 +250,7 @@ namespace MovieTheater.Services
 
 
             WebClient client = new WebClient();
+
             byte[] potentialPoster = client.DownloadData(url);
 
             FileInfo posterLoc = new FileInfo(Path.Combine(posterDir.FullName, movieID + ".png"));
