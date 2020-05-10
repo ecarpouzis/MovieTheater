@@ -29,12 +29,8 @@ namespace MovieTheater.Services
         {
             pyPath = options.Value.PyPath;
             localFileDirectory = options.Value.LocalStorageFileDirectory;
-
             this.logger = logger;
-
             this.movieDb = movieDb;
-            //Realize this should be called from Startup when in dev environment:
-            Initialize().Wait();
         }
 
         public FileInfo GetPosterFile(int movieId) => new FileInfo(Path.Combine(localFileDirectory, movieId + ".png"));
@@ -71,10 +67,9 @@ namespace MovieTheater.Services
             }
         }
 
-        public async Task<string> Initialize()
+        public async Task Initialize()
         {
             await CheckForServerPosters();
-            return null;
         }
 
         public async Task<string> CheckForServerPosters()

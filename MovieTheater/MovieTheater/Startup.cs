@@ -17,6 +17,7 @@ namespace MovieTheater
 {
     public class Startup
     {
+        //To-do: Create options class to inject environment information
         private IHostingEnvironment currentEnv;
 
         public Startup(IHostingEnvironment env)
@@ -97,14 +98,6 @@ namespace MovieTheater
             services.AddLogging(log => log.AddSerilog(logger: serilog));
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-
-            if (currentEnv.IsDevelopment())
-            {
-                //Disable server cert validation so we can connect and download posters from theater.carpouzis.com which has no cert installed
-                ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-
-                //Want to add call to LocalImageHandler.Initialize here.
-            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -125,6 +118,14 @@ namespace MovieTheater
             app.UseCookiePolicy();
             app.UseAuthentication();
             app.UseMvcWithDefaultRoute();
+            if (currentEnv.IsDevelopment())
+            {
+                //Disable server cert validation so we can connect and download posters from theater.carpouzis.com which has no cert installed
+                ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+
+                //Want to add call to LocalImageHandler.Initialize here.
+                app.ApplicationServices.GetService<IImageHandler>().Initialize().Wait();
+            }
         }
     }
 }

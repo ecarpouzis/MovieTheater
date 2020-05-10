@@ -18,7 +18,7 @@ namespace MovieTheater.Services
         /// <returns></returns>
         Task<byte[]> GetPosterImageFromID(int movieID, bool getThumb = false);
 
-        Task<string> Initialize();
+        Task Initialize();
 
         void CreateShrunkImageFile(int movieID);
         Task<string> CheckForServerPosters();
