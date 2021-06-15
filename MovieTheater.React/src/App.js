@@ -1,25 +1,18 @@
 import logo from "./logo.svg";
 import "./App.css";
+import { Layout } from "antd";
+import CardList from "./CardList";
+const { Sider, Content } = Layout;
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>Edited and saved.</p>
-        <div>
-          <p>testt test</p>
-          sasda
-        </div>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Layout style={{ height: "100vh" }}>
+        <Sider>Sider</Sider>
+        <Content>
+          <CardList></CardList>
+        </Content>
+      </Layout>
     </div>
   );
 }
