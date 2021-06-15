@@ -1,17 +1,22 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 /* eslint-disable jsx-a11y/anchor-has-content */
+
+import { MovieAPI } from "./MovieAPI";
+console.log(MovieAPI.getPosterThumbnail(100));
+
 function CardList() {
   return (
     <div>
-      <Card movieTitle="TestMovie" movieRating="R"></Card>
+      <Card movieID="100" movieTitle="TestMovie" movieRating="R"></Card>
     </div>
   );
 }
 
-function Card({ movieTitle, movieRating }) {
+function Card({ movieID, movieTitle, movieRating }) {
+  const thumbUrl = MovieAPI.getPosterThumbnail(movieID);
   return (
     <div>
-      <img class="moviePosterImage" alt="" src="" />
+      <img class="moviePosterImage" alt="" src={thumbUrl} />
       <a href="#" class="movieTitle">
         {movieTitle}
       </a>
