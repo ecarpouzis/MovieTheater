@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MovieTheater.Db;
 using MovieTheater.Services;
+using MovieTheater.Services.API;
 using MovieTheater.ViewModels;
 using Newtonsoft.Json.Linq;
 using System;
@@ -358,6 +359,12 @@ namespace MovieTheater.Controllers
             return View();
         }
 
+        public static void BatchTest(string test, MovieDb db, IImageHandler h)
+        {
+            MovieController c = new MovieController(db, h);
+            c.BatchGetMovie(test);
+        }
+
         [HttpGet("/Movie/BatchGetMovie")]
         public IActionResult BatchGetMovie(string foundMovie)
         {
@@ -380,14 +387,20 @@ namespace MovieTheater.Controllers
                     ////Try IMDB page lookup.
                     //Search using Google:         
                     string GoogleRT = "http://www.google.com/search?num=1&q=" + HttpUtility.UrlEncode(foundMovie) + " IMDB";
-                    var result = new HtmlWeb().Load(GoogleRT);
-                    HtmlNode googleNode = result.DocumentNode.SelectNodes("//html//body//a[contains(@href,'imdb')]")[0];
+                    //var result = new HtmlWeb().Load(GoogleRT);
+                    HttpClient c = new HttpClient();
+                    var r = c.GetStringAsync(GoogleRT);
+                    r.Wait();
+                    //HtmlNode googleNode = result.DocumentNode.SelectNodes("//html//body//a[contains(@href,'imdb')]")[0];
+                    //doc3.DocumentNode.SelectNodes("//html//body//a[contains(@href, 'imdb')]")[0].Attributes["href"].Value
+                    HtmlDocument doc3 = new HtmlAgilityPack.HtmlDocument();
+                    doc3.LoadHtml(r.Result);
+                    HtmlNode googleNode = doc3.DocumentNode.SelectNodes("//html//body//a[contains(@href,'imdb')]")[0];
+                    //HtmlAgilityPack.HtmlWeb docHFile3 = new HtmlWeb();
 
-                    HtmlAgilityPack.HtmlDocument doc3 = new HtmlAgilityPack.HtmlDocument();
-                    HtmlAgilityPack.HtmlWeb docHFile3 = new HtmlWeb();
                     //I notice URLs returned this way have additional text. Split on = and remove the extra "&amp" from the href
                     string imdbLink = googleNode.Attributes["href"].Value;
-                    string imdbID = imdbLink.Split("/")[4];
+                    string imdbID = imdbLink.Split("/")[5];
                     scrapedMovie = ImdbScrape(imdbID);
                 }
                 catch
@@ -434,6 +447,14 @@ namespace MovieTheater.Controllers
             public string movieRottenRating;
         }
 
+        [HttpGet("/Movie/TMDBScrape")]
+        public static ActionResult TMDBScrape(string givenID)
+        {
+            TMDBHttpClient ts = new TMDBHttpClient();
+            ts.RefreshAccessToken().Wait();
+            return new OkResult();
+        }
+
         [HttpGet("/Movie/ImdbScrape")]
         public ActionResult ImdbScrape(string givenID)
         {
@@ -473,12 +494,23 @@ namespace MovieTheater.Controllers
 
             try
             {
-                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//div[@class='title_wrapper']//h1/text()[1]"))
+                //It appears that IMDB now has various formats to the HTML page delivered to the client. Thus,
+                //there are multiple scrapes to attempt.
+                HtmlNode node = doc1.DocumentNode.SelectSingleNode("//div[@class='title_wrapper']//h1/text()[1]");
+                if (node == null) {
+                    node = doc1.DocumentNode.SelectSingleNode("//h1[contains(@class,'TitleText')");
+                }
+                if (node != null && !String.IsNullOrEmpty(node.InnerText))
                 {
                     movieName = node.InnerText;
                 }
-                thisMovie.movieName = HttpUtility.HtmlDecode(movieName.Trim());
-                //Movie Name is setup
+                else
+                {
+                    throw new Exception("All attempts to scrape movie name failed!");
+                }
+
+                thisMovie.movieName = HttpUtility.HtmlDecode(movieName.Trim()).Trim();
+                //Movie Name is set
             }
             catch
             {
@@ -504,11 +536,22 @@ namespace MovieTheater.Controllers
 
             try
             {
-                foreach (HtmlNode node in doc1.DocumentNode.SelectNodes("//div[@class='subtext'][1]/text()"))
+                HtmlNode node = doc1.DocumentNode.SelectSingleNode("//div[@class='subtext'][1]/text()");
+                if (node == null)
                 {
-                    //movieRating += node.Attributes["content"].Value;
-                    movieRating += node.InnerText;
+                    node = doc1.DocumentNode.SelectSingleNode("//a[contains(@href,'parentalguide')]");
                 }
+                if (node != null)
+                {
+                    movieRating = node.InnerText;
+                }
+                else
+                {
+                    throw new Exception("All attempts to scrape movie rating failed!");
+                }
+
+                movieRating = node.InnerText;
+                
                 thisMovie.movieRating = movieRating.Replace(",", "").Trim().Replace("_", " ");
             }
             catch
