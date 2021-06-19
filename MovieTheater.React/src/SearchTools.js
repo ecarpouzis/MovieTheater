@@ -1,4 +1,4 @@
-import { Input, Row, Col, Button } from "antd";
+import { Input, List, Button } from "antd";
 
 const { Search } = Input;
 
@@ -8,9 +8,15 @@ const searchLabelStyle = {
   display: "block",
 };
 
-const letterButtonStyle = {
-  width: "50px",
+const searchLetterStyle = {
   fontWeight: "bold",
+  position: "absolute",
+  width: "100%",
+  height: "1em",
+  lineHeight: "1em",
+  top: "50%",
+  left: "0px",
+  marginTop: "-0.5em",
 };
 
 const searchLetters = [
@@ -43,6 +49,8 @@ const searchLetters = [
   "Z",
 ];
 
+const listStyle = {};
+
 function SearchTools() {
   return (
     <div id="SearchToolContainer" style={{ color: "white" }}>
@@ -73,13 +81,31 @@ function SearchTools() {
         <br />
         <br />
         <span style={searchLabelStyle}>FIRST LETTER</span>
-        <Row gutter={[8, 8]}>
-          {searchLetters.map((letter, i) => (
-            <Col key={i}>
-              <Button syle={letterButtonStyle}>{letter}</Button>
-            </Col>
-          ))}
-        </Row>
+
+        {
+          <List
+            style={listStyle}
+            grid={{
+              gutter: 1,
+              xs: 3,
+              sm: 3,
+              md: 3,
+              lg: 3,
+              xl: 4,
+              xxl: 4,
+            }}
+            dataSource={searchLetters}
+            renderItem={(item, i) => {
+              return (
+                <List.Item style={{ marginBottom: "10px" }}>
+                  <Button style={{ width: "36px" }}>
+                    <span style={searchLetterStyle}>{item}</span>
+                  </Button>
+                </List.Item>
+              );
+            }}
+          />
+        }
       </div>
     </div>
   );

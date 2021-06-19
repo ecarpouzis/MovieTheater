@@ -1,4 +1,4 @@
-const MOVIE_API = "https://theater.carpouzis.com";
+const MOVIE_API = "http://localhost:65272";
 
 function getMoviePoster(id) {
   const rootUrl = MOVIE_API;
@@ -10,9 +10,15 @@ function getPosterThumbnail(id) {
   return rootUrl + "/ImageThumb/" + id;
 }
 
+function getMovies(num) {
+  const rootUrl = MOVIE_API;
+  return fetch(rootUrl + "/API/Movies?num=" + num);
+}
+
 const MovieAPI = {
   getMoviePoster,
   getPosterThumbnail,
+  getMovies,
 };
 
 export { MovieAPI };

@@ -86,6 +86,12 @@ namespace MovieTheater.Controllers
             return View(movie);
         }
 
+        [HttpGet("/API/Movies")]
+        public IActionResult Movies(int num=30)
+        {
+            var movies = movieDb.Movies.Take(num).ToList();
+            return Json(movies);
+        }
 
         [HttpGet("/Movie/ShrinkAllPosters")]
         public IActionResult ShrinkOldPosters()
