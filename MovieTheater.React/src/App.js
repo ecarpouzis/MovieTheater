@@ -10,17 +10,19 @@ const { Sider, Content } = Layout;
 
 function App() {
   const [count, setCount] = useState(30);
+  const [startsWith, setStartsWith] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [movieDataArray, setMovieDataArray] = useState([]);
   useEffect(() => {
     setIsLoading(true);
-    MovieAPI.getMovies(count)
+    const realCount = startsWith ? null : count;
+    MovieAPI.getMovies(realCount, startsWith)
       .then((response) => response.json())
       .then((responseData) => {
         setIsLoading(false);
         setMovieDataArray(responseData);
       });
-  }, [count]);
+  }, [count, startsWith]);
 
   return (
     <div className="App" style={{ overflow: "hidden" }}>
@@ -28,7 +30,7 @@ function App() {
         <Sider>
           <Login />
           <br />
-          <SearchTools />
+          <SearchTools setStartsWith={setStartsWith} startsWith={startsWith} />
         </Sider>
         <Content
           style={{ height: "100%", overflowY: "auto", paddingRight: "10px" }}

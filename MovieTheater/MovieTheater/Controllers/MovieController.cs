@@ -87,9 +87,28 @@ namespace MovieTheater.Controllers
         }
 
         [HttpGet("/API/Movies")]
-        public IActionResult Movies(int num=30)
+        public IActionResult Movies(int? num=null, string startsWith = "")
         {
-            var movies = movieDb.Movies.Take(num).ToList();
+            IQueryable<Movie> movies = movieDb.Movies;
+            
+            if (!String.IsNullOrEmpty(startsWith))
+            {
+                if (startsWith == "#")
+                {
+                    List<char> digits = new List<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+                    movies = movies.Where(m => digits.Contains(m.Title[0]));
+                }
+                else
+                {
+                    movies = movies.Where(m => m.Title.StartsWith(startsWith));
+                }
+            }
+
+            if (num.HasValue)
+            {
+                movies = movies.OrderBy(elem => Guid.NewGuid()).Take(num.Value);
+            }
+
             return Json(movies);
         }
 

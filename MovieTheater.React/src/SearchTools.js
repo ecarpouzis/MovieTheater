@@ -51,7 +51,7 @@ const searchLetters = [
 
 const listStyle = {};
 
-function SearchTools() {
+function SearchTools({ startsWith, setStartsWith }) {
   return (
     <div id="SearchToolContainer" style={{ color: "white" }}>
       <span style={{ fontWeight: "bold", fontSize: "18px" }}>SEARCH</span>
@@ -97,8 +97,20 @@ function SearchTools() {
             dataSource={searchLetters}
             renderItem={(item, i) => {
               return (
-                <List.Item style={{ marginBottom: "10px" }}>
-                  <Button style={{ width: "36px" }}>
+                <List.Item
+                  style={{
+                    marginBottom: "10px",
+                  }}
+                >
+                  <Button
+                    onClick={() =>
+                      setStartsWith(startsWith === item ? null : item)
+                    }
+                    style={{
+                      width: "36px",
+                      backgroundColor: item === startsWith ? "silver" : "white",
+                    }}
+                  >
                     <span style={searchLetterStyle}>{item}</span>
                   </Button>
                 </List.Item>
