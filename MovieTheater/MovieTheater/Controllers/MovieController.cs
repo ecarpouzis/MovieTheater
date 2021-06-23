@@ -86,8 +86,95 @@ namespace MovieTheater.Controllers
             return View(movie);
         }
 
-        [HttpGet("/API/Movies")]
-        public IActionResult Movies(int? num=null, string startsWith = "")
+
+        [HttpPost("/API/Login")]
+        public async Task<IActionResult> API_Login(string username)
+        {
+            String givenUser = username.Trim();
+
+            if (string.IsNullOrEmpty(givenUser))
+            {
+                return NotFound();
+            }
+
+            var user = await movieDb.Users.SingleOrDefaultAsync(d => d.Username == username);
+
+            if (user == null)
+            {
+                user = new User()
+                {
+                    Username = username
+                };
+
+                await movieDb.Users.AddAsync(user);
+                await movieDb.SaveChangesAsync();
+            }
+
+            var claims = new List<System.Security.Claims.Claim>()
+            {
+                new Claim(ClaimTypes.Name, username),
+                new Claim("UserID", user.UserID.ToString())
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+            var authProperties = new AuthenticationProperties { };
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), authProperties);
+
+            return Ok();
+        }
+
+
+        [HttpGet("/API/Logout")]
+        public async Task<IActionResult> API_Logout()
+        {
+            await HttpContext.SignOutAsync();
+            return Ok();
+        }
+
+        [HttpGet("/API/API_UserList")]
+        public IActionResult API_UserList()
+        {
+            var userList = movieDb.Users.Select(d => d.Username).ToList();
+            return Json(userList);
+        }
+
+        [HttpGet("/API/CountWatched")]
+        public async Task<IActionResult> API_CountWatched()
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                var userID = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
+
+                var count = await movieDb.Viewings.CountAsync(d => d.UserID == userID && d.ViewingType == "w");
+                return new JsonResult(new { count = count });
+            }
+            else
+            {
+                return new JsonResult(new { count = 0 });
+            }
+        }
+
+        [HttpGet("/API/CountWatchlist")]
+        public async Task<IActionResult> API_CountWatchlist()
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                var userID = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
+
+                var count = await movieDb.Viewings.CountAsync(d => d.UserID == userID && d.ViewingType == "s");
+                return new JsonResult(new { count = count });
+            }
+            else
+            {
+                return new JsonResult(new { count = 0 });
+            }
+        }
+
+
+        [HttpGet("/API/API_Movies")]
+        public IActionResult API_Movies(int? num=null, string startsWith = "")
         {
             IQueryable<Movie> movies = movieDb.Movies;
             

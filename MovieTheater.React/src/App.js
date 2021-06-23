@@ -9,9 +9,11 @@ import { useState, useEffect } from "react";
 const { Sider, Content } = Layout;
 
 function App() {
-  const [count, setCount] = useState(30);
+  const [count, setCount] = useState(20);
+  const [username, setUsername] = useState(null);
   const [startsWith, setStartsWith] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
   const [movieDataArray, setMovieDataArray] = useState([]);
   useEffect(() => {
     setIsLoading(true);
@@ -24,13 +26,17 @@ function App() {
       });
   }, [count, startsWith]);
 
+  function onUserLoggedIn(username) {
+    setUsername(username);
+  }
+
   return (
     <div className="App" style={{ overflow: "hidden" }}>
       <Layout style={{ height: "100vh" }}>
         <Sider>
-          <Login />
+          <Login username={username} onUserLoggedIn={onUserLoggedIn} />
           <br />
-          <SearchTools setStartsWith={setStartsWith} startsWith={startsWith} />
+          <SearchTools startsWith={startsWith} setStartsWith={setStartsWith} />
         </Sider>
         <Content
           style={{ height: "100%", overflowY: "auto", paddingRight: "10px" }}

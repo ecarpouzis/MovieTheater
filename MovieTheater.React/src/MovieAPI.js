@@ -12,16 +12,19 @@ function getPosterThumbnail(id) {
 
 function getMovies(num, startsWith) {
   const rootUrl = MOVIE_API;
-
   const url =
     rootUrl +
-    "/API/Movies?num=" +
+    "/API/API_Movies?num=" +
     (num || "") +
     "&startsWith=" +
     (startsWith ? encodeURIComponent(startsWith) : "");
 
-  console.log(url);
+  return fetch(url);
+}
 
+function getUsers() {
+  const rootUrl = MOVIE_API;
+  const url = rootUrl + "/API/API_UserList";
   return fetch(url);
 }
 
@@ -29,6 +32,7 @@ const MovieAPI = {
   getMoviePoster,
   getPosterThumbnail,
   getMovies,
+  getUsers,
 };
 
 export { MovieAPI };
