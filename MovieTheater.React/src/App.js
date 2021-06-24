@@ -11,6 +11,7 @@ const { Sider, Content } = Layout;
 function App() {
   const [count, setCount] = useState(20);
   const [username, setUsername] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [startsWith, setStartsWith] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -28,6 +29,12 @@ function App() {
 
   function onUserLoggedIn(username) {
     setUsername(username);
+    MovieAPI.loginUser(username)
+      .then((response) => response.json())
+      .then((responseData) => {
+        setUserData(responseData);
+        console.log(responseData);
+      });
   }
 
   return (

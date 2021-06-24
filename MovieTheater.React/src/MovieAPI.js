@@ -28,11 +28,18 @@ function getUsers() {
   return fetch(url);
 }
 
+function loginUser(username) {
+  const rootUrl = MOVIE_API;
+  const url = rootUrl + "/API/Login?username=" + username;
+  return fetch(url, { method: "post" });
+}
+
 const MovieAPI = {
   getMoviePoster,
   getPosterThumbnail,
   getMovies,
   getUsers,
+  loginUser,
 };
 
 export { MovieAPI };
