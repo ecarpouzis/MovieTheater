@@ -10,16 +10,17 @@ function getPosterThumbnail(id) {
   return rootUrl + "/ImageThumb/" + id;
 }
 
-function getMovies(num, startsWith) {
+function getMovies(search) {
   const rootUrl = MOVIE_API;
-  const url =
-    rootUrl +
-    "/API/API_Movies?num=" +
-    (num || "") +
-    "&startsWith=" +
-    (startsWith ? encodeURIComponent(startsWith) : "");
+  const url = rootUrl + "/API/API_Movies";
 
-  return fetch(url);
+  return fetch(url, {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(search),
+  });
 }
 
 function getUsers() {

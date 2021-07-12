@@ -49,12 +49,12 @@ namespace MovieTheater.Controllers
 
 
             //watched
-            var moviesSeen = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "w").Select(d=>d.MovieID).ToListAsync();
+            var moviesSeen = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "w").Select(d => d.MovieID).ToListAsync();
 
             //want to watch
             var moviesToWatch = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "s").Select(d => d.MovieID).ToListAsync();
 
-            return Json(new {user.Username, moviesSeen, moviesToWatch });
+            return Json(new { user.Username, moviesSeen, moviesToWatch });
         }
 
 
@@ -104,28 +104,50 @@ namespace MovieTheater.Controllers
         //    }
         //}
 
+        public class search{
+            public string type;
+            public int? count;
+            public string startsWith;
+            public string actor;
+            public string releaseYear;
+            public string uploadDate;
+        }
 
-        [HttpGet("/API/API_Movies")]
-        public IActionResult API_Movies(int? num = null, string startsWith = "")
+        [HttpPost("/API/API_Movies")]
+        public IActionResult API_Movies([FromBody]search search = null)
         {
             IQueryable<Movie> movies = movieDb.Movies;
-
-            if (!String.IsNullOrEmpty(startsWith))
+            if(search == null)
             {
-                if (startsWith == "#")
+                return BadRequest(new { message="No Search Data Provided" });
+            }
+            if (!String.IsNullOrEmpty(search.type))
+            {
+                switch (search.type)
                 {
-                    List<char> digits = new List<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-                    movies = movies.Where(m => digits.Contains(m.Title[0]));
+                    case "startsWith":
+                        if (!String.IsNullOrEmpty(search.startsWith))
+                        {
+                            if (search.startsWith == "#")
+                            {
+                                List<char> digits = new List<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+                                movies = movies.Where(m => digits.Contains(m.Title[0]));
+                            }
+                            else
+                            {
+                                movies = movies.Where(m => m.Title.StartsWith(search.startsWith));
+                            }
+                        }
+                        break;
+                    default:
+                        break;
                 }
-                else
-                {
-                    movies = movies.Where(m => m.Title.StartsWith(startsWith));
-                }
+
             }
 
-            if (num.HasValue)
+            if (search.count.HasValue)
             {
-                movies = movies.OrderBy(elem => Guid.NewGuid()).Take(num.Value);
+                movies = movies.OrderBy(elem => Guid.NewGuid()).Take(search.count.Value);
             }
 
             return Json(movies);

@@ -51,7 +51,7 @@ const searchLetters = [
 
 const listStyle = {};
 
-function SearchTools({ startsWith, setStartsWith }) {
+function SearchTools({ search, setSearch }) {
   return (
     <div id="SearchToolContainer" style={{ color: "white" }}>
       <span style={{ fontWeight: "bold", fontSize: "18px" }}>SEARCH</span>
@@ -103,12 +103,18 @@ function SearchTools({ startsWith, setStartsWith }) {
                   }}
                 >
                   <Button
-                    onClick={() =>
-                      setStartsWith(startsWith === item ? null : item)
-                    }
+                    onClick={() => {
+                      const isAlreadySelected = search.startsWith === item;
+                      if (isAlreadySelected) {
+                        setSearch({ count: 20 });
+                      } else {
+                        setSearch({ type: "startsWith", startsWith: item });
+                      }
+                    }}
                     style={{
                       width: "36px",
-                      backgroundColor: item === startsWith ? "silver" : "white",
+                      backgroundColor:
+                        item === search.startsWith ? "silver" : "white",
                     }}
                   >
                     <span style={searchLetterStyle}>{item}</span>

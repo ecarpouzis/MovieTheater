@@ -9,26 +9,22 @@ import { useState, useEffect } from "react";
 const { Sider, Content } = Layout;
 
 function App() {
-  const [count, setCount] = useState(20);
-  const [username, setUsername] = useState(null);
   const [userData, setUserData] = useState(null);
-  const [startsWith, setStartsWith] = useState(null);
+  const [search, setSearch] = useState({ count: 20 });
   const [isLoading, setIsLoading] = useState(true);
 
   const [movieDataArray, setMovieDataArray] = useState([]);
   useEffect(() => {
     setIsLoading(true);
-    const realCount = startsWith ? null : count;
-    MovieAPI.getMovies(realCount, startsWith)
+    MovieAPI.getMovies(search)
       .then((response) => response.json())
       .then((responseData) => {
         setIsLoading(false);
         setMovieDataArray(responseData);
       });
-  }, [count, startsWith]);
+  }, [search]);
 
   function onUserLoggedIn(username) {
-    setUsername(username);
     MovieAPI.loginUser(username)
       .then((response) => response.json())
       .then((responseData) => {
@@ -41,9 +37,9 @@ function App() {
     <div className="App" style={{ overflow: "hidden" }}>
       <Layout style={{ height: "100vh" }}>
         <Sider>
-          <Login username={username} onUserLoggedIn={onUserLoggedIn} />
+          <Login userData={userData} onUserLoggedIn={onUserLoggedIn} />
           <br />
-          <SearchTools startsWith={startsWith} setStartsWith={setStartsWith} />
+          <SearchTools search={search} setSearch={setSearch} />
         </Sider>
         <Content
           style={{ height: "100%", overflowY: "auto", paddingRight: "10px" }}
@@ -51,7 +47,10 @@ function App() {
           {isLoading ? (
             <div>Loading...</div>
           ) : (
-            <CardList movieDataArray={movieDataArray}></CardList>
+            <CardList
+              movieDataArray={movieDataArray}
+              userData={userData}
+            ></CardList>
           )}
         </Content>
       </Layout>

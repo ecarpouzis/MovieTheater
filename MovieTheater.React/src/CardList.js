@@ -62,6 +62,14 @@ const cardBodyStyle = {
   height: "200px",
   padding: "0px",
   display: "flex",
+  //If a user is logged in, we need height:250px
+};
+
+const cardContentWrapper = {
+  height: "100%",
+  width: "100%",
+  display: "flex",
+  //If a user is logged in, we need flex-wrap: wrap here, and height:90%
 };
 
 const posterContainer = { height: "100%", float: "left" };
@@ -74,7 +82,14 @@ const cardRightColumStyle = {
   paddingRight: "13px",
 };
 
-function CardList({ movieDataArray }) {
+function CardList({ movieDataArray, userData }) {
+  //If a user is logged in, cards need to be formatted for Watchlist buttons
+  if (userData) {
+    //cardBodyStyle.height = "250px";
+    //cardContentWrapper.height = "90%";
+    //cardContentWrapper.flexWrap = "wrap";
+  }
+
   return (
     <>
       {
@@ -109,36 +124,49 @@ function CardList({ movieDataArray }) {
             return (
               <List.Item>
                 <Card hoverable bodyStyle={cardBodyStyle}>
-                  <div style={posterContainer}>
-                    <img
-                      className="moviePosterImage"
-                      style={cardPosterStyle}
-                      alt=""
-                      src={thumbUrl}
-                    />
-                  </div>
-                  <Scrollbars>
-                    <div className="RightCol" style={cardRightColumStyle}>
-                      <a href="#" style={cardTitleStyle} className="movieTitle">
-                        {item.title +
-                          " (" +
-                          new Date(item.releaseDate).getFullYear() +
-                          ")"}
-                      </a>
-                      <br />
-                      <span className="movieTime" style={cardTimeStyle}>
-                        {item.runtime}
-                      </span>
-                      <span className="movieRating" style={cardRatingStyle}>
-                        {item.rating}
-                      </span>
-                      <br />
-                      <div style={cardActorSpacer}>{actorList}</div>
-                      <span className="moviePlot" style={cardPlotStyle}>
-                        {item.plot}
-                      </span>
+                  <div style={cardContentWrapper}>
+                    <div style={posterContainer}>
+                      <img
+                        className="moviePosterImage"
+                        style={cardPosterStyle}
+                        alt=""
+                        src={thumbUrl}
+                      />
                     </div>
-                  </Scrollbars>
+                    <Scrollbars>
+                      <div className="RightCol" style={cardRightColumStyle}>
+                        <a
+                          href="#"
+                          style={cardTitleStyle}
+                          className="movieTitle"
+                        >
+                          {item.title +
+                            " (" +
+                            new Date(item.releaseDate).getFullYear() +
+                            ")"}
+                        </a>
+                        <br />
+                        <span className="movieTime" style={cardTimeStyle}>
+                          {item.runtime}
+                        </span>
+                        <span className="movieRating" style={cardRatingStyle}>
+                          {item.rating}
+                        </span>
+                        <br />
+                        <div style={cardActorSpacer}>{actorList}</div>
+                        <span className="moviePlot" style={cardPlotStyle}>
+                          {item.plot}
+                        </span>
+                      </div>
+                    </Scrollbars>
+                  </div>
+                  if(userData)
+                  {
+                    <div>
+                      <span>H</span>
+                      <span>W</span>
+                    </div>
+                  }
                 </Card>
               </List.Item>
             );
