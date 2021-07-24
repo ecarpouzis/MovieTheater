@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MovieTheater.Db;
+using MovieTheater.Models;
 using MovieTheater.Services;
 
 namespace MovieTheater.Controllers
@@ -55,6 +56,50 @@ namespace MovieTheater.Controllers
             var moviesToWatch = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "s").Select(d => d.MovieID).ToListAsync();
 
             return Json(new { user.Username, moviesSeen, moviesToWatch });
+        }
+
+        [HttpPost("/API/SetViewingState")]
+        public async Task<IActionResult> SetViewingState([FromBody]ViewingState viewingState)
+        {
+            if (viewingState == null)
+            {
+                return BadRequest(new { Success = false, Message = "No User Movie Data Provided."});
+            }
+            
+            var user = await movieDb.Users.FirstOrDefaultAsync(u => u.Username == viewingState.Username);
+            if(user == null)
+            {
+                return BadRequest(new { Success = false, Message = "No User Found." });
+            }
+
+            var movie = await movieDb.Movies.FirstOrDefaultAsync(m=>m.id == viewingState.MovieID);
+            if(movie == null)
+            {
+                return BadRequest(new { Success = false, Message = "Invalid Movie ID." });
+            }
+
+            var action = viewingState.Action == ViewingState.ViewingType.SetWatched ? "s" : "w";
+            var existingViewing = await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.MovieID == movie.id && e.ViewingType == action);
+            bool shouldCreateNew = existingViewing == null && viewingState.SetActive;
+            bool shouldDeleteExisting = existingViewing != null && !viewingState.SetActive;
+
+            if(shouldCreateNew)
+            {
+                    var newViewing = new Viewing
+                    {
+                        MovieID = movie.id,
+                        UserID = user.UserID,
+                        ViewingType = action,
+                    };
+                await movieDb.Viewings.AddAsync(newViewing);
+            }
+            if(shouldDeleteExisting)
+            {
+                movieDb.Viewings.Remove(existingViewing);
+            }
+
+            await movieDb.SaveChangesAsync();
+            return Ok(new { Success = true });
         }
 
 

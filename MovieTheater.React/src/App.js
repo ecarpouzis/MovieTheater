@@ -50,6 +50,7 @@ function App() {
             <CardList
               movieDataArray={movieDataArray}
               userData={userData}
+              setUserData={setUserData}
             ></CardList>
           )}
         </Content>

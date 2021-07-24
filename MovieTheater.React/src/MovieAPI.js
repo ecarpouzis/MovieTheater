@@ -1,18 +1,15 @@
 const MOVIE_API = "http://localhost:65272";
 
 function getMoviePoster(id) {
-  const rootUrl = MOVIE_API;
-  return rootUrl + "/Image/" + id;
+  return MOVIE_API + "/Image/" + id;
 }
 
 function getPosterThumbnail(id) {
-  const rootUrl = MOVIE_API;
-  return rootUrl + "/ImageThumb/" + id;
+  return MOVIE_API + "/ImageThumb/" + id;
 }
 
 function getMovies(search) {
-  const rootUrl = MOVIE_API;
-  const url = rootUrl + "/API/API_Movies";
+  const url = MOVIE_API + "/API/API_Movies";
 
   return fetch(url, {
     method: "post",
@@ -24,15 +21,47 @@ function getMovies(search) {
 }
 
 function getUsers() {
-  const rootUrl = MOVIE_API;
-  const url = rootUrl + "/API/API_UserList";
+  const url = MOVIE_API + "/API/API_UserList";
   return fetch(url);
 }
 
 function loginUser(username) {
-  const rootUrl = MOVIE_API;
-  const url = rootUrl + "/API/Login?username=" + username;
+  const url = MOVIE_API + "/API/Login?username=" + username;
   return fetch(url, { method: "post" });
+}
+
+function setWatchedState(username, movieID, isActive) {
+  const url = MOVIE_API + "/API/SetViewingState";
+
+  return fetch(url, {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      Username: username,
+      MovieID: movieID,
+      SetActive: isActive,
+      Action: "SetWatched",
+    }),
+  });
+}
+
+function setWantToWatchState(username, movieID, isActive) {
+  const url = MOVIE_API + "/API/SetViewingState";
+
+  return fetch(url, {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      Username: username,
+      MovieID: movieID,
+      SetActive: isActive,
+      Action: "SetWantToWatch",
+    }),
+  });
 }
 
 const MovieAPI = {
@@ -41,6 +70,8 @@ const MovieAPI = {
   getMovies,
   getUsers,
   loginUser,
+  setWatchedState,
+  setWantToWatchState,
 };
 
 export { MovieAPI };

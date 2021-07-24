@@ -2,7 +2,7 @@
 /* eslint-disable jsx-a11y/anchor-has-content */
 
 import { MovieAPI } from "./MovieAPI";
-import { Card, List } from "antd";
+import { AutoComplete, Card, List } from "antd";
 import { Scrollbars } from "react-custom-scrollbars";
 
 const listStyle = {
@@ -10,6 +10,7 @@ const listStyle = {
   height: "100%",
   padding: "10px",
 };
+
 const cardPosterStyle = {
   height: "100%",
 };
@@ -58,14 +59,14 @@ const cardActorSpacer = {
   clear: "left",
 };
 
-const cardBodyStyle = {
+let cardBodyStyle = {
   height: "200px",
   padding: "0px",
   display: "flex",
   //If a user is logged in, we need height:250px
 };
 
-const cardContentWrapper = {
+let cardContentWrapper = {
   height: "100%",
   width: "100%",
   display: "flex",
@@ -82,12 +83,150 @@ const cardRightColumStyle = {
   paddingRight: "13px",
 };
 
-function CardList({ movieDataArray, userData }) {
+const filmIcon = {
+  fontSize: "30px",
+  width: "35px",
+  verticalAlign: "middle",
+  paddingRight: "30px",
+};
+
+const heartIcon = {
+  fontSize: "25px",
+  width: "30px",
+  verticalAlign: "middle",
+  paddingRight: "5px",
+};
+
+const buttonLabelStyle = {
+  fontWeight: "bold",
+  verticalAlign: "middle",
+};
+
+const userButtonStyle = {
+  display: "inline",
+};
+
+const hasWatchedDataContainer = {
+  width: "100px",
+  margin: "auto",
+  marginLeft: "-20px",
+  float: "left",
+  color: "#a9a9a9",
+};
+//when watched: #4169e3
+
+const toWatchDataContainer = {
+  width: "100px",
+  margin: "auto",
+  marginLeft: "10px",
+  paddingRight: "20px",
+  float: "left",
+  color: "#a9a9a9",
+};
+//when wanted: #dc143c
+
+function UserMovieOptions({ userData, id, setUserData }) {
+  if (userData) {
+    const isWatched = userData.moviesSeen.includes(id);
+    let watchedDataContainer;
+
+    if (isWatched) {
+      watchedDataContainer = {
+        ...hasWatchedDataContainer,
+        color: "#4169e3",
+      };
+    } else {
+      watchedDataContainer = hasWatchedDataContainer;
+    }
+
+    const isWanted = userData.moviesToWatch.includes(id);
+    let wantedDataContainer;
+    if (isWanted) {
+      wantedDataContainer = {
+        ...toWatchDataContainer,
+        color: "#dc143c",
+      };
+    } else {
+      wantedDataContainer = toWatchDataContainer;
+    }
+    return (
+      <>
+        <br style={{ clear: "both" }} />
+        <div style={{ margin: "auto" }}>
+          <div
+            onClick={() => {
+              if (!isWatched) {
+                let newUserData = {
+                  ...userData,
+                  moviesSeen: [...userData.moviesSeen, id],
+                };
+                setUserData(newUserData);
+              } else {
+                let newUserData = {
+                  ...userData,
+                  moviesSeen: userData.moviesSeen.filter((x) => x !== id),
+                };
+                setUserData(newUserData);
+              }
+
+              MovieAPI.setWatchedState(userData.username, id, !isWatched)
+                .then((response) => response.json())
+                .then((response) => {
+                  if (!response.success) {
+                    alert(response.message);
+                  }
+                });
+            }}
+            className="zoom-on-hover"
+            style={watchedDataContainer}
+          >
+            <span style={filmIcon} className="fas fa-film"></span>
+            <span style={buttonLabelStyle}>SEEN</span>
+          </div>
+          <div
+            onClick={() => {
+              if (!isWanted) {
+                let newUserData = {
+                  ...userData,
+                  moviesToWatch: [...userData.moviesToWatch, id],
+                };
+                setUserData(newUserData);
+              } else {
+                let newUserData = {
+                  ...userData,
+                  moviesToWatch: userData.moviesToWatch.filter((x) => x !== id),
+                };
+                setUserData(newUserData);
+              }
+              MovieAPI.setWatchedState(userData.username, id, !isWanted)
+                .then((response) => response.json())
+                .then((response) => {
+                  if (!response.success) {
+                    alert(response.message);
+                  }
+                });
+            }}
+            className="zoom-on-hover"
+            style={wantedDataContainer}
+          >
+            <span style={heartIcon} className="fas fa-heart"></span>
+            <span style={buttonLabelStyle}>WANT {isWanted}</span>
+          </div>
+        </div>
+      </>
+    );
+  }
+  return <></>;
+}
+
+function CardList({ movieDataArray, userData, setUserData }) {
   //If a user is logged in, cards need to be formatted for Watchlist buttons
   if (userData) {
-    //cardBodyStyle.height = "250px";
-    //cardContentWrapper.height = "90%";
-    //cardContentWrapper.flexWrap = "wrap";
+    cardBodyStyle = { ...cardBodyStyle, height: "260px", flexWrap: "wrap" };
+    cardContentWrapper = {
+      ...cardContentWrapper,
+      height: "85%",
+    };
   }
 
   return (
@@ -160,13 +299,11 @@ function CardList({ movieDataArray, userData }) {
                       </div>
                     </Scrollbars>
                   </div>
-                  if(userData)
-                  {
-                    <div>
-                      <span>H</span>
-                      <span>W</span>
-                    </div>
-                  }
+                  <UserMovieOptions
+                    userData={userData}
+                    id={item.id}
+                    setUserData={setUserData}
+                  />
                 </Card>
               </List.Item>
             );

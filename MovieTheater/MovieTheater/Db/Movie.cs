@@ -27,6 +27,6 @@ namespace MovieTheater.Db
         [Key]
         public int id { get; set; }
 
-        public List<Viewing> Viewings { get; }
+        public List<Viewing> Viewings { get; set; }
     }
 }

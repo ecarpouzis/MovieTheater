@@ -81,15 +81,6 @@ function Login({ userData, onUserLoggedIn }) {
   //When a user isn't logged in, render a login tool which enables the user to log in
   const getLoginTools = () => (
     <div id="LoginContainer" style={{ color: "white" }}>
-      <div style={viewingDataContainer}>
-        <span style={filmIcon} className="fas fa-film"></span>
-        <span style={viewingDataText}>3,410</span>
-      </div>
-      <div style={viewingDataContainer}>
-        <span style={heartIcon} className="fas fa-heart"></span>
-        <span style={viewingDataText}>301</span>
-      </div>
-      <br style={{ clear: "both" }} />
       <span style={{ fontWeight: "bold", fontSize: "18px" }}>LOG IN</span>
       <br />
       <br />
@@ -134,13 +125,27 @@ function Login({ userData, onUserLoggedIn }) {
   );
 
   //When a user is logged in, render information about that user and a button to log out
-  function getLoggedInDisplay(username) {
-    return <span>{username}</span>;
+  function getLoggedInDisplay(userData) {
+    return (
+      <div style={{ color: "white" }}>
+        <span>{userData.username}</span>
+        <br />
+        <div style={viewingDataContainer}>
+          <span style={filmIcon} className="fas fa-film"></span>
+          <span style={viewingDataText}>{userData.moviesSeen.length}</span>
+        </div>
+        <div style={viewingDataContainer}>
+          <span style={heartIcon} className="fas fa-heart"></span>
+          <span style={viewingDataText}>{userData.moviesToWatch.length}</span>
+        </div>
+        <br style={{ clear: "both" }} />
+      </div>
+    );
   }
 
   //Render LoggedInDisplay or LoginTools based on whether userData is populated
   if (userData) {
-    return getLoggedInDisplay(userData.username);
+    return getLoggedInDisplay(userData);
   } else {
     return getLoginTools();
   }
