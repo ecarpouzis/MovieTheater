@@ -4,6 +4,7 @@
 import { MovieAPI } from "./MovieAPI";
 import { AutoComplete, Card, List } from "antd";
 import { Scrollbars } from "react-custom-scrollbars";
+import { Link } from "react-router-dom";
 
 const listStyle = {
   width: "100%",
@@ -262,49 +263,51 @@ function CardList({ movieDataArray, userData, setUserData }) {
 
             return (
               <List.Item>
-                <Card hoverable bodyStyle={cardBodyStyle}>
-                  <div style={cardContentWrapper}>
-                    <div style={posterContainer}>
-                      <img
-                        className="moviePosterImage"
-                        style={cardPosterStyle}
-                        alt=""
-                        src={thumbUrl}
-                      />
-                    </div>
-                    <Scrollbars>
-                      <div className="RightCol" style={cardRightColumStyle}>
-                        <a
-                          href="#"
-                          style={cardTitleStyle}
-                          className="movieTitle"
-                        >
-                          {item.title +
-                            " (" +
-                            new Date(item.releaseDate).getFullYear() +
-                            ")"}
-                        </a>
-                        <br />
-                        <span className="movieTime" style={cardTimeStyle}>
-                          {item.runtime}
-                        </span>
-                        <span className="movieRating" style={cardRatingStyle}>
-                          {item.rating}
-                        </span>
-                        <br />
-                        <div style={cardActorSpacer}>{actorList}</div>
-                        <span className="moviePlot" style={cardPlotStyle}>
-                          {item.plot}
-                        </span>
+                <Link to={"/movie/" + item.id}>
+                  <Card hoverable bodyStyle={cardBodyStyle}>
+                    <div style={cardContentWrapper}>
+                      <div style={posterContainer}>
+                        <img
+                          className="moviePosterImage"
+                          style={cardPosterStyle}
+                          alt=""
+                          src={thumbUrl}
+                        />
                       </div>
-                    </Scrollbars>
-                  </div>
-                  <UserMovieOptions
-                    userData={userData}
-                    id={item.id}
-                    setUserData={setUserData}
-                  />
-                </Card>
+                      <Scrollbars>
+                        <div className="RightCol" style={cardRightColumStyle}>
+                          <a
+                            href="#"
+                            style={cardTitleStyle}
+                            className="movieTitle"
+                          >
+                            {item.title +
+                              " (" +
+                              new Date(item.releaseDate).getFullYear() +
+                              ")"}
+                          </a>
+                          <br />
+                          <span className="movieTime" style={cardTimeStyle}>
+                            {item.runtime}
+                          </span>
+                          <span className="movieRating" style={cardRatingStyle}>
+                            {item.rating}
+                          </span>
+                          <br />
+                          <div style={cardActorSpacer}>{actorList}</div>
+                          <span className="moviePlot" style={cardPlotStyle}>
+                            {item.plot}
+                          </span>
+                        </div>
+                      </Scrollbars>
+                    </div>
+                    <UserMovieOptions
+                      userData={userData}
+                      id={item.id}
+                      setUserData={setUserData}
+                    />
+                  </Card>
+                </Link>
               </List.Item>
             );
           }}
