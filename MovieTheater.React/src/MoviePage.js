@@ -39,6 +39,8 @@ function MoviePage() {
       <br />
       <span>{movie.writer}</span>
       <br />
+      <span>{movie.plot}</span>
+      <br />
       {movie.actors
         ? movie.actors.split(",").map((actor) => <Link>{actor}</Link>)
         : null}

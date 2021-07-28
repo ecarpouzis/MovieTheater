@@ -64,6 +64,7 @@ let cardBodyStyle = {
   height: "200px",
   padding: "0px",
   display: "flex",
+  userSelect: "none",
   //If a user is logged in, we need height:250px
 };
 
@@ -263,18 +264,18 @@ function CardList({ movieDataArray, userData, setUserData }) {
 
             return (
               <List.Item>
-                <Link to={{ pathname: "/movie/" + item.id, id: item.id }}>
-                  <Card hoverable bodyStyle={cardBodyStyle}>
-                    <div style={cardContentWrapper}>
-                      <div style={posterContainer}>
-                        <img
-                          className="moviePosterImage"
-                          style={cardPosterStyle}
-                          alt=""
-                          src={thumbUrl}
-                        />
-                      </div>
-                      <Scrollbars>
+                <Card hoverable bodyStyle={cardBodyStyle}>
+                  <div style={cardContentWrapper}>
+                    <div style={posterContainer}>
+                      <img
+                        className="moviePosterImage"
+                        style={cardPosterStyle}
+                        alt=""
+                        src={thumbUrl}
+                      />
+                    </div>
+                    <Scrollbars>
+                      <Link to={{ pathname: "/movie/" + item.id, id: item.id }}>
                         <div className="RightCol" style={cardRightColumStyle}>
                           <a
                             href="#"
@@ -299,15 +300,15 @@ function CardList({ movieDataArray, userData, setUserData }) {
                             {item.plot}
                           </span>
                         </div>
-                      </Scrollbars>
-                    </div>
-                    <UserMovieOptions
-                      userData={userData}
-                      id={item.id}
-                      setUserData={setUserData}
-                    />
-                  </Card>
-                </Link>
+                      </Link>
+                    </Scrollbars>
+                  </div>
+                  <UserMovieOptions
+                    userData={userData}
+                    id={item.id}
+                    setUserData={setUserData}
+                  />
+                </Card>
               </List.Item>
             );
           }}
