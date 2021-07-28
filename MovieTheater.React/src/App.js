@@ -10,10 +10,13 @@ import { BrowserRouter, Switch, Route } from "react-router-dom";
 
 const { Sider, Content } = Layout;
 
+const storedUsername = window.localStorage.getItem("Username");
+
 function App() {
   const [userData, setUserData] = useState(null);
   const [search, setSearch] = useState({ count: 20 });
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCheckedFirstLogin, setHasCheckedFirstLogin] = useState(false);
 
   const [movieDataArray, setMovieDataArray] = useState([]);
   useEffect(() => {
@@ -31,8 +34,16 @@ function App() {
       .then((response) => response.json())
       .then((responseData) => {
         setUserData(responseData);
+        window.localStorage.setItem("Username", username);
         console.log(responseData);
       });
+  }
+
+  if (!hasCheckedFirstLogin) {
+    setHasCheckedFirstLogin(true);
+    if (storedUsername) {
+      onUserLoggedIn(storedUsername);
+    }
   }
 
   return (
