@@ -51,7 +51,9 @@ function App() {
               <div>Loading...</div>
             ) : (
               <Switch>
-                <Route path="/movie/:id" component={MoviePage} />
+                <Route path="/movie/:id">
+                  <MoviePage userData={userData}></MoviePage>
+                </Route>
                 <Route path="/">
                   <CardList
                     movieDataArray={movieDataArray}

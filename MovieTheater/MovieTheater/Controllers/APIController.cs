@@ -25,6 +25,17 @@ namespace MovieTheater.Controllers
             this.imageHandler = imageHandler;
         }
 
+        [HttpGet("/API/GetMovie")]
+        public async Task<IActionResult> GetMovie(int id)
+        {
+            var movie = await movieDb.Movies.SingleOrDefaultAsync(m => m.id == id);
+            if(movie != null)
+            {
+                return Ok( new { Success=true, data=movie });
+            }
+            return BadRequest(new { Success=false, Message="Movie ID not found" });
+        }
+
         [HttpPost("/API/Login")]
         public async Task<IActionResult> Login(string username)
         {
@@ -116,38 +127,6 @@ namespace MovieTheater.Controllers
             var userList = movieDb.Users.Select(d => d.Username).ToList();
             return Json(userList);
         }
-
-        //[HttpGet("/API/CountWatched")]
-        //public async Task<IActionResult> API_CountWatched()
-        //{
-        //    if (User.Identity.IsAuthenticated)
-        //    {
-        //        var userID = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
-
-        //        var count = await movieDb.Viewings.CountAsync(d => d.UserID == userID && d.ViewingType == "w");
-        //        return new JsonResult(new { count = count });
-        //    }
-        //    else
-        //    {
-        //        return new JsonResult(new { count = 0 });
-        //    }
-        //}
-
-        //[HttpGet("/API/CountWatchlist")]
-        //public async Task<IActionResult> API_CountWatchlist()
-        //{
-        //    if (User.Identity.IsAuthenticated)
-        //    {
-        //        var userID = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
-
-        //        var count = await movieDb.Viewings.CountAsync(d => d.UserID == userID && d.ViewingType == "s");
-        //        return new JsonResult(new { count = count });
-        //    }
-        //    else
-        //    {
-        //        return new JsonResult(new { count = 0 });
-        //    }
-        //}
 
         public class search{
             public string type;

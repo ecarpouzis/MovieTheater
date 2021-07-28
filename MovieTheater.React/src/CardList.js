@@ -263,7 +263,7 @@ function CardList({ movieDataArray, userData, setUserData }) {
 
             return (
               <List.Item>
-                <Link to={"/movie/" + item.id}>
+                <Link to={{ pathname: "/movie/" + item.id, id: item.id }}>
                   <Card hoverable bodyStyle={cardBodyStyle}>
                     <div style={cardContentWrapper}>
                       <div style={posterContainer}>

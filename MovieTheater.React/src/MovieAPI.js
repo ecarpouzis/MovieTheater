@@ -20,6 +20,14 @@ function getMovies(search) {
   });
 }
 
+function getMovie(id) {
+  const url = MOVIE_API + "/API/GetMovie?id=" + id;
+
+  return fetch(url, {
+    method: "get",
+  });
+}
+
 function getUsers() {
   const url = MOVIE_API + "/API/API_UserList";
   return fetch(url);
@@ -68,6 +76,7 @@ const MovieAPI = {
   getMoviePoster,
   getPosterThumbnail,
   getMovies,
+  getMovie,
   getUsers,
   loginUser,
   setWatchedState,
