@@ -23,7 +23,7 @@ jobs:
       - run: docker push localhost:32000/movietheater-ui:$GITHUB_SHA
 
   k8s-deploy:
-    needs: [validate-gql-schema, docker-build-api, docker-build-ui, docker-build-py]
+    needs: [docker-build-api, docker-build-ui]
     runs-on: [self-hosted, linux, x64]
     steps:
       - run: envsubst < k8s/deployment.yaml | microk8s kubectl apply -f -
