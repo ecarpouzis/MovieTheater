@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: movietheater
+  labels:
+    app: movietheater
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: movietheater
+  template:
+    metadata:
+      labels:
+        app: movietheater
+    spec:
+      containers:
+        - name: movietheater-api
+          image: localhost:32000/movietheater-api:$GITHUB_SHA
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /api/status
+              port: 80
+            initialDelaySeconds: 60
+            periodSeconds: 10
+        - name: movietheater-ui
+          image: localhost:32000/movietheater-ui:$GITHUB_SHA
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 60
+            periodSeconds: 10

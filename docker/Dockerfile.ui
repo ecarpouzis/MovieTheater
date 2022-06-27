@@ -1,0 +1,18 @@
+# Build react app
+FROM node:14 as reactapp-build
+WORKDIR /build
+COPY src/ui/package.json .
+COPY src/ui/package-lock.json .
+RUN npm install
+COPY src/ui/ .
+RUN npm run build
+
+# Build final release image
+FROM node:14 as release
+RUN npm install -g serve
+
+WORKDIR /app
+COPY --from=reactapp-build /build/build .
+
+# serve -s /app -l 3000
+CMD ["serve", "-s", "/app", "-l", "3000"]

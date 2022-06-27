@@ -1,0 +1,34 @@
+# Build dotnet C# project
+FROM mcr.microsoft.com/dotnet/core/sdk:2.1 as dotnet-build
+WORKDIR /build
+COPY docker/projectfiles.tar .
+RUN tar -xvf projectfiles.tar
+RUN dotnet restore src/MovieTheater/MovieTheater.csproj
+
+COPY src ./src
+RUN dotnet publish src/MovieTheater/MovieTheater.csproj --no-restore -c Release -o /publish
+
+# Build final release image
+FROM mcr.microsoft.com/dotnet/core/aspnet:2.1 as release
+
+RUN apt-get update
+RUN apt-get install python3 --assume-yes
+RUN apt-get install python3-pip --assume-yes
+RUN pip3 install pillow==7.1.2
+
+RUN apt-get install -y --allow-unauthenticated libc6-dev libgdiplus libx11-dev
+
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_URLS="http://+:80"
+EXPOSE 80
+EXPOSE 443
+
+ENV ASPNETCORE_ENVIRONMENT Production
+ENV PY_PATH /usr/bin/python3
+
+WORKDIR /app
+COPY --from=dotnet-build /publish ./
+
+# dotnet /app/MovieTheater.dll web
+CMD ["dotnet", "/app/MovieTheater.dll"]
+
