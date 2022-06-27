@@ -29,6 +29,7 @@ ENV PY_PATH /usr/bin/python3
 WORKDIR /app
 COPY --from=dotnet-build /publish ./
 
+RUN mkdir /volume
 RUN mkdir /volume/posters
 
 # dotnet /app/MovieTheater.dll web
