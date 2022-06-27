@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
@@ -18,15 +19,23 @@ namespace MovieTheater
     public class Startup
     {
         //To-do: Create options class to inject environment information
-        private IHostingEnvironment currentEnv;
+        private readonly IHostingEnvironment currentEnv;
+        private readonly IConfiguration config;
 
         public Startup(IHostingEnvironment env)
         {
+            currentEnv = env;
+
             IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath);
             builder.AddJsonFile("appsettings.json");
 
-            currentEnv = env;
+            var aspEnv = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            if (!string.IsNullOrEmpty(aspEnv))
+            {
+                builder.AddJsonFile($"appsettings.{aspEnv}.json");
+            }
 
+            config = builder.Build();
         }
 
         public IConfiguration Configuration { get; }
@@ -36,29 +45,29 @@ namespace MovieTheater
         {
             services.Configure<LocalImageHandlerOptions>(options =>
             {
-                string posterImagesPath = Environment.GetEnvironmentVariable("MOVIE_POSTERSDIR");
+                string posterImagesPath = config["MoviePostersDir"];
 
                 if (string.IsNullOrEmpty(posterImagesPath))
                 {
-                    throw new System.IO.DirectoryNotFoundException("Movie posters directory is invalid. Should be set via environment variable `MOVIE_POSTERSDIR`");
+                    throw new DirectoryNotFoundException("Movie posters directory is invalid. Should be set via environment variable `MOVIE_POSTERSDIR`");
                 }
 
-                System.IO.DirectoryInfo postersDir = new System.IO.DirectoryInfo(posterImagesPath);
+                DirectoryInfo postersDir = new DirectoryInfo(posterImagesPath);
 
                 if (!postersDir.Exists)
                 {
-                    throw new System.IO.DirectoryNotFoundException("Movie posters directory is invalid. Should be set via environment variable `MOVIE_POSTERSDIR`");
+                    throw new DirectoryNotFoundException("Movie posters directory is invalid. Should be set via environment variable `MOVIE_POSTERSDIR`");
                 }
 
-                string pyPath = Environment.GetEnvironmentVariable("PY_PATH");
+                string pyPath = config["PY_PATH"];
 
-                if (!string.IsNullOrEmpty(pyPath))
+                if (string.IsNullOrEmpty(pyPath))
                 {
-                    options.PyPath = pyPath;
+                    options.PyPath = "python";
                 }
                 else
                 {
-                    options.PyPath = "python";
+                    options.PyPath = pyPath;
                 }
 
                 options.LocalStorageFileDirectory = postersDir.FullName;
@@ -77,18 +86,15 @@ namespace MovieTheater
 
             services.AddDbContext<MovieDb>(opt =>
             {
-                var server = Environment.GetEnvironmentVariable("MOVIE_DBSERVER");
-                var database = Environment.GetEnvironmentVariable("MOVIE_DATABASE");
-                var username = Environment.GetEnvironmentVariable("MOVIE_DBUSER");
-                var password = Environment.GetEnvironmentVariable("MOVIE_DBPASSWORD");
+                var conStr = config["DbConnectionString"];
 
-
-                if (server == null || database == null || username == null || password == null)
+                if (conStr == null)
                 {
-                    throw new NullReferenceException("One of your database environment variables is set incorrectly. Ensure these are set to the proper connection details.");
+                    throw new NullReferenceException("DbConnectionString is null, make sure this is set in your config.");
                 }
 
-                opt.UseSqlServer($"Server={server};Database={database};User Id={username};Password={password};Encrypt=yes;TrustServerCertificate=true;");
+                //$"Server={server};Database={database};User Id={username};Password={password};Encrypt=yes;TrustServerCertificate=true;"
+                opt.UseSqlServer(conStr);
             });
 
             var serilog = new LoggerConfiguration()
@@ -112,7 +118,7 @@ namespace MovieTheater
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
-            app.UseCors(x=>x.AllowAnyMethod().AllowAnyHeader().AllowAnyOrigin());
+            app.UseCors(x => x.AllowAnyMethod().AllowAnyHeader().AllowAnyOrigin());
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
