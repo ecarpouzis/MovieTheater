@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using MovieTheater.Db;
 using MovieTheater.Services;
 using MovieTheater.Services.API;
-using MovieTheater.ViewModels;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -52,40 +51,6 @@ namespace MovieTheater.Controllers
             this.imageHandler = imageHandler;
         }
 
-        [HttpGet("/")]
-        public IActionResult Home()
-        {
-            Random rnd = new Random();
-
-            /*
-             * If I can figure out how to AJAX this,  
-             * Math.floor($("#centerContent").outerWidth()/288)
-             * gives the number of movies that can fit on any one row.
-             * 
-             */
-            int movieCount = movieDb.Movies.Count();
-            var list = Enumerable.Range(1, movieCount).OrderBy(i => rnd.Next()).ToList<int>();
-            list = list.Take(8).ToList<int>();
-
-            var items = movieDb.Movies.Where(d => list.Contains(d.id));
-
-            return View(items);
-        }
-
-
-        [HttpGet("/Movie/{id}")]
-        public IActionResult Movie(int id)
-        {
-            var movie = movieDb.Movies.SingleOrDefault(d => d.id == id);
-
-            if (movie == null)
-            {
-                return NotFound();
-            }
-
-            return View(movie);
-        }
-
         [HttpGet("/Movie/ShrinkAllPosters")]
         public IActionResult ShrinkOldPosters()
         {
@@ -97,167 +62,6 @@ namespace MovieTheater.Controllers
             
             return Ok();
         }
-
-        [HttpGet("/Browse")]
-        public async Task<IActionResult> Browse()
-        {
-            int? userId;
-
-            if (User.Identity.IsAuthenticated)
-            {
-                userId = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
-            }
-            else
-            {
-                userId = null;
-            }
-
-            IQueryable<Movie> movies = movieDb.Movies;
-
-            string sort = Request.Query["sort"];
-
-            if (sort == "Letter")
-            {
-                string givenLetter = Request.Query["Letter"];
-                if (givenLetter == "1")
-                {
-                    string allLetters = "abcdefghijklmnopqrstuvwxyz";
-                    movies = movieDb.Movies.Where(m => !allLetters.Contains(m.SimpleTitle.Substring(0, 1)));
-                }
-                else
-                {
-                    movies = movieDb.Movies.Where(m => m.SimpleTitle.Substring(0, 1) == givenLetter);
-                }
-            }
-
-            if (sort == "Title")
-            {
-                String givenTitle = Request.Query["Title"];
-                movies = movieDb.Movies.Where(m => m.SimpleTitle.Contains(givenTitle) || m.Title.Contains(givenTitle));
-            }
-
-            if (sort == "Actor")
-            {
-                string givenActor = Request.Query["Actor"];
-                movies = movieDb.Movies.Where(m => m.Actors.Contains(givenActor));
-            }
-
-            if (sort == "Watched")
-            {
-                if (User.Identity.IsAuthenticated)
-                {
-                    movies = movieDb.Viewings
-                        .Include(d => d.Movie)
-                        .Where(d => d.UserID == userId && d.ViewingType == "w")
-                        .Select(d => d.Movie)
-                        .Distinct();
-                }
-                else
-                {
-                    movies = movieDb.Movies.Take(0);
-                }
-            }
-
-            if (sort == "Watchlist")
-            {
-                if (User.Identity.IsAuthenticated)
-                {
-                    movies = movieDb.Viewings
-                        .Include(d => d.Movie)
-                        .Where(d => d.UserID == userId && d.ViewingType == "s")
-                        .Select(d => d.Movie)
-                        .Distinct();
-                }
-                else
-                {
-                    movies = movieDb.Movies.Take(0);
-                }
-            }
-
-            //At this point, all sorts have been alphabetical
-            if (movies != null)
-            {
-                movies = movies.OrderBy(m => m.SimpleTitle);
-            }
-
-            //All future sorts are non-alphabetical
-
-            if (sort == "Uploaded")
-            {
-                DateTime minDate = new DateTime(2000, 1, 1);
-
-                DateTime dateFrom = Convert.ToDateTime(Request.Query["dateFrom"]);
-
-                if (dateFrom < minDate)
-                {
-                    dateFrom = minDate;
-                }
-
-                movies = movieDb.Movies.Where(d => d.UploadedDate > dateFrom);
-            }
-
-
-            if (sort == "Rank")
-            {
-                int top = Convert.ToInt32(Request.Query["Top"]);
-                decimal toplimit = Convert.ToDecimal(Request.Query["Topscore"]);
-                decimal bottomlimit = Convert.ToDecimal(Request.Query["Bottomscore"]);
-
-                movies = movieDb.Movies.OrderByDescending(d => d.imdbRating)
-                    .Where(m => toplimit > m.imdbRating && m.imdbRating > bottomlimit)
-                    .Take(top);
-            }
-
-            var viewModel = new BrowseViewModel();
-
-            viewModel.seenMovieIDs = movieDb.Viewings.Where(v => v.UserID == userId
-                                                       && v.ViewingType == "w").Select(m => m.MovieID).ToList();
-
-
-            viewModel.watchlistMovieIDs = movieDb.Viewings.Where(v => v.UserID == userId
-                                                       && v.ViewingType == "s").Select(m => m.MovieID).ToList();
-
-            viewModel.ratedMovieData = movieDb.Viewings.Where(v => v.UserID == userId
-                                                 && v.ViewingType == "r").ToDictionary(m => m.MovieID, m => Int32.Parse(m.ViewingData));
-
-            viewModel.Movies = await movies.Select(d => new BrowseViewModel.MovieItem
-            {
-                Title = d.Title,
-                Actors = d.Actors,
-                Director = d.Director,
-                Genre = d.Genre,
-                MovieID = d.id,
-                imdbID = d.imdbID,
-                imdbRating = d.imdbRating,
-                Plot = d.Plot,
-                PosterLink = d.PosterLink,
-                Rating = d.Rating,
-                ReleaseDate = d.ReleaseDate,
-                Runtime = d.Runtime,
-                SimpleTitle = d.SimpleTitle,
-                tomatoRating = d.tomatoRating,
-                Writer = d.Writer
-            })
-                .ToListAsync();
-
-            return View("Browse", viewModel);
-        }
-
-        [HttpGet("/Update/{id}")]
-        public ActionResult Update(int id)
-        {
-            var movie = movieDb.Movies.SingleOrDefault(d => d.id == id);
-
-            if (movie == null)
-            {
-                return NotFound();
-            }
-            else
-            {
-                return View(movie);
-            }
-        }
-
 
         [HttpPost("/Movie/UpdateMovie")]
         public IActionResult UpdateMovie(int givenID, string title, string simpletitle, string rated, string released, string runtime, string genre, string director,
@@ -344,24 +148,6 @@ namespace MovieTheater.Controllers
             movieDb.SaveChanges();
 
             return JsonSuccess;
-        }
-
-        [HttpGet("/Insert")]
-        public IActionResult Insert()
-        {
-            return View();
-        }
-
-        [HttpGet("/BatchInsert")]
-        public IActionResult BatchInsert()
-        {
-            return View();
-        }
-
-        public static void BatchTest(string test, MovieDb db, IImageHandler h)
-        {
-            MovieController c = new MovieController(db, h);
-            c.BatchGetMovie(test);
         }
 
         [HttpGet("/Movie/BatchGetMovie")]
@@ -1000,30 +786,6 @@ namespace MovieTheater.Controllers
             }
         }
 
-        [HttpGet("/Movie/Display/{movieID}")]
-        public async Task<IActionResult> Display(int movieID)
-        {
-            var movie = await movieDb.Movies.SingleOrDefaultAsync(d => d.id == movieID);
-
-            if (movie == null)
-            {
-                return NotFound();
-            }
-
-            var vm = new MovieDisplayViewModel
-            {
-                Movie = movie
-            };
-
-            if (User.Identity.IsAuthenticated)
-            {
-                var userId = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
-            }
-
-            return PartialView("Display", vm);
-        }
-
-
         //public ActionResult SaveRate(string rating, int movieID)
         //{
         //    movieDB db = new movieDB();
@@ -1077,7 +839,6 @@ namespace MovieTheater.Controllers
 
                 if (previousStatus != null)
                 {
-
                     movieDb.Viewings.Remove(previousStatus);
                 }
 
@@ -1153,32 +914,6 @@ namespace MovieTheater.Controllers
 
         //    return Json(UserData, JsonRequestBehavior.AllowGet);
         //}
-
-        [HttpGet("/Image/{id}")]
-        public async Task<IActionResult> ImageHandler(int id)
-        {
-            var poster = await imageHandler.GetPosterImageFromID(id);
-
-            if (poster == null)
-            {
-                return NotFound();
-            }
-
-            return File(poster, "image/png");
-        }
-
-        [HttpGet("/ImageThumb/{id}")]
-        public async Task<IActionResult> ImageThumbHandler(int id)
-        {
-            var poster = await imageHandler.GetPosterImageFromID(id, true);
-
-            if (poster == null)
-            {
-                return NotFound();
-            }
-
-            return File(poster, "image/png");
-        }
 
 
         [HttpGet("/PosterCollage")]
