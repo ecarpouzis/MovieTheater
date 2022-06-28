@@ -241,7 +241,7 @@ function CardList({ movieDataArray, userData, setUserData }) {
             xl: 3,
             xxl: 4,
           }}
-          dataSource={movieDataArray}
+          dataSource={movieDataArray.slice(0, Math.min(50, movieDataArray.length))}
           renderItem={(item, i) => {
             const thumbUrl = MovieAPI.getPosterThumbnail(item.id);
 
@@ -268,6 +268,7 @@ function CardList({ movieDataArray, userData, setUserData }) {
                         style={cardPosterStyle}
                         alt=""
                         src={thumbUrl}
+                        loading="lazy"
                       />
                     </div>
                     <Scrollbars>
