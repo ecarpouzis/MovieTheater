@@ -2,7 +2,7 @@
 /* eslint-disable jsx-a11y/anchor-has-content */
 
 import { MovieAPI } from "./MovieAPI";
-import { AutoComplete, Card, List } from "antd";
+import { Card, List } from "antd";
 import { Scrollbars } from "react-custom-scrollbars";
 import { Link } from "react-router-dom";
 
@@ -102,10 +102,6 @@ const heartIcon = {
 const buttonLabelStyle = {
   fontWeight: "bold",
   verticalAlign: "middle",
-};
-
-const userButtonStyle = {
-  display: "inline",
 };
 
 const hasWatchedDataContainer = {

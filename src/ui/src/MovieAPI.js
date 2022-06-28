@@ -1,15 +1,13 @@
-const MOVIE_API = "http://localhost:65272";
-
 function getMoviePoster(id) {
-  return MOVIE_API + "/Image/" + id;
+  return "/Image/" + id;
 }
 
 function getPosterThumbnail(id) {
-  return MOVIE_API + "/ImageThumb/" + id;
+  return "/ImageThumb/" + id;
 }
 
 function getMovies(search) {
-  const url = MOVIE_API + "/API/API_Movies";
+  const url = "/API/API_Movies";
 
   return fetch(url, {
     method: "post",
@@ -21,7 +19,7 @@ function getMovies(search) {
 }
 
 function getMovie(id) {
-  const url = MOVIE_API + "/API/GetMovie?id=" + id;
+  const url = "/API/GetMovie?id=" + id;
 
   return fetch(url, {
     method: "get",
@@ -29,17 +27,17 @@ function getMovie(id) {
 }
 
 function getUsers() {
-  const url = MOVIE_API + "/API/API_UserList";
+  const url = "/API/API_UserList";
   return fetch(url);
 }
 
 function loginUser(username) {
-  const url = MOVIE_API + "/API/Login?username=" + username;
+  const url = "/API/Login?username=" + username;
   return fetch(url, { method: "post" });
 }
 
 function setWatchedState(username, movieID, isActive) {
-  const url = MOVIE_API + "/API/SetViewingState";
+  const url = "/API/SetViewingState";
 
   return fetch(url, {
     method: "post",
@@ -56,7 +54,7 @@ function setWatchedState(username, movieID, isActive) {
 }
 
 function setWantToWatchState(username, movieID, isActive) {
-  const url = MOVIE_API + "/API/SetViewingState";
+  const url = "/API/SetViewingState";
 
   return fetch(url, {
     method: "post",

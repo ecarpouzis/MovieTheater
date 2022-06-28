@@ -13,7 +13,7 @@ function MoviePage() {
         setMovie(responseData.data);
         console.log(movie);
       });
-  }, [id]);
+  });
 
   if (!movie) {
     return <div>Loading</div>;
@@ -45,11 +45,11 @@ function MoviePage() {
         ? movie.actors.split(",").map((actor) => <Link>{actor}</Link>)
         : null}
       <br />
-      <a target="_blank" href={"http://www.imdb.com/title/" + movie.imdbID}>
+      <a target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID}>
         IMDB {movie.imdbRating}
       </a>
       <br />
-      <a target="_blank" href={"http://www.imdb.com/title/" + movie.imdbID}>
+      <a target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID}>
         RottenTomatoes {movie.tomatoRating}
       </a>
     </div>

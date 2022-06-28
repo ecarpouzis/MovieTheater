@@ -98,6 +98,9 @@ namespace MovieTheater
 
             services.AddLogging(log => log.AddSerilog(logger: serilog));
 
+            var proxyBuilder = services.AddReverseProxy();
+            proxyBuilder.LoadFromConfig(config.GetSection("ReverseProxy"));
+
             services.AddMvc();
         }
 
@@ -112,6 +115,7 @@ namespace MovieTheater
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapReverseProxy();
             });
         }
     }
