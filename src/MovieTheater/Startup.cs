@@ -18,15 +18,11 @@ namespace MovieTheater
 {
     public class Startup
     {
-        //To-do: Create options class to inject environment information
-        private readonly IHostingEnvironment currentEnv;
         private readonly IConfiguration config;
 
-        public Startup(IHostingEnvironment env)
+        public Startup()
         {
-            currentEnv = env;
-
-            IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath);
+            IConfigurationBuilder builder = new ConfigurationBuilder();
             builder.AddJsonFile("appsettings.json");
 
             var aspEnv = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
@@ -102,35 +98,21 @@ namespace MovieTheater
 
             services.AddLogging(log => log.AddSerilog(logger: serilog));
 
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                app.UseExceptionHandler("/Home/Error");
-            }
-
-            app.UseCors(x => x.AllowAnyMethod().AllowAnyHeader().AllowAnyOrigin());
             app.UseStaticFiles();
             app.UseCookiePolicy();
             app.UseAuthentication();
-            app.UseMvcWithDefaultRoute();
 
-            if (currentEnv.IsDevelopment())
+            app.UseRouting();
+            app.UseEndpoints(endpoints =>
             {
-                //Disable server cert validation so we can connect and download posters from theater.carpouzis.com which has no cert installed
-                ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-
-                //Want to add call to LocalImageHandler.Initialize here.
-                app.ApplicationServices.GetService<IImageHandler>().Initialize().Wait();
-            }
+                endpoints.MapControllers();
+            });
         }
     }
 }
