@@ -31,6 +31,9 @@ spec:
               port: 80
             initialDelaySeconds: 60
             periodSeconds: 10
+          volumeMounts:
+            - name: movietheater-volume
+              mountPath: /volume
         - name: movietheater-ui
           image: localhost:32000/movietheater-ui:$GITHUB_SHA
           ports:
