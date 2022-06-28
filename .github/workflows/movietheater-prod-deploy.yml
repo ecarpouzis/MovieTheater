@@ -1,0 +1,31 @@
+name: MovieTheater Prod Deploy
+on:
+  push:
+    branches:
+      - master
+      - React
+jobs:
+  docker-build-api:
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo $MOVIETHEATER_APPSETTINGS_JSON > src/MovieTheater/appsettings.Production.json
+        env:
+          MOVIETHEATER_APPSETTINGS_JSON: ${{ secrets.MOVIETHEATER_APPSETTINGS_JSON }}
+      - run: cd docker && bash build-api.sh
+      - run: docker push localhost:32000/movietheater-api:$GITHUB_SHA
+
+  docker-build-ui:
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - uses: actions/checkout@v2
+      - run: cd docker && bash build-ui.sh
+      - run: docker push localhost:32000/movietheater-ui:$GITHUB_SHA
+
+  k8s-deploy:
+    needs: [docker-build-api, docker-build-ui]
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - run: microk8s kubectl create namespace movietheater --dry-run=client -o yaml | microk8s kubectl apply -f -
+      - run: envsubst < k8s/deployment.yaml | microk8s kubectl apply -n movietheater -f -
+      - run: envsubst < k8s/service.yaml | microk8s kubectl apply -n movietheater -f -
