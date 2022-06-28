@@ -11,6 +11,9 @@ RUN dotnet publish src/MovieTheater/MovieTheater.csproj --no-restore -c Release 
 # Build final release image
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 as release
 
+RUN apt update
+RUN apt install -y libjpeg-dev zlib1g-dev
+
 RUN apt-get update
 RUN apt-get install python3 --assume-yes
 RUN apt-get install python3-pip --assume-yes
