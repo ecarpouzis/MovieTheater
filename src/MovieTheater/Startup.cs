@@ -93,7 +93,6 @@ namespace MovieTheater
                     throw new NullReferenceException("DbConnectionString is null, make sure this is set in your config.");
                 }
 
-                //$"Server={server};Database={database};User Id={username};Password={password};Encrypt=yes;TrustServerCertificate=true;"
                 opt.UseSqlServer(conStr);
             });
 
@@ -117,11 +116,13 @@ namespace MovieTheater
             {
                 app.UseExceptionHandler("/Home/Error");
             }
+
             app.UseCors(x => x.AllowAnyMethod().AllowAnyHeader().AllowAnyOrigin());
             app.UseStaticFiles();
             app.UseCookiePolicy();
             app.UseAuthentication();
             app.UseMvcWithDefaultRoute();
+
             if (currentEnv.IsDevelopment())
             {
                 //Disable server cert validation so we can connect and download posters from theater.carpouzis.com which has no cert installed
