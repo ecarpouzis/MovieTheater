@@ -50,3 +50,14 @@ spec:
               port: 3000
             initialDelaySeconds: 60
             periodSeconds: 10
+      volumes:
+        - name: movietheater-volume
+          volumeMode: Filesystem
+          accessModes:
+            - ReadWriteOnce
+          storageClassName: manual
+          persistentVolumeReclaimPolicy: Retain
+          capacity:
+            storage: 10Gi
+          hostPath:
+            path: "/movietheater/volume"
