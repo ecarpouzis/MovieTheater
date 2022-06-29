@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using MovieTheater.Db;
 using MovieTheater.Services;
 using MovieTheater.Services.API;
+using MovieTheater.Services.Poster;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -41,26 +42,14 @@ namespace MovieTheater.Controllers
          * */
 
         private readonly MovieDb movieDb;
-        private readonly IImageHandler imageHandler;
+        private readonly IPosterImageRepository imageRepository;
 
         private IActionResult JsonSuccess => Json(new { success = true });
 
-        public MovieController(MovieDb movieDb, IImageHandler imageHandler)
+        public MovieController(MovieDb movieDb, IPosterImageRepository imageProvider)
         {
             this.movieDb = movieDb;
-            this.imageHandler = imageHandler;
-        }
-
-        [HttpGet("/Movie/ShrinkAllPosters")]
-        public IActionResult ShrinkOldPosters()
-        {
-            int[] movieIDs = movieDb.Movies.Select(m => m.id).ToArray();
-            foreach (int id in movieIDs)
-            {
-                imageHandler.CreateShrunkImageFile(id);
-            }
-            
-            return Ok();
+            this.imageRepository = imageProvider;
         }
 
         [HttpPost("/Movie/UpdateMovie")]
@@ -124,7 +113,7 @@ namespace MovieTheater.Controllers
                 //If there's a poster link, then set the Movie Posterlink
                 updateMovie.PosterLink = givenPosterLink;
                 //Download the image at the Posterlink
-                imageHandler.SavePosterImageFromLink(givenID, updateMovie.PosterLink);
+                //imageHandler.SavePosterImageFromLink(givenID, updateMovie.PosterLink);
             }
 
             if (imdbrating.Trim() != "")
@@ -664,7 +653,7 @@ namespace MovieTheater.Controllers
 
                 if (poster.Trim() != "")
                 {
-                    var loc = imageHandler.SavePosterImageFromLink(newMovie.id, newMovie.PosterLink);
+                    //var loc = imageHandler.SavePosterImageFromLink(newMovie.id, newMovie.PosterLink);
                 }
             }
 
@@ -917,7 +906,7 @@ namespace MovieTheater.Controllers
 
 
         [HttpGet("/PosterCollage")]
-        public IActionResult PosterCollage()
+        public async Task<IActionResult> PosterCollage()
         {
             //This is my attempt at a webpage to return one massive image of all my posters
 
@@ -967,14 +956,16 @@ namespace MovieTheater.Controllers
             //COMMENTED UNTIL I CAN FIX:
             foreach (Movie movie in allMovies)
             {
-                var posterFile = imageHandler.GetShrunkPosterFile(movie.id);
+                var posterBytes = await imageRepository.GetImage(movie.id, PosterImageVariant.Thumbnail);
 
-                if (!posterFile.Exists)
-                {
+                if (posterBytes == null)
                     continue;
-                }
 
-                Image originalBitmap = Image.FromFile(posterFile.FullName);
+                Image originalBitmap;
+
+                using (var ms = new MemoryStream(posterBytes))
+                    originalBitmap = Image.FromStream(ms);
+
                 Bitmap resizeBitmap = new Bitmap(posterWidth, posterHeight);
                 Graphics resizeGraphic = Graphics.FromImage(resizeBitmap);
                 resizeGraphic.InterpolationMode = InterpolationMode.High;

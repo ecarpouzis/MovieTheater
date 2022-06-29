@@ -17,12 +17,10 @@ namespace MovieTheater.Controllers
     {
 
         private readonly MovieDb movieDb;
-        private readonly IImageHandler imageHandler;
 
-        public APIController(MovieDb movieDb, IImageHandler imageHandler)
+        public APIController(MovieDb movieDb)
         {
             this.movieDb = movieDb;
-            this.imageHandler = imageHandler;
         }
 
         [HttpGet("/API/GetMovie")]
@@ -112,14 +110,6 @@ namespace MovieTheater.Controllers
             await movieDb.SaveChangesAsync();
             return Ok(new { Success = true });
         }
-
-
-        //[HttpGet("/API/Logout")]
-        //public async Task<IActionResult> API_Logout()
-        //{
-        //    await HttpContext.SignOutAsync();
-        //    return Ok();
-        //}
 
         [HttpGet("/API/API_UserList")]
         public IActionResult API_UserList()
