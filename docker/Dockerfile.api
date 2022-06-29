@@ -27,7 +27,7 @@ EXPOSE 80
 EXPOSE 443
 
 ENV ASPNETCORE_ENVIRONMENT Production
-ENV PY_PATH /usr/bin/python3
+ENV PYPATH /usr/bin/python3
 
 WORKDIR /app
 COPY --from=dotnet-build /publish ./

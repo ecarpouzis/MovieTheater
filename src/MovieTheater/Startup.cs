@@ -1,19 +1,11 @@
-﻿using System;
-using System.IO;
-using System.Net;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using MovieTheater.Db;
 using MovieTheater.Services;
 using MovieTheater.Services.Poster;
-using Serilog;
+using MovieTheater.Services.Python;
+using System;
 
 namespace MovieTheater
 {
@@ -33,6 +25,8 @@ namespace MovieTheater
                 builder.AddJsonFile($"appsettings.{aspEnv}.json");
             }
 
+            builder.AddCommandLine(Environment.GetCommandLineArgs());
+
             if (aspEnv == "Production")
                 environment = HostedEnvironment.Production;
             else
@@ -49,6 +43,7 @@ namespace MovieTheater
             services.AddMovieLogging();
             services.AddMovieTheaterDb(config["DbConnectionString"]);
             services.AddPosterImageServices(config["MoviePostersDir"], environment);
+            services.AddPythonService(config["PyPath"]);
 
             var proxyBuilder = services.AddReverseProxy();
             proxyBuilder.LoadFromConfig(config.GetSection("ReverseProxy"));
