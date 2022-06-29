@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using MovieTheater.Core;
 using MovieTheater.Services.Python;
 using SixLabors.ImageSharp.Processing;
 using System;

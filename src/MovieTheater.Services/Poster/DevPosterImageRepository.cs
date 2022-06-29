@@ -29,7 +29,7 @@ namespace MovieTheater.Services.Poster
             return imageBytes != null;
         }
 
-        public async Task<byte[]> GetImage(int movieId, PosterImageVariant variant)
+        public async Task<byte[]?> GetImage(int movieId, PosterImageVariant variant)
         {
             var file = GetFile(movieId, variant);
 

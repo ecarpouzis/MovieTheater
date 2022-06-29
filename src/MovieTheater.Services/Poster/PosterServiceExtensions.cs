@@ -1,9 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.IO;
+﻿using Microsoft.Extensions.DependencyInjection;
 using System.Net;
-using System.Net.Http;
 using System.Security.Authentication;
 
 namespace MovieTheater.Services.Poster
@@ -43,6 +39,7 @@ namespace MovieTheater.Services.Poster
                 ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
 
                 // DevPosterImageRepository gets an HttpClient
+                services.AddTransient<IPosterImageRepository, DevPosterImageRepository>();
                 services.AddHttpClient<IPosterImageRepository, DevPosterImageRepository>()
                     .ConfigurePrimaryHttpMessageHandler(_ =>
                     {
@@ -57,8 +54,6 @@ namespace MovieTheater.Services.Poster
 
                         return handler;
                     });
-
-                services.AddTransient<IPosterImageRepository, DevPosterImageRepository>();
             }
 
             return services;
