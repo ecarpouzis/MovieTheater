@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MovieTheater.Db;
 using MovieTheater.Services;
+using MovieTheater.Services.ImdbApi;
 using MovieTheater.Services.Poster;
 using MovieTheater.Services.Python;
 using MovieTheater.Services.Tmdb;
@@ -45,6 +46,7 @@ namespace MovieTheater
             services.AddMovieTheaterDb(config["DbConnectionString"]);
             services.AddPosterImageServices(config["MoviePostersDir"], environment);
             services.AddPythonService(config["PyPath"]);
+            services.AddImdbServices(config["ImdbApiKey"]);
             services.AddTmdbServices(config["TmdbApiKey"]);
 
             var proxyBuilder = services.AddReverseProxy();

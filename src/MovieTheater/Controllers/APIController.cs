@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using IMDbApiLib.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,31 +11,35 @@ using Microsoft.EntityFrameworkCore;
 using MovieTheater.Db;
 using MovieTheater.Models;
 using MovieTheater.Services;
+using MovieTheater.Services.ImdbApi;
 using MovieTheater.Services.Tmdb;
 
 namespace MovieTheater.Controllers
 {
     public class APIController : Controller
     {
-        
+
         private readonly MovieDb movieDb;
         private readonly TmdbApi tmdb;
+        private readonly ImdbApiClient imdb;
 
-        public APIController(MovieDb movieDb, TmdbApi tmdb)
+
+        public APIController(MovieDb movieDb, TmdbApi tmdb, ImdbApiClient imdb)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
+            this.imdb = imdb;
         }
 
         [HttpGet("/API/GetMovie")]
         public async Task<IActionResult> GetMovie(int id)
         {
             var movie = await movieDb.Movies.SingleOrDefaultAsync(m => m.id == id);
-            if(movie != null)
+            if (movie != null)
             {
-                return Ok( new { Success=true, data=movie });
+                return Ok(new { Success = true, data = movie });
             }
-            return BadRequest(new { Success=false, Message="Movie ID not found" });
+            return BadRequest(new { Success = false, Message = "Movie ID not found" });
         }
 
         [HttpPost("/API/Login")]
@@ -70,6 +75,19 @@ namespace MovieTheater.Controllers
             return Json(new { user.Username, moviesSeen, moviesToWatch });
         }
 
+        [HttpGet("/API/ImdbApiLookupImdbID")]
+        public async Task<Movie> ImdbApiLookupImdbID(string imdbID)
+        {
+            return await imdb.ImdbApiLookupImdbID(imdbID);
+        }
+
+
+        [HttpGet("/API/ImdbApiLookupName")]
+        public async Task<Movie> ImdbApiLookupName(string name)
+        {
+            return await imdb.ImdbApiLookupName(name);
+        }
+
         [HttpGet("/API/TMDBLookupImdbID")]
         public async Task<MovieDto> TmdbLookupImdbID(string imdbID)
         {
@@ -77,28 +95,27 @@ namespace MovieTheater.Controllers
 
         }
 
-
         [HttpGet("/API/TMDBLookupName")]
         public async Task<MovieDto> TmdbLookupName(string name)
         {
             return await tmdb.GetMovieByName(name);
 
         }
-        public async Task<IActionResult> SetViewingState([FromBody]ViewingState viewingState)
+        public async Task<IActionResult> SetViewingState([FromBody] ViewingState viewingState)
         {
             if (viewingState == null)
             {
-                return BadRequest(new { Success = false, Message = "No User Movie Data Provided."});
+                return BadRequest(new { Success = false, Message = "No User Movie Data Provided." });
             }
-            
+
             var user = await movieDb.Users.FirstOrDefaultAsync(u => u.Username == viewingState.Username);
-            if(user == null)
+            if (user == null)
             {
                 return BadRequest(new { Success = false, Message = "No User Found." });
             }
 
-            var movie = await movieDb.Movies.FirstOrDefaultAsync(m=>m.id == viewingState.MovieID);
-            if(movie == null)
+            var movie = await movieDb.Movies.FirstOrDefaultAsync(m => m.id == viewingState.MovieID);
+            if (movie == null)
             {
                 return BadRequest(new { Success = false, Message = "Invalid Movie ID." });
             }
@@ -108,17 +125,17 @@ namespace MovieTheater.Controllers
             bool shouldCreateNew = existingViewing == null && viewingState.SetActive;
             bool shouldDeleteExisting = existingViewing != null && !viewingState.SetActive;
 
-            if(shouldCreateNew)
+            if (shouldCreateNew)
             {
-                    var newViewing = new Viewing
-                    {
-                        MovieID = movie.id,
-                        UserID = user.UserID,
-                        ViewingType = action,
-                    };
+                var newViewing = new Viewing
+                {
+                    MovieID = movie.id,
+                    UserID = user.UserID,
+                    ViewingType = action,
+                };
                 await movieDb.Viewings.AddAsync(newViewing);
             }
-            if(shouldDeleteExisting)
+            if (shouldDeleteExisting)
             {
                 movieDb.Viewings.Remove(existingViewing);
             }
@@ -134,7 +151,8 @@ namespace MovieTheater.Controllers
             return Json(userList);
         }
 
-        public class search{
+        public class search
+        {
             public string Type { get; set; }
             public int? Count { get; set; }
             public string StartsWith { get; set; }
@@ -144,12 +162,12 @@ namespace MovieTheater.Controllers
         }
 
         [HttpPost("/API/API_Movies")]
-        public IActionResult API_Movies([FromBody]search search = null)
+        public IActionResult API_Movies([FromBody] search search = null)
         {
             IQueryable<Movie> movies = movieDb.Movies;
-            if(search == null)
+            if (search == null)
             {
-                return BadRequest(new { message="No Search Data Provided" });
+                return BadRequest(new { message = "No Search Data Provided" });
             }
             if (!String.IsNullOrEmpty(search.Type))
             {
