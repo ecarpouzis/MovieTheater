@@ -50,7 +50,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpPost("/API/InsertMovie")]
-        public async Task<IActionResult> InsertMovie(Movie movie)
+        public async Task<IActionResult> InsertMovie([FromBody]Movie movie)
         {
             var checkMovie = movieDb.Movies.SingleOrDefault(d => d.imdbID == movie.imdbID);
 
