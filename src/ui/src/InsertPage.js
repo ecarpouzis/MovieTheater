@@ -48,7 +48,7 @@ function InsertPage() {
     newState.Plot = movie.plot;
     newState.PosterLink = movie.posterLink;
     newState.imdbRating = movie.imdbRating;
-    newState.imdbID = movieState.imdbID;
+    newState.imdbID = movie.imdbID;
     //newState.tomatoRating = movie.tomatoRating;
 
     setMovieState(newState);

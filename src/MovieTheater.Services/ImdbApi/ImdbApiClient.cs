@@ -18,6 +18,7 @@ namespace MovieTheater.Services.ImdbApi
             var movieData = await apiLib.TitleAsync(imdbID);
             return new Movie()
             {
+                imdbID = imdbID,
                 Title = movieData.Title,
                 Rating = movieData.ContentRating,
                 ReleaseDate = DateTime.Parse(movieData.ReleaseDate),

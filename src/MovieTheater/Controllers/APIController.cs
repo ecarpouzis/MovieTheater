@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using IMDbApiLib.Models;
@@ -12,6 +13,7 @@ using MovieTheater.Db;
 using MovieTheater.Models;
 using MovieTheater.Services;
 using MovieTheater.Services.ImdbApi;
+using MovieTheater.Services.Poster;
 using MovieTheater.Services.Tmdb;
 
 namespace MovieTheater.Controllers
@@ -22,13 +24,18 @@ namespace MovieTheater.Controllers
         private readonly MovieDb movieDb;
         private readonly TmdbApi tmdb;
         private readonly ImdbApiClient imdb;
+        private readonly HttpClient httpClient;
+        private readonly IPosterImageRepository imageRepo;
+        private readonly ImageShrinkService shrinkService;
 
-
-        public APIController(MovieDb movieDb, TmdbApi tmdb, ImdbApiClient imdb)
+        public APIController(MovieDb movieDb, TmdbApi tmdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo, ImageShrinkService shrinkService)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
             this.imdb = imdb;
+            this.httpClient = httpClient;
+            this.imageRepo = imageRepo;
+            this.shrinkService = shrinkService;
         }
 
         [HttpGet("/API/GetMovie")]
@@ -40,6 +47,113 @@ namespace MovieTheater.Controllers
                 return Ok(new { Success = true, data = movie });
             }
             return BadRequest(new { Success = false, Message = "Movie ID not found" });
+        }
+
+        [HttpPost("/API/InsertMovie")]
+        public async Task<IActionResult> InsertMovie(string title, string rated, string released, string runtime, string genre, string director,
+            string writer, string actors, string plot, string poster, string imdbrating, string imdbid, string tomatorating)
+        {
+            var checkMovie = movieDb.Movies.SingleOrDefault(d => d.imdbID == imdbid);
+
+            if (checkMovie == null)
+            {
+                Movie newMovie = new Movie();
+                byte[] potentialPoster = new byte[0];
+
+                if (title.Trim() != "")
+                {
+                    newMovie.Title = title.Trim();
+                    newMovie.SimpleTitle = title.Trim();
+                }
+
+                if (rated.Trim() != "")
+                {
+                    newMovie.Rating = rated.Trim();
+                }
+
+                if (released.Trim() != "")
+                {
+                    newMovie.ReleaseDate = Convert.ToDateTime(released);
+                }
+
+                if (runtime.Trim() != "")
+                {
+                    newMovie.Runtime = runtime;
+                }
+
+                if (genre.Trim() != "")
+                {
+                    newMovie.Genre = genre;
+                }
+
+                if (director.Trim() != "")
+                {
+                    newMovie.Director = director;
+                }
+                else
+                {
+                    newMovie.Director = "";
+                }
+
+                if (writer.Trim() != "")
+                {
+                    newMovie.Writer = writer;
+                }
+                else
+                {
+                    newMovie.Writer = "";
+                }
+
+                if (poster.Trim() != "")
+                {
+                    newMovie.PosterLink = poster;
+                }
+
+                if (actors.Trim() != "")
+                {
+                    newMovie.Actors = actors;
+                }
+                else
+                {
+                    newMovie.Actors = "";
+                }
+
+                if (plot.Trim() != "")
+                {
+                    newMovie.Plot = plot;
+                }
+                if (imdbrating.Trim() != "")
+                {
+                    newMovie.imdbRating = Decimal.Parse(imdbrating);
+                }
+
+                if (imdbid.Trim() != "")
+                {
+                    newMovie.imdbID = imdbid;
+                }
+
+                if (tomatorating != null)
+                {
+                    if (tomatorating.Trim() != "" && tomatorating.Trim() != "N/A")
+                    {
+                        newMovie.tomatoRating = Convert.ToInt32(tomatorating);
+                    }
+                }
+                newMovie.UploadedDate = DateTime.Now;
+
+                movieDb.Movies.Add(newMovie);
+                movieDb.SaveChanges();
+
+                if (poster.Trim() != "")
+                {
+                    var result = await httpClient.GetAsync(poster);
+                    var content = await result.Content.ReadAsByteArrayAsync();
+                    await imageRepo.SaveImage(newMovie.id, PosterImageVariant.Main, content);
+                    await shrinkService.EnsurePosterThumnailExists(newMovie.id);
+                }
+            }
+
+            return Ok();
         }
 
         [HttpPost("/API/Login")]
@@ -80,8 +194,7 @@ namespace MovieTheater.Controllers
         {
             return await imdb.ImdbApiLookupImdbID(imdbID);
         }
-
-
+        
         [HttpGet("/API/ImdbApiLookupName")]
         public async Task<Movie> ImdbApiLookupName(string name)
         {
@@ -92,15 +205,14 @@ namespace MovieTheater.Controllers
         public async Task<MovieDto> TmdbLookupImdbID(string imdbID)
         {
             return await tmdb.GetMovie(imdbID);
-
         }
 
         [HttpGet("/API/TMDBLookupName")]
         public async Task<MovieDto> TmdbLookupName(string name)
         {
             return await tmdb.GetMovieByName(name);
-
         }
+
         public async Task<IActionResult> SetViewingState([FromBody] ViewingState viewingState)
         {
             if (viewingState == null)
