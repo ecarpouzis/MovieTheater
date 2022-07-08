@@ -26,6 +26,18 @@ function getMovie(id) {
   });
 }
 
+function insertMovie(movie) {
+  const url = "/API/InsertMovie";
+
+  return fetch(url, {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(movie),
+  });
+}
+
 function getUsers() {
   const url = "/API/API_UserList";
   return fetch(url);
@@ -128,6 +140,7 @@ const MovieAPI = {
   getMovies,
   getMovie,
   getUsers,
+  insertMovie,
   tmdbLookupImdbID,
   tmdbLookupName,
   imdbApiLookupImdbId,

@@ -34,7 +34,9 @@ function InsertPage() {
     }
   }
 
-  async function insert() {}
+  async function insert() {
+    if (movieState.title) await MovieAPI.insertMovie(movieState);
+  }
 
   async function imdbMatch() {
     if (movieState.imdbID) {
