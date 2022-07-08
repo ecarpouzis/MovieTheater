@@ -70,12 +70,40 @@ function setWantToWatchState(username, movieID, isActive) {
   });
 }
 
+function tmdbLookupImdbID(id) {
+  const url = "/API/TMDBLookupImdbID?imdbID=" + id;
+
+  return fetch(url, {
+    method: "get",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }).then((response) => {
+    return response.json();
+  });
+}
+
+function tmdbLookupName(name) {
+  const url = "/API/TMDBLookupName?name=" + encodeURIComponent(name);
+
+  return fetch(url, {
+    method: "get",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }).then((response) => {
+    return response.json();
+  });
+}
+
 const MovieAPI = {
   getMoviePoster,
   getPosterThumbnail,
   getMovies,
   getMovie,
   getUsers,
+  tmdbLookupImdbID,
+  tmdbLookupName,
   loginUser,
   setWatchedState,
   setWantToWatchState,

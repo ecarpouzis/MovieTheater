@@ -25,6 +25,13 @@ function InsertMovieInput({ placeholder, name, movieState, setMovieState }) {
 function InsertPage() {
   const [movieState, setMovieState] = useState({});
 
+  async function imdbMatch() {
+    if (movieState.imdbID) {
+      const movie = await MovieAPI.tmdbLookupImdbID(movieState.imdbID);
+      console.log(movie);
+    }
+  }
+
   return (
     <div>
       <div>{JSON.stringify(movieState)}</div>
@@ -176,7 +183,9 @@ function InsertPage() {
         </tbody>
       </table>
       <div id="imgContainer"></div>
-      <Button type="text">Attempt IMDB ID Match</Button>
+      <Button onClick={imdbMatch} type="text">
+        Attempt IMDB ID Match
+      </Button>
       <Button type="text">Attempt Name Match</Button>
       <Button type="primary">Insert</Button>
     </div>

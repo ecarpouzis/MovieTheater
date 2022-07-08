@@ -76,6 +76,14 @@ namespace MovieTheater.Controllers
             return await tmdb.GetMovie(imdbID);
 
         }
+
+
+        [HttpGet("/API/TMDBLookupName")]
+        public async Task<MovieDto> TmdbLookupName(string name)
+        {
+            return await tmdb.GetMovieByName(name);
+
+        }
         public async Task<IActionResult> SetViewingState([FromBody]ViewingState viewingState)
         {
             if (viewingState == null)

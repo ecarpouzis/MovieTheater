@@ -33,5 +33,19 @@ namespace MovieTheater.Services.Tmdb
             var movie = root.MovieResults.Single();
             return movie;
         }
+
+
+        public async Task<MovieDto> GetMovieByName(string name)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"/3/find/{name}?api_key={_options.ApiKey}", UriKind.Relative));
+            var response = await _httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            string responseContent = await response.Content.ReadAsStringAsync();
+
+            var root = JsonConvert.DeserializeObject<Root>(responseContent);
+            var movie = root.MovieResults.Single();
+            return movie;
+        }
     }
 }
