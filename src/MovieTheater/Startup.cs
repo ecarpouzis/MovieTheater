@@ -5,6 +5,7 @@ using MovieTheater.Db;
 using MovieTheater.Services;
 using MovieTheater.Services.Poster;
 using MovieTheater.Services.Python;
+using MovieTheater.Services.Tmdb;
 using System;
 
 namespace MovieTheater
@@ -44,6 +45,7 @@ namespace MovieTheater
             services.AddMovieTheaterDb(config["DbConnectionString"]);
             services.AddPosterImageServices(config["MoviePostersDir"], environment);
             services.AddPythonService(config["PyPath"]);
+            services.AddTmdbServices(config["TmdbApiKey"]);
 
             var proxyBuilder = services.AddReverseProxy();
             proxyBuilder.LoadFromConfig(config.GetSection("ReverseProxy"));

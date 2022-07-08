@@ -10,17 +10,20 @@ using Microsoft.EntityFrameworkCore;
 using MovieTheater.Db;
 using MovieTheater.Models;
 using MovieTheater.Services;
+using MovieTheater.Services.Tmdb;
 
 namespace MovieTheater.Controllers
 {
     public class APIController : Controller
     {
-
+        
         private readonly MovieDb movieDb;
+        private readonly TmdbApi tmdb;
 
-        public APIController(MovieDb movieDb)
+        public APIController(MovieDb movieDb, TmdbApi tmdb)
         {
             this.movieDb = movieDb;
+            this.tmdb = tmdb;
         }
 
         [HttpGet("/API/GetMovie")]
@@ -67,7 +70,12 @@ namespace MovieTheater.Controllers
             return Json(new { user.Username, moviesSeen, moviesToWatch });
         }
 
-        [HttpPost("/API/SetViewingState")]
+        [HttpGet("/API/TMDBLookupImdbID")]
+        public async Task<MovieDto> TmdbLookupImdbID(string imdbID)
+        {
+            return await tmdb.GetMovie(imdbID);
+
+        }
         public async Task<IActionResult> SetViewingState([FromBody]ViewingState viewingState)
         {
             if (viewingState == null)
