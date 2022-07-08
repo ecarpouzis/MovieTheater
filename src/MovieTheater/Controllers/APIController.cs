@@ -119,12 +119,12 @@ namespace MovieTheater.Controllers
         }
 
         public class search{
-            public string type;
-            public int? count;
-            public string startsWith;
-            public string actor;
-            public string releaseYear;
-            public string uploadDate;
+            public string Type { get; set; }
+            public int? Count { get; set; }
+            public string StartsWith { get; set; }
+            public string Actor { get; set; }
+            public string ReleaseYear { get; set; }
+            public string UploadDate { get; set; }
         }
 
         [HttpPost("/API/API_Movies")]
@@ -135,21 +135,21 @@ namespace MovieTheater.Controllers
             {
                 return BadRequest(new { message="No Search Data Provided" });
             }
-            if (!String.IsNullOrEmpty(search.type))
+            if (!String.IsNullOrEmpty(search.Type))
             {
-                switch (search.type)
+                switch (search.Type)
                 {
                     case "startsWith":
-                        if (!String.IsNullOrEmpty(search.startsWith))
+                        if (!String.IsNullOrEmpty(search.StartsWith))
                         {
-                            if (search.startsWith == "#")
+                            if (search.StartsWith == "#")
                             {
                                 List<char> digits = new List<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
                                 movies = movies.Where(m => digits.Contains(m.Title[0]));
                             }
                             else
                             {
-                                movies = movies.Where(m => m.Title.StartsWith(search.startsWith));
+                                movies = movies.Where(m => m.Title.StartsWith(search.StartsWith));
                             }
                         }
                         break;
@@ -159,9 +159,9 @@ namespace MovieTheater.Controllers
 
             }
 
-            if (search.count.HasValue)
+            if (search.Count.HasValue)
             {
-                movies = movies.OrderBy(elem => Guid.NewGuid()).Take(search.count.Value);
+                movies = movies.OrderBy(elem => Guid.NewGuid()).Take(search.Count.Value);
             }
 
             return Json(movies);
