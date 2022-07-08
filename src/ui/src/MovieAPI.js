@@ -96,6 +96,32 @@ function tmdbLookupName(name) {
   });
 }
 
+function imdbApiLookupImdbId(id) {
+  const url = "/API/ImdbApiLookupImdbID?imdbID=" + encodeURIComponent(id);
+
+  return fetch(url, {
+    method: "get",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }).then((response) => {
+    return response.json();
+  });
+}
+
+function imdbApiLookupName(name) {
+  const url = "/API/ImdbApiLookupName?name=" + encodeURIComponent(name);
+
+  return fetch(url, {
+    method: "get",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }).then((response) => {
+    return response.json();
+  });
+}
+
 const MovieAPI = {
   getMoviePoster,
   getPosterThumbnail,
@@ -104,6 +130,8 @@ const MovieAPI = {
   getUsers,
   tmdbLookupImdbID,
   tmdbLookupName,
+  imdbApiLookupImdbId,
+  imdbApiLookupName,
   loginUser,
   setWatchedState,
   setWantToWatchState,

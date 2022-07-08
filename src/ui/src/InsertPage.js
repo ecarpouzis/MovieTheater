@@ -25,30 +25,40 @@ function InsertMovieInput({ placeholder, name, movieState, setMovieState }) {
 function InsertPage() {
   const [movieState, setMovieState] = useState({ imdbID: "tt6710474" });
 
-  async function nameMatch() {}
+  async function nameMatch() {
+    if (movieState.Title) {
+      const movie = await MovieAPI.imdbApiLookupName(movieState.Title);
+      if (movie) {
+        mapMovie(movie);
+      }
+    }
+  }
   async function insert() {}
+
+  function mapMovie(movie) {
+    const newState = {};
+    newState.Title = movie.title;
+    newState.Rating = movie.rating;
+    newState.ReleaseDate = movie.releaseDate;
+    newState.Runtime = movie.runtime;
+    newState.Genre = movie.genre;
+    newState.Director = movie.director;
+    newState.Writer = movie.writer;
+    newState.Actors = movie.actors;
+    newState.Plot = movie.plot;
+    newState.PosterLink = movie.posterLink;
+    newState.imdbRating = movie.imdbRating;
+    newState.imdbID = movieState.imdbID;
+    //newState.tomatoRating = movie.tomatoRating;
+
+    setMovieState(newState);
+  }
+
   async function imdbMatch() {
     if (movieState.imdbID) {
-      const movie = await MovieAPI.tmdbLookupImdbID(movieState.imdbID);
-      const posterBasePath = "https://image.tmdb.org/t/p/original";
+      const movie = await MovieAPI.imdbApiLookupImdbId(movieState.imdbID);
       if (movie) {
-        const newState = {};
-        newState.Title = movie.title;
-        //newState.Release = movie.Release;
-        //newState.Rating = movie.Rating;
-        //newState.ReleaseDate = movie.ReleaseDate;
-        //newState.Runtime = movie.Runtime;
-        //newState.Genre = movie.Genre;
-        //newState.Director = movie.Director;
-        //newState.Writer = movie.Writer;
-        //newState.Actors = movie.Actors;
-        newState.Plot = movie.overview;
-        newState.PosterLink = posterBasePath + movie.posterPath;
-        //newState.imdbRating = movie.imdbRating;
-        //newState.imdbID = movie.imdbID;
-        //newState.tomatoRating = movie.tomatoRating;
-
-        setMovieState(newState);
+        mapMovie(movie);
       }
     }
   }

@@ -25,7 +25,7 @@ namespace MovieTheater.Services.ImdbApi
                 Genre = movieData.Genres,
                 Director = movieData.Directors,
                 Writer = movieData.Writers,
-                Actors = String.Join(",", movieData.ActorList.Take(3).Select(x => x.Name)),
+                Actors = String.Join(", ", movieData.ActorList.Take(3).Select(x => x.Name)),
                 Plot = movieData.Plot,
                 PosterLink = movieData.Image,
                 imdbRating = Decimal.Parse(movieData.IMDbRating)
