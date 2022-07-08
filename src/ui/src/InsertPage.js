@@ -23,12 +23,33 @@ function InsertMovieInput({ placeholder, name, movieState, setMovieState }) {
 }
 
 function InsertPage() {
-  const [movieState, setMovieState] = useState({});
+  const [movieState, setMovieState] = useState({ imdbID: "tt6710474" });
 
+  async function nameMatch() {}
+  async function insert() {}
   async function imdbMatch() {
     if (movieState.imdbID) {
       const movie = await MovieAPI.tmdbLookupImdbID(movieState.imdbID);
-      console.log(movie);
+      const posterBasePath = "https://image.tmdb.org/t/p/original";
+      if (movie) {
+        const newState = {};
+        newState.Title = movie.title;
+        //newState.Release = movie.Release;
+        //newState.Rating = movie.Rating;
+        //newState.ReleaseDate = movie.ReleaseDate;
+        //newState.Runtime = movie.Runtime;
+        //newState.Genre = movie.Genre;
+        //newState.Director = movie.Director;
+        //newState.Writer = movie.Writer;
+        //newState.Actors = movie.Actors;
+        newState.Plot = movie.overview;
+        newState.PosterLink = posterBasePath + movie.posterPath;
+        //newState.imdbRating = movie.imdbRating;
+        //newState.imdbID = movie.imdbID;
+        //newState.tomatoRating = movie.tomatoRating;
+
+        setMovieState(newState);
+      }
     }
   }
 
@@ -182,12 +203,18 @@ function InsertPage() {
           </tr>
         </tbody>
       </table>
-      <div id="imgContainer"></div>
       <Button onClick={imdbMatch} type="text">
         Attempt IMDB ID Match
       </Button>
-      <Button type="text">Attempt Name Match</Button>
-      <Button type="primary">Insert</Button>
+      <Button onClick={nameMatch} type="text">
+        Attempt Name Match
+      </Button>
+      <Button onClick={insert} type="primary">
+        Insert
+      </Button>
+      <div id="imgContainer">
+        <img alt="Poster" src={movieState.PosterLink}></img>
+      </div>
     </div>
   );
 }
