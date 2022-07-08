@@ -213,6 +213,7 @@ namespace MovieTheater.Controllers
             return await tmdb.GetMovieByName(name);
         }
 
+
         public async Task<IActionResult> SetViewingState([FromBody] ViewingState viewingState)
         {
             if (viewingState == null)
