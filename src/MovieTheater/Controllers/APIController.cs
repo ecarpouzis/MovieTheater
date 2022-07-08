@@ -50,108 +50,28 @@ namespace MovieTheater.Controllers
         }
 
         [HttpPost("/API/InsertMovie")]
-        public async Task<IActionResult> InsertMovie(string title, string rated, string released, string runtime, string genre, string director,
-            string writer, string actors, string plot, string poster, string imdbrating, string imdbid, string tomatorating)
+        public async Task<IActionResult> InsertMovie(Movie movie)
         {
-            var checkMovie = movieDb.Movies.SingleOrDefault(d => d.imdbID == imdbid);
+            var checkMovie = movieDb.Movies.SingleOrDefault(d => d.imdbID == movie.imdbID);
 
-            if (checkMovie == null)
+            if (checkMovie != null)
             {
-                Movie newMovie = new Movie();
-                byte[] potentialPoster = new byte[0];
-
-                if (title.Trim() != "")
-                {
-                    newMovie.Title = title.Trim();
-                    newMovie.SimpleTitle = title.Trim();
-                }
-
-                if (rated.Trim() != "")
-                {
-                    newMovie.Rating = rated.Trim();
-                }
-
-                if (released.Trim() != "")
-                {
-                    newMovie.ReleaseDate = Convert.ToDateTime(released);
-                }
-
-                if (runtime.Trim() != "")
-                {
-                    newMovie.Runtime = runtime;
-                }
-
-                if (genre.Trim() != "")
-                {
-                    newMovie.Genre = genre;
-                }
-
-                if (director.Trim() != "")
-                {
-                    newMovie.Director = director;
-                }
-                else
-                {
-                    newMovie.Director = "";
-                }
-
-                if (writer.Trim() != "")
-                {
-                    newMovie.Writer = writer;
-                }
-                else
-                {
-                    newMovie.Writer = "";
-                }
-
-                if (poster.Trim() != "")
-                {
-                    newMovie.PosterLink = poster;
-                }
-
-                if (actors.Trim() != "")
-                {
-                    newMovie.Actors = actors;
-                }
-                else
-                {
-                    newMovie.Actors = "";
-                }
-
-                if (plot.Trim() != "")
-                {
-                    newMovie.Plot = plot;
-                }
-                if (imdbrating.Trim() != "")
-                {
-                    newMovie.imdbRating = Decimal.Parse(imdbrating);
-                }
-
-                if (imdbid.Trim() != "")
-                {
-                    newMovie.imdbID = imdbid;
-                }
-
-                if (tomatorating != null)
-                {
-                    if (tomatorating.Trim() != "" && tomatorating.Trim() != "N/A")
-                    {
-                        newMovie.tomatoRating = Convert.ToInt32(tomatorating);
-                    }
-                }
-                newMovie.UploadedDate = DateTime.Now;
-
-                movieDb.Movies.Add(newMovie);
-                movieDb.SaveChanges();
-
-                if (poster.Trim() != "")
-                {
-                    var result = await httpClient.GetAsync(poster);
-                    var content = await result.Content.ReadAsByteArrayAsync();
-                    await imageRepo.SaveImage(newMovie.id, PosterImageVariant.Main, content);
-                    await shrinkService.EnsurePosterThumnailExists(newMovie.id);
-                }
+                throw new InvalidOperationException("Movie Already Exists");
             }
+
+            movie.UploadedDate = DateTime.Now;
+
+            movieDb.Movies.Add(movie);
+            movieDb.SaveChanges();
+
+            if (movie.PosterLink.Trim() != "")
+            {
+                var result = await httpClient.GetAsync(movie.PosterLink);
+                var content = await result.Content.ReadAsByteArrayAsync();
+                await imageRepo.SaveImage(movie.id, PosterImageVariant.Main, content);
+                await shrinkService.EnsurePosterThumnailExists(movie.id);
+            }
+
 
             return Ok();
         }
@@ -194,7 +114,7 @@ namespace MovieTheater.Controllers
         {
             return await imdb.ImdbApiLookupImdbID(imdbID);
         }
-        
+
         [HttpGet("/API/ImdbApiLookupName")]
         public async Task<Movie> ImdbApiLookupName(string name)
         {

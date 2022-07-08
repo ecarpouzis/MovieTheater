@@ -26,39 +26,21 @@ function InsertPage() {
   const [movieState, setMovieState] = useState({});
 
   async function nameMatch() {
-    if (movieState.Title) {
-      const movie = await MovieAPI.imdbApiLookupName(movieState.Title);
+    if (movieState.title) {
+      const movie = await MovieAPI.imdbApiLookupName(movieState.title);
       if (movie) {
-        mapMovie(movie);
+        setMovieState(movie);
       }
     }
   }
+
   async function insert() {}
-
-  function mapMovie(movie) {
-    const newState = {};
-    newState.Title = movie.title;
-    newState.Rating = movie.rating;
-    newState.ReleaseDate = movie.releaseDate;
-    newState.Runtime = movie.runtime;
-    newState.Genre = movie.genre;
-    newState.Director = movie.director;
-    newState.Writer = movie.writer;
-    newState.Actors = movie.actors;
-    newState.Plot = movie.plot;
-    newState.PosterLink = movie.posterLink;
-    newState.imdbRating = movie.imdbRating;
-    newState.imdbID = movie.imdbID;
-    //newState.tomatoRating = movie.tomatoRating;
-
-    setMovieState(newState);
-  }
 
   async function imdbMatch() {
     if (movieState.imdbID) {
       const movie = await MovieAPI.imdbApiLookupImdbId(movieState.imdbID);
       if (movie) {
-        mapMovie(movie);
+        setMovieState(movie);
       }
     }
   }
@@ -73,7 +55,7 @@ function InsertPage() {
             <td>
               <InsertMovieInput
                 placeholder="Title"
-                name="Title"
+                name="title"
                 movieState={movieState}
                 setMovieState={setMovieState}
               />
@@ -84,7 +66,7 @@ function InsertPage() {
             <td>
               <InsertMovieInput
                 placeholder="Rating"
-                name="Rating"
+                name="rating"
                 movieState={movieState}
                 setMovieState={setMovieState}
               />
@@ -95,7 +77,7 @@ function InsertPage() {
             <td>
               <InsertMovieInput
                 placeholder="Release Date"
-                name="ReleaseDate"
+                name="releaseDate"
                 movieState={movieState}
                 setMovieState={setMovieState}
               />
@@ -106,7 +88,7 @@ function InsertPage() {
             <td>
               <InsertMovieInput
                 placeholder="Runtime"
-                name="Runtime"
+                name="runtime"
                 movieState={movieState}
                 setMovieState={setMovieState}
               />
@@ -117,7 +99,7 @@ function InsertPage() {
             <td>
               <InsertMovieInput
                 placeholder="Genre"
-                name="Genre"
+                name="genre"
                 movieState={movieState}
                 setMovieState={setMovieState}
               />
@@ -128,7 +110,7 @@ function InsertPage() {
             <td>
               <InsertMovieInput
                 placeholder="Director"
-                name="Director"
+                name="director"
                 movieState={movieState}
                 setMovieState={setMovieState}
               />
@@ -139,7 +121,7 @@ function InsertPage() {
             <td>
               <InsertMovieInput
                 placeholder="Writer"
-                name="Writer"
+                name="writer"
                 movieState={movieState}
                 setMovieState={setMovieState}
               />
@@ -150,7 +132,7 @@ function InsertPage() {
             <td>
               <InsertMovieInput
                 placeholder="Actors"
-                name="Actors"
+                name="actors"
                 movieState={movieState}
                 setMovieState={setMovieState}
               />
@@ -161,7 +143,7 @@ function InsertPage() {
             <td>
               <InsertMovieInput
                 placeholder="Plot"
-                name="Plot"
+                name="plot"
                 movieState={movieState}
                 setMovieState={setMovieState}
               />
@@ -172,7 +154,7 @@ function InsertPage() {
             <td>
               <InsertMovieInput
                 placeholder="Poster Link"
-                name="PosterLink"
+                name="posterLink"
                 movieState={movieState}
                 setMovieState={setMovieState}
               />
@@ -223,7 +205,7 @@ function InsertPage() {
         Insert
       </Button>
       <div id="imgContainer">
-        <img alt="Poster" src={movieState.PosterLink}></img>
+        <img alt="Poster" src={movieState.posterLink}></img>
       </div>
     </div>
   );
