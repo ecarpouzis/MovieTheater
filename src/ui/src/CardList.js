@@ -246,16 +246,17 @@ function CardList({ movieDataArray, userData, setUserData }) {
             const thumbUrl = MovieAPI.getPosterThumbnail(item.id);
 
             const actorList = item.actors.split(",").map((actor, i) => (
-              <>
+              <div
+              key={i}
+              >
                 <a
-                  key={i}
                   style={actorLinkStyle}
                   href={"/browse?sort=Actor&actor=" + actor.trim()}
                 >
                   {actor}
                 </a>
                 <br />
-              </>
+              </div>
             ));
 
             return (
@@ -272,10 +273,8 @@ function CardList({ movieDataArray, userData, setUserData }) {
                       />
                     </div>
                     <Scrollbars>
-                      <Link to={{ pathname: "/movie/" + item.id, id: item.id }}>
                         <div className="RightCol" style={cardRightColumStyle}>
-                          <a
-                            href="#"
+                          <Link to={{ pathname: "/movie/" + item.id, id: item.id }}
                             style={cardTitleStyle}
                             className="movieTitle"
                           >
@@ -283,7 +282,7 @@ function CardList({ movieDataArray, userData, setUserData }) {
                               " (" +
                               new Date(item.releaseDate).getFullYear() +
                               ")"}
-                          </a>
+                          </Link>
                           <br />
                           <span className="movieTime" style={cardTimeStyle}>
                             {item.runtime}
@@ -297,7 +296,6 @@ function CardList({ movieDataArray, userData, setUserData }) {
                             {item.plot}
                           </span>
                         </div>
-                      </Link>
                     </Scrollbars>
                   </div>
                   <UserMovieOptions
