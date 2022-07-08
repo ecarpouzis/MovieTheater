@@ -3,6 +3,7 @@ import { Layout } from "antd";
 import CardList from "./CardList";
 import SearchTools from "./SearchTools";
 import MoviePage from "./MoviePage";
+import InsertPage from "./InsertPage";
 import Login from "./Login";
 import { MovieAPI } from "./MovieAPI";
 import { useState, useEffect } from "react";
@@ -62,8 +63,11 @@ function App() {
               <div>Loading...</div>
             ) : (
               <Switch>
-                <Route path="/movie/:id">
+                <Route path="/movie/:id" exact>
                   <MoviePage userData={userData}></MoviePage>
+                </Route>
+                <Route path="/insert" exact>
+                  <InsertPage></InsertPage>
                 </Route>
                 <Route path="/">
                   <CardList
