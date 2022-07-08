@@ -23,7 +23,7 @@ function InsertMovieInput({ placeholder, name, movieState, setMovieState }) {
 }
 
 function InsertPage() {
-  const [movieState, setMovieState] = useState({ imdbID: "tt6710474" });
+  const [movieState, setMovieState] = useState({});
 
   async function nameMatch() {
     if (movieState.Title) {
