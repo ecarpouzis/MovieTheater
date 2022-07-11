@@ -62,7 +62,14 @@ namespace MovieTheater.Controllers
             movie.UploadedDate = DateTime.Now;
 
             movieDb.Movies.Add(movie);
-            movieDb.SaveChanges();
+            try
+            {
+                movieDb.SaveChanges();
+            }
+            catch
+            {
+                return Ok( new { Message = "Save failed", Success = false} );
+            }
 
             if (movie.PosterLink.Trim() != "")
             {
