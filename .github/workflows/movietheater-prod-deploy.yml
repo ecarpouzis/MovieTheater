@@ -36,4 +36,4 @@ jobs:
       - run: microk8s kubectl create namespace movietheater --dry-run=client -o yaml | microk8s kubectl apply -f -
       - run: envsubst < k8s/deployment.yaml | microk8s kubectl apply -n movietheater -f -
       - run: envsubst < k8s/service.yaml | microk8s kubectl apply -n movietheater -f -
-      - run: microk8s kubectl rollout status deployment/movietheater
+      - run: microk8s kubectl rollout status -n movietheater deployment/movietheater
