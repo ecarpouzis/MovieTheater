@@ -1,34 +1,19 @@
-import "./App.css";
 import { Layout } from "antd";
-import CardList from "./CardList";
-import SearchTools from "./NavBar/SearchTools";
-import MoviePage from "./Pages/MoviePage";
-import InsertPage from "./Pages/InsertPage";
-import Login from "./Login";
 import { MovieAPI } from "./MovieAPI";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 
-const { Sider, Content } = Layout;
+import NavBar from "./NavBar/NavBar";
+import Browse from "./Pages/Browse/Browse";
+import MoviePage from "./Pages/MoviePage";
+import InsertPage from "./Pages/InsertPage";
 
 const storedUsername = window.localStorage.getItem("Username");
 
 function App() {
   const [userData, setUserData] = useState(null);
   const [search, setSearch] = useState({ count: 20 });
-  const [isLoading, setIsLoading] = useState(true);
   const [hasCheckedFirstLogin, setHasCheckedFirstLogin] = useState(false);
-
-  const [movieDataArray, setMovieDataArray] = useState([]);
-  useEffect(() => {
-    setIsLoading(true);
-    MovieAPI.getMovies(search)
-      .then((response) => response.json())
-      .then((responseData) => {
-        setIsLoading(false);
-        setMovieDataArray(responseData);
-      });
-  }, [search]);
 
   function onUserLoggedIn(username) {
     MovieAPI.loginUser(username)
@@ -36,7 +21,6 @@ function App() {
       .then((responseData) => {
         setUserData(responseData);
         window.localStorage.setItem("Username", username);
-        console.log(responseData);
       });
   }
 
@@ -50,28 +34,20 @@ function App() {
   return (
     <BrowserRouter>
       <Layout style={{ height: "100vh", overflow: "hidden" }}>
-        <Sider>
-          <Login userData={userData} onUserLoggedIn={onUserLoggedIn} />
-          <br />
-          <SearchTools search={search} setSearch={setSearch} />
-        </Sider>
-        <Content style={{ height: "100%", overflowY: "auto", paddingRight: "10px" }}>
-          {isLoading ? (
-            <div>Loading...</div>
-          ) : (
-            <Switch>
-              <Route path="/movie/:id" exact>
-                <MoviePage userData={userData}></MoviePage>
-              </Route>
-              <Route path="/insert" exact>
-                <InsertPage></InsertPage>
-              </Route>
-              <Route path="/">
-                <CardList movieDataArray={movieDataArray} userData={userData} setUserData={setUserData}></CardList>
-              </Route>
-            </Switch>
-          )}
-        </Content>
+        <NavBar search={search} setSearch={setSearch} userData={userData} onUserLoggedIn={onUserLoggedIn} />
+        <Layout.Content style={{ height: "100%", overflowY: "auto", paddingRight: "10px" }}>
+          <Switch>
+            <Route path="/movie/:id" exact>
+              <MoviePage userData={userData} />
+            </Route>
+            <Route path="/insert" exact>
+              <InsertPage />
+            </Route>
+            <Route path="/">
+              <Browse search={search} userData={userData} setUserData={setUserData} />
+            </Route>
+          </Switch>
+        </Layout.Content>
       </Layout>
     </BrowserRouter>
   );

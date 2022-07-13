@@ -1,5 +1,4 @@
 import { Input, List, Button } from "antd";
-import { MovieAPI } from "../MovieAPI";
 
 const { Search } = Input;
 
@@ -114,8 +113,7 @@ function SearchTools({ search, setSearch }) {
                     }}
                     style={{
                       width: "36px",
-                      backgroundColor:
-                        item === search.startsWith ? "silver" : "white",
+                      backgroundColor: item === search.startsWith ? "silver" : "white",
                     }}
                   >
                     <span style={searchLetterStyle}>{item}</span>

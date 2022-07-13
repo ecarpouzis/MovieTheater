@@ -1,4 +1,4 @@
-import { MovieAPI } from "./MovieAPI";
+import { MovieAPI } from "../../MovieAPI";
 import { Card, List } from "antd";
 import { Scrollbars } from "react-custom-scrollbars";
 import { Link } from "react-router-dom";

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button, Input, Tooltip, AutoComplete } from "antd";
 import { InfoCircleOutlined, UserOutlined } from "@ant-design/icons";
-import { MovieAPI } from "./MovieAPI";
+import { MovieAPI } from "../MovieAPI";
 
 //Function component Login
 //Props:
