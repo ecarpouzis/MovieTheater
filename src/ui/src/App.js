@@ -1,7 +1,7 @@
 import "./App.css";
 import { Layout } from "antd";
 import CardList from "./CardList";
-import SearchTools from "./SearchTools";
+import SearchTools from "./NavBar/SearchTools";
 import MoviePage from "./Pages/MoviePage";
 import InsertPage from "./Pages/InsertPage";
 import Login from "./Login";

@@ -1,5 +1,5 @@
 import { Input, List, Button } from "antd";
-import { MovieAPI } from "./MovieAPI";
+import { MovieAPI } from "../MovieAPI";
 
 const { Search } = Input;
 
