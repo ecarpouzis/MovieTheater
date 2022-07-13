@@ -202,7 +202,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpPost("/API/API_Movies")]
-        public IActionResult API_Movies([FromBody] search search = null)
+        public async Task<IActionResult> API_Movies([FromBody] search search = null)
         {
             IQueryable<Movie> movies = movieDb.Movies;
             if (search == null)
@@ -238,7 +238,8 @@ namespace MovieTheater.Controllers
                 movies = movies.OrderBy(elem => Guid.NewGuid()).Take(search.Count.Value);
             }
 
-            return Json(movies);
+            var movieList = await movies.ToListAsync();
+            return Json(movieList);
         }
     }
 }
