@@ -2,7 +2,7 @@ import "./App.css";
 import { Layout } from "antd";
 import CardList from "./CardList";
 import SearchTools from "./SearchTools";
-import MoviePage from "./MoviePage";
+import MoviePage from "./Pages/MoviePage";
 import InsertPage from "./InsertPage";
 import Login from "./Login";
 import { MovieAPI } from "./MovieAPI";
