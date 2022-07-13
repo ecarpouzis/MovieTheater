@@ -7,6 +7,6 @@ namespace MovieTheater.Db
         [Key]
         public int UserID { get; set; }
 
-        public string Username { get; set; }
+        public string? Username { get; set; }
     }
 }

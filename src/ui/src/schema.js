@@ -19,7 +19,7 @@ type Movie {
   imdbRating: Decimal
   imdbID: String
   tomatoRating: Int
-  uploadedDate: DateTime!
+  uploadedDate: DateTime
   id: Int!
   viewings: [Viewing!]!
 }
@@ -32,28 +32,19 @@ type Query {
   movies(where: MovieFilterInput order: [MovieSortInput!]): [Movie]
 }
 
-type Viewing {
-  movieID: Int!
+type User {
   userID: Int!
-  viewingType: String!
-  viewingID: Int!
-  viewingData: String!
-  movie: Movie!
+  username: String
 }
 
-input ComparableDateTimeOperationFilterInput {
-  eq: DateTime
-  neq: DateTime
-  in: [DateTime!]
-  nin: [DateTime!]
-  gt: DateTime
-  ngt: DateTime
-  gte: DateTime
-  ngte: DateTime
-  lt: DateTime
-  nlt: DateTime
-  lte: DateTime
-  nlte: DateTime
+type Viewing {
+  viewingID: Int!
+  movieID: Int!
+  movie: Movie!
+  userID: Int!
+  user: User!
+  viewingType: String
+  viewingData: String
 }
 
 input ComparableInt32OperationFilterInput {
@@ -140,7 +131,7 @@ input MovieFilterInput {
   imdbRating: ComparableNullableOfDecimalOperationFilterInput
   imdbID: StringOperationFilterInput
   tomatoRating: ComparableNullableOfInt32OperationFilterInput
-  uploadedDate: ComparableDateTimeOperationFilterInput
+  uploadedDate: ComparableNullableOfDateTimeOperationFilterInput
   id: ComparableInt32OperationFilterInput
   viewings: ListFilterInputTypeOfViewingFilterInput
 }
@@ -179,15 +170,23 @@ input StringOperationFilterInput {
   nendsWith: String
 }
 
+input UserFilterInput {
+  and: [UserFilterInput!]
+  or: [UserFilterInput!]
+  userID: ComparableInt32OperationFilterInput
+  username: StringOperationFilterInput
+}
+
 input ViewingFilterInput {
   and: [ViewingFilterInput!]
   or: [ViewingFilterInput!]
-  movieID: ComparableInt32OperationFilterInput
-  userID: ComparableInt32OperationFilterInput
-  viewingType: StringOperationFilterInput
   viewingID: ComparableInt32OperationFilterInput
-  viewingData: StringOperationFilterInput
+  movieID: ComparableInt32OperationFilterInput
   movie: MovieFilterInput
+  userID: ComparableInt32OperationFilterInput
+  user: UserFilterInput
+  viewingType: StringOperationFilterInput
+  viewingData: StringOperationFilterInput
 }
 
 enum ApplyPolicy {
