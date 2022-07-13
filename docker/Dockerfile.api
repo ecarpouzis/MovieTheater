@@ -28,10 +28,11 @@ EXPOSE 443
 
 ENV ASPNETCORE_ENVIRONMENT Production
 ENV PYPATH /usr/bin/python3
+ENV MOVIEPOSTERSDIR /volume/posters
 
 WORKDIR /app
 COPY --from=dotnet-build /publish ./
 
 # dotnet /app/MovieTheater.dll web
-CMD ["dotnet", "/app/MovieTheater.dll"]
+CMD ["dotnet", "/app/MovieTheater.dll", "web"]
 

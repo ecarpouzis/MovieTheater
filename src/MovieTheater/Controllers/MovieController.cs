@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MovieTheater.Db;
 using MovieTheater.Services;
-using MovieTheater.Services.API;
 using MovieTheater.Services.Poster;
 using Newtonsoft.Json.Linq;
 using System;
@@ -219,14 +218,6 @@ namespace MovieTheater.Controllers
             public string movieIMDBID;
             public string moviePlot;
             public string movieRottenRating;
-        }
-
-        [HttpGet("/Movie/TMDBScrape")]
-        public static ActionResult TMDBScrape(string givenID)
-        {
-            TMDBHttpClient ts = new TMDBHttpClient();
-            ts.RefreshAccessToken().Wait();
-            return new OkResult();
         }
 
         [HttpGet("/Movie/ImdbScrape")]

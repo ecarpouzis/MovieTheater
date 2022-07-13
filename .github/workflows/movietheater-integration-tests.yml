@@ -1,8 +1,9 @@
-name: MovieTheater Prod Deploy
+name: MovieTheater Integration Tests
 on:
   push:
     branches:
-      - master
+      - '**'
+      - '!master'
 jobs:
   validate-gql-schema:
     runs-on: ubuntu-latest
@@ -28,12 +29,3 @@ jobs:
       - uses: actions/checkout@v2
       - run: cd docker && bash build-ui.sh
       - run: docker push localhost:32000/movietheater-ui:$GITHUB_SHA
-
-  k8s-deploy:
-    needs: [validate-gql-schema, docker-build-api, docker-build-ui]
-    runs-on: [self-hosted, linux, x64]
-    steps:
-      - run: microk8s kubectl create namespace movietheater --dry-run=client -o yaml | microk8s kubectl apply -f -
-      - run: envsubst < k8s/deployment.yaml | microk8s kubectl apply -n movietheater -f -
-      - run: envsubst < k8s/service.yaml | microk8s kubectl apply -n movietheater -f -
-      - run: microk8s kubectl rollout status deployment/movietheater
