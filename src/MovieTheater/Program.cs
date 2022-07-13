@@ -52,6 +52,7 @@ namespace MovieTheater
             catch (Exception e)
             {
                 logger.LogCritical(e, "Unhandled exception");
+                Environment.Exit(1);
             }
         }
 
