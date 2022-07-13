@@ -3,7 +3,16 @@ on:
   push:
     branches:
       - master
+      - nb/gql
 jobs:
+  validate-gql-schema:
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/dotnet/sdk:6.0
+    steps:
+      - uses: actions/checkout@v2
+      - run: cd src/MovieTheater; dotnet run export gql ../ui/src/schema-new.graphql
+      - run: cd src/ui/src; diff schema.graphql schema-new.graphql
+
   docker-build-api:
     runs-on: [self-hosted, linux, x64]
     steps:
