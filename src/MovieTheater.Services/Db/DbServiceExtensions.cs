@@ -8,15 +8,13 @@ namespace MovieTheater.Db
     {
         public static IServiceCollection AddMovieTheaterDb(this IServiceCollection services, string sqlServerConnectionString)
         {
-            if(string.IsNullOrEmpty(sqlServerConnectionString))
+            if (string.IsNullOrEmpty(sqlServerConnectionString))
             {
                 throw new ArgumentNullException(nameof(sqlServerConnectionString));
             }
 
-            services.AddDbContext<MovieDb>(opt =>
-            {
-                opt.UseSqlServer(sqlServerConnectionString);
-            });
+            services.AddDbContext<MovieDb>(opt => opt.UseSqlServer(sqlServerConnectionString));
+            services.AddPooledDbContextFactory<MovieDb>(x => x.UseSqlServer(sqlServerConnectionString));
 
             return services;
         }

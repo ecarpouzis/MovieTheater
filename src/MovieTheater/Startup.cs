@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MovieTheater.Db;
+using MovieTheater.Gql;
 using MovieTheater.Services;
 using MovieTheater.Services.ImdbApi;
 using MovieTheater.Services.Poster;
@@ -42,6 +43,7 @@ namespace MovieTheater
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddMovieTheaterGql();
             services.AddMovieLogging();
             services.AddMovieTheaterDb(config["DbConnectionString"]);
             services.AddPosterImageServices(config["MoviePostersDir"], environment);
@@ -62,6 +64,7 @@ namespace MovieTheater
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapGraphQL();
                 endpoints.MapReverseProxy();
             });
         }
