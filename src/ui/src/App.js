@@ -3,7 +3,7 @@ import { Layout } from "antd";
 import CardList from "./CardList";
 import SearchTools from "./SearchTools";
 import MoviePage from "./Pages/MoviePage";
-import InsertPage from "./InsertPage";
+import InsertPage from "./Pages/InsertPage";
 import Login from "./Login";
 import { MovieAPI } from "./MovieAPI";
 import { useState, useEffect } from "react";

@@ -1,4 +1,4 @@
-import { MovieAPI } from "./MovieAPI";
+import { MovieAPI } from "../MovieAPI";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button, Checkbox, Input } from "antd";
