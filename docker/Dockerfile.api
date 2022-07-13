@@ -33,5 +33,5 @@ WORKDIR /app
 COPY --from=dotnet-build /publish ./
 
 # dotnet /app/MovieTheater.dll web
-CMD ["dotnet", "/app/MovieTheater.dll"]
+CMD ["dotnet", "/app/MovieTheater.dll", "web"]
 
