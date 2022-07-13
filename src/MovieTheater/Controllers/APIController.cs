@@ -196,6 +196,7 @@ namespace MovieTheater.Controllers
             public string Type { get; set; }
             public int? Count { get; set; }
             public string StartsWith { get; set; }
+            public string Text { get; set; }
             public string Actor { get; set; }
             public string ReleaseYear { get; set; }
             public string UploadDate { get; set; }
@@ -206,37 +207,39 @@ namespace MovieTheater.Controllers
         {
             IQueryable<Movie> movies = movieDb.Movies;
             if (search == null)
-            {
                 return BadRequest(new { message = "No Search Data Provided" });
-            }
-            if (!String.IsNullOrEmpty(search.Type))
-            {
+           
+            if(!String.IsNullOrEmpty(search.Type))
                 switch (search.Type)
                 {
                     case "startsWith":
-                        if (!String.IsNullOrEmpty(search.StartsWith))
+                        if (search.StartsWith == "#")
                         {
-                            if (search.StartsWith == "#")
-                            {
-                                List<char> digits = new List<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-                                movies = movies.Where(m => digits.Contains(m.Title[0]));
-                            }
-                            else
-                            {
-                                movies = movies.Where(m => m.Title.StartsWith(search.StartsWith));
-                            }
+                            List<char> digits = new List<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+                            movies = movies.Where(m => digits.Contains(m.Title[0]));
                         }
-                        break;
+                        else
+                        {
+                            movies = movies.Where(m => m.Title.StartsWith(search.StartsWith));
+                        }
+                    break;
+                    
+                    case "containsText":
+                        if(!String.IsNullOrEmpty(search.Text))
+                            movies = movies.Where(m => m.Title.Contains(search.Text));
+                    break;
+                    
+                    case "actorSearch":
+                    if (!String.IsNullOrEmpty(search.Actor))
+                        movies = movies.Where(m => m.Actors.Contains(search.Actor));
+                    break;
+                    
                     default:
                         break;
                 }
 
-            }
-
             if (search.Count.HasValue)
-            {
                 movies = movies.OrderBy(elem => Guid.NewGuid()).Take(search.Count.Value);
-            }
 
             var movieList = await movies.ToListAsync();
             return Json(movieList);

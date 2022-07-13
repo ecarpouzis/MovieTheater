@@ -1,4 +1,5 @@
 import { Input, List, Button } from "antd";
+import { MovieAPI } from "./MovieAPI";
 
 const { Search } = Input;
 
@@ -52,6 +53,14 @@ const searchLetters = [
 const listStyle = {};
 
 function SearchTools({ search, setSearch }) {
+  function TitleSearch(title) {
+    setSearch({ type: "containsText", Text: title });
+  }
+
+  function ActorSearch(actor) {
+    setSearch({ type: "actorSearch", Actor: actor });
+  }
+
   return (
     <div id="SearchToolContainer" style={{ color: "white" }}>
       <span style={{ fontWeight: "bold", fontSize: "18px" }}>SEARCH</span>
@@ -65,19 +74,11 @@ function SearchTools({ search, setSearch }) {
         }}
       >
         <span style={searchLabelStyle}>MOVIE TITLE</span>
-        <Search
-          placeholder="Title"
-          //onSearch={onSearch}
-          enterButton
-        />
+        <Search placeholder="Title" onSearch={TitleSearch} enterButton />
         <br />
         <br />
         <span style={searchLabelStyle}>ACTOR NAME</span>
-        <Search
-          placeholder="Actor"
-          //onSearch={onSearch}
-          enterButton
-        />
+        <Search placeholder="Actor" onSearch={ActorSearch} enterButton />
         <br />
         <br />
         <span style={searchLabelStyle}>FIRST LETTER</span>
