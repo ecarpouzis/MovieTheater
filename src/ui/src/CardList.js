@@ -1,6 +1,3 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
-/* eslint-disable jsx-a11y/anchor-has-content */
-
 import { MovieAPI } from "./MovieAPI";
 import { Card, List } from "antd";
 import { Scrollbars } from "react-custom-scrollbars";
@@ -246,13 +243,8 @@ function CardList({ movieDataArray, userData, setUserData }) {
             const thumbUrl = MovieAPI.getPosterThumbnail(item.id);
 
             const actorList = item.actors.split(",").map((actor, i) => (
-              <div
-              key={i}
-              >
-                <a
-                  style={actorLinkStyle}
-                  href={"/browse?sort=Actor&actor=" + actor.trim()}
-                >
+              <div key={i}>
+                <a style={actorLinkStyle} href={"/browse?sort=Actor&actor=" + actor.trim()}>
                   {actor}
                 </a>
                 <br />
@@ -264,45 +256,29 @@ function CardList({ movieDataArray, userData, setUserData }) {
                 <Card hoverable bodyStyle={cardBodyStyle}>
                   <div style={cardContentWrapper}>
                     <div style={posterContainer}>
-                      <img
-                        className="moviePosterImage"
-                        style={cardPosterStyle}
-                        alt=""
-                        src={thumbUrl}
-                        loading="lazy"
-                      />
+                      <img className="moviePosterImage" style={cardPosterStyle} alt="" src={thumbUrl} loading="lazy" />
                     </div>
                     <Scrollbars>
-                        <div className="RightCol" style={cardRightColumStyle}>
-                          <Link to={{ pathname: "/movie/" + item.id, id: item.id }}
-                            style={cardTitleStyle}
-                            className="movieTitle"
-                          >
-                            {item.title +
-                              " (" +
-                              new Date(item.releaseDate).getFullYear() +
-                              ")"}
-                          </Link>
-                          <br />
-                          <span className="movieTime" style={cardTimeStyle}>
-                            {item.runtime}
-                          </span>
-                          <span className="movieRating" style={cardRatingStyle}>
-                            {item.rating}
-                          </span>
-                          <br />
-                          <div style={cardActorSpacer}>{actorList}</div>
-                          <span className="moviePlot" style={cardPlotStyle}>
-                            {item.plot}
-                          </span>
-                        </div>
+                      <div className="RightCol" style={cardRightColumStyle}>
+                        <Link to={{ pathname: "/movie/" + item.id, id: item.id }} style={cardTitleStyle} className="movieTitle">
+                          {item.title + " (" + new Date(item.releaseDate).getFullYear() + ")"}
+                        </Link>
+                        <br />
+                        <span className="movieTime" style={cardTimeStyle}>
+                          {item.runtime}
+                        </span>
+                        <span className="movieRating" style={cardRatingStyle}>
+                          {item.rating}
+                        </span>
+                        <br />
+                        <div style={cardActorSpacer}>{actorList}</div>
+                        <span className="moviePlot" style={cardPlotStyle}>
+                          {item.plot}
+                        </span>
+                      </div>
                     </Scrollbars>
                   </div>
-                  <UserMovieOptions
-                    userData={userData}
-                    id={item.id}
-                    setUserData={setUserData}
-                  />
+                  <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} />
                 </Card>
               </List.Item>
             );
