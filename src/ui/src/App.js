@@ -1,5 +1,5 @@
 import "./App.css";
-import { Layout } from "antd";
+import { Layout, notification, Button } from "antd";
 import CardList from "./CardList";
 import SearchTools from "./SearchTools";
 import MoviePage from "./MoviePage";
@@ -47,40 +47,40 @@ function App() {
     }
   }
 
+  function openNotification() {
+    notification.error({
+      message: "Title",
+      description: "This is some content",
+      placement: "bottom",
+    });
+  }
+
   return (
     <BrowserRouter>
-      <div className="App" style={{ overflow: "hidden" }}>
-        <Layout style={{ height: "100vh" }}>
-          <Sider>
-            <Login userData={userData} onUserLoggedIn={onUserLoggedIn} />
-            <br />
-            <SearchTools search={search} setSearch={setSearch} />
-          </Sider>
-          <Content
-            style={{ height: "100%", overflowY: "auto", paddingRight: "10px" }}
-          >
-            {isLoading ? (
-              <div>Loading...</div>
-            ) : (
-              <Switch>
-                <Route path="/movie/:id" exact>
-                  <MoviePage userData={userData}></MoviePage>
-                </Route>
-                <Route path="/insert" exact>
-                  <InsertPage></InsertPage>
-                </Route>
-                <Route path="/">
-                  <CardList
-                    movieDataArray={movieDataArray}
-                    userData={userData}
-                    setUserData={setUserData}
-                  ></CardList>
-                </Route>
-              </Switch>
-            )}
-          </Content>
-        </Layout>
-      </div>
+      <Layout style={{ height: "100vh", overflow: "hidden" }}>
+        <Sider>
+          <Login userData={userData} onUserLoggedIn={onUserLoggedIn} />
+          <br />
+          <SearchTools search={search} setSearch={setSearch} />
+        </Sider>
+        <Content style={{ height: "100%", overflowY: "auto", paddingRight: "10px" }}>
+          {isLoading ? (
+            <div>Loading...</div>
+          ) : (
+            <Switch>
+              <Route path="/movie/:id" exact>
+                <MoviePage userData={userData}></MoviePage>
+              </Route>
+              <Route path="/insert" exact>
+                <InsertPage></InsertPage>
+              </Route>
+              <Route path="/">
+                <CardList movieDataArray={movieDataArray} userData={userData} setUserData={setUserData}></CardList>
+              </Route>
+            </Switch>
+          )}
+        </Content>
+      </Layout>
     </BrowserRouter>
   );
 }
