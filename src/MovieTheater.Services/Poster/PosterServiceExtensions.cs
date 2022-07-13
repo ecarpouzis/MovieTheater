@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MovieTheater.Core;
 using System.Net;
 using System.Security.Authentication;
 
@@ -6,14 +7,9 @@ namespace MovieTheater.Services.Poster
 {
     public static class PosterServiceExtensions
     {
-        public static IServiceCollection AddPosterImageServices(this IServiceCollection services, string postersDirectoryPath, HostedEnvironment environment)
+        public static IServiceCollection AddPosterImageServices(this IServiceCollection services, string? postersDirectoryPath, HostedEnvironment environment)
         {
-            if (string.IsNullOrEmpty(postersDirectoryPath))
-            {
-                throw new ArgumentNullException(nameof(postersDirectoryPath), "Movie posters directory is invalid.");
-            }
-
-            DirectoryInfo postersDir = new DirectoryInfo(postersDirectoryPath);
+            DirectoryInfo postersDir = new DirectoryInfo(postersDirectoryPath ?? "posters");
 
             if (!postersDir.Exists)
             {

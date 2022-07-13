@@ -4,7 +4,7 @@ namespace MovieTheater.Services.Tmdb
 {
     public static class TmdbServiceExtensions
     {
-        public static IServiceCollection AddTmdbServices(this IServiceCollection services, string tmdbApiKey)
+        public static IServiceCollection AddTmdbServices(this IServiceCollection services, string? tmdbApiKey)
         {
             if (tmdbApiKey == null)
                 throw new ArgumentNullException(nameof(tmdbApiKey));

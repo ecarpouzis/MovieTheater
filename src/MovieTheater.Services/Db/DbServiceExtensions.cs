@@ -6,7 +6,7 @@ namespace MovieTheater.Db
 {
     public static class DbServiceExtensions
     {
-        public static IServiceCollection AddMovieTheaterDb(this IServiceCollection services, string sqlServerConnectionString)
+        public static IServiceCollection AddMovieTheaterDb(this IServiceCollection services, string? sqlServerConnectionString)
         {
             if (string.IsNullOrEmpty(sqlServerConnectionString))
             {
