@@ -13,17 +13,14 @@ function MoviePage() {
         setMovie(responseData.data);
         console.log(movie);
       });
-  });
+  }, [id]);
 
   if (!movie) {
     return <div>Loading</div>;
   }
   return (
     <div>
-      <img
-        alt={movie.title + " poster"}
-        src={MovieAPI.getMoviePoster(movie.id)}
-      />
+      <img alt={movie.title + " poster"} src={MovieAPI.getMoviePoster(movie.id)} />
       <br />
       <span>{movie.title}</span>
       <br />
@@ -41,9 +38,7 @@ function MoviePage() {
       <br />
       <span>{movie.plot}</span>
       <br />
-      {movie.actors
-        ? movie.actors.split(",").map((actor) => <Link>{actor}</Link>)
-        : null}
+      {movie.actors ? movie.actors.split(",").map((actor) => <Link>{actor}</Link>) : null}
       <br />
       <a target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID}>
         IMDB {movie.imdbRating}
