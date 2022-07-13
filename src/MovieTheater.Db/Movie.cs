@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MovieTheater.Db
@@ -22,11 +20,11 @@ namespace MovieTheater.Db
         public decimal? imdbRating { get; set; }
         public string? imdbID { get; set; }
         public int? tomatoRating { get; set; }
-        public DateTime UploadedDate { get; set; }
+        public DateTime? UploadedDate { get; set; }
 
         [Key]
         public int id { get; set; }
 
-        public List<Viewing> Viewings { get; set; }
+        public List<Viewing> Viewings { get; set; } = default!;
     }
 }

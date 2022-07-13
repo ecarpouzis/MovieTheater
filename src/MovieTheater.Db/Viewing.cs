@@ -7,18 +7,23 @@ namespace MovieTheater.Db
     [Table("Viewing")]
     public class Viewing
     {
-        public int MovieID { get; set; }
-
-        public int UserID { get; set; }
-
-        public string ViewingType { get; set; }
-
         [Key]
         public int ViewingID { get; set; }
 
-        public string ViewingData { get; set; }
+        public int MovieID { get; set; }
 
         [ForeignKey(nameof(MovieID))]
-        public Movie Movie { get; set; }
+        public Movie Movie { get; set; } = default!
+
+        public int UserID { get; set; }
+
+        [ForeignKey(nameof(UserID))]
+        public User User { get; set; } = default!;
+
+        public string? ViewingType { get; set; }
+
+
+        public string? ViewingData { get; set; }
+
     }
 }
