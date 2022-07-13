@@ -20,6 +20,7 @@ namespace MovieTheater.Services.ImdbApi
             {
                 imdbID = imdbID,
                 Title = movieData.Title,
+                SimpleTitle = movieData.Title,
                 Rating = movieData.ContentRating,
                 ReleaseDate = DateTime.Parse(movieData.ReleaseDate),
                 Runtime = movieData.RuntimeStr,

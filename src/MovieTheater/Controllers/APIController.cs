@@ -52,9 +52,9 @@ namespace MovieTheater.Controllers
         [HttpPost("/API/InsertMovie")]
         public async Task<IActionResult> InsertMovie([FromBody]Movie movie)
         {
-            var checkMovie = movieDb.Movies.SingleOrDefault(d => d.imdbID == movie.imdbID);
+            var checkMovie = await movieDb.Movies.AnyAsync(d => d.imdbID == movie.imdbID);
 
-            if (checkMovie != null)
+            if (checkMovie)
             {
                 throw new InvalidOperationException("Movie Already Exists");
             }

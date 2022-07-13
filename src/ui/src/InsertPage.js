@@ -64,6 +64,17 @@ function InsertPage() {
             </td>
           </tr>
           <tr>
+            <td>Simple Title</td>
+            <td>
+              <InsertMovieInput
+                placeholder="Simple Title"
+                name="simpleTitle"
+                movieState={movieState}
+                setMovieState={setMovieState}
+              />
+            </td>
+          </tr>
+          <tr>
             <td>Rating</td>
             <td>
               <InsertMovieInput
