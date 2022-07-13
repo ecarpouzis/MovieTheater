@@ -34,9 +34,11 @@ namespace MovieTheater.Services.Poster
             }
         }
 
-        public Task SaveImage(int movieId, PosterImageVariant variant, byte[] imageContent)
+        public async Task SaveImage(int movieId, PosterImageVariant variant, byte[] imageContent)
         {
-            throw new InvalidOperationException("You cannot save images in dev mode.");
+            var file = GetFile(movieId, variant);
+
+            await File.WriteAllBytesAsync(file.FullName, imageContent);
         }
 
         private FileInfo GetFile(int movieId, PosterImageVariant variant)
@@ -49,7 +51,7 @@ namespace MovieTheater.Services.Poster
             }
             else if (variant == PosterImageVariant.Thumbnail)
             {
-                path = Path.Combine(options.Directory.FullName, movieId + ".png");
+                path = Path.Combine(options.Directory.FullName, movieId + "_s.png");
             }
             else
             {

@@ -82,7 +82,7 @@ namespace MovieTheater.Services.Poster
             }
             else if (variant == PosterImageVariant.Thumbnail)
             {
-                path = Path.Combine(options.Directory.FullName, movieId + ".png");
+                path = Path.Combine(options.Directory.FullName, movieId + "_s.png");
             }
             else
             {
