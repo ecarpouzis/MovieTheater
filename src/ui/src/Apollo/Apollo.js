@@ -1,4 +1,4 @@
-import schema from "./schema";
+import schema from "../schema";
 import { buildSchema } from "graphql";
 import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
