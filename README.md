@@ -25,12 +25,9 @@
 Configure C# project
 1. Copy `src/MovieTheater/appsettings.default.json` to `src/MovieTheater/appsettings.Development.json`
 1. Update the values in appsettings.Development for local development:
-    - MoviePostersDir points to a directory we attempt to find movie poster images. This can be an empty dir if you don't need local dev.
     - DbConnectionString is your sql server connection string to the movie db
-1. Setup `MovieTheater` c# project to launch on port 3001
-    - Set env var `ASPNETCORE_URLS=http://+:3001`
-    - And/Or, setup `src/MovieTheater/Properties/launchSettings.json` with an applicationUrl `"http://localhost:3001"`
-    - ![launchSettings.json image](./README/launchSettings.json.png)
+	- ImdbApiKey is for [ImdbApi](https://imdb-api.com/API)
+	- TmdbApiKey is for [TmdbApi](https://www.themoviedb.org/documentation/api)
 
 Configure React.js project
 1. In console, `cd src/ui`
