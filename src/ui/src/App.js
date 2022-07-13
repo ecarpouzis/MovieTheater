@@ -1,5 +1,5 @@
 import "./App.css";
-import { Layout, notification, Button } from "antd";
+import { Layout } from "antd";
 import CardList from "./CardList";
 import SearchTools from "./SearchTools";
 import MoviePage from "./MoviePage";
@@ -45,14 +45,6 @@ function App() {
     if (storedUsername) {
       onUserLoggedIn(storedUsername);
     }
-  }
-
-  function openNotification() {
-    notification.error({
-      message: "Title",
-      description: "This is some content",
-      placement: "bottom",
-    });
   }
 
   return (
