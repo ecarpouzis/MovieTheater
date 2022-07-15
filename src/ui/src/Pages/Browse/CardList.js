@@ -238,7 +238,7 @@ function CardList({ movieDataArray, userData, setUserData }) {
             xl: 3,
             xxl: 4,
           }}
-          dataSource={movieDataArray.slice(0, Math.min(50, movieDataArray.length))}
+          dataSource={movieDataArray}
           renderItem={(item, i) => {
             const thumbUrl = MovieAPI.getPosterThumbnail(item.id);
 
