@@ -216,17 +216,17 @@ namespace MovieTheater.Controllers
                         if (search.StartsWith == "#")
                         {
                             List<char> digits = new List<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-                            movies = movies.Where(m => digits.Contains(m.Title[0]));
+                            movies = movies.Where(m => digits.Contains(m.SimpleTitle[0]));
                         }
                         else
                         {
-                            movies = movies.Where(m => m.Title.StartsWith(search.StartsWith));
+                            movies = movies.Where(m => m.SimpleTitle.StartsWith(search.StartsWith));
                         }
                     break;
                     
                     case "containsText":
                         if(!String.IsNullOrEmpty(search.Text))
-                            movies = movies.Where(m => m.Title.Contains(search.Text));
+                            movies = movies.Where(m => m.SimpleTitle.Contains(search.Text));
                     break;
                     
                     case "actorSearch":
@@ -241,7 +241,7 @@ namespace MovieTheater.Controllers
             if (search.Count.HasValue)
                 movies = movies.OrderBy(elem => Guid.NewGuid()).Take(search.Count.Value);
 
-            var movieList = await movies.ToListAsync();
+            var movieList = await movies.OrderBy(m => m.SimpleTitle).ToListAsync();
             return Json(movieList);
         }
     }
