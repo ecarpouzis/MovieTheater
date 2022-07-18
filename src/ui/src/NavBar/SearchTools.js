@@ -1,4 +1,5 @@
 import { Input, List, Button } from "antd";
+import { gql } from "@apollo/client";
 
 const { Search } = Input;
 
@@ -51,13 +52,140 @@ const searchLetters = [
 
 const listStyle = {};
 
-function SearchTools({ search, setSearch }) {
+function SearchTools({ search, setSearch, resetSearch }) {
   function TitleSearch(title) {
-    setSearch({ type: "containsText", Text: title });
+    const query = gql`
+      query ($title: String!) {
+        movies(where: { simpleTitle: { contains: $title } }, order: { simpleTitle: ASC }) {
+          id
+          actors
+          title
+          simpleTitle
+          rating
+          releaseDate
+          runtime
+          genre
+          director
+          writer
+          plot
+          posterLink
+          imdbRating
+          tomatoRating
+          uploadedDate
+          removeFromRandom
+        }
+      }
+    `;
+    const variables = { title: title };
+    setSearch({ query: query, variables: variables });
   }
 
   function ActorSearch(actor) {
-    setSearch({ type: "actorSearch", Actor: actor });
+    const query = gql`
+      query ($actor: String!) {
+        movies(where: { actors: { contains: $actor } }, order: { simpleTitle: ASC }) {
+          id
+          actors
+          title
+          simpleTitle
+          rating
+          releaseDate
+          runtime
+          genre
+          director
+          writer
+          plot
+          posterLink
+          imdbRating
+          tomatoRating
+          uploadedDate
+          removeFromRandom
+        }
+      }
+    `;
+    const variables = { actor: actor };
+    setSearch({ query: query, variables: variables });
+  }
+
+  function ToggleLetterSearch(firstLetter) {
+    let isAlreadySelected;
+    let query;
+    let variables;
+    if (firstLetter === "#") {
+      query = gql`
+        query {
+          movies(
+            where: {
+              simpleTitle: {
+                or: [
+                  { startsWith: "#" }
+                  { startsWith: "0" }
+                  { startsWith: "1" }
+                  { startsWith: "2" }
+                  { startsWith: "3" }
+                  { startsWith: "4" }
+                  { startsWith: "5" }
+                  { startsWith: "6" }
+                  { startsWith: "7" }
+                  { startsWith: "8" }
+                  { startsWith: "9" }
+                ]
+              }
+            }
+            order: { simpleTitle: ASC }
+          ) {
+            id
+            actors
+            title
+            simpleTitle
+            rating
+            releaseDate
+            runtime
+            genre
+            director
+            writer
+            plot
+            posterLink
+            imdbRating
+            tomatoRating
+            uploadedDate
+            removeFromRandom
+          }
+        }
+      `;
+      isAlreadySelected = search.query === query && search.variables.firstLetter == firstLetter;
+    } else {
+      query = gql`
+        query ($firstLetter: String!) {
+          movies(where: { simpleTitle: { startsWith: $firstLetter } }, order: { simpleTitle: ASC }) {
+            id
+            actors
+            title
+            simpleTitle
+            rating
+            releaseDate
+            runtime
+            genre
+            director
+            writer
+            plot
+            posterLink
+            imdbRating
+            tomatoRating
+            uploadedDate
+            removeFromRandom
+          }
+        }
+      `;
+      isAlreadySelected = search.query === query;
+      variables = { firstLetter: firstLetter };
+    }
+
+    if (isAlreadySelected) {
+      resetSearch();
+    } else {
+      setSearch({ query: query, variables: variables });
+    }
   }
 
   return (
@@ -104,12 +232,7 @@ function SearchTools({ search, setSearch }) {
                 >
                   <Button
                     onClick={() => {
-                      const isAlreadySelected = search.startsWith === item;
-                      if (isAlreadySelected) {
-                        setSearch({ count: 20 });
-                      } else {
-                        setSearch({ type: "startsWith", startsWith: item });
-                      }
+                      ToggleLetterSearch(item);
                     }}
                     style={{
                       width: "36px",

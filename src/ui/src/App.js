@@ -2,7 +2,7 @@ import { Layout } from "antd";
 import { MovieAPI } from "./MovieAPI";
 import { useState } from "react";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
-
+import { gql } from "@apollo/client";
 import NavBar from "./NavBar/NavBar";
 import Browse from "./Pages/Browse/Browse";
 import MoviePage from "./Pages/MoviePage";
@@ -10,10 +10,37 @@ import InsertPage from "./Pages/InsertPage";
 
 const storedUsername = window.localStorage.getItem("Username");
 
+const randomMoviesQuery = gql`
+  query {
+    randomMovies {
+      id
+      actors
+      title
+      simpleTitle
+      rating
+      releaseDate
+      runtime
+      genre
+      director
+      writer
+      plot
+      posterLink
+      imdbRating
+      tomatoRating
+      uploadedDate
+      removeFromRandom
+    }
+  }
+`;
+
 function App() {
   const [userData, setUserData] = useState(null);
-  const [search, setSearch] = useState({ count: 20 });
+  const [search, setSearch] = useState({ query: randomMoviesQuery, variables: {} });
   const [hasCheckedFirstLogin, setHasCheckedFirstLogin] = useState(false);
+
+  function resetSearch() {
+    setSearch({ query: randomMoviesQuery, variables: {} });
+  }
 
   function onUserLoggedIn(username) {
     MovieAPI.loginUser(username)
@@ -34,7 +61,7 @@ function App() {
   return (
     <BrowserRouter>
       <Layout style={{ height: "100vh", overflow: "hidden" }}>
-        <NavBar search={search} setSearch={setSearch} userData={userData} onUserLoggedIn={onUserLoggedIn} />
+        <NavBar search={search} setSearch={setSearch} resetSearch={resetSearch} userData={userData} onUserLoggedIn={onUserLoggedIn} />
         <Layout.Content style={{ height: "100%", overflowY: "auto", paddingRight: "10px" }}>
           <Switch>
             <Route path="/movie/:id" exact>
