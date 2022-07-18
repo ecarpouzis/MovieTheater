@@ -21,6 +21,7 @@ namespace MovieTheater.Db
         public string? imdbID { get; set; }
         public int? tomatoRating { get; set; }
         public DateTime? UploadedDate { get; set; }
+        public bool RemoveFromRandom { get; set; }
 
         [Key]
         public int id { get; set; }

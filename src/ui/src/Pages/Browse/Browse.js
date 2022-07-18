@@ -1,20 +1,40 @@
 import { useEffect, useState } from "react";
-
+import { gql, useQuery } from "@apollo/client";
 import { MovieAPI } from "../../MovieAPI";
 import CardList from "./CardList";
 
-function Browse({ search, userData, setUserData }) {
-  const [movieDataArray, setMovieDataArray] = useState([]);
+const query = gql`
+  query {
+    randomMovies {
+      id
+      actors
+      title
+      simpleTitle
+      rating
+      releaseDate
+      runtime
+      genre
+      director
+      writer
+      plot
+      posterLink
+      imdbRating
+      tomatoRating
+      uploadedDate
+      removeFromRandom
+    }
+  }
+`;
 
-  useEffect(() => {
-    MovieAPI.getMovies(search)
-      .then((response) => response.json())
-      .then((responseData) => {
-        setMovieDataArray(responseData);
-      });
-  }, [search]);
+function Browse({ parameters, userData, setUserData }) {
+  const { data, loading, error } = useQuery(query);
 
-  return <CardList movieDataArray={movieDataArray} userData={userData} setUserData={setUserData}></CardList>;
+  if (data) {
+    const movieDataArray = data.movies || data.randomMovies;
+    return <CardList movieDataArray={movieDataArray} userData={userData} setUserData={setUserData}></CardList>;
+  } else {
+    return <span>Loading</span>;
+  }
 }
 
 export default Browse;

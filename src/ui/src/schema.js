@@ -20,6 +20,7 @@ type Movie {
   imdbID: String
   tomatoRating: Int
   uploadedDate: DateTime
+  removeFromRandom: Boolean!
   id: Int!
   viewings: [Viewing!]!
 }
@@ -30,6 +31,7 @@ type Mutation {
 
 type Query {
   movies(where: MovieFilterInput order: [MovieSortInput!]): [Movie]
+  randomMovies(take: Int! = 50): [Movie]
 }
 
 type User {
@@ -45,6 +47,11 @@ type Viewing {
   user: User!
   viewingType: String
   viewingData: String
+}
+
+input BooleanOperationFilterInput {
+  eq: Boolean
+  neq: Boolean
 }
 
 input ComparableInt32OperationFilterInput {
@@ -132,6 +139,7 @@ input MovieFilterInput {
   imdbID: StringOperationFilterInput
   tomatoRating: ComparableNullableOfInt32OperationFilterInput
   uploadedDate: ComparableNullableOfDateTimeOperationFilterInput
+  removeFromRandom: BooleanOperationFilterInput
   id: ComparableInt32OperationFilterInput
   viewings: ListFilterInputTypeOfViewingFilterInput
 }
@@ -152,6 +160,7 @@ input MovieSortInput {
   imdbID: SortEnumType
   tomatoRating: SortEnumType
   uploadedDate: SortEnumType
+  removeFromRandom: SortEnumType
   id: SortEnumType
 }
 
