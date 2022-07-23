@@ -16,6 +16,7 @@ namespace MovieTheater.Services.ImdbApi
         {
             var apiLib = new IMDbApiLib.ApiLib(imdbApiKey);
             var movieData = await apiLib.TitleAsync(imdbID);
+            bool imdbParseSuccess = Decimal.TryParse(movieData.IMDbRating, out var imdbRatingParsed);
             return new Movie()
             {
                 imdbID = imdbID,
@@ -30,7 +31,7 @@ namespace MovieTheater.Services.ImdbApi
                 Actors = String.Join(", ", movieData.ActorList.Take(3).Select(x => x.Name)),
                 Plot = movieData.Plot,
                 PosterLink = movieData.Image,
-                imdbRating = Decimal.Parse(movieData.IMDbRating)
+                imdbRating = imdbParseSuccess? imdbRatingParsed : null
             };
         }
 

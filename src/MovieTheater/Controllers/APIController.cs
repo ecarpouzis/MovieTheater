@@ -27,8 +27,9 @@ namespace MovieTheater.Controllers
         private readonly HttpClient httpClient;
         private readonly IPosterImageRepository imageRepo;
         private readonly ImageShrinkService shrinkService;
+        private readonly GoogleSearchService googleSearchService;
 
-        public APIController(MovieDb movieDb, TmdbApi tmdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo, ImageShrinkService shrinkService)
+        public APIController(MovieDb movieDb, TmdbApi tmdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -36,6 +37,7 @@ namespace MovieTheater.Controllers
             this.httpClient = httpClient;
             this.imageRepo = imageRepo;
             this.shrinkService = shrinkService;
+            this.googleSearchService = googleSearchService;
         }
 
         [HttpGet("/API/GetMovie")]
@@ -50,7 +52,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpPost("/API/InsertMovie")]
-        public async Task<IActionResult> InsertMovie([FromBody]Movie movie)
+        public async Task<IActionResult> InsertMovie([FromBody] Movie movie)
         {
             var checkMovie = await movieDb.Movies.AnyAsync(d => d.imdbID == movie.imdbID);
 
@@ -68,7 +70,7 @@ namespace MovieTheater.Controllers
             }
             catch
             {
-                return Ok( new { Message = "Save failed", Success = false} );
+                return Ok(new { Message = "Save failed", Success = false });
             }
 
             if (movie.PosterLink.Trim() != "")
@@ -120,6 +122,19 @@ namespace MovieTheater.Controllers
         public async Task<Movie> ImdbApiLookupImdbID(string imdbID)
         {
             return await imdb.ImdbApiLookupImdbID(imdbID);
+        }
+
+        [HttpPost("/API/GetMoviesFromNames")]
+        public async Task<List<Movie>> GetMoviesFromNames([FromBody]string[] movieNames)
+        {
+            List<Movie> movies = new List<Movie>();
+            foreach(var movieName in movieNames)
+            {
+                var imdbID = await  googleSearchService.FindImdbIdFromMovieName(movieName);
+                var movie = await imdb.ImdbApiLookupImdbID(imdbID);
+                movies.Add(movie);
+            }
+            return movies;
         }
 
         [HttpGet("/API/ImdbApiLookupName")]

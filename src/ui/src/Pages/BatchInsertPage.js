@@ -141,13 +141,15 @@ function BatchInsertPage() {
     setMovies(newMovies);
   }
 
-  function setupMovieList() {
-    var moviesArray = batchTextAreaState.split("\n");
+  async function setupMovieList() {
+    const movieNames = batchTextAreaState.split("\n");
+    const moviesArray = await MovieAPI.movieLookupFromNames(movieNames);
+
     setMovies(
-      moviesArray.map((movieName, index) => {
+      moviesArray.map((movie, index) => {
         return {
           index,
-          title: movieName,
+          ...movie,
         };
       })
     );

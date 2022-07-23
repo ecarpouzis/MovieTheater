@@ -108,6 +108,20 @@ function tmdbLookupName(name) {
   });
 }
 
+function movieLookupFromNames(movieNames) {
+  const url = "/API/GetMoviesFromNames";
+
+  return fetch(url, {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(movieNames),
+  }).then((response) => {
+    return response.json();
+  });
+}
+
 function imdbApiLookupImdbId(id) {
   const url = "/API/ImdbApiLookupImdbID?imdbID=" + encodeURIComponent(id);
 
@@ -148,6 +162,7 @@ const MovieAPI = {
   loginUser,
   setWatchedState,
   setWantToWatchState,
+  movieLookupFromNames,
 };
 
 export { MovieAPI };

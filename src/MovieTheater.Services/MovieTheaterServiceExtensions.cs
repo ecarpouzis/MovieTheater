@@ -18,7 +18,7 @@ namespace MovieTheater.Services
             services.AddPythonService(config.PyPath);
             services.AddImdbServices(config.ImdbApiKey);
             services.AddTmdbServices(config.TmdbApiKey);
-
+            services.AddTransient<GoogleSearchService>();
             return services;
         }
     }
