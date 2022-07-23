@@ -241,7 +241,7 @@ namespace MovieTheater.Controllers
                     
                     case "containsText":
                         if(!String.IsNullOrEmpty(search.Text))
-                            movies = movies.Where(m => m.SimpleTitle.Contains(search.Text));
+                            movies = movies.Where(m => m.SimpleTitle.Contains(search.Text) || m.Title.Contains(search.Text));
                     break;
                     
                     case "actorSearch":
