@@ -17,13 +17,23 @@ namespace MovieTheater.Services.ImdbApi
             var apiLib = new IMDbApiLib.ApiLib(imdbApiKey);
             var movieData = await apiLib.TitleAsync(imdbID);
             bool imdbParseSuccess = Decimal.TryParse(movieData.IMDbRating, out var imdbRatingParsed);
+
+            //If the release date is null, try the first of the movie's year. If all else fails, return null.
+            bool dateReleaseParseSuccess = DateTime.TryParse(movieData.ReleaseDate, out var dateReleaseDateParsed);
+            bool yearReleaseParseSuccess = DateTime.TryParse(movieData.Year+"-1-1", out var yearReleaseDateParsed);
+            DateTime? releaseDate = null;
+            if (dateReleaseParseSuccess)
+                releaseDate = dateReleaseDateParsed;
+            else if (yearReleaseParseSuccess)
+                releaseDate = yearReleaseDateParsed;
+
             return new Movie()
             {
                 imdbID = imdbID,
                 Title = movieData.Title,
                 SimpleTitle = movieData.Title,
                 Rating = movieData.ContentRating,
-                ReleaseDate = DateTime.Parse(movieData.ReleaseDate),
+                ReleaseDate = releaseDate,
                 Runtime = movieData.RuntimeStr,
                 Genre = movieData.Genres,
                 Director = movieData.Directors,
