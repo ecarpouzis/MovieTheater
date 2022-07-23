@@ -7,6 +7,7 @@ import NavBar from "./NavBar/NavBar";
 import Browse from "./Pages/Browse/Browse";
 import MoviePage from "./Pages/MoviePage";
 import InsertPage from "./Pages/InsertPage";
+import BatchInsertPage from "./Pages/BatchInsertPage";
 
 const storedUsername = window.localStorage.getItem("Username");
 
@@ -69,6 +70,9 @@ function App() {
             </Route>
             <Route path="/insert" exact>
               <InsertPage />
+            </Route>
+            <Route path="/batchinsert" exact>
+              <BatchInsertPage />
             </Route>
             <Route path="/">
               <Browse search={search} userData={userData} setUserData={setUserData} />
