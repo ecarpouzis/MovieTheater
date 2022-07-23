@@ -636,7 +636,7 @@ namespace MovieTheater.Controllers
             {
                 var userID = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
 
-                var count = await movieDb.Viewings.CountAsync(d => d.UserID == userID && d.ViewingType == "w");
+                var count = await movieDb.Viewings.CountAsync(d => d.UserID == userID && d.ViewingType == "Seen");
                 return new JsonResult(new { count = count });
             }
             else
@@ -652,7 +652,7 @@ namespace MovieTheater.Controllers
             {
                 var userID = Int32.Parse(User.Claims.Single(d => d.Type == "UserID").Value);
 
-                var count = await movieDb.Viewings.CountAsync(d => d.UserID == userID && d.ViewingType == "s");
+                var count = await movieDb.Viewings.CountAsync(d => d.UserID == userID && d.ViewingType == "WantToWatch");
                 return new JsonResult(new { count = count });
             }
             else

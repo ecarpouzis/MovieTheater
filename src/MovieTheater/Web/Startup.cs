@@ -9,6 +9,7 @@ using MovieTheater.Services.Poster;
 using MovieTheater.Services.Python;
 using MovieTheater.Services.Tmdb;
 using System;
+using System.Text.Json.Serialization;
 
 namespace MovieTheater
 {
@@ -29,7 +30,11 @@ namespace MovieTheater
             var proxyBuilder = services.AddReverseProxy();
             proxyBuilder.LoadFromConfig(config.RawConfiguration.GetSection("ReverseProxy"));
 
-            services.AddMvc();
+            services.AddMvc().AddJsonOptions(opts =>
+            {
+                var enumConverter = new JsonStringEnumConverter();
+                opts.JsonSerializerOptions.Converters.Add(enumConverter);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

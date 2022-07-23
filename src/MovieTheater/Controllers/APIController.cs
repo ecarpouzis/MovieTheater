@@ -108,10 +108,10 @@ namespace MovieTheater.Controllers
 
 
             //watched
-            var moviesSeen = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "w").Select(d => d.MovieID).ToListAsync();
+            var moviesSeen = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "Seen").Select(d => d.MovieID).ToListAsync();
 
             //want to watch
-            var moviesToWatch = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "s").Select(d => d.MovieID).ToListAsync();
+            var moviesToWatch = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "WantToWatch").Select(d => d.MovieID).ToListAsync();
 
             return Json(new { user.Username, moviesSeen, moviesToWatch });
         }
@@ -140,8 +140,8 @@ namespace MovieTheater.Controllers
             return await tmdb.GetMovieByName(name);
         }
 
-
-        public async Task<IActionResult> SetViewingState([FromBody] ViewingState viewingState)
+        [HttpPost("/API/SetViewingState")]
+        public async Task<IActionResult> SetViewingState([FromBody]ViewingState viewingState)
         {
             if (viewingState == null)
             {
@@ -153,18 +153,18 @@ namespace MovieTheater.Controllers
             {
                 return BadRequest(new { Success = false, Message = "No User Found." });
             }
-
+            
             var movie = await movieDb.Movies.FirstOrDefaultAsync(m => m.id == viewingState.MovieID);
             if (movie == null)
             {
                 return BadRequest(new { Success = false, Message = "Invalid Movie ID." });
             }
-
-            var action = viewingState.Action == ViewingState.ViewingType.SetWatched ? "s" : "w";
+            
+            var action = viewingState.Action == ViewingType.SetWatched ? "Seen" : "WantToWatch";
             var existingViewing = await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.MovieID == movie.id && e.ViewingType == action);
             bool shouldCreateNew = existingViewing == null && viewingState.SetActive;
             bool shouldDeleteExisting = existingViewing != null && !viewingState.SetActive;
-
+            
             if (shouldCreateNew)
             {
                 var newViewing = new Viewing

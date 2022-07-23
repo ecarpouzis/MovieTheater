@@ -193,7 +193,7 @@ function UserMovieOptions({ userData, id, setUserData }) {
                 };
                 setUserData(newUserData);
               }
-              MovieAPI.setWatchedState(userData.username, id, !isWanted)
+              MovieAPI.setWantToWatchState(userData.username, id, !isWanted)
                 .then((response) => response.json())
                 .then((response) => {
                   if (!response.success) {
