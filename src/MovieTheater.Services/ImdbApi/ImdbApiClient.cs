@@ -14,8 +14,15 @@ namespace MovieTheater.Services.ImdbApi
 
         public async Task<Movie> ImdbApiLookupImdbID(string imdbID)
         {
+            if (String.IsNullOrEmpty(imdbID))
+                return null;
+
             var apiLib = new IMDbApiLib.ApiLib(imdbApiKey);
             var movieData = await apiLib.TitleAsync(imdbID);
+
+            if (movieData.Id == null)
+                return null;
+
             bool imdbParseSuccess = Decimal.TryParse(movieData.IMDbRating, out var imdbRatingParsed);
 
             //If the release date is null, try the first of the movie's year. If all else fails, return null.
