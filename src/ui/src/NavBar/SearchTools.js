@@ -56,7 +56,7 @@ function SearchTools({ search, setSearch, resetSearch }) {
   function TitleSearch(title) {
     const query = gql`
       query ($title: String!) {
-        movies(where: { simpleTitle: { contains: $title } }, order: { simpleTitle: ASC }) {
+        movies(where: { or: [{ simpleTitle: { contains: $title } }, { title: { contains: $title } }] }, order: { simpleTitle: ASC }) {
           id
           actors
           title
