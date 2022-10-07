@@ -52,61 +52,7 @@ const searchLetters = [
 
 const listStyle = {};
 
-function SearchTools({ search, setSearch, resetSearch }) {
-  function TitleSearch(title) {
-    const query = gql`
-      query ($title: String!) {
-        movies(where: { or: [{ simpleTitle: { contains: $title } }, { title: { contains: $title } }] }, order: { simpleTitle: ASC }) {
-          id
-          actors
-          title
-          simpleTitle
-          rating
-          releaseDate
-          runtime
-          genre
-          director
-          writer
-          plot
-          posterLink
-          imdbRating
-          tomatoRating
-          uploadedDate
-          removeFromRandom
-        }
-      }
-    `;
-    const variables = { title: title };
-    setSearch({ query: query, variables: variables });
-  }
-
-  function ActorSearch(actor) {
-    const query = gql`
-      query ($actor: String!) {
-        movies(where: { actors: { contains: $actor } }, order: { simpleTitle: ASC }) {
-          id
-          actors
-          title
-          simpleTitle
-          rating
-          releaseDate
-          runtime
-          genre
-          director
-          writer
-          plot
-          posterLink
-          imdbRating
-          tomatoRating
-          uploadedDate
-          removeFromRandom
-        }
-      }
-    `;
-    const variables = { actor: actor };
-    setSearch({ query: query, variables: variables });
-  }
-
+function SearchTools({ search, setSearch, resetSearch, titleSearch, actorSearch }) {
   function ToggleLetterSearch(firstLetter) {
     let isAlreadySelected;
     let query;
@@ -201,11 +147,11 @@ function SearchTools({ search, setSearch, resetSearch }) {
         }}
       >
         <span style={searchLabelStyle}>MOVIE TITLE</span>
-        <Search placeholder="Title" onSearch={TitleSearch} enterButton />
+        <Search placeholder="Title" onSearch={titleSearch} enterButton />
         <br />
         <br />
         <span style={searchLabelStyle}>ACTOR NAME</span>
-        <Search placeholder="Actor" onSearch={ActorSearch} enterButton />
+        <Search placeholder="Actor" onSearch={actorSearch} enterButton />
         <br />
         <br />
         <span style={searchLabelStyle}>FIRST LETTER</span>

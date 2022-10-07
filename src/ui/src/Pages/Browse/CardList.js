@@ -214,7 +214,7 @@ function UserMovieOptions({ userData, id, setUserData }) {
   return <></>;
 }
 
-function CardList({ movieDataArray, userData, setUserData }) {
+function CardList({ movieDataArray, userData, setUserData, actorSearch }) {
   //If a user is logged in, cards need to be formatted for Watchlist buttons
   if (userData) {
     cardBodyStyle = { ...cardBodyStyle, height: "260px", flexWrap: "wrap" };
@@ -244,7 +244,7 @@ function CardList({ movieDataArray, userData, setUserData }) {
 
             const actorList = item.actors.split(",").map((actor, i) => (
               <div key={i}>
-                <a style={actorLinkStyle} href={"/browse?sort=Actor&actor=" + actor.trim()}>
+                <a style={actorLinkStyle} onClick={() => actorSearch(actor)}>
                   {actor}
                 </a>
                 <br />

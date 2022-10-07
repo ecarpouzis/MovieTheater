@@ -7,7 +7,7 @@ import { MovieAPI } from "../MovieAPI";
 //Props:
 //  userData - Stores user data, used to determine if the Login component displays ways to log in, or user information and Logout
 //  onUserLoggedIn - Hook to handle passing user login event to App.js
-function Login({ userData, onUserLoggedIn }) {
+function Login({ userData, setUserData, onUserLoggedIn, moviesSeenSearch, moviesWantToWatchSearch }) {
   //Hook to store a list of all users
   const [userlist, setUserlist] = useState([]);
   const [filteredUserlist, setFilteredUserlist] = useState([]);
@@ -78,6 +78,11 @@ function Login({ userData, onUserLoggedIn }) {
     paddingLeft: "10px",
   };
 
+  function logoutUser() {
+    setUserData();
+    window.localStorage.clear();
+  }
+
   //When a user isn't logged in, render a login tool which enables the user to log in
   const getLoginTools = () => (
     <div id="LoginContainer" style={{ color: "white" }}>
@@ -132,13 +137,19 @@ function Login({ userData, onUserLoggedIn }) {
         <br />
         <div style={viewingDataContainer}>
           <span style={filmIcon} className="fas fa-film"></span>
-          <span style={viewingDataText}>{userData.moviesSeen.length}</span>
+          <a style={viewingDataText} onClick={moviesSeenSearch}>
+            {userData.moviesSeen.length}
+          </a>
         </div>
         <div style={viewingDataContainer}>
           <span style={heartIcon} className="fas fa-heart"></span>
-          <span style={viewingDataText}>{userData.moviesToWatch.length}</span>
+          <a style={viewingDataText} onClick={moviesWantToWatchSearch}>
+            {userData.moviesToWatch.length}
+          </a>
         </div>
         <br style={{ clear: "both" }} />
+        <a onClick={logoutUser}>{"Logout"}</a>
+        <br />
       </div>
     );
   }

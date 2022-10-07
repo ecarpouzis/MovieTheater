@@ -59,14 +59,114 @@ function App() {
     }
   }
 
+  function TitleSearch(title) {
+    const query = gql`
+      query ($title: String!) {
+        movies(where: { or: [{ simpleTitle: { contains: $title } }, { title: { contains: $title } }] }, order: { simpleTitle: ASC }) {
+          id
+          actors
+          title
+          simpleTitle
+          rating
+          releaseDate
+          runtime
+          genre
+          director
+          writer
+          plot
+          posterLink
+          imdbRating
+          tomatoRating
+          uploadedDate
+          removeFromRandom
+        }
+      }
+    `;
+    const variables = { title: title };
+    setSearch({ query: query, variables: variables });
+  }
+
+  function ActorSearch(actor) {
+    const query = gql`
+      query ($actor: String!) {
+        movies(where: { actors: { contains: $actor } }, order: { simpleTitle: ASC }) {
+          id
+          actors
+          title
+          simpleTitle
+          rating
+          releaseDate
+          runtime
+          genre
+          director
+          writer
+          plot
+          posterLink
+          imdbRating
+          tomatoRating
+          uploadedDate
+          removeFromRandom
+        }
+      }
+    `;
+    const variables = { actor: actor };
+    setSearch({ query: query, variables: variables });
+  }
+
+  function MovieIDListSearch(movieIds) {
+    const query = gql`
+      query ($movieIds: [Int!]) {
+        movies(where: { id: { in: $movieIds } }, order: { simpleTitle: ASC }) {
+          id
+          actors
+          title
+          simpleTitle
+          rating
+          releaseDate
+          runtime
+          genre
+          director
+          writer
+          plot
+          posterLink
+          imdbRating
+          tomatoRating
+          uploadedDate
+          removeFromRandom
+        }
+      }
+    `;
+    const variables = { movieIds: movieIds };
+    setSearch({ query: query, variables: variables });
+  }
+
+  function MoviesSeenSearch() {
+    MovieIDListSearch(userData.moviesSeen);
+  }
+
+  function MoviesWantToWatchSearch() {
+    MovieIDListSearch(userData.moviesToWatch);
+  }
+
   return (
     <BrowserRouter>
       <Layout style={{ height: "100vh", overflow: "hidden" }}>
-        <NavBar search={search} setSearch={setSearch} resetSearch={resetSearch} userData={userData} onUserLoggedIn={onUserLoggedIn} />
+        <NavBar
+          search={search}
+          setSearch={setSearch}
+          resetSearch={resetSearch}
+          userData={userData}
+          setUserData={setUserData}
+          onUserLoggedIn={onUserLoggedIn}
+          titleSearch={TitleSearch}
+          actorSearch={ActorSearch}
+          moviesSeenSearch={MoviesSeenSearch}
+          moviesWantToWatchSearch={MoviesWantToWatchSearch}
+        />
         <Layout.Content style={{ height: "100%", overflowY: "auto", paddingRight: "10px" }}>
           <Switch>
             <Route path="/movie/:id" exact>
-              <MoviePage userData={userData} />
+              <MoviePage />
             </Route>
             <Route path="/insert" exact>
               <InsertPage />
@@ -75,7 +175,7 @@ function App() {
               <BatchInsertPage />
             </Route>
             <Route path="/">
-              <Browse search={search} userData={userData} setUserData={setUserData} />
+              <Browse search={search} userData={userData} setUserData={setUserData} actorSearch={ActorSearch} />
             </Route>
           </Switch>
         </Layout.Content>
