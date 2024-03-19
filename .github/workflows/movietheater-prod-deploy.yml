@@ -33,6 +33,8 @@ jobs:
     needs: [validate-gql-schema, docker-build-api, docker-build-ui]
     runs-on: [self-hosted, linux, x64]
     steps:
+      - run: kubeadm certs check-expiration
+      - run: kubeadm certs renew all
       - run: microk8s kubectl create namespace movietheater --dry-run=client -o yaml | microk8s kubectl apply -f -
       - run: envsubst < k8s/deployment.yaml | microk8s kubectl apply -n movietheater -f -
       - run: envsubst < k8s/service.yaml | microk8s kubectl apply -n movietheater -f -
