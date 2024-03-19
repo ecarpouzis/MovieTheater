@@ -1,7 +1,7 @@
 import { MovieAPI } from "../MovieAPI";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Button, Checkbox, Input } from "antd";
+import { Button, Input, Radio } from "antd";
 
 function InsertMovieInput({ placeholder, name, movieState, setMovieState }) {
   function onChange(event) {
@@ -21,7 +21,7 @@ function InsertPage() {
 
   async function nameMatch() {
     if (movieState.title) {
-      const movie = await MovieAPI.imdbApiLookupName(movieState.title);
+      let movie = await MovieAPI.omdbLookupName(movieState.title);
       if (movie) {
         setMovieState(movie);
       }
@@ -34,11 +34,37 @@ function InsertPage() {
 
   async function imdbMatch() {
     if (movieState.imdbID) {
-      const movie = await MovieAPI.imdbApiLookupImdbId(movieState.imdbID);
-      if (movie) {
+      let omdbMovieData = await MovieAPI.omdbLookupImdbID(movieState.imdbID);
+      if (omdbMovieData) {
+        const movie = omdbMapMovie(omdbMovieData);
         setMovieState(movie);
       }
     }
+  }
+
+  function omdbMapMovie(movieData) {
+    // Ratings come back in a source/value array
+    // imdb gets a special property but RT doesn't and must be formatted.
+    const rtRating = movieData.ratings.filter((rating) => rating.source == "Rotten Tomatoes");
+
+    let movie = {
+      title: movieData.title,
+      simpleTitle: movieData.title,
+      rating: movieData.rated,
+      releaseDate: new Date(movieData.released).toLocaleDateString("en-US"),
+      runtime: movieData.runtime,
+      genre: movieData.genre,
+      director: movieData.director,
+      writer: movieData.writer,
+      actors: movieData.actors,
+      plot: movieData.plot,
+      imdbRating: movieData.imdbRating,
+      tomatoRating: rtRating[0].value.replace("%", ""),
+      imdbID: movieData.imdbID,
+      posterLink: movieData.poster,
+    };
+
+    return movie;
   }
 
   return (

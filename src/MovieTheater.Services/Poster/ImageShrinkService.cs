@@ -109,9 +109,11 @@ namespace MovieTheater.Services.Poster
                 image.Mutate(x => x.GaussianSharpen(.2f));
 
 
-                SixLabors.ImageSharp.Formats.Png.PngEncoder png = new SixLabors.ImageSharp.Formats.Png.PngEncoder();
-                png.CompressionLevel = 0;
-                png.FilterMethod = SixLabors.ImageSharp.Formats.Png.PngFilterMethod.None;
+                SixLabors.ImageSharp.Formats.Png.PngEncoder png = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+                {
+                    CompressionLevel = 0,
+                    FilterMethod = SixLabors.ImageSharp.Formats.Png.PngFilterMethod.None
+                };
 
                 using (var ms = new MemoryStream())
                 {

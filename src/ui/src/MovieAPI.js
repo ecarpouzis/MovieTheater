@@ -28,12 +28,14 @@ function getMovie(id) {
 
 function insertMovie(movie) {
   const url = "/API/InsertMovie";
+  movie.releaseDate = new Date(movie.releaseDate);
 
   return fetch(url, {
     method: "post",
     headers: {
       "Content-Type": "application/json",
     },
+
     body: JSON.stringify(movie),
   });
 }
@@ -108,6 +110,32 @@ function tmdbLookupName(name) {
   });
 }
 
+function omdbLookupImdbID(id) {
+  const url = "/API/OMDBLookupImdbID?imdbID=" + id;
+
+  return fetch(url, {
+    method: "get",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }).then((response) => {
+    return response.json();
+  });
+}
+
+function omdbLookupName(name) {
+  const url = "/API/OMDBLookupName?name=" + encodeURIComponent(name);
+
+  return fetch(url, {
+    method: "get",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }).then((response) => {
+    return response.json();
+  });
+}
+
 function movieLookupFromNames(movieNames) {
   const url = "/API/GetMoviesFromNames";
 
@@ -157,6 +185,8 @@ const MovieAPI = {
   insertMovie,
   tmdbLookupImdbID,
   tmdbLookupName,
+  omdbLookupImdbID,
+  omdbLookupName,
   imdbApiLookupImdbId,
   imdbApiLookupName,
   loginUser,

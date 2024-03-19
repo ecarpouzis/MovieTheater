@@ -9,7 +9,7 @@ namespace MovieTheater.Gql
 {
     public static class GqlServiceExtensions
     {
-        public static NameString SchemaName => Schema.DefaultName;
+        public static string SchemaName => Schema.DefaultName;
 
         public static IServiceCollection AddMovieTheaterGql(this IServiceCollection services)
         {

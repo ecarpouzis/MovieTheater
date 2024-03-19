@@ -36,9 +36,11 @@ namespace MovieTheater.Gql
             IServiceProvider serviceProvider = serviceCollection.BuildServiceProvider();
             var executorResolver = serviceProvider.GetRequiredService<IRequestExecutorResolver>();
             var requestExecutor = await executorResolver.GetRequestExecutorAsync(GqlServiceExtensions.SchemaName);
-            var sdl = SchemaSerializer.Serialize(requestExecutor.Schema);
 
-            await File.WriteAllTextAsync(OutputFile.FullName, sdl);
+            using (StreamWriter writer = File.CreateText(OutputFile.FullName))
+            {
+                SchemaPrinter.Serialize(requestExecutor.Schema, writer);
+            }
 
             logger.LogInformation("Gql schema output to {file}", OutputFile.FullName);
         }

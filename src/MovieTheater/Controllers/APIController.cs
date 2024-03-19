@@ -15,6 +15,7 @@ using MovieTheater.Services;
 using MovieTheater.Services.ImdbApi;
 using MovieTheater.Services.Poster;
 using MovieTheater.Services.Tmdb;
+using MovieTheater.Services.Omdb;
 
 namespace MovieTheater.Controllers
 {
@@ -23,16 +24,18 @@ namespace MovieTheater.Controllers
 
         private readonly MovieDb movieDb;
         private readonly TmdbApi tmdb;
+        private readonly OmdbApi omdb;
         private readonly ImdbApiClient imdb;
         private readonly HttpClient httpClient;
         private readonly IPosterImageRepository imageRepo;
         private readonly ImageShrinkService shrinkService;
         private readonly GoogleSearchService googleSearchService;
 
-        public APIController(MovieDb movieDb, TmdbApi tmdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService)
+        public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
+            this.omdb = omdb;
             this.imdb = imdb;
             this.httpClient = httpClient;
             this.imageRepo = imageRepo;
@@ -153,6 +156,18 @@ namespace MovieTheater.Controllers
         public async Task<MovieDto> TmdbLookupName(string name)
         {
             return await tmdb.GetMovieByName(name);
+        }
+
+        [HttpGet("/API/OMDBLookupName")]
+        public async Task<OmdbMovieDto> OmdbLookupName(string name)
+        {
+            return await omdb.GetMovieByName(name);
+        }
+
+        [HttpGet("/API/OMDBLookupImdbID")]
+        public async Task<OmdbMovieDto> OmdbLookupImdbID(string imdbID)
+        {
+            return await omdb.GetMovie(imdbID);
         }
 
         [HttpPost("/API/SetViewingState")]

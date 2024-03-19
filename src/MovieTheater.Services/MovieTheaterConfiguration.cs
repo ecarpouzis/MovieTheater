@@ -13,6 +13,8 @@ namespace MovieTheater.Services
 
         public string? TmdbApiKey { get; set; }
 
+        public string? OmdbApiKey { get; set; }
+
         public string? PyPath { get; set; }
 
         public HostedEnvironment Environment { get; }
