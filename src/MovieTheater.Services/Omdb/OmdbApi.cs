@@ -1,5 +1,8 @@
 ﻿using Microsoft.Extensions.Options;
+using MovieTheater.Db;
+using MovieTheater.Services.Tmdb;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace MovieTheater.Services.Omdb
 {
@@ -21,7 +24,38 @@ namespace MovieTheater.Services.Omdb
             _options = options.Value;
         }
 
-        public async Task<OmdbMovieDto> GetMovie(string imdbID)
+        public Movie OmdbToMovie(OmdbMovieDto omdbMovie)
+        {
+            DateTime releaseDate;
+            DateTime.TryParse(omdbMovie.Released, out releaseDate);
+            string tomatoRatingString = omdbMovie.Ratings
+                                            .FirstOrDefault(r => r.Source == "Rotten Tomatoes").Value;
+
+            int tomatoRating = int.Parse(tomatoRatingString.Replace("%",""));
+
+            return new Movie()
+            {
+                Title = omdbMovie.Title,
+                SimpleTitle = omdbMovie.Title,
+                Rating = omdbMovie.Rated,
+                ReleaseDate = releaseDate,
+                Runtime = omdbMovie.Runtime,
+                Genre = omdbMovie.Genre,
+                Director = omdbMovie.Director,
+                Writer = omdbMovie.Writer,
+                Actors = omdbMovie.Actors,
+                Plot = omdbMovie.Plot,
+                PosterLink = omdbMovie.Poster,
+                imdbRating = decimal.Parse(omdbMovie.imdbRating),
+                imdbID = omdbMovie.imdbID,
+                tomatoRating = tomatoRating,
+                UploadedDate = DateTime.Now,
+                RemoveFromRandom = false
+            };
+
+        }
+
+        public async Task<Movie> GetMovie(string imdbID)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"?apikey={_options.ApiKey}&i={imdbID}", UriKind.Relative));
             var response = await _httpClient.SendAsync(request);
@@ -30,20 +64,20 @@ namespace MovieTheater.Services.Omdb
             string responseContent = await response.Content.ReadAsStringAsync();
 
             var root =  JsonConvert.DeserializeObject<OmdbMovieDto>(responseContent);
-            return root;
+            return OmdbToMovie(root);
         }
 
 
-        public async Task<OmdbMovieDto> GetMovieByName(string name)
+        public async Task<Movie> GetMovieByName(string name)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"?apikey={_options.ApiKey}&i={name}", UriKind.Relative));
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"?apikey={_options.ApiKey}&t={name}", UriKind.Relative));
             var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             string responseContent = await response.Content.ReadAsStringAsync();
 
             var root = JsonConvert.DeserializeObject<OmdbMovieDto>(responseContent);
-            return root;
+            return OmdbToMovie(root);
         }
     }
 }

@@ -133,8 +133,9 @@ namespace MovieTheater.Controllers
             List<Movie> movies = new List<Movie>();
             foreach(var movieName in movieNames)
             {
-                var imdbID = await  googleSearchService.FindImdbIdFromMovieName(movieName);
-                var movie = await imdb.ImdbApiLookupImdbID(imdbID);
+                //var imdbID = await  googleSearchService.FindImdbIdFromMovieName(movieName);
+                //var movie = await imdb.ImdbApiLookupImdbID(imdbID);
+                var movie = await omdb.GetMovieByName(movieName);
                 movies.Add(movie);
             }
             return movies;
@@ -159,13 +160,13 @@ namespace MovieTheater.Controllers
         }
 
         [HttpGet("/API/OMDBLookupName")]
-        public async Task<OmdbMovieDto> OmdbLookupName(string name)
+        public async Task<Movie> OmdbLookupName(string name)
         {
             return await omdb.GetMovieByName(name);
         }
 
         [HttpGet("/API/OMDBLookupImdbID")]
-        public async Task<OmdbMovieDto> OmdbLookupImdbID(string imdbID)
+        public async Task<Movie> OmdbLookupImdbID(string imdbID)
         {
             return await omdb.GetMovie(imdbID);
         }

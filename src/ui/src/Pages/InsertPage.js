@@ -19,22 +19,25 @@ function InsertMovieInput({ placeholder, name, movieState, setMovieState }) {
 function InsertPage() {
   const [movieState, setMovieState] = useState({});
 
-  async function nameMatch() {
-    if (movieState.title) {
-      let movie = await MovieAPI.omdbLookupName(movieState.title);
-      if (movie) {
-        setMovieState(movie);
-      }
-    }
-  }
-
   async function insert() {
-    if (movieState.title) await MovieAPI.insertMovie(movieState);
+    if (movieState.title) {
+      await MovieAPI.insertMovie(movieState);
+    }
   }
 
   async function imdbMatch() {
     if (movieState.imdbID) {
       let omdbMovieData = await MovieAPI.omdbLookupImdbID(movieState.imdbID);
+      if (omdbMovieData) {
+        const movie = omdbMapMovie(omdbMovieData);
+        setMovieState(movie);
+      }
+    }
+  }
+
+  async function nameMatch() {
+    if (movieState.title) {
+      let omdbMovieData = await MovieAPI.omdbLookupName(movieState.title);
       if (omdbMovieData) {
         const movie = omdbMapMovie(omdbMovieData);
         setMovieState(movie);
