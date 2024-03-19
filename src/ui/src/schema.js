@@ -54,22 +54,7 @@ input BooleanOperationFilterInput {
   neq: Boolean
 }
 
-input ComparableInt32OperationFilterInput {
-  eq: Int
-  neq: Int
-  in: [Int!]
-  nin: [Int!]
-  gt: Int
-  ngt: Int
-  gte: Int
-  ngte: Int
-  lt: Int
-  nlt: Int
-  lte: Int
-  nlte: Int
-}
-
-input ComparableNullableOfDateTimeOperationFilterInput {
+input DateTimeOperationFilterInput {
   eq: DateTime
   neq: DateTime
   in: [DateTime]
@@ -84,7 +69,7 @@ input ComparableNullableOfDateTimeOperationFilterInput {
   nlte: DateTime
 }
 
-input ComparableNullableOfDecimalOperationFilterInput {
+input DecimalOperationFilterInput {
   eq: Decimal
   neq: Decimal
   in: [Decimal]
@@ -99,7 +84,7 @@ input ComparableNullableOfDecimalOperationFilterInput {
   nlte: Decimal
 }
 
-input ComparableNullableOfInt32OperationFilterInput {
+input IntOperationFilterInput {
   eq: Int
   neq: Int
   in: [Int]
@@ -127,7 +112,7 @@ input MovieFilterInput {
   title: StringOperationFilterInput
   simpleTitle: StringOperationFilterInput
   rating: StringOperationFilterInput
-  releaseDate: ComparableNullableOfDateTimeOperationFilterInput
+  releaseDate: DateTimeOperationFilterInput
   runtime: StringOperationFilterInput
   genre: StringOperationFilterInput
   director: StringOperationFilterInput
@@ -135,12 +120,12 @@ input MovieFilterInput {
   actors: StringOperationFilterInput
   plot: StringOperationFilterInput
   posterLink: StringOperationFilterInput
-  imdbRating: ComparableNullableOfDecimalOperationFilterInput
+  imdbRating: DecimalOperationFilterInput
   imdbID: StringOperationFilterInput
-  tomatoRating: ComparableNullableOfInt32OperationFilterInput
-  uploadedDate: ComparableNullableOfDateTimeOperationFilterInput
+  tomatoRating: IntOperationFilterInput
+  uploadedDate: DateTimeOperationFilterInput
   removeFromRandom: BooleanOperationFilterInput
-  id: ComparableInt32OperationFilterInput
+  id: IntOperationFilterInput
   viewings: ListFilterInputTypeOfViewingFilterInput
 }
 
@@ -182,17 +167,17 @@ input StringOperationFilterInput {
 input UserFilterInput {
   and: [UserFilterInput!]
   or: [UserFilterInput!]
-  userID: ComparableInt32OperationFilterInput
+  userID: IntOperationFilterInput
   username: StringOperationFilterInput
 }
 
 input ViewingFilterInput {
   and: [ViewingFilterInput!]
   or: [ViewingFilterInput!]
-  viewingID: ComparableInt32OperationFilterInput
-  movieID: ComparableInt32OperationFilterInput
+  viewingID: IntOperationFilterInput
+  movieID: IntOperationFilterInput
   movie: MovieFilterInput
-  userID: ComparableInt32OperationFilterInput
+  userID: IntOperationFilterInput
   user: UserFilterInput
   viewingType: StringOperationFilterInput
   viewingData: StringOperationFilterInput
@@ -201,25 +186,13 @@ input ViewingFilterInput {
 enum ApplyPolicy {
   BEFORE_RESOLVER
   AFTER_RESOLVER
+  VALIDATION
 }
 
 enum SortEnumType {
   ASC
   DESC
 }
-
-directive @authorize("The name of the authorization policy that determines access to the annotated resource." policy: String "Roles that are allowed to access the annotated resource." roles: [String!] "Defines when when the resolver shall be executed.By default the resolver is executed after the policy has determined that the current user is allowed to access the field." apply: ApplyPolicy! = BEFORE_RESOLVER) repeatable on SCHEMA | OBJECT | FIELD_DEFINITION
-
-"The \`@defer\` directive may be provided for fragment spreads and inline fragments to inform the executor to delay the execution of the current fragment to indicate deprioritization of the current fragment. A query with \`@defer\` directive will cause the request to potentially return multiple responses, where non-deferred data is delivered in the initial response and data deferred is delivered in a subsequent response. \`@include\` and \`@skip\` take precedence over \`@defer\`."
-directive @defer("If this argument label has a value other than null, it will be passed on to the result of this defer directive. This label is intended to give client applications a way to identify to which fragment a deferred result belongs to." label: String "Deferred when true." if: Boolean) on FRAGMENT_SPREAD | INLINE_FRAGMENT
-
-"The \`@specifiedBy\` directive is used within the type system definition language to provide a URL for specifying the behavior of custom scalar definitions."
-directive @specifiedBy("The specifiedBy URL points to a human-readable specification. This field will only read a result for scalar types." url: String!) on SCALAR
-
-"The \`@stream\` directive may be provided for a field of \`List\` type so that the backend can leverage technology such as asynchronous iterators to provide a partial list in the initial response, and additional list items in subsequent responses. \`@include\` and \`@skip\` take precedence over \`@stream\`."
-directive @stream("If this argument label has a value other than null, it will be passed on to the result of this stream directive. This label is intended to give client applications a way to identify to which fragment a streamed result belongs to." label: String "The initial elements that shall be send down to the consumer." initialCount: Int! = 0 "Streamed when true." if: Boolean) on FIELD
-
-scalar Any
 
 "The \`DateTime\` scalar represents an ISO-8601 compliant date time type."
 scalar DateTime @specifiedBy(url: "https:\/\/www.graphql-scalars.com\/date-time")
