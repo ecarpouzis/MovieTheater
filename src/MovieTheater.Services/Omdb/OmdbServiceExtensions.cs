@@ -13,7 +13,6 @@ namespace MovieTheater.Services.Omdb
             services.AddTransient<OmdbApi>();
             services.AddHttpClient<OmdbApi>((httpClient) => { httpClient.BaseAddress = new Uri("http://www.omdbapi.com/"); });
 
-
             return services;
         }
     }
