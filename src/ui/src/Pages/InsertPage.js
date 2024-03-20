@@ -27,9 +27,8 @@ function InsertPage() {
 
   async function imdbMatch() {
     if (movieState.imdbID) {
-      let omdbMovieData = await MovieAPI.omdbLookupImdbID(movieState.imdbID);
-      if (omdbMovieData) {
-        const movie = omdbMapMovie(omdbMovieData);
+      let movie = await MovieAPI.omdbLookupImdbID(movieState.imdbID);
+      if (movie) {
         setMovieState(movie);
       }
     }
@@ -37,33 +36,11 @@ function InsertPage() {
 
   async function nameMatch() {
     if (movieState.title) {
-      let omdbMovieData = await MovieAPI.omdbLookupName(movieState.title);
-      if (omdbMovieData) {
-        const movie = omdbMapMovie(omdbMovieData);
+      let movie = await MovieAPI.omdbLookupName(movieState.title);
+      if (movie) {
         setMovieState(movie);
       }
     }
-  }
-
-  function omdbMapMovie(movieData) {
-    let movie = {
-      title: movieData.title,
-      simpleTitle: movieData.title,
-      rating: movieData.rated,
-      releaseDate: new Date(movieData.released).toLocaleDateString("en-US"),
-      runtime: movieData.runtime,
-      genre: movieData.genre,
-      director: movieData.director,
-      writer: movieData.writer,
-      actors: movieData.actors,
-      plot: movieData.plot,
-      imdbRating: movieData.imdbRating,
-      tomatoRating: movieData.tomatoRating,
-      imdbID: movieData.imdbID,
-      posterLink: movieData.poster,
-    };
-
-    return movie;
   }
 
   return (
