@@ -46,10 +46,6 @@ function InsertPage() {
   }
 
   function omdbMapMovie(movieData) {
-    // Ratings come back in a source/value array
-    // imdb gets a special property, but RT doesn't and must be formatted
-    const rtRating = movieData.ratings.filter((rating) => rating.source == "Rotten Tomatoes");
-
     let movie = {
       title: movieData.title,
       simpleTitle: movieData.title,
@@ -62,7 +58,7 @@ function InsertPage() {
       actors: movieData.actors,
       plot: movieData.plot,
       imdbRating: movieData.imdbRating,
-      tomatoRating: rtRating[0].value.replace("%", ""),
+      tomatoRating: movieData.tomatoRating,
       imdbID: movieData.imdbID,
       posterLink: movieData.poster,
     };
