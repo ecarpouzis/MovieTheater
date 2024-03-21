@@ -28,10 +28,9 @@ namespace MovieTheater.Services.Omdb
         {
             DateTime releaseDate;
             DateTime.TryParse(omdbMovie.Released, out releaseDate);
-            string tomatoRatingString = omdbMovie.Ratings
-                                            .FirstOrDefault(r => r.Source == "Rotten Tomatoes").Value;
+            string? tomatoRatingString = omdbMovie.Ratings?.FirstOrDefault(r => r.Source == "Rotten Tomatoes")?.Value;
 
-            int tomatoRating = int.Parse(tomatoRatingString.Replace("%",""));
+            int? tomatoRating = tomatoRatingString != null ? int.Parse(tomatoRatingString.Replace("%", "")) : null;
 
             return new Movie()
             {
