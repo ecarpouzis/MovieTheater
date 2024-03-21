@@ -133,9 +133,9 @@ namespace MovieTheater.Controllers
             List<Movie> movies = new List<Movie>();
             foreach(var movieName in movieNames)
             {
-                //var imdbID = await  googleSearchService.FindImdbIdFromMovieName(movieName);
-                //var movie = await imdb.ImdbApiLookupImdbID(imdbID);
-                var movie = await omdb.GetMovieByName(movieName);
+                //OMDB lookup-by-title is very inconsistent. Better to Google for the IMDBID
+                var imdbID = await googleSearchService.FindImdbIdFromMovieName(movieName);
+                var movie = await omdb.GetMovie(imdbID);
                 movies.Add(movie);
             }
             return movies;

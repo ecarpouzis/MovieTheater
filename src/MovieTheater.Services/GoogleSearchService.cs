@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -25,11 +26,22 @@ namespace MovieTheater.Services
 
             movieName = movieName.Trim();
 
-            ////Try IMDB page lookup.
-            //Search using Google:         
-            string GoogleRT = "http://www.google.com/search?num=1&q=" + HttpUtility.UrlEncode(movieName) + " IMDB";
-            var result = await new HtmlWeb().LoadFromWebAsync(GoogleRT);
-            var googleNodes = result.DocumentNode.SelectNodes("//html//body//div[@id='main']//a").ToList();
+            //Try IMDB page lookup.
+            HttpClient httpClient = new HttpClient();
+
+            //Search using Google: 
+            string GoogleQuery = "http://www.google.com/search?num=1&q=" + HttpUtility.UrlEncode(movieName) + " IMDB";          
+
+            //Set a legitimate client string
+            string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36";
+            httpClient.DefaultRequestHeaders.Add("User-Agent", userAgent);
+            
+            HttpResponseMessage response = await httpClient.GetAsync(GoogleQuery);
+            string htmlContent = await response.Content.ReadAsStringAsync();
+            HtmlDocument newDoc = new HtmlDocument();
+            newDoc.LoadHtml(htmlContent);
+
+            var googleNodes = newDoc.DocumentNode.SelectNodes("//html//body//div[@id='main']//a").ToList();
             foreach(var link in googleNodes)
             {
                 var href = link.GetAttributeValue("href", "");
