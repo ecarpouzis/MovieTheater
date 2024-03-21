@@ -13,7 +13,7 @@ namespace MovieTheater.Services.Omdb
 
         //Because we use IOptions we can hotswap options at runtime and similar benefits
         //it is the proper way to configure an httpclient in .net
-        
+
         //AspNetCore typically includes this by default, but as some of my code is in a standalone DLL it includes no packages by default.
         //Because I want to use IOptions, I install Microsoft.Extensions.Options
 
@@ -24,13 +24,23 @@ namespace MovieTheater.Services.Omdb
             _options = options.Value;
         }
 
-        public Movie OmdbToMovie(OmdbMovieDto omdbMovie)
+        public Movie? OmdbToMovie(OmdbMovieDto omdbMovie)
         {
+            if (string.IsNullOrEmpty(omdbMovie.Title))
+            {
+                return null;
+            }
             DateTime releaseDate;
             DateTime.TryParse(omdbMovie.Released, out releaseDate);
             string? tomatoRatingString = omdbMovie.Ratings?.FirstOrDefault(r => r.Source == "Rotten Tomatoes")?.Value;
 
-            int? tomatoRating = tomatoRatingString != null ? int.Parse(tomatoRatingString.Replace("%", "")) : null;
+            int? tomatoRating = tomatoRatingString != null ?
+                                int.Parse(tomatoRatingString.Replace("%", ""))
+                                : null;
+
+            decimal? imdbRating = decimal.TryParse(omdbMovie.imdbRating, out decimal parsedRating) ?
+                                  parsedRating 
+                                  : null;
 
             return new Movie()
             {
@@ -45,7 +55,7 @@ namespace MovieTheater.Services.Omdb
                 Actors = omdbMovie.Actors,
                 Plot = omdbMovie.Plot,
                 PosterLink = omdbMovie.Poster,
-                imdbRating = decimal.Parse(omdbMovie.imdbRating),
+                imdbRating = imdbRating,
                 imdbID = omdbMovie.imdbID,
                 tomatoRating = tomatoRating,
                 UploadedDate = DateTime.Now,
@@ -62,8 +72,13 @@ namespace MovieTheater.Services.Omdb
 
             string responseContent = await response.Content.ReadAsStringAsync();
 
-            var root =  JsonConvert.DeserializeObject<OmdbMovieDto>(responseContent);
-            return OmdbToMovie(root);
+            var root = JsonConvert.DeserializeObject<OmdbMovieDto>(responseContent);
+            var movie = OmdbToMovie(root);
+            if (movie == null)
+            {
+                return await Task.FromResult<Movie>(null);
+            }
+            return movie;
         }
 
 
@@ -76,7 +91,12 @@ namespace MovieTheater.Services.Omdb
             string responseContent = await response.Content.ReadAsStringAsync();
 
             var root = JsonConvert.DeserializeObject<OmdbMovieDto>(responseContent);
-            return OmdbToMovie(root);
+            var movie = OmdbToMovie(root);
+            if (movie == null)
+            {
+                return await Task.FromResult<Movie>(null);
+            }
+            return movie;
         }
     }
 }
