@@ -14,12 +14,16 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 as release
 RUN apt update
 RUN apt install -y libjpeg-dev zlib1g-dev
 
-RUN apt-get update
-RUN apt-get install python3 --assume-yes
-RUN apt-get install python3-pip --assume-yes
-RUN pip3 install pillow==7.1.2
+# Install system deps and python tooling in one step, remove apt lists to reduce image size
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      python3 python3-pip libjpeg-dev zlib1g-dev \
+      libc6-dev libgdiplus libx11-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN apt-get install -y --allow-unauthenticated libc6-dev libgdiplus libx11-dev
+# Use modern pip and install a Pillow wheel (avoid building from source)
+RUN python3 -m pip install --upgrade pip setuptools wheel && \
+    python3 -m pip install --no-cache-dir "pillow>=9.5.0"
 
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS="http://+:80"
