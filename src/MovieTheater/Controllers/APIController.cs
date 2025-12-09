@@ -133,8 +133,12 @@ namespace MovieTheater.Controllers
             List<Movie> movies = new List<Movie>();
             foreach(var movieName in movieNames)
             {
-                //OMDB lookup-by-title is very inconsistent. Better to Google for the IMDBID
-                var imdbID = await googleSearchService.FindImdbIdFromMovieName(movieName);
+                var imdbID = movieName;
+                if (!IsValidImdbId(movieName))
+                {
+                    //OMDB lookup-by-title is very inconsistent. Better to Google for the IMDBID
+                    imdbID = await googleSearchService.FindImdbIdFromMovieName(movieName);
+                }
                 var movie = await omdb.GetMovie(imdbID);
                 movies.Add(movie);
             }
@@ -274,6 +278,16 @@ namespace MovieTheater.Controllers
 
             var movieList = await movies.OrderBy(m => m.SimpleTitle).ToListAsync();
             return Json(movieList);
+        }
+
+        private static bool IsValidImdbId(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return false;
+
+            var id = input.Trim();
+            // IMDB title IDs are typically "tt" followed by 7-9 digits (e.g., tt1234567)
+            return System.Text.RegularExpressions.Regex.IsMatch(id, @"^tt\d{7,9}$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         }
     }
 }
