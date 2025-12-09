@@ -8,7 +8,7 @@ on:
 jobs:
   validate-gql-schema:
     runs-on: ubuntu-latest
-    container: mcr.microsoft.com/dotnet/sdk:6.0
+    container: mcr.microsoft.com/dotnet/sdk:8.0
     steps:
       - uses: actions/checkout@v2
       - run: cd src/MovieTheater; cp appsettings.default.json appsettings.Development.json; dotnet run export gql ../ui/src/schema-new.graphql

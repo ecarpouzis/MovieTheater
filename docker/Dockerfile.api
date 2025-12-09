@@ -1,5 +1,5 @@
 # Build dotnet C# project
-FROM mcr.microsoft.com/dotnet/sdk:6.0 as dotnet-build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 as dotnet-build
 WORKDIR /build
 COPY docker/projectfiles.tar .
 RUN tar -xvf projectfiles.tar
@@ -9,7 +9,7 @@ COPY src ./src
 RUN dotnet publish src/MovieTheater/MovieTheater.csproj --no-restore -c Release -o /publish
 
 # Build final release image
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 as release
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 as release
 
 RUN apt update
 RUN apt install -y libjpeg-dev zlib1g-dev
