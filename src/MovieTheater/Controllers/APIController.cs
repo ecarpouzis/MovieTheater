@@ -16,6 +16,7 @@ using MovieTheater.Services.ImdbApi;
 using MovieTheater.Services.Poster;
 using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
+using HotChocolate;
 
 namespace MovieTheater.Controllers
 {
@@ -64,7 +65,7 @@ namespace MovieTheater.Controllers
 
             if (checkMovie)
             {
-                throw new InvalidOperationException("Movie Already Exists");
+                return Conflict(new { Message = "Movie already Exists", Success = false });
             }
 
             movie.UploadedDate = DateTime.Now;
