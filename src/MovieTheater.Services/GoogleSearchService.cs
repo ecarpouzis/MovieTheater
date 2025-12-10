@@ -1,77 +1,64 @@
-﻿using System.Text.RegularExpressions;
+﻿using HtmlAgilityPack;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Web;
-using System.Text.Json;
 
 namespace MovieTheater.Services
 {
     public class GoogleSearchService
     {
-        public async Task<string> FindImdbIdFromMovieName(string movieName)
+        public async Task<string?> FindImdbIdFromMovieName(string movieName)
         {
-            if (string.IsNullOrWhiteSpace(movieName))
+            //First remove any quality (720p) designation from the final portion of the folder name
+            string qual = movieName.Split(' ').Last<string>().ToLower();
+            if (qual.Last<char>() == 'p')
             {
-                return string.Empty;
+                movieName = movieName.Replace(qual, "");
             }
 
-            // First remove any quality (720p) designation from the final portion of the folder name
-            string[] parts = movieName.Split(' ');
-            string qual = parts.Last().ToLowerInvariant();
-            if (qual.Length > 0 && qual.Last() == 'p')
-            {
-                // Remove only the last occurrence (token) to avoid accidental removals elsewhere
-                int lastIndex = movieName.LastIndexOf(qual, StringComparison.OrdinalIgnoreCase);
-                if (lastIndex >= 0)
-                {
-                    movieName = movieName.Remove(lastIndex, qual.Length).Trim();
-                }
-            }
+            //Next remove any tags between square brackets in movie name
+            movieName = Regex.Replace(movieName, @"\[.*?\]", "");
 
-            // Next remove any tags between square brackets in movie name
-            movieName = Regex.Replace(movieName, @"\[[^\]]*?\]", string.Empty);
             movieName = movieName.Trim();
 
-            try
+            //Try IMDB page lookup.
+            HttpClient httpClient = new HttpClient();
+
+            //Search using Google: 
+            string GoogleQuery = "http://www.google.com/search?num=1&q=" + HttpUtility.UrlEncode(movieName) + " IMDB";
+
+            //Set a legitimate client string
+            string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36";
+            httpClient.DefaultRequestHeaders.Add("User-Agent", userAgent);
+
+            HttpResponseMessage response = await httpClient.GetAsync(GoogleQuery);
+            string htmlContent = await response.Content.ReadAsStringAsync();
+            HtmlDocument newDoc = new HtmlDocument();
+            newDoc.LoadHtml(htmlContent);
+
+            var googleNodes = newDoc.DocumentNode.SelectNodes("//html//body//div[@id='main']//a").ToList();
+            foreach (var link in googleNodes)
             {
-                using HttpClient httpClient = new HttpClient();
-                // Use a common browser user-agent to improve chance of acceptance by endpoints
-                string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36";
-                httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
-
-                string encodedQuery = HttpUtility.UrlEncode(movieName);
-                string requestUri = "https://api.imdbapi.dev/search/titles?query=" + encodedQuery;
-
-                HttpResponseMessage response = await httpClient.GetAsync(requestUri).ConfigureAwait(false);
-                if (!response.IsSuccessStatusCode)
+                var href = link.GetAttributeValue("href", "");
+                var match = Regex.Match(href, @"https:\/\/www\.imdb\.com\/title\/([^\/]+).*");
+                if (match.Success)
                 {
-                    return string.Empty;
+                    return match.Groups[1].Value;
                 }
-
-                string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    return string.Empty;
-                }
-
-                using JsonDocument doc = JsonDocument.Parse(json);
-                JsonElement root = doc.RootElement;
-
-                if (root.TryGetProperty("titles", out JsonElement results) && results.ValueKind == JsonValueKind.Array && results.GetArrayLength() > 0)
-                {
-                    JsonElement first = results[0];
-                    if (first.TryGetProperty("id", out JsonElement idElement) && idElement.ValueKind == JsonValueKind.String)
-                    {
-                        string id = idElement.GetString() ?? string.Empty;
-                        return id;
-                    }
-                }
-
-                return string.Empty;
             }
-            catch
-            {
-                // On any error (network, parse, etc.) return empty string to indicate not found.
-                return string.Empty;
-            }
-        }
+
+            return null;
+
+            ////I notice URLs returned this way have additional text. Split on = and remove the extra "&amp" from the href
+            //string[] imdbLink = googleNode.Attributes["href"].Value.Split('=')[1].Split(new string[] { "&amp;" }, StringSplitOptions.None)[0].Split('/');
+            //string imdbID = imdbLink[imdbLink.Length - 2];
+            //
+            //return imdbID;
+        }   //
     }
 }

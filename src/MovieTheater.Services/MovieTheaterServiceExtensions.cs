@@ -21,6 +21,7 @@ namespace MovieTheater.Services
             services.AddTmdbServices(config.TmdbApiKey);
             services.AddOmdbServices(config.OmdbApiKey);
             services.AddTransient<GoogleSearchService>();
+            services.AddTransient<IMDBApiService>();
             return services;
         }
     }

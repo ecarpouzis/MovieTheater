@@ -30,8 +30,10 @@ namespace MovieTheater.Controllers
         private readonly IPosterImageRepository imageRepo;
         private readonly ImageShrinkService shrinkService;
         private readonly GoogleSearchService googleSearchService;
+        private readonly IMDBApiService imdbApiService;
 
-        public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService)
+        public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
+            ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -41,6 +43,7 @@ namespace MovieTheater.Controllers
             this.imageRepo = imageRepo;
             this.shrinkService = shrinkService;
             this.googleSearchService = googleSearchService;
+            this.imdbApiService = imdbApiService;
         }
 
         [HttpGet("/API/GetMovie")]
@@ -138,6 +141,10 @@ namespace MovieTheater.Controllers
                 {
                     //OMDB lookup-by-title is very inconsistent. Better to Google for the IMDBID
                     imdbID = await googleSearchService.FindImdbIdFromMovieName(movieName);
+                }
+                if(string.IsNullOrEmpty(imdbID))
+                {
+                    imdbID = await imdbApiService.FindImdbIdFromMovieName(movieName);
                 }
                 var movie = await omdb.GetMovie(imdbID);
                 movies.Add(movie);
