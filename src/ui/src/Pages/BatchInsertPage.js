@@ -21,7 +21,7 @@ function MovieInsertForm({ movie, setMovie }) {
     if (movie.title) {
       try {
         const result = await MovieAPI.insertMovie(movie);
-        if (!result || result.error) {
+        if (!result || result.error || result.status != 200) {
           message.error(result?.error || "Failed to insert movie.");
         } else {
           message.success("Movie inserted successfully.");
