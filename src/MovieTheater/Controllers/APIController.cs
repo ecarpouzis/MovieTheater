@@ -65,7 +65,7 @@ namespace MovieTheater.Controllers
 
             if (checkMovie)
             {
-                return Conflict(new { Message = "Movie already Exists", Success = false });
+                return Conflict(new { Message = $"Movie already Exists: {movie.Title}", Success = false });
             }
 
             movie.UploadedDate = DateTime.Now;
@@ -153,6 +153,14 @@ namespace MovieTheater.Controllers
                     imdbID = await googleSearchService.FindImdbIdFromMovieName(movieName);
                 }
                 var movie = await omdb.GetMovie(imdbID);
+
+                var checkMovie = await movieDb.Movies.AnyAsync(d => d.imdbID == movie.imdbID);
+
+                if (checkMovie)
+                {
+                    movie.Title = "!DUPLICATE DETECTED! - "+movie.Title;
+                }
+
                 movies.Add(movie);
             }
             return movies;
