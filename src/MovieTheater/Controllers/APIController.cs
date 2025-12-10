@@ -136,15 +136,20 @@ namespace MovieTheater.Controllers
             List<Movie> movies = new List<Movie>();
             foreach(var movieName in movieNames)
             {
+
+                //First check if the input is already an IMDBID
                 var imdbID = movieName;
                 if (!IsValidImdbId(movieName))
                 {
-                    //OMDB lookup-by-title is very inconsistent. Better to Google for the IMDBID
-                    imdbID = await googleSearchService.FindImdbIdFromMovieName(movieName);
+                    //If not, start attempting to find the ImdbID
+                    //  OMDB lookup-by-title is very inconsistent
+                    //  Google search is best, but Google has been unreliable to search using HttpClient
+                    //  ImdbApi seems reliable, but has been down at times
+                    imdbID = await imdbApiService.FindImdbIdFromMovieName(movieName);
                 }
                 if(string.IsNullOrEmpty(imdbID))
                 {
-                    imdbID = await imdbApiService.FindImdbIdFromMovieName(movieName);
+                    imdbID = await googleSearchService.FindImdbIdFromMovieName(movieName);
                 }
                 var movie = await omdb.GetMovie(imdbID);
                 movies.Add(movie);

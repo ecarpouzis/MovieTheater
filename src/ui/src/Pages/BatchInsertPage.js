@@ -1,7 +1,7 @@
 import { MovieAPI } from "../MovieAPI";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Button, Checkbox, Input } from "antd";
+import { Button, Checkbox, Input, message } from "antd";
 
 function InsertMovieInput({ placeholder, name, movieState, setMovieState }) {
   function onChange(event) {
@@ -18,7 +18,18 @@ function InsertMovieInput({ placeholder, name, movieState, setMovieState }) {
 
 function MovieInsertForm({ movie, setMovie }) {
   async function insert() {
-    if (movie.title) await MovieAPI.insertMovie(movie);
+    if (movie.title) {
+      try {
+        const result = await MovieAPI.insertMovie(movie);
+        if (!result || result.error) {
+          message.error(result?.error || "Failed to insert movie.");
+        } else {
+          message.success("Movie inserted successfully.");
+        }
+      } catch (err) {
+        message.error(err.message || "Failed to insert movie.");
+      }
+    }
   }
 
   return (
@@ -142,7 +153,10 @@ function BatchInsertPage() {
   }
 
   async function setupMovieList() {
-    const movieNames = batchTextAreaState.split("\n");
+    const movieNames = batchTextAreaState
+      .split("\n")
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0);
     const moviesArray = await MovieAPI.movieLookupFromNames(movieNames);
 
     setMovies(
