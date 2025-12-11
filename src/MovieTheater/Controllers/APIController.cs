@@ -77,7 +77,7 @@ namespace MovieTheater.Controllers
             }
             catch
             {
-                return Ok(new { Message = "Save failed", Success = false });
+                return Conflict(new { Message = "Save failed", Success = false });
             }
 
             if (movie.PosterLink.Trim() != "")
@@ -88,8 +88,7 @@ namespace MovieTheater.Controllers
                 await shrinkService.EnsurePosterThumnailExists(movie.id);
             }
 
-
-            return Ok();
+            return Ok(new { Message = "Movie saved", Success = true });
         }
 
         [HttpPost("/API/Login")]
