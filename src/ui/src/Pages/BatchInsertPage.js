@@ -34,12 +34,13 @@ function MovieInsertForm({ movie, setMovie }) {
   }
 
   async function refreshDetails() {
-    if (!movie.title) {
+    const lookupName = movie.originalMovieName || movie.title;
+    if (!lookupName) {
       message.error("No Name provided.");
       return;
     }
     try {
-      const data = await MovieAPI.movieLookupFromNames([movie.title], true);
+      const data = await MovieAPI.movieLookupFromNames([lookupName], true);
       if (!Array.isArray(data) || data.length === 0) {
         message.error("Failed to fetch details from OMDB.");
         return;
@@ -61,6 +62,7 @@ function MovieInsertForm({ movie, setMovie }) {
         imdbRating: fetched.imdbRating || movie.imdbRating,
         tomatoRating: fetched.tomatoRating || movie.tomatoRating,
         imdbID: fetched.imdbID || movie.imdbID,
+        originalMovieName: movie.originalMovieName,
       };
       setMovie(updatedMovie);
       message.success("Movie details refreshed.");
@@ -76,7 +78,7 @@ function MovieInsertForm({ movie, setMovie }) {
       </div>
       <div style={{ marginBottom: 8 }}>
         <Button onClick={refreshDetails} type="default" style={{ marginRight: 8 }}>
-          Refresh Details from Name Field
+          Attempt Backup Movie Lookup
         </Button>
       </div>
       <div>
@@ -206,6 +208,7 @@ function BatchInsertPage() {
         return {
           index,
           ...movie,
+          originalMovieName: movieNames[index] || "",
         };
       })
     );

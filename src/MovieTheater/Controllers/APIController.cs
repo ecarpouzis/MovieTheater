@@ -114,7 +114,6 @@ namespace MovieTheater.Controllers
                 await movieDb.SaveChangesAsync();
             }
 
-
             //watched
             var moviesSeen = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "Seen").Select(d => d.MovieID).ToListAsync();
 
@@ -173,16 +172,38 @@ namespace MovieTheater.Controllers
                 if (!string.IsNullOrEmpty(imdbID) && movie == null)
                     movie = await omdb.GetMovieByImdbId(imdbID);
 
-                var checkMovie = await movieDb.Movies.AnyAsync(d => d.imdbID == movie.imdbID);
-
-                if (checkMovie)
-                    movie.Title = "!DUPLICATE DETECTED! - "+movie.Title;
+                movie = await PrepMovieTitle(movie);
 
                 movies.Add(movie);
             }
             return movies;
         }
-        
+
+        private async Task<Movie> PrepMovieTitle(Movie movie)
+        {
+            var trimmedTitle = movie.Title.Trim();
+            if (trimmedTitle.StartsWith("The", StringComparison.OrdinalIgnoreCase) &&
+                        !trimmedTitle.EndsWith(", The", StringComparison.OrdinalIgnoreCase))
+            {
+                var withoutArticle = trimmedTitle.Substring(4).Trim(); // remove leading "The "
+                
+                // If removing the article leaves an empty string, keep original to avoid producing ", The"
+                if (!string.IsNullOrEmpty(withoutArticle))
+                {
+                    movie.Title = $"{withoutArticle}, The";
+                    movie.SimpleTitle = $"{withoutArticle}, The";
+                }
+            }
+
+            //Check if we've already got a copy of this movie
+            var checkMovie = await movieDb.Movies.AnyAsync(d => d.imdbID == movie.imdbID);
+
+            if (checkMovie)
+                movie.Title = "!DUPLICATE DETECTED! - " + movie.Title;
+
+            return movie;
+        }
+
 
         /*
          1. If givenName is null/whitespace -> return empty string.
