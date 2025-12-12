@@ -136,8 +136,8 @@ function omdbLookupName(name) {
   });
 }
 
-function movieLookupFromNames(movieNames) {
-  const url = "/API/GetMoviesFromNames";
+function movieLookupFromNames(movieNames, forceBackup = false) {
+  const url = `/API/GetMoviesFromNames?forceBackupLogic=${forceBackup}`;
 
   return fetch(url, {
     method: "post",

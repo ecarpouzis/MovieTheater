@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Azure.Core;
+using Microsoft.Extensions.Options;
 using MovieTheater.Db;
 using MovieTheater.Services.Tmdb;
 using Newtonsoft.Json;
@@ -64,9 +65,20 @@ namespace MovieTheater.Services.Omdb
 
         }
 
-        public async Task<Movie> GetMovie(string imdbID)
+        public async Task<Movie> GetMovieByNameAndYear(string movieName, string movieYear)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"?apikey={_options.ApiKey}&t={movieName}&y={movieYear}", UriKind.Relative));
+            return await GetMovie(request);
+        }
+
+        public async Task<Movie> GetMovieByImdbId(string imdbID)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"?apikey={_options.ApiKey}&i={imdbID}", UriKind.Relative));
+            return await GetMovie(request);
+        }
+
+        private async Task<Movie> GetMovie(HttpRequestMessage request)
+        {
             var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
@@ -80,7 +92,6 @@ namespace MovieTheater.Services.Omdb
             }
             return movie;
         }
-
 
         public async Task<Movie> GetMovieByName(string name)
         {

@@ -33,10 +33,51 @@ function MovieInsertForm({ movie, setMovie }) {
     }
   }
 
+  async function refreshDetails() {
+    if (!movie.title) {
+      message.error("No Name provided.");
+      return;
+    }
+    try {
+      const data = await MovieAPI.movieLookupFromNames([movie.title], true);
+      if (!Array.isArray(data) || data.length === 0) {
+        message.error("Failed to fetch details from OMDB.");
+        return;
+      }
+      const fetched = data[0];
+      const updatedMovie = {
+        ...movie,
+        title: fetched.title || movie.title,
+        simpleTitle: fetched.simpleTitle || movie.simpleTitle,
+        rating: fetched.rating || movie.rating,
+        releaseDate: fetched.releaseDate || movie.releaseDate,
+        runtime: fetched.runtime || movie.runtime,
+        genre: fetched.genre || movie.genre,
+        director: fetched.director || movie.director,
+        writer: fetched.writer || movie.writer,
+        actors: fetched.actors || movie.actors,
+        plot: fetched.plot || movie.plot,
+        posterLink: fetched.posterLink || movie.posterLink,
+        imdbRating: fetched.imdbRating || movie.imdbRating,
+        tomatoRating: fetched.tomatoRating || movie.tomatoRating,
+        imdbID: fetched.imdbID || movie.imdbID,
+      };
+      setMovie(updatedMovie);
+      message.success("Movie details refreshed.");
+    } catch (err) {
+      message.error("Error refreshing details: " + (err.message || err));
+    }
+  }
+
   return (
     <div>
       <div class="imgContainer">
         <img alt="Poster" src={movie.posterLink}></img>
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        <Button onClick={refreshDetails} type="default" style={{ marginRight: 8 }}>
+          Refresh Details from Name Field
+        </Button>
       </div>
       <div>
         <table>

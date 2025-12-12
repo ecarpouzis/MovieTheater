@@ -130,39 +130,135 @@ namespace MovieTheater.Controllers
             return await imdb.ImdbApiLookupImdbID(imdbID);
         }
 
+
         [HttpPost("/API/GetMoviesFromNames")]
-        public async Task<List<Movie>> GetMoviesFromNames([FromBody]string[] movieNames)
+        public async Task<List<Movie>> GetMoviesFromNames([FromBody]string[] movieNames, bool forceBackupLogic = false)
         {
             List<Movie> movies = new List<Movie>();
-            foreach(var movieName in movieNames)
+            foreach(var givenTitle in movieNames)
             {
+                Movie movie = null;
+                string Name = ParseName(givenTitle);
+                string Year = ParseYear(givenTitle);
+                var imdbID = "";
 
                 //First check if the input is already an IMDBID
-                var imdbID = movieName;
-                if (!IsValidImdbId(movieName))
+                if (IsValidImdbId(givenTitle))
+                    imdbID = givenTitle;
+
+                //If we're forcing backup logic, perform backup IMDB search before anything else.
+                if (forceBackupLogic)
+                    imdbID = await googleSearchService.FindImdbIdFromMovieName($"{Name} ({Year})");
+                
+                //We don't have a valid IMDBId, Search.
+                if (!IsValidImdbId(imdbID))
                 {
-                    //If not, start attempting to find the ImdbID
-                    //  OMDB lookup-by-title is very inconsistent
-                    //  Google search is best, but Google has been unreliable to search using HttpClient
-                    //  ImdbApi seems reliable, but has been down at times
-                    imdbID = await imdbApiService.FindImdbIdFromMovieName(movieName);
+                    //The input is not an IMDBID, check to see if we can retrieve the movie by Name and Year
+                    movie = await omdb.GetMovieByNameAndYear(Name, Year);
+
+                    //If that fails, try to find the IMDBID via other services
+                    if (movie == null)
+                    {
+                        //  OMDB lookup-by-title is very inconsistent
+                        //  Google search is best, but Google has been unreliable to search using HttpClient
+                        //  ImdbApi seems reliable, but has been down at times
+                        if (string.IsNullOrEmpty(imdbID))
+                            imdbID = await imdbApiService.FindImdbIdFromMovieName(Name);
+                        if (string.IsNullOrEmpty(imdbID))
+                            imdbID = await googleSearchService.FindImdbIdFromMovieName(Name);
+                   }
                 }
-                if(string.IsNullOrEmpty(imdbID))
-                {
-                    imdbID = await googleSearchService.FindImdbIdFromMovieName(movieName);
-                }
-                var movie = await omdb.GetMovie(imdbID);
+
+                //If we have an IMDBID but not yet retrieved a movie, try to get the movie by the ID
+                if (!string.IsNullOrEmpty(imdbID) && movie == null)
+                    movie = await omdb.GetMovieByImdbId(imdbID);
 
                 var checkMovie = await movieDb.Movies.AnyAsync(d => d.imdbID == movie.imdbID);
 
                 if (checkMovie)
-                {
                     movie.Title = "!DUPLICATE DETECTED! - "+movie.Title;
-                }
 
                 movies.Add(movie);
             }
             return movies;
+        }
+        
+
+        /*
+         1. If givenName is null/whitespace -> return empty string.
+         2. Trim surrounding whitespace.
+         3. Find the first parenthetical group that contains a 4-digit year (supports ranges like (2012-2013) or (2012–2013)).
+            - Use a regex that matches a parenthesis group with a 4-digit year.
+            - Use Match to locate the first occurrence; this returns the index of that parenthesis.
+         4. If a match is found:
+            - Return the substring from start up to the match.Index, trimmed.
+            - This covers inputs like "Swan, The (2023) [junk] 1080p" -> "Swan, The".
+         5. If no such parenthetical year is found:
+            - Fall back to the previous behavior of removing a trailing "(YYYY)" if it exists at the end.
+            - Otherwise return the trimmed input unchanged.
+         6. Ensure returned string has no trailing punctuation or stray characters (trim).
+        */
+        private string ParseName(string givenName)
+        {
+            if (string.IsNullOrWhiteSpace(givenName))
+                return string.Empty;
+
+            var trimmed = givenName.Trim();
+
+            // Regex to find a parenthetical year (e.g. "(2023)", "(2012-2013)", support en-dash or hyphen)
+            var yearParenRegex = new System.Text.RegularExpressions.Regex(@"\(\s*\d{4}(?:[–-]\d{4})?\s*\)");
+            var match = yearParenRegex.Match(trimmed);
+
+            if (match.Success)
+            {
+                // Return everything before the first year-parenthesis occurrence
+                var titleBeforeYear = trimmed.Substring(0, match.Index).Trim();
+
+                // Additional cleanup: remove trailing separators or stray characters
+                titleBeforeYear = System.Text.RegularExpressions.Regex.Replace(titleBeforeYear, @"[\s\-\:\–\—]+$", "").Trim();
+
+                return titleBeforeYear;
+            }
+
+            // Fallback: remove a trailing "(YYYY)" or "(YYYY-YYYY)" if present at the end
+            var stripped = System.Text.RegularExpressions.Regex.Replace(trimmed, @"\s*\(\s*\d{4}(?:[–-]\d{4})?\s*\)\s*$", "");
+            return stripped.Trim();
+        }
+
+        private string ParseYear(string givenTitle)
+        {
+            /*
+             1. If givenTitle is null, empty, or whitespace -> return empty string.
+             2. Trim the input to remove surrounding whitespace.
+             3. Attempt a strict regex match for a trailing year in parentheses,
+                capturing the first 4-digit year. Support ranges like "(2012-2013)" or "(2012–2013)".
+                Regex: @"\(\s*(\d{4})(?:[–-]\d{4})?\s*\)\s*$"
+             4. If that match succeeds, return the captured year (group 1).
+             5. If not matched, attempt a looser search for a standalone 4-digit year
+                (preferring 19xx or 20xx) anywhere in the string using: @"\b(19|20)\d{2}\b"
+             6. If found, return that year; otherwise return empty string.
+             */
+
+            if (string.IsNullOrWhiteSpace(givenTitle))
+                return string.Empty;
+
+            var trimmed = givenTitle.Trim();
+
+            // Strict trailing parentheses match e.g. "Title (2012)" or "Title (2012-2013)"
+            var match = System.Text.RegularExpressions.Regex.Match(trimmed, @"\(\s*(\d{4})(?:[–-]\d{4})?\s*\)\s*$");
+            if (match.Success && match.Groups.Count > 1)
+            {
+                return match.Groups[1].Value;
+            }
+
+            // Fallback: find any standalone 4-digit year (prefer 1900-2099)
+            var looseMatch = System.Text.RegularExpressions.Regex.Match(trimmed, @"\b(19|20)\d{2}\b");
+            if (looseMatch.Success)
+            {
+                return looseMatch.Value;
+            }
+
+            return string.Empty;
         }
 
         [HttpGet("/API/ImdbApiLookupName")]
@@ -192,7 +288,7 @@ namespace MovieTheater.Controllers
         [HttpGet("/API/OMDBLookupImdbID")]
         public async Task<Movie> OmdbLookupImdbID(string imdbID)
         {
-            return await omdb.GetMovie(imdbID);
+            return await omdb.GetMovieByImdbId(imdbID);
         }
 
         [HttpPost("/API/SetViewingState")]
