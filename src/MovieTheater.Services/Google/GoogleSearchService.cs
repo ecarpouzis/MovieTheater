@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 using System.Net.Http;
 using System.Text.Json;
 
-namespace MovieTheater.Services
+namespace MovieTheater.Services.Google
 {
     // Uses Google Custom Search JSON API (requires API key and Search Engine ID configured).
     // Configure keys in appsettings.json under "GoogleCustomSearch:ApiKey" and "GoogleCustomSearch:SearchEngineId".
@@ -21,8 +21,8 @@ namespace MovieTheater.Services
         public GoogleSearchService(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
-            _apiKey = configuration["GoogleCustomSearch:ApiKey"];
-            _searchEngineId = configuration["GoogleCustomSearch:SearchEngineId"];
+            _apiKey = configuration["GoogleSearchApiKey"];
+            _searchEngineId = configuration["GoogleSearchEngineId"];
         }
 
         public async Task<string?> FindImdbIdFromMovieName(string movieName)

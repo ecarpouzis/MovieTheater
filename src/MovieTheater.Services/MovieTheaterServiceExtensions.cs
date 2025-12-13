@@ -6,6 +6,7 @@ using MovieTheater.Services.Poster;
 using MovieTheater.Services.Python;
 using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
+using MovieTheater.Services.Google;
 
 namespace MovieTheater.Services
 {
@@ -20,7 +21,7 @@ namespace MovieTheater.Services
             services.AddImdbServices(config.ImdbApiKey);
             services.AddTmdbServices(config.TmdbApiKey);
             services.AddOmdbServices(config.OmdbApiKey);
-            services.AddTransient<GoogleSearchService>();
+            services.AddGoogleServices(config.GoogleSearchApiKey, config.GoogleSearchEngineId);
             services.AddTransient<IMDBApiService>();
             return services;
         }

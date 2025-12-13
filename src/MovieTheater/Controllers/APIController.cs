@@ -17,6 +17,7 @@ using MovieTheater.Services.Poster;
 using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
 using HotChocolate;
+using MovieTheater.Services.Google;
 
 namespace MovieTheater.Controllers
 {
