@@ -20,7 +20,8 @@ The deployment has been configured to handle pod termination gracefully to preve
    - This allows time for in-flight requests to complete
 
 2. **preStop Lifecycle Hook**
-   - Executes a 5-second sleep before sending the SIGTERM signal
+   - Executes a 5-second sleep when pod termination begins
+   - Runs simultaneously with SIGTERM being sent to the application
    - Provides a buffer for load balancers and services to remove the pod from their endpoints
    - Prevents new connections from being established during shutdown
 
@@ -30,11 +31,11 @@ During a rolling update or pod termination:
 
 1. Kubernetes marks the pod for termination
 2. The pod is removed from service endpoints (stops receiving new traffic)
-3. The `preStop` hook executes (5-second sleep)
-4. SIGTERM signal is sent to the application
-5. Application begins graceful shutdown
-6. Kubernetes waits up to `terminationGracePeriodSeconds` (30 seconds)
-7. If still running after grace period, SIGKILL is sent
+3. The `preStop` hook and SIGTERM signal are sent simultaneously
+   - The `preStop` hook executes (5-second sleep)
+   - The application receives SIGTERM and begins graceful shutdown
+4. Kubernetes waits up to `terminationGracePeriodSeconds` (30 seconds)
+5. If still running after grace period, SIGKILL is sent
 
 This ensures that old replicas terminate cleanly without getting stuck in a pending state.
 
