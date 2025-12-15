@@ -17,6 +17,8 @@ function InsertMovieInput({ placeholder, name, movieState, setMovieState }) {
 }
 
 function MovieInsertForm({ movie, setMovie }) {
+  const [inserted, setInserted] = useState(false);
+
   async function insert() {
     if (movie.title) {
       try {
@@ -26,6 +28,7 @@ function MovieInsertForm({ movie, setMovie }) {
           message.error("Error: " + data.message);
         } else {
           message.success("Movie inserted successfully.");
+          setInserted(true);
         }
       } catch (err) {
         message.error(err.message || "Failed to insert movie.");
@@ -170,7 +173,11 @@ function MovieInsertForm({ movie, setMovie }) {
             </tr>
             <tr>
               <td>
-                <Button onClick={insert} type="primary">
+                <Button
+                  onClick={insert}
+                  type={inserted ? "success" : "primary"}
+                  style={inserted ? { backgroundColor: "#52c41a", borderColor: "#52c41a" } : {}}
+                >
                   Insert
                 </Button>
               </td>
