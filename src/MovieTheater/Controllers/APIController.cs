@@ -183,7 +183,7 @@ namespace MovieTheater.Controllers
         private async Task<Movie> PrepMovieTitle(Movie movie)
         {
             var trimmedTitle = movie.Title.Trim();
-            if (trimmedTitle.StartsWith("The", StringComparison.OrdinalIgnoreCase) &&
+            if (trimmedTitle.StartsWith("The ", StringComparison.OrdinalIgnoreCase) &&
                         !trimmedTitle.EndsWith(", The", StringComparison.OrdinalIgnoreCase))
             {
                 var withoutArticle = trimmedTitle.Substring(4).Trim(); // remove leading "The "
