@@ -138,13 +138,13 @@ function Login({ userData, setUserData, onUserLoggedIn, moviesSeenSearch, movies
         <div style={viewingDataContainer}>
           <span style={filmIcon} className="fas fa-film"></span>
           <a style={viewingDataText} onClick={moviesSeenSearch}>
-            {userData.moviesSeen.length}
+            Seen
           </a>
         </div>
         <div style={viewingDataContainer}>
           <span style={heartIcon} className="fas fa-heart"></span>
           <a style={viewingDataText} onClick={moviesWantToWatchSearch}>
-            {userData.moviesToWatch.length}
+            Want
           </a>
         </div>
         <br style={{ clear: "both" }} />

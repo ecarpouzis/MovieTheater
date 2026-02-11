@@ -1,7 +1,6 @@
 import { MovieAPI } from "../../MovieAPI";
 import { Card, List } from "antd";
 import { Scrollbars } from "react-custom-scrollbars";
-import { Link } from "react-router-dom";
 
 const listStyle = {
   width: "100%",
@@ -214,7 +213,7 @@ function UserMovieOptions({ userData, id, setUserData }) {
   return <></>;
 }
 
-function CardList({ movieDataArray, userData, setUserData, actorSearch }) {
+function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieClick }) {
   //If a user is logged in, cards need to be formatted for Watchlist buttons
   if (userData) {
     cardBodyStyle = { ...cardBodyStyle, height: "260px", flexWrap: "wrap" };
@@ -260,9 +259,9 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch }) {
                     </div>
                     <Scrollbars>
                       <div className="RightCol" style={cardRightColumStyle}>
-                        <Link to={{ pathname: "/movie/" + item.id, id: item.id }} style={cardTitleStyle} className="movieTitle">
+                        <div onClick={() => onMovieClick(item.id)} style={{ ...cardTitleStyle, cursor: "pointer" }} className="movieTitle">
                           {item.title + " (" + new Date(item.releaseDate).getFullYear() + ")"}
-                        </Link>
+                        </div>
                         <br />
                         <span className="movieTime" style={cardTimeStyle}>
                           {item.runtime}
