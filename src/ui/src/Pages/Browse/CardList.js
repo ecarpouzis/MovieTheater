@@ -1,6 +1,7 @@
 import { MovieAPI } from "../../MovieAPI";
 import { Card, List } from "antd";
 import { Scrollbars } from "react-custom-scrollbars";
+import { useState } from "react";
 
 const listStyle = {
   width: "100%",
@@ -120,6 +121,9 @@ const toWatchDataContainer = {
 //when wanted: #dc143c
 
 function UserMovieOptions({ userData, id, setUserData }) {
+  const [hoveredSeenButton, setHoveredSeenButton] = useState(false);
+  const [hoveredWantButton, setHoveredWantButton] = useState(false);
+
   if (userData) {
     const isWatched = userData.moviesSeen.includes(id);
     let watchedDataContainer;
@@ -130,7 +134,10 @@ function UserMovieOptions({ userData, id, setUserData }) {
         color: "#4169e3",
       };
     } else {
-      watchedDataContainer = hasWatchedDataContainer;
+      watchedDataContainer = {
+        ...hasWatchedDataContainer,
+        color: hoveredSeenButton ? "#52c41a" : "#a9a9a9", // Change color on hover of seen button
+      };
     }
 
     const isWanted = userData.moviesToWatch.includes(id);
@@ -141,7 +148,10 @@ function UserMovieOptions({ userData, id, setUserData }) {
         color: "#dc143c",
       };
     } else {
-      wantedDataContainer = toWatchDataContainer;
+      wantedDataContainer = {
+        ...toWatchDataContainer,
+        color: hoveredWantButton ? "#52c41a" : "#a9a9a9", // Change color on hover of want button
+      };
     }
     return (
       <>
@@ -171,6 +181,8 @@ function UserMovieOptions({ userData, id, setUserData }) {
                   }
                 });
             }}
+            onMouseEnter={() => setHoveredSeenButton(true)}
+            onMouseLeave={() => setHoveredSeenButton(false)}
             className="zoom-on-hover"
             style={watchedDataContainer}
           >
@@ -200,6 +212,8 @@ function UserMovieOptions({ userData, id, setUserData }) {
                   }
                 });
             }}
+            onMouseEnter={() => setHoveredWantButton(true)} // changes color on hover of seen and want buttons
+            onMouseLeave={() => setHoveredWantButton(false)}
             className="zoom-on-hover"
             style={wantedDataContainer}
           >
@@ -223,6 +237,9 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieC
     };
   }
 
+  const [hoveredMovieId, setHoveredMovieId] = useState(null);
+  const [hoveredActor, setHoveredActor] = useState(null);
+
   return (
     <>
       {
@@ -243,7 +260,15 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieC
 
             const actorList = item.actors.split(",").map((actor, i) => (
               <div key={i}>
-                <a style={actorLinkStyle} onClick={() => actorSearch(actor)}>
+                <a
+                  style={{
+                    ...actorLinkStyle,
+                    color: hoveredActor === actor ? "#1890ff" : "black", // Change color on hover of actor name
+                  }}
+                  onClick={() => actorSearch(actor)}
+                  onMouseEnter={() => setHoveredActor(actor)}
+                  onMouseLeave={() => setHoveredActor(null)}
+                >
                   {actor}
                 </a>
                 <br />
@@ -259,7 +284,17 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieC
                     </div>
                     <Scrollbars>
                       <div className="RightCol" style={cardRightColumStyle}>
-                        <div onClick={() => onMovieClick(item.id)} style={{ ...cardTitleStyle, cursor: "pointer" }} className="movieTitle">
+                        <div
+                          onClick={() => onMovieClick(item.id)}
+                          onMouseEnter={() => setHoveredMovieId(item.id)}
+                          onMouseLeave={() => setHoveredMovieId(null)}
+                          style={{
+                            ...cardTitleStyle,
+                            cursor: "pointer",
+                            color: hoveredMovieId === item.id ? "#1890ff" : "#5E5E5E", // Change color on hover of movie title
+                          }}
+                          className="movieTitle"
+                        >
                           {item.title + " (" + new Date(item.releaseDate).getFullYear() + ")"}
                         </div>
                         <br />

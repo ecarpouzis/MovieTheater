@@ -19,6 +19,11 @@ function Browse({ search, userData, setUserData, actorSearch }) {
     setSelectedMovieId(null);
   };
 
+  // Close modal when search changes (e.g., when actor is clicked)
+  useEffect(() => {
+    handleCloseModal();
+  }, [search]);
+
   if (data) {
     const movieDataArray = data.movies || data.randomMovies;
     return (

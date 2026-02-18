@@ -54,7 +54,8 @@ const listStyle = {};
 
 function SearchTools({ search, setSearch, resetSearch, titleSearch, actorSearch }) {
   function ToggleLetterSearch(firstLetter) {
-    let isAlreadySelected;
+    // removed isAlreadySelected variable declaration here since it is now declared later to properly capture the current search state after the potential resetSearch call
+    // let isAlreadySelected;
     let query;
     let variables;
     if (firstLetter === "#") {
@@ -99,7 +100,9 @@ function SearchTools({ search, setSearch, resetSearch, titleSearch, actorSearch 
           }
         }
       `;
-      isAlreadySelected = search.query === query && search.variables.firstLetter == firstLetter;
+      // removed isAlreadySelected variable declaration here since it is now declared later to properly capture the current search state after the potential resetSearch call
+      // isAlreadySelected = search.query === query && search.variables.firstLetter == firstLetter;
+      variables = {}; // No variables needed for this query since the first letter conditions are hardcoded in the query
     } else {
       query = gql`
         query ($firstLetter: String!) {
@@ -123,14 +126,18 @@ function SearchTools({ search, setSearch, resetSearch, titleSearch, actorSearch 
           }
         }
       `;
-      isAlreadySelected = search.query === query;
+      // removed isAlreadySelected variable declaration here since it is now declared later to properly capture the current search state after the potential resetSearch call
+      //  isAlreadySelected = search.query === query;
       variables = { firstLetter: firstLetter };
     }
+
+    // Check if already viewing this letter by comparing the startsWith property
+    const isAlreadySelected = search.startsWith === firstLetter;
 
     if (isAlreadySelected) {
       resetSearch();
     } else {
-      setSearch({ query: query, variables: variables });
+      setSearch({ query: query, variables: variables, startsWith: firstLetter }); // Set startsWith to the selected letter to track that we are doing a letter-title search
     }
   }
 
@@ -182,7 +189,11 @@ function SearchTools({ search, setSearch, resetSearch, titleSearch, actorSearch 
                     }}
                     style={{
                       width: "36px",
-                      backgroundColor: item === search.startsWith ? "silver" : "white",
+                      // removed backgroundColor change on selection since it was too similar to the hover color and made it hard to see which letter was selected, replaced with a blue background and white text for better visibility
+                      //  backgroundColor: item === search.startsWith ? "silver" : "white",
+                      backgroundColor: item === search.startsWith ? "#1890ff" : "white",
+                      color: item === search.startsWith ? "white" : "black",
+                      borderColor: item === search.startsWith ? "#1890ff" : "#d9d9d9",
                     }}
                   >
                     <span style={searchLetterStyle}>{item}</span>
