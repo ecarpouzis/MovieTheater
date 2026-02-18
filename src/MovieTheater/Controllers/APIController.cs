@@ -48,6 +48,21 @@ namespace MovieTheater.Controllers
             this.imdbApiService = imdbApiService;
         }
 
+        private int GetMPARatingFromMovieRating(string movieRating)
+        {
+            if (string.IsNullOrWhiteSpace(movieRating))
+            {
+                return 0;
+            }
+
+            var trimmedRating = movieRating.Trim();
+
+            var ratingMap = movieDb.RatingMaps
+                                  .FirstOrDefault(rm => rm.MovieRating == trimmedRating);
+
+            return ratingMap.MPARatingID;
+        }
+
         [HttpGet("/API/GetMovie")]
         public async Task<IActionResult> GetMovie(int id)
         {

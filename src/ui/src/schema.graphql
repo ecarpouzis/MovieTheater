@@ -29,8 +29,22 @@ type Mutation {
 }
 
 type Query {
+  ratingMPAs: [RatingMPA]
+  ratingMaps: [RatingMap]
   movies(where: MovieFilterInput order: [MovieSortInput!]): [Movie]
   randomMovies(take: Int! = 50): [Movie]
+}
+
+type RatingMPA {
+  ratingID: Int!
+  minAge: Int!
+  mpaName: String
+}
+
+type RatingMap {
+  ratingMapID: Int!
+  movieRating: String
+  mpaRatingID: Int!
 }
 
 type User {
