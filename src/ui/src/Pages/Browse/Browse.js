@@ -41,6 +41,8 @@ function Browse({ search, userData, setUserData, actorSearch }) {
           onClose={handleCloseModal}
           actorSearch={actorSearch}
           movieDataArray={movieDataArray}
+          userData={userData}
+          setUserData={setUserData}
         />
       </>
     );

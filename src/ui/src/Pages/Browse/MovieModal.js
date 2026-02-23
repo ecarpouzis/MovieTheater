@@ -3,7 +3,174 @@ import { useState, useEffect } from "react";
 import { Modal, Spin } from "antd";
 import { Link } from "react-router-dom";
 
-function MovieModal({ movieId, visible, onClose, actorSearch, movieDataArray }) {
+const filmIcon = {
+  fontSize: "30px",
+  width: "35px",
+  verticalAlign: "middle",
+  paddingRight: "30px",
+};
+
+const heartIcon = {
+  fontSize: "25px",
+  width: "30px",
+  verticalAlign: "middle",
+  paddingRight: "5px",
+};
+
+const buttonLabelStyle = {
+  fontWeight: "bold",
+  verticalAlign: "middle",
+};
+
+const hasWatchedDataContainer = {
+  width: "100px",
+  margin: "auto",
+  marginLeft: "-20px",
+  float: "left",
+  color: "#a9a9a9",
+};
+
+const toWatchDataContainer = {
+  width: "100px",
+  margin: "auto",
+  marginLeft: "10px",
+  paddingRight: "20px",
+  float: "left",
+  color: "#a9a9a9",
+};
+
+function UserMovieOptions({ userData, id, setUserData, inline = false }) {
+  const [hoveredSeenButton, setHoveredSeenButton] = useState(false);
+  const [hoveredWantButton, setHoveredWantButton] = useState(false);
+
+  if (userData) {
+    const isWatched = userData.moviesSeen.includes(id);
+    let watchedDataContainer;
+
+    if (isWatched) {
+      watchedDataContainer = {
+        ...hasWatchedDataContainer,
+        color: "#4169e3",
+      };
+    } else {
+      watchedDataContainer = {
+        ...hasWatchedDataContainer,
+        color: hoveredSeenButton ? "#52c41a" : "#a9a9a9",
+      };
+    }
+
+    const isWanted = userData.moviesToWatch.includes(id);
+    let wantedDataContainer;
+    if (isWanted) {
+      wantedDataContainer = {
+        ...toWatchDataContainer,
+        color: "#dc143c",
+      };
+    } else {
+      wantedDataContainer = {
+        ...toWatchDataContainer,
+        color: hoveredWantButton ? "#52c41a" : "#a9a9a9",
+      };
+    }
+    return (
+      <>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: inline ? "10px" : "18px",
+            marginTop: inline ? "0" : "0px",
+            width: inline ? "auto" : "100%",
+          }}
+        >
+          <div
+            onClick={() => {
+              if (!isWatched) {
+                let newUserData = {
+                  ...userData,
+                  moviesSeen: [...userData.moviesSeen, id],
+                };
+                setUserData(newUserData);
+              } else {
+                let newUserData = {
+                  ...userData,
+                  moviesSeen: userData.moviesSeen.filter((x) => x !== id),
+                };
+                setUserData(newUserData);
+              }
+
+              MovieAPI.setWatchedState(userData.username, id, !isWatched)
+                .then((response) => response.json())
+                .then((response) => {
+                  if (!response.success) {
+                    alert(response.message);
+                  }
+                });
+            }}
+            onMouseEnter={() => setHoveredSeenButton(true)}
+            onMouseLeave={() => setHoveredSeenButton(false)}
+            className="zoom-on-hover"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: inline ? "100px" : "160px",
+              padding: inline ? "0" : "8px 12px",
+              cursor: "pointer",
+              color: isWatched ? "#4169e3" : hoveredSeenButton ? "#52c41a" : "#a9a9a9",
+            }}
+          >
+            <span style={filmIcon} className="fas fa-film"></span>
+            <span style={{ ...buttonLabelStyle, fontSize: inline ? "inherit" : "16px" }}>SEEN</span>
+          </div>
+          <div
+            onClick={() => {
+              if (!isWanted) {
+                let newUserData = {
+                  ...userData,
+                  moviesToWatch: [...userData.moviesToWatch, id],
+                };
+                setUserData(newUserData);
+              } else {
+                let newUserData = {
+                  ...userData,
+                  moviesToWatch: userData.moviesToWatch.filter((x) => x !== id),
+                };
+                setUserData(newUserData);
+              }
+              MovieAPI.setWantToWatchState(userData.username, id, !isWanted)
+                .then((response) => response.json())
+                .then((response) => {
+                  if (!response.success) {
+                    alert(response.message);
+                  }
+                });
+            }}
+            onMouseEnter={() => setHoveredWantButton(true)}
+            onMouseLeave={() => setHoveredWantButton(false)}
+            className="zoom-on-hover"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: inline ? "100px" : "160px",
+              padding: inline ? "0" : "8px 12px",
+              cursor: "pointer",
+              color: isWanted ? "#dc143c" : hoveredWantButton ? "#52c41a" : "#a9a9a9",
+            }}
+          >
+            <span style={heartIcon} className="fas fa-heart"></span>
+            <span style={{ ...buttonLabelStyle, fontSize: inline ? "inherit" : "16px" }}>WANT {isWanted}</span>
+          </div>
+        </div>
+      </>
+    );
+  }
+  return <></>;
+}
+
+function MovieModal({ movieId, visible, onClose, actorSearch, movieDataArray, userData, setUserData }) {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [totalMovieCount, setTotalMovieCount] = useState(0);
@@ -57,12 +224,14 @@ function MovieModal({ movieId, visible, onClose, actorSearch, movieDataArray }) 
         <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
           <h1 style={{ textAlign: "center", fontSize: "32px", fontWeight: "bold", margin: "0 0 20px 0" }}>{movie.title}</h1>
           <div className="movie-page-wrapper" style={{ width: "100%", maxWidth: "none", margin: "0" }}>
-            <img
-              className="movie-page-poster"
-              alt={movie.title + " poster"}
-              src={MovieAPI.getMoviePoster(movie.id)}
-              style={{ width: "200px", height: "auto", marginRight: "20px", marginTop: "0" }}
-            />
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginRight: "20px", width: "200px" }}>
+              <img
+                className="movie-page-poster"
+                alt={movie.title + " poster"}
+                src={MovieAPI.getMoviePoster(movie.id)}
+                style={{ width: "200px", height: "auto", marginTop: "0" }}
+              />
+            </div>
             <div className="movie-detail-container">
               <div className="movie-detail">
                 <u>Release Date:</u> {new Date(movie.releaseDate).getFullYear()}
@@ -116,10 +285,18 @@ function MovieModal({ movieId, visible, onClose, actorSearch, movieDataArray }) 
               </div>
               <div
                 className="movie-detail2"
-                style={{ marginTop: "10px", textAlign: "left", fontSize: "13px", backgroundColor: "white", color: "gray" }}
+                style={{
+                  marginTop: "4px",
+                  fontSize: "13px",
+                  backgroundColor: "white",
+                  color: "gray",
+                  marginBottom: "2px",
+                  textAlign: "right",
+                }}
               >
-                id #{movie.id}
+                <span>id #{movie.id}</span>
               </div>
+              <UserMovieOptions userData={userData} id={movie.id} setUserData={setUserData} />
             </div>
           </div>
         </div>
