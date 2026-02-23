@@ -35,7 +35,13 @@ function Browse({ search, userData, setUserData, actorSearch }) {
           actorSearch={actorSearch}
           onMovieClick={handleOpenMovie}
         />
-        <MovieModal movieId={selectedMovieId} visible={isModalVisible} onClose={handleCloseModal} actorSearch={actorSearch} />
+        <MovieModal
+          movieId={selectedMovieId}
+          visible={isModalVisible}
+          onClose={handleCloseModal}
+          actorSearch={actorSearch}
+          movieDataArray={movieDataArray}
+        />
       </>
     );
   } else {

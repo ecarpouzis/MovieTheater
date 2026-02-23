@@ -176,6 +176,14 @@ function imdbApiLookupName(name) {
   });
 }
 
+function getTotalMovieCount() {
+  const url = "/API/GetTotalMovieCount";
+
+  return fetch(url, {
+    method: "get",
+  });
+}
+
 const MovieAPI = {
   getMoviePoster,
   getPosterThumbnail,
@@ -183,6 +191,7 @@ const MovieAPI = {
   getMovie,
   getUsers,
   insertMovie,
+  getTotalMovieCount,
   tmdbLookupImdbID,
   tmdbLookupName,
   omdbLookupImdbID,

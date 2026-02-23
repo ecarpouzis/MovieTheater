@@ -74,6 +74,20 @@ namespace MovieTheater.Controllers
             return BadRequest(new { Success = false, Message = "Movie ID not found" });
         }
 
+        [HttpGet("/API/GetTotalMovieCount")]
+        public async Task<IActionResult> GetTotalMovieCount()
+        {
+            try
+            {
+                var count = await movieDb.Movies.CountAsync();
+                return Ok(new { totalCount = count, success = true });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { totalCount = 0, success = false, error = ex.Message });
+            }
+        }
+
         [HttpPost("/API/InsertMovie")]
         public async Task<IActionResult> InsertMovie([FromBody] Movie movie)
         {

@@ -3,9 +3,11 @@ import { useState, useEffect } from "react";
 import { Modal, Spin } from "antd";
 import { Link } from "react-router-dom";
 
-function MovieModal({ movieId, visible, onClose, actorSearch }) {
+function MovieModal({ movieId, visible, onClose, actorSearch, movieDataArray }) {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [totalMovieCount, setTotalMovieCount] = useState(0);
+  const [movieIndex, setMovieIndex] = useState(0);
 
   useEffect(() => {
     if (visible && movieId) {
@@ -22,6 +24,30 @@ function MovieModal({ movieId, visible, onClose, actorSearch }) {
         });
     }
   }, [movieId, visible]);
+
+  useEffect(() => {
+    if (visible) {
+      MovieAPI.getTotalMovieCount()
+        .then((response) => {
+          console.log("Response status:", response.status);
+          console.log("Response ok:", response.ok);
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Total movie count response:", data);
+          if (data.success !== false) {
+            setTotalMovieCount(data.totalCount || 0);
+          } else {
+            console.error("Backend error:", data.error);
+            setTotalMovieCount(0);
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching total movie count:", error);
+          setTotalMovieCount(0);
+        });
+    }
+  }, [visible]);
 
   return (
     <Modal visible={visible} onCancel={onClose} footer={null} width={1100} bodyStyle={{ maxHeight: "80vh", overflowY: "auto", padding: "24px" }}>
@@ -87,6 +113,12 @@ function MovieModal({ movieId, visible, onClose, actorSearch }) {
                 <a target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID}>
                   {movie.tomatoRating} / 100
                 </a>
+              </div>
+              <div
+                className="movie-detail2"
+                style={{ marginTop: "10px", textAlign: "left", fontSize: "13px", backgroundColor: "white", color: "gray" }}
+              >
+                id #{movie.id}
               </div>
             </div>
           </div>
