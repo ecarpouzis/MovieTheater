@@ -83,17 +83,21 @@ const cardRightColumStyle = {
 };
 
 const filmIcon = {
-  fontSize: "30px",
-  width: "35px",
-  verticalAlign: "middle",
-  paddingRight: "30px",
+  fontSize: "24px",
+  width: "24px",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  marginRight: "8px",
 };
 
 const heartIcon = {
-  fontSize: "25px",
-  width: "30px",
-  verticalAlign: "middle",
-  paddingRight: "5px",
+  fontSize: "24px",
+  width: "24px",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  marginRight: "8px",
 };
 
 const buttonLabelStyle = {
@@ -103,22 +107,28 @@ const buttonLabelStyle = {
 
 const hasWatchedDataContainer = {
   width: "100px",
+  height: "44px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   margin: "auto",
   marginLeft: "-20px",
   float: "left",
   color: "#a9a9a9",
 };
-//when watched: #4169e3
 
 const toWatchDataContainer = {
   width: "100px",
+  height: "44px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   margin: "auto",
   marginLeft: "10px",
   paddingRight: "20px",
   float: "left",
   color: "#a9a9a9",
 };
-//when wanted: #dc143c
 
 function UserMovieOptions({ userData, id, setUserData }) {
   const [hoveredSeenButton, setHoveredSeenButton] = useState(false);
