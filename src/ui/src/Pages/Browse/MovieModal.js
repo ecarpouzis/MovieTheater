@@ -1,7 +1,6 @@
 import { MovieAPI } from "../../MovieAPI";
 import { useState, useEffect } from "react";
 import { Modal, Spin } from "antd";
-import { Link } from "react-router-dom";
 
 const filmIcon = {
   fontSize: "30px",
@@ -257,18 +256,26 @@ function MovieModal({ movieId, visible, onClose, actorSearch, movieDataArray, us
               <div className="movie-detail actors-container">
                 <u>Actors:</u>
                 {movie.actors
-                  ? movie.actors.split(",").map((actor, index) => (
-                      <Link
-                        key={index}
-                        className="actor-box"
-                        onClick={() => {
-                          actorSearch(actor);
-                          onClose();
-                        }}
-                      >
-                        {actor}
-                      </Link>
-                    ))
+                  ? movie.actors.split(",").map((actorName, index) => {
+                      const actor = actorName.trim();
+                      if (!actor) {
+                        return null;
+                      }
+
+                      return (
+                        <button
+                          key={index}
+                          type="button"
+                          className="actor-box actor-box-clickable"
+                          onClick={() => {
+                            onClose();
+                            actorSearch(actor);
+                          }}
+                        >
+                          {actor}
+                        </button>
+                      );
+                    })
                   : null}
               </div>
               <div className="movie-detail">
@@ -279,7 +286,7 @@ function MovieModal({ movieId, visible, onClose, actorSearch, movieDataArray, us
               </div>
               <div className="movie-detail">
                 <u>RottenTomatoes Rating:</u>{" "}
-                <a target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID}>
+                <a target="_blank" rel="noreferrer" href={"https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}>
                   {movie.tomatoRating} / 100
                 </a>
               </div>

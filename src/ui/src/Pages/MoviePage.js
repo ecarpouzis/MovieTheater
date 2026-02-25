@@ -65,7 +65,7 @@ function MoviePage() {
           </div>
           <div className="movie-detail">
             <u>RottenTomatoes Rating:</u>{" "}
-            <a target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID}>
+            <a target="_blank" rel="noreferrer" href={"https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}>
               {movie.tomatoRating} / 100
             </a>
           </div>
