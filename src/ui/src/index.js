@@ -7,15 +7,11 @@ import App from "./App";
 import client from "./Apollo/Apollo";
 import { ApolloProvider } from "@apollo/client";
 
-if (window.location.href === "http://localhost:3000/") {
-  window.location.href = "http://localhost:3001";
-} else {
-  ReactDOM.render(
-    <React.StrictMode>
-      <ApolloProvider client={client}>
-        <App />
-      </ApolloProvider>
-    </React.StrictMode>,
-    document.getElementById("root")
-  );
-}
+ReactDOM.render(
+  <React.StrictMode>
+    <ApolloProvider client={client}>
+      <App />
+    </ApolloProvider>
+  </React.StrictMode>,
+  document.getElementById("root")
+);

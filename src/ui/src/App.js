@@ -113,7 +113,83 @@ function App() {
     setSearch({ query: query, variables: variables });
   }
 
-  function MovieIDListSearch(movieIds) {
+  function FirstLetterSearch(firstLetter) {
+    let query;
+    let variables;
+
+    if (firstLetter === "#") {
+      query = gql`
+        query {
+          movies(
+            where: {
+              simpleTitle: {
+                or: [
+                  { startsWith: "#" }
+                  { startsWith: "0" }
+                  { startsWith: "1" }
+                  { startsWith: "2" }
+                  { startsWith: "3" }
+                  { startsWith: "4" }
+                  { startsWith: "5" }
+                  { startsWith: "6" }
+                  { startsWith: "7" }
+                  { startsWith: "8" }
+                  { startsWith: "9" }
+                ]
+              }
+            }
+            order: { simpleTitle: ASC }
+          ) {
+            id
+            actors
+            title
+            simpleTitle
+            rating
+            releaseDate
+            runtime
+            genre
+            director
+            writer
+            plot
+            posterLink
+            imdbRating
+            tomatoRating
+            uploadedDate
+            removeFromRandom
+          }
+        }
+      `;
+      variables = {};
+    } else {
+      query = gql`
+        query ($firstLetter: String!) {
+          movies(where: { simpleTitle: { startsWith: $firstLetter } }, order: { simpleTitle: ASC }) {
+            id
+            actors
+            title
+            simpleTitle
+            rating
+            releaseDate
+            runtime
+            genre
+            director
+            writer
+            plot
+            posterLink
+            imdbRating
+            tomatoRating
+            uploadedDate
+            removeFromRandom
+          }
+        }
+      `;
+      variables = { firstLetter: firstLetter };
+    }
+
+    setSearch({ query: query, variables: variables, startsWith: firstLetter });
+  }
+
+  function MovieIDListSearch(movieIds, restoreOrder = null) {
     const query = gql`
       query ($movieIds: [Int!]) {
         movies(where: { id: { in: $movieIds } }, order: { simpleTitle: ASC }) {
@@ -137,7 +213,11 @@ function App() {
       }
     `;
     const variables = { movieIds: movieIds };
-    setSearch({ query: query, variables: variables });
+    setSearch({ query: query, variables: variables, restoreOrder });
+  }
+
+  function RestoreMovieIdsSearch(movieIds) {
+    MovieIDListSearch(movieIds, movieIds);
   }
 
   function MoviesSeenSearch() {
@@ -153,13 +233,14 @@ function App() {
       <Layout style={{ height: "100vh", overflow: "hidden" }}>
         <NavBar
           search={search}
-          setSearch={setSearch}
           resetSearch={resetSearch}
           userData={userData}
           setUserData={setUserData}
           onUserLoggedIn={onUserLoggedIn}
           titleSearch={TitleSearch}
           actorSearch={ActorSearch}
+          firstLetterSearch={FirstLetterSearch}
+          restoreMovieIdsSearch={RestoreMovieIdsSearch}
           moviesSeenSearch={MoviesSeenSearch}
           moviesWantToWatchSearch={MoviesWantToWatchSearch}
         />
@@ -175,7 +256,7 @@ function App() {
               <BatchInsertPage />
             </Route>
             <Route path="/">
-              <Browse search={search} userData={userData} setUserData={setUserData} actorSearch={ActorSearch} />
+              <Browse search={search} userData={userData} setUserData={setUserData} />
             </Route>
           </Switch>
         </Layout.Content>

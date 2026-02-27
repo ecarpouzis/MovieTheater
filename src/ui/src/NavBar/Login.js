@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { Button, Input, Tooltip, AutoComplete } from "antd";
 import { InfoCircleOutlined, UserOutlined } from "@ant-design/icons";
+import { useHistory } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
 
 //Function component Login
 //Props:
 //  userData - Stores user data, used to determine if the Login component displays ways to log in, or user information and Logout
 //  onUserLoggedIn - Hook to handle passing user login event to App.js
-function Login({ userData, setUserData, onUserLoggedIn, moviesSeenSearch, moviesWantToWatchSearch }) {
+function Login({ userData, setUserData, onUserLoggedIn }) {
+  const history = useHistory();
   //Hook to store a list of all users
   const [userlist, setUserlist] = useState([]);
   const [filteredUserlist, setFilteredUserlist] = useState([]);
@@ -83,6 +85,16 @@ function Login({ userData, setUserData, onUserLoggedIn, moviesSeenSearch, movies
     window.localStorage.clear();
   }
 
+  function navigateToBrowseSearch(mode) {
+    const params = new URLSearchParams();
+    params.set("mode", mode);
+
+    history.push({
+      pathname: "/",
+      search: `?${params.toString()}`,
+    });
+  }
+
   //When a user isn't logged in, render a login tool which enables the user to log in
   const getLoginTools = () => (
     <div id="LoginContainer" style={{ color: "white" }}>
@@ -137,13 +149,23 @@ function Login({ userData, setUserData, onUserLoggedIn, moviesSeenSearch, movies
         <br />
         <div style={viewingDataContainer}>
           <span style={filmIcon} className="fas fa-film"></span>
-          <a style={viewingDataText} onClick={moviesSeenSearch}>
+          <a
+            style={viewingDataText}
+            onClick={() => {
+              navigateToBrowseSearch("seen");
+            }}
+          >
             Seen ({userData.moviesSeen.length})
           </a>
         </div>
         <div style={viewingDataContainer}>
           <span style={heartIcon} className="fas fa-heart"></span>
-          <a style={viewingDataText} onClick={moviesWantToWatchSearch}>
+          <a
+            style={viewingDataText}
+            onClick={() => {
+              navigateToBrowseSearch("want");
+            }}
+          >
             Want ({userData.moviesToWatch.length})
           </a>
         </div>

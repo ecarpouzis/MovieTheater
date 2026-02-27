@@ -270,17 +270,22 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieC
 
             const actorList = item.actors.split(",").map((actor, i) => (
               <div key={i}>
-                <a
+                <button
+                  type="button"
                   style={{
                     ...actorLinkStyle,
                     color: hoveredActor === actor ? "#1890ff" : "black", // Change color on hover of actor name
+                    background: "none",
+                    border: "none",
+                    padding: "0",
+                    cursor: "pointer",
                   }}
                   onClick={() => actorSearch(actor)}
                   onMouseEnter={() => setHoveredActor(actor)}
                   onMouseLeave={() => setHoveredActor(null)}
                 >
                   {actor}
-                </a>
+                </button>
                 <br />
               </div>
             ));

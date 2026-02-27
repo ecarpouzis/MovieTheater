@@ -1,5 +1,5 @@
 import { Input, List, Button } from "antd";
-import { gql } from "@apollo/client";
+import { useHistory } from "react-router-dom";
 
 const { Search } = Input;
 
@@ -52,92 +52,34 @@ const searchLetters = [
 
 const listStyle = {};
 
-function SearchTools({ search, setSearch, resetSearch, titleSearch, actorSearch }) {
-  function ToggleLetterSearch(firstLetter) {
-    // removed isAlreadySelected variable declaration here since it is now declared later to properly capture the current search state after the potential resetSearch call
-    // let isAlreadySelected;
-    let query;
-    let variables;
-    if (firstLetter === "#") {
-      query = gql`
-        query {
-          movies(
-            where: {
-              simpleTitle: {
-                or: [
-                  { startsWith: "#" }
-                  { startsWith: "0" }
-                  { startsWith: "1" }
-                  { startsWith: "2" }
-                  { startsWith: "3" }
-                  { startsWith: "4" }
-                  { startsWith: "5" }
-                  { startsWith: "6" }
-                  { startsWith: "7" }
-                  { startsWith: "8" }
-                  { startsWith: "9" }
-                ]
-              }
-            }
-            order: { simpleTitle: ASC }
-          ) {
-            id
-            actors
-            title
-            simpleTitle
-            rating
-            releaseDate
-            runtime
-            genre
-            director
-            writer
-            plot
-            posterLink
-            imdbRating
-            tomatoRating
-            uploadedDate
-            removeFromRandom
-          }
-        }
-      `;
-      // removed isAlreadySelected variable declaration here since it is now declared later to properly capture the current search state after the potential resetSearch call
-      // isAlreadySelected = search.query === query && search.variables.firstLetter == firstLetter;
-      variables = {}; // No variables needed for this query since the first letter conditions are hardcoded in the query
-    } else {
-      query = gql`
-        query ($firstLetter: String!) {
-          movies(where: { simpleTitle: { startsWith: $firstLetter } }, order: { simpleTitle: ASC }) {
-            id
-            actors
-            title
-            simpleTitle
-            rating
-            releaseDate
-            runtime
-            genre
-            director
-            writer
-            plot
-            posterLink
-            imdbRating
-            tomatoRating
-            uploadedDate
-            removeFromRandom
-          }
-        }
-      `;
-      // removed isAlreadySelected variable declaration here since it is now declared later to properly capture the current search state after the potential resetSearch call
-      //  isAlreadySelected = search.query === query;
-      variables = { firstLetter: firstLetter };
+function SearchTools({ search }) {
+  const history = useHistory();
+
+  function navigateToBrowseSearch(mode, value = "") {
+    const params = new URLSearchParams();
+
+    if (mode) {
+      params.set("mode", mode);
     }
 
+    if (value && value.trim()) {
+      params.set("value", value.trim());
+    }
+
+    history.push({
+      pathname: "/",
+      search: params.toString() ? `?${params.toString()}` : "",
+    });
+  }
+
+  function ToggleLetterSearch(firstLetter) {
     // Check if already viewing this letter by comparing the startsWith property
     const isAlreadySelected = search.startsWith === firstLetter;
 
     if (isAlreadySelected) {
-      resetSearch();
+      navigateToBrowseSearch();
     } else {
-      setSearch({ query: query, variables: variables, startsWith: firstLetter }); // Set startsWith to the selected letter to track that we are doing a letter-title search
+      navigateToBrowseSearch("letter", firstLetter);
     }
   }
 
@@ -154,11 +96,31 @@ function SearchTools({ search, setSearch, resetSearch, titleSearch, actorSearch 
         }}
       >
         <span style={searchLabelStyle}>MOVIE TITLE</span>
-        <Search placeholder="Title" onSearch={titleSearch} enterButton />
+        <Search
+          placeholder="Title"
+          onSearch={(value) => {
+            if (value && value.trim()) {
+              navigateToBrowseSearch("title", value);
+            } else {
+              navigateToBrowseSearch();
+            }
+          }}
+          enterButton
+        />
         <br />
         <br />
         <span style={searchLabelStyle}>ACTOR NAME</span>
-        <Search placeholder="Actor" onSearch={actorSearch} enterButton />
+        <Search
+          placeholder="Actor"
+          onSearch={(value) => {
+            if (value && value.trim()) {
+              navigateToBrowseSearch("actor", value);
+            } else {
+              navigateToBrowseSearch();
+            }
+          }}
+          enterButton
+        />
         <br />
         <br />
         <span style={searchLabelStyle}>FIRST LETTER</span>
