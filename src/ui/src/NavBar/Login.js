@@ -56,28 +56,25 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
     []
   );
 
-  const viewingDataContainer = {
-    width: "100px",
-    margin: "auto",
-    clear: "both",
+  const sectionHeaderStyle = {
+    display: "block",
+    fontSize: "10px",
+    fontWeight: "700",
+    color: "#6b8aad",
+    textTransform: "uppercase",
+    letterSpacing: "1.5px",
+    marginBottom: "12px",
+    paddingBottom: "8px",
+    borderBottom: "1px solid #1e3a57",
   };
 
-  const filmIcon = {
-    fontSize: "30px",
-    width: "30px",
-    float: "left",
-  };
-
-  const heartIcon = {
-    fontSize: "25px",
-    width: "30px",
-    float: "left",
-  };
-
-  const viewingDataText = {
-    fontSize: "15px",
-    float: "left",
-    paddingLeft: "10px",
+  const statRowStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    padding: "7px 0",
+    cursor: "pointer",
+    borderRadius: "4px",
   };
 
   function logoutUser() {
@@ -144,34 +141,66 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
   //When a user is logged in, render information about that user and a button to log out
   function getLoggedInDisplay(userData) {
     return (
-      <div style={{ color: "white" }}>
-        <span>{userData.username}</span>
-        <br />
-        <div style={viewingDataContainer}>
-          <span style={filmIcon} className="fas fa-film"></span>
-          <a
-            style={viewingDataText}
-            onClick={() => {
-              navigateToBrowseSearch("seen");
+      <div style={{ padding: "16px 16px 8px", color: "white" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            marginBottom: "14px",
+            paddingBottom: "12px",
+            borderBottom: "1px solid #1e3a57",
+          }}
+        >
+          <div
+            style={{
+              width: "34px",
+              height: "34px",
+              borderRadius: "50%",
+              background: "#1e3a57",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "16px",
+              flexShrink: 0,
             }}
           >
-            Seen ({userData.moviesSeen.length})
-          </a>
+            👤
+          </div>
+          <span style={{ fontWeight: "600", fontSize: "14px", color: "rgba(255,255,255,0.9)" }}>{userData.username}</span>
         </div>
-        <div style={viewingDataContainer}>
-          <span style={heartIcon} className="fas fa-heart"></span>
-          <a
-            style={viewingDataText}
-            onClick={() => {
-              navigateToBrowseSearch("want");
-            }}
-          >
-            Want ({userData.moviesToWatch.length})
-          </a>
+        <div style={statRowStyle} onClick={() => navigateToBrowseSearch("seen")}>
+          <span className="fas fa-film" style={{ color: "#4169e3", fontSize: "15px", width: "18px", textAlign: "center" }}></span>
+          <span style={{ color: "#c8d8e8", fontSize: "13px", flex: 1 }}>Seen</span>
+          <span style={{ background: "#1e3a57", color: "#7eb3e0", borderRadius: "10px", padding: "1px 9px", fontSize: "12px", fontWeight: "bold" }}>
+            {userData.moviesSeen.length}
+          </span>
         </div>
-        <br style={{ clear: "both" }} />
-        <a onClick={logoutUser}>{"Logout"}</a>
-        <br />
+        <div style={statRowStyle} onClick={() => navigateToBrowseSearch("want")}>
+          <span className="fas fa-heart" style={{ color: "#dc143c", fontSize: "15px", width: "18px", textAlign: "center" }}></span>
+          <span style={{ color: "#c8d8e8", fontSize: "13px", flex: 1 }}>Want to Watch</span>
+          <span style={{ background: "#1e3a57", color: "#7eb3e0", borderRadius: "10px", padding: "1px 9px", fontSize: "12px", fontWeight: "bold" }}>
+            {userData.moviesToWatch.length}
+          </span>
+        </div>
+        <button
+          onClick={logoutUser}
+          style={{
+            marginTop: "10px",
+            width: "100%",
+            background: "transparent",
+            border: "1px solid #2a4a6e",
+            color: "#7eb3e0",
+            borderRadius: "4px",
+            cursor: "pointer",
+            padding: "5px 0",
+            fontSize: "12px",
+            fontWeight: "600",
+            letterSpacing: "0.5px",
+          }}
+        >
+          Log Out
+        </button>
       </div>
     );
   }

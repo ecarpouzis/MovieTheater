@@ -3,10 +3,27 @@ import { useHistory } from "react-router-dom";
 
 const { Search } = Input;
 
-const searchLabelStyle = {
-  fontWeight: "bold",
-  textAlign: "left",
+const sectionHeaderStyle = {
   display: "block",
+  fontSize: "10px",
+  fontWeight: "700",
+  color: "#6b8aad",
+  textTransform: "uppercase",
+  letterSpacing: "1.5px",
+  marginBottom: "12px",
+  paddingBottom: "8px",
+  borderBottom: "1px solid #1e3a57",
+};
+
+const inputLabelStyle = {
+  display: "block",
+  fontSize: "10px",
+  fontWeight: "600",
+  color: "#8fa8c0",
+  textTransform: "uppercase",
+  letterSpacing: "0.8px",
+  marginBottom: "5px",
+  marginTop: "14px",
 };
 
 const searchLetterStyle = {
@@ -84,88 +101,67 @@ function SearchTools({ search }) {
   }
 
   return (
-    <div id="SearchToolContainer" style={{ color: "white" }}>
-      <span style={{ fontWeight: "bold", fontSize: "18px" }}>SEARCH</span>
-      <br />
-      <br />
-      <div
-        style={{
-          width: "100%",
-          paddingLeft: "10px",
-          paddingRight: "10px",
+    <div id="SearchToolContainer" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid #1e3a57" }}>
+      <span style={sectionHeaderStyle}>Search</span>
+      <span style={{ ...inputLabelStyle, marginTop: 0 }}>Movie Title</span>
+      <Search
+        placeholder="Title"
+        style={{ width: "100%" }}
+        onSearch={(value) => {
+          if (value && value.trim()) {
+            navigateToBrowseSearch("title", value);
+          } else {
+            navigateToBrowseSearch();
+          }
         }}
-      >
-        <span style={searchLabelStyle}>MOVIE TITLE</span>
-        <Search
-          placeholder="Title"
-          onSearch={(value) => {
-            if (value && value.trim()) {
-              navigateToBrowseSearch("title", value);
-            } else {
-              navigateToBrowseSearch();
-            }
-          }}
-          enterButton
-        />
-        <br />
-        <br />
-        <span style={searchLabelStyle}>ACTOR NAME</span>
-        <Search
-          placeholder="Actor"
-          onSearch={(value) => {
-            if (value && value.trim()) {
-              navigateToBrowseSearch("actor", value);
-            } else {
-              navigateToBrowseSearch();
-            }
-          }}
-          enterButton
-        />
-        <br />
-        <br />
-        <span style={searchLabelStyle}>FIRST LETTER</span>
-
-        {
-          <List
-            style={listStyle}
-            grid={{
-              gutter: 1,
-              xs: 3,
-              sm: 3,
-              md: 3,
-              lg: 3,
-              xl: 4,
-              xxl: 4,
-            }}
-            dataSource={searchLetters}
-            renderItem={(item, i) => {
-              return (
-                <List.Item
-                  style={{
-                    marginBottom: "10px",
-                  }}
-                >
-                  <Button
-                    onClick={() => {
-                      ToggleLetterSearch(item);
-                    }}
-                    style={{
-                      width: "36px",
-                      // removed backgroundColor change on selection since it was too similar to the hover color and made it hard to see which letter was selected, replaced with a blue background and white text for better visibility
-                      //  backgroundColor: item === search.startsWith ? "silver" : "white",
-                      backgroundColor: item === search.startsWith ? "#1890ff" : "white",
-                      color: item === search.startsWith ? "white" : "black",
-                      borderColor: item === search.startsWith ? "#1890ff" : "#d9d9d9",
-                    }}
-                  >
-                    <span style={searchLetterStyle}>{item}</span>
-                  </Button>
-                </List.Item>
-              );
-            }}
-          />
-        }
-      </div>
+        enterButton
+      />
+      <span style={inputLabelStyle}>Actor Name</span>
+      <Search
+        placeholder="Actor"
+        style={{ width: "100%" }}
+        onSearch={(value) => {
+          if (value && value.trim()) {
+            navigateToBrowseSearch("actor", value);
+          } else {
+            navigateToBrowseSearch();
+          }
+        }}
+        enterButton
+      />
+      <span style={inputLabelStyle}>First Letter</span>
+      <List
+        style={listStyle}
+        grid={{
+          gutter: [6, 8],
+          xs: 3,
+          sm: 3,
+          md: 3,
+          lg: 3,
+          xl: 4,
+          xxl: 4,
+        }}
+        dataSource={searchLetters}
+        renderItem={(item, i) => {
+          return (
+            <List.Item style={{ display: "flex", justifyContent: "center", marginBottom: 0 }}>
+              <Button
+                onClick={() => {
+                  ToggleLetterSearch(item);
+                }}
+                style={{
+                  width: "36px",
+                  backgroundColor: item === search.startsWith ? "#1890ff" : "rgba(255,255,255,0.08)",
+                  color: item === search.startsWith ? "white" : "rgba(255,255,255,0.75)",
+                  borderColor: item === search.startsWith ? "#1890ff" : "rgba(255,255,255,0.15)",
+                }}
+              >
+                <span style={searchLetterStyle}>{item}</span>
+              </Button>
+            </List.Item>
+          );
+        }}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { Layout } from "antd";
 import { MovieAPI } from "./MovieAPI";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import { gql } from "@apollo/client";
 import NavBar from "./NavBar/NavBar";
@@ -34,10 +34,21 @@ const randomMoviesQuery = gql`
   }
 `;
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= breakpoint);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 function App() {
   const [userData, setUserData] = useState(null);
   const [search, setSearch] = useState({ query: randomMoviesQuery, variables: {} });
   const [hasCheckedFirstLogin, setHasCheckedFirstLogin] = useState(false);
+  const isMobile = useIsMobile();
 
   function resetSearch() {
     setSearch({ query: randomMoviesQuery, variables: {} });
@@ -230,7 +241,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Layout style={{ height: "100vh", overflow: "hidden" }}>
+      <Layout style={{ height: isMobile ? "auto" : "100vh", overflow: isMobile ? "visible" : "hidden", minHeight: "100vh" }}>
         <NavBar
           search={search}
           resetSearch={resetSearch}
@@ -244,7 +255,15 @@ function App() {
           moviesSeenSearch={MoviesSeenSearch}
           moviesWantToWatchSearch={MoviesWantToWatchSearch}
         />
-        <Layout.Content style={{ height: "100%", overflowY: "auto", paddingRight: "10px" }}>
+        <Layout.Content
+          style={{
+            overflowY: isMobile ? "visible" : "auto",
+            height: isMobile ? "auto" : "100%",
+            paddingRight: isMobile ? 0 : "10px",
+            paddingTop: isMobile ? "48px" : 0,
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
           <Switch>
             <Route path="/movie/:id" exact>
               <MoviePage />

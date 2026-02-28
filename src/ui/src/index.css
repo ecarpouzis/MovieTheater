@@ -7,8 +7,13 @@ body {
   background-color: #f5f5f5;
 }
 
+html {
+  box-sizing: border-box;
+}
+
 #root {
   width: 100%;
+  overflow-x: hidden;
 }
 
 .ant-list {
@@ -136,4 +141,27 @@ img {
 
 .ant-modal-close:hover .ant-modal-close-x {
   color: #dc3545;
+}
+
+/* Dark mobile nav drawer: make close button and title visible on dark background */
+.ant-drawer-close {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+.ant-drawer-close:hover {
+  color: white !important;
+}
+.ant-drawer-title {
+  color: white !important;
+}
+@media (max-width: 768px) {
+  .moviePosterImage {
+    max-height: 180px;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  .zoom-on-hover {
+    min-height: 48px;
+    min-width: 80px;
+  }
 }

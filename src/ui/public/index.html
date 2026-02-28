@@ -21,6 +21,12 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>Movie Theater</title>
+  <script>
+    /* process polyfill: webpack 4 + Node 17+ does not always inject this into the browser bundle */
+    if (typeof process === 'undefined') {
+      window.process = { env: { NODE_ENV: 'development' } };
+    }
+  </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
