@@ -10,6 +10,7 @@ using MovieTheater.Services.Python;
 using MovieTheater.Services.Tmdb;
 using System;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace MovieTheater
 {
@@ -25,6 +26,14 @@ namespace MovieTheater
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options =>
+                {
+                    options.LoginPath = "/login";
+                    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+                    options.SlidingExpiration = true;
+                });
+
             services.AddMovieTheaterGql();
 
             var proxyBuilder = services.AddReverseProxy();
@@ -41,6 +50,8 @@ namespace MovieTheater
         public void Configure(IApplicationBuilder app)
         {
             app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

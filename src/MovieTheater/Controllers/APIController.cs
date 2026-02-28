@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using IMDbApiLib.Models;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -48,6 +49,16 @@ namespace MovieTheater.Controllers
             this.imdbApiService = imdbApiService;
         }
 
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return userId;
+            }
+            return null;
+        }
+
         private int GetMPARatingFromMovieRating(string movieRating)
         {
             if (string.IsNullOrWhiteSpace(movieRating))
@@ -66,8 +77,21 @@ namespace MovieTheater.Controllers
         [HttpGet("/API/GetMovie")]
         public async Task<IActionResult> GetMovie(int id)
         {
+            int ageRestriction = 100;
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId.HasValue)
+            {
+                var setRestriction = await movieDb.UserSettings
+                    .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value);
+                if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction)) 
+                {
+                    ageRestriction = parsedRestriction;
+                }
+            }
+            
             var movie = await movieDb.Movies.SingleOrDefaultAsync(m => m.id == id);
-            if (movie != null)
+            var rating = GetMPARatingFromMovieRating(movie.Rating);
+            if (movie != null && (rating <= ageRestriction))
             {
                 return Ok(new { Success = true, data = movie });
             }
@@ -143,6 +167,24 @@ namespace MovieTheater.Controllers
                 await movieDb.Users.AddAsync(user);
                 await movieDb.SaveChangesAsync();
             }
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
+                new Claim(ClaimTypes.Name, user.Username)
+            };
+
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var authProperties = new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
+            };
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                authProperties);
 
             //watched
             var moviesSeen = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "Seen").Select(d => d.MovieID).ToListAsync();
