@@ -1,5 +1,6 @@
 import { Input, List, Button } from "antd";
-import { useHistory } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useHistory, useLocation } from "react-router-dom";
 
 const { Search } = Input;
 
@@ -54,26 +55,83 @@ const listStyle = {};
 
 function SearchTools({ search }) {
   const history = useHistory();
+  const location = useLocation();
+  const [titleValue, setTitleValue] = useState("");
+  const [actorValue, setActorValue] = useState("");
 
-  function navigateToBrowseSearch(mode, value = "") {
-    const params = new URLSearchParams();
-
-    if (mode) {
-      params.set("mode", mode);
+  function decodePathValue(pathValue) {
+    if (!pathValue) {
+      return "";
     }
 
-    if (value && value.trim()) {
-      params.set("value", value.trim());
+    try {
+      return decodeURIComponent(pathValue);
+    } catch {
+      return "";
+    }
+  }
+
+  function navigateToBrowseSearch(mode, value = "") {
+    const trimmedValue = value && value.trim() ? value.trim() : "";
+    let pathname = "/";
+
+    if (mode === "title" && trimmedValue) {
+      pathname = `/discover/title/${encodeURIComponent(trimmedValue)}`;
+    } else if (mode === "actor" && trimmedValue) {
+      pathname = `/discover/person/${encodeURIComponent(trimmedValue)}`;
+    } else if (mode === "letter" && trimmedValue) {
+      pathname = `/discover/letter/${encodeURIComponent(trimmedValue)}`;
     }
 
     history.push({
-      pathname: "/",
-      search: params.toString() ? `?${params.toString()}` : "",
+      pathname,
+      search: "",
     });
   }
 
+  useEffect(() => {
+    const pathname = location.pathname || "/";
+    const params = new URLSearchParams(location.search || "");
+    const legacyMode = params.get("mode") || "";
+
+    if (
+      pathname === "/library/watched" ||
+      pathname === "/library/watchlist" ||
+      pathname === "/browse/seen" ||
+      pathname === "/browse/want" ||
+      legacyMode === "seen" ||
+      legacyMode === "want"
+    ) {
+      setActorValue("");
+      setTitleValue("");
+      return;
+    }
+
+    if (pathname.startsWith("/discover/title/")) {
+      const value = decodePathValue(pathname.replace("/discover/title/", ""));
+      setTitleValue(value);
+      setActorValue("");
+      return;
+    }
+
+    if (pathname.startsWith("/discover/person/")) {
+      const value = decodePathValue(pathname.replace("/discover/person/", ""));
+      setActorValue(value);
+      setTitleValue("");
+      return;
+    }
+
+    if (pathname.startsWith("/discover/all/person/")) {
+      setActorValue("");
+      setTitleValue("");
+      return;
+    }
+
+    setActorValue("");
+    setTitleValue("");
+  }, [location.pathname, location.search]);
+
   function ToggleLetterSearch(firstLetter) {
-    // Check if already viewing this letter by comparing the startsWith property
     const isAlreadySelected = search.startsWith === firstLetter;
 
     if (isAlreadySelected) {
@@ -98,8 +156,11 @@ function SearchTools({ search }) {
         <span style={searchLabelStyle}>MOVIE TITLE</span>
         <Search
           placeholder="Title"
+          value={titleValue}
+          onChange={(event) => setTitleValue(event.target.value)}
           onSearch={(value) => {
             if (value && value.trim()) {
+              setActorValue("");
               navigateToBrowseSearch("title", value);
             } else {
               navigateToBrowseSearch();
@@ -112,8 +173,11 @@ function SearchTools({ search }) {
         <span style={searchLabelStyle}>ACTOR NAME</span>
         <Search
           placeholder="Actor"
+          value={actorValue}
+          onChange={(event) => setActorValue(event.target.value)}
           onSearch={(value) => {
             if (value && value.trim()) {
+              setTitleValue("");
               navigateToBrowseSearch("actor", value);
             } else {
               navigateToBrowseSearch();

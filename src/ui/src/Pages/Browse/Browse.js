@@ -13,6 +13,54 @@ function Browse({ search, userData, setUserData }) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   let movieDataArray = data ? data.movies || data.randomMovies : [];
 
+  function decodePathValue(pathValue) {
+    if (!pathValue) {
+      return "";
+    }
+
+    try {
+      return decodeURIComponent(pathValue);
+    } catch {
+      return "";
+    }
+  }
+
+  function getBrowseHeaderText() {
+    const pathname = location.pathname || "/";
+
+    if (pathname.startsWith("/discover/letter/")) {
+      const value = decodePathValue(pathname.replace("/discover/letter/", ""));
+      return `Search: movies starting with '${value}'`;
+    }
+
+    if (pathname.startsWith("/discover/title/")) {
+      const value = decodePathValue(pathname.replace("/discover/title/", ""));
+      return `Search: '${value}' in movie titles`;
+    }
+
+    if (pathname.startsWith("/discover/person/")) {
+      const value = decodePathValue(pathname.replace("/discover/person/", ""));
+      return `Search: '${value}' in actor's names`;
+    }
+
+    if (pathname.startsWith("/discover/all/person/")) {
+      const value = decodePathValue(pathname.replace("/discover/all/person/", ""));
+      return `All: movies with actor '${value}'`;
+    }
+
+    if (pathname === "/library/watchlist") {
+      const wantCount = userData ? userData.moviesToWatch.length : 0;
+      return `Watchlist`;
+    }
+
+    if (pathname === "/library/watched") {
+      const seenCount = userData ? userData.moviesSeen.length : 0;
+      return `Seen movies`;
+    }
+
+    return "Browse All Movies";
+  }
+
   if (data && Array.isArray(search.restoreOrder) && search.restoreOrder.length > 0 && Array.isArray(data.movies)) {
     const movieById = new Map(data.movies.map((movie) => [movie.id, movie]));
     const orderedMovies = search.restoreOrder.map((id) => movieById.get(id)).filter(Boolean);
@@ -37,16 +85,12 @@ function Browse({ search, userData, setUserData }) {
     }
 
     const trimmedActor = actor.trim();
-    const params = new URLSearchParams();
-    params.set("mode", "actor");
-    params.set("value", trimmedActor);
-
-    const targetSearch = `?${params.toString()}`;
-    if (location.pathname === "/" && location.search === targetSearch) {
+    const targetPathname = `/discover/all/person/${encodeURIComponent(trimmedActor)}`;
+    if (location.pathname === targetPathname && !location.search) {
       return;
     }
 
-    if (!location.search && movieDataArray.length > 0) {
+    if (userData && !location.search && movieDataArray.length > 0 && location.pathname === "/") {
       const browseMovieIds = movieDataArray.map((movie) => movie.id).filter((id) => Number.isInteger(id) && id > 0);
       if (browseMovieIds.length > 0) {
         history.replace({
@@ -61,8 +105,8 @@ function Browse({ search, userData, setUserData }) {
     }
 
     history.push({
-      pathname: "/",
-      search: targetSearch,
+      pathname: targetPathname,
+      search: "",
     });
   };
 
@@ -72,8 +116,12 @@ function Browse({ search, userData, setUserData }) {
   }, [search]);
 
   if (data) {
+    const headerText = getBrowseHeaderText();
+    const isBrowseAllHeader = headerText === "Browse All Movies";
+
     return (
       <>
+        <div style={{ padding: "10px", fontWeight: "bold", fontSize: "16px", textAlign: isBrowseAllHeader ? "center" : "left" }}>{headerText}</div>
         <CardList
           movieDataArray={movieDataArray}
           userData={userData}

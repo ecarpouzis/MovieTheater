@@ -22,15 +22,89 @@ function NavBar({
   const location = useLocation();
   const hasHandledInitialLoadRef = useRef(false);
 
-  useEffect(() => {
-    const isInitialLoad = !hasHandledInitialLoadRef.current;
-    if (isInitialLoad) {
-      hasHandledInitialLoadRef.current = true;
+  function decodePathValue(pathValue) {
+    if (!pathValue) {
+      return "";
+    }
+
+    try {
+      return decodeURIComponent(pathValue);
+    } catch {
+      return "";
+    }
+  }
+
+  function getNavigationState() {
+    const pathname = location.pathname || "/";
+
+    if (pathname.startsWith("/discover/title/")) {
+      const value = decodePathValue(pathname.replace("/discover/title/", ""));
+      return { mode: "title", value };
+    }
+
+    if (pathname.startsWith("/discover/person/")) {
+      const value = decodePathValue(pathname.replace("/discover/person/", ""));
+      return { mode: "actor", value };
+    }
+
+    if (pathname.startsWith("/discover/all/person/")) {
+      const value = decodePathValue(pathname.replace("/discover/all/person/", ""));
+      return { mode: "actor", value };
+    }
+
+    if (pathname.startsWith("/discover/letter/")) {
+      const value = decodePathValue(pathname.replace("/discover/letter/", ""));
+      return { mode: "letter", value };
+    }
+
+    if (pathname === "/library/watched") {
+      return { mode: "seen", value: "" };
+    }
+
+    if (pathname === "/library/watchlist") {
+      return { mode: "want", value: "" };
+    }
+
+    if (pathname === "/") {
+      return { mode: null, value: "" };
+    }
+
+    // Backward compatibility for previous URL schemes
+    if (pathname.startsWith("/search/title/")) {
+      const value = decodePathValue(pathname.replace("/search/title/", ""));
+      return { mode: "title", value };
+    }
+
+    if (pathname.startsWith("/search/actor/")) {
+      const value = decodePathValue(pathname.replace("/search/actor/", ""));
+      return { mode: "actor", value };
+    }
+
+    if (pathname.startsWith("/browse/letter/")) {
+      const value = decodePathValue(pathname.replace("/browse/letter/", ""));
+      return { mode: "letter", value };
+    }
+
+    if (pathname === "/browse/seen") {
+      return { mode: "seen", value: "" };
+    }
+
+    if (pathname === "/browse/want") {
+      return { mode: "want", value: "" };
     }
 
     const params = new URLSearchParams(location.search);
     const mode = params.get("mode");
     const value = params.get("value") || "";
+    return { mode, value };
+  }
+
+  useEffect(() => {
+    const isInitialLoad = !hasHandledInitialLoadRef.current;
+    if (isInitialLoad) {
+      hasHandledInitialLoadRef.current = true;
+    }
+    const { mode, value } = getNavigationState();
 
     if (!mode) {
       const navigationEntry = window.performance?.getEntriesByType?.("navigation")?.[0];
@@ -50,9 +124,9 @@ function NavBar({
         return;
       }
 
-      const restoreIds = Array.isArray(location.state?.browseMovieIds) ? location.state.browseMovieIds : [];
+      const restoreIds = userData && Array.isArray(location.state?.browseMovieIds) ? location.state.browseMovieIds : [];
       const movieIds = restoreIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
-      if (movieIds.length > 0) {
+      if (userData && movieIds.length > 0) {
         restoreMovieIdsSearch(movieIds);
         return;
       }
@@ -107,7 +181,7 @@ function NavBar({
     }
 
     resetSearch();
-  }, [location.search, location.state, userData]);
+  }, [location.pathname, location.search, location.state, userData]);
 
   return (
     <Layout.Sider>

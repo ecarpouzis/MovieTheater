@@ -83,15 +83,27 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
   function logoutUser() {
     setUserData();
     window.localStorage.clear();
+    history.replace({
+      pathname: "/",
+      search: "",
+      state: undefined,
+    });
   }
 
   function navigateToBrowseSearch(mode) {
-    const params = new URLSearchParams();
-    params.set("mode", mode);
+    let pathname = "/";
+
+    if (mode === "seen") {
+      pathname = "/library/watched";
+    }
+
+    if (mode === "want") {
+      pathname = "/library/watchlist";
+    }
 
     history.push({
-      pathname: "/",
-      search: `?${params.toString()}`,
+      pathname,
+      search: "",
     });
   }
 
