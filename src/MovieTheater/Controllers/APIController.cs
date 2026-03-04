@@ -192,7 +192,23 @@ namespace MovieTheater.Controllers
             //want to watch
             var moviesToWatch = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "WantToWatch").Select(d => d.MovieID).ToListAsync();
 
-            return Json(new { user.Username, moviesSeen, moviesToWatch });
+            //age restriction
+            int? ageRestriction = null;
+            var ageSetting = await movieDb.UserSettings
+                .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == user.UserID);
+            if (ageSetting != null && int.TryParse(ageSetting.SettingValue, out int parsedAgeRestriction))
+            {
+                ageRestriction = parsedAgeRestriction;
+            }
+
+            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction });
+        }
+
+        [HttpPost("/API/Logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Ok(new { Success = true });
         }
 
         [HttpGet("/API/ImdbApiLookupImdbID")]

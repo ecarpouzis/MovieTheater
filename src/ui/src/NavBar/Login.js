@@ -81,8 +81,10 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
   };
 
   function logoutUser() {
-    setUserData();
-    window.localStorage.clear();
+    fetch("/API/Logout", { method: "POST" }).finally(() => {
+      setUserData();
+      window.localStorage.clear();
+    });
   }
 
   function navigateToBrowseSearch(mode) {

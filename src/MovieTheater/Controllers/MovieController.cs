@@ -618,7 +618,7 @@ namespace MovieTheater.Controllers
         [HttpGet("/Movie/Logout")]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return Ok();
         }
 

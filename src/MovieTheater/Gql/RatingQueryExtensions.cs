@@ -1,4 +1,5 @@
-using System.Collections.Generic;
+using System.Linq;
+using HotChocolate;
 using HotChocolate.Types;
 using MovieTheater.Gql.Attributes;
 using MovieTheater.Db;
@@ -13,15 +14,13 @@ namespace MovieTheater.Gql
         {
             descriptor.Name("Query");
 
-            // These resolvers return empty lists when exporting schema.
-            // Later replace with proper EF-backed resolvers or service calls.
             descriptor.Field("ratingMPAs")
                 .Type<ListType<ObjectType<RatingMPA>>>()
-                .Resolve(ctx => new List<RatingMPA>());
+                .Resolve(ctx => ctx.Service<MovieDb>().RatingMpas.ToList());
 
             descriptor.Field("ratingMaps")
                 .Type<ListType<ObjectType<RatingMap>>>()
-                .Resolve(ctx => new List<RatingMap>());
+                .Resolve(ctx => ctx.Service<MovieDb>().RatingMaps.ToList());
         }
     }
 }

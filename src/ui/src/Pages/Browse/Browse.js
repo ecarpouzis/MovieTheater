@@ -1,17 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { gql, useQuery } from "@apollo/client";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
 import CardList from "./CardList";
 import MovieModal from "./MovieModal";
 
+const RATING_MAPS_QUERY = gql`
+  query {
+    ratingMaps {
+      movieRating
+      mpaRatingID
+    }
+  }
+`;
+
 function Browse({ search, userData, setUserData }) {
   const { data, loading, error } = useQuery(search.query, { variables: search.variables });
+  const { data: ratingMapsData } = useQuery(RATING_MAPS_QUERY);
   const history = useHistory();
   const location = useLocation();
   const [selectedMovieId, setSelectedMovieId] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const ratingToMpaId = useMemo(() => {
+    if (!ratingMapsData?.ratingMaps) return null;
+    return new Map(ratingMapsData.ratingMaps.map((rm) => [rm.movieRating, rm.mpaRatingID]));
+  }, [ratingMapsData]);
+
   let movieDataArray = data ? data.movies || data.randomMovies : [];
+
+  if (!userData && data?.randomMovies) {
+    movieDataArray = movieDataArray.filter((movie) => !movie.removeFromRandom);
+  }
 
   if (data && Array.isArray(search.restoreOrder) && search.restoreOrder.length > 0 && Array.isArray(data.movies)) {
     const movieById = new Map(data.movies.map((movie) => [movie.id, movie]));
@@ -19,6 +39,13 @@ function Browse({ search, userData, setUserData }) {
     const orderedIdSet = new Set(orderedMovies.map((movie) => movie.id));
     const remainingMovies = data.movies.filter((movie) => !orderedIdSet.has(movie.id));
     movieDataArray = [...orderedMovies, ...remainingMovies];
+  }
+
+  if (userData?.ageRestriction != null && ratingToMpaId) {
+    movieDataArray = movieDataArray.filter((movie) => {
+      const mpaId = ratingToMpaId.get(movie.rating);
+      return mpaId == null || mpaId <= userData.ageRestriction;
+    });
   }
 
   const handleOpenMovie = (movieId) => {
