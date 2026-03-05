@@ -3,7 +3,7 @@ FROM node:14 as reactapp-build
 WORKDIR /build
 COPY src/ui/package.json .
 COPY src/ui/package-lock.json .
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY src/ui/ .
 RUN npm run build
 
