@@ -17,7 +17,6 @@ using MovieTheater.Services.ImdbApi;
 using MovieTheater.Services.Poster;
 using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
-using HotChocolate;
 using MovieTheater.Services.Google;
 
 namespace MovieTheater.Controllers
@@ -112,6 +111,25 @@ namespace MovieTheater.Controllers
             }
         }
 
+        [HttpGet("/API/GetRandomMovies")]
+        public async Task<IActionResult> GetRandomMovies(int take = 50)
+        {
+            int ageRestriction = 100;
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId.HasValue)
+            {
+                var setRestriction = await movieDb.UserSettings
+                    .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value);
+                if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction))
+                    ageRestriction = parsedRestriction;
+            }
+
+            IQueryable<Movie> movies = movieDb.Movies.Where(m => !m.RemoveFromRandom);
+            movies = movies.Where(m => !movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID > ageRestriction));
+            var result = await movies.OrderBy(m => Guid.NewGuid()).Take(take).ToListAsync();
+            return Ok(result);
+        }
+
         [HttpPost("/API/InsertMovie")]
         public async Task<IActionResult> InsertMovie([FromBody] Movie movie)
         {
@@ -192,7 +210,23 @@ namespace MovieTheater.Controllers
             //want to watch
             var moviesToWatch = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "WantToWatch").Select(d => d.MovieID).ToListAsync();
 
-            return Json(new { user.Username, moviesSeen, moviesToWatch });
+            //age restriction
+            int? ageRestriction = null;
+            var ageSetting = await movieDb.UserSettings
+                .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == user.UserID);
+            if (ageSetting != null && int.TryParse(ageSetting.SettingValue, out int parsedAgeRestriction))
+            {
+                ageRestriction = parsedAgeRestriction;
+            }
+
+            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction });
+        }
+
+        [HttpPost("/API/Logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Ok(new { Success = true });
         }
 
         [HttpGet("/API/ImdbApiLookupImdbID")]

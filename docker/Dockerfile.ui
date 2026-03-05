@@ -1,5 +1,5 @@
 # Build react app
-FROM node:14 as reactapp-build
+FROM node:20-alpine AS reactapp-build
 WORKDIR /build
 COPY src/ui/package.json .
 COPY src/ui/package-lock.json .
@@ -8,7 +8,7 @@ COPY src/ui/ .
 RUN npm run build
 
 # Build final release image
-FROM node:14 as release
+FROM node:20-alpine AS release
 RUN npm install -g serve
 
 WORKDIR /app

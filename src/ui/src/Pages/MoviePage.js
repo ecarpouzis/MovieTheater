@@ -1,6 +1,6 @@
 import { MovieAPI } from "../MovieAPI";
 import { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 function MoviePage() {
   const { id } = useParams();
@@ -51,9 +51,9 @@ function MoviePage() {
             <u>Actors:</u>
             {movie.actors
               ? movie.actors.split(",").map((actor, index) => (
-                  <Link key={index} className="actor-box">
+                  <span key={index} className="actor-box">
                     {actor}
-                  </Link>
+                  </span>
                 ))
               : null}
           </div>

@@ -2,37 +2,23 @@ import { Layout } from "antd";
 import { MovieAPI } from "./MovieAPI";
 import { useState, useEffect } from "react";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
-import { gql } from "@apollo/client";
 import NavBar from "./NavBar/NavBar";
 import Browse from "./Pages/Browse/Browse";
 import MoviePage from "./Pages/MoviePage";
 import InsertPage from "./Pages/InsertPage";
 import BatchInsertPage from "./Pages/BatchInsertPage";
 
+const RANDOM_MOVIES_URL = "/API/GetRandomMovies";
+
 const storedUsername = window.localStorage.getItem("Username");
 
-const randomMoviesQuery = gql`
-  query {
-    randomMovies {
-      id
-      actors
-      title
-      simpleTitle
-      rating
-      releaseDate
-      runtime
-      genre
-      director
-      writer
-      plot
-      posterLink
-      imdbRating
-      tomatoRating
-      uploadedDate
-      removeFromRandom
-    }
-  }
-`;
+function escapeODataString(value) {
+  return value.replace(/'/g, "''");
+}
+
+function buildMoviesUrl(filter) {
+  return `/odata/Movies?$filter=${encodeURIComponent(filter)}&$orderby=simpleTitle asc`;
+}
 
 function useIsMobile(breakpoint = 768) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= breakpoint);
@@ -46,12 +32,13 @@ function useIsMobile(breakpoint = 768) {
 
 function App() {
   const [userData, setUserData] = useState(null);
-  const [search, setSearch] = useState({ query: randomMoviesQuery, variables: {} });
+  const [search, setSearch] = useState({ url: RANDOM_MOVIES_URL });
   const [hasCheckedFirstLogin, setHasCheckedFirstLogin] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(!storedUsername);
   const isMobile = useIsMobile();
 
   function resetSearch() {
-    setSearch({ query: randomMoviesQuery, variables: {} });
+    setSearch({ url: RANDOM_MOVIES_URL });
   }
 
   function onUserLoggedIn(username) {
@@ -59,6 +46,7 @@ function App() {
       .then((response) => response.json())
       .then((responseData) => {
         setUserData(responseData);
+        setIsAuthReady(true);
         window.localStorage.setItem("Username", username);
       });
   }
@@ -71,160 +59,32 @@ function App() {
   }
 
   function TitleSearch(title) {
-    const query = gql`
-      query ($title: String!) {
-        movies(where: { or: [{ simpleTitle: { contains: $title } }, { title: { contains: $title } }] }, order: { simpleTitle: ASC }) {
-          id
-          actors
-          title
-          simpleTitle
-          rating
-          releaseDate
-          runtime
-          genre
-          director
-          writer
-          plot
-          posterLink
-          imdbRating
-          tomatoRating
-          uploadedDate
-          removeFromRandom
-        }
-      }
-    `;
-    const variables = { title: title };
-    setSearch({ query: query, variables: variables });
+    const escaped = escapeODataString(title);
+    setSearch({ url: buildMoviesUrl(`contains(simpleTitle,'${escaped}') or contains(title,'${escaped}')`) });
   }
 
   function ActorSearch(actor) {
-    const query = gql`
-      query ($actor: String!) {
-        movies(where: { actors: { contains: $actor } }, order: { simpleTitle: ASC }) {
-          id
-          actors
-          title
-          simpleTitle
-          rating
-          releaseDate
-          runtime
-          genre
-          director
-          writer
-          plot
-          posterLink
-          imdbRating
-          tomatoRating
-          uploadedDate
-          removeFromRandom
-        }
-      }
-    `;
-    const variables = { actor: actor };
-    setSearch({ query: query, variables: variables });
+    const escaped = escapeODataString(actor);
+    setSearch({ url: buildMoviesUrl(`contains(actors,'${escaped}')`) });
   }
 
   function FirstLetterSearch(firstLetter) {
-    let query;
-    let variables;
-
     if (firstLetter === "#") {
-      query = gql`
-        query {
-          movies(
-            where: {
-              simpleTitle: {
-                or: [
-                  { startsWith: "#" }
-                  { startsWith: "0" }
-                  { startsWith: "1" }
-                  { startsWith: "2" }
-                  { startsWith: "3" }
-                  { startsWith: "4" }
-                  { startsWith: "5" }
-                  { startsWith: "6" }
-                  { startsWith: "7" }
-                  { startsWith: "8" }
-                  { startsWith: "9" }
-                ]
-              }
-            }
-            order: { simpleTitle: ASC }
-          ) {
-            id
-            actors
-            title
-            simpleTitle
-            rating
-            releaseDate
-            runtime
-            genre
-            director
-            writer
-            plot
-            posterLink
-            imdbRating
-            tomatoRating
-            uploadedDate
-            removeFromRandom
-          }
-        }
-      `;
-      variables = {};
+      const digitFilters = "0123456789".split("").map((d) => `startswith(simpleTitle,'${d}')`).join(" or ");
+      setSearch({ url: buildMoviesUrl(digitFilters), startsWith: firstLetter });
     } else {
-      query = gql`
-        query ($firstLetter: String!) {
-          movies(where: { simpleTitle: { startsWith: $firstLetter } }, order: { simpleTitle: ASC }) {
-            id
-            actors
-            title
-            simpleTitle
-            rating
-            releaseDate
-            runtime
-            genre
-            director
-            writer
-            plot
-            posterLink
-            imdbRating
-            tomatoRating
-            uploadedDate
-            removeFromRandom
-          }
-        }
-      `;
-      variables = { firstLetter: firstLetter };
+      const escaped = escapeODataString(firstLetter);
+      setSearch({ url: buildMoviesUrl(`startswith(simpleTitle,'${escaped}')`), startsWith: firstLetter });
     }
-
-    setSearch({ query: query, variables: variables, startsWith: firstLetter });
   }
 
   function MovieIDListSearch(movieIds, restoreOrder = null) {
-    const query = gql`
-      query ($movieIds: [Int!]) {
-        movies(where: { id: { in: $movieIds } }, order: { simpleTitle: ASC }) {
-          id
-          actors
-          title
-          simpleTitle
-          rating
-          releaseDate
-          runtime
-          genre
-          director
-          writer
-          plot
-          posterLink
-          imdbRating
-          tomatoRating
-          uploadedDate
-          removeFromRandom
-        }
-      }
-    `;
-    const variables = { movieIds: movieIds };
-    setSearch({ query: query, variables: variables, restoreOrder });
+    if (!movieIds || movieIds.length === 0) {
+      setSearch({ url: null, restoreOrder });
+      return;
+    }
+    const idList = movieIds.join(",");
+    setSearch({ url: `/odata/Movies?$filter=id in (${idList})&$orderby=simpleTitle asc`, restoreOrder });
   }
 
   function RestoreMovieIdsSearch(movieIds) {
@@ -275,7 +135,7 @@ function App() {
               <BatchInsertPage />
             </Route>
             <Route path="/">
-              <Browse search={search} userData={userData} setUserData={setUserData} />
+              <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} />
             </Route>
           </Switch>
         </Layout.Content>
@@ -285,3 +145,4 @@ function App() {
 }
 
 export default App;
+

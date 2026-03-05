@@ -1,6 +1,5 @@
 import { MovieAPI } from "../MovieAPI";
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
 import { Button, Checkbox, Input, message } from "antd";
 
 function InsertMovieInput({ placeholder, name, movieState, setMovieState }) {
@@ -76,7 +75,7 @@ function MovieInsertForm({ movie, setMovie }) {
 
   return (
     <div>
-      <div class="imgContainer">
+      <div className="imgContainer">
         <img alt="Poster" src={movie.posterLink}></img>
       </div>
       <div style={{ marginBottom: 8 }}>
@@ -228,7 +227,7 @@ function BatchInsertPage() {
         <Button onClick={setupMovieList}>Generate Batch</Button>
       </div>
       {movies.map((movie) => (
-        <MovieInsertForm movie={movie} setMovie={setMovie} />
+        <MovieInsertForm key={movie.index} movie={movie} setMovie={setMovie} />
       ))}
     </div>
   );

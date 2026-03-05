@@ -1,24 +1,40 @@
 import { useEffect, useState } from "react";
-import { gql, useQuery } from "@apollo/client";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
 import CardList from "./CardList";
 import MovieModal from "./MovieModal";
 
-function Browse({ search, userData, setUserData }) {
-  const { data, loading, error } = useQuery(search.query, { variables: search.variables });
+function Browse({ search, userData, setUserData, isAuthReady }) {
+  const [movieDataArray, setMovieDataArray] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isAuthReady) return;
+    if (!search.url) {
+      setMovieDataArray([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    fetch(search.url)
+      .then((r) => r.json())
+      .then((data) => {
+        setMovieDataArray(Array.isArray(data) ? data : (data?.value ?? []));
+        setLoading(false);
+      });
+  }, [search.url, userData?.username, isAuthReady]);
+
   const history = useHistory();
   const location = useLocation();
   const [selectedMovieId, setSelectedMovieId] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  let movieDataArray = data ? data.movies || data.randomMovies : [];
 
-  if (data && Array.isArray(search.restoreOrder) && search.restoreOrder.length > 0 && Array.isArray(data.movies)) {
-    const movieById = new Map(data.movies.map((movie) => [movie.id, movie]));
+  let displayMovies = movieDataArray;
+  if (Array.isArray(search.restoreOrder) && search.restoreOrder.length > 0) {
+    const movieById = new Map(movieDataArray.map((movie) => [movie.id, movie]));
     const orderedMovies = search.restoreOrder.map((id) => movieById.get(id)).filter(Boolean);
     const orderedIdSet = new Set(orderedMovies.map((movie) => movie.id));
-    const remainingMovies = data.movies.filter((movie) => !orderedIdSet.has(movie.id));
-    movieDataArray = [...orderedMovies, ...remainingMovies];
+    displayMovies = [...orderedMovies, ...movieDataArray.filter((movie) => !orderedIdSet.has(movie.id))];
   }
 
   const handleOpenMovie = (movieId) => {
@@ -71,30 +87,31 @@ function Browse({ search, userData, setUserData }) {
     handleCloseModal();
   }, [search]);
 
-  if (data) {
-    return (
-      <>
-        <CardList
-          movieDataArray={movieDataArray}
-          userData={userData}
-          setUserData={setUserData}
-          actorSearch={handleActorSearch}
-          onMovieClick={handleOpenMovie}
-        />
-        <MovieModal
-          movieId={selectedMovieId}
-          visible={isModalVisible}
-          onClose={handleCloseModal}
-          actorSearch={handleActorSearch}
-          movieDataArray={movieDataArray}
-          userData={userData}
-          setUserData={setUserData}
-        />
-      </>
-    );
-  } else {
+  if (loading) {
     return <span>Loading</span>;
   }
+
+  return (
+    <>
+      <CardList
+        movieDataArray={displayMovies}
+        userData={userData}
+        setUserData={setUserData}
+        actorSearch={handleActorSearch}
+        onMovieClick={handleOpenMovie}
+      />
+      <MovieModal
+        movieId={selectedMovieId}
+        open={isModalVisible}
+        onClose={handleCloseModal}
+        actorSearch={handleActorSearch}
+        movieDataArray={displayMovies}
+        userData={userData}
+        setUserData={setUserData}
+      />
+    </>
+  );
 }
 
 export default Browse;
+

@@ -169,14 +169,14 @@ function UserMovieOptions({ userData, id, setUserData, inline = false }) {
   return <></>;
 }
 
-function MovieModal({ movieId, visible, onClose, actorSearch, movieDataArray, userData, setUserData }) {
+function MovieModal({ movieId, open, onClose, actorSearch, movieDataArray, userData, setUserData }) {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [totalMovieCount, setTotalMovieCount] = useState(0);
   const [movieIndex, setMovieIndex] = useState(0);
 
   useEffect(() => {
-    if (visible && movieId) {
+    if (open && movieId) {
       setLoading(true);
       MovieAPI.getMovie(movieId)
         .then((response) => response.json())
@@ -189,10 +189,10 @@ function MovieModal({ movieId, visible, onClose, actorSearch, movieDataArray, us
           setLoading(false);
         });
     }
-  }, [movieId, visible]);
+  }, [movieId, open]);
 
   useEffect(() => {
-    if (visible) {
+    if (open) {
       MovieAPI.getTotalMovieCount()
         .then((response) => {
           console.log("Response status:", response.status);
@@ -213,10 +213,10 @@ function MovieModal({ movieId, visible, onClose, actorSearch, movieDataArray, us
           setTotalMovieCount(0);
         });
     }
-  }, [visible]);
+  }, [open]);
 
   return (
-    <Modal visible={visible} onCancel={onClose} footer={null} width={1100} bodyStyle={{ maxHeight: "80vh", overflowY: "auto", padding: "24px" }}>
+    <Modal open={open} onCancel={onClose} footer={null} width={1100} bodyStyle={{ maxHeight: "80vh", overflowY: "auto", padding: "24px" }}>
       {loading ? (
         <Spin />
       ) : movie ? (

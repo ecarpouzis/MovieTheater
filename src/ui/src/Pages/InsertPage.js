@@ -1,6 +1,5 @@
 import { MovieAPI } from "../MovieAPI";
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
 import { Button, Input, Radio } from "antd";
 
 function InsertMovieInput({ placeholder, name, movieState, setMovieState }) {

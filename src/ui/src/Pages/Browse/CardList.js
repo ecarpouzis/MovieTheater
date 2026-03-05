@@ -1,6 +1,5 @@
 import { MovieAPI } from "../../MovieAPI";
 import { Card, List } from "antd";
-import { Scrollbars } from "react-custom-scrollbars";
 import { useState, useEffect } from "react";
 
 const listStyle = {
@@ -10,6 +9,8 @@ const listStyle = {
 
 const cardPosterStyle = {
   height: "100%",
+  width: "100%",
+  objectFit: "cover",
 };
 
 const cardTitleStyle = {
@@ -71,11 +72,12 @@ let cardContentWrapper = {
   //If a user is logged in, we need flex-wrap: wrap here, and height:90%
 };
 
-const posterContainer = { height: "100%", float: "left" };
+const posterContainer = { height: "100%", width: "130px", float: "left", flexShrink: 0, overflow: "hidden" };
 
 const cardRightColumStyle = {
   flexGrow: "1",
   overflowY: "auto",
+  minHeight: 0,
   textAlign: "left",
   paddingLeft: "3px",
   paddingRight: "13px",
@@ -441,7 +443,7 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieC
                       <div style={currentPosterContainer}>
                         <img className="moviePosterImage" style={currentPosterStyle} alt="" src={thumbUrl} loading="lazy" />
                       </div>
-                      <Scrollbars>{rightColContent}</Scrollbars>
+                      {rightColContent}
                     </div>
                     <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} />
                   </Card>
