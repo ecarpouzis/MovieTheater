@@ -4,11 +4,12 @@ import { MovieAPI } from "../../MovieAPI";
 import CardList from "./CardList";
 import MovieModal from "./MovieModal";
 
-function Browse({ search, userData, setUserData }) {
+function Browse({ search, userData, setUserData, isAuthReady }) {
   const [movieDataArray, setMovieDataArray] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isAuthReady) return;
     if (!search.url) {
       setMovieDataArray([]);
       setLoading(false);
@@ -21,7 +22,7 @@ function Browse({ search, userData, setUserData }) {
         setMovieDataArray(Array.isArray(data) ? data : (data?.value ?? []));
         setLoading(false);
       });
-  }, [search.url, userData?.username]);
+  }, [search.url, userData?.username, isAuthReady]);
 
   const history = useHistory();
   const location = useLocation();

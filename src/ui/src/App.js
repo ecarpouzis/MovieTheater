@@ -24,6 +24,7 @@ function App() {
   const [userData, setUserData] = useState(null);
   const [search, setSearch] = useState({ url: RANDOM_MOVIES_URL });
   const [hasCheckedFirstLogin, setHasCheckedFirstLogin] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(!storedUsername);
 
   function resetSearch() {
     setSearch({ url: RANDOM_MOVIES_URL });
@@ -34,6 +35,7 @@ function App() {
       .then((response) => response.json())
       .then((responseData) => {
         setUserData(responseData);
+        setIsAuthReady(true);
         window.localStorage.setItem("Username", username);
       });
   }
@@ -114,7 +116,7 @@ function App() {
               <BatchInsertPage />
             </Route>
             <Route path="/">
-              <Browse search={search} userData={userData} setUserData={setUserData} />
+              <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} />
             </Route>
           </Switch>
         </Layout.Content>
