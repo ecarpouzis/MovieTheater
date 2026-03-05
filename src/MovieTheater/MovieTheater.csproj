@@ -8,9 +8,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="CliFx" Version="2.3.5" />
-		<PackageReference Include="HotChocolate.AspNetCore" Version="13.9.0" />
-		<PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="13.9.0" />
-		<PackageReference Include="HotChocolate.Data.EntityFramework" Version="13.9.0" />
+		<PackageReference Include="Microsoft.AspNetCore.OData" Version="8.2.5" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.22" />
 		<PackageReference Include="System.Drawing.Common" Version="8.0.3" />
 		<PackageReference Include="Yarp.ReverseProxy" Version="2.1.0" />
@@ -24,5 +22,11 @@
 		<None Update="PILResaveImage.exe">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Gql\Attributes\" />
+	  <Folder Include="Gql\Movie\" />
+	  <Folder Include="Gql\Test\" />
 	</ItemGroup>
 </Project>

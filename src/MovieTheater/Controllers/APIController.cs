@@ -17,7 +17,6 @@ using MovieTheater.Services.ImdbApi;
 using MovieTheater.Services.Poster;
 using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
-using HotChocolate;
 using MovieTheater.Services.Google;
 
 namespace MovieTheater.Controllers
@@ -110,6 +109,18 @@ namespace MovieTheater.Controllers
             {
                 return BadRequest(new { totalCount = 0, success = false, error = ex.Message });
             }
+        }
+
+        [HttpGet("/API/GetRandomMovies")]
+        public async Task<IActionResult> GetRandomMovies(int take = 50, int? maxMpaRatingId = null)
+        {
+            IQueryable<Movie> movies = movieDb.Movies.Where(m => !m.RemoveFromRandom);
+            if (maxMpaRatingId.HasValue)
+            {
+                movies = movies.Where(m => !movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID > maxMpaRatingId.Value));
+            }
+            var result = await movies.OrderBy(m => Guid.NewGuid()).Take(take).ToListAsync();
+            return Ok(result);
         }
 
         [HttpPost("/API/InsertMovie")]

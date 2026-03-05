@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MovieTheater.Db;
-using MovieTheater.Gql;
+using Microsoft.AspNetCore.OData;
 using MovieTheater.Services;
 using MovieTheater.Services.ImdbApi;
 using MovieTheater.Services.Poster;
@@ -34,16 +34,17 @@ namespace MovieTheater
                     options.SlidingExpiration = true;
                 });
 
-            services.AddMovieTheaterGql();
-
             var proxyBuilder = services.AddReverseProxy();
             proxyBuilder.LoadFromConfig(config.RawConfiguration.GetSection("ReverseProxy"));
 
-            services.AddMvc().AddJsonOptions(opts =>
-            {
-                var enumConverter = new JsonStringEnumConverter();
-                opts.JsonSerializerOptions.Converters.Add(enumConverter);
-            });
+            services.AddMvc()
+                .AddJsonOptions(opts =>
+                {
+                    var enumConverter = new JsonStringEnumConverter();
+                    opts.JsonSerializerOptions.Converters.Add(enumConverter);
+                    opts.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+                })
+                .AddOData(opts => opts.Select().Filter().OrderBy().SetMaxTop(null));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -55,7 +56,6 @@ namespace MovieTheater
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapGraphQL();
                 endpoints.MapReverseProxy();
             });
         }

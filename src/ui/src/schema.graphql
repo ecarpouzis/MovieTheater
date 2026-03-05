@@ -32,8 +32,8 @@ type Query {
   ratingMPAs: [RatingMPA]
   ratingMaps: [RatingMap]
   userSettings: [UserSettings]
-  movies(where: MovieFilterInput order: [MovieSortInput!]): [Movie]
-  randomMovies(take: Int! = 50): [Movie]
+  movies(maxMpaRatingId: Int where: MovieFilterInput order: [MovieSortInput!]): [Movie]
+  randomMovies(maxMpaRatingId: Int take: Int! = 50): [Movie]
 }
 
 type RatingMPA {
