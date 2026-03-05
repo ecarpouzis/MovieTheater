@@ -39,22 +39,20 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
   //? - Why is the array at the end of this empty, since this isn't happening based on some value, is useEffect appropriate?
   //Get and store a list of website users, which will be used as the default values of the autocomplete box.
   //This only gets run once, when the component is rendered (intended in this scenario)
-  useEffect(
-    () =>
-      MovieAPI.getUsers()
-        .then((response) => {
-          return response.json();
-        })
-        .then((responseData) => {
-          const responseDataMap = responseData.map((x) => ({
-            value: x,
-          }));
+  useEffect(() => {
+    MovieAPI.getUsers()
+      .then((response) => {
+        return response.json();
+      })
+      .then((responseData) => {
+        const responseDataMap = responseData.map((x) => ({
+          value: x,
+        }));
 
-          setUserlist(responseDataMap);
-          setFilteredUserlist(responseDataMap);
-        }),
-    []
-  );
+        setUserlist(responseDataMap);
+        setFilteredUserlist(responseDataMap);
+      });
+  }, []);
 
   const viewingDataContainer = {
     width: "100px",

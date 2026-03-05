@@ -2,6 +2,22 @@
     "version": "0.2.0",
     "configurations": [
         {
+            // Debugs the .NET backend. Start this first — it will also launch Vite.
+            // Access the app at http://localhost:3001 (YARP proxies UI assets to Vite at :3000).
+            "name": ".NET (with Vite)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Start Vite dev server",
+            "program": "${workspaceFolder}/src/MovieTheater/bin/Debug/net8.0/MovieTheater.dll",
+            "args": ["web"],
+            "cwd": "${workspaceFolder}/src/MovieTheater",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://+:3001"
+            }
+        },
+        {
+            // Attach Chrome to the already-running app.
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",
@@ -14,6 +30,14 @@
             "name": "Attach to Chrome",
             "port": 9222,
             "webRoot": "${workspaceFolder}/src/ui"
+        }
+    ],
+    "compounds": [
+        {
+            // Runs .NET (which pre-launches Vite) and opens Chrome in one shot.
+            "name": "Full Stack",
+            "configurations": [".NET (with Vite)", "Launch Chrome against localhost"],
+            "stopAll": true
         }
     ]
 }

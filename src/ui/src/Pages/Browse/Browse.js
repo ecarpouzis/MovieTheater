@@ -101,7 +101,7 @@ function Browse({ search, userData, setUserData }) {
       />
       <MovieModal
         movieId={selectedMovieId}
-        visible={isModalVisible}
+        open={isModalVisible}
         onClose={handleCloseModal}
         actorSearch={handleActorSearch}
         movieDataArray={displayMovies}
