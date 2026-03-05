@@ -112,13 +112,20 @@ namespace MovieTheater.Controllers
         }
 
         [HttpGet("/API/GetRandomMovies")]
-        public async Task<IActionResult> GetRandomMovies(int take = 50, int? maxMpaRatingId = null)
+        public async Task<IActionResult> GetRandomMovies(int take = 50)
         {
-            IQueryable<Movie> movies = movieDb.Movies.Where(m => !m.RemoveFromRandom);
-            if (maxMpaRatingId.HasValue)
+            int ageRestriction = 100;
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId.HasValue)
             {
-                movies = movies.Where(m => !movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID > maxMpaRatingId.Value));
+                var setRestriction = await movieDb.UserSettings
+                    .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value);
+                if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction))
+                    ageRestriction = parsedRestriction;
             }
+
+            IQueryable<Movie> movies = movieDb.Movies.Where(m => !m.RemoveFromRandom);
+            movies = movies.Where(m => !movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID > ageRestriction));
             var result = await movies.OrderBy(m => Guid.NewGuid()).Take(take).ToListAsync();
             return Ok(result);
         }

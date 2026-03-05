@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
 import CardList from "./CardList";
@@ -8,27 +8,20 @@ function Browse({ search, userData, setUserData }) {
   const [movieDataArray, setMovieDataArray] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const effectiveUrl = useMemo(() => {
-    if (!search.url) return null;
-    if (userData?.ageRestriction == null) return search.url;
-    const sep = search.url.includes("?") ? "&" : "?";
-    return `${search.url}${sep}maxMpaRatingId=${userData.ageRestriction}`;
-  }, [search.url, userData?.ageRestriction]);
-
   useEffect(() => {
-    if (!effectiveUrl) {
+    if (!search.url) {
       setMovieDataArray([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    fetch(effectiveUrl)
+    fetch(search.url)
       .then((r) => r.json())
       .then((data) => {
         setMovieDataArray(Array.isArray(data) ? data : (data?.value ?? []));
         setLoading(false);
       });
-  }, [effectiveUrl]);
+  }, [search.url, userData?.username]);
 
   const history = useHistory();
   const location = useLocation();
