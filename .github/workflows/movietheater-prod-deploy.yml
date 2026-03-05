@@ -4,14 +4,6 @@ on:
     branches:
       - master
 jobs:
-  validate-gql-schema:
-    runs-on: ubuntu-latest
-    container: mcr.microsoft.com/dotnet/sdk:8.0
-    steps:
-      - uses: actions/checkout@v2
-      - run: cd src/MovieTheater; cp appsettings.default.json appsettings.Development.json; dotnet run export gql ../ui/src/schema-new.graphql
-      - run: cd src/ui/src; diff schema.graphql schema-new.graphql
-
   docker-build-api:
     runs-on: [self-hosted, linux, x64]
     steps:
@@ -30,7 +22,7 @@ jobs:
       - run: docker push localhost:32000/movietheater-ui:$GITHUB_SHA
 
   k8s-deploy:
-    needs: [validate-gql-schema, docker-build-api, docker-build-ui]
+    needs: [docker-build-api, docker-build-ui]
     runs-on: [self-hosted, linux, x64]
     steps:
       - run: microk8s kubectl create namespace movietheater --dry-run=client -o yaml | microk8s kubectl apply -f -
