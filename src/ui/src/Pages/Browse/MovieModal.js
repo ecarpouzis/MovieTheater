@@ -160,7 +160,7 @@ function UserMovieOptions({ userData, id, setUserData, inline = false }) {
             }}
           >
             <span style={heartIcon} className="fas fa-heart"></span>
-            <span style={{ ...buttonLabelStyle, fontSize: inline ? "inherit" : "16px" }}>WANT {isWanted}</span>
+            <span style={{ ...buttonLabelStyle, fontSize: inline ? "inherit" : "16px" }}>WANT</span>
           </div>
         </div>
       </>
@@ -172,8 +172,6 @@ function UserMovieOptions({ userData, id, setUserData, inline = false }) {
 function MovieModal({ movieId, open, onClose, actorSearch, movieDataArray, userData, setUserData }) {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [totalMovieCount, setTotalMovieCount] = useState(0);
-  const [movieIndex, setMovieIndex] = useState(0);
 
   useEffect(() => {
     if (open && movieId) {
@@ -190,30 +188,6 @@ function MovieModal({ movieId, open, onClose, actorSearch, movieDataArray, userD
         });
     }
   }, [movieId, open]);
-
-  useEffect(() => {
-    if (open) {
-      MovieAPI.getTotalMovieCount()
-        .then((response) => {
-          console.log("Response status:", response.status);
-          console.log("Response ok:", response.ok);
-          return response.json();
-        })
-        .then((data) => {
-          console.log("Total movie count response:", data);
-          if (data.success !== false) {
-            setTotalMovieCount(data.totalCount || 0);
-          } else {
-            console.error("Backend error:", data.error);
-            setTotalMovieCount(0);
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching total movie count:", error);
-          setTotalMovieCount(0);
-        });
-    }
-  }, [open]);
 
   return (
     <Modal open={open} onCancel={onClose} footer={null} width={1100} bodyStyle={{ maxHeight: "80vh", overflowY: "auto", padding: "24px" }}>

@@ -1,6 +1,14 @@
 import { MovieAPI } from "../../MovieAPI";
 import { Card, List } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+function getColumnCount() {
+  const w = window.innerWidth;
+  if (w >= 1600) return 4;
+  if (w >= 1200) return 3;
+  if (w >= 768) return 2;
+  return 1;
+}
 
 const listStyle = {
   width: "100%",
@@ -58,19 +66,17 @@ const cardActorSpacer = {
   clear: "left",
 };
 
-let cardBodyStyle = {
+const baseCardBodyStyle = {
   height: "200px",
   padding: "0px",
   display: "flex",
   userSelect: "none",
-  //If a user is logged in, we need height:250px
 };
 
-let cardContentWrapper = {
+const baseCardContentWrapper = {
   height: "100%",
   width: "100%",
   display: "flex",
-  //If a user is logged in, we need flex-wrap: wrap here, and height:90%
 };
 
 const posterContainer = { height: "100%", width: "130px", float: "left", flexShrink: 0, overflow: "hidden" };
@@ -230,7 +236,7 @@ function UserMovieOptions({ userData, id, setUserData }) {
             style={wantedDataContainer}
           >
             <span style={heartIcon} className="fas fa-heart"></span>
-            <span style={buttonLabelStyle}>WANT {isWanted}</span>
+            <span style={buttonLabelStyle}>WANT</span>
           </div>
         </div>
       </>
@@ -240,32 +246,31 @@ function UserMovieOptions({ userData, id, setUserData }) {
 }
 
 function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieClick }) {
-  //If a user is logged in, cards need to be formatted for Watchlist buttons
-  if (userData) {
-    cardBodyStyle = { ...cardBodyStyle, height: "260px", flexWrap: "wrap" };
-    cardContentWrapper = {
-      ...cardContentWrapper,
-      height: "85%",
-    };
-  }
+const cardBodyStyle = userData
+  ? { ...baseCardBodyStyle, height: "260px", flexWrap: "wrap" }
+  : baseCardBodyStyle;
+const cardContentWrapper = userData
+  ? { ...baseCardContentWrapper, height: "85%" }
+  : baseCardContentWrapper;
 
-  const [hoveredMovieId, setHoveredMovieId] = useState(null);
-  const [hoveredActor, setHoveredActor] = useState(null);
+const [columns, setColumns] = useState(getColumnCount);
+const [hoveredMovieId, setHoveredMovieId] = useState(null);
+const [hoveredActor, setHoveredActor] = useState(null);
+
+useEffect(() => {
+  function handleResize() {
+    setColumns(getColumnCount());
+  }
+  window.addEventListener("resize", handleResize);
+  return () => window.removeEventListener("resize", handleResize);
+}, []);
 
   return (
     <>
       {
         <List
           style={listStyle}
-          grid={{
-            gutter: 8,
-            xs: 1,
-            sm: 1,
-            md: 2,
-            lg: 2,
-            xl: 3,
-            xxl: 4,
-          }}
+          grid={{ gutter: 8, column: columns }}
           dataSource={movieDataArray}
           renderItem={(item, i) => {
             const thumbUrl = MovieAPI.getPosterThumbnail(item.id);

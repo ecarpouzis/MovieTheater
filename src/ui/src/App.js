@@ -1,6 +1,6 @@
 import { Layout } from "antd";
 import { MovieAPI } from "./MovieAPI";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import NavBar from "./NavBar/NavBar";
 import Browse from "./Pages/Browse/Browse";
@@ -23,7 +23,7 @@ function buildMoviesUrl(filter) {
 function App() {
   const [userData, setUserData] = useState(null);
   const [search, setSearch] = useState({ url: RANDOM_MOVIES_URL });
-  const [hasCheckedFirstLogin, setHasCheckedFirstLogin] = useState(false);
+  const hasCheckedFirstLoginRef = useRef(false);
   const [isAuthReady, setIsAuthReady] = useState(!storedUsername);
 
   function resetSearch() {
@@ -40,8 +40,8 @@ function App() {
       });
   }
 
-  if (!hasCheckedFirstLogin) {
-    setHasCheckedFirstLogin(true);
+  if (!hasCheckedFirstLoginRef.current) {
+    hasCheckedFirstLoginRef.current = true;
     if (storedUsername) {
       onUserLoggedIn(storedUsername);
     }
