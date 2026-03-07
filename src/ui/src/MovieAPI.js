@@ -6,18 +6,6 @@ function getPosterThumbnail(id) {
   return "/ImageThumb/" + id;
 }
 
-function getMovies(search) {
-  const url = "/API/API_Movies";
-
-  return fetch(url, {
-    method: "post",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(search),
-  });
-}
-
 function getMovie(id) {
   const url = "/API/GetMovie?id=" + id;
 
@@ -185,10 +173,9 @@ function getTotalMovieCount() {
 }
 
 const MovieAPI = {
-  getMoviePoster,
-  getPosterThumbnail,
-  getMovies,
-  getMovie,
+getMoviePoster,
+getPosterThumbnail,
+getMovie,
   getUsers,
   insertMovie,
   getTotalMovieCount,

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
 using MovieTheater.Db;
 using MovieTheater.Models;
@@ -109,6 +110,44 @@ namespace MovieTheater.Controllers
             {
                 return BadRequest(new { totalCount = 0, success = false, error = ex.Message });
             }
+        }
+
+        [EnableQuery]
+        [HttpGet("/odata/Movies")]
+        public async Task<IQueryable<Movie>> GetMovies()
+        {
+            return await GetBaseMovieQuery();
+        }
+
+        [HttpPost("/API/GetMoviesByIds")]
+        public async Task<IActionResult> GetMoviesByIds([FromBody] List<int> ids)
+        {
+            if (ids == null || ids.Count == 0)
+                return Ok(new List<Movie>());
+
+            var baseQuery = await GetBaseMovieQuery();
+            var movies = await baseQuery
+                .Where(m => ids.Contains(m.id))
+                .OrderBy(m => m.SimpleTitle)
+                .ToListAsync();
+
+            return Ok(movies);
+        }
+
+        private async Task<IQueryable<Movie>> GetBaseMovieQuery()
+        {
+            int ageRestriction = 100;
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId.HasValue)
+            {
+                var setRestriction = await movieDb.UserSettings
+                    .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value);
+                if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction))
+                    ageRestriction = parsedRestriction;
+            }
+
+            return movieDb.Movies.Where(m =>
+                !movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID > ageRestriction));
         }
 
         [HttpGet("/API/GetRandomMovies")]

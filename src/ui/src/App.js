@@ -72,8 +72,7 @@ function App() {
       setSearch({ url: null, restoreOrder });
       return;
     }
-    const idList = movieIds.join(",");
-    setSearch({ url: `/odata/Movies?$filter=id in (${idList})&$orderby=simpleTitle asc`, restoreOrder });
+    setSearch({ movieIds, restoreOrder });
   }
 
   function RestoreMovieIdsSearch(movieIds) {

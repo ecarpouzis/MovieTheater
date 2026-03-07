@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { MovieAPI } from "../../MovieAPI";
 import CardList from "./CardList";
 import MovieModal from "./MovieModal";
 
@@ -10,19 +9,26 @@ function Browse({ search, userData, setUserData, isAuthReady }) {
 
   useEffect(() => {
     if (!isAuthReady) return;
-    if (!search.url) {
+    if (!search.url && !search.movieIds) {
       setMovieDataArray([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    fetch(search.url)
+    const fetchPromise = search.movieIds
+      ? fetch("/API/GetMoviesByIds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(search.movieIds),
+        })
+      : fetch(search.url);
+    fetchPromise
       .then((r) => r.json())
       .then((data) => {
         setMovieDataArray(Array.isArray(data) ? data : (data?.value ?? []));
         setLoading(false);
       });
-  }, [search.url, userData?.username, isAuthReady]);
+  }, [search.url, search.movieIds, userData?.username, isAuthReady]);
 
   const history = useHistory();
   const location = useLocation();
