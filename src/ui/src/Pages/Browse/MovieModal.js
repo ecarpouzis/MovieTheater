@@ -21,56 +21,14 @@ const buttonLabelStyle = {
   verticalAlign: "middle",
 };
 
-const hasWatchedDataContainer = {
-  width: "100px",
-  margin: "auto",
-  marginLeft: "-20px",
-  float: "left",
-  color: "#a9a9a9",
-};
-
-const toWatchDataContainer = {
-  width: "100px",
-  margin: "auto",
-  marginLeft: "10px",
-  paddingRight: "20px",
-  float: "left",
-  color: "#a9a9a9",
-};
-
 function UserMovieOptions({ userData, id, setUserData, inline = false, onToggleViewing }) {
   const [hoveredSeenButton, setHoveredSeenButton] = useState(false);
   const [hoveredWantButton, setHoveredWantButton] = useState(false);
 
   if (userData) {
     const isWatched = userData.moviesSeen.includes(id);
-    let watchedDataContainer;
-
-    if (isWatched) {
-      watchedDataContainer = {
-        ...hasWatchedDataContainer,
-        color: "#4169e3",
-      };
-    } else {
-      watchedDataContainer = {
-        ...hasWatchedDataContainer,
-        color: hoveredSeenButton ? "#52c41a" : "#a9a9a9",
-      };
-    }
 
     const isWanted = userData.moviesToWatch.includes(id);
-    let wantedDataContainer;
-    if (isWanted) {
-      wantedDataContainer = {
-        ...toWatchDataContainer,
-        color: "#dc143c",
-      };
-    } else {
-      wantedDataContainer = {
-        ...toWatchDataContainer,
-        color: hoveredWantButton ? "#52c41a" : "#a9a9a9",
-      };
-    }
     return (
       <>
         <div
