@@ -107,7 +107,9 @@ function NavBar({
     }
 
     resetSearch();
-  }, [location.search, location.state, userData]);
+  // These callbacks are all stable (useCallback in App.js), so including them here
+  // is safe and allows the linter to be satisfied without causing spurious re-runs.
+  }, [location.search, userData?.username, resetSearch, titleSearch, actorSearch, firstLetterSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch]);
 
   return (
     <Layout.Sider>

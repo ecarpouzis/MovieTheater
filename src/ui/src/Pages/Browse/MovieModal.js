@@ -38,7 +38,7 @@ const toWatchDataContainer = {
   color: "#a9a9a9",
 };
 
-function UserMovieOptions({ userData, id, setUserData, inline = false }) {
+function UserMovieOptions({ userData, id, setUserData, inline = false, onToggleViewing }) {
   const [hoveredSeenButton, setHoveredSeenButton] = useState(false);
   const [hoveredWantButton, setHoveredWantButton] = useState(false);
 
@@ -85,6 +85,7 @@ function UserMovieOptions({ userData, id, setUserData, inline = false }) {
         >
           <div
             onClick={() => {
+              const newIsWatched = !isWatched;
               if (!isWatched) {
                 let newUserData = {
                   ...userData,
@@ -99,7 +100,9 @@ function UserMovieOptions({ userData, id, setUserData, inline = false }) {
                 setUserData(newUserData);
               }
 
-              MovieAPI.setWatchedState(userData.username, id, !isWatched)
+              if (typeof onToggleViewing === "function") onToggleViewing(id, "SetWatched", newIsWatched);
+
+              MovieAPI.setWatchedState(userData.username, id, newIsWatched)
                 .then((response) => response.json())
                 .then((response) => {
                   if (!response.success) {
@@ -125,6 +128,7 @@ function UserMovieOptions({ userData, id, setUserData, inline = false }) {
           </div>
           <div
             onClick={() => {
+              const newIsWanted = !isWanted;
               if (!isWanted) {
                 let newUserData = {
                   ...userData,
@@ -138,7 +142,10 @@ function UserMovieOptions({ userData, id, setUserData, inline = false }) {
                 };
                 setUserData(newUserData);
               }
-              MovieAPI.setWantToWatchState(userData.username, id, !isWanted)
+
+              if (typeof onToggleViewing === "function") onToggleViewing(id, "SetWantToWatch", newIsWanted);
+
+              MovieAPI.setWantToWatchState(userData.username, id, newIsWanted)
                 .then((response) => response.json())
                 .then((response) => {
                   if (!response.success) {
@@ -169,7 +176,7 @@ function UserMovieOptions({ userData, id, setUserData, inline = false }) {
   return <></>;
 }
 
-function MovieModal({ movieId, open, onClose, actorSearch, movieDataArray, userData, setUserData }) {
+function MovieModal({ movieId, open, onClose, actorSearch, movieDataArray, userData, setUserData, onToggleViewing }) {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -277,7 +284,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, movieDataArray, userD
               >
                 <span>id #{movie.id}</span>
               </div>
-              <UserMovieOptions userData={userData} id={movie.id} setUserData={setUserData} />
+              <UserMovieOptions userData={userData} id={movie.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
             </div>
           </div>
         </div>

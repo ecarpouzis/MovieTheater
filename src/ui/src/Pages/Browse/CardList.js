@@ -138,7 +138,7 @@ const toWatchDataContainer = {
   color: "#a9a9a9",
 };
 
-function UserMovieOptions({ userData, id, setUserData }) {
+function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
   const [hoveredSeenButton, setHoveredSeenButton] = useState(false);
   const [hoveredWantButton, setHoveredWantButton] = useState(false);
 
@@ -177,6 +177,7 @@ function UserMovieOptions({ userData, id, setUserData }) {
         <div style={{ margin: "auto" }}>
           <div
             onClick={() => {
+              const newIsWatched = !isWatched;
               if (!isWatched) {
                 let newUserData = {
                   ...userData,
@@ -191,7 +192,9 @@ function UserMovieOptions({ userData, id, setUserData }) {
                 setUserData(newUserData);
               }
 
-              MovieAPI.setWatchedState(userData.username, id, !isWatched)
+              if (typeof onToggleViewing === "function") onToggleViewing(id, "SetWatched", newIsWatched);
+
+              MovieAPI.setWatchedState(userData.username, id, newIsWatched)
                 .then((response) => response.json())
                 .then((response) => {
                   if (!response.success) {
@@ -209,6 +212,7 @@ function UserMovieOptions({ userData, id, setUserData }) {
           </div>
           <div
             onClick={() => {
+              const newIsWanted = !isWanted;
               if (!isWanted) {
                 let newUserData = {
                   ...userData,
@@ -222,7 +226,10 @@ function UserMovieOptions({ userData, id, setUserData }) {
                 };
                 setUserData(newUserData);
               }
-              MovieAPI.setWantToWatchState(userData.username, id, !isWanted)
+
+              if (typeof onToggleViewing === "function") onToggleViewing(id, "SetWantToWatch", newIsWanted);
+
+              MovieAPI.setWantToWatchState(userData.username, id, newIsWanted)
                 .then((response) => response.json())
                 .then((response) => {
                   if (!response.success) {
@@ -245,7 +252,7 @@ function UserMovieOptions({ userData, id, setUserData }) {
   return <></>;
 }
 
-function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieClick }) {
+function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieClick, onToggleViewing }) {
 const cardBodyStyle = userData
   ? { ...baseCardBodyStyle, height: "260px", flexWrap: "wrap" }
   : baseCardBodyStyle;
@@ -332,7 +339,7 @@ useEffect(() => {
                         </span>
                     </div>
                   </div>
-                  <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} />
+                  <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
                 </Card>
               </List.Item>
             );

@@ -93,6 +93,14 @@ function Browse({ search, userData, setUserData, isAuthReady }) {
     handleCloseModal();
   }, [search]);
 
+  // Called by CardList / MovieModal when a movie's viewing state is toggled.
+  // Removes deselected movies from the displayed list immediately without navigation/refresh.
+  const handleToggleViewing = (movieId, action, isActive) => {
+    if (!isActive) {
+      setMovieDataArray((prev) => prev.filter((m) => m.id !== movieId));
+    }
+  };
+
   if (loading) {
     return <span>Loading</span>;
   }
@@ -105,6 +113,7 @@ function Browse({ search, userData, setUserData, isAuthReady }) {
         setUserData={setUserData}
         actorSearch={handleActorSearch}
         onMovieClick={handleOpenMovie}
+        onToggleViewing={handleToggleViewing}
       />
       <MovieModal
         movieId={selectedMovieId}
@@ -114,10 +123,13 @@ function Browse({ search, userData, setUserData, isAuthReady }) {
         movieDataArray={displayMovies}
         userData={userData}
         setUserData={setUserData}
+        onToggleViewing={handleToggleViewing}
       />
     </>
   );
 }
 
 export default Browse;
+
+
 
