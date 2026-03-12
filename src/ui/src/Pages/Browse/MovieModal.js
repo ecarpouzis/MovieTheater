@@ -25,83 +25,82 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
   }, [movieId, open]);
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} width={1100} wrapClassName="movie-modal">
+    <Modal open={open} onCancel={onClose} footer={null} width={960} wrapClassName="movie-modal">
       {loading ? (
         <Spin />
       ) : movie ? (
-        <div className="modal-content-outer">
-          <h1 className="modal-movie-title">{movie.title}</h1>
-          <div className="movie-page-wrapper modal-movie-wrapper">
-            <div className="modal-poster-column">
-              <img
-                className="movie-page-poster modal-poster"
-                alt={movie.title + " poster"}
-                src={MovieAPI.getMoviePoster(movie.id)}
-              />
+        <div className="modal-body-wrapper">
+          <div className="modal-poster-column">
+            <img
+              className="modal-poster"
+              alt={movie.title + " poster"}
+              src={MovieAPI.getMoviePoster(movie.id)}
+            />
+          </div>
+          <div className="modal-info-panel">
+            <h2 className="modal-movie-title">{movie.title}</h2>
+
+            <div className="modal-meta-row">
+              <span>{new Date(movie.releaseDate).getFullYear()}</span>
+              {movie.rating && <><span className="modal-dot">·</span><span>{movie.rating}</span></>}
+              {movie.runtime && <><span className="modal-dot">·</span><span>{movie.runtime}</span></>}
             </div>
-            <div className="movie-detail-container">
-              <div className="movie-detail">
-                <u>Release Date:</u> {new Date(movie.releaseDate).getFullYear()}
-              </div>
-              <div className="movie-detail">
-                <u>Rating:</u> {movie.rating}
-              </div>
-              <div className="movie-detail">
-                <u>Runtime:</u> {movie.runtime}
-              </div>
-              <div className="movie-detail">
-                <u>Genre:</u> {movie.genre}
-              </div>
-              <div className="movie-detail">
-                <u>Director:</u> {movie.director}
-              </div>
-              <div className="movie-detail">
-                <u>Writer:</u> {movie.writer}
-              </div>
-              <div className="movie-detail">
-                <u>Plot:</u> {movie.plot}
-              </div>
-              <div className="movie-detail actors-container">
-                <u>Actors:</u>
-                {movie.actors
-                  ? movie.actors.split(",").map((actorName, index) => {
-                      const actor = actorName.trim();
-                      if (!actor) {
-                        return null;
-                      }
-                      return (
-                        <button
-                          key={index}
-                          type="button"
-                          className="actor-box actor-box-clickable"
-                          onClick={() => {
-                            onClose();
-                            actorSearch(actor);
-                          }}
-                        >
-                          {actor}
-                        </button>
-                      );
-                    })
-                  : null}
-              </div>
-              <div className="movie-detail">
-                <u>IMDB Rating:</u>{" "}
-                <a target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID}>
-                  {movie.imdbRating} / 10
-                </a>
-              </div>
-              <div className="movie-detail">
-                <u>RottenTomatoes Rating:</u>{" "}
-                <a target="_blank" rel="noreferrer" href={"https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}>
-                  {movie.tomatoRating} / 100
-                </a>
-              </div>
-              <div className="movie-detail2 movie-id-label">
-                <span>id #{movie.id}</span>
-              </div>
-              <UserMovieOptions userData={userData} id={movie.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
+
+            {movie.genre && <div className="modal-genre">{movie.genre}</div>}
+
+            <div className="modal-crew-grid">
+              {movie.director && (
+                <div className="modal-crew-item">
+                  <span className="modal-label">Director</span>
+                  <span>{movie.director}</span>
+                </div>
+              )}
+              {movie.writer && (
+                <div className="modal-crew-item">
+                  <span className="modal-label">Writer</span>
+                  <span>{movie.writer}</span>
+                </div>
+              )}
             </div>
+
+            {movie.plot && <p className="modal-plot">{movie.plot}</p>}
+
+            {movie.actors && (
+              <div className="modal-actors">
+                {movie.actors.split(",").map((actorName, index) => {
+                  const actor = actorName.trim();
+                  if (!actor) return null;
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      className="actor-box actor-box-clickable"
+                      onClick={() => {
+                        onClose();
+                        actorSearch(actor);
+                      }}
+                    >
+                      {actor}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="modal-ratings-row">
+              <a className="modal-rating-link" target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID}>
+                <span className="modal-label">IMDb</span>
+                <span className="modal-rating-score">{movie.imdbRating}<span className="modal-rating-denom"> / 10</span></span>
+              </a>
+              <a className="modal-rating-link" target="_blank" rel="noreferrer" href={"https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}>
+                <span className="modal-label">Rotten Tomatoes</span>
+                <span className="modal-rating-score">{movie.tomatoRating}<span className="modal-rating-denom"> / 100</span></span>
+              </a>
+            </div>
+
+            <UserMovieOptions userData={userData} id={movie.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
+
+            <div className="modal-movie-id">id #{movie.id}</div>
           </div>
         </div>
       ) : (

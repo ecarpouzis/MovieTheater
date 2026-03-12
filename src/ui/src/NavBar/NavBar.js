@@ -50,10 +50,10 @@ function NavBar({
 
   // useEffect with a dependency array runs the callback whenever any listed value changes
   // — similar to subscribing to a PropertyChanged event for those specific properties.
-  // Close the dropdown whenever the URL query string changes (i.e. a search was performed).
+  // Close the dropdown whenever the URL path or query string changes.
   useEffect(() => {
     setDrawerOpen(false);
-  }, [location.search]);
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     // The ref lets us detect the very first execution of this effect.
@@ -167,7 +167,7 @@ function NavBar({
   }
 
   return (
-    <Layout.Sider className="navbar-sider">
+    <Layout.Sider className="navbar-sider" trigger={null}>
       <div className="navbar-sider-header">
         <button className="navbar-home-btn" onClick={() => history.push("/")}>
           <span className="navbar-home-emoji">🎬</span>
