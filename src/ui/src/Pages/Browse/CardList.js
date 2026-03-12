@@ -1,6 +1,7 @@
 import { MovieAPI } from "../../MovieAPI";
 import { Card, List } from "antd";
 import { useState, useEffect } from "react";
+import UserMovieOptions from "./UserMovieOptions";
 
 function getColumnCount() {
   const w = window.innerWidth;
@@ -89,54 +90,6 @@ const cardRightColumStyle = {
   paddingRight: "13px",
 };
 
-const filmIcon = {
-  fontSize: "24px",
-  width: "24px",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  marginRight: "8px",
-};
-
-const heartIcon = {
-  fontSize: "24px",
-  width: "24px",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  marginRight: "8px",
-};
-
-const buttonLabelStyle = {
-  fontWeight: "bold",
-  verticalAlign: "middle",
-};
-
-const hasWatchedDataContainer = {
-  width: "100px",
-  height: "44px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  margin: "auto",
-  marginLeft: "-20px",
-  float: "left",
-  color: "#a9a9a9",
-};
-
-const toWatchDataContainer = {
-  width: "100px",
-  height: "44px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  margin: "auto",
-  marginLeft: "10px",
-  paddingRight: "20px",
-  float: "left",
-  color: "#a9a9a9",
-};
-
 function useIsMobile(breakpoint = 768) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= breakpoint);
   useEffect(() => {
@@ -145,125 +98,6 @@ function useIsMobile(breakpoint = 768) {
     return () => window.removeEventListener("resize", handler);
   }, [breakpoint]);
   return isMobile;
-}
-
-function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
-  const [hoveredSeenButton, setHoveredSeenButton] = useState(false);
-  const [hoveredWantButton, setHoveredWantButton] = useState(false);
-  const isMobile = useIsMobile();
-
-  if (userData) {
-    const isWatched = userData.moviesSeen.includes(id);
-    let watchedDataContainer;
-
-    if (isWatched) {
-      watchedDataContainer = {
-        ...hasWatchedDataContainer,
-        color: "#4169e3",
-      };
-    } else {
-      watchedDataContainer = {
-        ...hasWatchedDataContainer,
-        color: hoveredSeenButton ? "#52c41a" : "#a9a9a9", // Change color on hover of seen button
-      };
-    }
-
-    const isWanted = userData.moviesToWatch.includes(id);
-    let wantedDataContainer;
-    if (isWanted) {
-      wantedDataContainer = {
-        ...toWatchDataContainer,
-        color: "#dc143c",
-      };
-    } else {
-      wantedDataContainer = {
-        ...toWatchDataContainer,
-        color: hoveredWantButton ? "#52c41a" : "#a9a9a9", // Change color on hover of want button
-      };
-    }
-    if (isMobile) {
-      watchedDataContainer = { ...watchedDataContainer, float: "none", marginLeft: "0", height: "36px" };
-      wantedDataContainer = { ...wantedDataContainer, float: "none", marginLeft: "0", paddingRight: "0", height: "36px" };
-    }
-    return (
-      <>
-        {!isMobile && <br style={{ clear: "both" }} />}
-        <div style={isMobile ? { display: "flex", justifyContent: "center", width: "100%", gap: "8px", paddingTop: "3px" } : { margin: "auto" }}>
-          <div
-            onClick={() => {
-              const newIsWatched = !isWatched;
-              if (!isWatched) {
-                let newUserData = {
-                  ...userData,
-                  moviesSeen: [...userData.moviesSeen, id],
-                };
-                setUserData(newUserData);
-              } else {
-                let newUserData = {
-                  ...userData,
-                  moviesSeen: userData.moviesSeen.filter((x) => x !== id),
-                };
-                setUserData(newUserData);
-              }
-
-              if (typeof onToggleViewing === "function") onToggleViewing(id, "SetWatched", newIsWatched);
-
-              MovieAPI.setWatchedState(userData.username, id, newIsWatched)
-                .then((response) => response.json())
-                .then((response) => {
-                  if (!response.success) {
-                    alert(response.message);
-                  }
-                });
-            }}
-            onMouseEnter={() => setHoveredSeenButton(true)}
-            onMouseLeave={() => setHoveredSeenButton(false)}
-            className="zoom-on-hover"
-            style={watchedDataContainer}
-          >
-            <span style={filmIcon} className="fas fa-film"></span>
-            <span style={buttonLabelStyle}>SEEN</span>
-          </div>
-          <div
-            onClick={() => {
-              const newIsWanted = !isWanted;
-              if (!isWanted) {
-                let newUserData = {
-                  ...userData,
-                  moviesToWatch: [...userData.moviesToWatch, id],
-                };
-                setUserData(newUserData);
-              } else {
-                let newUserData = {
-                  ...userData,
-                  moviesToWatch: userData.moviesToWatch.filter((x) => x !== id),
-                };
-                setUserData(newUserData);
-              }
-
-              if (typeof onToggleViewing === "function") onToggleViewing(id, "SetWantToWatch", newIsWanted);
-
-              MovieAPI.setWantToWatchState(userData.username, id, newIsWanted)
-                .then((response) => response.json())
-                .then((response) => {
-                  if (!response.success) {
-                    alert(response.message);
-                  }
-                });
-            }}
-            onMouseEnter={() => setHoveredWantButton(true)} // changes color on hover of seen and want buttons
-            onMouseLeave={() => setHoveredWantButton(false)}
-            className="zoom-on-hover"
-            style={wantedDataContainer}
-          >
-            <span style={heartIcon} className="fas fa-heart"></span>
-            <span style={buttonLabelStyle}>WANT</span>
-          </div>
-        </div>
-      </>
-    );
-  }
-  return <></>;
 }
 
 function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieClick, onToggleViewing }) {
