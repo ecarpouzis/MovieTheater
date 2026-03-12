@@ -94,10 +94,21 @@ function Browse({ search, userData, setUserData, isAuthReady }) {
   }, [search]);
 
   // Called by CardList / MovieModal when a movie's viewing state is toggled.
-  // Removes deselected movies from the displayed list immediately without navigation/refresh.
+  // Only removes a movie from the displayed list when the action that was deactivated
+  // is the exact criterion that defines membership in the current browse mode.
+  // e.g. removing from Seen while on the Want list leaves the card visible,
+  // because Want-list membership (SetWantToWatch) was not affected.
+  const modeActionMap = {
+    seen: "SetWatched",
+    want: "SetWantToWatch",
+  };
   const handleToggleViewing = (movieId, action, isActive) => {
     if (!isActive) {
-      setMovieDataArray((prev) => prev.filter((m) => m.id !== movieId));
+      const params = new URLSearchParams(location.search);
+      const mode = params.get("mode");
+      if (modeActionMap[mode] === action) {
+        setMovieDataArray((prev) => prev.filter((m) => m.id !== movieId));
+      }
     }
   };
 

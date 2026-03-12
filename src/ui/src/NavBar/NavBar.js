@@ -150,8 +150,10 @@ function NavBar({
           <button className="navbar-menu-btn" onClick={() => setDrawerOpen((o) => !o)}>
             <MenuOutlined />
           </button>
-          <button className="navbar-home-btn" onClick={() => history.push("/")}>🎬</button>
-          <span className="navbar-title">Movie Theater</span>
+          <button className="navbar-home-btn" onClick={() => history.push("/")}>
+            <span className="navbar-home-emoji">🎬</span>
+            <span className="navbar-title">Movie Theater</span>
+          </button>
           {userData && <span className="navbar-username-badge">{userData.username}</span>}
         </div>
 
@@ -167,8 +169,10 @@ function NavBar({
   return (
     <Layout.Sider className="navbar-sider">
       <div className="navbar-sider-header">
-        <button className="navbar-home-btn" onClick={() => history.push("/")}>🎬</button>
-        <span className="navbar-sider-title">Movie Theater</span>
+        <button className="navbar-home-btn" onClick={() => history.push("/")}>
+          <span className="navbar-home-emoji">🎬</span>
+          <span className="navbar-sider-title">Movie Theater</span>
+        </button>
       </div>
       {navContent}
     </Layout.Sider>

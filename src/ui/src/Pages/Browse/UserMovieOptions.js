@@ -7,7 +7,6 @@ if (userData) {
     const isWanted = userData.moviesToWatch.includes(id);
     return (
       <>
-        {!inline && <br style={{ clear: "both" }} />}
         <div className={`viewing-options${inline ? " viewing-options--compact" : ""}`}>
           <div
             onClick={() => {

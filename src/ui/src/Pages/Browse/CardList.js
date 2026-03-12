@@ -125,6 +125,7 @@ const columns = getColumnCount();
                     </div>
                     {rightColContent}
                   </div>
+                  <br style={{ clear: "both" }} />
                   <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
                 </Card>
                 )}
