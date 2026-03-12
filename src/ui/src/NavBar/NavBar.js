@@ -108,7 +108,7 @@ function NavBar({
 
     if (mode === "seen") {
       if (userData) {
-        moviesSeenSearch();
+        moviesSeenSearch(userData);
       } else {
         resetSearch();
       }
@@ -117,7 +117,7 @@ function NavBar({
 
     if (mode === "want") {
       if (userData) {
-        moviesWantToWatchSearch();
+        moviesWantToWatchSearch(userData);
       } else {
         resetSearch();
       }

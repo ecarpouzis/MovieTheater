@@ -25,7 +25,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, movieDataArray, userD
   }, [movieId, open]);
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} width={1100} bodyStyle={{ maxHeight: "80vh", overflowY: "auto", padding: "24px" }}>
+    <Modal open={open} onCancel={onClose} footer={null} width={1100} wrapClassName="movie-modal">
       {loading ? (
         <Spin />
       ) : movie ? (

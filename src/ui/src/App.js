@@ -1,34 +1,31 @@
 import { Layout } from "antd";
 import { MovieAPI } from "./MovieAPI";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import NavBar from "./NavBar/NavBar";
 import Browse from "./Pages/Browse/Browse";
 import MoviePage from "./Pages/MoviePage";
 import InsertPage from "./Pages/InsertPage";
 import BatchInsertPage from "./Pages/BatchInsertPage";
-
-const RANDOM_MOVIES_URL = "/API/GetRandomMovies";
+import { useMovieSearch } from "./hooks/useMovieSearch";
 
 const storedUsername = window.localStorage.getItem("Username");
 
-function escapeODataString(value) {
-  return value.replace(/'/g, "''");
-}
-
-function buildMoviesUrl(filter) {
-  return `/odata/Movies?$filter=${encodeURIComponent(filter)}&$orderby=simpleTitle asc`;
-}
-
 function App() {
   const [userData, setUserData] = useState(null);
-  const [search, setSearch] = useState({ url: RANDOM_MOVIES_URL });
   const hasCheckedFirstLoginRef = useRef(false);
   const [isAuthReady, setIsAuthReady] = useState(!storedUsername);
 
-  const resetSearch = useCallback(() => {
-    setSearch({ url: RANDOM_MOVIES_URL });
-  }, []);
+  const {
+    search,
+    resetSearch,
+    titleSearch,
+    actorSearch,
+    firstLetterSearch,
+    restoreMovieIdsSearch,
+    moviesSeenSearch,
+    moviesWantToWatchSearch,
+  } = useMovieSearch();
 
   function onUserLoggedIn(username) {
     MovieAPI.loginUser(username)
@@ -47,67 +44,6 @@ function App() {
     }
   }
 
-  const TitleSearch = useCallback(
-    (title) => {
-      const escaped = escapeODataString(title);
-      setSearch({ url: buildMoviesUrl(`contains(simpleTitle,'${escaped}') or contains(title,'${escaped}')`) });
-    },
-    []
-  );
-
-  const ActorSearch = useCallback(
-    (actor) => {
-      const escaped = escapeODataString(actor);
-      setSearch({ url: buildMoviesUrl(`contains(actors,'${escaped}')`) });
-    },
-    []
-  );
-
-  const FirstLetterSearch = useCallback(
-    (firstLetter) => {
-      if (firstLetter === "#") {
-        const digitFilters = "0123456789".split("").map((d) => `startswith(simpleTitle,'${d}')`).join(" or ");
-        setSearch({ url: buildMoviesUrl(digitFilters), startsWith: firstLetter });
-      } else {
-        const escaped = escapeODataString(firstLetter);
-        setSearch({ url: buildMoviesUrl(`startswith(simpleTitle,'${escaped}')`), startsWith: firstLetter });
-      }
-    },
-    []
-  );
-
-  const MovieIDListSearch = useCallback(
-    (movieIds, restoreOrder = null) => {
-      if (!movieIds || movieIds.length === 0) {
-        setSearch({ url: null, restoreOrder });
-        return;
-      }
-      setSearch({ movieIds, restoreOrder });
-    },
-    []
-  );
-
-  const RestoreMovieIdsSearch = useCallback(
-    (movieIds) => {
-      MovieIDListSearch(movieIds, movieIds);
-    },
-    [MovieIDListSearch]
-  );
-
-  const MoviesSeenSearch = useCallback(() => {
-    setUserData((currentUserData) => {
-      if (currentUserData) MovieIDListSearch(currentUserData.moviesSeen);
-      return currentUserData;
-    });
-  }, [MovieIDListSearch]);
-
-  const MoviesWantToWatchSearch = useCallback(() => {
-    setUserData((currentUserData) => {
-      if (currentUserData) MovieIDListSearch(currentUserData.moviesToWatch);
-      return currentUserData;
-    });
-  }, [MovieIDListSearch]);
-
   return (
     <BrowserRouter>
       <Layout className="app-layout">
@@ -117,12 +53,12 @@ function App() {
           userData={userData}
           setUserData={setUserData}
           onUserLoggedIn={onUserLoggedIn}
-          titleSearch={TitleSearch}
-          actorSearch={ActorSearch}
-          firstLetterSearch={FirstLetterSearch}
-          restoreMovieIdsSearch={RestoreMovieIdsSearch}
-          moviesSeenSearch={MoviesSeenSearch}
-          moviesWantToWatchSearch={MoviesWantToWatchSearch}
+          titleSearch={titleSearch}
+          actorSearch={actorSearch}
+          firstLetterSearch={firstLetterSearch}
+          restoreMovieIdsSearch={restoreMovieIdsSearch}
+          moviesSeenSearch={moviesSeenSearch}
+          moviesWantToWatchSearch={moviesWantToWatchSearch}
         />
         <Layout.Content className="app-content">
           <Switch>
