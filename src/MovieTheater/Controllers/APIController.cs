@@ -570,5 +570,74 @@ namespace MovieTheater.Controllers
             // IMDB title IDs are typically "tt" followed by 7-9 digits (e.g., tt1234567)
             return System.Text.RegularExpressions.Regex.IsMatch(id, @"^tt\d{7,9}$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         }
+
+        [HttpGet("/API/GetMPARatings")]
+        public async Task<IActionResult> GetMPARatings()
+        {
+            var ratingIds = await movieDb.RatingMaps
+                .Select(rm => rm.MPARatingID)
+                .Distinct()
+                .OrderBy(id => id)
+                .ToListAsync();
+
+            var mpaNames = await movieDb.RatingMpas
+                .ToDictionaryAsync(mpa => mpa.RatingID, mpa => mpa.MPAName);
+
+            var result = ratingIds.Select(id => new
+            {
+                id,
+                name = mpaNames.TryGetValue(id, out var n) && !string.IsNullOrEmpty(n) ? n : id.ToString()
+            }).ToList();
+
+            return Ok(result);
+        }
+
+        public class UserSettingRequest
+        {
+            public string SettingKey { get; set; }
+            public string SettingValue { get; set; }
+        }
+
+        [HttpPost("/API/SetUserSetting")]
+        public async Task<IActionResult> SetUserSetting([FromBody] UserSettingRequest request)
+        {
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+                return Unauthorized(new { Success = false, Message = "Not logged in." });
+
+            if (string.IsNullOrEmpty(request?.SettingKey))
+                return BadRequest(new { Success = false, Message = "SettingKey is required." });
+
+            var existing = await movieDb.UserSettings
+                .FirstOrDefaultAsync(u => u.UserID == currentUserId.Value && u.SettingKey == request.SettingKey);
+
+            if (request.SettingValue == null)
+            {
+                if (existing != null)
+                {
+                    movieDb.UserSettings.Remove(existing);
+                    await movieDb.SaveChangesAsync();
+                }
+            }
+            else
+            {
+                if (existing != null)
+                {
+                    existing.SettingValue = request.SettingValue;
+                }
+                else
+                {
+                    await movieDb.UserSettings.AddAsync(new UserSettings
+                    {
+                        UserID = currentUserId.Value,
+                        SettingKey = request.SettingKey,
+                        SettingValue = request.SettingValue,
+                    });
+                }
+                await movieDb.SaveChangesAsync();
+            }
+
+            return Ok(new { Success = true });
+        }
     }
 }
