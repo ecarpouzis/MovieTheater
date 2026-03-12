@@ -21,18 +21,14 @@
 
 /* Poster container */
 .card-poster-container {
-  width: 120px;
-  height: 200px;
   flex-shrink: 0;
   overflow: hidden;
 }
 
-/* Poster image */
+/* Poster image — thumbnails are pre-resized to 200px tall, render at natural size */
 .card-poster-image {
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-  object-position: top;
+  height: 200px;
+  width: auto;
   display: block;
   margin: 0;
 }
@@ -140,7 +136,7 @@
   display: block;
   margin: 0;
   object-fit: cover;
-  object-position: top;
+  object-position: top center;
 }
 
 .mobile-card-info {
