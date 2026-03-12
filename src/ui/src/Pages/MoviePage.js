@@ -11,7 +11,6 @@ function MoviePage() {
       .then((response) => response.json())
       .then((responseData) => {
         setMovie(responseData.data);
-        console.log(movie);
       });
   }, [id]);
 

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { MovieAPI } from "../../MovieAPI";
 import CardList from "./CardList";
 import MovieModal from "./MovieModal";
 
@@ -10,19 +9,26 @@ function Browse({ search, userData, setUserData, isAuthReady }) {
 
   useEffect(() => {
     if (!isAuthReady) return;
-    if (!search.url) {
+    if (!search.url && !search.movieIds) {
       setMovieDataArray([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    fetch(search.url)
+    const fetchPromise = search.movieIds
+      ? fetch("/API/GetMoviesByIds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(search.movieIds),
+        })
+      : fetch(search.url);
+    fetchPromise
       .then((r) => r.json())
       .then((data) => {
         setMovieDataArray(Array.isArray(data) ? data : (data?.value ?? []));
         setLoading(false);
       });
-  }, [search.url, userData?.username, isAuthReady]);
+  }, [search.url, search.movieIds, userData?.username, isAuthReady]);
 
   const history = useHistory();
   const location = useLocation();
@@ -87,6 +93,14 @@ function Browse({ search, userData, setUserData, isAuthReady }) {
     handleCloseModal();
   }, [search]);
 
+  // Called by CardList / MovieModal when a movie's viewing state is toggled.
+  // Removes deselected movies from the displayed list immediately without navigation/refresh.
+  const handleToggleViewing = (movieId, action, isActive) => {
+    if (!isActive) {
+      setMovieDataArray((prev) => prev.filter((m) => m.id !== movieId));
+    }
+  };
+
   if (loading) {
     return <span>Loading</span>;
   }
@@ -99,6 +113,7 @@ function Browse({ search, userData, setUserData, isAuthReady }) {
         setUserData={setUserData}
         actorSearch={handleActorSearch}
         onMovieClick={handleOpenMovie}
+        onToggleViewing={handleToggleViewing}
       />
       <MovieModal
         movieId={selectedMovieId}
@@ -108,10 +123,13 @@ function Browse({ search, userData, setUserData, isAuthReady }) {
         movieDataArray={displayMovies}
         userData={userData}
         setUserData={setUserData}
+        onToggleViewing={handleToggleViewing}
       />
     </>
   );
 }
 
 export default Browse;
+
+
 

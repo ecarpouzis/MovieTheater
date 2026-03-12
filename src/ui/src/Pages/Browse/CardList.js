@@ -2,6 +2,14 @@ import { MovieAPI } from "../../MovieAPI";
 import { Card, List } from "antd";
 import { useState, useEffect } from "react";
 
+function getColumnCount() {
+  const w = window.innerWidth;
+  if (w >= 1600) return 4;
+  if (w >= 1200) return 3;
+  if (w >= 768) return 2;
+  return 1;
+}
+
 const listStyle = {
   width: "100%",
   padding: "10px 10px 2px",
@@ -57,19 +65,17 @@ const cardActorSpacer = {
   clear: "left",
 };
 
-let cardBodyStyle = {
+const baseCardBodyStyle = {
   height: "200px",
   padding: "0px",
   display: "flex",
   userSelect: "none",
-  //If a user is logged in, we need height:250px
 };
 
-let cardContentWrapper = {
+const baseCardContentWrapper = {
   height: "100%",
   width: "100%",
   display: "flex",
-  //If a user is logged in, we need flex-wrap: wrap here, and height:90%
 };
 
 const posterContainer = { height: "100%", width: "130px", float: "left", flexShrink: 0, overflow: "hidden" };
@@ -141,7 +147,7 @@ function useIsMobile(breakpoint = 768) {
   return isMobile;
 }
 
-function UserMovieOptions({ userData, id, setUserData }) {
+function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
   const [hoveredSeenButton, setHoveredSeenButton] = useState(false);
   const [hoveredWantButton, setHoveredWantButton] = useState(false);
   const isMobile = useIsMobile();
@@ -185,6 +191,7 @@ function UserMovieOptions({ userData, id, setUserData }) {
         <div style={isMobile ? { display: "flex", justifyContent: "center", width: "100%", gap: "8px", paddingTop: "3px" } : { margin: "auto" }}>
           <div
             onClick={() => {
+              const newIsWatched = !isWatched;
               if (!isWatched) {
                 let newUserData = {
                   ...userData,
@@ -199,7 +206,9 @@ function UserMovieOptions({ userData, id, setUserData }) {
                 setUserData(newUserData);
               }
 
-              MovieAPI.setWatchedState(userData.username, id, !isWatched)
+              if (typeof onToggleViewing === "function") onToggleViewing(id, "SetWatched", newIsWatched);
+
+              MovieAPI.setWatchedState(userData.username, id, newIsWatched)
                 .then((response) => response.json())
                 .then((response) => {
                   if (!response.success) {
@@ -217,6 +226,7 @@ function UserMovieOptions({ userData, id, setUserData }) {
           </div>
           <div
             onClick={() => {
+              const newIsWanted = !isWanted;
               if (!isWanted) {
                 let newUserData = {
                   ...userData,
@@ -230,7 +240,10 @@ function UserMovieOptions({ userData, id, setUserData }) {
                 };
                 setUserData(newUserData);
               }
-              MovieAPI.setWantToWatchState(userData.username, id, !isWanted)
+
+              if (typeof onToggleViewing === "function") onToggleViewing(id, "SetWantToWatch", newIsWanted);
+
+              MovieAPI.setWantToWatchState(userData.username, id, newIsWanted)
                 .then((response) => response.json())
                 .then((response) => {
                   if (!response.success) {
@@ -244,7 +257,7 @@ function UserMovieOptions({ userData, id, setUserData }) {
             style={wantedDataContainer}
           >
             <span style={heartIcon} className="fas fa-heart"></span>
-            <span style={buttonLabelStyle}>WANT {isWanted}</span>
+            <span style={buttonLabelStyle}>WANT</span>
           </div>
         </div>
       </>
@@ -253,41 +266,37 @@ function UserMovieOptions({ userData, id, setUserData }) {
   return <></>;
 }
 
-function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieClick }) {
-  const [hoveredMovieId, setHoveredMovieId] = useState(null);
-  const [hoveredActor, setHoveredActor] = useState(null);
-  const isMobile = useIsMobile();
+function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieClick, onToggleViewing }) {
+const [hoveredMovieId, setHoveredMovieId] = useState(null);
+const [hoveredActor, setHoveredActor] = useState(null);
+const isMobile = useIsMobile();
+const columns = getColumnCount();
 
-  const currentCardBodyStyle = isMobile
-    ? { padding: "12px", display: "flex", flexDirection: "column", userSelect: "none" }
-    : userData
-    ? { ...cardBodyStyle, height: "260px", flexWrap: "wrap" }
-    : cardBodyStyle;
+const cardBodyStyle = userData
+  ? { ...baseCardBodyStyle, height: "260px", flexWrap: "wrap" }
+  : baseCardBodyStyle;
+const cardContentWrapper = userData
+  ? { ...baseCardContentWrapper, height: "85%" }
+  : baseCardContentWrapper;
 
-  const currentCardContentWrapper = isMobile
-    ? { display: "flex", flexDirection: "column", width: "100%" }
-    : userData
-    ? { ...cardContentWrapper, height: "85%" }
-    : cardContentWrapper;
+const currentCardBodyStyle = isMobile
+  ? { padding: "12px", display: "flex", flexDirection: "column", userSelect: "none" }
+  : cardBodyStyle;
 
-  const currentPosterContainer = isMobile ? { display: "flex", justifyContent: "center", width: "100%", marginBottom: "8px" } : posterContainer;
+const currentCardContentWrapper = isMobile
+  ? { display: "flex", flexDirection: "column", width: "100%" }
+  : cardContentWrapper;
 
-  const currentPosterStyle = isMobile ? { maxHeight: "180px", width: "auto", height: "auto", objectFit: "contain" } : cardPosterStyle;
+const currentPosterContainer = isMobile ? { display: "flex", justifyContent: "center", width: "100%", marginBottom: "8px" } : posterContainer;
+
+const currentPosterStyle = isMobile ? { maxHeight: "180px", width: "auto", height: "auto", objectFit: "contain" } : cardPosterStyle;
 
   return (
     <>
       {
         <List
           style={listStyle}
-          grid={{
-            gutter: 8,
-            xs: 1,
-            sm: 1,
-            md: 2,
-            lg: 2,
-            xl: 3,
-            xxl: 4,
-          }}
+          grid={{ gutter: 8, column: columns }}
           dataSource={movieDataArray}
           renderItem={(item, i) => {
             const thumbUrl = MovieAPI.getPosterThumbnail(item.id);
@@ -433,20 +442,19 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieC
                         </div>
                       </div>
                     </div>
-                    {/* Plot full-width below */}
-                    <p style={{ fontSize: "0.82em", color: "#666", lineHeight: "1.4", margin: "0 0 2px 0", textAlign: "left" }}>{item.plot}</p>
-                    <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} />
-                  </Card>
-                ) : (
-                  <Card hoverable bodyStyle={currentCardBodyStyle}>
-                    <div style={currentCardContentWrapper}>
-                      <div style={currentPosterContainer}>
-                        <img className="moviePosterImage" style={currentPosterStyle} alt="" src={thumbUrl} loading="lazy" />
-                      </div>
-                      {rightColContent}
+                  <p style={{ fontSize: "0.82em", color: "#666", lineHeight: "1.4", margin: "0 0 2px 0", textAlign: "left" }}>{item.plot}</p>
+                  <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
+                </Card>
+              ) : (
+                <Card hoverable bodyStyle={currentCardBodyStyle}>
+                  <div style={currentCardContentWrapper}>
+                    <div style={currentPosterContainer}>
+                      <img className="moviePosterImage" style={currentPosterStyle} alt="" src={thumbUrl} loading="lazy" />
                     </div>
-                    <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} />
-                  </Card>
+                    {rightColContent}
+                  </div>
+                  <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
+                </Card>
                 )}
               </List.Item>
             );

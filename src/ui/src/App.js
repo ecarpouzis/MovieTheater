@@ -1,6 +1,6 @@
 import { Layout } from "antd";
 import { MovieAPI } from "./MovieAPI";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import NavBar from "./NavBar/NavBar";
 import Browse from "./Pages/Browse/Browse";
@@ -33,13 +33,13 @@ function useIsMobile(breakpoint = 768) {
 function App() {
   const [userData, setUserData] = useState(null);
   const [search, setSearch] = useState({ url: RANDOM_MOVIES_URL });
-  const [hasCheckedFirstLogin, setHasCheckedFirstLogin] = useState(false);
+  const hasCheckedFirstLoginRef = useRef(false);
   const [isAuthReady, setIsAuthReady] = useState(!storedUsername);
   const isMobile = useIsMobile();
 
-  function resetSearch() {
+  const resetSearch = useCallback(() => {
     setSearch({ url: RANDOM_MOVIES_URL });
-  }
+  }, []);
 
   function onUserLoggedIn(username) {
     MovieAPI.loginUser(username)
@@ -51,53 +51,73 @@ function App() {
       });
   }
 
-  if (!hasCheckedFirstLogin) {
-    setHasCheckedFirstLogin(true);
+  if (!hasCheckedFirstLoginRef.current) {
+    hasCheckedFirstLoginRef.current = true;
     if (storedUsername) {
       onUserLoggedIn(storedUsername);
     }
   }
 
-  function TitleSearch(title) {
-    const escaped = escapeODataString(title);
-    setSearch({ url: buildMoviesUrl(`contains(simpleTitle,'${escaped}') or contains(title,'${escaped}')`) });
-  }
+  const TitleSearch = useCallback(
+    (title) => {
+      const escaped = escapeODataString(title);
+      setSearch({ url: buildMoviesUrl(`contains(simpleTitle,'${escaped}') or contains(title,'${escaped}')`) });
+    },
+    []
+  );
 
-  function ActorSearch(actor) {
-    const escaped = escapeODataString(actor);
-    setSearch({ url: buildMoviesUrl(`contains(actors,'${escaped}')`) });
-  }
+  const ActorSearch = useCallback(
+    (actor) => {
+      const escaped = escapeODataString(actor);
+      setSearch({ url: buildMoviesUrl(`contains(actors,'${escaped}')`) });
+    },
+    []
+  );
 
-  function FirstLetterSearch(firstLetter) {
-    if (firstLetter === "#") {
-      const digitFilters = "0123456789".split("").map((d) => `startswith(simpleTitle,'${d}')`).join(" or ");
-      setSearch({ url: buildMoviesUrl(digitFilters), startsWith: firstLetter });
-    } else {
-      const escaped = escapeODataString(firstLetter);
-      setSearch({ url: buildMoviesUrl(`startswith(simpleTitle,'${escaped}')`), startsWith: firstLetter });
-    }
-  }
+  const FirstLetterSearch = useCallback(
+    (firstLetter) => {
+      if (firstLetter === "#") {
+        const digitFilters = "0123456789".split("").map((d) => `startswith(simpleTitle,'${d}')`).join(" or ");
+        setSearch({ url: buildMoviesUrl(digitFilters), startsWith: firstLetter });
+      } else {
+        const escaped = escapeODataString(firstLetter);
+        setSearch({ url: buildMoviesUrl(`startswith(simpleTitle,'${escaped}')`), startsWith: firstLetter });
+      }
+    },
+    []
+  );
 
-  function MovieIDListSearch(movieIds, restoreOrder = null) {
-    if (!movieIds || movieIds.length === 0) {
-      setSearch({ url: null, restoreOrder });
-      return;
-    }
-    const idList = movieIds.join(",");
-    setSearch({ url: `/odata/Movies?$filter=id in (${idList})&$orderby=simpleTitle asc`, restoreOrder });
-  }
+  const MovieIDListSearch = useCallback(
+    (movieIds, restoreOrder = null) => {
+      if (!movieIds || movieIds.length === 0) {
+        setSearch({ url: null, restoreOrder });
+        return;
+      }
+      setSearch({ movieIds, restoreOrder });
+    },
+    []
+  );
 
-  function RestoreMovieIdsSearch(movieIds) {
-    MovieIDListSearch(movieIds, movieIds);
-  }
+  const RestoreMovieIdsSearch = useCallback(
+    (movieIds) => {
+      MovieIDListSearch(movieIds, movieIds);
+    },
+    [MovieIDListSearch]
+  );
 
-  function MoviesSeenSearch() {
-    MovieIDListSearch(userData.moviesSeen);
-  }
+  const MoviesSeenSearch = useCallback(() => {
+    setUserData((currentUserData) => {
+      if (currentUserData) MovieIDListSearch(currentUserData.moviesSeen);
+      return currentUserData;
+    });
+  }, [MovieIDListSearch]);
 
-  function MoviesWantToWatchSearch() {
-    MovieIDListSearch(userData.moviesToWatch);
-  }
+  const MoviesWantToWatchSearch = useCallback(() => {
+    setUserData((currentUserData) => {
+      if (currentUserData) MovieIDListSearch(currentUserData.moviesToWatch);
+      return currentUserData;
+    });
+  }, [MovieIDListSearch]);
 
   return (
     <BrowserRouter>

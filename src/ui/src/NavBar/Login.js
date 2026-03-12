@@ -30,7 +30,7 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
 
   //When text is entered into the Login box, return a list of users that include the entered text for Autocomplete
   const handleSearch = (value) => {
-    var filteredList = userlist.filter((e) => {
+    const filteredList = userlist.filter((e) => {
       return e.value.toLowerCase().includes(value.toLowerCase());
     });
     setFilteredUserlist(filteredList);
