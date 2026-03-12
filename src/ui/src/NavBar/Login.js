@@ -118,6 +118,9 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
             👤
           </div>
           <span className="user-username">{userData.username}</span>
+          <button className="settings-icon-btn" onClick={() => history.push("/settings")} title="User Settings">
+            ⚙️
+          </button>
         </div>
         <div className="stat-row" onClick={() => navigateToBrowseSearch("seen")}>
           <span className="stat-icon stat-icon--seen fas fa-film"></span>

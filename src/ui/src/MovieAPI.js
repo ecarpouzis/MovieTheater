@@ -172,6 +172,18 @@ function getTotalMovieCount() {
   });
 }
 
+function getMPARatings() {
+  return fetch("/API/GetMPARatings");
+}
+
+function setUserSetting(key, value) {
+  return fetch("/API/SetUserSetting", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ settingKey: key, settingValue: value }),
+  });
+}
+
 const MovieAPI = {
 getMoviePoster,
 getPosterThumbnail,
@@ -189,6 +201,8 @@ getMovie,
   setWatchedState,
   setWantToWatchState,
   movieLookupFromNames,
+  getMPARatings,
+  setUserSetting,
 };
 
 export { MovieAPI };

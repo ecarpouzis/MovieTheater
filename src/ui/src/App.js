@@ -7,6 +7,7 @@ import Browse from "./Pages/Browse/Browse";
 import MoviePage from "./Pages/MoviePage";
 import InsertPage from "./Pages/InsertPage";
 import BatchInsertPage from "./Pages/BatchInsertPage";
+import UserSettingsPage from "./Pages/UserSettingsPage";
 import { useMovieSearch } from "./hooks/useMovieSearch";
 
 const storedUsername = window.localStorage.getItem("Username");
@@ -70,6 +71,9 @@ function App() {
             </Route>
             <Route path="/batchinsert" exact>
               <BatchInsertPage />
+            </Route>
+            <Route path="/settings" exact>
+              <UserSettingsPage userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/">
               <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} />
