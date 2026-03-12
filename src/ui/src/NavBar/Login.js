@@ -3,6 +3,7 @@ import { Button, Input, Tooltip, AutoComplete } from "antd";
 import { InfoCircleOutlined, UserOutlined } from "@ant-design/icons";
 import { useHistory } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
+import "./Login.css";
 
 //Function component Login
 //Props:
@@ -54,27 +55,6 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
       });
   }, []);
 
-  const sectionHeaderStyle = {
-    display: "block",
-    fontSize: "10px",
-    fontWeight: "700",
-    color: "#6b8aad",
-    textTransform: "uppercase",
-    letterSpacing: "1.5px",
-    marginBottom: "12px",
-    paddingBottom: "8px",
-    borderBottom: "1px solid #1e3a57",
-  };
-
-  const statRowStyle = {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "7px 0",
-    cursor: "pointer",
-    borderRadius: "4px",
-  };
-
   function logoutUser() {
     fetch("/API/Logout", { method: "POST" }).finally(() => {
       setUserData();
@@ -94,15 +74,13 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
 
   //When a user isn't logged in, render a login tool which enables the user to log in
   const getLoginTools = () => (
-    <div id="LoginContainer" style={{ color: "white" }}>
-      <span style={{ fontWeight: "bold", fontSize: "18px" }}>LOG IN</span>
+    <div id="LoginContainer" className="login-container">
+      <span className="login-title">LOG IN</span>
       <br />
       <br />
       <AutoComplete
         options={filteredUserlist}
-        style={{
-          width: 180,
-        }}
+        className="login-autocomplete"
         onSelect={onSelect}
         onSearch={handleSearch}
       >
@@ -110,25 +88,18 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
           <Input
             placeholder="Username"
             prefix={<UserOutlined className="site-form-item-icon" />}
-            style={{
-              width: "135px",
-              borderTopRightRadius: "0px",
-              borderBottomRightRadius: "0px",
-            }}
+            className="login-input"
             onChange={(e) => setSearchValue(e.target.value)}
             value={searchValue}
             suffix={
               <Tooltip title="This website purposely requires no password to log in.">
-                <InfoCircleOutlined style={{ color: "rgba(0,0,0,.45)" }} />
+                <InfoCircleOutlined className="login-tooltip-icon" />
               </Tooltip>
             }
           />
           <Button
             type="primary"
-            style={{
-              borderTopLeftRadius: "0px",
-              borderBottomLeftRadius: "0px",
-            }}
+            className="login-button"
             onClick={onUserClickedLoginButton}
           >
             {">"}
@@ -141,64 +112,24 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
   //When a user is logged in, render information about that user and a button to log out
   function getLoggedInDisplay(userData) {
     return (
-      <div style={{ padding: "16px 16px 8px", color: "white" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            marginBottom: "14px",
-            paddingBottom: "12px",
-            borderBottom: "1px solid #1e3a57",
-          }}
-        >
-          <div
-            style={{
-              width: "34px",
-              height: "34px",
-              borderRadius: "50%",
-              background: "#1e3a57",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "16px",
-              flexShrink: 0,
-            }}
-          >
+      <div className="user-panel">
+        <div className="user-panel-header">
+          <div className="user-avatar">
             👤
           </div>
-          <span style={{ fontWeight: "600", fontSize: "14px", color: "rgba(255,255,255,0.9)" }}>{userData.username}</span>
+          <span className="user-username">{userData.username}</span>
         </div>
-        <div style={statRowStyle} onClick={() => navigateToBrowseSearch("seen")}>
-          <span className="fas fa-film" style={{ color: "#4169e3", fontSize: "15px", width: "18px", textAlign: "center" }}></span>
-          <span style={{ color: "#c8d8e8", fontSize: "13px", flex: 1 }}>Seen</span>
-          <span style={{ background: "#1e3a57", color: "#7eb3e0", borderRadius: "10px", padding: "1px 9px", fontSize: "12px", fontWeight: "bold" }}>
-            {userData.moviesSeen.length}
-          </span>
+        <div className="stat-row" onClick={() => navigateToBrowseSearch("seen")}>
+          <span className="stat-icon stat-icon--seen fas fa-film"></span>
+          <span className="stat-label">Seen</span>
+          <span className="stat-count">{userData.moviesSeen.length}</span>
         </div>
-        <div style={statRowStyle} onClick={() => navigateToBrowseSearch("want")}>
-          <span className="fas fa-heart" style={{ color: "#dc143c", fontSize: "15px", width: "18px", textAlign: "center" }}></span>
-          <span style={{ color: "#c8d8e8", fontSize: "13px", flex: 1 }}>Want to Watch</span>
-          <span style={{ background: "#1e3a57", color: "#7eb3e0", borderRadius: "10px", padding: "1px 9px", fontSize: "12px", fontWeight: "bold" }}>
-            {userData.moviesToWatch.length}
-          </span>
+        <div className="stat-row" onClick={() => navigateToBrowseSearch("want")}>
+          <span className="stat-icon stat-icon--want fas fa-heart"></span>
+          <span className="stat-label">Want to Watch</span>
+          <span className="stat-count">{userData.moviesToWatch.length}</span>
         </div>
-        <button
-          onClick={logoutUser}
-          style={{
-            marginTop: "10px",
-            width: "100%",
-            background: "transparent",
-            border: "1px solid #2a4a6e",
-            color: "#7eb3e0",
-            borderRadius: "4px",
-            cursor: "pointer",
-            padding: "5px 0",
-            fontSize: "12px",
-            fontWeight: "600",
-            letterSpacing: "0.5px",
-          }}
-        >
+        <button className="logout-button" onClick={logoutUser}>
           Log Out
         </button>
       </div>

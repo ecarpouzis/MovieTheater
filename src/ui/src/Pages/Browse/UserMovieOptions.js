@@ -1,57 +1,15 @@
 import { MovieAPI } from "../../MovieAPI";
-import { useState, useEffect } from "react";
-
-const filmIcon = {
-  fontSize: "30px",
-  width: "35px",
-  verticalAlign: "middle",
-  paddingRight: "30px",
-};
-
-const heartIcon = {
-  fontSize: "25px",
-  width: "30px",
-  verticalAlign: "middle",
-  paddingRight: "5px",
-};
-
-const buttonLabelStyle = {
-  fontWeight: "bold",
-  verticalAlign: "middle",
-};
-
-function useIsMobile(breakpoint = 768) {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= breakpoint);
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth <= breakpoint);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, [breakpoint]);
-  return isMobile;
-}
+import { useState } from "react";
+import "./UserMovieOptions.css";
 
 function UserMovieOptions({ userData, id, setUserData, inline = false, onToggleViewing }) {
-  const [hoveredSeenButton, setHoveredSeenButton] = useState(false);
-  const [hoveredWantButton, setHoveredWantButton] = useState(false);
-  const isMobile = useIsMobile();
-  const compact = inline || isMobile;
-
-  if (userData) {
+if (userData) {
     const isWatched = userData.moviesSeen.includes(id);
     const isWanted = userData.moviesToWatch.includes(id);
     return (
       <>
-        {!compact && <br style={{ clear: "both" }} />}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: compact ? "10px" : "18px",
-            width: compact ? "auto" : "100%",
-            paddingTop: isMobile ? "3px" : "0",
-          }}
-        >
+        {!inline && <br style={{ clear: "both" }} />}
+        <div className={`viewing-options${inline ? " viewing-options--compact" : ""}`}>
           <div
             onClick={() => {
               const newIsWatched = !isWatched;
@@ -71,21 +29,10 @@ function UserMovieOptions({ userData, id, setUserData, inline = false, onToggleV
                   }
                 });
             }}
-            onMouseEnter={() => setHoveredSeenButton(true)}
-            onMouseLeave={() => setHoveredSeenButton(false)}
-            className="zoom-on-hover"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: compact ? "100px" : "160px",
-              padding: compact ? "0" : "8px 12px",
-              cursor: "pointer",
-              color: isWatched ? "#4169e3" : hoveredSeenButton ? "#52c41a" : "#a9a9a9",
-            }}
+            className={`viewing-btn zoom-on-hover${inline ? " viewing-btn--compact" : ""}${isWatched ? " viewing-btn-seen--watched" : ""}`}
           >
-            <span style={filmIcon} className="fas fa-film"></span>
-            <span style={{ ...buttonLabelStyle, fontSize: compact ? "inherit" : "16px" }}>SEEN</span>
+            <span className="film-icon fas fa-film"></span>
+            <span className={`viewing-btn-label${inline ? " viewing-btn-label--compact" : ""}`}>SEEN</span>
           </div>
           <div
             onClick={() => {
@@ -106,21 +53,10 @@ function UserMovieOptions({ userData, id, setUserData, inline = false, onToggleV
                   }
                 });
             }}
-            onMouseEnter={() => setHoveredWantButton(true)}
-            onMouseLeave={() => setHoveredWantButton(false)}
-            className="zoom-on-hover"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: compact ? "100px" : "160px",
-              padding: compact ? "0" : "8px 12px",
-              cursor: "pointer",
-              color: isWanted ? "#dc143c" : hoveredWantButton ? "#52c41a" : "#a9a9a9",
-            }}
+            className={`viewing-btn zoom-on-hover${inline ? " viewing-btn--compact" : ""}${isWanted ? " viewing-btn-want--wanted" : ""}`}
           >
-            <span style={heartIcon} className="fas fa-heart"></span>
-            <span style={{ ...buttonLabelStyle, fontSize: compact ? "inherit" : "16px" }}>WANT</span>
+            <span className="heart-icon fas fa-heart"></span>
+            <span className={`viewing-btn-label${inline ? " viewing-btn-label--compact" : ""}`}>WANT</span>
           </div>
         </div>
       </>

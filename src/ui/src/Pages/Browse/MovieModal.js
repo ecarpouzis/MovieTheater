@@ -2,6 +2,7 @@
 import { Modal, Spin } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import UserMovieOptions from "./UserMovieOptions";
+import "./MovieModal.css";
 
 function MovieModal({ movieId, open, onClose, actorSearch, movieDataArray, userData, setUserData, onToggleViewing }) {
   const [movie, setMovie] = useState(null);
@@ -28,15 +29,14 @@ function MovieModal({ movieId, open, onClose, actorSearch, movieDataArray, userD
       {loading ? (
         <Spin />
       ) : movie ? (
-        <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-          <h1 style={{ textAlign: "center", fontSize: "32px", fontWeight: "bold", margin: "0 0 20px 0" }}>{movie.title}</h1>
-          <div className="movie-page-wrapper" style={{ width: "100%", maxWidth: "none", margin: "0" }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginRight: "20px", width: "200px" }}>
+        <div className="modal-content-outer">
+          <h1 className="modal-movie-title">{movie.title}</h1>
+          <div className="movie-page-wrapper modal-movie-wrapper">
+            <div className="modal-poster-column">
               <img
-                className="movie-page-poster"
+                className="movie-page-poster modal-poster"
                 alt={movie.title + " poster"}
                 src={MovieAPI.getMoviePoster(movie.id)}
-                style={{ width: "200px", height: "auto", marginTop: "0" }}
               />
             </div>
             <div className="movie-detail-container">
@@ -97,17 +97,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, movieDataArray, userD
                   {movie.tomatoRating} / 100
                 </a>
               </div>
-              <div
-                className="movie-detail2"
-                style={{
-                  marginTop: "4px",
-                  fontSize: "13px",
-                  backgroundColor: "white",
-                  color: "gray",
-                  marginBottom: "2px",
-                  textAlign: "right",
-                }}
-              >
+              <div className="movie-detail2 movie-id-label">
                 <span>id #{movie.id}</span>
               </div>
               <UserMovieOptions userData={userData} id={movie.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />

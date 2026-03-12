@@ -1,6 +1,6 @@
 import { Layout } from "antd";
 import { MovieAPI } from "./MovieAPI";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import NavBar from "./NavBar/NavBar";
 import Browse from "./Pages/Browse/Browse";
@@ -20,22 +20,11 @@ function buildMoviesUrl(filter) {
   return `/odata/Movies?$filter=${encodeURIComponent(filter)}&$orderby=simpleTitle asc`;
 }
 
-function useIsMobile(breakpoint = 768) {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= breakpoint);
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth <= breakpoint);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, [breakpoint]);
-  return isMobile;
-}
-
 function App() {
   const [userData, setUserData] = useState(null);
   const [search, setSearch] = useState({ url: RANDOM_MOVIES_URL });
   const hasCheckedFirstLoginRef = useRef(false);
   const [isAuthReady, setIsAuthReady] = useState(!storedUsername);
-  const isMobile = useIsMobile();
 
   const resetSearch = useCallback(() => {
     setSearch({ url: RANDOM_MOVIES_URL });
@@ -121,7 +110,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Layout style={{ height: isMobile ? "auto" : "100vh", overflow: isMobile ? "visible" : "hidden", minHeight: "100vh" }}>
+      <Layout className="app-layout">
         <NavBar
           search={search}
           resetSearch={resetSearch}
@@ -135,15 +124,7 @@ function App() {
           moviesSeenSearch={MoviesSeenSearch}
           moviesWantToWatchSearch={MoviesWantToWatchSearch}
         />
-        <Layout.Content
-          style={{
-            overflowY: isMobile ? "visible" : "auto",
-            height: isMobile ? "auto" : "100%",
-            paddingRight: isMobile ? 0 : "10px",
-            paddingTop: isMobile ? "48px" : 0,
-            WebkitOverflowScrolling: "touch",
-          }}
-        >
+        <Layout.Content className="app-content">
           <Switch>
             <Route path="/movie/:id" exact>
               <MoviePage />
