@@ -78,13 +78,8 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
       <span className="login-title">LOG IN</span>
       <br />
       <br />
-      <AutoComplete
-        options={filteredUserlist}
-        className="login-autocomplete"
-        onSelect={onSelect}
-        onSearch={handleSearch}
-      >
-        <div>
+      <AutoComplete options={filteredUserlist} className="login-autocomplete" onSelect={onSelect} onSearch={handleSearch}>
+        <div style={{ display: "flex", gap: "0", alignItems: "stretch" }}>
           <Input
             placeholder="Username"
             prefix={<UserOutlined className="site-form-item-icon" />}
@@ -97,11 +92,7 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
               </Tooltip>
             }
           />
-          <Button
-            type="primary"
-            className="login-button"
-            onClick={onUserClickedLoginButton}
-          >
+          <Button type="primary" className="login-button" onClick={onUserClickedLoginButton}>
             {">"}
           </Button>
         </div>
@@ -114,9 +105,7 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
     return (
       <div className="user-panel">
         <div className="user-panel-header">
-          <div className="user-avatar">
-            👤
-          </div>
+          <div className="user-avatar">👤</div>
           <span className="user-username">{userData.username}</span>
           <button className="settings-icon-btn" onClick={() => history.push("/settings")} title="User Settings">
             ⚙️

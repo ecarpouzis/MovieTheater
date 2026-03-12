@@ -16,17 +16,10 @@ function App() {
   const [userData, setUserData] = useState(null);
   const hasCheckedFirstLoginRef = useRef(false);
   const [isAuthReady, setIsAuthReady] = useState(!storedUsername);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const {
-    search,
-    resetSearch,
-    titleSearch,
-    actorSearch,
-    firstLetterSearch,
-    restoreMovieIdsSearch,
-    moviesSeenSearch,
-    moviesWantToWatchSearch,
-  } = useMovieSearch();
+  const { search, resetSearch, titleSearch, actorSearch, firstLetterSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch } =
+    useMovieSearch();
 
   function onUserLoggedIn(username) {
     MovieAPI.loginUser(username)
@@ -60,6 +53,8 @@ function App() {
           restoreMovieIdsSearch={restoreMovieIdsSearch}
           moviesSeenSearch={moviesSeenSearch}
           moviesWantToWatchSearch={moviesWantToWatchSearch}
+          collapsed={sidebarCollapsed}
+          onCollapse={setSidebarCollapsed}
         />
         <Layout.Content className="app-content">
           <Switch>
@@ -76,7 +71,7 @@ function App() {
               <UserSettingsPage userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/">
-              <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} />
+              <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} sidebarCollapsed={sidebarCollapsed} />
             </Route>
           </Switch>
         </Layout.Content>
@@ -86,4 +81,3 @@ function App() {
 }
 
 export default App;
-

@@ -35,6 +35,8 @@ function NavBar({
   restoreMovieIdsSearch,
   moviesSeenSearch,
   moviesWantToWatchSearch,
+  collapsed,
+  onCollapse,
 }) {
   // Router objects — think of these as injected services provided by the router.
   // history is used to programmatically navigate; location is the current URL.
@@ -112,11 +114,11 @@ function NavBar({
     // Dispatch table — equivalent to a switch statement or Dictionary<string, Action<string>>.
     // Keyed on the URL "mode" param; each entry is a lambda that runs the appropriate search.
     const modeHandlers = {
-      title:  (v) => v.trim() ? titleSearch(v)              : resetSearch(),
-      actor:  (v) => v.trim() ? actorSearch(v)              : resetSearch(),
-      letter: (v) => v.trim() ? firstLetterSearch(v)        : resetSearch(),
-      seen:   ()  => userData  ? moviesSeenSearch(userData)  : resetSearch(),
-      want:   ()  => userData  ? moviesWantToWatchSearch(userData) : resetSearch(),
+      title: (v) => (v.trim() ? titleSearch(v) : resetSearch()),
+      actor: (v) => (v.trim() ? actorSearch(v) : resetSearch()),
+      letter: (v) => (v.trim() ? firstLetterSearch(v) : resetSearch()),
+      seen: () => (userData ? moviesSeenSearch(userData) : resetSearch()),
+      want: () => (userData ? moviesWantToWatchSearch(userData) : resetSearch()),
     };
 
     const handler = modeHandlers[mode];
@@ -125,12 +127,25 @@ function NavBar({
     } else {
       resetSearch();
     }
-  // These callbacks are all stable (useCallback in App.js), and history is a stable
-  // reference from useHistory(). userData?.username is used intentionally instead of
-  // userData to avoid re-running when moviesSeen/moviesToWatch mutate — only a user
-  // identity change should re-trigger mode dispatch.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search, location.pathname, location.state, userData?.username, history, resetSearch, titleSearch, actorSearch, firstLetterSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch]);
+    // These callbacks are all stable (useCallback in App.js), and history is a stable
+    // reference from useHistory(). userData?.username is used intentionally instead of
+    // userData to avoid re-running when moviesSeen/moviesToWatch mutate — only a user
+    // identity change should re-trigger mode dispatch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    location.search,
+    location.pathname,
+    location.state,
+    userData?.username,
+    history,
+    resetSearch,
+    titleSearch,
+    actorSearch,
+    firstLetterSearch,
+    restoreMovieIdsSearch,
+    moviesSeenSearch,
+    moviesWantToWatchSearch,
+  ]);
 
   // JSX can be stored in a variable just like any other value and rendered later.
   // The empty tags <> </> are a fragment — a grouping wrapper that emits no DOM element.
@@ -159,15 +174,13 @@ function NavBar({
 
         {drawerOpen && <div className="navbar-overlay" onClick={() => setDrawerOpen(false)} />}
 
-        <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}`}>
-          {navContent}
-        </div>
+        <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}`}>{navContent}</div>
       </>
     );
   }
 
   return (
-    <Layout.Sider className="navbar-sider" trigger={null}>
+    <Layout.Sider className="navbar-sider" trigger={null} collapsible collapsed={collapsed} onCollapse={onCollapse}>
       <div className="navbar-sider-header">
         <button className="navbar-home-btn" onClick={() => history.push("/")}>
           <span className="navbar-home-emoji">🎬</span>

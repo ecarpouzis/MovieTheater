@@ -67,7 +67,9 @@ const searchLetters = [
   "Z",
 ];
 
-const listStyle = {};
+const listStyle = {
+  paddingBottom: "20px",
+};
 
 function SearchTools({ search }) {
   const history = useHistory();
@@ -142,7 +144,7 @@ function SearchTools({ search }) {
           xxl: 4,
         }}
         dataSource={searchLetters}
-        renderItem={(item, i) => {
+        renderItem={(item) => {
           return (
             <List.Item style={{ display: "flex", justifyContent: "center", marginBottom: 0 }}>
               <Button

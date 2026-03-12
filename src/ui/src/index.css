@@ -191,3 +191,298 @@ img {
     min-width: 80px;
   }
 }
+
+/* Search button consistency */
+#SearchToolContainer .ant-input-search-button {
+  height: 100% !important;
+  min-height: 32px !important;
+  padding: 4px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#SearchToolContainer .ant-input-search .ant-btn {
+  height: 100% !important;
+  min-height: 32px !important;
+}
+
+#SearchToolContainer .ant-input-search {
+  display: flex !important;
+}
+
+/* Alphabet list scrollable space */
+#SearchToolContainer .ant-list {
+  padding-bottom: 30px !important;
+}
+
+/* Card title overflow handling for desktop and mobile */
+.movieTitle {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  line-height: 1.3 !important;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  body {
+    padding: 0;
+    margin: 0;
+  }
+
+  .ant-list {
+    padding: 5px !important;
+  }
+
+  .ant-card {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .actor-box-clickable {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Improve button touch targets */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Mobile sidebar - reduce collapsed width */
+  .ant-layout-sider-collapsed.app-sider {
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+  }
+
+  /* Mobile sidebar trigger button sizing */
+  .ant-layout-sider-collapsed.app-sider .ant-layout-sider-trigger {
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 14px !important;
+  }
+
+  /* Mobile movie cards - remove bottom space when buttons not present */
+  .mobile-movie-card {
+    height: auto !important;
+    min-height: 250px !important;
+  }
+
+  /* Login input and arrow button height sync */
+  #LoginContainer .ant-input {
+    height: 36px !important;
+    flex: 1;
+  }
+
+  #LoginContainer .ant-btn-primary {
+    padding: 0 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 16px !important;
+  }
+
+  /* Mobile alphabet button styling */
+  #SearchToolContainer .ant-list-item {
+    margin-bottom: 8px !important;
+  }
+
+  #SearchToolContainer .ant-btn {
+    width: 32px !important;
+    height: 32px !important;
+    position: relative !important;
+  }
+
+  #SearchToolContainer .ant-btn span {
+    font-size: 15px !important;
+    font-weight: 800 !important;
+  }
+
+  /* Mobile search button consistency */
+  #SearchToolContainer .ant-input-search-button {
+    height: 32px !important;
+    min-height: 32px !important;
+  }
+
+  #SearchToolContainer .ant-input-search .ant-btn {
+    height: 32px !important;
+    min-height: 32px !important;
+  }
+}
+
+/* Desktop alphabet button styling (original) */
+@media (min-width: 769px) {
+  #SearchToolContainer .ant-list-item {
+    margin-bottom: 10px;
+  }
+
+  #SearchToolContainer .ant-btn {
+    width: 36px !important;
+    height: 36px !important;
+    position: relative !important;
+  }
+
+  #SearchToolContainer .ant-btn span {
+    font-size: 11px !important;
+    font-weight: bold !important;
+    position: absolute;
+    width: 100%;
+    height: 1em;
+    line-height: 1em;
+    top: 50%;
+    left: 0px;
+    margin-top: -0.5em;
+  }
+
+  #SearchToolContainer .ant-list {
+    padding-right: 0 !important;
+  }
+
+  /* Desktop search button consistency */
+  #SearchToolContainer .ant-input-search-button {
+    height: 32px !important;
+    min-height: 32px !important;
+  }
+
+  #SearchToolContainer .ant-input-search .ant-btn {
+    height: 32px !important;
+    min-height: 32px !important;
+  }
+}
+
+/* Smooth transitions for mobile interactions */
+.actor-box-clickable:active {
+  transform: scale(0.95);
+  transition: transform 0.1s ease;
+}
+
+/* Responsive mobile button sizing */
+@media (max-width: 500px) {
+  /* Shrink button text and icons on very small screens */
+  .mobile-button-container button {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+  
+  .mobile-button-container button span:first-child {
+    font-size: 14px !important;
+    margin-right: 4px !important;
+  }
+
+  /* Responsive login input and button on very small screens */
+  #LoginContainer .ant-input {
+    height: 32px !important;
+    flex: 1;
+  }
+
+  #LoginContainer .ant-btn-primary {
+    padding: 0 10px !important;
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  /* Further shrink on extra small screens */
+  .mobile-button-container button {
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+  }
+  
+  .mobile-button-container button span:first-child {
+    font-size: 12px !important;
+    margin-right: 3px !important;
+  }
+
+  /* Extra small screen login button sizing */
+  #LoginContainer .ant-input {
+    height: 28px !important;
+    flex: 1;
+  }
+
+  #LoginContainer .ant-btn-primary {
+    padding: 0 8px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* Logout link styling */
+.logout-link {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #dc143c;
+}
+
+.logout-link:hover {
+  background-color: #dc143c;
+  color: white;
+  padding: 2px 6px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #999;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Sidebar scrollbar styling */
+.ant-layout-sider {
+  scrollbar-width: auto;
+}
+
+.ant-layout-sider::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ant-layout-sider::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ant-layout-sider::-webkit-scrollbar-thumb {
+  background: #999;
+  border-radius: 4px;
+}
+
+.ant-layout-sider::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Card content scrollbar styling */
+.RightCol {
+  scrollbar-width: auto;
+}
+
+.RightCol::-webkit-scrollbar {
+  width: 6px;
+}
+
+.RightCol::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.RightCol::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.RightCol::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
