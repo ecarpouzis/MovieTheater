@@ -4,6 +4,17 @@
   padding: 10px 10px 2px;
 }
 
+/* Replace the antd border with a box-shadow ring so there's no border to frame the flush poster */
+.movie-card.ant-card {
+  border: none;
+  box-shadow: 0 0 0 1px #f0f0f0;
+  overflow: hidden;
+}
+
+.movie-card.ant-card-hoverable:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
 /* Desktop card body (via antd) */
 .movie-card .ant-card-body {
   padding: 0;
@@ -108,6 +119,17 @@
 .movie-card .viewing-options {
   padding: 6px 12px 8px;
   border-top: 1px solid #f0f0f0;
+}
+
+/* Replace the antd border with a box-shadow ring on mobile card too */
+.mobile-movie-card.ant-card {
+  border: none;
+  box-shadow: 0 0 0 1px #f0f0f0;
+  overflow: hidden;
+}
+
+.mobile-movie-card.ant-card-hoverable:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 /* Mobile card body (via antd) */
