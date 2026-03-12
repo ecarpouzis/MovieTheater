@@ -4,7 +4,7 @@ import { MovieAPI } from "../../MovieAPI";
 import UserMovieOptions from "./UserMovieOptions";
 import "./MovieModal.css";
 
-function MovieModal({ movieId, open, onClose, actorSearch, movieDataArray, userData, setUserData, onToggleViewing }) {
+function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData, onToggleViewing }) {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
 

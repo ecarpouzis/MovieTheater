@@ -1,5 +1,4 @@
 import { MovieAPI } from "../../MovieAPI";
-import { useState } from "react";
 import "./UserMovieOptions.css";
 
 function UserMovieOptions({ userData, id, setUserData, inline = false, onToggleViewing }) {
