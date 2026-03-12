@@ -36,39 +36,24 @@ const columns = getColumnCount();
           renderItem={(item, i) => {
             const thumbUrl = MovieAPI.getPosterThumbnail(item.id);
 
-            const actorList = item.actors.split(",").map((actor, i) => (
-              <div key={i}>
-                <button
-                  type="button"
-                  className="actor-link"
-                  onClick={() => actorSearch(actor)}
-                >
-                  {actor}
-                </button>
-                <br />
-              </div>
-            ));
-
             const rightColContent = (
-              <div className="RightCol card-right-col">
-                <div
-                  onClick={() => onMovieClick(item.id)}
-                  className="card-title movieTitle"
-                >
-                  {item.title + " (" + new Date(item.releaseDate).getFullYear() + ")"}
+              <div className="card-right-col">
+                <div onClick={() => onMovieClick(item.id)} className="card-title">
+                  {item.title} ({new Date(item.releaseDate).getFullYear()})
                 </div>
-                <br />
-                <span className="movieTime card-time">
-                  {item.runtime}
-                </span>
-                <span className="movieRating card-rating">
-                  {item.rating}
-                </span>
-                <br />
-                <div className="card-actor-spacer">{actorList}</div>
-                <span className="moviePlot card-plot">
-                  {item.plot}
-                </span>
+                <div className="card-meta-row">
+                  {item.rating && <span className="badge-rating">{item.rating}</span>}
+                  {item.runtime && <span className="badge-runtime">{item.runtime}</span>}
+                  {item.imdbRating && <span className="badge-imdb">★ {item.imdbRating}</span>}
+                </div>
+                <div className="card-actor-row">
+                  {item.actors.split(",").map((actor, i) => (
+                    <button key={i} type="button" className="mobile-actor-chip" onClick={() => actorSearch(actor.trim())}>
+                      {actor.trim()}
+                    </button>
+                  ))}
+                </div>
+                <p className="card-plot">{item.plot}</p>
               </div>
             );
 
@@ -118,14 +103,13 @@ const columns = getColumnCount();
                   <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
                 </Card>
               ) : (
-                <Card hoverable className={`movie-card${userData ? " movie-card--with-user" : ""}`}>
-                  <div className={`card-content-wrapper${userData ? " card-content-wrapper--with-user" : ""}`}>
+                <Card hoverable className="movie-card">
+                  <div className="card-content-wrapper">
                     <div className="card-poster-container">
                       <img className="card-poster-image" alt="" src={thumbUrl} loading="lazy" />
                     </div>
                     {rightColContent}
                   </div>
-                  <br style={{ clear: "both" }} />
                   <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
                 </Card>
                 )}
