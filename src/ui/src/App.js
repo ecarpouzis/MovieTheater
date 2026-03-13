@@ -59,6 +59,7 @@ function App() {
           moviesWantToWatchSearch={moviesWantToWatchSearch}
           collapsed={sidebarCollapsed}
           onCollapse={setSidebarCollapsed}
+          isAuthReady={isAuthReady}
         />
         <Layout.Content className="app-content">
           <Switch>
@@ -75,7 +76,7 @@ function App() {
               <UserSettingsPage userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/">
-              <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} simpleStyle={simpleStyle} sidebarCollapsed={sidebarCollapsed} />
+              <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} simpleStyle={simpleStyle} />
             </Route>
           </Switch>
         </Layout.Content>

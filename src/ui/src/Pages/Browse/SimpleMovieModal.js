@@ -1,4 +1,4 @@
-import { MovieAPI } from "../../MovieAPI";
+﻿import { MovieAPI } from "../../MovieAPI";
 import { useState, useEffect } from "react";
 import { Spin } from "antd";
 
@@ -226,7 +226,7 @@ function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
         }}
         style={buttonStyle(isWatched, hoveredSeenButton, "seen")}
       >
-        <span style={filmIcon}>?</span>
+              <span style={filmIcon}>✓</span>
         <span>SEEN</span>
       </button>
       <button
@@ -318,7 +318,7 @@ function SimpleMovieModal({ movieId, open, onClose, actorSearch, userData, setUs
           onMouseEnter={(e) => { e.target.style.color = "#dc3545"; e.target.style.borderColor = "#dc3545"; }}
           onMouseLeave={(e) => { e.target.style.color = "#666"; e.target.style.borderColor = "#ddd"; }}
         >
-          �
+          ×
         </button>
         {loading ? (
           <div style={{ display: "flex", justifyContent: "center", padding: "50px" }}>

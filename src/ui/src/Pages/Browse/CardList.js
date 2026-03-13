@@ -2,8 +2,24 @@ import { MovieAPI } from "../../MovieAPI";
 import { Card, List } from "antd";
 import UserMovieOptions from "./UserMovieOptions";
 import "./CardList.css";
+import { useRef, useEffect, useState } from "react";
 
-function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieClick, onToggleViewing }) {
+function PlotText({ text, className, hiddenClass }) {
+  const ref = useRef(null);
+  const [overflows, setOverflows] = useState(false);
+
+  useEffect(() => {
+    if (ref.current) {
+      setOverflows(ref.current.scrollHeight > ref.current.clientHeight);
+    }
+  }, [text]);
+
+  const classes = [className, hiddenClass, overflows ? "card-plot--faded" : ""].filter(Boolean).join(" ");
+
+  return <p ref={ref} className={classes}>{text}</p>;
+}
+
+function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieClick, onToggleViewing, isMobile }) {
   return (
     <List
       className="card-list"
@@ -15,11 +31,11 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieC
         return (
           <List.Item>
             <Card hoverable className="movie-card">
-              <div className="card-content-wrapper">
+              <div className={`card-content-wrapper${isMobile ? " card-content-wrapper--mobile" : ""}`}>
                 <div className="card-poster-container">
-                  <img className="card-poster-image" alt="" src={thumbUrl} loading="lazy" />
+                  <img className={`card-poster-image${isMobile ? " card-poster-image--mobile" : ""}`} alt="" src={thumbUrl} loading="lazy" />
                 </div>
-                <div className="card-right-col">
+                <div className={`card-right-col${isMobile ? " card-right-col--mobile" : ""}`}>
                   <div onClick={() => onMovieClick(item.id)} className="card-title">
                     {item.title} ({new Date(item.releaseDate).getFullYear()})
                   </div>
@@ -35,9 +51,10 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieC
                       </button>
                     ))}
                   </div>
-                  <p className="card-plot">{item.plot}</p>
+                  <PlotText text={item.plot} className="card-plot" hiddenClass={isMobile ? "card-plot--hidden" : ""} />
                 </div>
               </div>
+              <PlotText text={item.plot} className="card-plot-below" hiddenClass={isMobile ? "card-plot-below--visible" : ""} />
               <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
             </Card>
           </List.Item>

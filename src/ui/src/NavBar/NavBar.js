@@ -1,27 +1,12 @@
-import { Layout } from "antd";
 import { MenuOutlined } from "@ant-design/icons";
+import { Layout } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import "./NavBar.css";
 
 import SearchTools from "./SearchTools";
 import Login from "./Login";
-
-// Custom hook — reusable stateful logic extracted into a standalone function.
-// Hooks are the JS equivalent of a small utility class: they hold state and
-// side effects, and return values the caller can use.
-function useIsMobile(breakpoint = 768) {
-  // useState is like a property backed by a private field; setting it schedules a re-render.
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= breakpoint);
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth <= breakpoint);
-    window.addEventListener("resize", handler);
-    // Returning a function from useEffect registers it as a cleanup callback,
-    // called when the component unmounts — equivalent to IDisposable.Dispose().
-    return () => window.removeEventListener("resize", handler);
-  }, [breakpoint]);
-  return isMobile;
-}
+import useIsMobile from "../hooks/useIsMobile";
 
 function NavBar({
   search,
@@ -37,6 +22,7 @@ function NavBar({
   moviesWantToWatchSearch,
   collapsed,
   onCollapse,
+  isAuthReady,
 }) {
   // Router objects — think of these as injected services provided by the router.
   // history is used to programmatically navigate; location is the current URL.
@@ -117,8 +103,14 @@ function NavBar({
       title: (v) => (v.trim() ? titleSearch(v) : resetSearch()),
       actor: (v) => (v.trim() ? actorSearch(v) : resetSearch()),
       letter: (v) => (v.trim() ? firstLetterSearch(v) : resetSearch()),
-      seen: () => (userData ? moviesSeenSearch(userData) : resetSearch()),
-      want: () => (userData ? moviesWantToWatchSearch(userData) : resetSearch()),
+      seen: () => {
+        if (!isAuthReady) return;
+        userData ? moviesSeenSearch(userData) : resetSearch();
+      },
+      want: () => {
+        if (!isAuthReady) return;
+        userData ? moviesWantToWatchSearch(userData) : resetSearch();
+      },
     };
 
     const handler = modeHandlers[mode];
@@ -137,6 +129,7 @@ function NavBar({
     location.pathname,
     location.state,
     userData?.username,
+    isAuthReady,
     history,
     resetSearch,
     titleSearch,

@@ -4,10 +4,13 @@ import CardList from "./CardList";
 import MovieModal from "./MovieModal";
 import SimpleCardList from "./SimpleCardList";
 import SimpleMovieModal from "./SimpleMovieModal";
+import useIsMobile from "../../hooks/useIsMobile";
 
-function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, sidebarCollapsed }) {
+function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   const [movieDataArray, setMovieDataArray] = useState([]);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
+  const useSimpleStyle = simpleStyle && isMobile;
 
   useEffect(() => {
     if (!isAuthReady) return;
@@ -30,7 +33,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, sideb
         setMovieDataArray(Array.isArray(data) ? data : (data?.value ?? []));
         setLoading(false);
       });
-  }, [search.url, search.movieIds, userData?.username, isAuthReady]);
+  }, [search.url, search.movieIds, isAuthReady]);
 
   const history = useHistory();
   const location = useLocation();
@@ -120,14 +123,13 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, sideb
 
   return (
     <>
-      {simpleStyle ? (
+      {useSimpleStyle ? (
         <SimpleCardList
           movieDataArray={displayMovies}
           userData={userData}
           setUserData={setUserData}
           onMovieClick={handleOpenMovie}
           onToggleViewing={handleToggleViewing}
-          sidebarCollapsed={sidebarCollapsed}
         />
       ) : (
         <CardList
@@ -137,10 +139,10 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, sideb
           actorSearch={handleActorSearch}
           onMovieClick={handleOpenMovie}
           onToggleViewing={handleToggleViewing}
-          simpleStyle={false}
+          isMobile={isMobile}
         />
       )}
-      {simpleStyle ? (
+      {useSimpleStyle ? (
         <SimpleMovieModal
           movieId={selectedMovieId}
           open={isModalVisible}

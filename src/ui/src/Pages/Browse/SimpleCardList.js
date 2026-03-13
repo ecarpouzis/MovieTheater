@@ -1,16 +1,7 @@
-import { MovieAPI } from "../../MovieAPI";
+﻿import { MovieAPI } from "../../MovieAPI";
 import { Card, List } from "antd";
-import { useState, useEffect } from "react";
-
-function getColumnCount(sidebarCollapsed = false) {
-  const w = window.innerWidth;
-  if (sidebarCollapsed) {
-    if (w >= 600) return 3;
-    return 2;
-  }
-  if (w >= 600) return 2;
-  return 1;
-}
+import { useState } from "react";
+import useIsMobile from "../../hooks/useIsMobile";
 
 const listStyle = {
   width: "100%",
@@ -123,9 +114,7 @@ function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
   const [hoveredSeenButton, setHoveredSeenButton] = useState(false);
   const [hoveredWantButton, setHoveredWantButton] = useState(false);
 
-  if (!userData) {
-    return null;
-  }
+  if (!userData) return null;
 
   const isWatched = userData.moviesSeen.includes(id);
   const isWanted = userData.moviesToWatch.includes(id);
@@ -140,18 +129,10 @@ function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
         : userData.moviesSeen.filter((x) => x !== id),
     };
     setUserData(newUserData);
-
-    if (typeof onToggleViewing === "function") {
-      onToggleViewing(id, "SetWatched", newIsWatched);
-    }
-
+    if (typeof onToggleViewing === "function") onToggleViewing(id, "SetWatched", newIsWatched);
     MovieAPI.setWatchedState(userData.username, id, newIsWatched)
-      .then((response) => response.json())
-      .then((response) => {
-        if (!response.success) {
-          alert(response.message);
-        }
-      });
+      .then((r) => r.json())
+      .then((r) => { if (!r.success) alert(r.message); });
   };
 
   const handleWantClick = (e) => {
@@ -164,18 +145,10 @@ function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
         : userData.moviesToWatch.filter((x) => x !== id),
     };
     setUserData(newUserData);
-
-    if (typeof onToggleViewing === "function") {
-      onToggleViewing(id, "SetWantToWatch", newIsWanted);
-    }
-
+    if (typeof onToggleViewing === "function") onToggleViewing(id, "SetWantToWatch", newIsWanted);
     MovieAPI.setWantToWatchState(userData.username, id, newIsWanted)
-      .then((response) => response.json())
-      .then((response) => {
-        if (!response.success) {
-          alert(response.message);
-        }
-      });
+      .then((r) => r.json())
+      .then((r) => { if (!r.success) alert(r.message); });
   };
 
   return (
@@ -188,7 +161,7 @@ function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
         onTouchEnd={() => setHoveredSeenButton(false)}
         style={buttonStyle(isWatched ? "seen" : null, hoveredSeenButton)}
       >
-        <span style={filmIcon}>?</span>
+              <span style={filmIcon}>✓</span>
         <span>SEEN</span>
       </button>
       <button
@@ -206,21 +179,10 @@ function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
   );
 }
 
-function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, onToggleViewing, sidebarCollapsed }) {
-  const [columns, setColumns] = useState(() => getColumnCount(sidebarCollapsed));
+function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, onToggleViewing }) {
+  const isNarrow = useIsMobile(600);
+  const columns = isNarrow ? 1 : 2;
   const [hoveredMovieId, setHoveredMovieId] = useState(null);
-
-  useEffect(() => {
-    function handleResize() {
-      setColumns(getColumnCount(sidebarCollapsed));
-    }
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [sidebarCollapsed]);
-
-  useEffect(() => {
-    setColumns(getColumnCount(sidebarCollapsed));
-  }, [sidebarCollapsed]);
 
   return (
     <List
@@ -229,7 +191,6 @@ function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, o
       dataSource={movieDataArray}
       renderItem={(item) => {
         const thumbUrl = MovieAPI.getPosterThumbnail(item.id);
-
         return (
           <List.Item>
             <Card
@@ -245,34 +206,19 @@ function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, o
               }}
             >
               <div style={posterContainer}>
-                <img
-                  style={cardPosterStyle}
-                  alt={item.title}
-                  src={thumbUrl}
-                  loading="lazy"
-                />
+                <img style={cardPosterStyle} alt={item.title} src={thumbUrl} loading="lazy" />
               </div>
               <div
                 onClick={() => onMovieClick(item.id)}
                 onMouseEnter={() => setHoveredMovieId(item.id)}
                 onMouseLeave={() => setHoveredMovieId(null)}
-                style={{
-                  cursor: "pointer",
-                  display: "flex",
-                  flexDirection: "column",
-                  flex: "0 0 auto",
-                }}
+                style={{ cursor: "pointer", display: "flex", flexDirection: "column", flex: "0 0 auto" }}
               >
-                <div
-                  style={{
-                    ...cardTitleStyle,
-                    color: hoveredMovieId === item.id ? "#1890ff" : "#5E5E5E",
-                  }}
-                >
+                <div style={{ ...cardTitleStyle, color: hoveredMovieId === item.id ? "#1890ff" : "#5E5E5E" }}>
                   {item.title}
                 </div>
                 <div style={cardMetaStyle}>
-                  {new Date(item.releaseDate).getFullYear()} � {item.rating} � {item.runtime}
+                  {new Date(item.releaseDate).getFullYear()} • {item.rating} • {item.runtime}
                 </div>
               </div>
               <UserMovieOptions
