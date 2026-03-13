@@ -1,7 +1,21 @@
-/* List wrapper */
+/* Card grid */
 .card-list {
-  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
   padding: 10px 10px 2px;
+}
+
+@media (min-width: 768px) {
+  .card-list { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1200px) {
+  .card-list { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 1600px) {
+  .card-list { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* Replace the antd border with a box-shadow ring so there's no border to frame the flush poster */
@@ -122,7 +136,8 @@
   color: #666;
   line-height: 1.4;
   margin: 0;
-  max-height: 200px;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   position: relative;
 }

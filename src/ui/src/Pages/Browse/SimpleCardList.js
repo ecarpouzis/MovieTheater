@@ -1,7 +1,6 @@
 ﻿import { MovieAPI } from "../../MovieAPI";
 import { Card, List } from "antd";
 import { useState } from "react";
-import useIsMobile from "../../hooks/useIsMobile";
 
 const listStyle = {
   width: "100%",
@@ -72,34 +71,34 @@ const posterContainer = {
 const buttonContainerStyle = {
   display: "flex",
   justifyContent: "center",
-  gap: "12px",
+  gap: "6px",
   marginTop: "auto",
-  padding: "6px",
+  padding: "4px",
   backgroundColor: "#f5f5f5",
   borderRadius: "6px",
   flex: "0 0 auto",
 };
 
 const filmIcon = {
-  fontSize: "16px",
-  width: "18px",
+  fontSize: "12px",
+  width: "14px",
   verticalAlign: "middle",
-  marginRight: "6px",
+  marginRight: "4px",
 };
 
 const heartIcon = {
-  fontSize: "16px",
-  width: "18px",
+  fontSize: "12px",
+  width: "14px",
   verticalAlign: "middle",
-  marginRight: "6px",
+  marginRight: "4px",
 };
 
 const buttonStyle = (isActive, isHovered) => ({
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: "8px 16px",
-  fontSize: "14px",
+  padding: "5px 8px",
+  fontSize: "12px",
   fontWeight: "bold",
   cursor: "pointer",
   borderRadius: "4px",
@@ -180,14 +179,12 @@ function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
 }
 
 function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, onToggleViewing }) {
-  const isNarrow = useIsMobile(600);
-  const columns = isNarrow ? 1 : 2;
   const [hoveredMovieId, setHoveredMovieId] = useState(null);
 
   return (
     <List
       style={listStyle}
-      grid={{ gutter: 4, column: columns }}
+      grid={{ gutter: 4, column: 2 }}
       dataSource={movieDataArray}
       renderItem={(item) => {
         const thumbUrl = MovieAPI.getPosterThumbnail(item.id);
