@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
@@ -645,6 +648,109 @@ namespace MovieTheater.Controllers
             }
 
             return Ok(new { Success = true });
+        }
+
+        // GET /PosterCollage
+        // Optional query params:
+        //   postersWide    – number of poster columns (default: 25)
+        //   postersHigh    – target row count; all matching posters are shown, distributed evenly
+        //                    across this many rows (last row may be shorter). Makes the image
+        //                    as wide as needed rather than capping the poster count.
+        //   maxPixelsWide  – derive column count from max image width instead of postersWide
+        //   actor          – only include movies whose Actors field contains this value
+        //   text           – only include movies whose SimpleTitle or Title contains this value
+        //   startsWith     – only include movies whose SimpleTitle starts with this letter ('#' for digits)
+        //   posterWidth    – width of each poster tile in pixels (default: 75)
+        //   posterHeight   – height of each poster tile in pixels (default: 100)
+        [HttpGet("/PosterCollage")]
+        public async Task<IActionResult> PosterCollage(
+            int? postersWide = null, int? postersHigh = null, int? maxPixelsWide = null,
+            string actor = null, string text = null, string startsWith = null,
+            int posterWidth = 75, int posterHeight = 100)
+        {
+            IQueryable<Movie> moviesQuery = movieDb.Movies.OrderBy(m => m.SimpleTitle);
+
+            if (!string.IsNullOrEmpty(actor))
+                moviesQuery = moviesQuery.Where(m => m.Actors.Contains(actor));
+
+            if (!string.IsNullOrEmpty(text))
+                moviesQuery = moviesQuery.Where(m => m.SimpleTitle.Contains(text) || m.Title.Contains(text));
+
+            if (!string.IsNullOrEmpty(startsWith))
+            {
+                if (startsWith == "#")
+                {
+                    var digits = new List<char> { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+                    moviesQuery = moviesQuery.Where(m => digits.Contains(m.SimpleTitle[0]));
+                }
+                else
+                {
+                    moviesQuery = moviesQuery.Where(m => m.SimpleTitle.StartsWith(startsWith));
+                }
+            }
+
+            var allMovies = await moviesQuery.ToListAsync();
+
+            // Fire all image loads in parallel. Task.WhenAll preserves result order
+            // regardless of which file finishes first, so draw order is guaranteed.
+            var imageTasks = allMovies.Select(m => imageRepo.GetImage(m.id, PosterImageVariant.Thumbnail));
+            var allImageResults = await Task.WhenAll(imageTasks);
+
+            var posterImages = allImageResults.Where(b => b != null).ToList();
+
+            int totalPosters = posterImages.Count;
+
+            // postersHigh: distribute all posters into this many rows, making the image as wide as needed.
+            // maxPixelsWide / postersWide: directly set column count regardless of poster count.
+            int rowLength;
+            if (postersHigh.HasValue)
+                rowLength = Math.Max(1, (int)Math.Ceiling((double)totalPosters / postersHigh.Value));
+            else if (maxPixelsWide.HasValue)
+                rowLength = Math.Max(1, maxPixelsWide.Value / posterWidth);
+            else
+                rowLength = postersWide ?? 25;
+
+            int rowCount = (int)Math.Ceiling((double)totalPosters / rowLength);
+            int totalWidth = Math.Min(totalPosters, rowLength) * posterWidth;
+            int totalHeight = rowCount * posterHeight;
+
+            using var combinedBitmap = new Bitmap(totalWidth, totalHeight);
+            using var combinedGraphics = Graphics.FromImage(combinedBitmap);
+
+            int drawingX = 0;
+            int drawingY = 0;
+            int rowCounter = 0;
+
+            foreach (var bytes in posterImages)
+            {
+                if (rowCounter == rowLength)
+                {
+                    rowCounter = 0;
+                    drawingX = 0;
+                    drawingY += posterHeight;
+                }
+
+                using var ms = new MemoryStream(bytes);
+                using var originalImage = Image.FromStream(ms);
+                using var resizeBitmap = new Bitmap(posterWidth, posterHeight);
+                using var resizeGraphics = Graphics.FromImage(resizeBitmap);
+
+                resizeGraphics.InterpolationMode = InterpolationMode.High;
+                resizeGraphics.CompositingQuality = CompositingQuality.HighQuality;
+                resizeGraphics.SmoothingMode = SmoothingMode.AntiAlias;
+                resizeGraphics.DrawImage(originalImage, new Rectangle(0, 0, posterWidth, posterHeight));
+
+                combinedGraphics.DrawImage(resizeBitmap, new Point(drawingX, drawingY));
+                drawingX += posterWidth;
+                rowCounter++;
+            }
+
+            using var outputMs = new MemoryStream();
+            combinedBitmap.Save(outputMs, System.Drawing.Imaging.ImageFormat.Png);
+            outputMs.Position = 0;
+            HttpContext.Response.ContentType = "image/png";
+            await outputMs.CopyToAsync(HttpContext.Response.Body);
+            return Ok();
         }
     }
 }
