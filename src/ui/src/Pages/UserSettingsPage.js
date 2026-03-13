@@ -4,10 +4,16 @@ import { useHistory } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
 import "./UserSettingsPage.css";
 
+const cardStyleOptions = [
+  { value: "standard", label: "Standard" },
+  { value: "simple", label: "Simple" },
+];
+
 function UserSettingsPage({ userData, setUserData }) {
   const history = useHistory();
   const [mpaRatings, setMpaRatings] = useState([]);
   const [ageRestriction, setAgeRestriction] = useState(undefined);
+  const [cardStyle, setCardStyle] = useState("standard");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -24,23 +30,27 @@ function UserSettingsPage({ userData, setUserData }) {
       .then((data) => {
         setMpaRatings(Array.isArray(data) ? data : []);
         setAgeRestriction(userData.ageRestriction ?? undefined);
+        setCardStyle(userData.cardStyle ?? "standard");
       });
   }, [userData, history]);
 
   const handleSave = () => {
     setSaving(true);
     setSaved(false);
-    const value = ageRestriction != null ? String(ageRestriction) : null;
-    MovieAPI.setUserSetting("AgeRestriction", value)
-      .then((r) => r.json())
+    const ageValue = ageRestriction != null ? String(ageRestriction) : null;
+    Promise.all([
+      MovieAPI.setUserSetting("AgeRestriction", ageValue).then((r) => r.json()),
+      MovieAPI.setUserSetting("CardStyle", cardStyle).then((r) => r.json()),
+    ])
       .then(() => {
-        setUserData((prev) => ({ ...prev, ageRestriction }));
+        setUserData((prev) => ({ ...prev, ageRestriction, cardStyle }));
+        window.localStorage.setItem("CardStyle", cardStyle ?? "standard");
         setSaved(true);
       })
       .finally(() => setSaving(false));
   };
 
-  const options = mpaRatings.map((r) => ({ value: r.id, label: r.name }));
+  const mpaOptions = mpaRatings.map((r) => ({ value: r.id, label: r.name }));
 
   return (
     <div className="settings-page">
@@ -57,11 +67,27 @@ function UserSettingsPage({ userData, setUserData }) {
               setAgeRestriction(v);
               setSaved(false);
             }}
-            options={options}
+            options={mpaOptions}
             placeholder="No Restriction"
           />
         </div>
         <p className="settings-hint">Movies above this MPA rating will be hidden from all views.</p>
+      </div>
+      <div className="settings-section">
+        <h3 className="settings-section-title">Display</h3>
+        <div className="settings-row">
+          <span className="settings-label">Card Style</span>
+          <Select
+            className="settings-select"
+            value={cardStyle}
+            onChange={(v) => {
+              setCardStyle(v);
+              setSaved(false);
+            }}
+            options={cardStyleOptions}
+          />
+        </div>
+        <p className="settings-hint">Simple shows a compact two-column layout. Standard shows a full row with plot and actors.</p>
       </div>
       <button className="settings-save-btn" onClick={handleSave} disabled={saving}>
         {saving ? "Saving…" : "Save Settings"}

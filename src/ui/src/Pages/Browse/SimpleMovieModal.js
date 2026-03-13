@@ -226,7 +226,7 @@ function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
         }}
         style={buttonStyle(isWatched, hoveredSeenButton, "seen")}
       >
-        <span style={filmIcon}>✓</span>
+        <span style={filmIcon}>?</span>
         <span>SEEN</span>
       </button>
       <button
@@ -250,15 +250,7 @@ function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
   );
 }
 
-function MobileMovieModal({
-  movieId,
-  open,
-  onClose,
-  actorSearch,
-  userData,
-  setUserData,
-  onToggleViewing,
-}) {
+function SimpleMovieModal({ movieId, open, onClose, actorSearch, userData, setUserData, onToggleViewing }) {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [touchStartX, setTouchStartX] = useState(0);
@@ -300,32 +292,18 @@ function MobileMovieModal({
   };
 
   const handleTouchEnd = () => {
-    if (touchStartX - touchEndX > 100) {
-      onClose();
-    }
-    if (touchEndX - touchStartX > 100) {
-      onClose();
-    }
+    if (touchStartX - touchEndX > 100) onClose();
+    if (touchEndX - touchStartX > 100) onClose();
   };
 
   if (!open) return null;
 
   return (
-    <div 
-      style={overlayStyle} 
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onClose();
-      }}
-      onTouchStart={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
-      onTouchEnd={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
+    <div
+      style={overlayStyle}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
+      onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); }}
     >
       <div
         style={modalContainerStyle}
@@ -336,20 +314,11 @@ function MobileMovieModal({
       >
         <button
           style={closeButtonStyle}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.color = "#dc3545";
-            e.target.style.borderColor = "#dc3545";
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.color = "#666";
-            e.target.style.borderColor = "#ddd";
-          }}
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          onMouseEnter={(e) => { e.target.style.color = "#dc3545"; e.target.style.borderColor = "#dc3545"; }}
+          onMouseLeave={(e) => { e.target.style.color = "#666"; e.target.style.borderColor = "#ddd"; }}
         >
-          ×
+          �
         </button>
         {loading ? (
           <div style={{ display: "flex", justifyContent: "center", padding: "50px" }}>
@@ -358,70 +327,31 @@ function MobileMovieModal({
         ) : movie ? (
           <div style={contentStyle}>
             <h1 style={titleStyle}>{movie.title}</h1>
-
             <div style={moviePageWrapperStyle}>
               <div style={posterContainerStyle}>
-                <img
-                  alt={movie.title + " poster"}
-                  src={MovieAPI.getMoviePoster(movie.id)}
-                  style={posterStyle}
-                />
+                <img alt={movie.title + " poster"} src={MovieAPI.getMoviePoster(movie.id)} style={posterStyle} />
               </div>
-
               <div style={detailContainerStyle}>
-                <div style={detailStyle}>
-                  <strong>Release Date:</strong> {new Date(movie.releaseDate).getFullYear()}
-                </div>
-
-                <div style={detailStyle}>
-                  <strong>Rating:</strong> {movie.rating}
-                </div>
-
-                <div style={detailStyle}>
-                  <strong>Runtime:</strong> {movie.runtime}
-                </div>
-
-                <div style={detailStyle}>
-                  <strong>Genre:</strong> {movie.genre}
-                </div>
-
-                <div style={detailStyle}>
-                  <strong>Director:</strong> {movie.director}
-                </div>
-
-                <div style={detailStyle}>
-                  <strong>Writer:</strong> {movie.writer}
-                </div>
-
-                <div style={detailStyle}>
-                  <strong>Plot:</strong> {movie.plot}
-                </div>
-
+                <div style={detailStyle}><strong>Release Date:</strong> {new Date(movie.releaseDate).getFullYear()}</div>
+                <div style={detailStyle}><strong>Rating:</strong> {movie.rating}</div>
+                <div style={detailStyle}><strong>Runtime:</strong> {movie.runtime}</div>
+                <div style={detailStyle}><strong>Genre:</strong> {movie.genre}</div>
+                <div style={detailStyle}><strong>Director:</strong> {movie.director}</div>
+                <div style={detailStyle}><strong>Writer:</strong> {movie.writer}</div>
+                <div style={detailStyle}><strong>Plot:</strong> {movie.plot}</div>
                 <div style={{ ...detailStyle, display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   <strong style={{ width: "100%", marginBottom: "8px" }}>Actors:</strong>
                   {movie.actors
                     ? movie.actors.split(",").map((actorName, index) => {
                         const actor = actorName.trim();
                         if (!actor) return null;
-
                         return (
                           <button
                             key={index}
                             type="button"
                             className="actor-box actor-box-clickable"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              actorSearch(actor);
-                              onClose();
-                            }}
-                            style={{
-                              padding: "6px 12px",
-                              backgroundColor: "#f0f0f0",
-                              border: "1px solid #ccc",
-                              borderRadius: "5px",
-                              fontSize: "14px",
-                              cursor: "pointer",
-                            }}
+                            onClick={(e) => { e.stopPropagation(); actorSearch(actor); onClose(); }}
+                            style={{ padding: "6px 12px", backgroundColor: "#f0f0f0", border: "1px solid #ccc", borderRadius: "5px", fontSize: "14px", cursor: "pointer" }}
                           >
                             {actor}
                           </button>
@@ -429,62 +359,31 @@ function MobileMovieModal({
                       })
                     : null}
                 </div>
-
                 <div style={detailStyle}>
                   <strong>IMDB Rating:</strong>{" "}
-                  <a
-                    target="_blank"
-                    rel="noreferrer"
-                    href={"http://www.imdb.com/title/" + movie.imdbID}
-                    style={{ color: "#007bff", textDecoration: "none" }}
-                  >
+                  <a target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID} style={{ color: "#007bff", textDecoration: "none" }}>
                     {movie.imdbRating} / 10
                   </a>
                 </div>
-
                 <div style={detailStyle}>
                   <strong>RottenTomatoes Rating:</strong>{" "}
-                  <a
-                    target="_blank"
-                    rel="noreferrer"
-                    href={
-                      "https://www.rottentomatoes.com/search?search=" +
-                      encodeURIComponent(movie.title)
-                    }
-                    style={{ color: "#007bff", textDecoration: "none" }}
-                  >
+                  <a target="_blank" rel="noreferrer" href={"https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)} style={{ color: "#007bff", textDecoration: "none" }}>
                     {movie.tomatoRating} / 100
                   </a>
                 </div>
-
-                <div
-                  style={{
-                    padding: "8px",
-                    fontSize: "12px",
-                    color: "gray",
-                    textAlign: "right",
-                  }}
-                >
+                <div style={{ padding: "8px", fontSize: "12px", color: "gray", textAlign: "right" }}>
                   <span>id #{movie.id}</span>
                 </div>
               </div>
             </div>
-
-            <UserMovieOptions
-              userData={userData}
-              id={movie.id}
-              setUserData={setUserData}
-              onToggleViewing={onToggleViewing}
-            />
+            <UserMovieOptions userData={userData} id={movie.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
           </div>
         ) : (
-          <div style={{ padding: "20px", textAlign: "center", color: "#ff4d4f" }}>
-            Error loading movie
-          </div>
+          <div style={{ padding: "20px", textAlign: "center", color: "#ff4d4f" }}>Error loading movie</div>
         )}
       </div>
     </div>
   );
 }
 
-export default MobileMovieModal;
+export default SimpleMovieModal;

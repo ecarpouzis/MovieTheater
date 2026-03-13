@@ -4,12 +4,10 @@ import { useState, useEffect } from "react";
 
 function getColumnCount(sidebarCollapsed = false) {
   const w = window.innerWidth;
-  // When sidebar is collapsed, use more columns to show more movies
   if (sidebarCollapsed) {
     if (w >= 600) return 3;
     return 2;
   }
-  // Normal sidebar visible
   if (w >= 600) return 2;
   return 1;
 }
@@ -67,13 +65,6 @@ const baseCardBodyStyle = {
   height: "100%",
   overflow: "hidden",
   gap: "0",
-};
-
-const cardContainerStyle = {
-  width: "100%",
-  height: "320px",
-  display: "flex",
-  flexDirection: "column",
 };
 
 const posterContainer = {
@@ -197,7 +188,7 @@ function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
         onTouchEnd={() => setHoveredSeenButton(false)}
         style={buttonStyle(isWatched ? "seen" : null, hoveredSeenButton)}
       >
-        <span style={filmIcon}>âœ“</span>
+        <span style={filmIcon}>?</span>
         <span>SEEN</span>
       </button>
       <button
@@ -215,7 +206,7 @@ function UserMovieOptions({ userData, id, setUserData, onToggleViewing }) {
   );
 }
 
-function MobileCardList({ movieDataArray, userData, setUserData, onMovieClick, onToggleViewing, sidebarCollapsed }) {
+function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, onToggleViewing, sidebarCollapsed }) {
   const [columns, setColumns] = useState(() => getColumnCount(sidebarCollapsed));
   const [hoveredMovieId, setHoveredMovieId] = useState(null);
 
@@ -227,7 +218,6 @@ function MobileCardList({ movieDataArray, userData, setUserData, onMovieClick, o
     return () => window.removeEventListener("resize", handleResize);
   }, [sidebarCollapsed]);
 
-  // Update columns when sidebar collapses/expands
   useEffect(() => {
     setColumns(getColumnCount(sidebarCollapsed));
   }, [sidebarCollapsed]);
@@ -282,7 +272,7 @@ function MobileCardList({ movieDataArray, userData, setUserData, onMovieClick, o
                   {item.title}
                 </div>
                 <div style={cardMetaStyle}>
-                  {new Date(item.releaseDate).getFullYear()} â€¢ {item.rating} â€¢ {item.runtime}
+                  {new Date(item.releaseDate).getFullYear()} • {item.rating} • {item.runtime}
                 </div>
               </div>
               <UserMovieOptions
@@ -299,4 +289,4 @@ function MobileCardList({ movieDataArray, userData, setUserData, onMovieClick, o
   );
 }
 
-export default MobileCardList;
+export default SimpleCardList;

@@ -12,6 +12,9 @@ namespace MovieTheater.Db
 
         public int UserID { get; set; }
 
+        [ForeignKey(nameof(UserID))]
+        public User User { get; set; } = default!;
+
         public string SettingKey { get; set; }
 
         public string SettingValue { get; set; }

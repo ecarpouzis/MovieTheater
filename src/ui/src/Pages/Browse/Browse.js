@@ -2,14 +2,12 @@ import { useEffect, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import CardList from "./CardList";
 import MovieModal from "./MovieModal";
-import MobileCardList from "./MobileCardList";
-import MobileMovieModal from "./MobileMovieModal";
-import { useIsMobile } from "../../hooks/useIsMobile";
+import SimpleCardList from "./SimpleCardList";
+import SimpleMovieModal from "./SimpleMovieModal";
 
-function Browse({ search, userData, setUserData, isAuthReady, sidebarCollapsed }) {
+function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, sidebarCollapsed }) {
   const [movieDataArray, setMovieDataArray] = useState([]);
   const [loading, setLoading] = useState(true);
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!isAuthReady) return;
@@ -122,48 +120,47 @@ function Browse({ search, userData, setUserData, isAuthReady, sidebarCollapsed }
 
   return (
     <>
-      {isMobile ? (
-        <>
-          <MobileCardList
-            movieDataArray={displayMovies}
-            userData={userData}
-            setUserData={setUserData}
-            onMovieClick={handleOpenMovie}
-            onToggleViewing={handleToggleViewing}
-            sidebarCollapsed={sidebarCollapsed}
-          />
-          <MobileMovieModal
-            movieId={selectedMovieId}
-            open={isModalVisible}
-            onClose={handleCloseModal}
-            actorSearch={handleActorSearch}
-            userData={userData}
-            setUserData={setUserData}
-            onToggleViewing={handleToggleViewing}
-          />
-        </>
+      {simpleStyle ? (
+        <SimpleCardList
+          movieDataArray={displayMovies}
+          userData={userData}
+          setUserData={setUserData}
+          onMovieClick={handleOpenMovie}
+          onToggleViewing={handleToggleViewing}
+          sidebarCollapsed={sidebarCollapsed}
+        />
       ) : (
-        <>
-          <CardList
-            movieDataArray={displayMovies}
-            userData={userData}
-            setUserData={setUserData}
-            actorSearch={handleActorSearch}
-            onMovieClick={handleOpenMovie}
-            onToggleViewing={handleToggleViewing}
-            sidebarCollapsed={sidebarCollapsed}
-          />
-          <MovieModal
-            movieId={selectedMovieId}
-            open={isModalVisible}
-            onClose={handleCloseModal}
-            actorSearch={handleActorSearch}
-            movieDataArray={displayMovies}
-            userData={userData}
-            setUserData={setUserData}
-            onToggleViewing={handleToggleViewing}
-          />
-        </>
+        <CardList
+          movieDataArray={displayMovies}
+          userData={userData}
+          setUserData={setUserData}
+          actorSearch={handleActorSearch}
+          onMovieClick={handleOpenMovie}
+          onToggleViewing={handleToggleViewing}
+          simpleStyle={false}
+        />
+      )}
+      {simpleStyle ? (
+        <SimpleMovieModal
+          movieId={selectedMovieId}
+          open={isModalVisible}
+          onClose={handleCloseModal}
+          actorSearch={handleActorSearch}
+          userData={userData}
+          setUserData={setUserData}
+          onToggleViewing={handleToggleViewing}
+        />
+      ) : (
+        <MovieModal
+          movieId={selectedMovieId}
+          open={isModalVisible}
+          onClose={handleCloseModal}
+          actorSearch={handleActorSearch}
+          movieDataArray={displayMovies}
+          userData={userData}
+          setUserData={setUserData}
+          onToggleViewing={handleToggleViewing}
+        />
       )}
     </>
   );

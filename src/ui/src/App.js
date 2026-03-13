@@ -11,6 +11,7 @@ import UserSettingsPage from "./Pages/UserSettingsPage";
 import { useMovieSearch } from "./hooks/useMovieSearch";
 
 const storedUsername = window.localStorage.getItem("Username");
+const storedCardStyle = window.localStorage.getItem("CardStyle");
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -28,6 +29,7 @@ function App() {
         setUserData(responseData);
         setIsAuthReady(true);
         window.localStorage.setItem("Username", username);
+        window.localStorage.setItem("CardStyle", responseData.cardStyle ?? "standard");
       });
   }
 
@@ -37,6 +39,8 @@ function App() {
       onUserLoggedIn(storedUsername);
     }
   }
+
+  const simpleStyle = (userData?.cardStyle ?? storedCardStyle) === "simple";
 
   return (
     <BrowserRouter>
@@ -71,7 +75,7 @@ function App() {
               <UserSettingsPage userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/">
-              <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} sidebarCollapsed={sidebarCollapsed} />
+              <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} simpleStyle={simpleStyle} sidebarCollapsed={sidebarCollapsed} />
             </Route>
           </Switch>
         </Layout.Content>

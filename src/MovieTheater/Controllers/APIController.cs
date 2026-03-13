@@ -257,7 +257,12 @@ namespace MovieTheater.Controllers
                 ageRestriction = parsedAgeRestriction;
             }
 
-            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction });
+            //card style
+            var cardStyleSetting = await movieDb.UserSettings
+                .FirstOrDefaultAsync(u => u.SettingKey == "CardStyle" && u.UserID == user.UserID);
+            var cardStyle = cardStyleSetting?.SettingValue ?? "standard";
+
+            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle });
         }
 
         [HttpPost("/API/Logout")]
@@ -627,12 +632,14 @@ namespace MovieTheater.Controllers
                 }
                 else
                 {
-                    await movieDb.UserSettings.AddAsync(new UserSettings
+                    var newSetting = new MovieTheater.Db.UserSettings
                     {
                         UserID = currentUserId.Value,
                         SettingKey = request.SettingKey,
                         SettingValue = request.SettingValue,
-                    });
+                    };
+                    await movieDb.UserSettings.AddAsync(newSetting);
+                    movieDb.Entry(newSetting).Reference(s => s.User).IsModified = false;
                 }
                 await movieDb.SaveChangesAsync();
             }

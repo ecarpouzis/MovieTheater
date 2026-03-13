@@ -112,12 +112,12 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
           </button>
         </div>
         <div className="stat-row" onClick={() => navigateToBrowseSearch("seen")}>
-          <span className="stat-icon stat-icon--seen fas fa-film"></span>
+          <span className="stat-icon stat-icon--seen">🎬</span>
           <span className="stat-label">Seen</span>
           <span className="stat-count">{userData.moviesSeen.length}</span>
         </div>
         <div className="stat-row" onClick={() => navigateToBrowseSearch("want")}>
-          <span className="stat-icon stat-icon--want fas fa-heart"></span>
+          <span className="stat-icon stat-icon--want">♥</span>
           <span className="stat-label">Want to Watch</span>
           <span className="stat-count">{userData.moviesToWatch.length}</span>
         </div>
