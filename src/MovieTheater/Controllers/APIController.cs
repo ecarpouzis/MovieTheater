@@ -738,6 +738,7 @@ namespace MovieTheater.Controllers
                 resizeGraphics.InterpolationMode = InterpolationMode.High;
                 resizeGraphics.CompositingQuality = CompositingQuality.HighQuality;
                 resizeGraphics.SmoothingMode = SmoothingMode.AntiAlias;
+                resizeGraphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
                 resizeGraphics.DrawImage(originalImage, new Rectangle(0, 0, posterWidth, posterHeight));
 
                 combinedGraphics.DrawImage(resizeBitmap, new Point(drawingX, drawingY));
