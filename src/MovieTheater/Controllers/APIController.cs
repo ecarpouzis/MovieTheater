@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.IO;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
@@ -714,8 +715,7 @@ namespace MovieTheater.Controllers
             int totalWidth = Math.Min(totalPosters, rowLength) * posterWidth;
             int totalHeight = rowCount * posterHeight;
 
-            using var combinedBitmap = new Bitmap(totalWidth, totalHeight);
-            using var combinedGraphics = Graphics.FromImage(combinedBitmap);
+            using var combinedImage = new Image<Rgba32>(totalWidth, totalHeight);
 
             int drawingX = 0;
             int drawingY = 0;
@@ -730,28 +730,20 @@ namespace MovieTheater.Controllers
                     drawingY += posterHeight;
                 }
 
-                using var ms = new MemoryStream(bytes);
-                using var originalImage = Image.FromStream(ms);
-                using var resizeBitmap = new Bitmap(posterWidth, posterHeight);
-                using var resizeGraphics = Graphics.FromImage(resizeBitmap);
+                using var posterImg = Image.Load(bytes);
+                posterImg.Mutate(x => x.Resize(posterWidth, posterHeight));
+                combinedImage.Mutate(ctx => ctx.DrawImage(posterImg, new Point(drawingX, drawingY), 1f));
 
-                resizeGraphics.InterpolationMode = InterpolationMode.High;
-                resizeGraphics.CompositingQuality = CompositingQuality.HighQuality;
-                resizeGraphics.SmoothingMode = SmoothingMode.AntiAlias;
-                resizeGraphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
-                resizeGraphics.DrawImage(originalImage, new Rectangle(0, 0, posterWidth, posterHeight));
-
-                combinedGraphics.DrawImage(resizeBitmap, new Point(drawingX, drawingY));
                 drawingX += posterWidth;
                 rowCounter++;
             }
 
             using var outputMs = new MemoryStream();
-            combinedBitmap.Save(outputMs, System.Drawing.Imaging.ImageFormat.Png);
+            await combinedImage.SaveAsPngAsync(outputMs);
             outputMs.Position = 0;
             HttpContext.Response.ContentType = "image/png";
             await outputMs.CopyToAsync(HttpContext.Response.Body);
-            return Ok();
+            return new EmptyResult();
         }
     }
 }
