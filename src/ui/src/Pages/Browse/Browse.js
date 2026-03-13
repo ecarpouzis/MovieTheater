@@ -20,19 +20,26 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       return;
     }
     setLoading(true);
+    const controller = new AbortController();
+    const { signal } = controller;
     const fetchPromise = search.movieIds
       ? fetch("/API/GetMoviesByIds", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(search.movieIds),
+          signal,
         })
-      : fetch(search.url);
+      : fetch(search.url, { signal });
     fetchPromise
       .then((r) => r.json())
       .then((data) => {
         setMovieDataArray(Array.isArray(data) ? data : (data?.value ?? []));
         setLoading(false);
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") throw err;
       });
+    return () => controller.abort();
   }, [search.url, search.movieIds, isAuthReady]);
 
   const history = useHistory();
