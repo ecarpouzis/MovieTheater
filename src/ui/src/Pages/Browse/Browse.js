@@ -124,6 +124,12 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     }
   };
 
+  const handleMovieUpdated = (updatedMovie) => {
+    setMovieDataArray((prev) =>
+      prev.map((m) => (m.id === updatedMovie.id ? updatedMovie : m))
+    );
+  };
+
   if (loading) {
     return <span>Loading</span>;
   }
@@ -169,6 +175,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
           userData={userData}
           setUserData={setUserData}
           onToggleViewing={handleToggleViewing}
+          onMovieUpdated={handleMovieUpdated}
         />
       )}
     </>

@@ -205,6 +205,67 @@ namespace MovieTheater.Controllers
             return Ok(new { Message = "Movie saved", Success = true });
         }
 
+        public class MovieUpdateDto
+        {
+            public int id { get; set; }
+            public string? Title { get; set; }
+            public string? SimpleTitle { get; set; }
+            public string? Rating { get; set; }
+            public DateTime? ReleaseDate { get; set; }
+            public string? Runtime { get; set; }
+            public string? Genre { get; set; }
+            public string? Director { get; set; }
+            public string? Writer { get; set; }
+            public string? Actors { get; set; }
+            public string? Plot { get; set; }
+            public string? PosterLink { get; set; }
+            public decimal? imdbRating { get; set; }
+            public string? imdbID { get; set; }
+            public int? tomatoRating { get; set; }
+            public bool RemoveFromRandom { get; set; }
+        }
+
+        [HttpPost("/API/UpdateMovie")]
+        public async Task<IActionResult> UpdateMovie([FromBody] MovieUpdateDto dto)
+        {
+            if (dto == null)
+                return BadRequest(new { Message = "Invalid movie data", Success = false });
+
+            if (dto.id == 0)
+                return BadRequest(new { Message = "Movie ID is required", Success = false });
+
+            var existing = await movieDb.Movies.SingleOrDefaultAsync(m => m.id == dto.id);
+            if (existing == null)
+                return NotFound(new { Message = "Movie not found", Success = false });
+
+            existing.Title = dto.Title;
+            existing.SimpleTitle = dto.SimpleTitle;
+            existing.Rating = dto.Rating;
+            existing.ReleaseDate = dto.ReleaseDate;
+            existing.Runtime = dto.Runtime;
+            existing.Genre = dto.Genre;
+            existing.Director = dto.Director;
+            existing.Writer = dto.Writer;
+            existing.Actors = dto.Actors;
+            existing.Plot = dto.Plot;
+            existing.PosterLink = dto.PosterLink;
+            existing.imdbRating = dto.imdbRating;
+            existing.imdbID = dto.imdbID;
+            existing.tomatoRating = dto.tomatoRating;
+            existing.RemoveFromRandom = dto.RemoveFromRandom;
+
+            try
+            {
+                await movieDb.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return Conflict(new { Message = $"Save failed: {ex.InnerException?.Message ?? ex.Message}", Success = false });
+            }
+
+            return Ok(new { Message = "Movie updated", Success = true, data = existing });
+        }
+
         [HttpPost("/API/Login")]
         public async Task<IActionResult> Login(string username)
         {
