@@ -327,7 +327,12 @@ namespace MovieTheater.Controllers
                 .FirstOrDefaultAsync(u => u.SettingKey == "CardStyle" && u.UserID == user.UserID);
             var cardStyle = cardStyleSetting?.SettingValue ?? "standard";
 
-            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle });
+            //can edit movies
+            var canEditSetting = await movieDb.UserSettings
+                .FirstOrDefaultAsync(u => u.SettingKey == "CanEditMovies" && u.UserID == user.UserID);
+            var canEditMovies = canEditSetting?.SettingValue == "true";
+
+            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies });
         }
 
         [HttpPost("/API/Logout")]

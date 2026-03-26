@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Select } from "antd";
+import { Select, Checkbox } from "antd";
 import { useHistory } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
 import "./UserSettingsPage.css";
@@ -14,6 +14,7 @@ function UserSettingsPage({ userData, setUserData }) {
   const [mpaRatings, setMpaRatings] = useState([]);
   const [ageRestriction, setAgeRestriction] = useState(undefined);
   const [cardStyle, setCardStyle] = useState("standard");
+  const [canEditMovies, setCanEditMovies] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -31,6 +32,7 @@ function UserSettingsPage({ userData, setUserData }) {
         setMpaRatings(Array.isArray(data) ? data : []);
         setAgeRestriction(userData.ageRestriction ?? undefined);
         setCardStyle(userData.cardStyle ?? "standard");
+        setCanEditMovies(userData.canEditMovies ?? false);
       });
   }, [userData, history]);
 
@@ -88,6 +90,18 @@ function UserSettingsPage({ userData, setUserData }) {
           />
         </div>
         <p className="settings-hint">Simple shows a compact two-column layout. Standard shows a full row with plot and actors.</p>
+      </div>
+      <div className="settings-section">
+        <h3 className="settings-section-title">Permissions</h3>
+        <div className="settings-row">
+          <Checkbox
+            checked={canEditMovies}
+            disabled
+          >
+            <span style={{ color: "inherit" }}>Can Edit Movies</span>
+          </Checkbox>
+        </div>
+        <p className="settings-hint">This permission is managed by an administrator.</p>
       </div>
       <button className="settings-save-btn" onClick={handleSave} disabled={saving}>
         {saving ? "Saving…" : "Save Settings"}

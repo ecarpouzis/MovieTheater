@@ -166,11 +166,13 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
 
                 <UserMovieOptions userData={userData} id={movie.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
 
-                <div className="modal-edit-row">
-                  <Button type="default" onClick={startEditing}>
-                    <span className="fas fa-pen" style={{ marginRight: 6 }} />Edit
-                  </Button>
-                </div>
+                {userData?.canEditMovies && (
+                  <div className="modal-edit-row">
+                    <Button type="default" onClick={startEditing}>
+                      <span className="fas fa-pen" style={{ marginRight: 6 }} />Edit
+                    </Button>
+                  </div>
+                )}
 
                 <div className="modal-movie-id">id #{movie.id}</div>
               </>
