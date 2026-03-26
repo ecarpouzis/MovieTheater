@@ -37,6 +37,14 @@ export function useMovieSearch() {
     }
   }, []);
 
+  const ratingSearch = useCallback((maxRatingId, page = 1) => {
+    setSearch({
+      url: `/API/GetMoviesByRating?maxRatingId=${maxRatingId}&page=${page}&pageSize=50`,
+      maxRatingId: String(maxRatingId),
+      page: Number(page),
+    });
+  }, []);
+
   const movieIDListSearch = useCallback((movieIds, restoreOrder = null) => {
     if (!movieIds || movieIds.length === 0) {
       setSearch({ url: null, restoreOrder });
@@ -63,6 +71,7 @@ export function useMovieSearch() {
     titleSearch,
     actorSearch,
     firstLetterSearch,
+    ratingSearch,
     movieIDListSearch,
     restoreMovieIdsSearch,
     moviesSeenSearch,

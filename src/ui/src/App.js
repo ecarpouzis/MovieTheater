@@ -19,7 +19,7 @@ function App() {
   const [isAuthReady, setIsAuthReady] = useState(!storedUsername);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const { search, resetSearch, titleSearch, actorSearch, firstLetterSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch } =
+  const { search, resetSearch, titleSearch, actorSearch, firstLetterSearch, ratingSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch } =
     useMovieSearch();
 
   function onUserLoggedIn(username) {
@@ -54,6 +54,7 @@ function App() {
           titleSearch={titleSearch}
           actorSearch={actorSearch}
           firstLetterSearch={firstLetterSearch}
+          ratingSearch={ratingSearch}
           restoreMovieIdsSearch={restoreMovieIdsSearch}
           moviesSeenSearch={moviesSeenSearch}
           moviesWantToWatchSearch={moviesWantToWatchSearch}
