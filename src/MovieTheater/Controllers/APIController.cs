@@ -831,7 +831,7 @@ namespace MovieTheater.Controllers
             var effectiveMax = Math.Min(maxRatingId, ageRestriction);
 
             var query = movieDb.Movies
-                .Where(m => movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID <= effectiveMax));
+                .Where(m => movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID == effectiveMax));
 
             var moviesList = await query.ToListAsync();
             var sorted = moviesList
