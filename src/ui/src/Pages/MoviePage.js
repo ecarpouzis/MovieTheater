@@ -20,7 +20,7 @@ function MoviePage() {
   return (
     <div>
       <div className="movie-page-wrapper">
-        <img className="movie-page-poster" alt={movie.title + " poster"} src={MovieAPI.getMoviePoster(movie.id)} />
+        src={MovieAPI.getMoviePoster(movie.id, movie.posterVersion)}
         <div className="movie-detail-container">
           <div className="movie-detail">
             <u>Title:</u> {movie.title}

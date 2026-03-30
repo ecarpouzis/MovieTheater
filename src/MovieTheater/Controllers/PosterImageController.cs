@@ -35,7 +35,8 @@ namespace MovieTheater.Controllers
 
             var etag = $"\"{modifiedDate.Value.Ticks}\"";
 
-            Response.Headers["Cache-Control"] = "public, max-age=3600";
+            var hasVersion = Request.Query.ContainsKey("v");
+            Response.Headers["Cache-Control"] = hasVersion ? "public, max-age=31536000, immutable" : "public, max-age=3600";
             Response.Headers["ETag"] = etag;
 
             if (Request.Headers.TryGetValue("If-None-Match", out var ifNoneMatch) && ifNoneMatch == etag)

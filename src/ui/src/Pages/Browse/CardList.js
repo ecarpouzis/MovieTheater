@@ -29,7 +29,7 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieC
   return (
     <div className="card-list">
       {movieDataArray.map((item) => {
-        const thumbUrl = MovieAPI.getPosterThumbnail(item.id);
+        const thumbUrl = MovieAPI.getPosterThumbnail(item.id, item.posterVersion);
 
         return (
           <div key={item.id}>

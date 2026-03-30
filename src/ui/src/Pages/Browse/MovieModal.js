@@ -98,7 +98,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
             <img
               className="modal-poster"
               alt={movie.title + " poster"}
-              src={MovieAPI.getMoviePoster(movie.id)}
+              src={MovieAPI.getMoviePoster(movie.id, movie.posterVersion)}
             />
           </div>
           <div className="modal-info-panel">

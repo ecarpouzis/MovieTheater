@@ -22,6 +22,7 @@ namespace MovieTheater.Db
         public int? tomatoRating { get; set; }
         public DateTime? UploadedDate { get; set; }
         public bool RemoveFromRandom { get; set; }
+        public int PosterVersion { get; set; }
 
         [Key]
         public int id { get; set; }

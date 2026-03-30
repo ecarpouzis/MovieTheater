@@ -187,7 +187,7 @@ function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, o
       grid={{ gutter: 4, column: 2 }}
       dataSource={movieDataArray}
       renderItem={(item) => {
-        const thumbUrl = MovieAPI.getPosterThumbnail(item.id);
+        const thumbUrl = MovieAPI.getPosterThumbnail(item.id, item.posterVersion);
         return (
           <List.Item>
             <Card

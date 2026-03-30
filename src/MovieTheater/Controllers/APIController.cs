@@ -207,7 +207,7 @@ namespace MovieTheater.Controllers
 
             if (!string.IsNullOrWhiteSpace(movie.PosterLink))
             {
-                await DownloadAndSavePoster(movie.id, movie.PosterLink);
+                await DownloadAndSavePoster(movie, movie.PosterLink);
             }
 
             return Ok(new { Message = "Movie saved", Success = true });
@@ -297,7 +297,7 @@ namespace MovieTheater.Controllers
             {
                 try
                 {
-                    await DownloadAndSavePoster(existing.id, dto.PosterLink, force: true);
+                    await DownloadAndSavePoster(existing, dto.PosterLink, force: true);
                 }
                 catch (Exception ex)
                 {
@@ -311,35 +311,15 @@ namespace MovieTheater.Controllers
             return Ok(new { Message = message, Success = true, data = existing });
         }
 
-        private async Task DownloadAndSavePoster(int movieId, string posterLink, bool force = false)
+        private async Task DownloadAndSavePoster(Movie movie, string posterLink, bool force = false)
         {
             var result = await httpClient.GetAsync(posterLink);
             result.EnsureSuccessStatusCode();
             var content = await result.Content.ReadAsByteArrayAsync();
-            await imageRepo.SaveImage(movieId, PosterImageVariant.Main, content);
-            await shrinkService.EnsurePosterThumnailExists(movieId, force);
-        }
-
-        [HttpPost("/API/RefreshPoster")]
-        public async Task<IActionResult> RefreshPoster(int id)
-        {
-            var movie = await movieDb.Movies.SingleOrDefaultAsync(m => m.id == id);
-            if (movie == null)
-                return NotFound(new { Message = "Movie not found", Success = false });
-
-            if (string.IsNullOrWhiteSpace(movie.PosterLink))
-                return BadRequest(new { Message = "Movie has no poster link", Success = false });
-
-            try
-            {
-                await DownloadAndSavePoster(movie.id, movie.PosterLink, force: true);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Message = $"Poster download failed: {ex.Message}", Success = false });
-            }
-
-            return Ok(new { Message = "Poster refreshed", Success = true });
+            await imageRepo.SaveImage(movie.id, PosterImageVariant.Main, content);
+            await shrinkService.EnsurePosterThumnailExists(movie.id, force);
+            movie.PosterVersion++;
+            await movieDb.SaveChangesAsync();
         }
 
         [HttpPost("/API/Login")]

@@ -1,9 +1,9 @@
-function getMoviePoster(id) {
-  return "/Image/" + id;
+function getMoviePoster(id, posterVersion) {
+  return posterVersion ? `/Image/${id}?v=${posterVersion}` : `/Image/${id}`;
 }
 
-function getPosterThumbnail(id) {
-  return "/ImageThumb/" + id;
+function getPosterThumbnail(id, posterVersion) {
+  return posterVersion ? `/ImageThumb/${id}?v=${posterVersion}` : `/ImageThumb/${id}`;
 }
 
 function getMovie(id) {
