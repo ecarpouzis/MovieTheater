@@ -329,7 +329,7 @@ function SimpleMovieModal({ movieId, open, onClose, actorSearch, userData, setUs
             <h1 style={titleStyle}>{movie.title}</h1>
             <div style={moviePageWrapperStyle}>
               <div style={posterContainerStyle}>
-                src={MovieAPI.getMoviePoster(movie.id, movie.posterVersion)} style={posterStyle}
+                <img src={MovieAPI.getMoviePoster(movie.id, movie.posterVersion)} alt={movie.title + " poster"} style={posterStyle} />
               </div>
               <div style={detailContainerStyle}>
                 <div style={detailStyle}><strong>Release Date:</strong> {new Date(movie.releaseDate).getFullYear()}</div>

@@ -19,9 +19,9 @@ function MoviePage() {
   }
   return (
     <div>
-      <div className="movie-page-wrapper">
-        src={MovieAPI.getMoviePoster(movie.id, movie.posterVersion)}
-        <div className="movie-detail-container">
+    <div className="movie-page-wrapper">
+      <img src={MovieAPI.getMoviePoster(movie.id, movie.posterVersion)} alt={movie.title + " poster"} />
+      <div className="movie-detail-container">
           <div className="movie-detail">
             <u>Title:</u> {movie.title}
           </div>
