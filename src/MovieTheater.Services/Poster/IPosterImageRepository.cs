@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace MovieTheater.Services.Poster
 {
@@ -7,5 +8,6 @@ namespace MovieTheater.Services.Poster
         Task<bool> HasImage(int movieId, PosterImageVariant variant);
         Task<byte[]> GetImage(int movieId, PosterImageVariant variant);
         Task SaveImage(int movieId, PosterImageVariant variant, byte[] imageContent);
+        Task<DateTimeOffset?> GetImageModifiedDate(int movieId, PosterImageVariant variant);
     }
 }

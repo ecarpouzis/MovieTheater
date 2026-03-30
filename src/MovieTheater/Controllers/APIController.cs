@@ -320,6 +320,28 @@ namespace MovieTheater.Controllers
             await shrinkService.EnsurePosterThumnailExists(movieId, force);
         }
 
+        [HttpPost("/API/RefreshPoster")]
+        public async Task<IActionResult> RefreshPoster(int id)
+        {
+            var movie = await movieDb.Movies.SingleOrDefaultAsync(m => m.id == id);
+            if (movie == null)
+                return NotFound(new { Message = "Movie not found", Success = false });
+
+            if (string.IsNullOrWhiteSpace(movie.PosterLink))
+                return BadRequest(new { Message = "Movie has no poster link", Success = false });
+
+            try
+            {
+                await DownloadAndSavePoster(movie.id, movie.PosterLink, force: true);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = $"Poster download failed: {ex.Message}", Success = false });
+            }
+
+            return Ok(new { Message = "Poster refreshed", Success = true });
+        }
+
         [HttpPost("/API/Login")]
         public async Task<IActionResult> Login(string username)
         {

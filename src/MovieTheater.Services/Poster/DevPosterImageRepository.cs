@@ -72,6 +72,13 @@ namespace MovieTheater.Services.Poster
             throw new InvalidOperationException("You cannot save images in dev mode.");
         }
 
+        public Task<DateTimeOffset?> GetImageModifiedDate(int movieId, PosterImageVariant variant)
+        {
+            var file = GetFile(movieId, variant);
+            DateTimeOffset? result = file.Exists ? new DateTimeOffset(file.LastWriteTimeUtc) : null;
+            return Task.FromResult(result);
+        }
+
         private FileInfo GetFile(int movieId, PosterImageVariant variant)
         {
             string path;
