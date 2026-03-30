@@ -28,6 +28,37 @@ function insertMovie(movie) {
   });
 }
 
+function updateMovie(movie) {
+  const url = "/API/UpdateMovie";
+
+  const payload = {
+    id: movie.id,
+    title: movie.title,
+    simpleTitle: movie.simpleTitle,
+    rating: movie.rating,
+    releaseDate: movie.releaseDate ? new Date(movie.releaseDate).toISOString() : null,
+    runtime: movie.runtime,
+    genre: movie.genre,
+    director: movie.director,
+    writer: movie.writer,
+    actors: movie.actors,
+    plot: movie.plot,
+    posterLink: movie.posterLink,
+    imdbRating: movie.imdbRating === "" || movie.imdbRating == null ? null : Number(movie.imdbRating),
+    imdbID: movie.imdbID,
+    tomatoRating: movie.tomatoRating === "" || movie.tomatoRating == null ? null : Number(movie.tomatoRating),
+    removeFromRandom: !!movie.removeFromRandom,
+  };
+
+  return fetch(url, {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
 function getUsers() {
   const url = "/API/API_UserList";
   return fetch(url);
@@ -190,6 +221,7 @@ getPosterThumbnail,
 getMovie,
   getUsers,
   insertMovie,
+  updateMovie,
   getTotalMovieCount,
   tmdbLookupImdbID,
   tmdbLookupName,

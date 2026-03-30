@@ -182,6 +182,17 @@ namespace MovieTheater.Controllers
                 return Conflict(new { Message = $"Movie already Exists: {movie.Title}", Success = false });
             }
 
+            movie.Title = movie.Title?.Trim();
+            movie.SimpleTitle = movie.SimpleTitle?.Trim();
+            movie.Rating = movie.Rating?.Trim();
+            movie.Runtime = movie.Runtime?.Trim();
+            movie.Genre = movie.Genre?.Trim();
+            movie.Director = movie.Director?.Trim();
+            movie.Writer = movie.Writer?.Trim();
+            movie.Actors = movie.Actors?.Trim();
+            movie.Plot = movie.Plot?.Trim();
+            movie.PosterLink = movie.PosterLink?.Trim();
+            movie.imdbID = movie.imdbID?.Trim();
             movie.UploadedDate = DateTime.Now;
 
             movieDb.Movies.Add(movie);
@@ -194,15 +205,107 @@ namespace MovieTheater.Controllers
                 return Conflict(new { Message = "Save failed", Success = false });
             }
 
-            if (movie.PosterLink.Trim() != "")
+            if (!string.IsNullOrWhiteSpace(movie.PosterLink))
             {
-                var result = await httpClient.GetAsync(movie.PosterLink);
-                var content = await result.Content.ReadAsByteArrayAsync();
-                await imageRepo.SaveImage(movie.id, PosterImageVariant.Main, content);
-                await shrinkService.EnsurePosterThumnailExists(movie.id);
+                await DownloadAndSavePoster(movie.id, movie.PosterLink);
             }
 
             return Ok(new { Message = "Movie saved", Success = true });
+        }
+
+        public class MovieUpdateDto
+        {
+            public int id { get; set; }
+            public string? Title { get; set; }
+            public string? SimpleTitle { get; set; }
+            public string? Rating { get; set; }
+            public DateTime? ReleaseDate { get; set; }
+            public string? Runtime { get; set; }
+            public string? Genre { get; set; }
+            public string? Director { get; set; }
+            public string? Writer { get; set; }
+            public string? Actors { get; set; }
+            public string? Plot { get; set; }
+            public string? PosterLink { get; set; }
+            public decimal? imdbRating { get; set; }
+            public string? imdbID { get; set; }
+            public int? tomatoRating { get; set; }
+            public bool RemoveFromRandom { get; set; }
+        }
+
+        [HttpPost("/API/UpdateMovie")]
+        public async Task<IActionResult> UpdateMovie([FromBody] MovieUpdateDto dto)
+        {
+            if (dto == null)
+                return BadRequest(new { Message = "Invalid movie data", Success = false });
+
+            if (dto.id == 0)
+                return BadRequest(new { Message = "Movie ID is required", Success = false });
+
+            var existing = await movieDb.Movies.SingleOrDefaultAsync(m => m.id == dto.id);
+            if (existing == null)
+                return NotFound(new { Message = "Movie not found", Success = false });
+
+            dto.Title = dto.Title?.Trim();
+            dto.SimpleTitle = dto.SimpleTitle?.Trim();
+            dto.Rating = dto.Rating?.Trim();
+            dto.Runtime = dto.Runtime?.Trim();
+            dto.Genre = dto.Genre?.Trim();
+            dto.Director = dto.Director?.Trim();
+            dto.Writer = dto.Writer?.Trim();
+            dto.Actors = dto.Actors?.Trim();
+            dto.Plot = dto.Plot?.Trim();
+            dto.PosterLink = dto.PosterLink?.Trim();
+            dto.imdbID = dto.imdbID?.Trim();
+
+            var posterLinkChanged = !string.Equals(existing.PosterLink, dto.PosterLink, StringComparison.Ordinal);
+
+            if (!string.Equals(existing.imdbID, dto.imdbID, StringComparison.Ordinal) && !string.IsNullOrEmpty(dto.imdbID))
+            {
+                var imdbConflict = await movieDb.Movies.AnyAsync(m => m.imdbID == dto.imdbID && m.id != dto.id);
+                if (imdbConflict)
+                    return Conflict(new { Message = $"Another movie already has imdbID: {dto.imdbID}", Success = false });
+            }
+
+            existing.Title = dto.Title;
+            existing.SimpleTitle = dto.SimpleTitle;
+            existing.Rating = dto.Rating;
+            existing.ReleaseDate = dto.ReleaseDate;
+            existing.Runtime = dto.Runtime;
+            existing.Genre = dto.Genre;
+            existing.Director = dto.Director;
+            existing.Writer = dto.Writer;
+            existing.Actors = dto.Actors;
+            existing.Plot = dto.Plot;
+            existing.PosterLink = dto.PosterLink;
+            existing.imdbRating = dto.imdbRating;
+            existing.imdbID = dto.imdbID;
+            existing.tomatoRating = dto.tomatoRating;
+            existing.RemoveFromRandom = dto.RemoveFromRandom;
+
+            try
+            {
+                await movieDb.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return Conflict(new { Message = $"Save failed: {ex.InnerException?.Message ?? ex.Message}", Success = false });
+            }
+
+            if (posterLinkChanged && !string.IsNullOrWhiteSpace(dto.PosterLink))
+            {
+                await DownloadAndSavePoster(existing.id, dto.PosterLink, force: true);
+            }
+
+            return Ok(new { Message = "Movie updated", Success = true, data = existing });
+        }
+
+        private async Task DownloadAndSavePoster(int movieId, string posterLink, bool force = false)
+        {
+            var result = await httpClient.GetAsync(posterLink);
+            var content = await result.Content.ReadAsByteArrayAsync();
+            await imageRepo.SaveImage(movieId, PosterImageVariant.Main, content);
+            await shrinkService.EnsurePosterThumnailExists(movieId, force);
         }
 
         [HttpPost("/API/Login")]
@@ -266,7 +369,12 @@ namespace MovieTheater.Controllers
                 .FirstOrDefaultAsync(u => u.SettingKey == "CardStyle" && u.UserID == user.UserID);
             var cardStyle = cardStyleSetting?.SettingValue ?? "standard";
 
-            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle });
+            //can edit movies
+            var canEditSetting = await movieDb.UserSettings
+                .FirstOrDefaultAsync(u => u.SettingKey == "CanEditMovies" && u.UserID == user.UserID);
+            var canEditMovies = canEditSetting?.SettingValue == "true";
+
+            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies });
         }
 
         [HttpPost("/API/Logout")]
