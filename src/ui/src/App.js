@@ -12,6 +12,7 @@ import { useMovieSearch } from "./hooks/useMovieSearch";
 
 const storedUsername = window.localStorage.getItem("Username");
 const storedCardStyle = window.localStorage.getItem("CardStyle");
+const storedEnablePagination = window.localStorage.getItem("EnablePagination") === "true";
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -41,6 +42,7 @@ function App() {
   }
 
   const simpleStyle = (userData?.cardStyle ?? storedCardStyle) === "simple";
+  const enablePagination = userData?.enablePagination ?? false;
 
   return (
     <BrowserRouter>
@@ -77,7 +79,7 @@ function App() {
               <UserSettingsPage userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/">
-              <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} simpleStyle={simpleStyle} />
+              <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} simpleStyle={simpleStyle} enablePagination={enablePagination} />
             </Route>
           </Switch>
         </Layout.Content>

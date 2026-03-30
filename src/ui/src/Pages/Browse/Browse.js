@@ -6,7 +6,7 @@ import SimpleCardList from "./SimpleCardList";
 import SimpleMovieModal from "./SimpleMovieModal";
 import useIsMobile from "../../hooks/useIsMobile";
 
-function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
+function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enablePagination }) {
   const [movieDataArray, setMovieDataArray] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState(null);
@@ -24,6 +24,15 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     setLoading(true);
     const controller = new AbortController();
     const { signal } = controller;
+    let effectiveUrl = search.url;
+    if (!enablePagination && effectiveUrl) {
+      const urlObj = new URL(effectiveUrl, window.location.origin);
+      if (urlObj.searchParams.has("pageSize")) {
+        urlObj.searchParams.set("pageSize", "0");
+        urlObj.searchParams.delete("page");
+        effectiveUrl = urlObj.pathname + urlObj.search;
+      }
+    }
     const fetchPromise = search.movieIds
       ? fetch("/API/GetMoviesByIds", {
           method: "POST",
@@ -31,7 +40,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
           body: JSON.stringify(search.movieIds),
           signal,
         })
-      : fetch(search.url, { signal });
+      : fetch(effectiveUrl, { signal });
     fetchPromise
       .then((r) => r.json())
       .then((data) => {
@@ -48,7 +57,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
         if (err.name !== "AbortError") throw err;
       });
     return () => controller.abort();
-  }, [search.url, search.movieIds, isAuthReady]);
+  }, [search.url, search.movieIds, isAuthReady, enablePagination]);
 
   const history = useHistory();
   const location = useLocation();
@@ -266,7 +275,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
 
   return (
     <>
-      {paginationBar}
+      {enablePagination && paginationBar}
       {useSimpleStyle ? (
         <SimpleCardList
           movieDataArray={displayMovies}
@@ -286,7 +295,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
           isMobile={isMobile}
         />
       )}
-      {paginationBar}
+      {enablePagination && paginationBar}
       {useSimpleStyle ? (
         <SimpleMovieModal
           movieId={selectedMovieId}

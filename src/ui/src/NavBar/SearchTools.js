@@ -195,7 +195,7 @@ function SearchTools({ search, userData }) {
       />
       {mpaRatings.length > 0 && (
         <>
-          <span style={inputLabelStyle}>MPA Rating Filter</span>
+          <span style={inputLabelStyle}>MPA Rating Search</span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", paddingBottom: "20px" }}>
             {mpaRatings.map((r) => {
               const isActive = search.maxRatingId === String(r.id);

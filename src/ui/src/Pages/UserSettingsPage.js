@@ -15,6 +15,7 @@ function UserSettingsPage({ userData, setUserData }) {
   const [ageRestriction, setAgeRestriction] = useState(undefined);
   const [cardStyle, setCardStyle] = useState("standard");
   const [canEditMovies, setCanEditMovies] = useState(false);
+  const [enablePagination, setEnablePagination] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -33,6 +34,11 @@ function UserSettingsPage({ userData, setUserData }) {
         setAgeRestriction(userData.ageRestriction ?? undefined);
         setCardStyle(userData.cardStyle ?? "standard");
         setCanEditMovies(userData.canEditMovies ?? false);
+        setEnablePagination(
+          userData.enablePagination === undefined || userData.enablePagination === null
+            ? false
+            : Boolean(userData.enablePagination)
+        );
       });
   }, [userData, history]);
 
@@ -43,9 +49,10 @@ function UserSettingsPage({ userData, setUserData }) {
     Promise.all([
       MovieAPI.setUserSetting("AgeRestriction", ageValue).then((r) => r.json()),
       MovieAPI.setUserSetting("CardStyle", cardStyle).then((r) => r.json()),
+      MovieAPI.setUserSetting("EnablePagination", enablePagination ? "true" : "false").then((r) => r.json()),
     ])
       .then(() => {
-        setUserData((prev) => ({ ...prev, ageRestriction, cardStyle }));
+        setUserData((prev) => ({ ...prev, ageRestriction, cardStyle, enablePagination }));
         window.localStorage.setItem("CardStyle", cardStyle ?? "standard");
         setSaved(true);
       })
@@ -88,8 +95,20 @@ function UserSettingsPage({ userData, setUserData }) {
             }}
             options={cardStyleOptions}
           />
+              </div>
+              <p className="settings-hint">Simple shows a compact two-column layout. Standard shows a full row with plot and actors.</p>
+        <div className="settings-row" style={{ marginTop: 12 }}>
+          <Checkbox
+            checked={enablePagination}
+            onChange={e => {
+              setEnablePagination(e.target.checked);
+              setSaved(false);
+            }}
+          >
+            Enable Pagination
+          </Checkbox>
         </div>
-        <p className="settings-hint">Simple shows a compact two-column layout. Standard shows a full row with plot and actors.</p>
+        <p className="settings-hint">If pagination is disabled, all movies will be loaded at once (may be slow for large libraries).</p>
       </div>
       <div className="settings-section">
         <h3 className="settings-section-title">Permissions</h3>

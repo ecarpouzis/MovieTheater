@@ -492,7 +492,16 @@ namespace MovieTheater.Controllers
                 .FirstOrDefaultAsync(u => u.SettingKey == "CanEditMovies" && u.UserID == user.UserID);
             var canEditMovies = canEditSetting?.SettingValue == "true";
 
-            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies });
+            // enable pagination
+            var enablePaginationSetting = await movieDb.UserSettings
+                .FirstOrDefaultAsync(u => u.SettingKey == "EnablePagination" && u.UserID == user.UserID);
+            bool enablePagination = false;
+            if (enablePaginationSetting != null && bool.TryParse(enablePaginationSetting.SettingValue, out var parsedEnablePagination))
+            {
+                enablePagination = parsedEnablePagination;
+            }
+
+            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies, enablePagination });
         }
 
         [HttpPost("/API/Logout")]
@@ -824,18 +833,22 @@ namespace MovieTheater.Controllers
             var query = movieDb.Movies
                 .Where(m => movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID <= effectiveMax));
 
-            var totalCount = await query.CountAsync();
+            var moviesList = await query.ToListAsync();
+            var sorted = moviesList
+                .OrderBy(m => string.IsNullOrEmpty(m.SimpleTitle) || !char.IsDigit(m.SimpleTitle[0]))
+                .ThenBy(m => m.SimpleTitle)
+                .ToList();
+            var totalCount = sorted.Count;
+
+            if (pageSize <= 0)
+            {
+                return Ok(new { movies = sorted, totalCount, page = 1, pageSize = totalCount });
+            }
 
             if (page < 1) page = 1;
             var skip = (page - 1) * pageSize;
-
-            var movies = await query
-                .OrderBy(m => m.SimpleTitle)
-                .Skip(skip)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return Ok(new { movies, totalCount, page, pageSize });
+            var paged = sorted.Skip(skip).Take(pageSize).ToList();
+            return Ok(new { movies = paged, totalCount, page, pageSize });
         }
 
         [HttpGet("/API/GetMPARatings")]
