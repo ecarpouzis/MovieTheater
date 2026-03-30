@@ -182,6 +182,17 @@ namespace MovieTheater.Controllers
                 return Conflict(new { Message = $"Movie already Exists: {movie.Title}", Success = false });
             }
 
+            movie.Title = movie.Title?.Trim();
+            movie.SimpleTitle = movie.SimpleTitle?.Trim();
+            movie.Rating = movie.Rating?.Trim();
+            movie.Runtime = movie.Runtime?.Trim();
+            movie.Genre = movie.Genre?.Trim();
+            movie.Director = movie.Director?.Trim();
+            movie.Writer = movie.Writer?.Trim();
+            movie.Actors = movie.Actors?.Trim();
+            movie.Plot = movie.Plot?.Trim();
+            movie.PosterLink = movie.PosterLink?.Trim();
+            movie.imdbID = movie.imdbID?.Trim();
             movie.UploadedDate = DateTime.Now;
 
             movieDb.Movies.Add(movie);
@@ -194,12 +205,9 @@ namespace MovieTheater.Controllers
                 return Conflict(new { Message = "Save failed", Success = false });
             }
 
-            if (movie.PosterLink.Trim() != "")
+            if (!string.IsNullOrWhiteSpace(movie.PosterLink))
             {
-                var result = await httpClient.GetAsync(movie.PosterLink);
-                var content = await result.Content.ReadAsByteArrayAsync();
-                await imageRepo.SaveImage(movie.id, PosterImageVariant.Main, content);
-                await shrinkService.EnsurePosterThumnailExists(movie.id);
+                await DownloadAndSavePoster(movie.id, movie.PosterLink);
             }
 
             return Ok(new { Message = "Movie saved", Success = true });
@@ -238,6 +246,27 @@ namespace MovieTheater.Controllers
             if (existing == null)
                 return NotFound(new { Message = "Movie not found", Success = false });
 
+            dto.Title = dto.Title?.Trim();
+            dto.SimpleTitle = dto.SimpleTitle?.Trim();
+            dto.Rating = dto.Rating?.Trim();
+            dto.Runtime = dto.Runtime?.Trim();
+            dto.Genre = dto.Genre?.Trim();
+            dto.Director = dto.Director?.Trim();
+            dto.Writer = dto.Writer?.Trim();
+            dto.Actors = dto.Actors?.Trim();
+            dto.Plot = dto.Plot?.Trim();
+            dto.PosterLink = dto.PosterLink?.Trim();
+            dto.imdbID = dto.imdbID?.Trim();
+
+            var posterLinkChanged = !string.Equals(existing.PosterLink, dto.PosterLink, StringComparison.Ordinal);
+
+            if (!string.Equals(existing.imdbID, dto.imdbID, StringComparison.Ordinal) && !string.IsNullOrEmpty(dto.imdbID))
+            {
+                var imdbConflict = await movieDb.Movies.AnyAsync(m => m.imdbID == dto.imdbID && m.id != dto.id);
+                if (imdbConflict)
+                    return Conflict(new { Message = $"Another movie already has imdbID: {dto.imdbID}", Success = false });
+            }
+
             existing.Title = dto.Title;
             existing.SimpleTitle = dto.SimpleTitle;
             existing.Rating = dto.Rating;
@@ -263,7 +292,20 @@ namespace MovieTheater.Controllers
                 return Conflict(new { Message = $"Save failed: {ex.InnerException?.Message ?? ex.Message}", Success = false });
             }
 
+            if (posterLinkChanged && !string.IsNullOrWhiteSpace(dto.PosterLink))
+            {
+                await DownloadAndSavePoster(existing.id, dto.PosterLink, force: true);
+            }
+
             return Ok(new { Message = "Movie updated", Success = true, data = existing });
+        }
+
+        private async Task DownloadAndSavePoster(int movieId, string posterLink, bool force = false)
+        {
+            var result = await httpClient.GetAsync(posterLink);
+            var content = await result.Content.ReadAsByteArrayAsync();
+            await imageRepo.SaveImage(movieId, PosterImageVariant.Main, content);
+            await shrinkService.EnsurePosterThumnailExists(movieId, force);
         }
 
         [HttpPost("/API/Login")]

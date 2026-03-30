@@ -24,10 +24,10 @@ namespace MovieTheater.Services.Poster
             this.logger = logger;
         }
 
-        public async Task EnsurePosterThumnailExists(int movieId)
+        public async Task EnsurePosterThumnailExists(int movieId, bool force = false)
         {
             var alreadyExists = await posterRepository.HasImage(movieId, PosterImageVariant.Thumbnail);
-            if (alreadyExists)
+            if (alreadyExists && !force)
             {
                 logger.LogInformation("Thumbnail poster already exists for {movieId}. Skipping regen...", movieId);
                 return;
