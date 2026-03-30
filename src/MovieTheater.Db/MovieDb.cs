@@ -5,6 +5,7 @@ namespace MovieTheater.Db
     public class MovieDb : DbContext
     {
         public DbSet<Movie> Movies { get; set; }
+        public DbSet<MoviePosterDetails> MoviePosterDetails { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Viewing> Viewings { get; set; }
         public DbSet<RatingMap> RatingMaps { get; set; }

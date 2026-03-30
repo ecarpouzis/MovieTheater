@@ -92,7 +92,7 @@ namespace MovieTheater.Controllers
                 }
             }
             
-            var movie = await movieDb.Movies.SingleOrDefaultAsync(m => m.id == id);
+            var movie = await movieDb.Movies.Include(m => m.PosterDetails).SingleOrDefaultAsync(m => m.id == id);
             var rating = GetMPARatingFromMovieRating(movie.Rating);
             if (movie != null && (rating <= ageRestriction))
             {
@@ -149,8 +149,9 @@ namespace MovieTheater.Controllers
                     ageRestriction = parsedRestriction;
             }
 
-            return movieDb.Movies.Where(m =>
-                !movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID > ageRestriction));
+            return movieDb.Movies
+                .Include(m => m.PosterDetails)
+                .Where(m => !movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID > ageRestriction));
         }
 
         [HttpGet("/API/GetRandomMovies")]
@@ -166,7 +167,7 @@ namespace MovieTheater.Controllers
                     ageRestriction = parsedRestriction;
             }
 
-            IQueryable<Movie> movies = movieDb.Movies.Where(m => !m.RemoveFromRandom);
+            IQueryable<Movie> movies = movieDb.Movies.Include(m => m.PosterDetails).Where(m => !m.RemoveFromRandom);
             movies = movies.Where(m => !movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID > ageRestriction));
             var result = await movies.OrderBy(m => Guid.NewGuid()).Take(take).ToListAsync();
             return Ok(result);
@@ -242,7 +243,7 @@ namespace MovieTheater.Controllers
             if (dto.id == 0)
                 return BadRequest(new { Message = "Movie ID is required", Success = false });
 
-            var existing = await movieDb.Movies.SingleOrDefaultAsync(m => m.id == dto.id);
+            var existing = await movieDb.Movies.Include(m => m.PosterDetails).SingleOrDefaultAsync(m => m.id == dto.id);
             if (existing == null)
                 return NotFound(new { Message = "Movie not found", Success = false });
 
@@ -258,7 +259,7 @@ namespace MovieTheater.Controllers
             dto.PosterLink = dto.PosterLink?.Trim();
             dto.imdbID = dto.imdbID?.Trim();
 
-            var posterLinkChanged = !string.Equals(existing.PosterLink, dto.PosterLink, StringComparison.Ordinal);
+            var posterLinkChanged = !string.Equals(existing.PosterDetails?.PosterLink, dto.PosterLink, StringComparison.Ordinal);
 
             if (!string.Equals(existing.imdbID, dto.imdbID, StringComparison.Ordinal) && !string.IsNullOrEmpty(dto.imdbID))
             {
@@ -277,7 +278,6 @@ namespace MovieTheater.Controllers
             existing.Writer = dto.Writer;
             existing.Actors = dto.Actors;
             existing.Plot = dto.Plot;
-            existing.PosterLink = dto.PosterLink;
             existing.imdbRating = dto.imdbRating;
             existing.imdbID = dto.imdbID;
             existing.tomatoRating = dto.tomatoRating;
@@ -295,6 +295,17 @@ namespace MovieTheater.Controllers
             string posterError = null;
             if (posterLinkChanged && !string.IsNullOrWhiteSpace(dto.PosterLink))
             {
+                if (existing.PosterDetails == null)
+                {
+                    var pd = new MoviePosterDetails { MovieId = existing.id, PosterLink = dto.PosterLink };
+                    movieDb.MoviePosterDetails.Add(pd);
+                }
+                else
+                {
+                    existing.PosterDetails.PosterLink = dto.PosterLink;
+                }
+                await movieDb.SaveChangesAsync();
+
                 try
                 {
                     await DownloadAndSavePoster(existing, dto.PosterLink, force: true);
@@ -318,7 +329,17 @@ namespace MovieTheater.Controllers
             var content = await result.Content.ReadAsByteArrayAsync();
             await imageRepo.SaveImage(movie.id, PosterImageVariant.Main, content);
             await shrinkService.EnsurePosterThumnailExists(movie.id, force);
-            movie.PosterVersion++;
+            var posterDetails = await movieDb.MoviePosterDetails.FindAsync(movie.id);
+            if (posterDetails == null)
+            {
+                posterDetails = new MoviePosterDetails { MovieId = movie.id, PosterLink = posterLink, PosterVersion = 1 };
+                movieDb.MoviePosterDetails.Add(posterDetails);
+            }
+            else
+            {
+                posterDetails.PosterLink = posterLink;
+                posterDetails.PosterVersion++;
+            }
             await movieDb.SaveChangesAsync();
         }
 

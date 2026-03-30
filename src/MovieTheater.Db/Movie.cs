@@ -16,17 +16,28 @@ namespace MovieTheater.Db
         public string? Writer { get; set; }
         public string? Actors { get; set; }
         public string? Plot { get; set; }
-        public string? PosterLink { get; set; }
         public decimal? imdbRating { get; set; }
         public string? imdbID { get; set; }
         public int? tomatoRating { get; set; }
         public DateTime? UploadedDate { get; set; }
         public bool RemoveFromRandom { get; set; }
-        public int PosterVersion { get; set; }
 
         [Key]
         public int id { get; set; }
 
         public List<Viewing> Viewings { get; set; } = default!;
+
+        public MoviePosterDetails? PosterDetails { get; set; }
+
+        private string? _posterLink;
+        [NotMapped]
+        public string? PosterLink
+        {
+            get => _posterLink ?? PosterDetails?.PosterLink;
+            set => _posterLink = value;
+        }
+
+        [NotMapped]
+        public int PosterVersion => PosterDetails?.PosterVersion ?? 0;
     }
 }
