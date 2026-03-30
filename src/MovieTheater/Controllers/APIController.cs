@@ -329,16 +329,21 @@ namespace MovieTheater.Controllers
             var content = await result.Content.ReadAsByteArrayAsync();
             await imageRepo.SaveImage(movie.id, PosterImageVariant.Main, content);
             await shrinkService.EnsurePosterThumnailExists(movie.id, force);
+
+            var thumbnailBytes = await imageRepo.GetImage(movie.id, PosterImageVariant.Thumbnail);
+            var dominantColor = ComputeAverageColor(thumbnailBytes ?? content);
+
             var posterDetails = await movieDb.MoviePosterDetails.FindAsync(movie.id);
             if (posterDetails == null)
             {
-                posterDetails = new MoviePosterDetails { MovieId = movie.id, PosterLink = posterLink, PosterVersion = 1 };
+                posterDetails = new MoviePosterDetails { MovieId = movie.id, PosterLink = posterLink, PosterVersion = 1, DominantColor = dominantColor };
                 movieDb.MoviePosterDetails.Add(posterDetails);
             }
             else
             {
                 posterDetails.PosterLink = posterLink;
                 posterDetails.PosterVersion++;
+                posterDetails.DominantColor = dominantColor;
             }
             await movieDb.SaveChangesAsync();
         }
