@@ -292,17 +292,29 @@ namespace MovieTheater.Controllers
                 return Conflict(new { Message = $"Save failed: {ex.InnerException?.Message ?? ex.Message}", Success = false });
             }
 
+            string posterError = null;
             if (posterLinkChanged && !string.IsNullOrWhiteSpace(dto.PosterLink))
             {
-                await DownloadAndSavePoster(existing.id, dto.PosterLink, force: true);
+                try
+                {
+                    await DownloadAndSavePoster(existing.id, dto.PosterLink, force: true);
+                }
+                catch (Exception ex)
+                {
+                    posterError = ex.Message;
+                }
             }
 
-            return Ok(new { Message = "Movie updated", Success = true, data = existing });
+            var message = posterError != null
+                ? $"Movie updated, but poster download failed: {posterError}"
+                : "Movie updated";
+            return Ok(new { Message = message, Success = true, data = existing });
         }
 
         private async Task DownloadAndSavePoster(int movieId, string posterLink, bool force = false)
         {
             var result = await httpClient.GetAsync(posterLink);
+            result.EnsureSuccessStatusCode();
             var content = await result.Content.ReadAsByteArrayAsync();
             await imageRepo.SaveImage(movieId, PosterImageVariant.Main, content);
             await shrinkService.EnsurePosterThumnailExists(movieId, force);
