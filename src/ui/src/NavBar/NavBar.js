@@ -17,6 +17,7 @@ function NavBar({
   titleSearch,
   actorSearch,
   firstLetterSearch,
+  ratingSearch,
   restoreMovieIdsSearch,
   moviesSeenSearch,
   moviesWantToWatchSearch,
@@ -56,6 +57,7 @@ function NavBar({
     const params = new URLSearchParams(location.search);
     const mode = params.get("mode");
     const value = params.get("value") || "";
+    const page = params.get("page") || "1";
 
     if (!mode) {
       // No search mode in the URL. Determine whether this is a hard browser reload
@@ -103,6 +105,7 @@ function NavBar({
       title: (v) => (v.trim() ? titleSearch(v) : resetSearch()),
       actor: (v) => (v.trim() ? actorSearch(v) : resetSearch()),
       letter: (v) => (v.trim() ? firstLetterSearch(v) : resetSearch()),
+      rating: (v) => (v.trim() ? ratingSearch(v, parseInt(page, 10) || 1) : resetSearch()),
       seen: () => {
         if (!isAuthReady) return;
         userData ? moviesSeenSearch(userData) : resetSearch();
@@ -135,6 +138,7 @@ function NavBar({
     titleSearch,
     actorSearch,
     firstLetterSearch,
+    ratingSearch,
     restoreMovieIdsSearch,
     moviesSeenSearch,
     moviesWantToWatchSearch,
@@ -145,7 +149,7 @@ function NavBar({
   const navContent = (
     <>
       <Login userData={userData} setUserData={setUserData} onUserLoggedIn={onUserLoggedIn} />
-      <SearchTools search={search} />
+      <SearchTools search={search} userData={userData} />
     </>
   );
 

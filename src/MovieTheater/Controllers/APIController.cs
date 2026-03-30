@@ -806,6 +806,38 @@ namespace MovieTheater.Controllers
             return System.Text.RegularExpressions.Regex.IsMatch(id, @"^tt\d{7,9}$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         }
 
+        [HttpGet("/API/GetMoviesByRating")]
+        public async Task<IActionResult> GetMoviesByRating(int maxRatingId, int page = 1, int pageSize = 50)
+        {
+            int ageRestriction = 100;
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId.HasValue)
+            {
+                var setRestriction = await movieDb.UserSettings
+                    .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value);
+                if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction))
+                    ageRestriction = parsedRestriction;
+            }
+
+            var effectiveMax = Math.Min(maxRatingId, ageRestriction);
+
+            var query = movieDb.Movies
+                .Where(m => movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID <= effectiveMax));
+
+            var totalCount = await query.CountAsync();
+
+            if (page < 1) page = 1;
+            var skip = (page - 1) * pageSize;
+
+            var movies = await query
+                .OrderBy(m => m.SimpleTitle)
+                .Skip(skip)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(new { movies, totalCount, page, pageSize });
+        }
+
         [HttpGet("/API/GetMPARatings")]
         public async Task<IActionResult> GetMPARatings()
         {

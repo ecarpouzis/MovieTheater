@@ -1,5 +1,7 @@
-import { Input, List, Button } from "antd";
+import { Input, List, Button, message } from "antd";
+import { useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
+import { MovieAPI } from "../MovieAPI";
 
 const { Search } = Input;
 
@@ -71,8 +73,18 @@ const listStyle = {
   paddingBottom: "20px",
 };
 
-function SearchTools({ search }) {
+function SearchTools({ search, userData }) {
   const history = useHistory();
+  const [mpaRatings, setMpaRatings] = useState([]);
+
+  useEffect(() => {
+    MovieAPI.getMPARatings()
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setMpaRatings(data);
+      })
+      .catch(() => {});
+  }, []);
 
   function navigateToBrowseSearch(mode, value = "") {
     const params = new URLSearchParams();
@@ -100,6 +112,23 @@ function SearchTools({ search }) {
     } else {
       navigateToBrowseSearch("letter", firstLetter);
     }
+  }
+
+  function ToggleRatingSearch(ratingId) {
+    const isAlreadySelected = search.maxRatingId === String(ratingId);
+
+    if (isAlreadySelected) {
+      navigateToBrowseSearch();
+      return;
+    }
+
+    if (userData?.ageRestriction != null && ratingId > userData.ageRestriction) {
+      const restrictionName = mpaRatings.find((r) => r.id === userData.ageRestriction)?.name || "your current setting";
+      message.warning(`Your age restriction is set to ${restrictionName}. You cannot browse movies above that rating.`);
+      return;
+    }
+
+    navigateToBrowseSearch("rating", String(ratingId));
   }
 
   return (
@@ -164,6 +193,41 @@ function SearchTools({ search }) {
           );
         }}
       />
+      {mpaRatings.length > 0 && (
+        <>
+          <span style={inputLabelStyle}>MPA Rating Filter</span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", paddingBottom: "20px" }}>
+            {mpaRatings.map((r) => {
+              const isActive = search.maxRatingId === String(r.id);
+              const isRestricted = userData?.ageRestriction != null && r.id > userData.ageRestriction;
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => ToggleRatingSearch(r.id)}
+                  style={{
+                    whiteSpace: "nowrap",
+                    overflow: "visible",
+                    display: "inline-block",
+                    padding: "4px 14px",
+                    fontSize: "14px",
+                    lineHeight: "22px",
+                    borderRadius: "6px",
+                    border: "1px solid",
+                    cursor: "pointer",
+                    transition: "background 0.15s, color 0.15s",
+                    backgroundColor: isActive ? "#1890ff" : "rgba(255,255,255,0.08)",
+                    color: isActive ? "white" : isRestricted ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.75)",
+                    borderColor: isActive ? "#1890ff" : isRestricted ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.15)",
+                    opacity: isRestricted ? 0.6 : 1,
+                  }}
+                >
+                  {r.name}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }
