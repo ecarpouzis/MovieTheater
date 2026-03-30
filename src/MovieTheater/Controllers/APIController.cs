@@ -343,6 +343,84 @@ namespace MovieTheater.Controllers
             await movieDb.SaveChangesAsync();
         }
 
+        [HttpPost("/API/ScanPosterColors")]
+        public async Task<IActionResult> ScanPosterColors(int batchSize = 50)
+        {
+            batchSize = Math.Clamp(batchSize, 1, 500);
+
+            var batch = await movieDb.MoviePosterDetails
+                .Where(pd => pd.DominantColor == null)
+                .OrderBy(pd => pd.MovieId)
+                .Take(batchSize)
+                .ToListAsync();
+
+            if (batch.Count == 0)
+            {
+                var total = await movieDb.MoviePosterDetails.CountAsync();
+                return Ok(new { Processed = 0, Skipped = 0, Remaining = 0, Total = total, Errors = Array.Empty<string>() });
+            }
+
+            int processed = 0;
+            int skipped = 0;
+            var errors = new List<string>();
+
+            foreach (var pd in batch)
+            {
+                try
+                {
+                    var hasThumb = await imageRepo.HasImage(pd.MovieId, PosterImageVariant.Thumbnail);
+                    var variant = hasThumb ? PosterImageVariant.Thumbnail : PosterImageVariant.Main;
+                    if (!hasThumb && !await imageRepo.HasImage(pd.MovieId, PosterImageVariant.Main))
+                    {
+                        skipped++;
+                        continue;
+                    }
+
+                    var imageBytes = await imageRepo.GetImage(pd.MovieId, variant);
+                    pd.DominantColor = ComputeAverageColor(imageBytes);
+                    processed++;
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Movie {pd.MovieId}: {ex.Message}");
+                }
+            }
+
+            await movieDb.SaveChangesAsync();
+
+            var remaining = await movieDb.MoviePosterDetails.CountAsync(pd => pd.DominantColor == null);
+
+            return Ok(new { Processed = processed, Skipped = skipped, Remaining = remaining, Errors = errors });
+        }
+
+        private static string ComputeAverageColor(byte[] imageBytes)
+        {
+            using var image = Image.Load<Rgba32>(imageBytes);
+            long totalR = 0, totalG = 0, totalB = 0, count = 0;
+
+            image.ProcessPixelRows(accessor =>
+            {
+                for (int y = 0; y < accessor.Height; y++)
+                {
+                    var row = accessor.GetRowSpan(y);
+                    for (int x = 0; x < row.Length; x++)
+                    {
+                        var pixel = row[x];
+                        if (pixel.A < 128) continue;
+                        totalR += pixel.R;
+                        totalG += pixel.G;
+                        totalB += pixel.B;
+                        count++;
+                    }
+                }
+            });
+
+            if (count == 0)
+                return "#000000";
+
+            return $"#{totalR / count:X2}{totalG / count:X2}{totalB / count:X2}";
+        }
+
         [HttpPost("/API/Login")]
         public async Task<IActionResult> Login(string username)
         {
