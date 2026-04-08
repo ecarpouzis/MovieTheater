@@ -29,9 +29,21 @@ namespace MovieTheater.Controllers
 
         private async Task<IActionResult> PosterResponse(int movieId, PosterImageVariant variant)
         {
+            // Try to get the modified date for caching. In dev mode the file may not
+            // exist yet but the repository can fetch it on demand (DevPosterImageRepository).
             var modifiedDate = await imageRepository.GetImageModifiedDate(movieId, variant);
+            byte[]? posterBytes = null;
+
             if (modifiedDate == null)
-                return NotFound();
+            {
+                // Attempt to fetch the image (this will download & save in DevPosterImageRepository).
+                posterBytes = await imageRepository.GetImage(movieId, variant);
+                if (posterBytes == null)
+                    return NotFound();
+
+                // Re-check modified date; if repository doesn't supply it, use now.
+                modifiedDate = await imageRepository.GetImageModifiedDate(movieId, variant) ?? DateTimeOffset.UtcNow;
+            }
 
             var etag = $"\"{modifiedDate.Value.Ticks}\"";
 
@@ -42,11 +54,15 @@ namespace MovieTheater.Controllers
             if (Request.Headers.TryGetValue("If-None-Match", out var ifNoneMatch) && ifNoneMatch == etag)
                 return StatusCode(304);
 
-            var poster = await imageRepository.GetImage(movieId, variant);
-            if (poster == null)
-                return NotFound();
+            // If we already fetched the bytes above, use them. Otherwise load from repository.
+            if (posterBytes == null)
+            {
+                posterBytes = await imageRepository.GetImage(movieId, variant);
+                if (posterBytes == null)
+                    return NotFound();
+            }
 
-            return File(poster, "image/png");
+            return File(posterBytes, "image/png");
         }
     }
 }
