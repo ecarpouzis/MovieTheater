@@ -55,6 +55,9 @@ jobs:
       - name: Install GoDaddy DNS webhook
         run: |
           microk8s kubectl apply -f k8s/godaddy-webhook.yaml
+          microk8s kubectl wait --for=condition=Ready \
+            certificate/cert-manager-webhook-godaddy-webhook-tls \
+            -n cert-manager --timeout=120s
           microk8s kubectl rollout status -n cert-manager deployment/cert-manager-webhook-godaddy --timeout=120s
 
       - name: Configure GoDaddy credentials
