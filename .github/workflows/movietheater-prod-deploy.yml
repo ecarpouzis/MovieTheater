@@ -81,6 +81,9 @@ jobs:
               -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
             READY=${READY:-0}
             if [ "$READY" -gt 0 ] && microk8s kubectl get apiservice v1alpha1.acme.snowdrop.it > /dev/null 2>&1; then
+              echo "GoDaddy webhook already healthy (readyReplicas=$READY) and APIService registered — skipping reinstall."
+              microk8s kubectl get deployment godaddy-webhook -n cert-manager
+              microk8s kubectl get apiservice v1alpha1.acme.snowdrop.it
               exit 0
             fi
             # Pod unhealthy or APIService missing — delete and redeploy cleanly
@@ -178,5 +181,19 @@ jobs:
             exit 1
           }
 
-      - run: microk8s kubectl rollout status -n movietheater deployment/movietheater
+      - name: Deployment summary
+        run: |
+          microk8s kubectl rollout status -n movietheater deployment/movietheater
+          echo "---"
+          echo "Pods:"
+          microk8s kubectl get pods -n movietheater
+          echo "---"
+          echo "Certificate:"
+          microk8s kubectl get certificate movietheater-tls -n movietheater
+          echo "TLS secret validity:"
+          microk8s kubectl get secret movietheater-tls -n movietheater \
+            -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -subject -issuer -dates
+          echo "---"
+          echo "Ingress:"
+          microk8s kubectl get ingress -n movietheater
 
