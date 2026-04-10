@@ -25,7 +25,25 @@ jobs:
     needs: [docker-build-api, docker-build-ui]
     runs-on: [self-hosted, linux, x64]
     steps:
+      - uses: actions/checkout@v2
+
+      # Ensure cert-manager and ingress addons are enabled (idempotent)
+      - run: microk8s enable cert-manager || true
+      - run: microk8s enable ingress || true
+
+      # Wait for cert-manager to be ready
+      - run: microk8s kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=cert-manager -n cert-manager --timeout=300s || true
+
       - run: microk8s kubectl create namespace movietheater --dry-run=client -o yaml | microk8s kubectl apply -f -
+
+      # Deploy cert-manager certificate issuer
+      - run: microk8s kubectl apply -f k8s/cert-issuer.yaml
+
+      # Deploy application
       - run: envsubst < k8s/deployment.yaml | microk8s kubectl apply -n movietheater -f -
       - run: envsubst < k8s/service.yaml | microk8s kubectl apply -n movietheater -f -
+
+      # Deploy ingress with TLS
+      - run: microk8s kubectl apply -n movietheater -f k8s/ingress.yaml
+
       - run: microk8s kubectl rollout status -n movietheater deployment/movietheater

@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: movietheater-ingress
+  annotations:
+    # Use cert-manager to automatically provision and renew Let's Encrypt certificates
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # Redirect HTTP to HTTPS
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # Optional: increase body size for poster uploads
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - theater.carpouzis.com
+    secretName: movietheater-tls
+  rules:
+  - host: theater.carpouzis.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: movietheater
+            port:
+              number: 32766

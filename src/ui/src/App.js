@@ -12,7 +12,6 @@ import { useMovieSearch } from "./hooks/useMovieSearch";
 
 const storedUsername = window.localStorage.getItem("Username");
 const storedCardStyle = window.localStorage.getItem("CardStyle");
-const storedEnablePagination = window.localStorage.getItem("EnablePagination") === "true";
 
 function App() {
   const [userData, setUserData] = useState(null);
