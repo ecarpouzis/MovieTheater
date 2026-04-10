@@ -37,8 +37,6 @@ jobs:
   k8s-deploy:
     needs: [docker-build-api, docker-build-ui]
     runs-on: [self-hosted, linux, x64]
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v5
 
@@ -79,7 +77,6 @@ jobs:
               -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
             READY=${READY:-0}
             if [ "$READY" -gt 0 ] && microk8s kubectl get apiservice v1alpha1.acme.snowdrop.it > /dev/null 2>&1; then
-              echo "WEBHOOK_OK=true" >> $GITHUB_ENV
               exit 0
             fi
             # Pod unhealthy or APIService missing — delete and redeploy cleanly
@@ -98,51 +95,17 @@ jobs:
               if microk8s kubectl wait --for=condition=ready pod \
                   -l app.kubernetes.io/name=godaddy-webhook \
                   -n cert-manager --timeout=90s; then
-                echo "WEBHOOK_OK=true" >> $GITHUB_ENV
+                : # success
               else
                 microk8s kubectl describe pod -n cert-manager -l app.kubernetes.io/name=godaddy-webhook | grep -A 15 "Events:" || true
-                echo "WEBHOOK_OK=false" >> $GITHUB_ENV
+                exit 1
               fi
             else
-              echo "WEBHOOK_OK=false" >> $GITHUB_ENV
+              exit 1
             fi
           else
-            echo "WEBHOOK_OK=false" >> $GITHUB_ENV
+            exit 1
           fi
-
-      - name: Install GoDaddy webhook (fallback - build from source)
-        if: env.WEBHOOK_OK != 'true'
-        shell: bash
-        run: |
-          WEBHOOK_DIR="${GITHUB_WORKSPACE}/.webhook-build"
-          mkdir -p "$WEBHOOK_DIR" && cd "$WEBHOOK_DIR"
-
-          # Try tarball download first (most reliable, no auth needed)
-          if curl -L https://github.com/snowdrop/godaddy-webhook/archive/refs/heads/master.tar.gz \
-              -o webhook.tar.gz && \
-             tar -xzf webhook.tar.gz && \
-             mv godaddy-webhook-master cert-manager-webhook-godaddy; then
-            : # success
-          elif [ -n "$GITHUB_TOKEN" ]; then
-            git clone https://${GITHUB_TOKEN}@github.com/snowdrop/godaddy-webhook.git && \
-              mv godaddy-webhook cert-manager-webhook-godaddy
-          else
-            GIT_TERMINAL_PROMPT=0 git clone https://github.com/snowdrop/godaddy-webhook.git && \
-              mv godaddy-webhook cert-manager-webhook-godaddy
-          fi
-
-          cd cert-manager-webhook-godaddy
-          DOCKER_BUILDKIT=1 docker build -t localhost:32000/cert-manager-webhook-godaddy:latest .
-          docker push localhost:32000/cert-manager-webhook-godaddy:latest
-
-          cd "$GITHUB_WORKSPACE"
-          sed -i 's|image: "ghcr.io/snowdrop/godaddy-webhook:latest"|image: "localhost:32000/cert-manager-webhook-godaddy:latest"|g' k8s/godaddy-webhook.yaml
-          sed -i 's|imagePullPolicy: IfNotPresent|imagePullPolicy: Always|g' k8s/godaddy-webhook.yaml
-          microk8s kubectl apply --validate=false -f k8s/godaddy-webhook.yaml
-          sleep 30
-          microk8s kubectl wait --for=condition=ready pod \
-            -l app.kubernetes.io/name=cert-manager-webhook-godaddy \
-            -n cert-manager --timeout=90s
 
       - name: Configure GoDaddy credentials
         run: |
