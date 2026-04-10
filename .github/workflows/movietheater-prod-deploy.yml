@@ -16,12 +16,16 @@ on:
     branches: [master]
   workflow_dispatch: {}
 
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
 jobs:
   docker-build-api:
     runs-on: [self-hosted, linux, x64]
     steps:
       - uses: actions/checkout@v5
-      - run: echo $MOVIETHEATER_APPSETTINGS_JSON > src/MovieTheater/appsettings.Production.json
+      - run: echo "$MOVIETHEATER_APPSETTINGS_JSON" > src/MovieTheater/appsettings.Production.json
         env:
           MOVIETHEATER_APPSETTINGS_JSON: ${{ secrets.MOVIETHEATER_APPSETTINGS_JSON }}
       - run: cd docker && bash build-api.sh
@@ -91,10 +95,9 @@ jobs:
               -o /tmp/webhook-all.yml; then
             sed "s/acme.mycompany.com/acme.snowdrop.it/g" /tmp/webhook-all.yml > /tmp/webhook-configured.yml
             if microk8s kubectl apply --validate=false -f /tmp/webhook-configured.yml; then
-              sleep 30
               if microk8s kubectl wait --for=condition=ready pod \
                   -l app.kubernetes.io/name=godaddy-webhook \
-                  -n cert-manager --timeout=90s; then
+                  -n cert-manager --timeout=120s; then
                 : # success
               else
                 microk8s kubectl describe pod -n cert-manager -l app.kubernetes.io/name=godaddy-webhook | grep -A 15 "Events:" || true
@@ -108,9 +111,12 @@ jobs:
           fi
 
       - name: Configure GoDaddy credentials
+        env:
+          GODADDY_API_KEY: ${{ secrets.GODADDY_API_KEY }}
+          GODADDY_API_SECRET: ${{ secrets.GODADDY_API_SECRET }}
         run: |
           microk8s kubectl create secret generic godaddy-api-key \
-            --from-literal=token='${{ secrets.GODADDY_API_KEY }}:${{ secrets.GODADDY_API_SECRET }}' \
+            --from-literal=token="$GODADDY_API_KEY:$GODADDY_API_SECRET" \
             --namespace cert-manager \
             --dry-run=client -o yaml | microk8s kubectl apply -f -
 
@@ -148,6 +154,7 @@ jobs:
             READY=$(microk8s kubectl get clusterissuer letsencrypt-prod \
               -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "")
             [ "$READY" = "True" ] && break
+            [ $i -eq 30 ] && echo "ClusterIssuer not ready after 60s" && exit 1
             sleep 2
           done
 
