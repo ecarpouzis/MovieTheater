@@ -1,52 +1,300 @@
-# Kubernetes Deployment Configuration
+# MovieTheater Kubernetes Deployment with HTTPS
 
-## Overview
+## 📋 Overview
 
-This directory contains Kubernetes manifests for deploying the MovieTheater application with **fully automated HTTPS/TLS** using Let's Encrypt.
+This directory contains Kubernetes manifests for deploying the MovieTheater application to MicroK8s with **automated HTTPS/TLS** using Let's Encrypt via DNS-01 challenge through GoDaddy.
 
-## Files
+**Domain**: `theater.carpouzis.com`
 
-- `deployment.yaml` - Main deployment configuration for the application
-- `service.yaml` - Service configuration to expose the application
-- `ingress.yaml` - Ingress configuration with TLS/HTTPS support (template)
-- `cert-issuer.yaml` - Let's Encrypt production certificate issuer (template)
-- `cert-issuer-staging.yaml` - Let's Encrypt staging certificate issuer (for testing)
+---
 
-## 🚀 Fully Automated Setup
+## 📂 Files
 
-### One-Time Configuration (GitHub Secrets)
+### Core Kubernetes Manifests
+- **`deployment.yaml`** - Application deployment (API + UI containers)
+- **`service.yaml`** - NodePort service exposing the application
+- **`ingress.yaml`** - Nginx ingress with TLS termination
 
-**Set these secrets in your GitHub repository:**
+### Certificate Management
+- **`cert-issuer.yaml`** - Let's Encrypt production ClusterIssuer (DNS-01 via GoDaddy)
+- **`cert-issuer-staging.yaml`** - Let's Encrypt staging ClusterIssuer (for testing)
+- **`certificate.yaml`** - Standalone Certificate resource for theater.carpouzis.com
 
-1. Go to: **Settings → Secrets and variables → Actions → New repository secret**
+---
 
-2. **Add these secrets:**
+## 🔧 Architecture & How It Works
 
-   | Secret Name | Example Value | Description |
-   |-------------|---------------|-------------|
-   | `DOMAIN_NAME` | `movietheater.yourdomain.com` | Your domain name |
-   | `LETSENCRYPT_EMAIL` | `admin@yourdomain.com` | Email for Let's Encrypt notifications |
+### The Challenge: Why DNS-01 Instead of HTTP-01?
 
-3. **Ensure DNS points to your server:**
-   ```bash
-   nslookup movietheater.yourdomain.com
-   # Should return your server's public IP address
-   ```
+**HTTP-01 was failing due to routing conflicts:**
+- The main ingress would intercept ACME challenge requests meant for cert-manager's temporary solver ingress
+- Reverse proxy issues caused Let's Encrypt to receive incorrect responses
+- Timing issues: deploying the main ingress too early blocked challenges
 
-4. **Push to master** - Everything else is automatic! 🎉
+**DNS-01 solves this by:**
+- Bypassing HTTP routing entirely
+- Proving domain ownership via DNS TXT records
+- No dependency on ingress or reverse proxy configuration
+- More reliable for complex routing scenarios
 
-### What Happens Automatically
+### Components
 
-Every push to master:
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     GitHub Actions Workflow                  │
+│  (.github/workflows/movietheater-prod-deploy.yml)           │
+└──────────────────┬──────────────────────────────────────────┘
+                   │
+                   ├──> 1. Build Docker images (API + UI)
+                   │
+                   ├──> 2. Setup cert-manager + GoDaddy webhook
+                   │     └─> Helm chart: cert-manager-webhook-godaddy
+                   │
+                   ├──> 3. Deploy ClusterIssuer (cert-issuer.yaml)
+                   │     └─> Configured with GoDaddy API credentials
+                   │
+                   ├──> 4. Deploy Application (deployment.yaml + service.yaml)
+                   │
+                   ├──> 5. Check existing certificate status
+                   │     ├─> If ready: skip to step 7
+                   │     └─> If not ready: continue to step 6
+                   │
+                   ├──> 6. Request Certificate (certificate.yaml)
+                   │     └─> cert-manager uses GoDaddy to create DNS TXT record
+                   │         └─> Let's Encrypt validates DNS
+                   │             └─> Certificate issued to secret: movietheater-tls
+                   │
+                   └──> 7. Deploy Ingress (ingress.yaml)
+                        └─> References movietheater-tls secret for TLS
+```
 
-1. ✅ Enables cert-manager addon (if not already enabled)
-2. ✅ Enables ingress addon (if not already enabled)
-3. ✅ Waits for cert-manager to be ready
-4. ✅ Deploys cert-issuer with your email (testmanager@test.com)
+### DNS-01 Challenge Flow
+
+```
+1. Certificate resource created
+   └─> cert-manager detects new Certificate
+
+2. cert-manager contacts Let's Encrypt
+   └─> Let's Encrypt responds with DNS-01 challenge
+
+3. cert-manager calls GoDaddy webhook
+   └─> Webhook creates TXT record: _acme-challenge.theater.carpouzis.com
+
+4. Let's Encrypt queries DNS for TXT record
+   └─> DNS propagation (30-90 seconds)
+       └─> Let's Encrypt validates domain ownership
+
+5. Certificate issued
+   └─> Stored in Kubernetes secret: movietheater-tls
+
+6. Ingress uses certificate
+   └─> HTTPS is live!
+```
+
+---
+
+## 🚀 Deployment Process
+
+### Prerequisites
+
+**Required GitHub Secrets:**
+
+| Secret Name | Description | Example |
+|-------------|-------------|---------|
+| `MOVIETHEATER_APPSETTINGS_JSON` | Production appsettings.json | `{"ConnectionStrings":...}` |
+| `GODADDY_API_KEY` | GoDaddy API key | `dXXXXXXXXXXXX_XXXxxx...` |
+| `GODADDY_API_SECRET` | GoDaddy API secret | `XXXxxxXXXxxx` |
+
+**How to get GoDaddy credentials:**
+1. Go to https://developer.godaddy.com/keys
+2. Create new production API key
+3. Save key + secret to GitHub Secrets
+
+**DNS Configuration:**
+```bash
+# Ensure your domain points to the MicroK8s server
+theater.carpouzis.com → <server-public-ip>
+```
+
+### Automated Deployment
+
+**Simply push to master:**
+```bash
+git push origin master
+```
+
+The GitHub Actions workflow automatically:
+1. ✅ Builds Docker images
+2. ✅ Pushes to MicroK8s registry
+3. ✅ Installs/configures cert-manager + GoDaddy webhook
+4. ✅ Deploys ClusterIssuer with your GoDaddy credentials
 5. ✅ Deploys application
-6. ✅ Deploys ingress with TLS for testeddomain.com
-7. ✅ Let's Encrypt automatically issues certificate (~2 min)
-8. ✅ HTTPS is live with valid certificate!
+6. ✅ Checks certificate status (skips issuance if already valid)
+7. ✅ Requests certificate via DNS-01 (if needed)
+8. ✅ Waits for certificate issuance (~90-120 seconds)
+9. ✅ Deploys ingress with TLS
+10. ✅ HTTPS is live at https://theater.carpouzis.com
+
+**Expected timeline:**
+- New deployment (no cert): ~3-5 minutes
+- Re-deployment (cert exists): ~2 minutes
+
+---
+
+## 🐛 Troubleshooting
+
+### Certificate Not Issuing
+
+**Check certificate status:**
+```bash
+microk8s kubectl get certificate -n movietheater
+microk8s kubectl describe certificate movietheater-tls -n movietheater
+```
+
+**Check DNS challenge:**
+```bash
+# View challenge status
+microk8s kubectl get challenge -n movietheater -o wide
+
+# Check challenge details
+microk8s kubectl describe challenge <challenge-name> -n movietheater
+```
+
+**Check cert-manager logs:**
+```bash
+# Main controller
+microk8s kubectl logs -n cert-manager -l app=cert-manager --tail=100
+
+# GoDaddy webhook
+microk8s kubectl logs -n cert-manager -l app.kubernetes.io/name=cert-manager-webhook-godaddy --tail=100
+```
+
+**Verify GoDaddy credentials:**
+```bash
+microk8s kubectl get secret godaddy-api-key -n cert-manager -o yaml
+```
+
+### Certificate Stuck or Failed
+
+**Clean up and retry:**
+```bash
+# Delete certificate resources (will trigger re-issuance)
+microk8s kubectl delete certificate movietheater-tls -n movietheater
+microk8s kubectl delete certificaterequest --all -n movietheater
+microk8s kubectl delete challenge --all -n movietheater
+microk8s kubectl delete secret movietheater-tls -n movietheater
+
+# Re-deploy (push to master or manually apply)
+microk8s kubectl apply -f k8s/certificate.yaml
+```
+
+### Ingress Not Working
+
+**Check ingress status:**
+```bash
+microk8s kubectl get ingress -n movietheater
+microk8s kubectl describe ingress movietheater-ingress -n movietheater
+```
+
+**Verify TLS secret exists:**
+```bash
+microk8s kubectl get secret movietheater-tls -n movietheater
+```
+
+**Check nginx ingress logs:**
+```bash
+microk8s kubectl logs -n ingress -l app.kubernetes.io/name=ingress-nginx --tail=100
+```
+
+### GoDaddy Webhook Issues
+
+**Check webhook pod:**
+```bash
+microk8s kubectl get pods -n cert-manager -l app.kubernetes.io/name=cert-manager-webhook-godaddy
+microk8s kubectl logs -n cert-manager -l app.kubernetes.io/name=cert-manager-webhook-godaddy --tail=100
+```
+
+**Check webhook deployment:**
+```bash
+microk8s kubectl get deployment cert-manager-webhook-godaddy -n cert-manager
+microk8s kubectl describe deployment cert-manager-webhook-godaddy -n cert-manager
+```
+
+**Verify APIService:**
+```bash
+microk8s kubectl get apiservice v1alpha1.acme.snowdrop.it
+microk8s kubectl describe apiservice v1alpha1.acme.snowdrop.it
+```
+
+**Re-deploy webhook (no Helm required):**
+```bash
+microk8s kubectl delete -f k8s/godaddy-webhook.yaml
+sleep 5
+microk8s kubectl apply -f k8s/godaddy-webhook.yaml
+```
+
+---
+
+## 📊 Key Differences from HTTP-01
+
+| Aspect | HTTP-01 (Old) | DNS-01 (Current) |
+|--------|---------------|------------------|
+| **Challenge Method** | HTTP endpoint | DNS TXT record |
+| **Routing Dependency** | Yes (ingress required) | No (DNS only) |
+| **Reverse Proxy Issues** | Affected | Not affected |
+| **Firewall Requirements** | Port 80 open | None |
+| **DNS Provider** | Not needed | GoDaddy API required |
+| **Reliability** | Poor (routing conflicts) | Excellent |
+| **Issuance Time** | 30-60 seconds | 90-120 seconds |
+
+---
+
+## ⚠️ Common Pitfalls (Learned from 50+ Failed Attempts)
+
+### 1. **Deploying Ingress Too Early**
+- ❌ **Problem**: Main ingress intercepts ACME HTTP-01 challenges
+- ✅ **Solution**: Use DNS-01 (no HTTP dependency) OR deploy ingress AFTER certificate is ready
+
+### 2. **GoDaddy Webhook Not Ready**
+- ❌ **Problem**: ClusterIssuer deployed before webhook APIService is available
+- ✅ **Solution**: Wait for `v1alpha1.acme.snowdrop.it` APIService to be ready before deploying ClusterIssuer
+
+### 3. **Re-requesting Certificates Too Frequently**
+- ❌ **Problem**: Let's Encrypt rate limits (5 failures/hour, 50 certs/week per domain)
+- ✅ **Solution**: Check certificate status before requesting new one (implemented in workflow)
+
+### 4. **Wrong Challenge Type in Certificate**
+- ❌ **Problem**: Certificate resource specifies HTTP-01, but ClusterIssuer only supports DNS-01
+- ✅ **Solution**: Certificate resource should NOT specify challenge type (inherits from ClusterIssuer)
+
+### 5. **Stale Certificate Resources**
+- ❌ **Problem**: Failed certificate requests leave behind stuck CertificateRequest/Challenge objects
+- ✅ **Solution**: Clean up all related resources before retrying (see troubleshooting section)
+
+---
+
+## 🎯 Production Checklist
+
+Before going live:
+- [ ] GoDaddy API credentials set in GitHub Secrets
+- [ ] DNS points to correct server IP
+- [ ] MicroK8s ingress addon enabled
+- [ ] cert-manager installed (handled by workflow)
+- [ ] GoDaddy webhook installed (handled by workflow)
+- [ ] Push to master and monitor workflow
+- [ ] Verify certificate issued: `microk8s kubectl get certificate -n movietheater`
+- [ ] Test HTTPS: `curl -v https://theater.carpouzis.com`
+- [ ] Check certificate expiration: `openssl s_client -connect theater.carpouzis.com:443 -servername theater.carpouzis.com < /dev/null 2>/dev/null | openssl x509 -noout -dates`
+
+---
+
+## 📝 Notes
+
+- Certificates auto-renew ~30 days before expiration
+- Let's Encrypt production rate limits: 50 certificates per domain per week
+- Use staging ClusterIssuer (`cert-issuer-staging.yaml`) for testing
+- Certificate issuance typically takes 90-120 seconds with DNS-01
+- The workflow intelligently skips certificate requests if a valid certificate already exists
 
 **No SSH required. No manual commands. No secrets to configure. Just push to master.**
 

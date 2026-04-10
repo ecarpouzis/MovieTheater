@@ -11,6 +11,7 @@ using MovieTheater.Services.Tmdb;
 using System;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 
 namespace MovieTheater
 {
@@ -51,6 +52,19 @@ namespace MovieTheater
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app)
         {
+            // CRITICAL: Don't intercept .well-known paths - let them 404 so cert-manager's ingress can handle ACME challenges
+            // We catch all /.well-known/* paths to ensure ACME challenges work, even though we only care about /.well-known/acme-challenge/*
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Path.StartsWithSegments("/.well-known"))
+                {
+                    context.Response.StatusCode = 404;
+                    await context.Response.WriteAsync("Not found - .well-known paths should be handled by cert-manager or other ingress rules");
+                    return; // Don't call next() - stop the pipeline here and prevent reverse proxy from running
+                }
+                await next();
+            });
+
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();

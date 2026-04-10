@@ -6,13 +6,28 @@ spec:
   acme:
     # Let's Encrypt production server
     server: https://acme-v02.api.letsencrypt.org/directory
+
     # Email for Let's Encrypt notifications (certificate expiration warnings, etc.)
     email: ecarpouzis@gmail.com
+
     # Secret to store the ACME account private key
     privateKeySecretRef:
       name: letsencrypt-prod
-    # HTTP-01 challenge solver
+
+    # DNS-01 challenge solver using GoDaddy webhook
     solvers:
-    - http01:
-        ingress:
-          class: nginx
+    - dns01:
+        webhook:
+          # GroupName must match the webhook installation (--set groupName=acme.snowdrop.it)
+          groupName: acme.snowdrop.it
+          solverName: godaddy
+          config:
+            # Reference to GoDaddy API credentials secret
+            # Secret must have key "token" with value "API_KEY:SECRET" (concatenated with colon)
+            apiKeySecretRef:
+              name: godaddy-api-key
+              key: token
+            # Use GoDaddy production API
+            production: true
+            # TTL for DNS TXT records (seconds)
+            ttl: 600

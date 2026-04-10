@@ -1,13 +1,26 @@
+# MovieTheater Production Deployment
+#
+# Builds and deploys MovieTheater to MicroK8s with HTTPS via Let's Encrypt (DNS-01 / GoDaddy).
+# IIS certificate renewal is fully automated by the Windows scheduled task registered via
+# scripts/register-cert-renewal-task.ps1 — no manual steps required after first setup.
+#
+# Required GitHub Secrets:
+#   MOVIETHEATER_APPSETTINGS_JSON  - Production appsettings.json content
+#   GODADDY_API_KEY                - GoDaddy API key
+#   GODADDY_API_SECRET             - GoDaddy API secret
+
 name: MovieTheater Prod Deploy
+
 on:
   push:
-    branches:
-      - master
+    branches: [master]
+  workflow_dispatch: {}
+
 jobs:
   docker-build-api:
     runs-on: [self-hosted, linux, x64]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - run: echo $MOVIETHEATER_APPSETTINGS_JSON > src/MovieTheater/appsettings.Production.json
         env:
           MOVIETHEATER_APPSETTINGS_JSON: ${{ secrets.MOVIETHEATER_APPSETTINGS_JSON }}
@@ -17,7 +30,7 @@ jobs:
   docker-build-ui:
     runs-on: [self-hosted, linux, x64]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - run: cd docker && bash build-ui.sh
       - run: docker push localhost:32000/movietheater-ui:$GITHUB_SHA
 
@@ -25,25 +38,54 @@ jobs:
     needs: [docker-build-api, docker-build-ui]
     runs-on: [self-hosted, linux, x64]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      # Ensure cert-manager and ingress addons are enabled (idempotent)
-      - run: microk8s enable cert-manager || true
-      - run: microk8s enable ingress || true
+      - name: Enable nginx ingress
+        run: microk8s enable ingress || true
 
-      # Wait for cert-manager to be ready
-      - run: microk8s kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=cert-manager -n cert-manager --timeout=300s || true
+      - name: Install cert-manager
+        run: |
+          if ! microk8s kubectl get deployment cert-manager -n cert-manager &>/dev/null; then
+            microk8s kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
+            sleep 10
+          fi
+          microk8s kubectl rollout status -n cert-manager deployment/cert-manager         --timeout=300s
+          microk8s kubectl rollout status -n cert-manager deployment/cert-manager-webhook --timeout=300s
 
-      - run: microk8s kubectl create namespace movietheater --dry-run=client -o yaml | microk8s kubectl apply -f -
+      - name: Install GoDaddy DNS webhook
+        run: |
+          microk8s kubectl apply -f k8s/godaddy-webhook.yaml
+          microk8s kubectl rollout status -n cert-manager deployment/cert-manager-webhook-godaddy --timeout=120s
 
-      # Deploy cert-manager certificate issuer
-      - run: microk8s kubectl apply -f k8s/cert-issuer.yaml
+      - name: Configure GoDaddy credentials
+        run: |
+          microk8s kubectl create secret generic godaddy-api-key \
+            --from-literal=token='${{ secrets.GODADDY_API_KEY }}:${{ secrets.GODADDY_API_SECRET }}' \
+            --namespace cert-manager \
+            --dry-run=client -o yaml | microk8s kubectl apply -f -
 
-      # Deploy application
-      - run: envsubst < k8s/deployment.yaml | microk8s kubectl apply -n movietheater -f -
-      - run: envsubst < k8s/service.yaml | microk8s kubectl apply -n movietheater -f -
+      - name: Deploy ClusterIssuer
+        run: microk8s kubectl apply -f k8s/cert-issuer.yaml
 
-      # Deploy ingress with TLS
-      - run: microk8s kubectl apply -n movietheater -f k8s/ingress.yaml
+      - name: Create namespace
+        run: microk8s kubectl create namespace movietheater --dry-run=client -o yaml | microk8s kubectl apply -f -
+
+      - name: Deploy application
+        run: |
+          envsubst < k8s/deployment.yaml | microk8s kubectl apply -n movietheater -f -
+          microk8s kubectl apply -n movietheater -f k8s/service.yaml
+          microk8s kubectl apply -n movietheater -f k8s/ingress.yaml
+
+      - name: Deploy certificate
+        run: microk8s kubectl apply -n movietheater -f k8s/certificate.yaml
+
+      - name: Wait for certificate
+        run: |
+          microk8s kubectl wait --for=condition=Ready certificate/movietheater-tls \
+            -n movietheater --timeout=300s || {
+            microk8s kubectl describe certificate movietheater-tls -n movietheater
+            exit 1
+          }
 
       - run: microk8s kubectl rollout status -n movietheater deployment/movietheater
+
