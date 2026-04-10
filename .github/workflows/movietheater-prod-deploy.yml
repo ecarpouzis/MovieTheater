@@ -20,7 +20,7 @@ jobs:
   docker-build-api:
     runs-on: [self-hosted, linux, x64]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: echo $MOVIETHEATER_APPSETTINGS_JSON > src/MovieTheater/appsettings.Production.json
         env:
           MOVIETHEATER_APPSETTINGS_JSON: ${{ secrets.MOVIETHEATER_APPSETTINGS_JSON }}
@@ -30,15 +30,17 @@ jobs:
   docker-build-ui:
     runs-on: [self-hosted, linux, x64]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: cd docker && bash build-ui.sh
       - run: docker push localhost:32000/movietheater-ui:$GITHUB_SHA
 
   k8s-deploy:
     needs: [docker-build-api, docker-build-ui]
     runs-on: [self-hosted, linux, x64]
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Enable nginx ingress
         run: microk8s enable ingress || true
@@ -52,13 +54,95 @@ jobs:
           microk8s kubectl rollout status -n cert-manager deployment/cert-manager         --timeout=300s
           microk8s kubectl rollout status -n cert-manager deployment/cert-manager-webhook --timeout=300s
 
-      - name: Install GoDaddy DNS webhook
+      - name: Install GoDaddy webhook
+        shell: bash
         run: |
-          microk8s kubectl apply -f k8s/godaddy-webhook.yaml
-          microk8s kubectl wait --for=condition=Ready \
-            certificate/cert-manager-webhook-godaddy-webhook-tls \
-            -n cert-manager --timeout=120s
-          microk8s kubectl rollout status -n cert-manager deployment/cert-manager-webhook-godaddy --timeout=120s
+          # Remove old custom-named deployment if it exists — conflicts with official naming
+          if microk8s kubectl get deployment cert-manager-webhook-godaddy -n cert-manager > /dev/null 2>&1; then
+            microk8s kubectl delete deployment   cert-manager-webhook-godaddy              -n cert-manager --ignore-not-found=true
+            microk8s kubectl delete service      cert-manager-webhook-godaddy              -n cert-manager --ignore-not-found=true
+            microk8s kubectl delete serviceaccount cert-manager-webhook-godaddy            -n cert-manager --ignore-not-found=true
+            microk8s kubectl delete clusterrole  cert-manager-webhook-godaddy:flowcontrol-solver --ignore-not-found=true
+            microk8s kubectl delete clusterrolebinding cert-manager-webhook-godaddy:flowcontrol-solver --ignore-not-found=true
+            microk8s kubectl delete role         cert-manager-webhook-godaddy:secret-reader -n cert-manager --ignore-not-found=true
+            microk8s kubectl delete rolebinding  cert-manager-webhook-godaddy:secret-reader -n cert-manager --ignore-not-found=true
+            microk8s kubectl delete certificate  cert-manager-webhook-godaddy-webhook-tls  -n cert-manager --ignore-not-found=true
+            microk8s kubectl delete issuer       cert-manager-webhook-godaddy-selfsign      -n cert-manager --ignore-not-found=true
+            microk8s kubectl delete secret       cert-manager-webhook-godaddy-webhook-tls  -n cert-manager --ignore-not-found=true
+            microk8s kubectl delete apiservice   v1alpha1.acme.snowdrop.it                 --ignore-not-found=true
+            sleep 10
+          fi
+
+          # Skip if official deployment is already healthy with APIService registered
+          if microk8s kubectl get deployment godaddy-webhook -n cert-manager > /dev/null 2>&1; then
+            READY=$(microk8s kubectl get deployment godaddy-webhook -n cert-manager \
+              -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+            READY=${READY:-0}
+            if [ "$READY" -gt 0 ] && microk8s kubectl get apiservice v1alpha1.acme.snowdrop.it > /dev/null 2>&1; then
+              echo "WEBHOOK_OK=true" >> $GITHUB_ENV
+              exit 0
+            fi
+            # Pod unhealthy or APIService missing — delete and redeploy cleanly
+            curl -sSL https://raw.githubusercontent.com/snowdrop/godaddy-webhook/master/deploy/webhook-all.yml | \
+              sed "s/acme.mycompany.com/acme.snowdrop.it/g" | \
+              microk8s kubectl delete --ignore-not-found=true -f - || true
+            sleep 5
+          fi
+
+          # Download and apply official webhook YAML
+          if curl -sSL https://raw.githubusercontent.com/snowdrop/godaddy-webhook/master/deploy/webhook-all.yml \
+              -o /tmp/webhook-all.yml; then
+            sed "s/acme.mycompany.com/acme.snowdrop.it/g" /tmp/webhook-all.yml > /tmp/webhook-configured.yml
+            if microk8s kubectl apply --validate=false -f /tmp/webhook-configured.yml; then
+              sleep 30
+              if microk8s kubectl wait --for=condition=ready pod \
+                  -l app.kubernetes.io/name=godaddy-webhook \
+                  -n cert-manager --timeout=90s; then
+                echo "WEBHOOK_OK=true" >> $GITHUB_ENV
+              else
+                microk8s kubectl describe pod -n cert-manager -l app.kubernetes.io/name=godaddy-webhook | grep -A 15 "Events:" || true
+                echo "WEBHOOK_OK=false" >> $GITHUB_ENV
+              fi
+            else
+              echo "WEBHOOK_OK=false" >> $GITHUB_ENV
+            fi
+          else
+            echo "WEBHOOK_OK=false" >> $GITHUB_ENV
+          fi
+
+      - name: Install GoDaddy webhook (fallback - build from source)
+        if: env.WEBHOOK_OK != 'true'
+        shell: bash
+        run: |
+          WEBHOOK_DIR="${GITHUB_WORKSPACE}/.webhook-build"
+          mkdir -p "$WEBHOOK_DIR" && cd "$WEBHOOK_DIR"
+
+          # Try tarball download first (most reliable, no auth needed)
+          if curl -L https://github.com/snowdrop/godaddy-webhook/archive/refs/heads/master.tar.gz \
+              -o webhook.tar.gz && \
+             tar -xzf webhook.tar.gz && \
+             mv godaddy-webhook-master cert-manager-webhook-godaddy; then
+            : # success
+          elif [ -n "$GITHUB_TOKEN" ]; then
+            git clone https://${GITHUB_TOKEN}@github.com/snowdrop/godaddy-webhook.git && \
+              mv godaddy-webhook cert-manager-webhook-godaddy
+          else
+            GIT_TERMINAL_PROMPT=0 git clone https://github.com/snowdrop/godaddy-webhook.git && \
+              mv godaddy-webhook cert-manager-webhook-godaddy
+          fi
+
+          cd cert-manager-webhook-godaddy
+          DOCKER_BUILDKIT=1 docker build -t localhost:32000/cert-manager-webhook-godaddy:latest .
+          docker push localhost:32000/cert-manager-webhook-godaddy:latest
+
+          cd "$GITHUB_WORKSPACE"
+          sed -i 's|image: "ghcr.io/snowdrop/godaddy-webhook:latest"|image: "localhost:32000/cert-manager-webhook-godaddy:latest"|g' k8s/godaddy-webhook.yaml
+          sed -i 's|imagePullPolicy: IfNotPresent|imagePullPolicy: Always|g' k8s/godaddy-webhook.yaml
+          microk8s kubectl apply --validate=false -f k8s/godaddy-webhook.yaml
+          sleep 30
+          microk8s kubectl wait --for=condition=ready pod \
+            -l app.kubernetes.io/name=cert-manager-webhook-godaddy \
+            -n cert-manager --timeout=90s
 
       - name: Configure GoDaddy credentials
         run: |
@@ -68,7 +152,41 @@ jobs:
             --dry-run=client -o yaml | microk8s kubectl apply -f -
 
       - name: Deploy ClusterIssuer
-        run: microk8s kubectl apply -f k8s/cert-issuer.yaml
+        shell: bash
+        run: |
+          # Wait for webhook's own TLS certificate (name varies by which attempt succeeded)
+          for cert_name in godaddy-webhook-webhook-tls cert-manager-webhook-godaddy-webhook-tls; do
+            if microk8s kubectl get certificate "$cert_name" -n cert-manager > /dev/null 2>&1; then
+              microk8s kubectl wait --for=condition=Ready certificate/"$cert_name" \
+                -n cert-manager --timeout=60s || true
+              break
+            fi
+          done
+
+          # Wait for the APIService to be available — required before ClusterIssuer will work
+          for i in {1..60}; do
+            if microk8s kubectl get apiservice v1alpha1.acme.snowdrop.it > /dev/null 2>&1; then
+              AVAIL=$(microk8s kubectl get apiservice v1alpha1.acme.snowdrop.it \
+                -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || echo "False")
+              [ "$AVAIL" = "True" ] && break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "APIService not available after 2 minutes"
+              microk8s kubectl get apiservice v1alpha1.acme.snowdrop.it -o yaml || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+          microk8s kubectl apply -f k8s/cert-issuer.yaml
+
+          # Wait for ClusterIssuer to report Ready
+          for i in {1..30}; do
+            READY=$(microk8s kubectl get clusterissuer letsencrypt-prod \
+              -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "")
+            [ "$READY" = "True" ] && break
+            sleep 2
+          done
 
       - name: Create namespace
         run: microk8s kubectl create namespace movietheater --dry-run=client -o yaml | microk8s kubectl apply -f -
