@@ -177,6 +177,7 @@ function SearchTools({ search, userData }) {
           return (
             <List.Item style={{ display: "flex", justifyContent: "center", marginBottom: 0 }}>
               <Button
+                className={`search-letter-btn${item === search.startsWith ? " search-letter-btn--active" : ""}`}
                 onClick={() => {
                   ToggleLetterSearch(item);
                 }}
@@ -203,6 +204,7 @@ function SearchTools({ search, userData }) {
               return (
                 <button
                   key={r.id}
+                  className={`search-rating-btn${isActive ? " search-rating-btn--active" : ""}${isRestricted ? " search-rating-btn--restricted" : ""}`}
                   onClick={() => ToggleRatingSearch(r.id)}
                   style={{
                     whiteSpace: "nowrap",

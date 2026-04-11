@@ -35,9 +35,7 @@ function UserSettingsPage({ userData, setUserData }) {
         setCardStyle(userData.cardStyle ?? "standard");
         setCanEditMovies(userData.canEditMovies ?? false);
         setEnablePagination(
-          userData.enablePagination === undefined || userData.enablePagination === null
-            ? false
-            : Boolean(userData.enablePagination)
+          userData.enablePagination === undefined || userData.enablePagination === null ? false : Boolean(userData.enablePagination),
         );
       });
   }, [userData, history]);
@@ -71,6 +69,7 @@ function UserSettingsPage({ userData, setUserData }) {
           <Select
             allowClear
             className="settings-select"
+            popupClassName="settings-select-dropdown"
             value={ageRestriction}
             onChange={(v) => {
               setAgeRestriction(v);
@@ -88,6 +87,7 @@ function UserSettingsPage({ userData, setUserData }) {
           <span className="settings-label">Card Style</span>
           <Select
             className="settings-select"
+            popupClassName="settings-select-dropdown"
             value={cardStyle}
             onChange={(v) => {
               setCardStyle(v);
@@ -95,12 +95,12 @@ function UserSettingsPage({ userData, setUserData }) {
             }}
             options={cardStyleOptions}
           />
-              </div>
-              <p className="settings-hint">Simple shows a compact two-column layout. Standard shows a full row with plot and actors.</p>
+        </div>
+        <p className="settings-hint">Simple shows a compact two-column layout. Standard shows a full row with plot and actors.</p>
         <div className="settings-row" style={{ marginTop: 12 }}>
           <Checkbox
             checked={enablePagination}
-            onChange={e => {
+            onChange={(e) => {
               setEnablePagination(e.target.checked);
               setSaved(false);
             }}
@@ -113,17 +113,14 @@ function UserSettingsPage({ userData, setUserData }) {
       <div className="settings-section">
         <h3 className="settings-section-title">Permissions</h3>
         <div className="settings-row">
-          <Checkbox
-            checked={canEditMovies}
-            disabled
-          >
+          <Checkbox checked={canEditMovies} disabled>
             <span style={{ color: "inherit" }}>Can Edit Movies</span>
           </Checkbox>
         </div>
         <p className="settings-hint">This permission is managed by an administrator.</p>
       </div>
       <button className="settings-save-btn" onClick={handleSave} disabled={saving}>
-        {saving ? "Saving…" : "Save Settings"}
+        {saving ? "Savingï¿½" : "Save Settings"}
       </button>
       {saved && <span className="settings-saved-msg">? Saved</span>}
     </div>
