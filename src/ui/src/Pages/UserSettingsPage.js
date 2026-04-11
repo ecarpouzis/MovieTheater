@@ -122,7 +122,7 @@ function UserSettingsPage({ userData, setUserData }) {
       <button className="settings-save-btn" onClick={handleSave} disabled={saving}>
         {saving ? "Saving�" : "Save Settings"}
       </button>
-      {saved && <span className="settings-saved-msg">? Saved</span>}
+      {saved && <span className="settings-saved-msg">Settings Saved</span>}
     </div>
   );
 }
