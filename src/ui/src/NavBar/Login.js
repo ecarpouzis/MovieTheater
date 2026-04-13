@@ -78,7 +78,14 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
       <span className="login-title">LOG IN</span>
       <br />
       <br />
-      <AutoComplete options={filteredUserlist} className="login-autocomplete" onSelect={onSelect} onSearch={handleSearch} getPopupContainer={(trigger) => trigger.parentElement}>
+      <AutoComplete
+        options={filteredUserlist}
+        className="login-autocomplete"
+        popupClassName="login-user-dropdown"
+        onSelect={onSelect}
+        onSearch={handleSearch}
+        getPopupContainer={(trigger) => trigger.parentElement}
+      >
         <div style={{ display: "flex", gap: "0", alignItems: "stretch" }}>
           <Input
             placeholder="Username"

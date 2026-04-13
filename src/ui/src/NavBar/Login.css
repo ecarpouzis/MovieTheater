@@ -23,6 +23,16 @@
   color: rgba(0, 0, 0, 0.45);
 }
 
+.login-user-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled),
+.login-user-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background: #1890ff !important;
+}
+
+.login-user-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) .ant-select-item-option-content,
+.login-user-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) .ant-select-item-option-content {
+  color: #ffffff !important;
+}
+
 /* Logged-in user panel */
 .user-panel {
   padding: 16px 16px 8px;
@@ -68,6 +78,21 @@
   padding: 7px 0;
   cursor: pointer;
   border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.stat-row:hover {
+  background-color: rgba(24, 144, 255, 0.12);
+}
+
+.stat-row:hover .stat-icon,
+.stat-row:hover .stat-label,
+.stat-row:hover .stat-count {
+  color: #1890ff;
+}
+
+.stat-row:hover .stat-icon--want {
+  color: #dc143c;
 }
 
 .stat-icon {
@@ -111,6 +136,22 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.5px;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.logout-button:hover,
+.logout-button:focus {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #dc143c;
+  font-weight: 700;
+}
+
+.logout-button:active {
+  background: #f4f4f4;
+  border-color: #f4f4f4;
+  color: #b01031;
+  font-weight: 700;
 }
 
 .settings-icon-btn {
