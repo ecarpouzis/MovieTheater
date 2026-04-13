@@ -9,7 +9,7 @@ import "./Login.css";
 //Props:
 //  userData - Stores user data, used to determine if the Login component displays ways to log in, or user information and Logout
 //  onUserLoggedIn - Hook to handle passing user login event to App.js
-function Login({ userData, setUserData, onUserLoggedIn }) {
+function Login({ userData, setUserData, onUserLoggedIn, isBoardGames = false }) {
   const history = useHistory();
   //Hook to store a list of all users
   const [userlist, setUserlist] = useState([]);
@@ -78,7 +78,13 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
       <span className="login-title">LOG IN</span>
       <br />
       <br />
-      <AutoComplete options={filteredUserlist} className="login-autocomplete" onSelect={onSelect} onSearch={handleSearch} getPopupContainer={(trigger) => trigger.parentElement}>
+      <AutoComplete
+        options={filteredUserlist}
+        className="login-autocomplete"
+        onSelect={onSelect}
+        onSearch={handleSearch}
+        getPopupContainer={(trigger) => trigger.parentElement}
+      >
         <div style={{ display: "flex", gap: "0", alignItems: "stretch" }}>
           <Input
             placeholder="Username"
@@ -112,13 +118,13 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
           </button>
         </div>
         <div className="stat-row" onClick={() => navigateToBrowseSearch("seen")}>
-          <span className="stat-icon stat-icon--seen">🎬</span>
-          <span className="stat-label">Seen</span>
+          <span className="stat-icon stat-icon--seen">{isBoardGames ? "🎲" : "🎬"}</span>
+          <span className="stat-label">{isBoardGames ? "Played" : "Seen"}</span>
           <span className="stat-count">{userData.moviesSeen.length}</span>
         </div>
         <div className="stat-row" onClick={() => navigateToBrowseSearch("want")}>
           <span className="stat-icon stat-icon--want">♥</span>
-          <span className="stat-label">Want to Watch</span>
+          <span className="stat-label">{isBoardGames ? "Want to Play" : "Want to Watch"}</span>
           <span className="stat-count">{userData.moviesToWatch.length}</span>
         </div>
         <button className="logout-button" onClick={logoutUser}>

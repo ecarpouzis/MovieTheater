@@ -73,18 +73,25 @@ const listStyle = {
   paddingBottom: "20px",
 };
 
-function SearchTools({ search, userData }) {
+const boardGameAgeRanges = ["0-3", "3-5", "6-8", "8-12", "13-100"];
+
+function SearchTools({ search, userData, isBoardGames = false }) {
   const history = useHistory();
   const [mpaRatings, setMpaRatings] = useState([]);
 
   useEffect(() => {
+    if (isBoardGames) {
+      setMpaRatings([]);
+      return;
+    }
+
     MovieAPI.getMPARatings()
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setMpaRatings(data);
       })
       .catch(() => {});
-  }, []);
+  }, [isBoardGames]);
 
   function navigateToBrowseSearch(mode, value = "") {
     const params = new URLSearchParams();
@@ -98,7 +105,7 @@ function SearchTools({ search, userData }) {
     }
 
     history.push({
-      pathname: "/",
+      pathname: isBoardGames ? "/boardgames" : "/",
       search: params.toString() ? `?${params.toString()}` : "",
     });
   }
@@ -124,17 +131,30 @@ function SearchTools({ search, userData }) {
 
     if (userData?.ageRestriction != null && ratingId > userData.ageRestriction) {
       const restrictionName = mpaRatings.find((r) => r.id === userData.ageRestriction)?.name || "your current setting";
-      message.warning(`Your age restriction is set to ${restrictionName}. You cannot browse movies above that rating.`);
+      message.warning(
+        isBoardGames
+          ? `Your age restriction is set to ${restrictionName}. You cannot browse board games above that range.`
+          : `Your age restriction is set to ${restrictionName}. You cannot browse movies above that rating.`,
+      );
       return;
     }
 
     navigateToBrowseSearch("rating", String(ratingId));
   }
 
+  function ToggleBoardGameAgeRangeSearch(ageRange) {
+    const isAlreadySelected = search.maxRatingId === ageRange;
+    if (isAlreadySelected) {
+      navigateToBrowseSearch();
+      return;
+    }
+    navigateToBrowseSearch("rating", ageRange);
+  }
+
   return (
     <div id="SearchToolContainer" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid #1e3a57" }}>
       <span style={sectionHeaderStyle}>Search</span>
-      <span style={{ ...inputLabelStyle, marginTop: 0 }}>Movie Title</span>
+      <span style={{ ...inputLabelStyle, marginTop: 0 }}>{isBoardGames ? "Board Game Title" : "Movie Title"}</span>
       <Search
         placeholder="Title"
         style={{ width: "100%" }}
@@ -147,19 +167,23 @@ function SearchTools({ search, userData }) {
         }}
         enterButton
       />
-      <span style={inputLabelStyle}>Actor Name</span>
-      <Search
-        placeholder="Actor"
-        style={{ width: "100%" }}
-        onSearch={(value) => {
-          if (value && value.trim()) {
-            navigateToBrowseSearch("actor", value);
-          } else {
-            navigateToBrowseSearch();
-          }
-        }}
-        enterButton
-      />
+      {!isBoardGames && (
+        <>
+          <span style={inputLabelStyle}>Actor Name</span>
+          <Search
+            placeholder="Actor"
+            style={{ width: "100%" }}
+            onSearch={(value) => {
+              if (value && value.trim()) {
+                navigateToBrowseSearch("actor", value);
+              } else {
+                navigateToBrowseSearch();
+              }
+            }}
+            enterButton
+          />
+        </>
+      )}
       <span style={inputLabelStyle}>First Letter</span>
       <List
         style={listStyle}
@@ -193,9 +217,42 @@ function SearchTools({ search, userData }) {
           );
         }}
       />
-      {mpaRatings.length > 0 && (
+      {isBoardGames && (
         <>
-          <span style={inputLabelStyle}>MPA Rating Search</span>
+          <span style={inputLabelStyle}>Age Range Search</span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", paddingBottom: "20px" }}>
+            {boardGameAgeRanges.map((range) => {
+              const isActive = search.maxRatingId === range;
+              return (
+                <button
+                  key={range}
+                  onClick={() => ToggleBoardGameAgeRangeSearch(range)}
+                  style={{
+                    whiteSpace: "nowrap",
+                    overflow: "visible",
+                    display: "inline-block",
+                    padding: "4px 14px",
+                    fontSize: "14px",
+                    lineHeight: "22px",
+                    borderRadius: "6px",
+                    border: "1px solid",
+                    cursor: "pointer",
+                    transition: "background 0.15s, color 0.15s",
+                    backgroundColor: isActive ? "#1890ff" : "rgba(255,255,255,0.08)",
+                    color: isActive ? "white" : "rgba(255,255,255,0.75)",
+                    borderColor: isActive ? "#1890ff" : "rgba(255,255,255,0.15)",
+                  }}
+                >
+                  {range}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+      {!isBoardGames && mpaRatings.length > 0 && (
+        <>
+          <span style={inputLabelStyle}>{isBoardGames ? "Age Range Search" : "MPA Rating Search"}</span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", paddingBottom: "20px" }}>
             {mpaRatings.map((r) => {
               const isActive = search.maxRatingId === String(r.id);
