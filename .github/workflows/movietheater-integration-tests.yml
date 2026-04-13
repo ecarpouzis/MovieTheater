@@ -4,21 +4,19 @@ on:
     branches:
       - '**'
       - '!master'
-      - '!dependabot/**'
+
 jobs:
   docker-build-api:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: movietheater
     steps:
-      - uses: actions/checkout@v2
-      - run: echo $MOVIETHEATER_APPSETTINGS_JSON > src/MovieTheater/appsettings.Production.json
+      - uses: actions/checkout@v4
+      - run: echo "$MOVIETHEATER_APPSETTINGS_JSON" > src/MovieTheater/appsettings.Production.json
         env:
           MOVIETHEATER_APPSETTINGS_JSON: ${{ secrets.MOVIETHEATER_APPSETTINGS_JSON }}
       - run: cd docker && bash build-api.sh
-      - run: docker push localhost:32000/movietheater-api:$GITHUB_SHA
 
   docker-build-ui:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: movietheater
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - run: cd docker && bash build-ui.sh
-      - run: docker push localhost:32000/movietheater-ui:$GITHUB_SHA
