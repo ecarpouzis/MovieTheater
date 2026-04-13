@@ -66,7 +66,9 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
         try {
           const errBody = await response.json();
           errorMsg = errBody.message || errorMsg;
-        } catch { /* response wasn't JSON */ }
+        } catch {
+          /* response wasn't JSON */
+        }
         console.error("UpdateMovie failed:", errorMsg);
         message.error(errorMsg);
         setSaving(false);
@@ -95,11 +97,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
       ) : movie ? (
         <div className="modal-body-wrapper">
           <div className="modal-poster-column">
-            <img
-              className="modal-poster"
-              alt={movie.title + " poster"}
-              src={MovieAPI.getMoviePoster(movie.id, movie.posterVersion)}
-            />
+            <img className="modal-poster" alt={movie.title + " poster"} src={MovieAPI.getMoviePoster(movie.id, movie.posterVersion)} />
           </div>
           <div className="modal-info-panel">
             {!editing ? (
@@ -108,8 +106,18 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
 
                 <div className="modal-meta-row">
                   <span>{new Date(movie.releaseDate).getFullYear()}</span>
-                  {movie.rating && <><span className="modal-dot">·</span><span>{movie.rating}</span></>}
-                  {movie.runtime && <><span className="modal-dot">·</span><span>{movie.runtime}</span></>}
+                  {movie.rating && (
+                    <>
+                      <span className="modal-dot">·</span>
+                      <span>{movie.rating}</span>
+                    </>
+                  )}
+                  {movie.runtime && (
+                    <>
+                      <span className="modal-dot">·</span>
+                      <span>{movie.runtime}</span>
+                    </>
+                  )}
                 </div>
 
                 {movie.genre && <div className="modal-genre">{movie.genre}</div>}
@@ -156,11 +164,22 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                 <div className="modal-ratings-row">
                   <a className="modal-rating-link" target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID}>
                     <span className="modal-label">IMDb</span>
-                    <span className="modal-rating-score">{movie.imdbRating}<span className="modal-rating-denom"> / 10</span></span>
+                    <span className="modal-rating-score">
+                      {movie.imdbRating}
+                      <span className="modal-rating-denom"> / 10</span>
+                    </span>
                   </a>
-                  <a className="modal-rating-link" target="_blank" rel="noreferrer" href={"https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}>
+                  <a
+                    className="modal-rating-link"
+                    target="_blank"
+                    rel="noreferrer"
+                    href={"https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
+                  >
                     <span className="modal-label">Rotten Tomatoes</span>
-                    <span className="modal-rating-score">{movie.tomatoRating}<span className="modal-rating-denom"> / 100</span></span>
+                    <span className="modal-rating-score">
+                      {movie.tomatoRating}
+                      <span className="modal-rating-denom"> / 100</span>
+                    </span>
                   </a>
                 </div>
 
@@ -169,7 +188,8 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                 {userData?.canEditMovies && (
                   <div className="modal-edit-row">
                     <Button type="default" onClick={startEditing}>
-                      <span className="fas fa-pen" style={{ marginRight: 6 }} />Edit
+                      <span className="fas fa-pen" style={{ marginRight: 6 }} />
+                      Edit
                     </Button>
                   </div>
                 )}
@@ -181,7 +201,11 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                 <EditField label="Title" value={editState.title} onChange={(v) => updateField("title", v)} />
                 <EditField label="Simple Title" value={editState.simpleTitle} onChange={(v) => updateField("simpleTitle", v)} />
                 <EditField label="Rating" value={editState.rating} onChange={(v) => updateField("rating", v)} />
-                <EditField label="Release Date" value={editState.releaseDate ? editState.releaseDate.substring(0, 10) : ""} onChange={(v) => updateField("releaseDate", v)} />
+                <EditField
+                  label="Release Date"
+                  value={editState.releaseDate ? editState.releaseDate.substring(0, 10) : ""}
+                  onChange={(v) => updateField("releaseDate", v)}
+                />
                 <EditField label="Runtime" value={editState.runtime} onChange={(v) => updateField("runtime", v)} />
                 <EditField label="Genre" value={editState.genre} onChange={(v) => updateField("genre", v)} />
                 <EditField label="Director" value={editState.director} onChange={(v) => updateField("director", v)} />
@@ -199,8 +223,12 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                 </div>
 
                 <div className="modal-edit-actions">
-                  <Button type="primary" onClick={saveChanges} loading={saving}>Save</Button>
-                  <Button onClick={cancelEditing}>Cancel</Button>
+                  <Button type="primary" onClick={saveChanges} loading={saving}>
+                    Save
+                  </Button>
+                  <Button className="btn-cancel" onClick={cancelEditing}>
+                    Cancel
+                  </Button>
                 </div>
               </div>
             )}

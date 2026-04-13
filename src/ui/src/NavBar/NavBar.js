@@ -6,6 +6,7 @@ import "./NavBar.css";
 
 import SearchTools from "./SearchTools";
 import Login from "./Login";
+import UserSettingsModal from "./UserSettingsModal";
 import useIsMobile from "../hooks/useIsMobile";
 
 function NavBar({
@@ -36,6 +37,9 @@ function NavBar({
 
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [homeButtonActive, setHomeButtonActive] = useState(false);
+  const homeButtonTimeoutRef = useRef(null);
 
   // useEffect with a dependency array runs the callback whenever any listed value changes
   // — similar to subscribing to a PropertyChanged event for those specific properties.
@@ -148,7 +152,12 @@ function NavBar({
   // The empty tags <> </> are a fragment — a grouping wrapper that emits no DOM element.
   const navContent = (
     <>
-      <Login userData={userData} setUserData={setUserData} onUserLoggedIn={onUserLoggedIn} />
+      <Login 
+        userData={userData} 
+        setUserData={setUserData} 
+        onUserLoggedIn={onUserLoggedIn} 
+        setSettingsModalOpen={setSettingsModalOpen}
+      />
       <SearchTools search={search} userData={userData} />
     </>
   );
@@ -156,13 +165,37 @@ function NavBar({
   // Render entirely different markup for mobile vs. desktop rather than relying on
   // CSS media queries — the isMobile hook drives layout switching at the JS level.
   if (isMobile) {
+    const handleMobileHomeClick = () => {
+      if (location.pathname === "/" && !location.search) {
+        resetSearch();
+      } else {
+        history.push("/");
+      }
+    };
+
+    const handleHomeTouchStart = () => {
+      if (homeButtonTimeoutRef.current) clearTimeout(homeButtonTimeoutRef.current);
+      setHomeButtonActive(true);
+    };
+
+    const handleHomeTouchEnd = () => {
+      homeButtonTimeoutRef.current = setTimeout(() => setHomeButtonActive(false), 2000);
+    };
+
     return (
       <>
         <div className="navbar-topbar">
           <button className="navbar-menu-btn" onClick={() => setDrawerOpen((o) => !o)}>
             <MenuOutlined />
           </button>
-          <button className="navbar-home-btn" onClick={() => history.push("/")}>
+          <button 
+            className={`navbar-home-btn${homeButtonActive ? " navbar-home-btn--active" : ""}`}
+            onClick={handleMobileHomeClick}
+            onTouchStart={handleHomeTouchStart}
+            onTouchEnd={handleHomeTouchEnd}
+            onMouseEnter={() => setHomeButtonActive(true)}
+            onMouseLeave={() => setHomeButtonActive(false)}
+          >
             <span className="navbar-home-emoji">🎬</span>
             <span className="navbar-title">Movie Theater</span>
           </button>
@@ -172,20 +205,43 @@ function NavBar({
         {drawerOpen && <div className="navbar-overlay" onClick={() => setDrawerOpen(false)} />}
 
         <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}`}>{navContent}</div>
+
+        <UserSettingsModal 
+          open={settingsModalOpen} 
+          onClose={() => setSettingsModalOpen(false)} 
+          userData={userData}
+          setUserData={setUserData}
+        />
       </>
     );
   }
 
+  const handleDesktopHomeClick = () => {
+    if (location.pathname === "/" && !location.search) {
+      resetSearch();
+    } else {
+      history.push("/");
+    }
+  };
+
   return (
-    <Layout.Sider className="navbar-sider" trigger={null} collapsible collapsed={collapsed} onCollapse={onCollapse}>
-      <div className="navbar-sider-header">
-        <button className="navbar-home-btn" onClick={() => history.push("/")}>
-          <span className="navbar-home-emoji">🎬</span>
-          <span className="navbar-sider-title">Movie Theater</span>
-        </button>
-      </div>
-      {navContent}
-    </Layout.Sider>
+    <>
+      <Layout.Sider className="navbar-sider" trigger={null} collapsible collapsed={collapsed} onCollapse={onCollapse}>
+        <div className="navbar-sider-header">
+          <button className="navbar-home-btn" onClick={handleDesktopHomeClick}>
+            <span className="navbar-home-emoji">🎬</span>
+            <span className="navbar-sider-title">Movie Theater</span>
+          </button>
+        </div>
+        {navContent}
+      </Layout.Sider>
+      <UserSettingsModal 
+        open={settingsModalOpen} 
+        onClose={() => setSettingsModalOpen(false)} 
+        userData={userData}
+        setUserData={setUserData}
+      />
+    </>
   );
 }
 

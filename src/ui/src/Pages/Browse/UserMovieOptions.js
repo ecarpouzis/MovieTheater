@@ -1,7 +1,10 @@
 import { MovieAPI } from "../../MovieAPI";
+import { useState, useRef } from "react";
 import "./UserMovieOptions.css";
 
 function UserMovieOptions({ userData, id, setUserData, inline = false, onToggleViewing }) {
+  const [activeButton, setActiveButton] = useState(null);
+  const clearTimeoutRef = useRef(null);
 if (userData) {
     const isWatched = userData.moviesSeen.includes(id);
     const isWanted = userData.moviesToWatch.includes(id);
@@ -27,7 +30,16 @@ if (userData) {
                   }
                 });
             }}
-            className={`viewing-btn zoom-on-hover${inline ? " viewing-btn--compact" : ""}${isWatched ? " viewing-btn-seen--watched" : ""}`}
+            onTouchStart={() => {
+              if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
+              setActiveButton('seen');
+            }}
+            onTouchEnd={() => {
+              clearTimeoutRef.current = setTimeout(() => setActiveButton(null), 2000);
+            }}
+            onMouseEnter={() => setActiveButton('seen')}
+            onMouseLeave={() => setActiveButton(null)}
+            className={`viewing-btn zoom-on-hover${inline ? " viewing-btn--compact" : ""}${isWatched ? " viewing-btn-seen--watched" : ""}${activeButton === 'seen' && !isWatched ? " viewing-btn--active" : ""}`}
           >
             <span className="film-icon fas fa-film"></span>
             <span className={`viewing-btn-label${inline ? " viewing-btn-label--compact" : ""}`}>SEEN</span>
@@ -51,7 +63,16 @@ if (userData) {
                   }
                 });
             }}
-            className={`viewing-btn zoom-on-hover${inline ? " viewing-btn--compact" : ""}${isWanted ? " viewing-btn-want--wanted" : ""}`}
+            onTouchStart={() => {
+              if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
+              setActiveButton('want');
+            }}
+            onTouchEnd={() => {
+              clearTimeoutRef.current = setTimeout(() => setActiveButton(null), 2000);
+            }}
+            onMouseEnter={() => setActiveButton('want')}
+            onMouseLeave={() => setActiveButton(null)}
+            className={`viewing-btn zoom-on-hover${inline ? " viewing-btn--compact" : ""}${isWanted ? " viewing-btn-want--wanted" : ""}${activeButton === 'want' && !isWanted ? " viewing-btn--active" : ""}`}
           >
             <span className="heart-icon fas fa-heart"></span>
             <span className={`viewing-btn-label${inline ? " viewing-btn-label--compact" : ""}`}>WANT</span>

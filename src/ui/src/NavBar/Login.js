@@ -9,7 +9,8 @@ import "./Login.css";
 //Props:
 //  userData - Stores user data, used to determine if the Login component displays ways to log in, or user information and Logout
 //  onUserLoggedIn - Hook to handle passing user login event to App.js
-function Login({ userData, setUserData, onUserLoggedIn }) {
+//  setSettingsModalOpen - setter for settings modal state
+function Login({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen }) {
   const history = useHistory();
   //Hook to store a list of all users
   const [userlist, setUserlist] = useState([]);
@@ -114,7 +115,7 @@ function Login({ userData, setUserData, onUserLoggedIn }) {
         <div className="user-panel-header">
           <div className="user-avatar">👤</div>
           <span className="user-username">{userData.username}</span>
-          <button className="settings-icon-btn" onClick={() => history.push("/settings")} title="User Settings">
+          <button className="settings-icon-btn" onClick={() => setSettingsModalOpen(true)} title="User Settings">
             ⚙️
           </button>
         </div>
