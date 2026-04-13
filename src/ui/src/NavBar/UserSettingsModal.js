@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Modal, Select, Checkbox, Button, message } from "antd";
 import { MovieAPI } from "../MovieAPI";
 import "./UserSettingsModal.css";
@@ -7,6 +7,10 @@ const cardStyleOptions = [
   { value: "standard", label: "Standard" },
   { value: "simple", label: "Simple" },
 ];
+
+// MPA ratings are static lookup data — cache them for the lifetime of the page
+// so every modal open doesn't trigger a redundant network round-trip.
+let mpaRatingsCache = null;
 
 function UserSettingsModal({ open, onClose, userData, setUserData }) {
   const [mpaRatings, setMpaRatings] = useState([]);
@@ -17,25 +21,35 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open && userData) {
-      MovieAPI.getMPARatings()
-        .then((r) => {
-          if (!r.ok) throw new Error(`GetMPARatings failed: HTTP ${r.status}`);
-          return r.json();
-        })
-        .then((data) => {
-          setMpaRatings(Array.isArray(data) ? data : []);
-          setAgeRestriction(userData.ageRestriction ?? undefined);
-          setCardStyle(userData.cardStyle ?? "standard");
-          setCanEditMovies(userData.canEditMovies ?? false);
-          setEnablePagination(
-            userData.enablePagination === undefined || userData.enablePagination === null ? false : Boolean(userData.enablePagination),
-          );
-        })
-        .catch((error) => {
-          console.error("Error loading MPA ratings:", error);
-        });
+    if (!open || !userData) return;
+
+    // Initialize form fields synchronously from userData so the form is
+    // immediately populated — no waiting for the ratings API call.
+    setAgeRestriction(userData.ageRestriction ?? undefined);
+    setCardStyle(userData.cardStyle ?? "standard");
+    setCanEditMovies(userData.canEditMovies ?? false);
+    setEnablePagination(
+      userData.enablePagination == null ? false : Boolean(userData.enablePagination),
+    );
+
+    // Use the cached ratings if already fetched; otherwise fetch once and cache.
+    if (mpaRatingsCache) {
+      setMpaRatings(mpaRatingsCache);
+      return;
     }
+
+    MovieAPI.getMPARatings()
+      .then((r) => {
+        if (!r.ok) throw new Error(`GetMPARatings failed: HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data) => {
+        mpaRatingsCache = Array.isArray(data) ? data : [];
+        setMpaRatings(mpaRatingsCache);
+      })
+      .catch((error) => {
+        console.error("Error loading MPA ratings:", error);
+      });
   }, [open, userData]);
 
   const handleSave = () => {
@@ -61,7 +75,11 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
       .finally(() => setSaving(false));
   };
 
-  const mpaOptions = mpaRatings.map((r) => ({ value: r.id, label: r.name }));
+  // Re-derive options only when the ratings array reference changes.
+  const mpaOptions = useMemo(
+    () => mpaRatings.map((r) => ({ value: r.id, label: r.name })),
+    [mpaRatings],
+  );
 
   return (
     <Modal
@@ -108,7 +126,7 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
             />
           </div>
           <p className="settings-hint">Simple shows a compact two-column layout. Standard shows a full row with plot and actors.</p>
-          <div className="settings-row" style={{ marginTop: 12 }}>
+          <div className="settings-row settings-row--push">
             <Checkbox checked={enablePagination} onChange={(e) => setEnablePagination(e.target.checked)}>
               Enable Pagination
             </Checkbox>
