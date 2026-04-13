@@ -38,8 +38,6 @@ function NavBar({
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [homeButtonActive, setHomeButtonActive] = useState(false);
-  const homeButtonTimeoutRef = useRef(null);
 
   // useEffect with a dependency array runs the callback whenever any listed value changes
   // — similar to subscribing to a PropertyChanged event for those specific properties.
@@ -173,15 +171,6 @@ function NavBar({
       }
     };
 
-    const handleHomeTouchStart = () => {
-      if (homeButtonTimeoutRef.current) clearTimeout(homeButtonTimeoutRef.current);
-      setHomeButtonActive(true);
-    };
-
-    const handleHomeTouchEnd = () => {
-      homeButtonTimeoutRef.current = setTimeout(() => setHomeButtonActive(false), 2000);
-    };
-
     return (
       <>
         <div className="navbar-topbar">
@@ -189,12 +178,8 @@ function NavBar({
             <MenuOutlined />
           </button>
           <button 
-            className={`navbar-home-btn${homeButtonActive ? " navbar-home-btn--active" : ""}`}
+            className="navbar-home-btn"
             onClick={handleMobileHomeClick}
-            onTouchStart={handleHomeTouchStart}
-            onTouchEnd={handleHomeTouchEnd}
-            onMouseEnter={() => setHomeButtonActive(true)}
-            onMouseLeave={() => setHomeButtonActive(false)}
           >
             <span className="navbar-home-emoji">🎬</span>
             <span className="navbar-title">Movie Theater</span>

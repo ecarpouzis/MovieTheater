@@ -14,6 +14,15 @@
   border-bottom: 1px solid #1e3a57;
 }
 
+.navbar-topbar .navbar-home-btn {
+  flex: 1 1 auto;
+  align-self: stretch;
+  justify-content: flex-start;
+  padding: 0 14px;
+  margin: 4px 6px 4px 0;
+  min-width: 0;
+}
+
 .navbar-menu-btn {
   background: none;
   border: none;
@@ -33,17 +42,20 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0;
+  padding: 6px 8px;
   margin-right: 6px;
   font-size: inherit;
   line-height: 1;
   opacity: 0.85;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s ease, transform 0.12s ease, background-color 0.15s ease;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  border-radius: 4px;
 }
 
 .navbar-home-emoji {
@@ -56,21 +68,43 @@
 
 .navbar-home-btn--active .navbar-title,
 .navbar-home-btn--active .navbar-sider-title {
-  color: #1890ff;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  color: white;
+  text-decoration: none;
+}
+
+.navbar-home-btn:focus-visible {
+  opacity: 1;
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+  background-color: rgba(24, 144, 255, 0.12);
+}
+
+.navbar-home-btn:active {
+  opacity: 1;
+  transform: scale(0.97);
+  background-color: rgba(24, 144, 255, 0.18);
+}
+
+.navbar-home-btn:active .navbar-title,
+.navbar-home-btn:active .navbar-sider-title,
+.navbar-home-btn:focus-visible .navbar-title,
+.navbar-home-btn:focus-visible .navbar-sider-title,
+.navbar-home-btn:focus .navbar-title,
+.navbar-home-btn:focus .navbar-sider-title {
+  color: white;
+  text-decoration: none;
 }
 
 @media (hover: hover) {
   .navbar-home-btn:hover {
     opacity: 1;
+    background-color: rgba(24, 144, 255, 0.12);
   }
 
   .navbar-home-btn:hover .navbar-title,
   .navbar-home-btn:hover .navbar-sider-title {
-    color: #1890ff;
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    color: white;
+    text-decoration: none;
   }
 }
 
@@ -131,6 +165,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.navbar-sider-header .navbar-home-btn {
+  width: 100%;
+  justify-content: flex-start;
+  margin-right: 0;
+  padding: 8px 10px;
 }
 
 .navbar-sider-title {
