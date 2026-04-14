@@ -23,6 +23,7 @@ namespace MovieTheater.Services
             services.AddOmdbServices(config.OmdbApiKey);
             services.AddGoogleServices(config.GoogleSearchApiKey, config.GoogleSearchEngineId);
             services.AddTransient<IMDBApiService>();
+            services.AddTransient<PosterMosaicService>();
             return services;
         }
     }
