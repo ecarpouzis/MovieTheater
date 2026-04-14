@@ -17,6 +17,10 @@ namespace MovieTheater.Services
         public string? GoogleSearchApiKey { get; set; }
         public string? GoogleSearchEngineId { get; set; }
 
+        public string? BggUsername { get; set; }
+        public string? BggPassword { get; set; }
+        public string? BggCookieHeader { get; set; }
+
         public string? PyPath { get; set; }
 
         public HostedEnvironment Environment { get; }

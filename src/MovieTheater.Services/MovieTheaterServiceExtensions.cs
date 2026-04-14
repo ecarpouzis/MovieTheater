@@ -7,6 +7,7 @@ using MovieTheater.Services.Python;
 using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
 using MovieTheater.Services.Google;
+using MovieTheater.Services.Bgg;
 
 namespace MovieTheater.Services
 {
@@ -22,6 +23,7 @@ namespace MovieTheater.Services
             services.AddTmdbServices(config.TmdbApiKey);
             services.AddOmdbServices(config.OmdbApiKey);
             services.AddGoogleServices(config.GoogleSearchApiKey, config.GoogleSearchEngineId);
+            services.AddBoardGameGeekServices(config.BggUsername, config.BggPassword, config.BggCookieHeader);
             services.AddTransient<IMDBApiService>();
             return services;
         }

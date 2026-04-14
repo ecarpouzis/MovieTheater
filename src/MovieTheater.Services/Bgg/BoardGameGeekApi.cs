@@ -1,0 +1,279 @@
+using System.Globalization;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Xml.Linq;
+using Microsoft.Extensions.Options;
+using MovieTheater.Db;
+
+namespace MovieTheater.Services.Bgg
+{
+    public class BoardGameGeekApi
+    {
+        private static readonly string[] Domains =
+        {
+            "https://boardgamegeek.com",
+            "https://rpggeek.com",
+            "https://videogamegeek.com"
+        };
+
+        private readonly HttpClient httpClient;
+        private readonly BggApiOptions options;
+
+        public BoardGameGeekApi(HttpClient httpClient, IOptions<BggApiOptions> options)
+        {
+            this.httpClient = httpClient;
+            this.options = options.Value;
+        }
+
+        public async Task<Boardgame?> GetBoardgameByTitle(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return null;
+            }
+
+            var encoded = Uri.EscapeDataString(title.Trim());
+            var xml = await SendBggGetAsync($"/xmlapi2/search?query={encoded}&type=boardgame&exact=1");
+            var doc = XDocument.Parse(xml);
+
+            var item = doc.Root?.Elements("item")
+                .FirstOrDefault(x => int.TryParse((string?)x.Attribute("id"), out _));
+
+            if (item == null)
+            {
+                xml = await SendBggGetAsync($"/xmlapi2/search?query={encoded}&type=boardgame");
+                doc = XDocument.Parse(xml);
+                item = doc.Root?.Elements("item")
+                    .FirstOrDefault(x => int.TryParse((string?)x.Attribute("id"), out _));
+            }
+
+            if (item == null)
+            {
+                return null;
+            }
+
+            var idText = (string?)item.Attribute("id");
+            if (!int.TryParse(idText, out var bggThingId))
+            {
+                return null;
+            }
+
+            return await GetBoardgame(bggThingId);
+        }
+
+        public async Task<Boardgame?> GetBoardgame(int bggThingId)
+        {
+            var xml = await SendBggGetAsync($"/xmlapi2/thing?id={bggThingId}&type=boardgame&stats=1&versions=1&videos=1&marketplace=1");
+            var parsed = ParseBoardgame(xml, bggThingId);
+            if (parsed == null)
+            {
+                return null;
+            }
+
+            parsed.RawXml = xml;
+            parsed.LastSyncedUtc = DateTime.UtcNow;
+            return parsed;
+        }
+
+        private async Task<string> SendBggGetAsync(string pathAndQuery)
+        {
+            HttpStatusCode? lastStatus = null;
+            string? lastBody = null;
+
+            foreach (var domain in Domains)
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"{domain}{pathAndQuery}"));
+
+                request.Headers.Referrer = new Uri(domain);
+                request.Headers.TryAddWithoutValidation("Origin", domain);
+
+                if (!string.IsNullOrWhiteSpace(options.CookieHeader))
+                {
+                    request.Headers.TryAddWithoutValidation("Cookie", options.CookieHeader);
+                }
+
+                if (!string.IsNullOrWhiteSpace(options.Username) && !string.IsNullOrWhiteSpace(options.Password))
+                {
+                    var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{options.Username}:{options.Password}"));
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Basic", token);
+                }
+
+                var response = await httpClient.SendAsync(request);
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadAsStringAsync();
+                }
+
+                lastStatus = response.StatusCode;
+                lastBody = await response.Content.ReadAsStringAsync();
+            }
+
+            throw new HttpRequestException($"BGG request failed on all domains. Last status: {(int?)lastStatus} {lastStatus}. Body: {lastBody}");
+        }
+
+        private static Boardgame? ParseBoardgame(string rawXml, int bggThingId)
+        {
+            var doc = XDocument.Parse(rawXml);
+            var item = doc.Root?.Element("item");
+            if (item == null)
+            {
+                return null;
+            }
+
+            var names = item.Elements("name")
+                .Select(x => new
+                {
+                    type = (string?)x.Attribute("type"),
+                    value = (string?)x.Attribute("value"),
+                    sortIndex = ParseInt((string?)x.Attribute("sortindex"))
+                })
+                .Where(x => !string.IsNullOrWhiteSpace(x.value))
+                .ToList();
+
+            var primaryName = names.FirstOrDefault(x => string.Equals(x.type, "primary", StringComparison.OrdinalIgnoreCase))?.value
+                ?? names.FirstOrDefault()?.value;
+
+            var alternateNames = names
+                .Where(x => !string.Equals(x.type, "primary", StringComparison.OrdinalIgnoreCase))
+                .Select(x => x.value)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+
+            var stats = item.Element("statistics")?.Element("ratings");
+
+            var links = item.Elements("link")
+                .Select(x => new
+                {
+                    type = (string?)x.Attribute("type"),
+                    id = ParseInt((string?)x.Attribute("id")),
+                    value = (string?)x.Attribute("value"),
+                    inbound = ParseBool((string?)x.Attribute("inbound"))
+                })
+                .ToList();
+
+            var polls = item.Elements("poll")
+                .Select(x => new
+                {
+                    name = (string?)x.Attribute("name"),
+                    title = (string?)x.Attribute("title"),
+                    totalVotes = ParseInt((string?)x.Attribute("totalvotes")),
+                    xml = x.ToString(SaveOptions.DisableFormatting)
+                })
+                .ToList();
+
+            var videos = item.Element("videos")?.Elements("video")
+                .Select(x => new
+                {
+                    id = ParseInt((string?)x.Attribute("id")),
+                    title = (string?)x.Attribute("title"),
+                    category = (string?)x.Attribute("category"),
+                    language = (string?)x.Attribute("language"),
+                    link = (string?)x.Attribute("link"),
+                    username = (string?)x.Attribute("username"),
+                    postDate = (string?)x.Attribute("postdate")
+                })
+                .ToList();
+
+            var ranks = stats?.Element("ranks")?.Elements("rank")
+                .Select(x => new
+                {
+                    type = (string?)x.Attribute("type"),
+                    id = ParseInt((string?)x.Attribute("id")),
+                    name = (string?)x.Attribute("name"),
+                    friendlyName = (string?)x.Attribute("friendlyname"),
+                    value = (string?)x.Attribute("value"),
+                    bayesAverage = ParseDecimal((string?)x.Attribute("bayesaverage"))
+                })
+                .ToList();
+
+            return new Boardgame
+            {
+                BggThingId = bggThingId,
+                ThingType = (string?)item.Attribute("type"),
+                Name = string.IsNullOrWhiteSpace(primaryName) ? null : primaryName.Trim(),
+                AlternateNamesJson = JsonSerializer.Serialize(alternateNames),
+                YearPublished = ParseIntAttribute(item.Element("yearpublished"), "value"),
+                MinPlayers = ParseIntAttribute(item.Element("minplayers"), "value"),
+                MaxPlayers = ParseIntAttribute(item.Element("maxplayers"), "value"),
+                PlayingTime = ParseIntAttribute(item.Element("playingtime"), "value"),
+                MinPlayTime = ParseIntAttribute(item.Element("minplaytime"), "value"),
+                MaxPlayTime = ParseIntAttribute(item.Element("maxplaytime"), "value"),
+                MinAge = ParseIntAttribute(item.Element("minage"), "value"),
+                Thumbnail = NullIfWhiteSpace(item.Element("thumbnail")?.Value),
+                Image = NullIfWhiteSpace(item.Element("image")?.Value),
+                Description = item.Element("description")?.Value,
+                UsersRated = ParseIntAttribute(stats?.Element("usersrated"), "value"),
+                AverageRating = ParseDecimalAttribute(stats?.Element("average"), "value"),
+                BayesAverageRating = ParseDecimalAttribute(stats?.Element("bayesaverage"), "value"),
+                StdDev = ParseDecimalAttribute(stats?.Element("stddev"), "value"),
+                Median = ParseDecimalAttribute(stats?.Element("median"), "value"),
+                Owned = ParseIntAttribute(stats?.Element("owned"), "value"),
+                Trading = ParseIntAttribute(stats?.Element("trading"), "value"),
+                Wanting = ParseIntAttribute(stats?.Element("wanting"), "value"),
+                Wishing = ParseIntAttribute(stats?.Element("wishing"), "value"),
+                NumComments = ParseIntAttribute(stats?.Element("numcomments"), "value"),
+                NumWeights = ParseIntAttribute(stats?.Element("numweights"), "value"),
+                AverageWeight = ParseDecimalAttribute(stats?.Element("averageweight"), "value"),
+                RanksJson = JsonSerializer.Serialize(ranks),
+                LinksJson = JsonSerializer.Serialize(links),
+                PollsJson = JsonSerializer.Serialize(polls),
+                VersionsXml = item.Element("versions")?.ToString(SaveOptions.DisableFormatting),
+                VideosJson = JsonSerializer.Serialize(videos),
+                MarketplaceXml = item.Element("marketplacelistings")?.ToString(SaveOptions.DisableFormatting)
+            };
+        }
+
+        private static int? ParseIntAttribute(XElement? element, string attributeName)
+        {
+            return ParseInt((string?)element?.Attribute(attributeName));
+        }
+
+        private static decimal? ParseDecimalAttribute(XElement? element, string attributeName)
+        {
+            return ParseDecimal((string?)element?.Attribute(attributeName));
+        }
+
+        private static int? ParseInt(string? value)
+        {
+            if (int.TryParse(value, out var parsed))
+            {
+                return parsed;
+            }
+
+            return null;
+        }
+
+        private static decimal? ParseDecimal(string? value)
+        {
+            if (decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed))
+            {
+                return parsed;
+            }
+
+            return null;
+        }
+
+        private static bool? ParseBool(string? value)
+        {
+            if (string.Equals(value, "1", StringComparison.OrdinalIgnoreCase) || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (string.Equals(value, "0", StringComparison.OrdinalIgnoreCase) || string.Equals(value, "false", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return null;
+        }
+
+        private static string? NullIfWhiteSpace(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+    }
+}

@@ -1,0 +1,82 @@
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace MovieTheater.Db
+{
+    [Table("Boardgame")]
+    [Index(nameof(BggThingId), IsUnique = true)]
+    public class Boardgame
+    {
+        [Key]
+        public int id { get; set; }
+
+        public int BggThingId { get; set; }
+
+        public string? ThingType { get; set; }
+
+        public string? Name { get; set; }
+
+        public string? AlternateNamesJson { get; set; }
+
+        public int? YearPublished { get; set; }
+
+        public int? MinPlayers { get; set; }
+
+        public int? MaxPlayers { get; set; }
+
+        public int? PlayingTime { get; set; }
+
+        public int? MinPlayTime { get; set; }
+
+        public int? MaxPlayTime { get; set; }
+
+        public int? MinAge { get; set; }
+
+        public string? Thumbnail { get; set; }
+
+        public string? Image { get; set; }
+
+        public string? Description { get; set; }
+
+        public int? UsersRated { get; set; }
+
+        public decimal? AverageRating { get; set; }
+
+        public decimal? BayesAverageRating { get; set; }
+
+        public decimal? StdDev { get; set; }
+
+        public decimal? Median { get; set; }
+
+        public int? Owned { get; set; }
+
+        public int? Trading { get; set; }
+
+        public int? Wanting { get; set; }
+
+        public int? Wishing { get; set; }
+
+        public int? NumComments { get; set; }
+
+        public int? NumWeights { get; set; }
+
+        public decimal? AverageWeight { get; set; }
+
+        public string? RanksJson { get; set; }
+
+        public string? LinksJson { get; set; }
+
+        public string? PollsJson { get; set; }
+
+        public string? VersionsXml { get; set; }
+
+        public string? VideosJson { get; set; }
+
+        public string? MarketplaceXml { get; set; }
+
+        public string? RawXml { get; set; }
+
+        public DateTime LastSyncedUtc { get; set; }
+    }
+}

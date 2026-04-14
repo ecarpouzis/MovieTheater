@@ -11,6 +11,7 @@ namespace MovieTheater.Db
         public DbSet<RatingMap> RatingMaps { get; set; }
         public DbSet<RatingMPA> RatingMpas { get; set; }
         public DbSet<UserSettings> UserSettings { get; set; }
+        public DbSet<Boardgame> Boardgames { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)

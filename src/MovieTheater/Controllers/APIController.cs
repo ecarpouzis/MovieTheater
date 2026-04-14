@@ -22,6 +22,7 @@ using MovieTheater.Services.Poster;
 using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
 using MovieTheater.Services.Google;
+using MovieTheater.Services.Bgg;
 
 namespace MovieTheater.Controllers
 {
@@ -117,9 +118,10 @@ namespace MovieTheater.Controllers
         private readonly ImageShrinkService shrinkService;
         private readonly GoogleSearchService googleSearchService;
         private readonly IMDBApiService imdbApiService;
+        private readonly BoardGameGeekApi boardGameGeekApi;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
-            ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService)
+            ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService, BoardGameGeekApi boardGameGeekApi)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -130,6 +132,7 @@ namespace MovieTheater.Controllers
             this.shrinkService = shrinkService;
             this.googleSearchService = googleSearchService;
             this.imdbApiService = imdbApiService;
+            this.boardGameGeekApi = boardGameGeekApi;
         }
 
         private int? GetCurrentUserId()
@@ -1410,6 +1413,226 @@ namespace MovieTheater.Controllers
             using var outMs = new MemoryStream();
             await combined.SaveAsPngAsync(outMs);
             return outMs.ToArray();
+        }
+
+        [HttpGet("/API/SyncBoardgameFromBgg")]
+        [HttpPost("/API/SyncBoardgameFromBgg")]
+        public async Task<IActionResult> SyncBoardgameFromBgg(int bggThingId)
+        {
+            if (bggThingId <= 0)
+            {
+                return BadRequest(new { Success = false, Message = "bggThingId must be a positive integer" });
+            }
+
+            await EnsureBoardgameTableExistsAsync();
+
+            try
+            {
+                var fromBgg = await boardGameGeekApi.GetBoardgame(bggThingId);
+                if (fromBgg == null)
+                {
+                    return NotFound(new { Success = false, Message = "Boardgame not found from BoardGameGeek" });
+                }
+
+                var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
+                if (existing == null)
+                {
+                    movieDb.Boardgames.Add(fromBgg);
+                    await movieDb.SaveChangesAsync();
+                    return Ok(new { Success = true, Message = "Boardgame captured", data = fromBgg });
+                }
+
+                ApplyBoardgameSnapshot(existing, fromBgg);
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true, Message = "Boardgame updated", data = existing });
+            }
+            catch (HttpRequestException ex)
+            {
+                return StatusCode(502, new { Success = false, Message = "BoardGameGeek request failed", Error = ex.Message });
+            }
+        }
+
+        [HttpGet("/API/SyncBoardgameFromBggByTitle")]
+        [HttpPost("/API/SyncBoardgameFromBggByTitle")]
+        public async Task<IActionResult> SyncBoardgameFromBggByTitle(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return BadRequest(new { Success = false, Message = "title is required" });
+            }
+
+            await EnsureBoardgameTableExistsAsync();
+
+            try
+            {
+                var fromBgg = await boardGameGeekApi.GetBoardgameByTitle(title);
+                if (fromBgg == null)
+                {
+                    return NotFound(new { Success = false, Message = $"Boardgame '{title}' not found from BoardGameGeek" });
+                }
+
+                var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == fromBgg.BggThingId);
+                if (existing == null)
+                {
+                    movieDb.Boardgames.Add(fromBgg);
+                    await movieDb.SaveChangesAsync();
+                    return Ok(new { Success = true, Message = "Boardgame captured", data = fromBgg });
+                }
+
+                ApplyBoardgameSnapshot(existing, fromBgg);
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true, Message = "Boardgame updated", data = existing });
+            }
+            catch (HttpRequestException ex)
+            {
+                return StatusCode(502, new { Success = false, Message = "BoardGameGeek request failed", Error = ex.Message });
+            }
+        }
+
+        [HttpGet("/API/GetBoardgame")]
+        public async Task<IActionResult> GetBoardgame(int bggThingId)
+        {
+            if (bggThingId <= 0)
+            {
+                return BadRequest(new { Success = false, Message = "bggThingId must be a positive integer" });
+            }
+
+            await EnsureBoardgameTableExistsAsync();
+
+            var boardgame = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
+            if (boardgame == null)
+            {
+                return NotFound(new { Success = false, Message = "Boardgame not found" });
+            }
+
+            return Ok(new { Success = true, data = boardgame });
+        }
+
+        [EnableQuery]
+        [HttpGet("/odata/Boardgames")]
+        public IQueryable<Boardgame> GetBoardgames()
+        {
+            return movieDb.Boardgames;
+        }
+
+        private static void ApplyBoardgameSnapshot(Boardgame existing, Boardgame fromBgg)
+        {
+            existing.ThingType = fromBgg.ThingType;
+            existing.Name = fromBgg.Name;
+            existing.AlternateNamesJson = fromBgg.AlternateNamesJson;
+            existing.YearPublished = fromBgg.YearPublished;
+            existing.MinPlayers = fromBgg.MinPlayers;
+            existing.MaxPlayers = fromBgg.MaxPlayers;
+            existing.PlayingTime = fromBgg.PlayingTime;
+            existing.MinPlayTime = fromBgg.MinPlayTime;
+            existing.MaxPlayTime = fromBgg.MaxPlayTime;
+            existing.MinAge = fromBgg.MinAge;
+            existing.Thumbnail = fromBgg.Thumbnail;
+            existing.Image = fromBgg.Image;
+            existing.Description = fromBgg.Description;
+            existing.UsersRated = fromBgg.UsersRated;
+            existing.AverageRating = fromBgg.AverageRating;
+            existing.BayesAverageRating = fromBgg.BayesAverageRating;
+            existing.StdDev = fromBgg.StdDev;
+            existing.Median = fromBgg.Median;
+            existing.Owned = fromBgg.Owned;
+            existing.Trading = fromBgg.Trading;
+            existing.Wanting = fromBgg.Wanting;
+            existing.Wishing = fromBgg.Wishing;
+            existing.NumComments = fromBgg.NumComments;
+            existing.NumWeights = fromBgg.NumWeights;
+            existing.AverageWeight = fromBgg.AverageWeight;
+            existing.RanksJson = fromBgg.RanksJson;
+            existing.LinksJson = fromBgg.LinksJson;
+            existing.PollsJson = fromBgg.PollsJson;
+            existing.VersionsXml = fromBgg.VersionsXml;
+            existing.VideosJson = fromBgg.VideosJson;
+            existing.MarketplaceXml = fromBgg.MarketplaceXml;
+            existing.RawXml = fromBgg.RawXml;
+            existing.LastSyncedUtc = fromBgg.LastSyncedUtc;
+        }
+
+        private async Task EnsureBoardgameTableExistsAsync()
+        {
+            const string sql = @"
+IF OBJECT_ID(N'[Boardgame]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [Boardgame]
+    (
+        [id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        [BggThingId] INT NOT NULL,
+        [ThingType] NVARCHAR(100) NULL,
+        [Name] NVARCHAR(MAX) NULL,
+        [AlternateNamesJson] NVARCHAR(MAX) NULL,
+        [YearPublished] INT NULL,
+        [MinPlayers] INT NULL,
+        [MaxPlayers] INT NULL,
+        [PlayingTime] INT NULL,
+        [MinPlayTime] INT NULL,
+        [MaxPlayTime] INT NULL,
+        [MinAge] INT NULL,
+        [Thumbnail] NVARCHAR(MAX) NULL,
+        [Image] NVARCHAR(MAX) NULL,
+        [Description] NVARCHAR(MAX) NULL,
+        [UsersRated] INT NULL,
+        [AverageRating] DECIMAL(9,4) NULL,
+        [BayesAverageRating] DECIMAL(9,4) NULL,
+        [StdDev] DECIMAL(9,4) NULL,
+        [Median] DECIMAL(9,4) NULL,
+        [Owned] INT NULL,
+        [Trading] INT NULL,
+        [Wanting] INT NULL,
+        [Wishing] INT NULL,
+        [NumComments] INT NULL,
+        [NumWeights] INT NULL,
+        [AverageWeight] DECIMAL(9,4) NULL,
+        [RanksJson] NVARCHAR(MAX) NULL,
+        [LinksJson] NVARCHAR(MAX) NULL,
+        [PollsJson] NVARCHAR(MAX) NULL,
+        [VersionsXml] NVARCHAR(MAX) NULL,
+        [VideosJson] NVARCHAR(MAX) NULL,
+        [MarketplaceXml] NVARCHAR(MAX) NULL,
+        [RawXml] NVARCHAR(MAX) NULL,
+        [LastSyncedUtc] DATETIME2 NOT NULL
+    );
+END;
+
+IF COL_LENGTH('Boardgame', 'ThingType') IS NULL ALTER TABLE [Boardgame] ADD [ThingType] NVARCHAR(100) NULL;
+IF COL_LENGTH('Boardgame', 'AlternateNamesJson') IS NULL ALTER TABLE [Boardgame] ADD [AlternateNamesJson] NVARCHAR(MAX) NULL;
+IF COL_LENGTH('Boardgame', 'MinPlayers') IS NULL ALTER TABLE [Boardgame] ADD [MinPlayers] INT NULL;
+IF COL_LENGTH('Boardgame', 'MaxPlayers') IS NULL ALTER TABLE [Boardgame] ADD [MaxPlayers] INT NULL;
+IF COL_LENGTH('Boardgame', 'PlayingTime') IS NULL ALTER TABLE [Boardgame] ADD [PlayingTime] INT NULL;
+IF COL_LENGTH('Boardgame', 'MinPlayTime') IS NULL ALTER TABLE [Boardgame] ADD [MinPlayTime] INT NULL;
+IF COL_LENGTH('Boardgame', 'MaxPlayTime') IS NULL ALTER TABLE [Boardgame] ADD [MaxPlayTime] INT NULL;
+IF COL_LENGTH('Boardgame', 'MinAge') IS NULL ALTER TABLE [Boardgame] ADD [MinAge] INT NULL;
+IF COL_LENGTH('Boardgame', 'UsersRated') IS NULL ALTER TABLE [Boardgame] ADD [UsersRated] INT NULL;
+IF COL_LENGTH('Boardgame', 'AverageRating') IS NULL ALTER TABLE [Boardgame] ADD [AverageRating] DECIMAL(9,4) NULL;
+IF COL_LENGTH('Boardgame', 'BayesAverageRating') IS NULL ALTER TABLE [Boardgame] ADD [BayesAverageRating] DECIMAL(9,4) NULL;
+IF COL_LENGTH('Boardgame', 'StdDev') IS NULL ALTER TABLE [Boardgame] ADD [StdDev] DECIMAL(9,4) NULL;
+IF COL_LENGTH('Boardgame', 'Median') IS NULL ALTER TABLE [Boardgame] ADD [Median] DECIMAL(9,4) NULL;
+IF COL_LENGTH('Boardgame', 'Owned') IS NULL ALTER TABLE [Boardgame] ADD [Owned] INT NULL;
+IF COL_LENGTH('Boardgame', 'Trading') IS NULL ALTER TABLE [Boardgame] ADD [Trading] INT NULL;
+IF COL_LENGTH('Boardgame', 'Wanting') IS NULL ALTER TABLE [Boardgame] ADD [Wanting] INT NULL;
+IF COL_LENGTH('Boardgame', 'Wishing') IS NULL ALTER TABLE [Boardgame] ADD [Wishing] INT NULL;
+IF COL_LENGTH('Boardgame', 'NumComments') IS NULL ALTER TABLE [Boardgame] ADD [NumComments] INT NULL;
+IF COL_LENGTH('Boardgame', 'NumWeights') IS NULL ALTER TABLE [Boardgame] ADD [NumWeights] INT NULL;
+IF COL_LENGTH('Boardgame', 'AverageWeight') IS NULL ALTER TABLE [Boardgame] ADD [AverageWeight] DECIMAL(9,4) NULL;
+IF COL_LENGTH('Boardgame', 'RanksJson') IS NULL ALTER TABLE [Boardgame] ADD [RanksJson] NVARCHAR(MAX) NULL;
+IF COL_LENGTH('Boardgame', 'LinksJson') IS NULL ALTER TABLE [Boardgame] ADD [LinksJson] NVARCHAR(MAX) NULL;
+IF COL_LENGTH('Boardgame', 'PollsJson') IS NULL ALTER TABLE [Boardgame] ADD [PollsJson] NVARCHAR(MAX) NULL;
+IF COL_LENGTH('Boardgame', 'VersionsXml') IS NULL ALTER TABLE [Boardgame] ADD [VersionsXml] NVARCHAR(MAX) NULL;
+IF COL_LENGTH('Boardgame', 'VideosJson') IS NULL ALTER TABLE [Boardgame] ADD [VideosJson] NVARCHAR(MAX) NULL;
+IF COL_LENGTH('Boardgame', 'MarketplaceXml') IS NULL ALTER TABLE [Boardgame] ADD [MarketplaceXml] NVARCHAR(MAX) NULL;
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = 'IX_Boardgame_BggThingId' AND object_id = OBJECT_ID(N'[Boardgame]')
+)
+BEGIN
+    CREATE UNIQUE INDEX [IX_Boardgame_BggThingId] ON [Boardgame]([BggThingId]);
+END;";
+            await movieDb.Database.ExecuteSqlRawAsync(sql);
         }
     }
 }
