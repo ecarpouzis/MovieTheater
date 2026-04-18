@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using SixLabors.ImageSharp;
@@ -23,6 +23,7 @@ using MovieTheater.Services.Poster;
 using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
 using MovieTheater.Services.Google;
+using MovieTheater.Services.Bgg;
 
 namespace MovieTheater.Controllers
 {
@@ -37,10 +38,11 @@ namespace MovieTheater.Controllers
         private readonly ImageShrinkService shrinkService;
         private readonly GoogleSearchService googleSearchService;
         private readonly IMDBApiService imdbApiService;
+        private readonly BoardGameGeekApi boardGameGeekApi;
         private readonly PosterMosaicService posterMosaicService;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
-            ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService, PosterMosaicService posterMosaicService)
+            ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService, BoardGameGeekApi boardGameGeekApi, PosterMosaicService posterMosaicService)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -51,6 +53,7 @@ namespace MovieTheater.Controllers
             this.shrinkService = shrinkService;
             this.googleSearchService = googleSearchService;
             this.imdbApiService = imdbApiService;
+            this.boardGameGeekApi = boardGameGeekApi;
             this.posterMosaicService = posterMosaicService;
         }
 
@@ -88,12 +91,12 @@ namespace MovieTheater.Controllers
             {
                 var setRestriction = await movieDb.UserSettings
                     .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value);
-                if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction)) 
+                if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction))
                 {
                     ageRestriction = parsedRestriction;
                 }
             }
-            
+
             var movie = await movieDb.Movies.Include(m => m.PosterDetails).SingleOrDefaultAsync(m => m.id == id);
             var rating = GetMPARatingFromMovieRating(movie.Rating);
             if (movie != null && (rating <= ageRestriction))
@@ -521,10 +524,10 @@ namespace MovieTheater.Controllers
 
 
         [HttpPost("/API/GetMoviesFromNames")]
-        public async Task<List<Movie>> GetMoviesFromNames([FromBody]string[] movieNames, bool forceBackupLogic = false)
+        public async Task<List<Movie>> GetMoviesFromNames([FromBody] string[] movieNames, bool forceBackupLogic = false)
         {
             List<Movie> movies = new List<Movie>();
-            foreach(var givenTitle in movieNames)
+            foreach (var givenTitle in movieNames)
             {
                 Movie movie = null;
                 string Name = ParseName(givenTitle);
@@ -538,7 +541,7 @@ namespace MovieTheater.Controllers
                 //If we're forcing backup logic, perform backup IMDB search before anything else.
                 if (forceBackupLogic)
                     imdbID = await googleSearchService.FindImdbIdFromMovieName($"{Name} ({Year})");
-                
+
                 //We don't have a valid IMDBId, Search.
                 if (!IsValidImdbId(imdbID))
                 {
@@ -555,7 +558,7 @@ namespace MovieTheater.Controllers
                             imdbID = await imdbApiService.FindImdbIdFromMovieName(Name);
                         if (string.IsNullOrEmpty(imdbID))
                             imdbID = await googleSearchService.FindImdbIdFromMovieName(Name);
-                   }
+                    }
                 }
 
                 //If we have an IMDBID but not yet retrieved a movie, try to get the movie by the ID
@@ -576,7 +579,7 @@ namespace MovieTheater.Controllers
                         !trimmedTitle.EndsWith(", The", StringComparison.OrdinalIgnoreCase))
             {
                 var withoutArticle = trimmedTitle.Substring(4).Trim(); // remove leading "The "
-                
+
                 // If removing the article leaves an empty string, keep original to avoid producing ", The"
                 if (!string.IsNullOrEmpty(withoutArticle))
                 {
@@ -703,7 +706,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpPost("/API/SetViewingState")]
-        public async Task<IActionResult> SetViewingState([FromBody]ViewingState viewingState)
+        public async Task<IActionResult> SetViewingState([FromBody] ViewingState viewingState)
         {
             if (viewingState == null)
             {
@@ -715,18 +718,18 @@ namespace MovieTheater.Controllers
             {
                 return BadRequest(new { Success = false, Message = "No User Found." });
             }
-            
+
             var movie = await movieDb.Movies.FirstOrDefaultAsync(m => m.id == viewingState.MovieID);
             if (movie == null)
             {
                 return BadRequest(new { Success = false, Message = "Invalid Movie ID." });
             }
-            
+
             var action = viewingState.Action == ViewingType.SetWatched ? "Seen" : "WantToWatch";
             var existingViewing = await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.MovieID == movie.id && e.ViewingType == action);
             bool shouldCreateNew = existingViewing == null && viewingState.SetActive;
             bool shouldDeleteExisting = existingViewing != null && !viewingState.SetActive;
-            
+
             if (shouldCreateNew)
             {
                 var newViewing = new Viewing
@@ -770,8 +773,8 @@ namespace MovieTheater.Controllers
             IQueryable<Movie> movies = movieDb.Movies;
             if (search == null)
                 return BadRequest(new { message = "No Search Data Provided" });
-           
-            if(!String.IsNullOrEmpty(search.Type))
+
+            if (!String.IsNullOrEmpty(search.Type))
                 switch (search.Type)
                 {
                     case "startsWith":
@@ -784,18 +787,18 @@ namespace MovieTheater.Controllers
                         {
                             movies = movies.Where(m => m.SimpleTitle.StartsWith(search.StartsWith));
                         }
-                    break;
-                    
+                        break;
+
                     case "containsText":
-                        if(!String.IsNullOrEmpty(search.Text))
+                        if (!String.IsNullOrEmpty(search.Text))
                             movies = movies.Where(m => m.SimpleTitle.Contains(search.Text) || m.Title.Contains(search.Text));
-                    break;
-                    
+                        break;
+
                     case "actorSearch":
-                    if (!String.IsNullOrEmpty(search.Actor))
-                        movies = movies.Where(m => m.Actors.Contains(search.Actor));
-                    break;
-                    
+                        if (!String.IsNullOrEmpty(search.Actor))
+                            movies = movies.Where(m => m.Actors.Contains(search.Actor));
+                        break;
+
                     default:
                         break;
                 }
@@ -1151,6 +1154,138 @@ namespace MovieTheater.Controllers
                 }
             };
         }
+
+        [HttpGet("/API/SyncBoardgameFromBgg")]
+        [HttpPost("/API/SyncBoardgameFromBgg")]
+        public async Task<IActionResult> SyncBoardgameFromBgg(int bggThingId)
+        {
+            if (bggThingId <= 0)
+            {
+                return BadRequest(new { Success = false, Message = "bggThingId must be a positive integer" });
+            }
+
+            try
+            {
+                var fromBgg = await boardGameGeekApi.GetBoardgame(bggThingId);
+                if (fromBgg == null)
+                {
+                    return NotFound(new { Success = false, Message = "Boardgame not found from BoardGameGeek" });
+                }
+
+                var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
+                if (existing == null)
+                {
+                    movieDb.Boardgames.Add(fromBgg);
+                    await movieDb.SaveChangesAsync();
+                    return Ok(new { Success = true, Message = "Boardgame captured", data = fromBgg });
+                }
+
+                ApplyBoardgameSnapshot(existing, fromBgg);
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true, Message = "Boardgame updated", data = existing });
+            }
+            catch (HttpRequestException ex)
+            {
+                return StatusCode(502, new { Success = false, Message = "BoardGameGeek request failed", Error = ex.Message });
+            }
+        }
+
+        [HttpGet("/API/SyncBoardgameFromBggByTitle")]
+        [HttpPost("/API/SyncBoardgameFromBggByTitle")]
+        public async Task<IActionResult> SyncBoardgameFromBggByTitle(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return BadRequest(new { Success = false, Message = "title is required" });
+            }
+
+            try
+            {
+                var fromBgg = await boardGameGeekApi.GetBoardgameByTitle(title);
+                if (fromBgg == null)
+                {
+                    return NotFound(new { Success = false, Message = $"Boardgame '{title}' not found from BoardGameGeek" });
+                }
+
+                var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == fromBgg.BggThingId);
+                if (existing == null)
+                {
+                    movieDb.Boardgames.Add(fromBgg);
+                    await movieDb.SaveChangesAsync();
+                    return Ok(new { Success = true, Message = "Boardgame captured", data = fromBgg });
+                }
+
+                ApplyBoardgameSnapshot(existing, fromBgg);
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true, Message = "Boardgame updated", data = existing });
+            }
+            catch (HttpRequestException ex)
+            {
+                return StatusCode(502, new { Success = false, Message = "BoardGameGeek request failed", Error = ex.Message });
+            }
+        }
+
+        [HttpGet("/API/GetBoardgame")]
+        public async Task<IActionResult> GetBoardgame(int bggThingId)
+        {
+            if (bggThingId <= 0)
+            {
+                return BadRequest(new { Success = false, Message = "bggThingId must be a positive integer" });
+            }
+
+            var boardgame = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
+            if (boardgame == null)
+            {
+                return NotFound(new { Success = false, Message = "Boardgame not found" });
+            }
+
+            return Ok(new { Success = true, data = boardgame });
+        }
+
+        [EnableQuery]
+        [HttpGet("/odata/Boardgames")]
+        public IQueryable<Boardgame> GetBoardgames()
+        {
+            return movieDb.Boardgames;
+        }
+
+        private static void ApplyBoardgameSnapshot(Boardgame existing, Boardgame fromBgg)
+        {
+            existing.ThingType = fromBgg.ThingType;
+            existing.Name = fromBgg.Name;
+            existing.AlternateNamesJson = fromBgg.AlternateNamesJson;
+            existing.YearPublished = fromBgg.YearPublished;
+            existing.MinPlayers = fromBgg.MinPlayers;
+            existing.MaxPlayers = fromBgg.MaxPlayers;
+            existing.PlayingTime = fromBgg.PlayingTime;
+            existing.MinPlayTime = fromBgg.MinPlayTime;
+            existing.MaxPlayTime = fromBgg.MaxPlayTime;
+            existing.MinAge = fromBgg.MinAge;
+            existing.Thumbnail = fromBgg.Thumbnail;
+            existing.Image = fromBgg.Image;
+            existing.Description = fromBgg.Description;
+            existing.UsersRated = fromBgg.UsersRated;
+            existing.AverageRating = fromBgg.AverageRating;
+            existing.BayesAverageRating = fromBgg.BayesAverageRating;
+            existing.StdDev = fromBgg.StdDev;
+            existing.Median = fromBgg.Median;
+            existing.Owned = fromBgg.Owned;
+            existing.Trading = fromBgg.Trading;
+            existing.Wanting = fromBgg.Wanting;
+            existing.Wishing = fromBgg.Wishing;
+            existing.NumComments = fromBgg.NumComments;
+            existing.NumWeights = fromBgg.NumWeights;
+            existing.AverageWeight = fromBgg.AverageWeight;
+            existing.RanksJson = fromBgg.RanksJson;
+            existing.LinksJson = fromBgg.LinksJson;
+            existing.PollsJson = fromBgg.PollsJson;
+            existing.VersionsXml = fromBgg.VersionsXml;
+            existing.VideosJson = fromBgg.VideosJson;
+            existing.MarketplaceXml = fromBgg.MarketplaceXml;
+            existing.RawXml = fromBgg.RawXml;
+            existing.LastSyncedUtc = fromBgg.LastSyncedUtc;
+        }
+
 
         private static string GetMimeType(MosaicOutputFormat format) => format switch
         {

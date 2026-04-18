@@ -29,6 +29,8 @@ export default defineConfig({
       "/odata": "http://localhost:3001",
       "/Image": "http://localhost:3001",
       "/ImageThumb": "http://localhost:3001",
+      "/BoardgameImage": "http://localhost:3001",
+      "/BoardgameImageThumb": "http://localhost:3001",
     },
   },
 

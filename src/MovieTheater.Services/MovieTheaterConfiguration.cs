@@ -7,6 +7,8 @@ namespace MovieTheater.Services
     {
         public string? MoviePostersDir { get; set; }
 
+        public string? BoardgameImagesDir { get; set; }
+
         public string? DbConnectionString { get; set; }
 
         public string? ImdbApiKey { get; set; }
@@ -16,6 +18,8 @@ namespace MovieTheater.Services
         public string? OmdbApiKey { get; set; }
         public string? GoogleSearchApiKey { get; set; }
         public string? GoogleSearchEngineId { get; set; }
+
+        public string? BggApiToken { get; set; }
 
         public string? PyPath { get; set; }
 
