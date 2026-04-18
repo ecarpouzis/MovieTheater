@@ -3,6 +3,7 @@ using MovieTheater.Core.Logging;
 using MovieTheater.Db;
 using MovieTheater.Services.ImdbApi;
 using MovieTheater.Services.Poster;
+using MovieTheater.Services.BoardgameImage;
 using MovieTheater.Services.Python;
 using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
@@ -18,12 +19,13 @@ namespace MovieTheater.Services
             services.AddMovieTheaterLogging();
             services.AddMovieTheaterDb(config.DbConnectionString);
             services.AddPosterImageServices(config.MoviePostersDir, config.Environment);
+            services.AddBoardgameImageServices(config.BoardgameImagesDir, config.Environment);
             services.AddPythonService(config.PyPath);
             services.AddImdbServices(config.ImdbApiKey);
             services.AddTmdbServices(config.TmdbApiKey);
             services.AddOmdbServices(config.OmdbApiKey);
             services.AddGoogleServices(config.GoogleSearchApiKey, config.GoogleSearchEngineId);
-            services.AddBoardGameGeekServices(config.BggUsername, config.BggPassword, config.BggCookieHeader);
+            services.AddBoardGameGeekServices(config.BggApiToken);
             services.AddTransient<IMDBApiService>();
             return services;
         }

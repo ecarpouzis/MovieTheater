@@ -1,8 +1,27 @@
 # BoardGameGeek XMLAPI2 Reference
 
+> **Version date:** 2025-07-02
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Registration Requirements](#registration-requirements)
+- [Licenses](#licenses)
+- [Using the XML API for a Business](#using-the-xml-api-for-a-business)
+- [Using Other Parts of the API](#using-other-parts-of-the-api)
+- [Usage Limits](#usage-limits)
+- [Application Tokens](#application-tokens)
+- [Changes to the XML API and its Policies](#changes-to-the-xml-api-and-its-policies)
+- [Technical Support](#technical-support)
+- [API Reference](#api-reference)
+
+---
+
 ## Introduction
 
-To start, read the introductory guide to using the XML API and the XML API terms of use.
+BoardGameGeek provides some of its data in XML form via an API, which users may use according to the [XML API terms of use](https://boardgamegeek.com/wiki/page/XML_API_Terms_of_Use). For details about what data is available via the XML API, see `BGG_XML_API` and `BGG_XML_API2`.
+
+**Registration and authorization is required for use of the XML API.** To register your application, go to <https://boardgamegeek.com/applications>, and click the button to create an application. Please be patient regarding a response—it may be a week or more before BGG gets back to you.
 
 The `XMLAPI2` is a newer version of the XML API and is currently in **BETA**. For the old API, see `BGG_XML_API`.
 
@@ -13,6 +32,137 @@ For current info, discussions, and source material:
 - BoardGameGeek XML API / guild thread: <https://boardgamegeek.com/guild/1229>
 - Related wiki: **Data Mining** (based on previous XMLAPI)
 - Current bugs/enhancement requests: **XML API Enhancements**
+
+---
+
+## Registration Requirements
+
+You can register either a commercial or non-commercial application. Registration is required for nearly all use of the XML API.
+
+**Exceptions:**
+- If all you are doing with the XML API is downloading your own collection while logged in, you do not need to register.
+- You can also download other users' collections without registering while logged in, but without a registered application, this will be heavily rate limited.
+- If you routinely need to download multiple users' collections, you should register.
+- You do not need to register to download the CSV dump of all games while logged in.
+
+Licenses may not be approved in all cases; in particular, any application which, in BGG's judgment, competes with any part of BGG's business, or which harms them in any way, may be denied. In particular, any application which helps manage ticketing for conventions is likely to be declined. Approved applications which, in BGG's judgment, harm BGG may have their licenses withdrawn.
+
+---
+
+## Licenses
+
+### New Commercial Licenses
+
+If your organization is for-profit or if it is used to raise money in any way, or if your application will be showing advertising or offering users any benefit in exchange for payment, it is considered commercial. All commercial applications will require a commercial license.
+
+Current policies for commercial licenses (subject to change at any time):
+
+| Monetization Type | License Policy |
+|---|---|
+| User payments | Usually free until 100 paying users |
+| Advertisements (no user payments) | Usually free until 1000 users |
+| Sales (e.g., online game stores) | Usually requires paid commercial license immediately; local game stores without significant online business may qualify for free license |
+| Voluntary donations only (no additional features for donors) | Requires commercial license, but usually free |
+| Non-public facing commercial applications | Evaluated case-by-case |
+
+To obtain a commercial license, register your application and choose "Commercial" in the appropriate option. Costs for commercial licenses, when applicable, are determined on a case-by-case basis.
+
+### Existing Commercial Licenses
+
+If you have an existing commercial license, you will still need to register and add the Authorization header. When you register, please include details about your license, including the cost (if any), whom you discussed this with, when, and whether it was via email, geekmail, or some other method.
+
+### Non-Commercial Licenses
+
+If your application is purely non-commercial, you may be eligible for a non-commercial license. A non-commercial license is generally provided at no cost, but may have different usage limits than a commercial license. Authorization requirements are the same for non-commercial as commercial applications.
+
+---
+
+## Using the XML API for a Business
+
+The XML API and these policies are subject to change at any time. If you are building a business application that depends on this data, proceed at your own risk.
+
+---
+
+## Using Other Parts of the API
+
+In addition to the public-facing XML API, BGG has several other private APIs used by their website. Unless otherwise noted or authorized, no license is granted for use of those endpoints.
+
+This agreement (and Authorization requirements) also applies to downloading user collections in XML or CSV format, with the exception of downloading your own collection directly from the site while logged in.
+
+An approved application is also required for the CSV download of all games. If you have an approved application, you can download that CSV directly from the page while logged in, or use the Application Token.
+
+---
+
+## Usage Limits
+
+Exact usage limits are still being determined. General guidance:
+
+- **Server-side requests preferred:** When possible, all requests should be made by your servers, with the results cached. Having requests come directly from clients (browser or app) may result in too much traffic, which could be grounds for having your license suspended.
+- **Minimize requests:** Keep your number of requests to a minimum.
+- **License-dependent limits:** Usage limits may be affected by your license type.
+- **Monitor usage:** You can monitor your current usage at <https://boardgamegeek.com/applications> by clicking "Usage" under your application name.
+
+---
+
+## Application Tokens
+
+Along with registration, BGG has introduced Authorization tokens to enforce registration.
+
+Once you have an approved application, you can create Tokens by going to <https://boardgamegeek.com/applications> and clicking "Tokens" by your application.
+
+### Using a Token
+
+To use a token, send your HTTPS request to BGG with an `Authorization` header:
+
+```
+Authorization: Bearer e3f8c3ff-9926-4efc-863c-3b92acda4d32
+```
+
+(Replace with your actual token.)
+
+For more details on Authorization headers, see: <https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication>
+
+For now, Bearer tokens are used but not required to be refreshed; this may change.
+
+**If you are unable to add the Authorization header to your requests, you will not be able to use the XML API.**
+
+### Troubleshooting Tokens
+
+If your token does not seem to be working:
+- Ensure you are making requests to the correct domain (`boardgamegeek.com`, **WITHOUT** a leading `www`)
+- Ensure the format for your authorization header is correct: `Bearer` followed by a space (no colon!) and the bearer token
+
+### Third Party Tools for Using the API
+
+If you are working on a 3rd party library to allow other applications to use the XML API, you should provide a configuration to allow users of your library to set their application tokens. Each application using your library should have its own token.
+
+**Note:** This is for software libraries, in contrast to services. Third party services that allow other applications (not end users) to access BGG data are strictly prohibited.
+
+If you have an application intended for end users (not programmers), you should obtain your own token, and the application should have access to it; you should not be asking non-programmer end-users to obtain their own token.
+
+### Applications Which Make Client-Side Requests
+
+If your application must make client-side XML API requests from a browser, and you do not want to move your requests server-side, the client must have access to the token. This could create a security issue—if your token is captured and used for unauthorized purposes, your access could be revoked, or you may at least have to generate a new token. **Make your API calls server-side where possible.**
+
+### Public Facing Applications
+
+As mentioned in the XML API terms of use, public facing apps must include the "Powered by BGG" logo, which should link back to BoardGameGeek. The logo should be sized so that the text remains easily legible. Logo files can be found on the BGG site.
+
+---
+
+## Changes to the XML API and its Policies
+
+The XML API and its policies are subject to change. Planned changes will typically be announced in the [Geek Tools News forum](https://boardgamegeek.com/forum/46/boardgamegeek/geek-tools-news).
+
+---
+
+## Technical Support
+
+No technical support is available for the XML API. If you have issues, search the forums and, if necessary, ask questions in the [Geek Tools Guild](https://boardgamegeek.com/guild/1229).
+
+---
+
+## API Reference
 
 ## CSV Downloads
 

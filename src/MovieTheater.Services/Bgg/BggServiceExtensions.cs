@@ -5,16 +5,21 @@ namespace MovieTheater.Services.Bgg
 {
     public static class BggServiceExtensions
     {
-        public static IServiceCollection AddBoardGameGeekServices(this IServiceCollection services, string? username = null, string? password = null, string? cookieHeader = null)
+        /// <summary>
+        /// Registers BoardGameGeek API services with Bearer token authentication.
+        /// </summary>
+        /// <param name="services">The service collection.</param>
+        /// <param name="apiToken">Bearer token from https://boardgamegeek.com/applications</param>
+        /// <param name="rateLimitDelayMs">Minimum delay between requests in milliseconds (default: 5000ms per BGG guidelines)</param>
+        public static IServiceCollection AddBoardGameGeekServices(this IServiceCollection services, string? apiToken = null, int rateLimitDelayMs = 5000)
         {
             services.Configure<BggApiOptions>(options =>
             {
-                options.Username = username;
-                options.Password = password;
-                options.CookieHeader = cookieHeader;
+                options.ApiToken = apiToken;
+                options.RateLimitDelayMs = rateLimitDelayMs;
             });
 
-            services.AddTransient<BoardGameGeekApi>();
+            services.AddSingleton<BoardGameGeekApi>();
             services.AddHttpClient<BoardGameGeekApi>((httpClient) =>
             {
                 httpClient.Timeout = TimeSpan.FromSeconds(60);

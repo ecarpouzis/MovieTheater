@@ -11,15 +11,13 @@ namespace MovieTheater.Services.Bgg
 {
     public class BoardGameGeekApi
     {
-        private static readonly string[] Domains =
-        {
-            "https://boardgamegeek.com",
-            "https://rpggeek.com",
-            "https://videogamegeek.com"
-        };
+        // Use boardgamegeek.com WITHOUT www prefix per BGG API documentation
+        private const string BaseUrl = "https://boardgamegeek.com";
 
         private readonly HttpClient httpClient;
         private readonly BggApiOptions options;
+        private readonly SemaphoreSlim rateLimitSemaphore = new(1, 1);
+        private DateTime lastRequestTime = DateTime.MinValue;
 
         public BoardGameGeekApi(HttpClient httpClient, IOptions<BggApiOptions> options)
         {
@@ -79,38 +77,50 @@ namespace MovieTheater.Services.Bgg
 
         private async Task<string> SendBggGetAsync(string pathAndQuery)
         {
-            HttpStatusCode? lastStatus = null;
-            string? lastBody = null;
-
-            foreach (var domain in Domains)
+            await rateLimitSemaphore.WaitAsync();
+            try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"{domain}{pathAndQuery}"));
-
-                request.Headers.Referrer = new Uri(domain);
-                request.Headers.TryAddWithoutValidation("Origin", domain);
-
-                if (!string.IsNullOrWhiteSpace(options.CookieHeader))
+                // Enforce rate limiting - wait if needed to respect BGG's guidelines
+                var timeSinceLastRequest = DateTime.UtcNow - lastRequestTime;
+                var requiredDelay = TimeSpan.FromMilliseconds(options.RateLimitDelayMs);
+                if (timeSinceLastRequest < requiredDelay)
                 {
-                    request.Headers.TryAddWithoutValidation("Cookie", options.CookieHeader);
+                    var waitTime = requiredDelay - timeSinceLastRequest;
+                    await Task.Delay(waitTime);
                 }
 
-                if (!string.IsNullOrWhiteSpace(options.Username) && !string.IsNullOrWhiteSpace(options.Password))
+                using var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"{BaseUrl}{pathAndQuery}"));
+
+                // Use Bearer token authentication per BGG API documentation
+                if (!string.IsNullOrWhiteSpace(options.ApiToken))
                 {
-                    var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{options.Username}:{options.Password}"));
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Basic", token);
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", options.ApiToken.Trim());
                 }
 
                 var response = await httpClient.SendAsync(request);
-                if (response.IsSuccessStatusCode)
+                lastRequestTime = DateTime.UtcNow;
+
+                // Handle BGG-specific status codes
+                if (response.StatusCode == HttpStatusCode.Accepted) // 202 - queued, need to retry
                 {
-                    return await response.Content.ReadAsStringAsync();
+                    // BGG returns 202 when request is queued; retry after delay
+                    await Task.Delay(options.RateLimitDelayMs);
+                    return await SendBggGetAsync(pathAndQuery);
                 }
 
-                lastStatus = response.StatusCode;
-                lastBody = await response.Content.ReadAsStringAsync();
-            }
+                if (response.StatusCode == HttpStatusCode.ServiceUnavailable || 
+                    response.StatusCode == HttpStatusCode.InternalServerError) // 503 or 500 - too busy
+                {
+                    throw new HttpRequestException($"BGG server too busy. Status: {(int)response.StatusCode}. Try again later.");
+                }
 
-            throw new HttpRequestException($"BGG request failed on all domains. Last status: {(int?)lastStatus} {lastStatus}. Body: {lastBody}");
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAsStringAsync();
+            }
+            finally
+            {
+                rateLimitSemaphore.Release();
+            }
         }
 
         private static Boardgame? ParseBoardgame(string rawXml, int bggThingId)
