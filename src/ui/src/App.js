@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import NavBar from "./NavBar/NavBar";
 import Browse from "./Pages/Browse/Browse";
+import BoardGames from "./Pages/BoardGames/BoardGames";
 import MoviePage from "./Pages/MoviePage";
 import InsertPage from "./Pages/InsertPage";
 import BatchInsertPage from "./Pages/BatchInsertPage";
@@ -72,6 +73,9 @@ function App() {
             </Route>
             <Route path="/batchinsert" exact>
               <BatchInsertPage />
+            </Route>
+            <Route path="/boardgames" exact>
+              <BoardGames userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/">
               <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} simpleStyle={simpleStyle} enablePagination={enablePagination} />

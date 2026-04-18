@@ -6,6 +6,7 @@ import "./NavBar.css";
 
 import SearchTools from "./SearchTools";
 import Login from "./Login";
+import BoardGameNavContent from "./BoardGameNavContent";
 import UserSettingsModal from "./UserSettingsModal";
 import useIsMobile from "../hooks/useIsMobile";
 
@@ -37,6 +38,7 @@ function NavBar({
 
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   // useEffect with a dependency array runs the callback whenever any listed value changes
@@ -44,6 +46,7 @@ function NavBar({
   // Close the dropdown whenever the URL path or query string changes.
   useEffect(() => {
     setDrawerOpen(false);
+    setDropdownOpen(false);
   }, [location.pathname, location.search]);
 
   useEffect(() => {
@@ -146,14 +149,27 @@ function NavBar({
     moviesWantToWatchSearch,
   ]);
 
+  const isBoardGames = location.pathname === "/boardgames";
+  const sectionEmoji = isBoardGames ? "🎲" : "🎬";
+  const sectionTitle = isBoardGames ? "Board Games" : "Movie Theater";
+  const navThemeClass = isBoardGames ? " navbar-boardgames-theme" : "";
+
   // JSX can be stored in a variable just like any other value and rendered later.
   // The empty tags <> </> are a fragment — a grouping wrapper that emits no DOM element.
-  const navContent = (
+  const navContent = isBoardGames ? (
+    <BoardGameNavContent
+      userData={userData}
+      setUserData={setUserData}
+      onUserLoggedIn={onUserLoggedIn}
+      setSettingsModalOpen={setSettingsModalOpen}
+      search={search}
+    />
+  ) : (
     <>
-      <Login 
-        userData={userData} 
-        setUserData={setUserData} 
-        onUserLoggedIn={onUserLoggedIn} 
+      <Login
+        userData={userData}
+        setUserData={setUserData}
+        onUserLoggedIn={onUserLoggedIn}
         setSettingsModalOpen={setSettingsModalOpen}
       />
       <SearchTools search={search} userData={userData} />
@@ -163,33 +179,35 @@ function NavBar({
   // Render entirely different markup for mobile vs. desktop rather than relying on
   // CSS media queries — the isMobile hook drives layout switching at the JS level.
   if (isMobile) {
-    const handleMobileHomeClick = () => {
-      if (location.pathname === "/" && !location.search) {
-        resetSearch();
-      } else {
-        history.push("/");
-      }
-    };
-
     return (
       <>
-        <div className="navbar-topbar">
+        <div className={`navbar-topbar${navThemeClass}`}>
           <button className="navbar-menu-btn" onClick={() => setDrawerOpen((o) => !o)}>
             <MenuOutlined />
           </button>
-          <button 
-            className="navbar-home-btn"
-            onClick={handleMobileHomeClick}
-          >
-            <span className="navbar-home-emoji">🎬</span>
-            <span className="navbar-title">Movie Theater</span>
-          </button>
+          <div className="navbar-dropdown-wrapper">
+            <button className="navbar-home-btn" onClick={() => setDropdownOpen((o) => !o)}>
+              <span className="navbar-home-emoji">{sectionEmoji}</span>
+              <span className="navbar-title">{sectionTitle} ▼</span>
+            </button>
+            {dropdownOpen && (
+              <div className="navbar-section-dropdown">
+                <button className="navbar-section-item" onClick={() => history.push("/")}>
+                  🎬 Movie Theater
+                </button>
+                <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
+                  🎲 Board Games
+                </button>
+              </div>
+            )}
+          </div>
           {userData && <span className="navbar-username-badge">{userData.username}</span>}
         </div>
 
         {drawerOpen && <div className="navbar-overlay" onClick={() => setDrawerOpen(false)} />}
+        {dropdownOpen && <div className="navbar-overlay" onClick={() => setDropdownOpen(false)} style={{ zIndex: 1150 }} />}
 
-        <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}`}>{navContent}</div>
+        <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}${navThemeClass}`}>{navContent}</div>
 
         <UserSettingsModal 
           open={settingsModalOpen} 
@@ -201,22 +219,26 @@ function NavBar({
     );
   }
 
-  const handleDesktopHomeClick = () => {
-    if (location.pathname === "/" && !location.search) {
-      resetSearch();
-    } else {
-      history.push("/");
-    }
-  };
-
   return (
     <>
-      <Layout.Sider className="navbar-sider" trigger={null} collapsible collapsed={collapsed} onCollapse={onCollapse}>
-        <div className="navbar-sider-header">
-          <button className="navbar-home-btn" onClick={handleDesktopHomeClick}>
-            <span className="navbar-home-emoji">🎬</span>
-            <span className="navbar-sider-title">Movie Theater</span>
-          </button>
+      <Layout.Sider className={`navbar-sider${navThemeClass}`} trigger={null} collapsible collapsed={collapsed} onCollapse={onCollapse}>
+        <div className={`navbar-sider-header${navThemeClass}`}>
+          <div className="navbar-dropdown-wrapper">
+            <button className="navbar-home-btn" onClick={() => setDropdownOpen((o) => !o)}>
+              <span className="navbar-home-emoji">{sectionEmoji}</span>
+              <span className="navbar-sider-title">{sectionTitle} ▼</span>
+            </button>
+            {dropdownOpen && (
+              <div className="navbar-section-dropdown navbar-section-dropdown-desktop">
+                <button className="navbar-section-item" onClick={() => history.push("/")}>
+                  🎬 Movie Theater
+                </button>
+                <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
+                  🎲 Board Games
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         {navContent}
       </Layout.Sider>

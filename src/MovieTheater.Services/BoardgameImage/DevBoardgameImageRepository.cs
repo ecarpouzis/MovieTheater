@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using MovieTheater.Db;
 using System;
 using System.IO;
 using System.Net.Http;
@@ -10,11 +12,13 @@ namespace MovieTheater.Services.BoardgameImage
     {
         private readonly HttpClient httpClient;
         private readonly LocalBoardgameImageOptions options;
+        private readonly MovieDb movieDb;
 
-        public DevBoardgameImageRepository(HttpClient httpClient, IOptions<LocalBoardgameImageOptions> options)
+        public DevBoardgameImageRepository(HttpClient httpClient, IOptions<LocalBoardgameImageOptions> options, MovieDb movieDb)
         {
             this.httpClient = httpClient;
             this.options = options.Value;
+            this.movieDb = movieDb;
         }
 
         public async Task<bool> HasImage(int boardgameId, BoardgameImageVariant variant)
@@ -50,12 +54,24 @@ namespace MovieTheater.Services.BoardgameImage
                     throw new InvalidOperationException($"Unrecognized BoardgameImageVariant: \"{variant}\" ({(int)variant})");
                 }
 
-
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 var response = await httpClient.SendAsync(request);
 
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    return null;
+                {
+                    var sourceUrl = await GetSourceImageUrl(boardgameId, variant);
+                    if (string.IsNullOrWhiteSpace(sourceUrl))
+                        return null;
+
+                    var sourceResponse = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, sourceUrl));
+                    if (sourceResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
+                        return null;
+
+                    sourceResponse.EnsureSuccessStatusCode();
+                    var sourceBytes = await sourceResponse.Content.ReadAsByteArrayAsync();
+                    await File.WriteAllBytesAsync(file.FullName, sourceBytes);
+                    return sourceBytes;
+                }
 
                 response.EnsureSuccessStatusCode();
 
@@ -77,6 +93,18 @@ namespace MovieTheater.Services.BoardgameImage
             var file = GetFile(boardgameId, variant);
             DateTimeOffset? result = file.Exists ? new DateTimeOffset(file.LastWriteTimeUtc) : null;
             return Task.FromResult(result);
+        }
+
+        private async Task<string?> GetSourceImageUrl(int boardgameId, BoardgameImageVariant variant)
+        {
+            var boardgame = await movieDb.Boardgames
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.id == boardgameId);
+
+            if (boardgame == null)
+                return null;
+
+            return variant == BoardgameImageVariant.Main ? boardgame.Image : boardgame.Thumbnail;
         }
 
         private FileInfo GetFile(int boardgameId, BoardgameImageVariant variant)
