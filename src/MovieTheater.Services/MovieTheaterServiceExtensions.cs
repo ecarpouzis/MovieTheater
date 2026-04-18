@@ -27,6 +27,7 @@ namespace MovieTheater.Services
             services.AddGoogleServices(config.GoogleSearchApiKey, config.GoogleSearchEngineId);
             services.AddBoardGameGeekServices(config.BggApiToken);
             services.AddTransient<IMDBApiService>();
+            services.AddTransient<PosterMosaicService>();
             return services;
         }
     }

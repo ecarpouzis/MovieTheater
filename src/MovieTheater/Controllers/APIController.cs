@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.Linq;
@@ -28,87 +29,6 @@ namespace MovieTheater.Controllers
 {
     public class APIController : Controller
     {
-
-        // Simple 3-dimensional k-d tree for RGB color nearest-neighbor lookup.
-        // Works with a small in-memory list of points and performs recursive partitioning.
-        private class KDTree3
-        {
-            private class Node
-            {
-                public byte R, G, B;
-                public int MovieId;
-                public Node? Left;
-                public Node? Right;
-            }
-
-            private readonly Node? root;
-
-            public KDTree3(List<(int MovieId, byte R, byte G, byte B)> points)
-            {
-                if (points == null || points.Count == 0) { root = null; return; }
-                var pts = points.Select(p => new Node { MovieId = p.MovieId, R = p.R, G = p.G, B = p.B }).ToList();
-                root = Build(pts, 0);
-            }
-
-            private Node? Build(List<Node> pts, int depth)
-            {
-                if (pts == null || pts.Count == 0) return null;
-                int axis = depth % 3;
-                pts.Sort((a, b) => axis switch
-                {
-                    0 => a.R.CompareTo(b.R),
-                    1 => a.G.CompareTo(b.G),
-                    _ => a.B.CompareTo(b.B),
-                });
-                int mid = pts.Count / 2;
-                var node = pts[mid];
-                var leftList = pts.Take(mid).ToList();
-                var rightList = pts.Skip(mid + 1).ToList();
-                node.Left = Build(leftList, depth + 1);
-                node.Right = Build(rightList, depth + 1);
-                return node;
-            }
-
-            public int Nearest(byte r, byte g, byte b)
-            {
-                if (root == null) return -1;
-                int bestId = root.MovieId;
-                int bestDist = int.MaxValue;
-
-                void Search(Node? node, int depth)
-                {
-                    if (node == null) return;
-                    int dr = node.R - r;
-                    int dg = node.G - g;
-                    int db = node.B - b;
-                    int dist = dr * dr + dg * dg + db * db;
-                    if (dist < bestDist)
-                    {
-                        bestDist = dist;
-                        bestId = node.MovieId;
-                    }
-
-                    int axis = depth % 3;
-                    int diff = axis switch
-                    {
-                        0 => node.R - r,
-                        1 => node.G - g,
-                        _ => node.B - b,
-                    };
-
-                    var first = diff > 0 ? node.Left : node.Right;
-                    var second = diff > 0 ? node.Right : node.Left;
-
-                    Search(first, depth + 1);
-                    if (diff * diff < bestDist)
-                        Search(second, depth + 1);
-                }
-
-                Search(root, 0);
-                return bestId;
-            }
-        }
-
         private readonly MovieDb movieDb;
         private readonly TmdbApi tmdb;
         private readonly OmdbApi omdb;
@@ -119,9 +39,10 @@ namespace MovieTheater.Controllers
         private readonly GoogleSearchService googleSearchService;
         private readonly IMDBApiService imdbApiService;
         private readonly BoardGameGeekApi boardGameGeekApi;
+        private readonly PosterMosaicService posterMosaicService;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
-            ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService, BoardGameGeekApi boardGameGeekApi)
+            ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService, BoardGameGeekApi boardGameGeekApi, PosterMosaicService posterMosaicService)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -133,6 +54,7 @@ namespace MovieTheater.Controllers
             this.googleSearchService = googleSearchService;
             this.imdbApiService = imdbApiService;
             this.boardGameGeekApi = boardGameGeekApi;
+            this.posterMosaicService = posterMosaicService;
         }
 
         private int? GetCurrentUserId()
@@ -169,12 +91,12 @@ namespace MovieTheater.Controllers
             {
                 var setRestriction = await movieDb.UserSettings
                     .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value);
-                if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction)) 
+                if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction))
                 {
                     ageRestriction = parsedRestriction;
                 }
             }
-            
+
             var movie = await movieDb.Movies.Include(m => m.PosterDetails).SingleOrDefaultAsync(m => m.id == id);
             var rating = GetMPARatingFromMovieRating(movie.Rating);
             if (movie != null && (rating <= ageRestriction))
@@ -602,10 +524,10 @@ namespace MovieTheater.Controllers
 
 
         [HttpPost("/API/GetMoviesFromNames")]
-        public async Task<List<Movie>> GetMoviesFromNames([FromBody]string[] movieNames, bool forceBackupLogic = false)
+        public async Task<List<Movie>> GetMoviesFromNames([FromBody] string[] movieNames, bool forceBackupLogic = false)
         {
             List<Movie> movies = new List<Movie>();
-            foreach(var givenTitle in movieNames)
+            foreach (var givenTitle in movieNames)
             {
                 Movie movie = null;
                 string Name = ParseName(givenTitle);
@@ -619,7 +541,7 @@ namespace MovieTheater.Controllers
                 //If we're forcing backup logic, perform backup IMDB search before anything else.
                 if (forceBackupLogic)
                     imdbID = await googleSearchService.FindImdbIdFromMovieName($"{Name} ({Year})");
-                
+
                 //We don't have a valid IMDBId, Search.
                 if (!IsValidImdbId(imdbID))
                 {
@@ -636,7 +558,7 @@ namespace MovieTheater.Controllers
                             imdbID = await imdbApiService.FindImdbIdFromMovieName(Name);
                         if (string.IsNullOrEmpty(imdbID))
                             imdbID = await googleSearchService.FindImdbIdFromMovieName(Name);
-                   }
+                    }
                 }
 
                 //If we have an IMDBID but not yet retrieved a movie, try to get the movie by the ID
@@ -657,7 +579,7 @@ namespace MovieTheater.Controllers
                         !trimmedTitle.EndsWith(", The", StringComparison.OrdinalIgnoreCase))
             {
                 var withoutArticle = trimmedTitle.Substring(4).Trim(); // remove leading "The "
-                
+
                 // If removing the article leaves an empty string, keep original to avoid producing ", The"
                 if (!string.IsNullOrEmpty(withoutArticle))
                 {
@@ -784,7 +706,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpPost("/API/SetViewingState")]
-        public async Task<IActionResult> SetViewingState([FromBody]ViewingState viewingState)
+        public async Task<IActionResult> SetViewingState([FromBody] ViewingState viewingState)
         {
             if (viewingState == null)
             {
@@ -796,18 +718,18 @@ namespace MovieTheater.Controllers
             {
                 return BadRequest(new { Success = false, Message = "No User Found." });
             }
-            
+
             var movie = await movieDb.Movies.FirstOrDefaultAsync(m => m.id == viewingState.MovieID);
             if (movie == null)
             {
                 return BadRequest(new { Success = false, Message = "Invalid Movie ID." });
             }
-            
+
             var action = viewingState.Action == ViewingType.SetWatched ? "Seen" : "WantToWatch";
             var existingViewing = await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.MovieID == movie.id && e.ViewingType == action);
             bool shouldCreateNew = existingViewing == null && viewingState.SetActive;
             bool shouldDeleteExisting = existingViewing != null && !viewingState.SetActive;
-            
+
             if (shouldCreateNew)
             {
                 var newViewing = new Viewing
@@ -851,8 +773,8 @@ namespace MovieTheater.Controllers
             IQueryable<Movie> movies = movieDb.Movies;
             if (search == null)
                 return BadRequest(new { message = "No Search Data Provided" });
-           
-            if(!String.IsNullOrEmpty(search.Type))
+
+            if (!String.IsNullOrEmpty(search.Type))
                 switch (search.Type)
                 {
                     case "startsWith":
@@ -865,18 +787,18 @@ namespace MovieTheater.Controllers
                         {
                             movies = movies.Where(m => m.SimpleTitle.StartsWith(search.StartsWith));
                         }
-                    break;
-                    
+                        break;
+
                     case "containsText":
-                        if(!String.IsNullOrEmpty(search.Text))
+                        if (!String.IsNullOrEmpty(search.Text))
                             movies = movies.Where(m => m.SimpleTitle.Contains(search.Text) || m.Title.Contains(search.Text));
-                    break;
-                    
+                        break;
+
                     case "actorSearch":
-                    if (!String.IsNullOrEmpty(search.Actor))
-                        movies = movies.Where(m => m.Actors.Contains(search.Actor));
-                    break;
-                    
+                        if (!String.IsNullOrEmpty(search.Actor))
+                            movies = movies.Where(m => m.Actors.Contains(search.Actor));
+                        break;
+
                     default:
                         break;
                 }
@@ -1102,20 +1024,25 @@ namespace MovieTheater.Controllers
 
         // POST /PosterMosaic
         // Accepts an uploaded image and creates a photo-mosaic where each tile is one of the stored posters.
-        // Parameters:
-        //   imageFile   - multipart form file containing the source image
-        //   posterCount - number of tiles to divide the source image into (default: 500)
-        //   poolSize    - maximum number of posters to consider when matching by dominant color (default: 500)
-        //   posterWidth - width of each poster tile in pixels (default: 20)
-        //   posterHeight- height of each poster tile in pixels (default: 30)
         [HttpPost("/PosterMosaic")]
-        public async Task<IActionResult> PosterMosaic(IFormFile imageFile, int posterCount = 500, int poolSize = 6000, int posterWidth = 30, int posterHeight = 40, int topK = 15, int excludeRadius = 1)
+        public async Task<IActionResult> PosterMosaic(
+            IFormFile imageFile,
+            // Scale
+            double tileScale = 1.0,
+            double outputScale = 1.0,
+            int maxOutputDimension = 0,
+            // Color Matching
+            int topK = 50,
+            int excludeRadius = 2,
+            double colorDecayFactor = 10000.0,
+            double adjacencyPenaltyBase = 0.1,
+            // Output Format
+            string format = "png",
+            int quality = 85,
+            int pngCompression = 6)
         {
             if (imageFile == null || imageFile.Length == 0)
                 return BadRequest(new { Message = "No image uploaded", Success = false });
-
-            posterCount = Math.Clamp(posterCount, 1, 6000);
-            poolSize = Math.Clamp(poolSize, 1, 6000);
 
             byte[] sourceBytes;
             using (var ms = new MemoryStream())
@@ -1124,65 +1051,38 @@ namespace MovieTheater.Controllers
                 sourceBytes = ms.ToArray();
             }
 
-            using var srcImage = Image.Load<Rgba32>(sourceBytes);
-
-            // Determine grid size from posterCount and image aspect ratio
-            double aspect = (double)srcImage.Width / srcImage.Height;
-            int columns = Math.Max(1, (int)Math.Round(Math.Sqrt(posterCount * aspect)));
-            int rows = Math.Max(1, (int)Math.Ceiling((double)posterCount / columns));
-
-            // Resize a copy of the source image to the grid size to sample colors
-            using var small = srcImage.Clone(ctx => ctx.Resize(columns, rows));
-
-            // Load candidate posters: those that have a DominantColor
-            var candidates = await movieDb.MoviePosterDetails
-                .Where(pd => !string.IsNullOrEmpty(pd.DominantColor))
-                .OrderBy(pd => pd.MovieId)
-                .Take(poolSize)
-                .ToListAsync();
-
-            if (candidates.Count == 0)
-                return BadRequest(new { Message = "No posters with DominantColor available", Success = false });
-
-            // Parse candidate colors and build a lookup
-            var candidateColors = new List<(int MovieId, byte R, byte G, byte B)>();
-            foreach (var c in candidates)
-            {
-                try
-                {
-                    var hex = c.DominantColor?.Trim();
-                    if (string.IsNullOrEmpty(hex)) continue;
-                    if (hex.StartsWith("#")) hex = hex.Substring(1);
-                    if (hex.Length != 6) continue;
-                    byte r = Convert.ToByte(hex.Substring(0, 2), 16);
-                    byte g = Convert.ToByte(hex.Substring(2, 2), 16);
-                    byte b = Convert.ToByte(hex.Substring(4, 2), 16);
-                    candidateColors.Add((c.MovieId, r, g, b));
-                }
-                catch
-                {
-                    // ignore malformed colors
-                }
-            }
-
-            if (candidateColors.Count == 0)
-                return BadRequest(new { Message = "No valid poster colors available", Success = false });
+            var options = BuildMosaicOptions(tileScale, outputScale, maxOutputDimension,
+                topK, excludeRadius, colorDecayFactor, adjacencyPenaltyBase, format, quality, pngCompression);
 
             byte[] mosaicBytes;
             try
             {
-                mosaicBytes = await BuildPosterMosaicBytes(sourceBytes, posterCount, poolSize, posterWidth, posterHeight, topK, excludeRadius);
+                mosaicBytes = await posterMosaicService.BuildPosterMosaicBytes(sourceBytes, options);
             }
             catch (InvalidOperationException ex)
             {
                 return BadRequest(new { Message = ex.Message, Success = false });
             }
 
-            return File(mosaicBytes, "image/png");
+            return File(mosaicBytes, GetMimeType(options.OutputFormat));
         }
 
         [HttpGet("/PosterMosaicFromUrl")]
-        public async Task<IActionResult> PosterMosaicFromUrl(string imageUrl, int posterCount = 500, int poolSize = 6000, int posterWidth = 30, int posterHeight = 40, int topK = 15, int excludeRadius = 1)
+        public async Task<IActionResult> PosterMosaicFromUrl(
+            string imageUrl,
+            // Scale
+            double tileScale = 1.0,
+            double outputScale = 1.0,
+            int maxOutputDimension = 0,
+            // Color Matching
+            int topK = 50,
+            int excludeRadius = 2,
+            double colorDecayFactor = 10000.0,
+            double adjacencyPenaltyBase = 0.1,
+            // Output Format
+            string format = "png",
+            int quality = 85,
+            int pngCompression = 6)
         {
             if (string.IsNullOrWhiteSpace(imageUrl))
                 return BadRequest(new { Message = "imageUrl is required", Success = false });
@@ -1202,217 +1102,57 @@ namespace MovieTheater.Controllers
 
             var sourceBytes = await result.Content.ReadAsByteArrayAsync();
 
+            var options = BuildMosaicOptions(tileScale, outputScale, maxOutputDimension,
+                topK, excludeRadius, colorDecayFactor, adjacencyPenaltyBase, format, quality, pngCompression);
+
             byte[] mosaicBytes;
             try
             {
-                mosaicBytes = await BuildPosterMosaicBytes(sourceBytes, posterCount, poolSize, posterWidth, posterHeight, topK, excludeRadius);
+                mosaicBytes = await posterMosaicService.BuildPosterMosaicBytes(sourceBytes, options);
             }
             catch (InvalidOperationException ex)
             {
                 return BadRequest(new { Message = ex.Message, Success = false });
             }
 
-            return File(mosaicBytes, "image/png");
+            return File(mosaicBytes, GetMimeType(options.OutputFormat));
         }
 
-        private async Task<byte[]> BuildPosterMosaicBytes(byte[] sourceBytes, int posterCount, int poolSize, int posterWidth, int posterHeight, int topK, int excludeRadius)
+        private static MosaicOptions BuildMosaicOptions(
+            double tileScale, double outputScale, int maxOutputDimension,
+            int topK, int excludeRadius, double colorDecayFactor, double adjacencyPenaltyBase,
+            string format, int quality, int pngCompression)
         {
-            posterCount = Math.Clamp(posterCount, 1, 6000);
-            poolSize = Math.Clamp(poolSize, 1, 6000);
-            topK = Math.Clamp(topK, 1, 6000);
-            excludeRadius = Math.Clamp(excludeRadius, 0, Math.Max(0, Math.Min(50, Math.Max(1, Math.Max(posterWidth, posterHeight)))));
-
-            using var srcImage = Image.Load<Rgba32>(sourceBytes);
-
-            double aspect = (double)srcImage.Width / srcImage.Height;
-            int columns = Math.Max(1, (int)Math.Round(Math.Sqrt(posterCount * aspect)));
-            int rows = Math.Max(1, (int)Math.Ceiling((double)posterCount / columns));
-
-            using var small = srcImage.Clone(ctx => ctx.Resize(columns, rows));
-
-            var candidates = await movieDb.MoviePosterDetails
-                .Where(pd => !string.IsNullOrEmpty(pd.DominantColor))
-                .OrderBy(pd => pd.MovieId)
-                .Take(poolSize)
-                .ToListAsync();
-
-            if (candidates.Count == 0)
-                throw new InvalidOperationException("No posters with DominantColor available");
-
-            var candidateColors = new List<(int MovieId, byte R, byte G, byte B)>();
-            foreach (var c in candidates)
+            return new MosaicOptions
             {
-                try
+                TileScale = tileScale,
+                OutputScale = outputScale,
+                MaxOutputDimension = maxOutputDimension,
+                TopK = topK,
+                ExcludeRadius = excludeRadius,
+                ColorDecayFactor = colorDecayFactor,
+                AdjacencyPenaltyBase = adjacencyPenaltyBase,
+                OutputFormat = format?.ToLowerInvariant() switch
                 {
-                    var hex = c.DominantColor?.Trim();
-                    if (string.IsNullOrEmpty(hex)) continue;
-                    if (hex.StartsWith("#")) hex = hex.Substring(1);
-                    if (hex.Length != 6) continue;
-                    byte r = Convert.ToByte(hex.Substring(0, 2), 16);
-                    byte g = Convert.ToByte(hex.Substring(2, 2), 16);
-                    byte b = Convert.ToByte(hex.Substring(4, 2), 16);
-                    candidateColors.Add((c.MovieId, r, g, b));
-                }
-                catch
+                    "jpeg" or "jpg" => MosaicOutputFormat.Jpeg,
+                    "webp" => MosaicOutputFormat.WebP,
+                    _ => MosaicOutputFormat.Png
+                },
+                Quality = quality,
+                PngCompressionLevel = pngCompression switch
                 {
-                    // ignore malformed colors
+                    1 => PngCompressionLevel.Level1,
+                    2 => PngCompressionLevel.Level2,
+                    3 => PngCompressionLevel.Level3,
+                    4 => PngCompressionLevel.Level4,
+                    5 => PngCompressionLevel.Level5,
+                    6 => PngCompressionLevel.Level6,
+                    7 => PngCompressionLevel.Level7,
+                    8 => PngCompressionLevel.Level8,
+                    9 => PngCompressionLevel.Level9,
+                    _ => PngCompressionLevel.DefaultCompression
                 }
-            }
-
-            if (candidateColors.Count == 0)
-                throw new InvalidOperationException("No valid poster colors available");
-
-            var chosenMovieIds = new int[rows, columns];
-
-            // To avoid using the exact same poster repeatedly while preserving
-            // visual similarity, choose among the top-K nearest candidate colors
-            // for each cell and prefer the least-used poster so far. This keeps
-            // tiles visually close to the source color but spreads usage.
-            var usageCounts = new Dictionary<int, int>();
-            int effectiveTopK = Math.Min(topK, candidateColors.Count); // how many nearest candidates to consider
-
-            var rng = new Random();
-
-            small.ProcessPixelRows(accessor =>
-            {
-                for (int y = 0; y < accessor.Height; y++)
-                {
-                    var row = accessor.GetRowSpan(y);
-                    for (int x = 0; x < row.Length; x++)
-                    {
-                        var p = row[x];
-                        byte pr = p.R; byte pg = p.G; byte pb = p.B;
-
-                        // Compute distance to all candidates and pick among top-K the least-used
-                        var dlist = new List<(int MovieId, int Dist)>();
-                        for (int i = 0; i < candidateColors.Count; i++)
-                        {
-                            var c = candidateColors[i];
-                            int dr = c.R - pr;
-                            int dg = c.G - pg;
-                            int db = c.B - pb;
-                            int dist = dr * dr + dg * dg + db * db;
-                            dlist.Add((c.MovieId, dist));
-                        }
-
-                        var top = dlist.OrderBy(t => t.Dist).Take(effectiveTopK).ToList();
-
-                        // Weighted-random selection among the top candidates.
-                        // Weight combines color distance (closer => larger weight),
-                        // inverse usage (less-used => larger weight), and a neighborhood
-                        // penalty for nearby occurrences. This keeps visual quality
-                        // while spreading poster usage stochastically.
-                        double totalWeight = 0.0;
-                        var weights = new List<(int MovieId, double Weight)>();
-
-                        foreach (var cand in top)
-                        {
-                            int mid = cand.MovieId;
-                            int dist = cand.Dist;
-
-                            usageCounts.TryGetValue(mid, out int ucount);
-
-                            int adjacentSame = 0;
-                            for (int ny = Math.Max(0, y - excludeRadius); ny <= Math.Min(rows - 1, y + excludeRadius); ny++)
-                            {
-                                for (int nx = Math.Max(0, x - excludeRadius); nx <= Math.Min(columns - 1, x + excludeRadius); nx++)
-                                {
-                                    if (ny == y && nx == x) continue;
-                                    if (chosenMovieIds[ny, nx] == mid) adjacentSame++;
-                                }
-                            }
-
-                            // base weight from distance: closer = higher weight.
-                            // Use an exponential falloff; the scale controls sharpness.
-                            double scale = 10000.0; // larger => smoother
-                            double w = Math.Exp(-dist / scale);
-
-                            // penalize by usage (simple divisor)
-                            w /= (1.0 + ucount);
-
-                            // penalize by nearby occurrences (stronger penalty)
-                            w *= Math.Pow(0.1, adjacentSame);
-
-                            if (w <= 0) w = 1e-12;
-                            weights.Add((mid, w));
-                            totalWeight += w;
-                        }
-
-                        int chosenId;
-                        if (totalWeight <= 0)
-                        {
-                            // fallback to nearest if something went wrong
-                            chosenId = top[0].MovieId;
-                        }
-                        else
-                        {
-                            double r = rng.NextDouble() * totalWeight;
-                            double acc = 0.0;
-                            chosenId = top[0].MovieId;
-                            foreach (var w in weights)
-                            {
-                                acc += w.Weight;
-                                if (r <= acc)
-                                {
-                                    chosenId = w.MovieId;
-                                    break;
-                                }
-                            }
-                        }
-
-                        // increment usage count
-                        usageCounts.TryGetValue(chosenId, out int curCount2);
-                        usageCounts[chosenId] = curCount2 + 1;
-                        chosenMovieIds[y, x] = chosenId;
-                    }
-                }
-            });
-
-            var uniqueIds = chosenMovieIds.Cast<int>().Distinct().ToList();
-            var posterBytesById = new Dictionary<int, byte[]>();
-            foreach (var id in uniqueIds)
-            {
-                try
-                {
-                    var variant = await imageRepo.HasImage(id, PosterImageVariant.Thumbnail) ? PosterImageVariant.Thumbnail : PosterImageVariant.Main;
-                    if (!await imageRepo.HasImage(id, variant)) continue;
-                    var bytes = await imageRepo.GetImage(id, variant);
-                    if (bytes != null)
-                        posterBytesById[id] = bytes;
-                }
-                catch
-                {
-                    // ignore load errors
-                }
-            }
-
-            if (posterBytesById.Count == 0)
-                throw new InvalidOperationException("No poster image files available for selected posters");
-
-            int totalWidth = columns * posterWidth;
-            int totalHeight = rows * posterHeight;
-
-            using var combined = new Image<Rgba32>(totalWidth, totalHeight);
-
-            for (int ry = 0; ry < rows; ry++)
-            {
-                for (int rx = 0; rx < columns; rx++)
-                {
-                    var movieId = chosenMovieIds[ry, rx];
-                    if (!posterBytesById.TryGetValue(movieId, out var pb))
-                        pb = posterBytesById.Values.First();
-
-                    using var posterImg = Image.Load(pb);
-                    posterImg.Mutate(x => x.Resize(posterWidth, posterHeight));
-                    int destX = rx * posterWidth;
-                    int destY = ry * posterHeight;
-                    combined.Mutate(ctx => ctx.DrawImage(posterImg, new Point(destX, destY), 1f));
-                }
-            }
-
-            using var outMs = new MemoryStream();
-            await combined.SaveAsPngAsync(outMs);
-            return outMs.ToArray();
+            };
         }
 
         [HttpGet("/API/SyncBoardgameFromBgg")]
@@ -1546,5 +1286,12 @@ namespace MovieTheater.Controllers
             existing.LastSyncedUtc = fromBgg.LastSyncedUtc;
         }
 
+
+        private static string GetMimeType(MosaicOutputFormat format) => format switch
+        {
+            MosaicOutputFormat.Jpeg => "image/jpeg",
+            MosaicOutputFormat.WebP => "image/webp",
+            _ => "image/png"
+        };
     }
 }
