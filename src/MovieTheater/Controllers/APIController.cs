@@ -1470,35 +1470,129 @@ namespace MovieTheater.Controllers
             });
         }
 
-        private async Task DownloadAndSaveBoardgameImages(Boardgame boardgame)
+        [HttpPost("/API/BackfillBoardgameImages")]
+        public async Task<IActionResult> BackfillBoardgameImages(int? id = null, int take = 0)
         {
-            try
+            var query = movieDb.Boardgames.AsQueryable();
+            if (id.HasValue && id.Value > 0)
             {
-                // Download and save main image
+                query = query.Where(x => x.id == id.Value);
+            }
+            else if (take > 0)
+            {
+                query = query.OrderBy(x => x.id).Take(take);
+            }
+
+            var boardgames = await query.ToListAsync();
+            int success = 0;
+            int failed = 0;
+            var errors = new List<object>();
+
+            foreach (var boardgame in boardgames)
+            {
+                try
+                {
+                    await DownloadAndSaveBoardgameImages(boardgame, force: true);
+                    success++;
+                }
+                catch (Exception ex)
+                {
+                    failed++;
+                    errors.Add(new { boardgame.id, boardgame.Name, Error = ex.Message });
+                }
+            }
+
+            return Ok(new
+            {
+                Success = true,
+                Total = boardgames.Count,
+                Processed = success,
+                Failed = failed,
+                Errors = errors
+            });
+        }
+
+        private async Task DownloadAndSaveBoardgameImages(Boardgame boardgame, bool force = false)
+        {
+            byte[]? mainBytes = null;
+            bool hasMain = await boardgameImageRepo.HasImage(boardgame.id, BoardgameImageVariant.Main);
+            bool hasThumb = await boardgameImageRepo.HasImage(boardgame.id, BoardgameImageVariant.Thumbnail);
+
+            if (force || !hasMain)
+            {
                 if (!string.IsNullOrWhiteSpace(boardgame.Image))
                 {
                     var imageResponse = await httpClient.GetAsync(boardgame.Image);
-                    if (imageResponse.IsSuccessStatusCode)
-                    {
-                        var imageBytes = await imageResponse.Content.ReadAsByteArrayAsync();
-                        await boardgameImageRepo.SaveImage(boardgame.id, BoardgameImageVariant.Main, imageBytes);
-                    }
+                    imageResponse.EnsureSuccessStatusCode();
+                    mainBytes = await imageResponse.Content.ReadAsByteArrayAsync();
+                    await boardgameImageRepo.SaveImage(boardgame.id, BoardgameImageVariant.Main, mainBytes);
                 }
+            }
 
-                // Download and save thumbnail
+            if (force || !hasThumb)
+            {
+                byte[]? thumbBytes = null;
+
                 if (!string.IsNullOrWhiteSpace(boardgame.Thumbnail))
                 {
                     var thumbResponse = await httpClient.GetAsync(boardgame.Thumbnail);
                     if (thumbResponse.IsSuccessStatusCode)
                     {
-                        var thumbBytes = await thumbResponse.Content.ReadAsByteArrayAsync();
-                        await boardgameImageRepo.SaveImage(boardgame.id, BoardgameImageVariant.Thumbnail, thumbBytes);
+                        thumbBytes = await thumbResponse.Content.ReadAsByteArrayAsync();
                     }
                 }
+
+                if (thumbBytes == null)
+                {
+                    mainBytes ??= await boardgameImageRepo.GetImage(boardgame.id, BoardgameImageVariant.Main);
+                    if (mainBytes != null)
+                    {
+                        thumbBytes = BuildBoardgameThumbnail(mainBytes);
+                    }
+                }
+
+                if (thumbBytes != null)
+                {
+                    await boardgameImageRepo.SaveImage(boardgame.id, BoardgameImageVariant.Thumbnail, thumbBytes);
+                }
             }
-            catch (Exception)
+        }
+
+        private static byte[] BuildBoardgameThumbnail(byte[] sourceImage)
+        {
+            using (var image = SixLabors.ImageSharp.Image.Load(sourceImage))
             {
-                // Silently fail image downloads - boardgame data is already saved
+                float originalHeight = image.Height;
+                float originalWidth = image.Width;
+                float calcHeight = 200f;
+                int maxWidth = 150;
+                float changedPerc = calcHeight / originalHeight;
+                float calcWidth = changedPerc * originalWidth;
+                int finalWidth = (int)Math.Round(calcWidth);
+                int finalHeight = (int)Math.Round(calcHeight);
+                if (finalWidth > maxWidth)
+                {
+                    finalWidth = maxWidth;
+                }
+
+                image.Mutate(x => x.Resize(finalWidth, finalHeight, KnownResamplers.Lanczos2));
+                image.Mutate(x => x.GaussianSharpen(.5f));
+                image.Mutate(x => x.GaussianSharpen(.5f));
+                image.Mutate(x => x.GaussianSharpen(.4f));
+                image.Mutate(x => x.GaussianSharpen(.3f));
+                image.Mutate(x => x.GaussianSharpen(.2f));
+
+                var png = new PngEncoder
+                {
+                    CompressionLevel = 0,
+                    FilterMethod = PngFilterMethod.None
+                };
+
+                using (var ms = new MemoryStream())
+                {
+                    image.Save(ms, png);
+                    return ms.ToArray();
+                }
             }
         }
 

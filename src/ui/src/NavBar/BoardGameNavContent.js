@@ -10,19 +10,19 @@ const sectionHeaderStyle = {
   display: "block",
   fontSize: "10px",
   fontWeight: "700",
-  color: "#6b8aad",
+  color: "#b6dec4",
   textTransform: "uppercase",
   letterSpacing: "1.5px",
   marginBottom: "12px",
   paddingBottom: "8px",
-  borderBottom: "1px solid #1e3a57",
+  borderBottom: "1px solid #365943",
 };
 
 const inputLabelStyle = {
   display: "block",
   fontSize: "10px",
   fontWeight: "600",
-  color: "#8fa8c0",
+  color: "#d5ebdd",
   textTransform: "uppercase",
   letterSpacing: "0.8px",
   marginBottom: "5px",
@@ -147,7 +147,7 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
         <BoardGameLoginForm onUserLoggedIn={onUserLoggedIn} />
       )}
 
-      <div id="SearchToolContainer" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid #1e3a57" }}>
+      <div id="SearchToolContainer" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid #365943" }}>
         <span style={sectionHeaderStyle}>Search</span>
 
         <span style={{ ...inputLabelStyle, marginTop: 0 }}>Game Title</span>
@@ -169,9 +169,9 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
                 onClick={() => toggleLetter(item)}
                 style={{
                   width: "36px",
-                  backgroundColor: item === search.startsWith ? "#1890ff" : "rgba(255,255,255,0.08)",
+                  backgroundColor: item === search.startsWith ? "#3a9760" : "rgba(255,255,255,0.08)",
                   color: item === search.startsWith ? "white" : "rgba(255,255,255,0.75)",
-                  borderColor: item === search.startsWith ? "#1890ff" : "rgba(255,255,255,0.15)",
+                  borderColor: item === search.startsWith ? "#3a9760" : "rgba(255,255,255,0.15)",
                 }}
               >
                 <span style={searchLetterStyle}>{item}</span>
