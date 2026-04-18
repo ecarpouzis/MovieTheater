@@ -1325,42 +1325,49 @@ namespace MovieTheater.Controllers
                     continue;
                 }
 
+                // Check DB by name before hitting BGG
+                var dbMatch = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.Name == title);
+                if (dbMatch != null)
+                {
+                    results.Add(new { Index = i, Title = title, BggThingId = dbMatch.BggThingId, Status = "AlreadyExists", Name = dbMatch.Name });
+                    skippedCount++;
+                    continue;
+                }
+
+                bool madeApiCall = false;
                 try
                 {
                     var fromBgg = await boardGameGeekApi.GetBoardgameByTitle(title);
+                    madeApiCall = true;
                     if (fromBgg == null)
                     {
                         results.Add(new { Index = i, Title = title, Status = "NotFound", Message = "Not found on BGG" });
                         failureCount++;
-                        continue;
-                    }
-
-                    var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == fromBgg.BggThingId);
-                    if (existing == null)
-                    {
-                        movieDb.Boardgames.Add(fromBgg);
-                        await movieDb.SaveChangesAsync();
-
-                        // Download images after saving to database
-                        await DownloadAndSaveBoardgameImages(fromBgg);
-
-                        results.Add(new { Index = i, Title = title, BggThingId = fromBgg.BggThingId, Status = "Created", Name = fromBgg.Name });
-                        successCount++;
                     }
                     else
                     {
-                        results.Add(new { Index = i, Title = title, BggThingId = fromBgg.BggThingId, Status = "AlreadyExists", Name = existing.Name });
-                        skippedCount++;
-                    }
+                        var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == fromBgg.BggThingId);
+                        if (existing == null)
+                        {
+                            movieDb.Boardgames.Add(fromBgg);
+                            await movieDb.SaveChangesAsync();
 
-                    // Rate limiting: wait between requests
-                    if (i < gameNames.Count - 1)
-                    {
-                        await Task.Delay(delayMs);
+                            // Download images after saving to database
+                            await DownloadAndSaveBoardgameImages(fromBgg);
+
+                            results.Add(new { Index = i, Title = title, BggThingId = fromBgg.BggThingId, Status = "Created", Name = fromBgg.Name });
+                            successCount++;
+                        }
+                        else
+                        {
+                            results.Add(new { Index = i, Title = title, BggThingId = fromBgg.BggThingId, Status = "AlreadyExists", Name = existing.Name });
+                            skippedCount++;
+                        }
                     }
                 }
                 catch (HttpRequestException ex)
                 {
+                    madeApiCall = true;
                     results.Add(new { Index = i, Title = title, Status = "Failed", Error = ex.Message });
                     failureCount++;
                 }
@@ -1368,6 +1375,12 @@ namespace MovieTheater.Controllers
                 {
                     results.Add(new { Index = i, Title = title, Status = "Failed", Error = ex.Message });
                     failureCount++;
+                }
+
+                // Rate limiting: only wait when we actually called BGG
+                if (madeApiCall && i < gameNames.Count - 1)
+                {
+                    await Task.Delay(delayMs);
                 }
             }
 
