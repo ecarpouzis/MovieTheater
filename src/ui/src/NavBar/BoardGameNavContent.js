@@ -131,7 +131,7 @@ const playerOptions = [
 
 const ageOptions = [
   { value: "", label: "Any age" },
-  ...[4,5,6,7,8,9,10,12,14,16,18].map((a) => ({ value: String(a), label: `Age ${a}+` })),
+  ...[5,6,7,8,9,10,12,14,16,18].map((a) => ({ value: String(a), label: `Age ${a}+` })),
 ];
 
 const timeOptions = [
