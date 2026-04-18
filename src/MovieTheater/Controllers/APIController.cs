@@ -11,6 +11,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
@@ -1180,6 +1181,10 @@ namespace MovieTheater.Controllers
                 {
                     movieDb.Boardgames.Add(fromBgg);
                     await movieDb.SaveChangesAsync();
+
+                    // Download images after saving to database
+                    await DownloadAndSaveBoardgameImages(fromBgg);
+
                     return Ok(new { Success = true, Message = "Boardgame captured", data = fromBgg });
                 }
 
@@ -1215,6 +1220,10 @@ namespace MovieTheater.Controllers
                 {
                     movieDb.Boardgames.Add(fromBgg);
                     await movieDb.SaveChangesAsync();
+
+                    // Download images after saving to database
+                    await DownloadAndSaveBoardgameImages(fromBgg);
+
                     return Ok(new { Success = true, Message = "Boardgame captured", data = fromBgg });
                 }
 
@@ -1252,6 +1261,7 @@ namespace MovieTheater.Controllers
             return movieDb.Boardgames;
         }
 
+        [AllowAnonymous]
         [HttpGet("/API/TEMP_ImportMyBoardgames")]
         [HttpPost("/API/TEMP_ImportMyBoardgames")]
         public async Task<IActionResult> TEMP_ImportMyBoardgames(int delayMs = 2000)
