@@ -1424,8 +1424,6 @@ namespace MovieTheater.Controllers
                 return BadRequest(new { Success = false, Message = "bggThingId must be a positive integer" });
             }
 
-            await EnsureBoardgameTableExistsAsync();
-
             try
             {
                 var fromBgg = await boardGameGeekApi.GetBoardgame(bggThingId);
@@ -1461,8 +1459,6 @@ namespace MovieTheater.Controllers
                 return BadRequest(new { Success = false, Message = "title is required" });
             }
 
-            await EnsureBoardgameTableExistsAsync();
-
             try
             {
                 var fromBgg = await boardGameGeekApi.GetBoardgameByTitle(title);
@@ -1496,8 +1492,6 @@ namespace MovieTheater.Controllers
             {
                 return BadRequest(new { Success = false, Message = "bggThingId must be a positive integer" });
             }
-
-            await EnsureBoardgameTableExistsAsync();
 
             var boardgame = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
             if (boardgame == null)
@@ -1552,87 +1546,5 @@ namespace MovieTheater.Controllers
             existing.LastSyncedUtc = fromBgg.LastSyncedUtc;
         }
 
-        private async Task EnsureBoardgameTableExistsAsync()
-        {
-            const string sql = @"
-IF OBJECT_ID(N'[Boardgame]', N'U') IS NULL
-BEGIN
-    CREATE TABLE [Boardgame]
-    (
-        [id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-        [BggThingId] INT NOT NULL,
-        [ThingType] NVARCHAR(100) NULL,
-        [Name] NVARCHAR(MAX) NULL,
-        [AlternateNamesJson] NVARCHAR(MAX) NULL,
-        [YearPublished] INT NULL,
-        [MinPlayers] INT NULL,
-        [MaxPlayers] INT NULL,
-        [PlayingTime] INT NULL,
-        [MinPlayTime] INT NULL,
-        [MaxPlayTime] INT NULL,
-        [MinAge] INT NULL,
-        [Thumbnail] NVARCHAR(MAX) NULL,
-        [Image] NVARCHAR(MAX) NULL,
-        [Description] NVARCHAR(MAX) NULL,
-        [UsersRated] INT NULL,
-        [AverageRating] DECIMAL(9,4) NULL,
-        [BayesAverageRating] DECIMAL(9,4) NULL,
-        [StdDev] DECIMAL(9,4) NULL,
-        [Median] DECIMAL(9,4) NULL,
-        [Owned] INT NULL,
-        [Trading] INT NULL,
-        [Wanting] INT NULL,
-        [Wishing] INT NULL,
-        [NumComments] INT NULL,
-        [NumWeights] INT NULL,
-        [AverageWeight] DECIMAL(9,4) NULL,
-        [RanksJson] NVARCHAR(MAX) NULL,
-        [LinksJson] NVARCHAR(MAX) NULL,
-        [PollsJson] NVARCHAR(MAX) NULL,
-        [VersionsXml] NVARCHAR(MAX) NULL,
-        [VideosJson] NVARCHAR(MAX) NULL,
-        [MarketplaceXml] NVARCHAR(MAX) NULL,
-        [RawXml] NVARCHAR(MAX) NULL,
-        [LastSyncedUtc] DATETIME2 NOT NULL
-    );
-END;
-
-IF COL_LENGTH('Boardgame', 'ThingType') IS NULL ALTER TABLE [Boardgame] ADD [ThingType] NVARCHAR(100) NULL;
-IF COL_LENGTH('Boardgame', 'AlternateNamesJson') IS NULL ALTER TABLE [Boardgame] ADD [AlternateNamesJson] NVARCHAR(MAX) NULL;
-IF COL_LENGTH('Boardgame', 'MinPlayers') IS NULL ALTER TABLE [Boardgame] ADD [MinPlayers] INT NULL;
-IF COL_LENGTH('Boardgame', 'MaxPlayers') IS NULL ALTER TABLE [Boardgame] ADD [MaxPlayers] INT NULL;
-IF COL_LENGTH('Boardgame', 'PlayingTime') IS NULL ALTER TABLE [Boardgame] ADD [PlayingTime] INT NULL;
-IF COL_LENGTH('Boardgame', 'MinPlayTime') IS NULL ALTER TABLE [Boardgame] ADD [MinPlayTime] INT NULL;
-IF COL_LENGTH('Boardgame', 'MaxPlayTime') IS NULL ALTER TABLE [Boardgame] ADD [MaxPlayTime] INT NULL;
-IF COL_LENGTH('Boardgame', 'MinAge') IS NULL ALTER TABLE [Boardgame] ADD [MinAge] INT NULL;
-IF COL_LENGTH('Boardgame', 'UsersRated') IS NULL ALTER TABLE [Boardgame] ADD [UsersRated] INT NULL;
-IF COL_LENGTH('Boardgame', 'AverageRating') IS NULL ALTER TABLE [Boardgame] ADD [AverageRating] DECIMAL(9,4) NULL;
-IF COL_LENGTH('Boardgame', 'BayesAverageRating') IS NULL ALTER TABLE [Boardgame] ADD [BayesAverageRating] DECIMAL(9,4) NULL;
-IF COL_LENGTH('Boardgame', 'StdDev') IS NULL ALTER TABLE [Boardgame] ADD [StdDev] DECIMAL(9,4) NULL;
-IF COL_LENGTH('Boardgame', 'Median') IS NULL ALTER TABLE [Boardgame] ADD [Median] DECIMAL(9,4) NULL;
-IF COL_LENGTH('Boardgame', 'Owned') IS NULL ALTER TABLE [Boardgame] ADD [Owned] INT NULL;
-IF COL_LENGTH('Boardgame', 'Trading') IS NULL ALTER TABLE [Boardgame] ADD [Trading] INT NULL;
-IF COL_LENGTH('Boardgame', 'Wanting') IS NULL ALTER TABLE [Boardgame] ADD [Wanting] INT NULL;
-IF COL_LENGTH('Boardgame', 'Wishing') IS NULL ALTER TABLE [Boardgame] ADD [Wishing] INT NULL;
-IF COL_LENGTH('Boardgame', 'NumComments') IS NULL ALTER TABLE [Boardgame] ADD [NumComments] INT NULL;
-IF COL_LENGTH('Boardgame', 'NumWeights') IS NULL ALTER TABLE [Boardgame] ADD [NumWeights] INT NULL;
-IF COL_LENGTH('Boardgame', 'AverageWeight') IS NULL ALTER TABLE [Boardgame] ADD [AverageWeight] DECIMAL(9,4) NULL;
-IF COL_LENGTH('Boardgame', 'RanksJson') IS NULL ALTER TABLE [Boardgame] ADD [RanksJson] NVARCHAR(MAX) NULL;
-IF COL_LENGTH('Boardgame', 'LinksJson') IS NULL ALTER TABLE [Boardgame] ADD [LinksJson] NVARCHAR(MAX) NULL;
-IF COL_LENGTH('Boardgame', 'PollsJson') IS NULL ALTER TABLE [Boardgame] ADD [PollsJson] NVARCHAR(MAX) NULL;
-IF COL_LENGTH('Boardgame', 'VersionsXml') IS NULL ALTER TABLE [Boardgame] ADD [VersionsXml] NVARCHAR(MAX) NULL;
-IF COL_LENGTH('Boardgame', 'VideosJson') IS NULL ALTER TABLE [Boardgame] ADD [VideosJson] NVARCHAR(MAX) NULL;
-IF COL_LENGTH('Boardgame', 'MarketplaceXml') IS NULL ALTER TABLE [Boardgame] ADD [MarketplaceXml] NVARCHAR(MAX) NULL;
-
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.indexes
-    WHERE name = 'IX_Boardgame_BggThingId' AND object_id = OBJECT_ID(N'[Boardgame]')
-)
-BEGIN
-    CREATE UNIQUE INDEX [IX_Boardgame_BggThingId] ON [Boardgame]([BggThingId]);
-END;";
-            await movieDb.Database.ExecuteSqlRawAsync(sql);
-        }
     }
 }
