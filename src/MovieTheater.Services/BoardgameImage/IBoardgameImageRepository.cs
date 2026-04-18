@@ -8,6 +8,7 @@ namespace MovieTheater.Services.BoardgameImage
         Task<bool> HasImage(int boardgameId, BoardgameImageVariant variant);
         Task<byte[]> GetImage(int boardgameId, BoardgameImageVariant variant);
         Task SaveImage(int boardgameId, BoardgameImageVariant variant, byte[] imageContent);
+        Task DeleteImage(int boardgameId, BoardgameImageVariant variant);
         Task<DateTimeOffset?> GetImageModifiedDate(int boardgameId, BoardgameImageVariant variant);
     }
 }

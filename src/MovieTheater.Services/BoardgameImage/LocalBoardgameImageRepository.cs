@@ -41,6 +41,13 @@ namespace MovieTheater.Services.BoardgameImage
             await File.WriteAllBytesAsync(file.FullName, imageContent);
         }
 
+        public Task DeleteImage(int boardgameId, BoardgameImageVariant variant)
+        {
+            var file = GetFile(boardgameId, variant);
+            if (file.Exists) file.Delete();
+            return Task.CompletedTask;
+        }
+
         public Task<DateTimeOffset?> GetImageModifiedDate(int boardgameId, BoardgameImageVariant variant)
         {
             var file = GetFile(boardgameId, variant);

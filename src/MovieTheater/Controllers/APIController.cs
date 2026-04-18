@@ -1237,6 +1237,105 @@ namespace MovieTheater.Controllers
             }
         }
 
+        public class UpdateBoardgameRequest
+        {
+            public int Id { get; set; }
+            public string? Name { get; set; }
+            public string? Description { get; set; }
+            public int? YearPublished { get; set; }
+            public int? MinPlayers { get; set; }
+            public int? MaxPlayers { get; set; }
+            public int? PlayingTime { get; set; }
+            public int? MinAge { get; set; }
+            public string? ImageUrl { get; set; }
+        }
+
+        [HttpPost("/API/UpdateBoardgame")]
+        public async Task<IActionResult> UpdateBoardgame([FromBody] UpdateBoardgameRequest req)
+        {
+            if (req == null)
+                return BadRequest(new { Success = false, Message = "No data provided." });
+
+            var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == req.Id);
+            if (game == null)
+                return NotFound(new { Success = false, Message = "Boardgame not found." });
+
+            var imageUrlChanged = !string.Equals(game.Image, req.ImageUrl?.Trim(), StringComparison.Ordinal)
+                                  && !string.IsNullOrWhiteSpace(req.ImageUrl);
+
+            game.Name = req.Name;
+            game.Description = req.Description;
+            game.YearPublished = req.YearPublished;
+            game.MinPlayers = req.MinPlayers;
+            game.MaxPlayers = req.MaxPlayers;
+            game.PlayingTime = req.PlayingTime;
+            game.MinAge = req.MinAge;
+
+            if (imageUrlChanged)
+                game.Image = req.ImageUrl!.Trim();
+
+            await movieDb.SaveChangesAsync();
+
+            string? imageError = null;
+            if (imageUrlChanged)
+            {
+                try
+                {
+                    await DownloadAndSaveBoardgameImages(game, force: true);
+                }
+                catch (Exception ex)
+                {
+                    imageError = ex.Message;
+                }
+            }
+
+            var msg = imageError != null ? $"Boardgame updated, but image download failed: {imageError}" : "Boardgame updated";
+            return Ok(new { Success = true, Message = msg, data = game });
+        }
+
+        public class RematchBoardgameRequest
+        {
+            public int Id { get; set; }
+            public int NewBggThingId { get; set; }
+        }
+
+        [HttpPost("/API/RematchBoardgame")]
+        public async Task<IActionResult> RematchBoardgame([FromBody] RematchBoardgameRequest req)
+        {
+            if (req == null || req.Id <= 0 || req.NewBggThingId <= 0)
+                return BadRequest(new { Success = false, Message = "id and newBggThingId must be positive integers." });
+
+            var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == req.Id);
+            if (game == null)
+                return NotFound(new { Success = false, Message = "Boardgame not found." });
+
+            var conflict = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.BggThingId == req.NewBggThingId && x.id != req.Id);
+            if (conflict != null)
+                return Conflict(new { Success = false, Message = $"BGG ID {req.NewBggThingId} is already used by '{conflict.Name}' (id #{conflict.id})." });
+
+            try
+            {
+                var fromBgg = await boardGameGeekApi.GetBoardgame(req.NewBggThingId);
+                if (fromBgg == null)
+                    return NotFound(new { Success = false, Message = "Boardgame not found on BoardGameGeek." });
+
+                await boardgameImageRepo.DeleteImage(game.id, BoardgameImageVariant.Main);
+                await boardgameImageRepo.DeleteImage(game.id, BoardgameImageVariant.Thumbnail);
+
+                ApplyBoardgameSnapshot(game, fromBgg);
+                game.BggThingId = req.NewBggThingId;
+
+                await movieDb.SaveChangesAsync();
+                await DownloadAndSaveBoardgameImages(game, force: true);
+
+                return Ok(new { Success = true, data = game });
+            }
+            catch (HttpRequestException ex)
+            {
+                return StatusCode(502, new { Success = false, Message = "BoardGameGeek request failed", Error = ex.Message });
+            }
+        }
+
         [HttpGet("/API/GetBoardgame")]
         public async Task<IActionResult> GetBoardgame(int bggThingId)
         {

@@ -207,6 +207,32 @@ function getMPARatings() {
   return fetch("/API/GetMPARatings");
 }
 
+function updateBoardgame(game) {
+  return fetch("/API/UpdateBoardgame", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      Id: game.id,
+      Name: game.name,
+      Description: game.description,
+      YearPublished: game.yearPublished,
+      MinPlayers: game.minPlayers,
+      MaxPlayers: game.maxPlayers,
+      PlayingTime: game.playingTime,
+      MinAge: game.minAge,
+      ImageUrl: game.imageUrl ?? null,
+    }),
+  });
+}
+
+function rematchBoardgame(id, newBggThingId) {
+  return fetch("/API/RematchBoardgame", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Id: id, NewBggThingId: newBggThingId }),
+  });
+}
+
 function setUserSetting(key, value) {
   return fetch("/API/SetUserSetting", {
     method: "POST",
@@ -235,6 +261,8 @@ getMovie,
   movieLookupFromNames,
   getMPARatings,
   setUserSetting,
+  updateBoardgame,
+  rematchBoardgame,
 };
 
 export { MovieAPI };

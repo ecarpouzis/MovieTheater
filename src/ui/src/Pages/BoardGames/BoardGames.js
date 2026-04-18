@@ -16,6 +16,7 @@ function normalizeGame(game) {
     averageRating: game.averageRating ?? game.AverageRating,
     averageWeight: game.averageWeight ?? game.AverageWeight,
     description: game.description ?? game.Description,
+    imageUrl: game.imageUrl ?? game.ImageUrl ?? game.image ?? game.Image ?? null,
   };
 }
 
@@ -24,7 +25,7 @@ function extractGames(payload) {
   return rawGames.map(normalizeGame).filter((g) => Number.isInteger(g.id) && g.id > 0);
 }
 
-function BoardGames() {
+function BoardGames({ userData }) {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,7 +38,7 @@ function BoardGames() {
     setLoading(true);
     setError(null);
 
-    fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minAge,averageRating,averageWeight,description&$orderby=name", {
+    fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minAge,averageRating,averageWeight,description,image&$orderby=name", {
       signal: controller.signal,
     })
       .then((r) => {
@@ -61,18 +62,45 @@ function BoardGames() {
   const params = new URLSearchParams(location.search);
   const mode = params.get("mode");
   const value = params.get("value") || "";
+  const playersParam = params.get("players");
+  const ageParam = params.get("age");
+  const sortParam = params.get("sort");
 
   let displayGames = games;
+
   if (mode === "title" && value.trim()) {
     const q = value.trim().toLowerCase();
-    displayGames = games.filter((g) => g.name?.toLowerCase().includes(q));
+    displayGames = displayGames.filter((g) => g.name?.toLowerCase().includes(q));
   } else if (mode === "letter" && value.trim()) {
     const letter = value.trim().toUpperCase();
     if (letter === "#") {
-      displayGames = games.filter((g) => g.name && !/^[A-Z]/i.test(g.name));
+      displayGames = displayGames.filter((g) => g.name && !/^[A-Z]/i.test(g.name));
     } else {
-      displayGames = games.filter((g) => g.name?.toUpperCase().startsWith(letter));
+      displayGames = displayGames.filter((g) => g.name?.toUpperCase().startsWith(letter));
     }
+  }
+
+  if (playersParam) {
+    const p = parseInt(playersParam, 10);
+    if (p === 8) {
+      displayGames = displayGames.filter((g) => g.maxPlayers == null || g.maxPlayers >= 8);
+    } else {
+      displayGames = displayGames.filter((g) =>
+        (g.minPlayers == null || g.minPlayers <= p) &&
+        (g.maxPlayers == null || g.maxPlayers >= p)
+      );
+    }
+  }
+
+  if (ageParam) {
+    const a = parseInt(ageParam, 10);
+    displayGames = displayGames.filter((g) => g.minAge == null || g.minAge <= a);
+  }
+
+  if (sortParam === "complexity_asc") {
+    displayGames = [...displayGames].sort((a, b) => (a.averageWeight ?? 0) - (b.averageWeight ?? 0));
+  } else if (sortParam === "complexity_desc") {
+    displayGames = [...displayGames].sort((a, b) => (b.averageWeight ?? 0) - (a.averageWeight ?? 0));
   }
 
   const handleOpenGame = (gameId) => {
@@ -83,6 +111,11 @@ function BoardGames() {
   const handleCloseModal = () => {
     setIsModalVisible(false);
     setSelectedGameId(null);
+  };
+
+  const handleGameUpdated = (rawData) => {
+    const updated = normalizeGame(rawData);
+    setGames((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
   };
 
   if (loading) return <span>Loading</span>;
@@ -100,6 +133,8 @@ function BoardGames() {
         open={isModalVisible}
         onClose={handleCloseModal}
         games={games}
+        userData={userData}
+        onGameUpdated={handleGameUpdated}
       />
     </>
   );

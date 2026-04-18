@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Input, List, Button, AutoComplete, Tooltip } from "antd";
+import { Input, List, Button, AutoComplete, Tooltip, Select } from "antd";
 import { InfoCircleOutlined, UserOutlined } from "@ant-design/icons";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
 
 const { Search } = Input;
@@ -10,19 +10,19 @@ const sectionHeaderStyle = {
   display: "block",
   fontSize: "10px",
   fontWeight: "700",
-  color: "#b6dec4",
+  color: "#7abf96",
   textTransform: "uppercase",
   letterSpacing: "1.5px",
   marginBottom: "12px",
   paddingBottom: "8px",
-  borderBottom: "1px solid #365943",
+  borderBottom: "1px solid #2a6040",
 };
 
 const inputLabelStyle = {
   display: "block",
   fontSize: "10px",
   fontWeight: "600",
-  color: "#d5ebdd",
+  color: "#9fcfad",
   textTransform: "uppercase",
   letterSpacing: "0.8px",
   marginBottom: "5px",
@@ -53,7 +53,7 @@ function BoardGameUserPanel({ userData, setUserData, setSettingsModalOpen }) {
   return (
     <div className="user-panel">
       <div className="user-panel-header">
-        <div className="user-avatar">👤</div>
+        <div className="user-avatar"><UserOutlined /></div>
         <span className="user-username">{userData.username}</span>
         <button className="settings-icon-btn" onClick={() => setSettingsModalOpen(true)} title="User Settings">
           ⚙️
@@ -94,7 +94,7 @@ function BoardGameLoginForm({ onUserLoggedIn }) {
       <AutoComplete
         options={filtered}
         className="login-autocomplete"
-        popupClassName="login-user-dropdown"
+        popupClassName="login-user-dropdown boardgame-login-dropdown"
         onSelect={onUserLoggedIn}
         onSearch={(v) => setFiltered(userlist.filter((e) => e.value.toLowerCase().includes(v.toLowerCase())))}
         getPopupContainer={(t) => t.parentElement}
@@ -121,13 +121,39 @@ function BoardGameLoginForm({ onUserLoggedIn }) {
   );
 }
 
+const playerOptions = [
+  { value: "", label: "Any player count" },
+  ...[1,2,3,4,5,6,7,8].map((n) => ({
+    value: String(n),
+    label: n === 8 ? "8+ players" : `${n} player${n === 1 ? "" : "s"}`,
+  })),
+];
+
+const ageOptions = [
+  { value: "", label: "Any age" },
+  ...[4,5,6,7,8,9,10,12,14,16,18].map((a) => ({ value: String(a), label: `Age ${a}+` })),
+];
+
+const sortOptions = [
+  { value: "", label: "Alphabetical A → Z" },
+  { value: "complexity_asc", label: "Complexity: Low → High" },
+  { value: "complexity_desc", label: "Complexity: High → Low" },
+];
+
 function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen, search }) {
   const history = useHistory();
+  const location = useLocation();
 
   function navigate(mode, value = "") {
-    const params = new URLSearchParams();
-    if (mode) params.set("mode", mode);
-    if (value && value.trim()) params.set("value", value.trim());
+    const params = new URLSearchParams(location.search);
+    if (mode) { params.set("mode", mode); } else { params.delete("mode"); }
+    if (value && value.trim()) { params.set("value", value.trim()); } else { params.delete("value"); }
+    history.push({ pathname: "/boardgames", search: params.toString() ? `?${params.toString()}` : "" });
+  }
+
+  function updateParam(key, value) {
+    const params = new URLSearchParams(location.search);
+    if (value != null && value !== "") { params.set(key, value); } else { params.delete(key); }
     history.push({ pathname: "/boardgames", search: params.toString() ? `?${params.toString()}` : "" });
   }
 
@@ -139,6 +165,11 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
     }
   }
 
+  const urlParams = new URLSearchParams(location.search);
+  const activePlayers = urlParams.get("players") || undefined;
+  const activeAge = urlParams.get("age") || undefined;
+  const activeSort = urlParams.get("sort") || undefined;
+
   return (
     <>
       {userData ? (
@@ -147,7 +178,7 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
         <BoardGameLoginForm onUserLoggedIn={onUserLoggedIn} />
       )}
 
-      <div id="SearchToolContainer" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid #365943" }}>
+      <div id="SearchToolContainer" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid #2a6040" }}>
         <span style={sectionHeaderStyle}>Search</span>
 
         <span style={{ ...inputLabelStyle, marginTop: 0 }}>Game Title</span>
@@ -156,6 +187,33 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
           style={{ width: "100%" }}
           onSearch={(v) => (v && v.trim() ? navigate("title", v) : navigate())}
           enterButton
+        />
+
+        <span style={{ ...inputLabelStyle, marginTop: "18px" }}>Players</span>
+        <Select
+          style={{ width: "100%" }}
+          value={activePlayers ?? ""}
+          onChange={(v) => updateParam("players", v)}
+          options={playerOptions}
+          popupClassName="boardgame-login-dropdown"
+        />
+
+        <span style={inputLabelStyle}>Age</span>
+        <Select
+          style={{ width: "100%" }}
+          value={activeAge ?? ""}
+          onChange={(v) => updateParam("age", v)}
+          options={ageOptions}
+          popupClassName="boardgame-login-dropdown"
+        />
+
+        <span style={inputLabelStyle}>Sort By</span>
+        <Select
+          style={{ width: "100%" }}
+          value={activeSort ?? ""}
+          onChange={(v) => updateParam("sort", v)}
+          options={sortOptions}
+          popupClassName="boardgame-login-dropdown"
         />
 
         <span style={inputLabelStyle}>First Letter</span>
@@ -169,9 +227,9 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
                 onClick={() => toggleLetter(item)}
                 style={{
                   width: "36px",
-                  backgroundColor: item === search.startsWith ? "#3a9760" : "rgba(255,255,255,0.08)",
-                  color: item === search.startsWith ? "white" : "rgba(255,255,255,0.75)",
-                  borderColor: item === search.startsWith ? "#3a9760" : "rgba(255,255,255,0.15)",
+                  backgroundColor: item === search.startsWith ? "#2db56d" : "rgba(100,220,160,0.08)",
+                  color: item === search.startsWith ? "#fff" : "rgba(180,240,200,0.75)",
+                  borderColor: item === search.startsWith ? "#2db56d" : "rgba(100,220,160,0.2)",
                 }}
               >
                 <span style={searchLetterStyle}>{item}</span>

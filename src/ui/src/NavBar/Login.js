@@ -113,7 +113,7 @@ function Login({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen }) 
     return (
       <div className="user-panel">
         <div className="user-panel-header">
-          <div className="user-avatar">👤</div>
+          <div className="user-avatar"><UserOutlined /></div>
           <span className="user-username">{userData.username}</span>
           <button className="settings-icon-btn" onClick={() => setSettingsModalOpen(true)} title="User Settings">
             ⚙️

@@ -88,6 +88,13 @@ namespace MovieTheater.Services.BoardgameImage
             throw new InvalidOperationException("You cannot save images in dev mode.");
         }
 
+        public Task DeleteImage(int boardgameId, BoardgameImageVariant variant)
+        {
+            var file = GetFile(boardgameId, variant);
+            if (file.Exists) file.Delete();
+            return Task.CompletedTask;
+        }
+
         public Task<DateTimeOffset?> GetImageModifiedDate(int boardgameId, BoardgameImageVariant variant)
         {
             var file = GetFile(boardgameId, variant);
