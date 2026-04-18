@@ -32,6 +32,7 @@ EXPOSE 80
 ENV ASPNETCORE_ENVIRONMENT Production
 ENV PYPATH /usr/bin/python3
 ENV MOVIEPOSTERSDIR /volume/posters
+ENV BOARDGAMEIMAGESDIR /volume/boardgameimages
 
 WORKDIR /app
 COPY --from=dotnet-build /publish ./

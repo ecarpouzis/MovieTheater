@@ -14,7 +14,7 @@ namespace MovieTheater.Services.Poster
             if (!postersDir.Exists)
             {
                 if (environment == HostedEnvironment.Production)
-                    throw new DirectoryNotFoundException("Movie posters directory is invalid. Should be set via environment variable `MOVIE_POSTERSDIR`");
+                    throw new DirectoryNotFoundException("Movie posters directory is invalid. Should be set via environment variable `MOVIEPOSTERSDIR`");
                 else
                     postersDir.Create();
             }

@@ -16,7 +16,7 @@ namespace MovieTheater.Services.BoardgameImage
             if (!boardgameImagesDir.Exists)
             {
                 if (environment == HostedEnvironment.Production)
-                    throw new DirectoryNotFoundException("Boardgame images directory is invalid. Should be set via configuration key `BoardgameImagesDir`");
+                    throw new DirectoryNotFoundException("Boardgame images directory is invalid. Should be set via environment variable `BOARDGAMEIMAGESDIR`");
                 else
                     boardgameImagesDir.Create();
             }
