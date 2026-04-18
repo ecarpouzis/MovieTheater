@@ -253,6 +253,7 @@
 
 .navbar-sider.navbar-boardgames-theme .navbar-section-dropdown,
 .navbar-dropdown.navbar-boardgames-theme .navbar-section-dropdown,
+.navbar-topbar.navbar-boardgames-theme .navbar-section-dropdown,
 .navbar-sider.navbar-boardgames-theme .navbar-section-dropdown-desktop,
 .navbar-dropdown.navbar-boardgames-theme .navbar-section-dropdown-desktop {
   background: #163020;
@@ -374,4 +375,20 @@
 .boardgame-login-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) .ant-select-item-option-content,
 .boardgame-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) .ant-select-item-option-content {
   color: #fff !important;
+}
+
+/* Keep boardgame navbar Select controls green (avoid default Ant blue focus/open styles on mobile) */
+.navbar-sider.navbar-boardgames-theme .ant-select:not(.ant-select-disabled):hover .ant-select-selector,
+.navbar-dropdown.navbar-boardgames-theme .ant-select:not(.ant-select-disabled):hover .ant-select-selector,
+.navbar-sider.navbar-boardgames-theme .ant-select-focused .ant-select-selector,
+.navbar-dropdown.navbar-boardgames-theme .ant-select-focused .ant-select-selector,
+.navbar-sider.navbar-boardgames-theme .ant-select-open .ant-select-selector,
+.navbar-dropdown.navbar-boardgames-theme .ant-select-open .ant-select-selector {
+  border-color: #2db56d !important;
+  box-shadow: 0 0 0 2px rgba(45, 181, 109, 0.2) !important;
+}
+
+.navbar-sider.navbar-boardgames-theme .ant-select-selection-item,
+.navbar-dropdown.navbar-boardgames-theme .ant-select-selection-item {
+  color: #d8f0df;
 }
