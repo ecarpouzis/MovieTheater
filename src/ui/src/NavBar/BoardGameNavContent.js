@@ -3,6 +3,7 @@ import { Input, List, Button, AutoComplete, Tooltip, Select } from "antd";
 import { InfoCircleOutlined, UserOutlined } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
+import poweredByBggImage from "../../powered_by_BGG_SM.png";
 
 const { Search } = Input;
 
@@ -254,6 +255,14 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
               </Button>
             </List.Item>
           )}
+        />
+      </div>
+
+      <div style={{ marginTop: "auto", padding: "12px", borderTop: "1px solid #2a6040" }}>
+        <img
+          src={poweredByBggImage}
+          alt="Powered by BoardGameGeek"
+          style={{ width: "100%", display: "block", borderRadius: "6px" }}
         />
       </div>
     </>
