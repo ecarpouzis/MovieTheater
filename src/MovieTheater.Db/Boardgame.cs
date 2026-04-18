@@ -33,10 +33,6 @@ namespace MovieTheater.Db
 
         public int? MinAge { get; set; }
 
-        public string? Thumbnail { get; set; }
-
-        public string? Image { get; set; }
-
         public string? Description { get; set; }
 
         public int? UsersRated { get; set; }
@@ -78,5 +74,26 @@ namespace MovieTheater.Db
         public string? RawXml { get; set; }
 
         public DateTime LastSyncedUtc { get; set; }
+
+        public BoardgameImageDetails? ImageDetails { get; set; }
+
+        private string? _imageUrl;
+        [NotMapped]
+        public string? ImageUrl
+        {
+            get => _imageUrl ?? ImageDetails?.ImageUrl;
+            set => _imageUrl = value;
+        }
+
+        private string? _thumbnailUrl;
+        [NotMapped]
+        public string? ThumbnailUrl
+        {
+            get => _thumbnailUrl ?? ImageDetails?.ThumbnailUrl;
+            set => _thumbnailUrl = value;
+        }
+
+        [NotMapped]
+        public int ImageVersion => ImageDetails?.ImageVersion ?? 0;
     }
 }

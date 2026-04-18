@@ -1176,20 +1176,36 @@ namespace MovieTheater.Controllers
                     return NotFound(new { Success = false, Message = "Boardgame not found from BoardGameGeek" });
                 }
 
-                var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
+                var fromBggBoardgame = fromBgg.Boardgame;
+                var existing = await movieDb.Boardgames
+                    .Include(x => x.ImageDetails)
+                    .SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
                 if (existing == null)
                 {
-                    movieDb.Boardgames.Add(fromBgg);
+                    movieDb.Boardgames.Add(fromBggBoardgame);
                     await movieDb.SaveChangesAsync();
+                    await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
 
                     // Download images after saving to database
-                    await DownloadAndSaveBoardgameImages(fromBgg);
+                    await DownloadAndSaveBoardgameImages(fromBggBoardgame);
 
-                    return Ok(new { Success = true, Message = "Boardgame captured", data = fromBgg });
+                    await movieDb.Entry(fromBggBoardgame).Reference(x => x.ImageDetails).LoadAsync();
+                    return Ok(new { Success = true, Message = "Boardgame captured", data = fromBggBoardgame });
                 }
 
-                ApplyBoardgameSnapshot(existing, fromBgg);
+                var imageUrlsChanged = !string.Equals(existing.ImageDetails?.ImageUrl, fromBgg.ImageUrl, StringComparison.Ordinal)
+                    || !string.Equals(existing.ImageDetails?.ThumbnailUrl, fromBgg.ThumbnailUrl, StringComparison.Ordinal);
+
+                ApplyBoardgameSnapshot(existing, fromBggBoardgame);
                 await movieDb.SaveChangesAsync();
+                await UpsertBoardgameImageUrls(existing.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
+
+                if (imageUrlsChanged)
+                    await DownloadAndSaveBoardgameImages(existing, force: true);
+
+                if (existing.ImageDetails == null)
+                    await movieDb.Entry(existing).Reference(x => x.ImageDetails).LoadAsync();
+
                 return Ok(new { Success = true, Message = "Boardgame updated", data = existing });
             }
             catch (HttpRequestException ex)
@@ -1215,20 +1231,36 @@ namespace MovieTheater.Controllers
                     return NotFound(new { Success = false, Message = $"Boardgame '{title}' not found from BoardGameGeek" });
                 }
 
-                var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == fromBgg.BggThingId);
+                var fromBggBoardgame = fromBgg.Boardgame;
+                var existing = await movieDb.Boardgames
+                    .Include(x => x.ImageDetails)
+                    .SingleOrDefaultAsync(x => x.BggThingId == fromBggBoardgame.BggThingId);
                 if (existing == null)
                 {
-                    movieDb.Boardgames.Add(fromBgg);
+                    movieDb.Boardgames.Add(fromBggBoardgame);
                     await movieDb.SaveChangesAsync();
+                    await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
 
                     // Download images after saving to database
-                    await DownloadAndSaveBoardgameImages(fromBgg);
+                    await DownloadAndSaveBoardgameImages(fromBggBoardgame);
 
-                    return Ok(new { Success = true, Message = "Boardgame captured", data = fromBgg });
+                    await movieDb.Entry(fromBggBoardgame).Reference(x => x.ImageDetails).LoadAsync();
+                    return Ok(new { Success = true, Message = "Boardgame captured", data = fromBggBoardgame });
                 }
 
-                ApplyBoardgameSnapshot(existing, fromBgg);
+                var imageUrlsChanged = !string.Equals(existing.ImageDetails?.ImageUrl, fromBgg.ImageUrl, StringComparison.Ordinal)
+                    || !string.Equals(existing.ImageDetails?.ThumbnailUrl, fromBgg.ThumbnailUrl, StringComparison.Ordinal);
+
+                ApplyBoardgameSnapshot(existing, fromBggBoardgame);
                 await movieDb.SaveChangesAsync();
+                await UpsertBoardgameImageUrls(existing.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
+
+                if (imageUrlsChanged)
+                    await DownloadAndSaveBoardgameImages(existing, force: true);
+
+                if (existing.ImageDetails == null)
+                    await movieDb.Entry(existing).Reference(x => x.ImageDetails).LoadAsync();
+
                 return Ok(new { Success = true, Message = "Boardgame updated", data = existing });
             }
             catch (HttpRequestException ex)
@@ -1256,11 +1288,11 @@ namespace MovieTheater.Controllers
             if (req == null)
                 return BadRequest(new { Success = false, Message = "No data provided." });
 
-            var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == req.Id);
+            var game = await movieDb.Boardgames.Include(b => b.ImageDetails).FirstOrDefaultAsync(x => x.id == req.Id);
             if (game == null)
                 return NotFound(new { Success = false, Message = "Boardgame not found." });
 
-            var imageUrlChanged = !string.Equals(game.Image, req.ImageUrl?.Trim(), StringComparison.Ordinal)
+            var imageUrlChanged = !string.Equals(game.ImageDetails?.ImageUrl, req.ImageUrl?.Trim(), StringComparison.Ordinal)
                                   && !string.IsNullOrWhiteSpace(req.ImageUrl);
 
             game.Name = req.Name;
@@ -1271,14 +1303,12 @@ namespace MovieTheater.Controllers
             game.PlayingTime = req.PlayingTime;
             game.MinAge = req.MinAge;
 
-            if (imageUrlChanged)
-                game.Image = req.ImageUrl!.Trim();
-
             await movieDb.SaveChangesAsync();
 
             string? imageError = null;
             if (imageUrlChanged)
             {
+                await UpsertBoardgameImageUrls(game.id, req.ImageUrl!.Trim(), game.ImageDetails?.ThumbnailUrl);
                 try
                 {
                     await DownloadAndSaveBoardgameImages(game, force: true);
@@ -1319,14 +1349,21 @@ namespace MovieTheater.Controllers
                 if (fromBgg == null)
                     return NotFound(new { Success = false, Message = "Boardgame not found on BoardGameGeek." });
 
+                var fromBggBoardgame = fromBgg.Boardgame;
+
                 await boardgameImageRepo.DeleteImage(game.id, BoardgameImageVariant.Main);
                 await boardgameImageRepo.DeleteImage(game.id, BoardgameImageVariant.Thumbnail);
 
-                ApplyBoardgameSnapshot(game, fromBgg);
+                ApplyBoardgameSnapshot(game, fromBggBoardgame);
                 game.BggThingId = req.NewBggThingId;
 
                 await movieDb.SaveChangesAsync();
+                await UpsertBoardgameImageUrls(game.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
                 await DownloadAndSaveBoardgameImages(game, force: true);
+
+                // ImageDetails is set by DownloadAndSaveBoardgameImages; load it if not already populated
+                if (game.ImageDetails == null)
+                    await movieDb.Entry(game).Reference(g => g.ImageDetails).LoadAsync();
 
                 return Ok(new { Success = true, data = game });
             }
@@ -1344,7 +1381,9 @@ namespace MovieTheater.Controllers
                 return BadRequest(new { Success = false, Message = "bggThingId must be a positive integer" });
             }
 
-            var boardgame = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
+            var boardgame = await movieDb.Boardgames
+                .Include(x => x.ImageDetails)
+                .SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
             if (boardgame == null)
             {
                 return NotFound(new { Success = false, Message = "Boardgame not found" });
@@ -1357,7 +1396,7 @@ namespace MovieTheater.Controllers
         [HttpGet("/odata/Boardgames")]
         public IQueryable<Boardgame> GetBoardgames()
         {
-            return movieDb.Boardgames;
+            return movieDb.Boardgames.Include(b => b.ImageDetails);
         }
 
         [AllowAnonymous]
@@ -1445,21 +1484,23 @@ namespace MovieTheater.Controllers
                     }
                     else
                     {
-                        var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == fromBgg.BggThingId);
+                        var fromBggBoardgame = fromBgg.Boardgame;
+                        var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == fromBggBoardgame.BggThingId);
                         if (existing == null)
                         {
-                            movieDb.Boardgames.Add(fromBgg);
+                            movieDb.Boardgames.Add(fromBggBoardgame);
                             await movieDb.SaveChangesAsync();
+                            await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
 
                             // Download images after saving to database
-                            await DownloadAndSaveBoardgameImages(fromBgg);
+                            await DownloadAndSaveBoardgameImages(fromBggBoardgame);
 
-                            results.Add(new { Index = i, Title = title, BggThingId = fromBgg.BggThingId, Status = "Created", Name = fromBgg.Name });
+                            results.Add(new { Index = i, Title = title, BggThingId = fromBggBoardgame.BggThingId, Status = "Created", Name = fromBggBoardgame.Name });
                             successCount++;
                         }
                         else
                         {
-                            results.Add(new { Index = i, Title = title, BggThingId = fromBgg.BggThingId, Status = "AlreadyExists", Name = existing.Name });
+                            results.Add(new { Index = i, Title = title, BggThingId = fromBggBoardgame.BggThingId, Status = "AlreadyExists", Name = existing.Name });
                             skippedCount++;
                         }
                     }
@@ -1525,21 +1566,23 @@ namespace MovieTheater.Controllers
                         continue;
                     }
 
-                    var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == fromBgg.BggThingId);
+                    var fromBggBoardgame = fromBgg.Boardgame;
+                    var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == fromBggBoardgame.BggThingId);
                     if (existing == null)
                     {
-                        movieDb.Boardgames.Add(fromBgg);
+                        movieDb.Boardgames.Add(fromBggBoardgame);
                         await movieDb.SaveChangesAsync();
+                        await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
 
                         // Download images after saving to database
-                        await DownloadAndSaveBoardgameImages(fromBgg);
+                        await DownloadAndSaveBoardgameImages(fromBggBoardgame);
 
-                        results.Add(new { Index = i, Title = title, BggThingId = fromBgg.BggThingId, Status = "Created", Name = fromBgg.Name });
+                        results.Add(new { Index = i, Title = title, BggThingId = fromBggBoardgame.BggThingId, Status = "Created", Name = fromBggBoardgame.Name });
                         successCount++;
                     }
                     else
                     {
-                        results.Add(new { Index = i, Title = title, BggThingId = fromBgg.BggThingId, Status = "AlreadyExists", Name = existing.Name });
+                        results.Add(new { Index = i, Title = title, BggThingId = fromBggBoardgame.BggThingId, Status = "AlreadyExists", Name = existing.Name });
                         skippedCount++;
                     }
 
@@ -1611,20 +1654,39 @@ namespace MovieTheater.Controllers
             });
         }
 
+        private async Task UpsertBoardgameImageUrls(int boardgameId, string? imageUrl, string? thumbnailUrl)
+        {
+            var details = await movieDb.BoardgameImageDetails.FindAsync(boardgameId);
+            if (details == null)
+                movieDb.BoardgameImageDetails.Add(new BoardgameImageDetails { BoardgameId = boardgameId, ImageVersion = 0, ImageUrl = imageUrl, ThumbnailUrl = thumbnailUrl });
+            else
+            {
+                details.ImageUrl = imageUrl;
+                details.ThumbnailUrl = thumbnailUrl;
+            }
+            await movieDb.SaveChangesAsync();
+        }
+
         private async Task DownloadAndSaveBoardgameImages(Boardgame boardgame, bool force = false)
         {
+            var details = boardgame.ImageDetails ?? await movieDb.BoardgameImageDetails.FindAsync(boardgame.id);
+            var imageUrl = details?.ImageUrl;
+            var thumbnailUrl = details?.ThumbnailUrl;
+
             byte[]? mainBytes = null;
             bool hasMain = await boardgameImageRepo.HasImage(boardgame.id, BoardgameImageVariant.Main);
             bool hasThumb = await boardgameImageRepo.HasImage(boardgame.id, BoardgameImageVariant.Thumbnail);
+            bool savedAny = false;
 
             if (force || !hasMain)
             {
-                if (!string.IsNullOrWhiteSpace(boardgame.Image))
+                if (!string.IsNullOrWhiteSpace(imageUrl))
                 {
-                    var imageResponse = await httpClient.GetAsync(boardgame.Image);
+                    var imageResponse = await httpClient.GetAsync(imageUrl);
                     imageResponse.EnsureSuccessStatusCode();
                     mainBytes = await imageResponse.Content.ReadAsByteArrayAsync();
                     await boardgameImageRepo.SaveImage(boardgame.id, BoardgameImageVariant.Main, mainBytes);
+                    savedAny = true;
                 }
             }
 
@@ -1632,9 +1694,9 @@ namespace MovieTheater.Controllers
             {
                 byte[]? thumbBytes = null;
 
-                if (!string.IsNullOrWhiteSpace(boardgame.Thumbnail))
+                if (!string.IsNullOrWhiteSpace(thumbnailUrl))
                 {
-                    var thumbResponse = await httpClient.GetAsync(boardgame.Thumbnail);
+                    var thumbResponse = await httpClient.GetAsync(thumbnailUrl);
                     if (thumbResponse.IsSuccessStatusCode)
                     {
                         thumbBytes = await thumbResponse.Content.ReadAsByteArrayAsync();
@@ -1653,7 +1715,25 @@ namespace MovieTheater.Controllers
                 if (thumbBytes != null)
                 {
                     await boardgameImageRepo.SaveImage(boardgame.id, BoardgameImageVariant.Thumbnail, thumbBytes);
+                    savedAny = true;
                 }
+            }
+
+            if (savedAny)
+            {
+                if (details == null)
+                {
+                    details = new BoardgameImageDetails { BoardgameId = boardgame.id, ImageVersion = 1, ImageUrl = imageUrl, ThumbnailUrl = thumbnailUrl };
+                    movieDb.BoardgameImageDetails.Add(details);
+                    boardgame.ImageDetails = details;
+                }
+                else
+                {
+                    details.ImageVersion++;
+                    details.ImageUrl = imageUrl;
+                    details.ThumbnailUrl = thumbnailUrl;
+                }
+                await movieDb.SaveChangesAsync();
             }
         }
 
@@ -1707,8 +1787,6 @@ namespace MovieTheater.Controllers
             existing.MinPlayTime = fromBgg.MinPlayTime;
             existing.MaxPlayTime = fromBgg.MaxPlayTime;
             existing.MinAge = fromBgg.MinAge;
-            existing.Thumbnail = fromBgg.Thumbnail;
-            existing.Image = fromBgg.Image;
             existing.Description = fromBgg.Description;
             existing.UsersRated = fromBgg.UsersRated;
             existing.AverageRating = fromBgg.AverageRating;

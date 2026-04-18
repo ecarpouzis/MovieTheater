@@ -106,12 +106,13 @@ namespace MovieTheater.Services.BoardgameImage
         {
             var boardgame = await movieDb.Boardgames
                 .AsNoTracking()
+                .Include(x => x.ImageDetails)
                 .SingleOrDefaultAsync(x => x.id == boardgameId);
 
             if (boardgame == null)
                 return null;
 
-            return variant == BoardgameImageVariant.Main ? boardgame.Image : boardgame.Thumbnail;
+            return variant == BoardgameImageVariant.Main ? boardgame.ImageDetails?.ImageUrl : boardgame.ImageDetails?.ThumbnailUrl;
         }
 
         private FileInfo GetFile(int boardgameId, BoardgameImageVariant variant)

@@ -46,7 +46,7 @@ namespace MovieTheater
                     opts.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
                     opts.JsonSerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
                 })
-                .AddOData(opts => opts.Select().Filter().OrderBy().SetMaxTop(null));
+                .AddOData(opts => opts.Select().Filter().OrderBy().Expand().SetMaxTop(null));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

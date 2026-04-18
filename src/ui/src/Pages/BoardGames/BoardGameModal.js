@@ -139,7 +139,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
           <img
             className="boardgame-modal-poster"
             alt={game.name}
-            src={`/BoardgameImage/${game.id}`}
+            src={`/BoardgameImage/${game.id}${game.imageVersion != null ? `?v=${game.imageVersion}` : ""}`}
           />
         </div>
         <div className="boardgame-modal-info-panel">

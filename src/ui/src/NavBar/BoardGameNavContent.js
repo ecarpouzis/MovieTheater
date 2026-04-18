@@ -134,6 +134,14 @@ const ageOptions = [
   ...[4,5,6,7,8,9,10,12,14,16,18].map((a) => ({ value: String(a), label: `Age ${a}+` })),
 ];
 
+const timeOptions = [
+  { value: "", label: "Any length" },
+  ...[15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,100,110,120,150,180].map((t) => ({
+    value: String(t),
+    label: `Up to ${t} min`,
+  })),
+];
+
 const sortOptions = [
   { value: "", label: "Alphabetical A → Z" },
   { value: "complexity_asc", label: "Complexity: Low → High" },
@@ -168,6 +176,7 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
   const urlParams = new URLSearchParams(location.search);
   const activePlayers = urlParams.get("players") || undefined;
   const activeAge = urlParams.get("age") || undefined;
+  const activeTime = urlParams.get("time") || undefined;
   const activeSort = urlParams.get("sort") || undefined;
 
   return (
@@ -204,6 +213,15 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
           value={activeAge ?? ""}
           onChange={(v) => updateParam("age", v)}
           options={ageOptions}
+          popupClassName="boardgame-login-dropdown"
+        />
+
+        <span style={inputLabelStyle}>Play Time</span>
+        <Select
+          style={{ width: "100%" }}
+          value={activeTime ?? ""}
+          onChange={(v) => updateParam("time", v)}
+          options={timeOptions}
           popupClassName="boardgame-login-dropdown"
         />
 

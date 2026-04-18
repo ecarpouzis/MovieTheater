@@ -19,10 +19,14 @@ function BoardGameCardList({ games, onGameClick }) {
   return (
     <div className="card-list">
       {games.map((game) => {
-        const thumbUrl = `/BoardgameImageThumb/${game.id}`;
+        const v = game.imageVersion != null ? `?v=${game.imageVersion}` : "";
+        const thumbUrl = `/BoardgameImageThumb/${game.id}${v}`;
         const minP = game.minPlayers;
         const maxP = game.maxPlayers;
         const players = minP && maxP ? (minP === maxP ? `${minP}` : `${minP}–${maxP}`) : minP || maxP || null;
+        const minT = game.minPlayTime;
+        const maxT = game.maxPlayTime ?? game.playingTime;
+        const playtime = minT && maxT ? (minT === maxT ? `${minT}` : `${minT}–${maxT}`) : maxT || minT || null;
         const description = stripHtml(game.description);
 
         return (
@@ -38,7 +42,7 @@ function BoardGameCardList({ games, onGameClick }) {
                   </div>
                   <div className="card-meta-row">
                     {players && <span className="badge-rating">👥 {players}</span>}
-                    {game.playingTime ? <span className="badge-runtime">⏱ {game.playingTime} min</span> : null}
+                    {playtime ? <span className="badge-runtime">⏱ {playtime} min</span> : null}
                     {game.averageRating ? <span className="badge-imdb">★ {Number(game.averageRating).toFixed(1)}</span> : null}
                     {game.averageWeight ? <span className="badge-rating">⚖ {Number(game.averageWeight).toFixed(1)}/5</span> : null}
                   </div>

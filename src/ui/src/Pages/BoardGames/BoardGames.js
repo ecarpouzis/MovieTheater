@@ -4,6 +4,7 @@ import BoardGameCardList from "./BoardGameCardList";
 import BoardGameModal from "./BoardGameModal";
 
 function normalizeGame(game) {
+  const details = game.imageDetails ?? game.ImageDetails ?? null;
   return {
     id: game.id ?? game.Id,
     bggThingId: game.bggThingId ?? game.BggThingId,
@@ -12,11 +13,14 @@ function normalizeGame(game) {
     minPlayers: game.minPlayers ?? game.MinPlayers,
     maxPlayers: game.maxPlayers ?? game.MaxPlayers,
     playingTime: game.playingTime ?? game.PlayingTime,
+    minPlayTime: game.minPlayTime ?? game.MinPlayTime,
+    maxPlayTime: game.maxPlayTime ?? game.MaxPlayTime,
     minAge: game.minAge ?? game.MinAge,
     averageRating: game.averageRating ?? game.AverageRating,
     averageWeight: game.averageWeight ?? game.AverageWeight,
     description: game.description ?? game.Description,
-    imageUrl: game.imageUrl ?? game.ImageUrl ?? game.image ?? game.Image ?? null,
+    imageUrl: details?.imageUrl ?? details?.ImageUrl ?? null,
+    imageVersion: details?.imageVersion ?? details?.ImageVersion ?? null,
   };
 }
 
@@ -38,7 +42,7 @@ function BoardGames({ userData }) {
     setLoading(true);
     setError(null);
 
-    fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minAge,averageRating,averageWeight,description,image&$orderby=name", {
+    fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minPlayTime,maxPlayTime,minAge,averageRating,averageWeight,description&$expand=imageDetails&$orderby=name", {
       signal: controller.signal,
     })
       .then((r) => {
@@ -64,6 +68,7 @@ function BoardGames({ userData }) {
   const value = params.get("value") || "";
   const playersParam = params.get("players");
   const ageParam = params.get("age");
+  const timeParam = params.get("time");
   const sortParam = params.get("sort");
 
   let displayGames = games;
@@ -95,6 +100,14 @@ function BoardGames({ userData }) {
   if (ageParam) {
     const a = parseInt(ageParam, 10);
     displayGames = displayGames.filter((g) => g.minAge == null || g.minAge <= a);
+  }
+
+  if (timeParam) {
+    const t = parseInt(timeParam, 10);
+    displayGames = displayGames.filter((g) => {
+      const min = g.minPlayTime ?? g.playingTime;
+      return min == null || min <= t;
+    });
   }
 
   if (sortParam === "complexity_asc") {

@@ -9,6 +9,8 @@ using MovieTheater.Db;
 
 namespace MovieTheater.Services.Bgg
 {
+    public record BoardgameBggResult(Boardgame Boardgame, string? ImageUrl, string? ThumbnailUrl);
+
     public class BoardGameGeekApi
     {
         // Use boardgamegeek.com WITHOUT www prefix per BGG API documentation
@@ -25,7 +27,7 @@ namespace MovieTheater.Services.Bgg
             this.options = options.Value;
         }
 
-        public async Task<Boardgame?> GetBoardgameByTitle(string title)
+        public async Task<BoardgameBggResult?> GetBoardgameByTitle(string title)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -61,7 +63,7 @@ namespace MovieTheater.Services.Bgg
             return await GetBoardgame(bggThingId);
         }
 
-        public async Task<Boardgame?> GetBoardgame(int bggThingId)
+        public async Task<BoardgameBggResult?> GetBoardgame(int bggThingId)
         {
             var xml = await SendBggGetAsync($"/xmlapi2/thing?id={bggThingId}&type=boardgame&stats=1&versions=1&videos=1&marketplace=1");
             var parsed = ParseBoardgame(xml, bggThingId);
@@ -70,8 +72,8 @@ namespace MovieTheater.Services.Bgg
                 return null;
             }
 
-            parsed.RawXml = xml;
-            parsed.LastSyncedUtc = DateTime.UtcNow;
+            parsed.Boardgame.RawXml = xml;
+            parsed.Boardgame.LastSyncedUtc = DateTime.UtcNow;
             return parsed;
         }
 
@@ -123,7 +125,7 @@ namespace MovieTheater.Services.Bgg
             }
         }
 
-        private static Boardgame? ParseBoardgame(string rawXml, int bggThingId)
+        private static BoardgameBggResult? ParseBoardgame(string rawXml, int bggThingId)
         {
             var doc = XDocument.Parse(rawXml);
             var item = doc.Root?.Element("item");
@@ -199,7 +201,7 @@ namespace MovieTheater.Services.Bgg
                 })
                 .ToList();
 
-            return new Boardgame
+            var boardgame = new Boardgame
             {
                 BggThingId = bggThingId,
                 ThingType = (string?)item.Attribute("type"),
@@ -212,8 +214,6 @@ namespace MovieTheater.Services.Bgg
                 MinPlayTime = ParseIntAttribute(item.Element("minplaytime"), "value"),
                 MaxPlayTime = ParseIntAttribute(item.Element("maxplaytime"), "value"),
                 MinAge = ParseIntAttribute(item.Element("minage"), "value"),
-                Thumbnail = NullIfWhiteSpace(item.Element("thumbnail")?.Value),
-                Image = NullIfWhiteSpace(item.Element("image")?.Value),
                 Description = item.Element("description")?.Value,
                 UsersRated = ParseIntAttribute(stats?.Element("usersrated"), "value"),
                 AverageRating = ParseDecimalAttribute(stats?.Element("average"), "value"),
@@ -234,6 +234,10 @@ namespace MovieTheater.Services.Bgg
                 VideosJson = JsonSerializer.Serialize(videos),
                 MarketplaceXml = item.Element("marketplacelistings")?.ToString(SaveOptions.DisableFormatting)
             };
+
+            var imageUrl = NullIfWhiteSpace(item.Element("image")?.Value);
+            var thumbnailUrl = NullIfWhiteSpace(item.Element("thumbnail")?.Value);
+            return new BoardgameBggResult(boardgame, imageUrl, thumbnailUrl);
         }
 
         private static int? ParseIntAttribute(XElement? element, string attributeName)
