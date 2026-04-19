@@ -110,7 +110,18 @@ function BoardGames({ userData }) {
     });
   }
 
-  if (sortParam === "complexity_asc") {
+  const getPlayTimeSortValue = (game) => game.minPlayTime ?? game.playingTime ?? game.maxPlayTime ?? 0;
+  const getRatingSortValue = (game) => game.averageRating ?? 0;
+
+  if (sortParam === "play_time_asc") {
+    displayGames = [...displayGames].sort((a, b) => getPlayTimeSortValue(a) - getPlayTimeSortValue(b));
+  } else if (sortParam === "play_time_desc") {
+    displayGames = [...displayGames].sort((a, b) => getPlayTimeSortValue(b) - getPlayTimeSortValue(a));
+  } else if (sortParam === "rating_asc") {
+    displayGames = [...displayGames].sort((a, b) => getRatingSortValue(a) - getRatingSortValue(b));
+  } else if (sortParam === "rating_desc") {
+    displayGames = [...displayGames].sort((a, b) => getRatingSortValue(b) - getRatingSortValue(a));
+  } else if (sortParam === "complexity_asc") {
     displayGames = [...displayGames].sort((a, b) => (a.averageWeight ?? 0) - (b.averageWeight ?? 0));
   } else if (sortParam === "complexity_desc") {
     displayGames = [...displayGames].sort((a, b) => (b.averageWeight ?? 0) - (a.averageWeight ?? 0));

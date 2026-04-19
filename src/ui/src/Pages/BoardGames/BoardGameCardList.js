@@ -44,7 +44,7 @@ function BoardGameCardList({ games, onGameClick }) {
                     {players && <span className="badge-rating">👥 {players}</span>}
                     {playtime ? <span className="badge-runtime">⏱ {playtime} min</span> : null}
                     {game.averageRating ? <span className="badge-imdb">★ {Number(game.averageRating).toFixed(1)}</span> : null}
-                    {game.averageWeight ? <span className="badge-rating">⚖ {Number(game.averageWeight).toFixed(1)}/5</span> : null}
+                    {game.averageWeight ? <span className="badge-rating">🧠 {Number(game.averageWeight).toFixed(1)}/5</span> : null}
                   </div>
                   {description && <p className="card-plot">{description.substring(0, 300)}</p>}
                 </div>

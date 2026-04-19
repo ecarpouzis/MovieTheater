@@ -145,6 +145,10 @@ const timeOptions = [
 
 const sortOptions = [
   { value: "", label: "Alphabetical A → Z" },
+  { value: "play_time_asc", label: "Play Time: Short → Long" },
+  { value: "play_time_desc", label: "Play Time: Long → Short" },
+  { value: "rating_asc", label: "Rating: Low → High" },
+  { value: "rating_desc", label: "Rating: High → Low" },
   { value: "complexity_asc", label: "Complexity: Low → High" },
   { value: "complexity_desc", label: "Complexity: High → Low" },
 ];
