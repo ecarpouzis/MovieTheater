@@ -275,7 +275,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   }
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} width={800} wrapClassName="boardgame-modal">
+    <Modal open={open} onCancel={onClose} footer={null} width={1000} wrapClassName="boardgame-modal">
       <div className="boardgame-modal-body">
         <div className="boardgame-modal-poster-column">
           <img
