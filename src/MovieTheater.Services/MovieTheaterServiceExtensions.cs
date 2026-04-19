@@ -26,6 +26,7 @@ namespace MovieTheater.Services
             services.AddOmdbServices(config.OmdbApiKey);
             services.AddGoogleServices(config.GoogleSearchApiKey, config.GoogleSearchEngineId);
             services.AddBoardGameGeekServices(config.BggApiToken);
+            services.AddTransient<BoardgameRulesService>();
             services.AddTransient<IMDBApiService>();
             services.AddTransient<PosterMosaicService>();
             return services;

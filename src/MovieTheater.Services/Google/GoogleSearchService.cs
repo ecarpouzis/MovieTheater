@@ -25,6 +25,52 @@ namespace MovieTheater.Services.Google
             _searchEngineId = configuration["GoogleSearchEngineId"];
         }
 
+        public async Task<string?> SearchForPdfUrl(string query)
+        {
+            var results = await SearchAsync(query, 5);
+            foreach (var link in results)
+            {
+                if (link.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                    return link;
+            }
+            return results.FirstOrDefault();
+        }
+
+        public async Task<string?> SearchForUrl(string query)
+        {
+            var results = await SearchAsync(query, 3);
+            return results.FirstOrDefault();
+        }
+
+        public Task<List<string>> SearchForUrls(string query, int max = 3)
+            => SearchAsync(query, max);
+
+        private async Task<List<string>> SearchAsync(string query, int num)
+        {
+            if (string.IsNullOrWhiteSpace(_apiKey) || string.IsNullOrWhiteSpace(_searchEngineId))
+                return [];
+
+            var client = _httpClientFactory.CreateClient();
+            var q = HttpUtility.UrlEncode(query);
+            var requestUrl = $"https://www.googleapis.com/customsearch/v1?key={_apiKey}&cx={_searchEngineId}&q={q}&num={num}";
+
+            using var resp = await client.GetAsync(requestUrl).ConfigureAwait(false);
+            if (!resp.IsSuccessStatusCode) return [];
+
+            using var stream = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            using var doc = await JsonDocument.ParseAsync(stream).ConfigureAwait(false);
+            if (!doc.RootElement.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array)
+                return [];
+
+            var links = new List<string>();
+            foreach (var item in items.EnumerateArray())
+            {
+                if (item.TryGetProperty("link", out var linkProp) && linkProp.ValueKind == JsonValueKind.String)
+                    links.Add(linkProp.GetString()!);
+            }
+            return links;
+        }
+
         public async Task<string?> FindImdbIdFromMovieName(string movieName)
         {
             if (string.IsNullOrWhiteSpace(movieName))

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -74,6 +75,23 @@ namespace MovieTheater.Db
         public string? RawXml { get; set; }
 
         public DateTime LastSyncedUtc { get; set; }
+
+        public string? RulesPdfCandidateUrl { get; set; }
+
+        public string? RulesPdfUrl { get; set; }
+
+        public string? HowToPlayVideoUrlsJson { get; set; }
+
+        public DateTime? RulesSyncedUtc { get; set; }
+
+        [NotMapped]
+        public List<string> HowToPlayVideoUrls
+        {
+            get => string.IsNullOrWhiteSpace(HowToPlayVideoUrlsJson)
+                ? []
+                : JsonSerializer.Deserialize<List<string>>(HowToPlayVideoUrlsJson) ?? [];
+            set => HowToPlayVideoUrlsJson = value.Count > 0 ? JsonSerializer.Serialize(value) : null;
+        }
 
         public BoardgameImageDetails? ImageDetails { get; set; }
 

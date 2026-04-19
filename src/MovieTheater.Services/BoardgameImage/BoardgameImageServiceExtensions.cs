@@ -21,6 +21,8 @@ namespace MovieTheater.Services.BoardgameImage
                 options.Directory = boardgameImagesDir;
             });
 
+            services.AddTransient<BoardgamePdfRepository>();
+
             if (environment == HostedEnvironment.Production)
             {
                 services.AddTransient<IBoardgameImageRepository, LocalBoardgameImageRepository>();

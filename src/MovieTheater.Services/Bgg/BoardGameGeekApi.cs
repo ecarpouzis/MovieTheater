@@ -63,6 +63,9 @@ namespace MovieTheater.Services.Bgg
             return await GetBoardgame(bggThingId);
         }
 
+        public Task<string> GetThingFilesXmlAsync(int bggThingId)
+            => SendBggGetAsync($"/xmlapi2/thing?id={bggThingId}&type=boardgame&files=1");
+
         public async Task<BoardgameBggResult?> GetBoardgame(int bggThingId)
         {
             var xml = await SendBggGetAsync($"/xmlapi2/thing?id={bggThingId}&type=boardgame&stats=1&versions=1&videos=1&marketplace=1");
