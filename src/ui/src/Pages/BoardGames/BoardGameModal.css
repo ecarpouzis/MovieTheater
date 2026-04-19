@@ -16,22 +16,25 @@
 
 .boardgame-modal-poster-column {
   float: left;
-  width: 210px;
-  margin-right: 24px;
+  width: 180px;
+  margin-right: 22px;
   margin-bottom: 12px;
 }
 
 .boardgame-modal-poster {
-  width: 210px;
+  width: 180px;
   height: auto;
   display: block;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
 }
 
+/* Block (not flex) so content flows around the floated poster */
 .boardgame-modal-info-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: block;
+}
+
+.boardgame-modal-info-panel > * + * {
+  margin-top: 14px;
 }
 
 .boardgame-modal-title {
@@ -186,6 +189,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 8px;
 }
 
 .rules-pdf-link {
