@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Modal, Input, Button, Collapse, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import "./BoardGameModal.css";
@@ -70,6 +70,8 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   const [removingSlot, setRemovingSlot] = useState(null);
   const [savingRules, setSavingRules] = useState(false);
   const [manualPdfUrl, setManualPdfUrl] = useState("");
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const pdfFileInputRef = useRef(null);
   const [editApprovedPdfs, setEditApprovedPdfs] = useState([]); // [{url, name}]
   const [editVideoUrls, setEditVideoUrls] = useState([]);
   const [newVideoUrl, setNewVideoUrl] = useState("");
@@ -85,6 +87,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
       setEditState({});
       setRematchId("");
       setManualPdfUrl("");
+      setUploadingPdf(false);
       setEditApprovedPdfs([]);
       setEditVideoUrls([]);
       setNewVideoUrl("");
@@ -220,6 +223,25 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
     } finally {
       setApprovingUrl(null);
       setManualPdfUrl("");
+    }
+  }
+
+  async function uploadPdf(file) {
+    setUploadingPdf(true);
+    try {
+      const resp = await MovieAPI.uploadBoardgameRulesPdf(game.id, file);
+      if (!resp.ok) { const b = await resp.json().catch(() => ({})); message.error(b.message || "Upload failed"); return; }
+      const result = await resp.json();
+      if (result.success) {
+        const updated = (result.data.rulesPdfUrls ?? []).map(normalizePdfEntry);
+        setEditApprovedPdfs(updated);
+        patchGame({ rulesPdfUrls: updated });
+        message.success("PDF uploaded");
+      }
+    } catch {
+      message.error("Error uploading PDF");
+    } finally {
+      setUploadingPdf(false);
     }
   }
 
@@ -395,6 +417,18 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                       disabled={!manualPdfUrl.trim()}
                     >
                       Approve
+                    </Button>
+                  </div>
+                  <div className="rules-url-add-row">
+                    <input
+                      ref={pdfFileInputRef}
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      style={{ display: "none" }}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) { uploadPdf(f); e.target.value = ""; } }}
+                    />
+                    <Button loading={uploadingPdf} onClick={() => pdfFileInputRef.current?.click()}>
+                      Upload PDF
                     </Button>
                   </div>
                 </div>

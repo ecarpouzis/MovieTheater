@@ -2047,6 +2047,33 @@ namespace MovieTheater.Controllers
 
         public class ApprovePdfRequest { public string? Url { get; set; } }
 
+        [HttpPost("/API/UploadBoardgameRulesPdf")]
+        public async Task<IActionResult> UploadBoardgameRulesPdf(int id, IFormFile file)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (file == null || file.Length == 0)
+                return BadRequest(new { Success = false, Message = "No file provided." });
+            if (!file.ContentType.Contains("pdf", StringComparison.OrdinalIgnoreCase) &&
+                !file.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { Success = false, Message = "Only PDF files are allowed." });
+
+            var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == id);
+            if (game == null) return NotFound(new { Success = false, Message = "Boardgame not found." });
+
+            var slot = game.RulesPdfUrls.Count;
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+            await boardgamePdfRepository.SavePdfAsync(game.id, slot, ms.ToArray());
+
+            var approved = game.RulesPdfUrls;
+            var name = Path.GetFileNameWithoutExtension(file.FileName);
+            approved.Add(new RulesPdfEntry { Url = $"/BoardgamePdf/{game.id}/{slot}", Name = name });
+            game.RulesPdfUrls = approved;
+
+            await movieDb.SaveChangesAsync();
+            return Ok(new { Success = true, data = new { rulesPdfUrls = game.RulesPdfUrls.Select(e => new { url = e.Url, name = e.Name }), slot } });
+        }
+
         [HttpPost("/API/BatchDiscoverBoardgameRules")]
         public async Task<IActionResult> BatchDiscoverBoardgameRules([FromBody] int[] ids)
         {
