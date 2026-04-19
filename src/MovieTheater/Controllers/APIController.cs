@@ -26,6 +26,7 @@ using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
 using MovieTheater.Services.Google;
 using MovieTheater.Services.Bgg;
+using MovieTheater.Services.Ai;
 
 namespace MovieTheater.Controllers
 {
@@ -43,9 +44,15 @@ namespace MovieTheater.Controllers
         private readonly IMDBApiService imdbApiService;
         private readonly BoardGameGeekApi boardGameGeekApi;
         private readonly PosterMosaicService posterMosaicService;
+        private readonly BoardgameRulesService boardgameRulesService;
+        private readonly BoardgamePdfRepository boardgamePdfRepository;
+        private readonly ClaudeRulesGenerator? claudeRulesGenerator;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
-            IBoardgameImageRepository boardgameImageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService, BoardGameGeekApi boardGameGeekApi, PosterMosaicService posterMosaicService)
+            IBoardgameImageRepository boardgameImageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService,
+            BoardGameGeekApi boardGameGeekApi, PosterMosaicService posterMosaicService,
+            BoardgameRulesService boardgameRulesService, BoardgamePdfRepository boardgamePdfRepository,
+            ClaudeRulesGenerator? claudeRulesGenerator = null)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -59,6 +66,9 @@ namespace MovieTheater.Controllers
             this.imdbApiService = imdbApiService;
             this.boardGameGeekApi = boardGameGeekApi;
             this.posterMosaicService = posterMosaicService;
+            this.boardgameRulesService = boardgameRulesService;
+            this.boardgamePdfRepository = boardgamePdfRepository;
+            this.claudeRulesGenerator = claudeRulesGenerator;
         }
 
         private int? GetCurrentUserId()
@@ -1962,6 +1972,148 @@ namespace MovieTheater.Controllers
             }
 
             return Ok(results);
+        }
+
+        // ─── Rules & Video Endpoints ─────────────────────────────────────────────
+
+        [HttpPost("/API/DiscoverBoardgameRules")]
+        public async Task<IActionResult> DiscoverBoardgameRules(int id)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+
+            var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == id);
+            if (game == null) return NotFound(new { Success = false, Message = "Boardgame not found." });
+
+            var (pdfCandidate, videoUrl) = await boardgameRulesService.DiscoverAsync(game);
+
+            game.RulesPdfCandidateUrl = pdfCandidate;
+            if (!string.IsNullOrWhiteSpace(videoUrl))
+                game.HowToPlayVideoUrl = videoUrl;
+
+            await movieDb.SaveChangesAsync();
+            return Ok(new { Success = true, data = new { pdfCandidateUrl = pdfCandidate, howToPlayVideoUrl = game.HowToPlayVideoUrl } });
+        }
+
+        [HttpPost("/API/ApproveBoardgameRulesPdf")]
+        public async Task<IActionResult> ApproveBoardgameRulesPdf(int id, [FromBody] ApprovePdfRequest? req = null)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+
+            var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == id);
+            if (game == null) return NotFound(new { Success = false, Message = "Boardgame not found." });
+
+            var pdfUrl = req?.OverridePdfUrl?.Trim();
+            if (string.IsNullOrWhiteSpace(pdfUrl))
+                pdfUrl = game.RulesPdfCandidateUrl;
+
+            if (string.IsNullOrWhiteSpace(pdfUrl))
+                return BadRequest(new { Success = false, Message = "No PDF URL to approve. Run DiscoverBoardgameRules first or provide an overridePdfUrl." });
+
+            try
+            {
+                var response = await httpClient.GetAsync(pdfUrl);
+                response.EnsureSuccessStatusCode();
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                await boardgamePdfRepository.SavePdfAsync(game.id, bytes);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(502, new { Success = false, Message = $"Failed to download PDF: {ex.Message}" });
+            }
+
+            game.RulesPdfUrl = pdfUrl;
+            await movieDb.SaveChangesAsync();
+            return Ok(new { Success = true, Message = "PDF downloaded and saved.", data = new { rulesPdfUrl = game.RulesPdfUrl } });
+        }
+
+        public class ApprovePdfRequest { public string? OverridePdfUrl { get; set; } }
+
+        [HttpPost("/API/GenerateBoardgameRules")]
+        public async Task<IActionResult> GenerateBoardgameRules(int id)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (claudeRulesGenerator == null)
+                return StatusCode(503, new { Success = false, Message = "AnthropicApiKey is not configured." });
+
+            var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == id);
+            if (game == null) return NotFound(new { Success = false, Message = "Boardgame not found." });
+
+            try
+            {
+                var rules = await claudeRulesGenerator.GenerateCommonlyMissedRulesAsync(game);
+                game.CommonlyMissedRules = rules;
+                game.RulesSyncedUtc = DateTime.UtcNow;
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true, data = new { commonlyMissedRules = rules } });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(502, new { Success = false, Message = $"Claude API error: {ex.Message}" });
+            }
+        }
+
+        [HttpPost("/API/BatchDiscoverBoardgameRules")]
+        public async Task<IActionResult> BatchDiscoverBoardgameRules([FromBody] int[] ids)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (ids == null || ids.Length == 0) return BadRequest(new { Success = false, Message = "No ids provided." });
+
+            var results = new List<object>();
+            foreach (var gameId in ids)
+            {
+                var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == gameId);
+                if (game == null) { results.Add(new { id = gameId, success = false, message = "Not found" }); continue; }
+
+                try
+                {
+                    var (pdfCandidate, videoUrl) = await boardgameRulesService.DiscoverAsync(game);
+                    game.RulesPdfCandidateUrl = pdfCandidate;
+                    if (!string.IsNullOrWhiteSpace(videoUrl)) game.HowToPlayVideoUrl = videoUrl;
+                    await movieDb.SaveChangesAsync();
+                    results.Add(new { id = gameId, success = true, pdfCandidateUrl = pdfCandidate, howToPlayVideoUrl = game.HowToPlayVideoUrl });
+                }
+                catch (Exception ex)
+                {
+                    results.Add(new { id = gameId, success = false, message = ex.Message });
+                }
+
+                await Task.Delay(1000);
+            }
+
+            return Ok(new { Success = true, results });
+        }
+
+        [HttpPut("/API/UpdateBoardgameRules")]
+        public async Task<IActionResult> UpdateBoardgameRules([FromBody] UpdateBoardgameRulesRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (req == null) return BadRequest(new { Success = false, Message = "No data provided." });
+
+            var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == req.Id);
+            if (game == null) return NotFound(new { Success = false, Message = "Boardgame not found." });
+
+            if (req.RulesPdfUrl != null) game.RulesPdfUrl = req.RulesPdfUrl;
+            if (req.HowToPlayVideoUrl != null) game.HowToPlayVideoUrl = req.HowToPlayVideoUrl;
+            if (req.CommonlyMissedRules != null) game.CommonlyMissedRules = req.CommonlyMissedRules;
+
+            await movieDb.SaveChangesAsync();
+            return Ok(new { Success = true, Message = "Boardgame rules updated.", data = game });
+        }
+
+        public class UpdateBoardgameRulesRequest
+        {
+            public int Id { get; set; }
+            public string? RulesPdfUrl { get; set; }
+            public string? HowToPlayVideoUrl { get; set; }
+            public string? CommonlyMissedRules { get; set; }
+        }
+
+        private async Task<bool> IsCurrentUserEditor()
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue) return false;
+            var settings = await movieDb.UserSettings.FirstOrDefaultAsync(s => s.UserID == userId.Value && s.SettingKey == "CanEditMovies");
+            return settings != null && string.Equals(settings.SettingValue, "true", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

@@ -164,6 +164,117 @@
   align-items: center;
 }
 
+/* ── Rules / Video view-mode sections ── */
+.rules-video-wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 */
+}
+
+.rules-video-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 6px;
+}
+
+.rules-pdf-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 6px;
+  color: #d46b08;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  align-self: flex-start;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.rules-pdf-link:hover {
+  background: #ffe7ba;
+  border-color: #fa8c16;
+}
+
+.rules-collapse {
+  margin: 0 !important;
+}
+
+.rules-collapse .ant-collapse-header {
+  padding: 6px 0 !important;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.rules-collapse .ant-collapse-content-box {
+  padding: 4px 0 8px !important;
+}
+
+.rules-bullet-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #444;
+  line-height: 1.7;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ── Rules admin panel (edit mode) ── */
+.rules-admin-panel {
+  margin-top: 8px;
+  padding: 14px 16px;
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rules-admin-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+.rules-admin-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.rules-candidate-link {
+  font-size: 13px;
+  color: #1677ff;
+  text-decoration: none;
+}
+
+.rules-candidate-link:hover {
+  text-decoration: underline;
+}
+
+.rules-confirmed-url {
+  font-size: 12px;
+  color: #52c41a;
+  font-weight: 500;
+}
+
+.rules-confirmed-url a {
+  color: #52c41a;
+  text-decoration: underline;
+}
+
 @media (max-width: 600px) {
   .boardgame-modal .ant-modal {
     max-width: 96vw !important;

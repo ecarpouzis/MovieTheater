@@ -75,6 +75,16 @@ namespace MovieTheater.Db
 
         public DateTime LastSyncedUtc { get; set; }
 
+        public string? RulesPdfCandidateUrl { get; set; }
+
+        public string? RulesPdfUrl { get; set; }
+
+        public string? HowToPlayVideoUrl { get; set; }
+
+        public string? CommonlyMissedRules { get; set; }
+
+        public DateTime? RulesSyncedUtc { get; set; }
+
         public BoardgameImageDetails? ImageDetails { get; set; }
 
         private string? _imageUrl;

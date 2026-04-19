@@ -263,6 +263,30 @@ function batchInsertBoardgames(inputs, delayMs = 2000) {
   });
 }
 
+function discoverBoardgameRules(id) {
+  return fetch(`/API/DiscoverBoardgameRules?id=${encodeURIComponent(id)}`, { method: "POST" });
+}
+
+function approveBoardgameRulesPdf(id, overridePdfUrl) {
+  return fetch(`/API/ApproveBoardgameRulesPdf?id=${encodeURIComponent(id)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(overridePdfUrl ? { overridePdfUrl } : null),
+  });
+}
+
+function generateBoardgameRules(id) {
+  return fetch(`/API/GenerateBoardgameRules?id=${encodeURIComponent(id)}`, { method: "POST" });
+}
+
+function updateBoardgameRules(id, { rulesPdfUrl, howToPlayVideoUrl, commonlyMissedRules } = {}) {
+  return fetch("/API/UpdateBoardgameRules", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Id: id, RulesPdfUrl: rulesPdfUrl, HowToPlayVideoUrl: howToPlayVideoUrl, CommonlyMissedRules: commonlyMissedRules }),
+  });
+}
+
 const MovieAPI = {
   getMoviePoster,
   getPosterThumbnail,
@@ -288,6 +312,10 @@ const MovieAPI = {
   boardgameLookupFromInputs,
   insertBoardgameFromBgg,
   batchInsertBoardgames,
+  discoverBoardgameRules,
+  approveBoardgameRulesPdf,
+  generateBoardgameRules,
+  updateBoardgameRules,
 };
 
 export { MovieAPI };
