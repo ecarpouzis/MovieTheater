@@ -241,10 +241,32 @@ function setUserSetting(key, value) {
   });
 }
 
+function boardgameLookupFromInputs(inputs) {
+  return fetch("/API/GetBoardgamesFromInputs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(inputs),
+  }).then((response) => response.json());
+}
+
+function insertBoardgameFromBgg(bggThingId) {
+  return fetch(`/API/InsertBoardgameFromBgg?bggThingId=${encodeURIComponent(bggThingId)}`, {
+    method: "POST",
+  });
+}
+
+function batchInsertBoardgames(inputs, delayMs = 2000) {
+  return fetch(`/API/BatchInsertBoardgames?delayMs=${encodeURIComponent(delayMs)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(inputs),
+  });
+}
+
 const MovieAPI = {
-getMoviePoster,
-getPosterThumbnail,
-getMovie,
+  getMoviePoster,
+  getPosterThumbnail,
+  getMovie,
   getUsers,
   insertMovie,
   updateMovie,
@@ -263,6 +285,9 @@ getMovie,
   setUserSetting,
   updateBoardgame,
   rematchBoardgame,
+  boardgameLookupFromInputs,
+  insertBoardgameFromBgg,
+  batchInsertBoardgames,
 };
 
 export { MovieAPI };

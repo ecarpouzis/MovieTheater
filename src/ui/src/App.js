@@ -8,6 +8,7 @@ import BoardGames from "./Pages/BoardGames/BoardGames";
 import MoviePage from "./Pages/MoviePage";
 import InsertPage from "./Pages/InsertPage";
 import BatchInsertPage from "./Pages/BatchInsertPage";
+import BoardgameBatchInsertPage from "./Pages/BoardGames/BoardgameBatchInsertPage";
 import { useMovieSearch } from "./hooks/useMovieSearch";
 
 const storedUsername = window.localStorage.getItem("Username");
@@ -73,6 +74,9 @@ function App() {
             </Route>
             <Route path="/batchinsert" exact>
               <BatchInsertPage />
+            </Route>
+            <Route path="/boardgames/batchinsert" exact>
+              <BoardgameBatchInsertPage />
             </Route>
             <Route path="/boardgames" exact>
               <BoardGames userData={userData} setUserData={setUserData} />

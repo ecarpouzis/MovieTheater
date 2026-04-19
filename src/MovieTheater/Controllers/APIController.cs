@@ -1534,6 +1534,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpPost("/API/BatchImportBoardgames")]
+        [HttpPost("/API/BatchInsertBoardgames")]
         public async Task<IActionResult> BatchImportBoardgames([FromBody] List<string> gameNames, int delayMs = 2000)
         {
             if (gameNames == null || gameNames.Count == 0)
@@ -1548,20 +1549,48 @@ namespace MovieTheater.Controllers
 
             for (int i = 0; i < gameNames.Count; i++)
             {
-                var title = gameNames[i]?.Trim();
-                if (string.IsNullOrWhiteSpace(title))
+                var rawInput = gameNames[i]?.Trim();
+                if (string.IsNullOrWhiteSpace(rawInput))
                 {
-                    results.Add(new { Index = i, Title = title, Status = "Skipped", Reason = "Empty title" });
+                    results.Add(new { Index = i, Input = rawInput, Status = "Skipped", Reason = "Empty input" });
                     skippedCount++;
                     continue;
                 }
 
+                bool madeApiCall = false;
                 try
                 {
-                    var fromBgg = await boardGameGeekApi.GetBoardgameByTitle(title);
+                    var isBggId = int.TryParse(rawInput, out var bggThingId) && bggThingId > 0;
+
+                    if (isBggId)
+                    {
+                        var existingById = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
+                        if (existingById != null)
+                        {
+                            results.Add(new { Index = i, Input = rawInput, BggThingId = existingById.BggThingId, Status = "AlreadyExists", Name = existingById.Name });
+                            skippedCount++;
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        var existingByName = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.Name == rawInput);
+                        if (existingByName != null)
+                        {
+                            results.Add(new { Index = i, Input = rawInput, BggThingId = existingByName.BggThingId, Status = "AlreadyExists", Name = existingByName.Name });
+                            skippedCount++;
+                            continue;
+                        }
+                    }
+
+                    var fromBgg = isBggId
+                        ? await boardGameGeekApi.GetBoardgame(bggThingId)
+                        : await boardGameGeekApi.GetBoardgameByTitle(rawInput);
+                    madeApiCall = true;
+
                     if (fromBgg == null)
                     {
-                        results.Add(new { Index = i, Title = title, Status = "NotFound", Message = "Not found on BGG" });
+                        results.Add(new { Index = i, Input = rawInput, Status = "NotFound", Message = "Not found on BGG" });
                         failureCount++;
                         continue;
                     }
@@ -1577,30 +1606,30 @@ namespace MovieTheater.Controllers
                         // Download images after saving to database
                         await DownloadAndSaveBoardgameImages(fromBggBoardgame);
 
-                        results.Add(new { Index = i, Title = title, BggThingId = fromBggBoardgame.BggThingId, Status = "Created", Name = fromBggBoardgame.Name });
+                        results.Add(new { Index = i, Input = rawInput, BggThingId = fromBggBoardgame.BggThingId, Status = "Created", Name = fromBggBoardgame.Name });
                         successCount++;
                     }
                     else
                     {
-                        results.Add(new { Index = i, Title = title, BggThingId = fromBggBoardgame.BggThingId, Status = "AlreadyExists", Name = existing.Name });
+                        results.Add(new { Index = i, Input = rawInput, BggThingId = fromBggBoardgame.BggThingId, Status = "AlreadyExists", Name = existing.Name });
                         skippedCount++;
-                    }
-
-                    // Rate limiting: wait between requests (default 2 seconds)
-                    if (i < gameNames.Count - 1)
-                    {
-                        await Task.Delay(delayMs);
                     }
                 }
                 catch (HttpRequestException ex)
                 {
-                    results.Add(new { Index = i, Title = title, Status = "Failed", Error = ex.Message });
+                    results.Add(new { Index = i, Input = rawInput, Status = "Failed", Error = ex.Message });
                     failureCount++;
                 }
                 catch (Exception ex)
                 {
-                    results.Add(new { Index = i, Title = title, Status = "Failed", Error = ex.Message });
+                    results.Add(new { Index = i, Input = rawInput, Status = "Failed", Error = ex.Message });
                     failureCount++;
+                }
+
+                // Rate limiting: wait between BGG requests (default 2 seconds)
+                if (madeApiCall && i < gameNames.Count - 1)
+                {
+                    await Task.Delay(delayMs);
                 }
             }
 
@@ -1700,7 +1729,7 @@ namespace MovieTheater.Controllers
                     if (thumbResponse.IsSuccessStatusCode)
                     {
                         thumbBytes = await thumbResponse.Content.ReadAsByteArrayAsync();
-                    }
+                      }
                 }
 
                 if (thumbBytes == null)
@@ -1817,5 +1846,105 @@ namespace MovieTheater.Controllers
             MosaicOutputFormat.WebP => "image/webp",
             _ => "image/png"
         };
+
+        [HttpGet("/API/InsertBoardgameFromBgg")]
+        [HttpPost("/API/InsertBoardgameFromBgg")]
+        public async Task<IActionResult> InsertBoardgameFromBgg(int bggThingId)
+        {
+            if (bggThingId <= 0)
+                return BadRequest(new { Success = false, Message = "bggThingId must be a positive integer" });
+
+            var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
+            if (existing != null)
+                return Conflict(new { Success = false, Message = $"Boardgame with BGG ID {bggThingId} already exists.", data = existing });
+
+            try
+            {
+                var fromBgg = await boardGameGeekApi.GetBoardgame(bggThingId);
+                if (fromBgg == null)
+                    return NotFound(new { Success = false, Message = "Boardgame not found from BoardGameGeek" });
+
+                var fromBggBoardgame = fromBgg.Boardgame;
+                movieDb.Boardgames.Add(fromBggBoardgame);
+                await movieDb.SaveChangesAsync();
+
+                await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
+                await DownloadAndSaveBoardgameImages(fromBggBoardgame);
+                await movieDb.Entry(fromBggBoardgame).Reference(x => x.ImageDetails).LoadAsync();
+
+                return Ok(new { Success = true, Message = "Boardgame inserted", data = fromBggBoardgame });
+            }
+            catch (HttpRequestException ex)
+            {
+                return StatusCode(502, new { Success = false, Message = "BoardGameGeek request failed", Error = ex.Message });
+            }
+        }
+
+        [HttpPost("/API/GetBoardgamesFromInputs")]
+        public async Task<IActionResult> GetBoardgamesFromInputs([FromBody] string[] inputs)
+        {
+            if (inputs == null || inputs.Length == 0)
+                return Ok(new List<object>());
+
+            var results = new List<object>();
+
+            foreach (var raw in inputs)
+            {
+                var input = raw?.Trim();
+                if (string.IsNullOrWhiteSpace(input))
+                {
+                    results.Add(new { input = raw, found = false, message = "Empty input" });
+                    continue;
+                }
+
+                try
+                {
+                    var isBggId = int.TryParse(input, out var bggThingId) && bggThingId > 0;
+                    var fromBgg = isBggId
+                        ? await boardGameGeekApi.GetBoardgame(bggThingId)
+                        : await boardGameGeekApi.GetBoardgameByTitle(input);
+
+                    if (fromBgg == null)
+                    {
+                        results.Add(new { input, found = false, message = "Not found on BGG" });
+                        continue;
+                    }
+
+                    var existing = await movieDb.Boardgames
+                        .AsNoTracking()
+                        .Include(x => x.ImageDetails)
+                        .SingleOrDefaultAsync(x => x.BggThingId == fromBgg.Boardgame.BggThingId);
+
+                    results.Add(new
+                    {
+                        input,
+                        found = true,
+                        exists = existing != null,
+                        id = existing?.id,
+                        bggThingId = fromBgg.Boardgame.BggThingId,
+                        name = fromBgg.Boardgame.Name,
+                        yearPublished = fromBgg.Boardgame.YearPublished,
+                        minPlayers = fromBgg.Boardgame.MinPlayers,
+                        maxPlayers = fromBgg.Boardgame.MaxPlayers,
+                        playingTime = fromBgg.Boardgame.PlayingTime,
+                        minAge = fromBgg.Boardgame.MinAge,
+                        description = fromBgg.Boardgame.Description,
+                        imageUrl = fromBgg.ImageUrl,
+                        thumbnailUrl = fromBgg.ThumbnailUrl,
+                        imageVersion = existing?.ImageDetails?.ImageVersion ?? 0
+                    });
+                }
+                catch (HttpRequestException ex)
+                {
+                    results.Add(new { input, found = false, message = $"BGG request failed: {ex.Message}" });
+                }
+                catch (Exception ex)
+                {
+                    results.Add(new { input, found = false, message = ex.Message });
+                }
+            }
+
+            return Ok(results);
+        }
     }
 }
