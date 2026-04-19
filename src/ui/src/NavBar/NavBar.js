@@ -149,7 +149,7 @@ function NavBar({
     moviesWantToWatchSearch,
   ]);
 
-  const isBoardGames = location.pathname === "/boardgames";
+  const isBoardGames = location.pathname.startsWith("/boardgames");
   const sectionEmoji = isBoardGames ? "🎲" : "🎬";
   const sectionTitle = isBoardGames ? "Board Games" : "Movie Theater";
   const navThemeClass = isBoardGames ? " navbar-boardgames-theme" : "";

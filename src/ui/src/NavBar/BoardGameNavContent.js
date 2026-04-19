@@ -152,6 +152,7 @@ const sortOptions = [
 function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen, search }) {
   const history = useHistory();
   const location = useLocation();
+  const getSelectPopupContainer = (trigger) => trigger.parentElement;
 
   function navigate(mode, value = "") {
     const params = new URLSearchParams(location.search);
@@ -206,6 +207,7 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
           onChange={(v) => updateParam("players", v)}
           options={playerOptions}
           popupClassName="boardgame-login-dropdown"
+          getPopupContainer={getSelectPopupContainer}
         />
 
         <span style={inputLabelStyle}>Age</span>
@@ -215,6 +217,7 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
           onChange={(v) => updateParam("age", v)}
           options={ageOptions}
           popupClassName="boardgame-login-dropdown"
+          getPopupContainer={getSelectPopupContainer}
         />
 
         <span style={inputLabelStyle}>Play Time</span>
@@ -224,6 +227,7 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
           onChange={(v) => updateParam("time", v)}
           options={timeOptions}
           popupClassName="boardgame-login-dropdown"
+          getPopupContainer={getSelectPopupContainer}
         />
 
         <span style={inputLabelStyle}>Sort By</span>
@@ -233,6 +237,7 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
           onChange={(v) => updateParam("sort", v)}
           options={sortOptions}
           popupClassName="boardgame-login-dropdown"
+          getPopupContainer={getSelectPopupContainer}
         />
 
         <span style={inputLabelStyle}>First Letter</span>
