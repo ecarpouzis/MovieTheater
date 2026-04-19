@@ -824,6 +824,23 @@ namespace MovieTheater.Controllers
             return System.Text.RegularExpressions.Regex.IsMatch(id, @"^tt\d{7,9}$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         }
 
+        private static bool TryParseBggThingId(string input, out int bggThingId)
+        {
+            bggThingId = 0;
+            if (string.IsNullOrWhiteSpace(input))
+                return false;
+
+            var trimmed = input.Trim();
+            if (int.TryParse(trimmed, out bggThingId) && bggThingId > 0)
+                return true;
+
+            var match = System.Text.RegularExpressions.Regex.Match(trimmed, @"(?:boardgame|boardgameexpansion)/(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!match.Success)
+                match = System.Text.RegularExpressions.Regex.Match(trimmed, @"\b(\d{3,})\b");
+
+            return match.Success && int.TryParse(match.Groups[1].Value, out bggThingId) && bggThingId > 0;
+        }
+
         [HttpGet("/API/GetMoviesByRating")]
         public async Task<IActionResult> GetMoviesByRating(int maxRatingId, int page = 1, int pageSize = 50)
         {
@@ -1560,7 +1577,7 @@ namespace MovieTheater.Controllers
                 bool madeApiCall = false;
                 try
                 {
-                    var isBggId = int.TryParse(rawInput, out var bggThingId) && bggThingId > 0;
+                    var isBggId = TryParseBggThingId(rawInput, out var bggThingId) && bggThingId > 0;
 
                     if (isBggId)
                     {
@@ -1899,7 +1916,7 @@ namespace MovieTheater.Controllers
 
                 try
                 {
-                    var isBggId = int.TryParse(input, out var bggThingId) && bggThingId > 0;
+                    var isBggId = TryParseBggThingId(input, out var bggThingId) && bggThingId > 0;
                     var fromBgg = isBggId
                         ? await boardGameGeekApi.GetBoardgame(bggThingId)
                         : await boardGameGeekApi.GetBoardgameByTitle(input);

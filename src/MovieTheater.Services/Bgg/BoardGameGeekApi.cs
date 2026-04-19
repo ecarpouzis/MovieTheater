@@ -67,6 +67,14 @@ namespace MovieTheater.Services.Bgg
         {
             var xml = await SendBggGetAsync($"/xmlapi2/thing?id={bggThingId}&type=boardgame&stats=1&versions=1&videos=1&marketplace=1");
             var parsed = ParseBoardgame(xml, bggThingId);
+
+            if (parsed == null)
+            {
+                // Fallback: some BGG entries are not returned with type=boardgame.
+                xml = await SendBggGetAsync($"/xmlapi2/thing?id={bggThingId}&stats=1&versions=1&videos=1&marketplace=1");
+                parsed = ParseBoardgame(xml, bggThingId);
+            }
+
             if (parsed == null)
             {
                 return null;
