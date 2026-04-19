@@ -27,13 +27,17 @@ namespace MovieTheater.Services.Google
 
         public async Task<string?> SearchForPdfUrl(string query)
         {
-            var results = await SearchAsync(query, 5);
-            foreach (var link in results)
-            {
-                if (link.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
-                    return link;
-            }
+            var results = await SearchForPdfUrls(query, 5);
             return results.FirstOrDefault();
+        }
+
+        public async Task<List<string>> SearchForPdfUrls(string query, int max = 5)
+        {
+            var results = await SearchAsync(query, max);
+            // PDFs first, then everything else
+            return results
+                .OrderByDescending(r => r.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                .ToList();
         }
 
         public async Task<string?> SearchForUrl(string query)

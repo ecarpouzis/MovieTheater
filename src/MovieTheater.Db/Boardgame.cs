@@ -76,22 +76,37 @@ namespace MovieTheater.Db
 
         public DateTime LastSyncedUtc { get; set; }
 
-        public string? RulesPdfCandidateUrl { get; set; }
+        public string? RulesPdfCandidateUrlsJson { get; set; }
 
-        public string? RulesPdfUrl { get; set; }
+        public string? RulesPdfUrlsJson { get; set; }
 
         public string? HowToPlayVideoUrlsJson { get; set; }
 
         public DateTime? RulesSyncedUtc { get; set; }
 
         [NotMapped]
+        public List<string> RulesPdfCandidateUrls
+        {
+            get => DeserializeList(RulesPdfCandidateUrlsJson);
+            set => RulesPdfCandidateUrlsJson = value.Count > 0 ? JsonSerializer.Serialize(value) : null;
+        }
+
+        [NotMapped]
+        public List<string> RulesPdfUrls
+        {
+            get => DeserializeList(RulesPdfUrlsJson);
+            set => RulesPdfUrlsJson = value.Count > 0 ? JsonSerializer.Serialize(value) : null;
+        }
+
+        [NotMapped]
         public List<string> HowToPlayVideoUrls
         {
-            get => string.IsNullOrWhiteSpace(HowToPlayVideoUrlsJson)
-                ? []
-                : JsonSerializer.Deserialize<List<string>>(HowToPlayVideoUrlsJson) ?? [];
+            get => DeserializeList(HowToPlayVideoUrlsJson);
             set => HowToPlayVideoUrlsJson = value.Count > 0 ? JsonSerializer.Serialize(value) : null;
         }
+
+        private static List<string> DeserializeList(string? json)
+            => string.IsNullOrWhiteSpace(json) ? [] : JsonSerializer.Deserialize<List<string>>(json) ?? [];
 
         public BoardgameImageDetails? ImageDetails { get; set; }
 

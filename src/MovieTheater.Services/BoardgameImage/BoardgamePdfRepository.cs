@@ -14,24 +14,38 @@ namespace MovieTheater.Services.BoardgameImage
                 rulesDir.Create();
         }
 
-        public bool HasPdf(int boardgameId) => GetFile(boardgameId).Exists;
+        public async Task SavePdfAsync(int boardgameId, int slot, byte[] content)
+            => await File.WriteAllBytesAsync(GetFile(boardgameId, slot).FullName, content);
 
-        public async Task SavePdfAsync(int boardgameId, byte[] content)
-            => await File.WriteAllBytesAsync(GetFile(boardgameId).FullName, content);
-
-        public async Task<byte[]?> GetPdfAsync(int boardgameId)
+        public async Task<byte[]?> GetPdfAsync(int boardgameId, int slot)
         {
-            var file = GetFile(boardgameId);
+            var file = GetFile(boardgameId, slot);
             return file.Exists ? await File.ReadAllBytesAsync(file.FullName) : null;
         }
 
-        public void DeletePdf(int boardgameId)
+        public void DeleteFromSlot(int boardgameId, int fromSlot, int totalSlots)
         {
-            var file = GetFile(boardgameId);
-            if (file.Exists) file.Delete();
+            for (int i = fromSlot; i < totalSlots; i++)
+            {
+                var file = GetFile(boardgameId, i);
+                if (file.Exists) file.Delete();
+            }
         }
 
-        private FileInfo GetFile(int boardgameId)
-            => new FileInfo(Path.Combine(rulesDir.FullName, $"{boardgameId}.pdf"));
+        public void DeleteAndCompact(int boardgameId, int slotToRemove, int totalSlots)
+        {
+            var target = GetFile(boardgameId, slotToRemove);
+            if (target.Exists) target.Delete();
+
+            for (int i = slotToRemove + 1; i < totalSlots; i++)
+            {
+                var src = GetFile(boardgameId, i);
+                var dst = GetFile(boardgameId, i - 1);
+                if (src.Exists) src.MoveTo(dst.FullName, overwrite: true);
+            }
+        }
+
+        private FileInfo GetFile(int boardgameId, int slot)
+            => new FileInfo(Path.Combine(rulesDir.FullName, $"{boardgameId}_{slot}.pdf"));
     }
 }

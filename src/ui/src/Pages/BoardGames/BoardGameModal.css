@@ -180,6 +180,12 @@
   border-radius: 6px;
 }
 
+.rules-pdf-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .rules-pdf-link {
   display: inline-flex;
   align-items: center;
@@ -192,38 +198,12 @@
   font-size: 13px;
   font-weight: 500;
   text-decoration: none;
-  align-self: flex-start;
   transition: background 0.15s, border-color 0.15s;
 }
 
 .rules-pdf-link:hover {
   background: #ffe7ba;
   border-color: #fa8c16;
-}
-
-.rules-collapse {
-  margin: 0 !important;
-}
-
-.rules-collapse .ant-collapse-header {
-  padding: 6px 0 !important;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.rules-collapse .ant-collapse-content-box {
-  padding: 4px 0 8px !important;
-}
-
-.rules-bullet-list {
-  margin: 0;
-  padding-left: 20px;
-  font-size: 13px;
-  color: #444;
-  line-height: 1.7;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 /* ── Rules admin panel (edit mode) ── */
@@ -275,7 +255,7 @@
   text-decoration: underline;
 }
 
-.rules-video-url-row {
+.rules-url-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -283,20 +263,31 @@
   border-bottom: 1px solid #f0f0f0;
 }
 
-.rules-video-url-text {
+.rules-url-text {
   flex: 1;
   font-size: 12px;
-  color: #555;
+  color: #1677ff;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-decoration: none;
 }
 
-.rules-video-add-row {
+.rules-url-text:hover {
+  text-decoration: underline;
+}
+
+.rules-url-add-row {
   display: flex;
   gap: 8px;
   align-items: center;
   margin-top: 6px;
+}
+
+.rules-empty-hint {
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
 }
 
 @media (max-width: 600px) {

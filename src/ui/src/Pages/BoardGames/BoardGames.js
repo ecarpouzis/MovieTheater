@@ -24,8 +24,8 @@ function normalizeGame(game) {
     averageRating: game.averageRating ?? game.AverageRating,
     averageWeight: game.averageWeight ?? game.AverageWeight,
     description: game.description ?? game.Description,
-    rulesPdfUrl: game.rulesPdfUrl ?? game.RulesPdfUrl ?? null,
-    rulesPdfCandidateUrl: game.rulesPdfCandidateUrl ?? game.RulesPdfCandidateUrl ?? null,
+    rulesPdfUrls: parseJsonArray(game.rulesPdfUrlsJson ?? game.RulesPdfUrlsJson) ?? game.rulesPdfUrls ?? game.RulesPdfUrls ?? [],
+    rulesPdfCandidateUrls: parseJsonArray(game.rulesPdfCandidateUrlsJson ?? game.RulesPdfCandidateUrlsJson) ?? game.rulesPdfCandidateUrls ?? game.RulesPdfCandidateUrls ?? [],
     howToPlayVideoUrls: parseJsonArray(game.howToPlayVideoUrlsJson ?? game.HowToPlayVideoUrlsJson) ?? game.howToPlayVideoUrls ?? game.HowToPlayVideoUrls ?? [],
     imageUrl: details?.imageUrl ?? details?.ImageUrl ?? null,
     imageVersion: details?.imageVersion ?? details?.ImageVersion ?? null,
@@ -50,7 +50,7 @@ function BoardGames({ userData }) {
     setLoading(true);
     setError(null);
 
-    fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minPlayTime,maxPlayTime,minAge,averageRating,averageWeight,description,rulesPdfUrl,rulesPdfCandidateUrl,howToPlayVideoUrlsJson&$expand=imageDetails&$orderby=name", {
+    fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minPlayTime,maxPlayTime,minAge,averageRating,averageWeight,description,rulesPdfUrlsJson,rulesPdfCandidateUrlsJson,howToPlayVideoUrlsJson&$expand=imageDetails&$orderby=name", {
       signal: controller.signal,
     })
       .then((r) => {

@@ -19,9 +19,7 @@ function toYouTubeEmbedUrl(url) {
   if (!url) return null;
   try {
     const u = new URL(url);
-    if (u.hostname === "youtu.be") {
-      return `https://www.youtube.com/embed${u.pathname}`;
-    }
+    if (u.hostname === "youtu.be") return `https://www.youtube.com/embed${u.pathname}`;
     const v = u.searchParams.get("v");
     if (v) return `https://www.youtube.com/embed/${v}`;
   } catch {}
@@ -42,6 +40,15 @@ function EditField({ label, value, onChange, multiline = false, type = "text" })
   );
 }
 
+function UrlRow({ url, actionLabel, actionDanger, onAction, loading }) {
+  return (
+    <div className="rules-url-row">
+      <a href={url} target="_blank" rel="noreferrer" className="rules-url-text" title={url}>{url}</a>
+      <Button size="small" danger={actionDanger} onClick={onAction} loading={loading}>{actionLabel}</Button>
+    </div>
+  );
+}
+
 function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated }) {
   const [game, setGame] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -50,14 +57,13 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   const [rematchId, setRematchId] = useState("");
   const [rematching, setRematching] = useState(false);
 
-  // Rules workflow state
   const [discovering, setDiscovering] = useState(false);
-  const [approving, setApproving] = useState(false);
-  const [savingRules, setSavingRules] = useState(false);
-  const [overridePdfUrl, setOverridePdfUrl] = useState("");
+  const [approvingUrl, setApprovingUrl] = useState(null);
+  const [removingSlot, setRemovingSlot] = useState(null);
+  const [savingVideos, setSavingVideos] = useState(false);
+  const [manualPdfUrl, setManualPdfUrl] = useState("");
   const [editVideoUrls, setEditVideoUrls] = useState([]);
   const [newVideoUrl, setNewVideoUrl] = useState("");
-  const [editPdfUrl, setEditPdfUrl] = useState("");
 
   useEffect(() => {
     const found = games.find((g) => g.id === gameId);
@@ -69,10 +75,9 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
       setEditing(false);
       setEditState({});
       setRematchId("");
-      setOverridePdfUrl("");
+      setManualPdfUrl("");
       setEditVideoUrls([]);
       setNewVideoUrl("");
-      setEditPdfUrl("");
     }
   }, [open]);
 
@@ -84,6 +89,8 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   const description = stripHtml(game.description);
   const videoUrls = game.howToPlayVideoUrls ?? [];
   const embedUrls = videoUrls.map(toYouTubeEmbedUrl).filter(Boolean);
+  const approvedPdfs = game.rulesPdfUrls ?? [];
+  const candidatePdfs = game.rulesPdfCandidateUrls ?? [];
 
   function patchGame(updates) {
     setGame((prev) => ({ ...prev, ...updates }));
@@ -93,7 +100,6 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   function startEditing() {
     setEditState({ ...game, description: stripHtml(game.description), imageUrl: game.imageUrl ?? "" });
     setEditVideoUrls([...(game.howToPlayVideoUrls ?? [])]);
-    setEditPdfUrl(game.rulesPdfUrl ?? "");
     setEditing(true);
   }
 
@@ -112,10 +118,6 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
     if (!url) return;
     if (!editVideoUrls.includes(url)) setEditVideoUrls((prev) => [...prev, url]);
     setNewVideoUrl("");
-  }
-
-  function removeVideoUrl(url) {
-    setEditVideoUrls((prev) => prev.filter((u) => u !== url));
   }
 
   async function saveChanges() {
@@ -142,26 +144,20 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
     }
   }
 
-  async function saveRulesOverrides() {
-    setSavingRules(true);
+  async function saveVideos() {
+    setSavingVideos(true);
     try {
-      const resp = await MovieAPI.updateBoardgameRules(game.id, {
-        rulesPdfUrl: editPdfUrl || undefined,
-        howToPlayVideoUrls: editVideoUrls.length > 0 ? editVideoUrls : undefined,
-      });
-      if (!resp.ok) { message.error("Failed to save rules"); return; }
+      const resp = await MovieAPI.updateBoardgameRules(game.id, { howToPlayVideoUrls: editVideoUrls });
+      if (!resp.ok) { message.error("Failed to save videos"); return; }
       const result = await resp.json();
       if (result.success) {
-        message.success("Rules saved");
-        patchGame({
-          rulesPdfUrl: editPdfUrl || game.rulesPdfUrl,
-          howToPlayVideoUrls: editVideoUrls.length > 0 ? editVideoUrls : game.howToPlayVideoUrls,
-        });
+        message.success("Videos saved");
+        patchGame({ howToPlayVideoUrls: editVideoUrls });
       }
     } catch {
-      message.error("Error saving rules");
+      message.error("Error saving videos");
     } finally {
-      setSavingRules(false);
+      setSavingVideos(false);
     }
   }
 
@@ -172,12 +168,10 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
       if (!resp.ok) { message.error("Discovery failed"); return; }
       const result = await resp.json();
       if (result.success) {
-        const discovered = result.data.howToPlayVideoUrls ?? [];
-        patchGame({
-          rulesPdfCandidateUrl: result.data.pdfCandidateUrl,
-          howToPlayVideoUrls: discovered,
-        });
-        setEditVideoUrls(discovered);
+        const candidates = result.data.rulesPdfCandidateUrls ?? [];
+        const videos = result.data.howToPlayVideoUrls ?? [];
+        patchGame({ rulesPdfCandidateUrls: candidates, howToPlayVideoUrls: videos });
+        setEditVideoUrls(videos);
         message.success("Discovery complete");
       }
     } catch {
@@ -187,21 +181,38 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
     }
   }
 
-  async function approvePdf() {
-    setApproving(true);
+  async function approvePdf(url) {
+    setApprovingUrl(url);
     try {
-      const resp = await MovieAPI.approveBoardgameRulesPdf(game.id, overridePdfUrl || null);
+      const resp = await MovieAPI.approveBoardgameRulesPdf(game.id, url);
       if (!resp.ok) { const b = await resp.json().catch(() => ({})); message.error(b.message || "Approval failed"); return; }
       const result = await resp.json();
       if (result.success) {
-        patchGame({ rulesPdfUrl: result.data.rulesPdfUrl });
-        setEditPdfUrl(result.data.rulesPdfUrl ?? "");
+        patchGame({ rulesPdfUrls: result.data.rulesPdfUrls, rulesPdfCandidateUrls: result.data.rulesPdfCandidateUrls });
         message.success("PDF downloaded and saved");
       }
     } catch {
       message.error("Error approving PDF");
     } finally {
-      setApproving(false);
+      setApprovingUrl(null);
+      setManualPdfUrl("");
+    }
+  }
+
+  async function removePdf(slot) {
+    setRemovingSlot(slot);
+    try {
+      const resp = await MovieAPI.removeBoardgameRulesPdf(game.id, slot);
+      if (!resp.ok) { message.error("Remove failed"); return; }
+      const result = await resp.json();
+      if (result.success) {
+        patchGame({ rulesPdfUrls: result.data.rulesPdfUrls });
+        message.success("PDF removed");
+      }
+    } catch {
+      message.error("Error removing PDF");
+    } finally {
+      setRemovingSlot(null);
     }
   }
 
@@ -263,7 +274,6 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
               </div>
               {description && <p className="boardgame-modal-plot">{description}</p>}
 
-              {/* ── How to Play videos ── */}
               {embedUrls.map((url, i) => (
                 <div key={url} className="rules-video-wrapper">
                   <iframe
@@ -276,16 +286,20 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                 </div>
               ))}
 
-              {/* ── Rulebook PDF link ── */}
-              {game.rulesPdfUrl && (
-                <a
-                  className="rules-pdf-link"
-                  href={`/BoardgamePdf/${game.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  📄 View Rulebook PDF
-                </a>
+              {approvedPdfs.length > 0 && (
+                <div className="rules-pdf-links">
+                  {approvedPdfs.map((_, slot) => (
+                    <a
+                      key={slot}
+                      className="rules-pdf-link"
+                      href={`/BoardgamePdf/${game.id}/${slot}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      📄 {approvedPdfs.length > 1 ? `Rulebook PDF ${slot + 1}` : "Rulebook PDF"}
+                    </a>
+                  ))}
+                </div>
               )}
 
               <a className="boardgame-bgg-link" href={`https://boardgamegeek.com/boardgame/${game.bggThingId}`} target="_blank" rel="noreferrer">
@@ -321,37 +335,70 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
               <div className="rules-admin-panel">
                 <div className="rules-admin-section-title">Rules &amp; Videos</div>
 
-                <div className="rules-admin-row">
-                  <Button onClick={discoverRules} loading={discovering}>Find Rules &amp; Videos</Button>
-                  {game.rulesPdfCandidateUrl && (
-                    <a href={game.rulesPdfCandidateUrl} target="_blank" rel="noreferrer" className="rules-candidate-link">
-                      Review candidate PDF ↗
-                    </a>
-                  )}
+                <Button onClick={discoverRules} loading={discovering}>Find Rules &amp; Videos</Button>
+
+                {/* PDF Candidates */}
+                <div className="edit-field">
+                  <label className="edit-field-label">PDF Candidates</label>
+                  {candidatePdfs.length === 0 && <span className="rules-empty-hint">None found yet — run discovery or paste a URL below</span>}
+                  {candidatePdfs.map((url) => (
+                    <UrlRow
+                      key={url}
+                      url={url}
+                      actionLabel="Approve"
+                      actionDanger={false}
+                      loading={approvingUrl === url}
+                      onAction={() => approvePdf(url)}
+                    />
+                  ))}
+                  <div className="rules-url-add-row">
+                    <Input
+                      value={manualPdfUrl}
+                      onChange={(e) => setManualPdfUrl(e.target.value)}
+                      onPressEnter={() => manualPdfUrl.trim() && approvePdf(manualPdfUrl.trim())}
+                      placeholder="Paste a PDF URL to approve directly…"
+                    />
+                    <Button
+                      onClick={() => manualPdfUrl.trim() && approvePdf(manualPdfUrl.trim())}
+                      loading={approvingUrl === manualPdfUrl.trim()}
+                      disabled={!manualPdfUrl.trim()}
+                    >
+                      Approve
+                    </Button>
+                  </div>
                 </div>
 
-                <div className="edit-field">
-                  <label className="edit-field-label">Override PDF URL (optional)</label>
-                  <Input value={overridePdfUrl} onChange={(e) => setOverridePdfUrl(e.target.value)} placeholder={game.rulesPdfCandidateUrl ?? "Paste a PDF URL…"} />
-                </div>
-                <Button onClick={approvePdf} loading={approving} disabled={!game.rulesPdfCandidateUrl && !overridePdfUrl}>
-                  Approve &amp; Download PDF
-                </Button>
-                {game.rulesPdfUrl && (
-                  <div className="rules-confirmed-url">
-                    ✓ PDF saved — <a href={`/BoardgamePdf/${game.id}`} target="_blank" rel="noreferrer">view</a>
+                {/* Approved PDFs */}
+                {approvedPdfs.length > 0 && (
+                  <div className="edit-field">
+                    <label className="edit-field-label">Approved PDFs</label>
+                    {approvedPdfs.map((url, slot) => (
+                      <UrlRow
+                        key={slot}
+                        url={`/BoardgamePdf/${game.id}/${slot}`}
+                        actionLabel="Remove"
+                        actionDanger={true}
+                        loading={removingSlot === slot}
+                        onAction={() => removePdf(slot)}
+                      />
+                    ))}
                   </div>
                 )}
 
-                <div className="edit-field" style={{ marginTop: 12 }}>
+                {/* How to Play Videos */}
+                <div className="edit-field">
                   <label className="edit-field-label">How to Play Videos</label>
+                  {editVideoUrls.length === 0 && <span className="rules-empty-hint">None added yet</span>}
                   {editVideoUrls.map((url) => (
-                    <div key={url} className="rules-video-url-row">
-                      <span className="rules-video-url-text">{url}</span>
-                      <Button size="small" danger onClick={() => removeVideoUrl(url)}>Remove</Button>
-                    </div>
+                    <UrlRow
+                      key={url}
+                      url={url}
+                      actionLabel="Remove"
+                      actionDanger={true}
+                      onAction={() => setEditVideoUrls((prev) => prev.filter((u) => u !== url))}
+                    />
                   ))}
-                  <div className="rules-video-add-row">
+                  <div className="rules-url-add-row">
                     <Input
                       value={newVideoUrl}
                       onChange={(e) => setNewVideoUrl(e.target.value)}
@@ -362,9 +409,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                   </div>
                 </div>
 
-                <div className="rules-admin-row" style={{ marginTop: 8 }}>
-                  <Button type="primary" onClick={saveRulesOverrides} loading={savingRules}>Save Rules &amp; Videos</Button>
-                </div>
+                <Button type="primary" onClick={saveVideos} loading={savingVideos}>Save Videos</Button>
               </div>
 
               <div className="boardgame-rematch-section">
