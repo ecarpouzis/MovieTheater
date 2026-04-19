@@ -13,10 +13,10 @@ namespace MovieTheater.Controllers
             this.pdfRepository = pdfRepository;
         }
 
-        [HttpGet("/BoardgamePdf/{id:int}")]
-        public async Task<IActionResult> GetPdf(int id)
+        [HttpGet("/BoardgamePdf/{id:int}/{slot:int}")]
+        public async Task<IActionResult> GetPdf(int id, int slot)
         {
-            var bytes = await pdfRepository.GetPdfAsync(id);
+            var bytes = await pdfRepository.GetPdfAsync(id, slot);
             if (bytes == null)
                 return NotFound();
 

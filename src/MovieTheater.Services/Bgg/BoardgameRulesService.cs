@@ -15,26 +15,34 @@ namespace MovieTheater.Services.Bgg
             this.googleSearchService = googleSearchService;
         }
 
-        public async Task<(string? PdfCandidateUrl, List<string> VideoUrls)> DiscoverAsync(Boardgame game)
+        public async Task<(List<string> PdfCandidateUrls, List<string> VideoUrls)> DiscoverAsync(Boardgame game)
         {
-            var pdfTask = FindRulesPdfAsync(game);
+            var pdfTask = FindRulesPdfsAsync(game);
             var videoTask = FindHowToPlayVideosAsync(game);
             await Task.WhenAll(pdfTask, videoTask);
             return (pdfTask.Result, videoTask.Result);
         }
 
-        private async Task<string?> FindRulesPdfAsync(Boardgame game)
+        private async Task<List<string>> FindRulesPdfsAsync(Boardgame game)
         {
+            var urls = new List<string>();
+
             var bggUrl = await FindPdfFromBggFilesAsync(game.BggThingId);
-            if (bggUrl != null) return bggUrl;
+            if (bggUrl != null) urls.Add(bggUrl);
 
             if (!string.IsNullOrWhiteSpace(game.Name))
             {
-                var query = $"\"{game.Name}\"{(game.YearPublished.HasValue ? $" \"{game.YearPublished}\"" : "")} rulebook filetype:pdf";
-                return await googleSearchService.SearchForPdfUrl(query);
+                var withFiletype = $"\"{game.Name}\" rulebook filetype:pdf";
+                urls.AddRange(await googleSearchService.SearchForPdfUrls(withFiletype));
+
+                if (urls.Count == 0)
+                {
+                    var plain = $"\"{game.Name}\" rulebook PDF rules";
+                    urls.AddRange(await googleSearchService.SearchForPdfUrls(plain));
+                }
             }
 
-            return null;
+            return urls.Distinct().ToList();
         }
 
         private async Task<string?> FindPdfFromBggFilesAsync(int bggThingId)
@@ -96,8 +104,12 @@ namespace MovieTheater.Services.Bgg
                     var category = video.TryGetProperty("category", out var cat) ? cat.GetString()?.ToLowerInvariant() : null;
                     var title = video.TryGetProperty("title", out var t) ? t.GetString()?.ToLowerInvariant() : null;
                     var link = video.TryGetProperty("link", out var l) ? l.GetString() : null;
+                    var language = video.TryGetProperty("language", out var lang) ? lang.GetString()?.ToLowerInvariant() : null;
 
                     if (string.IsNullOrWhiteSpace(link)) continue;
+
+                    // Skip non-English videos when language is explicitly set
+                    if (language != null && language != "en" && language != "english") continue;
 
                     var isHowToPlay = category == "instructional"
                         || (title != null && (title.Contains("how to play") || title.Contains("learn to play") || title.Contains("how to set up")));

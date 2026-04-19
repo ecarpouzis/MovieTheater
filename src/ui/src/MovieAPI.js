@@ -267,19 +267,23 @@ function discoverBoardgameRules(id) {
   return fetch(`/API/DiscoverBoardgameRules?id=${encodeURIComponent(id)}`, { method: "POST" });
 }
 
-function approveBoardgameRulesPdf(id, overridePdfUrl) {
+function approveBoardgameRulesPdf(id, url) {
   return fetch(`/API/ApproveBoardgameRulesPdf?id=${encodeURIComponent(id)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(overridePdfUrl ? { overridePdfUrl } : null),
+    body: JSON.stringify({ url }),
   });
 }
 
-function updateBoardgameRules(id, { rulesPdfUrl, howToPlayVideoUrls } = {}) {
+function removeBoardgameRulesPdf(id, slot) {
+  return fetch(`/API/RemoveBoardgameRulesPdf?id=${encodeURIComponent(id)}&slot=${slot}`, { method: "POST" });
+}
+
+function updateBoardgameRules(id, { howToPlayVideoUrls } = {}) {
   return fetch("/API/UpdateBoardgameRules", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ Id: id, RulesPdfUrl: rulesPdfUrl, HowToPlayVideoUrls: howToPlayVideoUrls }),
+    body: JSON.stringify({ Id: id, HowToPlayVideoUrls: howToPlayVideoUrls }),
   });
 }
 
@@ -310,6 +314,7 @@ const MovieAPI = {
   batchInsertBoardgames,
   discoverBoardgameRules,
   approveBoardgameRulesPdf,
+  removeBoardgameRulesPdf,
   updateBoardgameRules,
 };
 
