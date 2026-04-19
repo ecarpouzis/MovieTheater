@@ -8,6 +8,12 @@ function parseJsonArray(json) {
   try { const v = JSON.parse(json); return Array.isArray(v) ? v : null; } catch { return null; }
 }
 
+function parsePdfEntries(json) {
+  const arr = parseJsonArray(json);
+  if (!arr) return null;
+  return arr.map((e) => typeof e === "string" ? { url: e, name: null } : { url: e.Url ?? e.url ?? "", name: e.Name ?? e.name ?? null });
+}
+
 function normalizeGame(game) {
   const details = game.imageDetails ?? game.ImageDetails ?? null;
   return {
@@ -24,7 +30,7 @@ function normalizeGame(game) {
     averageRating: game.averageRating ?? game.AverageRating,
     averageWeight: game.averageWeight ?? game.AverageWeight,
     description: game.description ?? game.Description,
-    rulesPdfUrls: parseJsonArray(game.rulesPdfUrlsJson ?? game.RulesPdfUrlsJson) ?? game.rulesPdfUrls ?? game.RulesPdfUrls ?? [],
+    rulesPdfUrls: parsePdfEntries(game.rulesPdfUrlsJson ?? game.RulesPdfUrlsJson) ?? game.rulesPdfUrls ?? game.RulesPdfUrls ?? [],
     rulesPdfCandidateUrls: parseJsonArray(game.rulesPdfCandidateUrlsJson ?? game.RulesPdfCandidateUrlsJson) ?? game.rulesPdfCandidateUrls ?? game.RulesPdfCandidateUrls ?? [],
     howToPlayVideoUrls: parseJsonArray(game.howToPlayVideoUrlsJson ?? game.HowToPlayVideoUrlsJson) ?? game.howToPlayVideoUrls ?? game.HowToPlayVideoUrls ?? [],
     imageUrl: details?.imageUrl ?? details?.ImageUrl ?? null,

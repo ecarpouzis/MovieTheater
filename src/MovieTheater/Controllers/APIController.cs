@@ -2017,12 +2017,12 @@ namespace MovieTheater.Controllers
             }
 
             var approved = game.RulesPdfUrls;
-            approved.Add(pdfUrl);
+            approved.Add(new RulesPdfEntry { Url = pdfUrl });
             game.RulesPdfUrls = approved;
             game.RulesPdfCandidateUrls = game.RulesPdfCandidateUrls.Where(u => u != pdfUrl).ToList();
 
             await movieDb.SaveChangesAsync();
-            return Ok(new { Success = true, data = new { rulesPdfUrls = game.RulesPdfUrls, rulesPdfCandidateUrls = game.RulesPdfCandidateUrls, slot } });
+            return Ok(new { Success = true, data = new { rulesPdfUrls = game.RulesPdfUrls.Select(e => new { url = e.Url, name = e.Name }), rulesPdfCandidateUrls = game.RulesPdfCandidateUrls, slot } });
         }
 
         [HttpPost("/API/RemoveBoardgameRulesPdf")]
@@ -2042,7 +2042,7 @@ namespace MovieTheater.Controllers
             game.RulesPdfUrls = urls;
 
             await movieDb.SaveChangesAsync();
-            return Ok(new { Success = true, data = new { rulesPdfUrls = game.RulesPdfUrls } });
+            return Ok(new { Success = true, data = new { rulesPdfUrls = game.RulesPdfUrls.Select(e => new { url = e.Url, name = e.Name }) } });
         }
 
         public class ApprovePdfRequest { public string? Url { get; set; } }
@@ -2090,15 +2090,17 @@ namespace MovieTheater.Controllers
             if (game == null) return NotFound(new { Success = false, Message = "Boardgame not found." });
 
             if (req.HowToPlayVideoUrls != null) game.HowToPlayVideoUrls = req.HowToPlayVideoUrls;
+            if (req.RulesPdfUrls != null) game.RulesPdfUrls = req.RulesPdfUrls;
 
             await movieDb.SaveChangesAsync();
-            return Ok(new { Success = true, Message = "Boardgame rules updated.", data = game });
+            return Ok(new { Success = true, data = new { rulesPdfUrls = game.RulesPdfUrls.Select(e => new { url = e.Url, name = e.Name }), howToPlayVideoUrls = game.HowToPlayVideoUrls } });
         }
 
         public class UpdateBoardgameRulesRequest
         {
             public int Id { get; set; }
             public List<string>? HowToPlayVideoUrls { get; set; }
+            public List<RulesPdfEntry>? RulesPdfUrls { get; set; }
         }
 
         private async Task<bool> IsCurrentUserEditor()

@@ -92,9 +92,10 @@ namespace MovieTheater.Db
         }
 
         [NotMapped]
-        public List<string> RulesPdfUrls
+        public List<RulesPdfEntry> RulesPdfUrls
         {
-            get => DeserializeList(RulesPdfUrlsJson);
+            get => string.IsNullOrWhiteSpace(RulesPdfUrlsJson) ? []
+                : JsonSerializer.Deserialize<List<RulesPdfEntry>>(RulesPdfUrlsJson) ?? [];
             set => RulesPdfUrlsJson = value.Count > 0 ? JsonSerializer.Serialize(value) : null;
         }
 
@@ -128,5 +129,11 @@ namespace MovieTheater.Db
 
         [NotMapped]
         public int ImageVersion => ImageDetails?.ImageVersion ?? 0;
+    }
+
+    public class RulesPdfEntry
+    {
+        public string Url { get; set; } = "";
+        public string? Name { get; set; }
     }
 }

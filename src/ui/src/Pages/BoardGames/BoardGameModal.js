@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { Modal, Input, Button, message } from "antd";
+import { Modal, Input, Button, Collapse, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import "./BoardGameModal.css";
+
+const { Panel } = Collapse;
 
 function stripHtml(html) {
   if (!html) return "";
@@ -25,6 +27,12 @@ function toYouTubeEmbedUrl(url) {
   } catch {}
   if (url.includes("youtube.com/embed/")) return url;
   return null;
+}
+
+function normalizePdfEntry(e) {
+  if (!e) return { url: "", name: null };
+  if (typeof e === "string") return { url: e, name: null };
+  return { url: e.url ?? e.Url ?? "", name: e.name ?? e.Name ?? null };
 }
 
 function EditField({ label, value, onChange, multiline = false, type = "text" }) {
@@ -60,8 +68,9 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   const [discovering, setDiscovering] = useState(false);
   const [approvingUrl, setApprovingUrl] = useState(null);
   const [removingSlot, setRemovingSlot] = useState(null);
-  const [savingVideos, setSavingVideos] = useState(false);
+  const [savingRules, setSavingRules] = useState(false);
   const [manualPdfUrl, setManualPdfUrl] = useState("");
+  const [editApprovedPdfs, setEditApprovedPdfs] = useState([]); // [{url, name}]
   const [editVideoUrls, setEditVideoUrls] = useState([]);
   const [newVideoUrl, setNewVideoUrl] = useState("");
 
@@ -76,6 +85,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
       setEditState({});
       setRematchId("");
       setManualPdfUrl("");
+      setEditApprovedPdfs([]);
       setEditVideoUrls([]);
       setNewVideoUrl("");
     }
@@ -87,10 +97,14 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   const maxP = game.maxPlayers;
   const players = minP && maxP ? (minP === maxP ? `${minP}` : `${minP}–${maxP}`) : minP || maxP || null;
   const description = stripHtml(game.description);
+  const approvedPdfs = (game.rulesPdfUrls ?? []).map(normalizePdfEntry);
   const videoUrls = game.howToPlayVideoUrls ?? [];
   const embedUrls = videoUrls.map(toYouTubeEmbedUrl).filter(Boolean);
-  const approvedPdfs = game.rulesPdfUrls ?? [];
   const candidatePdfs = game.rulesPdfCandidateUrls ?? [];
+  const hasRulesContent = approvedPdfs.length > 0 || embedUrls.length > 0;
+  const collapseHeader = approvedPdfs.length > 0 && embedUrls.length > 0
+    ? "Rules & How to Play"
+    : approvedPdfs.length > 0 ? "Rulebook PDFs" : "How to Play";
 
   function patchGame(updates) {
     setGame((prev) => ({ ...prev, ...updates }));
@@ -99,6 +113,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
 
   function startEditing() {
     setEditState({ ...game, description: stripHtml(game.description), imageUrl: game.imageUrl ?? "" });
+    setEditApprovedPdfs(approvedPdfs);
     setEditVideoUrls([...(game.howToPlayVideoUrls ?? [])]);
     setEditing(true);
   }
@@ -144,20 +159,26 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
     }
   }
 
-  async function saveVideos() {
-    setSavingVideos(true);
+  async function saveRules() {
+    setSavingRules(true);
     try {
-      const resp = await MovieAPI.updateBoardgameRules(game.id, { howToPlayVideoUrls: editVideoUrls });
-      if (!resp.ok) { message.error("Failed to save videos"); return; }
+      const resp = await MovieAPI.updateBoardgameRules(game.id, {
+        howToPlayVideoUrls: editVideoUrls,
+        rulesPdfUrls: editApprovedPdfs,
+      });
+      if (!resp.ok) { message.error("Failed to save"); return; }
       const result = await resp.json();
       if (result.success) {
-        message.success("Videos saved");
-        patchGame({ howToPlayVideoUrls: editVideoUrls });
+        message.success("Saved");
+        patchGame({
+          howToPlayVideoUrls: editVideoUrls,
+          rulesPdfUrls: (result.data.rulesPdfUrls ?? editApprovedPdfs).map(normalizePdfEntry),
+        });
       }
     } catch {
-      message.error("Error saving videos");
+      message.error("Error saving");
     } finally {
-      setSavingVideos(false);
+      setSavingRules(false);
     }
   }
 
@@ -188,7 +209,10 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
       if (!resp.ok) { const b = await resp.json().catch(() => ({})); message.error(b.message || "Approval failed"); return; }
       const result = await resp.json();
       if (result.success) {
-        patchGame({ rulesPdfUrls: result.data.rulesPdfUrls, rulesPdfCandidateUrls: result.data.rulesPdfCandidateUrls });
+        const newEntry = { url, name: null };
+        const updatedPdfs = [...editApprovedPdfs, newEntry];
+        setEditApprovedPdfs(updatedPdfs);
+        patchGame({ rulesPdfUrls: updatedPdfs, rulesPdfCandidateUrls: result.data.rulesPdfCandidateUrls });
         message.success("PDF downloaded and saved");
       }
     } catch {
@@ -206,7 +230,9 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
       if (!resp.ok) { message.error("Remove failed"); return; }
       const result = await resp.json();
       if (result.success) {
-        patchGame({ rulesPdfUrls: result.data.rulesPdfUrls });
+        const updated = (result.data.rulesPdfUrls ?? []).map(normalizePdfEntry);
+        patchGame({ rulesPdfUrls: updated });
+        setEditApprovedPdfs(updated);
         message.success("PDF removed");
       }
     } catch {
@@ -274,32 +300,37 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
               </div>
               {description && <p className="boardgame-modal-plot">{description}</p>}
 
-              {embedUrls.map((url, i) => (
-                <div key={url} className="rules-video-wrapper">
-                  <iframe
-                    className="rules-video-iframe"
-                    src={url}
-                    title={embedUrls.length > 1 ? `How to Play (${i + 1})` : "How to Play"}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              ))}
-
-              {approvedPdfs.length > 0 && (
-                <div className="rules-pdf-links">
-                  {approvedPdfs.map((_, slot) => (
-                    <a
-                      key={slot}
-                      className="rules-pdf-link"
-                      href={`/BoardgamePdf/${game.id}/${slot}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      📄 {approvedPdfs.length > 1 ? `Rulebook PDF ${slot + 1}` : "Rulebook PDF"}
-                    </a>
-                  ))}
-                </div>
+              {hasRulesContent && (
+                <Collapse ghost defaultActiveKey={[]} className="rules-collapse">
+                  <Panel header={collapseHeader} key="rules">
+                    {approvedPdfs.length > 0 && (
+                      <div className="rules-pdf-links">
+                        {approvedPdfs.map((pdf, slot) => (
+                          <a
+                            key={slot}
+                            className="rules-pdf-link"
+                            href={`/BoardgamePdf/${game.id}/${slot}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            📄 {pdf.name || (approvedPdfs.length > 1 ? `Rulebook PDF ${slot + 1}` : "Rulebook PDF")}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    {embedUrls.map((url, i) => (
+                      <div key={url} className="rules-video-wrapper">
+                        <iframe
+                          className="rules-video-iframe"
+                          src={url}
+                          title={embedUrls.length > 1 ? `How to Play (${i + 1})` : "How to Play"}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    ))}
+                  </Panel>
+                </Collapse>
               )}
 
               <a className="boardgame-bgg-link" href={`https://boardgamegeek.com/boardgame/${game.bggThingId}`} target="_blank" rel="noreferrer">
@@ -368,19 +399,25 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                   </div>
                 </div>
 
-                {/* Approved PDFs */}
-                {approvedPdfs.length > 0 && (
+                {/* Approved PDFs with name editing */}
+                {editApprovedPdfs.length > 0 && (
                   <div className="edit-field">
                     <label className="edit-field-label">Approved PDFs</label>
-                    {approvedPdfs.map((url, slot) => (
-                      <UrlRow
-                        key={slot}
-                        url={`/BoardgamePdf/${game.id}/${slot}`}
-                        actionLabel="Remove"
-                        actionDanger={true}
-                        loading={removingSlot === slot}
-                        onAction={() => removePdf(slot)}
-                      />
+                    {editApprovedPdfs.map((pdf, slot) => (
+                      <div key={slot} className="rules-approved-pdf-row">
+                        <a href={`/BoardgamePdf/${game.id}/${slot}`} target="_blank" rel="noreferrer" className="rules-approved-pdf-slot">
+                          📄 {slot + 1}
+                        </a>
+                        <Input
+                          className="rules-approved-pdf-name"
+                          value={pdf.name ?? ""}
+                          onChange={(e) => setEditApprovedPdfs((prev) =>
+                            prev.map((p, i) => i === slot ? { ...p, name: e.target.value || null } : p)
+                          )}
+                          placeholder="Display name…"
+                        />
+                        <Button size="small" danger loading={removingSlot === slot} onClick={() => removePdf(slot)}>Remove</Button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -409,7 +446,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                   </div>
                 </div>
 
-                <Button type="primary" onClick={saveVideos} loading={savingVideos}>Save Videos</Button>
+                <Button type="primary" onClick={saveRules} loading={savingRules}>Save Rules &amp; Videos</Button>
               </div>
 
               <div className="boardgame-rematch-section">

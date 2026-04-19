@@ -5,16 +5,20 @@
 }
 
 .boardgame-modal-body {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 28px;
   width: 100%;
 }
 
+.boardgame-modal-body::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
 .boardgame-modal-poster-column {
-  flex-shrink: 0;
+  float: left;
   width: 210px;
+  margin-right: 24px;
+  margin-bottom: 12px;
 }
 
 .boardgame-modal-poster {
@@ -25,8 +29,6 @@
 }
 
 .boardgame-modal-info-panel {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -290,6 +292,29 @@
   font-style: italic;
 }
 
+.rules-approved-pdf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.rules-approved-pdf-slot {
+  font-size: 13px;
+  color: #d46b08;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.rules-approved-pdf-slot:hover {
+  text-decoration: underline;
+}
+
+.rules-approved-pdf-name {
+  flex: 1;
+}
+
 @media (max-width: 600px) {
   .boardgame-modal .ant-modal {
     max-width: 96vw !important;
@@ -299,14 +324,10 @@
     padding: 16px;
   }
 
-  .boardgame-modal-body {
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-  }
-
   .boardgame-modal-poster-column {
+    float: none;
     width: 100%;
+    margin-right: 0;
     display: flex;
     justify-content: center;
   }
@@ -316,7 +337,6 @@
   }
 
   .boardgame-modal-info-panel {
-    width: 100%;
     gap: 12px;
   }
 

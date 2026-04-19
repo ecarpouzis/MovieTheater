@@ -279,11 +279,15 @@ function removeBoardgameRulesPdf(id, slot) {
   return fetch(`/API/RemoveBoardgameRulesPdf?id=${encodeURIComponent(id)}&slot=${slot}`, { method: "POST" });
 }
 
-function updateBoardgameRules(id, { howToPlayVideoUrls } = {}) {
+function updateBoardgameRules(id, { howToPlayVideoUrls, rulesPdfUrls } = {}) {
   return fetch("/API/UpdateBoardgameRules", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ Id: id, HowToPlayVideoUrls: howToPlayVideoUrls }),
+    body: JSON.stringify({
+      Id: id,
+      HowToPlayVideoUrls: howToPlayVideoUrls,
+      RulesPdfUrls: rulesPdfUrls?.map((e) => ({ Url: e.url, Name: e.name })),
+    }),
   });
 }
 
