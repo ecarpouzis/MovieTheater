@@ -9,7 +9,6 @@ using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
 using MovieTheater.Services.Google;
 using MovieTheater.Services.Bgg;
-using MovieTheater.Services.Ai;
 
 namespace MovieTheater.Services
 {
@@ -28,8 +27,6 @@ namespace MovieTheater.Services
             services.AddGoogleServices(config.GoogleSearchApiKey, config.GoogleSearchEngineId);
             services.AddBoardGameGeekServices(config.BggApiToken);
             services.AddTransient<BoardgameRulesService>();
-            if (!string.IsNullOrWhiteSpace(config.AnthropicApiKey))
-                services.AddTransient(_ => new ClaudeRulesGenerator(config.AnthropicApiKey));
             services.AddTransient<IMDBApiService>();
             services.AddTransient<PosterMosaicService>();
             return services;

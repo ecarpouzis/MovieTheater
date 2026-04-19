@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
-import { Modal, Input, Button, message, Collapse } from "antd";
+import { Modal, Input, Button, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import "./BoardGameModal.css";
-
-const { TextArea } = Input;
-const { Panel } = Collapse;
 
 function stripHtml(html) {
   if (!html) return "";
@@ -32,24 +29,12 @@ function toYouTubeEmbedUrl(url) {
   return null;
 }
 
-function CommonlyMissedRulesList({ text }) {
-  if (!text) return null;
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-  return (
-    <ul className="rules-bullet-list">
-      {lines.map((line, i) => (
-        <li key={i}>{line.replace(/^[•\-\*]\s*/, "")}</li>
-      ))}
-    </ul>
-  );
-}
-
 function EditField({ label, value, onChange, multiline = false, type = "text" }) {
   return (
     <div className="edit-field">
       <label className="edit-field-label">{label}</label>
       {multiline ? (
-        <TextArea rows={4} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
+        <Input.TextArea rows={4} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
       ) : (
         <Input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
       )}
@@ -68,11 +53,10 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   // Rules workflow state
   const [discovering, setDiscovering] = useState(false);
   const [approving, setApproving] = useState(false);
-  const [generating, setGenerating] = useState(false);
   const [savingRules, setSavingRules] = useState(false);
   const [overridePdfUrl, setOverridePdfUrl] = useState("");
-  const [overrideVideoUrl, setOverrideVideoUrl] = useState("");
-  const [editRules, setEditRules] = useState("");
+  const [editVideoUrls, setEditVideoUrls] = useState([]);
+  const [newVideoUrl, setNewVideoUrl] = useState("");
   const [editPdfUrl, setEditPdfUrl] = useState("");
 
   useEffect(() => {
@@ -86,8 +70,8 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
       setEditState({});
       setRematchId("");
       setOverridePdfUrl("");
-      setOverrideVideoUrl("");
-      setEditRules("");
+      setEditVideoUrls([]);
+      setNewVideoUrl("");
       setEditPdfUrl("");
     }
   }, [open]);
@@ -98,7 +82,8 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   const maxP = game.maxPlayers;
   const players = minP && maxP ? (minP === maxP ? `${minP}` : `${minP}–${maxP}`) : minP || maxP || null;
   const description = stripHtml(game.description);
-  const embedUrl = toYouTubeEmbedUrl(game.howToPlayVideoUrl);
+  const videoUrls = game.howToPlayVideoUrls ?? [];
+  const embedUrls = videoUrls.map(toYouTubeEmbedUrl).filter(Boolean);
 
   function patchGame(updates) {
     setGame((prev) => ({ ...prev, ...updates }));
@@ -107,9 +92,8 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
 
   function startEditing() {
     setEditState({ ...game, description: stripHtml(game.description), imageUrl: game.imageUrl ?? "" });
-    setEditRules(game.commonlyMissedRules ?? "");
+    setEditVideoUrls([...(game.howToPlayVideoUrls ?? [])]);
     setEditPdfUrl(game.rulesPdfUrl ?? "");
-    setOverrideVideoUrl(game.howToPlayVideoUrl ?? "");
     setEditing(true);
   }
 
@@ -121,6 +105,17 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
 
   function updateField(field, value) {
     setEditState((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function addVideoUrl() {
+    const url = newVideoUrl.trim();
+    if (!url) return;
+    if (!editVideoUrls.includes(url)) setEditVideoUrls((prev) => [...prev, url]);
+    setNewVideoUrl("");
+  }
+
+  function removeVideoUrl(url) {
+    setEditVideoUrls((prev) => prev.filter((u) => u !== url));
   }
 
   async function saveChanges() {
@@ -152,8 +147,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
     try {
       const resp = await MovieAPI.updateBoardgameRules(game.id, {
         rulesPdfUrl: editPdfUrl || undefined,
-        howToPlayVideoUrl: overrideVideoUrl || undefined,
-        commonlyMissedRules: editRules || undefined,
+        howToPlayVideoUrls: editVideoUrls.length > 0 ? editVideoUrls : undefined,
       });
       if (!resp.ok) { message.error("Failed to save rules"); return; }
       const result = await resp.json();
@@ -161,8 +155,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
         message.success("Rules saved");
         patchGame({
           rulesPdfUrl: editPdfUrl || game.rulesPdfUrl,
-          howToPlayVideoUrl: overrideVideoUrl || game.howToPlayVideoUrl,
-          commonlyMissedRules: editRules || game.commonlyMissedRules,
+          howToPlayVideoUrls: editVideoUrls.length > 0 ? editVideoUrls : game.howToPlayVideoUrls,
         });
       }
     } catch {
@@ -179,11 +172,12 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
       if (!resp.ok) { message.error("Discovery failed"); return; }
       const result = await resp.json();
       if (result.success) {
+        const discovered = result.data.howToPlayVideoUrls ?? [];
         patchGame({
           rulesPdfCandidateUrl: result.data.pdfCandidateUrl,
-          howToPlayVideoUrl: result.data.howToPlayVideoUrl ?? game.howToPlayVideoUrl,
+          howToPlayVideoUrls: discovered,
         });
-        setOverrideVideoUrl(result.data.howToPlayVideoUrl ?? overrideVideoUrl);
+        setEditVideoUrls(discovered);
         message.success("Discovery complete");
       }
     } catch {
@@ -208,24 +202,6 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
       message.error("Error approving PDF");
     } finally {
       setApproving(false);
-    }
-  }
-
-  async function generateRules() {
-    setGenerating(true);
-    try {
-      const resp = await MovieAPI.generateBoardgameRules(game.id);
-      if (!resp.ok) { const b = await resp.json().catch(() => ({})); message.error(b.message || "Generation failed"); return; }
-      const result = await resp.json();
-      if (result.success) {
-        patchGame({ commonlyMissedRules: result.data.commonlyMissedRules });
-        setEditRules(result.data.commonlyMissedRules ?? "");
-        message.success("Rules generated");
-      }
-    } catch {
-      message.error("Error generating rules");
-    } finally {
-      setGenerating(false);
     }
   }
 
@@ -287,18 +263,18 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
               </div>
               {description && <p className="boardgame-modal-plot">{description}</p>}
 
-              {/* ── How to Play video ── */}
-              {embedUrl && (
-                <div className="rules-video-wrapper">
+              {/* ── How to Play videos ── */}
+              {embedUrls.map((url, i) => (
+                <div key={url} className="rules-video-wrapper">
                   <iframe
                     className="rules-video-iframe"
-                    src={embedUrl}
-                    title="How to Play"
+                    src={url}
+                    title={embedUrls.length > 1 ? `How to Play (${i + 1})` : "How to Play"}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
                 </div>
-              )}
+              ))}
 
               {/* ── Rulebook PDF link ── */}
               {game.rulesPdfUrl && (
@@ -310,15 +286,6 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                 >
                   📄 View Rulebook PDF
                 </a>
-              )}
-
-              {/* ── Commonly Missed Rules ── */}
-              {game.commonlyMissedRules && (
-                <Collapse ghost className="rules-collapse">
-                  <Panel header="Commonly Missed Rules" key="rules">
-                    <CommonlyMissedRulesList text={game.commonlyMissedRules} />
-                  </Panel>
-                </Collapse>
               )}
 
               <a className="boardgame-bgg-link" href={`https://boardgamegeek.com/boardgame/${game.bggThingId}`} target="_blank" rel="noreferrer">
@@ -352,10 +319,10 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
 
               {/* ── Rules Admin Panel ── */}
               <div className="rules-admin-panel">
-                <div className="rules-admin-section-title">Rules &amp; Video</div>
+                <div className="rules-admin-section-title">Rules &amp; Videos</div>
 
                 <div className="rules-admin-row">
-                  <Button onClick={discoverRules} loading={discovering}>Find Rules &amp; Video</Button>
+                  <Button onClick={discoverRules} loading={discovering}>Find Rules &amp; Videos</Button>
                   {game.rulesPdfCandidateUrl && (
                     <a href={game.rulesPdfCandidateUrl} target="_blank" rel="noreferrer" className="rules-candidate-link">
                       Review candidate PDF ↗
@@ -376,18 +343,27 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                   </div>
                 )}
 
-                <div className="edit-field" style={{ marginTop: 8 }}>
-                  <label className="edit-field-label">Override Video URL</label>
-                  <Input value={overrideVideoUrl} onChange={(e) => setOverrideVideoUrl(e.target.value)} placeholder="YouTube URL…" />
+                <div className="edit-field" style={{ marginTop: 12 }}>
+                  <label className="edit-field-label">How to Play Videos</label>
+                  {editVideoUrls.map((url) => (
+                    <div key={url} className="rules-video-url-row">
+                      <span className="rules-video-url-text">{url}</span>
+                      <Button size="small" danger onClick={() => removeVideoUrl(url)}>Remove</Button>
+                    </div>
+                  ))}
+                  <div className="rules-video-add-row">
+                    <Input
+                      value={newVideoUrl}
+                      onChange={(e) => setNewVideoUrl(e.target.value)}
+                      onPressEnter={addVideoUrl}
+                      placeholder="YouTube URL…"
+                    />
+                    <Button onClick={addVideoUrl}>Add</Button>
+                  </div>
                 </div>
 
-                <div className="edit-field">
-                  <label className="edit-field-label">Commonly Missed Rules (editable)</label>
-                  <TextArea rows={5} value={editRules} onChange={(e) => setEditRules(e.target.value)} placeholder="One rule per line…" />
-                </div>
-                <div className="rules-admin-row">
-                  <Button onClick={generateRules} loading={generating}>Generate with AI</Button>
-                  <Button type="primary" onClick={saveRulesOverrides} loading={savingRules}>Save Rules &amp; Video</Button>
+                <div className="rules-admin-row" style={{ marginTop: 8 }}>
+                  <Button type="primary" onClick={saveRulesOverrides} loading={savingRules}>Save Rules &amp; Videos</Button>
                 </div>
               </div>
 

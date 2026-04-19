@@ -21,8 +21,6 @@ namespace MovieTheater.Services
 
         public string? BggApiToken { get; set; }
 
-        public string? AnthropicApiKey { get; set; }
-
         public string? PyPath { get; set; }
 
         public HostedEnvironment Environment { get; }

@@ -26,7 +26,6 @@ using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
 using MovieTheater.Services.Google;
 using MovieTheater.Services.Bgg;
-using MovieTheater.Services.Ai;
 
 namespace MovieTheater.Controllers
 {
@@ -46,13 +45,11 @@ namespace MovieTheater.Controllers
         private readonly PosterMosaicService posterMosaicService;
         private readonly BoardgameRulesService boardgameRulesService;
         private readonly BoardgamePdfRepository boardgamePdfRepository;
-        private readonly ClaudeRulesGenerator? claudeRulesGenerator;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
             IBoardgameImageRepository boardgameImageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService,
             BoardGameGeekApi boardGameGeekApi, PosterMosaicService posterMosaicService,
-            BoardgameRulesService boardgameRulesService, BoardgamePdfRepository boardgamePdfRepository,
-            ClaudeRulesGenerator? claudeRulesGenerator = null)
+            BoardgameRulesService boardgameRulesService, BoardgamePdfRepository boardgamePdfRepository)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -68,7 +65,6 @@ namespace MovieTheater.Controllers
             this.posterMosaicService = posterMosaicService;
             this.boardgameRulesService = boardgameRulesService;
             this.boardgamePdfRepository = boardgamePdfRepository;
-            this.claudeRulesGenerator = claudeRulesGenerator;
         }
 
         private int? GetCurrentUserId()
@@ -1984,14 +1980,14 @@ namespace MovieTheater.Controllers
             var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == id);
             if (game == null) return NotFound(new { Success = false, Message = "Boardgame not found." });
 
-            var (pdfCandidate, videoUrl) = await boardgameRulesService.DiscoverAsync(game);
+            var (pdfCandidate, videoUrls) = await boardgameRulesService.DiscoverAsync(game);
 
             game.RulesPdfCandidateUrl = pdfCandidate;
-            if (!string.IsNullOrWhiteSpace(videoUrl))
-                game.HowToPlayVideoUrl = videoUrl;
+            if (videoUrls.Count > 0)
+                game.HowToPlayVideoUrls = game.HowToPlayVideoUrls.Union(videoUrls).Distinct().ToList();
 
             await movieDb.SaveChangesAsync();
-            return Ok(new { Success = true, data = new { pdfCandidateUrl = pdfCandidate, howToPlayVideoUrl = game.HowToPlayVideoUrl } });
+            return Ok(new { Success = true, data = new { pdfCandidateUrl = pdfCandidate, howToPlayVideoUrls = game.HowToPlayVideoUrls } });
         }
 
         [HttpPost("/API/ApproveBoardgameRulesPdf")]
@@ -2028,30 +2024,6 @@ namespace MovieTheater.Controllers
 
         public class ApprovePdfRequest { public string? OverridePdfUrl { get; set; } }
 
-        [HttpPost("/API/GenerateBoardgameRules")]
-        public async Task<IActionResult> GenerateBoardgameRules(int id)
-        {
-            if (!await IsCurrentUserEditor()) return Forbid();
-            if (claudeRulesGenerator == null)
-                return StatusCode(503, new { Success = false, Message = "AnthropicApiKey is not configured." });
-
-            var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == id);
-            if (game == null) return NotFound(new { Success = false, Message = "Boardgame not found." });
-
-            try
-            {
-                var rules = await claudeRulesGenerator.GenerateCommonlyMissedRulesAsync(game);
-                game.CommonlyMissedRules = rules;
-                game.RulesSyncedUtc = DateTime.UtcNow;
-                await movieDb.SaveChangesAsync();
-                return Ok(new { Success = true, data = new { commonlyMissedRules = rules } });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(502, new { Success = false, Message = $"Claude API error: {ex.Message}" });
-            }
-        }
-
         [HttpPost("/API/BatchDiscoverBoardgameRules")]
         public async Task<IActionResult> BatchDiscoverBoardgameRules([FromBody] int[] ids)
         {
@@ -2066,11 +2038,12 @@ namespace MovieTheater.Controllers
 
                 try
                 {
-                    var (pdfCandidate, videoUrl) = await boardgameRulesService.DiscoverAsync(game);
+                    var (pdfCandidate, videoUrls) = await boardgameRulesService.DiscoverAsync(game);
                     game.RulesPdfCandidateUrl = pdfCandidate;
-                    if (!string.IsNullOrWhiteSpace(videoUrl)) game.HowToPlayVideoUrl = videoUrl;
+                    if (videoUrls.Count > 0)
+                        game.HowToPlayVideoUrls = game.HowToPlayVideoUrls.Union(videoUrls).Distinct().ToList();
                     await movieDb.SaveChangesAsync();
-                    results.Add(new { id = gameId, success = true, pdfCandidateUrl = pdfCandidate, howToPlayVideoUrl = game.HowToPlayVideoUrl });
+                    results.Add(new { id = gameId, success = true, pdfCandidateUrl = pdfCandidate, howToPlayVideoUrls = game.HowToPlayVideoUrls });
                 }
                 catch (Exception ex)
                 {
@@ -2093,8 +2066,7 @@ namespace MovieTheater.Controllers
             if (game == null) return NotFound(new { Success = false, Message = "Boardgame not found." });
 
             if (req.RulesPdfUrl != null) game.RulesPdfUrl = req.RulesPdfUrl;
-            if (req.HowToPlayVideoUrl != null) game.HowToPlayVideoUrl = req.HowToPlayVideoUrl;
-            if (req.CommonlyMissedRules != null) game.CommonlyMissedRules = req.CommonlyMissedRules;
+            if (req.HowToPlayVideoUrls != null) game.HowToPlayVideoUrls = req.HowToPlayVideoUrls;
 
             await movieDb.SaveChangesAsync();
             return Ok(new { Success = true, Message = "Boardgame rules updated.", data = game });
@@ -2104,8 +2076,7 @@ namespace MovieTheater.Controllers
         {
             public int Id { get; set; }
             public string? RulesPdfUrl { get; set; }
-            public string? HowToPlayVideoUrl { get; set; }
-            public string? CommonlyMissedRules { get; set; }
+            public List<string>? HowToPlayVideoUrls { get; set; }
         }
 
         private async Task<bool> IsCurrentUserEditor()

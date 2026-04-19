@@ -42,6 +42,9 @@ namespace MovieTheater.Services.Google
             return results.FirstOrDefault();
         }
 
+        public Task<List<string>> SearchForUrls(string query, int max = 3)
+            => SearchAsync(query, max);
+
         private async Task<List<string>> SearchAsync(string query, int num)
         {
             if (string.IsNullOrWhiteSpace(_apiKey) || string.IsNullOrWhiteSpace(_searchEngineId))

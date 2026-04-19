@@ -3,6 +3,11 @@ import { useLocation } from "react-router-dom";
 import BoardGameCardList from "./BoardGameCardList";
 import BoardGameModal from "./BoardGameModal";
 
+function parseJsonArray(json) {
+  if (!json) return null;
+  try { const v = JSON.parse(json); return Array.isArray(v) ? v : null; } catch { return null; }
+}
+
 function normalizeGame(game) {
   const details = game.imageDetails ?? game.ImageDetails ?? null;
   return {
@@ -21,8 +26,7 @@ function normalizeGame(game) {
     description: game.description ?? game.Description,
     rulesPdfUrl: game.rulesPdfUrl ?? game.RulesPdfUrl ?? null,
     rulesPdfCandidateUrl: game.rulesPdfCandidateUrl ?? game.RulesPdfCandidateUrl ?? null,
-    howToPlayVideoUrl: game.howToPlayVideoUrl ?? game.HowToPlayVideoUrl ?? null,
-    commonlyMissedRules: game.commonlyMissedRules ?? game.CommonlyMissedRules ?? null,
+    howToPlayVideoUrls: parseJsonArray(game.howToPlayVideoUrlsJson ?? game.HowToPlayVideoUrlsJson) ?? game.howToPlayVideoUrls ?? game.HowToPlayVideoUrls ?? [],
     imageUrl: details?.imageUrl ?? details?.ImageUrl ?? null,
     imageVersion: details?.imageVersion ?? details?.ImageVersion ?? null,
   };
@@ -46,7 +50,7 @@ function BoardGames({ userData }) {
     setLoading(true);
     setError(null);
 
-    fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minPlayTime,maxPlayTime,minAge,averageRating,averageWeight,description,rulesPdfUrl,rulesPdfCandidateUrl,howToPlayVideoUrl,commonlyMissedRules&$expand=imageDetails&$orderby=name", {
+    fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minPlayTime,maxPlayTime,minAge,averageRating,averageWeight,description,rulesPdfUrl,rulesPdfCandidateUrl,howToPlayVideoUrlsJson&$expand=imageDetails&$orderby=name", {
       signal: controller.signal,
     })
       .then((r) => {

@@ -275,15 +275,11 @@ function approveBoardgameRulesPdf(id, overridePdfUrl) {
   });
 }
 
-function generateBoardgameRules(id) {
-  return fetch(`/API/GenerateBoardgameRules?id=${encodeURIComponent(id)}`, { method: "POST" });
-}
-
-function updateBoardgameRules(id, { rulesPdfUrl, howToPlayVideoUrl, commonlyMissedRules } = {}) {
+function updateBoardgameRules(id, { rulesPdfUrl, howToPlayVideoUrls } = {}) {
   return fetch("/API/UpdateBoardgameRules", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ Id: id, RulesPdfUrl: rulesPdfUrl, HowToPlayVideoUrl: howToPlayVideoUrl, CommonlyMissedRules: commonlyMissedRules }),
+    body: JSON.stringify({ Id: id, RulesPdfUrl: rulesPdfUrl, HowToPlayVideoUrls: howToPlayVideoUrls }),
   });
 }
 
@@ -314,7 +310,6 @@ const MovieAPI = {
   batchInsertBoardgames,
   discoverBoardgameRules,
   approveBoardgameRulesPdf,
-  generateBoardgameRules,
   updateBoardgameRules,
 };
 

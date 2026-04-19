@@ -15,21 +15,19 @@ namespace MovieTheater.Services.Bgg
             this.googleSearchService = googleSearchService;
         }
 
-        public async Task<(string? PdfCandidateUrl, string? VideoUrl)> DiscoverAsync(Boardgame game)
+        public async Task<(string? PdfCandidateUrl, List<string> VideoUrls)> DiscoverAsync(Boardgame game)
         {
             var pdfTask = FindRulesPdfAsync(game);
-            var videoTask = FindHowToPlayVideoAsync(game);
+            var videoTask = FindHowToPlayVideosAsync(game);
             await Task.WhenAll(pdfTask, videoTask);
             return (pdfTask.Result, videoTask.Result);
         }
 
         private async Task<string?> FindRulesPdfAsync(Boardgame game)
         {
-            // Try BGG files API first
             var bggUrl = await FindPdfFromBggFilesAsync(game.BggThingId);
             if (bggUrl != null) return bggUrl;
 
-            // Fallback to Google Search
             if (!string.IsNullOrWhiteSpace(game.Name))
             {
                 var query = $"\"{game.Name}\"{(game.YearPublished.HasValue ? $" \"{game.YearPublished}\"" : "")} rulebook filetype:pdf";
@@ -69,31 +67,29 @@ namespace MovieTheater.Services.Bgg
             return null;
         }
 
-        private async Task<string?> FindHowToPlayVideoAsync(Boardgame game)
+        private async Task<List<string>> FindHowToPlayVideosAsync(Boardgame game)
         {
-            // Check existing BGG VideosJson first
-            if (!string.IsNullOrWhiteSpace(game.VideosJson))
-            {
-                var url = FindVideoInBggJson(game.VideosJson);
-                if (url != null) return url;
-            }
+            var urls = new List<string>();
 
-            // Fallback to Google Search targeting YouTube
-            if (!string.IsNullOrWhiteSpace(game.Name))
+            if (!string.IsNullOrWhiteSpace(game.VideosJson))
+                urls.AddRange(FindVideosInBggJson(game.VideosJson));
+
+            if (urls.Count == 0 && !string.IsNullOrWhiteSpace(game.Name))
             {
                 var query = $"\"{game.Name}\" \"how to play\" site:youtube.com";
-                return await googleSearchService.SearchForUrl(query);
+                urls.AddRange(await googleSearchService.SearchForUrls(query));
             }
 
-            return null;
+            return urls.Distinct().ToList();
         }
 
-        private static string? FindVideoInBggJson(string videosJson)
+        private static List<string> FindVideosInBggJson(string videosJson)
         {
+            var result = new List<string>();
             try
             {
                 using var doc = JsonDocument.Parse(videosJson);
-                if (doc.RootElement.ValueKind != JsonValueKind.Array) return null;
+                if (doc.RootElement.ValueKind != JsonValueKind.Array) return result;
 
                 foreach (var video in doc.RootElement.EnumerateArray())
                 {
@@ -106,12 +102,11 @@ namespace MovieTheater.Services.Bgg
                     var isHowToPlay = category == "instructional"
                         || (title != null && (title.Contains("how to play") || title.Contains("learn to play") || title.Contains("how to set up")));
 
-                    if (isHowToPlay) return link;
+                    if (isHowToPlay) result.Add(link);
                 }
             }
             catch { }
-
-            return null;
+            return result;
         }
     }
 }
