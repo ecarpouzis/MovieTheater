@@ -2045,6 +2045,21 @@ namespace MovieTheater.Controllers
             return Ok(new { Success = true, data = new { rulesPdfUrls = game.RulesPdfUrls.Select(e => new { url = e.Url, name = e.Name }) } });
         }
 
+        [HttpPost("/API/RemoveBoardgameRulesPdfCandidate")]
+        public async Task<IActionResult> RemoveBoardgameRulesPdfCandidate(int id, [FromBody] ApprovePdfRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (string.IsNullOrWhiteSpace(req?.Url))
+                return BadRequest(new { Success = false, Message = "No URL provided." });
+
+            var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == id);
+            if (game == null) return NotFound(new { Success = false, Message = "Boardgame not found." });
+
+            game.RulesPdfCandidateUrls = game.RulesPdfCandidateUrls.Where(u => u != req.Url.Trim()).ToList();
+            await movieDb.SaveChangesAsync();
+            return Ok(new { Success = true, data = new { rulesPdfCandidateUrls = game.RulesPdfCandidateUrls } });
+        }
+
         public class ApprovePdfRequest { public string? Url { get; set; } }
 
         [HttpPost("/API/UploadBoardgameRulesPdf")]

@@ -279,6 +279,14 @@ function removeBoardgameRulesPdf(id, slot) {
   return fetch(`/API/RemoveBoardgameRulesPdf?id=${encodeURIComponent(id)}&slot=${slot}`, { method: "POST" });
 }
 
+function removeBoardgameRulesPdfCandidate(id, url) {
+  return fetch(`/API/RemoveBoardgameRulesPdfCandidate?id=${encodeURIComponent(id)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+}
+
 function uploadBoardgameRulesPdf(id, file) {
   const form = new FormData();
   form.append("file", file);
@@ -328,6 +336,7 @@ const MovieAPI = {
   discoverBoardgameRules,
   approveBoardgameRulesPdf,
   removeBoardgameRulesPdf,
+  removeBoardgameRulesPdfCandidate,
   uploadBoardgameRulesPdf,
   updateBoardgameRules,
 };

@@ -67,6 +67,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
 
   const [discovering, setDiscovering] = useState(false);
   const [approvingUrl, setApprovingUrl] = useState(null);
+  const [removingCandidateUrl, setRemovingCandidateUrl] = useState(null);
   const [removingSlot, setRemovingSlot] = useState(null);
   const [savingRules, setSavingRules] = useState(false);
   const [manualPdfUrl, setManualPdfUrl] = useState("");
@@ -223,6 +224,20 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
     } finally {
       setApprovingUrl(null);
       setManualPdfUrl("");
+    }
+  }
+
+  async function removeCandidatePdf(url) {
+    setRemovingCandidateUrl(url);
+    try {
+      const resp = await MovieAPI.removeBoardgameRulesPdfCandidate(game.id, url);
+      if (!resp.ok) { message.error("Remove failed"); return; }
+      const result = await resp.json();
+      if (result.success) patchGame({ rulesPdfCandidateUrls: result.data.rulesPdfCandidateUrls });
+    } catch {
+      message.error("Error removing candidate");
+    } finally {
+      setRemovingCandidateUrl(null);
     }
   }
 
@@ -395,14 +410,11 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                   <label className="edit-field-label">PDF Candidates</label>
                   {candidatePdfs.length === 0 && <span className="rules-empty-hint">None found yet — run discovery or paste a URL below</span>}
                   {candidatePdfs.map((url) => (
-                    <UrlRow
-                      key={url}
-                      url={url}
-                      actionLabel="Approve"
-                      actionDanger={false}
-                      loading={approvingUrl === url}
-                      onAction={() => approvePdf(url)}
-                    />
+                    <div key={url} className="rules-url-row">
+                      <a href={url} target="_blank" rel="noreferrer" className="rules-url-text" title={url}>{url}</a>
+                      <Button size="small" onClick={() => approvePdf(url)} loading={approvingUrl === url} disabled={!!removingCandidateUrl}>Approve</Button>
+                      <Button size="small" danger onClick={() => removeCandidatePdf(url)} loading={removingCandidateUrl === url} disabled={!!approvingUrl}>Remove</Button>
+                    </div>
                   ))}
                   <div className="rules-url-add-row">
                     <Input
