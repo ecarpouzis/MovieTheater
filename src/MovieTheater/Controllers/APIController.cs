@@ -1202,6 +1202,7 @@ namespace MovieTheater.Controllers
                 var fromBggBoardgame = fromBgg.Boardgame;
                 var existing = await movieDb.Boardgames
                     .Include(x => x.ImageDetails)
+                    .Include(x => x.ExtraDetails)
                     .SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
                 if (existing == null)
                 {
@@ -1257,6 +1258,7 @@ namespace MovieTheater.Controllers
                 var fromBggBoardgame = fromBgg.Boardgame;
                 var existing = await movieDb.Boardgames
                     .Include(x => x.ImageDetails)
+                    .Include(x => x.ExtraDetails)
                     .SingleOrDefaultAsync(x => x.BggThingId == fromBggBoardgame.BggThingId);
                 if (existing == null)
                 {
@@ -1358,7 +1360,10 @@ namespace MovieTheater.Controllers
             if (req == null || req.Id <= 0 || req.NewBggThingId <= 0)
                 return BadRequest(new { Success = false, Message = "id and newBggThingId must be positive integers." });
 
-            var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == req.Id);
+            var game = await movieDb.Boardgames
+                .Include(x => x.ImageDetails)
+                .Include(x => x.ExtraDetails)
+                .FirstOrDefaultAsync(x => x.id == req.Id);
             if (game == null)
                 return NotFound(new { Success = false, Message = "Boardgame not found." });
 
@@ -1831,7 +1836,6 @@ namespace MovieTheater.Controllers
         {
             existing.ThingType = fromBgg.ThingType;
             existing.Name = fromBgg.Name;
-            existing.AlternateNamesJson = fromBgg.AlternateNamesJson;
             existing.YearPublished = fromBgg.YearPublished;
             existing.MinPlayers = fromBgg.MinPlayers;
             existing.MaxPlayers = fromBgg.MaxPlayers;
@@ -1852,14 +1856,21 @@ namespace MovieTheater.Controllers
             existing.NumComments = fromBgg.NumComments;
             existing.NumWeights = fromBgg.NumWeights;
             existing.AverageWeight = fromBgg.AverageWeight;
-            existing.RanksJson = fromBgg.RanksJson;
-            existing.LinksJson = fromBgg.LinksJson;
-            existing.PollsJson = fromBgg.PollsJson;
-            existing.VersionsXml = fromBgg.VersionsXml;
-            existing.VideosJson = fromBgg.VideosJson;
-            existing.MarketplaceXml = fromBgg.MarketplaceXml;
-            existing.RawXml = fromBgg.RawXml;
             existing.LastSyncedUtc = fromBgg.LastSyncedUtc;
+
+            var src = fromBgg.ExtraDetails;
+            if (src != null)
+            {
+                existing.ExtraDetails ??= new BoardgameExtraDetails { BoardgameId = existing.id };
+                existing.ExtraDetails.AlternateNamesJson = src.AlternateNamesJson;
+                existing.ExtraDetails.RanksJson = src.RanksJson;
+                existing.ExtraDetails.LinksJson = src.LinksJson;
+                existing.ExtraDetails.PollsJson = src.PollsJson;
+                existing.ExtraDetails.VersionsXml = src.VersionsXml;
+                existing.ExtraDetails.VideosJson = src.VideosJson;
+                existing.ExtraDetails.MarketplaceXml = src.MarketplaceXml;
+                existing.ExtraDetails.RawXml = src.RawXml;
+            }
         }
 
 
@@ -1977,7 +1988,9 @@ namespace MovieTheater.Controllers
         {
             if (!await IsCurrentUserEditor()) return Forbid();
 
-            var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == id);
+            var game = await movieDb.Boardgames
+                .Include(x => x.ExtraDetails)
+                .FirstOrDefaultAsync(x => x.id == id);
             if (game == null) return NotFound(new { Success = false, Message = "Boardgame not found." });
 
             var (pdfCandidateUrls, videoUrls) = await boardgameRulesService.DiscoverAsync(game);
@@ -2098,7 +2111,9 @@ namespace MovieTheater.Controllers
             var results = new List<object>();
             foreach (var gameId in ids)
             {
-                var game = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.id == gameId);
+                var game = await movieDb.Boardgames
+                    .Include(x => x.ExtraDetails)
+                    .FirstOrDefaultAsync(x => x.id == gameId);
                 if (game == null) { results.Add(new { id = gameId, success = false, message = "Not found" }); continue; }
 
                 try

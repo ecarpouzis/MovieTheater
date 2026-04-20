@@ -83,7 +83,8 @@ namespace MovieTheater.Services.Bgg
                 return null;
             }
 
-            parsed.Boardgame.RawXml = xml;
+            parsed.Boardgame.ExtraDetails ??= new MovieTheater.Db.BoardgameExtraDetails();
+            parsed.Boardgame.ExtraDetails.RawXml = xml;
             parsed.Boardgame.LastSyncedUtc = DateTime.UtcNow;
             return parsed;
         }
@@ -217,7 +218,6 @@ namespace MovieTheater.Services.Bgg
                 BggThingId = bggThingId,
                 ThingType = (string?)item.Attribute("type"),
                 Name = string.IsNullOrWhiteSpace(primaryName) ? null : primaryName.Trim(),
-                AlternateNamesJson = JsonSerializer.Serialize(alternateNames),
                 YearPublished = ParseIntAttribute(item.Element("yearpublished"), "value"),
                 MinPlayers = ParseIntAttribute(item.Element("minplayers"), "value"),
                 MaxPlayers = ParseIntAttribute(item.Element("maxplayers"), "value"),
@@ -238,12 +238,16 @@ namespace MovieTheater.Services.Bgg
                 NumComments = ParseIntAttribute(stats?.Element("numcomments"), "value"),
                 NumWeights = ParseIntAttribute(stats?.Element("numweights"), "value"),
                 AverageWeight = ParseDecimalAttribute(stats?.Element("averageweight"), "value"),
-                RanksJson = JsonSerializer.Serialize(ranks),
-                LinksJson = JsonSerializer.Serialize(links),
-                PollsJson = JsonSerializer.Serialize(polls),
-                VersionsXml = item.Element("versions")?.ToString(SaveOptions.DisableFormatting),
-                VideosJson = JsonSerializer.Serialize(videos),
-                MarketplaceXml = item.Element("marketplacelistings")?.ToString(SaveOptions.DisableFormatting)
+                ExtraDetails = new MovieTheater.Db.BoardgameExtraDetails
+                {
+                    AlternateNamesJson = JsonSerializer.Serialize(alternateNames),
+                    RanksJson = JsonSerializer.Serialize(ranks),
+                    LinksJson = JsonSerializer.Serialize(links),
+                    PollsJson = JsonSerializer.Serialize(polls),
+                    VersionsXml = item.Element("versions")?.ToString(SaveOptions.DisableFormatting),
+                    VideosJson = JsonSerializer.Serialize(videos),
+                    MarketplaceXml = item.Element("marketplacelistings")?.ToString(SaveOptions.DisableFormatting),
+                },
             };
 
             var imageUrl = NullIfWhiteSpace(item.Element("image")?.Value);

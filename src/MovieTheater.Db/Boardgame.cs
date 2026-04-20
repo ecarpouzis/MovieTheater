@@ -18,8 +18,6 @@ namespace MovieTheater.Db
 
         public string? Name { get; set; }
 
-        public string? AlternateNamesJson { get; set; }
-
         public int? YearPublished { get; set; }
 
         public int? MinPlayers { get; set; }
@@ -60,20 +58,6 @@ namespace MovieTheater.Db
 
         public decimal? AverageWeight { get; set; }
 
-        public string? RanksJson { get; set; }
-
-        public string? LinksJson { get; set; }
-
-        public string? PollsJson { get; set; }
-
-        public string? VersionsXml { get; set; }
-
-        public string? VideosJson { get; set; }
-
-        public string? MarketplaceXml { get; set; }
-
-        public string? RawXml { get; set; }
-
         public DateTime LastSyncedUtc { get; set; }
 
         public string? RulesPdfCandidateUrlsJson { get; set; }
@@ -110,6 +94,8 @@ namespace MovieTheater.Db
             => string.IsNullOrWhiteSpace(json) ? [] : JsonSerializer.Deserialize<List<string>>(json) ?? [];
 
         public BoardgameImageDetails? ImageDetails { get; set; }
+
+        public BoardgameExtraDetails? ExtraDetails { get; set; }
 
         private string? _imageUrl;
         [NotMapped]

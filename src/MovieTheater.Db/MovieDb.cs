@@ -13,6 +13,7 @@ namespace MovieTheater.Db
         public DbSet<UserSettings> UserSettings { get; set; }
         public DbSet<Boardgame> Boardgames { get; set; }
         public DbSet<BoardgameImageDetails> BoardgameImageDetails { get; set; }
+        public DbSet<BoardgameExtraDetails> BoardgameExtraDetails { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)

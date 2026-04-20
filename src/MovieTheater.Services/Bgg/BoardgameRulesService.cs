@@ -79,8 +79,8 @@ namespace MovieTheater.Services.Bgg
         {
             var urls = new List<string>();
 
-            if (!string.IsNullOrWhiteSpace(game.VideosJson))
-                urls.AddRange(FindVideosInBggJson(game.VideosJson));
+            if (!string.IsNullOrWhiteSpace(game.ExtraDetails?.VideosJson))
+                urls.AddRange(FindVideosInBggJson(game.ExtraDetails.VideosJson));
 
             if (urls.Count == 0 && !string.IsNullOrWhiteSpace(game.Name))
             {
