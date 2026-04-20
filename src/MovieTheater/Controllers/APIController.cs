@@ -1331,7 +1331,7 @@ namespace MovieTheater.Controllers
             string? imageError = null;
             if (imageUrlChanged)
             {
-                await UpsertBoardgameImageUrls(game.id, req.ImageUrl!.Trim(), game.ImageDetails?.ThumbnailUrl);
+                await UpsertBoardgameImageUrls(game.id, req.ImageUrl!.Trim(), null);
                 try
                 {
                     await DownloadAndSaveBoardgameImages(game, force: true);
