@@ -255,7 +255,7 @@ namespace MovieTheater.Services.Bgg
             return new BoardgameBggResult(boardgame, imageUrl, thumbnailUrl);
         }
 
-        internal static string? DecodeDescription(string? raw)
+        public static string? DecodeDescription(string? raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return raw;
             // BGG XML descriptions are HTML-entity-encoded plain text (e.g. &hellip; &rsquo; &mdash;).
