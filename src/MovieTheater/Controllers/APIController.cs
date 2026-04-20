@@ -1401,6 +1401,31 @@ namespace MovieTheater.Controllers
             }
         }
 
+        [HttpPost("/API/FixBoardgameDescriptionEncoding")]
+        public async Task<IActionResult> FixBoardgameDescriptionEncoding()
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+
+            var games = await movieDb.Boardgames
+                .Where(g => g.Description != null)
+                .Select(g => new { g.id, g.Description })
+                .ToListAsync();
+
+            int updated = 0;
+            foreach (var row in games)
+            {
+                var decoded = BoardGameGeekApi.DecodeDescription(row.Description);
+                if (decoded == row.Description) continue;
+
+                await movieDb.Boardgames
+                    .Where(g => g.id == row.id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(g => g.Description, decoded));
+                updated++;
+            }
+
+            return Ok(new { Success = true, Total = games.Count, Updated = updated });
+        }
+
         [HttpGet("/API/GetBoardgame")]
         public async Task<IActionResult> GetBoardgame(int bggThingId)
         {

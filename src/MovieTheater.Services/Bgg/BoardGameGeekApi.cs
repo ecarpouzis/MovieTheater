@@ -225,7 +225,7 @@ namespace MovieTheater.Services.Bgg
                 MinPlayTime = ParseIntAttribute(item.Element("minplaytime"), "value"),
                 MaxPlayTime = ParseIntAttribute(item.Element("maxplaytime"), "value"),
                 MinAge = ParseIntAttribute(item.Element("minage"), "value"),
-                Description = item.Element("description")?.Value,
+                Description = DecodeDescription(item.Element("description")?.Value),
                 UsersRated = ParseIntAttribute(stats?.Element("usersrated"), "value"),
                 AverageRating = ParseDecimalAttribute(stats?.Element("average"), "value"),
                 BayesAverageRating = ParseDecimalAttribute(stats?.Element("bayesaverage"), "value"),
@@ -253,6 +253,14 @@ namespace MovieTheater.Services.Bgg
             var imageUrl = NullIfWhiteSpace(item.Element("image")?.Value);
             var thumbnailUrl = NullIfWhiteSpace(item.Element("thumbnail")?.Value);
             return new BoardgameBggResult(boardgame, imageUrl, thumbnailUrl);
+        }
+
+        internal static string? DecodeDescription(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return raw;
+            // BGG XML descriptions are HTML-entity-encoded plain text (e.g. &hellip; &rsquo; &mdash;).
+            // XElement.Value decodes XML entities but not HTML named entities, so we need a second pass.
+            return System.Net.WebUtility.HtmlDecode(raw).Trim();
         }
 
         private static int? ParseIntAttribute(XElement? element, string attributeName)
