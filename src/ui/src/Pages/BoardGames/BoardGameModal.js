@@ -30,6 +30,21 @@ function toYouTubeEmbedUrl(url) {
 }
 
 
+// HowToPlayVideoUrlsJson is serialized with PascalCase keys by the C# backend.
+// Handle both PascalCase (from OData) and camelCase (from REST responses).
+function parseVideoEntries(json) {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item) =>
+      typeof item === "string"
+        ? { url: item }
+        : { url: item.Url ?? item.url ?? "", title: item.Title ?? item.title ?? null, duration: item.Duration ?? item.duration ?? null }
+    );
+  } catch { return []; }
+}
+
 function normalizePdfEntry(e) {
   if (!e) return { url: "", name: null };
   if (typeof e === "string") return { url: e, name: null };
@@ -103,7 +118,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   const players = minP && maxP ? (minP === maxP ? `${minP}` : `${minP}–${maxP}`) : minP || maxP || null;
   const description = stripHtml(game.description);
   const approvedPdfs = (game.rulesPdfUrls ?? []).map(normalizePdfEntry);
-  const videoEntries = (game.howToPlayVideoEntries ?? [])
+  const videoEntries = parseVideoEntries(game.howToPlayVideoUrlsJson)
     .map((e) => ({ ...e, embedUrl: toYouTubeEmbedUrl(e.url) }))
     .filter((e) => e.embedUrl);
   const candidatePdfs = game.rulesPdfCandidateUrls ?? [];
@@ -178,7 +193,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
         message.success("Saved");
         patchGame({
           howToPlayVideoUrls: result.data.howToPlayVideoUrls ?? editVideoUrls,
-          howToPlayVideoEntries: result.data.howToPlayVideoEntries,
+          howToPlayVideoUrlsJson: result.data.howToPlayVideoUrlsJson,
           rulesPdfUrls: (result.data.rulesPdfUrls ?? editApprovedPdfs).map(normalizePdfEntry),
         });
       }

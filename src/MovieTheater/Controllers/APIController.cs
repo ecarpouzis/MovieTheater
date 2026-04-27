@@ -2201,7 +2201,7 @@ namespace MovieTheater.Controllers
             return Ok(new { Success = true, data = new {
                 rulesPdfUrls = game.RulesPdfUrls.Select(e => new { url = e.Url, name = e.Name }),
                 howToPlayVideoUrls = game.HowToPlayVideoUrls,
-                howToPlayVideoEntries = game.HowToPlayVideoEntries,
+                howToPlayVideoUrlsJson = game.HowToPlayVideoUrlsJson,
             }});
         }
 
