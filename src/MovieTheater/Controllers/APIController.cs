@@ -2154,13 +2154,10 @@ namespace MovieTheater.Controllers
                         game.RulesPdfCandidateUrls = game.RulesPdfCandidateUrls.Union(pdfCandidateUrls).Distinct().ToList();
                     if (videoUrls.Count > 0)
                         game.HowToPlayVideoUrls = game.HowToPlayVideoUrls.Union(videoUrls).Distinct().ToList();
-                    await movieDb.SaveChangesAsync();
                     var entries = game.HowToPlayVideoEntries;
                     if (await youTubeService.RefreshEntriesAsync(entries))
-                    {
                         game.HowToPlayVideoEntries = entries;
-                        await movieDb.SaveChangesAsync();
-                    }
+                    await movieDb.SaveChangesAsync();
                     results.Add(new { id = gameId, success = true, rulesPdfCandidateUrls = game.RulesPdfCandidateUrls, howToPlayVideoUrls = game.HowToPlayVideoUrls });
                 }
                 catch (Exception ex)
@@ -2186,17 +2183,14 @@ namespace MovieTheater.Controllers
             if (req.HowToPlayVideoUrls != null) game.HowToPlayVideoUrls = req.HowToPlayVideoUrls;
             if (req.RulesPdfUrls != null) game.RulesPdfUrls = req.RulesPdfUrls;
 
-            await movieDb.SaveChangesAsync();
-
             if (req.HowToPlayVideoUrls != null)
             {
                 var entries = game.HowToPlayVideoEntries;
                 if (await youTubeService.RefreshEntriesAsync(entries))
-                {
                     game.HowToPlayVideoEntries = entries;
-                    await movieDb.SaveChangesAsync();
-                }
             }
+
+            await movieDb.SaveChangesAsync();
 
             return Ok(new { Success = true, data = new {
                 rulesPdfUrls = game.RulesPdfUrls.Select(e => new { url = e.Url, name = e.Name }),

@@ -30,7 +30,7 @@ namespace MovieTheater.Services.Google
             _apiKey = configuration["GoogleSearchApiKey"];
         }
 
-        public static string? ExtractVideoId(string? url)
+        private static string? ExtractVideoId(string? url)
         {
             if (string.IsNullOrWhiteSpace(url)) return null;
             var m = VideoIdFromWatch.Match(url);

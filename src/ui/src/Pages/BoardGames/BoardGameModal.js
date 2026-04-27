@@ -29,8 +29,7 @@ function toYouTubeEmbedUrl(url) {
   return null;
 }
 
-
-// HowToPlayVideoUrlsJson is serialized with PascalCase keys by the C# backend.
+// HowToPlayVideoUrlsJson is stored with PascalCase keys by the C# backend.
 // Handle both PascalCase (from OData) and camelCase (from REST responses).
 function parseVideoEntries(json) {
   if (!json) return [];
