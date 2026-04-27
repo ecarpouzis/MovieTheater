@@ -170,16 +170,44 @@
 }
 
 /* ── Rules / Video view-mode sections ── */
+.rules-video-container {
+  margin-bottom: 16px;
+}
+
+.rules-video-container:last-child {
+  margin-bottom: 0;
+}
+
+.rules-video-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.rules-video-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.rules-video-duration {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .rules-video-wrapper {
   clear: both;
   position: relative;
   width: 100%;
   padding-top: 56.25%; /* 16:9 */
-  margin-bottom: 16px;
-}
-
-.rules-video-wrapper:last-child {
-  margin-bottom: 0;
 }
 
 .rules-video-iframe {

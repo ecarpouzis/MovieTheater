@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using MovieTheater.Db;
 using MovieTheater.Models;
 using MovieTheater.Services;
@@ -45,11 +46,14 @@ namespace MovieTheater.Controllers
         private readonly PosterMosaicService posterMosaicService;
         private readonly BoardgameRulesService boardgameRulesService;
         private readonly BoardgamePdfRepository boardgamePdfRepository;
+        private readonly IConfiguration configuration;
+        private readonly YouTubeService youTubeService;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
             IBoardgameImageRepository boardgameImageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService,
             BoardGameGeekApi boardGameGeekApi, PosterMosaicService posterMosaicService,
-            BoardgameRulesService boardgameRulesService, BoardgamePdfRepository boardgamePdfRepository)
+            BoardgameRulesService boardgameRulesService, BoardgamePdfRepository boardgamePdfRepository,
+            IConfiguration configuration, YouTubeService youTubeService)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -65,6 +69,8 @@ namespace MovieTheater.Controllers
             this.posterMosaicService = posterMosaicService;
             this.boardgameRulesService = boardgameRulesService;
             this.boardgamePdfRepository = boardgamePdfRepository;
+            this.configuration = configuration;
+            this.youTubeService = youTubeService;
         }
 
         private int? GetCurrentUserId()
@@ -2149,6 +2155,12 @@ namespace MovieTheater.Controllers
                     if (videoUrls.Count > 0)
                         game.HowToPlayVideoUrls = game.HowToPlayVideoUrls.Union(videoUrls).Distinct().ToList();
                     await movieDb.SaveChangesAsync();
+                    var entries = game.HowToPlayVideoEntries;
+                    if (await youTubeService.RefreshEntriesAsync(entries))
+                    {
+                        game.HowToPlayVideoEntries = entries;
+                        await movieDb.SaveChangesAsync();
+                    }
                     results.Add(new { id = gameId, success = true, rulesPdfCandidateUrls = game.RulesPdfCandidateUrls, howToPlayVideoUrls = game.HowToPlayVideoUrls });
                 }
                 catch (Exception ex)
@@ -2175,7 +2187,22 @@ namespace MovieTheater.Controllers
             if (req.RulesPdfUrls != null) game.RulesPdfUrls = req.RulesPdfUrls;
 
             await movieDb.SaveChangesAsync();
-            return Ok(new { Success = true, data = new { rulesPdfUrls = game.RulesPdfUrls.Select(e => new { url = e.Url, name = e.Name }), howToPlayVideoUrls = game.HowToPlayVideoUrls } });
+
+            if (req.HowToPlayVideoUrls != null)
+            {
+                var entries = game.HowToPlayVideoEntries;
+                if (await youTubeService.RefreshEntriesAsync(entries))
+                {
+                    game.HowToPlayVideoEntries = entries;
+                    await movieDb.SaveChangesAsync();
+                }
+            }
+
+            return Ok(new { Success = true, data = new {
+                rulesPdfUrls = game.RulesPdfUrls.Select(e => new { url = e.Url, name = e.Name }),
+                howToPlayVideoUrls = game.HowToPlayVideoUrls,
+                howToPlayVideoEntries = game.HowToPlayVideoEntries,
+            }});
         }
 
         public class UpdateBoardgameRulesRequest
@@ -2191,6 +2218,34 @@ namespace MovieTheater.Controllers
             if (!userId.HasValue) return false;
             var settings = await movieDb.UserSettings.FirstOrDefaultAsync(s => s.UserID == userId.Value && s.SettingKey == "CanEditMovies");
             return settings != null && string.Equals(settings.SettingValue, "true", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Scrapes YouTube video metadata for all boardgame videos that are missing or stale (>30 days,
+        // per YouTube Developer Policies §4.D). Stores results directly in HowToPlayVideoUrlsJson.
+        [HttpPost("/API/ScrapeYouTubeVideoDetails")]
+        public async Task<IActionResult> ScrapeYouTubeVideoDetails()
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+
+            var games = await movieDb.Boardgames
+                .Where(b => b.HowToPlayVideoUrlsJson != null)
+                .ToListAsync();
+
+            int scraped = 0, total = 0;
+            foreach (var game in games)
+            {
+                var entries = game.HowToPlayVideoEntries;
+                if (entries.Count == 0) continue;
+                total += entries.Count;
+                if (await youTubeService.RefreshEntriesAsync(entries))
+                {
+                    game.HowToPlayVideoEntries = entries;
+                    scraped++;
+                }
+            }
+
+            if (scraped > 0) await movieDb.SaveChangesAsync();
+            return Ok(new { message = $"Updated {scraped} boardgame(s).", scraped, total });
         }
     }
 }

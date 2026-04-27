@@ -29,6 +29,7 @@ function toYouTubeEmbedUrl(url) {
   return null;
 }
 
+
 function normalizePdfEntry(e) {
   if (!e) return { url: "", name: null };
   if (typeof e === "string") return { url: e, name: null };
@@ -102,11 +103,12 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   const players = minP && maxP ? (minP === maxP ? `${minP}` : `${minP}–${maxP}`) : minP || maxP || null;
   const description = stripHtml(game.description);
   const approvedPdfs = (game.rulesPdfUrls ?? []).map(normalizePdfEntry);
-  const videoUrls = game.howToPlayVideoUrls ?? [];
-  const embedUrls = videoUrls.map(toYouTubeEmbedUrl).filter(Boolean);
+  const videoEntries = (game.howToPlayVideoEntries ?? [])
+    .map((e) => ({ ...e, embedUrl: toYouTubeEmbedUrl(e.url) }))
+    .filter((e) => e.embedUrl);
   const candidatePdfs = game.rulesPdfCandidateUrls ?? [];
-  const hasRulesContent = approvedPdfs.length > 0 || embedUrls.length > 0;
-  const collapseHeader = approvedPdfs.length > 0 && embedUrls.length > 0
+  const hasRulesContent = approvedPdfs.length > 0 || videoEntries.length > 0;
+  const collapseHeader = approvedPdfs.length > 0 && videoEntries.length > 0
     ? "Rules & How to Play"
     : approvedPdfs.length > 0 ? "Rulebook PDFs" : "How to Play";
 
@@ -175,7 +177,8 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
       if (result.success) {
         message.success("Saved");
         patchGame({
-          howToPlayVideoUrls: editVideoUrls,
+          howToPlayVideoUrls: result.data.howToPlayVideoUrls ?? editVideoUrls,
+          howToPlayVideoEntries: result.data.howToPlayVideoEntries,
           rulesPdfUrls: (result.data.rulesPdfUrls ?? editApprovedPdfs).map(normalizePdfEntry),
         });
       }
@@ -355,15 +358,23 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                         ))}
                       </div>
                     )}
-                    {embedUrls.map((url, i) => (
-                      <div key={url} className="rules-video-wrapper">
-                        <iframe
-                          className="rules-video-iframe"
-                          src={url}
-                          title={embedUrls.length > 1 ? `How to Play (${i + 1})` : "How to Play"}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
+                    {videoEntries.map((entry, i) => (
+                      <div key={entry.embedUrl} className="rules-video-container">
+                        {(entry.title || entry.duration) && (
+                          <div className="rules-video-header">
+                            {entry.title && <span className="rules-video-title">{entry.title}</span>}
+                            {entry.duration && <span className="rules-video-duration">{entry.duration}</span>}
+                          </div>
+                        )}
+                        <div className="rules-video-wrapper">
+                          <iframe
+                            className="rules-video-iframe"
+                            src={entry.embedUrl}
+                            title={entry.title || (videoEntries.length > 1 ? `How to Play (${i + 1})` : "How to Play")}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
                       </div>
                     ))}
                   </Panel>

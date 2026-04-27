@@ -14,6 +14,7 @@ namespace MovieTheater.Services.Google
 
             services.Configure<GoogleApiOptions>(options => { options.ApiKey = googleApiKey; options.EngineId = googleEngineId; });
             services.AddTransient<GoogleSearchService>();
+            services.AddTransient<YouTubeService>();
 
             return services;
         }

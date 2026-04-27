@@ -84,10 +84,41 @@ namespace MovieTheater.Db
         }
 
         [NotMapped]
+        public List<HowToPlayVideoEntry> HowToPlayVideoEntries
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(HowToPlayVideoUrlsJson)) return [];
+                try
+                {
+                    return JsonSerializer.Deserialize<List<HowToPlayVideoEntry>>(HowToPlayVideoUrlsJson) ?? [];
+                }
+                catch
+                {
+                    // Migrate from old plain-string-array format
+                    try
+                    {
+                        var urls = JsonSerializer.Deserialize<List<string>>(HowToPlayVideoUrlsJson);
+                        return urls?.Select(u => new HowToPlayVideoEntry { Url = u }).ToList() ?? [];
+                    }
+                    catch { return []; }
+                }
+            }
+            set => HowToPlayVideoUrlsJson = value.Count > 0 ? JsonSerializer.Serialize(value) : null;
+        }
+
+        // Returns just the URL strings. Setter preserves existing metadata for unchanged URLs.
+        [NotMapped]
         public List<string> HowToPlayVideoUrls
         {
-            get => DeserializeList(HowToPlayVideoUrlsJson);
-            set => HowToPlayVideoUrlsJson = value.Count > 0 ? JsonSerializer.Serialize(value) : null;
+            get => HowToPlayVideoEntries.Select(e => e.Url).ToList();
+            set
+            {
+                var byUrl = HowToPlayVideoEntries.ToDictionary(e => e.Url);
+                HowToPlayVideoEntries = value
+                    .Select(u => byUrl.TryGetValue(u, out var existing) ? existing : new HowToPlayVideoEntry { Url = u })
+                    .ToList();
+            }
         }
 
         private static List<string> DeserializeList(string? json)
@@ -121,5 +152,13 @@ namespace MovieTheater.Db
     {
         public string Url { get; set; } = "";
         public string? Name { get; set; }
+    }
+
+    public class HowToPlayVideoEntry
+    {
+        public string Url { get; set; } = "";
+        public string? Title { get; set; }
+        public string? Duration { get; set; }
+        public DateTime? FetchedAtUtc { get; set; }
     }
 }
