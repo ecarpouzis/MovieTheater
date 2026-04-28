@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using MovieTheater.Db;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
@@ -195,7 +196,7 @@ namespace MovieTheater.Services.Poster
         private const int BaseTileWidth = 150;
         private const int BaseTileHeight = 200;
 
-        private readonly MovieDb movieDb;
+        private readonly IServiceScopeFactory scopeFactory;
         private readonly IPosterImageRepository imageRepo;
 
         // Cached color data and k-d tree, rebuilt when InvalidateCache() is called
@@ -203,9 +204,9 @@ namespace MovieTheater.Services.Poster
         private KDTree3? cachedTree;
         private DateTime cacheBuiltAt = DateTime.MinValue;
 
-        public PosterMosaicService(MovieDb movieDb, IPosterImageRepository imageRepo)
+        public PosterMosaicService(IServiceScopeFactory scopeFactory, IPosterImageRepository imageRepo)
         {
-            this.movieDb = movieDb;
+            this.scopeFactory = scopeFactory;
             this.imageRepo = imageRepo;
         }
 
@@ -247,7 +248,9 @@ namespace MovieTheater.Services.Poster
                 // Double-check after acquiring lock
                 if (cachedTree != null) return cachedTree;
 
-                var candidates = await movieDb.MoviePosterDetails
+                using var scope = scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<MovieDb>();
+                var candidates = await db.MoviePosterDetails
                     .Where(pd => !string.IsNullOrEmpty(pd.DominantColor))
                     .Select(pd => new { pd.MovieId, pd.DominantColor })
                     .ToListAsync();
@@ -482,7 +485,7 @@ namespace MovieTheater.Services.Poster
                 }
             });
 
-            // Load poster images in parallel
+            // Load poster bytes in parallel
             var uniqueIds = chosenMovieIds.Cast<int>().Where(id => id != 0).Distinct().ToList();
             var posterBytesById = new ConcurrentDictionary<int, byte[]>();
 
@@ -490,13 +493,8 @@ namespace MovieTheater.Services.Poster
             {
                 try
                 {
-                    var variant = await imageRepo.HasImage(id, PosterImageVariant.Thumbnail)
-                        ? PosterImageVariant.Thumbnail
-                        : PosterImageVariant.Main;
-
-                    if (!await imageRepo.HasImage(id, variant)) return;
-
-                    var bytes = await imageRepo.GetImage(id, variant);
+                    var bytes = await imageRepo.GetImage(id, PosterImageVariant.Thumbnail)
+                        ?? await imageRepo.GetImage(id, PosterImageVariant.Main);
                     if (bytes != null)
                         posterBytesById[id] = bytes;
                 }
@@ -511,29 +509,32 @@ namespace MovieTheater.Services.Poster
 
             using var combined = new Image<Rgba32>(columns * posterWidth, rows * posterHeight);
 
-            // Pre-load and resize all unique poster images to avoid redundant decoding
-            var resizedPosters = new Dictionary<int, Image<Rgba32>>();
+            // Decode and resize all unique posters in parallel
+            var resizedPosters = new ConcurrentDictionary<int, Image<Rgba32>>();
             try
             {
-                foreach (var kvp in posterBytesById)
+                Parallel.ForEach(posterBytesById, kvp =>
                 {
                     var img = Image.Load<Rgba32>(kvp.Value);
                     img.Mutate(x => x.Resize(posterWidth, posterHeight));
                     resizedPosters[kvp.Key] = img;
-                }
+                });
 
                 var fallbackPoster = resizedPosters.Values.First();
 
-                // Compose tiles by drawing each poster at its grid position
-                for (int ry = 0; ry < rows; ry++)
+                // Compose all tiles in a single Mutate call to avoid per-tile pipeline overhead
+                combined.Mutate(ctx =>
                 {
-                    for (int rx = 0; rx < columns; rx++)
+                    for (int ry = 0; ry < rows; ry++)
                     {
-                        var movieId = chosenMovieIds[ry, rx];
-                        var posterImg = resizedPosters.GetValueOrDefault(movieId) ?? fallbackPoster;
-                        combined.Mutate(ctx => ctx.DrawImage(posterImg, new Point(rx * posterWidth, ry * posterHeight), 1f));
+                        for (int rx = 0; rx < columns; rx++)
+                        {
+                            var movieId = chosenMovieIds[ry, rx];
+                            var posterImg = resizedPosters.GetValueOrDefault(movieId) ?? fallbackPoster;
+                            ctx.DrawImage(posterImg, new Point(rx * posterWidth, ry * posterHeight), 1f);
+                        }
                     }
-                }
+                });
             }
             finally
             {

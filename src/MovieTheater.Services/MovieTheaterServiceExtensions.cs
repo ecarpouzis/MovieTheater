@@ -28,7 +28,7 @@ namespace MovieTheater.Services
             services.AddBoardGameGeekServices(config.BggApiToken);
             services.AddTransient<BoardgameRulesService>();
             services.AddTransient<IMDBApiService>();
-            services.AddTransient<PosterMosaicService>();
+            services.AddSingleton<PosterMosaicService>();
             return services;
         }
     }
