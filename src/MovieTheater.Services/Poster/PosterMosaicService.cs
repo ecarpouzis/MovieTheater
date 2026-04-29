@@ -190,7 +190,6 @@ namespace MovieTheater.Services.Poster
         // Cached color data and k-d tree, rebuilt when InvalidateCache() is called
         private readonly SemaphoreSlim cacheLock = new(1, 1);
         private KDTree3? cachedTree;
-        private Dictionary<int, (float L, float A, float B)>? cachedMovieLab;
         private DateTime cacheBuiltAt = DateTime.MinValue;
 
         public PosterMosaicService(IServiceScopeFactory scopeFactory, IPosterImageRepository imageRepo)
@@ -208,7 +207,6 @@ namespace MovieTheater.Services.Poster
             try
             {
                 cachedTree = null;
-                cachedMovieLab = null;
                 cacheBuiltAt = DateTime.MinValue;
             }
             finally
@@ -262,7 +260,6 @@ namespace MovieTheater.Services.Poster
                     throw new InvalidOperationException("No valid poster colors available");
 
                 cachedTree = new KDTree3(candidateColors);
-                cachedMovieLab = candidateColors.ToDictionary(c => c.MovieId, c => (c.L, c.A, c.B));
                 cacheBuiltAt = DateTime.UtcNow;
                 return cachedTree;
             }
@@ -430,21 +427,15 @@ namespace MovieTheater.Services.Poster
                     $"Reduce outputScale or increase tileScale. Current dimensions: {outputWidth}×{outputHeight} ({columns}×{rows} tiles)");
             }
 
-            using var small = srcImage.Clone(ctx => ctx.Resize(columns, rows).GaussianBlur(1f));
+            using var small = srcImage.Clone(ctx => ctx.Resize(columns, rows));
 
             // Use cached k-d tree for fast nearest-neighbor lookups
             var tree = await GetOrBuildTreeAsync();
-            var movieLab = cachedMovieLab!;
             int effectiveTopK = Math.Min(topK, tree.Count);
 
             var chosenMovieIds = new int[rows, columns];
             var usageCounts = new Dictionary<int, int>();
             var rng = new Random();
-
-            // Floyd-Steinberg error accumulation buffers (CIE LAB)
-            var errL = new float[rows, columns];
-            var errA = new float[rows, columns];
-            var errB = new float[rows, columns];
 
             // Pre-allocate weight buffer to avoid allocations in tight loop
             var weightBuffer = new List<(int MovieId, double Distance, double Weight)>(effectiveTopK);
@@ -457,14 +448,8 @@ namespace MovieTheater.Services.Poster
                     for (int x = 0; x < row.Length; x++)
                     {
                         var p = row[x];
-
-                        // Convert pixel to LAB and add accumulated dither error
                         var (pl, pa, pb) = RgbToLab(p.R, p.G, p.B);
-                        float tl = pl + errL[y, x];
-                        float ta = pa + errA[y, x];
-                        float tb = pb + errB[y, x];
-
-                        var topCandidates = tree.NearestK(tl, ta, tb, effectiveTopK);
+                        var topCandidates = tree.NearestK(pl, pa, pb, effectiveTopK);
 
                         // Compute weights for each candidate
                         weightBuffer.Clear();
@@ -513,39 +498,6 @@ namespace MovieTheater.Services.Poster
                         usageCounts.TryGetValue(chosenId, out int cur);
                         usageCounts[chosenId] = cur + 1;
                         chosenMovieIds[y, x] = chosenId;
-
-                        // Floyd-Steinberg: propagate quantisation error to neighbours
-                        if (movieLab.TryGetValue(chosenId, out var chosen))
-                        {
-                            float el = tl - chosen.L;
-                            float ea = ta - chosen.A;
-                            float eb = tb - chosen.B;
-
-                            if (x + 1 < columns)
-                            {
-                                errL[y, x + 1] += el * (7f / 16f);
-                                errA[y, x + 1] += ea * (7f / 16f);
-                                errB[y, x + 1] += eb * (7f / 16f);
-                            }
-                            if (y + 1 < rows)
-                            {
-                                if (x > 0)
-                                {
-                                    errL[y + 1, x - 1] += el * (3f / 16f);
-                                    errA[y + 1, x - 1] += ea * (3f / 16f);
-                                    errB[y + 1, x - 1] += eb * (3f / 16f);
-                                }
-                                errL[y + 1, x] += el * (5f / 16f);
-                                errA[y + 1, x] += ea * (5f / 16f);
-                                errB[y + 1, x] += eb * (5f / 16f);
-                                if (x + 1 < columns)
-                                {
-                                    errL[y + 1, x + 1] += el * (1f / 16f);
-                                    errA[y + 1, x + 1] += ea * (1f / 16f);
-                                    errB[y + 1, x + 1] += eb * (1f / 16f);
-                                }
-                            }
-                        }
                     }
                 }
             });
