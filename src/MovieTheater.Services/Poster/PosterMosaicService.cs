@@ -102,22 +102,22 @@ namespace MovieTheater.Services.Poster
         {
             private class Node
             {
-                public byte R, G, B;
+                public float L, A, B;
                 public int MovieId;
                 public Node? Left;
                 public Node? Right;
             }
 
             private readonly Node? root;
-            private readonly List<(int MovieId, byte R, byte G, byte B)> allPoints;
+            private readonly List<(int MovieId, float L, float A, float B)> allPoints;
 
             public int Count => allPoints.Count;
 
-            public KDTree3(List<(int MovieId, byte R, byte G, byte B)> points)
+            public KDTree3(List<(int MovieId, float L, float A, float B)> points)
             {
                 allPoints = points ?? [];
                 if (allPoints.Count == 0) { root = null; return; }
-                var pts = allPoints.Select(p => new Node { MovieId = p.MovieId, R = p.R, G = p.G, B = p.B }).ToList();
+                var pts = allPoints.Select(p => new Node { MovieId = p.MovieId, L = p.L, A = p.A, B = p.B }).ToList();
                 root = Build(pts, 0);
             }
 
@@ -125,11 +125,11 @@ namespace MovieTheater.Services.Poster
             {
                 if (pts == null || pts.Count == 0) return null;
                 int axis = depth % 3;
-                pts.Sort((a, b) => axis switch
+                pts.Sort((x, y) => axis switch
                 {
-                    0 => a.R.CompareTo(b.R),
-                    1 => a.G.CompareTo(b.G),
-                    _ => a.B.CompareTo(b.B),
+                    0 => x.L.CompareTo(y.L),
+                    1 => x.A.CompareTo(y.A),
+                    _ => x.B.CompareTo(y.B),
                 });
                 int mid = pts.Count / 2;
                 var node = pts[mid];
@@ -139,30 +139,27 @@ namespace MovieTheater.Services.Poster
             }
 
             /// <summary>
-            /// Find the K nearest neighbors to the given RGB color.
-            /// Returns results sorted by distance (ascending).
+            /// Find the K nearest neighbors in CIE LAB space.
+            /// Returns results sorted by squared distance (ascending).
             /// </summary>
-            public List<(int MovieId, int Distance)> NearestK(byte r, byte g, byte b, int k)
+            public List<(int MovieId, double Distance)> NearestK(float l, float a, float b, int k)
             {
                 if (root == null || k <= 0) return [];
 
-                // Use a max-heap to track top-K closest (sorted by distance descending for efficient removal)
-                var heap = new SortedSet<(int Dist, int MovieId, int Tiebreaker)>();
+                var heap = new SortedSet<(double Dist, int MovieId, int Tiebreaker)>();
                 int tiebreaker = 0;
 
                 void Search(Node? node, int depth)
                 {
                     if (node == null) return;
 
-                    int dr = node.R - r;
-                    int dg = node.G - g;
-                    int db = node.B - b;
-                    int dist = dr * dr + dg * dg + db * db;
+                    double dl = node.L - l;
+                    double da = node.A - a;
+                    double db = node.B - b;
+                    double dist = dl * dl + da * da + db * db;
 
                     if (heap.Count < k)
-                    {
                         heap.Add((dist, node.MovieId, tiebreaker++));
-                    }
                     else if (dist < heap.Max.Dist)
                     {
                         heap.Remove(heap.Max);
@@ -170,25 +167,16 @@ namespace MovieTheater.Services.Poster
                     }
 
                     int axis = depth % 3;
-                    int diff = axis switch
-                    {
-                        0 => r - node.R,
-                        1 => g - node.G,
-                        _ => b - node.B,
-                    };
-
+                    float diff = axis switch { 0 => l - node.L, 1 => a - node.A, _ => b - node.B };
                     var first = diff < 0 ? node.Left : node.Right;
                     var second = diff < 0 ? node.Right : node.Left;
 
                     Search(first, depth + 1);
-
-                    // Only search the other branch if it could contain closer points
-                    if (heap.Count < k || diff * diff < heap.Max.Dist)
+                    if (heap.Count < k || (double)(diff * diff) < heap.Max.Dist)
                         Search(second, depth + 1);
                 }
 
                 Search(root, 0);
-
                 return heap.Select(h => (h.MovieId, h.Dist)).OrderBy(x => x.Dist).ToList();
             }
         }
@@ -202,6 +190,7 @@ namespace MovieTheater.Services.Poster
         // Cached color data and k-d tree, rebuilt when InvalidateCache() is called
         private readonly SemaphoreSlim cacheLock = new(1, 1);
         private KDTree3? cachedTree;
+        private Dictionary<int, (float L, float A, float B)>? cachedMovieLab;
         private DateTime cacheBuiltAt = DateTime.MinValue;
 
         public PosterMosaicService(IServiceScopeFactory scopeFactory, IPosterImageRepository imageRepo)
@@ -219,6 +208,7 @@ namespace MovieTheater.Services.Poster
             try
             {
                 cachedTree = null;
+                cachedMovieLab = null;
                 cacheBuiltAt = DateTime.MinValue;
             }
             finally
@@ -258,17 +248,21 @@ namespace MovieTheater.Services.Poster
                 if (candidates.Count == 0)
                     throw new InvalidOperationException("No posters with DominantColor available");
 
-                var candidateColors = new List<(int MovieId, byte R, byte G, byte B)>(candidates.Count);
+                var candidateColors = new List<(int MovieId, float L, float A, float B)>(candidates.Count);
                 foreach (var c in candidates)
                 {
                     if (TryParseHexColor(c.DominantColor, out byte r, out byte g, out byte b))
-                        candidateColors.Add((c.MovieId, r, g, b));
+                    {
+                        var (cl, ca, cb) = RgbToLab(r, g, b);
+                        candidateColors.Add((c.MovieId, cl, ca, cb));
+                    }
                 }
 
                 if (candidateColors.Count == 0)
                     throw new InvalidOperationException("No valid poster colors available");
 
                 cachedTree = new KDTree3(candidateColors);
+                cachedMovieLab = candidateColors.ToDictionary(c => c.MovieId, c => (c.L, c.A, c.B));
                 cacheBuiltAt = DateTime.UtcNow;
                 return cachedTree;
             }
@@ -299,6 +293,30 @@ namespace MovieTheater.Services.Poster
                 return false;
             }
         }
+
+        private static (float L, float A, float B) RgbToLab(byte r, byte g, byte b)
+        {
+            double rl = SrgbToLinear(r / 255.0);
+            double gl = SrgbToLinear(g / 255.0);
+            double bl = SrgbToLinear(b / 255.0);
+
+            // Linear sRGB → XYZ (D65)
+            double x = rl * 0.4124564 + gl * 0.3575761 + bl * 0.1804375;
+            double y = rl * 0.2126729 + gl * 0.7151522 + bl * 0.0721750;
+            double z = rl * 0.0193339 + gl * 0.1191920 + bl * 0.9503041;
+
+            double fx = LabF(x / 0.95047);
+            double fy = LabF(y / 1.00000);
+            double fz = LabF(z / 1.08883);
+
+            return ((float)(116.0 * fy - 16.0), (float)(500.0 * (fx - fy)), (float)(200.0 * (fy - fz)));
+        }
+
+        private static double SrgbToLinear(double c) =>
+            c <= 0.04045 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+
+        private static double LabF(double t) =>
+            t > 0.008856 ? Math.Cbrt(t) : 7.787037 * t + 16.0 / 116.0;
 
         /// <summary>
         /// Builds a poster mosaic from the source image using default options.
@@ -409,18 +427,24 @@ namespace MovieTheater.Services.Poster
                     $"Reduce outputScale or increase tileScale. Current dimensions: {outputWidth}×{outputHeight} ({columns}×{rows} tiles)");
             }
 
-            using var small = srcImage.Clone(ctx => ctx.Resize(columns, rows));
+            using var small = srcImage.Clone(ctx => ctx.Resize(columns, rows).GaussianBlur(1f));
 
             // Use cached k-d tree for fast nearest-neighbor lookups
             var tree = await GetOrBuildTreeAsync();
+            var movieLab = cachedMovieLab!;
             int effectiveTopK = Math.Min(topK, tree.Count);
 
             var chosenMovieIds = new int[rows, columns];
             var usageCounts = new Dictionary<int, int>();
             var rng = new Random();
 
+            // Floyd-Steinberg error accumulation buffers (CIE LAB)
+            var errL = new float[rows, columns];
+            var errA = new float[rows, columns];
+            var errB = new float[rows, columns];
+
             // Pre-allocate weight buffer to avoid allocations in tight loop
-            var weightBuffer = new List<(int MovieId, int Distance, double Weight)>(effectiveTopK);
+            var weightBuffer = new List<(int MovieId, double Distance, double Weight)>(effectiveTopK);
 
             small.ProcessPixelRows(accessor =>
             {
@@ -431,8 +455,13 @@ namespace MovieTheater.Services.Poster
                     {
                         var p = row[x];
 
-                        // Use k-d tree for O(k log n) nearest-K lookup instead of O(n log n) brute force
-                        var topCandidates = tree.NearestK(p.R, p.G, p.B, effectiveTopK);
+                        // Convert pixel to LAB and add accumulated dither error
+                        var (pl, pa, pb) = RgbToLab(p.R, p.G, p.B);
+                        float tl = pl + errL[y, x];
+                        float ta = pa + errA[y, x];
+                        float tb = pb + errB[y, x];
+
+                        var topCandidates = tree.NearestK(tl, ta, tb, effectiveTopK);
 
                         // Compute weights for each candidate
                         weightBuffer.Clear();
@@ -469,18 +498,51 @@ namespace MovieTheater.Services.Poster
                         int chosenId = weightBuffer.Count > 0 ? weightBuffer[0].MovieId : 0;
                         if (totalWeight > 0)
                         {
-                            double r = rng.NextDouble() * totalWeight;
+                            double rv = rng.NextDouble() * totalWeight;
                             double acc = 0.0;
                             foreach (var (movieId, _, weight) in weightBuffer)
                             {
                                 acc += weight;
-                                if (r <= acc) { chosenId = movieId; break; }
+                                if (rv <= acc) { chosenId = movieId; break; }
                             }
                         }
 
                         usageCounts.TryGetValue(chosenId, out int cur);
                         usageCounts[chosenId] = cur + 1;
                         chosenMovieIds[y, x] = chosenId;
+
+                        // Floyd-Steinberg: propagate quantisation error to neighbours
+                        if (movieLab.TryGetValue(chosenId, out var chosen))
+                        {
+                            float el = tl - chosen.L;
+                            float ea = ta - chosen.A;
+                            float eb = tb - chosen.B;
+
+                            if (x + 1 < columns)
+                            {
+                                errL[y, x + 1] += el * (7f / 16f);
+                                errA[y, x + 1] += ea * (7f / 16f);
+                                errB[y, x + 1] += eb * (7f / 16f);
+                            }
+                            if (y + 1 < rows)
+                            {
+                                if (x > 0)
+                                {
+                                    errL[y + 1, x - 1] += el * (3f / 16f);
+                                    errA[y + 1, x - 1] += ea * (3f / 16f);
+                                    errB[y + 1, x - 1] += eb * (3f / 16f);
+                                }
+                                errL[y + 1, x] += el * (5f / 16f);
+                                errA[y + 1, x] += ea * (5f / 16f);
+                                errB[y + 1, x] += eb * (5f / 16f);
+                                if (x + 1 < columns)
+                                {
+                                    errL[y + 1, x + 1] += el * (1f / 16f);
+                                    errA[y + 1, x + 1] += ea * (1f / 16f);
+                                    errB[y + 1, x + 1] += eb * (1f / 16f);
+                                }
+                            }
+                        }
                     }
                 }
             });
