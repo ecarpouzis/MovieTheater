@@ -16,7 +16,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using MovieTheater.Db;
 using MovieTheater.Models;
@@ -49,13 +48,12 @@ namespace MovieTheater.Controllers
         private readonly BoardgamePdfRepository boardgamePdfRepository;
         private readonly IConfiguration configuration;
         private readonly YouTubeService youTubeService;
-        private readonly IMemoryCache memoryCache;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
             IBoardgameImageRepository boardgameImageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService,
             BoardGameGeekApi boardGameGeekApi, PosterMosaicService posterMosaicService,
             BoardgameRulesService boardgameRulesService, BoardgamePdfRepository boardgamePdfRepository,
-            IConfiguration configuration, YouTubeService youTubeService, IMemoryCache memoryCache)
+            IConfiguration configuration, YouTubeService youTubeService)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -73,7 +71,6 @@ namespace MovieTheater.Controllers
             this.boardgamePdfRepository = boardgamePdfRepository;
             this.configuration = configuration;
             this.youTubeService = youTubeService;
-            this.memoryCache = memoryCache;
         }
 
         private int? GetCurrentUserId()
@@ -1123,14 +1120,6 @@ namespace MovieTheater.Controllers
             if (string.IsNullOrWhiteSpace(imageUrl))
                 return BadRequest(new { Message = "imageUrl is required", Success = false });
 
-            var options = BuildMosaicOptions(tileScale, outputScale, maxOutputDimension,
-                topK, excludeRadius, colorDecayFactor, adjacencyPenaltyBase, format, quality, pngCompression);
-
-            var cacheKey = $"mosaic:{imageUrl}:ts={tileScale}:os={outputScale}:max={maxOutputDimension}:k={topK}:er={excludeRadius}:cd={colorDecayFactor}:ap={adjacencyPenaltyBase}:fmt={format}:q={quality}:png={pngCompression}";
-
-            if (memoryCache.TryGetValue(cacheKey, out byte[] cached))
-                return File(cached, GetMimeType(options.OutputFormat));
-
             HttpResponseMessage result;
             try
             {
@@ -1146,6 +1135,9 @@ namespace MovieTheater.Controllers
 
             var sourceBytes = await result.Content.ReadAsByteArrayAsync();
 
+            var options = BuildMosaicOptions(tileScale, outputScale, maxOutputDimension,
+                topK, excludeRadius, colorDecayFactor, adjacencyPenaltyBase, format, quality, pngCompression);
+
             byte[] mosaicBytes;
             try
             {
@@ -1155,12 +1147,6 @@ namespace MovieTheater.Controllers
             {
                 return BadRequest(new { Message = ex.Message, Success = false });
             }
-
-            memoryCache.Set(cacheKey, mosaicBytes, new MemoryCacheEntryOptions
-            {
-                SlidingExpiration = TimeSpan.FromHours(2),
-                Size = mosaicBytes.Length,
-            });
 
             return File(mosaicBytes, GetMimeType(options.OutputFormat));
         }
