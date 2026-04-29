@@ -531,16 +531,15 @@ namespace MovieTheater.Services.Poster
 
             using var combined = new Image<Rgba32>(columns * posterWidth, rows * posterHeight);
 
-            // Decode and resize all unique posters in parallel
-            var resizedPosters = new ConcurrentDictionary<int, Image<Rgba32>>();
+            var resizedPosters = new Dictionary<int, Image<Rgba32>>();
             try
             {
-                Parallel.ForEach(posterBytesById, kvp =>
+                foreach (var kvp in posterBytesById)
                 {
                     var img = Image.Load<Rgba32>(kvp.Value);
                     img.Mutate(x => x.Resize(posterWidth, posterHeight));
                     resizedPosters[kvp.Key] = img;
-                });
+                }
 
                 var fallbackPoster = resizedPosters.Values.First();
 
