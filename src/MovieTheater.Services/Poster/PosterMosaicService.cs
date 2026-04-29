@@ -342,7 +342,10 @@ namespace MovieTheater.Services.Poster
             int excludeRadius = Math.Clamp(options.ExcludeRadius, 0, 50);
             double tileScale = Math.Clamp(options.TileScale, 0.01, 10.0);
             double outputScale = Math.Clamp(options.OutputScale, 0.1, 100.0);
-            double colorDecay = Math.Clamp(options.ColorDecayFactor, 1.0, 1000000.0);
+            // Rescale colorDecayFactor from RGB squared-distance space (max ~195,075) to LAB (max ~10,000)
+            // so existing parameter values produce equivalent visual discrimination after switching to LAB.
+            const double RgbToLabDecayScale = 3.0 * 255.0 * 255.0 / (100.0 * 100.0); // ≈ 19.5
+            double colorDecay = Math.Clamp(options.ColorDecayFactor, 1.0, 1000000.0) / RgbToLabDecayScale;
             double adjacencyPenalty = Math.Clamp(options.AdjacencyPenaltyBase, 0.001, 1.0);
 
             using var srcImage = Image.Load<Rgba32>(sourceBytes);
