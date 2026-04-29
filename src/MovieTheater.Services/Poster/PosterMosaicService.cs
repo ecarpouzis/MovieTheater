@@ -72,8 +72,8 @@ namespace MovieTheater.Services.Poster
         /// <summary>Radius (in cells) to check for duplicate posters (0-50).</summary>
         public int ExcludeRadius { get; set; } = 2;
 
-        /// <summary>Exponential decay divisor for color distance weighting. Higher = more tolerant of color differences.</summary>
-        public double ColorDecayFactor { get; set; } = 10000.0;
+        /// <summary>Exponential decay divisor for color distance weighting in CIE LAB ΔE² units. Higher = more tolerant of color differences.</summary>
+        public double ColorDecayFactor { get; set; } = 100.0;
 
         /// <summary>Base penalty multiplier for adjacent duplicate posters (0-1). Lower = stronger penalty.</summary>
         public double AdjacencyPenaltyBase { get; set; } = 0.1;
@@ -95,29 +95,29 @@ namespace MovieTheater.Services.Poster
     public class PosterMosaicService
     {
         /// <summary>
-        /// 3-dimensional k-d tree for RGB color nearest-neighbor lookup with top-K support.
+        /// 3-dimensional k-d tree for CIE LAB color nearest-neighbor lookup with top-K support.
         /// Thread-safe for concurrent read operations after construction.
         /// </summary>
         private class KDTree3
         {
             private class Node
             {
-                public float X, Y, Z; // normalized LAB: each component scaled to [0,255]
+                public float L, A, B;
                 public int MovieId;
                 public Node? Left;
                 public Node? Right;
             }
 
             private readonly Node? root;
-            private readonly List<(int MovieId, float X, float Y, float Z)> allPoints;
+            private readonly int count;
 
-            public int Count => allPoints.Count;
+            public int Count => count;
 
-            public KDTree3(List<(int MovieId, float X, float Y, float Z)> points)
+            public KDTree3(List<(int MovieId, float L, float A, float B)> points)
             {
-                allPoints = points ?? [];
-                if (allPoints.Count == 0) { root = null; return; }
-                var pts = allPoints.Select(p => new Node { MovieId = p.MovieId, X = p.X, Y = p.Y, Z = p.Z }).ToList();
+                count = points?.Count ?? 0;
+                if (count == 0) { root = null; return; }
+                var pts = points!.Select(p => new Node { MovieId = p.MovieId, L = p.L, A = p.A, B = p.B }).ToList();
                 root = Build(pts, 0);
             }
 
@@ -127,9 +127,9 @@ namespace MovieTheater.Services.Poster
                 int axis = depth % 3;
                 pts.Sort((a, b) => axis switch
                 {
-                    0 => a.X.CompareTo(b.X),
-                    1 => a.Y.CompareTo(b.Y),
-                    _ => a.Z.CompareTo(b.Z),
+                    0 => a.L.CompareTo(b.L),
+                    1 => a.A.CompareTo(b.A),
+                    _ => a.B.CompareTo(b.B),
                 });
                 int mid = pts.Count / 2;
                 var node = pts[mid];
@@ -139,25 +139,24 @@ namespace MovieTheater.Services.Poster
             }
 
             /// <summary>
-            /// Find the K nearest neighbors. Components are normalized LAB in [0,255],
-            /// so distances are in the same numerical range as RGB and existing colorDecayFactor
-            /// values apply without adjustment.
+            /// Find the K nearest neighbors in CIE LAB space.
+            /// Returns squared ΔE distances, ascending.
             /// </summary>
-            public List<(int MovieId, int Distance)> NearestK(float x, float y, float z, int k)
+            public List<(int MovieId, double Distance)> NearestK(float l, float a, float b, int k)
             {
                 if (root == null || k <= 0) return [];
 
-                var heap = new SortedSet<(int Dist, int MovieId, int Tiebreaker)>();
+                var heap = new SortedSet<(double Dist, int MovieId, int Tiebreaker)>();
                 int tiebreaker = 0;
 
                 void Search(Node? node, int depth)
                 {
                     if (node == null) return;
 
-                    float dx = node.X - x;
-                    float dy = node.Y - y;
-                    float dz = node.Z - z;
-                    int dist = (int)(dx * dx + dy * dy + dz * dz);
+                    double dl = node.L - l;
+                    double da = node.A - a;
+                    double db = node.B - b;
+                    double dist = dl * dl + da * da + db * db;
 
                     if (heap.Count < k)
                         heap.Add((dist, node.MovieId, tiebreaker++));
@@ -168,12 +167,12 @@ namespace MovieTheater.Services.Poster
                     }
 
                     int axis = depth % 3;
-                    float diff = axis switch { 0 => x - node.X, 1 => y - node.Y, _ => z - node.Z };
+                    double diff = axis switch { 0 => l - node.L, 1 => a - node.A, _ => b - node.B };
                     var first = diff < 0 ? node.Left : node.Right;
                     var second = diff < 0 ? node.Right : node.Left;
 
                     Search(first, depth + 1);
-                    if (heap.Count < k || (int)(diff * diff) < heap.Max.Dist)
+                    if (heap.Count < k || diff * diff < heap.Max.Dist)
                         Search(second, depth + 1);
                 }
 
@@ -247,13 +246,13 @@ namespace MovieTheater.Services.Poster
                 if (candidates.Count == 0)
                     throw new InvalidOperationException("No posters with DominantColor available");
 
-                var candidateColors = new List<(int MovieId, float X, float Y, float Z)>(candidates.Count);
+                var candidateColors = new List<(int MovieId, float L, float A, float B)>(candidates.Count);
                 foreach (var c in candidates)
                 {
                     if (TryParseHexColor(c.DominantColor, out byte r, out byte g, out byte b))
                     {
-                        var (x, y, z) = RgbToLabNormalized(r, g, b);
-                        candidateColors.Add((c.MovieId, x, y, z));
+                        var (l, a, b2) = RgbToLab(r, g, b);
+                        candidateColors.Add((c.MovieId, l, a, b2));
                     }
                 }
 
@@ -292,10 +291,8 @@ namespace MovieTheater.Services.Poster
             }
         }
 
-        // Converts sRGB to normalized LAB where each component is in [0,255].
-        // This keeps distances in the same numerical range as RGB so colorDecayFactor
-        // values work without adjustment.
-        private static (float X, float Y, float Z) RgbToLabNormalized(byte r, byte g, byte b)
+        // Converts sRGB to CIE LAB. Raw values: L 0–100, a/b roughly –128–127.
+        private static (float L, float A, float B) RgbToLab(byte r, byte g, byte b)
         {
             double rl = SrgbToLinear(r / 255.0);
             double gl = SrgbToLinear(g / 255.0);
@@ -309,12 +306,7 @@ namespace MovieTheater.Services.Poster
             double fy = LabF(yd / 1.00000);
             double fz = LabF(zd / 1.08883);
 
-            double L = 116.0 * fy - 16.0;   // 0–100
-            double A = 500.0 * (fx - fy);    // ~–128–127
-            double B = 200.0 * (fy - fz);    // ~–128–127
-
-            // Normalize to [0,255] so distance scale matches RGB
-            return ((float)(L * 2.55), (float)(A + 128.0), (float)(B + 128.0));
+            return ((float)(116.0 * fy - 16.0), (float)(500.0 * (fx - fy)), (float)(200.0 * (fy - fz)));
         }
 
         private static double SrgbToLinear(double c) =>
@@ -443,7 +435,7 @@ namespace MovieTheater.Services.Poster
             var rng = new Random();
 
             // Pre-allocate weight buffer to avoid allocations in tight loop
-            var weightBuffer = new List<(int MovieId, int Distance, double Weight)>(effectiveTopK);
+            var weightBuffer = new List<(int MovieId, double Distance, double Weight)>(effectiveTopK);
 
             small.ProcessPixelRows(accessor =>
             {
@@ -453,7 +445,7 @@ namespace MovieTheater.Services.Poster
                     for (int x = 0; x < row.Length; x++)
                     {
                         var p = row[x];
-                        var (lx, ly, lz) = RgbToLabNormalized(p.R, p.G, p.B);
+                        var (lx, ly, lz) = RgbToLab(p.R, p.G, p.B);
                         var topCandidates = tree.NearestK(lx, ly, lz, effectiveTopK);
 
                         // Compute weights for each candidate

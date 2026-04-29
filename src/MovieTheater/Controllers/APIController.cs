@@ -1070,7 +1070,7 @@ namespace MovieTheater.Controllers
             // Color Matching
             int topK = 50,
             int excludeRadius = 2,
-            double colorDecayFactor = 10000.0,
+            double colorDecayFactor = 100.0,
             double adjacencyPenaltyBase = 0.1,
             // Output Format
             string format = "png",
@@ -1113,7 +1113,7 @@ namespace MovieTheater.Controllers
             // Color Matching
             int topK = 50,
             int excludeRadius = 2,
-            double colorDecayFactor = 10000.0,
+            double colorDecayFactor = 100.0,
             double adjacencyPenaltyBase = 0.1,
             // Output Format
             string format = "png",
