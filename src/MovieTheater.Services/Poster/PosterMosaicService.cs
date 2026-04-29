@@ -102,22 +102,22 @@ namespace MovieTheater.Services.Poster
         {
             private class Node
             {
-                public float L, A, B;
+                public float X, Y, Z; // normalized LAB: each component scaled to [0,255]
                 public int MovieId;
                 public Node? Left;
                 public Node? Right;
             }
 
             private readonly Node? root;
-            private readonly List<(int MovieId, float L, float A, float B)> allPoints;
+            private readonly List<(int MovieId, float X, float Y, float Z)> allPoints;
 
             public int Count => allPoints.Count;
 
-            public KDTree3(List<(int MovieId, float L, float A, float B)> points)
+            public KDTree3(List<(int MovieId, float X, float Y, float Z)> points)
             {
                 allPoints = points ?? [];
                 if (allPoints.Count == 0) { root = null; return; }
-                var pts = allPoints.Select(p => new Node { MovieId = p.MovieId, L = p.L, A = p.A, B = p.B }).ToList();
+                var pts = allPoints.Select(p => new Node { MovieId = p.MovieId, X = p.X, Y = p.Y, Z = p.Z }).ToList();
                 root = Build(pts, 0);
             }
 
@@ -125,11 +125,11 @@ namespace MovieTheater.Services.Poster
             {
                 if (pts == null || pts.Count == 0) return null;
                 int axis = depth % 3;
-                pts.Sort((x, y) => axis switch
+                pts.Sort((a, b) => axis switch
                 {
-                    0 => x.L.CompareTo(y.L),
-                    1 => x.A.CompareTo(y.A),
-                    _ => x.B.CompareTo(y.B),
+                    0 => a.X.CompareTo(b.X),
+                    1 => a.Y.CompareTo(b.Y),
+                    _ => a.Z.CompareTo(b.Z),
                 });
                 int mid = pts.Count / 2;
                 var node = pts[mid];
@@ -139,24 +139,25 @@ namespace MovieTheater.Services.Poster
             }
 
             /// <summary>
-            /// Find the K nearest neighbors in CIE LAB space.
-            /// Returns results sorted by squared distance (ascending).
+            /// Find the K nearest neighbors. Components are normalized LAB in [0,255],
+            /// so distances are in the same numerical range as RGB and existing colorDecayFactor
+            /// values apply without adjustment.
             /// </summary>
-            public List<(int MovieId, double Distance)> NearestK(float l, float a, float b, int k)
+            public List<(int MovieId, int Distance)> NearestK(float x, float y, float z, int k)
             {
                 if (root == null || k <= 0) return [];
 
-                var heap = new SortedSet<(double Dist, int MovieId, int Tiebreaker)>();
+                var heap = new SortedSet<(int Dist, int MovieId, int Tiebreaker)>();
                 int tiebreaker = 0;
 
                 void Search(Node? node, int depth)
                 {
                     if (node == null) return;
 
-                    double dl = node.L - l;
-                    double da = node.A - a;
-                    double db = node.B - b;
-                    double dist = dl * dl + da * da + db * db;
+                    float dx = node.X - x;
+                    float dy = node.Y - y;
+                    float dz = node.Z - z;
+                    int dist = (int)(dx * dx + dy * dy + dz * dz);
 
                     if (heap.Count < k)
                         heap.Add((dist, node.MovieId, tiebreaker++));
@@ -167,12 +168,12 @@ namespace MovieTheater.Services.Poster
                     }
 
                     int axis = depth % 3;
-                    float diff = axis switch { 0 => l - node.L, 1 => a - node.A, _ => b - node.B };
+                    float diff = axis switch { 0 => x - node.X, 1 => y - node.Y, _ => z - node.Z };
                     var first = diff < 0 ? node.Left : node.Right;
                     var second = diff < 0 ? node.Right : node.Left;
 
                     Search(first, depth + 1);
-                    if (heap.Count < k || (double)(diff * diff) < heap.Max.Dist)
+                    if (heap.Count < k || (int)(diff * diff) < heap.Max.Dist)
                         Search(second, depth + 1);
                 }
 
@@ -246,13 +247,13 @@ namespace MovieTheater.Services.Poster
                 if (candidates.Count == 0)
                     throw new InvalidOperationException("No posters with DominantColor available");
 
-                var candidateColors = new List<(int MovieId, float L, float A, float B)>(candidates.Count);
+                var candidateColors = new List<(int MovieId, float X, float Y, float Z)>(candidates.Count);
                 foreach (var c in candidates)
                 {
                     if (TryParseHexColor(c.DominantColor, out byte r, out byte g, out byte b))
                     {
-                        var (cl, ca, cb) = RgbToLab(r, g, b);
-                        candidateColors.Add((c.MovieId, cl, ca, cb));
+                        var (x, y, z) = RgbToLabNormalized(r, g, b);
+                        candidateColors.Add((c.MovieId, x, y, z));
                     }
                 }
 
@@ -291,22 +292,29 @@ namespace MovieTheater.Services.Poster
             }
         }
 
-        private static (float L, float A, float B) RgbToLab(byte r, byte g, byte b)
+        // Converts sRGB to normalized LAB where each component is in [0,255].
+        // This keeps distances in the same numerical range as RGB so colorDecayFactor
+        // values work without adjustment.
+        private static (float X, float Y, float Z) RgbToLabNormalized(byte r, byte g, byte b)
         {
             double rl = SrgbToLinear(r / 255.0);
             double gl = SrgbToLinear(g / 255.0);
             double bl = SrgbToLinear(b / 255.0);
 
-            // Linear sRGB → XYZ (D65)
-            double x = rl * 0.4124564 + gl * 0.3575761 + bl * 0.1804375;
-            double y = rl * 0.2126729 + gl * 0.7151522 + bl * 0.0721750;
-            double z = rl * 0.0193339 + gl * 0.1191920 + bl * 0.9503041;
+            double xd = rl * 0.4124564 + gl * 0.3575761 + bl * 0.1804375;
+            double yd = rl * 0.2126729 + gl * 0.7151522 + bl * 0.0721750;
+            double zd = rl * 0.0193339 + gl * 0.1191920 + bl * 0.9503041;
 
-            double fx = LabF(x / 0.95047);
-            double fy = LabF(y / 1.00000);
-            double fz = LabF(z / 1.08883);
+            double fx = LabF(xd / 0.95047);
+            double fy = LabF(yd / 1.00000);
+            double fz = LabF(zd / 1.08883);
 
-            return ((float)(116.0 * fy - 16.0), (float)(500.0 * (fx - fy)), (float)(200.0 * (fy - fz)));
+            double L = 116.0 * fy - 16.0;   // 0–100
+            double A = 500.0 * (fx - fy);    // ~–128–127
+            double B = 200.0 * (fy - fz);    // ~–128–127
+
+            // Normalize to [0,255] so distance scale matches RGB
+            return ((float)(L * 2.55), (float)(A + 128.0), (float)(B + 128.0));
         }
 
         private static double SrgbToLinear(double c) =>
@@ -339,10 +347,7 @@ namespace MovieTheater.Services.Poster
             int excludeRadius = Math.Clamp(options.ExcludeRadius, 0, 50);
             double tileScale = Math.Clamp(options.TileScale, 0.01, 10.0);
             double outputScale = Math.Clamp(options.OutputScale, 0.1, 100.0);
-            // Rescale colorDecayFactor from RGB squared-distance space (max ~195,075) to LAB (max ~10,000)
-            // so existing parameter values produce equivalent visual discrimination after switching to LAB.
-            const double RgbToLabDecayScale = 3.0 * 255.0 * 255.0 / (100.0 * 100.0); // ≈ 19.5
-            double colorDecay = Math.Clamp(options.ColorDecayFactor, 1.0, 1000000.0) / RgbToLabDecayScale;
+            double colorDecay = Math.Clamp(options.ColorDecayFactor, 1.0, 1000000.0);
             double adjacencyPenalty = Math.Clamp(options.AdjacencyPenaltyBase, 0.001, 1.0);
 
             using var srcImage = Image.Load<Rgba32>(sourceBytes);
@@ -438,7 +443,7 @@ namespace MovieTheater.Services.Poster
             var rng = new Random();
 
             // Pre-allocate weight buffer to avoid allocations in tight loop
-            var weightBuffer = new List<(int MovieId, double Distance, double Weight)>(effectiveTopK);
+            var weightBuffer = new List<(int MovieId, int Distance, double Weight)>(effectiveTopK);
 
             small.ProcessPixelRows(accessor =>
             {
@@ -448,8 +453,8 @@ namespace MovieTheater.Services.Poster
                     for (int x = 0; x < row.Length; x++)
                     {
                         var p = row[x];
-                        var (pl, pa, pb) = RgbToLab(p.R, p.G, p.B);
-                        var topCandidates = tree.NearestK(pl, pa, pb, effectiveTopK);
+                        var (lx, ly, lz) = RgbToLabNormalized(p.R, p.G, p.B);
+                        var topCandidates = tree.NearestK(lx, ly, lz, effectiveTopK);
 
                         // Compute weights for each candidate
                         weightBuffer.Clear();

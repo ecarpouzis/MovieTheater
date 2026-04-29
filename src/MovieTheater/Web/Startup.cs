@@ -38,6 +38,8 @@ namespace MovieTheater
             var proxyBuilder = services.AddReverseProxy();
             proxyBuilder.LoadFromConfig(config.RawConfiguration.GetSection("ReverseProxy"));
 
+            services.AddMemoryCache(opts => opts.SizeLimit = 200 * 1024 * 1024); // 200 MB cap for mosaic cache
+
             services.AddMvc()
                 .AddJsonOptions(opts =>
                 {
