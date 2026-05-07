@@ -31,18 +31,14 @@ namespace MovieTheater.Services.Bgg
 
             var linkSets = games.ToDictionary(g => g.id, g => ParseLinkSets(g.ExtraDetails?.LinksJson));
 
-            // IDF: rare mechanics/categories score higher than ubiquitous ones.
-            // A mechanic shared by 2 games is a much stronger signal than "Card Game" shared by 40.
-            var mechanicCounts = new Dictionary<int, int>();
-            var categoryCounts = new Dictionary<int, int>();
+            int n = games.Count;
+            var allTagCounts = new Dictionary<(string type, int id), int>();
             foreach (var (mech, cat) in linkSets.Values)
             {
-                foreach (var id in mech.Keys) mechanicCounts[id] = mechanicCounts.GetValueOrDefault(id) + 1;
-                foreach (var id in cat.Keys) categoryCounts[id] = categoryCounts.GetValueOrDefault(id) + 1;
+                foreach (var id in mech.Keys) { var k = ("m", id); allTagCounts[k] = allTagCounts.GetValueOrDefault(k) + 1; }
+                foreach (var id in cat.Keys) { var k = ("c", id); allTagCounts[k] = allTagCounts.GetValueOrDefault(k) + 1; }
             }
-            int n = games.Count;
-            double MechanicIdf(int id) => Math.Log((double)n / (1.0 + mechanicCounts.GetValueOrDefault(id)));
-            double CategoryIdf(int id) => Math.Log((double)n / (1.0 + categoryCounts.GetValueOrDefault(id)));
+            double TagIdf((string type, int id) key) => Math.Log((double)n / (1.0 + allTagCounts.GetValueOrDefault(key))) * (key.type == "m" ? 1.2 : 1.0);
 
             var newIndex = new Dictionary<int, IReadOnlyList<SimilarGameDto>>();
             foreach (var game in games)
@@ -50,13 +46,19 @@ namespace MovieTheater.Services.Bgg
                 var (targetMechanics, targetCategories) = linkSets[game.id];
                 if (targetMechanics.Count == 0 && targetCategories.Count == 0) continue;
 
+                var targetTags = targetMechanics.ToDictionary(kv => ("m", kv.Key), kv => kv.Value)
+                    .Concat(targetCategories.ToDictionary(kv => ("c", kv.Key), kv => kv.Value))
+                    .ToDictionary(kv => kv.Key, kv => kv.Value);
+
                 var similar = games
                     .Where(other => other.id != game.id)
                     .Select(other =>
                     {
                         var (mechanics, categories) = linkSets[other.id];
-                        double score = 0.65 * WeightedJaccard(targetMechanics, mechanics, MechanicIdf)
-                                     + 0.35 * WeightedJaccard(targetCategories, categories, CategoryIdf);
+                        var otherTags = mechanics.ToDictionary(kv => ("m", kv.Key), kv => kv.Value)
+                            .Concat(categories.ToDictionary(kv => ("c", kv.Key), kv => kv.Value))
+                            .ToDictionary(kv => kv.Key, kv => kv.Value);
+                        double score = WeightedJaccard(targetTags, otherTags, TagIdf);
                         var sharedMechanics = targetMechanics.Where(kv => mechanics.ContainsKey(kv.Key)).Select(kv => kv.Value).ToList();
                         var sharedCategories = targetCategories.Where(kv => categories.ContainsKey(kv.Key)).Select(kv => kv.Value).ToList();
                         return (other, score, sharedMechanics, sharedCategories);
@@ -94,7 +96,7 @@ namespace MovieTheater.Services.Bgg
             return (mechanics, categories);
         }
 
-        private static double WeightedJaccard(Dictionary<int, string> a, Dictionary<int, string> b, Func<int, double> idf)
+        private static double WeightedJaccard(Dictionary<(string type, int id), string> a, Dictionary<(string type, int id), string> b, Func<(string type, int id), double> idf)
         {
             if (a.Count == 0 && b.Count == 0) return 0;
             double intersection = 0, union = 0;
