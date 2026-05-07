@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import BoardGameCardList from "./BoardGameCardList";
 import BoardGameModal from "./BoardGameModal";
@@ -37,6 +37,8 @@ function normalizeGame(game) {
       .map((e) => (typeof e === "string" ? e : e.Url ?? e.url ?? "")).filter(Boolean),
     imageUrl: details?.imageUrl ?? details?.ImageUrl ?? null,
     imageVersion: details?.imageVersion ?? details?.ImageVersion ?? null,
+    thingType: game.thingType ?? game.ThingType ?? null,
+    baseGameId: game.baseGameId ?? game.BaseGameId ?? null,
   };
 }
 
@@ -46,7 +48,7 @@ function extractGames(payload) {
 }
 
 function BoardGames({ userData }) {
-  const [games, setGames] = useState([]);
+  const [allGames, setAllGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedGameId, setSelectedGameId] = useState(null);
@@ -58,7 +60,7 @@ function BoardGames({ userData }) {
     setLoading(true);
     setError(null);
 
-    fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minPlayTime,maxPlayTime,minAge,averageRating,averageWeight,description,rulesPdfUrlsJson,rulesPdfCandidateUrlsJson,howToPlayVideoUrlsJson&$expand=imageDetails&$orderby=name", {
+    fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minPlayTime,maxPlayTime,minAge,averageRating,averageWeight,description,rulesPdfUrlsJson,rulesPdfCandidateUrlsJson,howToPlayVideoUrlsJson,thingType,baseGameId&$expand=imageDetails&$orderby=name", {
       signal: controller.signal,
     })
       .then((r) => {
@@ -66,18 +68,29 @@ function BoardGames({ userData }) {
         return r.json();
       })
       .then((data) => {
-        setGames(extractGames(data));
+        setAllGames(extractGames(data));
         setLoading(false);
       })
       .catch((err) => {
         if (err.name === "AbortError") return;
-        setGames([]);
+        setAllGames([]);
         setError(err.message || "Failed to load boardgames");
         setLoading(false);
       });
 
     return () => controller.abort();
   }, []);
+
+  const expansionMap = useMemo(() => {
+    const map = {};
+    for (const g of allGames) {
+      if (g.baseGameId != null) {
+        if (!map[g.baseGameId]) map[g.baseGameId] = [];
+        map[g.baseGameId].push(g);
+      }
+    }
+    return map;
+  }, [allGames]);
 
   const params = new URLSearchParams(location.search);
   const mode = params.get("mode");
@@ -87,7 +100,10 @@ function BoardGames({ userData }) {
   const timeParam = params.get("time");
   const sortParam = params.get("sort");
 
-  let displayGames = games;
+  const showExpansions = userData?.showBoardgameExpansions ?? false;
+  let displayGames = showExpansions
+    ? allGames
+    : allGames.filter((g) => g.thingType !== "boardgameexpansion" && g.baseGameId == null);
 
   if (mode === "title" && value.trim()) {
     const q = value.trim().toLowerCase();
@@ -104,12 +120,20 @@ function BoardGames({ userData }) {
   if (playersParam) {
     const p = parseInt(playersParam, 10);
     if (p === 8) {
-      displayGames = displayGames.filter((g) => g.maxPlayers == null || g.maxPlayers >= 8);
+      displayGames = displayGames.filter((g) => {
+        if (g.maxPlayers == null || g.maxPlayers >= 8) return true;
+        return (expansionMap[g.id] ?? []).some((e) => e.maxPlayers == null || e.maxPlayers >= 8);
+      });
     } else {
-      displayGames = displayGames.filter((g) =>
-        (g.minPlayers == null || g.minPlayers <= p) &&
-        (g.maxPlayers == null || g.maxPlayers >= p)
-      );
+      displayGames = displayGames.filter((g) => {
+        const gameMatches =
+          (g.minPlayers == null || g.minPlayers <= p) &&
+          (g.maxPlayers == null || g.maxPlayers >= p);
+        if (gameMatches) return true;
+        return (expansionMap[g.id] ?? []).some(
+          (e) => (e.minPlayers == null || e.minPlayers <= p) && (e.maxPlayers == null || e.maxPlayers >= p)
+        );
+      });
     }
   }
 
@@ -155,7 +179,7 @@ function BoardGames({ userData }) {
 
   const handleGameUpdated = (rawData) => {
     const updated = normalizeGame(rawData);
-    setGames((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+    setAllGames((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
   };
 
   if (loading) return <span>Loading</span>;
@@ -166,13 +190,14 @@ function BoardGames({ userData }) {
       {displayGames.length === 0 ? (
         <span>No boardgames found.</span>
       ) : (
-        <BoardGameCardList games={displayGames} onGameClick={handleOpenGame} />
+        <BoardGameCardList games={displayGames} expansionMap={expansionMap} onGameClick={handleOpenGame} />
       )}
       <BoardGameModal
         gameId={selectedGameId}
         open={isModalVisible}
         onClose={handleCloseModal}
-        games={games}
+        games={allGames}
+        expansionMap={expansionMap}
         userData={userData}
         onGameUpdated={handleGameUpdated}
       />

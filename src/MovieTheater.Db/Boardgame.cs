@@ -16,6 +16,14 @@ namespace MovieTheater.Db
 
         public string? ThingType { get; set; }
 
+        public int? BaseGameId { get; set; }
+
+        [ForeignKey(nameof(BaseGameId))]
+        public Boardgame? BaseGame { get; set; }
+
+        [InverseProperty(nameof(BaseGame))]
+        public ICollection<Boardgame> Expansions { get; set; } = [];
+
         public string? Name { get; set; }
 
         public int? YearPublished { get; set; }

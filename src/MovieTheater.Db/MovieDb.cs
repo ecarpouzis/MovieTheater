@@ -4,6 +4,17 @@ namespace MovieTheater.Db
 {
     public class MovieDb : DbContext
     {
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<Boardgame>()
+                .HasOne(b => b.BaseGame)
+                .WithMany(b => b.Expansions)
+                .HasForeignKey(b => b.BaseGameId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
+
         public DbSet<Movie> Movies { get; set; }
         public DbSet<MoviePosterDetails> MoviePosterDetails { get; set; }
         public DbSet<User> Users { get; set; }

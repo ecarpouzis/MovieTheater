@@ -18,6 +18,7 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
   const [cardStyle, setCardStyle] = useState("standard");
   const [canEditMovies, setCanEditMovies] = useState(false);
   const [enablePagination, setEnablePagination] = useState(false);
+  const [showBoardgameExpansions, setShowBoardgameExpansions] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -31,6 +32,7 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
     setEnablePagination(
       userData.enablePagination == null ? false : Boolean(userData.enablePagination),
     );
+    setShowBoardgameExpansions(userData.showBoardgameExpansions ?? false);
 
     // Use the cached ratings if already fetched; otherwise fetch once and cache.
     if (mpaRatingsCache) {
@@ -59,9 +61,10 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
       MovieAPI.setUserSetting("AgeRestriction", ageValue).then((r) => r.json()),
       MovieAPI.setUserSetting("CardStyle", cardStyle).then((r) => r.json()),
       MovieAPI.setUserSetting("EnablePagination", enablePagination ? "true" : "false").then((r) => r.json()),
+      MovieAPI.setUserSetting("ShowBoardgameExpansions", showBoardgameExpansions ? "true" : "false").then((r) => r.json()),
     ])
       .then(() => {
-        setUserData((prev) => ({ ...prev, ageRestriction, cardStyle, enablePagination }));
+        setUserData((prev) => ({ ...prev, ageRestriction, cardStyle, enablePagination, showBoardgameExpansions }));
         window.localStorage.setItem("CardStyle", cardStyle ?? "standard");
         message.success("Settings Saved!");
         setTimeout(() => {
@@ -132,6 +135,16 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
             </Checkbox>
           </div>
           <p className="settings-hint">If pagination is disabled, all movies will be loaded at once (may be slow for large libraries).</p>
+        </div>
+
+        <div className="settings-section">
+          <h3 className="settings-section-title">Board Games</h3>
+          <div className="settings-row settings-row--push">
+            <Checkbox checked={showBoardgameExpansions} onChange={(e) => setShowBoardgameExpansions(e.target.checked)}>
+              Show Expansions
+            </Checkbox>
+          </div>
+          <p className="settings-hint">When enabled, boardgame expansions appear in the list alongside base games.</p>
         </div>
 
         <div className="settings-section">

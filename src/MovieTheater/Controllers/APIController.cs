@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
@@ -525,7 +526,16 @@ namespace MovieTheater.Controllers
                 enablePagination = parsedEnablePagination;
             }
 
-            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies, enablePagination });
+            // show boardgame expansions
+            var showExpansionsSetting = await movieDb.UserSettings
+                .FirstOrDefaultAsync(u => u.SettingKey == "ShowBoardgameExpansions" && u.UserID == user.UserID);
+            bool showBoardgameExpansions = false;
+            if (showExpansionsSetting != null && bool.TryParse(showExpansionsSetting.SettingValue, out var parsedShowExpansions))
+            {
+                showBoardgameExpansions = parsedShowExpansions;
+            }
+
+            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions });
         }
 
         [HttpPost("/API/Logout")]
@@ -1227,6 +1237,8 @@ namespace MovieTheater.Controllers
                 {
                     movieDb.Boardgames.Add(fromBggBoardgame);
                     await movieDb.SaveChangesAsync();
+                    fromBggBoardgame.BaseGameId = await ResolveBaseGameId(fromBggBoardgame.ExtraDetails?.LinksJson);
+                    if (fromBggBoardgame.BaseGameId.HasValue) await movieDb.SaveChangesAsync();
                     await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
 
                     // Download images after saving to database
@@ -1240,6 +1252,8 @@ namespace MovieTheater.Controllers
                     || !string.Equals(existing.ImageDetails?.ThumbnailUrl, fromBgg.ThumbnailUrl, StringComparison.Ordinal);
 
                 ApplyBoardgameSnapshot(existing, fromBggBoardgame);
+                await movieDb.SaveChangesAsync();
+                existing.BaseGameId = await ResolveBaseGameId(existing.ExtraDetails?.LinksJson);
                 await movieDb.SaveChangesAsync();
                 await UpsertBoardgameImageUrls(existing.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
 
@@ -1283,6 +1297,8 @@ namespace MovieTheater.Controllers
                 {
                     movieDb.Boardgames.Add(fromBggBoardgame);
                     await movieDb.SaveChangesAsync();
+                    fromBggBoardgame.BaseGameId = await ResolveBaseGameId(fromBggBoardgame.ExtraDetails?.LinksJson);
+                    if (fromBggBoardgame.BaseGameId.HasValue) await movieDb.SaveChangesAsync();
                     await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
 
                     // Download images after saving to database
@@ -1296,6 +1312,8 @@ namespace MovieTheater.Controllers
                     || !string.Equals(existing.ImageDetails?.ThumbnailUrl, fromBgg.ThumbnailUrl, StringComparison.Ordinal);
 
                 ApplyBoardgameSnapshot(existing, fromBggBoardgame);
+                await movieDb.SaveChangesAsync();
+                existing.BaseGameId = await ResolveBaseGameId(existing.ExtraDetails?.LinksJson);
                 await movieDb.SaveChangesAsync();
                 await UpsertBoardgameImageUrls(existing.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
 
@@ -1324,6 +1342,7 @@ namespace MovieTheater.Controllers
             public int? PlayingTime { get; set; }
             public int? MinAge { get; set; }
             public string? ImageUrl { get; set; }
+            public int? BaseGameId { get; set; }
         }
 
         [HttpPost("/API/UpdateBoardgame")]
@@ -1346,6 +1365,7 @@ namespace MovieTheater.Controllers
             game.MaxPlayers = req.MaxPlayers;
             game.PlayingTime = req.PlayingTime;
             game.MinAge = req.MinAge;
+            game.BaseGameId = req.BaseGameId;
 
             await movieDb.SaveChangesAsync();
 
@@ -1918,6 +1938,60 @@ namespace MovieTheater.Controllers
         }
 
 
+        private async Task<int?> ResolveBaseGameId(string? linksJson)
+        {
+            if (string.IsNullOrWhiteSpace(linksJson)) return null;
+            try
+            {
+                using var doc = JsonDocument.Parse(linksJson);
+                if (doc.RootElement.ValueKind != JsonValueKind.Array) return null;
+                // boardgameexpansion = DLC-style; boardgameimplementation = standalone version of another game
+                // inbound=true on either means the linked game is this game's base/original
+                foreach (var link in doc.RootElement.EnumerateArray())
+                {
+                    if (!link.TryGetProperty("type", out var typeProp)) continue;
+                    var linkType = typeProp.GetString();
+                    if (linkType != "boardgameexpansion" && linkType != "boardgameimplementation") continue;
+                    if (!link.TryGetProperty("inbound", out var inboundProp) || inboundProp.ValueKind != JsonValueKind.True) continue;
+                    if (!link.TryGetProperty("id", out var idProp) || !idProp.TryGetInt32(out var bggBaseId)) continue;
+                    var baseGame = await movieDb.Boardgames
+                        .AsNoTracking()
+                        .Where(b => b.BggThingId == bggBaseId)
+                        .Select(b => new { b.id })
+                        .FirstOrDefaultAsync();
+                    if (baseGame != null) return baseGame.id;
+                }
+            }
+            catch { /* malformed JSON */ }
+            return null;
+        }
+
+        [HttpPost("/API/BackfillBoardgameBaseGameIds")]
+        public async Task<IActionResult> BackfillBoardgameBaseGameIds()
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+
+            var candidates = await movieDb.Boardgames
+                .Include(b => b.ExtraDetails)
+                .Where(b => b.ExtraDetails != null && b.ExtraDetails.LinksJson != null)
+                .ToListAsync();
+
+            int updated = 0, skipped = 0;
+            foreach (var game in candidates)
+            {
+                var resolved = await ResolveBaseGameId(game.ExtraDetails?.LinksJson);
+                if (resolved.HasValue && game.BaseGameId != resolved.Value)
+                {
+                    game.BaseGameId = resolved.Value;
+                    updated++;
+                }
+                else skipped++;
+            }
+
+            await movieDb.SaveChangesAsync();
+            return Ok(new { Success = true, Total = candidates.Count, Updated = updated, Skipped = skipped });
+        }
+
         private static string GetMimeType(MosaicOutputFormat format) => format switch
         {
             MosaicOutputFormat.Jpeg => "image/jpeg",
@@ -1945,6 +2019,8 @@ namespace MovieTheater.Controllers
                 var fromBggBoardgame = fromBgg.Boardgame;
                 movieDb.Boardgames.Add(fromBggBoardgame);
                 await movieDb.SaveChangesAsync();
+                fromBggBoardgame.BaseGameId = await ResolveBaseGameId(fromBggBoardgame.ExtraDetails?.LinksJson);
+                if (fromBggBoardgame.BaseGameId.HasValue) await movieDb.SaveChangesAsync();
 
                 await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
                 await DownloadAndSaveBoardgameImages(fromBggBoardgame);

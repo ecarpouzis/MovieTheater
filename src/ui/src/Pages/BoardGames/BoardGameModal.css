@@ -28,9 +28,8 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
 }
 
-/* Block (not flex) so content flows around the floated poster */
 .boardgame-modal-info-panel {
-  display: block;
+  overflow: hidden;
 }
 
 .boardgame-modal-info-panel > * + * {
@@ -113,6 +112,152 @@
   margin-top: auto;
 }
 
+/* ── Expansion flags (poster column) ── */
+.expansion-flags {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
+}
+
+.expansion-flag {
+  display: block;
+  width: 100%;
+  padding: 5px 10px 5px 8px;
+  background: #f5f0ff;
+  border: none;
+  border-left: 4px solid #7c3aed;
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.expansion-flag:hover {
+  background: #ede9fe;
+}
+
+.expansion-flag--active {
+  background: #7c3aed;
+  border-left-color: #5b21b6;
+}
+
+.expansion-flag--active .expansion-flag-label {
+  color: #fff;
+}
+
+.expansion-flag--base {
+  background: #e8f3ff;
+  border-left-color: #1677ff;
+}
+
+.expansion-flag--base:hover {
+  background: #d0e8ff;
+}
+
+.expansion-flag--base.expansion-flag--active {
+  background: #1677ff;
+  border-left-color: #0958d9;
+}
+
+.expansion-flag--base .expansion-flag-label {
+  color: #1677ff;
+}
+
+.expansion-flag--base.expansion-flag--active .expansion-flag-label {
+  color: #fff;
+}
+
+.expansion-flag--standalone {
+  background: #f0fdfa;
+  border-left-color: #0d9488;
+}
+
+.expansion-flag--standalone:hover {
+  background: #ccfbf1;
+}
+
+.expansion-flag--standalone.expansion-flag--active {
+  background: #0d9488;
+  border-left-color: #0f766e;
+}
+
+.expansion-flag--standalone .expansion-flag-label {
+  color: #0d9488;
+}
+
+.expansion-flag--standalone.expansion-flag--active .expansion-flag-label {
+  color: #fff;
+}
+
+.expansion-flag-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5b21b6;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Expansion detail panel (info panel) ── */
+.expansion-detail-panel {
+  background: #faf5ff;
+  border: 1px solid #c4b5fd;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.expansion-detail-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.expansion-detail-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: #3b0764;
+}
+
+.expansion-detail-year {
+  font-size: 13px;
+  color: #888;
+}
+
+.expansion-detail-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.expansion-detail-stat {
+  font-size: 13px;
+  color: #555;
+  font-weight: 500;
+}
+
+.expansion-detail-desc {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.expansion-detail-bgg {
+  font-size: 12px;
+  color: #7c3aed;
+  text-decoration: none;
+  align-self: flex-start;
+}
+
+.expansion-detail-bgg:hover {
+  text-decoration: underline;
+}
+
 /* Edit form — reuse MovieModal patterns */
 .modal-edit-row {
   display: flex;
@@ -138,6 +283,17 @@
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: #aaa;
+}
+
+.edit-field-hint {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.boardgame-modal-base-game {
+  font-size: 13px;
+  color: #666;
 }
 
 .modal-edit-actions {

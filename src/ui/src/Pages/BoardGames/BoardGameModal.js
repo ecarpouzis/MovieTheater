@@ -72,13 +72,15 @@ function UrlRow({ url, actionLabel, actionDanger, onAction, loading }) {
   );
 }
 
-function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated }) {
+function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, onGameUpdated }) {
   const [game, setGame] = useState(null);
   const [editing, setEditing] = useState(false);
   const [editState, setEditState] = useState({});
   const [saving, setSaving] = useState(false);
   const [rematchId, setRematchId] = useState("");
   const [rematching, setRematching] = useState(false);
+
+  const [activeExpansionId, setActiveExpansionId] = useState(null);
 
   const [discovering, setDiscovering] = useState(false);
   const [approvingUrl, setApprovingUrl] = useState(null);
@@ -107,34 +109,46 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
       setEditApprovedPdfs([]);
       setEditVideoUrls([]);
       setNewVideoUrl("");
+      setActiveExpansionId(null);
     }
   }, [open]);
 
   if (!game) return null;
 
-  const minP = game.minPlayers;
-  const maxP = game.maxPlayers;
+  const expansions = expansionMap?.[game.id] ?? [];
+  const activeExpansion = expansions.find((e) => e.id === activeExpansionId) ?? null;
+  const displayGame = activeExpansion ?? game;
+
+  const minP = displayGame.minPlayers;
+  const maxP = displayGame.maxPlayers;
   const players = minP && maxP ? (minP === maxP ? `${minP}` : `${minP}–${maxP}`) : minP || maxP || null;
-  const description = stripHtml(game.description);
-  const approvedPdfs = (game.rulesPdfUrls ?? []).map(normalizePdfEntry);
-  const videoEntries = parseVideoEntries(game.howToPlayVideoUrlsJson)
+  const description = stripHtml(displayGame.description);
+  const approvedPdfs = (displayGame.rulesPdfUrls ?? []).map(normalizePdfEntry);
+  const videoEntries = parseVideoEntries(displayGame.howToPlayVideoUrlsJson)
     .map((e) => ({ ...e, embedUrl: toYouTubeEmbedUrl(e.url) }))
     .filter((e) => e.embedUrl);
-  const candidatePdfs = game.rulesPdfCandidateUrls ?? [];
+  const candidatePdfs = displayGame.rulesPdfCandidateUrls ?? [];
   const hasRulesContent = approvedPdfs.length > 0 || videoEntries.length > 0;
   const collapseHeader = approvedPdfs.length > 0 && videoEntries.length > 0
     ? "Rules & How to Play"
     : approvedPdfs.length > 0 ? "Rulebook PDFs" : "How to Play";
+  const bggPath = displayGame.thingType === "boardgameexpansion" ? "boardgameexpansion" : "boardgame";
 
+  // ID of the game currently being edited (base game or an expansion)
+  const editedId = editState.id ?? game.id;
+
+  // Update the correct game in the parent list and, if it's the base game, local state too
   function patchGame(updates) {
-    setGame((prev) => ({ ...prev, ...updates }));
-    if (onGameUpdated) onGameUpdated({ ...game, ...updates });
+    if (displayGame.id === game.id) {
+      setGame((prev) => ({ ...prev, ...updates }));
+    }
+    if (onGameUpdated) onGameUpdated({ ...displayGame, ...updates });
   }
 
   function startEditing() {
-    setEditState({ ...game, description: stripHtml(game.description), imageUrl: game.imageUrl ?? "" });
-    setEditApprovedPdfs(approvedPdfs);
-    setEditVideoUrls([...(game.howToPlayVideoUrls ?? [])]);
+    setEditState({ ...displayGame, description: stripHtml(displayGame.description), imageUrl: displayGame.imageUrl ?? "" });
+    setEditApprovedPdfs((displayGame.rulesPdfUrls ?? []).map(normalizePdfEntry));
+    setEditVideoUrls([...(displayGame.howToPlayVideoUrls ?? [])]);
     setEditing(true);
   }
 
@@ -182,7 +196,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   async function saveRules() {
     setSavingRules(true);
     try {
-      const resp = await MovieAPI.updateBoardgameRules(game.id, {
+      const resp = await MovieAPI.updateBoardgameRules(editedId, {
         howToPlayVideoUrls: editVideoUrls,
         rulesPdfUrls: editApprovedPdfs,
       });
@@ -206,7 +220,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   async function discoverRules() {
     setDiscovering(true);
     try {
-      const resp = await MovieAPI.discoverBoardgameRules(game.id);
+      const resp = await MovieAPI.discoverBoardgameRules(editedId);
       if (!resp.ok) { message.error("Discovery failed"); return; }
       const result = await resp.json();
       if (result.success) {
@@ -226,7 +240,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   async function approvePdf(url) {
     setApprovingUrl(url);
     try {
-      const resp = await MovieAPI.approveBoardgameRulesPdf(game.id, url);
+      const resp = await MovieAPI.approveBoardgameRulesPdf(editedId, url);
       if (!resp.ok) { const b = await resp.json().catch(() => ({})); message.error(b.message || "Approval failed"); return; }
       const result = await resp.json();
       if (result.success) {
@@ -247,7 +261,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   async function removeCandidatePdf(url) {
     setRemovingCandidateUrl(url);
     try {
-      const resp = await MovieAPI.removeBoardgameRulesPdfCandidate(game.id, url);
+      const resp = await MovieAPI.removeBoardgameRulesPdfCandidate(editedId, url);
       if (!resp.ok) { message.error("Remove failed"); return; }
       const result = await resp.json();
       if (result.success) patchGame({ rulesPdfCandidateUrls: result.data.rulesPdfCandidateUrls });
@@ -261,7 +275,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   async function uploadPdf(file) {
     setUploadingPdf(true);
     try {
-      const resp = await MovieAPI.uploadBoardgameRulesPdf(game.id, file);
+      const resp = await MovieAPI.uploadBoardgameRulesPdf(editedId, file);
       if (!resp.ok) { const b = await resp.json().catch(() => ({})); message.error(b.message || "Upload failed"); return; }
       const result = await resp.json();
       if (result.success) {
@@ -280,7 +294,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
   async function removePdf(slot) {
     setRemovingSlot(slot);
     try {
-      const resp = await MovieAPI.removeBoardgameRulesPdf(game.id, slot);
+      const resp = await MovieAPI.removeBoardgameRulesPdf(editedId, slot);
       if (!resp.ok) { message.error("Remove failed"); return; }
       const result = await resp.json();
       if (result.success) {
@@ -308,7 +322,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
       onOk: async () => {
         setRematching(true);
         try {
-          const response = await MovieAPI.rematchBoardgame(game.id, bggId);
+          const response = await MovieAPI.rematchBoardgame(editedId, bggId);
           if (!response.ok) { const body = await response.json().catch(() => ({})); message.error(body.message || `Server error (${response.status})`); return; }
           const result = await response.json();
           if (result.success) {
@@ -334,23 +348,53 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
         <div className="boardgame-modal-poster-column">
           <img
             className="boardgame-modal-poster"
-            alt={game.name}
-            src={`/BoardgameImage/${game.id}${game.imageVersion != null ? `?v=${game.imageVersion}` : ""}`}
+            alt={displayGame.name}
+            src={`/BoardgameImage/${displayGame.id}${displayGame.imageVersion != null ? `?v=${displayGame.imageVersion}` : ""}`}
           />
+          {expansions.map((exp) => (
+            <img
+              key={exp.id}
+              src={`/BoardgameImage/${exp.id}${exp.imageVersion != null ? `?v=${exp.imageVersion}` : ""}`}
+              alt=""
+              style={{ display: "none" }}
+            />
+          ))}
+          {!editing && expansions.length > 0 && (
+            <div className="expansion-flags">
+              <button
+                className={`expansion-flag expansion-flag--base${activeExpansionId === null ? " expansion-flag--active" : ""}`}
+                onClick={() => setActiveExpansionId(null)}
+              >
+                <span className="expansion-flag-label">{game.name}</span>
+              </button>
+              {expansions.map((exp) => {
+                const isStandalone = exp.thingType !== "boardgameexpansion";
+                return (
+                  <button
+                    key={exp.id}
+                    className={`expansion-flag${isStandalone ? " expansion-flag--standalone" : ""}${activeExpansionId === exp.id ? " expansion-flag--active" : ""}`}
+                    onClick={() => setActiveExpansionId(activeExpansionId === exp.id ? null : exp.id)}
+                  >
+                    <span className="expansion-flag-label">{exp.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div className="boardgame-modal-info-panel">
           {!editing ? (
             <>
-              <h2 className="boardgame-modal-title">{game.name}</h2>
+              <h2 className="boardgame-modal-title">{displayGame.name}</h2>
               <div className="boardgame-modal-meta-row">
-                {game.yearPublished && <span>{game.yearPublished}</span>}
+                {displayGame.yearPublished && <span>{displayGame.yearPublished}</span>}
                 {players && <><span className="modal-dot">·</span><span>👥 {players} players</span></>}
-                {game.playingTime && <><span className="modal-dot">·</span><span>⏱ {game.playingTime} min</span></>}
+                {displayGame.playingTime && <><span className="modal-dot">·</span><span>⏱ {displayGame.playingTime > 999 ? "∞" : displayGame.playingTime} min</span></>}
               </div>
               <div className="boardgame-modal-stats-row">
-                {game.averageRating ? <div className="boardgame-modal-stat"><span className="modal-label">BGG Rating</span><span className="boardgame-modal-stat-value">★ {Number(game.averageRating).toFixed(1)}/10</span></div> : null}
-                {game.averageWeight ? <div className="boardgame-modal-stat"><span className="modal-label">Complexity</span><span className="boardgame-modal-stat-value">{Number(game.averageWeight).toFixed(2)}/5</span></div> : null}
-                {game.minAge ? <div className="boardgame-modal-stat"><span className="modal-label">Min Age</span><span className="boardgame-modal-stat-value">{game.minAge}+</span></div> : null}
+                {displayGame.averageRating ? <div className="boardgame-modal-stat"><span className="modal-label">BGG Rating</span><span className="boardgame-modal-stat-value">★ {Number(displayGame.averageRating).toFixed(1)}/10</span></div> : null}
+                {displayGame.averageWeight ? <div className="boardgame-modal-stat"><span className="modal-label">Complexity</span><span className="boardgame-modal-stat-value">{Number(displayGame.averageWeight).toFixed(2)}/5</span></div> : null}
+                {displayGame.minAge ? <div className="boardgame-modal-stat"><span className="modal-label">Min Age</span><span className="boardgame-modal-stat-value">{displayGame.minAge}+</span></div> : null}
               </div>
               {description && <p className="boardgame-modal-plot">{description}</p>}
 
@@ -363,7 +407,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                           <a
                             key={slot}
                             className="rules-pdf-link"
-                            href={`/BoardgamePdf/${game.id}/${slot}`}
+                            href={`/BoardgamePdf/${displayGame.id}/${slot}`}
                             target="_blank"
                             rel="noreferrer"
                           >
@@ -395,7 +439,14 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                 </Collapse>
               )}
 
-              <a className="boardgame-bgg-link" href={`https://boardgamegeek.com/boardgame/${game.bggThingId}`} target="_blank" rel="noreferrer">
+              {displayGame.baseGameId != null && (() => {
+                const baseGame = games.find((g) => g.id === displayGame.baseGameId);
+                return baseGame ? (
+                  <div className="boardgame-modal-base-game">Expansion of: <strong>{baseGame.name}</strong></div>
+                ) : null;
+              })()}
+
+              <a className="boardgame-bgg-link" href={`https://boardgamegeek.com/${bggPath}/${displayGame.bggThingId}`} target="_blank" rel="noreferrer">
                 View on BoardGameGeek
               </a>
               {userData?.canEditMovies && (
@@ -406,7 +457,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                   </Button>
                 </div>
               )}
-              <div className="boardgame-modal-id">id #{game.id} · BGG #{game.bggThingId}</div>
+              <div className="boardgame-modal-id">id #{displayGame.id} · BGG #{displayGame.bggThingId}</div>
             </>
           ) : (
             <div className="modal-edit-form">
@@ -418,6 +469,19 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
               <EditField label="Min Age" value={editState.minAge} onChange={(v) => updateField("minAge", v ? Number(v) : null)} type="number" />
               <EditField label="Description" value={editState.description} onChange={(v) => updateField("description", v)} multiline />
               <EditField label="Image URL (re-downloads on save)" value={editState.imageUrl} onChange={(v) => updateField("imageUrl", v)} />
+              <div className="edit-field">
+                <label className="edit-field-label">Base Game ID</label>
+                <Input
+                  type="number"
+                  value={editState.baseGameId ?? ""}
+                  onChange={(e) => updateField("baseGameId", e.target.value ? Number(e.target.value) : null)}
+                  placeholder="Internal DB id of base game, or blank for none"
+                />
+                {editState.baseGameId != null && (() => {
+                  const found = games.find((g) => g.id === editState.baseGameId);
+                  return <div className="edit-field-hint">{found ? `→ ${found.name}` : "No game with this ID in collection"}</div>;
+                })()}
+              </div>
 
               <div className="modal-edit-actions">
                 <Button type="primary" onClick={saveChanges} loading={saving}>Save</Button>
@@ -476,7 +540,7 @@ function BoardGameModal({ gameId, open, onClose, games, userData, onGameUpdated 
                     <label className="edit-field-label">Approved PDFs</label>
                     {editApprovedPdfs.map((pdf, slot) => (
                       <div key={slot} className="rules-approved-pdf-row">
-                        <a href={`/BoardgamePdf/${game.id}/${slot}`} target="_blank" rel="noreferrer" className="rules-approved-pdf-slot">
+                        <a href={`/BoardgamePdf/${editedId}/${slot}`} target="_blank" rel="noreferrer" className="rules-approved-pdf-slot">
                           📄 {slot + 1}
                         </a>
                         <Input
