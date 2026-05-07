@@ -2,6 +2,7 @@ import { useRef, useLayoutEffect, useState } from "react";
 import { Card, Tooltip } from "antd";
 import "../Browse/CardList.css";
 import "./BoardGameCardList.css";
+import { stripHtml } from "./boardGameUtils";
 
 function PlotText({ text }) {
   const ref = useRef(null);
@@ -18,19 +19,6 @@ function PlotText({ text }) {
   }, [text]);
 
   return <p ref={ref} className={`card-plot${overflows ? " card-plot--faded" : ""}`}>{text}</p>;
-}
-
-function stripHtml(html) {
-  if (!html) return "";
-  return html
-    .replace(/<[^>]*>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/&#10;/g, " ")
-    .trim();
 }
 
 function BoardGameCardList({ games, expansionMap, onGameClick }) {
@@ -81,7 +69,7 @@ function BoardGameCardList({ games, expansionMap, onGameClick }) {
                     {game.averageRating ? <span className="badge-imdb">★ {Number(game.averageRating).toFixed(1)}</span> : null}
                     {game.averageWeight ? <span className="badge-rating">🧠 {Number(game.averageWeight).toFixed(1)}/5</span> : null}
                   </div>
-                  {description && <PlotText text={description.substring(0, 300)} />}
+                  {description && <PlotText text={description} />}
                 </div>
               </div>
             </Card>

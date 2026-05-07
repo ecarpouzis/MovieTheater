@@ -51,12 +51,14 @@ namespace MovieTheater.Controllers
         private readonly IConfiguration configuration;
         private readonly YouTubeService youTubeService;
         private readonly IMemoryCache memoryCache;
+        private readonly BoardgameSimilarityService boardgameSimilarityService;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
             IBoardgameImageRepository boardgameImageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService,
             BoardGameGeekApi boardGameGeekApi, PosterMosaicService posterMosaicService,
             BoardgameRulesService boardgameRulesService, BoardgamePdfRepository boardgamePdfRepository,
-            IConfiguration configuration, YouTubeService youTubeService, IMemoryCache memoryCache)
+            IConfiguration configuration, YouTubeService youTubeService, IMemoryCache memoryCache,
+            BoardgameSimilarityService boardgameSimilarityService)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -75,6 +77,7 @@ namespace MovieTheater.Controllers
             this.configuration = configuration;
             this.youTubeService = youTubeService;
             this.memoryCache = memoryCache;
+            this.boardgameSimilarityService = boardgameSimilarityService;
         }
 
         private int? GetCurrentUserId()
@@ -1216,54 +1219,15 @@ namespace MovieTheater.Controllers
         public async Task<IActionResult> SyncBoardgameFromBgg(int bggThingId)
         {
             if (bggThingId <= 0)
-            {
                 return BadRequest(new { Success = false, Message = "bggThingId must be a positive integer" });
-            }
 
             try
             {
                 var fromBgg = await boardGameGeekApi.GetBoardgame(bggThingId);
                 if (fromBgg == null)
-                {
                     return NotFound(new { Success = false, Message = "Boardgame not found from BoardGameGeek" });
-                }
 
-                var fromBggBoardgame = fromBgg.Boardgame;
-                var existing = await movieDb.Boardgames
-                    .Include(x => x.ImageDetails)
-                    .Include(x => x.ExtraDetails)
-                    .SingleOrDefaultAsync(x => x.BggThingId == bggThingId);
-                if (existing == null)
-                {
-                    movieDb.Boardgames.Add(fromBggBoardgame);
-                    await movieDb.SaveChangesAsync();
-                    fromBggBoardgame.BaseGameId = await ResolveBaseGameId(fromBggBoardgame.ExtraDetails?.LinksJson);
-                    if (fromBggBoardgame.BaseGameId.HasValue) await movieDb.SaveChangesAsync();
-                    await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
-
-                    // Download images after saving to database
-                    await DownloadAndSaveBoardgameImages(fromBggBoardgame);
-
-                    await movieDb.Entry(fromBggBoardgame).Reference(x => x.ImageDetails).LoadAsync();
-                    return Ok(new { Success = true, Message = "Boardgame captured", data = fromBggBoardgame });
-                }
-
-                var imageUrlsChanged = !string.Equals(existing.ImageDetails?.ImageUrl, fromBgg.ImageUrl, StringComparison.Ordinal)
-                    || !string.Equals(existing.ImageDetails?.ThumbnailUrl, fromBgg.ThumbnailUrl, StringComparison.Ordinal);
-
-                ApplyBoardgameSnapshot(existing, fromBggBoardgame);
-                await movieDb.SaveChangesAsync();
-                existing.BaseGameId = await ResolveBaseGameId(existing.ExtraDetails?.LinksJson);
-                await movieDb.SaveChangesAsync();
-                await UpsertBoardgameImageUrls(existing.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
-
-                if (imageUrlsChanged)
-                    await DownloadAndSaveBoardgameImages(existing, force: true);
-
-                if (existing.ImageDetails == null)
-                    await movieDb.Entry(existing).Reference(x => x.ImageDetails).LoadAsync();
-
-                return Ok(new { Success = true, Message = "Boardgame updated", data = existing });
+                return await SyncBoardgameInternal(fromBgg);
             }
             catch (HttpRequestException ex)
             {
@@ -1276,59 +1240,60 @@ namespace MovieTheater.Controllers
         public async Task<IActionResult> SyncBoardgameFromBggByTitle(string title)
         {
             if (string.IsNullOrWhiteSpace(title))
-            {
                 return BadRequest(new { Success = false, Message = "title is required" });
-            }
 
             try
             {
                 var fromBgg = await boardGameGeekApi.GetBoardgameByTitle(title);
                 if (fromBgg == null)
-                {
                     return NotFound(new { Success = false, Message = $"Boardgame '{title}' not found from BoardGameGeek" });
-                }
 
-                var fromBggBoardgame = fromBgg.Boardgame;
-                var existing = await movieDb.Boardgames
-                    .Include(x => x.ImageDetails)
-                    .Include(x => x.ExtraDetails)
-                    .SingleOrDefaultAsync(x => x.BggThingId == fromBggBoardgame.BggThingId);
-                if (existing == null)
-                {
-                    movieDb.Boardgames.Add(fromBggBoardgame);
-                    await movieDb.SaveChangesAsync();
-                    fromBggBoardgame.BaseGameId = await ResolveBaseGameId(fromBggBoardgame.ExtraDetails?.LinksJson);
-                    if (fromBggBoardgame.BaseGameId.HasValue) await movieDb.SaveChangesAsync();
-                    await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
-
-                    // Download images after saving to database
-                    await DownloadAndSaveBoardgameImages(fromBggBoardgame);
-
-                    await movieDb.Entry(fromBggBoardgame).Reference(x => x.ImageDetails).LoadAsync();
-                    return Ok(new { Success = true, Message = "Boardgame captured", data = fromBggBoardgame });
-                }
-
-                var imageUrlsChanged = !string.Equals(existing.ImageDetails?.ImageUrl, fromBgg.ImageUrl, StringComparison.Ordinal)
-                    || !string.Equals(existing.ImageDetails?.ThumbnailUrl, fromBgg.ThumbnailUrl, StringComparison.Ordinal);
-
-                ApplyBoardgameSnapshot(existing, fromBggBoardgame);
-                await movieDb.SaveChangesAsync();
-                existing.BaseGameId = await ResolveBaseGameId(existing.ExtraDetails?.LinksJson);
-                await movieDb.SaveChangesAsync();
-                await UpsertBoardgameImageUrls(existing.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
-
-                if (imageUrlsChanged)
-                    await DownloadAndSaveBoardgameImages(existing, force: true);
-
-                if (existing.ImageDetails == null)
-                    await movieDb.Entry(existing).Reference(x => x.ImageDetails).LoadAsync();
-
-                return Ok(new { Success = true, Message = "Boardgame updated", data = existing });
+                return await SyncBoardgameInternal(fromBgg);
             }
             catch (HttpRequestException ex)
             {
                 return StatusCode(502, new { Success = false, Message = "BoardGameGeek request failed", Error = ex.Message });
             }
+        }
+
+        private async Task<IActionResult> SyncBoardgameInternal(BoardgameBggResult fromBgg)
+        {
+            var fromBggBoardgame = fromBgg.Boardgame;
+            var existing = await movieDb.Boardgames
+                .Include(x => x.ImageDetails)
+                .Include(x => x.ExtraDetails)
+                .SingleOrDefaultAsync(x => x.BggThingId == fromBggBoardgame.BggThingId);
+
+            if (existing == null)
+            {
+                movieDb.Boardgames.Add(fromBggBoardgame);
+                await movieDb.SaveChangesAsync();
+                fromBggBoardgame.BaseGameId = await ResolveBaseGameId(fromBggBoardgame.ExtraDetails?.LinksJson);
+                if (fromBggBoardgame.BaseGameId.HasValue) await movieDb.SaveChangesAsync();
+                await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
+                await DownloadAndSaveBoardgameImages(fromBggBoardgame);
+                await movieDb.Entry(fromBggBoardgame).Reference(x => x.ImageDetails).LoadAsync();
+                await boardgameSimilarityService.RebuildAsync(movieDb);
+                return Ok(new { Success = true, Message = "Boardgame captured", data = fromBggBoardgame });
+            }
+
+            var imageUrlsChanged = !string.Equals(existing.ImageDetails?.ImageUrl, fromBgg.ImageUrl, StringComparison.Ordinal)
+                || !string.Equals(existing.ImageDetails?.ThumbnailUrl, fromBgg.ThumbnailUrl, StringComparison.Ordinal);
+
+            ApplyBoardgameSnapshot(existing, fromBggBoardgame);
+            await movieDb.SaveChangesAsync();
+            existing.BaseGameId = await ResolveBaseGameId(existing.ExtraDetails?.LinksJson);
+            await movieDb.SaveChangesAsync();
+            await UpsertBoardgameImageUrls(existing.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
+
+            if (imageUrlsChanged)
+                await DownloadAndSaveBoardgameImages(existing, force: true);
+
+            if (existing.ImageDetails == null)
+                await movieDb.Entry(existing).Reference(x => x.ImageDetails).LoadAsync();
+
+            await boardgameSimilarityService.RebuildAsync(movieDb);
+            return Ok(new { Success = true, Message = "Boardgame updated", data = existing });
         }
 
         public class UpdateBoardgameRequest
@@ -1432,37 +1397,13 @@ namespace MovieTheater.Controllers
                 if (game.ImageDetails == null)
                     await movieDb.Entry(game).Reference(g => g.ImageDetails).LoadAsync();
 
+                await boardgameSimilarityService.RebuildAsync(movieDb);
                 return Ok(new { Success = true, data = game });
             }
             catch (HttpRequestException ex)
             {
                 return StatusCode(502, new { Success = false, Message = "BoardGameGeek request failed", Error = ex.Message });
             }
-        }
-
-        [HttpPost("/API/FixBoardgameDescriptionEncoding")]
-        public async Task<IActionResult> FixBoardgameDescriptionEncoding()
-        {
-            if (!await IsCurrentUserEditor()) return Forbid();
-
-            var games = await movieDb.Boardgames
-                .Where(g => g.Description != null)
-                .Select(g => new { g.id, g.Description })
-                .ToListAsync();
-
-            int updated = 0;
-            foreach (var row in games)
-            {
-                var decoded = BoardGameGeekApi.DecodeDescription(row.Description);
-                if (decoded == row.Description) continue;
-
-                await movieDb.Boardgames
-                    .Where(g => g.id == row.id)
-                    .ExecuteUpdateAsync(s => s.SetProperty(g => g.Description, decoded));
-                updated++;
-            }
-
-            return Ok(new { Success = true, Total = games.Count, Updated = updated });
         }
 
         [HttpGet("/API/GetBoardgame")]
@@ -1491,138 +1432,11 @@ namespace MovieTheater.Controllers
             return movieDb.Boardgames.Include(b => b.ImageDetails);
         }
 
-        [AllowAnonymous]
-        [HttpGet("/API/TEMP_ImportMyBoardgames")]
-        [HttpPost("/API/TEMP_ImportMyBoardgames")]
-        public async Task<IActionResult> TEMP_ImportMyBoardgames(int delayMs = 2000)
+        [HttpGet("/API/SimilarBoardgames")]
+        public IActionResult SimilarBoardgames(int id)
         {
-            // TEMPORARY ENDPOINT - DELETE AFTER USE
-            // Hardcoded list of boardgames from F:\Work\BoardGameDecider\dataTable.js
-
-            var gameNames = new List<string>
-            {
-                "Raptor", "Mr. Jack", "Jenga: Donkey Kong Edition", "Space Invaders", "Candy Land",
-                "War on Terror: The Board Game", "Camel Up", "Terraforming Mars", "Takenoko", "King of Tokyo",
-                "Settlers of Catan", "Carcassonne", "Tsuro", "Tokaido", "Champions of Midgard",
-                "Discworld: Ankh-Morpork", "Ticket to Ride", "Small World", "Terror In Meeple City",
-                "Talisman: The Magical Quest Game", "Uno", "Star Realms", "Insider", "A Fake Artist Goes to New York",
-                "Forest", "Lights Camera Action", "Coup", "Secret Hitler", "Bang!", "Werewords",
-                "Cards Against Humanity: Trump Cards", "Cards Against Humanity", "Power Grid", "Guillotine", "Zombie Dice",
-                "The Big Book of Madness", "Mysterium", "Flash Point: Fire Rescue", "Pandemic", "Forbidden Desert",
-                "Horrified", "Shadows Over Camelot", "Battlestar Galactica: The Board Game", "The Resistance", "Donner Dinner Party",
-                "Sheriff of Nottingham", "Diplomacy", "A Game of Thrones: The Board Game", "7 Wonders", "Valley of the Kings: Premium Edition",
-                "Magic: The Gathering - Game Night 2019", "Gwent: Monsters and Scoiatael", "Yahtzee", "Blood Bowl", "Risk",
-                "Torres", "Photosynthesis", "Fate of the Elder Gods", "Castle Panic", "Dead Panic",
-                "Legendary: A Marvel Deck Building Game", "Boss Monster: The Dungeon Building Card Game", "Android: Netrunner",
-                "Lets Feed The Very Hungry Caterpillar Game", "Spirit Island", "Cash n Guns", "Agricola", "Puerto Rico",
-                "Portal: The Uncooperative Cake Acquisition Game", "Arkham Horror", "Eldritch Horror", "Arkham Horror: The Card Game",
-                "What Next?", "Root", "Scooby-Doo! The Board Game", "Betrayal at House on the Hill", "The Isle of Cats",
-                "Chickapig", "Enchanted Cupcake Party Game", "Chutes and Ladders", "Sorry!", "Mind MGMT: The Psychic Espionage Game",
-                "Pretty Pretty Princess", "The 7th Continent", "Dark Souls: The Card Game", "Wingspan", "Detective: A Modern Crime Board Game",
-                "The Quacks of Quedlinburg", "Throw Throw Burrito", "Jamaica", "Caper", "Neuroshima Hex!",
-                "The Adventurers: The Temple of Chac", "Banzai", "Scrabble", "The Binding of Isaac: Four Souls", "Sushi Go!",
-                "Fury of Dracula", "Last Night on Earth: The Zombie Game", "Die Hard: The Nakatomi Heist Board Game", "Poetry for Neanderthals",
-                "Geek Out!", "Codenames", "Spaceteam", "Blockbuster: Trilogy Box Set", "Dont Get Stabbed!",
-                "Smash Up", "Cosmic Encounter", "Stuffed Fables", "Mice and Mystics", "MindTrap",
-                "MindTrap II", "Gloomhaven", "Frosthaven", "Cthulhu: Death May Die", "Exploding Kittens",
-                "Unstable Unicorns", "Wings of War: Famous Aces", "The Oregon Trail Card Game", "Story War", "Cthulhu Gloom",
-                "We Didnt Playtest This At All", "Fluxx", "Monty Python Fluxx", "Stoner Fluxx", "Zombie Fluxx",
-                "Legendary: Villains - A Marvel Deck Building Game", "Ascension: Storm of Souls", "Thunderstone Advance: Towers of Ruin",
-                "Descent: Journeys in the Dark", "Descent: Journeys in the Dark - Second Edition", "Disney Villainous",
-                "Disney Villainous: Wicked to the Core", "Disney Villainous: Evil Comes Prepared", "Disney Villainous: Perfectly Wretched",
-                "Disney Villainous: Despicable Plots", "Disney Villainous: Bigger and Badder", "Scythe", "Welcome to the Dungeon",
-                "Welcome Back to the Dungeon", "Epic Spell Wars of the Battle Wizards: Duel at Mt. Skullzfyre",
-                "Awesome Kingdom: The Tower of Hateskull", "Roll For It! - Deluxe Edition", "Tiny Epic Kingdoms - Second Edition",
-                "Skull", "Apples to Apples: Party Crate Expansion", "Hive Pocket", "Poetry for Neanderthals: NSFW Edition",
-                "Puns of Anarchy", "Ransom Notes", "The Blood of an Englishman", "Munchkin Quest", "One Week Ultimate Werewolf",
-                "Ultimate Werewolf: Deluxe Edition", "One Night Ultimate Werewolf: Daybreak", "One Night Ultimate Vampire",
-                "One Night Ultimate Alien", "One Night Ultimate Super Villains", "Zombicide: Green Horde", "Dungeonville",
-                "Vast: The Crystal Caverns", "Vast: The Mysterious Manor"
-            };
-
-            var results = new List<object>();
-            int successCount = 0;
-            int failureCount = 0;
-            int skippedCount = 0;
-
-            for (int i = 0; i < gameNames.Count; i++)
-            {
-                var title = gameNames[i]?.Trim();
-                if (string.IsNullOrWhiteSpace(title))
-                {
-                    results.Add(new { Index = i, Title = title, Status = "Skipped", Reason = "Empty title" });
-                    skippedCount++;
-                    continue;
-                }
-
-                // Check DB by name before hitting BGG
-                var dbMatch = await movieDb.Boardgames.FirstOrDefaultAsync(x => x.Name == title);
-                if (dbMatch != null)
-                {
-                    results.Add(new { Index = i, Title = title, BggThingId = dbMatch.BggThingId, Status = "AlreadyExists", Name = dbMatch.Name });
-                    skippedCount++;
-                    continue;
-                }
-
-                bool madeApiCall = false;
-                try
-                {
-                    var fromBgg = await boardGameGeekApi.GetBoardgameByTitle(title);
-                    madeApiCall = true;
-                    if (fromBgg == null)
-                    {
-                        results.Add(new { Index = i, Title = title, Status = "NotFound", Message = "Not found on BGG" });
-                        failureCount++;
-                    }
-                    else
-                    {
-                        var fromBggBoardgame = fromBgg.Boardgame;
-                        var existing = await movieDb.Boardgames.SingleOrDefaultAsync(x => x.BggThingId == fromBggBoardgame.BggThingId);
-                        if (existing == null)
-                        {
-                            movieDb.Boardgames.Add(fromBggBoardgame);
-                            await movieDb.SaveChangesAsync();
-                            await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
-
-                            // Download images after saving to database
-                            await DownloadAndSaveBoardgameImages(fromBggBoardgame);
-
-                            results.Add(new { Index = i, Title = title, BggThingId = fromBggBoardgame.BggThingId, Status = "Created", Name = fromBggBoardgame.Name });
-                            successCount++;
-                        }
-                        else
-                        {
-                            results.Add(new { Index = i, Title = title, BggThingId = fromBggBoardgame.BggThingId, Status = "AlreadyExists", Name = existing.Name });
-                            skippedCount++;
-                        }
-                    }
-                }
-                catch (HttpRequestException ex)
-                {
-                    madeApiCall = true;
-                    results.Add(new { Index = i, Title = title, Status = "Failed", Error = ex.Message });
-                    failureCount++;
-                }
-                catch (Exception ex)
-                {
-                    results.Add(new { Index = i, Title = title, Status = "Failed", Error = ex.Message });
-                    failureCount++;
-                }
-
-                // Rate limiting: only wait when we actually called BGG
-                if (madeApiCall && i < gameNames.Count - 1)
-                {
-                    await Task.Delay(delayMs);
-                }
-            }
-
-            return Ok(new
-            {
-                Success = true,
-                Message = "TEMPORARY ENDPOINT - DELETE AFTER USE - 162 games imported",
-                Summary = new { Total = gameNames.Count, Success = successCount, Failed = failureCount, Skipped = skippedCount },
-                Results = results
-            });
+            var similar = boardgameSimilarityService.GetSimilar(id);
+            return Ok(new { success = true, data = similar });
         }
 
         [HttpPost("/API/BatchImportBoardgames")]
@@ -1725,53 +1539,14 @@ namespace MovieTheater.Controllers
                 }
             }
 
+            if (successCount > 0)
+                await boardgameSimilarityService.RebuildAsync(movieDb);
+
             return Ok(new
             {
                 Success = true,
                 Summary = new { Total = gameNames.Count, Success = successCount, Failed = failureCount, Skipped = skippedCount },
                 Results = results
-            });
-        }
-
-        [HttpPost("/API/BackfillBoardgameImages")]
-        public async Task<IActionResult> BackfillBoardgameImages(int? id = null, int take = 0)
-        {
-            var query = movieDb.Boardgames.AsQueryable();
-            if (id.HasValue && id.Value > 0)
-            {
-                query = query.Where(x => x.id == id.Value);
-            }
-            else if (take > 0)
-            {
-                query = query.OrderBy(x => x.id).Take(take);
-            }
-
-            var boardgames = await query.ToListAsync();
-            int success = 0;
-            int failed = 0;
-            var errors = new List<object>();
-
-            foreach (var boardgame in boardgames)
-            {
-                try
-                {
-                    await DownloadAndSaveBoardgameImages(boardgame, force: true);
-                    success++;
-                }
-                catch (Exception ex)
-                {
-                    failed++;
-                    errors.Add(new { boardgame.id, boardgame.Name, Error = ex.Message });
-                }
-            }
-
-            return Ok(new
-            {
-                Success = true,
-                Total = boardgames.Count,
-                Processed = success,
-                Failed = failed,
-                Errors = errors
             });
         }
 
@@ -1945,13 +1720,13 @@ namespace MovieTheater.Controllers
             {
                 using var doc = JsonDocument.Parse(linksJson);
                 if (doc.RootElement.ValueKind != JsonValueKind.Array) return null;
-                // boardgameexpansion = DLC-style; boardgameimplementation = standalone version of another game
-                // inbound=true on either means the linked game is this game's base/original
+                // boardgameexpansion inbound:true = this game requires the linked game to play
+                // boardgameimplementation inbound:true = design lineage only; still a standalone game, not an expansion
                 foreach (var link in doc.RootElement.EnumerateArray())
                 {
                     if (!link.TryGetProperty("type", out var typeProp)) continue;
                     var linkType = typeProp.GetString();
-                    if (linkType != "boardgameexpansion" && linkType != "boardgameimplementation") continue;
+                    if (linkType != "boardgameexpansion") continue;
                     if (!link.TryGetProperty("inbound", out var inboundProp) || inboundProp.ValueKind != JsonValueKind.True) continue;
                     if (!link.TryGetProperty("id", out var idProp) || !idProp.TryGetInt32(out var bggBaseId)) continue;
                     var baseGame = await movieDb.Boardgames
@@ -1964,32 +1739,6 @@ namespace MovieTheater.Controllers
             }
             catch { /* malformed JSON */ }
             return null;
-        }
-
-        [HttpPost("/API/BackfillBoardgameBaseGameIds")]
-        public async Task<IActionResult> BackfillBoardgameBaseGameIds()
-        {
-            if (!await IsCurrentUserEditor()) return Forbid();
-
-            var candidates = await movieDb.Boardgames
-                .Include(b => b.ExtraDetails)
-                .Where(b => b.ExtraDetails != null && b.ExtraDetails.LinksJson != null)
-                .ToListAsync();
-
-            int updated = 0, skipped = 0;
-            foreach (var game in candidates)
-            {
-                var resolved = await ResolveBaseGameId(game.ExtraDetails?.LinksJson);
-                if (resolved.HasValue && game.BaseGameId != resolved.Value)
-                {
-                    game.BaseGameId = resolved.Value;
-                    updated++;
-                }
-                else skipped++;
-            }
-
-            await movieDb.SaveChangesAsync();
-            return Ok(new { Success = true, Total = candidates.Count, Updated = updated, Skipped = skipped });
         }
 
         private static string GetMimeType(MosaicOutputFormat format) => format switch
@@ -2025,6 +1774,7 @@ namespace MovieTheater.Controllers
                 await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
                 await DownloadAndSaveBoardgameImages(fromBggBoardgame);
                 await movieDb.Entry(fromBggBoardgame).Reference(x => x.ImageDetails).LoadAsync();
+                await boardgameSimilarityService.RebuildAsync(movieDb);
 
                 return Ok(new { Success = true, Message = "Boardgame inserted", data = fromBggBoardgame });
             }

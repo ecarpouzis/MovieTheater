@@ -25,11 +25,16 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
   const [editing, setEditing] = useState(false);
   const [editState, setEditState] = useState({});
   const [saving, setSaving] = useState(false);
+  const [plotExpanded, setPlotExpanded] = useState(false);
+  const [plotOverflows, setPlotOverflows] = useState(false);
+  const plotRef = useRef(null);
 
   useEffect(() => {
     if (open && movieId) {
       setLoading(true);
       setEditing(false);
+      setPlotExpanded(false);
+      setPlotOverflows(false);
       MovieAPI.getMovie(movieId)
         .then((response) => response.json())
         .then((responseData) => {
@@ -42,6 +47,16 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
         });
     }
   }, [movieId, open]);
+
+  useEffect(() => {
+    const el = plotRef.current;
+    if (!el) return;
+    const check = () => setPlotOverflows(el.scrollHeight > 120);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [movie]);
 
   function startEditing() {
     setEditState({ ...movie });
@@ -137,7 +152,18 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                   )}
                 </div>
 
-                {movie.plot && <p className="modal-plot">{movie.plot}</p>}
+                {movie.plot && (
+                  <>
+                    <div className={`modal-plot-wrap${plotOverflows && !plotExpanded ? " modal-plot-wrap--collapsed" : ""}`}>
+                      <p ref={plotRef} className="modal-plot">{movie.plot}</p>
+                    </div>
+                    {plotOverflows && (
+                      <button className="modal-desc-toggle" onClick={() => setPlotExpanded((v) => !v)}>
+                        {plotExpanded ? "Show less ↑" : "Show more ↓"}
+                      </button>
+                    )}
+                  </>
+                )}
 
                 {movie.actors && (
                   <div className="modal-actors">

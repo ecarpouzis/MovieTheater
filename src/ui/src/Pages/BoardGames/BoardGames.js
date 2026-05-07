@@ -200,6 +200,7 @@ function BoardGames({ userData }) {
         expansionMap={expansionMap}
         userData={userData}
         onGameUpdated={handleGameUpdated}
+        onOpenGame={setSelectedGameId}
       />
     </>
   );

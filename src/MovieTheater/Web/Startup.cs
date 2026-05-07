@@ -40,6 +40,8 @@ namespace MovieTheater
 
             services.AddMemoryCache(opts => opts.SizeLimit = 200 * 1024 * 1024); // 200 MB cap, evicts LRU when full
 
+            services.AddHostedService<BoardgameSimilarityStartupService>();
+
             services.AddMvc()
                 .AddJsonOptions(opts =>
                 {

@@ -297,6 +297,10 @@ function uploadBoardgameRulesPdf(id, file) {
   });
 }
 
+function getSimilarBoardgames(id) {
+  return fetch(`/API/SimilarBoardgames?id=${encodeURIComponent(id)}`);
+}
+
 function updateBoardgameRules(id, { howToPlayVideoUrls, rulesPdfUrls } = {}) {
   return fetch("/API/UpdateBoardgameRules", {
     method: "PUT",
@@ -340,6 +344,7 @@ const MovieAPI = {
   removeBoardgameRulesPdfCandidate,
   uploadBoardgameRulesPdf,
   updateBoardgameRules,
+  getSimilarBoardgames,
 };
 
 export { MovieAPI };

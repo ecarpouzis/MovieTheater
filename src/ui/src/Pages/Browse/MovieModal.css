@@ -94,6 +94,41 @@
 }
 
 /* ?? Plot ????????????????????????????????????????????????????????? */
+.modal-plot-wrap {
+  position: relative;
+}
+
+.modal-plot-wrap--collapsed {
+  max-height: 120px;
+  overflow: hidden;
+}
+
+.modal-plot-wrap--collapsed::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  background: linear-gradient(to bottom, transparent, #fff);
+  pointer-events: none;
+}
+
+.modal-desc-toggle {
+  background: none;
+  border: none;
+  color: #1677ff;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 0;
+  display: block;
+}
+
+.modal-desc-toggle:hover {
+  color: #0958d9;
+  text-decoration: underline;
+}
+
 .modal-plot {
   margin: 0;
   font-size: 14px;

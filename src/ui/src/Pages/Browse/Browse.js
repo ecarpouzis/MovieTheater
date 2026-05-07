@@ -3,7 +3,6 @@ import { useHistory, useLocation } from "react-router-dom";
 import CardList from "./CardList";
 import MovieModal from "./MovieModal";
 import SimpleCardList from "./SimpleCardList";
-import SimpleMovieModal from "./SimpleMovieModal";
 import useIsMobile from "../../hooks/useIsMobile";
 
 function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enablePagination }) {
@@ -297,7 +296,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
       )}
       {enablePagination && paginationBar}
       {useSimpleStyle ? (
-        <SimpleMovieModal
+        <MovieModal
           movieId={selectedMovieId}
           open={isModalVisible}
           onClose={handleCloseModal}

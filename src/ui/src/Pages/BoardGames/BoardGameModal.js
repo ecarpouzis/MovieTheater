@@ -1,21 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Modal, Input, Button, Collapse, message } from "antd";
+import { Modal, Input, Button, Collapse, Tooltip, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import "./BoardGameModal.css";
+import { stripHtml } from "./boardGameUtils";
 
 const { Panel } = Collapse;
-
-function stripHtml(html) {
-  if (!html) return "";
-  return html
-    .replace(/<[^>]*>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .trim();
-}
 
 function toYouTubeEmbedUrl(url) {
   if (!url) return null;
@@ -72,15 +61,19 @@ function UrlRow({ url, actionLabel, actionDanger, onAction, loading }) {
   );
 }
 
-function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, onGameUpdated }) {
+function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, onGameUpdated, onOpenGame }) {
   const [game, setGame] = useState(null);
   const [editing, setEditing] = useState(false);
+  const [similarGames, setSimilarGames] = useState([]);
   const [editState, setEditState] = useState({});
   const [saving, setSaving] = useState(false);
   const [rematchId, setRematchId] = useState("");
   const [rematching, setRematching] = useState(false);
 
   const [activeExpansionId, setActiveExpansionId] = useState(null);
+
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [descOverflows, setDescOverflows] = useState(false);
 
   const [discovering, setDiscovering] = useState(false);
   const [approvingUrl, setApprovingUrl] = useState(null);
@@ -90,6 +83,7 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
   const [manualPdfUrl, setManualPdfUrl] = useState("");
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const pdfFileInputRef = useRef(null);
+  const descRef = useRef(null);
   const [editApprovedPdfs, setEditApprovedPdfs] = useState([]); // [{url, name}]
   const [editVideoUrls, setEditVideoUrls] = useState([]);
   const [newVideoUrl, setNewVideoUrl] = useState("");
@@ -97,6 +91,8 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
   useEffect(() => {
     const found = games.find((g) => g.id === gameId);
     setGame(found ?? null);
+    setDescExpanded(false);
+    setDescOverflows(false);
   }, [gameId, games]);
 
   useEffect(() => {
@@ -110,8 +106,29 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
       setEditVideoUrls([]);
       setNewVideoUrl("");
       setActiveExpansionId(null);
+      setSimilarGames([]);
+      setDescExpanded(false);
+      setDescOverflows(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !gameId) { setSimilarGames([]); return; }
+    MovieAPI.getSimilarBoardgames(gameId)
+      .then((r) => r.json())
+      .then((result) => { if (result.success) setSimilarGames(result.data); })
+      .catch(() => {});
+  }, [gameId, open]);
+
+  useEffect(() => {
+    const el = descRef.current;
+    if (!el) return;
+    const check = () => setDescOverflows(el.scrollHeight > 120);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [game, activeExpansionId]);
 
   if (!game) return null;
 
@@ -396,7 +413,18 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
                 {displayGame.averageWeight ? <div className="boardgame-modal-stat"><span className="modal-label">Complexity</span><span className="boardgame-modal-stat-value">{Number(displayGame.averageWeight).toFixed(2)}/5</span></div> : null}
                 {displayGame.minAge ? <div className="boardgame-modal-stat"><span className="modal-label">Min Age</span><span className="boardgame-modal-stat-value">{displayGame.minAge}+</span></div> : null}
               </div>
-              {description && <p className="boardgame-modal-plot">{description}</p>}
+              {description && (
+                <>
+                  <div className={`boardgame-modal-plot-wrap${descOverflows && !descExpanded ? " boardgame-modal-plot-wrap--collapsed" : ""}`}>
+                    <p ref={descRef} className="boardgame-modal-plot">{description}</p>
+                  </div>
+                  {descOverflows && (
+                    <button className="boardgame-desc-toggle" onClick={() => setDescExpanded((v) => !v)}>
+                      {descExpanded ? "Show less ↑" : "Show more ↓"}
+                    </button>
+                  )}
+                </>
+              )}
 
               {hasRulesContent && (
                 <Collapse ghost defaultActiveKey={[]} className="rules-collapse">
@@ -445,6 +473,38 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
                   <div className="boardgame-modal-base-game">Expansion of: <strong>{baseGame.name}</strong></div>
                 ) : null;
               })()}
+
+              {similarGames.length > 0 && (
+                <div className="boardgame-similar-section">
+                  <span className="modal-label">Similar Games</span>
+                  <div className="boardgame-similar-list">
+                    {similarGames.map((g) => {
+                      const tooltipContent = (
+                        <div className="similar-tooltip">
+                          {g.sharedMechanics?.length > 0 && (
+                            <div><span className="similar-tooltip-label">Mechanics: </span>{g.sharedMechanics.join(", ")}</div>
+                          )}
+                          {g.sharedCategories?.length > 0 && (
+                            <div><span className="similar-tooltip-label">Categories: </span>{g.sharedCategories.join(", ")}</div>
+                          )}
+                        </div>
+                      );
+                      return (
+                        <Tooltip key={g.id} title={tooltipContent} placement="top">
+                          <button className="boardgame-similar-item" onClick={() => onOpenGame?.(g.id)}>
+                            <img
+                              src={`/BoardgameImageThumb/${g.id}${g.imageVersion != null ? `?v=${g.imageVersion}` : ""}`}
+                              alt={g.name}
+                              className="boardgame-similar-thumb"
+                            />
+                            <span className="boardgame-similar-name">{g.name}</span>
+                          </button>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <a className="boardgame-bgg-link" href={`https://boardgamegeek.com/${bggPath}/${displayGame.bggThingId}`} target="_blank" rel="noreferrer">
                 View on BoardGameGeek
