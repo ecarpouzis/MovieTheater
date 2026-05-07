@@ -102,7 +102,7 @@ namespace MovieTheater.Controllers
             var ratingMap = movieDb.RatingMaps
                                   .FirstOrDefault(rm => rm.MovieRating == trimmedRating);
 
-            return ratingMap.MPARatingID;
+            return ratingMap?.MPARatingID ?? 0;
         }
 
         [HttpGet("/API/GetMovie")]
@@ -121,8 +121,10 @@ namespace MovieTheater.Controllers
             }
 
             var movie = await movieDb.Movies.Include(m => m.PosterDetails).SingleOrDefaultAsync(m => m.id == id);
+            if (movie == null)
+                return BadRequest(new { Success = false, Message = "Movie ID not found" });
             var rating = GetMPARatingFromMovieRating(movie.Rating);
-            if (movie != null && (rating <= ageRestriction))
+            if (rating <= ageRestriction)
             {
                 return Ok(new { Success = true, data = movie });
             }
@@ -464,7 +466,7 @@ namespace MovieTheater.Controllers
                 return NotFound();
             }
 
-            var user = await movieDb.Users.SingleOrDefaultAsync(d => d.Username == username);
+            var user = await movieDb.Users.SingleOrDefaultAsync(d => d.Username == givenUser);
 
             if (user == null)
             {
@@ -812,8 +814,7 @@ namespace MovieTheater.Controllers
                     case "startsWith":
                         if (search.StartsWith == "#")
                         {
-                            List<char> digits = new List<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-                            movies = movies.Where(m => digits.Contains(m.SimpleTitle[0]));
+                            movies = movies.Where(m => char.IsDigit(m.SimpleTitle[0]));
                         }
                         else
                         {
@@ -1006,8 +1007,7 @@ namespace MovieTheater.Controllers
             {
                 if (startsWith == "#")
                 {
-                    var digits = new List<char> { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-                    moviesQuery = moviesQuery.Where(m => digits.Contains(m.SimpleTitle[0]));
+                    moviesQuery = moviesQuery.Where(m => char.IsDigit(m.SimpleTitle[0]));
                 }
                 else
                 {
@@ -1650,12 +1650,13 @@ namespace MovieTheater.Controllers
                     finalWidth = maxWidth;
                 }
 
-                image.Mutate(x => x.Resize(finalWidth, finalHeight, KnownResamplers.Lanczos2));
-                image.Mutate(x => x.GaussianSharpen(.5f));
-                image.Mutate(x => x.GaussianSharpen(.5f));
-                image.Mutate(x => x.GaussianSharpen(.4f));
-                image.Mutate(x => x.GaussianSharpen(.3f));
-                image.Mutate(x => x.GaussianSharpen(.2f));
+                image.Mutate(x => x
+                    .Resize(finalWidth, finalHeight, KnownResamplers.Lanczos2)
+                    .GaussianSharpen(.5f)
+                    .GaussianSharpen(.5f)
+                    .GaussianSharpen(.4f)
+                    .GaussianSharpen(.3f)
+                    .GaussianSharpen(.2f));
 
                 var png = new PngEncoder
                 {
