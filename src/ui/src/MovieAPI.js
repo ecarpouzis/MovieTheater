@@ -221,6 +221,7 @@ function updateBoardgame(game) {
       PlayingTime: game.playingTime,
       MinAge: game.minAge,
       ImageUrl: game.imageUrl ?? null,
+      BaseGameId: game.baseGameId ?? null,
     }),
   });
 }

@@ -1,6 +1,24 @@
+import { useRef, useLayoutEffect, useState } from "react";
 import { Card, Tooltip } from "antd";
 import "../Browse/CardList.css";
 import "./BoardGameCardList.css";
+
+function PlotText({ text }) {
+  const ref = useRef(null);
+  const [overflows, setOverflows] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => setOverflows(el.scrollHeight > el.clientHeight);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text]);
+
+  return <p ref={ref} className={`card-plot${overflows ? " card-plot--faded" : ""}`}>{text}</p>;
+}
 
 function stripHtml(html) {
   if (!html) return "";
@@ -63,7 +81,7 @@ function BoardGameCardList({ games, expansionMap, onGameClick }) {
                     {game.averageRating ? <span className="badge-imdb">★ {Number(game.averageRating).toFixed(1)}</span> : null}
                     {game.averageWeight ? <span className="badge-rating">🧠 {Number(game.averageWeight).toFixed(1)}/5</span> : null}
                   </div>
-                  {description && <p className="card-plot">{description.substring(0, 300)}</p>}
+                  {description && <PlotText text={description.substring(0, 300)} />}
                 </div>
               </div>
             </Card>
