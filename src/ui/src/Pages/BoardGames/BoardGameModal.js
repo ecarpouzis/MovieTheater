@@ -25,7 +25,7 @@ function SimilarGameItem({ game, onOpenGame }) {
     <Tooltip
       title={tooltipContent}
       placement="top"
-      visible={isTouch ? open : undefined}
+      open={isTouch ? open : undefined}
       trigger={isTouch ? [] : ["hover"]}
     >
       <button
@@ -52,7 +52,9 @@ function toYouTubeEmbedUrl(url) {
     if (u.hostname === "youtu.be") return `https://www.youtube.com/embed${u.pathname}`;
     const v = u.searchParams.get("v");
     if (v) return `https://www.youtube.com/embed/${v}`;
-  } catch {}
+  } catch {
+    return url.includes("youtube.com/embed/") ? url : null;
+  }
   if (url.includes("youtube.com/embed/")) return url;
   return null;
 }
