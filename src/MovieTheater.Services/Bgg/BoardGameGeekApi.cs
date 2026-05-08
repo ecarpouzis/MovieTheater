@@ -30,37 +30,45 @@ namespace MovieTheater.Services.Bgg
         public async Task<BoardgameBggResult?> GetBoardgameByTitle(string title)
         {
             if (string.IsNullOrWhiteSpace(title))
-            {
                 return null;
-            }
 
-            var encoded = Uri.EscapeDataString(title.Trim());
-            var xml = await SendBggGetAsync($"/xmlapi2/search?query={encoded}&type=boardgame&exact=1");
+            var query = title.Trim();
+            var encoded = Uri.EscapeDataString(query);
+
+            // Search both base games and expansions so titles like "Munchkin 2: Unnatural Axe"
+            // (which BGG classifies as boardgameexpansion) are found.
+            var xml = await SendBggGetAsync($"/xmlapi2/search?query={encoded}&type=boardgame,boardgameexpansion,boardgameaccessory&exact=1");
             var doc = XDocument.Parse(xml);
 
-            var item = doc.Root?.Elements("item")
-                .FirstOrDefault(x => int.TryParse((string?)x.Attribute("id"), out _));
+            var items = doc.Root?.Elements("item")
+                .Where(x => int.TryParse((string?)x.Attribute("id"), out _))
+                .ToList() ?? [];
 
-            if (item == null)
+            if (items.Count == 0)
             {
-                xml = await SendBggGetAsync($"/xmlapi2/search?query={encoded}&type=boardgame");
+                xml = await SendBggGetAsync($"/xmlapi2/search?query={encoded}&type=boardgame,boardgameexpansion,boardgameaccessory");
                 doc = XDocument.Parse(xml);
-                item = doc.Root?.Elements("item")
-                    .FirstOrDefault(x => int.TryParse((string?)x.Attribute("id"), out _));
+                items = doc.Root?.Elements("item")
+                    .Where(x => int.TryParse((string?)x.Attribute("id"), out _))
+                    .ToList() ?? [];
             }
 
-            if (item == null)
-            {
+            if (items.Count == 0)
                 return null;
-            }
 
-            var idText = (string?)item.Attribute("id");
-            if (!int.TryParse(idText, out var bggThingId))
-            {
-                return null;
-            }
+            // Prefer results whose primary name starts with the query (handles "Munchkin 2" → "Munchkin 2: …")
+            var best = items
+                .Select(x => new
+                {
+                    item = x,
+                    name = (string?)x.Element("name")?.Attribute("value") ?? "",
+                    id = int.Parse(((string?)x.Attribute("id"))!)
+                })
+                .OrderByDescending(x => x.name.Equals(query, StringComparison.OrdinalIgnoreCase))
+                .ThenByDescending(x => x.name.StartsWith(query, StringComparison.OrdinalIgnoreCase))
+                .First();
 
-            return await GetBoardgame(bggThingId);
+            return await GetBoardgame(best.id);
         }
 
         public Task<string> GetThingFilesXmlAsync(int bggThingId)

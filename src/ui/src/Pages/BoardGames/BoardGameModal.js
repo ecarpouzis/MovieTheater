@@ -427,11 +427,12 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
                 <span className="expansion-flag-label">{game.name}</span>
               </button>
               {expansions.map((exp) => {
-                const isStandalone = exp.thingType !== "boardgameexpansion";
+                const isAccessory = exp.thingType === "boardgameaccessory";
+                const isStandalone = exp.thingType !== "boardgameexpansion" && !isAccessory;
                 return (
                   <button
                     key={exp.id}
-                    className={`expansion-flag${isStandalone ? " expansion-flag--standalone" : ""}${activeExpansionId === exp.id ? " expansion-flag--active" : ""}`}
+                    className={`expansion-flag${isAccessory ? " expansion-flag--accessory" : ""}${isStandalone ? " expansion-flag--standalone" : ""}${activeExpansionId === exp.id ? " expansion-flag--active" : ""}`}
                     onClick={() => setActiveExpansionId(activeExpansionId === exp.id ? null : exp.id)}
                   >
                     <span className="expansion-flag-label">{exp.name}</span>
