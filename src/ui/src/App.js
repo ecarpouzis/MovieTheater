@@ -46,7 +46,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Layout className="app-layout">
+      <Layout className="app-layout" hasSider>
         <NavBar
           search={search}
           resetSearch={resetSearch}

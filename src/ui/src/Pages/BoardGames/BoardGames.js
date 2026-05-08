@@ -76,7 +76,7 @@ function BoardGames({ userData }) {
         const games = extractGames(data);
         setAllGames(games);
         setLoading(false);
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify(games)); } catch {}
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(games)); } catch { return; }
       })
       .catch((err) => {
         if (err.name === "AbortError") return;
@@ -189,7 +189,13 @@ function BoardGames({ userData }) {
     setAllGames((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
   };
 
-  if (loading) return <div style={{ padding: 60, textAlign: "center" }}><Spin size="large" /></div>;
+  if (loading) {
+    return (
+      <div style={{ padding: "10px 10px 2px", display: "flex", justifyContent: "center" }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
   if (error && allGames.length === 0) return <div style={{ padding: 40, color: "#f00" }}>{error}</div>;
 
   return (
