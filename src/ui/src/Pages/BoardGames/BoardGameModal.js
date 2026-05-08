@@ -446,10 +446,10 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
               <div className="boardgame-modal-meta-row">
                 {displayGame.yearPublished && <span>{displayGame.yearPublished}</span>}
                 {players && <><span className="modal-dot">·</span><span>👥 {players} players</span></>}
-                {displayGame.playingTime && <><span className="modal-dot">·</span><span>⏱ {displayGame.playingTime > 999 ? "∞" : displayGame.playingTime} min</span></>}
+                {displayGame.playingTime && <><span className="modal-dot">·</span><span>⏱ {displayGame.playingTime > 999 ? "∞" : displayGame.playingTime}</span></>}
               </div>
               <div className="boardgame-modal-stats-row">
-                {displayGame.averageRating ? <div className="boardgame-modal-stat"><span className="modal-label">BGG Rating</span><span className="boardgame-modal-stat-value">★ {Number(displayGame.averageRating).toFixed(1)}/10</span></div> : null}
+                {displayGame.averageRating ? <div className="boardgame-modal-stat"><span className="modal-label">BGG Rating</span><span className="boardgame-modal-stat-value">★ {Math.round(Number(displayGame.averageRating) * 10)}/100</span></div> : null}
                 {displayGame.averageWeight ? <div className="boardgame-modal-stat"><span className="modal-label">Complexity</span><span className="boardgame-modal-stat-value">{Number(displayGame.averageWeight).toFixed(2)}/5</span></div> : null}
                 {displayGame.minAge ? <div className="boardgame-modal-stat"><span className="modal-label">Min Age</span><span className="boardgame-modal-stat-value">{displayGame.minAge}+</span></div> : null}
               </div>

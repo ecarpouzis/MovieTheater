@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
+import { Spin } from "antd";
 import BoardGameCardList from "./BoardGameCardList";
 import BoardGameModal from "./BoardGameModal";
 
@@ -47,9 +48,15 @@ function extractGames(payload) {
   return rawGames.map(normalizeGame).filter((g) => Number.isInteger(g.id) && g.id > 0);
 }
 
+const CACHE_KEY = "boardgames_v1";
+
 function BoardGames({ userData }) {
-  const [allGames, setAllGames] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const cached = useMemo(() => {
+    try { const v = localStorage.getItem(CACHE_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
+  }, []);
+
+  const [allGames, setAllGames] = useState(cached ?? []);
+  const [loading, setLoading] = useState(cached == null);
   const [error, setError] = useState(null);
   const [selectedGameId, setSelectedGameId] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -57,8 +64,6 @@ function BoardGames({ userData }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
-    setError(null);
 
     fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minPlayTime,maxPlayTime,minAge,averageRating,averageWeight,description,rulesPdfUrlsJson,rulesPdfCandidateUrlsJson,howToPlayVideoUrlsJson,thingType,baseGameId&$expand=imageDetails&$orderby=name", {
       signal: controller.signal,
@@ -68,12 +73,14 @@ function BoardGames({ userData }) {
         return r.json();
       })
       .then((data) => {
-        setAllGames(extractGames(data));
+        const games = extractGames(data);
+        setAllGames(games);
         setLoading(false);
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(games)); } catch {}
       })
       .catch((err) => {
         if (err.name === "AbortError") return;
-        setAllGames([]);
+        if (cached == null) setAllGames([]);
         setError(err.message || "Failed to load boardgames");
         setLoading(false);
       });
@@ -182,8 +189,8 @@ function BoardGames({ userData }) {
     setAllGames((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
   };
 
-  if (loading) return <span>Loading</span>;
-  if (error) return <span>{error}</span>;
+  if (loading) return <div style={{ padding: 60, textAlign: "center" }}><Spin size="large" /></div>;
+  if (error && allGames.length === 0) return <div style={{ padding: 40, color: "#f00" }}>{error}</div>;
 
   return (
     <>

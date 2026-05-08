@@ -68,13 +68,13 @@ function BoardGameCardList({ games, expansionMap, onGameClick }) {
                   <div className="card-meta-row">
                     {(basePlayers || hasExtendedPlayers) && (
                       <span className="badge-rating">
-                        👥 {basePlayers ?? expansionMaxPlayers}
+                        👥&#x202F;{basePlayers ?? expansionMaxPlayers}
                         {hasExtendedPlayers && <span className="badge-exp-ext">→{expansionMaxPlayers}</span>}
                       </span>
                     )}
-                    {playtime ? <span className="badge-runtime">⏱ {playtime} min</span> : null}
-                    {game.averageRating ? <Tooltip trigger={tooltipTrigger} title="BGG average rating (out of 10)"><span className="badge-imdb">★ {Number(game.averageRating).toFixed(1)}</span></Tooltip> : null}
-                    {game.averageWeight ? <Tooltip trigger={tooltipTrigger} title="Complexity (0–100), based on BGG average weight out of 5"><span className="badge-rating">🧠 {Math.round(Number(game.averageWeight) / 5 * 100)}</span></Tooltip> : null}
+                    {playtime ? <span className="badge-runtime">⏱&#x202F;{playtime}</span> : null}
+                    {game.averageRating ? <Tooltip trigger={tooltipTrigger} title="BGG average rating (out of 100)"><span className="badge-imdb">★&#x202F;{Math.round(Number(game.averageRating) * 10)}</span></Tooltip> : null}
+                    {game.averageWeight ? <Tooltip trigger={tooltipTrigger} title="Complexity (0–100), based on BGG average weight out of 5"><span className="badge-rating">🧠&#x202F;{Math.round(Number(game.averageWeight) / 5 * 100)}</span></Tooltip> : null}
                   </div>
                   {description && <PlotText text={description} hasExpansion={expansions.length > 0} />}
                 </div>

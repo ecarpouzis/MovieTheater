@@ -66,6 +66,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  justify-content: center;
 }
 
 .boardgame-modal-stat {
@@ -76,6 +77,12 @@
   background: #fafafa;
   border: 1px solid #ebebeb;
   border-radius: 8px;
+  align-items: center;
+  text-align: center;
+}
+
+.boardgame-modal-stat .modal-label {
+  white-space: nowrap;
 }
 
 .boardgame-modal-stat-value {
@@ -688,6 +695,17 @@
 
   .boardgame-modal-info-panel {
     gap: 12px;
+  }
+
+  .boardgame-modal-stats-row {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .boardgame-modal-stat {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
   }
 
   .boardgame-modal-title {
