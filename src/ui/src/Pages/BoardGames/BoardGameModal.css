@@ -2,6 +2,12 @@
   max-height: 85vh;
   overflow-y: auto;
   padding: 28px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.boardgame-modal-close-btn {
+  display: none;
 }
 
 .boardgame-modal-body {
@@ -230,9 +236,7 @@
   font-weight: 600;
   color: #5b21b6;
   display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 /* ── Expansion detail panel (info panel) ── */
@@ -573,6 +577,8 @@
   border-radius: 8px;
   padding: 8px;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
   width: 90px;
   transition: background 0.15s, border-color 0.15s;
   text-align: center;
@@ -620,14 +626,54 @@
 }
 
 @media (max-width: 600px) {
+  /* Nav bar is fixed at z-index 1300, height 48px. Start the modal below it so the
+     close button isn't hidden behind the nav bar. */
   .boardgame-modal .ant-modal {
-    max-width: 96vw !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    top: 48px !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Fixed height fills the space below the nav bar. Flex column lets the body scroll. */
+  .boardgame-modal .ant-modal-content {
+    border-radius: 0;
+    height: calc(100vh - 48px);
+    height: calc(100dvh - 48px);
+    display: flex;
+    flex-direction: column;
   }
 
   .boardgame-modal .ant-modal-body {
-    padding: 16px;
+    padding: 0 16px 16px;
+    max-height: none;
+    flex: 1;
+    min-height: 0; /* lets the flex item shrink so overflow-y: auto actually scrolls */
   }
 
+  /* Hide the Ant Design × — replaced by in-flow close button */
+  .boardgame-modal .ant-modal-close {
+    display: none;
+  }
+
+  .boardgame-modal-close-btn {
+    display: block;
+    float: right;
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+    padding: 8px 0 8px 12px;
+  }
+
+  .boardgame-modal-close-btn:active {
+    color: #333;
+  }
+
+  /* Row layout — flags stay beside the poster */
   .boardgame-modal-poster-column {
     float: none;
     width: 100%;

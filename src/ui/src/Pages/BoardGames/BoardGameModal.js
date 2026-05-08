@@ -10,7 +10,7 @@ const { Panel } = Collapse;
 
 function SimilarGameItem({ game, onOpenGame }) {
   const isTouch = useTouchDevice();
-  const { open, handlers, suppressClick } = useLongPress();
+  const { open, ref, suppressClick } = useLongPress();
   const tooltipContent = (
     <div className="similar-tooltip">
       {game.sharedMechanics?.length > 0 && (
@@ -29,14 +29,15 @@ function SimilarGameItem({ game, onOpenGame }) {
       trigger={isTouch ? [] : ["hover"]}
     >
       <button
+        ref={ref}
         className="boardgame-similar-item"
         onClick={suppressClick(() => onOpenGame?.(game.id))}
-        {...(isTouch ? handlers : {})}
       >
         <img
           src={`/BoardgameImageThumb/${game.id}${game.imageVersion != null ? `?v=${game.imageVersion}` : ""}`}
           alt={game.name}
           className="boardgame-similar-thumb"
+          draggable={false}
         />
         <span className="boardgame-similar-name">{game.name}</span>
       </button>
@@ -400,6 +401,7 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
   return (
     <Modal open={open} onCancel={onClose} footer={null} width={1000} wrapClassName="boardgame-modal">
       <div className="boardgame-modal-body">
+        <button className="boardgame-modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
         <div className="boardgame-modal-poster-column">
           <img
             className="boardgame-modal-poster"
