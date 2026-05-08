@@ -3,8 +3,46 @@ import { Modal, Input, Button, Collapse, Tooltip, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import "./BoardGameModal.css";
 import { stripHtml } from "./boardGameUtils";
+import useTouchDevice from "../../hooks/useTouchDevice";
+import useLongPress from "../../hooks/useLongPress";
 
 const { Panel } = Collapse;
+
+function SimilarGameItem({ game, onOpenGame }) {
+  const isTouch = useTouchDevice();
+  const { open, handlers, suppressClick } = useLongPress();
+  const tooltipContent = (
+    <div className="similar-tooltip">
+      {game.sharedMechanics?.length > 0 && (
+        <div><span className="similar-tooltip-label">Mechanics: </span>{game.sharedMechanics.join(", ")}</div>
+      )}
+      {game.sharedCategories?.length > 0 && (
+        <div><span className="similar-tooltip-label">Categories: </span>{game.sharedCategories.join(", ")}</div>
+      )}
+    </div>
+  );
+  return (
+    <Tooltip
+      title={tooltipContent}
+      placement="top"
+      visible={isTouch ? open : undefined}
+      trigger={isTouch ? [] : ["hover"]}
+    >
+      <button
+        className="boardgame-similar-item"
+        onClick={suppressClick(() => onOpenGame?.(game.id))}
+        {...(isTouch ? handlers : {})}
+      >
+        <img
+          src={`/BoardgameImageThumb/${game.id}${game.imageVersion != null ? `?v=${game.imageVersion}` : ""}`}
+          alt={game.name}
+          className="boardgame-similar-thumb"
+        />
+        <span className="boardgame-similar-name">{game.name}</span>
+      </button>
+    </Tooltip>
+  );
+}
 
 function toYouTubeEmbedUrl(url) {
   if (!url) return null;
@@ -478,30 +516,9 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
                 <div className="boardgame-similar-section">
                   <span className="modal-label">Similar Games</span>
                   <div className="boardgame-similar-list">
-                    {similarGames.map((g) => {
-                      const tooltipContent = (
-                        <div className="similar-tooltip">
-                          {g.sharedMechanics?.length > 0 && (
-                            <div><span className="similar-tooltip-label">Mechanics: </span>{g.sharedMechanics.join(", ")}</div>
-                          )}
-                          {g.sharedCategories?.length > 0 && (
-                            <div><span className="similar-tooltip-label">Categories: </span>{g.sharedCategories.join(", ")}</div>
-                          )}
-                        </div>
-                      );
-                      return (
-                        <Tooltip key={g.id} title={tooltipContent} placement="top">
-                          <button className="boardgame-similar-item" onClick={() => onOpenGame?.(g.id)}>
-                            <img
-                              src={`/BoardgameImageThumb/${g.id}${g.imageVersion != null ? `?v=${g.imageVersion}` : ""}`}
-                              alt={g.name}
-                              className="boardgame-similar-thumb"
-                            />
-                            <span className="boardgame-similar-name">{g.name}</span>
-                          </button>
-                        </Tooltip>
-                      );
-                    })}
+                    {similarGames.map((g) => (
+                      <SimilarGameItem key={g.id} game={g} onOpenGame={onOpenGame} />
+                    ))}
                   </div>
                 </div>
               )}

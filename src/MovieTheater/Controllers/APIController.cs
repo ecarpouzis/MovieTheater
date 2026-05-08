@@ -1569,50 +1569,47 @@ namespace MovieTheater.Controllers
             var imageUrl = details?.ImageUrl;
             var thumbnailUrl = details?.ThumbnailUrl;
 
-            byte[]? mainBytes = null;
             bool hasMain = await boardgameImageRepo.HasImage(boardgame.id, BoardgameImageVariant.Main);
             bool hasThumb = await boardgameImageRepo.HasImage(boardgame.id, BoardgameImageVariant.Thumbnail);
             bool savedAny = false;
 
-            if (force || !hasMain)
+            // Fire both HTTP requests before awaiting either so they download in parallel
+            var mainFetchTask = (force || !hasMain) && !string.IsNullOrWhiteSpace(imageUrl)
+                ? httpClient.GetAsync(imageUrl)
+                : null;
+            var thumbFetchTask = (force || !hasThumb) && !string.IsNullOrWhiteSpace(thumbnailUrl)
+                ? httpClient.GetAsync(thumbnailUrl)
+                : null;
+
+            byte[]? mainBytes = null;
+            if (mainFetchTask != null)
             {
-                if (!string.IsNullOrWhiteSpace(imageUrl))
-                {
-                    var imageResponse = await httpClient.GetAsync(imageUrl);
-                    imageResponse.EnsureSuccessStatusCode();
-                    mainBytes = await imageResponse.Content.ReadAsByteArrayAsync();
-                    await boardgameImageRepo.SaveImage(boardgame.id, BoardgameImageVariant.Main, mainBytes);
-                    savedAny = true;
-                }
+                var imageResponse = await mainFetchTask;
+                imageResponse.EnsureSuccessStatusCode();
+                mainBytes = await imageResponse.Content.ReadAsByteArrayAsync();
+                await boardgameImageRepo.SaveImage(boardgame.id, BoardgameImageVariant.Main, mainBytes);
+                savedAny = true;
             }
 
-            if (force || !hasThumb)
+            byte[]? thumbBytes = null;
+            if (thumbFetchTask != null)
             {
-                byte[]? thumbBytes = null;
+                var thumbResponse = await thumbFetchTask;
+                if (thumbResponse.IsSuccessStatusCode)
+                    thumbBytes = await thumbResponse.Content.ReadAsByteArrayAsync();
+            }
 
-                if (!string.IsNullOrWhiteSpace(thumbnailUrl))
-                {
-                    var thumbResponse = await httpClient.GetAsync(thumbnailUrl);
-                    if (thumbResponse.IsSuccessStatusCode)
-                    {
-                        thumbBytes = await thumbResponse.Content.ReadAsByteArrayAsync();
-                      }
-                }
+            if (thumbBytes == null && (force || !hasThumb))
+            {
+                mainBytes ??= await boardgameImageRepo.GetImage(boardgame.id, BoardgameImageVariant.Main);
+                if (mainBytes != null)
+                    thumbBytes = BuildBoardgameThumbnail(mainBytes);
+            }
 
-                if (thumbBytes == null)
-                {
-                    mainBytes ??= await boardgameImageRepo.GetImage(boardgame.id, BoardgameImageVariant.Main);
-                    if (mainBytes != null)
-                    {
-                        thumbBytes = BuildBoardgameThumbnail(mainBytes);
-                    }
-                }
-
-                if (thumbBytes != null)
-                {
-                    await boardgameImageRepo.SaveImage(boardgame.id, BoardgameImageVariant.Thumbnail, thumbBytes);
-                    savedAny = true;
-                }
+            if (thumbBytes != null)
+            {
+                await boardgameImageRepo.SaveImage(boardgame.id, BoardgameImageVariant.Thumbnail, thumbBytes);
+                savedAny = true;
             }
 
             if (savedAny)
@@ -1652,11 +1649,7 @@ namespace MovieTheater.Controllers
 
                 image.Mutate(x => x
                     .Resize(finalWidth, finalHeight, KnownResamplers.Lanczos2)
-                    .GaussianSharpen(.5f)
-                    .GaussianSharpen(.5f)
-                    .GaussianSharpen(.4f)
-                    .GaussianSharpen(.3f)
-                    .GaussianSharpen(.2f));
+                    .GaussianSharpen(.5f));
 
                 var png = new PngEncoder
                 {

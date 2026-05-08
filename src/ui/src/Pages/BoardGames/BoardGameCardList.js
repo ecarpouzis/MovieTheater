@@ -3,8 +3,9 @@ import { Card, Tooltip } from "antd";
 import "../Browse/CardList.css";
 import "./BoardGameCardList.css";
 import { stripHtml } from "./boardGameUtils";
+import useTouchDevice from "../../hooks/useTouchDevice";
 
-function PlotText({ text }) {
+function PlotText({ text, hasExpansion }) {
   const ref = useRef(null);
   const [overflows, setOverflows] = useState(false);
 
@@ -18,10 +19,16 @@ function PlotText({ text }) {
     return () => observer.disconnect();
   }, [text]);
 
-  return <p ref={ref} className={`card-plot${overflows ? " card-plot--faded" : ""}`}>{text}</p>;
+  return (
+    <p ref={ref} className={`card-plot${overflows ? " card-plot--faded" : ""}`}>
+      {hasExpansion && <span className="expansion-float-spacer" />}
+      {text}
+    </p>
+  );
 }
 
 function BoardGameCardList({ games, expansionMap, onGameClick }) {
+  const tooltipTrigger = useTouchDevice() ? "click" : "hover";
   return (
     <div className="card-list">
       {games.map((game) => {
@@ -66,15 +73,15 @@ function BoardGameCardList({ games, expansionMap, onGameClick }) {
                       </span>
                     )}
                     {playtime ? <span className="badge-runtime">⏱ {playtime} min</span> : null}
-                    {game.averageRating ? <span className="badge-imdb">★ {Number(game.averageRating).toFixed(1)}</span> : null}
-                    {game.averageWeight ? <span className="badge-rating">🧠 {Number(game.averageWeight).toFixed(1)}/5</span> : null}
+                    {game.averageRating ? <Tooltip trigger={tooltipTrigger} title="BGG average rating (out of 10)"><span className="badge-imdb">★ {Number(game.averageRating).toFixed(1)}</span></Tooltip> : null}
+                    {game.averageWeight ? <Tooltip trigger={tooltipTrigger} title="Complexity (0–100), based on BGG average weight out of 5"><span className="badge-rating">🧠 {Math.round(Number(game.averageWeight) / 5 * 100)}</span></Tooltip> : null}
                   </div>
-                  {description && <PlotText text={description} />}
+                  {description && <PlotText text={description} hasExpansion={expansions.length > 0} />}
                 </div>
               </div>
             </Card>
             {expansions.length > 0 && (
-              <Tooltip title={expansions.map((e) => e.name).join(", ")} placement="left">
+              <Tooltip trigger={tooltipTrigger} title={expansions.map((e) => e.name).join(", ")} placement="left">
                 <div className="card-expansion-flag">{expansions.length}</div>
               </Tooltip>
             )}
