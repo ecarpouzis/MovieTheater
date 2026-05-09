@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button, Card, Input, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 
@@ -86,10 +86,27 @@ function BoardgameInsertCard({ item, onInserted }) {
   );
 }
 
+function ts() {
+  return new Date().toISOString().replace("T", " ").substring(0, 23);
+}
+
 function BoardgameBatchInsertPage() {
   const [batchInput, setBatchInput] = useState("");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [logLines, setLogLines] = useState([]);
+  const logRef = useRef(null);
+
+  function appendLog(line) {
+    setLogLines((prev) => {
+      const next = [...prev, `[${ts()}] ${line}`];
+      // scroll log to bottom after render
+      setTimeout(() => {
+        if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+      }, 0);
+      return next;
+    });
+  }
 
   function updateItem(index, patch) {
     setItems((prev) => prev.map((x) => (x.index === index ? { ...x, ...patch } : x)));
@@ -106,17 +123,39 @@ function BoardgameBatchInsertPage() {
       return;
     }
 
+    setItems([]);
+    setLogLines([]);
     setLoading(true);
-    try {
-      const response = await MovieAPI.boardgameLookupFromInputs(inputs);
-      const normalized = (Array.isArray(response) ? response : []).map((x, i) => normalizeResult(x, i));
-      setItems(normalized);
-    } catch (err) {
-      message.error(err?.message || "Failed to generate batch.");
-      setItems([]);
-    } finally {
-      setLoading(false);
+    appendLog(`Starting lookup for ${inputs.length} game(s)…`);
+
+    const allItems = [];
+    for (let i = 0; i < inputs.length; i++) {
+      const input = inputs[i];
+      appendLog(`[${i + 1}/${inputs.length}] Querying: "${input}"`);
+      const t0 = Date.now();
+      try {
+        const response = await MovieAPI.boardgameLookupFromInputs([input]);
+        const elapsed = Date.now() - t0;
+        const raw = Array.isArray(response) && response.length > 0 ? response[0] : null;
+        const item = normalizeResult(raw, allItems.length);
+        allItems.push(item);
+        setItems([...allItems]);
+        if (item.found) {
+          appendLog(`  → Found: "${item.name}" (BGG #${item.bggThingId}) — ${elapsed}ms`);
+        } else {
+          appendLog(`  → Not found: ${item.message || "no result"} — ${elapsed}ms`);
+        }
+      } catch (err) {
+        const elapsed = Date.now() - t0;
+        appendLog(`  → ERROR: ${err?.message || "unknown error"} — ${elapsed}ms`);
+        allItems.push(normalizeResult({ input, found: false, message: err?.message }, allItems.length));
+        setItems([...allItems]);
+      }
     }
+
+    const found = allItems.filter((x) => x.found).length;
+    appendLog(`Done. ${found}/${allItems.length} found.`);
+    setLoading(false);
   }
 
   async function insertAll() {
@@ -156,6 +195,29 @@ function BoardgameBatchInsertPage() {
         <Button type="primary" onClick={generateBatch} loading={loading}>Generate Batch</Button>
         <Button onClick={insertAll} disabled={items.length === 0}>Insert All</Button>
       </div>
+
+      {logLines.length > 0 && (
+        <div
+          ref={logRef}
+          style={{
+            marginTop: 12,
+            padding: "8px 10px",
+            background: "#1a1a1a",
+            color: "#d4d4d4",
+            fontFamily: "monospace",
+            fontSize: 12,
+            lineHeight: 1.6,
+            borderRadius: 4,
+            maxHeight: 200,
+            overflowY: "auto",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-all",
+            userSelect: "all",
+          }}
+        >
+          {logLines.join("\n")}
+        </div>
+      )}
 
       {items.map((item) => (
         <BoardgameInsertCard key={`${item.index}-${item.input}`} item={item} onInserted={updateItem} />

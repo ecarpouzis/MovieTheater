@@ -97,9 +97,12 @@ namespace MovieTheater.Services.Bgg
             return parsed;
         }
 
-        private async Task<string> SendBggGetAsync(string pathAndQuery)
+        private async Task<string> SendBggGetAsync(string pathAndQuery, int attempt = 0)
         {
+            const int MaxRetries = 5;
+
             await rateLimitSemaphore.WaitAsync();
+            bool released = false;
             try
             {
                 // Enforce rate limiting - wait if needed to respect BGG's guidelines
@@ -125,12 +128,18 @@ namespace MovieTheater.Services.Bgg
                 // Handle BGG-specific status codes
                 if (response.StatusCode == HttpStatusCode.Accepted) // 202 - queued, need to retry
                 {
-                    // BGG returns 202 when request is queued; retry after delay
+                    if (attempt >= MaxRetries)
+                        throw new HttpRequestException($"BGG request still queued after {MaxRetries} retries.");
+
+                    // Release the semaphore BEFORE retrying — holding it across the recursive
+                    // await would deadlock since the inner call also tries to acquire it.
+                    rateLimitSemaphore.Release();
+                    released = true;
                     await Task.Delay(options.RateLimitDelayMs);
-                    return await SendBggGetAsync(pathAndQuery);
+                    return await SendBggGetAsync(pathAndQuery, attempt + 1);
                 }
 
-                if (response.StatusCode == HttpStatusCode.ServiceUnavailable || 
+                if (response.StatusCode == HttpStatusCode.ServiceUnavailable ||
                     response.StatusCode == HttpStatusCode.InternalServerError) // 503 or 500 - too busy
                 {
                     throw new HttpRequestException($"BGG server too busy. Status: {(int)response.StatusCode}. Try again later.");
@@ -141,7 +150,7 @@ namespace MovieTheater.Services.Bgg
             }
             finally
             {
-                rateLimitSemaphore.Release();
+                if (!released) rateLimitSemaphore.Release();
             }
         }
 
