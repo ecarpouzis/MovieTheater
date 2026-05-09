@@ -81,7 +81,16 @@ function BoardGameCardList({ games, expansionMap, onGameClick }) {
               </div>
             </Card>
             {expansions.length > 0 && (
-              <Tooltip trigger={tooltipTrigger} title={expansions.map((e) => e.name).join(", ")} placement="left">
+              <Tooltip
+                trigger={tooltipTrigger}
+                placement="left"
+                overlayStyle={{ maxWidth: 320 }}
+                title={
+                  <ul style={{ margin: 0, paddingLeft: 16 }}>
+                    {expansions.map((e) => <li key={e.id}>{e.name}</li>)}
+                  </ul>
+                }
+              >
                 <div className="card-expansion-flag">{expansions.length}</div>
               </Tooltip>
             )}
