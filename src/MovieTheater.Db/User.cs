@@ -8,5 +8,7 @@ namespace MovieTheater.Db
         public int UserID { get; set; }
 
         public string? Username { get; set; }
+
+        public DateTime? LastLogin { get; set; }
     }
 }

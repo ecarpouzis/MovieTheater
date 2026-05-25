@@ -476,8 +476,10 @@ namespace MovieTheater.Controllers
                 };
 
                 await movieDb.Users.AddAsync(user);
-                await movieDb.SaveChangesAsync();
             }
+
+            user.LastLogin = DateTime.UtcNow;
+            await movieDb.SaveChangesAsync();
 
             var claims = new List<Claim>
             {
@@ -791,7 +793,11 @@ namespace MovieTheater.Controllers
         [HttpGet("/API/API_UserList")]
         public IActionResult API_UserList()
         {
-            var userList = movieDb.Users.Select(d => d.Username).ToList();
+            var userList = movieDb.Users
+                .OrderByDescending(u => u.LastLogin.HasValue)
+                .ThenByDescending(u => u.LastLogin)
+                .Select(d => d.Username)
+                .ToList();
             return Json(userList);
         }
 
