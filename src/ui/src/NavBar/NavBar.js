@@ -198,6 +198,11 @@ function NavBar({
                 <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
                   🎲 Board Games
                 </button>
+                {userData?.comicSiteAccess && (
+                  <button className="navbar-section-item" onClick={() => window.open(userData.comicSiteAccess, "_blank", "noopener,noreferrer")}>
+                    📚 Comics
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -236,6 +241,11 @@ function NavBar({
                 <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
                   🎲 Board Games
                 </button>
+                {userData?.comicSiteAccess && (
+                  <button className="navbar-section-item" onClick={() => window.open(userData.comicSiteAccess, "_blank", "noopener,noreferrer")}>
+                    📚 Comics
+                  </button>
+                )}
               </div>
             )}
           </div>

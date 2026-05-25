@@ -540,7 +540,12 @@ namespace MovieTheater.Controllers
                 showBoardgameExpansions = parsedShowExpansions;
             }
 
-            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions });
+            // comic site access — SettingValue is the URL; null means no access
+            var comicSiteAccessSetting = await movieDb.UserSettings
+                .FirstOrDefaultAsync(u => u.SettingKey == "ComicSiteAccess" && u.UserID == user.UserID);
+            var comicSiteAccess = comicSiteAccessSetting?.SettingValue;
+
+            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess });
         }
 
         [HttpPost("/API/Logout")]
