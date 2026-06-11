@@ -207,6 +207,10 @@ function getMPARatings() {
   return fetch("/API/GetMPARatings");
 }
 
+function getGenres() {
+  return fetch("/API/GetGenres");
+}
+
 function updateBoardgame(game) {
   return fetch("/API/UpdateBoardgame", {
     method: "POST",
@@ -332,6 +336,7 @@ const MovieAPI = {
   setWantToWatchState,
   movieLookupFromNames,
   getMPARatings,
+  getGenres,
   setUserSetting,
   updateBoardgame,
   rematchBoardgame,

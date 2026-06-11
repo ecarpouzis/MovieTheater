@@ -1010,6 +1010,17 @@ namespace MovieTheater.Controllers
             return Ok(new { movies = paged, totalCount, page, pageSize });
         }
 
+        // Distinct genre names from the normalized Genre table, for the browse genre filter.
+        [HttpGet("/API/GetGenres")]
+        public async Task<IActionResult> GetGenres()
+        {
+            var genres = await movieDb.Genres
+                .OrderBy(g => g.Name)
+                .Select(g => g.Name)
+                .ToListAsync();
+            return Ok(genres);
+        }
+
         [HttpGet("/API/GetMPARatings")]
         public async Task<IActionResult> GetMPARatings()
         {

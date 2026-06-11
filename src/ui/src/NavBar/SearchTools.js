@@ -1,4 +1,4 @@
-import { Input, List, Button, message } from "antd";
+import { Input, List, Button, Select, message } from "antd";
 import { useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
@@ -76,12 +76,19 @@ const listStyle = {
 function SearchTools({ search, userData }) {
   const history = useHistory();
   const [mpaRatings, setMpaRatings] = useState([]);
+  const [genres, setGenres] = useState([]);
 
   useEffect(() => {
     MovieAPI.getMPARatings()
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setMpaRatings(data);
+      })
+      .catch(() => {});
+    MovieAPI.getGenres()
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setGenres(data);
       })
       .catch(() => {});
   }, []);
@@ -160,6 +167,21 @@ function SearchTools({ search, userData }) {
         }}
         enterButton
       />
+      {genres.length > 0 && (
+        <>
+          <span style={inputLabelStyle}>Genre</span>
+          <Select
+            showSearch
+            allowClear
+            placeholder="Genre"
+            style={{ width: "100%" }}
+            value={search.genre || undefined}
+            onChange={(value) => navigateToBrowseSearch(value ? "genre" : undefined, value || "")}
+            options={genres.map((g) => ({ label: g, value: g }))}
+            filterOption={(input, option) => option.label.toLowerCase().includes(input.toLowerCase())}
+          />
+        </>
+      )}
       <span style={inputLabelStyle}>First Letter</span>
       <List
         style={listStyle}

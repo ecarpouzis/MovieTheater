@@ -18,6 +18,7 @@ function NavBar({
   onUserLoggedIn,
   titleSearch,
   actorSearch,
+  genreSearch,
   firstLetterSearch,
   ratingSearch,
   restoreMovieIdsSearch,
@@ -109,6 +110,7 @@ function NavBar({
     const modeHandlers = {
       title: (v) => (v.trim() ? titleSearch(v) : resetSearch()),
       actor: (v) => (v.trim() ? actorSearch(v) : resetSearch()),
+      genre: (v) => (v.trim() ? genreSearch(v) : resetSearch()),
       letter: (v) => (v.trim() ? firstLetterSearch(v) : resetSearch()),
       rating: (v) => (v.trim() ? ratingSearch(v, parseInt(page, 10) || 1) : resetSearch()),
       seen: () => {
@@ -142,6 +144,7 @@ function NavBar({
     resetSearch,
     titleSearch,
     actorSearch,
+    genreSearch,
     firstLetterSearch,
     ratingSearch,
     restoreMovieIdsSearch,

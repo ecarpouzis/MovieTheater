@@ -10,6 +10,12 @@ export function buildODataUrl(filter) {
   return `/odata/Movies?$filter=${encodeURIComponent(filter)}&$orderby=simpleTitle asc`;
 }
 
+// Filters that traverse navigation properties (Credits, MovieGenres) require PascalCase
+// property names — including in $orderby — unlike the lenient simple-property filters.
+export function buildNavODataUrl(filter) {
+  return `/odata/Movies?$filter=${encodeURIComponent(filter)}&$orderby=SimpleTitle asc`;
+}
+
 export function useMovieSearch() {
   const [search, setSearch] = useState({ url: RANDOM_MOVIES_URL });
 
@@ -22,9 +28,27 @@ export function useMovieSearch() {
     setSearch({ url: buildODataUrl(`contains(simpleTitle,'${escaped}') or contains(title,'${escaped}')`) });
   }, []);
 
+  // Search the full normalized cast (MovieCredit -> Person), falling back to the legacy
+  // Actors string for any movie not yet normalized.
   const actorSearch = useCallback((actor) => {
     const escaped = escapeODataString(actor);
-    setSearch({ url: buildODataUrl(`contains(actors,'${escaped}')`) });
+    setSearch({
+      url: buildNavODataUrl(
+        `Credits/any(c: contains(c/Person/DisplayName,'${escaped}')) or contains(Actors,'${escaped}')`
+      ),
+      actor,
+    });
+  }, []);
+
+  // Filter by a normalized genre (Genre table), with a legacy Genre-string fallback.
+  const genreSearch = useCallback((genre) => {
+    const escaped = escapeODataString(genre);
+    setSearch({
+      url: buildNavODataUrl(
+        `MovieGenres/any(g: g/Genre/Name eq '${escaped}') or contains(Genre,'${escaped}')`
+      ),
+      genre,
+    });
   }, []);
 
   const firstLetterSearch = useCallback((firstLetter) => {
@@ -70,6 +94,7 @@ export function useMovieSearch() {
     resetSearch,
     titleSearch,
     actorSearch,
+    genreSearch,
     firstLetterSearch,
     ratingSearch,
     movieIDListSearch,
