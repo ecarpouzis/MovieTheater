@@ -19,14 +19,24 @@ function EditField({ label, value, onChange, multiline = false }) {
   );
 }
 
+// Format whole minutes as e.g. "2h 16m" / "47m", matching IMDB's normalized runtime.
+function formatRuntime(minutes) {
+  if (!minutes || minutes <= 0) return null;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h > 0 ? `${h}h${m ? " " + m + "m" : ""}` : `${m}m`;
+}
+
 function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData, onToggleViewing, onMovieUpdated }) {
   const [movie, setMovie] = useState(null);
+  const [normalized, setNormalized] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editState, setEditState] = useState({});
   const [saving, setSaving] = useState(false);
   const [plotExpanded, setPlotExpanded] = useState(false);
   const [plotOverflows, setPlotOverflows] = useState(false);
+  const [synopsisOpen, setSynopsisOpen] = useState(false);
   const plotRef = useRef(null);
 
   useEffect(() => {
@@ -35,10 +45,12 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
       setEditing(false);
       setPlotExpanded(false);
       setPlotOverflows(false);
+      setSynopsisOpen(false);
       MovieAPI.getMovie(movieId)
         .then((response) => response.json())
         .then((responseData) => {
           setMovie(responseData.data);
+          setNormalized(responseData.normalized || null);
           setLoading(false);
         })
         .catch((error) => {
@@ -105,6 +117,24 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
     setSaving(false);
   }
 
+  // Prefer the normalized IMDB data; fall back to the legacy comma-separated
+  // columns for movies the scrape hasn't reached yet.
+  const n = normalized || {};
+  const displayRuntime = formatRuntime(n.runtimeMinutes) || movie?.runtime;
+  const displayGenres = Array.isArray(n.genres) && n.genres.length > 0 ? n.genres.join(" · ") : movie?.genre;
+  const displayDirectors =
+    Array.isArray(n.directors) && n.directors.length > 0 ? n.directors.map((p) => p.name).join(", ") : movie?.director;
+  const displayWriters =
+    Array.isArray(n.writers) && n.writers.length > 0 ? n.writers.map((p) => p.name).join(", ") : movie?.writer;
+  const displayPlot = n.plotFull || movie?.plot;
+  const castList =
+    Array.isArray(n.cast) && n.cast.length > 0
+      ? n.cast
+      : movie?.actors
+      ? movie.actors.split(",").map((a) => ({ name: a.trim(), character: null })).filter((a) => a.name)
+      : [];
+  const hasSynopsis = !!(n.plotSynopsis || (Array.isArray(n.summaries) && n.summaries.length > 0));
+
   return (
     <Modal open={open} onCancel={onClose} footer={null} width={960} wrapClassName="movie-modal">
       {loading ? (
@@ -127,35 +157,35 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                       <span>{movie.rating}</span>
                     </>
                   )}
-                  {movie.runtime && (
+                  {displayRuntime && (
                     <>
                       <span className="modal-dot">·</span>
-                      <span>{movie.runtime}</span>
+                      <span>{displayRuntime}</span>
                     </>
                   )}
                 </div>
 
-                {movie.genre && <div className="modal-genre">{movie.genre}</div>}
+                {displayGenres && <div className="modal-genre">{displayGenres}</div>}
 
                 <div className="modal-crew-grid">
-                  {movie.director && (
+                  {displayDirectors && (
                     <div className="modal-crew-item">
                       <span className="modal-label">Director</span>
-                      <span>{movie.director}</span>
+                      <span>{displayDirectors}</span>
                     </div>
                   )}
-                  {movie.writer && (
+                  {displayWriters && (
                     <div className="modal-crew-item">
                       <span className="modal-label">Writer</span>
-                      <span>{movie.writer}</span>
+                      <span>{displayWriters}</span>
                     </div>
                   )}
                 </div>
 
-                {movie.plot && (
+                {displayPlot && (
                   <>
                     <div className={`modal-plot-wrap${plotOverflows && !plotExpanded ? " modal-plot-wrap--collapsed" : ""}`}>
-                      <p ref={plotRef} className="modal-plot">{movie.plot}</p>
+                      <p ref={plotRef} className="modal-plot">{displayPlot}</p>
                     </div>
                     {plotOverflows && (
                       <button className="modal-desc-toggle" onClick={() => setPlotExpanded((v) => !v)}>
@@ -165,25 +195,43 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                   </>
                 )}
 
-                {movie.actors && (
+                {hasSynopsis && (
+                  <div className="modal-synopsis">
+                    <button className="modal-desc-toggle" onClick={() => setSynopsisOpen((v) => !v)}>
+                      {synopsisOpen ? "Hide full synopsis ↑" : "Read full synopsis ↓"}
+                    </button>
+                    {synopsisOpen && (
+                      <div className="modal-synopsis-body">
+                        {n.plotSynopsis && <p className="modal-synopsis-text">{n.plotSynopsis}</p>}
+                        {Array.isArray(n.summaries) &&
+                          n.summaries.map((s, i) => (
+                            <p key={i} className="modal-summary-text">
+                              {s.text}
+                              {s.author ? <span className="modal-summary-author"> — {s.author}</span> : null}
+                            </p>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {castList.length > 0 && (
                   <div className="modal-actors">
-                    {movie.actors.split(",").map((actorName, index) => {
-                      const actor = actorName.trim();
-                      if (!actor) return null;
-                      return (
-                        <button
-                          key={index}
-                          type="button"
-                          className="actor-box actor-box-clickable"
-                          onClick={() => {
-                            onClose();
-                            actorSearch(actor);
-                          }}
-                        >
-                          {actor}
-                        </button>
-                      );
-                    })}
+                    {castList.map((c, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className="actor-box actor-box-clickable"
+                        title={c.character ? `as ${c.character}` : undefined}
+                        onClick={() => {
+                          onClose();
+                          actorSearch(c.name);
+                        }}
+                      >
+                        {c.name}
+                        {c.character ? <span className="actor-character"> as {c.character}</span> : null}
+                      </button>
+                    ))}
                   </div>
                 )}
 

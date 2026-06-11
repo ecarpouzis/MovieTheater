@@ -21,6 +21,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using MovieTheater.Db;
 using MovieTheater.Models;
+using MovieTheater.Normalization;
 using MovieTheater.Services;
 using MovieTheater.Services.ImdbApi;
 using MovieTheater.Services.Poster;
@@ -126,9 +127,56 @@ namespace MovieTheater.Controllers
             var rating = GetMPARatingFromMovieRating(movie.Rating);
             if (rating <= ageRestriction)
             {
-                return Ok(new { Success = true, data = movie });
+                var normalized = await GetNormalizedMovieData(id, movie);
+                return Ok(new { Success = true, data = movie, normalized });
             }
             return BadRequest(new { Success = false, Message = "Movie ID not found" });
+        }
+
+        // Normalized IMDB data (from the FK tables / new columns) for a single movie.
+        // Returned alongside the legacy entity so the UI can prefer it and fall back
+        // to the legacy comma-separated columns for rows not yet scraped.
+        private async Task<object> GetNormalizedMovieData(int id, Movie movie)
+        {
+            var genres = await movieDb.MovieGenres
+                .Where(mg => mg.MovieID == id)
+                .OrderBy(mg => mg.Ordering)
+                .Select(mg => mg.Genre.Name)
+                .ToListAsync();
+
+            var credits = await movieDb.MovieCredits
+                .Where(c => c.MovieID == id)
+                .OrderBy(c => c.Ordering)
+                .Select(c => new { c.Role, Nm = c.Person.ImdbNameId, Name = c.Person.DisplayName, c.Character })
+                .ToListAsync();
+
+            var summaries = await movieDb.MoviePlotSummaries
+                .Where(s => s.MovieID == id)
+                .OrderBy(s => s.Ordering)
+                .Select(s => new { s.Author, s.Text })
+                .ToListAsync();
+
+            object People(CreditRole role) => credits
+                .Where(c => c.Role == role)
+                .Select(c => new { nm = c.Nm, name = c.Name, character = c.Character })
+                .ToList();
+
+            return new
+            {
+                verified = movie.ImdbVerifiedDate != null,
+                needsReview = movie.ImdbNeedsReview,
+                runtimeMinutes = movie.RuntimeMinutes,
+                plotFull = movie.PlotFull,
+                plotSynopsis = movie.PlotSynopsis,
+                mpaaRating = movie.MpaaRating,
+                imdbReleaseDate = movie.ImdbReleaseDate,
+                imdbRating = movie.ImdbRatingScraped,
+                genres,
+                cast = People(CreditRole.Actor),
+                directors = People(CreditRole.Director),
+                writers = People(CreditRole.Writer),
+                summaries
+            };
         }
 
         [HttpGet("/API/GetTotalMovieCount")]
@@ -236,6 +284,18 @@ namespace MovieTheater.Controllers
                 return Conflict(new { Message = "Save failed", Success = false });
             }
 
+            // Parse the submitted text fields into the normalized model (genres, runtime,
+            // plot, rating, cast/crew). The movie stays unverified so the IMDB scrape can
+            // later enrich it with nm-keyed cast, characters, and summaries.
+            try
+            {
+                await MovieNormalizer.ApplyAllAsync(movieDb, movie);
+            }
+            catch
+            {
+                // Normalized parse failed; the movie itself is already saved.
+            }
+
             if (!string.IsNullOrWhiteSpace(movie.PosterLink))
             {
                 await DownloadAndSavePoster(movie, movie.PosterLink);
@@ -298,6 +358,17 @@ namespace MovieTheater.Controllers
                     return Conflict(new { Message = $"Another movie already has imdbID: {dto.imdbID}", Success = false });
             }
 
+            // Detect which legacy text fields actually changed, so we re-parse only those into
+            // the normalized tables (the user's edit wins for that field; unchanged fields keep
+            // any richer scraped data).
+            bool genreChanged = !string.Equals(existing.Genre, dto.Genre, StringComparison.Ordinal);
+            bool runtimeChanged = !string.Equals(existing.Runtime, dto.Runtime, StringComparison.Ordinal);
+            bool plotChanged = !string.Equals(existing.Plot, dto.Plot, StringComparison.Ordinal);
+            bool ratingChanged = !string.Equals(existing.Rating, dto.Rating, StringComparison.Ordinal);
+            bool directorChanged = !string.Equals(existing.Director, dto.Director, StringComparison.Ordinal);
+            bool writerChanged = !string.Equals(existing.Writer, dto.Writer, StringComparison.Ordinal);
+            bool actorsChanged = !string.Equals(existing.Actors, dto.Actors, StringComparison.Ordinal);
+
             existing.Title = dto.Title;
             existing.SimpleTitle = dto.SimpleTitle;
             existing.Rating = dto.Rating;
@@ -320,6 +391,24 @@ namespace MovieTheater.Controllers
             catch (Exception ex)
             {
                 return Conflict(new { Message = $"Save failed: {ex.InnerException?.Message ?? ex.Message}", Success = false });
+            }
+
+            // Re-parse only the changed text fields into the normalized model.
+            try
+            {
+                if (runtimeChanged) MovieNormalizer.ApplyRuntime(existing);
+                if (plotChanged) MovieNormalizer.ApplyPlot(existing);
+                if (ratingChanged) MovieNormalizer.ApplyRating(existing);
+                if (genreChanged) await MovieNormalizer.ReplaceGenresAsync(movieDb, existing.id, existing.Genre);
+                if (directorChanged) await MovieNormalizer.ReplaceRoleCreditsAsync(movieDb, existing.id, CreditRole.Director, existing.Director);
+                if (writerChanged) await MovieNormalizer.ReplaceRoleCreditsAsync(movieDb, existing.id, CreditRole.Writer, existing.Writer);
+                if (actorsChanged) await MovieNormalizer.ReplaceRoleCreditsAsync(movieDb, existing.id, CreditRole.Actor, existing.Actors);
+                if (genreChanged || runtimeChanged || plotChanged || ratingChanged || directorChanged || writerChanged || actorsChanged)
+                    await movieDb.SaveChangesAsync();
+            }
+            catch
+            {
+                // Normalized re-parse failed; the legacy update is already saved.
             }
 
             string posterError = null;
@@ -840,7 +929,11 @@ namespace MovieTheater.Controllers
 
                     case "actorSearch":
                         if (!String.IsNullOrEmpty(search.Actor))
-                            movies = movies.Where(m => m.Actors.Contains(search.Actor));
+                            // Prefer the normalized cast (richer: full billed cast); fall back to
+                            // the legacy Actors string for movies not yet scraped.
+                            movies = movies.Where(m =>
+                                m.Credits.Any(c => c.Role == CreditRole.Actor && c.Person.DisplayName.Contains(search.Actor))
+                                || (m.Actors != null && m.Actors.Contains(search.Actor)));
                         break;
 
                     default:
@@ -1009,7 +1102,9 @@ namespace MovieTheater.Controllers
             IQueryable<Movie> moviesQuery = movieDb.Movies.OrderBy(m => m.SimpleTitle);
 
             if (!string.IsNullOrEmpty(actor))
-                moviesQuery = moviesQuery.Where(m => m.Actors.Contains(actor));
+                moviesQuery = moviesQuery.Where(m =>
+                    m.Credits.Any(c => c.Role == CreditRole.Actor && c.Person.DisplayName.Contains(actor))
+                    || (m.Actors != null && m.Actors.Contains(actor)));
 
             if (!string.IsNullOrEmpty(text))
                 moviesQuery = moviesQuery.Where(m => m.SimpleTitle.Contains(text) || m.Title.Contains(text));

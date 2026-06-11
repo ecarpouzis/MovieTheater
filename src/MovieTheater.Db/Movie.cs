@@ -22,10 +22,51 @@ namespace MovieTheater.Db
         public DateTime? UploadedDate { get; set; }
         public bool RemoveFromRandom { get; set; }
 
+        // ── IMDB re-scrape: normalized/corrected data written into NEW columns. ──
+        // Legacy columns above (Runtime, Plot, Rating, ReleaseDate, imdbRating,
+        // Genre, Actors, Director, Writer) are intentionally left frozen as the
+        // pre-scrape snapshot and are never overwritten by the scrape.
+
+        /// <summary>Runtime normalized to whole minutes (legacy <see cref="Runtime"/> kept as text).</summary>
+        public int? RuntimeMinutes { get; set; }
+
+        /// <summary>Concise, complete IMDB plot outline (legacy <see cref="Plot"/> kept; it was often truncated).</summary>
+        public string? PlotFull { get; set; }
+
+        /// <summary>The long, single IMDB synopsis (spoilers); paired with <see cref="PlotSummaries"/>.</summary>
+        public string? PlotSynopsis { get; set; }
+
+        /// <summary>Normalized MPAA certificate from IMDB (legacy <see cref="Rating"/> kept).</summary>
+        public string? MpaaRating { get; set; }
+
+        /// <summary>Canonical release date from IMDB (releaseinfo / datePublished).</summary>
+        public DateTime? ImdbReleaseDate { get; set; }
+
+        /// <summary>Fresh IMDB aggregate rating captured during the scrape.</summary>
+        public decimal? ImdbRatingScraped { get; set; }
+
+        /// <summary>When this row was last verified against IMDB; null = not yet scraped.</summary>
+        public DateTime? ImdbVerifiedDate { get; set; }
+
+        /// <summary>Title IMDB reported for our imdbID, used for mismatch detection.</summary>
+        public string? ImdbScrapedTitle { get; set; }
+
+        /// <summary>True when the scrape could not confidently confirm our imdbID.</summary>
+        public bool ImdbNeedsReview { get; set; }
+
+        /// <summary>Why the row was flagged for manual review.</summary>
+        public string? ImdbReviewReason { get; set; }
+
         [Key]
         public int id { get; set; }
 
         public List<Viewing> Viewings { get; set; } = default!;
+
+        public ICollection<MovieCredit> Credits { get; set; } = [];
+
+        public ICollection<MovieGenre> MovieGenres { get; set; } = [];
+
+        public ICollection<MoviePlotSummary> PlotSummaries { get; set; } = [];
 
         public MoviePosterDetails? PosterDetails { get; set; }
 

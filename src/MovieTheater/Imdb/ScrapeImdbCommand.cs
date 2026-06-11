@@ -1,0 +1,231 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using CliFx;
+using CliFx.Attributes;
+using CliFx.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Playwright;
+using MovieTheater.Console;
+using MovieTheater.Db;
+using MovieTheater.Services;
+
+namespace MovieTheater.Imdb
+{
+    /// <summary>
+    /// One-time gentle, resumable pass that re-scrapes each movie's IMDB page to verify
+    /// its id and refill normalized data (runtime, full plot, MPAA rating, release date,
+    /// genres, cast/crew) into the new columns and FK tables. Legacy columns and posters
+    /// are never touched. Resumes on rows where ImdbVerifiedDate IS NULL.
+    /// </summary>
+    [Command("scrape-imdb", Description = "Re-scrape IMDB to verify ids and fill normalized movie data.")]
+    public class ScrapeImdbCommand : BasicDICommand, ICommand
+    {
+        [CommandOption("limit", Description = "Max number of movies to process this run.")]
+        public int? Limit { get; set; }
+
+        [CommandOption("dry-run", Description = "Scrape and print results without writing to the database.")]
+        public bool DryRun { get; set; }
+
+        [CommandOption("imdb-id", Description = "Scrape a single explicit IMDB id and print it (implies dry-run).")]
+        public string SingleImdbId { get; set; }
+
+        [CommandOption("rescrape", Description = "Also reprocess rows already verified (default: only unverified).")]
+        public bool Rescrape { get; set; }
+
+        [CommandOption("cast-limit", Description = "Max billed actors to capture per movie.")]
+        public int CastLimit { get; set; } = 15;
+
+        [CommandOption("skip-plot-summaries", Description = "Skip the extra /plotsummary page load (synopsis + summaries).")]
+        public bool SkipPlotSummaries { get; set; }
+
+        [CommandOption("delay-min", Description = "Minimum delay between titles, ms.")]
+        public int DelayMinMs { get; set; } = 2000;
+
+        [CommandOption("delay-max", Description = "Maximum delay between titles, ms.")]
+        public int DelayMaxMs { get; set; } = 5000;
+
+        [CommandOption("headful", Description = "Run the browser with a visible window (debugging).")]
+        public bool Headful { get; set; }
+
+        private const string UserAgent =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+        private readonly IDbContextFactory<MovieDb> dbFactory;
+        private readonly ILogger<ScrapeImdbCommand> logger;
+        private readonly ImdbTitleScraper scraper = new ImdbTitleScraper();
+        private readonly Random rng = new Random();
+
+        public ScrapeImdbCommand(MovieTheaterConfiguration config) : base(config)
+        {
+            dbFactory = GetRequiredService<IDbContextFactory<MovieDb>>();
+            logger = GetRequiredService<ILogger<ScrapeImdbCommand>>();
+        }
+
+        public async ValueTask ExecuteAsync(IConsole console)
+        {
+            var cancel = console.RegisterCancellationHandler();
+
+            using var playwright = await Playwright.CreateAsync();
+            await using var browser = await playwright.Chromium.LaunchAsync(
+                new BrowserTypeLaunchOptions { Headless = !Headful });
+            var context = await browser.NewContextAsync(
+                new BrowserNewContextOptions { UserAgent = UserAgent, Locale = "en-US" });
+            var page = await context.NewPageAsync();
+
+            await WarmUpAsync(page);
+
+            // Single-id smoke test: scrape and print, never write.
+            if (!string.IsNullOrWhiteSpace(SingleImdbId))
+            {
+                var single = await ScrapeWithRetryAsync(page, SingleImdbId.Trim(), cancel);
+                PrintResult(console, single);
+                return;
+            }
+
+            List<MovieRow> todo;
+            using (var db = await dbFactory.CreateDbContextAsync())
+            {
+                var query = db.Movies
+                    .Where(m => m.imdbID != null && m.imdbID != "")
+                    .Where(m => Rescrape || m.ImdbVerifiedDate == null)
+                    .OrderBy(m => m.id)
+                    .Select(m => new MovieRow { Id = m.id, ImdbId = m.imdbID, Title = m.Title, ReleaseDate = m.ReleaseDate });
+                if (Limit.HasValue) query = query.Take(Limit.Value);
+                todo = await query.ToListAsync();
+            }
+
+            console.Output.WriteLine($"Scraping {todo.Count} movie(s){(DryRun ? " (dry-run)" : "")}…");
+            int done = 0, flagged = 0, failed = 0;
+
+            foreach (var row in todo)
+            {
+                if (cancel.IsCancellationRequested)
+                {
+                    console.Output.WriteLine("Cancellation requested — stopping (progress is saved per-movie).");
+                    break;
+                }
+
+                try
+                {
+                    var result = await ScrapeWithRetryAsync(page, row.ImdbId, cancel);
+                    if (DryRun)
+                    {
+                        PrintResult(console, result);
+                    }
+                    else
+                    {
+                        var status = await ApplyAsync(row, result);
+                        if (status == ImdbApplyStatus.Flagged) flagged++;
+                        if (status == ImdbApplyStatus.NotFound) failed++;
+                    }
+                    done++;
+                }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed scraping {ImdbId} ({Title})", row.ImdbId, row.Title);
+                    console.Error.WriteLine($"  ! {row.ImdbId} ({row.Title}): {ex.Message}");
+                }
+
+                if (done % 25 == 0)
+                    console.Output.WriteLine($"  …{done}/{todo.Count} (flagged for review: {flagged}, not found: {failed})");
+
+                await DelayAsync(cancel);
+            }
+
+            console.Output.WriteLine($"Done. Processed {done}, flagged {flagged}, not found {failed}.");
+        }
+
+        private async Task WarmUpAsync(IPage page)
+        {
+            // Visiting the homepage first clears IMDB's bot challenge so subsequent
+            // title pages return the full (HTTP 200) document instead of the 202 lite page.
+            try
+            {
+                await page.GotoAsync("https://www.imdb.com/",
+                    new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 45000 });
+                await page.WaitForTimeoutAsync(2500);
+            }
+            catch (PlaywrightException ex)
+            {
+                logger.LogWarning(ex, "IMDB homepage warm-up failed; continuing anyway.");
+            }
+        }
+
+        private async Task<ImdbScrapeResult> ScrapeWithRetryAsync(IPage page, string imdbId, CancellationToken cancel)
+        {
+            const int maxAttempts = 4;
+            for (int attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    return await scraper.ScrapeAsync(page, imdbId, CastLimit, !SkipPlotSummaries);
+                }
+                catch (ImdbChallengeException) when (attempt < maxAttempts)
+                {
+                    // Re-warm and back off exponentially before retrying.
+                    int backoff = 3000 * attempt;
+                    logger.LogWarning("Challenged on {ImdbId} (attempt {Attempt}); re-warming in {Backoff}ms.", imdbId, attempt, backoff);
+                    await Task.Delay(backoff, cancel);
+                    await WarmUpAsync(page);
+                }
+                catch (ImdbChallengeException ex)
+                {
+                    return new ImdbScrapeResult { ImdbId = imdbId, Found = false, FailureReason = ex.Message };
+                }
+                catch (TimeoutException ex) when (attempt < maxAttempts)
+                {
+                    logger.LogWarning("Timeout on {ImdbId} (attempt {Attempt}); retrying.", imdbId, attempt);
+                    await Task.Delay(2000 * attempt, cancel);
+                }
+            }
+        }
+
+        private async Task<ImdbApplyStatus> ApplyAsync(MovieRow row, ImdbScrapeResult result)
+        {
+            using var db = await dbFactory.CreateDbContextAsync();
+            var movie = await db.Movies.FirstOrDefaultAsync(m => m.id == row.Id);
+            if (movie == null) return ImdbApplyStatus.NotFound;
+            return await ImdbDataApplier.ApplyAsync(db, movie, result);
+        }
+
+        private async Task DelayAsync(CancellationToken cancel)
+        {
+            int lo = Math.Max(0, DelayMinMs);
+            int hi = Math.Max(lo + 1, DelayMaxMs);
+            try { await Task.Delay(rng.Next(lo, hi), cancel); }
+            catch (OperationCanceledException) { }
+        }
+
+        private static void PrintResult(IConsole console, ImdbScrapeResult r)
+        {
+            var o = console.Output;
+            o.WriteLine($"── {r.ImdbId} ──");
+            if (!r.Found) { o.WriteLine($"  NOT FOUND: {r.FailureReason}"); return; }
+            o.WriteLine($"  Title:    {r.Title} ({r.Year})");
+            o.WriteLine($"  Released: {r.ReleaseDate:yyyy-MM-dd}   Runtime: {r.RuntimeMinutes} min   MPAA: {r.MpaaRating}   IMDb: {r.ImdbRating}");
+            o.WriteLine($"  Genres:   {string.Join(", ", r.Genres)}");
+            o.WriteLine($"  Director: {string.Join(", ", r.Directors.Select(p => p.DisplayName))}");
+            o.WriteLine($"  Writers:  {string.Join(", ", r.Writers.Select(p => p.DisplayName))}");
+            o.WriteLine($"  Cast:     {string.Join(", ", r.Actors.Select(p => $"{p.DisplayName} ({p.Character})"))}");
+            o.WriteLine($"  Plot:     {r.Plot}");
+            o.WriteLine($"  Summaries:{r.Summaries.Count} (synopsis: {(string.IsNullOrEmpty(r.Synopsis) ? "none" : r.Synopsis.Length + " chars")})");
+            foreach (var s in r.Summaries)
+                o.WriteLine($"    - [{s.Author ?? "—"}] {(s.Text.Length > 100 ? s.Text.Substring(0, 100) + "…" : s.Text)}");
+        }
+
+        private class MovieRow
+        {
+            public int Id { get; set; }
+            public string ImdbId { get; set; }
+            public string Title { get; set; }
+            public DateTime? ReleaseDate { get; set; }
+        }
+    }
+}
