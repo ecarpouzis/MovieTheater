@@ -40,15 +40,24 @@ export function useMovieSearch() {
     });
   }, []);
 
-  // Filter by a normalized genre (Genre table), with a legacy Genre-string fallback.
-  const genreSearch = useCallback((genre) => {
-    const escaped = escapeODataString(genre);
-    setSearch({
-      url: buildNavODataUrl(
-        `MovieGenres/any(g: g/Genre/Name eq '${escaped}') or contains(Genre,'${escaped}')`
-      ),
-      genre,
-    });
+  // Filter by one or more normalized genres (Genre table), with a legacy Genre-string
+  // fallback. Multiple genres use AND semantics (a movie must have every selected genre),
+  // so each genre gets its own any() clause with a distinct range variable.
+  const genreSearch = useCallback((genres) => {
+    const list = (Array.isArray(genres) ? genres : String(genres).split(","))
+      .map((g) => g.trim())
+      .filter(Boolean);
+    if (list.length === 0) {
+      setSearch({ url: RANDOM_MOVIES_URL });
+      return;
+    }
+    const filter = list
+      .map((g, i) => {
+        const e = escapeODataString(g);
+        return `(MovieGenres/any(g${i}: g${i}/Genre/Name eq '${e}') or contains(Genre,'${e}'))`;
+      })
+      .join(" and ");
+    setSearch({ url: buildNavODataUrl(filter), genre: list });
   }, []);
 
   const firstLetterSearch = useCallback((firstLetter) => {

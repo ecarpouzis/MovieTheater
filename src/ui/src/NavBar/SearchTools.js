@@ -171,12 +171,13 @@ function SearchTools({ search, userData }) {
         <>
           <span style={inputLabelStyle}>Genre</span>
           <Select
+            mode="multiple"
             showSearch
             allowClear
-            placeholder="Genre"
+            placeholder="Genre (matches all selected)"
             style={{ width: "100%" }}
-            value={search.genre || undefined}
-            onChange={(value) => navigateToBrowseSearch(value ? "genre" : undefined, value || "")}
+            value={Array.isArray(search.genre) ? search.genre : search.genre ? [search.genre] : []}
+            onChange={(vals) => navigateToBrowseSearch(vals.length ? "genre" : undefined, vals.join(","))}
             options={genres.map((g) => ({ label: g, value: g }))}
             filterOption={(input, option) => option.label.toLowerCase().includes(input.toLowerCase())}
           />
