@@ -39,6 +39,14 @@ namespace MovieTheater.Db
         /// <summary>Normalized MPAA certificate from IMDB (legacy <see cref="Rating"/> kept).</summary>
         public string? MpaaRating { get; set; }
 
+        /// <summary>
+        /// Top-billed actor names (comma-separated) derived from the <see cref="MovieCredit"/>
+        /// FK cast — a lightweight read cache so browse cards can show cast without expanding
+        /// the credit graph. Source of truth remains <see cref="Credits"/>; kept in sync when
+        /// credits are written. Lets the legacy <see cref="Actors"/> column be retired.
+        /// </summary>
+        public string? TopCast { get; set; }
+
         /// <summary>Canonical release date from IMDB (releaseinfo / datePublished).</summary>
         public DateTime? ImdbReleaseDate { get; set; }
 

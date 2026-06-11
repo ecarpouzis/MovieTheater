@@ -402,7 +402,11 @@ namespace MovieTheater.Controllers
                 if (genreChanged) await MovieNormalizer.ReplaceGenresAsync(movieDb, existing.id, existing.Genre);
                 if (directorChanged) await MovieNormalizer.ReplaceRoleCreditsAsync(movieDb, existing.id, CreditRole.Director, existing.Director);
                 if (writerChanged) await MovieNormalizer.ReplaceRoleCreditsAsync(movieDb, existing.id, CreditRole.Writer, existing.Writer);
-                if (actorsChanged) await MovieNormalizer.ReplaceRoleCreditsAsync(movieDb, existing.id, CreditRole.Actor, existing.Actors);
+                if (actorsChanged)
+                {
+                    await MovieNormalizer.ReplaceRoleCreditsAsync(movieDb, existing.id, CreditRole.Actor, existing.Actors);
+                    MovieNormalizer.ApplyTopCast(existing);
+                }
                 if (genreChanged || runtimeChanged || plotChanged || ratingChanged || directorChanged || writerChanged || actorsChanged)
                     await movieDb.SaveChangesAsync();
             }

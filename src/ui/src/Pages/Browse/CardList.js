@@ -33,6 +33,11 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
         const thumbUrl = MovieAPI.getPosterThumbnail(item.id, item.posterVersion);
         // Prefer the IMDB summary; fall back to the legacy plot only when there isn't one.
         const summaryText = item.plotFull || item.plot;
+        // Pills come from the FK-derived top cast; fall back to legacy actors if absent.
+        const castNames = (item.topCast || item.actors || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
 
         return (
           <div key={item.id}>
@@ -51,8 +56,7 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
                     {item.imdbRating && <span className="badge-imdb">&#9733; {item.imdbRating}</span>}
                   </div>
                   <div className="card-actor-row">
-                    {item.actors.split(",").map((actor, i) => {
-                      const name = actor.trim();
+                    {castNames.map((name, i) => {
                       const isActive = activeName && name.toLowerCase() === activeName;
                       return (
                         <button

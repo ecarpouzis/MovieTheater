@@ -37,6 +37,12 @@ namespace MovieTheater.Normalization
             if (!string.IsNullOrWhiteSpace(m.Rating)) m.MpaaRating = m.Rating.Trim();
         }
 
+        /// <summary>Sets the TopCast read cache from the (top-billed) Actors text.</summary>
+        public static void ApplyTopCast(Movie m)
+        {
+            m.TopCast = CreditFormatting.TopCast(SplitCsv(m.Actors));
+        }
+
         // ── genre / credit tables ──────────────────────────────────────────
         public static async Task ReplaceGenresAsync(MovieDb db, int movieId, string genreCsv)
         {
@@ -78,6 +84,7 @@ namespace MovieTheater.Normalization
             ApplyRuntime(m);
             ApplyPlot(m);
             ApplyRating(m);
+            ApplyTopCast(m);
             await ReplaceGenresAsync(db, m.id, m.Genre);
             await ReplaceRoleCreditsAsync(db, m.id, CreditRole.Director, m.Director);
             await ReplaceRoleCreditsAsync(db, m.id, CreditRole.Writer, m.Writer);

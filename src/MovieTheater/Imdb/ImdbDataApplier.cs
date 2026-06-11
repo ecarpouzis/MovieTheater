@@ -51,6 +51,8 @@ namespace MovieTheater.Imdb
             if (result.ReleaseDate.HasValue) movie.ImdbReleaseDate = result.ReleaseDate;
             if (result.ImdbRating.HasValue) movie.ImdbRatingScraped = result.ImdbRating;
 
+            movie.TopCast = CreditFormatting.TopCast(result.Actors.Select(a => a.DisplayName));
+
             await ReplaceGenresAsync(db, movie.id, result.Genres);
             await ReplaceCreditsAsync(db, movie.id, result);
             await ReplacePlotSummariesAsync(db, movie.id, result.Summaries);
