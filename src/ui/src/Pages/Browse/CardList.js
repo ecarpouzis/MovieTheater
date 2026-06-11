@@ -31,6 +31,8 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
     <div className="card-list">
       {movieDataArray.map((item) => {
         const thumbUrl = MovieAPI.getPosterThumbnail(item.id, item.posterVersion);
+        // Prefer the IMDB summary; fall back to the legacy plot only when there isn't one.
+        const summaryText = item.plotFull || item.plot;
 
         return (
           <div key={item.id}>
@@ -64,10 +66,10 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
                       );
                     })}
                   </div>
-                  <PlotText text={item.plot} className="card-plot" hiddenClass={isMobile ? "card-plot--hidden" : ""} />
+                  <PlotText text={summaryText} className="card-plot" hiddenClass={isMobile ? "card-plot--hidden" : ""} />
                 </div>
               </div>
-              <PlotText text={item.plot} className="card-plot-below" hiddenClass={isMobile ? "card-plot-below--visible" : ""} />
+              <PlotText text={summaryText} className="card-plot-below" hiddenClass={isMobile ? "card-plot-below--visible" : ""} />
               <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
             </Card>
           </div>
