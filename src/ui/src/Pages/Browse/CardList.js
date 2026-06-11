@@ -25,7 +25,8 @@ function PlotText({ text, className, hiddenClass }) {
   return <p ref={ref} className={classes}>{text}</p>;
 }
 
-function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieClick, onToggleViewing, isMobile }) {
+function CardList({ movieDataArray, userData, setUserData, actorSearch, activePerson, onMovieClick, onToggleViewing, isMobile }) {
+  const activeName = (activePerson || "").trim().toLowerCase();
   return (
     <div className="card-list">
       {movieDataArray.map((item) => {
@@ -48,11 +49,20 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, onMovieC
                     {item.imdbRating && <span className="badge-imdb">&#9733; {item.imdbRating}</span>}
                   </div>
                   <div className="card-actor-row">
-                    {item.actors.split(",").map((actor, i) => (
-                      <button key={i} type="button" className="actor-link" onClick={() => actorSearch(actor.trim())}>
-                        {actor.trim()}
-                      </button>
-                    ))}
+                    {item.actors.split(",").map((actor, i) => {
+                      const name = actor.trim();
+                      const isActive = activeName && name.toLowerCase() === activeName;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          className={`actor-link${isActive ? " actor-link--active" : ""}`}
+                          onClick={() => actorSearch(name)}
+                        >
+                          {name}
+                        </button>
+                      );
+                    })}
                   </div>
                   <PlotText text={item.plot} className="card-plot" hiddenClass={isMobile ? "card-plot--hidden" : ""} />
                 </div>

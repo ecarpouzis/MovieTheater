@@ -154,9 +154,9 @@ function SearchTools({ search, userData }) {
         }}
         enterButton
       />
-      <span style={inputLabelStyle}>Actor Name</span>
+      <span style={inputLabelStyle}>People</span>
       <Search
-        placeholder="Actor"
+        placeholder="Actor, director, or writer"
         style={{ width: "100%" }}
         onSearch={(value) => {
           if (value && value.trim()) {

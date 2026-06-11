@@ -332,7 +332,43 @@
   font-style: italic;
 }
 
-.actor-character {
-  opacity: 0.6;
-  font-size: 0.85em;
+/* Subtle clickable person link — used for cast, director, and writer (replaces the
+   heavy boxed buttons). */
+.person-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+  color: #1677ff;
+}
+
+.person-link:hover {
+  text-decoration: underline;
+  color: #0958d9;
+}
+
+/* Compact two-column cast list: "Name as Character" */
+.modal-cast {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 5px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.modal-cast-item {
+  overflow-wrap: anywhere;
+}
+
+.modal-cast-character {
+  color: #999;
+}
+
+@media (max-width: 600px) {
+  .modal-cast {
+    grid-template-columns: 1fr;
+  }
 }

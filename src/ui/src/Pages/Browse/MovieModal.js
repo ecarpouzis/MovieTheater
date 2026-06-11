@@ -135,6 +135,31 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
       : [];
   const hasSynopsis = !!(n.plotSynopsis || (Array.isArray(n.summaries) && n.summaries.length > 0));
 
+  const searchPerson = (name) => {
+    if (!name) return;
+    onClose();
+    actorSearch(name);
+  };
+
+  // Render a list of people as subtle, comma-separated search links. Prefers the
+  // normalized array ([{name}]); falls back to a legacy comma-separated string.
+  const renderPeopleLinks = (people, legacy) => {
+    const names =
+      Array.isArray(people) && people.length > 0
+        ? people.map((p) => p.name).filter(Boolean)
+        : legacy
+        ? legacy.split(",").map((s) => s.trim()).filter(Boolean)
+        : [];
+    return names.map((name, i) => (
+      <span key={i}>
+        {i > 0 ? ", " : ""}
+        <button type="button" className="person-link" onClick={() => searchPerson(name)}>
+          {name}
+        </button>
+      </span>
+    ));
+  };
+
   return (
     <Modal open={open} onCancel={onClose} footer={null} width={960} wrapClassName="movie-modal">
       {loading ? (
@@ -171,13 +196,13 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                   {displayDirectors && (
                     <div className="modal-crew-item">
                       <span className="modal-label">Director</span>
-                      <span>{displayDirectors}</span>
+                      <span>{renderPeopleLinks(n.directors, movie?.director)}</span>
                     </div>
                   )}
                   {displayWriters && (
                     <div className="modal-crew-item">
                       <span className="modal-label">Writer</span>
-                      <span>{displayWriters}</span>
+                      <span>{renderPeopleLinks(n.writers, movie?.writer)}</span>
                     </div>
                   )}
                 </div>
@@ -216,21 +241,14 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                 )}
 
                 {castList.length > 0 && (
-                  <div className="modal-actors">
+                  <div className="modal-cast">
                     {castList.map((c, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        className="actor-box actor-box-clickable"
-                        title={c.character ? `as ${c.character}` : undefined}
-                        onClick={() => {
-                          onClose();
-                          actorSearch(c.name);
-                        }}
-                      >
-                        {c.name}
-                        {c.character ? <span className="actor-character"> as {c.character}</span> : null}
-                      </button>
+                      <span className="modal-cast-item" key={index}>
+                        <button type="button" className="person-link" onClick={() => searchPerson(c.name)}>
+                          {c.name}
+                        </button>
+                        {c.character ? <span className="modal-cast-character"> as {c.character}</span> : null}
+                      </span>
                     ))}
                   </div>
                 )}

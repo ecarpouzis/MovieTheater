@@ -289,6 +289,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
           userData={userData}
           setUserData={setUserData}
           actorSearch={handleActorSearch}
+          activePerson={search.actor}
           onMovieClick={handleOpenMovie}
           onToggleViewing={handleToggleViewing}
           isMobile={isMobile}

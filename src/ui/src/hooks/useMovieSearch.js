@@ -28,15 +28,17 @@ export function useMovieSearch() {
     setSearch({ url: buildODataUrl(`contains(simpleTitle,'${escaped}') or contains(title,'${escaped}')`) });
   }, []);
 
-  // Search the full normalized cast (MovieCredit -> Person), falling back to the legacy
-  // Actors string for any movie not yet normalized.
-  const actorSearch = useCallback((actor) => {
-    const escaped = escapeODataString(actor);
+  // People search across the full normalized credits (actors, directors, writers via
+  // MovieCredit -> Person), falling back to the legacy Actors/Director/Writer strings for
+  // any movie not yet normalized.
+  const actorSearch = useCallback((person) => {
+    const escaped = escapeODataString(person);
     setSearch({
       url: buildNavODataUrl(
-        `Credits/any(c: contains(c/Person/DisplayName,'${escaped}')) or contains(Actors,'${escaped}')`
+        `Credits/any(c: contains(c/Person/DisplayName,'${escaped}')) ` +
+          `or contains(Actors,'${escaped}') or contains(Director,'${escaped}') or contains(Writer,'${escaped}')`
       ),
-      actor,
+      actor: person,
     });
   }, []);
 
