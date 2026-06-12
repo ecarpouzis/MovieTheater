@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
@@ -549,10 +550,19 @@ namespace MovieTheater.Controllers
             return $"#{totalR / count:X2}{totalG / count:X2}{totalB / count:X2}";
         }
 
-        [HttpPost("/API/Login")]
-        public async Task<IActionResult> Login(string username)
+        private static readonly PasswordHasher<User> passwordHasher = new();
+
+        public class LoginRequest
         {
-            String givenUser = username.Trim();
+            public string Username { get; set; }
+            public string Password { get; set; }
+        }
+
+        // Password comes in the JSON body, never the query string, so it can't leak into request logs.
+        [HttpPost("/API/Login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        {
+            var givenUser = request?.Username?.Trim();
 
             if (string.IsNullOrEmpty(givenUser))
             {
@@ -565,10 +575,42 @@ namespace MovieTheater.Controllers
             {
                 user = new User()
                 {
-                    Username = username
+                    Username = givenUser
                 };
 
                 await movieDb.Users.AddAsync(user);
+            }
+            else if (user.PasswordHash != null)
+            {
+                if (string.IsNullOrEmpty(request.Password))
+                {
+                    return Unauthorized(new { requiresPassword = true, message = "This account is password-protected." });
+                }
+
+                var failKey = $"LoginFailures:{user.UserID}";
+                if (memoryCache.TryGetValue(failKey, out int failures) && failures >= 5)
+                {
+                    return StatusCode(StatusCodes.Status429TooManyRequests,
+                        new { requiresPassword = true, message = "Too many failed attempts. Try again in 15 minutes." });
+                }
+
+                var verification = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+                if (verification == PasswordVerificationResult.Failed)
+                {
+                    memoryCache.Set(failKey, failures + 1, new MemoryCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15),
+                        Size = 1
+                    });
+                    return Unauthorized(new { requiresPassword = true, message = "Incorrect password." });
+                }
+
+                memoryCache.Remove(failKey);
+
+                if (verification == PasswordVerificationResult.SuccessRehashNeeded)
+                {
+                    user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
+                }
             }
 
             user.LastLogin = DateTime.UtcNow;
@@ -592,6 +634,84 @@ namespace MovieTheater.Controllers
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
 
+            return Json(await BuildUserPayload(user));
+        }
+
+        // Restores a session from the auth cookie without re-running login. Required for
+        // password-protected accounts: the SPA can no longer silently re-login on page load.
+        [HttpGet("/API/Me")]
+        public async Task<IActionResult> Me()
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var user = await movieDb.Users.FindAsync(userId.Value);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            user.LastLogin = DateTime.UtcNow;
+            await movieDb.SaveChangesAsync();
+
+            return Json(await BuildUserPayload(user));
+        }
+
+        public class SetPasswordRequest
+        {
+            public string CurrentPassword { get; set; }
+            public string NewPassword { get; set; }
+        }
+
+        [HttpPost("/API/SetPassword")]
+        public async Task<IActionResult> SetPassword([FromBody] SetPasswordRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var user = await movieDb.Users.FindAsync(userId.Value);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            if (user.PasswordHash != null)
+            {
+                if (string.IsNullOrEmpty(request?.CurrentPassword) ||
+                    passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.CurrentPassword) == PasswordVerificationResult.Failed)
+                {
+                    return Unauthorized(new { success = false, message = "Current password is incorrect." });
+                }
+            }
+
+            if (string.IsNullOrEmpty(request?.NewPassword))
+            {
+                // Empty new password removes the password, returning the account to passwordless login.
+                user.PasswordHash = null;
+            }
+            else
+            {
+                if (request.NewPassword.Length < 8)
+                {
+                    return BadRequest(new { success = false, message = "Password must be at least 8 characters." });
+                }
+
+                user.PasswordHash = passwordHasher.HashPassword(user, request.NewPassword);
+            }
+
+            await movieDb.SaveChangesAsync();
+
+            return Ok(new { success = true, hasPassword = user.PasswordHash != null });
+        }
+
+        private async Task<object> BuildUserPayload(User user)
+        {
             //watched
             var moviesSeen = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "Seen").Select(d => d.MovieID).ToListAsync();
 
@@ -640,7 +760,9 @@ namespace MovieTheater.Controllers
                 .FirstOrDefaultAsync(u => u.SettingKey == "ComicSiteAccess" && u.UserID == user.UserID);
             var comicSiteAccess = comicSiteAccessSetting?.SettingValue;
 
-            return Json(new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess });
+            var hasPassword = user.PasswordHash != null;
+
+            return new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess, hasPassword };
         }
 
         [HttpPost("/API/Logout")]
@@ -847,10 +969,18 @@ namespace MovieTheater.Controllers
                 return BadRequest(new { Success = false, Message = "No User Movie Data Provided." });
             }
 
-            var user = await movieDb.Users.FirstOrDefaultAsync(u => u.Username == viewingState.Username);
+            // Act on the authenticated cookie identity, never the client-supplied username —
+            // otherwise anyone could edit a password-protected user's lists without the password.
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+            {
+                return Unauthorized(new { Success = false, Message = "Not logged in." });
+            }
+
+            var user = await movieDb.Users.FindAsync(currentUserId.Value);
             if (user == null)
             {
-                return BadRequest(new { Success = false, Message = "No User Found." });
+                return Unauthorized(new { Success = false, Message = "No User Found." });
             }
 
             var movie = await movieDb.Movies.FirstOrDefaultAsync(m => m.id == viewingState.MovieID);

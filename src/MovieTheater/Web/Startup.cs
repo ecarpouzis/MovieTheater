@@ -33,6 +33,32 @@ namespace MovieTheater
                     options.LoginPath = "/login";
                     options.ExpireTimeSpan = TimeSpan.FromDays(30);
                     options.SlidingExpiration = true;
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SameSite = SameSiteMode.Lax;
+                    // SameAsRequest so local HTTP dev still works; production is HTTPS-only so the cookie is Secure there.
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+
+                    // The SPA expects real status codes from API endpoints, not redirects to an HTML login page.
+                    options.Events.OnRedirectToLogin = context =>
+                    {
+                        if (context.Request.Path.StartsWithSegments("/API") || context.Request.Path.StartsWithSegments("/odata"))
+                        {
+                            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                            return System.Threading.Tasks.Task.CompletedTask;
+                        }
+                        context.Response.Redirect(context.RedirectUri);
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    };
+                    options.Events.OnRedirectToAccessDenied = context =>
+                    {
+                        if (context.Request.Path.StartsWithSegments("/API") || context.Request.Path.StartsWithSegments("/odata"))
+                        {
+                            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                            return System.Threading.Tasks.Task.CompletedTask;
+                        }
+                        context.Response.Redirect(context.RedirectUri);
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    };
                 });
 
             var proxyBuilder = services.AddReverseProxy();

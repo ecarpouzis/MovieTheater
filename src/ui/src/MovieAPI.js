@@ -64,9 +64,37 @@ function getUsers() {
   return fetch(url);
 }
 
-function loginUser(username) {
-  const url = "/API/Login?username=" + username;
-  return fetch(url, { method: "post" });
+// Password travels in the JSON body (never the query string) so it can't leak into logs.
+function loginUser(username, password) {
+  return fetch("/API/Login", {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      Username: username,
+      Password: password ?? null,
+    }),
+  });
+}
+
+// Restores the session from the auth cookie without re-running login.
+function getCurrentUser() {
+  return fetch("/API/Me");
+}
+
+// Pass a null/empty newPassword to remove the password from the account.
+function setPassword(currentPassword, newPassword) {
+  return fetch("/API/SetPassword", {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      CurrentPassword: currentPassword ?? null,
+      NewPassword: newPassword ?? null,
+    }),
+  });
 }
 
 function setWatchedState(username, movieID, isActive) {
@@ -332,6 +360,8 @@ const MovieAPI = {
   imdbApiLookupImdbId,
   imdbApiLookupName,
   loginUser,
+  getCurrentUser,
+  setPassword,
   setWatchedState,
   setWantToWatchState,
   movieLookupFromNames,

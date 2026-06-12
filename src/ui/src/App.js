@@ -23,21 +23,46 @@ function App() {
   const { search, resetSearch, titleSearch, actorSearch, genreSearch, firstLetterSearch, ratingSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch } =
     useMovieSearch();
 
-  function onUserLoggedIn(username) {
-    MovieAPI.loginUser(username)
-      .then((response) => response.json())
-      .then((responseData) => {
-        setUserData(responseData);
+  function applyUserData(responseData, username) {
+    setUserData(responseData);
+    setIsAuthReady(true);
+    window.localStorage.setItem("Username", username ?? responseData.username);
+    window.localStorage.setItem("CardStyle", responseData.cardStyle ?? "standard");
+  }
+
+  //Attempts a login; resolves to { ok } on success, or { ok: false, requiresPassword?, message? }
+  //so the Login component can prompt for a password when the account has one.
+  function onUserLoggedIn(username, password) {
+    return MovieAPI.loginUser(username, password).then((response) => {
+      if (!response.ok) {
         setIsAuthReady(true);
-        window.localStorage.setItem("Username", username);
-        window.localStorage.setItem("CardStyle", responseData.cardStyle ?? "standard");
+        return response
+          .json()
+          .catch(() => ({}))
+          .then((body) => ({ ok: false, status: response.status, ...body }));
+      }
+      return response.json().then((responseData) => {
+        applyUserData(responseData, username);
+        return { ok: true };
       });
+    });
   }
 
   if (!hasCheckedFirstLoginRef.current) {
     hasCheckedFirstLoginRef.current = true;
     if (storedUsername) {
-      onUserLoggedIn(storedUsername);
+      //Restore the session from the auth cookie first — password-protected accounts
+      //can't silently re-login. Passwordless accounts fall back to re-login as before.
+      MovieAPI.getCurrentUser().then((response) => {
+        if (response.ok) {
+          return response.json().then((responseData) => applyUserData(responseData, storedUsername));
+        }
+        return onUserLoggedIn(storedUsername).then((result) => {
+          if (!result.ok) {
+            window.localStorage.removeItem("Username");
+          }
+        });
+      }).catch(() => setIsAuthReady(true));
     }
   }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button, Input, Tooltip, AutoComplete } from "antd";
-import { InfoCircleOutlined, UserOutlined } from "@ant-design/icons";
+import { InfoCircleOutlined, UserOutlined, LockOutlined } from "@ant-design/icons";
 import { useHistory } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
 import "./Login.css";
@@ -16,17 +16,45 @@ function Login({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen }) 
   const [userlist, setUserlist] = useState([]);
   const [filteredUserlist, setFilteredUserlist] = useState([]);
   const [searchValue, setSearchValue] = useState(null);
+  //Password-protected accounts: revealed only after the server asks for one
+  const [requiresPassword, setRequiresPassword] = useState(false);
+  const [password, setPassword] = useState("");
+  const [loginMessage, setLoginMessage] = useState(null);
+
+  //Attempt a login; if the account is password-protected the server responds with
+  //requiresPassword and we reveal the password field instead of logging in.
+  const attemptLogin = (username, pass) => {
+    if (!username) return;
+    onUserLoggedIn(username, pass).then((result) => {
+      if (result.ok) {
+        setRequiresPassword(false);
+        setPassword("");
+        setLoginMessage(null);
+        return;
+      }
+      if (result.requiresPassword) {
+        setRequiresPassword(true);
+        setLoginMessage(result.message ?? "This account is password-protected.");
+      } else {
+        setLoginMessage(result.message ?? "Login failed.");
+      }
+    });
+  };
 
   //When a name in the Username dropdown is selected, log that user in
   const onSelect = (value) => {
-    onUserLoggedIn(value);
+    setSearchValue(value);
+    setRequiresPassword(false);
+    setPassword("");
+    setLoginMessage(null);
+    attemptLogin(value);
   };
 
   //When the LoginButton is clicked, log in as the user in the input field
   const onUserClickedLoginButton = () => {
     const user = userlist.find((obj) => obj.value === searchValue);
     if (user) {
-      onUserLoggedIn(user.value);
+      attemptLogin(user.value, requiresPassword ? password : undefined);
     }
   };
 
@@ -95,7 +123,7 @@ function Login({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen }) 
             onChange={(e) => setSearchValue(e.target.value)}
             value={searchValue}
             suffix={
-              <Tooltip title="This website purposely requires no password to log in.">
+              <Tooltip title="Most accounts need no password. If an account has one set, you'll be asked for it.">
                 <InfoCircleOutlined className="login-tooltip-icon" />
               </Tooltip>
             }
@@ -105,6 +133,18 @@ function Login({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen }) 
           </Button>
         </div>
       </AutoComplete>
+      {requiresPassword && (
+        <Input.Password
+          placeholder="Password"
+          className="login-input login-password-input"
+          prefix={<LockOutlined className="site-form-item-icon" />}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onPressEnter={() => attemptLogin(searchValue, password)}
+          autoFocus
+        />
+      )}
+      {loginMessage && <div className="login-message">{loginMessage}</div>}
     </div>
   );
 

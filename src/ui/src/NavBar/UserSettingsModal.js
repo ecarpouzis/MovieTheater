@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Modal, Select, Checkbox, Button, message } from "antd";
+import { Modal, Select, Checkbox, Button, Input, message } from "antd";
 import { MovieAPI } from "../MovieAPI";
 import "./UserSettingsModal.css";
 
@@ -20,6 +20,12 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
   const [enablePagination, setEnablePagination] = useState(false);
   const [showBoardgameExpansions, setShowBoardgameExpansions] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+
+  const hasPassword = userData?.hasPassword ?? false;
 
   useEffect(() => {
     if (!open || !userData) return;
@@ -33,6 +39,9 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
       userData.enablePagination == null ? false : Boolean(userData.enablePagination),
     );
     setShowBoardgameExpansions(userData.showBoardgameExpansions ?? false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
 
     // Use the cached ratings if already fetched; otherwise fetch once and cache.
     if (mpaRatingsCache) {
@@ -76,6 +85,40 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
         message.error("Failed to save settings");
       })
       .finally(() => setSaving(false));
+  };
+
+  // Setting/changing/removing the password is its own server call, separate from
+  // the settings save. Removing sends an empty new password.
+  const submitPassword = (removing) => {
+    if (!removing) {
+      if (!newPassword || newPassword.length < 8) {
+        message.error("Password must be at least 8 characters.");
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        message.error("Passwords do not match.");
+        return;
+      }
+    }
+    setPasswordSaving(true);
+    MovieAPI.setPassword(hasPassword ? currentPassword : null, removing ? null : newPassword)
+      .then((r) => r.json().then((body) => ({ ok: r.ok, body })))
+      .then(({ ok, body }) => {
+        if (!ok) {
+          message.error(body.message ?? "Failed to update password.");
+          return;
+        }
+        message.success(removing ? "Password removed." : "Password saved!");
+        setUserData((prev) => ({ ...prev, hasPassword: body.hasPassword }));
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      })
+      .catch((error) => {
+        console.error("Error updating password:", error);
+        message.error("Failed to update password.");
+      })
+      .finally(() => setPasswordSaving(false));
   };
 
   // Re-derive options only when the ratings array reference changes.
@@ -145,6 +188,52 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
             </Checkbox>
           </div>
           <p className="settings-hint">When enabled, boardgame expansions appear in the list alongside base games.</p>
+        </div>
+
+        <div className="settings-section">
+          <h3 className="settings-section-title">Account Security</h3>
+          {hasPassword && (
+            <div className="settings-row">
+              <span className="settings-label">Current Password</span>
+              <Input.Password
+                className="settings-password-input"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+          )}
+          <div className="settings-row">
+            <span className="settings-label">New Password</span>
+            <Input.Password
+              className="settings-password-input"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="settings-row">
+            <span className="settings-label">Confirm Password</span>
+            <Input.Password
+              className="settings-password-input"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="settings-row settings-row--push">
+            <Button onClick={() => submitPassword(false)} loading={passwordSaving}>
+              {hasPassword ? "Change Password" : "Set Password"}
+            </Button>
+            {hasPassword && (
+              <Button danger onClick={() => submitPassword(true)} loading={passwordSaving}>
+                Remove Password
+              </Button>
+            )}
+          </div>
+          <p className="settings-hint">
+            Passwords are optional. Once set, you'll be asked for it when logging in. At least 8 characters.
+          </p>
         </div>
 
         <div className="settings-section">
