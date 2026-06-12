@@ -65,6 +65,15 @@ namespace MovieTheater.Db
         /// <summary>Why the row was flagged for manual review.</summary>
         public string? ImdbReviewReason { get; set; }
 
+        /// <summary>
+        /// Absolute path of the movie's primary video file on the NAS, as the share exposes it
+        /// (e.g. <c>L:\1 - Movies\G\Goodfellas (1990) 2160p\Goodfellas.mkv</c>). Null when the
+        /// movie has no mapped file. Seeded by the NAS mapping pass; the future Jellyfin sync
+        /// translates this via path mappings (see docs/streaming-plan.md §5).
+        /// </summary>
+        [MaxLength(1024)]
+        public string? FilePath { get; set; }
+
         [Key]
         public int id { get; set; }
 
