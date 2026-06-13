@@ -37,3 +37,26 @@ jobs:
       - uses: actions/checkout@v4
       - run: cd docker && bash build-ui.sh
       - run: docker push $REGISTRY/movietheater-ui:$IMAGE_TAG
+
+  # TEMPORARY read-only diagnostic: inspect why new images aren't going live.
+  # Only runs `get`/`logs` (no changes). Remove once the deploy issue is resolved.
+  diagnose:
+    runs-on: movietheater
+    steps:
+      - run: |
+          echo "=== kube access test (namespace: movietheater) ==="
+          if ! kubectl -n movietheater get pods -o wide; then
+            echo "NO KUBE ACCESS FROM RUNNER (kubectl missing or unauthorized)"
+            echo "=== try locating movietheater pods across all namespaces ==="
+            kubectl get pods -A 2>/dev/null | grep -i movie || echo "(none found / no access)"
+            exit 0
+          fi
+          echo "=== deployments + image tags ==="
+          kubectl -n movietheater get deploy -o wide || true
+          echo "=== per-pod state + previous (crashed) container logs ==="
+          for p in $(kubectl -n movietheater get pods -o name 2>/dev/null); do
+            echo "----- $p : restarts / state -----"
+            kubectl -n movietheater get "$p" -o jsonpath='phase={.status.phase}{range .status.containerStatuses[*]} restarts={.restartCount} state={.state}{end}{"\n"}' 2>/dev/null || true
+            echo "----- $p : previous (crashed) container log, last 50 lines -----"
+            kubectl -n movietheater logs "$p" --previous --tail=50 2>/dev/null || echo "(no previous log)"
+          done
