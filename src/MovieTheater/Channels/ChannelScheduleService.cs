@@ -195,6 +195,38 @@ namespace MovieTheater.Channels
             return items.OrderBy(i => i.StartUtc).ToList();
         }
 
+        /// <summary>
+        /// Collapses the currently-airing item to end now and pulls every later item up by the
+        /// same amount, so the channel jumps to the next movie for everyone while staying
+        /// contiguous (streaming-plan.md §8 vote-to-skip). Guarded by <paramref name="expectedItemId"/>:
+        /// if the channel has already advanced past that item, this is a no-op — which makes
+        /// concurrent skip triggers for the same item safe (only the first one moves the line).
+        /// </summary>
+        public async Task<bool> SkipCurrentAsync(Channel channel, long expectedItemId, CancellationToken cancel = default)
+        {
+            var now = DateTime.UtcNow;
+            var items = await EnsureScheduleAsync(channel, now.Add(ScheduleHorizon), cancel);
+
+            var current = items.FirstOrDefault(i => i.StartUtc <= now && now < i.EndUtc);
+            if (current == null || current.Id != expectedItemId)
+                return false;
+
+            var originalEnd = current.EndUtc;
+            var delta = originalEnd - now;
+            if (delta <= TimeSpan.Zero)
+                return false;
+
+            current.EndUtc = now;
+            foreach (var item in items.Where(i => i.StartUtc >= originalEnd))
+            {
+                item.StartUtc -= delta;
+                item.EndUtc -= delta;
+            }
+
+            await movieDb.SaveChangesAsync(cancel);
+            return true;
+        }
+
         // Deterministic Fisher-Yates so a regenerated round reproduces (rows are never
         // rewritten, but determinism keeps races harmless). ReleaseDate mode orders by id
         // ascending as a stable proxy when no shuffle is wanted.

@@ -39,12 +39,17 @@ function TvPage({ userData }) {
   const [adminOpen, setAdminOpen] = useState(false);
   const [quality, setQuality] = useState(() => window.localStorage.getItem("StreamQuality") || "auto");
   const [qualityOpen, setQualityOpen] = useState(false);
+  const [skip, setSkip] = useState(null); // { viewers, votes, required, youVoted }
 
   const canEdit = userData?.canEditMovies ?? false;
 
   // tune() reads the current quality without re-binding on every change.
   const qualityRef = useRef(quality);
   qualityRef.current = quality;
+
+  // The schedule item currently playing — used to scope skip votes and to notice when
+  // the channel has moved on (a skip elsewhere, or a natural advance) so we re-tune.
+  const currentItemIdRef = useRef(null);
 
   // Monotonic id for the in-flight tune. The auto-advance timer and the video's
   // `ended` event can both fire tune() around a boundary; this lets a superseded
@@ -68,27 +73,14 @@ function TvPage({ userData }) {
     }
   }, []);
 
+  // A tap always *shows* the chrome and resets the idle timer — never hides it. (An
+  // earlier tap-to-toggle made the picker un-tappable on touch devices: a stray tap
+  // hid it, and while hidden the buttons are pointer-events:none.) It fades on its own
+  // when idle, and touching the picker keeps it alive while you browse.
   const wakeOverlay = useCallback(() => {
     setOverlayVisible(true);
     clearTimeout(overlayTimerRef.current);
-    overlayTimerRef.current = setTimeout(() => setOverlayVisible(false), 3000);
-  }, []);
-
-  // A tap on the screen toggles the chrome — show it, or dismiss it immediately
-  // instead of waiting out the auto-hide (the picker was blocking the view on phones).
-  const toggleOverlay = useCallback(() => {
-    clearTimeout(overlayTimerRef.current);
-    setOverlayVisible((v) => {
-      if (v) return false;
-      overlayTimerRef.current = setTimeout(() => setOverlayVisible(false), 3000);
-      return true;
-    });
-  }, []);
-
-  // Hide the chrome now (used after picking a channel/quality so it gets out of the way).
-  const dismissOverlay = useCallback(() => {
-    clearTimeout(overlayTimerRef.current);
-    setOverlayVisible(false);
+    overlayTimerRef.current = setTimeout(() => setOverlayVisible(false), 4500);
   }, []);
 
   // ── tune to the channel's live position ─────────────────────────────────────
@@ -115,8 +107,12 @@ function TvPage({ userData }) {
         setNow(nowData);
         if (!nowData.current) {
           setOffAir(true);
+          currentItemIdRef.current = null;
+          setSkip(null);
           return;
         }
+        currentItemIdRef.current = nowData.current.itemId ?? null;
+        setSkip(nowData.skip || null);
 
         // TV is passive and doesn't adapt mid-play; "Auto" (the default) maps to a sane
         // fixed cap from the connection estimate rather than streaming uncapped — important
@@ -304,6 +300,46 @@ function TvPage({ userData }) {
     [channel, tune]
   );
 
+  // Poll "what's on now" while a channel is up: it keeps the skip tally fresh, doubles as
+  // the presence heartbeat (the server counts a poll as "still watching"), and re-tunes if
+  // the channel has moved on — a skip the group passed, or a natural advance we missed.
+  useEffect(() => {
+    if (!channel) return undefined;
+    const poll = setInterval(async () => {
+      try {
+        const r = await fetch(`/API/Channel/${channel.id}/Now`);
+        if (!r.ok) return;
+        const data = await r.json();
+        setSkip(data.skip || null);
+        if (data.current && currentItemIdRef.current != null && data.current.itemId !== currentItemIdRef.current) {
+          tune(channel);
+        }
+      } catch {
+        /* transient — the next poll retries */
+      }
+    }, 12_000);
+    return () => clearInterval(poll);
+  }, [channel, tune]);
+
+  // Cast a skip vote for the current item. If it carries the majority the server collapses
+  // the schedule and we jump straight to the next movie; otherwise we just reflect the tally.
+  const voteSkip = useCallback(async () => {
+    if (!channel) return;
+    try {
+      const r = await fetch(`/API/Channel/${channel.id}/Skip`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId: currentItemIdRef.current ?? 0 }),
+      });
+      if (!r.ok) return;
+      const data = await r.json();
+      if (data.skipped) tune(channel);
+      else setSkip(data.skip || null);
+    } catch {
+      /* ignore — they can tap again */
+    }
+  }, [channel, tune]);
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.tagName === "INPUT" || adminOpen) return;
@@ -358,7 +394,7 @@ function TvPage({ userData }) {
 
   return (
     /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/media-has-caption */
-    <div className="tv-room" onMouseMove={wakeOverlay} onClick={toggleOverlay}>
+    <div className="tv-room" onMouseMove={wakeOverlay} onClick={wakeOverlay}>
       <video ref={videoRef} className="tv-video" autoPlay playsInline muted />
 
       {/* channel-change static burst */}
@@ -397,12 +433,28 @@ function TvPage({ userData }) {
               <span className="tv-panel-time">{new Date(now.next[0].startsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
             </div>
           )}
+          {skip && (
+            <div className="tv-panel-skip">
+              <button
+                className={`tv-skip${skip.youVoted ? " tv-skip--voted" : ""}`}
+                onClick={(e) => { e.stopPropagation(); voteSkip(); }}
+              >
+                <span className="tv-skip-glyph">⏭</span>
+                {skip.viewers > 1 ? (skip.youVoted ? "Voted to skip" : "Vote to skip") : "Skip"}
+                {skip.viewers > 1 && <span className="tv-skip-tally">{skip.votes}/{skip.required}</span>}
+              </button>
+              {skip.viewers > 1 && <span className="tv-skip-viewers">{skip.viewers} watching</span>}
+            </div>
+          )}
         </div>
       )}
 
       {/* channel switcher */}
       {channels && channels.length > 0 && (
-        <div className={`tv-channels${overlayVisible ? "" : " tv-channels--hidden"}`}>
+        <div
+          className={`tv-channels${overlayVisible ? "" : " tv-channels--hidden"}`}
+          onTouchStart={wakeOverlay}
+        >
           {channels.map((c, i) => (
             <button
               key={c.id}
@@ -410,7 +462,7 @@ function TvPage({ userData }) {
               onClick={(e) => {
                 e.stopPropagation();
                 setChannel(c);
-                dismissOverlay();
+                wakeOverlay();
               }}
             >
               <span className="tv-channel-num">{i + 1}</span>

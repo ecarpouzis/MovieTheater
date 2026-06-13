@@ -24,11 +24,13 @@ namespace MovieTheater.Controllers
 
         private readonly MovieDb movieDb;
         private readonly ChannelScheduleService scheduleService;
+        private readonly ChannelSkipService skipService;
 
-        public ChannelController(MovieDb movieDb, ChannelScheduleService scheduleService)
+        public ChannelController(MovieDb movieDb, ChannelScheduleService scheduleService, ChannelSkipService skipService)
         {
             this.movieDb = movieDb;
             this.scheduleService = scheduleService;
+            this.skipService = skipService;
         }
 
         private int? GetCurrentUserId()
@@ -101,10 +103,14 @@ namespace MovieTheater.Controllers
                 startsAtUtc = i.StartUtc,
             });
 
+            // Polling Now is also the presence heartbeat for the skip-vote tally (§8).
+            var skip = skipService.Touch(id, current.Id, userId.Value);
+
             return Json(new
             {
                 current = new
                 {
+                    itemId = current.Id,
                     movieId = current.MovieID,
                     title = titles.GetValueOrDefault(current.MovieID, ""),
                     offsetSeconds = Math.Max(0, (now - current.StartUtc).TotalSeconds),
@@ -112,6 +118,50 @@ namespace MovieTheater.Controllers
                     endsAtUtc = current.EndUtc,
                 },
                 next = nextItems,
+                skip = new { viewers = skip.Viewers, votes = skip.Votes, required = skip.Required, youVoted = skip.YouVoted },
+            });
+        }
+
+        public class SkipRequest
+        {
+            public long ItemId { get; set; }
+        }
+
+        [HttpPost("/API/Channel/{id}/Skip")]
+        public async Task<IActionResult> Skip(int id, [FromBody] SkipRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+
+            var channel = await movieDb.Channels.FirstOrDefaultAsync(c => c.Id == id && c.Enabled);
+            if (channel == null)
+                return NotFound(new { message = "Channel not found." });
+
+            if (await scheduleService.GetCeilingAsync(channel) > await GetAgeRestrictionAsync(userId.Value))
+                return StatusCode(403, new { message = "This channel isn't available on your account." });
+
+            var now = DateTime.UtcNow;
+            var items = await scheduleService.EnsureScheduleAsync(channel, now.Add(TimeSpan.FromHours(48)));
+            var current = items.FirstOrDefault(i => i.StartUtc <= now && now < i.EndUtc);
+            if (current == null)
+                return Json(new { skipped = false, skip = (object?)null });
+
+            // The vote must be about the item the client is actually watching; a stale itemId
+            // (the channel moved on under them) just counts as presence on the real current item.
+            if (request != null && request.ItemId != 0 && request.ItemId != current.Id)
+            {
+                var stale = skipService.Touch(id, current.Id, userId.Value);
+                return Json(new { skipped = false, skip = new { stale.Viewers, stale.Votes, stale.Required, stale.YouVoted } });
+            }
+
+            var (carried, status) = skipService.Vote(id, current.Id, userId.Value);
+            bool skipped = carried && await scheduleService.SkipCurrentAsync(channel, current.Id);
+
+            return Json(new
+            {
+                skipped,
+                skip = new { status.Viewers, status.Votes, status.Required, status.YouVoted },
             });
         }
 

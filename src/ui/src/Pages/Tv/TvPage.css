@@ -176,6 +176,56 @@
   transition: width 1s linear;
 }
 
+/* vote-to-skip */
+.tv-panel-skip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.tv-skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(11, 10, 8, 0.78);
+  border: 1px solid rgba(227, 179, 65, 0.45);
+  color: #f2ecdd;
+  font-size: 12.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+
+.tv-skip:hover {
+  border-color: #e3b341;
+}
+
+.tv-skip--voted {
+  background: rgba(227, 179, 65, 0.16);
+  border-color: #e3b341;
+}
+
+.tv-skip-glyph {
+  color: #e3b341;
+  font-size: 13px;
+}
+
+.tv-skip-tally {
+  font-variant-numeric: tabular-nums;
+  color: #e3b341;
+  font-weight: 600;
+}
+
+.tv-skip-viewers {
+  font-size: 11px;
+  color: rgba(242, 236, 221, 0.5);
+  white-space: nowrap;
+}
+
 /* channel switcher (right rail) */
 .tv-channels {
   position: absolute;
@@ -238,9 +288,10 @@
   font-size: 11px;
 }
 
-/* On phones the centered right-rail column blocked the picture. Drop it to a
-   bottom, horizontally-scrollable strip that's out of the way and easy to flick. */
-@media (max-width: 640px) {
+/* On touch devices (phones AND tablets) the centered right-rail column blocked the
+   picture and was awkward to hit. Drop it to a bottom, horizontally-scrollable strip
+   that stays out of the way and is easy to flick through. */
+@media (pointer: coarse), (max-width: 640px) {
   .tv-channels {
     right: 0;
     left: 0;
