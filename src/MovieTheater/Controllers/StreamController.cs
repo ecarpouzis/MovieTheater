@@ -153,6 +153,15 @@ namespace MovieTheater.Controllers
             var videoIsCopied = source.TranscodeReasons == null
                 || !source.TranscodeReasons.Any(r => r.Contains("Video", StringComparison.OrdinalIgnoreCase));
 
+            // The codec the player actually receives: when the video is copied it's the
+            // source codec; when re-encoded it's the first of the negotiated list (the
+            // encode target). The transcoding url only carries the candidate list, so a
+            // copied H.264 source to an HEVC-capable client would otherwise misread "hevc".
+            var sourceVideoCodec = source.MediaStreams.FirstOrDefault(s => s.Type == "Video")?.Codec;
+            var outputVideoCodec = videoIsCopied
+                ? sourceVideoCodec ?? VideoCodecFromTranscodingUrl(source.TranscodingUrl)
+                : VideoCodecFromTranscodingUrl(source.TranscodingUrl);
+
             return Ok(new
             {
                 playSessionId = info.PlaySessionId,
@@ -161,7 +170,7 @@ namespace MovieTheater.Controllers
                 isDirectStream = videoIsCopied,
                 // The codec the player will actually receive (copied or encoded) — drives the
                 // "HEVC"/"Direct" readout and confirms §14.1 negotiation worked.
-                videoCodec = VideoCodecFromTranscodingUrl(source.TranscodingUrl),
+                videoCodec = outputVideoCodec,
                 audioTracks,
                 subtitleTracks,
                 resumePositionTicks = resume,
