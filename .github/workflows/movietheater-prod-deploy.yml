@@ -38,25 +38,28 @@ jobs:
       - run: cd docker && bash build-ui.sh
       - run: docker push $REGISTRY/movietheater-ui:$IMAGE_TAG
 
-  # TEMPORARY read-only diagnostic: inspect why new images aren't going live.
-  # Only runs `get`/`logs` (no changes). Remove once the deploy issue is resolved.
+  # TEMPORARY read-only diagnostic: the runner has no kubectl, so talk to the
+  # Kubernetes API directly with the pod's service-account token. Read-only
+  # (GET only), fails soft. Remove once the deploy issue is resolved.
   diagnose:
     runs-on: movietheater
     steps:
       - run: |
-          echo "=== kube access test (namespace: movietheater) ==="
-          if ! kubectl -n movietheater get pods -o wide; then
-            echo "NO KUBE ACCESS FROM RUNNER (kubectl missing or unauthorized)"
-            echo "=== try locating movietheater pods across all namespaces ==="
-            kubectl get pods -A 2>/dev/null | grep -i movie || echo "(none found / no access)"
+          set +e
+          SA=/var/run/secrets/kubernetes.io/serviceaccount
+          if [ ! -f "$SA/token" ]; then
+            echo "NO SERVICE-ACCOUNT TOKEN MOUNTED — runner cannot reach the kube API. Host-only."
             exit 0
           fi
-          echo "=== deployments + image tags ==="
-          kubectl -n movietheater get deploy -o wide || true
-          echo "=== per-pod state + previous (crashed) container logs ==="
-          for p in $(kubectl -n movietheater get pods -o name 2>/dev/null); do
-            echo "----- $p : restarts / state -----"
-            kubectl -n movietheater get "$p" -o jsonpath='phase={.status.phase}{range .status.containerStatuses[*]} restarts={.restartCount} state={.state}{end}{"\n"}' 2>/dev/null || true
-            echo "----- $p : previous (crashed) container log, last 50 lines -----"
-            kubectl -n movietheater logs "$p" --previous --tail=50 2>/dev/null || echo "(no previous log)"
-          done
+          TOKEN=$(cat "$SA/token"); RUNNER_NS=$(cat "$SA/namespace"); API=https://kubernetes.default.svc
+          AUTH="Authorization: Bearer $TOKEN"
+          echo "runner service-account namespace: $RUNNER_NS"
+          echo "=== GET pods in namespace 'movietheater' ==="
+          code=$(curl -sk -o /tmp/pods.json -w "%{http_code}" -H "$AUTH" "$API/api/v1/namespaces/movietheater/pods")
+          echo "HTTP $code"
+          if [ "$code" = "403" ]; then echo "FORBIDDEN — runner's service account has no RBAC for the movietheater namespace. Host-only."; fi
+          echo "--- pod names / phase / restarts / waiting-reason / images ---"
+          grep -oE '"name":"movietheater[^"]*"|"phase":"[^"]*"|"restartCount":[0-9]+|"reason":"[^"]*"|"image":"[^"]*"' /tmp/pods.json 2>/dev/null | head -80
+          echo "=== GET deployments in 'movietheater' ==="
+          curl -sk -H "$AUTH" "$API/apis/apps/v1/namespaces/movietheater/deployments" 2>/dev/null | grep -oE '"name":"[^"]*"|"image":"[^"]*"|"replicas":[0-9]+|"readyReplicas":[0-9]+|"unavailableReplicas":[0-9]+' | head -50
+          echo "=== done (if you see pods/deployments above, the runner CAN drive a restart; if 403/empty, it's host-only) ==="
