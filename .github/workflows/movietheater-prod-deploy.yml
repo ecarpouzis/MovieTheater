@@ -76,24 +76,27 @@ jobs:
             exit 0
           fi
           TOKEN=$(cat "$SA/token"); API=https://kubernetes.default.svc; AUTH="Authorization: Bearer $TOKEN"
-          echo "=== finding crash-looping container(s) and pulling their crash logs ==="
-          curl -sk -H "$AUTH" "$API/api/v1/namespaces/movietheater/pods" -o /tmp/pods.json
-          CANDS=$(python3 -c "
+          echo "=== DEPLOYMENT: image tag the cluster is actually running + readiness ==="
+          curl -sk -H "$AUTH" "$API/apis/apps/v1/namespaces/movietheater/deployments" -o /tmp/d.json
+          python3 - <<'PY'
           import json
-          for it in json.load(open('/tmp/pods.json')).get('items',[]):
-              pod=it['metadata']['name']
+          for it in json.load(open('/tmp/d.json')).get('items',[]):
+              n=it['metadata']['name']; st=it.get('status',{})
+              tags=[c['image'].split(':')[-1] for c in it['spec']['template']['spec']['containers']]
+              print(f"DEPLOY {n}: deployment-points-at-tags={tags} ready={st.get('readyReplicas')}/{st.get('replicas')} updated={st.get('updatedReplicas')} unavailable={st.get('unavailableReplicas')}")
+          PY
+          echo "=== APP PODS: which image tag each is running + crash state ==="
+          curl -sk -H "$AUTH" "$API/api/v1/namespaces/movietheater/pods" -o /tmp/p.json
+          python3 - <<'PY'
+          import json
+          for it in json.load(open('/tmp/p.json')).get('items',[]):
+              n=it['metadata']['name']
+              if 'runner' in n or 'posters-backup' in n: continue
               for c in it.get('status',{}).get('containerStatuses') or []:
                   w=(c.get('state',{}).get('waiting') or {}).get('reason')
-                  term=(c.get('lastState',{}).get('terminated') or {})
-                  if w=='CrashLoopBackOff' or term:
-                      print(pod, c['name'])
-          ")
-          echo "crash candidates (pod container):"
-          echo "$CANDS"
-          echo "$CANDS" | while read POD CONT; do
-            [ -z "$POD" ] && continue
-            echo "================ PREVIOUS (CRASH) LOG: $POD / $CONT ================"
-            curl -sk -H "$AUTH" "$API/api/v1/namespaces/movietheater/pods/$POD/log?container=$CONT&previous=true&tailLines=120"
-            echo "================ END $POD / $CONT ================"
-          done
+                  run=(c.get('state',{}).get('running') or {})
+                  tag=c.get('image','').split(':')[-1]
+                  print(f"POD {n} [{c['name']}] tag={tag} restarts={c.get('restartCount')} waiting={w} running={'yes' if run else 'no'}")
+          PY
+          echo "=== latest api tag in registry should be from commit being built now ==="
           echo "=== done ==="
