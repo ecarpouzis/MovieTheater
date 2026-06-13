@@ -97,18 +97,8 @@ namespace MovieTheater.Controllers
             }
             catch (Exception ex)
             {
-                // Surface the real cause: which media-server URL the pod is using and what
-                // went wrong reaching it (network, auth, etc.) instead of a bare 500.
-                logger.LogError(ex, "Jellyfin PlaybackInfo failed for movie {MovieId} via {BaseUrl}", movie.id, config.JellyfinBaseUrl);
-                var detail = $"{ex.GetType().Name}: {ex.Message}";
-                if (ex.InnerException != null)
-                    detail += $" -> {ex.InnerException.GetType().Name}: {ex.InnerException.Message}";
-                return StatusCode(502, new
-                {
-                    message = "Could not reach the media server.",
-                    detail,
-                    jellyfinBaseUrl = config.JellyfinBaseUrl,
-                });
+                logger.LogError(ex, "Jellyfin PlaybackInfo failed for movie {MovieId}", movie.id);
+                return StatusCode(502, new { message = "Could not reach the media server." });
             }
 
             var source = info.MediaSources[0];

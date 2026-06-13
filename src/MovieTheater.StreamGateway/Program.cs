@@ -1,3 +1,4 @@
+using System.Linq;
 using MovieTheater.Core;
 using Yarp.ReverseProxy.Forwarder;
 
@@ -38,7 +39,7 @@ var httpClient = new HttpMessageInvoker(new SocketsHttpHandler
 });
 
 var requestOptions = new ForwarderRequestConfig { ActivityTimeout = TimeSpan.FromSeconds(100) };
-var transformer = new GatewayTransformer(jellyfinApiKey);
+var transformer = new GatewayTransformer(jellyfinApiKey, siteOrigin);
 var forwarder = app.Services.GetRequiredService<IHttpForwarder>();
 
 // CORS preflight + headers. Auth is in the URL, never credentials, so the
@@ -98,8 +99,13 @@ static string NormalizeItemId(string id) => id.Replace("-", "");
 sealed class GatewayTransformer : HttpTransformer
 {
     private readonly string apiKey;
+    private readonly string siteOrigin;
 
-    public GatewayTransformer(string apiKey) => this.apiKey = apiKey;
+    public GatewayTransformer(string apiKey, string siteOrigin)
+    {
+        this.apiKey = apiKey;
+        this.siteOrigin = siteOrigin;
+    }
 
     public override async ValueTask TransformRequestAsync(
         HttpContext httpContext, HttpRequestMessage proxyRequest, string destinationPrefix, CancellationToken cancellationToken)
@@ -116,5 +122,21 @@ sealed class GatewayTransformer : HttpTransformer
 
         proxyRequest.Headers.Remove("X-Emby-Token");
         proxyRequest.Headers.TryAddWithoutValidation("X-Emby-Token", apiKey);
+    }
+
+    public override async ValueTask<bool> TransformResponseAsync(
+        HttpContext httpContext, HttpResponseMessage? proxyResponse, CancellationToken cancellationToken)
+    {
+        var result = await base.TransformResponseAsync(httpContext, proxyResponse, cancellationToken);
+
+        // Jellyfin emits its own Access-Control-Allow-Origin: * — left alongside the
+        // gateway's header that produces TWO ACAO headers, which browsers reject (so HLS
+        // playback silently fails). Strip all upstream CORS headers and emit exactly one.
+        var headers = httpContext.Response.Headers;
+        foreach (var key in headers.Keys.Where(k => k.StartsWith("Access-Control-", StringComparison.OrdinalIgnoreCase)).ToList())
+            headers.Remove(key);
+        headers["Access-Control-Allow-Origin"] = siteOrigin;
+        headers["Access-Control-Expose-Headers"] = "Content-Length, Content-Range, Accept-Ranges";
+        return result;
     }
 }
