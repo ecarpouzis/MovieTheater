@@ -46,6 +46,11 @@ function TvPage({ userData }) {
   const qualityRef = useRef(quality);
   qualityRef.current = quality;
 
+  // Monotonic id for the in-flight tune. The auto-advance timer and the video's
+  // `ended` event can both fire tune() around a boundary; this lets a superseded
+  // tune bail out instead of stomping a newer one with a stale error or stream.
+  const tuneSeqRef = useRef(0);
+
   // ── helpers ─────────────────────────────────────────────────────────────────
   const stopSession = useCallback((useBeacon = false) => {
     const s = sessionRef.current;
@@ -73,9 +78,12 @@ function TvPage({ userData }) {
   const tune = useCallback(
     async (chan) => {
       if (!chan) return;
+      const seq = ++tuneSeqRef.current;
+      const superseded = () => seq !== tuneSeqRef.current;
       clearTimeout(advanceTimerRef.current);
       stopSession();
       destroyHls();
+      setError(null);
       setOffAir(false);
       setStaticBurst(true);
       setTimeout(() => setStaticBurst(false), 420);
@@ -83,8 +91,10 @@ function TvPage({ userData }) {
 
       try {
         const nowResponse = await fetch(`/API/Channel/${chan.id}/Now`);
+        if (superseded()) return;
         if (!nowResponse.ok) throw Object.assign(new Error(), { status: nowResponse.status });
         const nowData = await nowResponse.json();
+        if (superseded()) return;
         setNow(nowData);
         if (!nowData.current) {
           setOffAir(true);
@@ -102,11 +112,18 @@ function TvPage({ userData }) {
           maxBitrateBps,
           startSeconds: Math.floor(nowData.current.offsetSeconds),
         });
+        if (superseded()) return;
         if (!startResponse.ok) {
           const body = await startResponse.json().catch(() => ({}));
           throw Object.assign(new Error(body.message || ""), { status: startResponse.status });
         }
         const session = await startResponse.json();
+        if (superseded()) {
+          // A newer tune started while we were mid-request — drop this stream so we
+          // don't leak a transcode or attach a stale source.
+          MovieAPI.stopStream({ playSessionId: session.playSessionId, movieId: nowData.current.movieId });
+          return;
+        }
         sessionRef.current = { playSessionId: session.playSessionId, movieId: nowData.current.movieId };
 
         const video = videoRef.current;
@@ -144,7 +161,9 @@ function TvPage({ userData }) {
         const msUntilEnd = new Date(nowData.current.endsAtUtc).getTime() - Date.now();
         advanceTimerRef.current = setTimeout(() => tune(chan), Math.max(msUntilEnd, 5_000) + 3_000);
       } catch (err) {
-        setError(err);
+        // Only the active tune may surface an error — a superseded one stays quiet so a
+        // transient blip on an abandoned request can't leave a stuck "No signal".
+        if (!superseded()) setError(err);
       }
     },
     [stopSession, destroyHls, wakeOverlay]
@@ -154,8 +173,9 @@ function TvPage({ userData }) {
   // keepSelection: after an admin edit, hold the current channel if it still exists
   // rather than snapping back to the first one.
   const loadChannels = useCallback(
-    (keepSelection = false) =>
-      fetch("/API/Channel/List")
+    (keepSelection = false) => {
+      setError(null);
+      return fetch("/API/Channel/List")
         .then((r) => {
           if (!r.ok) throw Object.assign(new Error(), { status: r.status });
           return r.json();
@@ -171,7 +191,8 @@ function TvPage({ userData }) {
             return wanted || list[0] || null;
           });
         })
-        .catch((err) => setError(err)),
+        .catch((err) => setError(err));
+    },
     [channelId]
   );
 
