@@ -250,6 +250,8 @@ function ChannelAdminModal({ open, onClose, onChanged }) {
       onCancel={handleClose}
       title={editing ? (editing.id ? "Edit channel" : "New channel") : "TV channels"}
       width={560}
+      centered
+      bodyStyle={{ maxHeight: "calc(100vh - 220px)", overflowY: "auto" }}
       footer={
         editing
           ? [
