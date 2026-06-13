@@ -1,89 +1,149 @@
-.movie-modal .ant-modal-body {
-  max-height: 85vh;
-  overflow-y: auto;
-  padding: 28px;
+/* ═══════════════════════════════════════════════════════════════════════
+   Movie modal — a clean "now showing" card. The poster's dominant color is
+   passed in as --poster-rgb ("r, g, b") and used for a soft ambient wash and
+   subtle accents so every film's modal feels a little bit themed.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.movie-modal {
+  --poster-rgb: 90, 95, 110;
 }
 
-/* ?? Two-column shell ????????????????????????????????????????????? */
+.movie-modal .ant-modal-content {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+}
+
+/* Ambient glow behind the header, tinted by the poster's dominant color. */
+.movie-modal .ant-modal-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 240px;
+  background:
+    radial-gradient(125% 90% at 18% -10%, rgba(var(--poster-rgb), 0.28), transparent 62%),
+    linear-gradient(to bottom, rgba(var(--poster-rgb), 0.14), rgba(var(--poster-rgb), 0) 92%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.movie-modal .ant-modal-body {
+  position: relative;
+  z-index: 1;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 30px 32px;
+}
+
+.movie-modal .ant-modal-close {
+  z-index: 2;
+}
+
+/* ── Two-column shell ─────────────────────────────────────────────────── */
 .modal-body-wrapper {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 28px;
+  gap: 30px;
   width: 100%;
 }
 
-/* ?? Poster ??????????????????????????????????????????????????????? */
+/* ── Poster ───────────────────────────────────────────────────────────── */
 .modal-poster-column {
   flex-shrink: 0;
-  width: 210px;
+  width: 214px;
+  position: sticky;
+  top: 0;
+}
+
+.modal-poster-frame {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  padding: 5px;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.04),
+    0 10px 30px rgba(0, 0, 0, 0.26);
+  outline: 1px solid rgba(0, 0, 0, 0.06);
+  outline-offset: -1px;
 }
 
 .modal-poster {
-  width: 210px;
+  width: 100%;
   height: auto;
   display: block;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+  border-radius: 6px;
 }
 
-/* ?? Info panel (right column) ???????????????????????????????????? */
+/* ── Info panel (right column) ────────────────────────────────────────── */
 .modal-info-panel {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .modal-movie-title {
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   margin: 0;
-  line-height: 1.25;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: #1a1a1f;
   overflow-wrap: break-word;
   text-align: center;
 }
 
-/* ?? Year � Rating � Runtime ?????????????????????????????????????? */
+/* ── Year · Rating · Runtime ──────────────────────────────────────────── */
 .modal-meta-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 14px;
-  color: #555;
-  font-weight: 500;
+  color: #5a5a64;
+  font-weight: 600;
+  margin-top: -6px;
 }
 
 .modal-dot {
-  color: #ccc;
+  color: #cfcfd6;
   font-weight: 400;
   user-select: none;
 }
 
-/* ?? Genre ???????????????????????????????????????????????????????? */
-.modal-genre {
-  font-size: 13px;
-  color: #888;
-  margin-top: -6px;
-}
-
-/* Watch ticket row — hidden entirely when the movie has no mapped file */
-.modal-watch-row {
+/* ── Genre chips ──────────────────────────────────────────────────────── */
+.modal-genre-chips {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 7px;
+  margin-top: -4px;
 }
 
-.modal-watch-row:empty {
-  display: none;
+.modal-genre-chip {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #4a4a55;
+  background: rgba(var(--poster-rgb), 0.1);
+  border: 1px solid rgba(var(--poster-rgb), 0.18);
+  border-radius: 999px;
+  padding: 3px 11px;
+  white-space: nowrap;
 }
 
-/* ?? Director / Writer ???????????????????????????????????????????? */
+/* ── Director / Writer ────────────────────────────────────────────────── */
 .modal-crew-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 32px;
+  gap: 6px 36px;
 }
 
 .modal-crew-item {
@@ -96,14 +156,14 @@
 
 /* Shared small-caps label used for crew and rating sources */
 .modal-label {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: #aaa;
+  letter-spacing: 0.08em;
+  color: #a2a2ad;
 }
 
-/* ?? Plot ????????????????????????????????????????????????????????? */
+/* ── Plot ─────────────────────────────────────────────────────────────── */
 .modal-plot-wrap {
   position: relative;
 }
@@ -124,12 +184,22 @@
   pointer-events: none;
 }
 
+.modal-plot {
+  margin: 0;
+  font-size: 14.5px;
+  color: #3c3c44;
+  line-height: 1.72;
+  border-left: 3px solid rgba(var(--poster-rgb), 0.45);
+  padding-left: 14px;
+}
+
 .modal-desc-toggle {
   background: none;
   border: none;
   color: #1677ff;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 600;
   padding: 2px 0;
   display: block;
 }
@@ -139,23 +209,41 @@
   text-decoration: underline;
 }
 
-.modal-plot {
+/* ── Cast (two-column "Name as Character") ────────────────────────────── */
+.modal-cast {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 28px;
+  row-gap: 6px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.modal-cast-item {
+  overflow-wrap: anywhere;
+}
+
+.modal-cast-character {
+  color: #9a9aa3;
+}
+
+/* Subtle clickable person link — used for cast, director, and writer. */
+.person-link {
+  background: none;
+  border: none;
+  padding: 0;
   margin: 0;
-  font-size: 14px;
-  color: #444;
-  line-height: 1.7;
-  border-left: 3px solid #e8e8e8;
-  padding-left: 12px;
+  font: inherit;
+  cursor: pointer;
+  color: #1677ff;
 }
 
-/* ?? Actor chips ?????????????????????????????????????????????????? */
-.modal-actors {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.person-link:hover {
+  text-decoration: underline;
+  color: #0958d9;
 }
 
-/* ?? Ratings row ?????????????????????????????????????????????????? */
+/* ── Ratings row ──────────────────────────────────────────────────────── */
 .modal-ratings-row {
   display: flex;
   flex-wrap: wrap;
@@ -169,17 +257,18 @@
   gap: 10px;
   text-decoration: none;
   color: inherit;
-  padding: 8px 14px;
+  padding: 9px 15px;
   background: #fafafa;
-  border: 1px solid #ebebeb;
-  border-radius: 8px;
+  border: 1px solid #ececf0;
+  border-radius: 10px;
   white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
 }
 
 .modal-rating-link:hover {
   background: #eef5ff;
   border-color: #91caff;
+  transform: translateY(-1px);
 }
 
 .modal-rating-score {
@@ -194,21 +283,67 @@
   color: #aaa;
 }
 
-/* ?? Movie ID ????????????????????????????????????????????????????? */
-.modal-movie-id {
-  font-size: 12px;
-  color: #ccc;
-  text-align: right;
-  margin-top: auto;
+/* ── IMDB-normalized synopsis section ─────────────────────────────────── */
+.modal-synopsis {
+  margin-top: 2px;
 }
 
-/* Edit button row  */
+.modal-synopsis-body {
+  margin-top: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.modal-synopsis-text {
+  white-space: pre-line;
+  margin-bottom: 12px;
+}
+
+.modal-summary-text {
+  margin-bottom: 10px;
+  opacity: 0.92;
+}
+
+.modal-summary-author {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+/* ── Action area: WATCH ticket above the SEEN / WANT toggles ──────────── */
+.modal-actions-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 1px solid #efeff2;
+}
+
+.modal-watch-row {
+  display: flex;
+  justify-content: center;
+}
+
+.modal-watch-row:empty {
+  display: none;
+}
+
+/* ── Footer: edit button + id ─────────────────────────────────────────── */
 .modal-edit-row {
   display: flex;
   justify-content: flex-end;
 }
 
-/* Edit form  */
+.modal-movie-id {
+  font-size: 12px;
+  color: #cfcfd6;
+  text-align: right;
+  margin-top: auto;
+}
+
+/* ── Edit form ────────────────────────────────────────────────────────── */
 .modal-edit-form {
   display: flex;
   flex-direction: column;
@@ -273,112 +408,68 @@
   flex-wrap: wrap;
 }
 
-/* ?? Mobile ??????????????????????????????????????????????????????? */
+/* ── Mobile ───────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .movie-modal .ant-modal {
     max-width: 96vw !important;
+    margin: 12px auto;
+  }
+
+  .movie-modal .ant-modal-content {
+    border-radius: 14px;
   }
 
   .movie-modal .ant-modal-body {
-    padding: 16px;
+    padding: 20px 18px;
   }
 
   .modal-body-wrapper {
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 18px;
   }
 
   .modal-poster-column {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-
-  .modal-poster {
-    width: 130px;
+    width: 150px;
+    position: static;
   }
 
   .modal-info-panel {
     width: 100%;
-    gap: 12px;
+    gap: 14px;
   }
 
   .modal-movie-title {
-    font-size: 20px;
+    font-size: 22px;
+  }
+
+  .modal-crew-grid {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .modal-cast {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-ratings-row {
+    justify-content: center;
   }
 
   .modal-rating-link {
     flex: 1;
     justify-content: center;
   }
-}
 
+  /* Keep the SEEN / WANT toggles from overflowing the padded modal on narrow
+     phones, where two fixed 160px buttons + gap exceed the content width. */
+  .modal-actions-row .viewing-options {
+    gap: 10px;
+  }
 
-/* IMDB-normalized extras: synopsis section + cast character labels */
-.modal-synopsis {
-  margin-top: 4px;
-}
-
-.modal-synopsis-body {
-  margin-top: 8px;
-  max-height: 320px;
-  overflow-y: auto;
-  padding-right: 6px;
-}
-
-.modal-synopsis-text {
-  white-space: pre-line;
-  margin-bottom: 12px;
-}
-
-.modal-summary-text {
-  margin-bottom: 10px;
-  opacity: 0.92;
-}
-
-.modal-summary-author {
-  opacity: 0.6;
-  font-style: italic;
-}
-
-/* Subtle clickable person link — used for cast, director, and writer (replaces the
-   heavy boxed buttons). */
-.person-link {
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  font: inherit;
-  cursor: pointer;
-  color: #1677ff;
-}
-
-.person-link:hover {
-  text-decoration: underline;
-  color: #0958d9;
-}
-
-/* Compact two-column cast list: "Name as Character" */
-.modal-cast {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 24px;
-  row-gap: 5px;
-  font-size: 13.5px;
-  line-height: 1.5;
-}
-
-.modal-cast-item {
-  overflow-wrap: anywhere;
-}
-
-.modal-cast-character {
-  color: #999;
-}
-
-@media (max-width: 600px) {
-  .modal-cast {
-    grid-template-columns: 1fr;
+  .modal-actions-row .viewing-btn {
+    width: auto;
+    flex: 1;
+    max-width: 160px;
   }
 }

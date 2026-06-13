@@ -28,6 +28,15 @@ function formatRuntime(minutes) {
   return h > 0 ? `${h}h${m ? " " + m + "m" : ""}` : `${m}m`;
 }
 
+// Parse a stored "#RRGGBB" dominant poster color into an "r, g, b" triple for use
+// in rgba() ambient tints. Falls back to a neutral slate when unavailable.
+function posterRgb(hex) {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec((hex || "").trim());
+  if (!m) return "90, 95, 110";
+  const int = parseInt(m[1], 16);
+  return `${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}`;
+}
+
 function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData, onToggleViewing, onMovieUpdated }) {
   const [movie, setMovie] = useState(null);
   const [normalized, setNormalized] = useState(null);
@@ -122,7 +131,12 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
   // columns for movies the scrape hasn't reached yet.
   const n = normalized || {};
   const displayRuntime = formatRuntime(n.runtimeMinutes) || movie?.runtime;
-  const displayGenres = Array.isArray(n.genres) && n.genres.length > 0 ? n.genres.join(" · ") : movie?.genre;
+  const genreList =
+    Array.isArray(n.genres) && n.genres.length > 0
+      ? n.genres
+      : movie?.genre
+      ? movie.genre.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
   const displayDirectors =
     Array.isArray(n.directors) && n.directors.length > 0 ? n.directors.map((p) => p.name).join(", ") : movie?.director;
   const displayWriters =
@@ -162,13 +176,22 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
   };
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} width={960} wrapClassName="movie-modal">
+    <Modal
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      width={960}
+      wrapClassName="movie-modal"
+      style={{ "--poster-rgb": posterRgb(movie?.posterDetails?.dominantColor) }}
+    >
       {loading ? (
         <Spin />
       ) : movie ? (
         <div className="modal-body-wrapper">
           <div className="modal-poster-column">
-            <img className="modal-poster" alt={movie.title + " poster"} src={MovieAPI.getMoviePoster(movie.id, movie.posterVersion)} />
+            <div className="modal-poster-frame">
+              <img className="modal-poster" alt={movie.title + " poster"} src={MovieAPI.getMoviePoster(movie.id, movie.posterVersion)} />
+            </div>
           </div>
           <div className="modal-info-panel">
             {!editing ? (
@@ -191,11 +214,15 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                   )}
                 </div>
 
-                {displayGenres && <div className="modal-genre">{displayGenres}</div>}
-
-                <div className="modal-watch-row">
-                  <WatchButton movie={movie} userData={userData} onBeforeNavigate={onClose} />
-                </div>
+                {genreList.length > 0 && (
+                  <div className="modal-genre-chips">
+                    {genreList.map((g, i) => (
+                      <span className="modal-genre-chip" key={i}>
+                        {g}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 <div className="modal-crew-grid">
                   {displayDirectors && (
@@ -280,7 +307,12 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                   </a>
                 </div>
 
-                <UserMovieOptions userData={userData} id={movie.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
+                <div className="modal-actions-row">
+                  <div className="modal-watch-row">
+                    <WatchButton movie={movie} userData={userData} onBeforeNavigate={onClose} />
+                  </div>
+                  <UserMovieOptions userData={userData} id={movie.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
+                </div>
 
                 {userData?.canEditMovies && (
                   <div className="modal-edit-row">

@@ -1,27 +1,37 @@
-/* A ticket stub in the light catalog UI — a sliver of the screening room's
-   black-and-gold leaking into the lobby. */
+/* A movie-ticket stub in the light catalog UI — a sliver of the screening room's
+   black-and-gold leaking into the lobby. Wide and short, with a torn perforation
+   between the WATCH body and the ADMIT ONE stub. */
 .watch-stub {
+  position: relative;
   display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  background: #14110b;
+  align-items: stretch;
+  height: 42px;
+  background: linear-gradient(135deg, #211b10 0%, #14110b 70%);
   color: #e3b341;
-  border: 1px solid #14110b;
-  border-radius: 4px;
-  padding: 9px 0 9px 16px;
+  border: none;
+  border-radius: 6px;
+  padding: 0;
   cursor: pointer;
-  overflow: hidden;
+  font-family: inherit;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 10px rgba(20, 17, 11, 0.25);
+  box-shadow: 0 3px 14px rgba(20, 17, 11, 0.32);
 }
 
 .watch-stub:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 18px rgba(20, 17, 11, 0.35);
+  box-shadow: 0 6px 20px rgba(20, 17, 11, 0.42);
 }
 
 .watch-stub:active {
   transform: none;
+}
+
+/* Main body: ▸ WATCH */
+.watch-stub-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
 }
 
 .watch-stub-tri {
@@ -35,27 +45,59 @@
 .watch-stub-text {
   font-weight: 700;
   font-size: 14px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
-/* the perforation line of the ticket */
+/* The perforation line of the ticket, with circular notches biting in from the
+   top and bottom edges to suggest a tear-off stub. */
 .watch-stub-perf {
+  position: relative;
   align-self: stretch;
   width: 0;
-  margin-left: 6px;
-  border-left: 2px dashed rgba(227, 179, 65, 0.45);
+  margin: 7px 0;
+  border-left: 2px dashed rgba(227, 179, 65, 0.5);
 }
 
+.watch-stub-perf::before,
+.watch-stub-perf::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  background: #fff;
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
+.watch-stub-perf::before {
+  top: -13px;
+}
+
+.watch-stub-perf::after {
+  bottom: -13px;
+}
+
+/* Tear-off stub: ADMIT / ONE stacked small */
 .watch-stub-tail {
-  font-size: 9px;
-  letter-spacing: 0.18em;
-  color: rgba(227, 179, 65, 0.75);
-  padding: 0 12px 0 10px;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transform: rotate(180deg);
-  line-height: 1;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0 13px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: rgba(227, 179, 65, 0.78);
+}
+
+.watch-stub-tail span {
+  /* nudge the wider word so the two stack visually centered despite tracking */
+  margin-right: -0.2em;
 }
 
 .watch-hint {

@@ -29,10 +29,15 @@ function WatchButton({ movie, userData, onBeforeNavigate }) {
         history.push(`/watch/${movie.id}`);
       }}
     >
-      <span className="watch-stub-tri" aria-hidden="true" />
-      <span className="watch-stub-text">Watch</span>
+      <span className="watch-stub-main">
+        <span className="watch-stub-tri" aria-hidden="true" />
+        <span className="watch-stub-text">Watch</span>
+      </span>
       <span className="watch-stub-perf" aria-hidden="true" />
-      <span className="watch-stub-tail" aria-hidden="true">ADMIT ONE</span>
+      <span className="watch-stub-tail" aria-hidden="true">
+        <span>Admit</span>
+        <span>One</span>
+      </span>
     </button>
   );
 }
