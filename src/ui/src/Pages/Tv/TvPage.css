@@ -176,6 +176,54 @@
   transition: width 1s linear;
 }
 
+/* cold-start "tuning in" indicator */
+.tv-tuning {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.tv-tuning-bulbs {
+  display: flex;
+  gap: 10px;
+}
+
+.tv-tuning-bulbs span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e3b341;
+  opacity: 0.35;
+  animation: tv-tuning-pulse 1.2s ease-in-out infinite;
+}
+
+.tv-tuning-bulbs span:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.tv-tuning-bulbs span:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+.tv-tuning-label {
+  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 13px;
+  color: rgba(242, 236, 221, 0.62);
+}
+
+@keyframes tv-tuning-pulse {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-4px); }
+}
+
 /* vote-to-skip */
 .tv-panel-skip {
   display: flex;

@@ -4,6 +4,20 @@ import "./VideoPlayer.css";
 
 const TICKS_PER_SECOND = 10_000_000;
 
+// Jellyfin spawns the transcode and opens the (networked) source file on the first
+// playlist/segment request, so a cold start can take ~10s before anything is playable.
+// hls.js's default manifest timeout is only 10s — it would give up and show nothing,
+// which a refresh then "fixes" by hitting a warm transcode. Be patient instead.
+export const HLS_LOAD_CONFIG = {
+  manifestLoadingTimeOut: 30_000,
+  manifestLoadingMaxRetry: 6,
+  manifestLoadingRetryDelay: 1_000,
+  levelLoadingTimeOut: 30_000,
+  levelLoadingMaxRetry: 6,
+  fragLoadingTimeOut: 60_000,
+  fragLoadingMaxRetry: 6,
+};
+
 // The quality ladder from streaming-plan.md §7. "Auto" (§14.4) adapts the cap to
 // measured bandwidth; "Original" omits the cap entirely, letting compatible sources
 // direct-stream with no re-encode. The numbered rungs pin a fixed cap.
@@ -109,7 +123,7 @@ function VideoPlayer({
 
     let hls = null;
     if (Hls.isSupported()) {
-      hls = new Hls({ maxBufferLength: 60, backBufferLength: 90 });
+      hls = new Hls({ maxBufferLength: 60, backBufferLength: 90, ...HLS_LOAD_CONFIG });
       hlsRef.current = hls;
       hls.on(Hls.Events.MANIFEST_PARSED, seekToStart);
       hls.on(Hls.Events.ERROR, (_event, data) => {

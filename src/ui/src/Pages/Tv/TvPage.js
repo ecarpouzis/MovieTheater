@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
-import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER } from "../Watch/VideoPlayer";
+import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, HLS_LOAD_CONFIG } from "../Watch/VideoPlayer";
 import { initialAutoBps } from "../../streamAbr";
 import ChannelAdminModal from "./ChannelAdminModal";
 import "./TvPage.css";
@@ -40,6 +40,7 @@ function TvPage({ userData }) {
   const [quality, setQuality] = useState(() => window.localStorage.getItem("StreamQuality") || "auto");
   const [qualityOpen, setQualityOpen] = useState(false);
   const [skip, setSkip] = useState(null); // { viewers, votes, required, youVoted }
+  const [tuning, setTuning] = useState(false); // waiting on the (cold) transcode to produce frames
 
   const canEdit = userData?.canEditMovies ?? false;
 
@@ -94,6 +95,7 @@ function TvPage({ userData }) {
       destroyHls();
       setError(null);
       setOffAir(false);
+      setTuning(true);
       setStaticBurst(true);
       setTimeout(() => setStaticBurst(false), 420);
       wakeOverlay();
@@ -107,6 +109,7 @@ function TvPage({ userData }) {
         setNow(nowData);
         if (!nowData.current) {
           setOffAir(true);
+          setTuning(false);
           currentItemIdRef.current = null;
           setSkip(null);
           return;
@@ -145,7 +148,7 @@ function TvPage({ userData }) {
         if (Hls.isSupported()) {
           // startPosition joins at the live offset directly instead of loading from 0 and
           // seeking — the seek churn was a source of the join-time A/V desync on mobile.
-          const hls = new Hls({ maxBufferLength: 30, backBufferLength: 10, startPosition: joinAt });
+          const hls = new Hls({ maxBufferLength: 30, backBufferLength: 10, startPosition: joinAt, ...HLS_LOAD_CONFIG });
           hlsRef.current = hls;
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             video.play().catch(() => {});
@@ -176,7 +179,10 @@ function TvPage({ userData }) {
       } catch (err) {
         // Only the active tune may surface an error — a superseded one stays quiet so a
         // transient blip on an abandoned request can't leave a stuck "No signal".
-        if (!superseded()) setError(err);
+        if (!superseded()) {
+          setError(err);
+          setTuning(false);
+        }
       }
     },
     [stopSession, destroyHls, wakeOverlay]
@@ -245,8 +251,13 @@ function TvPage({ userData }) {
     const video = videoRef.current;
     if (!video) return undefined;
     const onEnded = () => channel && tune(channel);
+    const onPlaying = () => setTuning(false); // first frames arrived — hide the "Tuning…" card
     video.addEventListener("ended", onEnded);
-    return () => video.removeEventListener("ended", onEnded);
+    video.addEventListener("playing", onPlaying);
+    return () => {
+      video.removeEventListener("ended", onEnded);
+      video.removeEventListener("playing", onPlaying);
+    };
   }, [channel, tune]);
 
   // ── teardown / wake lock / keyboard ─────────────────────────────────────────
@@ -399,6 +410,14 @@ function TvPage({ userData }) {
 
       {/* channel-change static burst */}
       <div className={`tv-static${staticBurst ? " tv-static--on" : ""}`} aria-hidden="true" />
+
+      {/* cold-transcode wait — the source takes a few seconds to start; show it's working */}
+      {tuning && !error && !offAir && (
+        <div className="tv-tuning" aria-label="Tuning">
+          <div className="tv-tuning-bulbs"><span /><span /><span /></div>
+          <div className="tv-tuning-label">Tuning in…</div>
+        </div>
+      )}
 
       {/* persistent channel bug */}
       {channel && (
