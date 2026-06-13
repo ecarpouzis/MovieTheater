@@ -1653,6 +1653,10 @@ namespace MovieTheater.Controllers
                 }
             }
 
+            // Name/rating/image fields edited here surface in other games' similar-game
+            // entries, so refresh the (persisted) similarity cache.
+            await boardgameSimilarityService.RebuildAsync(movieDb);
+
             var msg = imageError != null ? $"Boardgame updated, but image download failed: {imageError}" : "Boardgame updated";
             return Ok(new { Success = true, Message = msg, data = game });
         }

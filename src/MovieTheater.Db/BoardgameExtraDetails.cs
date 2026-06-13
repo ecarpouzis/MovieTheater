@@ -24,5 +24,12 @@ namespace MovieTheater.Db
         public string? MarketplaceXml { get; set; }
 
         public string? RawXml { get; set; }
+
+        /// <summary>
+        /// Cached boardgame-similarity result for this game: a JSON-serialized list of
+        /// the top similar games (see <c>SimilarGameDto</c>). Computed when a new game is
+        /// added and persisted here so the compare does not have to re-run on every startup.
+        /// </summary>
+        public string? SimilarGamesJson { get; set; }
     }
 }

@@ -21,6 +21,47 @@ namespace MovieTheater.Services.Bgg
         public IReadOnlyList<SimilarGameDto> GetSimilar(int gameId)
             => _index.TryGetValue(gameId, out var result) ? result : [];
 
+        /// <summary>
+        /// Populates the in-memory index from the similarities already persisted on each
+        /// game's <see cref="BoardgameExtraDetails.SimilarGamesJson"/>. Returns the number
+        /// of games loaded so the caller can decide whether a one-time rebuild is needed.
+        /// </summary>
+        public async Task<int> LoadAsync(MovieDb db)
+        {
+            var rows = await db.BoardgameExtraDetails
+                .AsNoTracking()
+                .Where(e => e.SimilarGamesJson != null)
+                .Select(e => new { e.BoardgameId, e.SimilarGamesJson })
+                .ToListAsync();
+
+            var loaded = new Dictionary<int, IReadOnlyList<SimilarGameDto>>();
+            foreach (var row in rows)
+            {
+                try
+                {
+                    var list = JsonSerializer.Deserialize<List<SimilarGameDto>>(row.SimilarGamesJson!);
+                    if (list != null) loaded[row.BoardgameId] = list;
+                }
+                catch { /* skip malformed cache rows; a rebuild will overwrite them */ }
+            }
+
+            _index = loaded;
+            return loaded.Count;
+        }
+
+        /// <summary>
+        /// True when some non-expansion game has an <see cref="BoardgameExtraDetails"/> row
+        /// whose <see cref="BoardgameExtraDetails.SimilarGamesJson"/> is still NULL — i.e. it
+        /// was never run through the compare. After a successful <see cref="RebuildAsync"/>
+        /// every such game holds a value (an array or "[]"), so a remaining NULL means an
+        /// insert's rebuild broke and the cache needs to be rebuilt.
+        /// </summary>
+        public Task<bool> HasUncomputedGamesAsync(MovieDb db)
+            => db.Boardgames.AnyAsync(g =>
+                g.ThingType != "boardgameexpansion"
+                && g.ExtraDetails != null
+                && g.ExtraDetails.SimilarGamesJson == null);
+
         public async Task RebuildAsync(MovieDb db)
         {
             var games = await db.Boardgames
@@ -71,6 +112,22 @@ namespace MovieTheater.Services.Bgg
 
                 newIndex[game.id] = similar;
             }
+
+            // Persist the freshly computed result onto each game's ExtraDetails so the
+            // compare does not have to re-run on the next startup. Every game considered
+            // here (all non-expansions with an ExtraDetails row) gets a non-null value —
+            // "[]" when there are no matches — so that a leftover NULL unambiguously means
+            // "never computed" (e.g. a game inserted after a rebuild that failed midway).
+            // HasUncomputedGamesAsync relies on that distinction.
+            foreach (var game in games)
+            {
+                if (game.ExtraDetails == null) continue;
+                game.ExtraDetails.SimilarGamesJson =
+                    newIndex.TryGetValue(game.id, out var list) && list.Count > 0
+                        ? JsonSerializer.Serialize(list)
+                        : "[]";
+            }
+            await db.SaveChangesAsync();
 
             _index = newIndex;
         }
