@@ -38,6 +38,30 @@ jobs:
       - run: cd docker && bash build-ui.sh
       - run: docker push $REGISTRY/movietheater-ui:$IMAGE_TAG
 
+  # TEMPORARY: validate the secret JSON (catches malformed values that crash the
+  # app at startup, e.g. a newline inside a string or duplicate keys). Prints only
+  # the validation result, never the secret. Remove once stable.
+  validate-config:
+    runs-on: movietheater
+    steps:
+      - run: |
+          printf '%s' "$MOVIETHEATER_APPSETTINGS_JSON" > /tmp/cfg.json
+          echo "byte size: $(wc -c < /tmp/cfg.json)"
+          python3 - <<'PY'
+          import json
+          def dup(pairs):
+              seen=set(); d=[k for k,_ in pairs if (k in seen or seen.add(k))]
+              if d: raise ValueError("DUPLICATE KEYS: "+", ".join(sorted(set(d))))
+              return dict(pairs)
+          try:
+              json.load(open('/tmp/cfg.json'), object_pairs_hook=dup)
+              print("RESULT: VALID JSON, no duplicate keys ✅")
+          except Exception as e:
+              print("RESULT: INVALID ❌ ->", type(e).__name__, str(e))
+          PY
+        env:
+          MOVIETHEATER_APPSETTINGS_JSON: ${{ secrets.MOVIETHEATER_APPSETTINGS_JSON }}
+
   # TEMPORARY read-only diagnostic: the runner has no kubectl, so talk to the
   # Kubernetes API directly with the pod's service-account token. Read-only
   # (GET only), fails soft. Remove once the deploy issue is resolved.
