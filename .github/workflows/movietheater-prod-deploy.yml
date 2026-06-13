@@ -51,15 +51,31 @@ jobs:
             echo "NO SERVICE-ACCOUNT TOKEN MOUNTED — runner cannot reach the kube API. Host-only."
             exit 0
           fi
-          TOKEN=$(cat "$SA/token"); RUNNER_NS=$(cat "$SA/namespace"); API=https://kubernetes.default.svc
-          AUTH="Authorization: Bearer $TOKEN"
-          echo "runner service-account namespace: $RUNNER_NS"
-          echo "=== GET pods in namespace 'movietheater' ==="
-          code=$(curl -sk -o /tmp/pods.json -w "%{http_code}" -H "$AUTH" "$API/api/v1/namespaces/movietheater/pods")
-          echo "HTTP $code"
-          if [ "$code" = "403" ]; then echo "FORBIDDEN — runner's service account has no RBAC for the movietheater namespace. Host-only."; fi
-          echo "--- pod names / phase / restarts / waiting-reason / images ---"
-          grep -oE '"name":"movietheater[^"]*"|"phase":"[^"]*"|"restartCount":[0-9]+|"reason":"[^"]*"|"image":"[^"]*"' /tmp/pods.json 2>/dev/null | head -80
-          echo "=== GET deployments in 'movietheater' ==="
-          curl -sk -H "$AUTH" "$API/apis/apps/v1/namespaces/movietheater/deployments" 2>/dev/null | grep -oE '"name":"[^"]*"|"image":"[^"]*"|"replicas":[0-9]+|"readyReplicas":[0-9]+|"unavailableReplicas":[0-9]+' | head -50
-          echo "=== done (if you see pods/deployments above, the runner CAN drive a restart; if 403/empty, it's host-only) ==="
+          TOKEN=$(cat "$SA/token"); API=https://kubernetes.default.svc; AUTH="Authorization: Bearer $TOKEN"
+          echo "=== CAN THIS RUNNER RESTART A DEPLOYMENT? (read-only permission check) ==="
+          curl -sk -X POST -H "$AUTH" -H "Content-Type: application/json" \
+            "$API/apis/authorization.k8s.io/v1/selfsubjectaccessreviews" \
+            -d '{"spec":{"resourceAttributes":{"namespace":"movietheater","verb":"patch","group":"apps","resource":"deployments"}}}' \
+            | grep -oE '"allowed": ?(true|false)|"reason": ?"[^"]*"'
+          echo "=== DEPLOYMENTS (name / ready / image) ==="
+          curl -sk -H "$AUTH" "$API/apis/apps/v1/namespaces/movietheater/deployments" -o /tmp/deploy.json
+          python3 - <<'PY' 2>/dev/null || grep -oE '"name": ?"[^"]*"|"image": ?"[^"]*"' /tmp/deploy.json | head -40
+          import json
+          for it in json.load(open('/tmp/deploy.json')).get('items',[]):
+              n=it['metadata']['name']; st=it.get('status',{})
+              imgs=[c['image'] for c in it['spec']['template']['spec']['containers']]
+              print(f"DEPLOY {n}  ready={st.get('readyReplicas')}/{st.get('replicas')}  images={imgs}")
+          PY
+          echo "=== PODS (name / phase / restarts / waiting-reason / image) ==="
+          curl -sk -H "$AUTH" "$API/api/v1/namespaces/movietheater/pods" -o /tmp/pods.json
+          python3 - <<'PY' 2>/dev/null || grep -oE '"name": ?"[^"]*"|"phase": ?"[^"]*"|"restartCount": ?[0-9]+|"reason": ?"[^"]*"' /tmp/pods.json | head -60
+          import json
+          for it in json.load(open('/tmp/pods.json')).get('items',[]):
+              n=it['metadata']['name']; ph=it.get('status',{}).get('phase')
+              cs=it.get('status',{}).get('containerStatuses') or []
+              if not cs: print(f"POD {n}  phase={ph}  (no containers yet)")
+              for c in cs:
+                  w=(c.get('state',{}).get('waiting') or {}).get('reason')
+                  print(f"POD {n}  phase={ph}  restarts={c.get('restartCount')}  waiting={w}  image={c.get('image')}")
+          PY
+          echo "=== done ==="
