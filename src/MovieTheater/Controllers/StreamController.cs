@@ -89,8 +89,27 @@ namespace MovieTheater.Controllers
             }
 
             var startTicks = (long)((request.StartSeconds ?? 0) * TicksPerSecond);
-            var info = await jellyfin.GetPlaybackInfoAsync(
-                file.JellyfinItemId, request.MaxBitrateBps, request.AudioStreamIndex, request.SubtitleStreamIndex, startTicks);
+            JellyfinPlaybackInfoResult info;
+            try
+            {
+                info = await jellyfin.GetPlaybackInfoAsync(
+                    file.JellyfinItemId, request.MaxBitrateBps, request.AudioStreamIndex, request.SubtitleStreamIndex, startTicks);
+            }
+            catch (Exception ex)
+            {
+                // Surface the real cause: which media-server URL the pod is using and what
+                // went wrong reaching it (network, auth, etc.) instead of a bare 500.
+                logger.LogError(ex, "Jellyfin PlaybackInfo failed for movie {MovieId} via {BaseUrl}", movie.id, config.JellyfinBaseUrl);
+                var detail = $"{ex.GetType().Name}: {ex.Message}";
+                if (ex.InnerException != null)
+                    detail += $" -> {ex.InnerException.GetType().Name}: {ex.InnerException.Message}";
+                return StatusCode(502, new
+                {
+                    message = "Could not reach the media server.",
+                    detail,
+                    jellyfinBaseUrl = config.JellyfinBaseUrl,
+                });
+            }
 
             var source = info.MediaSources[0];
             if (string.IsNullOrEmpty(source.TranscodingUrl))
