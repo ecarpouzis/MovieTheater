@@ -3,6 +3,8 @@ import { useParams, useHistory } from "react-router-dom";
 import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
 import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER } from "../Watch/VideoPlayer";
+import { initialAutoBps } from "../../streamAbr";
+import ChannelAdminModal from "./ChannelAdminModal";
 import "./TvPage.css";
 
 /**
@@ -34,6 +36,9 @@ function TvPage({ userData }) {
   const [staticBurst, setStaticBurst] = useState(false);
   const [error, setError] = useState(null);
   const [offAir, setOffAir] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+
+  const canEdit = userData?.canEditMovies ?? false;
 
   // ── helpers ─────────────────────────────────────────────────────────────────
   const stopSession = useCallback((useBeacon = false) => {
@@ -82,9 +87,12 @@ function TvPage({ userData }) {
 
         const rungKey = window.localStorage.getItem("StreamQuality") || "original";
         const rung = QUALITY_LADDER.find((q) => q.key === rungKey) || QUALITY_LADDER[0];
+        // TV is passive and doesn't adapt mid-play; "Auto" maps to a sane fixed cap
+        // from the connection estimate rather than streaming uncapped in the background.
+        const maxBitrateBps = rungKey === "auto" ? initialAutoBps() : rung.bps;
         const startResponse = await MovieAPI.startStream({
           movieId: nowData.current.movieId,
-          maxBitrateBps: rung.bps,
+          maxBitrateBps,
           startSeconds: Math.floor(nowData.current.offsetSeconds),
         });
         if (!startResponse.ok) {
@@ -133,18 +141,32 @@ function TvPage({ userData }) {
   );
 
   // ── channel list ────────────────────────────────────────────────────────────
+  // keepSelection: after an admin edit, hold the current channel if it still exists
+  // rather than snapping back to the first one.
+  const loadChannels = useCallback(
+    (keepSelection = false) =>
+      fetch("/API/Channel/List")
+        .then((r) => {
+          if (!r.ok) throw Object.assign(new Error(), { status: r.status });
+          return r.json();
+        })
+        .then((list) => {
+          setChannels(list);
+          setChannel((prev) => {
+            if (keepSelection && prev) {
+              const stillThere = list.find((c) => c.id === prev.id);
+              if (stillThere) return stillThere;
+            }
+            const wanted = channelId ? list.find((c) => String(c.id) === String(channelId)) : list[0];
+            return wanted || list[0] || null;
+          });
+        })
+        .catch((err) => setError(err)),
+    [channelId]
+  );
+
   useEffect(() => {
-    fetch("/API/Channel/List")
-      .then((r) => {
-        if (!r.ok) throw Object.assign(new Error(), { status: r.status });
-        return r.json();
-      })
-      .then((list) => {
-        setChannels(list);
-        const wanted = channelId ? list.find((c) => String(c.id) === String(channelId)) : list[0];
-        setChannel(wanted || list[0] || null);
-      })
-      .catch((err) => setError(err));
+    loadChannels();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -223,7 +245,7 @@ function TvPage({ userData }) {
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.target.tagName === "INPUT") return;
+      if (e.target.tagName === "INPUT" || adminOpen) return;
       if (e.key === "ArrowUp") switchBy(1);
       else if (e.key === "ArrowDown") switchBy(-1);
       else if (e.key === "m") setMuted((m) => !m);
@@ -240,7 +262,7 @@ function TvPage({ userData }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [switchBy, channels, wakeOverlay]);
+  }, [switchBy, channels, wakeOverlay, adminOpen]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -337,6 +359,12 @@ function TvPage({ userData }) {
             <span className="tv-channel-num">G</span>
             Guide
           </button>
+          {canEdit && (
+            <button className="tv-channel-item tv-channel-item--manage" onClick={(e) => { e.stopPropagation(); setAdminOpen(true); }}>
+              <span className="tv-channel-num">✎</span>
+              Manage
+            </button>
+          )}
           <button className="tv-channel-item tv-channel-item--off" onClick={() => history.push("/")}>
             <span className="tv-channel-num">⏻</span>
             Off
@@ -381,6 +409,14 @@ function TvPage({ userData }) {
           <p>{errorCopy}</p>
           <button className="tv-state-btn" onClick={() => history.push("/")}>← Back</button>
         </div>
+      )}
+
+      {canEdit && (
+        <ChannelAdminModal
+          open={adminOpen}
+          onClose={() => setAdminOpen(false)}
+          onChanged={() => loadChannels(true)}
+        />
       )}
     </div>
   );

@@ -4,15 +4,23 @@ import "./VideoPlayer.css";
 
 const TICKS_PER_SECOND = 10_000_000;
 
-// The quality ladder from streaming-plan.md §7. "Original" omits the bitrate cap,
-// which lets compatible sources direct-stream with no re-encode.
+// The quality ladder from streaming-plan.md §7. "Auto" (§14.4) adapts the cap to
+// measured bandwidth; "Original" omits the cap entirely, letting compatible sources
+// direct-stream with no re-encode. The numbered rungs pin a fixed cap.
 export const QUALITY_LADDER = [
+  { key: "auto", label: "Auto", bps: null, hint: "adapts to your connection" },
   { key: "original", label: "Original", bps: null, hint: "direct stream when possible" },
   { key: "1080-12", label: "1080p", bps: 12_000_000, hint: "12 Mbps" },
   { key: "1080-8", label: "1080p", bps: 8_000_000, hint: "8 Mbps" },
   { key: "720-4", label: "720p", bps: 4_000_000, hint: "4 Mbps" },
   { key: "480-15", label: "480p", bps: 1_500_000, hint: "1.5 Mbps" },
 ];
+
+// Pretty-print the negotiated output codec for the player readout (§14.1).
+function codecLabel(codec) {
+  const map = { hevc: "HEVC", h265: "HEVC", h264: "H.264", avc: "H.264", av1: "AV1", vp9: "VP9" };
+  return map[String(codec).toLowerCase()] || String(codec).toUpperCase();
+}
 
 function formatTime(totalSeconds) {
   if (!isFinite(totalSeconds) || totalSeconds < 0) totalSeconds = 0;
@@ -39,7 +47,9 @@ function VideoPlayer({
   durationSeconds,
   startAt = 0,
   isDirectStream = false,
+  videoCodec = null,
   qualityKey = "original",
+  qualityDetail = null,
   audioTracks = [],
   subtitleTracks = [],
   selectedAudioIndex = null,
@@ -48,6 +58,8 @@ function VideoPlayer({
   onSelectAudio,
   onSelectSubtitle,
   onProgress,
+  onBandwidth,
+  onStall,
   onEnded,
   onBack,
 }) {
@@ -101,6 +113,8 @@ function VideoPlayer({
       hlsRef.current = hls;
       hls.on(Hls.Events.MANIFEST_PARSED, seekToStart);
       hls.on(Hls.Events.ERROR, (_event, data) => {
+        // A buffer stall (non-fatal) is the adaptive-downshift signal (§14.4).
+        if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) onStall?.();
         if (!data.fatal) return;
         // Standard hls.js recovery dance before giving up.
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
@@ -133,7 +147,13 @@ function VideoPlayer({
     const video = videoRef.current;
     if (!video) return undefined;
 
-    const onTime = () => setCurrentTime(video.currentTime);
+    const onTime = () => {
+      setCurrentTime(video.currentTime);
+      // Time advancing is ground truth that we're not stalled. Some browsers
+      // resume after a `waiting` without firing `playing`, which would leave
+      // the buffering bulbs stuck over a running video.
+      if (!video.paused) setBuffering(false);
+    };
     const onPlay = () => {
       setPlaying(true);
       setNeedsTap(false);
@@ -184,6 +204,19 @@ function VideoPlayer({
     }, 10_000);
     return () => clearInterval(beat);
   }, [playing, onProgress]);
+
+  // ── bandwidth telemetry for adaptive bitrate (§14.4) ────────────────────────
+  // hls.js refines bandwidthEstimate as segments load; sample it while playing so
+  // the page can climb rungs when there's headroom. Safari's native HLS exposes no
+  // estimate, so ABR there leans on stalls + the initial connection guess instead.
+  useEffect(() => {
+    if (!playing || !onBandwidth) return undefined;
+    const sample = setInterval(() => {
+      const estimate = hlsRef.current?.bandwidthEstimate;
+      if (estimate && isFinite(estimate)) onBandwidth(estimate);
+    }, 5000);
+    return () => clearInterval(sample);
+  }, [playing, onBandwidth]);
 
   // ── volume ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -387,7 +420,13 @@ function VideoPlayer({
   };
 
   // Click = play/pause, double-click = fullscreen, without the double-fire.
+  // But when the chrome has faded out, the first tap only brings it back — the
+  // user is reaching for the controls, not trying to pause.
   const onSurfaceClick = () => {
+    if (hideChrome) {
+      wakeControls();
+      return;
+    }
     if (clickTimerRef.current) {
       clearTimeout(clickTimerRef.current);
       clickTimerRef.current = null;
@@ -624,8 +663,10 @@ function VideoPlayer({
 
                 <div className="vp-menu-section">Playing</div>
                 <div className="vp-menu-readout">
-                  {activeQuality.label} {activeQuality.hint ? `· ${activeQuality.hint}` : ""}
-                  {isDirectStream && qualityKey === "original" ? " · no re-encode" : ""}
+                  {qualityKey === "auto" && qualityDetail ? qualityDetail : activeQuality.label}
+                  {qualityKey !== "auto" && activeQuality.hint ? ` · ${activeQuality.hint}` : ""}
+                  {videoCodec ? ` · ${codecLabel(videoCodec)}` : ""}
+                  {isDirectStream && (qualityKey === "original" || qualityKey === "auto") ? " · no re-encode" : ""}
                 </div>
               </div>
             )}

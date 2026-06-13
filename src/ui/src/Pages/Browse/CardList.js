@@ -29,8 +29,12 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
   const activeName = (activePerson || "").trim().toLowerCase();
   return (
     <div className="card-list">
-      {movieDataArray.map((item) => {
+      {movieDataArray.map((item, index) => {
         const thumbUrl = MovieAPI.getPosterThumbnail(item.id, item.posterVersion);
+        // Eagerly fetch the first couple of rows (up to a 4-wide grid) so the posters
+        // above the fold paint immediately instead of waiting on lazy-load intersection;
+        // everything below stays lazy.
+        const isAboveFold = index < 8;
         // Prefer the IMDB summary; fall back to the legacy plot only when there isn't one.
         const summaryText = item.plotFull || item.plot;
         // Pills come from the FK-derived top cast; fall back to legacy actors if absent.
@@ -44,7 +48,14 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
             <Card hoverable className="movie-card">
               <div className={`card-content-wrapper${isMobile ? " card-content-wrapper--mobile" : ""}`}>
                 <div className="card-poster-container">
-                  <img className={`card-poster-image${isMobile ? " card-poster-image--mobile" : ""}`} alt="" src={thumbUrl} loading="lazy" />
+                  <img
+                    className={`card-poster-image${isMobile ? " card-poster-image--mobile" : ""}`}
+                    alt=""
+                    src={thumbUrl}
+                    loading={isAboveFold ? "eager" : "lazy"}
+                    fetchPriority={isAboveFold ? "high" : "auto"}
+                    decoding="async"
+                  />
                 </div>
                 <div className={`card-right-col${isMobile ? " card-right-col--mobile" : ""}`}>
                   <div onClick={() => onMovieClick(item.id)} className="card-title">

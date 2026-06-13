@@ -197,16 +197,56 @@ namespace MovieTheater.Controllers
         public async Task<IActionResult> GetMoviesByIds([FromBody] List<int> ids)
         {
             if (ids == null || ids.Count == 0)
-                return Ok(new List<Movie>());
+                return Ok(new List<MovieCardDto>());
 
             var baseQuery = await GetBaseMovieQuery();
             var movies = await baseQuery
                 .Where(m => ids.Contains(m.id))
                 .OrderBy(m => m.SimpleTitle)
+                .Select(ToCardDto)
                 .ToListAsync();
 
             return Ok(movies);
         }
+
+        // Slim row shape for browse cards. Carries only the columns CardList /
+        // SimpleCardList actually render — deliberately omitting the heavy
+        // PlotSynopsis / scrape-audit columns and the full PosterDetails object so
+        // the list payload (and the DB read) stays small. The modal fetches the full
+        // record on its own when opened.
+        public class MovieCardDto
+        {
+            public int id { get; set; }
+            public string? Title { get; set; }
+            public string? SimpleTitle { get; set; }
+            public DateTime? ReleaseDate { get; set; }
+            public string? Rating { get; set; }
+            public string? Runtime { get; set; }
+            public decimal? imdbRating { get; set; }
+            public string? PlotFull { get; set; }
+            public string? Plot { get; set; }
+            public string? TopCast { get; set; }
+            public string? Actors { get; set; }
+            public int PosterVersion { get; set; }
+        }
+
+        // Shared EF projection so every card-feeding endpoint emits the same slim
+        // shape and translates to a SELECT of just these columns.
+        private static readonly System.Linq.Expressions.Expression<Func<Movie, MovieCardDto>> ToCardDto = m => new MovieCardDto
+        {
+            id = m.id,
+            Title = m.Title,
+            SimpleTitle = m.SimpleTitle,
+            ReleaseDate = m.ReleaseDate,
+            Rating = m.Rating,
+            Runtime = m.Runtime,
+            imdbRating = m.imdbRating,
+            PlotFull = m.PlotFull,
+            Plot = m.Plot,
+            TopCast = m.TopCast,
+            Actors = m.Actors,
+            PosterVersion = m.PosterDetails != null ? m.PosterDetails.PosterVersion : 0,
+        };
 
         private async Task<IQueryable<Movie>> GetBaseMovieQuery()
         {
@@ -238,9 +278,9 @@ namespace MovieTheater.Controllers
                     ageRestriction = parsedRestriction;
             }
 
-            IQueryable<Movie> movies = movieDb.Movies.Include(m => m.PosterDetails).Where(m => !m.RemoveFromRandom);
+            IQueryable<Movie> movies = movieDb.Movies.Where(m => !m.RemoveFromRandom);
             movies = movies.Where(m => !movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID > ageRestriction));
-            var result = await movies.OrderBy(m => Guid.NewGuid()).Take(take).ToListAsync();
+            var result = await movies.OrderBy(m => Guid.NewGuid()).Take(take).Select(ToCardDto).ToListAsync();
             return Ok(result);
         }
 
@@ -1140,7 +1180,7 @@ namespace MovieTheater.Controllers
             var query = movieDb.Movies
                 .Where(m => movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID == effectiveMax));
 
-            var moviesList = await query.ToListAsync();
+            var moviesList = await query.Select(ToCardDto).ToListAsync();
             var sorted = moviesList
                 .OrderBy(m => string.IsNullOrEmpty(m.SimpleTitle) || !char.IsDigit(m.SimpleTitle[0]))
                 .ThenBy(m => m.SimpleTitle)

@@ -1,3 +1,5 @@
+import { detectStreamCapabilities } from "./streamCapabilities";
+
 function getMoviePoster(id, posterVersion) {
   return posterVersion ? `/Image/${id}?v=${posterVersion}` : `/Image/${id}`;
 }
@@ -102,10 +104,13 @@ function setPassword(currentPassword, newPassword) {
 // audioTracks, subtitleTracks, resumePositionTicks }.
 
 function startStream({ movieId, maxBitrateBps = null, audioStreamIndex = null, subtitleStreamIndex = null, startSeconds = null }) {
+  // Negotiate the codec profile from this browser's real capabilities (§14.1) so
+  // HEVC/AV1-capable clients avoid a needless H.264 re-encode.
+  const caps = detectStreamCapabilities();
   return fetch("/API/Stream/Start", {
     method: "post",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ movieId, maxBitrateBps, audioStreamIndex, subtitleStreamIndex, startSeconds }),
+    body: JSON.stringify({ movieId, maxBitrateBps, audioStreamIndex, subtitleStreamIndex, startSeconds, ...caps }),
   });
 }
 
@@ -389,6 +394,32 @@ function updateBoardgameRules(id, { howToPlayVideoUrls, rulesPdfUrls } = {}) {
   });
 }
 
+// ── Channel administration (streaming-plan.md §8, CanEditMovies-gated) ───────
+
+function getChannelAdminMeta() {
+  return fetch("/API/Channel/Admin/Meta");
+}
+
+function getChannelAdminList() {
+  return fetch("/API/Channel/Admin/List");
+}
+
+function saveChannel(channel) {
+  return fetch("/API/Channel/Admin/Save", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(channel),
+  });
+}
+
+function deleteChannel(id) {
+  return fetch("/API/Channel/Admin/Delete", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Id: id }),
+  });
+}
+
 const MovieAPI = {
   getMoviePoster,
   getPosterThumbnail,
@@ -428,6 +459,10 @@ const MovieAPI = {
   uploadBoardgameRulesPdf,
   updateBoardgameRules,
   getSimilarBoardgames,
+  getChannelAdminMeta,
+  getChannelAdminList,
+  saveChannel,
+  deleteChannel,
 };
 
 export { MovieAPI };

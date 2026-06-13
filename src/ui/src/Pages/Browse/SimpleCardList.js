@@ -98,8 +98,9 @@ function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, o
       style={listStyle}
       grid={{ gutter: 4, column: 2 }}
       dataSource={movieDataArray}
-      renderItem={(item) => {
+      renderItem={(item, index) => {
         const thumbUrl = MovieAPI.getPosterThumbnail(item.id, item.posterVersion);
+        const isAboveFold = index < 6;
         return (
           <List.Item>
             <Card
@@ -115,7 +116,14 @@ function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, o
               }}
             >
               <div style={posterContainer}>
-                <img style={cardPosterStyle} alt={item.title} src={thumbUrl} loading="lazy" />
+                <img
+                  style={cardPosterStyle}
+                  alt={item.title}
+                  src={thumbUrl}
+                  loading={isAboveFold ? "eager" : "lazy"}
+                  fetchPriority={isAboveFold ? "high" : "auto"}
+                  decoding="async"
+                />
               </div>
               <div
                 onClick={() => onMovieClick(item.id)}

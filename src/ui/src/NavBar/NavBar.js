@@ -201,6 +201,11 @@ function NavBar({
                 <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
                   🎲 Board Games
                 </button>
+                {userData?.hasPassword && (
+                  <button className="navbar-section-item" onClick={() => history.push("/tv")}>
+                    📺 TV
+                  </button>
+                )}
                 {userData?.comicSiteAccess && (
                   <button className="navbar-section-item" onClick={() => window.open(userData.comicSiteAccess, "_blank", "noopener,noreferrer")}>
                     📚 Comics
@@ -244,6 +249,11 @@ function NavBar({
                 <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
                   🎲 Board Games
                 </button>
+                {userData?.hasPassword && (
+                  <button className="navbar-section-item" onClick={() => history.push("/tv")}>
+                    📺 TV
+                  </button>
+                )}
                 {userData?.comicSiteAccess && (
                   <button className="navbar-section-item" onClick={() => window.open(userData.comicSiteAccess, "_blank", "noopener,noreferrer")}>
                     📚 Comics

@@ -53,6 +53,16 @@ namespace MovieTheater.Controllers
             public int? AudioStreamIndex { get; set; }
             public int? SubtitleStreamIndex { get; set; }
             public double? StartSeconds { get; set; }
+
+            // Client-detected decode capabilities (§14.1). Absent/false = the safe
+            // H.264/TS baseline, so an old or non-reporting client still plays.
+            public bool SupportsHevc { get; set; }
+            public bool SupportsAv1 { get; set; }
+            public bool SupportsHdr { get; set; }
+            public bool SupportsFmp4 { get; set; }
+
+            public ClientCapabilities ToCapabilities() =>
+                new(SupportsHevc, SupportsAv1, SupportsHdr, SupportsFmp4);
         }
 
         [HttpPost("/API/Stream/Start")]
@@ -93,7 +103,8 @@ namespace MovieTheater.Controllers
             try
             {
                 info = await jellyfin.GetPlaybackInfoAsync(
-                    file.JellyfinItemId, request.MaxBitrateBps, request.AudioStreamIndex, request.SubtitleStreamIndex, startTicks);
+                    file.JellyfinItemId, request.MaxBitrateBps, request.AudioStreamIndex, request.SubtitleStreamIndex,
+                    startTicks, request.ToCapabilities());
             }
             catch (Exception ex)
             {
@@ -148,6 +159,9 @@ namespace MovieTheater.Controllers
                 hlsUrl = ToGatewayUrl(source.TranscodingUrl),
                 durationTicks,
                 isDirectStream = videoIsCopied,
+                // The codec the player will actually receive (copied or encoded) — drives the
+                // "HEVC"/"Direct" readout and confirms §14.1 negotiation worked.
+                videoCodec = VideoCodecFromTranscodingUrl(source.TranscodingUrl),
                 audioTracks,
                 subtitleTracks,
                 resumePositionTicks = resume,
@@ -266,6 +280,19 @@ namespace MovieTheater.Controllers
             if (setting != null && int.TryParse(setting.SettingValue, out var parsed))
                 ageRestriction = parsed;
             return RatingGate.MpaRatingIdFor(movieDb, movieRating) <= ageRestriction;
+        }
+
+        /// <summary>The first VideoCodec Jellyfin chose for the HLS output (e.g. "hevc"/"h264"),
+        /// read from the transcoding url's query — purely informational for the player readout.</summary>
+        private static string? VideoCodecFromTranscodingUrl(string transcodingUrl)
+        {
+            var queryStart = transcodingUrl.IndexOf('?');
+            if (queryStart < 0)
+                return null;
+            var codec = transcodingUrl[(queryStart + 1)..]
+                .Split('&', StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault(p => p.StartsWith("VideoCodec=", StringComparison.OrdinalIgnoreCase));
+            return codec?["VideoCodec=".Length..].Split(',')[0] is { Length: > 0 } first ? first : null;
         }
 
         /// <summary>Removes the api_key query parameter Jellyfin embeds in relative urls — the

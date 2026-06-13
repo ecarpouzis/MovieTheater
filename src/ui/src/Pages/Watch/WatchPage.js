@@ -1,8 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
+import { initialAutoBps, rungDown, rungUp, shouldStepUp, isBottomRung, autoBpsLabel } from "../../streamAbr";
 import VideoPlayer, { formatTime, TICKS_PER_SECOND, QUALITY_LADDER } from "./VideoPlayer";
 import "./WatchPage.css";
+
+// Adaptive-bitrate pacing (§14.4): don't switch rungs more than once per window,
+// and only climb after a sustained good streak — each switch is a visible reload.
+const ABR_COOLDOWN_MS = 20_000;
+const ABR_STABLE_FOR_UP_MS = 90_000;
 
 // Format whole minutes as "2h 16m", matching the modal's convention.
 function formatRuntime(minutes) {
@@ -29,13 +35,22 @@ function WatchPage({ userData }) {
   const [error, setError] = useState(null);
   const [session, setSession] = useState(null); // Stream/Start response
   const [startAt, setStartAt] = useState(0);
-  const [qualityKey, setQualityKey] = useState(() => window.localStorage.getItem("StreamQuality") || "original");
+  const [qualityKey, setQualityKey] = useState(() => window.localStorage.getItem("StreamQuality") || "auto");
   const [audioIndex, setAudioIndex] = useState(null);
   const [subtitleIndex, setSubtitleIndex] = useState(null);
+  const [autoBps, setAutoBps] = useState(() => initialAutoBps());
 
   const sessionRef = useRef(null);
   sessionRef.current = session;
   const positionRef = useRef(0);
+
+  // ── adaptive-bitrate state (read inside callbacks without re-binding them) ──
+  const qualityKeyRef = useRef(qualityKey);
+  qualityKeyRef.current = qualityKey;
+  const autoBpsRef = useRef(autoBps);
+  autoBpsRef.current = autoBps;
+  const lastSwitchAtRef = useRef(0);
+  const stableSinceRef = useRef(Date.now());
 
   const goBack = useCallback(() => {
     if (history.length > 1) history.goBack();
@@ -52,11 +67,18 @@ function WatchPage({ userData }) {
   }, []);
 
   const startSession = useCallback(
-    async ({ startSeconds = null, quality = qualityKey, audio = audioIndex, subtitle = subtitleIndex, burnSubtitle = false } = {}) => {
-      const rung = QUALITY_LADDER.find((q) => q.key === quality) || QUALITY_LADDER[0];
+    async ({ startSeconds = null, quality = qualityKey, audio = audioIndex, subtitle = subtitleIndex, burnSubtitle = false, bpsOverride } = {}) => {
+      // Auto walks the adaptive ladder (current cap in autoBpsRef); the fixed rungs
+      // use their own cap; an explicit override (an adaptive switch) wins.
+      const bps =
+        bpsOverride !== undefined
+          ? bpsOverride
+          : quality === "auto"
+          ? autoBpsRef.current
+          : (QUALITY_LADDER.find((q) => q.key === quality) || QUALITY_LADDER[0]).bps;
       const response = await MovieAPI.startStream({
         movieId: Number(movieId),
-        maxBitrateBps: rung.bps,
+        maxBitrateBps: bps,
         audioStreamIndex: audio,
         subtitleStreamIndex: burnSubtitle ? subtitle : null,
         startSeconds,
@@ -163,11 +185,58 @@ function WatchPage({ userData }) {
     [startSession, stopCurrentSession]
   );
 
+  // Move the adaptive cap and restart at the live position. Updates the ref first so
+  // the restart picks up the new cap synchronously, ahead of the state re-render.
+  const adaptTo = useCallback(
+    (nextBps) => {
+      if (nextBps === autoBpsRef.current) return;
+      autoBpsRef.current = nextBps;
+      setAutoBps(nextBps);
+      lastSwitchAtRef.current = Date.now();
+      stableSinceRef.current = Date.now();
+      restartAtPosition({ quality: "auto", bpsOverride: nextBps });
+    },
+    [restartAtPosition]
+  );
+
+  // Stall = the connection can't keep up: drop a rung immediately (within cooldown).
+  const handleStall = useCallback(() => {
+    if (qualityKeyRef.current !== "auto" || isBottomRung(autoBpsRef.current)) return;
+    if (Date.now() - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
+    adaptTo(rungDown(autoBpsRef.current));
+  }, [adaptTo]);
+
+  // Throughput telemetry: climb a rung only after a sustained streak with clear
+  // headroom; any sample short of that headroom resets the streak.
+  const handleBandwidth = useCallback(
+    (estimateBps) => {
+      if (qualityKeyRef.current !== "auto") return;
+      if (!shouldStepUp(autoBpsRef.current, estimateBps)) {
+        stableSinceRef.current = Date.now();
+        return;
+      }
+      if (Date.now() - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
+      if (Date.now() - stableSinceRef.current >= ABR_STABLE_FOR_UP_MS) {
+        adaptTo(rungUp(autoBpsRef.current));
+      }
+    },
+    [adaptTo]
+  );
+
   const handleSelectQuality = useCallback(
     (rung) => {
       setQualityKey(rung.key);
       window.localStorage.setItem("StreamQuality", rung.key);
-      restartAtPosition({ quality: rung.key });
+      // Re-entering Auto reseeds from the connection estimate and a fresh streak.
+      if (rung.key === "auto") {
+        const seed = initialAutoBps();
+        autoBpsRef.current = seed;
+        setAutoBps(seed);
+        stableSinceRef.current = Date.now();
+        restartAtPosition({ quality: "auto", bpsOverride: seed });
+      } else {
+        restartAtPosition({ quality: rung.key });
+      }
     },
     [restartAtPosition]
   );
@@ -282,7 +351,9 @@ function WatchPage({ userData }) {
           durationSeconds={durationSeconds}
           startAt={startAt}
           isDirectStream={session.isDirectStream}
+          videoCodec={session.videoCodec}
           qualityKey={qualityKey}
+          qualityDetail={autoBpsLabel(autoBps)}
           audioTracks={session.audioTracks || []}
           subtitleTracks={session.subtitleTracks || []}
           selectedAudioIndex={audioIndex}
@@ -291,6 +362,8 @@ function WatchPage({ userData }) {
           onSelectAudio={handleSelectAudio}
           onSelectSubtitle={handleSelectSubtitle}
           onProgress={handleProgress}
+          onBandwidth={handleBandwidth}
+          onStall={handleStall}
           onEnded={handleEnded}
           onBack={goBack}
         />

@@ -60,15 +60,17 @@ namespace MovieTheater.Services.Jellyfin
         }
 
         /// <summary>
-        /// Asks Jellyfin how to play an item under the site's fixed web profile: HLS out,
-        /// H.264+AAC always allowed, copy when compatible, text subs delivered as sidecar
-        /// WebVTT, image subs burned in. Direct play/stream are disabled so the answer is
-        /// always an HLS TranscodingUrl — "direct stream" then means ffmpeg copies the
-        /// streams into HLS containers without re-encoding.
+        /// Asks Jellyfin how to play an item under a web profile built from the calling
+        /// client's real codec capabilities (streaming-plan.md §14.1): HLS out, fMP4
+        /// segments when the client can take them, HEVC/AV1 copied or HEVC-encoded for
+        /// capable clients, H.264+AAC the universal fallback, text subs delivered as
+        /// sidecar WebVTT, image subs burned in. Direct play/stream are disabled so the
+        /// answer is always an HLS TranscodingUrl — "direct stream" then means ffmpeg
+        /// copies the video into HLS containers without re-encoding.
         /// </summary>
         public async Task<JellyfinPlaybackInfoResult> GetPlaybackInfoAsync(
             string itemId, long? maxStreamingBitrate, int? audioStreamIndex, int? subtitleStreamIndex,
-            long startTimeTicks, CancellationToken cancel = default)
+            long startTimeTicks, ClientCapabilities capabilities, CancellationToken cancel = default)
         {
             EnsureConfigured();
             var userId = await GetUserIdAsync(cancel);
@@ -84,7 +86,7 @@ namespace MovieTheater.Services.Jellyfin
                 EnableDirectStream = false,
                 EnableTranscoding = true,
                 AutoOpenLiveStream = true,
-                DeviceProfile = BuildWebDeviceProfile(maxStreamingBitrate),
+                DeviceProfile = BuildWebDeviceProfile(maxStreamingBitrate, capabilities),
             };
 
             var response = await httpClient.PostAsJsonAsync(
@@ -138,28 +140,35 @@ namespace MovieTheater.Services.Jellyfin
 
         public const string DeviceId = "movietheater-site";
 
-        private static object BuildWebDeviceProfile(long? maxStreamingBitrate) => new
+        // VideoLevel is expressed ×30 for HEVC; 183 ≈ level 6.1, generous enough to copy
+        // any 4K HEVC source rather than needlessly re-encode it.
+        private const string HevcMaxLevel = "183";
+
+        private static object BuildWebDeviceProfile(long? maxStreamingBitrate, ClientCapabilities caps)
         {
-            Name = "MovieTheaterWeb",
-            MaxStreamingBitrate = maxStreamingBitrate ?? 1_000_000_000L,
-            TranscodingProfiles = new object[]
-            {
-                new
-                {
-                    Container = "ts",
-                    Type = "Video",
-                    VideoCodec = "h264",
-                    AudioCodec = "aac,mp3",
-                    Protocol = "hls",
-                    Context = "Streaming",
-                    MaxAudioChannels = "2",
-                    MinSegments = 1,
-                    BreakOnNonKeyFrames = true,
-                },
-                new { Container = "mp3", Type = "Audio", AudioCodec = "mp3", Protocol = "http", Context = "Streaming" },
-            },
-            DirectPlayProfiles = Array.Empty<object>(),
-            CodecProfiles = new object[]
+            // HEVC and AV1 can't ride MPEG-TS HLS — they require fMP4 (CMAF) segments,
+            // which is also the modern default and a touch more efficient for H.264 too
+            // (§14.2). Force fMP4 whenever an advanced codec is on the table; otherwise
+            // honor the client's own fMP4 capability, falling back to TS for ancient ones.
+            bool useFmp4 = caps.Fmp4 || caps.Hevc || caps.Av1;
+            string segmentContainer = useFmp4 ? "mp4" : "ts";
+
+            // Encode-target preference is list order: HEVC first when the client can decode
+            // it (≈30-40% smaller at equal quality, §14.3), H.264 the universal fallback.
+            // AV1 trails and is copy-only — we never AV1-encode — so it's never the target.
+            var videoCodecs = new List<string>();
+            if (caps.Hevc && useFmp4) videoCodecs.Add("hevc");
+            videoCodecs.Add("h264");
+            if (caps.Av1 && useFmp4) videoCodecs.Add("av1");
+            string videoCodec = string.Join(',', videoCodecs);
+
+            // HDR passthrough only to HDR-capable clients (§14.5 stretch, done here for the
+            // copy path): an SDR client that *copies* an HDR HEVC source renders washed-out,
+            // so restrict which ranges may be copied — non-HDR clients fall through to a
+            // tonemapping transcode. The copy path is the only no-cost HDR passthrough.
+            string allowedRanges = caps.Hdr ? "SDR|HDR10|HLG|HDR10Plus|DOVI" : "SDR";
+
+            var codecProfiles = new List<object>
             {
                 new
                 {
@@ -170,20 +179,58 @@ namespace MovieTheater.Services.Jellyfin
                         new { Condition = "LessThanEqual", Property = "VideoLevel", Value = "51", IsRequired = false },
                     },
                 },
-            },
-            SubtitleProfiles = new object[]
+            };
+            if (caps.Hevc && useFmp4)
             {
-                // Text subs ride as sidecar WebVTT; image subs (PGS/VobSub) burn in.
-                new { Format = "vtt", Method = "External" },
-                new { Format = "srt", Method = "External" },
-                new { Format = "ass", Method = "External" },
-                new { Format = "ssa", Method = "External" },
-                new { Format = "subrip", Method = "External" },
-                new { Format = "pgssub", Method = "Encode" },
-                new { Format = "dvdsub", Method = "Encode" },
-                new { Format = "dvbsub", Method = "Encode" },
-            },
-        };
+                codecProfiles.Add(new
+                {
+                    Type = "Video",
+                    Codec = "hevc",
+                    Conditions = new object[]
+                    {
+                        new { Condition = "LessThanEqual", Property = "VideoLevel", Value = HevcMaxLevel, IsRequired = false },
+                        new { Condition = "EqualsAny", Property = "VideoRangeType", Value = allowedRanges, IsRequired = false },
+                    },
+                });
+            }
+
+            return new
+            {
+                Name = "MovieTheaterWeb",
+                MaxStreamingBitrate = maxStreamingBitrate ?? 1_000_000_000L,
+                TranscodingProfiles = new object[]
+                {
+                    new
+                    {
+                        Container = segmentContainer,
+                        Type = "Video",
+                        VideoCodec = videoCodec,
+                        AudioCodec = "aac,mp3",
+                        Protocol = "hls",
+                        Context = "Streaming",
+                        MaxAudioChannels = "2",
+                        MinSegments = 1,
+                        // TS needs splitting on non-keyframes; fMP4 segments on GOP boundaries.
+                        BreakOnNonKeyFrames = !useFmp4,
+                    },
+                    new { Container = "mp3", Type = "Audio", AudioCodec = "mp3", Protocol = "http", Context = "Streaming" },
+                },
+                DirectPlayProfiles = Array.Empty<object>(),
+                CodecProfiles = codecProfiles.ToArray(),
+                SubtitleProfiles = new object[]
+                {
+                    // Text subs ride as sidecar WebVTT; image subs (PGS/VobSub) burn in.
+                    new { Format = "vtt", Method = "External" },
+                    new { Format = "srt", Method = "External" },
+                    new { Format = "ass", Method = "External" },
+                    new { Format = "ssa", Method = "External" },
+                    new { Format = "subrip", Method = "External" },
+                    new { Format = "pgssub", Method = "Encode" },
+                    new { Format = "dvdsub", Method = "Encode" },
+                    new { Format = "dvbsub", Method = "Encode" },
+                },
+            };
+        }
 
         /// <summary>
         /// Enumerates every movie item in Jellyfin's library with Path, MediaSources and
@@ -207,6 +254,16 @@ namespace MovieTheater.Services.Jellyfin
                     return items;
             }
         }
+    }
+
+    /// <summary>
+    /// What the calling browser can decode, detected client-side (§14.1) and used to
+    /// build a per-request <c>DeviceProfile</c>. Defaults are the safe H.264/TS baseline.
+    /// </summary>
+    public record ClientCapabilities(bool Hevc = false, bool Av1 = false, bool Hdr = false, bool Fmp4 = false)
+    {
+        /// <summary>The pre-§14 universal baseline: H.264 in MPEG-TS, nothing fancy.</summary>
+        public static readonly ClientCapabilities H264Baseline = new();
     }
 
     public class JellyfinApiOptions
