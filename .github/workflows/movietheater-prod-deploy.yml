@@ -76,22 +76,35 @@ jobs:
             exit 0
           fi
           TOKEN=$(cat "$SA/token"); API=https://kubernetes.default.svc; AUTH="Authorization: Bearer $TOKEN"
-          echo "=== WHY is the api container terminating? exit code / signal / limits / probes ==="
+          echo "=== probe config on movietheater-api ==="
           curl -sk -H "$AUTH" "$API/api/v1/namespaces/movietheater/pods" -o /tmp/p.json
           python3 - <<'PY'
           import json
+          seen=set()
           for it in json.load(open('/tmp/p.json')).get('items',[]):
               n=it['metadata']['name']
               if 'runner' in n or 'posters-backup' in n: continue
-              spec={c['name']:c for c in it['spec'].get('containers',[])}
-              for c in it.get('status',{}).get('containerStatuses') or []:
-                  if c['name']!='movietheater-api': continue
-                  sc=spec.get(c['name'],{})
-                  res=sc.get('resources',{})
-                  probes=[p for p in ('livenessProbe','readinessProbe','startupProbe') if sc.get(p)]
-                  ls=(c.get('lastState',{}).get('terminated') or {})
-                  print(f"POD {n} tag={c.get('image','').split(':')[-1]} restarts={c.get('restartCount')}")
-                  print(f"   limits={res.get('limits')} requests={res.get('requests')} probes={probes}")
-                  print(f"   lastTerminated: exitCode={ls.get('exitCode')} signal={ls.get('signal')} reason={ls.get('reason')} msg={ls.get('message')}")
+              for c in it['spec'].get('containers',[]):
+                  if c['name']!='movietheater-api' or n in seen: continue
+                  seen.add(n)
+                  for pk in ('livenessProbe','readinessProbe','startupProbe'):
+                      p=c.get(pk)
+                      if p: print(f"{pk}: {json.dumps(p)}")
+          PY
+          echo "=== recent events for movietheater app pods ==="
+          curl -sk -H "$AUTH" "$API/api/v1/namespaces/movietheater/events?limit=300" -o /tmp/e.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/e.json'))
+          if d.get('kind')!='EventList':
+              print("EVENTS NOT READABLE:", d.get('message','?')); raise SystemExit
+          rows=[]
+          for e in d.get('items',[]):
+              obj=e.get('involvedObject',{}).get('name','')
+              if obj.startswith('movietheater-7') or obj.startswith('movietheater-6'):
+                  rows.append((e.get('lastTimestamp') or e.get('eventTime') or '', e.get('reason'), (e.get('message') or '')[:160], e.get('count')))
+          for ts,reason,msg,cnt in rows[-40:]:
+              print(f"{ts} {reason} (x{cnt}): {msg}")
+          if not rows: print("(no events for app pods)")
           PY
           echo "=== done ==="
