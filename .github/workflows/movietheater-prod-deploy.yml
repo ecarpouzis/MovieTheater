@@ -52,30 +52,24 @@ jobs:
             exit 0
           fi
           TOKEN=$(cat "$SA/token"); API=https://kubernetes.default.svc; AUTH="Authorization: Bearer $TOKEN"
-          echo "=== CAN THIS RUNNER RESTART A DEPLOYMENT? (read-only permission check) ==="
-          curl -sk -X POST -H "$AUTH" -H "Content-Type: application/json" \
-            "$API/apis/authorization.k8s.io/v1/selfsubjectaccessreviews" \
-            -d '{"spec":{"resourceAttributes":{"namespace":"movietheater","verb":"patch","group":"apps","resource":"deployments"}}}' \
-            | grep -oE '"allowed": ?(true|false)|"reason": ?"[^"]*"'
-          echo "=== DEPLOYMENTS (name / ready / image) ==="
-          curl -sk -H "$AUTH" "$API/apis/apps/v1/namespaces/movietheater/deployments" -o /tmp/deploy.json
-          python3 - <<'PY' 2>/dev/null || grep -oE '"name": ?"[^"]*"|"image": ?"[^"]*"' /tmp/deploy.json | head -40
-          import json
-          for it in json.load(open('/tmp/deploy.json')).get('items',[]):
-              n=it['metadata']['name']; st=it.get('status',{})
-              imgs=[c['image'] for c in it['spec']['template']['spec']['containers']]
-              print(f"DEPLOY {n}  ready={st.get('readyReplicas')}/{st.get('replicas')}  images={imgs}")
-          PY
-          echo "=== PODS (name / phase / restarts / waiting-reason / image) ==="
+          echo "=== finding crash-looping container(s) and pulling their crash logs ==="
           curl -sk -H "$AUTH" "$API/api/v1/namespaces/movietheater/pods" -o /tmp/pods.json
-          python3 - <<'PY' 2>/dev/null || grep -oE '"name": ?"[^"]*"|"phase": ?"[^"]*"|"restartCount": ?[0-9]+|"reason": ?"[^"]*"' /tmp/pods.json | head -60
+          CANDS=$(python3 -c "
           import json
           for it in json.load(open('/tmp/pods.json')).get('items',[]):
-              n=it['metadata']['name']; ph=it.get('status',{}).get('phase')
-              cs=it.get('status',{}).get('containerStatuses') or []
-              if not cs: print(f"POD {n}  phase={ph}  (no containers yet)")
-              for c in cs:
+              pod=it['metadata']['name']
+              for c in it.get('status',{}).get('containerStatuses') or []:
                   w=(c.get('state',{}).get('waiting') or {}).get('reason')
-                  print(f"POD {n}  phase={ph}  restarts={c.get('restartCount')}  waiting={w}  image={c.get('image')}")
-          PY
+                  term=(c.get('lastState',{}).get('terminated') or {})
+                  if w=='CrashLoopBackOff' or term:
+                      print(pod, c['name'])
+          ")
+          echo "crash candidates (pod container):"
+          echo "$CANDS"
+          echo "$CANDS" | while read POD CONT; do
+            [ -z "$POD" ] && continue
+            echo "================ PREVIOUS (CRASH) LOG: $POD / $CONT ================"
+            curl -sk -H "$AUTH" "$API/api/v1/namespaces/movietheater/pods/$POD/log?container=$CONT&previous=true&tailLines=120"
+            echo "================ END $POD / $CONT ================"
+          done
           echo "=== done ==="
