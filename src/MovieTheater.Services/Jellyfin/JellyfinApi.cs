@@ -70,7 +70,7 @@ namespace MovieTheater.Services.Jellyfin
         /// </summary>
         public async Task<JellyfinPlaybackInfoResult> GetPlaybackInfoAsync(
             string itemId, long? maxStreamingBitrate, int? audioStreamIndex, int? subtitleStreamIndex,
-            long startTimeTicks, ClientCapabilities capabilities, CancellationToken cancel = default)
+            long startTimeTicks, ClientCapabilities capabilities, bool enableDirectPlay, CancellationToken cancel = default)
         {
             EnsureConfigured();
             var userId = await GetUserIdAsync(cancel);
@@ -82,7 +82,10 @@ namespace MovieTheater.Services.Jellyfin
                 StartTimeTicks = startTimeTicks,
                 AudioStreamIndex = audioStreamIndex,
                 SubtitleStreamIndex = subtitleStreamIndex,
-                EnableDirectPlay = false,
+                // When allowed (no burn-in subtitle), let Jellyfin flag a browser-playable source
+                // as direct-play so the controller can serve the original file with no transcode
+                // (streaming-plan §"direct play"); a TranscodingUrl is still returned as fallback.
+                EnableDirectPlay = enableDirectPlay,
                 EnableDirectStream = false,
                 EnableTranscoding = true,
                 AutoOpenLiveStream = true,
@@ -215,7 +218,19 @@ namespace MovieTheater.Services.Jellyfin
                     },
                     new { Container = "mp3", Type = "Audio", AudioCodec = "mp3", Protocol = "http", Context = "Streaming" },
                 },
-                DirectPlayProfiles = Array.Empty<object>(),
+                // Browser-native containers/codecs: a source matching one of these is flagged
+                // SupportsDirectPlay, letting the controller serve the original file with zero
+                // transcode. HEVC only when the client decodes it; mkv etc. won't match → transcode.
+                DirectPlayProfiles = new object[]
+                {
+                    new
+                    {
+                        Container = "mp4,m4v,mov",
+                        Type = "Video",
+                        VideoCodec = caps.Hevc ? "h264,hevc" : "h264",
+                        AudioCodec = "aac,mp3",
+                    },
+                },
                 CodecProfiles = codecProfiles.ToArray(),
                 SubtitleProfiles = new object[]
                 {

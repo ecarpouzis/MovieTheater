@@ -60,6 +60,7 @@ function VideoPlayer({
   metaLine,
   durationSeconds,
   startAt = 0,
+  isHls = true,
   isDirectStream = false,
   videoCodec = null,
   qualityKey = "original",
@@ -122,7 +123,12 @@ function VideoPlayer({
     };
 
     let hls = null;
-    if (Hls.isSupported()) {
+    if (!isHls) {
+      // Direct play: the original file, downloaded progressively via range requests — no
+      // transcode, near-instant start. Seeking/startAt are plain currentTime (range fetches).
+      video.src = src;
+      video.addEventListener("loadedmetadata", seekToStart, { once: true });
+    } else if (Hls.isSupported()) {
       hls = new Hls({ maxBufferLength: 60, backBufferLength: 90, ...HLS_LOAD_CONFIG });
       hlsRef.current = hls;
       hls.on(Hls.Events.MANIFEST_PARSED, seekToStart);
@@ -154,7 +160,7 @@ function VideoPlayer({
         video.load();
       }
     };
-  }, [src, startAt]);
+  }, [src, startAt, isHls]);
 
   // ── element events ──────────────────────────────────────────────────────────
   useEffect(() => {

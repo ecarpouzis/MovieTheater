@@ -52,6 +52,11 @@ function TvPage({ userData }) {
   // the channel has moved on (a skip elsewhere, or a natural advance) so we re-tune.
   const currentItemIdRef = useRef(null);
 
+  // A transcode started ahead of time for the *next* item, so an advance is instant
+  // instead of paying the ~8s cold start. { movieId, session } once warmed.
+  const prewarmRef = useRef(null);
+  const prewarmTimerRef = useRef(null);
+
   // Monotonic id for the in-flight tune. The auto-advance timer and the video's
   // `ended` event can both fire tune() around a boundary; this lets a superseded
   // tune bail out instead of stomping a newer one with a stale error or stream.
@@ -84,6 +89,32 @@ function TvPage({ userData }) {
     overlayTimerRef.current = setTimeout(() => setOverlayVisible(false), 4500);
   }, []);
 
+  // The bitrate cap for the current quality (Auto → a connection-based fixed cap).
+  const resolveBitrate = useCallback(() => {
+    const rungKey = qualityRef.current;
+    const rung = QUALITY_LADDER.find((q) => q.key === rungKey) || QUALITY_LADDER[0];
+    return rungKey === "auto" ? initialAutoBps() : rung.bps;
+  }, []);
+
+  // Start the next item's transcode ahead of the boundary and warm it (fetch its
+  // playlist), so the advance can reuse it instead of paying the cold start.
+  const prewarmNext = useCallback(
+    async (movieId) => {
+      try {
+        const r = await MovieAPI.startStream({ movieId, maxBitrateBps: resolveBitrate(), startSeconds: 0 });
+        if (!r.ok) return;
+        const session = await r.json();
+        // For a transcode, pull the playlist to actually spawn ffmpeg; direct play has
+        // nothing to warm (it's a static file).
+        if (session.isHls !== false) fetch(session.hlsUrl).catch(() => {});
+        prewarmRef.current = { movieId, session };
+      } catch {
+        /* prewarm is best-effort */
+      }
+    },
+    [resolveBitrate]
+  );
+
   // ── tune to the channel's live position ─────────────────────────────────────
   const tune = useCallback(
     async (chan) => {
@@ -91,6 +122,7 @@ function TvPage({ userData }) {
       const seq = ++tuneSeqRef.current;
       const superseded = () => seq !== tuneSeqRef.current;
       clearTimeout(advanceTimerRef.current);
+      clearTimeout(prewarmTimerRef.current);
       stopSession();
       destroyHls();
       setError(null);
@@ -117,23 +149,34 @@ function TvPage({ userData }) {
         currentItemIdRef.current = nowData.current.itemId ?? null;
         setSkip(nowData.skip || null);
 
-        // TV is passive and doesn't adapt mid-play; "Auto" (the default) maps to a sane
-        // fixed cap from the connection estimate rather than streaming uncapped — important
-        // on phones, where an uncapped channel buffers and drifts out of A/V sync.
-        const rungKey = qualityRef.current;
-        const rung = QUALITY_LADDER.find((q) => q.key === rungKey) || QUALITY_LADDER[0];
-        const maxBitrateBps = rungKey === "auto" ? initialAutoBps() : rung.bps;
-        const startResponse = await MovieAPI.startStream({
-          movieId: nowData.current.movieId,
-          maxBitrateBps,
-          startSeconds: Math.floor(nowData.current.offsetSeconds),
-        });
-        if (superseded()) return;
-        if (!startResponse.ok) {
-          const body = await startResponse.json().catch(() => ({}));
-          throw Object.assign(new Error(body.message || ""), { status: startResponse.status });
+        // Reuse a transcode we prewarmed for this item near the last boundary (instant
+        // advance); a prewarm is only valid for a fresh-start join (~offset 0).
+        let session = null;
+        const pw = prewarmRef.current;
+        prewarmRef.current = null;
+        if (pw) {
+          if (pw.movieId === nowData.current.movieId && nowData.current.offsetSeconds < 8) {
+            session = pw.session;
+          } else {
+            MovieAPI.stopStream({ playSessionId: pw.session.playSessionId, movieId: pw.movieId });
+          }
         }
-        const session = await startResponse.json();
+
+        if (!session) {
+          // "Auto" (the default) maps to a connection-based fixed cap rather than streaming
+          // uncapped — important on phones, where uncapped channels buffer and drift A/V.
+          const startResponse = await MovieAPI.startStream({
+            movieId: nowData.current.movieId,
+            maxBitrateBps: resolveBitrate(),
+            startSeconds: Math.floor(nowData.current.offsetSeconds),
+          });
+          if (superseded()) return;
+          if (!startResponse.ok) {
+            const body = await startResponse.json().catch(() => ({}));
+            throw Object.assign(new Error(body.message || ""), { status: startResponse.status });
+          }
+          session = await startResponse.json();
+        }
         if (superseded()) {
           // A newer tune started while we were mid-request — drop this stream so we
           // don't leak a transcode or attach a stale source.
@@ -145,7 +188,19 @@ function TvPage({ userData }) {
         const video = videoRef.current;
         if (!video) return;
         const joinAt = nowData.current.offsetSeconds;
-        if (Hls.isSupported()) {
+        if (session.isHls === false) {
+          // Direct play: the original file. Seek to the live offset via a range request —
+          // no transcode, so the channel joins near-instantly.
+          video.src = session.hlsUrl;
+          video.addEventListener(
+            "loadedmetadata",
+            () => {
+              video.currentTime = joinAt;
+              video.play().catch(() => {});
+            },
+            { once: true }
+          );
+        } else if (Hls.isSupported()) {
           // startPosition joins at the live offset directly instead of loading from 0 and
           // seeking — the seek churn was a source of the join-time A/V desync on mobile.
           const hls = new Hls({ maxBufferLength: 30, backBufferLength: 10, startPosition: joinAt, ...HLS_LOAD_CONFIG });
@@ -176,6 +231,13 @@ function TvPage({ userData }) {
         // Advance when the schedule says this item ends (+ a little grace).
         const msUntilEnd = new Date(nowData.current.endsAtUtc).getTime() - Date.now();
         advanceTimerRef.current = setTimeout(() => tune(chan), Math.max(msUntilEnd, 5_000) + 3_000);
+
+        // Prewarm the next item ~20s before the boundary so the advance is instant. Only
+        // worth it when there's enough lead and we're not joining right at the end.
+        const nextItem = nowData.next?.[0];
+        if (nextItem && msUntilEnd > 30_000) {
+          prewarmTimerRef.current = setTimeout(() => prewarmNext(nextItem.movieId), msUntilEnd - 20_000);
+        }
       } catch (err) {
         // Only the active tune may surface an error — a superseded one stays quiet so a
         // transient blip on an abandoned request can't leave a stuck "No signal".
@@ -185,7 +247,7 @@ function TvPage({ userData }) {
         }
       }
     },
-    [stopSession, destroyHls, wakeOverlay]
+    [stopSession, destroyHls, wakeOverlay, resolveBitrate, prewarmNext]
   );
 
   // ── channel list ────────────────────────────────────────────────────────────
@@ -267,8 +329,17 @@ function TvPage({ userData }) {
     return () => {
       window.removeEventListener("pagehide", onPageHide);
       clearTimeout(advanceTimerRef.current);
+      clearTimeout(prewarmTimerRef.current);
       clearTimeout(overlayTimerRef.current);
       stopSession(true);
+      // Don't leak a prewarmed transcode that never got consumed.
+      if (prewarmRef.current) {
+        MovieAPI.stopStream({
+          playSessionId: prewarmRef.current.session.playSessionId,
+          movieId: prewarmRef.current.movieId,
+        });
+        prewarmRef.current = null;
+      }
       destroyHls();
       wakeLockRef.current?.release?.().catch(() => {});
     };

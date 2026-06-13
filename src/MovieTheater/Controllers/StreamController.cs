@@ -99,12 +99,15 @@ namespace MovieTheater.Controllers
             }
 
             var startTicks = (long)((request.StartSeconds ?? 0) * TicksPerSecond);
+            // Direct play serves the whole original file, so it can't honor a burned-in subtitle
+            // or a non-default audio selection — fall back to a transcode in those cases.
+            var allowDirectPlay = request.SubtitleStreamIndex == null && request.AudioStreamIndex == null;
             JellyfinPlaybackInfoResult info;
             try
             {
                 info = await jellyfin.GetPlaybackInfoAsync(
                     file.JellyfinItemId, request.MaxBitrateBps, request.AudioStreamIndex, request.SubtitleStreamIndex,
-                    startTicks, request.ToCapabilities());
+                    startTicks, request.ToCapabilities(), allowDirectPlay);
             }
             catch (Exception ex)
             {
@@ -113,7 +116,17 @@ namespace MovieTheater.Controllers
             }
 
             var source = info.MediaSources[0];
-            if (string.IsNullOrEmpty(source.TranscodingUrl))
+
+            // Serve the original file (no ffmpeg) when the browser can play it as-is and the bitrate
+            // fits the chosen cap — instant start, zero GPU. Remote viewers on a capped rung whose
+            // file is too big still get a transcode below. Range requests through the gateway make
+            // mid-file joins (channels) and seeking work for faststart mp4.
+            var directPlay = allowDirectPlay
+                && source.SupportsDirectPlay
+                && !string.IsNullOrEmpty(source.Container)
+                && (request.MaxBitrateBps == null || (source.Bitrate ?? long.MaxValue) <= request.MaxBitrateBps.Value);
+
+            if (!directPlay && string.IsNullOrEmpty(source.TranscodingUrl))
                 return StatusCode(502, new { message = "Jellyfin did not return a playable stream." });
 
             // Mint the capability: one movie, one session, bounded life (§3.3). Expiry =
@@ -150,22 +163,44 @@ namespace MovieTheater.Controllers
                 .Select(p => (long?)p.PositionTicks)
                 .FirstOrDefaultAsync();
 
-            var videoIsCopied = source.TranscodeReasons == null
-                || !source.TranscodeReasons.Any(r => r.Contains("Video", StringComparison.OrdinalIgnoreCase));
-
-            // The codec the player actually receives: when the video is copied it's the
-            // source codec; when re-encoded it's the first of the negotiated list (the
-            // encode target). The transcoding url only carries the candidate list, so a
-            // copied H.264 source to an HEVC-capable client would otherwise misread "hevc".
             var sourceVideoCodec = source.MediaStreams.FirstOrDefault(s => s.Type == "Video")?.Codec;
-            var outputVideoCodec = videoIsCopied
-                ? sourceVideoCodec ?? VideoCodecFromTranscodingUrl(source.TranscodingUrl)
-                : VideoCodecFromTranscodingUrl(source.TranscodingUrl);
+
+            string playbackUrl;
+            bool isHls;
+            bool videoIsCopied;
+            string? outputVideoCodec;
+            if (directPlay)
+            {
+                // Original file via Jellyfin's static endpoint — the player downloads it directly
+                // (range requests) with no transcode. mediaSourceId pins which source; the gateway
+                // injects the api key and confines the path to this item.
+                playbackUrl = ToGatewayUrl(
+                    $"/Videos/{file.JellyfinItemId}/stream.{source.Container}?static=true&mediaSourceId={Uri.EscapeDataString(source.Id)}");
+                isHls = false;
+                videoIsCopied = true; // nothing is re-encoded
+                outputVideoCodec = sourceVideoCodec;
+            }
+            else
+            {
+                videoIsCopied = source.TranscodeReasons == null
+                    || !source.TranscodeReasons.Any(r => r.Contains("Video", StringComparison.OrdinalIgnoreCase));
+                // The codec the player actually receives: when the video is copied it's the source
+                // codec; when re-encoded it's the first of the negotiated list (the encode target).
+                // The transcoding url only carries the candidate list, so a copied H.264 source to
+                // an HEVC-capable client would otherwise misread "hevc".
+                outputVideoCodec = videoIsCopied
+                    ? sourceVideoCodec ?? VideoCodecFromTranscodingUrl(source.TranscodingUrl)
+                    : VideoCodecFromTranscodingUrl(source.TranscodingUrl);
+                playbackUrl = ToGatewayUrl(source.TranscodingUrl);
+                isHls = true;
+            }
 
             return Ok(new
             {
                 playSessionId = info.PlaySessionId,
-                hlsUrl = ToGatewayUrl(source.TranscodingUrl),
+                hlsUrl = playbackUrl,
+                // false → the player loads it as a progressive file (direct play), not via hls.js.
+                isHls,
                 durationTicks,
                 isDirectStream = videoIsCopied,
                 // The codec the player will actually receive (copied or encoded) — drives the

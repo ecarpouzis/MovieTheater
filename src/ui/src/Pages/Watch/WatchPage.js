@@ -350,6 +350,7 @@ function WatchPage({ userData }) {
           metaLine={metaLine}
           durationSeconds={durationSeconds}
           startAt={startAt}
+          isHls={session.isHls !== false}
           isDirectStream={session.isDirectStream}
           videoCodec={session.videoCodec}
           qualityKey={qualityKey}

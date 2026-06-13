@@ -13,8 +13,10 @@ namespace MovieTheater.Services.Jellyfin
         public string Id { get; set; } = default!;
         public string? Container { get; set; }
         public long? RunTimeTicks { get; set; }
+        public long? Bitrate { get; set; }
         public string? TranscodingUrl { get; set; }
         public bool SupportsDirectStream { get; set; }
+        public bool SupportsDirectPlay { get; set; }
         public List<string>? TranscodeReasons { get; set; }
         public List<JellyfinPlaybackStream> MediaStreams { get; set; } = new();
     }
