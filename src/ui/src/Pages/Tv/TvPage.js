@@ -37,8 +37,14 @@ function TvPage({ userData }) {
   const [error, setError] = useState(null);
   const [offAir, setOffAir] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [quality, setQuality] = useState(() => window.localStorage.getItem("StreamQuality") || "auto");
+  const [qualityOpen, setQualityOpen] = useState(false);
 
   const canEdit = userData?.canEditMovies ?? false;
+
+  // tune() reads the current quality without re-binding on every change.
+  const qualityRef = useRef(quality);
+  qualityRef.current = quality;
 
   // ── helpers ─────────────────────────────────────────────────────────────────
   const stopSession = useCallback((useBeacon = false) => {
@@ -85,10 +91,11 @@ function TvPage({ userData }) {
           return;
         }
 
-        const rungKey = window.localStorage.getItem("StreamQuality") || "original";
+        // TV is passive and doesn't adapt mid-play; "Auto" (the default) maps to a sane
+        // fixed cap from the connection estimate rather than streaming uncapped — important
+        // on phones, where an uncapped channel buffers and drifts out of A/V sync.
+        const rungKey = qualityRef.current;
         const rung = QUALITY_LADDER.find((q) => q.key === rungKey) || QUALITY_LADDER[0];
-        // TV is passive and doesn't adapt mid-play; "Auto" maps to a sane fixed cap
-        // from the connection estimate rather than streaming uncapped in the background.
         const maxBitrateBps = rungKey === "auto" ? initialAutoBps() : rung.bps;
         const startResponse = await MovieAPI.startStream({
           movieId: nowData.current.movieId,
@@ -104,11 +111,13 @@ function TvPage({ userData }) {
 
         const video = videoRef.current;
         if (!video) return;
+        const joinAt = nowData.current.offsetSeconds;
         if (Hls.isSupported()) {
-          const hls = new Hls({ maxBufferLength: 60, backBufferLength: 30 });
+          // startPosition joins at the live offset directly instead of loading from 0 and
+          // seeking — the seek churn was a source of the join-time A/V desync on mobile.
+          const hls = new Hls({ maxBufferLength: 30, backBufferLength: 10, startPosition: joinAt });
           hlsRef.current = hls;
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            video.currentTime = nowData.current.offsetSeconds;
             video.play().catch(() => {});
           });
           hls.on(Hls.Events.ERROR, (_e, data) => {
@@ -119,11 +128,12 @@ function TvPage({ userData }) {
           hls.loadSource(session.hlsUrl);
           hls.attachMedia(video);
         } else {
+          // Safari native HLS: seek on metadata is the only join lever available.
           video.src = session.hlsUrl;
           video.addEventListener(
             "loadedmetadata",
             () => {
-              video.currentTime = nowData.current.offsetSeconds;
+              video.currentTime = joinAt;
               video.play().catch(() => {});
             },
             { once: true }
@@ -243,6 +253,19 @@ function TvPage({ userData }) {
     [channels, channel]
   );
 
+  // Quality is shared with the Watch page via localStorage; changing it re-tunes the
+  // current channel at the live offset with the new bitrate cap.
+  const selectQuality = useCallback(
+    (key) => {
+      qualityRef.current = key;
+      setQuality(key);
+      window.localStorage.setItem("StreamQuality", key);
+      setQualityOpen(false);
+      if (channel) tune(channel);
+    },
+    [channel, tune]
+  );
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.tagName === "INPUT" || adminOpen) return;
@@ -359,6 +382,25 @@ function TvPage({ userData }) {
             <span className="tv-channel-num">G</span>
             Guide
           </button>
+          <button
+            className={`tv-channel-item tv-channel-item--quality${qualityOpen ? " tv-channel-item--on" : ""}`}
+            onClick={(e) => { e.stopPropagation(); setQualityOpen((q) => !q); }}
+          >
+            <span className="tv-channel-num">Q</span>
+            {QUALITY_LADDER.find((q) => q.key === quality)?.label || "Auto"}
+          </button>
+          {qualityOpen &&
+            QUALITY_LADDER.map((q) => (
+              <button
+                key={q.key}
+                className={`tv-channel-item tv-channel-item--qopt${quality === q.key ? " tv-channel-item--on" : ""}`}
+                onClick={(e) => { e.stopPropagation(); selectQuality(q.key); }}
+              >
+                <span className="tv-channel-num">·</span>
+                {q.label}
+                {q.hint ? <span className="tv-qopt-hint">{q.hint}</span> : null}
+              </button>
+            ))}
           {canEdit && (
             <button className="tv-channel-item tv-channel-item--manage" onClick={(e) => { e.stopPropagation(); setAdminOpen(true); }}>
               <span className="tv-channel-num">✎</span>
