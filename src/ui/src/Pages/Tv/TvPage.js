@@ -71,7 +71,24 @@ function TvPage({ userData }) {
   const wakeOverlay = useCallback(() => {
     setOverlayVisible(true);
     clearTimeout(overlayTimerRef.current);
-    overlayTimerRef.current = setTimeout(() => setOverlayVisible(false), 4500);
+    overlayTimerRef.current = setTimeout(() => setOverlayVisible(false), 3000);
+  }, []);
+
+  // A tap on the screen toggles the chrome — show it, or dismiss it immediately
+  // instead of waiting out the auto-hide (the picker was blocking the view on phones).
+  const toggleOverlay = useCallback(() => {
+    clearTimeout(overlayTimerRef.current);
+    setOverlayVisible((v) => {
+      if (v) return false;
+      overlayTimerRef.current = setTimeout(() => setOverlayVisible(false), 3000);
+      return true;
+    });
+  }, []);
+
+  // Hide the chrome now (used after picking a channel/quality so it gets out of the way).
+  const dismissOverlay = useCallback(() => {
+    clearTimeout(overlayTimerRef.current);
+    setOverlayVisible(false);
   }, []);
 
   // ── tune to the channel's live position ─────────────────────────────────────
@@ -341,7 +358,7 @@ function TvPage({ userData }) {
 
   return (
     /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/media-has-caption */
-    <div className="tv-room" onMouseMove={wakeOverlay} onClick={wakeOverlay}>
+    <div className="tv-room" onMouseMove={wakeOverlay} onClick={toggleOverlay}>
       <video ref={videoRef} className="tv-video" autoPlay playsInline muted />
 
       {/* channel-change static burst */}
@@ -393,6 +410,7 @@ function TvPage({ userData }) {
               onClick={(e) => {
                 e.stopPropagation();
                 setChannel(c);
+                dismissOverlay();
               }}
             >
               <span className="tv-channel-num">{i + 1}</span>
@@ -408,7 +426,8 @@ function TvPage({ userData }) {
             onClick={(e) => { e.stopPropagation(); setQualityOpen((q) => !q); }}
           >
             <span className="tv-channel-num">Q</span>
-            {QUALITY_LADDER.find((q) => q.key === quality)?.label || "Auto"}
+            Quality
+            <span className="tv-qopt-hint">{QUALITY_LADDER.find((q) => q.key === quality)?.label || "Auto"}</span>
           </button>
           {qualityOpen &&
             QUALITY_LADDER.map((q) => (

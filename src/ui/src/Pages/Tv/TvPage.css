@@ -238,6 +238,43 @@
   font-size: 11px;
 }
 
+/* On phones the centered right-rail column blocked the picture. Drop it to a
+   bottom, horizontally-scrollable strip that's out of the way and easy to flick. */
+@media (max-width: 640px) {
+  .tv-channels {
+    right: 0;
+    left: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, rgba(8, 7, 6, 0.92), rgba(8, 7, 6, 0));
+  }
+
+  .tv-channels--hidden {
+    transform: translateY(12px);
+  }
+
+  .tv-channel-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* the inset/margins that made sense in a column don't in a row */
+  .tv-channel-item--off,
+  .tv-channel-item--qopt {
+    margin-top: 0;
+    padding-left: 9px;
+  }
+}
+
 .tv-channel-num {
   font-family: var(--vp-display, "Marcellus", Georgia, serif);
   color: #e3b341;
