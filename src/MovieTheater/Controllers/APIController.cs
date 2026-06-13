@@ -92,20 +92,9 @@ namespace MovieTheater.Controllers
             return null;
         }
 
-        private int GetMPARatingFromMovieRating(string movieRating)
-        {
-            if (string.IsNullOrWhiteSpace(movieRating))
-            {
-                return 0;
-            }
-
-            var trimmedRating = movieRating.Trim();
-
-            var ratingMap = movieDb.RatingMaps
-                                  .FirstOrDefault(rm => rm.MovieRating == trimmedRating);
-
-            return ratingMap?.MPARatingID ?? 0;
-        }
+        // Delegates to the shared gate so the browse and streaming paths can't drift.
+        private int GetMPARatingFromMovieRating(string movieRating) =>
+            Web.RatingGate.MpaRatingIdFor(movieDb, movieRating);
 
         [HttpGet("/API/GetMovie")]
         public async Task<IActionResult> GetMovie(int id)
@@ -128,6 +117,9 @@ namespace MovieTheater.Controllers
             var rating = GetMPARatingFromMovieRating(movie.Rating);
             if (rating <= ageRestriction)
             {
+                // Surface whether the movie is streamable so the UI can show the Watch button.
+                movie.HasFile = await movieDb.MovieFiles
+                    .AnyAsync(f => f.MovieID == movie.id && f.JellyfinItemId != null && f.MissingSinceUtc == null);
                 var normalized = await GetNormalizedMovieData(id, movie);
                 return Ok(new { Success = true, data = movie, normalized });
             }
@@ -571,6 +563,11 @@ namespace MovieTheater.Controllers
 
             var user = await movieDb.Users.SingleOrDefaultAsync(d => d.Username == givenUser);
 
+            // Set when this session proved control of the account with a password — the
+            // trust boundary for streaming (§3.1 of the streaming plan). Mere
+            // authentication is not it: unknown usernames still auto-create accounts.
+            bool passwordVerified = false;
+
             if (user == null)
             {
                 user = new User()
@@ -606,6 +603,7 @@ namespace MovieTheater.Controllers
                 }
 
                 memoryCache.Remove(failKey);
+                passwordVerified = true;
 
                 if (verification == PasswordVerificationResult.SuccessRehashNeeded)
                 {
@@ -616,11 +614,24 @@ namespace MovieTheater.Controllers
             user.LastLogin = DateTime.UtcNow;
             await movieDb.SaveChangesAsync();
 
+            await SignInWithSessionClaims(user, passwordVerified);
+
+            return Json(await BuildUserPayload(user));
+        }
+
+        // Issues (or re-issues) the auth cookie. amr=pwd marks a password-verified
+        // session; the StreamingUser policy keys off it (§3.1).
+        private async Task SignInWithSessionClaims(User user, bool passwordVerified)
+        {
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
                 new Claim(ClaimTypes.Name, user.Username)
             };
+            if (passwordVerified)
+            {
+                claims.Add(new Claim("amr", "pwd"));
+            }
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var authProperties = new Microsoft.AspNetCore.Authentication.AuthenticationProperties
@@ -633,8 +644,6 @@ namespace MovieTheater.Controllers
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
-
-            return Json(await BuildUserPayload(user));
         }
 
         // Restores a session from the auth cookie without re-running login. Required for
@@ -706,6 +715,11 @@ namespace MovieTheater.Controllers
             }
 
             await movieDb.SaveChangesAsync();
+
+            // Re-issue the cookie so the session's amr claim tracks the account state:
+            // setting a password from this session proves account control (claim added);
+            // removing the password drops streaming rights immediately for this session.
+            await SignInWithSessionClaims(user, passwordVerified: user.PasswordHash != null);
 
             return Ok(new { success = true, hasPassword = user.PasswordHash != null });
         }

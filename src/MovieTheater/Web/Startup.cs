@@ -10,8 +10,11 @@ using MovieTheater.Services.Python;
 using MovieTheater.Services.Tmdb;
 using System;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace MovieTheater
 {
@@ -59,12 +62,61 @@ namespace MovieTheater
                         context.Response.Redirect(context.RedirectUri);
                         return System.Threading.Tasks.Task.CompletedTask;
                     };
+
+                    // Bounded revocation for streaming (§3.1): cookies live 30 days, so a
+                    // session claiming amr=pwd is re-checked against the DB every ~5 minutes.
+                    // If the account no longer has a password (or is gone), the principal is
+                    // rejected and any in-progress stream dies at the next authorized call.
+                    options.Events.OnValidatePrincipal = async context =>
+                    {
+                        if (context.Principal?.FindFirst("amr")?.Value != "pwd")
+                            return;
+
+                        const string checkedAtKey = "amrCheckedAt";
+                        var checkedAt = context.Properties.GetString(checkedAtKey);
+                        if (checkedAt != null
+                            && DateTimeOffset.TryParse(checkedAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var at)
+                            && DateTimeOffset.UtcNow - at < TimeSpan.FromMinutes(5))
+                            return;
+
+                        var idClaim = context.Principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                        bool stillValid = false;
+                        if (int.TryParse(idClaim, out var userId))
+                        {
+                            var db = context.HttpContext.RequestServices.GetRequiredService<MovieDb>();
+                            var passwordHash = await db.Users
+                                .Where(u => u.UserID == userId)
+                                .Select(u => u.PasswordHash)
+                                .FirstOrDefaultAsync();
+                            stillValid = passwordHash != null;
+                        }
+
+                        if (!stillValid)
+                        {
+                            context.RejectPrincipal();
+                            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                            return;
+                        }
+
+                        context.Properties.SetString(checkedAtKey, DateTimeOffset.UtcNow.ToString("O"));
+                        context.ShouldRenew = true; // persist the check timestamp into the cookie
+                    };
                 });
+
+            // One policy guards every streaming surface (§3.1): authenticated AND this
+            // session verified a password. Claim check is in-memory — no DB on the hot path.
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("StreamingUser", policy =>
+                    policy.RequireAuthenticatedUser().RequireClaim("amr", "pwd"));
+            });
 
             var proxyBuilder = services.AddReverseProxy();
             proxyBuilder.LoadFromConfig(config.RawConfiguration.GetSection("ReverseProxy"));
 
             services.AddMemoryCache(opts => opts.SizeLimit = 200 * 1024 * 1024); // 200 MB cap, evicts LRU when full
+
+            services.AddScoped<Channels.ChannelScheduleService>();
 
             services.AddHostedService<BoardgameSimilarityStartupService>();
 

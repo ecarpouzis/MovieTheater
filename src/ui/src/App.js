@@ -9,6 +9,8 @@ import MoviePage from "./Pages/MoviePage";
 import InsertPage from "./Pages/InsertPage";
 import BatchInsertPage from "./Pages/BatchInsertPage";
 import BoardgameBatchInsertPage from "./Pages/BoardGames/BoardgameBatchInsertPage";
+import WatchPage from "./Pages/Watch/WatchPage";
+import TvPage from "./Pages/Tv/TvPage";
 import { useMovieSearch } from "./hooks/useMovieSearch";
 
 const storedUsername = window.localStorage.getItem("Username");
@@ -93,7 +95,13 @@ function App() {
         <Layout.Content className="app-content">
           <Switch>
             <Route path="/movie/:id" exact>
-              <MoviePage />
+              <MoviePage userData={userData} />
+            </Route>
+            <Route path="/watch/:movieId" exact>
+              <WatchPage userData={userData} />
+            </Route>
+            <Route path="/tv/:channelId?" exact>
+              <TvPage userData={userData} />
             </Route>
             <Route path="/insert" exact>
               <InsertPage />

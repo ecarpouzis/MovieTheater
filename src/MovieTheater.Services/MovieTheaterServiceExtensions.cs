@@ -9,6 +9,7 @@ using MovieTheater.Services.Tmdb;
 using MovieTheater.Services.Omdb;
 using MovieTheater.Services.Google;
 using MovieTheater.Services.Bgg;
+using MovieTheater.Services.Jellyfin;
 
 namespace MovieTheater.Services
 {
@@ -16,6 +17,9 @@ namespace MovieTheater.Services
     {
         public static IServiceCollection AddMovieTheaterServices(this IServiceCollection services, MovieTheaterConfiguration config)
         {
+            // Make the bound config resolvable so controllers/services can inject it
+            // (StreamController needs the Jellyfin + gateway settings).
+            services.AddSingleton(config);
             services.AddMovieTheaterLogging();
             services.AddMovieTheaterDb(config.DbConnectionString);
             services.AddPosterImageServices(config.MoviePostersDir, config.Environment);
@@ -26,6 +30,7 @@ namespace MovieTheater.Services
             services.AddOmdbServices(config.OmdbApiKey);
             services.AddGoogleServices(config.GoogleSearchApiKey, config.GoogleSearchEngineId);
             services.AddBoardGameGeekServices(config.BggApiToken);
+            services.AddJellyfinServices(config);
             services.AddTransient<BoardgameRulesService>();
             services.AddTransient<IMDBApiService>();
             services.AddSingleton<PosterMosaicService>();

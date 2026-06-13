@@ -97,6 +97,50 @@ function setPassword(currentPassword, newPassword) {
   });
 }
 
+// ── Streaming control plane (docs/streaming-plan.md §6) ──────────────────────
+// Start returns { playSessionId, hlsUrl, durationTicks, isDirectStream,
+// audioTracks, subtitleTracks, resumePositionTicks }.
+
+function startStream({ movieId, maxBitrateBps = null, audioStreamIndex = null, subtitleStreamIndex = null, startSeconds = null }) {
+  return fetch("/API/Stream/Start", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ movieId, maxBitrateBps, audioStreamIndex, subtitleStreamIndex, startSeconds }),
+  });
+}
+
+// passive=true (TV channels) keeps Jellyfin throttling honest without writing
+// resume progress or auto-Seen — background play shouldn't claim you watched it.
+function reportStreamProgress({ playSessionId, movieId, positionTicks, paused, passive = false }) {
+  // keepalive lets the final progress report survive a navigation away.
+  return fetch("/API/Stream/Progress", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    keepalive: true,
+    body: JSON.stringify({ playSessionId, movieId, positionTicks, paused, passive }),
+  }).catch(() => {});
+}
+
+function stopStream({ playSessionId, movieId }) {
+  return fetch("/API/Stream/Stop", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    keepalive: true,
+    body: JSON.stringify({ playSessionId, movieId }),
+  }).catch(() => {});
+}
+
+// Fire-and-forget Stop for tab close — sendBeacon survives page teardown,
+// which is what actually kills the server-side ffmpeg process promptly.
+function beaconStopStream({ playSessionId, movieId }) {
+  const payload = JSON.stringify({ playSessionId, movieId });
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon("/API/Stream/Stop", new Blob([payload], { type: "application/json" }));
+  } else {
+    stopStream({ playSessionId, movieId });
+  }
+}
+
 function setWatchedState(username, movieID, isActive) {
   const url = "/API/SetViewingState";
 
@@ -362,6 +406,10 @@ const MovieAPI = {
   loginUser,
   getCurrentUser,
   setPassword,
+  startStream,
+  reportStreamProgress,
+  stopStream,
+  beaconStopStream,
   setWatchedState,
   setWantToWatchState,
   movieLookupFromNames,

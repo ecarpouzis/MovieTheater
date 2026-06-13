@@ -29,7 +29,7 @@ namespace MovieTheater.Services.BoardgameImage
             }
             else
             {
-                // We don't have valid ssl cert on theater.carpouzis.com so need to allow unsigned
+                // We don't have a valid ssl cert on the prod image host so need to allow unsigned
                 ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
 
                 // DevBoardgameImageRepository gets an HttpClient

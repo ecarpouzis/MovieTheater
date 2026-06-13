@@ -52,6 +52,48 @@ namespace MovieTheater.Db
                 .WithMany(m => m.PlotSummaries)
                 .HasForeignKey(s => s.MovieID)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MovieFile>()
+                .HasIndex(f => f.MovieID);
+
+            modelBuilder.Entity<MovieFile>()
+                .HasOne(f => f.Movie)
+                .WithMany(m => m.Files)
+                .HasForeignKey(f => f.MovieID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MoviePlaybackProgress>()
+                .HasIndex(p => new { p.UserID, p.MovieID })
+                .IsUnique();
+
+            // Restrict on User to avoid SQL Server multiple-cascade-path errors
+            // (Viewings already cascade from User in the live schema's spirit).
+            modelBuilder.Entity<MoviePlaybackProgress>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MoviePlaybackProgress>()
+                .HasOne(p => p.Movie)
+                .WithMany()
+                .HasForeignKey(p => p.MovieID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ChannelScheduleItem>()
+                .HasIndex(i => new { i.ChannelId, i.StartUtc });
+
+            modelBuilder.Entity<ChannelScheduleItem>()
+                .HasOne(i => i.Channel)
+                .WithMany(c => c.ScheduleItems)
+                .HasForeignKey(i => i.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ChannelScheduleItem>()
+                .HasOne(i => i.Movie)
+                .WithMany()
+                .HasForeignKey(i => i.MovieID)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
         public DbSet<Movie> Movies { get; set; }
@@ -69,6 +111,10 @@ namespace MovieTheater.Db
         public DbSet<Genre> Genres { get; set; }
         public DbSet<MovieGenre> MovieGenres { get; set; }
         public DbSet<MoviePlotSummary> MoviePlotSummaries { get; set; }
+        public DbSet<MovieFile> MovieFiles { get; set; }
+        public DbSet<MoviePlaybackProgress> MoviePlaybackProgresses { get; set; }
+        public DbSet<Channel> Channels { get; set; }
+        public DbSet<ChannelScheduleItem> ChannelScheduleItems { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)

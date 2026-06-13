@@ -1,0 +1,638 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   The screening room. The catalog site is bright and utilitarian; this is its
+   opposite on purpose — house lights down, warm black, marquee gold. One
+   typeface carries the cinema voice (Marcellus, an engraved Trajan cousin);
+   everything else is quiet.
+   ════════════════════════════════════════════════════════════════════════════ */
+@import url("https://fonts.googleapis.com/css2?family=Marcellus&display=swap");
+
+:root {
+  --vp-black: #0b0a08;
+  --vp-gold: #e3b341;
+  --vp-gold-bright: #f5cf72;
+  --vp-gold-dim: #9a7f3f;
+  --vp-cream: #f2ecdd;
+  --vp-cream-dim: rgba(242, 236, 221, 0.62);
+  --vp-display: "Marcellus", "Palatino Linotype", Georgia, serif;
+}
+
+.vp-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--vp-black);
+  overflow: hidden;
+  outline: none;
+  user-select: none;
+}
+
+.vp-stage--idle {
+  cursor: none;
+}
+
+.vp-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--vp-black);
+}
+
+.vp-video::cue {
+  background: rgba(8, 7, 5, 0.78);
+  color: var(--vp-cream);
+  font-family: inherit;
+  font-size: 1.05em;
+}
+
+/* Film grain + corner vignette — atmosphere, nearly subliminal. */
+.vp-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+.vp-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 62%, rgba(0, 0, 0, 0.42) 100%);
+}
+
+/* ── chrome fade: the lights dim ─────────────────────────────────────────── */
+.vp-topbar,
+.vp-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.vp-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── top bill ────────────────────────────────────────────────────────────── */
+.vp-topbar {
+  top: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 22px 26px 56px;
+  background: linear-gradient(to bottom, rgba(11, 10, 8, 0.88) 0%, rgba(11, 10, 8, 0.45) 55%, transparent 100%);
+}
+
+.vp-back {
+  background: none;
+  border: 1px solid rgba(227, 179, 65, 0.35);
+  color: var(--vp-gold);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+
+.vp-back:hover {
+  border-color: var(--vp-gold);
+  background: rgba(227, 179, 65, 0.1);
+  transform: translateX(-2px);
+}
+
+.vp-bill-title {
+  font-family: var(--vp-display);
+  font-size: clamp(20px, 2.6vw, 30px);
+  letter-spacing: 0.04em;
+  color: var(--vp-cream);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8);
+  line-height: 1.15;
+}
+
+.vp-bill-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--vp-gold-dim);
+}
+
+/* ── bottom controls ─────────────────────────────────────────────────────── */
+.vp-controls {
+  bottom: 0;
+  padding: 42px 22px 14px;
+  background: linear-gradient(to top, rgba(11, 10, 8, 0.92) 0%, rgba(11, 10, 8, 0.5) 60%, transparent 100%);
+}
+
+/* Scrubber: a thin gold filament that thickens under the pointer. */
+.vp-rail {
+  position: relative;
+  padding: 8px 0;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.vp-rail-track {
+  position: relative;
+  height: 3px;
+  background: rgba(242, 236, 221, 0.16);
+  border-radius: 2px;
+  transition: height 0.15s ease;
+}
+
+.vp-rail:hover .vp-rail-track {
+  height: 6px;
+}
+
+.vp-rail-buffered {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgba(242, 236, 221, 0.22);
+  border-radius: inherit;
+}
+
+.vp-rail-played {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(to right, var(--vp-gold-dim), var(--vp-gold));
+  border-radius: inherit;
+}
+
+.vp-rail-head {
+  position: absolute;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  margin: -6.5px 0 0 -6.5px;
+  border-radius: 50%;
+  background: var(--vp-gold-bright);
+  box-shadow: 0 0 10px 2px rgba(227, 179, 65, 0.55);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.vp-rail:hover .vp-rail-head {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.vp-rail-tip {
+  position: absolute;
+  bottom: 22px;
+  transform: translateX(-50%);
+  background: rgba(18, 16, 12, 0.95);
+  border: 1px solid rgba(227, 179, 65, 0.4);
+  color: var(--vp-cream);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  padding: 3px 9px;
+  border-radius: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Button row */
+.vp-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.vp-spacer {
+  flex: 1;
+}
+
+.vp-btn {
+  background: none;
+  border: none;
+  color: var(--vp-cream);
+  width: 40px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  font-size: 13px;
+}
+
+.vp-btn:hover {
+  color: var(--vp-gold-bright);
+  background: rgba(227, 179, 65, 0.08);
+}
+
+/* CSS glyphs — crisper than icon fonts at this scale, zero dependencies. */
+.vp-glyph-play {
+  width: 0;
+  height: 0;
+  border-left: 14px solid currentColor;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  margin-left: 3px;
+}
+
+.vp-glyph-pause {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.vp-glyph-pause i {
+  width: 4.5px;
+  height: 17px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.vp-glyph-vol {
+  position: relative;
+  width: 8px;
+  height: 10px;
+  background: currentColor;
+  clip-path: polygon(0 30%, 40% 30%, 100% 0, 100% 100%, 40% 70%, 0 70%);
+  margin-right: 6px;
+}
+
+.vp-glyph-vol::after {
+  content: "";
+  position: absolute;
+  right: -7px;
+  top: -2px;
+  width: 6px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-left: none;
+  border-radius: 0 10px 10px 0;
+  opacity: 0.7;
+}
+
+.vp-glyph-vol--off::after {
+  opacity: 0;
+}
+
+.vp-glyph-fs {
+  width: 15px;
+  height: 15px;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  -webkit-mask: linear-gradient(#000 0 0) top left / 6px 6px no-repeat, linear-gradient(#000 0 0) bottom right / 6px 6px no-repeat;
+  mask: linear-gradient(#000 0 0) top left / 6px 6px no-repeat, linear-gradient(#000 0 0) bottom right / 6px 6px no-repeat;
+}
+
+.vp-glyph-fs--exit {
+  -webkit-mask: linear-gradient(#000 0 0) top right / 6px 6px no-repeat, linear-gradient(#000 0 0) bottom left / 6px 6px no-repeat;
+  mask: linear-gradient(#000 0 0) top right / 6px 6px no-repeat, linear-gradient(#000 0 0) bottom left / 6px 6px no-repeat;
+}
+
+.vp-volume {
+  display: inline-flex;
+  align-items: center;
+}
+
+.vp-volume-slider {
+  width: 0;
+  opacity: 0;
+  transition: width 0.25s ease, opacity 0.25s ease;
+  accent-color: var(--vp-gold);
+  cursor: pointer;
+}
+
+.vp-volume:hover .vp-volume-slider,
+.vp-volume-slider:focus-visible {
+  width: 84px;
+  opacity: 1;
+}
+
+.vp-time {
+  margin-left: 10px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--vp-cream-dim);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.vp-time-now {
+  color: var(--vp-cream);
+}
+
+.vp-time-sep {
+  margin: 0 6px;
+  opacity: 0.45;
+}
+
+.vp-direct-badge {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--vp-gold);
+  border: 1px solid rgba(227, 179, 65, 0.45);
+  border-radius: 3px;
+  padding: 3px 7px;
+  margin-right: 6px;
+}
+
+.vp-btn-cc {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  width: 34px;
+  height: 22px;
+  align-self: center;
+  font-size: 11px;
+  margin: 0 4px;
+}
+
+.vp-btn-cc--on {
+  color: var(--vp-black);
+  background: var(--vp-gold);
+  border-color: var(--vp-gold);
+}
+
+.vp-btn-cc--on:hover {
+  color: var(--vp-black);
+  background: var(--vp-gold-bright);
+}
+
+.vp-btn-gear {
+  font-size: 17px;
+  transition: transform 0.3s ease, color 0.15s;
+}
+
+.vp-btn-gear--open {
+  transform: rotate(90deg);
+  color: var(--vp-gold-bright);
+}
+
+/* ── settings menu ───────────────────────────────────────────────────────── */
+.vp-menu-anchor {
+  position: relative;
+}
+
+.vp-menu {
+  position: absolute;
+  right: 0;
+  bottom: 46px;
+  min-width: 230px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: rgba(16, 14, 11, 0.97);
+  border: 1px solid rgba(227, 179, 65, 0.28);
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  animation: vp-menu-in 0.18s ease;
+}
+
+@keyframes vp-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.vp-menu-section {
+  font-family: var(--vp-display);
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--vp-gold-dim);
+  padding: 10px 12px 4px;
+}
+
+.vp-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--vp-cream);
+  font-size: 13.5px;
+  text-align: left;
+  padding: 7px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.vp-menu-item:hover {
+  background: rgba(227, 179, 65, 0.1);
+}
+
+.vp-menu-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid var(--vp-gold-dim);
+  flex-shrink: 0;
+}
+
+.vp-menu-item--on .vp-menu-dot {
+  background: var(--vp-gold);
+  border-color: var(--vp-gold);
+  box-shadow: 0 0 6px rgba(227, 179, 65, 0.7);
+}
+
+.vp-menu-hint {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--vp-cream-dim);
+}
+
+.vp-menu-readout {
+  font-size: 12px;
+  color: var(--vp-cream-dim);
+  padding: 4px 12px 8px;
+}
+
+/* ── center states ───────────────────────────────────────────────────────── */
+.vp-flash {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.vp-flash-glyph {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(11, 10, 8, 0.7);
+  border: 1px solid rgba(227, 179, 65, 0.5);
+  animation: vp-bloom 0.5s ease forwards;
+  position: relative;
+}
+
+.vp-flash-glyph::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.vp-flash-glyph--play::after {
+  border-left: 22px solid var(--vp-gold);
+  border-top: 14px solid transparent;
+  border-bottom: 14px solid transparent;
+  margin-left: 3px;
+}
+
+.vp-flash-glyph--pause::after {
+  width: 18px;
+  height: 24px;
+  border-left: 6px solid var(--vp-gold);
+  border-right: 6px solid var(--vp-gold);
+}
+
+@keyframes vp-bloom {
+  from {
+    opacity: 0.9;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+
+/* Buffering: three marquee bulbs warming in sequence. */
+.vp-bulbs {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.vp-bulbs span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--vp-gold-dim);
+  animation: vp-bulb 1.2s ease-in-out infinite;
+}
+
+.vp-bulbs span:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.vp-bulbs span:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+@keyframes vp-bulb {
+  0%,
+  100% {
+    background: var(--vp-gold-dim);
+    box-shadow: none;
+    transform: none;
+  }
+  45% {
+    background: var(--vp-gold-bright);
+    box-shadow: 0 0 14px 3px rgba(227, 179, 65, 0.55);
+    transform: scale(1.18);
+  }
+}
+
+/* Autoplay-blocked tap target */
+.vp-bigplay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: rgba(11, 10, 8, 0.72);
+  border: 1.5px solid var(--vp-gold);
+  cursor: pointer;
+  z-index: 3;
+  box-shadow: 0 0 36px rgba(227, 179, 65, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.vp-bigplay:hover {
+  transform: translate(-50%, -50%) scale(1.06);
+  box-shadow: 0 0 48px rgba(227, 179, 65, 0.4);
+}
+
+.vp-bigplay-tri {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-40%, -50%);
+  border-left: 30px solid var(--vp-gold);
+  border-top: 19px solid transparent;
+  border-bottom: 19px solid transparent;
+}
+
+/* Fatal playback error */
+.vp-fatal {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  z-index: 3;
+  color: var(--vp-cream);
+  font-family: var(--vp-display);
+  font-size: 17px;
+  letter-spacing: 0.05em;
+  text-align: center;
+  padding: 0 10vw;
+}
+
+.vp-fatal-rule {
+  width: 64px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--vp-gold), transparent);
+}
+
+/* ── small screens ───────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .vp-topbar {
+    padding: 14px 14px 40px;
+  }
+
+  .vp-controls {
+    padding: 34px 12px 10px;
+  }
+
+  .vp-volume-slider {
+    display: none;
+  }
+
+  .vp-time-total,
+  .vp-time-sep {
+    display: none;
+  }
+
+  .vp-direct-badge {
+    display: none;
+  }
+}

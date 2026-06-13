@@ -1,0 +1,644 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import Hls from "hls.js";
+import "./VideoPlayer.css";
+
+const TICKS_PER_SECOND = 10_000_000;
+
+// The quality ladder from streaming-plan.md §7. "Original" omits the bitrate cap,
+// which lets compatible sources direct-stream with no re-encode.
+export const QUALITY_LADDER = [
+  { key: "original", label: "Original", bps: null, hint: "direct stream when possible" },
+  { key: "1080-12", label: "1080p", bps: 12_000_000, hint: "12 Mbps" },
+  { key: "1080-8", label: "1080p", bps: 8_000_000, hint: "8 Mbps" },
+  { key: "720-4", label: "720p", bps: 4_000_000, hint: "4 Mbps" },
+  { key: "480-15", label: "480p", bps: 1_500_000, hint: "1.5 Mbps" },
+];
+
+function formatTime(totalSeconds) {
+  if (!isFinite(totalSeconds) || totalSeconds < 0) totalSeconds = 0;
+  const s = Math.floor(totalSeconds % 60);
+  const m = Math.floor((totalSeconds / 60) % 60);
+  const h = Math.floor(totalSeconds / 3600);
+  const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+/**
+ * The screening-room player (streaming-plan.md §7). Self-contained dark UI —
+ * deliberately no AntD in here. Shared later by the TV channel page.
+ *
+ * The parent owns the streaming session: this component plays an HLS url and
+ * reports intent (progress beats, quality/audio/subtitle choices, ended) upward.
+ */
+function VideoPlayer({
+  src,
+  poster,
+  title,
+  metaLine,
+  durationSeconds,
+  startAt = 0,
+  isDirectStream = false,
+  qualityKey = "original",
+  audioTracks = [],
+  subtitleTracks = [],
+  selectedAudioIndex = null,
+  selectedSubtitleIndex = null,
+  onSelectQuality,
+  onSelectAudio,
+  onSelectSubtitle,
+  onProgress,
+  onEnded,
+  onBack,
+}) {
+  const containerRef = useRef(null);
+  const videoRef = useRef(null);
+  const hlsRef = useRef(null);
+  const idleTimerRef = useRef(null);
+  const clickTimerRef = useRef(null);
+  const scrubRef = useRef(null);
+
+  const [playing, setPlaying] = useState(false);
+  const [needsTap, setNeedsTap] = useState(false); // autoplay was blocked
+  const [buffering, setBuffering] = useState(true);
+  const [currentTime, setCurrentTime] = useState(startAt);
+  const [bufferedEnd, setBufferedEnd] = useState(0);
+  const [volume, setVolume] = useState(() => {
+    const stored = parseFloat(window.localStorage.getItem("PlayerVolume"));
+    return isFinite(stored) ? Math.min(Math.max(stored, 0), 1) : 1;
+  });
+  const [muted, setMuted] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const [openMenu, setOpenMenu] = useState(null); // 'settings' | null
+  const [scrubbing, setScrubbing] = useState(false);
+  const [scrubTime, setScrubTime] = useState(null);
+  const [hoverTime, setHoverTime] = useState(null);
+  const [hoverX, setHoverX] = useState(0);
+  const [flash, setFlash] = useState(null); // transient center icon: 'play' | 'pause'
+  const [fatalError, setFatalError] = useState(null);
+
+  const duration = durationSeconds || videoRef.current?.duration || 0;
+  const shownTime = scrubbing && scrubTime != null ? scrubTime : currentTime;
+
+  // ── source lifecycle ────────────────────────────────────────────────────────
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !src) return undefined;
+
+    setBuffering(true);
+    setFatalError(null);
+
+    const seekToStart = () => {
+      if (startAt > 0.5) video.currentTime = startAt;
+      const attempt = video.play();
+      if (attempt) attempt.then(() => setNeedsTap(false)).catch(() => setNeedsTap(true));
+    };
+
+    let hls = null;
+    if (Hls.isSupported()) {
+      hls = new Hls({ maxBufferLength: 60, backBufferLength: 90 });
+      hlsRef.current = hls;
+      hls.on(Hls.Events.MANIFEST_PARSED, seekToStart);
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (!data.fatal) return;
+        // Standard hls.js recovery dance before giving up.
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+        else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+        else setFatalError("Playback failed — the stream could not be decoded.");
+      });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Safari: native HLS.
+      video.src = src;
+      video.addEventListener("loadedmetadata", seekToStart, { once: true });
+    } else {
+      setFatalError("This browser can't play HLS video.");
+    }
+
+    return () => {
+      if (hls) {
+        hls.destroy();
+        hlsRef.current = null;
+      } else {
+        video.removeAttribute("src");
+        video.load();
+      }
+    };
+  }, [src, startAt]);
+
+  // ── element events ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return undefined;
+
+    const onTime = () => setCurrentTime(video.currentTime);
+    const onPlay = () => {
+      setPlaying(true);
+      setNeedsTap(false);
+      onProgress?.(video.currentTime, false);
+    };
+    const onPause = () => {
+      setPlaying(false);
+      onProgress?.(video.currentTime, true);
+    };
+    const onSeeked = () => onProgress?.(video.currentTime, video.paused);
+    const onWaiting = () => setBuffering(true);
+    const onPlaying = () => setBuffering(false);
+    const onBufferProgress = () => {
+      try {
+        if (video.buffered.length > 0) setBufferedEnd(video.buffered.end(video.buffered.length - 1));
+      } catch {
+        /* transient invalid ranges while switching sources */
+      }
+    };
+    const onVideoEnded = () => onEnded?.(video.currentTime);
+
+    video.addEventListener("timeupdate", onTime);
+    video.addEventListener("play", onPlay);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("seeked", onSeeked);
+    video.addEventListener("waiting", onWaiting);
+    video.addEventListener("playing", onPlaying);
+    video.addEventListener("progress", onBufferProgress);
+    video.addEventListener("ended", onVideoEnded);
+    return () => {
+      video.removeEventListener("timeupdate", onTime);
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("seeked", onSeeked);
+      video.removeEventListener("waiting", onWaiting);
+      video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("progress", onBufferProgress);
+      video.removeEventListener("ended", onVideoEnded);
+    };
+  }, [onProgress, onEnded]);
+
+  // ── steady progress beat (~10s) while playing ───────────────────────────────
+  useEffect(() => {
+    if (!playing) return undefined;
+    const beat = setInterval(() => {
+      const video = videoRef.current;
+      if (video && !video.paused) onProgress?.(video.currentTime, false);
+    }, 10_000);
+    return () => clearInterval(beat);
+  }, [playing, onProgress]);
+
+  // ── volume ──────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.volume = volume;
+      video.muted = muted;
+    }
+    window.localStorage.setItem("PlayerVolume", String(volume));
+  }, [volume, muted]);
+
+  // ── text subtitles (sidecar VTT) ────────────────────────────────────────────
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    for (const track of Array.from(video.textTracks)) {
+      const matches = String(track.id) === String(selectedSubtitleIndex);
+      track.mode = matches ? "showing" : "hidden";
+    }
+  }, [selectedSubtitleIndex, src]);
+
+  // ── Media Session: title + poster on the OS media overlay ──────────────────
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return undefined;
+    navigator.mediaSession.metadata = new window.MediaMetadata({
+      title: title || "MovieTheater",
+      artist: metaLine || "",
+      artwork: poster ? [{ src: poster, sizes: "512x512", type: "image/jpeg" }] : [],
+    });
+    const video = () => videoRef.current;
+    const handlers = [
+      ["play", () => video()?.play()],
+      ["pause", () => video()?.pause()],
+      ["seekbackward", () => seekBy(-10)],
+      ["seekforward", () => seekBy(10)],
+      ["seekto", (e) => seekTo(e.seekTime)],
+    ];
+    for (const [action, handler] of handlers) {
+      try {
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch {
+        /* action unsupported */
+      }
+    }
+    return () => {
+      for (const [action] of handlers) {
+        try {
+          navigator.mediaSession.setActionHandler(action, null);
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, metaLine, poster]);
+
+  // ── fullscreen ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const onChange = () => setFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else containerRef.current?.requestFullscreen?.();
+  }, []);
+
+  // ── transport ───────────────────────────────────────────────────────────────
+  const togglePlay = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      video.play().catch(() => setNeedsTap(true));
+      setFlash("play");
+    } else {
+      video.pause();
+      setFlash("pause");
+    }
+    setTimeout(() => setFlash(null), 500);
+  }, []);
+
+  const seekTo = useCallback(
+    (seconds) => {
+      const video = videoRef.current;
+      if (!video) return;
+      const clamped = Math.min(Math.max(seconds, 0), duration || video.duration || seconds);
+      video.currentTime = clamped;
+      setCurrentTime(clamped);
+    },
+    [duration]
+  );
+
+  const seekBy = useCallback((delta) => seekTo((videoRef.current?.currentTime ?? 0) + delta), [seekTo]);
+
+  // ── controls visibility: fade like house lights ─────────────────────────────
+  const wakeControls = useCallback(() => {
+    setControlsVisible(true);
+    clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      // Keep controls up while paused, scrubbing, or inside a menu.
+      setControlsVisible((visible) => {
+        const video = videoRef.current;
+        if (!video || video.paused) return true;
+        return false;
+      });
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    wakeControls();
+    return () => clearTimeout(idleTimerRef.current);
+  }, [wakeControls]);
+
+  const hideChrome = playing && !controlsVisible && !openMenu && !scrubbing;
+
+  // ── keyboard ────────────────────────────────────────────────────────────────
+  const onKeyDown = useCallback(
+    (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      const video = videoRef.current;
+      let handled = true;
+      switch (e.key) {
+        case " ":
+        case "k":
+          togglePlay();
+          break;
+        case "ArrowLeft":
+          seekBy(-10);
+          break;
+        case "ArrowRight":
+          seekBy(10);
+          break;
+        case "j":
+          seekBy(-10);
+          break;
+        case "l":
+          seekBy(10);
+          break;
+        case "ArrowUp":
+          setMuted(false);
+          setVolume((v) => Math.min(1, v + 0.05));
+          break;
+        case "ArrowDown":
+          setVolume((v) => Math.max(0, v - 0.05));
+          break;
+        case "m":
+          setMuted((m) => !m);
+          break;
+        case "f":
+          toggleFullscreen();
+          break;
+        case "c":
+          if (subtitleTracks.length > 0)
+            onSelectSubtitle?.(selectedSubtitleIndex == null ? subtitleTracks[0].index : null);
+          break;
+        default:
+          if (/^[0-9]$/.test(e.key) && duration > 0 && video) {
+            seekTo((duration * parseInt(e.key, 10)) / 10);
+          } else {
+            handled = false;
+          }
+      }
+      if (handled) {
+        e.preventDefault();
+        wakeControls();
+      }
+    },
+    [togglePlay, seekBy, seekTo, toggleFullscreen, duration, subtitleTracks, selectedSubtitleIndex, onSelectSubtitle, wakeControls]
+  );
+
+  // ── scrubber pointer logic ──────────────────────────────────────────────────
+  const timeFromPointer = useCallback(
+    (clientX) => {
+      const rail = scrubRef.current;
+      if (!rail || !duration) return 0;
+      const rect = rail.getBoundingClientRect();
+      const ratio = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
+      return ratio * duration;
+    },
+    [duration]
+  );
+
+  const onScrubPointerDown = (e) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setScrubbing(true);
+    setScrubTime(timeFromPointer(e.clientX));
+  };
+  const onScrubPointerMove = (e) => {
+    const t = timeFromPointer(e.clientX);
+    setHoverTime(t);
+    setHoverX(e.clientX - scrubRef.current.getBoundingClientRect().left);
+    if (scrubbing) setScrubTime(t);
+  };
+  const onScrubPointerUp = (e) => {
+    if (!scrubbing) return;
+    setScrubbing(false);
+    const t = timeFromPointer(e.clientX);
+    setScrubTime(null);
+    seekTo(t);
+  };
+
+  // Click = play/pause, double-click = fullscreen, without the double-fire.
+  const onSurfaceClick = () => {
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+      toggleFullscreen();
+    } else {
+      clickTimerRef.current = setTimeout(() => {
+        clickTimerRef.current = null;
+        togglePlay();
+      }, 220);
+    }
+  };
+
+  const playedPct = duration > 0 ? (shownTime / duration) * 100 : 0;
+  const bufferedPct = duration > 0 ? Math.min((bufferedEnd / duration) * 100, 100) : 0;
+  const activeQuality = QUALITY_LADDER.find((q) => q.key === qualityKey) || QUALITY_LADDER[0];
+
+  return (
+    /* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/media-has-caption */
+    <div
+      ref={containerRef}
+      className={`vp-stage${hideChrome ? " vp-stage--idle" : ""}`}
+      tabIndex={0}
+      role="application"
+      aria-label={`Video player: ${title || ""}`}
+      onKeyDown={onKeyDown}
+      onMouseMove={wakeControls}
+      onMouseLeave={() => playing && setControlsVisible(false)}
+    >
+      <video ref={videoRef} className="vp-video" poster={poster} crossOrigin="anonymous" playsInline onClick={onSurfaceClick}>
+        {subtitleTracks
+          .filter((t) => t.deliveryUrl)
+          .map((t) => (
+            <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
+          ))}
+      </video>
+
+      {/* film grain + vignette atmosphere */}
+      <div className="vp-grain" aria-hidden="true" />
+
+      {/* transient center play/pause bloom */}
+      {flash && (
+        <div className="vp-flash" aria-hidden="true">
+          <span className={`vp-flash-glyph vp-flash-glyph--${flash}`} />
+        </div>
+      )}
+
+      {/* buffering: three marquee bulbs */}
+      {buffering && !needsTap && !fatalError && (
+        <div className="vp-bulbs" aria-label="Buffering">
+          <span /><span /><span />
+        </div>
+      )}
+
+      {/* autoplay was blocked — one gold tap target */}
+      {needsTap && (
+        <button className="vp-bigplay" onClick={togglePlay} aria-label="Play">
+          <span className="vp-bigplay-tri" />
+        </button>
+      )}
+
+      {fatalError && (
+        <div className="vp-fatal">
+          <div className="vp-fatal-rule" />
+          <p>{fatalError}</p>
+          <div className="vp-fatal-rule" />
+        </div>
+      )}
+
+      {/* top bill: back + title */}
+      <div className={`vp-topbar${hideChrome ? " vp-hidden" : ""}`}>
+        <button className="vp-back" onClick={onBack} aria-label="Back">
+          <span className="vp-back-arrow">←</span>
+        </button>
+        <div className="vp-bill">
+          <div className="vp-bill-title">{title}</div>
+          {metaLine && <div className="vp-bill-meta">{metaLine}</div>}
+        </div>
+      </div>
+
+      {/* bottom controls */}
+      <div className={`vp-controls${hideChrome ? " vp-hidden" : ""}`}>
+        <div
+          ref={scrubRef}
+          className="vp-rail"
+          onPointerDown={onScrubPointerDown}
+          onPointerMove={onScrubPointerMove}
+          onPointerUp={onScrubPointerUp}
+          onPointerLeave={() => setHoverTime(null)}
+        >
+          {hoverTime != null && duration > 0 && (
+            <div className="vp-rail-tip" style={{ left: hoverX }}>
+              {formatTime(hoverTime)}
+            </div>
+          )}
+          <div className="vp-rail-track">
+            <div className="vp-rail-buffered" style={{ width: `${bufferedPct}%` }} />
+            <div className="vp-rail-played" style={{ width: `${playedPct}%` }} />
+            <div className="vp-rail-head" style={{ left: `${playedPct}%` }} />
+          </div>
+        </div>
+
+        <div className="vp-buttons">
+          <button className="vp-btn" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
+            {playing ? (
+              <span className="vp-glyph-pause"><i /><i /></span>
+            ) : (
+              <span className="vp-glyph-play" />
+            )}
+          </button>
+
+          <div className="vp-volume">
+            <button className="vp-btn" onClick={() => setMuted((m) => !m)} aria-label={muted ? "Unmute" : "Mute"}>
+              <span className={`vp-glyph-vol${muted || volume === 0 ? " vp-glyph-vol--off" : ""}`} />
+            </button>
+            <input
+              className="vp-volume-slider"
+              type="range"
+              min="0"
+              max="1"
+              step="0.02"
+              value={muted ? 0 : volume}
+              aria-label="Volume"
+              onChange={(e) => {
+                setMuted(false);
+                setVolume(parseFloat(e.target.value));
+              }}
+            />
+          </div>
+
+          <div className="vp-time">
+            <span className="vp-time-now">{formatTime(shownTime)}</span>
+            <span className="vp-time-sep">/</span>
+            <span className="vp-time-total">{formatTime(duration)}</span>
+          </div>
+
+          <div className="vp-spacer" />
+
+          {isDirectStream && qualityKey === "original" && <span className="vp-direct-badge">Direct</span>}
+
+          {subtitleTracks.length > 0 && (
+            <button
+              className={`vp-btn vp-btn-cc${selectedSubtitleIndex != null ? " vp-btn-cc--on" : ""}`}
+              onClick={() => onSelectSubtitle?.(selectedSubtitleIndex == null ? subtitleTracks[0].index : null)}
+              aria-label="Subtitles"
+            >
+              CC
+            </button>
+          )}
+
+          <div className="vp-menu-anchor">
+            <button
+              className={`vp-btn vp-btn-gear${openMenu ? " vp-btn-gear--open" : ""}`}
+              onClick={() => setOpenMenu((m) => (m ? null : "settings"))}
+              aria-label="Settings"
+              aria-expanded={!!openMenu}
+            >
+              ✦
+            </button>
+
+            {openMenu && (
+              <div className="vp-menu" role="menu">
+                <div className="vp-menu-section">Quality</div>
+                {QUALITY_LADDER.map((q) => (
+                  <button
+                    key={q.key}
+                    role="menuitemradio"
+                    aria-checked={qualityKey === q.key}
+                    className={`vp-menu-item${qualityKey === q.key ? " vp-menu-item--on" : ""}`}
+                    onClick={() => {
+                      setOpenMenu(null);
+                      if (q.key !== qualityKey) onSelectQuality?.(q);
+                    }}
+                  >
+                    <span className="vp-menu-dot" />
+                    {q.label}
+                    <span className="vp-menu-hint">{q.hint}</span>
+                  </button>
+                ))}
+
+                {audioTracks.length > 1 && (
+                  <>
+                    <div className="vp-menu-section">Audio</div>
+                    {audioTracks.map((t) => (
+                      <button
+                        key={t.index}
+                        role="menuitemradio"
+                        aria-checked={selectedAudioIndex === t.index}
+                        className={`vp-menu-item${selectedAudioIndex === t.index ? " vp-menu-item--on" : ""}`}
+                        onClick={() => {
+                          setOpenMenu(null);
+                          if (t.index !== selectedAudioIndex) onSelectAudio?.(t);
+                        }}
+                      >
+                        <span className="vp-menu-dot" />
+                        {t.label}
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {subtitleTracks.length > 0 && (
+                  <>
+                    <div className="vp-menu-section">Subtitles</div>
+                    <button
+                      role="menuitemradio"
+                      aria-checked={selectedSubtitleIndex == null}
+                      className={`vp-menu-item${selectedSubtitleIndex == null ? " vp-menu-item--on" : ""}`}
+                      onClick={() => {
+                        setOpenMenu(null);
+                        onSelectSubtitle?.(null);
+                      }}
+                    >
+                      <span className="vp-menu-dot" />
+                      Off
+                    </button>
+                    {subtitleTracks.map((t) => (
+                      <button
+                        key={t.index}
+                        role="menuitemradio"
+                        aria-checked={selectedSubtitleIndex === t.index}
+                        className={`vp-menu-item${selectedSubtitleIndex === t.index ? " vp-menu-item--on" : ""}`}
+                        onClick={() => {
+                          setOpenMenu(null);
+                          onSelectSubtitle?.(t.index);
+                        }}
+                      >
+                        <span className="vp-menu-dot" />
+                        {t.label}
+                        {!t.deliveryUrl && <span className="vp-menu-hint">burned in</span>}
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                <div className="vp-menu-section">Playing</div>
+                <div className="vp-menu-readout">
+                  {activeQuality.label} {activeQuality.hint ? `· ${activeQuality.hint}` : ""}
+                  {isDirectStream && qualityKey === "original" ? " · no re-encode" : ""}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button className="vp-btn" onClick={toggleFullscreen} aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"}>
+            <span className={`vp-glyph-fs${fullscreen ? " vp-glyph-fs--exit" : ""}`} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export { formatTime, TICKS_PER_SECOND };
+export default VideoPlayer;

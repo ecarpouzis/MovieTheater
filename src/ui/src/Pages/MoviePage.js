@@ -1,8 +1,9 @@
 import { MovieAPI } from "../MovieAPI";
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import WatchButton from "./Watch/WatchButton";
 
-function MoviePage() {
+function MoviePage({ userData }) {
   const { id } = useParams();
   const [movie, setMovie] = useState(null);
 
@@ -22,6 +23,9 @@ function MoviePage() {
     <div className="movie-page-wrapper">
       <img src={MovieAPI.getMoviePoster(movie.id, movie.posterVersion)} alt={movie.title + " poster"} />
       <div className="movie-detail-container">
+          <div className="movie-detail">
+            <WatchButton movie={movie} userData={userData} />
+          </div>
           <div className="movie-detail">
             <u>Title:</u> {movie.title}
           </div>

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MovieTheater.Db;
 
@@ -11,9 +12,11 @@ using MovieTheater.Db;
 namespace MovieTheater.Db.Migrations
 {
     [DbContext(typeof(MovieDb))]
-    partial class MovieDbModelSnapshot : ModelSnapshot
+    [Migration("20260613011538_AddMovieFile")]
+    partial class AddMovieFile
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -178,77 +181,6 @@ namespace MovieTheater.Db.Migrations
                     b.HasKey("BoardgameId");
 
                     b.ToTable("BoardgameImageDetails");
-                });
-
-            modelBuilder.Entity("MovieTheater.Db.Channel", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AnchorUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<bool>("Enabled")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("FilterJson")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<int>("Seed")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ShuffleMode")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Channel");
-                });
-
-            modelBuilder.Entity("MovieTheater.Db.ChannelScheduleItem", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<int>("ChannelId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("EndUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("MovieID")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("StartUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MovieID");
-
-                    b.HasIndex("ChannelId", "StartUtc");
-
-                    b.ToTable("ChannelScheduleItem");
                 });
 
             modelBuilder.Entity("MovieTheater.Db.Genre", b =>
@@ -473,42 +405,6 @@ namespace MovieTheater.Db.Migrations
                     b.HasIndex("GenreId");
 
                     b.ToTable("MovieGenre");
-                });
-
-            modelBuilder.Entity("MovieTheater.Db.MoviePlaybackProgress", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Completed")
-                        .HasColumnType("bit");
-
-                    b.Property<long>("DurationTicks")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("MovieID")
-                        .HasColumnType("int");
-
-                    b.Property<long>("PositionTicks")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("UpdatedUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UserID")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MovieID");
-
-                    b.HasIndex("UserID", "MovieID")
-                        .IsUnique();
-
-                    b.ToTable("MoviePlaybackProgress");
                 });
 
             modelBuilder.Entity("MovieTheater.Db.MoviePlotSummary", b =>
@@ -736,25 +632,6 @@ namespace MovieTheater.Db.Migrations
                     b.Navigation("Boardgame");
                 });
 
-            modelBuilder.Entity("MovieTheater.Db.ChannelScheduleItem", b =>
-                {
-                    b.HasOne("MovieTheater.Db.Channel", "Channel")
-                        .WithMany("ScheduleItems")
-                        .HasForeignKey("ChannelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MovieTheater.Db.Movie", "Movie")
-                        .WithMany()
-                        .HasForeignKey("MovieID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Channel");
-
-                    b.Navigation("Movie");
-                });
-
             modelBuilder.Entity("MovieTheater.Db.MovieCredit", b =>
                 {
                     b.HasOne("MovieTheater.Db.Movie", "Movie")
@@ -802,25 +679,6 @@ namespace MovieTheater.Db.Migrations
                     b.Navigation("Genre");
 
                     b.Navigation("Movie");
-                });
-
-            modelBuilder.Entity("MovieTheater.Db.MoviePlaybackProgress", b =>
-                {
-                    b.HasOne("MovieTheater.Db.Movie", "Movie")
-                        .WithMany()
-                        .HasForeignKey("MovieID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MovieTheater.Db.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Movie");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MovieTheater.Db.MoviePlotSummary", b =>
@@ -882,11 +740,6 @@ namespace MovieTheater.Db.Migrations
                     b.Navigation("ExtraDetails");
 
                     b.Navigation("ImageDetails");
-                });
-
-            modelBuilder.Entity("MovieTheater.Db.Channel", b =>
-                {
-                    b.Navigation("ScheduleItems");
                 });
 
             modelBuilder.Entity("MovieTheater.Db.Genre", b =>

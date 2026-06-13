@@ -2,6 +2,7 @@
 import { Modal, Spin, Input, Button, Checkbox, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import UserMovieOptions from "./UserMovieOptions";
+import WatchButton from "../Watch/WatchButton";
 import "./MovieModal.css";
 
 const { TextArea } = Input;
@@ -191,6 +192,10 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                 </div>
 
                 {displayGenres && <div className="modal-genre">{displayGenres}</div>}
+
+                <div className="modal-watch-row">
+                  <WatchButton movie={movie} userData={userData} onBeforeNavigate={onClose} />
+                </div>
 
                 <div className="modal-crew-grid">
                   {displayDirectors && (

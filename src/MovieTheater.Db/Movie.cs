@@ -66,10 +66,10 @@ namespace MovieTheater.Db
         public string? ImdbReviewReason { get; set; }
 
         /// <summary>
-        /// Absolute path of the movie's primary video file on the NAS, as the share exposes it
-        /// (e.g. <c>L:\1 - Movies\G\Goodfellas (1990) 2160p\Goodfellas.mkv</c>). Null when the
-        /// movie has no mapped file. Seeded by the NAS mapping pass; the future Jellyfin sync
-        /// translates this via path mappings (see docs/streaming-plan.md §5).
+        /// Absolute path of the movie's primary video file as the media library exposes it
+        /// (e.g. <c>D:\Media\Movies\Title (Year)\Title.mkv</c>). Null when the movie has no
+        /// mapped file. Seeded by the file-mapping pass; the Jellyfin sync translates this
+        /// via path mappings (see docs/streaming-plan.md §5).
         /// </summary>
         [MaxLength(1024)]
         public string? FilePath { get; set; }
@@ -85,6 +85,8 @@ namespace MovieTheater.Db
 
         public ICollection<MoviePlotSummary> PlotSummaries { get; set; } = [];
 
+        public ICollection<MovieFile> Files { get; set; } = [];
+
         public MoviePosterDetails? PosterDetails { get; set; }
 
         private string? _posterLink;
@@ -97,5 +99,13 @@ namespace MovieTheater.Db
 
         [NotMapped]
         public int PosterVersion => PosterDetails?.PosterVersion ?? 0;
+
+        /// <summary>
+        /// True when the movie has a streamable file (a <see cref="MovieFile"/> with a
+        /// synced Jellyfin item id and not flagged missing). Populated by the API for the
+        /// watch button; not persisted.
+        /// </summary>
+        [NotMapped]
+        public bool HasFile { get; set; }
     }
 }

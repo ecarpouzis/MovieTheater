@@ -1,0 +1,211 @@
+/* The watch room is a full-viewport takeover — the rest of the app (nav, light
+   chrome) disappears behind it. Crossing this threshold is the design. */
+.watch-room {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--vp-black, #0b0a08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Poster as ember: blurred, dimmed, breathing very slowly. */
+.watch-backdrop {
+  position: absolute;
+  inset: -6%;
+  background-size: cover;
+  background-position: center 25%;
+  filter: blur(34px) brightness(0.32) saturate(1.05);
+  animation: watch-breathe 14s ease-in-out infinite alternate;
+}
+
+@keyframes watch-breathe {
+  from {
+    transform: scale(1);
+    filter: blur(34px) brightness(0.3) saturate(1.05);
+  }
+  to {
+    transform: scale(1.045);
+    filter: blur(30px) brightness(0.36) saturate(1.1);
+  }
+}
+
+.watch-room::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* ── the title card ──────────────────────────────────────────────────────── */
+.watch-card {
+  position: relative;
+  z-index: 2;
+  max-width: min(680px, 88vw);
+  text-align: center;
+  padding: 48px 40px;
+  color: var(--vp-cream, #f2ecdd);
+}
+
+.watch-card--entrance > * {
+  opacity: 0;
+  animation: watch-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+.watch-card--entrance > *:nth-child(1) { animation-delay: 0.05s; }
+.watch-card--entrance > *:nth-child(2) { animation-delay: 0.16s; }
+.watch-card--entrance > *:nth-child(3) { animation-delay: 0.3s; }
+.watch-card--entrance > *:nth-child(4) { animation-delay: 0.42s; }
+.watch-card--entrance > *:nth-child(5) { animation-delay: 0.56s; }
+
+@keyframes watch-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.watch-overline {
+  font-size: 12px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--vp-gold, #e3b341);
+  text-indent: 0.42em; /* optically recenters tracked text */
+  animation: watch-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards, watch-flicker 9s linear 2s infinite;
+}
+
+.watch-overline--dim {
+  color: var(--vp-gold-dim, #9a7f3f);
+}
+
+/* The faintest marquee-bulb flicker — blink and you miss it. */
+@keyframes watch-flicker {
+  0%, 100% { opacity: 1; }
+  61% { opacity: 1; }
+  61.5% { opacity: 0.55; }
+  62% { opacity: 1; }
+  74% { opacity: 1; }
+  74.3% { opacity: 0.7; }
+  74.6% { opacity: 1; }
+}
+
+.watch-title {
+  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  font-weight: 400;
+  font-size: clamp(34px, 6vw, 58px);
+  line-height: 1.08;
+  letter-spacing: 0.02em;
+  margin: 18px 0 0;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
+  text-wrap: balance;
+}
+
+.watch-title--small {
+  font-size: clamp(26px, 4vw, 38px);
+}
+
+.watch-rule {
+  width: 120px;
+  height: 1px;
+  margin: 26px auto;
+  background: linear-gradient(to right, transparent, var(--vp-gold, #e3b341), transparent);
+}
+
+.watch-meta {
+  font-size: 13px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(242, 236, 221, 0.66);
+  min-height: 1em;
+}
+
+.watch-error-body {
+  font-size: 15px;
+  line-height: 1.7;
+  color: rgba(242, 236, 221, 0.78);
+  max-width: 44ch;
+  margin: 0 auto;
+}
+
+/* ── ticket buttons ──────────────────────────────────────────────────────── */
+.watch-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 34px;
+}
+
+.watch-ticket-btn {
+  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vp-cream, #f2ecdd);
+  background: transparent;
+  border: 1px solid rgba(242, 236, 221, 0.35);
+  border-radius: 3px;
+  padding: 13px 26px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.watch-ticket-btn:hover {
+  border-color: var(--vp-cream, #f2ecdd);
+  transform: translateY(-1px);
+}
+
+.watch-ticket-btn--primary {
+  color: var(--vp-black, #0b0a08);
+  background: var(--vp-gold, #e3b341);
+  border-color: var(--vp-gold, #e3b341);
+  box-shadow: 0 6px 26px rgba(227, 179, 65, 0.28);
+}
+
+.watch-ticket-btn--primary:hover {
+  background: var(--vp-gold-bright, #f5cf72);
+  border-color: var(--vp-gold-bright, #f5cf72);
+  box-shadow: 0 8px 34px rgba(227, 179, 65, 0.42);
+}
+
+/* loading bulbs reuse the player's animation values */
+.watch-bulbs {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 34px;
+}
+
+.watch-bulbs span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--vp-gold-dim, #9a7f3f);
+  animation: vp-bulb 1.2s ease-in-out infinite;
+}
+
+.watch-bulbs span:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.watch-bulbs span:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+@media (max-width: 640px) {
+  .watch-card {
+    padding: 32px 18px;
+  }
+
+  .watch-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
