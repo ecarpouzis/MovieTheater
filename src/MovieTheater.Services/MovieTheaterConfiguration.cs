@@ -45,6 +45,15 @@ namespace MovieTheater.Services
 
         public string? PyPath { get; set; }
 
+        /// <summary>
+        /// Usernames granted administrator rights (case-insensitive). This is the root of trust for
+        /// the admin tools — it can only be changed in server config, never through the app, so admin
+        /// rights can't be escalated in-band. Because login is passwordless, being a config admin is
+        /// not enough on its own: the admin endpoints also require a password-verified session, so an
+        /// admin account must have a password set before it can administer anything.
+        /// </summary>
+        public List<string> AdminUsernames { get; set; } = new();
+
         public HostedEnvironment Environment { get; }
 
         public IConfiguration RawConfiguration { get; }

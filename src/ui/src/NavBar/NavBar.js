@@ -8,6 +8,7 @@ import SearchTools from "./SearchTools";
 import Login from "./Login";
 import BoardGameNavContent from "./BoardGameNavContent";
 import UserSettingsModal from "./UserSettingsModal";
+import AdminModal from "./AdminModal";
 import useIsMobile from "../hooks/useIsMobile";
 
 function NavBar({
@@ -41,6 +42,7 @@ function NavBar({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
 
   // useEffect with a dependency array runs the callback whenever any listed value changes
   // — similar to subscribing to a PropertyChanged event for those specific properties.
@@ -165,6 +167,7 @@ function NavBar({
       setUserData={setUserData}
       onUserLoggedIn={onUserLoggedIn}
       setSettingsModalOpen={setSettingsModalOpen}
+      setAdminModalOpen={setAdminModalOpen}
       search={search}
     />
   ) : (
@@ -174,6 +177,7 @@ function NavBar({
         setUserData={setUserData}
         onUserLoggedIn={onUserLoggedIn}
         setSettingsModalOpen={setSettingsModalOpen}
+        setAdminModalOpen={setAdminModalOpen}
       />
       <SearchTools search={search} userData={userData} />
     </>
@@ -222,12 +226,13 @@ function NavBar({
 
         <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}${navThemeClass}`}>{navContent}</div>
 
-        <UserSettingsModal 
-          open={settingsModalOpen} 
-          onClose={() => setSettingsModalOpen(false)} 
+        <UserSettingsModal
+          open={settingsModalOpen}
+          onClose={() => setSettingsModalOpen(false)}
           userData={userData}
           setUserData={setUserData}
         />
+        <AdminModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
       </>
     );
   }
@@ -265,12 +270,13 @@ function NavBar({
         </div>
         {navContent}
       </Layout.Sider>
-      <UserSettingsModal 
-        open={settingsModalOpen} 
-        onClose={() => setSettingsModalOpen(false)} 
+      <UserSettingsModal
+        open={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
         userData={userData}
         setUserData={setUserData}
       />
+      <AdminModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
     </>
   );
 }

@@ -43,7 +43,7 @@ const searchLetterStyle = {
 
 const searchLetters = ["#","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
 
-function BoardGameUserPanel({ userData, setUserData, setSettingsModalOpen }) {
+function BoardGameUserPanel({ userData, setUserData, setSettingsModalOpen, setAdminModalOpen }) {
   function logout() {
     fetch("/API/Logout", { method: "POST" }).finally(() => {
       setUserData();
@@ -59,6 +59,11 @@ function BoardGameUserPanel({ userData, setUserData, setSettingsModalOpen }) {
         <button className="settings-icon-btn" onClick={() => setSettingsModalOpen(true)} title="User Settings">
           ⚙️
         </button>
+        {userData.isAdmin && (
+          <button className="settings-icon-btn" onClick={() => setAdminModalOpen(true)} title="User Administration">
+            🛡️
+          </button>
+        )}
       </div>
       <button className="logout-button" onClick={logout}>
         Log Out
@@ -153,7 +158,7 @@ const sortOptions = [
   { value: "complexity_desc", label: "Complexity: High → Low" },
 ];
 
-function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen, search }) {
+function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen, search }) {
   const history = useHistory();
   const location = useLocation();
   const getSelectPopupContainer = (trigger) => trigger.parentElement;
@@ -188,7 +193,7 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
   return (
     <>
       {userData ? (
-        <BoardGameUserPanel userData={userData} setUserData={setUserData} setSettingsModalOpen={setSettingsModalOpen} />
+        <BoardGameUserPanel userData={userData} setUserData={setUserData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
       ) : (
         <BoardGameLoginForm onUserLoggedIn={onUserLoggedIn} />
       )}

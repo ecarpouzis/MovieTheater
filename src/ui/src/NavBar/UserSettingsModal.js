@@ -26,6 +26,10 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
   const [passwordSaving, setPasswordSaving] = useState(false);
 
   const hasPassword = userData?.hasPassword ?? false;
+  const isAdmin = userData?.isAdmin ?? false;
+  // Users can't create their own first password — streaming access is provisioned by an admin.
+  // They can still change/remove a password they already have. Admins may set their own first one.
+  const canSetPassword = hasPassword || isAdmin;
 
   useEffect(() => {
     if (!open || !userData) return;
@@ -192,48 +196,56 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
 
         <div className="settings-section">
           <h3 className="settings-section-title">Account Security</h3>
-          {hasPassword && (
-            <div className="settings-row">
-              <span className="settings-label">Current Password</span>
-              <Input.Password
-                className="settings-password-input"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-            </div>
+          {canSetPassword ? (
+            <>
+              {hasPassword && (
+                <div className="settings-row">
+                  <span className="settings-label">Current Password</span>
+                  <Input.Password
+                    className="settings-password-input"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    autoComplete="current-password"
+                  />
+                </div>
+              )}
+              <div className="settings-row">
+                <span className="settings-label">New Password</span>
+                <Input.Password
+                  className="settings-password-input"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="settings-row">
+                <span className="settings-label">Confirm Password</span>
+                <Input.Password
+                  className="settings-password-input"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="settings-row settings-row--push">
+                <Button onClick={() => submitPassword(false)} loading={passwordSaving}>
+                  {hasPassword ? "Change Password" : "Set Password"}
+                </Button>
+                {hasPassword && (
+                  <Button danger onClick={() => submitPassword(true)} loading={passwordSaving}>
+                    Remove Password
+                  </Button>
+                )}
+              </div>
+              <p className="settings-hint">
+                Once set, you'll be asked for it when logging in. At least 8 characters.
+              </p>
+            </>
+          ) : (
+            <p className="settings-hint">
+              Your account has no password. An administrator sets the initial password that unlocks streaming.
+            </p>
           )}
-          <div className="settings-row">
-            <span className="settings-label">New Password</span>
-            <Input.Password
-              className="settings-password-input"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-          </div>
-          <div className="settings-row">
-            <span className="settings-label">Confirm Password</span>
-            <Input.Password
-              className="settings-password-input"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-          </div>
-          <div className="settings-row settings-row--push">
-            <Button onClick={() => submitPassword(false)} loading={passwordSaving}>
-              {hasPassword ? "Change Password" : "Set Password"}
-            </Button>
-            {hasPassword && (
-              <Button danger onClick={() => submitPassword(true)} loading={passwordSaving}>
-                Remove Password
-              </Button>
-            )}
-          </div>
-          <p className="settings-hint">
-            Passwords are optional. Once set, you'll be asked for it when logging in. At least 8 characters.
-          </p>
         </div>
 
         <div className="settings-section">

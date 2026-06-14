@@ -92,6 +92,17 @@ namespace MovieTheater.Controllers
             return null;
         }
 
+        // Admins are defined solely by the AdminUsernames config list (case-insensitive); the
+        // dedicated AdminController is the root of trust. Here it gates the one self-service
+        // exception — a config admin may set their own first password (to become password-verified
+        // and unlock the admin tools), whereas ordinary users cannot create a first password.
+        private bool IsAdminUsername(string? username)
+        {
+            if (string.IsNullOrEmpty(username)) return false;
+            var admins = configuration.GetSection("AdminUsernames").Get<string[]>() ?? Array.Empty<string>();
+            return admins.Any(a => string.Equals(a, username, StringComparison.OrdinalIgnoreCase));
+        }
+
         // Delegates to the shared gate so the browse and streaming paths can't drift.
         private int GetMPARatingFromMovieRating(string movieRating) =>
             Web.RatingGate.MpaRatingIdFor(movieDb, movieRating);
@@ -738,6 +749,15 @@ namespace MovieTheater.Controllers
                     return Unauthorized(new { success = false, message = "Current password is incorrect." });
                 }
             }
+            else if (!string.IsNullOrEmpty(request?.NewPassword) && !IsAdminUsername(user.Username))
+            {
+                // Creating a *first* password is restricted: streaming access is provisioned by an
+                // admin, so a user can't self-grant it. (An account that already has a password can
+                // still freely change or remove it above.) Config admins are the one exception, so
+                // they can bootstrap their own password and unlock the admin tools.
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    new { success = false, message = "An administrator must set your initial password." });
+            }
 
             if (string.IsNullOrEmpty(request?.NewPassword))
             {
@@ -816,7 +836,12 @@ namespace MovieTheater.Controllers
 
             var hasPassword = user.PasswordHash != null;
 
-            return new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess, hasPassword };
+            // Drives whether the SPA shows the admin tools. Mirrors the server gate: a config admin
+            // who has a password (and so can become password-verified). A passwordless admin gets
+            // false here, which is correct — they must set their password before they can administer.
+            var isAdmin = IsAdminUsername(user.Username) && hasPassword;
+
+            return new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess, hasPassword, isAdmin };
         }
 
         [HttpPost("/API/Logout")]

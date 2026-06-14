@@ -420,6 +420,31 @@ function deleteChannel(id) {
   });
 }
 
+// ── User administration (admin-only; gated by AdminUsernames config + a
+// password-verified session) ────────────────────────────────────────────────
+
+function adminGetUsers() {
+  return fetch("/API/Admin/Users");
+}
+
+// Pass a null/empty newPassword to clear the user's password.
+function adminSetUserPassword(userId, newPassword) {
+  return fetch("/API/Admin/SetPassword", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ UserId: userId, NewPassword: newPassword ?? null }),
+  });
+}
+
+// Pass a null settingValue to delete the setting for that user.
+function adminSetUserSetting(userId, settingKey, settingValue) {
+  return fetch("/API/Admin/SetUserSetting", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ UserId: userId, SettingKey: settingKey, SettingValue: settingValue ?? null }),
+  });
+}
+
 const MovieAPI = {
   getMoviePoster,
   getPosterThumbnail,
@@ -463,6 +488,9 @@ const MovieAPI = {
   getChannelAdminList,
   saveChannel,
   deleteChannel,
+  adminGetUsers,
+  adminSetUserPassword,
+  adminSetUserSetting,
 };
 
 export { MovieAPI };
