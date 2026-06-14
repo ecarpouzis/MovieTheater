@@ -23,14 +23,19 @@ function TvPage({ userData }) {
   const hlsRef = useRef(null);
   const sessionRef = useRef(null);
   const advanceTimerRef = useRef(null);
-  const overlayTimerRef = useRef(null);
   const wakeLockRef = useRef(null);
 
   const [channels, setChannels] = useState(null); // null = loading
   const [channel, setChannel] = useState(null);
   const [now, setNow] = useState(null); // { current, next }
   const [muted, setMuted] = useState(true);
-  const [overlayVisible, setOverlayVisible] = useState(true);
+  const [volume, setVolume] = useState(() => {
+    const v = parseFloat(window.localStorage.getItem("TvVolume"));
+    return Number.isFinite(v) ? Math.min(Math.max(v, 0), 1) : 1;
+  });
+  const [pickerOpen, setPickerOpen] = useState(false); // channel picker popout
+  const [menuOpen, setMenuOpen] = useState(false); // settings dropdown (quality / guide / manage / off)
+  const [, setNowTick] = useState(0); // ticks every second to advance the live progress bar
   const [guideOpen, setGuideOpen] = useState(false);
   const [guide, setGuide] = useState(null);
   const [staticBurst, setStaticBurst] = useState(false);
@@ -89,14 +94,10 @@ function TvPage({ userData }) {
     }
   }, []);
 
-  // A tap always *shows* the chrome and resets the idle timer — never hides it. (An
-  // earlier tap-to-toggle made the picker un-tappable on touch devices: a stray tap
-  // hid it, and while hidden the buttons are pointer-events:none.) It fades on its own
-  // when idle, and touching the picker keeps it alive while you browse.
-  const wakeOverlay = useCallback(() => {
-    setOverlayVisible(true);
-    clearTimeout(overlayTimerRef.current);
-    overlayTimerRef.current = setTimeout(() => setOverlayVisible(false), 4500);
+  // Dismiss the channel picker / settings menu (e.g. on a click in the video area).
+  const closePopouts = useCallback(() => {
+    setPickerOpen(false);
+    setMenuOpen(false);
   }, []);
 
   // The bitrate cap for the current quality (Auto → a connection-based fixed cap).
@@ -140,7 +141,6 @@ function TvPage({ userData }) {
       setTuning(true);
       setStaticBurst(true);
       setTimeout(() => setStaticBurst(false), 420);
-      wakeOverlay();
 
       try {
         const nowResponse = await fetch(`/API/Channel/${chan.id}/Now`);
@@ -268,7 +268,7 @@ function TvPage({ userData }) {
         }
       }
     },
-    [stopSession, destroyHls, wakeOverlay, resolveBitrate, prewarmNext]
+    [stopSession, destroyHls, resolveBitrate, prewarmNext]
   );
 
   // ── channel list ────────────────────────────────────────────────────────────
@@ -354,7 +354,6 @@ function TvPage({ userData }) {
       window.removeEventListener("pagehide", onPageHide);
       clearTimeout(advanceTimerRef.current);
       clearTimeout(prewarmTimerRef.current);
-      clearTimeout(overlayTimerRef.current);
       stopSession(true);
       // Don't leak a prewarmed transcode that never got consumed.
       if (prewarmRef.current) {
@@ -405,6 +404,27 @@ function TvPage({ userData }) {
     },
     [channel, tune]
   );
+
+  // Local, per-viewer volume (the shared channel state is only play/pause). Dragging to 0
+  // mutes; dragging up unmutes. Persisted so the next visit remembers it.
+  const toggleMute = useCallback(() => setMuted((m) => !m), []);
+  const changeVolume = useCallback((v) => {
+    setVolume(v);
+    window.localStorage.setItem("TvVolume", String(v));
+    setMuted(v === 0);
+  }, []);
+
+  // The picker and the settings menu are mutually exclusive popouts.
+  const togglePicker = useCallback((e) => {
+    e.stopPropagation();
+    setMenuOpen(false);
+    setPickerOpen((o) => !o);
+  }, []);
+  const toggleMenu = useCallback((e) => {
+    e.stopPropagation();
+    setPickerOpen(false);
+    setMenuOpen((o) => !o);
+  }, []);
 
   // Poll "what's on now" while a channel is up: it keeps the skip tally fresh, doubles as
   // the presence heartbeat (the server counts a poll as "still watching"), and re-tunes if
@@ -522,16 +542,25 @@ function TvPage({ userData }) {
         if (target) setChannel(target);
       } else return;
       e.preventDefault();
-      wakeOverlay();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [switchBy, channels, wakeOverlay, adminOpen, togglePlayPause]);
+  }, [switchBy, channels, adminOpen, togglePlayPause]);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (video) video.muted = muted;
-  }, [muted]);
+    if (!video) return;
+    video.muted = muted;
+    video.volume = volume;
+  }, [muted, volume]);
+
+  // Tick once a second while something is playing so the progress bar advances smoothly
+  // between the (infrequent) schedule polls. progressPct is recomputed from the clock on render.
+  useEffect(() => {
+    if (!now?.current || paused) return undefined;
+    const t = setInterval(() => setNowTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [now?.current, paused]);
 
   // ── guide data ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -559,195 +588,238 @@ function TvPage({ userData }) {
     return error.message || "The signal dropped.";
   })();
 
+  const volumeIcon = muted || volume === 0 ? "🔇" : volume < 0.5 ? "🔉" : "🔊";
+
   return (
     /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/media-has-caption */
-    <div className="tv-room" onMouseMove={wakeOverlay} onClick={wakeOverlay}>
-      <video ref={videoRef} className="tv-video" autoPlay playsInline muted />
+    <div className="tv-room">
+      {/* The picture area. Nothing in the control bar overlaps it; only the picker / menu /
+          guide pop out over it, and only while open. */}
+      <div className="tv-screen" onClick={closePopouts}>
+        <video ref={videoRef} className="tv-video" autoPlay playsInline muted />
 
-      {/* channel-change static burst */}
-      <div className={`tv-static${staticBurst ? " tv-static--on" : ""}`} aria-hidden="true" />
+        {/* channel-change static burst */}
+        <div className={`tv-static${staticBurst ? " tv-static--on" : ""}`} aria-hidden="true" />
 
-      {/* cold-transcode wait — the source takes a few seconds to start; show it's working */}
-      {tuning && !error && !offAir && (
-        <div className="tv-tuning" aria-label="Tuning">
-          <div className="tv-tuning-bulbs"><span /><span /><span /></div>
-          <div className="tv-tuning-label">Tuning in…</div>
-        </div>
-      )}
-
-      {/* shared pause — the channel is frozen for everyone watching */}
-      {paused && !tuning && !error && !offAir && (
-        <div className="tv-paused" aria-label="Paused">
-          <span className="tv-paused-glyph">❚❚</span>
-          <span className="tv-paused-label">Paused</span>
-        </div>
-      )}
-
-      {/* persistent channel bug */}
-      {channel && (
-        <div className={`tv-bug${overlayVisible ? "" : " tv-bug--dim"}`}>
-          <span className="tv-bug-num">{channelNumber}</span>
-          <span className="tv-bug-name">{channel.name}</span>
-        </div>
-      )}
-
-      {/* tap to unmute */}
-      {muted && !error && !offAir && (
-        <button className="tv-unmute" onClick={(e) => { e.stopPropagation(); setMuted(false); }}>
-          <span className="tv-unmute-glyph">🔇</span> Tap to unmute
-        </button>
-      )}
-
-      {/* now / next overlay */}
-      {now?.current && (
-        <div className={`tv-panel${overlayVisible ? "" : " tv-panel--hidden"}`}>
-          <div className="tv-panel-row">
-            <span className="tv-panel-label">Now</span>
-            <span className="tv-panel-title">{now.current.title}</span>
-            <span className="tv-panel-time">ends {new Date(now.current.endsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+        {/* cold-transcode wait — the source takes a few seconds to start; show it's working */}
+        {tuning && !error && !offAir && (
+          <div className="tv-tuning" aria-label="Tuning">
+            <div className="tv-tuning-bulbs"><span /><span /><span /></div>
+            <div className="tv-tuning-label">Tuning in…</div>
           </div>
-          <div className="tv-panel-progress">
-            <div className="tv-panel-progress-fill" style={{ width: `${progressPct}%` }} />
+        )}
+
+        {/* shared pause — the channel is frozen for everyone watching */}
+        {paused && !tuning && !error && !offAir && (
+          <div className="tv-paused" aria-label="Paused">
+            <span className="tv-paused-glyph">❚❚</span>
+            <span className="tv-paused-label">Paused</span>
           </div>
-          {now.next?.[0] && (
-            <div className="tv-panel-row tv-panel-row--next">
-              <span className="tv-panel-label">Next</span>
-              <span className="tv-panel-title">{now.next[0].title}</span>
-              <span className="tv-panel-time">{new Date(now.next[0].startsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+        )}
+
+        {/* channel picker — pops out over the picture, anchored above the channel button */}
+        {pickerOpen && channels && channels.length > 0 && (
+          <div className="tv-picker" onClick={(e) => e.stopPropagation()}>
+            <div className="tv-picker-head">Channels</div>
+            <div className="tv-picker-list">
+              {channels.map((c, i) => (
+                <button
+                  key={c.id}
+                  className={`tv-channel-item${channel?.id === c.id ? " tv-channel-item--on" : ""}`}
+                  onClick={() => { setChannel(c); setPickerOpen(false); }}
+                >
+                  <span className="tv-channel-num">{i + 1}</span>
+                  {c.name}
+                </button>
+              ))}
             </div>
-          )}
-          <div className="tv-panel-skip">
-            {/* Skip/restart act on the live timeline, so they're hidden while frozen — resume first. */}
-            {restart && !paused && (
-              <button
-                className={`tv-skip tv-restart${restart.youVoted ? " tv-skip--voted" : ""}`}
-                onClick={(e) => { e.stopPropagation(); voteRestart(); }}
-              >
-                <span className="tv-skip-glyph">⏮</span>
-                {restart.viewers > 1 ? (restart.youVoted ? "Voted to restart" : "Vote to restart") : "Restart"}
-                {restart.viewers > 1 && <span className="tv-skip-tally">{restart.votes}/{restart.required}</span>}
-              </button>
-            )}
-            {/* shared play/pause — anyone watching freezes or resumes the channel for everyone */}
-            <button
-              className={`tv-skip tv-playpause${paused ? " tv-skip--voted tv-playpause--paused" : ""}`}
-              onClick={(e) => { e.stopPropagation(); togglePlayPause(); }}
-            >
-              <span className="tv-skip-glyph">{paused ? "▶" : "⏸"}</span>
-              {paused ? "Resume" : "Pause"}
-            </button>
-            {skip && !paused && (
-              <button
-                className={`tv-skip${skip.youVoted ? " tv-skip--voted" : ""}`}
-                onClick={(e) => { e.stopPropagation(); voteSkip(); }}
-              >
-                <span className="tv-skip-glyph">⏭</span>
-                {skip.viewers > 1 ? (skip.youVoted ? "Voted to skip" : "Vote to skip") : "Skip"}
-                {skip.viewers > 1 && <span className="tv-skip-tally">{skip.votes}/{skip.required}</span>}
-              </button>
-            )}
-            {!paused && (skip?.viewers > 1 || restart?.viewers > 1) && (
-              <span className="tv-skip-viewers">{skip?.viewers ?? restart?.viewers} watching</span>
-            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* channel switcher */}
-      {channels && channels.length > 0 && (
-        <div
-          className={`tv-channels${overlayVisible ? "" : " tv-channels--hidden"}`}
-          onTouchStart={wakeOverlay}
-        >
-          {channels.map((c, i) => (
+        {/* settings menu — quality / guide / manage / off */}
+        {menuOpen && (
+          <div className="tv-menu" onClick={(e) => e.stopPropagation()}>
             <button
-              key={c.id}
-              className={`tv-channel-item${channel?.id === c.id ? " tv-channel-item--on" : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setChannel(c);
-                wakeOverlay();
-              }}
+              className={`tv-channel-item${qualityOpen ? " tv-channel-item--on" : ""}`}
+              onClick={() => setQualityOpen((q) => !q)}
             >
-              <span className="tv-channel-num">{i + 1}</span>
-              {c.name}
+              <span className="tv-channel-num">Q</span>
+              Quality
+              <span className="tv-qopt-hint">{QUALITY_LADDER.find((q) => q.key === quality)?.label || "Auto"}</span>
             </button>
-          ))}
-          <button className={`tv-channel-item tv-channel-item--guide${guideOpen ? " tv-channel-item--on" : ""}`} onClick={(e) => { e.stopPropagation(); setGuideOpen((g) => !g); }}>
-            <span className="tv-channel-num">G</span>
-            Guide
-          </button>
-          <button
-            className={`tv-channel-item tv-channel-item--quality${qualityOpen ? " tv-channel-item--on" : ""}`}
-            onClick={(e) => { e.stopPropagation(); setQualityOpen((q) => !q); }}
-          >
-            <span className="tv-channel-num">Q</span>
-            Quality
-            <span className="tv-qopt-hint">{QUALITY_LADDER.find((q) => q.key === quality)?.label || "Auto"}</span>
-          </button>
-          {qualityOpen &&
-            QUALITY_LADDER.map((q) => (
-              <button
-                key={q.key}
-                className={`tv-channel-item tv-channel-item--qopt${quality === q.key ? " tv-channel-item--on" : ""}`}
-                onClick={(e) => { e.stopPropagation(); selectQuality(q.key); }}
-              >
-                <span className="tv-channel-num">·</span>
-                {q.label}
-                {q.hint ? <span className="tv-qopt-hint">{q.hint}</span> : null}
+            {qualityOpen &&
+              QUALITY_LADDER.map((q) => (
+                <button
+                  key={q.key}
+                  className={`tv-channel-item tv-channel-item--qopt${quality === q.key ? " tv-channel-item--on" : ""}`}
+                  onClick={() => selectQuality(q.key)}
+                >
+                  <span className="tv-channel-num">·</span>
+                  {q.label}
+                  {q.hint ? <span className="tv-qopt-hint">{q.hint}</span> : null}
+                </button>
+              ))}
+            <button
+              className={`tv-channel-item${guideOpen ? " tv-channel-item--on" : ""}`}
+              onClick={() => { setGuideOpen((g) => !g); setMenuOpen(false); }}
+            >
+              <span className="tv-channel-num">G</span>
+              Guide
+            </button>
+            {canEdit && (
+              <button className="tv-channel-item" onClick={() => { setAdminOpen(true); setMenuOpen(false); }}>
+                <span className="tv-channel-num">✎</span>
+                Manage
               </button>
-            ))}
-          {canEdit && (
-            <button className="tv-channel-item tv-channel-item--manage" onClick={(e) => { e.stopPropagation(); setAdminOpen(true); }}>
-              <span className="tv-channel-num">✎</span>
-              Manage
+            )}
+            <button className="tv-channel-item tv-channel-item--off" onClick={() => history.push("/")}>
+              <span className="tv-channel-num">⏻</span>
+              Off
             </button>
-          )}
-          <button className="tv-channel-item tv-channel-item--off" onClick={() => history.push("/")}>
-            <span className="tv-channel-num">⏻</span>
-            Off
-          </button>
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* EPG strip */}
-      {guideOpen && guide && (
-        <div className="tv-guide">
-          {guide.map((g, i) => (
-            <div key={i} className="tv-guide-item">
-              <div className="tv-guide-time">
-                {new Date(g.startUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+        {/* EPG strip */}
+        {guideOpen && guide && (
+          <div className="tv-guide" onClick={(e) => e.stopPropagation()}>
+            {guide.map((g, i) => (
+              <div key={i} className="tv-guide-item">
+                <div className="tv-guide-time">
+                  {new Date(g.startUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                </div>
+                <div className="tv-guide-title">{g.title}</div>
               </div>
-              <div className="tv-guide-title">{g.title}</div>
+            ))}
+            {guide.length === 0 && <div className="tv-guide-item tv-guide-item--empty">Nothing scheduled</div>}
+          </div>
+        )}
+
+        {/* full-screen states */}
+        {channels && channels.length === 0 && !error && (
+          <div className="tv-state">
+            <div className="tv-state-head">No channels are broadcasting</div>
+            <button className="tv-state-btn" onClick={() => history.push("/")}>← Back</button>
+          </div>
+        )}
+
+        {offAir && !error && (
+          <div className="tv-state">
+            <div className="tv-state-head">Off the air</div>
+            <p>This channel has nothing scheduled right now.</p>
+            <button className="tv-state-btn" onClick={() => history.push("/")}>← Back</button>
+          </div>
+        )}
+
+        {error && (
+          <div className="tv-state">
+            <div className="tv-state-head">No signal</div>
+            <p>{errorCopy}</p>
+            <button className="tv-state-btn" onClick={() => history.push("/")}>← Back</button>
+          </div>
+        )}
+      </div>
+
+      {/* flattened control bar — lives below the picture so it never covers it */}
+      <div className="tv-bar">
+        <div className="tv-bar-progress">
+          <div className="tv-bar-progress-fill" style={{ width: `${progressPct}%` }} />
+        </div>
+        <div className="tv-bar-row">
+          {channel && (
+            <button className="tv-bar-channel" onClick={togglePicker} title="Change channel">
+              <span className="tv-bar-channel-num">{channelNumber}</span>
+              <span className="tv-bar-channel-name">{channel.name}</span>
+              <span className="tv-bar-caret">▾</span>
+            </button>
+          )}
+
+          {now?.current && (
+            <div className="tv-bar-info">
+              <div className="tv-bar-now">
+                <span className="tv-bar-tag">Now</span>
+                <span className="tv-bar-title">{now.current.title}</span>
+                <span className="tv-bar-time">ends {new Date(now.current.endsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+              </div>
+              {now.next?.[0] && (
+                <div className="tv-bar-next">
+                  <span className="tv-bar-tag">Next</span>
+                  <span className="tv-bar-title">{now.next[0].title}</span>
+                  <span className="tv-bar-time">{new Date(now.next[0].startsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                </div>
+              )}
             </div>
-          ))}
-          {guide.length === 0 && <div className="tv-guide-item tv-guide-item--empty">Nothing scheduled</div>}
-        </div>
-      )}
+          )}
 
-      {/* full-screen states */}
-      {channels && channels.length === 0 && !error && (
-        <div className="tv-state">
-          <div className="tv-state-head">No channels are broadcasting</div>
-          <button className="tv-state-btn" onClick={() => history.push("/")}>← Back</button>
-        </div>
-      )}
+          <div className="tv-bar-spacer" />
 
-      {offAir && !error && (
-        <div className="tv-state">
-          <div className="tv-state-head">Off the air</div>
-          <p>This channel has nothing scheduled right now.</p>
-          <button className="tv-state-btn" onClick={() => history.push("/")}>← Back</button>
-        </div>
-      )}
+          {!paused && (skip?.viewers > 1 || restart?.viewers > 1) && (
+            <span className="tv-bar-watching">{skip?.viewers ?? restart?.viewers} watching</span>
+          )}
 
-      {error && (
-        <div className="tv-state">
-          <div className="tv-state-head">No signal</div>
-          <p>{errorCopy}</p>
-          <button className="tv-state-btn" onClick={() => history.push("/")}>← Back</button>
+          {now?.current && (
+            <div className="tv-bar-transport">
+              {/* Skip/restart act on the live timeline, so they're hidden while frozen — resume first. */}
+              {restart && !paused && (
+                <button
+                  className={`tv-skip tv-restart${restart.youVoted ? " tv-skip--voted" : ""}`}
+                  onClick={(e) => { e.stopPropagation(); voteRestart(); }}
+                  title={restart.viewers > 1 ? (restart.youVoted ? "Voted to restart" : "Vote to restart") : "Restart"}
+                >
+                  <span className="tv-skip-glyph">⏮</span>
+                  {restart.viewers > 1 && <span className="tv-skip-tally">{restart.votes}/{restart.required}</span>}
+                </button>
+              )}
+              {/* shared play/pause — anyone watching freezes or resumes the channel for everyone */}
+              <button
+                className={`tv-skip tv-playpause${paused ? " tv-skip--voted tv-playpause--paused" : ""}`}
+                onClick={(e) => { e.stopPropagation(); togglePlayPause(); }}
+                title={paused ? "Resume" : "Pause"}
+              >
+                <span className="tv-skip-glyph">{paused ? "▶" : "⏸"}</span>
+              </button>
+              {skip && !paused && (
+                <button
+                  className={`tv-skip${skip.youVoted ? " tv-skip--voted" : ""}`}
+                  onClick={(e) => { e.stopPropagation(); voteSkip(); }}
+                  title={skip.viewers > 1 ? (skip.youVoted ? "Voted to skip" : "Vote to skip") : "Skip"}
+                >
+                  <span className="tv-skip-glyph">⏭</span>
+                  {skip.viewers > 1 && <span className="tv-skip-tally">{skip.votes}/{skip.required}</span>}
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="tv-bar-volume">
+            <button
+              className={`tv-bar-icon-btn${muted || volume === 0 ? " tv-bar-icon-btn--pulse" : ""}`}
+              onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+              title={muted ? "Unmute" : "Mute"}
+            >
+              {volumeIcon}
+            </button>
+            <input
+              className="tv-bar-volume-slider"
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={muted ? 0 : volume}
+              onChange={(e) => changeVolume(parseFloat(e.target.value))}
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Volume"
+            />
+          </div>
+
+          <button
+            className={`tv-bar-icon-btn${menuOpen ? " tv-bar-icon-btn--on" : ""}`}
+            onClick={toggleMenu}
+            title="Menu"
+          >
+            ⚙
+          </button>
         </div>
-      )}
+      </div>
 
       {canEdit && (
         <ChannelAdminModal

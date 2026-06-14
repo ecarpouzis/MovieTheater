@@ -1,12 +1,25 @@
 /* The TV: same screening-room palette, but ambient — built to be left on.
-   Chrome appears on intent and gets out of the way. */
+   The picture fills the area above a flattened control bar; the bar lives in the
+   layout (not over the video), so on desktop nothing covers the picture. Only the
+   channel picker / settings menu / guide pop out over the video, and only while open. */
 .tv-room {
   position: fixed;
   inset: 0;
   z-index: 1000;
   background: #050505;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   cursor: default;
+}
+
+/* the picture area — everything that overlays the video is scoped inside here */
+.tv-screen {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: #050505;
 }
 
 .tv-video {
@@ -38,142 +51,6 @@
   40% { opacity: 0.75; background-position: 80px 40px; }
   80% { opacity: 0.5; background-position: 20px 120px; }
   100% { opacity: 0; }
-}
-
-/* channel bug */
-.tv-bug {
-  position: absolute;
-  top: 22px;
-  right: 26px;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  color: #f2ecdd;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
-  transition: opacity 0.6s ease;
-  z-index: 5;
-}
-
-.tv-bug--dim {
-  opacity: 0.28;
-}
-
-.tv-bug-num {
-  font-family: var(--vp-display, "Marcellus", Georgia, serif);
-  font-size: 34px;
-  color: #e3b341;
-  line-height: 1;
-}
-
-.tv-bug-name {
-  font-size: 12px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  opacity: 0.85;
-}
-
-/* tap to unmute */
-.tv-unmute {
-  position: absolute;
-  top: 24px;
-  left: 26px;
-  z-index: 6;
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  background: rgba(11, 10, 8, 0.82);
-  border: 1px solid rgba(227, 179, 65, 0.55);
-  color: #f2ecdd;
-  font-size: 13px;
-  letter-spacing: 0.06em;
-  border-radius: 999px;
-  padding: 10px 18px;
-  cursor: pointer;
-  animation: tv-unmute-pulse 2.4s ease-in-out infinite;
-}
-
-@keyframes tv-unmute-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(227, 179, 65, 0.35); }
-  50% { box-shadow: 0 0 0 9px rgba(227, 179, 65, 0); }
-}
-
-.tv-unmute:hover {
-  border-color: #e3b341;
-  background: rgba(227, 179, 65, 0.16);
-}
-
-/* now / next panel */
-.tv-panel {
-  position: absolute;
-  left: 26px;
-  bottom: 26px;
-  z-index: 5;
-  min-width: 320px;
-  max-width: min(480px, 80vw);
-  background: rgba(11, 10, 8, 0.84);
-  border: 1px solid rgba(227, 179, 65, 0.25);
-  border-radius: 8px;
-  padding: 14px 18px;
-  backdrop-filter: blur(8px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-.tv-panel--hidden {
-  opacity: 0;
-  transform: translateY(8px);
-  pointer-events: none;
-}
-
-.tv-panel-row {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  color: #f2ecdd;
-}
-
-.tv-panel-row--next {
-  margin-top: 9px;
-  opacity: 0.62;
-}
-
-.tv-panel-label {
-  font-size: 10px;
-  letter-spacing: 0.26em;
-  text-transform: uppercase;
-  color: #e3b341;
-  flex-shrink: 0;
-  width: 38px;
-}
-
-.tv-panel-title {
-  font-family: var(--vp-display, "Marcellus", Georgia, serif);
-  font-size: 17px;
-  letter-spacing: 0.02em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tv-panel-time {
-  margin-left: auto;
-  font-size: 11.5px;
-  color: rgba(242, 236, 221, 0.6);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.tv-panel-progress {
-  height: 2px;
-  background: rgba(242, 236, 221, 0.16);
-  border-radius: 1px;
-  margin-top: 10px;
-}
-
-.tv-panel-progress-fill {
-  height: 100%;
-  background: linear-gradient(to right, #9a7f3f, #e3b341);
-  border-radius: inherit;
-  transition: width 1s linear;
 }
 
 /* cold-start "tuning in" indicator */
@@ -224,14 +101,247 @@
   50% { opacity: 1; transform: translateY(-4px); }
 }
 
-/* vote-to-skip / vote-to-restart (share the .tv-skip pill styling) */
-.tv-panel-skip {
+/* full-screen "Paused" indicator while the channel is frozen */
+.tv-paused {
+  position: absolute;
+  inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin-top: 12px;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(8, 7, 6, 0.55);
+  pointer-events: none;
+  z-index: 5;
 }
 
+.tv-paused-glyph {
+  font-size: 64px;
+  letter-spacing: 4px;
+  color: #e3b341;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
+}
+
+.tv-paused-label {
+  font-size: 14px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(242, 236, 221, 0.78);
+}
+
+/* ── flattened control bar ──────────────────────────────────────────────────── */
+.tv-bar {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 6;
+  background: linear-gradient(to bottom, #0d0c0a, #070605);
+  border-top: 1px solid rgba(227, 179, 65, 0.25);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.tv-bar-progress {
+  height: 3px;
+  width: 100%;
+  background: rgba(242, 236, 221, 0.14);
+}
+
+.tv-bar-progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, #9a7f3f, #e3b341);
+  transition: width 1s linear;
+}
+
+.tv-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+}
+
+/* channel button — opens the picker */
+.tv-bar-channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  background: rgba(227, 179, 65, 0.06);
+  border: 1px solid rgba(227, 179, 65, 0.3);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: #f2ecdd;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.tv-bar-channel:hover {
+  border-color: #e3b341;
+  background: rgba(227, 179, 65, 0.12);
+}
+
+.tv-bar-channel-num {
+  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  font-size: 22px;
+  line-height: 1;
+  color: #e3b341;
+}
+
+.tv-bar-channel-name {
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-bar-caret {
+  color: rgba(242, 236, 221, 0.5);
+  font-size: 10px;
+}
+
+/* now / next info — two flat lines */
+.tv-bar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.tv-bar-now,
+.tv-bar-next {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+}
+
+.tv-bar-next {
+  opacity: 0.55;
+  font-size: 0.9em;
+}
+
+.tv-bar-tag {
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #e3b341;
+  flex-shrink: 0;
+  width: 30px;
+}
+
+.tv-bar-title {
+  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  font-size: 15px;
+  color: #f2ecdd;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.tv-bar-time {
+  font-size: 11px;
+  color: rgba(242, 236, 221, 0.55);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tv-bar-spacer {
+  flex: 1 1 auto;
+}
+
+.tv-bar-watching {
+  font-size: 11px;
+  color: rgba(242, 236, 221, 0.5);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tv-bar-transport {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* the transport pills reuse .tv-skip but are glyph-first and tighter */
+.tv-bar-transport .tv-skip {
+  padding: 7px 11px;
+  text-transform: none;
+}
+
+/* volume — local to this viewer */
+.tv-bar-volume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tv-bar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 34px;
+  background: rgba(11, 10, 8, 0.6);
+  border: 1px solid rgba(227, 179, 65, 0.25);
+  border-radius: 8px;
+  color: #f2ecdd;
+  font-size: 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.tv-bar-icon-btn:hover,
+.tv-bar-icon-btn--on {
+  border-color: #e3b341;
+}
+
+.tv-bar-icon-btn--pulse {
+  border-color: rgba(227, 179, 65, 0.55);
+  animation: tv-unmute-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes tv-unmute-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(227, 179, 65, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(227, 179, 65, 0); }
+}
+
+.tv-bar-volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 92px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(242, 236, 221, 0.2);
+  cursor: pointer;
+  outline: none;
+}
+
+.tv-bar-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #e3b341;
+  border: none;
+  cursor: pointer;
+}
+
+.tv-bar-volume-slider::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #e3b341;
+  border: none;
+  cursor: pointer;
+}
+
+/* vote-to-skip / vote-to-restart / play-pause pills (shared .tv-skip styling) */
 .tv-skip {
   display: inline-flex;
   align-items: center;
@@ -268,70 +378,69 @@
   font-weight: 600;
 }
 
-.tv-skip-viewers {
-  font-size: 11px;
-  color: rgba(242, 236, 221, 0.5);
-  white-space: nowrap;
-}
-
-/* shared play/pause pill — same family as the vote pills, paused state reuses --voted accent */
 .tv-playpause .tv-skip-glyph {
   font-size: 11px;
   letter-spacing: -1px;
 }
 
-/* full-screen "Paused" indicator while the channel is frozen */
-.tv-paused {
+/* ── popouts: channel picker + settings menu ────────────────────────────────── */
+.tv-picker,
+.tv-menu {
   position: absolute;
-  inset: 0;
+  bottom: 14px;
+  z-index: 8;
+  background: rgba(11, 10, 8, 0.94);
+  border: 1px solid rgba(227, 179, 65, 0.3);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  animation: tv-pop 0.16s ease-out;
+}
+
+@keyframes tv-pop {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tv-picker {
+  left: 20px;
+  width: min(320px, 70vw);
+  max-height: min(60vh, 460px);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  background: rgba(8, 7, 6, 0.55);
-  pointer-events: none;
-  z-index: 5;
+  overflow: hidden;
 }
 
-.tv-paused-glyph {
-  font-size: 64px;
-  letter-spacing: 4px;
-  color: #e3b341;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
-}
-
-.tv-paused-label {
-  font-size: 14px;
-  letter-spacing: 0.32em;
+.tv-picker-head {
+  font-size: 10px;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: rgba(242, 236, 221, 0.78);
+  color: #e3b341;
+  padding: 12px 14px 8px;
 }
 
-/* channel switcher (right rail) */
-.tv-channels {
-  position: absolute;
-  right: 26px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 5;
+.tv-picker-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  gap: 3px;
+  padding: 0 8px 10px;
+  overflow-y: auto;
 }
 
-.tv-channels--hidden {
-  opacity: 0;
-  transform: translateY(-50%) translateX(10px);
-  pointer-events: none;
+.tv-menu {
+  right: 20px;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px;
 }
 
 .tv-channel-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(11, 10, 8, 0.78);
+  background: rgba(11, 10, 8, 0.5);
   border: 1px solid transparent;
   color: rgba(242, 236, 221, 0.85);
   font-size: 13px;
@@ -353,8 +462,8 @@
 }
 
 .tv-channel-item--off {
-  margin-top: 10px;
-  opacity: 0.7;
+  margin-top: 4px;
+  opacity: 0.75;
 }
 
 /* quality sub-options sit slightly inset under the Quality toggle */
@@ -370,53 +479,16 @@
   font-size: 11px;
 }
 
-/* On touch devices (phones AND tablets) the centered right-rail column blocked the
-   picture and was awkward to hit. Drop it to a bottom, horizontally-scrollable strip
-   that stays out of the way and is easy to flick through. */
-@media (pointer: coarse), (max-width: 640px) {
-  .tv-channels {
-    right: 0;
-    left: 0;
-    top: auto;
-    bottom: 0;
-    transform: none;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 6px;
-    max-width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(to top, rgba(8, 7, 6, 0.92), rgba(8, 7, 6, 0));
-  }
-
-  .tv-channels--hidden {
-    transform: translateY(12px);
-  }
-
-  .tv-channel-item {
-    flex: 0 0 auto;
-    white-space: nowrap;
-  }
-
-  /* the inset/margins that made sense in a column don't in a row */
-  .tv-channel-item--off,
-  .tv-channel-item--qopt {
-    margin-top: 0;
-    padding-left: 9px;
-  }
-}
-
 .tv-channel-num {
   font-family: var(--vp-display, "Marcellus", Georgia, serif);
   color: #e3b341;
   width: 20px;
   text-align: center;
   font-size: 14px;
+  flex-shrink: 0;
 }
 
-/* EPG strip */
+/* EPG strip — sits at the bottom of the picture area, just above the bar */
 .tv-guide {
   position: absolute;
   left: 0;
@@ -465,7 +537,7 @@
   font-size: 13px;
 }
 
-/* full-screen states (no signal / off air) */
+/* full-screen states (no signal / off air) — cover the picture area only */
 .tv-state {
   position: absolute;
   inset: 0;
@@ -513,25 +585,37 @@
   color: #e3b341;
 }
 
+/* ── compact the bar on small screens ───────────────────────────────────────── */
 @media (max-width: 640px) {
-  .tv-panel {
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    min-width: 0;
+  .tv-bar-row {
+    gap: 10px;
+    padding: 8px 12px;
   }
 
-  .tv-channels {
-    right: 12px;
+  .tv-bar-next {
+    display: none;
   }
 
-  .tv-bug {
-    top: 12px;
-    right: 14px;
+  .tv-bar-channel-name {
+    max-width: 110px;
+    letter-spacing: 0.08em;
   }
 
-  .tv-unmute {
-    top: 12px;
-    left: 12px;
+  /* phones have hardware volume — the mute toggle is enough */
+  .tv-bar-volume-slider {
+    display: none;
+  }
+
+  .tv-picker,
+  .tv-menu {
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .tv-bar-info {
+    display: none;
   }
 }
