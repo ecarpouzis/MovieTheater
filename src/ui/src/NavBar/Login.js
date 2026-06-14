@@ -107,32 +107,33 @@ function Login({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen }) 
       <span className="login-title">LOG IN</span>
       <br />
       <br />
-      <AutoComplete
-        options={filteredUserlist}
-        className="login-autocomplete"
-        popupClassName="login-user-dropdown"
-        onSelect={onSelect}
-        onSearch={handleSearch}
-        getPopupContainer={(trigger) => trigger.parentElement}
-      >
-        <div style={{ display: "flex", gap: "0", alignItems: "stretch" }}>
+      <div className="login-input-row">
+        <AutoComplete
+          options={filteredUserlist}
+          className="login-autocomplete"
+          popupClassName="login-user-dropdown"
+          onSelect={onSelect}
+          onSearch={handleSearch}
+          onChange={(value) => setSearchValue(value)}
+          value={searchValue}
+          getPopupContainer={(trigger) => trigger.parentElement}
+        >
           <Input
             placeholder="Username"
             prefix={<UserOutlined className="site-form-item-icon" />}
             className="login-input"
-            onChange={(e) => setSearchValue(e.target.value)}
-            value={searchValue}
+            onPressEnter={onUserClickedLoginButton}
             suffix={
               <Tooltip title="Most accounts need no password. If an account has one set, you'll be asked for it.">
                 <InfoCircleOutlined className="login-tooltip-icon" />
               </Tooltip>
             }
           />
-          <Button type="primary" className="login-button" onClick={onUserClickedLoginButton}>
-            {">"}
-          </Button>
-        </div>
-      </AutoComplete>
+        </AutoComplete>
+        <Button type="primary" className="login-button" onClick={onUserClickedLoginButton}>
+          {">"}
+        </Button>
+      </div>
       {requiresPassword && (
         <Input.Password
           placeholder="Password"
