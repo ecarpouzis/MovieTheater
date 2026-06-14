@@ -227,6 +227,66 @@ namespace MovieTheater.Channels
             return true;
         }
 
+        /// <summary>
+        /// Restarts the currently-airing item from the top: its start is reset to now and its end
+        /// — along with every later item — is pushed back by however much had already played, so the
+        /// channel replays the same movie from the beginning for everyone while staying contiguous
+        /// (the mirror of <see cref="SkipCurrentAsync"/>). Guarded by <paramref name="expectedItemId"/>
+        /// so concurrent restart triggers for the same item are safe.
+        /// </summary>
+        public async Task<bool> RestartCurrentAsync(Channel channel, long expectedItemId, CancellationToken cancel = default)
+        {
+            var now = DateTime.UtcNow;
+            var items = await EnsureScheduleAsync(channel, now.Add(ScheduleHorizon), cancel);
+
+            var current = items.FirstOrDefault(i => i.StartUtc <= now && now < i.EndUtc);
+            if (current == null || current.Id != expectedItemId)
+                return false;
+
+            var elapsed = now - current.StartUtc;
+            if (elapsed <= TimeSpan.Zero)
+                return false;
+
+            var originalEnd = current.EndUtc;
+            current.StartUtc = now;
+            current.EndUtc = originalEnd + elapsed;
+            foreach (var item in items.Where(i => i.StartUtc >= originalEnd))
+            {
+                item.StartUtc += elapsed;
+                item.EndUtc += elapsed;
+            }
+
+            await movieDb.SaveChangesAsync(cancel);
+            return true;
+        }
+
+        /// <summary>
+        /// Resume after a shared pause: slide the item that was airing when we froze — and every item
+        /// after it — forward by <paramref name="wasPausedFor"/>, so the channel picks up exactly where
+        /// it left off instead of jumping ahead by the wall-clock time spent paused. A contiguous shift,
+        /// the same shape as <see cref="SkipCurrentAsync"/>/<see cref="RestartCurrentAsync"/>.
+        /// </summary>
+        public async Task ShiftForResumeAsync(Channel channel, TimeSpan wasPausedFor, CancellationToken cancel = default)
+        {
+            if (wasPausedFor <= TimeSpan.Zero)
+                return;
+
+            var now = DateTime.UtcNow;
+            var items = await EnsureScheduleAsync(channel, now.Add(ScheduleHorizon), cancel);
+
+            // The item airing at the moment of pause is the one whose original window still
+            // contained that instant; shift it and everything later back into the future.
+            var pausedAt = now - wasPausedFor;
+            foreach (var item in items.Where(i => i.EndUtc > pausedAt))
+            {
+                item.StartUtc += wasPausedFor;
+                item.EndUtc += wasPausedFor;
+            }
+
+            if (movieDb.ChangeTracker.HasChanges())
+                await movieDb.SaveChangesAsync(cancel);
+        }
+
         // Deterministic Fisher-Yates so a regenerated round reproduces (rows are never
         // rewritten, but determinism keeps races harmless). ReleaseDate mode orders by id
         // ascending as a stable proxy when no shuffle is wanted.

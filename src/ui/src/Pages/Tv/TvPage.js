@@ -40,7 +40,9 @@ function TvPage({ userData }) {
   const [quality, setQuality] = useState(() => window.localStorage.getItem("StreamQuality") || "auto");
   const [qualityOpen, setQualityOpen] = useState(false);
   const [skip, setSkip] = useState(null); // { viewers, votes, required, youVoted }
+  const [restart, setRestart] = useState(null); // { viewers, votes, required, youVoted }
   const [tuning, setTuning] = useState(false); // waiting on the (cold) transcode to produce frames
+  const [paused, setPaused] = useState(false); // shared channel pause — frozen for everyone watching
 
   const canEdit = userData?.canEditMovies ?? false;
 
@@ -48,9 +50,17 @@ function TvPage({ userData }) {
   const qualityRef = useRef(quality);
   qualityRef.current = quality;
 
+  // Pause is read inside event handlers (onPlaying) that aren't re-bound on every change.
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
+
   // The schedule item currently playing — used to scope skip votes and to notice when
   // the channel has moved on (a skip elsewhere, or a natural advance) so we re-tune.
   const currentItemIdRef = useRef(null);
+
+  // The current item's scheduled end. A restart keeps the same itemId but pushes the end later
+  // (the film replays from the top), so a later end on the same item is how other viewers notice.
+  const currentEndsAtRef = useRef(null);
 
   // A transcode started ahead of time for the *next* item, so an advance is instant
   // instead of paying the ~8s cold start. { movieId, session } once warmed.
@@ -143,11 +153,16 @@ function TvPage({ userData }) {
           setOffAir(true);
           setTuning(false);
           currentItemIdRef.current = null;
+          currentEndsAtRef.current = null;
           setSkip(null);
+          setRestart(null);
           return;
         }
         currentItemIdRef.current = nowData.current.itemId ?? null;
+        currentEndsAtRef.current = nowData.current.endsAtUtc ?? null;
         setSkip(nowData.skip || null);
+        setRestart(nowData.restart || null);
+        setPaused(nowData.paused || false);
 
         // Reuse a transcode we prewarmed for this item near the last boundary (instant
         // advance); a prewarm is only valid for a fresh-start join (~offset 0).
@@ -228,15 +243,21 @@ function TvPage({ userData }) {
           );
         }
 
-        // Advance when the schedule says this item ends (+ a little grace).
-        const msUntilEnd = new Date(nowData.current.endsAtUtc).getTime() - Date.now();
-        advanceTimerRef.current = setTimeout(() => tune(chan), Math.max(msUntilEnd, 5_000) + 3_000);
+        // While paused the timeline is frozen: don't arm the auto-advance or prewarm, and hold the
+        // picture on a still frame. A resume (ours or someone else's) re-tunes us at the live offset.
+        if (nowData.paused) {
+          video.pause();
+        } else {
+          // Advance when the schedule says this item ends (+ a little grace).
+          const msUntilEnd = new Date(nowData.current.endsAtUtc).getTime() - Date.now();
+          advanceTimerRef.current = setTimeout(() => tune(chan), Math.max(msUntilEnd, 5_000) + 3_000);
 
-        // Prewarm the next item ~20s before the boundary so the advance is instant. Only
-        // worth it when there's enough lead and we're not joining right at the end.
-        const nextItem = nowData.next?.[0];
-        if (nextItem && msUntilEnd > 30_000) {
-          prewarmTimerRef.current = setTimeout(() => prewarmNext(nextItem.movieId), msUntilEnd - 20_000);
+          // Prewarm the next item ~20s before the boundary so the advance is instant. Only
+          // worth it when there's enough lead and we're not joining right at the end.
+          const nextItem = nowData.next?.[0];
+          if (nextItem && msUntilEnd > 30_000) {
+            prewarmTimerRef.current = setTimeout(() => prewarmNext(nextItem.movieId), msUntilEnd - 20_000);
+          }
         }
       } catch (err) {
         // Only the active tune may surface an error — a superseded one stays quiet so a
@@ -313,7 +334,10 @@ function TvPage({ userData }) {
     const video = videoRef.current;
     if (!video) return undefined;
     const onEnded = () => channel && tune(channel);
-    const onPlaying = () => setTuning(false); // first frames arrived — hide the "Tuning…" card
+    const onPlaying = () => {
+      setTuning(false); // first frames arrived — hide the "Tuning…" card
+      if (pausedRef.current) videoRef.current?.pause(); // joined a frozen channel — hold the frame
+    };
     video.addEventListener("ended", onEnded);
     video.addEventListener("playing", onPlaying);
     return () => {
@@ -393,8 +417,27 @@ function TvPage({ userData }) {
         if (!r.ok) return;
         const data = await r.json();
         setSkip(data.skip || null);
-        if (data.current && currentItemIdRef.current != null && data.current.itemId !== currentItemIdRef.current) {
-          tune(channel);
+        setRestart(data.restart || null);
+
+        // Shared pause: someone froze the channel — hold the frame and stop here (no advance while
+        // frozen). When we were paused and the channel is now playing again, a resume happened
+        // elsewhere; fall through so the schedule-shift below re-tunes us at the live offset.
+        if (data.paused) {
+          setPaused(true);
+          videoRef.current?.pause();
+          clearTimeout(advanceTimerRef.current);
+          return;
+        }
+        if (pausedRef.current) setPaused(false);
+
+        if (data.current && currentItemIdRef.current != null) {
+          const advanced = data.current.itemId !== currentItemIdRef.current;
+          // Same item, end pushed meaningfully later → the film was restarted or resumed; rejoin.
+          const restarted =
+            !advanced &&
+            currentEndsAtRef.current &&
+            new Date(data.current.endsAtUtc).getTime() - new Date(currentEndsAtRef.current).getTime() > 2000;
+          if (advanced || restarted) tune(channel);
         }
       } catch {
         /* transient — the next poll retries */
@@ -422,6 +465,47 @@ function TvPage({ userData }) {
     }
   }, [channel, tune]);
 
+  // Cast a restart vote for the current item. If it carries the server rewinds the schedule item
+  // to the top and we rejoin from the start; otherwise we just reflect the tally. (A lone viewer's
+  // vote always carries — a single-viewer channel restarts the moment they ask.)
+  const voteRestart = useCallback(async () => {
+    if (!channel) return;
+    try {
+      const r = await fetch(`/API/Channel/${channel.id}/Restart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId: currentItemIdRef.current ?? 0 }),
+      });
+      if (!r.ok) return;
+      const data = await r.json();
+      if (data.restarted) tune(channel);
+      else setRestart(data.restart || null);
+    } catch {
+      /* ignore — they can tap again */
+    }
+  }, [channel, tune]);
+
+  // Flip the shared pause. Anyone watching can freeze or resume the channel for everyone — no vote.
+  // Resuming re-tunes at the (now schedule-shifted) live offset; pausing holds the current frame.
+  const togglePlayPause = useCallback(async () => {
+    if (!channel) return;
+    try {
+      const r = await fetch(`/API/Channel/${channel.id}/PlayPause`, { method: "POST" });
+      if (!r.ok) return;
+      const data = await r.json();
+      setPaused(data.paused);
+      if (data.paused) {
+        videoRef.current?.pause();
+        clearTimeout(advanceTimerRef.current); // frozen — no auto-advance
+        clearTimeout(prewarmTimerRef.current);
+      } else {
+        tune(channel); // rejoin where the channel left off
+      }
+    } catch {
+      /* ignore — they can tap again */
+    }
+  }, [channel, tune]);
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.tagName === "INPUT" || adminOpen) return;
@@ -429,6 +513,7 @@ function TvPage({ userData }) {
       else if (e.key === "ArrowDown") switchBy(-1);
       else if (e.key === "m") setMuted((m) => !m);
       else if (e.key === "g") setGuideOpen((g) => !g);
+      else if (e.key === "k" || e.key === " ") togglePlayPause();
       else if (e.key === "f") {
         if (document.fullscreenElement) document.exitFullscreen();
         else document.querySelector(".tv-room")?.requestFullscreen?.();
@@ -441,7 +526,7 @@ function TvPage({ userData }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [switchBy, channels, wakeOverlay, adminOpen]);
+  }, [switchBy, channels, wakeOverlay, adminOpen, togglePlayPause]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -490,6 +575,14 @@ function TvPage({ userData }) {
         </div>
       )}
 
+      {/* shared pause — the channel is frozen for everyone watching */}
+      {paused && !tuning && !error && !offAir && (
+        <div className="tv-paused" aria-label="Paused">
+          <span className="tv-paused-glyph">❚❚</span>
+          <span className="tv-paused-label">Paused</span>
+        </div>
+      )}
+
       {/* persistent channel bug */}
       {channel && (
         <div className={`tv-bug${overlayVisible ? "" : " tv-bug--dim"}`}>
@@ -523,8 +616,27 @@ function TvPage({ userData }) {
               <span className="tv-panel-time">{new Date(now.next[0].startsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
             </div>
           )}
-          {skip && (
-            <div className="tv-panel-skip">
+          <div className="tv-panel-skip">
+            {/* Skip/restart act on the live timeline, so they're hidden while frozen — resume first. */}
+            {restart && !paused && (
+              <button
+                className={`tv-skip tv-restart${restart.youVoted ? " tv-skip--voted" : ""}`}
+                onClick={(e) => { e.stopPropagation(); voteRestart(); }}
+              >
+                <span className="tv-skip-glyph">⏮</span>
+                {restart.viewers > 1 ? (restart.youVoted ? "Voted to restart" : "Vote to restart") : "Restart"}
+                {restart.viewers > 1 && <span className="tv-skip-tally">{restart.votes}/{restart.required}</span>}
+              </button>
+            )}
+            {/* shared play/pause — anyone watching freezes or resumes the channel for everyone */}
+            <button
+              className={`tv-skip tv-playpause${paused ? " tv-skip--voted tv-playpause--paused" : ""}`}
+              onClick={(e) => { e.stopPropagation(); togglePlayPause(); }}
+            >
+              <span className="tv-skip-glyph">{paused ? "▶" : "⏸"}</span>
+              {paused ? "Resume" : "Pause"}
+            </button>
+            {skip && !paused && (
               <button
                 className={`tv-skip${skip.youVoted ? " tv-skip--voted" : ""}`}
                 onClick={(e) => { e.stopPropagation(); voteSkip(); }}
@@ -533,9 +645,11 @@ function TvPage({ userData }) {
                 {skip.viewers > 1 ? (skip.youVoted ? "Voted to skip" : "Vote to skip") : "Skip"}
                 {skip.viewers > 1 && <span className="tv-skip-tally">{skip.votes}/{skip.required}</span>}
               </button>
-              {skip.viewers > 1 && <span className="tv-skip-viewers">{skip.viewers} watching</span>}
-            </div>
-          )}
+            )}
+            {!paused && (skip?.viewers > 1 || restart?.viewers > 1) && (
+              <span className="tv-skip-viewers">{skip?.viewers ?? restart?.viewers} watching</span>
+            )}
+          </div>
         </div>
       )}
 

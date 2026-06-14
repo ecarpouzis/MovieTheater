@@ -1,9 +1,18 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace MovieTheater.Db
 {
     public class MovieDb : DbContext
     {
+        // SQL Server's datetime2 carries no timezone, so EF materializes these columns with
+        // Kind=Unspecified — which System.Text.Json then serializes without a trailing 'Z',
+        // making the browser read a UTC instant as local time. Stamp Kind=Utc on read so the
+        // channel schedule times round-trip correctly to the client.
+        private static readonly ValueConverter<DateTime, DateTime> UtcConverter =
+            new(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -82,6 +91,13 @@ namespace MovieTheater.Db
 
             modelBuilder.Entity<ChannelScheduleItem>()
                 .HasIndex(i => new { i.ChannelId, i.StartUtc });
+
+            modelBuilder.Entity<ChannelScheduleItem>()
+                .Property(i => i.StartUtc).HasConversion(UtcConverter);
+            modelBuilder.Entity<ChannelScheduleItem>()
+                .Property(i => i.EndUtc).HasConversion(UtcConverter);
+            modelBuilder.Entity<Channel>()
+                .Property(c => c.AnchorUtc).HasConversion(UtcConverter);
 
             modelBuilder.Entity<ChannelScheduleItem>()
                 .HasOne(i => i.Channel)

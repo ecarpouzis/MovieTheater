@@ -89,9 +89,15 @@ namespace MovieTheater.Controllers
             var now = DateTime.UtcNow;
             var items = await scheduleService.EnsureScheduleAsync(channel, now.Add(TimeSpan.FromHours(48)));
 
-            var currentIndex = items.FindIndex(i => i.StartUtc <= now && now < i.EndUtc);
+            // While the channel is paused the timeline is frozen, so read "what's on" against the
+            // pause instant rather than the moving wall clock — the offset (and everything derived
+            // from it) holds steady until someone resumes.
+            var pausedAt = skipService.PausedSince(id);
+            var clock = pausedAt ?? now;
+
+            var currentIndex = items.FindIndex(i => i.StartUtc <= clock && clock < i.EndUtc);
             if (currentIndex < 0)
-                return Json(new { current = (object?)null, next = Array.Empty<object>() });
+                return Json(new { current = (object?)null, next = Array.Empty<object>(), paused = false });
 
             var current = items[currentIndex];
             var titles = await TitlesForAsync(items.Skip(currentIndex).Take(6).Select(i => i.MovieID));
@@ -103,8 +109,8 @@ namespace MovieTheater.Controllers
                 startsAtUtc = i.StartUtc,
             });
 
-            // Polling Now is also the presence heartbeat for the skip-vote tally (§8).
-            var skip = skipService.Touch(id, current.Id, userId.Value);
+            // Polling Now is also the presence heartbeat for the skip/restart tallies (§8).
+            var status = skipService.Touch(id, current.Id, userId.Value);
 
             return Json(new
             {
@@ -113,12 +119,14 @@ namespace MovieTheater.Controllers
                     itemId = current.Id,
                     movieId = current.MovieID,
                     title = titles.GetValueOrDefault(current.MovieID, ""),
-                    offsetSeconds = Math.Max(0, (now - current.StartUtc).TotalSeconds),
+                    offsetSeconds = Math.Max(0, (clock - current.StartUtc).TotalSeconds),
                     durationSeconds = (current.EndUtc - current.StartUtc).TotalSeconds,
                     endsAtUtc = current.EndUtc,
                 },
                 next = nextItems,
-                skip = new { viewers = skip.Viewers, votes = skip.Votes, required = skip.Required, youVoted = skip.YouVoted },
+                paused = pausedAt != null,
+                skip = new { viewers = status.Skip.Viewers, votes = status.Skip.Votes, required = status.Skip.Required, youVoted = status.Skip.YouVoted },
+                restart = new { viewers = status.Restart.Viewers, votes = status.Restart.Votes, required = status.Restart.Required, youVoted = status.Restart.YouVoted },
             });
         }
 
@@ -152,17 +160,90 @@ namespace MovieTheater.Controllers
             if (request != null && request.ItemId != 0 && request.ItemId != current.Id)
             {
                 var stale = skipService.Touch(id, current.Id, userId.Value);
-                return Json(new { skipped = false, skip = new { stale.Viewers, stale.Votes, stale.Required, stale.YouVoted } });
+                return Json(new { skipped = false, skip = new { stale.Skip.Viewers, stale.Skip.Votes, stale.Skip.Required, stale.Skip.YouVoted } });
             }
 
-            var (carried, status) = skipService.Vote(id, current.Id, userId.Value);
+            var (carried, status) = skipService.VoteSkip(id, current.Id, userId.Value);
             bool skipped = carried && await scheduleService.SkipCurrentAsync(channel, current.Id);
 
             return Json(new
             {
                 skipped,
-                skip = new { status.Viewers, status.Votes, status.Required, status.YouVoted },
+                skip = new { status.Skip.Viewers, status.Skip.Votes, status.Skip.Required, status.Skip.YouVoted },
             });
+        }
+
+        [HttpPost("/API/Channel/{id}/Restart")]
+        public async Task<IActionResult> Restart(int id, [FromBody] SkipRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+
+            var channel = await movieDb.Channels.FirstOrDefaultAsync(c => c.Id == id && c.Enabled);
+            if (channel == null)
+                return NotFound(new { message = "Channel not found." });
+
+            if (await scheduleService.GetCeilingAsync(channel) > await GetAgeRestrictionAsync(userId.Value))
+                return StatusCode(403, new { message = "This channel isn't available on your account." });
+
+            var now = DateTime.UtcNow;
+            var items = await scheduleService.EnsureScheduleAsync(channel, now.Add(TimeSpan.FromHours(48)));
+            var current = items.FirstOrDefault(i => i.StartUtc <= now && now < i.EndUtc);
+            if (current == null)
+                return Json(new { restarted = false, restart = (object?)null });
+
+            // As with Skip, a stale itemId just counts as presence on the real current item.
+            if (request != null && request.ItemId != 0 && request.ItemId != current.Id)
+            {
+                var stale = skipService.Touch(id, current.Id, userId.Value);
+                return Json(new { restarted = false, restart = new { stale.Restart.Viewers, stale.Restart.Votes, stale.Restart.Required, stale.Restart.YouVoted } });
+            }
+
+            var (carried, status) = skipService.VoteRestart(id, current.Id, userId.Value);
+            bool restarted = carried && await scheduleService.RestartCurrentAsync(channel, current.Id);
+            // The item id is unchanged by a restart, so clear the poll explicitly to allow another.
+            if (restarted)
+                skipService.ClearRestart(id, current.Id);
+
+            return Json(new
+            {
+                restarted,
+                restart = new { status.Restart.Viewers, status.Restart.Votes, status.Restart.Required, status.Restart.YouVoted },
+            });
+        }
+
+        [HttpPost("/API/Channel/{id}/PlayPause")]
+        public async Task<IActionResult> PlayPause(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+
+            var channel = await movieDb.Channels.FirstOrDefaultAsync(c => c.Id == id && c.Enabled);
+            if (channel == null)
+                return NotFound(new { message = "Channel not found." });
+
+            if (await scheduleService.GetCeilingAsync(channel) > await GetAgeRestrictionAsync(userId.Value))
+                return StatusCode(403, new { message = "This channel isn't available on your account." });
+
+            var now = DateTime.UtcNow;
+            var items = await scheduleService.EnsureScheduleAsync(channel, now.Add(TimeSpan.FromHours(48)));
+
+            // Find the item the viewer is actually looking at — frozen-clock aware, so resuming
+            // targets the same item that was airing when the channel was paused.
+            var clock = skipService.PausedSince(id) ?? now;
+            var current = items.FirstOrDefault(i => i.StartUtc <= clock && clock < i.EndUtc);
+            if (current == null)
+                return Json(new { paused = false });
+
+            // Anyone watching may flip the shared pause — no vote. On resume, slide the schedule
+            // forward by however long it was frozen so playback continues from where it stopped.
+            var (pausedNow, wasPausedFor) = skipService.TogglePause(id, current.Id, userId.Value);
+            if (pausedNow == null)
+                await scheduleService.ShiftForResumeAsync(channel, wasPausedFor);
+
+            return Json(new { paused = pausedNow != null });
         }
 
         [HttpGet("/API/Channel/{id}/Guide")]

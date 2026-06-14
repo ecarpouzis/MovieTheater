@@ -224,7 +224,7 @@
   50% { opacity: 1; transform: translateY(-4px); }
 }
 
-/* vote-to-skip */
+/* vote-to-skip / vote-to-restart (share the .tv-skip pill styling) */
 .tv-panel-skip {
   display: flex;
   align-items: center;
@@ -272,6 +272,40 @@
   font-size: 11px;
   color: rgba(242, 236, 221, 0.5);
   white-space: nowrap;
+}
+
+/* shared play/pause pill — same family as the vote pills, paused state reuses --voted accent */
+.tv-playpause .tv-skip-glyph {
+  font-size: 11px;
+  letter-spacing: -1px;
+}
+
+/* full-screen "Paused" indicator while the channel is frozen */
+.tv-paused {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(8, 7, 6, 0.55);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.tv-paused-glyph {
+  font-size: 64px;
+  letter-spacing: 4px;
+  color: #e3b341;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
+}
+
+.tv-paused-label {
+  font-size: 14px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(242, 236, 221, 0.78);
 }
 
 /* channel switcher (right rail) */
