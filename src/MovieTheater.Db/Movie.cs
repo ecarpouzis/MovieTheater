@@ -74,6 +74,28 @@ namespace MovieTheater.Db
         [MaxLength(1024)]
         public string? FilePath { get; set; }
 
+        // ── Rotten Tomatoes scores: scraped fresh from rottentomatoes.com. ──
+        // The legacy OMDB-sourced <see cref="tomatoRating"/> (single critic score) is left
+        // frozen; these carry today's Tomatometer (critics) and Popcornmeter (audience).
+
+        /// <summary>Rotten Tomatoes Tomatometer (critics) percentage, 0–100.</summary>
+        public int? RtTomatometer { get; set; }
+
+        /// <summary>Rotten Tomatoes Popcornmeter (audience) percentage, 0–100.</summary>
+        public int? RtPopcornmeter { get; set; }
+
+        /// <summary>Resolved canonical RT movie page (e.g. https://www.rottentomatoes.com/m/the_matrix).</summary>
+        public string? RtUrl { get; set; }
+
+        /// <summary>When the RT scores were last scraped; null = not yet scraped (drives resume).</summary>
+        public DateTime? RtScoresUpdatedDate { get; set; }
+
+        /// <summary>True when RT search could not confidently match our title/year, so the scores are suspect.</summary>
+        public bool RtNeedsReview { get; set; }
+
+        /// <summary>Why the RT row was flagged for manual review.</summary>
+        public string? RtReviewReason { get; set; }
+
         [Key]
         public int id { get; set; }
 

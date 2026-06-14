@@ -365,6 +365,8 @@ namespace MovieTheater.Controllers
             public decimal? imdbRating { get; set; }
             public string? imdbID { get; set; }
             public int? tomatoRating { get; set; }
+            public int? RtTomatometer { get; set; }
+            public int? RtPopcornmeter { get; set; }
             public bool RemoveFromRandom { get; set; }
         }
 
@@ -426,6 +428,8 @@ namespace MovieTheater.Controllers
             existing.imdbRating = dto.imdbRating;
             existing.imdbID = dto.imdbID;
             existing.tomatoRating = dto.tomatoRating;
+            existing.RtTomatometer = dto.RtTomatometer;
+            existing.RtPopcornmeter = dto.RtPopcornmeter;
             existing.RemoveFromRandom = dto.RemoveFromRandom;
 
             try

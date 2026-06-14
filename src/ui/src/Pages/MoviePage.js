@@ -67,9 +67,23 @@ function MoviePage({ userData }) {
             </a>
           </div>
           <div className="movie-detail">
-            <u>RottenTomatoes Rating:</u>{" "}
-            <a target="_blank" rel="noreferrer" href={"https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}>
-              {movie.tomatoRating} / 100
+            <u>Tomatometer:</u>{" "}
+            <a
+              target="_blank"
+              rel="noreferrer"
+              href={movie.rtUrl || "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
+            >
+              {(movie.rtTomatometer != null ? movie.rtTomatometer : movie.tomatoRating) ?? "—"} / 100
+            </a>
+          </div>
+          <div className="movie-detail">
+            <u>Popcornmeter:</u>{" "}
+            <a
+              target="_blank"
+              rel="noreferrer"
+              href={movie.rtUrl || "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
+            >
+              {movie.rtPopcornmeter ?? "—"} / 100
             </a>
           </div>
         </div>

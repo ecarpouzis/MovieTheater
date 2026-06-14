@@ -297,11 +297,23 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                     className="modal-rating-link"
                     target="_blank"
                     rel="noreferrer"
-                    href={"https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
+                    href={movie.rtUrl || "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
                   >
-                    <span className="modal-label">Rotten Tomatoes</span>
+                    <span className="modal-label">Tomatometer</span>
                     <span className="modal-rating-score">
-                      {movie.tomatoRating}
+                      {movie.rtTomatometer != null ? movie.rtTomatometer : movie.tomatoRating}
+                      <span className="modal-rating-denom"> / 100</span>
+                    </span>
+                  </a>
+                  <a
+                    className="modal-rating-link"
+                    target="_blank"
+                    rel="noreferrer"
+                    href={movie.rtUrl || "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
+                  >
+                    <span className="modal-label">Popcornmeter</span>
+                    <span className="modal-rating-score">
+                      {movie.rtPopcornmeter}
                       <span className="modal-rating-denom"> / 100</span>
                     </span>
                   </a>
@@ -344,7 +356,9 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                 <EditField label="Poster Link" value={editState.posterLink} onChange={(v) => updateField("posterLink", v)} />
                 <EditField label="IMDB Rating" value={editState.imdbRating} onChange={(v) => updateField("imdbRating", v)} />
                 <EditField label="IMDB ID" value={editState.imdbID} onChange={(v) => updateField("imdbID", v)} />
-                <EditField label="Tomato Rating" value={editState.tomatoRating} onChange={(v) => updateField("tomatoRating", v)} />
+                <EditField label="Tomato Rating (legacy)" value={editState.tomatoRating} onChange={(v) => updateField("tomatoRating", v)} />
+                <EditField label="RT Tomatometer" value={editState.rtTomatometer} onChange={(v) => updateField("rtTomatometer", v)} />
+                <EditField label="RT Popcornmeter" value={editState.rtPopcornmeter} onChange={(v) => updateField("rtPopcornmeter", v)} />
                 <div className="edit-field">
                   <Checkbox checked={editState.removeFromRandom || false} onChange={(e) => updateField("removeFromRandom", e.target.checked)}>
                     Remove from Random
