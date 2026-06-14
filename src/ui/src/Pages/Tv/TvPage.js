@@ -19,6 +19,7 @@ function TvPage({ userData }) {
   const { channelId } = useParams();
   const history = useHistory();
 
+  const roomRef = useRef(null);
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const sessionRef = useRef(null);
@@ -35,6 +36,7 @@ function TvPage({ userData }) {
   });
   const [pickerOpen, setPickerOpen] = useState(false); // channel picker popout
   const [menuOpen, setMenuOpen] = useState(false); // settings dropdown (quality / guide / manage / off)
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [, setNowTick] = useState(0); // ticks every second to advance the live progress bar
   const [guideOpen, setGuideOpen] = useState(false);
   const [guide, setGuide] = useState(null);
@@ -426,6 +428,11 @@ function TvPage({ userData }) {
     setMenuOpen((o) => !o);
   }, []);
 
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else roomRef.current?.requestFullscreen?.();
+  }, []);
+
   // Poll "what's on now" while a channel is up: it keeps the skip tally fresh, doubles as
   // the presence heartbeat (the server counts a poll as "still watching"), and re-tunes if
   // the channel has moved on — a skip the group passed, or a natural advance we missed.
@@ -534,10 +541,8 @@ function TvPage({ userData }) {
       else if (e.key === "m") setMuted((m) => !m);
       else if (e.key === "g") setGuideOpen((g) => !g);
       else if (e.key === "k" || e.key === " ") togglePlayPause();
-      else if (e.key === "f") {
-        if (document.fullscreenElement) document.exitFullscreen();
-        else document.querySelector(".tv-room")?.requestFullscreen?.();
-      } else if (/^[1-9]$/.test(e.key) && channels) {
+      else if (e.key === "f") toggleFullscreen();
+      else if (/^[1-9]$/.test(e.key) && channels) {
         const target = channels[parseInt(e.key, 10) - 1];
         if (target) setChannel(target);
       } else return;
@@ -545,7 +550,7 @@ function TvPage({ userData }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [switchBy, channels, adminOpen, togglePlayPause]);
+  }, [switchBy, channels, adminOpen, togglePlayPause, toggleFullscreen]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -553,6 +558,13 @@ function TvPage({ userData }) {
     video.muted = muted;
     video.volume = volume;
   }, [muted, volume]);
+
+  // Keep the fullscreen button's icon in sync with the actual state (incl. Esc to exit).
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
 
   // Tick once a second while something is playing so the progress bar advances smoothly
   // between the (infrequent) schedule polls. progressPct is recomputed from the clock on render.
@@ -592,7 +604,7 @@ function TvPage({ userData }) {
 
   return (
     /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/media-has-caption */
-    <div className="tv-room">
+    <div className="tv-room" ref={roomRef}>
       {/* The picture area. Nothing in the control bar overlaps it; only the picker / menu /
           guide pop out over it, and only while open. */}
       <div className="tv-screen" onClick={closePopouts}>
@@ -810,6 +822,14 @@ function TvPage({ userData }) {
               aria-label="Volume"
             />
           </div>
+
+          <button
+            className="tv-bar-icon-btn"
+            onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
+            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          >
+            <span className={`tv-glyph-fs${isFullscreen ? " tv-glyph-fs--exit" : ""}`} />
+          </button>
 
           <button
             className={`tv-bar-icon-btn${menuOpen ? " tv-bar-icon-btn--on" : ""}`}

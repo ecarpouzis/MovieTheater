@@ -305,6 +305,21 @@
   animation: tv-unmute-pulse 2.4s ease-in-out infinite;
 }
 
+/* corner-bracket fullscreen glyph (enter), mirrored for the exit state */
+.tv-glyph-fs {
+  width: 15px;
+  height: 15px;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  -webkit-mask: linear-gradient(#000 0 0) top left / 6px 6px no-repeat, linear-gradient(#000 0 0) bottom right / 6px 6px no-repeat;
+  mask: linear-gradient(#000 0 0) top left / 6px 6px no-repeat, linear-gradient(#000 0 0) bottom right / 6px 6px no-repeat;
+}
+
+.tv-glyph-fs--exit {
+  -webkit-mask: linear-gradient(#000 0 0) top right / 6px 6px no-repeat, linear-gradient(#000 0 0) bottom left / 6px 6px no-repeat;
+  mask: linear-gradient(#000 0 0) top right / 6px 6px no-repeat, linear-gradient(#000 0 0) bottom left / 6px 6px no-repeat;
+}
+
 @keyframes tv-unmute-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(227, 179, 65, 0.35); }
   50% { box-shadow: 0 0 0 8px rgba(227, 179, 65, 0); }
