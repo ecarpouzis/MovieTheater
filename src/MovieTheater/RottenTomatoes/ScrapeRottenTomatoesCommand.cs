@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using CliFx;
@@ -38,6 +39,9 @@ namespace MovieTheater.RottenTomatoes
 
         [CommandOption("rescrape", Description = "Also reprocess rows already scraped (default: only RtScoresUpdatedDate IS NULL).")]
         public bool Rescrape { get; set; }
+
+        [CommandOption("retry-review", Description = "Reprocess only rows currently flagged RtNeedsReview (recover earlier misses).")]
+        public bool RetryReview { get; set; }
 
         [CommandOption("delay-min", Description = "Minimum delay between titles, ms.")]
         public int DelayMinMs { get; set; } = 2000;
@@ -82,7 +86,7 @@ namespace MovieTheater.RottenTomatoes
             // Single-title smoke test: scrape and print, never write.
             if (!string.IsNullOrWhiteSpace(SingleTitle))
             {
-                var single = await ScrapeWithRetryAsync(page, SingleTitle.Trim(), SingleYear, cancel);
+                var single = await ScrapeWithRetryAsync(page, CleanSearchQuery(SingleTitle.Trim()), SingleYear, cancel);
                 PrintResult(console, single);
                 return;
             }
@@ -90,8 +94,11 @@ namespace MovieTheater.RottenTomatoes
             List<MovieRow> todo;
             using (var db = await dbFactory.CreateDbContextAsync())
             {
-                var query = db.Movies
-                    .Where(m => Rescrape || m.RtScoresUpdatedDate == null)
+                IQueryable<Db.Movie> rows = db.Movies;
+                rows = RetryReview
+                    ? rows.Where(m => m.RtNeedsReview)
+                    : rows.Where(m => Rescrape || m.RtScoresUpdatedDate == null);
+                var query = rows
                     .OrderBy(m => m.id)
                     .Select(m => new MovieRow
                     {
@@ -116,7 +123,8 @@ namespace MovieTheater.RottenTomatoes
                     break;
                 }
 
-                var searchTitle = !string.IsNullOrWhiteSpace(row.SimpleTitle) ? row.SimpleTitle : row.Title;
+                var rawTitle = !string.IsNullOrWhiteSpace(row.SimpleTitle) ? row.SimpleTitle : row.Title;
+                var searchTitle = CleanSearchQuery(rawTitle);
                 try
                 {
                     var result = await ScrapeWithRetryAsync(page, searchTitle, row.Year, cancel);
@@ -242,6 +250,32 @@ namespace MovieTheater.RottenTomatoes
             int hi = Math.Max(lo + 1, DelayMaxMs);
             try { await Task.Delay(rng.Next(lo, hi), cancel); }
             catch (OperationCanceledException) { }
+        }
+
+        // Eric's library uses collection/series naming that doesn't match RT's real titles.
+        // Rewrite the search query so RT search has a chance:
+        //   "Airplane 1: Airplane!"  -> "Airplane!"   (real title after a "<name> NN:" index)
+        //   "Anchorman 1"            -> "Anchorman"   (only a trailing "1"/"01": the franchise's
+        //                                              first film, whose base name maps to it;
+        //                                              higher numbers like "Pink Panther 02" are
+        //                                              left alone — the number disambiguates a
+        //                                              distinct film, so stripping it mis-scores)
+        //   "'60s, The"              -> "The '60s"     (de-invert a trailing article)
+        // Matching still normalizes both sides, so this only needs to get RT search close.
+        private static string CleanSearchQuery(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title)) return title;
+            var t = title.Trim();
+
+            var colon = Regex.Match(t, @"^.+?\s\d{1,3}:\s*(.+)$");
+            if (colon.Success) t = colon.Groups[1].Value.Trim();
+
+            t = Regex.Replace(t, @"\s+0?1$", "").Trim();
+
+            var article = Regex.Match(t, @"^(.+),\s*(the|a|an)$", RegexOptions.IgnoreCase);
+            if (article.Success) t = $"{article.Groups[2].Value} {article.Groups[1].Value}".Trim();
+
+            return string.IsNullOrWhiteSpace(t) ? title : t;
         }
 
         private static void PrintResult(IConsole console, RtScoreResult r)

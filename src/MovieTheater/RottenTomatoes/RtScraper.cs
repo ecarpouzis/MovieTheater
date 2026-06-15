@@ -32,6 +32,10 @@ namespace MovieTheater.RottenTomatoes
         // treating it as the wrong film (e.g. a remake, or a TV version not on /m/).
         private const int YearTolerance = 3;
 
+        // Both normalized titles must be at least this long to match by substring (Tier 2),
+        // so short titles ("It", "Up", "Her") don't false-match longer ones.
+        private const int MinContainsLen = 5;
+
         private class RowDto
         {
             [JsonPropertyName("url")] public string Url { get; set; }
@@ -149,26 +153,41 @@ namespace MovieTheater.RottenTomatoes
             if (rows.Count == 0) return null;
 
             var want = Normalize(title);
-            var titleMatches = rows.Where(r => Normalize(r.Title) == want).ToList();
+            // Tier 1: exact normalized title.
+            var exact = rows.Where(r => Normalize(r.Title) == want).ToList();
+            if (exact.Count > 0)
+                return WithinYear(ClosestByYear(exact, year), year);
 
-            if (titleMatches.Count > 0)
+            // Tier 2: an RT title that *extends* ours with a subtitle — recovers shortened
+            // bases (e.g. "Anchorman" → "Anchorman: The Legend of Ron Burgundy", "Ocean's"
+            // → "Ocean's Eleven"). Deliberately one-directional (theirs contains ours, not the
+            // reverse) so a numbered entry like "pinkpanther02" can't grab the base "pinkpanther"
+            // and mis-score a different franchise film. Min length guards short titles ("It"),
+            // and the year guard rejects wrong-era matches.
+            if (want.Length >= MinContainsLen)
             {
-                var best = ClosestByYear(titleMatches, year);
-                // A same-title row whose year is far from ours is almost certainly a different
-                // film (remake) or the wrong medium; don't attribute its scores to our movie.
-                if (year.HasValue && ParseYear(best.Year) is int by && Math.Abs(by - year.Value) > YearTolerance)
-                    return null;
-                return best;
+                var contains = rows.Where(r => Normalize(r.Title).Contains(want)).ToList();
+                if (contains.Count > 0)
+                    return WithinYear(ClosestByYear(contains, year), year);
             }
 
-            // No exact title hit: only accept a single result whose year matches ours,
-            // otherwise we can't be confident which row is the right movie.
+            // Tier 3: no title hit, but exactly one result shares our year.
             if (year.HasValue)
             {
                 var yearMatches = rows.Where(r => ParseYear(r.Year) == year.Value).ToList();
                 if (yearMatches.Count == 1) return yearMatches[0];
             }
             return null;
+        }
+
+        // Reject a match whose year is far from ours — almost certainly a different film
+        // (remake) or the wrong medium, so we don't attribute its scores to our movie.
+        private static RowDto WithinYear(RowDto row, int? year)
+        {
+            if (row == null) return null;
+            if (year.HasValue && ParseYear(row.Year) is int by && Math.Abs(by - year.Value) > YearTolerance)
+                return null;
+            return row;
         }
 
         private static RowDto ClosestByYear(List<RowDto> rows, int? year)
