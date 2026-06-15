@@ -282,11 +282,8 @@ function WatchPage({ userData }) {
   const errorCopy = (() => {
     if (!error) return null;
     if (error.status === 401) return { head: "Please sign in", body: "You need to be signed in to enter the screening room." };
-    if (error.status === 403 && userData && !userData.hasPassword)
-      return {
-        head: "A ticket is required",
-        body: "Streaming is for password-protected accounts. Set a password from the user menu, then come back.",
-      };
+    // Passwordless accounts fall through to the generic 403 — we don't tell them
+    // streaming exists, since only an admin can grant a first password anyway.
     if (error.status === 403) return { head: "Not this picture", body: error.message || "This movie isn't available on your account." };
     if (error.status === 503) return { head: "The theater is full", body: error.message || "Too many screens are running right now — try again in a few minutes." };
     if (error.status === 404 || error.status === 501)

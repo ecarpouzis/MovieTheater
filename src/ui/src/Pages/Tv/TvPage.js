@@ -25,6 +25,7 @@ function TvPage({ userData }) {
   const sessionRef = useRef(null);
   const advanceTimerRef = useRef(null);
   const wakeLockRef = useRef(null);
+  const idleTimerRef = useRef(null);
 
   const [channels, setChannels] = useState(null); // null = loading
   const [channel, setChannel] = useState(null);
@@ -50,6 +51,7 @@ function TvPage({ userData }) {
   const [restart, setRestart] = useState(null); // { viewers, votes, required, youVoted }
   const [tuning, setTuning] = useState(false); // waiting on the (cold) transcode to produce frames
   const [paused, setPaused] = useState(false); // shared channel pause — frozen for everyone watching
+  const [chromeVisible, setChromeVisible] = useState(true); // control bar fades out while idle, like the Watch player
 
   const canEdit = userData?.canEditMovies ?? false;
 
@@ -60,6 +62,11 @@ function TvPage({ userData }) {
   // Pause is read inside event handlers (onPlaying) that aren't re-bound on every change.
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+
+  // Whether any popout is open — read inside the idle timer (not re-bound per change) so a
+  // menu/picker/guide left open keeps the chrome up instead of fading mid-interaction.
+  const popoutOpenRef = useRef(false);
+  popoutOpenRef.current = pickerOpen || menuOpen || guideOpen;
 
   // The schedule item currently playing — used to scope skip votes and to notice when
   // the channel has moved on (a skip elsewhere, or a natural advance) so we re-tune.
@@ -101,6 +108,35 @@ function TvPage({ userData }) {
     setPickerOpen(false);
     setMenuOpen(false);
   }, []);
+
+  // Show the control bar and re-arm the idle fade. The bar drops away after a few seconds of
+  // stillness (like the Watch player's house-lights fade), but stays up while paused or while a
+  // popout is open so it can't vanish mid-interaction.
+  const wakeChrome = useCallback(() => {
+    setChromeVisible(true);
+    clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      const video = videoRef.current;
+      if (popoutOpenRef.current || pausedRef.current || !video || video.paused) return;
+      setChromeVisible(false);
+    }, 3000);
+  }, []);
+
+  // Tap/click on the picture: close an open popout if there is one, otherwise toggle the chrome —
+  // showing hides it, hidden shows it (and re-arms the fade). This is the tap-to-hide affordance.
+  const onScreenTap = useCallback(() => {
+    if (popoutOpenRef.current) {
+      closePopouts();
+      setGuideOpen(false);
+      return;
+    }
+    if (chromeVisible) {
+      clearTimeout(idleTimerRef.current);
+      setChromeVisible(false);
+    } else {
+      wakeChrome();
+    }
+  }, [chromeVisible, closePopouts, wakeChrome]);
 
   // The bitrate cap for the current quality (Auto → a connection-based fixed cap).
   const resolveBitrate = useCallback(() => {
@@ -339,6 +375,7 @@ function TvPage({ userData }) {
     const onPlaying = () => {
       setTuning(false); // first frames arrived — hide the "Tuning…" card
       if (pausedRef.current) videoRef.current?.pause(); // joined a frozen channel — hold the frame
+      else wakeChrome(); // playback is live — start the idle fade countdown
     };
     video.addEventListener("ended", onEnded);
     video.addEventListener("playing", onPlaying);
@@ -346,7 +383,7 @@ function TvPage({ userData }) {
       video.removeEventListener("ended", onEnded);
       video.removeEventListener("playing", onPlaying);
     };
-  }, [channel, tune]);
+  }, [channel, tune, wakeChrome]);
 
   // ── teardown / wake lock / keyboard ─────────────────────────────────────────
   useEffect(() => {
@@ -356,6 +393,7 @@ function TvPage({ userData }) {
       window.removeEventListener("pagehide", onPageHide);
       clearTimeout(advanceTimerRef.current);
       clearTimeout(prewarmTimerRef.current);
+      clearTimeout(idleTimerRef.current);
       stopSession(true);
       // Don't leak a prewarmed transcode that never got consumed.
       if (prewarmRef.current) {
@@ -383,6 +421,12 @@ function TvPage({ userData }) {
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
+
+  // Arm the idle fade once playing starts. Re-arm when the channel, pause, or popout state
+  // changes so a resume or a just-closed menu restarts the countdown rather than fading instantly.
+  useEffect(() => {
+    wakeChrome();
+  }, [wakeChrome, channel?.id, paused, pickerOpen, menuOpen, guideOpen]);
 
   const switchBy = useCallback(
     (delta) => {
@@ -547,10 +591,11 @@ function TvPage({ userData }) {
         if (target) setChannel(target);
       } else return;
       e.preventDefault();
+      wakeChrome();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [switchBy, channels, adminOpen, togglePlayPause, toggleFullscreen]);
+  }, [switchBy, channels, adminOpen, togglePlayPause, toggleFullscreen, wakeChrome]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -594,7 +639,8 @@ function TvPage({ userData }) {
   const errorCopy = (() => {
     if (!error) return null;
     if (error.status === 401) return "Sign in to turn on the TV.";
-    if (error.status === 403 && userData && !userData.hasPassword) return "Streaming is for password-protected accounts — set a password from the user menu.";
+    // Passwordless accounts fall through to the generic 403 — only an admin can
+    // grant a first password, so there's nothing to point them at.
     if (error.status === 403) return "This TV isn't available on your account.";
     if (error.status === 404 || error.status === 501) return "The broadcast tower isn't built yet.";
     return error.message || "The signal dropped.";
@@ -602,12 +648,15 @@ function TvPage({ userData }) {
 
   const volumeIcon = muted || volume === 0 ? "🔇" : volume < 0.5 ? "🔉" : "🔊";
 
+  // The bar fades out only once the chrome is idle and nothing is popped out over the picture.
+  const chromeHidden = !chromeVisible && !pickerOpen && !menuOpen && !guideOpen;
+
   return (
     /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/media-has-caption */
-    <div className="tv-room" ref={roomRef}>
+    <div className={`tv-room${chromeHidden ? " tv-room--idle" : ""}`} ref={roomRef} onMouseMove={wakeChrome}>
       {/* The picture area. Nothing in the control bar overlaps it; only the picker / menu /
           guide pop out over it, and only while open. */}
-      <div className="tv-screen" onClick={closePopouts}>
+      <div className="tv-screen" onClick={onScreenTap}>
         <video ref={videoRef} className="tv-video" autoPlay playsInline muted />
 
         {/* channel-change static burst */}
@@ -731,8 +780,9 @@ function TvPage({ userData }) {
         )}
       </div>
 
-      {/* flattened control bar — lives below the picture so it never covers it */}
-      <div className="tv-bar">
+      {/* flattened control bar — lives below the picture so it never covers it; slides away
+          while idle (tap the picture, or move the mouse, to bring it back) */}
+      <div className={`tv-bar${chromeHidden ? " tv-bar--hidden" : ""}`}>
         <div className="tv-bar-progress">
           <div className="tv-bar-progress-fill" style={{ width: `${progressPct}%` }} />
         </div>

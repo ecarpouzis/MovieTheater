@@ -1,117 +1,27 @@
-/* A movie-ticket stub in the light catalog UI — a sliver of the screening room's
-   black-and-gold leaking into the lobby. Wide and short, with a torn perforation
-   between the WATCH body and the ADMIT ONE stub. */
+/* The Watch ticket (🎟️) is drawn as an inline SVG (see WatchButton.js) so the
+   scalloped notches, cut-in corners, and ruled inner border are all exact. This
+   file only styles the wrapping button: a drop shadow that follows the notched
+   silhouette (not a rectangular box-shadow) plus the hover lift. */
 .watch-stub {
-  position: relative;
-  display: inline-flex;
-  align-items: stretch;
-  height: 42px;
-  background: linear-gradient(135deg, #211b10 0%, #14110b 70%);
-  color: #e3b341;
-  border: none;
-  border-radius: 6px;
+  display: inline-block;
   padding: 0;
+  border: none;
+  background: none;
   cursor: pointer;
-  font-family: inherit;
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
-  box-shadow: 0 3px 14px rgba(20, 17, 11, 0.32);
+  line-height: 0;
+  filter: drop-shadow(0 4px 10px rgba(120, 80, 20, 0.28));
+  transition: transform 0.15s ease, filter 0.2s ease;
 }
 
 .watch-stub:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(20, 17, 11, 0.42);
+  filter: drop-shadow(0 7px 14px rgba(120, 80, 20, 0.34)) brightness(1.03);
 }
 
 .watch-stub:active {
   transform: none;
 }
 
-/* Main body: ▸ WATCH */
-.watch-stub-main {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 18px;
-}
-
-.watch-stub-tri {
-  width: 0;
-  height: 0;
-  border-left: 11px solid currentColor;
-  border-top: 7px solid transparent;
-  border-bottom: 7px solid transparent;
-}
-
-.watch-stub-text {
-  font-weight: 700;
-  font-size: 14px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-/* The perforation line of the ticket, with circular notches biting in from the
-   top and bottom edges to suggest a tear-off stub. */
-.watch-stub-perf {
-  position: relative;
-  align-self: stretch;
-  width: 0;
-  margin: 7px 0;
-  border-left: 2px dashed rgba(227, 179, 65, 0.5);
-}
-
-.watch-stub-perf::before,
-.watch-stub-perf::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  width: 11px;
-  height: 11px;
-  background: #fff;
-  border-radius: 50%;
-  transform: translateX(-50%);
-}
-
-.watch-stub-perf::before {
-  top: -13px;
-}
-
-.watch-stub-perf::after {
-  bottom: -13px;
-}
-
-/* Tear-off stub: ADMIT / ONE stacked small */
-.watch-stub-tail {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  padding: 0 13px;
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  line-height: 1.2;
-  text-transform: uppercase;
-  color: rgba(227, 179, 65, 0.78);
-}
-
-.watch-stub-tail span {
-  /* nudge the wider word so the two stack visually centered despite tracking */
-  margin-right: -0.2em;
-}
-
-.watch-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
-  color: #8a6d2f;
-  background: #fdf6e3;
-  border: 1px dashed #d9bb6a;
-  border-radius: 4px;
-  padding: 7px 12px;
-}
-
-.watch-hint-glyph {
-  color: #c9a23c;
+.watch-stub-svg {
+  display: block;
 }

@@ -243,7 +243,7 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
             </>
           ) : (
             <p className="settings-hint">
-              Your account has no password. An administrator sets the initial password that unlocks streaming.
+              Your account has no password. Passwords are set up by an administrator.
             </p>
           )}
         </div>

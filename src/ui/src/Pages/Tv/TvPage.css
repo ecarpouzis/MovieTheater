@@ -13,6 +13,11 @@
   cursor: default;
 }
 
+/* while idle the chrome has faded — hide the pointer too, like a TV left running */
+.tv-room--idle {
+  cursor: none;
+}
+
 /* the picture area — everything that overlays the video is scoped inside here */
 .tv-screen {
   position: relative;
@@ -137,6 +142,15 @@
   background: linear-gradient(to bottom, #0d0c0a, #070605);
   border-top: 1px solid rgba(227, 179, 65, 0.25);
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* idle: slide the bar down past the bottom edge (clipped by the room) and fade it.
+   Its flex slot stays, falling back to the black room behind — seamless against the letterbox. */
+.tv-bar--hidden {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .tv-bar-progress {
