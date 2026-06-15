@@ -46,6 +46,17 @@ namespace MovieTheater.Controllers
             return claim != null && int.TryParse(claim.Value, out var id) ? id : null;
         }
 
+        // A stream is "English" by its language tag (eng/en) or, failing that, a DisplayTitle that
+        // leads with "English" — covers files whose audio carries a title but no language code.
+        private static bool IsEnglish(JellyfinPlaybackStream s)
+        {
+            var lang = s.Language?.Trim().ToLowerInvariant();
+            if (lang == "en" || lang == "eng" || lang == "english")
+                return true;
+            var title = s.DisplayTitle?.Trim();
+            return title != null && title.StartsWith("English", StringComparison.OrdinalIgnoreCase);
+        }
+
         public class StartRequest
         {
             public int MovieId { get; set; }
@@ -117,6 +128,38 @@ namespace MovieTheater.Controllers
 
             var source = info.MediaSources[0];
 
+            // Auto-default to English audio: when the caller expressed no preference and the track
+            // that would play (the container default, else the first) isn't English while an English
+            // track exists, re-resolve pinned to it. An explicit audio selection disables direct play,
+            // so this only re-requests when a switch is actually needed. Clients keep sending no
+            // preference, so this re-applies on every start (incl. each channel advance) for free.
+            int? effectiveAudioIndex = request.AudioStreamIndex;
+            if (request.AudioStreamIndex == null)
+            {
+                var audioStreams = source.MediaStreams.Where(s => s.Type == "Audio").ToList();
+                if (audioStreams.Count > 1)
+                {
+                    var playing = audioStreams.FirstOrDefault(s => s.IsDefault) ?? audioStreams[0];
+                    if (!IsEnglish(playing) && audioStreams.FirstOrDefault(IsEnglish) is { } english)
+                    {
+                        effectiveAudioIndex = english.Index;
+                        allowDirectPlay = false;
+                        try
+                        {
+                            info = await jellyfin.GetPlaybackInfoAsync(
+                                file.JellyfinItemId, request.MaxBitrateBps, effectiveAudioIndex, request.SubtitleStreamIndex,
+                                startTicks, request.ToCapabilities(), allowDirectPlay);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(ex, "Jellyfin PlaybackInfo (English audio) failed for movie {MovieId}", movie.id);
+                            return StatusCode(502, new { message = "Could not reach the media server." });
+                        }
+                        source = info.MediaSources[0];
+                    }
+                }
+            }
+
             // Serve the original file (no ffmpeg) when the browser can play it as-is and the bitrate
             // fits the chosen cap — instant start, zero GPU. Remote viewers on a capped rung whose
             // file is too big still get a transcode below. Range requests through the gateway make
@@ -140,10 +183,15 @@ namespace MovieTheater.Controllers
             string ToGatewayUrl(string jellyfinRelativeUrl) =>
                 $"{config.StreamGatewayBaseUrl!.TrimEnd('/')}/s/{token}{StripApiKey(jellyfinRelativeUrl)}";
 
-            var audioTracks = source.MediaStreams
-                .Where(s => s.Type == "Audio")
+            var audioStreamList = source.MediaStreams.Where(s => s.Type == "Audio").ToList();
+            var audioTracks = audioStreamList
                 .Select(s => new { index = s.Index, label = s.DisplayTitle ?? s.Codec ?? $"Track {s.Index}", language = s.Language })
                 .ToList();
+
+            // What's actually playing — an explicit/auto English pick, else the container default
+            // (or the first track) — so the player can highlight the live audio track in its menu.
+            var selectedAudioIndex = effectiveAudioIndex
+                ?? (audioStreamList.FirstOrDefault(s => s.IsDefault) ?? audioStreamList.FirstOrDefault())?.Index;
 
             var subtitleTracks = source.MediaStreams
                 .Where(s => s.Type == "Subtitle")
@@ -208,6 +256,10 @@ namespace MovieTheater.Controllers
                 videoCodec = outputVideoCodec,
                 audioTracks,
                 subtitleTracks,
+                // The tracks currently playing, so the player highlights them and (for audio) reflects
+                // the server-side English auto-default without the client having to re-derive it.
+                selectedAudioIndex,
+                selectedSubtitleIndex = request.SubtitleStreamIndex,
                 resumePositionTicks = resume,
             });
         }

@@ -354,8 +354,8 @@ function WatchPage({ userData }) {
           qualityDetail={autoBpsLabel(autoBps)}
           audioTracks={session.audioTracks || []}
           subtitleTracks={session.subtitleTracks || []}
-          selectedAudioIndex={audioIndex}
-          selectedSubtitleIndex={subtitleIndex}
+          selectedAudioIndex={audioIndex ?? session.selectedAudioIndex ?? null}
+          selectedSubtitleIndex={subtitleIndex ?? session.selectedSubtitleIndex ?? null}
           onSelectQuality={handleSelectQuality}
           onSelectAudio={handleSelectAudio}
           onSelectSubtitle={handleSelectSubtitle}

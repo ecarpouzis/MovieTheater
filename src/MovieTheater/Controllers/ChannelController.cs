@@ -112,6 +112,19 @@ namespace MovieTheater.Controllers
             // Polling Now is also the presence heartbeat for the skip/restart tallies (§8).
             var status = skipService.Touch(id, current.Id, userId.Value);
 
+            // Put names to the live presence so the viewer count can reveal who's connected. Yourself
+            // sorts first and is flagged, the rest alphabetically.
+            var viewerIds = skipService.ViewerIds(id);
+            var viewerNames = await movieDb.Users
+                .Where(u => viewerIds.Contains(u.UserID))
+                .Select(u => new { u.UserID, u.Username })
+                .ToListAsync();
+            var viewers = viewerNames
+                .OrderByDescending(u => u.UserID == userId.Value)
+                .ThenBy(u => u.Username)
+                .Select(u => new { name = u.Username ?? "Someone", you = u.UserID == userId.Value })
+                .ToList();
+
             return Json(new
             {
                 current = new
@@ -125,6 +138,7 @@ namespace MovieTheater.Controllers
                 },
                 next = nextItems,
                 paused = pausedAt != null,
+                viewers = new { count = viewers.Count, names = viewers },
                 skip = new { viewers = status.Skip.Viewers, votes = status.Skip.Votes, required = status.Skip.Required, youVoted = status.Skip.YouVoted },
                 restart = new { viewers = status.Restart.Viewers, votes = status.Restart.Votes, required = status.Restart.Required, youVoted = status.Restart.YouVoted },
             });

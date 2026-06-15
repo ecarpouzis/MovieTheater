@@ -47,8 +47,16 @@ function TvPage({ userData }) {
   const [adminOpen, setAdminOpen] = useState(false);
   const [quality, setQuality] = useState(() => window.localStorage.getItem("StreamQuality") || "auto");
   const [qualityOpen, setQualityOpen] = useState(false);
+  const [audioTracks, setAudioTracks] = useState([]);
+  const [subtitleTracks, setSubtitleTracks] = useState([]);
+  const [audioIndex, setAudioIndex] = useState(null); // explicit pick; null = let the server auto-default (English)
+  const [playingAudioIndex, setPlayingAudioIndex] = useState(null); // what's actually playing, for the menu highlight
+  const [subtitleIndex, setSubtitleIndex] = useState(null); // burned-in subtitle stream; null = off
+  const [audioOpen, setAudioOpen] = useState(false);
+  const [subsOpen, setSubsOpen] = useState(false);
   const [skip, setSkip] = useState(null); // { viewers, votes, required, youVoted }
   const [restart, setRestart] = useState(null); // { viewers, votes, required, youVoted }
+  const [viewers, setViewers] = useState(null); // { count, names: [{ name, you }] } — who's tuned in
   const [tuning, setTuning] = useState(false); // waiting on the (cold) transcode to produce frames
   const [paused, setPaused] = useState(false); // shared channel pause — frozen for everyone watching
   const [chromeVisible, setChromeVisible] = useState(true); // control bar fades out while idle, like the Watch player
@@ -58,6 +66,17 @@ function TvPage({ userData }) {
   // tune() reads the current quality without re-binding on every change.
   const qualityRef = useRef(quality);
   qualityRef.current = quality;
+
+  // tune() (and prewarm) read the current track selection without re-binding on every change.
+  const audioIndexRef = useRef(audioIndex);
+  audioIndexRef.current = audioIndex;
+  const subtitleIndexRef = useRef(subtitleIndex);
+  subtitleIndexRef.current = subtitleIndex;
+
+  // The subtitle we actually pass to the transcode — only ever an *image* sub, which has to be
+  // burned in. Text (sidecar) subs render client-side via <track>, so they stay null here and
+  // never trigger a transcode.
+  const burnSubIndexRef = useRef(null);
 
   // Pause is read inside event handlers (onPlaying) that aren't re-bound on every change.
   const pausedRef = useRef(paused);
@@ -71,6 +90,10 @@ function TvPage({ userData }) {
   // The schedule item currently playing — used to scope skip votes and to notice when
   // the channel has moved on (a skip elsewhere, or a natural advance) so we re-tune.
   const currentItemIdRef = useRef(null);
+
+  // The movie last tuned to — a pinned audio/subtitle choice is scoped to that film, so we
+  // can drop the override when the channel rolls to a different movie.
+  const tunedMovieIdRef = useRef(null);
 
   // The current item's scheduled end. A restart keeps the same itemId but pushes the end later
   // (the film replays from the top), so a later end on the same item is how other viewers notice.
@@ -149,14 +172,25 @@ function TvPage({ userData }) {
   // playlist), so the advance can reuse it instead of paying the cold start.
   const prewarmNext = useCallback(
     async (movieId) => {
+      // Pin the same track selection the live tune will ask for, so the warmed transcode
+      // matches — otherwise the reuse check below would reject it. Only a burned-in (image)
+      // subtitle reaches the transcode; text subs ride along as sidecars regardless.
+      const audioStreamIndex = audioIndexRef.current;
+      const subtitleStreamIndex = burnSubIndexRef.current;
       try {
-        const r = await MovieAPI.startStream({ movieId, maxBitrateBps: resolveBitrate(), startSeconds: 0 });
+        const r = await MovieAPI.startStream({
+          movieId,
+          maxBitrateBps: resolveBitrate(),
+          startSeconds: 0,
+          audioStreamIndex,
+          subtitleStreamIndex,
+        });
         if (!r.ok) return;
         const session = await r.json();
         // For a transcode, pull the playlist to actually spawn ffmpeg; direct play has
         // nothing to warm (it's a static file).
         if (session.isHls !== false) fetch(session.hlsUrl).catch(() => {});
-        prewarmRef.current = { movieId, session };
+        prewarmRef.current = { movieId, session, audioStreamIndex, subtitleStreamIndex };
       } catch {
         /* prewarm is best-effort */
       }
@@ -194,13 +228,31 @@ function TvPage({ userData }) {
           currentEndsAtRef.current = null;
           setSkip(null);
           setRestart(null);
+          setViewers(null);
           return;
         }
         currentItemIdRef.current = nowData.current.itemId ?? null;
         currentEndsAtRef.current = nowData.current.endsAtUtc ?? null;
         setSkip(nowData.skip || null);
         setRestart(nowData.restart || null);
+        setViewers(nowData.viewers || null);
         setPaused(nowData.paused || false);
+
+        // A pinned audio/subtitle choice is per-film. When the channel rolls to a different movie
+        // (a natural advance, a skip, or a channel switch) drop the override so the next film
+        // English-defaults again instead of inheriting a stream index that doesn't map to it.
+        if (tunedMovieIdRef.current !== nowData.current.movieId) {
+          tunedMovieIdRef.current = nowData.current.movieId;
+          if (audioIndexRef.current != null) {
+            audioIndexRef.current = null;
+            setAudioIndex(null);
+          }
+          if (subtitleIndexRef.current != null) {
+            subtitleIndexRef.current = null;
+            setSubtitleIndex(null);
+          }
+          burnSubIndexRef.current = null;
+        }
 
         // Reuse a transcode we prewarmed for this item near the last boundary (instant
         // advance); a prewarm is only valid for a fresh-start join (~offset 0).
@@ -208,7 +260,14 @@ function TvPage({ userData }) {
         const pw = prewarmRef.current;
         prewarmRef.current = null;
         if (pw) {
-          if (pw.movieId === nowData.current.movieId && nowData.current.offsetSeconds < 8) {
+          // Only reuse a prewarm for the same movie *and* the same track selection — a mid-flight
+          // audio/subtitle change makes the warmed transcode wrong even if the movie matches.
+          if (
+            pw.movieId === nowData.current.movieId &&
+            pw.audioStreamIndex === audioIndexRef.current &&
+            pw.subtitleStreamIndex === burnSubIndexRef.current &&
+            nowData.current.offsetSeconds < 8
+          ) {
             session = pw.session;
           } else {
             MovieAPI.stopStream({ playSessionId: pw.session.playSessionId, movieId: pw.movieId });
@@ -222,6 +281,8 @@ function TvPage({ userData }) {
             movieId: nowData.current.movieId,
             maxBitrateBps: resolveBitrate(),
             startSeconds: Math.floor(nowData.current.offsetSeconds),
+            audioStreamIndex: audioIndexRef.current,
+            subtitleStreamIndex: burnSubIndexRef.current,
           });
           if (superseded()) return;
           if (!startResponse.ok) {
@@ -237,6 +298,12 @@ function TvPage({ userData }) {
           return;
         }
         sessionRef.current = { playSessionId: session.playSessionId, movieId: nowData.current.movieId };
+
+        // Surface the track menus and reflect what's actually playing (incl. the server's English
+        // auto-default) so the settings menu highlights the live audio track.
+        setAudioTracks(session.audioTracks || []);
+        setSubtitleTracks(session.subtitleTracks || []);
+        setPlayingAudioIndex(session.selectedAudioIndex ?? null);
 
         const video = videoRef.current;
         if (!video) return;
@@ -451,6 +518,36 @@ function TvPage({ userData }) {
     [channel, tune]
   );
 
+  // Pin a specific audio track and re-tune at the live offset. No "auto" entry is needed —
+  // leaving audio unpinned is what lets the server English-default, and picking a track here
+  // overrides that for this viewer until they leave.
+  const selectAudio = useCallback(
+    (index) => {
+      audioIndexRef.current = index;
+      setAudioIndex(index);
+      setAudioOpen(false);
+      if (channel) tune(channel);
+    },
+    [channel, tune]
+  );
+
+  // Subtitles: text (sidecar) tracks toggle client-side via <track> — free, no transcode. Image
+  // subs (no deliveryUrl) can only be burned in, so those re-tune; null = off. We re-tune only
+  // when the *burned-in* sub changes, so flipping between text tracks or off never transcodes.
+  const selectSubtitle = useCallback(
+    (index) => {
+      const track = subtitleTracks.find((t) => t.index === index);
+      const nextBurn = track && !track.deliveryUrl ? index : null; // only image subs burn
+      const prevBurn = burnSubIndexRef.current;
+      subtitleIndexRef.current = index;
+      burnSubIndexRef.current = nextBurn;
+      setSubtitleIndex(index);
+      setSubsOpen(false);
+      if (channel && nextBurn !== prevBurn) tune(channel);
+    },
+    [channel, subtitleTracks, tune]
+  );
+
   // Local, per-viewer volume (the shared channel state is only play/pause). Dragging to 0
   // mutes; dragging up unmutes. Persisted so the next visit remembers it.
   const toggleMute = useCallback(() => setMuted((m) => !m), []);
@@ -489,6 +586,7 @@ function TvPage({ userData }) {
         const data = await r.json();
         setSkip(data.skip || null);
         setRestart(data.restart || null);
+        setViewers(data.viewers || null);
 
         // Shared pause: someone froze the channel — hold the frame and stop here (no advance while
         // frozen). When we were paused and the channel is now playing again, a resume happened
@@ -604,6 +702,16 @@ function TvPage({ userData }) {
     video.volume = volume;
   }, [muted, volume]);
 
+  // Sidecar text subtitles render client-side: show the chosen track, hide the rest. Re-applies
+  // when the track list changes (a new film) so freshly-mounted <track>s pick up the selection.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    for (const track of Array.from(video.textTracks)) {
+      track.mode = String(track.id) === String(subtitleIndex) ? "showing" : "hidden";
+    }
+  }, [subtitleIndex, subtitleTracks]);
+
   // Keep the fullscreen button's icon in sync with the actual state (incl. Esc to exit).
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -657,7 +765,13 @@ function TvPage({ userData }) {
       {/* The picture area. Nothing in the control bar overlaps it; only the picker / menu /
           guide pop out over it, and only while open. */}
       <div className="tv-screen" onClick={onScreenTap}>
-        <video ref={videoRef} className="tv-video" autoPlay playsInline muted />
+        <video ref={videoRef} className="tv-video" autoPlay playsInline muted crossOrigin="anonymous">
+          {subtitleTracks
+            .filter((t) => t.deliveryUrl)
+            .map((t) => (
+              <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
+            ))}
+        </video>
 
         {/* channel-change static burst */}
         <div className={`tv-static${staticBurst ? " tv-static--on" : ""}`} aria-hidden="true" />
@@ -720,6 +834,67 @@ function TvPage({ userData }) {
                   {q.hint ? <span className="tv-qopt-hint">{q.hint}</span> : null}
                 </button>
               ))}
+            {audioTracks.length > 1 && (
+              <>
+                <button
+                  className={`tv-channel-item${audioOpen ? " tv-channel-item--on" : ""}`}
+                  onClick={() => setAudioOpen((a) => !a)}
+                >
+                  <span className="tv-channel-num">A</span>
+                  Audio
+                  <span className="tv-qopt-hint">
+                    {audioTracks.find((t) => t.index === (audioIndex ?? playingAudioIndex))?.label || "Default"}
+                  </span>
+                </button>
+                {audioOpen &&
+                  audioTracks.map((t) => (
+                    <button
+                      key={t.index}
+                      className={`tv-channel-item tv-channel-item--qopt${(audioIndex ?? playingAudioIndex) === t.index ? " tv-channel-item--on" : ""}`}
+                      onClick={() => selectAudio(t.index)}
+                    >
+                      <span className="tv-channel-num">·</span>
+                      {t.label}
+                    </button>
+                  ))}
+              </>
+            )}
+            {subtitleTracks.length > 0 && (
+              <>
+                <button
+                  className={`tv-channel-item${subsOpen ? " tv-channel-item--on" : ""}`}
+                  onClick={() => setSubsOpen((s) => !s)}
+                >
+                  <span className="tv-channel-num">S</span>
+                  Subtitles
+                  <span className="tv-qopt-hint">
+                    {subtitleIndex == null ? "Off" : subtitleTracks.find((t) => t.index === subtitleIndex)?.label || "On"}
+                  </span>
+                </button>
+                {subsOpen && (
+                  <>
+                    <button
+                      className={`tv-channel-item tv-channel-item--qopt${subtitleIndex == null ? " tv-channel-item--on" : ""}`}
+                      onClick={() => selectSubtitle(null)}
+                    >
+                      <span className="tv-channel-num">·</span>
+                      Off
+                    </button>
+                    {subtitleTracks.map((t) => (
+                      <button
+                        key={t.index}
+                        className={`tv-channel-item tv-channel-item--qopt${subtitleIndex === t.index ? " tv-channel-item--on" : ""}`}
+                        onClick={() => selectSubtitle(t.index)}
+                      >
+                        <span className="tv-channel-num">·</span>
+                        {t.label}
+                        {!t.deliveryUrl && <span className="tv-qopt-hint">burned in</span>}
+                      </button>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
             <button
               className={`tv-channel-item${guideOpen ? " tv-channel-item--on" : ""}`}
               onClick={() => { setGuideOpen((g) => !g); setMenuOpen(false); }}
@@ -814,8 +989,26 @@ function TvPage({ userData }) {
 
           <div className="tv-bar-spacer" />
 
-          {!paused && (skip?.viewers > 1 || restart?.viewers > 1) && (
-            <span className="tv-bar-watching">{skip?.viewers ?? restart?.viewers} watching</span>
+          {viewers?.count > 1 && (
+            <div
+              className="tv-bar-viewers"
+              tabIndex={0}
+              role="group"
+              aria-label={`${viewers.count} watching`}
+            >
+              <span className="tv-bar-viewers-eye" aria-hidden="true">👁</span>
+              <span className="tv-bar-viewers-count">{viewers.count}</span>
+              {/* hover/focus to reveal who's connected */}
+              <div className="tv-viewers-tip" role="tooltip">
+                <div className="tv-viewers-tip-head">Watching now</div>
+                {viewers.names.map((v, i) => (
+                  <div key={i} className="tv-viewers-tip-name">
+                    {v.name}
+                    {v.you && <span className="tv-viewers-tip-you">you</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {now?.current && (

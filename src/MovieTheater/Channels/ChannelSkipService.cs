@@ -47,6 +47,21 @@ namespace MovieTheater.Channels
         // Strict majority of current viewers; a lone viewer (1) needs 1, so they act instantly.
         private static int RequiredVotes(int viewers) => viewers <= 1 ? 1 : viewers / 2 + 1;
 
+        /// <summary>
+        /// The userIds currently watching a channel (pruned of anyone gone quiet). Used to put names
+        /// to the viewer count; presence itself is still established by <see cref="Touch"/>.
+        /// </summary>
+        public IReadOnlyCollection<int> ViewerIds(int channelId)
+        {
+            lock (gate)
+            {
+                if (!states.TryGetValue(channelId, out var state))
+                    return Array.Empty<int>();
+                Prune(state, DateTime.UtcNow);
+                return state.Viewers.Keys.ToList();
+            }
+        }
+
         /// <summary>Record that <paramref name="userId"/> is watching <paramref name="itemId"/> right now.</summary>
         public ChannelStatus Touch(int channelId, long itemId, int userId)
         {

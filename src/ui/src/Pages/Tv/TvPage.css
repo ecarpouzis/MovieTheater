@@ -266,11 +266,93 @@
   flex: 1 1 auto;
 }
 
-.tv-bar-watching {
-  font-size: 11px;
-  color: rgba(242, 236, 221, 0.5);
-  white-space: nowrap;
+/* viewer count — hover/focus reveals who's connected */
+.tv-bar-viewers {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
+  font-size: 12px;
+  color: rgba(242, 236, 221, 0.7);
+  padding: 4px 7px;
+  border-radius: 6px;
+  cursor: default;
+  outline: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tv-bar-viewers:hover,
+.tv-bar-viewers:focus-visible {
+  color: #f2ecdd;
+  background: rgba(227, 179, 65, 0.08);
+}
+
+.tv-bar-viewers-eye {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.tv-bar-viewers-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #e3b341;
+}
+
+.tv-viewers-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  z-index: 9;
+  min-width: 160px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: rgba(11, 10, 8, 0.96);
+  border: 1px solid rgba(227, 179, 65, 0.3);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  padding: 8px;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.tv-bar-viewers:hover .tv-viewers-tip,
+.tv-bar-viewers:focus-within .tv-viewers-tip {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.tv-viewers-tip-head {
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #e3b341;
+  padding: 4px 8px 8px;
+}
+
+.tv-viewers-tip-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(242, 236, 221, 0.9);
+  padding: 5px 8px;
+  white-space: nowrap;
+}
+
+.tv-viewers-tip-you {
+  margin-left: auto;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #e3b341;
+  border: 1px solid rgba(227, 179, 65, 0.4);
+  border-radius: 999px;
+  padding: 1px 7px;
 }
 
 .tv-bar-transport {
