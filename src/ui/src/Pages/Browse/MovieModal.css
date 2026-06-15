@@ -283,6 +283,28 @@
   color: #aaa;
 }
 
+/* Rotten Tomatoes icon chip (🍅 / 🍿) sitting before the label. */
+.rt-icon {
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* Freshness tint for RT scores: fresh/full at the 60% threshold = green, rotten/spilled = red. */
+.modal-rating-score.rt-fresh {
+  color: #1a9e4b;
+}
+
+.modal-rating-score.rt-rotten {
+  color: #e0431a;
+}
+
+/* Keep the trailing % the same freshness color, just lighter weight. */
+.modal-rating-score.rt-fresh .modal-rating-denom,
+.modal-rating-score.rt-rotten .modal-rating-denom {
+  color: inherit;
+  opacity: 0.7;
+}
+
 /* ── IMDB-normalized synopsis section ─────────────────────────────────── */
 .modal-synopsis {
   margin-top: 2px;

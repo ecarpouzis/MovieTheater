@@ -66,26 +66,36 @@ function MoviePage({ userData }) {
               {movie.imdbRating} / 10
             </a>
           </div>
-          <div className="movie-detail">
-            <u>Tomatometer:</u>{" "}
-            <a
-              target="_blank"
-              rel="noreferrer"
-              href={movie.rtUrl || "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
-            >
-              {(movie.rtTomatometer != null ? movie.rtTomatometer : movie.tomatoRating) ?? "—"} / 100
-            </a>
-          </div>
-          <div className="movie-detail">
-            <u>Popcornmeter:</u>{" "}
-            <a
-              target="_blank"
-              rel="noreferrer"
-              href={movie.rtUrl || "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
-            >
-              {movie.rtPopcornmeter ?? "—"} / 100
-            </a>
-          </div>
+          {movie.rtTomatometer != null && (
+            <div className="movie-detail">
+              <u>Tomatometer:</u>{" "}
+              <a
+                target="_blank"
+                rel="noreferrer"
+                href={movie.rtUrl || "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
+              >
+                <span aria-hidden="true">🍅</span>{" "}
+                <span style={{ color: movie.rtTomatometer >= 60 ? "#1a9e4b" : "#e0431a", fontWeight: 700 }}>
+                  {movie.rtTomatometer}%
+                </span>
+              </a>
+            </div>
+          )}
+          {movie.rtPopcornmeter != null && (
+            <div className="movie-detail">
+              <u>Popcornmeter:</u>{" "}
+              <a
+                target="_blank"
+                rel="noreferrer"
+                href={movie.rtUrl || "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
+              >
+                <span aria-hidden="true">🍿</span>{" "}
+                <span style={{ color: movie.rtPopcornmeter >= 60 ? "#1a9e4b" : "#e0431a", fontWeight: 700 }}>
+                  {movie.rtPopcornmeter}%
+                </span>
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>

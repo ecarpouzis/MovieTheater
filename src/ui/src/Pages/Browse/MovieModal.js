@@ -293,30 +293,36 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                       <span className="modal-rating-denom"> / 10</span>
                     </span>
                   </a>
-                  <a
-                    className="modal-rating-link"
-                    target="_blank"
-                    rel="noreferrer"
-                    href={movie.rtUrl || "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
-                  >
-                    <span className="modal-label">Tomatometer</span>
-                    <span className="modal-rating-score">
-                      {movie.rtTomatometer != null ? movie.rtTomatometer : movie.tomatoRating}
-                      <span className="modal-rating-denom"> / 100</span>
-                    </span>
-                  </a>
-                  <a
-                    className="modal-rating-link"
-                    target="_blank"
-                    rel="noreferrer"
-                    href={movie.rtUrl || "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
-                  >
-                    <span className="modal-label">Popcornmeter</span>
-                    <span className="modal-rating-score">
-                      {movie.rtPopcornmeter}
-                      <span className="modal-rating-denom"> / 100</span>
-                    </span>
-                  </a>
+                  {movie.rtTomatometer != null && (
+                    <a
+                      className="modal-rating-link"
+                      target="_blank"
+                      rel="noreferrer"
+                      href={movie.rtUrl || "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
+                    >
+                      <span className="rt-icon" aria-hidden="true">🍅</span>
+                      <span className="modal-label">Tomatometer</span>
+                      <span className={"modal-rating-score " + (movie.rtTomatometer >= 60 ? "rt-fresh" : "rt-rotten")}>
+                        {movie.rtTomatometer}
+                        <span className="modal-rating-denom">%</span>
+                      </span>
+                    </a>
+                  )}
+                  {movie.rtPopcornmeter != null && (
+                    <a
+                      className="modal-rating-link"
+                      target="_blank"
+                      rel="noreferrer"
+                      href={movie.rtUrl || "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title)}
+                    >
+                      <span className="rt-icon" aria-hidden="true">🍿</span>
+                      <span className="modal-label">Popcornmeter</span>
+                      <span className={"modal-rating-score " + (movie.rtPopcornmeter >= 60 ? "rt-fresh" : "rt-rotten")}>
+                        {movie.rtPopcornmeter}
+                        <span className="modal-rating-denom">%</span>
+                      </span>
+                    </a>
+                  )}
                 </div>
 
                 <div className="modal-actions-row">
