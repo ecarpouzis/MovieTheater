@@ -72,6 +72,39 @@ function updateMovie(movie) {
   });
 }
 
+// Edit a series in place (peer of updateMovie).
+function updateSeries(series) {
+  return fetch("/API/UpdateSeries", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: series.id,
+      title: series.title,
+      simpleTitle: series.simpleTitle,
+      rating: series.rating,
+      releaseDate: series.releaseDate ? new Date(series.releaseDate).toISOString() : null,
+      runtime: series.runtime,
+      genre: series.genre,
+      director: series.director,
+      writer: series.writer,
+      actors: series.actors,
+      plot: series.plot,
+      posterLink: series.posterLink,
+      imdbRating: series.imdbRating === "" || series.imdbRating == null ? null : Number(series.imdbRating),
+      imdbID: series.imdbID,
+      rtTomatometer: series.rtTomatometer === "" || series.rtTomatometer == null ? null : Number(series.rtTomatometer),
+      rtPopcornmeter: series.rtPopcornmeter === "" || series.rtPopcornmeter == null ? null : Number(series.rtPopcornmeter),
+      removeFromRandom: !!series.removeFromRandom,
+    }),
+  });
+}
+
+// Re-pull IMDb data (rating / cert / year / plot / poster) for one title from its stored tt — for after a
+// tt correction. kind "movie" | "series".
+function refetchTitle(id, kind) {
+  return fetch(`/API/RefetchTitle?id=${encodeURIComponent(id)}&kind=${encodeURIComponent(kind || "movie")}`, { method: "post" });
+}
+
 function getUsers() {
   const url = "/API/API_UserList";
   return fetch(url);
@@ -540,6 +573,8 @@ const MovieAPI = {
   getUsers,
   insertMovie,
   updateMovie,
+  updateSeries,
+  refetchTitle,
   getTotalMovieCount,
   tmdbLookupImdbID,
   tmdbLookupName,

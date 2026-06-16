@@ -112,10 +112,31 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
     setEditState((prev) => ({ ...prev, [field]: value }));
   }
 
+  async function refetchFromImdb() {
+    setSaving(true);
+    try {
+      const res = await MovieAPI.refetchTitle(movie.id, kind);
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        message.error(b.message || "Re-fetch failed");
+        return;
+      }
+      const fresh = await MovieAPI.getTitle(movie.id, kind).then((r) => r.json());
+      setMovie(fresh.data);
+      setNormalized(fresh.normalized || null);
+      message.success("Re-fetched from IMDb");
+      if (onMovieUpdated) onMovieUpdated(fresh.data);
+    } catch {
+      message.error("Re-fetch failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function saveChanges() {
     setSaving(true);
     try {
-      const response = await MovieAPI.updateMovie(editState);
+      const response = await (isSeries ? MovieAPI.updateSeries(editState) : MovieAPI.updateMovie(editState));
       if (!response.ok) {
         let errorMsg = `Server error (${response.status})`;
         try {
@@ -438,11 +459,14 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                   </div>
                 )}
 
-                {userData?.canEditMovies && !isSeries && (
+                {userData?.canEditMovies && (
                   <div className="modal-edit-row">
                     <Button type="default" onClick={startEditing}>
                       <span className="fas fa-pen" style={{ marginRight: 6 }} />
                       Edit
+                    </Button>
+                    <Button type="default" onClick={refetchFromImdb} loading={saving} title="Re-pull rating, year, plot & poster from IMDb for the current id">
+                      ↻ Re-fetch from IMDb
                     </Button>
                   </div>
                 )}

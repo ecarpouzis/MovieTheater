@@ -38,6 +38,9 @@ namespace MovieTheater.Imdb
         [CommandOption("headful", Description = "Run the browser with a visible window (debugging).")]
         public bool Headful { get; set; }
 
+        [CommandOption("debug-tt", Description = "Probe one tt's episodes page (selectors, counts, sample text) and exit. No writes.")]
+        public string DebugTt { get; set; }
+
         [CommandOption("delay-min", Description = "Min delay between season pages, ms.")]
         public int DelayMinMs { get; set; } = 1500;
 
@@ -66,6 +69,34 @@ namespace MovieTheater.Imdb
         public async ValueTask ExecuteAsync(IConsole console)
         {
             var w = console.Output;
+
+            if (!string.IsNullOrWhiteSpace(DebugTt))
+            {
+                using var dpw = await Playwright.CreateAsync();
+                await using var dbrowser = await dpw.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = !Headful });
+                var dctx = await dbrowser.NewContextAsync(new BrowserNewContextOptions { UserAgent = UserAgent, Locale = "en-US" });
+                var dpage = await dctx.NewPageAsync();
+                var seasons = await DiscoverSeasonsAsync(dpage, DebugTt);
+                w.WriteLine($"discovered seasons: [{string.Join(",", seasons)}]");
+                foreach (var season in seasons)
+                {
+                    var url = $"https://www.imdb.com/title/{DebugTt}/episodes/?season={season}";
+                    await dpage.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 45000 });
+                    await dpage.WaitForTimeoutAsync(3500);
+                    w.WriteLine($"  S{season} {url}");
+                    w.WriteLine($"    page title: {await dpage.TitleAsync()}");
+                    foreach (var sel in new[] { "article.episode-item-wrapper", ".episode-item-wrapper",
+                        "section[data-testid='episodes-browse-episodes']", "[data-testid='episodes-browse-episodes'] article",
+                        "article", "a.ipc-title-link-wrapper", ".ipc-title__text", "div.list_item", "div.info" })
+                        w.WriteLine($"    [{sel}] = {await dpage.Locator(sel).CountAsync()}");
+                    var texts = await dpage.EvalOnSelectorAllAsync<string[]>(
+                        ".ipc-title__text, div.info strong a, [data-testid*='title']",
+                        "els => els.slice(0,10).map(e => (e.textContent||'').trim()).filter(Boolean)");
+                    w.WriteLine("    sample texts: " + string.Join(" || ", texts ?? Array.Empty<string>()));
+                }
+                return;
+            }
+
             List<(int Id, string Tt, string Title)> targets;
             using (var db = await dbFactory.CreateDbContextAsync())
             {

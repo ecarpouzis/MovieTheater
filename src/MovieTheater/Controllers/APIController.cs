@@ -56,13 +56,14 @@ namespace MovieTheater.Controllers
         private readonly IMemoryCache memoryCache;
         private readonly BoardgameSimilarityService boardgameSimilarityService;
         private readonly PosterFetchService posterFetchService;
+        private readonly TitleEnrichService titleEnrichService;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
             IBoardgameImageRepository boardgameImageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService,
             BoardGameGeekApi boardGameGeekApi, PosterMosaicService posterMosaicService,
             BoardgameRulesService boardgameRulesService, BoardgamePdfRepository boardgamePdfRepository,
             IConfiguration configuration, YouTubeService youTubeService, IMemoryCache memoryCache,
-            BoardgameSimilarityService boardgameSimilarityService, PosterFetchService posterFetchService)
+            BoardgameSimilarityService boardgameSimilarityService, PosterFetchService posterFetchService, TitleEnrichService titleEnrichService)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -83,6 +84,7 @@ namespace MovieTheater.Controllers
             this.memoryCache = memoryCache;
             this.boardgameSimilarityService = boardgameSimilarityService;
             this.posterFetchService = posterFetchService;
+            this.titleEnrichService = titleEnrichService;
         }
 
         private int? GetCurrentUserId()
@@ -460,6 +462,93 @@ namespace MovieTheater.Controllers
                 return BadRequest(new { Success = false, Message = "Series ID not found" });
             var normalized = await GetNormalizedSeriesData(id, series);
             return Ok(new { Success = true, data = series, normalized });
+        }
+
+        public class SeriesUpdateDto
+        {
+            public int id { get; set; }
+            public string? Title { get; set; }
+            public string? SimpleTitle { get; set; }
+            public string? Rating { get; set; }
+            public DateTime? ReleaseDate { get; set; }
+            public string? Runtime { get; set; }
+            public string? Genre { get; set; }
+            public string? Director { get; set; }
+            public string? Writer { get; set; }
+            public string? Actors { get; set; }
+            public string? Plot { get; set; }
+            public string? PosterLink { get; set; }
+            public decimal? imdbRating { get; set; }
+            public string? imdbID { get; set; }
+            public int? RtTomatometer { get; set; }
+            public int? RtPopcornmeter { get; set; }
+            public bool RemoveFromRandom { get; set; }
+        }
+
+        // Edit a series in place (the modal's Edit form for series — the peer of UpdateMovie). Editor-gated;
+        // a changed imdbID is conflict-checked, and a changed poster link is fetched. The richer normalized
+        // graph (cast/genre FK rows) comes from a re-scrape/Re-fetch, not this scalar edit.
+        [HttpPost("/API/UpdateSeries")]
+        public async Task<IActionResult> UpdateSeries([FromBody] SeriesUpdateDto dto)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (dto == null || dto.id == 0) return BadRequest(new { Message = "Series ID is required", Success = false });
+
+            var s = await movieDb.Series.Include(x => x.PosterDetails).SingleOrDefaultAsync(x => x.Id == dto.id);
+            if (s == null) return NotFound(new { Message = "Series not found", Success = false });
+
+            var newImdb = dto.imdbID?.Trim();
+            if (!string.IsNullOrEmpty(newImdb) && !string.Equals(s.imdbID, newImdb, StringComparison.Ordinal))
+            {
+                if (!IsValidImdbId(newImdb)) return BadRequest(new { Message = $"'{newImdb}' is not a valid IMDb id", Success = false });
+                if (await movieDb.Series.AnyAsync(x => x.imdbID == newImdb && x.Id != dto.id))
+                    return Conflict(new { Message = $"Another series already has imdbID: {newImdb}", Success = false });
+            }
+
+            var posterLink = dto.PosterLink?.Trim();
+            var posterChanged = !string.IsNullOrEmpty(posterLink) && !string.Equals(s.PosterDetails?.PosterLink, posterLink, StringComparison.Ordinal);
+
+            s.Title = dto.Title?.Trim();
+            s.SimpleTitle = dto.SimpleTitle?.Trim();
+            s.Rating = dto.Rating?.Trim();
+            s.ReleaseDate = dto.ReleaseDate;
+            s.Runtime = dto.Runtime?.Trim();
+            s.Genre = dto.Genre?.Trim();
+            s.Director = dto.Director?.Trim();
+            s.Writer = dto.Writer?.Trim();
+            s.Actors = dto.Actors?.Trim();
+            s.Plot = dto.Plot?.Trim();
+            s.imdbRating = dto.imdbRating;
+            s.imdbID = newImdb;
+            s.RtTomatometer = dto.RtTomatometer;
+            s.RtPopcornmeter = dto.RtPopcornmeter;
+            s.RemoveFromRandom = dto.RemoveFromRandom;
+
+            try { await movieDb.SaveChangesAsync(); }
+            catch (Exception ex) { return Conflict(new { Message = $"Save failed: {ex.InnerException?.Message ?? ex.Message}", Success = false }); }
+
+            if (posterChanged)
+            {
+                try { await DownloadAndSavePosterByIdAsync(s.Id, posterLink!, isSeries: true); } catch { /* poster best-effort */ }
+            }
+
+            var fresh = await movieDb.Series.Include(x => x.PosterDetails).SingleOrDefaultAsync(x => x.Id == dto.id);
+            var normalized = await GetNormalizedSeriesData(dto.id, fresh!);
+            return Ok(new { Success = true, data = fresh, normalized });
+        }
+
+        // Re-fetch IMDb data for a single title (movie or series) on demand — the modal's "Re-fetch from IMDb"
+        // button. Re-resolves rating / certificate / year / plot / poster from the stored tt (OMDB → IMDb API,
+        // never TMDB) and overwrites. Editor-gated. After a tt correction, this repopulates the metadata.
+        [HttpPost("/API/RefetchTitle")]
+        public async Task<IActionResult> RefetchTitle(int id, string kind = "movie")
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (id == 0) return BadRequest(new { Success = false, Message = "id required" });
+            bool isSeries = string.Equals(kind, "series", StringComparison.OrdinalIgnoreCase);
+            var ok = await titleEnrichService.EnrichAsync(id, isSeries, force: true);
+            if (!ok) return BadRequest(new { Success = false, Message = "Couldn't fetch IMDb data for this title (check the IMDb id)." });
+            return Ok(new { Success = true });
         }
 
         private async Task<object> GetNormalizedSeriesData(int id, Series series)

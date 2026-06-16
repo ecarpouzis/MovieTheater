@@ -33,6 +33,7 @@ namespace MovieTheater.Services
             services.AddJellyfinServices(config);
             services.AddTransient<BoardgameRulesService>();
             services.AddTransient<Poster.PosterFetchService>();
+            services.AddTransient<TitleEnrichService>();
             services.AddTransient<IMDBApiService>();
             services.AddSingleton<PosterMosaicService>();
             services.AddSingleton<BoardgameSimilarityService>();
