@@ -413,19 +413,24 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                         </button>
                         {openSeasons[s.season] && (
                           <div className="modal-season-eps">
-                            {s.episodes.map((e) => (
-                              <div className={"modal-ep" + (e.hasFile ? " modal-ep--hasfile" : "")} key={e.episode}>
-                                <span className="modal-ep-num">E{e.episode}</span>
-                                <span className="modal-ep-title">{e.title || "—"}</span>
-                                {e.isPlayable && canStream ? (
-                                  <button className="modal-play-btn" title="Watch this episode" onClick={() => goWatch(`?kind=series&playableId=${e.playableId}`)}>
-                                    ▶
-                                  </button>
-                                ) : e.hasFile ? (
-                                  <span className="modal-ep-file" title="file available">●</span>
-                                ) : null}
-                              </div>
-                            ))}
+                            {s.episodes.map((e) => {
+                              const playable = e.isPlayable && canStream;
+                              return (
+                                <div
+                                  className={"modal-ep" + (e.hasFile ? " modal-ep--hasfile" : "") + (playable ? " modal-ep--play" : "")}
+                                  key={e.episode}
+                                  onClick={playable ? () => goWatch(`?kind=series&playableId=${e.playableId}`) : undefined}
+                                  role={playable ? "button" : undefined}
+                                  tabIndex={playable ? 0 : undefined}
+                                  onKeyDown={playable ? (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); goWatch(`?kind=series&playableId=${e.playableId}`); } } : undefined}
+                                  title={playable ? "Play episode" : e.hasFile ? "File found — not yet streamable (run a Jellyfin sync)" : undefined}
+                                >
+                                  <span className="modal-ep-num">E{e.episode}</span>
+                                  <span className="modal-ep-title">{e.title || "—"}</span>
+                                  <span className="modal-ep-mark" aria-hidden="true">{playable ? "▶" : e.hasFile ? "●" : ""}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>

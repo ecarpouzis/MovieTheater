@@ -256,6 +256,13 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row.id]);
 
+  // IMDb's year takes priority for a real tt: if the row has no stored year, pre-fill the field from the
+  // lookup so it's visible before you save AND gets applied on Save/Approve (it wouldn't, left blank).
+  useEffect(() => {
+    const fy = fetchedYear(details && details.data);
+    if (fy) setYear((prev) => (prev ? prev : fy));
+  }, [details]);
+
   const d = details && details.data;
   // The poster to fetch on save: a user-typed/overridden URL, else — for a row that has no poster yet —
   // the one the lookup found. An already-postered row left untouched sends nothing (no needless re-download).
