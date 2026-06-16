@@ -37,14 +37,19 @@ namespace MovieTheater.Ingest
         [CommandOption("apply", Description = "Write changes. Omit for a dry run (default).")]
         public bool Apply { get; set; }
 
+        [CommandOption("backfill-posters", Description = "Also fetch posters for any already-approved movie/series that lacks one.")]
+        public bool BackfillPosters { get; set; }
+
         // Position-based episode matches we do NOT trust for auto-approval.
         private static readonly HashSet<string> RiskyStrategies = new(StringComparer.OrdinalIgnoreCase) { "absolute", "combined" };
 
         private readonly IDbContextFactory<MovieDb> dbFactory;
+        private readonly MovieTheater.Services.Poster.PosterFetchService posterFetch;
 
         public ReviewAutofixCommand(MovieTheaterConfiguration config) : base(config)
         {
             dbFactory = GetRequiredService<IDbContextFactory<MovieDb>>();
+            posterFetch = GetRequiredService<MovieTheater.Services.Poster.PosterFetchService>();
         }
 
         public async ValueTask ExecuteAsync(IConsole console)
@@ -121,6 +126,22 @@ namespace MovieTheater.Ingest
 
             foreach (var s in approve) { s.ReviewBatch = null; s.ReviewProvenance = null; s.ReviewConfidence = null; }
 
+            // ── Phase 3: posters. Newly auto-approved series + (with --backfill-posters) any already-
+            // approved movie/series that lacks one. EnsurePosterAsync no-ops when a poster already exists. ──
+            var posterTargets = approve.Select(s => (id: s.Id, tt: s.imdbID, series: true)).ToList();
+            if (BackfillPosters)
+            {
+                // Only rows that actually lack a poster record — don't re-walk the whole library.
+                var approvedSeries = await db.Series.Where(s => s.ReviewBatch == null && s.imdbID != null && s.PosterDetails == null)
+                    .Select(s => new { s.Id, s.imdbID }).ToListAsync();
+                var approvedMovies = await db.Movies.Where(m => m.ReviewBatch == null && m.imdbID != null && m.PosterDetails == null
+                        && m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries)
+                    .Select(m => new { m.id, m.imdbID }).ToListAsync();
+                foreach (var s in approvedSeries) if (!posterTargets.Any(p => p.id == s.Id && p.series)) posterTargets.Add((s.Id, s.imdbID, true));
+                foreach (var m in approvedMovies) posterTargets.Add((m.id, m.imdbID, false));
+            }
+            w.WriteLine($"\nPhase 3 — posters to ensure: {posterTargets.Count}" + (BackfillPosters ? " (incl. backfill of already-approved)" : ""));
+
             if (!Apply)
             {
                 w.WriteLine("\nDRY RUN — nothing written. Re-run with --apply to commit.");
@@ -128,7 +149,12 @@ namespace MovieTheater.Ingest
             }
 
             await db.SaveChangesAsync();
-            w.WriteLine($"\nAPPLIED: realigned {movieFixes.Count + seriesFixes.Count} title(s); auto-approved {approve.Count} series into the library.");
+
+            int gotPoster = 0;
+            await Parallel.ForEachAsync(posterTargets, new ParallelOptions { MaxDegreeOfParallelism = 6 },
+                async (t, _) => { if (await posterFetch.EnsurePosterAsync(t.id, t.tt, t.series)) System.Threading.Interlocked.Increment(ref gotPoster); });
+
+            w.WriteLine($"\nAPPLIED: realigned {movieFixes.Count + seriesFixes.Count} title(s); auto-approved {approve.Count} series; posters present for {gotPoster}/{posterTargets.Count}.");
         }
 
         private static string ImmediateFolder(string? path)

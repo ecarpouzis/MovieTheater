@@ -32,6 +32,7 @@ namespace MovieTheater.Services
             services.AddBoardGameGeekServices(config.BggApiToken);
             services.AddJellyfinServices(config);
             services.AddTransient<BoardgameRulesService>();
+            services.AddTransient<Poster.PosterFetchService>();
             services.AddTransient<IMDBApiService>();
             services.AddSingleton<PosterMosaicService>();
             services.AddSingleton<BoardgameSimilarityService>();

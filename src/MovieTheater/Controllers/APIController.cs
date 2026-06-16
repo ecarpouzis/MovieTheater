@@ -55,13 +55,14 @@ namespace MovieTheater.Controllers
         private readonly YouTubeService youTubeService;
         private readonly IMemoryCache memoryCache;
         private readonly BoardgameSimilarityService boardgameSimilarityService;
+        private readonly PosterFetchService posterFetchService;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
             IBoardgameImageRepository boardgameImageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService,
             BoardGameGeekApi boardGameGeekApi, PosterMosaicService posterMosaicService,
             BoardgameRulesService boardgameRulesService, BoardgamePdfRepository boardgamePdfRepository,
             IConfiguration configuration, YouTubeService youTubeService, IMemoryCache memoryCache,
-            BoardgameSimilarityService boardgameSimilarityService)
+            BoardgameSimilarityService boardgameSimilarityService, PosterFetchService posterFetchService)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -81,6 +82,7 @@ namespace MovieTheater.Controllers
             this.youTubeService = youTubeService;
             this.memoryCache = memoryCache;
             this.boardgameSimilarityService = boardgameSimilarityService;
+            this.posterFetchService = posterFetchService;
         }
 
         private int? GetCurrentUserId()
@@ -268,16 +270,19 @@ namespace MovieTheater.Controllers
 
         // Shared EF projection so every card-feeding endpoint emits the same slim
         // shape and translates to a SELECT of just these columns.
+        // Prefer the scraped IMDb data (the modal already does), falling back to the frozen legacy
+        // columns — so freshly-ingested rows, which only have the new columns filled, still show a
+        // rating / certificate / year on their card.
         private static readonly System.Linq.Expressions.Expression<Func<Movie, MovieCardDto>> ToCardDto = m => new MovieCardDto
         {
             id = m.id,
             Kind = "movie",
             Title = m.Title,
             SimpleTitle = m.SimpleTitle,
-            ReleaseDate = m.ReleaseDate,
-            Rating = m.Rating,
+            ReleaseDate = m.ReleaseDate ?? m.ImdbReleaseDate,
+            Rating = m.MpaaRating ?? m.Rating,
             Runtime = m.Runtime,
-            imdbRating = m.imdbRating,
+            imdbRating = m.ImdbRatingScraped ?? m.imdbRating,
             PlotFull = m.PlotFull,
             Plot = m.Plot,
             TopCast = m.TopCast,
@@ -292,10 +297,10 @@ namespace MovieTheater.Controllers
             Kind = "series",
             Title = s.Title,
             SimpleTitle = s.SimpleTitle,
-            ReleaseDate = s.ReleaseDate,
-            Rating = s.Rating,
+            ReleaseDate = s.ReleaseDate ?? s.ImdbReleaseDate,
+            Rating = s.MpaaRating ?? s.Rating,
             Runtime = s.Runtime,
-            imdbRating = s.imdbRating,
+            imdbRating = s.ImdbRatingScraped ?? s.imdbRating,
             PlotFull = s.PlotFull,
             Plot = s.Plot,
             TopCast = s.TopCast,
@@ -2938,6 +2943,17 @@ namespace MovieTheater.Controllers
             foreach (var v in miscRows) { v.ReviewBatch = null; v.ReviewProvenance = null; }
 
             await movieDb.SaveChangesAsync();
+
+            // A newly-approved title should carry a poster — fetch one (from IMDb via OMDB) for any movie /
+            // series that lacks it. EnsurePosterAsync no-ops when a poster already exists; bounded
+            // parallelism keeps a big "approve all" responsive, and a failed fetch never blocks approval.
+            var posterTargets = rows.Select(m => (id: m.id, tt: m.imdbID, series: false))
+                .Concat(seriesRows.Select(s => (id: s.Id, tt: s.imdbID, series: true)))
+                .ToList();
+            if (posterTargets.Count > 0)
+                await Parallel.ForEachAsync(posterTargets, new ParallelOptions { MaxDegreeOfParallelism = 6 },
+                    async (t, _) => await posterFetchService.EnsurePosterAsync(t.id, t.tt, t.series));
+
             return Ok(new { approved = rows.Count + seriesRows.Count + miscRows.Count });
         }
 
