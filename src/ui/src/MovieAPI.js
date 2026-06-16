@@ -551,6 +551,15 @@ function ingestReviewBackfillPosters() {
   return fetch("/API/Admin/IngestReview/BackfillPosters", { method: "post" });
 }
 
+// Point a series episode at the correct on-disk file (chosen from the folder dump); empty path clears it.
+function ingestReviewSetEpisodeFile(episodeId, path) {
+  return fetch("/API/Admin/IngestReview/SetEpisodeFile", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ EpisodeId: episodeId, Path: path ?? null }),
+  });
+}
+
 function ingestReviewUpdate({ id, kind, title, simpleTitle, year, imdbID, titleType, posterLink }) {
   return fetch("/API/Admin/IngestReview/Update", {
     method: "post",
@@ -625,6 +634,7 @@ const MovieAPI = {
   ingestReviewUpdate,
   ingestReviewReclassify,
   ingestReviewBackfillPosters,
+  ingestReviewSetEpisodeFile,
 };
 
 export { MovieAPI };

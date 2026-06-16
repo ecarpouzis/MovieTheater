@@ -234,6 +234,34 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
   const [detail, setDetail] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [settingEp, setSettingEp] = useState(null); // episodeId whose file is being assigned
+  const [epPath, setEpPath] = useState("");
+
+  async function refreshDetail() {
+    try {
+      const res = await MovieAPI.ingestReviewDetail(row.id, row.kind);
+      setDetail(await res.json());
+    } catch {
+      /* leave detail as-is */
+    }
+  }
+
+  async function submitEpFile(episodeId) {
+    setWorking(true);
+    try {
+      const res = await MovieAPI.ingestReviewSetEpisodeFile(episodeId, epPath.trim() || null);
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        message.error(b.message || "Set file failed.");
+        return;
+      }
+      setSettingEp(null);
+      setEpPath("");
+      await refreshDetail();
+    } finally {
+      setWorking(false);
+    }
+  }
 
   async function toggleDetail() {
     if (!detailOpen && !detail) {
@@ -512,33 +540,62 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
                 )}
               </div>
             ) : (
-              <div className="rc-seasons">
-                {(detail.seasons || []).map((s) => (
-                  <div key={s.season} className="rc-season">
-                    <div className="rc-season-hd">
-                      Season {s.season} · {s.episodes.filter((e) => e.files && e.files.length).length}/{s.episodes.length}
-                    </div>
-                    {s.episodes.map((e) => {
-                      const f = e.files && e.files[0];
-                      const st = f ? stratOf(f.label) : null;
-                      return (
-                        <div key={e.episode} className={"rc-ep" + (f ? "" : " rc-ep-missing")}>
-                          <span className="rc-epnum">E{e.episode}</span>
-                          <span className="rc-eptitle" title={e.title || ""}>{e.title || "—"}</span>
-                          {f ? (
-                            <>
-                              {st ? <Tag color={STRAT_COLOR[st] || "default"}>{st}</Tag> : null}
-                              <span className="rc-path" title={f.path}>{basename(f.path)}</span>
-                            </>
-                          ) : (
-                            <span className="rc-missing">no file</span>
-                          )}
-                        </div>
-                      );
-                    })}
+              <>
+                {detail.folderListing ? (
+                  <div className="rc-folderdump">
+                    <div className="rc-folderdump-hd">📁 on-disk folder — [OK] captured · [??] NOT captured (copy a path, then "set file" on an episode)</div>
+                    <textarea className="rc-folderdump-box" readOnly value={detail.folderListing} spellCheck={false} />
                   </div>
-                ))}
-              </div>
+                ) : (
+                  <Text type="secondary">No folder scan yet — run <code>scan-series-folders</code>.</Text>
+                )}
+                <div className="rc-seasons">
+                  {(detail.seasons || []).map((s) => (
+                    <div key={s.season} className="rc-season">
+                      <div className="rc-season-hd">
+                        Season {s.season} · {s.episodes.filter((e) => e.files && e.files.length).length}/{s.episodes.length}
+                      </div>
+                      {s.episodes.map((e) => {
+                        const f = e.files && e.files[0];
+                        const st = f ? stratOf(f.label) : null;
+                        const editing = settingEp === e.episodeId;
+                        return (
+                          <div key={e.episode} className={"rc-ep" + (f ? "" : " rc-ep-missing")}>
+                            <span className="rc-epnum">E{e.episode}</span>
+                            <span className="rc-eptitle" title={e.title || ""}>{e.title || "—"}</span>
+                            {editing ? (
+                              <span className="rc-ep-setfile">
+                                <Input
+                                  size="small"
+                                  style={{ width: 300 }}
+                                  value={epPath}
+                                  placeholder="paste full path from the dump (blank clears)"
+                                  onChange={(ev) => setEpPath(ev.target.value)}
+                                  onPressEnter={() => submitEpFile(e.episodeId)}
+                                />
+                                <Button size="small" type="primary" loading={working} onClick={() => submitEpFile(e.episodeId)}>Set</Button>
+                                <Button size="small" onClick={() => { setSettingEp(null); setEpPath(""); }}>✕</Button>
+                              </span>
+                            ) : (
+                              <>
+                                {f ? (
+                                  <>
+                                    {st ? <Tag color={STRAT_COLOR[st] || "default"}>{st}</Tag> : null}
+                                    <span className="rc-path" title={f.path}>{basename(f.path)}</span>
+                                  </>
+                                ) : (
+                                  <span className="rc-missing">no file</span>
+                                )}
+                                <a className="rc-ep-setlink" onClick={() => { setSettingEp(e.episodeId); setEpPath(f ? f.path : ""); }}>✎ set file</a>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}

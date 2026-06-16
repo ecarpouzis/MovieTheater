@@ -3004,7 +3004,7 @@ namespace MovieTheater.Controllers
                 if (ser == null) return NotFound(new { Message = "Not found" });
                 var seps = await movieDb.Episodes.Where(e => e.SeriesId == id)
                     .OrderBy(e => e.SeasonNumber).ThenBy(e => e.EpisodeNumber)
-                    .Select(e => new { e.SeasonNumber, e.EpisodeNumber, e.Title, e.PlayableId })
+                    .Select(e => new { e.Id, e.SeasonNumber, e.EpisodeNumber, e.Title, e.PlayableId })
                     .ToListAsync();
                 var sPlayableIds = seps.Where(e => e.PlayableId != null).Select(e => e.PlayableId!.Value).ToList();
                 var sFilesByPlayable = (await movieDb.MediaFiles.Where(f => sPlayableIds.Contains(f.PlayableId))
@@ -3015,6 +3015,7 @@ namespace MovieTheater.Controllers
                     season = g.Key,
                     episodes = g.Select(e => new
                     {
+                        episodeId = e.Id,
                         episode = e.EpisodeNumber,
                         title = e.Title,
                         files = (e.PlayableId != null && sFilesByPlayable.TryGetValue(e.PlayableId.Value, out var fl))
@@ -3028,6 +3029,7 @@ namespace MovieTheater.Controllers
                     episodeTotal = seps.Count,
                     episodeHave = seps.Count(e => e.PlayableId != null && sFilesByPlayable.ContainsKey(e.PlayableId.Value)),
                     seasons = sSeasons,
+                    folderListing = ser.FolderListing,   // on-disk folder dump (from scan-series-folders)
                 });
             }
 
@@ -3041,6 +3043,45 @@ namespace MovieTheater.Controllers
                     .Select(f => (object)new { path = f.Path, role = f.Role.ToString(), label = f.Label })
                     .ToListAsync();
             return Ok(new { kind = "movie", files });
+        }
+
+        public class SetEpisodeFileRequest { public int EpisodeId { get; set; } public string? Path { get; set; } }
+
+        // Manually point a series episode at the correct on-disk file (chosen from the folder dump). Ensures
+        // the episode has a Playable and sets/replaces its Primary MediaFile (Label "match:manual"); an empty
+        // path clears it. Editor-gated. The file becomes streamable after the next Jellyfin sync (matched by
+        // path). Disk files are untouched — this only records the mapping.
+        [HttpPost("/API/Admin/IngestReview/SetEpisodeFile")]
+        public async Task<IActionResult> IngestReviewSetEpisodeFile([FromBody] SetEpisodeFileRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (req == null || req.EpisodeId == 0) return BadRequest(new { Message = "EpisodeId required" });
+
+            var ep = await movieDb.Episodes.FirstOrDefaultAsync(e => e.Id == req.EpisodeId);
+            if (ep == null) return NotFound(new { Message = "Episode not found" });
+
+            if (ep.PlayableId == null)
+            {
+                ep.Playable = new Playable { Kind = PlayableKind.Episode };
+                await movieDb.SaveChangesAsync();   // assigns ep.PlayableId
+            }
+            var playableId = ep.PlayableId!.Value;
+
+            var path = req.Path?.Trim();
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                var existing = await movieDb.MediaFiles.Where(f => f.PlayableId == playableId).ToListAsync();
+                movieDb.MediaFiles.RemoveRange(existing);
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true, cleared = existing.Count });
+            }
+
+            // Replace any current Primary with the chosen file.
+            var prior = await movieDb.MediaFiles.Where(f => f.PlayableId == playableId && f.Role == MovieFileRole.Primary).ToListAsync();
+            movieDb.MediaFiles.RemoveRange(prior);
+            movieDb.MediaFiles.Add(new MediaFile { PlayableId = playableId, Path = path, Role = MovieFileRole.Primary, Label = "match:manual" });
+            await movieDb.SaveChangesAsync();
+            return Ok(new { Success = true });
         }
 
         // Movie ids in Ids, series ids in SeriesIds, misc-video ids in MiscIds (separate id sequences — see Kind).
