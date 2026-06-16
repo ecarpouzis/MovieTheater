@@ -805,6 +805,25 @@ export default function IngestReviewPage({ userData }) {
           </Button>
         </Popconfirm>
         <Button onClick={load}>Refresh</Button>
+        <Popconfirm
+          title="Fetch posters (from IMDb via OMDB) for every approved movie/series that has none?"
+          okText="Backfill posters"
+          onConfirm={async () => {
+            const hide = message.loading("Backfilling posters…", 0);
+            try {
+              const res = await MovieAPI.ingestReviewBackfillPosters();
+              const data = await res.json().catch(() => ({}));
+              hide();
+              if (res.ok) message.success(`Posters fetched for ${data.got ?? 0} of ${data.attempted ?? 0} title(s).`);
+              else message.error(data.message || "Backfill failed.");
+            } catch {
+              hide();
+              message.error("Backfill failed.");
+            }
+          }}
+        >
+          <Button>Backfill posters</Button>
+        </Popconfirm>
       </div>
 
       {loading ? (

@@ -2957,6 +2957,29 @@ namespace MovieTheater.Controllers
             return Ok(new { approved = rows.Count + seriesRows.Count + miscRows.Count });
         }
 
+        // Fetch posters for already-approved movies/series that have none (e.g. the auto-approved series).
+        // Runs in the web app so it writes to the live image store — the CLI backfill can't from a dev box.
+        // Editor-gated; idempotent (EnsurePosterAsync no-ops where a poster exists).
+        [HttpPost("/API/Admin/IngestReview/BackfillPosters")]
+        public async Task<IActionResult> IngestReviewBackfillPosters()
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var series = await movieDb.Series.Where(s => s.ReviewBatch == null && s.imdbID != null && s.PosterDetails == null)
+                .Select(s => new { s.Id, s.imdbID }).ToListAsync();
+            var movies = await movieDb.Movies.Where(m => m.ReviewBatch == null && m.imdbID != null && m.PosterDetails == null
+                    && m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries)
+                .Select(m => new { m.id, m.imdbID }).ToListAsync();
+            var targets = series.Select(s => (id: s.Id, tt: s.imdbID, isSeries: true))
+                .Concat(movies.Select(m => (id: m.id, tt: m.imdbID, isSeries: false))).ToList();
+
+            int got = 0;
+            if (targets.Count > 0)
+                await Parallel.ForEachAsync(targets, new ParallelOptions { MaxDegreeOfParallelism = 6 },
+                    async (t, _) => { if (await posterFetchService.EnsurePosterAsync(t.id, t.tt, t.isSeries)) System.Threading.Interlocked.Increment(ref got); });
+
+            return Ok(new { attempted = targets.Count, got });
+        }
+
         // Reject = delete the ingested row entirely. Guarded to pending-review rows so this can never
         // remove an established library entry. A series takes its episodes (+ their Playables/files) and
         // satellite graph with it; a misc video takes its Playable + files.

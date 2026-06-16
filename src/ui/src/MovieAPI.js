@@ -509,6 +509,11 @@ function ingestReviewReclassify({ id, fromKind, toKind, category, collectionName
   });
 }
 
+// Fetch posters for already-approved titles that lack one (runs server-side / in prod where images persist).
+function ingestReviewBackfillPosters() {
+  return fetch("/API/Admin/IngestReview/BackfillPosters", { method: "post" });
+}
+
 function ingestReviewUpdate({ id, kind, title, simpleTitle, year, imdbID, titleType, posterLink }) {
   return fetch("/API/Admin/IngestReview/Update", {
     method: "post",
@@ -580,6 +585,7 @@ const MovieAPI = {
   ingestReviewReject,
   ingestReviewUpdate,
   ingestReviewReclassify,
+  ingestReviewBackfillPosters,
 };
 
 export { MovieAPI };
