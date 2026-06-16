@@ -12,6 +12,7 @@ using System;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -30,6 +31,16 @@ namespace MovieTheater
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // Persist the Data Protection key ring (which encrypts the auth cookie) to durable storage.
+            // Without this the keys live in the container's ephemeral filesystem, so every redeploy or
+            // pod restart mints new keys and invalidates every existing cookie — signing all users out.
+            var keysDir = new System.IO.DirectoryInfo(ResolveDataProtectionKeysDir());
+            keysDir.Create(); // no-op if it already exists
+            services.AddDataProtection()
+                // Stable name so the key ring is shared across pods/restarts rather than scoped per instance.
+                .SetApplicationName("MovieTheater")
+                .PersistKeysToFileSystem(keysDir);
+
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options =>
                 {
@@ -130,6 +141,24 @@ namespace MovieTheater
                     opts.JsonSerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
                 })
                 .AddOData(opts => opts.Select().Filter().OrderBy().Expand().SetMaxTop(null));
+        }
+
+        // Where the Data Protection key ring lives. Prefer an explicit config value; otherwise put it on
+        // the same persistent mount as the posters (which already survives redeploys in prod). Falls back
+        // to a local folder for dev, where key persistence across restarts doesn't matter.
+        private string ResolveDataProtectionKeysDir()
+        {
+            if (!string.IsNullOrWhiteSpace(config.DataProtectionKeysDir))
+                return config.DataProtectionKeysDir;
+
+            if (!string.IsNullOrWhiteSpace(config.MoviePostersDir))
+            {
+                var postersDir = new System.IO.DirectoryInfo(config.MoviePostersDir);
+                var mountRoot = postersDir.Parent?.FullName ?? postersDir.FullName;
+                return System.IO.Path.Combine(mountRoot, "dataprotection-keys");
+            }
+
+            return System.IO.Path.Combine(AppContext.BaseDirectory, "dataprotection-keys");
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -10,6 +10,14 @@ namespace MovieTheater.Services
 
         public string? BoardgameImagesDir { get; set; }
 
+        /// <summary>
+        /// Where the ASP.NET Core Data Protection key ring is persisted. These keys encrypt the auth
+        /// cookie, so they MUST live on storage that survives a redeploy/pod restart — otherwise every
+        /// deploy generates new keys and signs every user out. When null we derive a folder on the same
+        /// mount as <see cref="MoviePostersDir"/> (which is already persistent in prod).
+        /// </summary>
+        public string? DataProtectionKeysDir { get; set; }
+
         public string? DbConnectionString { get; set; }
 
         /// <summary>Jellyfin base URL — the §3.2 authenticated ingress in prod, http://localhost:8096 in dev.</summary>
