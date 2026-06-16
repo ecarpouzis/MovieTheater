@@ -86,6 +86,11 @@ namespace MovieTheater.Db
         public string? Network { get; set; }
 
         // ── Library-ingest review quarantine (same pattern as Movie) ──
+        /// <summary>A scanned text dump of the series' on-disk folder (from <c>scan-series-folders</c>): every
+        /// file present, sized, and flagged mapped/unmapped, so the review tool surfaces files the mapper
+        /// missed. Snapshot — re-scan to refresh; null until scanned. Not shown in browse.</summary>
+        public string? FolderListing { get; set; }
+
         [MaxLength(64)]
         public string? ReviewBatch { get; set; }
         [MaxLength(32)]
