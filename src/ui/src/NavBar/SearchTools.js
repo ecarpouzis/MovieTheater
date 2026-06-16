@@ -191,14 +191,10 @@ function SearchTools({ search, userData }) {
         value={search.titleType || undefined}
         onChange={(val) => navigateToBrowseSearch(val ? "type" : undefined, val || "")}
         options={[
-          { label: "Movie", value: "Movie" },
+          { label: "Movies", value: "Movies" },
+          { label: "Series", value: "Series" },
           { label: "Short", value: "Short" },
-          { label: "TV Series", value: "TvSeries" },
-          { label: "TV Mini-Series", value: "TvMiniSeries" },
-          { label: "TV Movie", value: "TvMovie" },
-          { label: "TV Special", value: "TvSpecial" },
-          { label: "TV Short", value: "TvShort" },
-          { label: "Video", value: "Video" },
+          { label: "Misc", value: "Misc" },
         ]}
       />
       <span style={inputLabelStyle}>First Letter</span>

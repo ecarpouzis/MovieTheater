@@ -268,6 +268,12 @@ namespace MovieTheater.Controllers
             public string? TopCast { get; set; }
             public string? Actors { get; set; }
             public int PosterVersion { get; set; }
+
+            // ── Misc-only (Kind="misc"); null for movie/series cards. ──
+            /// <summary>Free-text MiscVideo bucket ("Workprint", "Stage Performance"…) shown as the card badge.</summary>
+            public string? Category { get; set; }
+            /// <summary>The misc video's Playable id — the stream target for a future play action.</summary>
+            public int? PlayableId { get; set; }
         }
 
         // Shared EF projection so every card-feeding endpoint emits the same slim
@@ -365,21 +371,51 @@ namespace MovieTheater.Controllers
             return Ok(all.Take(take).ToList());
         }
 
-        // Browse filtered by IMDB-aware TitleType. Series types come from the Series table.
+        // Browse filtered by the coarse, normalized Title Type bucket (Movies / Series / Short / Misc).
+        // Series come from the Series table; Movies/Short read Movie.NormalizedTitleType (a persisted
+        // computed column off TitleType); Misc reads the MiscVideo table (tt-less library videos —
+        // workprints, stage performances, shorts sets).
         [HttpGet("/API/GetMoviesByType")]
         public async Task<IActionResult> GetMoviesByType(string type)
         {
-            if (string.IsNullOrWhiteSpace(type) || !Enum.TryParse<TitleType>(type, true, out var tt))
+            if (string.IsNullOrWhiteSpace(type) || !Enum.TryParse<NormalizedTitleType>(type, true, out var nt))
                 return BadRequest(new { Message = $"Unknown title type '{type}'" });
-            if (tt == TitleType.TvSeries || tt == TitleType.TvMiniSeries)
+            if (nt == NormalizedTitleType.Series)
             {
                 var sq = await GetBaseSeriesQuery();
-                var ser = await sq.Where(s => s.TitleType == tt).OrderBy(s => s.SimpleTitle).Select(ToSeriesCardDto).ToListAsync();
+                var ser = await sq.OrderBy(s => s.SimpleTitle).Select(ToSeriesCardDto).ToListAsync();
                 return Ok(ser);
             }
+            if (nt == NormalizedTitleType.Misc)
+                return Ok(await GetMiscCards());
             var baseQuery = await GetBaseMovieQuery();
-            var movies = await baseQuery.Where(m => m.TitleType == tt).OrderBy(m => m.SimpleTitle).Select(ToCardDto).ToListAsync();
+            var movies = await baseQuery.Where(m => m.NormalizedTitleType == nt).OrderBy(m => m.SimpleTitle).Select(ToCardDto).ToListAsync();
             return Ok(movies);
+        }
+
+        // Approved (un-quarantined) MiscVideos as browse cards. They carry no Rating, so the age gate
+        // does not apply; poster (if any) is served from the separate /MiscImage namespace. The card
+        // builds the poster URL off Kind="misc", not the shared id space.
+        private async Task<List<MovieCardDto>> GetMiscCards()
+        {
+            var raw = await movieDb.MiscVideos
+                .Where(v => v.ReviewBatch == null)
+                .OrderBy(v => v.CollectionName ?? "")
+                .ThenBy(v => v.SortOrder ?? int.MaxValue)
+                .ThenBy(v => v.SimpleTitle ?? v.Title)
+                .Select(v => new { v.Id, v.Title, v.SimpleTitle, v.Year, v.Description, v.Category, v.PlayableId })
+                .ToListAsync();
+            return raw.Select(v => new MovieCardDto
+            {
+                id = v.Id,
+                Kind = "misc",
+                Title = v.Title,
+                SimpleTitle = v.SimpleTitle,
+                ReleaseDate = v.Year.HasValue ? new DateTime(v.Year.Value, 1, 1) : (DateTime?)null,
+                Plot = v.Description,
+                Category = v.Category,
+                PlayableId = v.PlayableId,
+            }).ToList();
         }
 
         // ── Unified search over movies + series (the frontend uses these instead of /odata/Movies) ──

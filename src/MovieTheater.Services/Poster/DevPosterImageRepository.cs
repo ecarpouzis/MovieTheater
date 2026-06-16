@@ -21,30 +21,30 @@ namespace MovieTheater.Services.Poster
             this.movieDb = movieDb;
         }
 
-        public async Task<bool> HasImage(int movieId, PosterImageVariant variant)
+        public async Task<bool> HasImage(int movieId, PosterImageVariant variant, string? bucket = null)
         {
-            var file = GetFile(movieId, variant);
+            var file = GetFile(movieId, variant, bucket);
 
             if (file.Exists)
             {
-                if (!await IsLocalCacheStale(movieId, variant))
+                if (!await IsLocalCacheStale(movieId, variant, bucket))
                     return true;
             }
 
             // If file doesn't exist (or cache is stale), try to get it by downloading
-            var imageBytes = await GetImage(movieId, variant);
+            var imageBytes = await GetImage(movieId, variant, bucket);
             return imageBytes != null;
         }
 
-        public async Task<byte[]?> GetImage(int movieId, PosterImageVariant variant)
+        public async Task<byte[]?> GetImage(int movieId, PosterImageVariant variant, string? bucket = null)
         {
-            var file = GetFile(movieId, variant);
+            var file = GetFile(movieId, variant, bucket);
 
-            var needsRefresh = file.Exists && await IsLocalCacheStale(movieId, variant);
+            var needsRefresh = file.Exists && await IsLocalCacheStale(movieId, variant, bucket);
 
             if (!file.Exists || needsRefresh)
             {
-                var fetched = await FetchAndCacheImage(movieId, variant, file);
+                var fetched = await FetchAndCacheImage(movieId, variant, file, bucket);
                 if (fetched != null)
                     return fetched;
 
@@ -57,29 +57,34 @@ namespace MovieTheater.Services.Poster
             return await File.ReadAllBytesAsync(file.FullName);
         }
 
-        public Task SaveImage(int movieId, PosterImageVariant variant, byte[] imageContent)
+        public Task SaveImage(int movieId, PosterImageVariant variant, byte[] imageContent, string? bucket = null)
         {
             throw new InvalidOperationException("You cannot save images in dev mode.");
         }
 
-        public Task<DateTimeOffset?> GetImageModifiedDate(int movieId, PosterImageVariant variant)
+        public Task<DateTimeOffset?> GetImageModifiedDate(int movieId, PosterImageVariant variant, string? bucket = null)
         {
-            var file = GetFile(movieId, variant);
+            var file = GetFile(movieId, variant, bucket);
             DateTimeOffset? result = file.Exists ? new DateTimeOffset(file.LastWriteTimeUtc) : null;
             return Task.FromResult(result);
         }
 
-        private async Task<byte[]?> FetchAndCacheImage(int movieId, PosterImageVariant variant, FileInfo file)
+        private async Task<byte[]?> FetchAndCacheImage(int movieId, PosterImageVariant variant, FileInfo file, string? bucket = null)
         {
+            // Mirror the prod routes so dev pulls a poster on demand: Movie/Series use /Image,
+            // bucketed namespaces (misc) use /{Bucket}Image (e.g. /MiscImage).
+            var route = string.IsNullOrEmpty(bucket)
+                ? ""
+                : char.ToUpperInvariant(bucket[0]) + bucket.Substring(1);
             string url;
 
             if (variant == PosterImageVariant.Main)
             {
-                url = $"https://theater.carpouzis.com/Image/{movieId}";
+                url = $"https://theater.carpouzis.com/{route}Image/{movieId}";
             }
             else if (variant == PosterImageVariant.Thumbnail)
             {
-                url = $"https://theater.carpouzis.com/ImageThumb/{movieId}";
+                url = $"https://theater.carpouzis.com/{route}ImageThumb/{movieId}";
             }
             else
             {
@@ -96,12 +101,18 @@ namespace MovieTheater.Services.Poster
 
             var responseBytes = await response.Content.ReadAsByteArrayAsync();
             await File.WriteAllBytesAsync(file.FullName, responseBytes);
-            await WriteLocalVersion(movieId, variant);
+            if (string.IsNullOrEmpty(bucket))
+                await WriteLocalVersion(movieId, variant);
             return responseBytes;
         }
 
-        private async Task<bool> IsLocalCacheStale(int movieId, PosterImageVariant variant)
+        private async Task<bool> IsLocalCacheStale(int movieId, PosterImageVariant variant, string? bucket = null)
         {
+            // Bucketed namespaces (misc) have no PosterDetails version row, so the local cache is
+            // never considered stale — fetch once, then serve the file.
+            if (!string.IsNullOrEmpty(bucket))
+                return false;
+
             var currentVersion = await movieDb.MoviePosterDetails
                 .AsNoTracking()
                 .Where(x => x.MovieId == movieId)
@@ -143,17 +154,18 @@ namespace MovieTheater.Services.Poster
             return new FileInfo(baseFile.FullName + ".version");
         }
 
-        private FileInfo GetFile(int movieId, PosterImageVariant variant)
+        private FileInfo GetFile(int movieId, PosterImageVariant variant, string? bucket = null)
         {
+            var prefix = string.IsNullOrEmpty(bucket) ? "" : bucket + "_";
             string path;
 
             if (variant == PosterImageVariant.Main)
             {
-                path = Path.Combine(options.Directory.FullName, movieId + ".png");
+                path = Path.Combine(options.Directory.FullName, prefix + movieId + ".png");
             }
             else if (variant == PosterImageVariant.Thumbnail)
             {
-                path = Path.Combine(options.Directory.FullName, movieId + "_s.png");
+                path = Path.Combine(options.Directory.FullName, prefix + movieId + "_s.png");
             }
             else
             {

@@ -99,8 +99,13 @@ function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, o
       grid={{ gutter: 4, column: 2 }}
       dataSource={movieDataArray}
       renderItem={(item, index) => {
-        const thumbUrl = MovieAPI.getPosterThumbnail(item.id, item.posterVersion);
+        const thumbUrl = MovieAPI.getPosterThumbnail(item.id, item.posterVersion, item.kind);
         const isAboveFold = index < 6;
+        const isMisc = item.kind === "misc";
+        const year = item.releaseDate ? new Date(item.releaseDate).getFullYear() : null;
+        const metaText = isMisc
+          ? [year, item.category || "Misc"].filter(Boolean).join(" • ")
+          : [year, item.rating, item.runtime].filter(Boolean).join(" • ");
         return (
           <List.Item>
             <Card
@@ -123,24 +128,25 @@ function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, o
                   loading={isAboveFold ? "eager" : "lazy"}
                   fetchPriority={isAboveFold ? "high" : "auto"}
                   decoding="async"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               </div>
               <div
-                onClick={() => onMovieClick(item.id, item.kind)}
-                onMouseEnter={() => setHoveredMovieId(item.id)}
+                onClick={isMisc ? undefined : () => onMovieClick(item.id, item.kind)}
+                onMouseEnter={() => !isMisc && setHoveredMovieId(item.id)}
                 onMouseLeave={() => setHoveredMovieId(null)}
-                onTouchStart={() => handleTitleTouchStart(item.id)}
+                onTouchStart={() => !isMisc && handleTitleTouchStart(item.id)}
                 onTouchEnd={handleTitleTouchEnd}
-                style={{ cursor: "pointer", display: "flex", flexDirection: "column", flex: "0 0 auto" }}
+                style={{ cursor: isMisc ? "default" : "pointer", display: "flex", flexDirection: "column", flex: "0 0 auto" }}
               >
                 <div style={{ ...cardTitleStyle, color: hoveredMovieId === item.id ? "#1890ff" : "#5E5E5E" }}>{item.title}</div>
-                <div style={cardMetaStyle}>
-                  {new Date(item.releaseDate).getFullYear()} � {item.rating} � {item.runtime}
+                <div style={cardMetaStyle}>{metaText}</div>
+              </div>
+              {!isMisc && (
+                <div style={buttonContainerStyle}>
+                  <UserMovieOptions userData={userData} id={item.id} kind={item.kind} setUserData={setUserData} onToggleViewing={onToggleViewing} inline={true} />
                 </div>
-              </div>
-              <div style={buttonContainerStyle}>
-                <UserMovieOptions userData={userData} id={item.id} kind={item.kind} setUserData={setUserData} onToggleViewing={onToggleViewing} inline={true} />
-              </div>
+              )}
             </Card>
           </List.Item>
         );

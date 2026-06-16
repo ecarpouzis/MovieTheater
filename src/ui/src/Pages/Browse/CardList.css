@@ -66,6 +66,36 @@
   height: 160px;
 }
 
+/* Shown when a poster is missing / fails to load (most Misc videos have no poster). Keeps the
+   2:3 poster footprint so the card layout doesn't collapse. */
+.card-poster-placeholder {
+  height: 200px;
+  width: 133px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2b3a4a, #1a2530);
+}
+
+.card-poster-placeholder--mobile {
+  height: 160px;
+  width: 107px;
+}
+
+.card-poster-placeholder-icon {
+  font-size: 2.4em;
+  opacity: 0.5;
+}
+
+/* A non-clickable title (Misc videos have no detail modal yet). */
+.card-title--static {
+  cursor: default;
+}
+
+.card-title--static:hover {
+  color: #5e5e5e;
+}
+
 /* Right column */
 .card-right-col {
   flex: 1;
@@ -223,4 +253,16 @@
   background-color: #faf0d0;
   color: #a07000;
   border: 1px solid #f0d060;
+}
+
+.badge-misc {
+  display: inline-block;
+  font-size: 0.75em;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  background-color: #f6edff;
+  color: #722ed1;
+  border: 1px solid #d3adf7;
 }

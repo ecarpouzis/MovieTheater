@@ -22,6 +22,15 @@ namespace MovieTheater.Db
             modelBuilder.Entity<Movie>()
                 .HasIndex(m => m.ReviewBatch);
 
+            // Coarse Browse "Type" bucket, derived from TitleType in the database so it is always
+            // correct with no app-side syncing. Short/TvShort (2,3) ⇒ Short (2); everything else ⇒
+            // Movies (0). Series-typed rows are excluded from public movie queries and live in the
+            // Series table, so a Movie row never needs the Series/Misc buckets. Mirrors
+            // TitleTypeExtensions.Normalize — keep the two in sync.
+            modelBuilder.Entity<Movie>()
+                .Property(m => m.NormalizedTitleType)
+                .HasComputedColumnSql("CASE WHEN [TitleType] IN (2, 3) THEN 2 ELSE 0 END", stored: true);
+
             modelBuilder.Entity<Boardgame>()
                 .HasOne(b => b.BaseGame)
                 .WithMany(b => b.Expansions)

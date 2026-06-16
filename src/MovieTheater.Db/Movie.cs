@@ -139,6 +139,16 @@ namespace MovieTheater.Db
         /// </summary>
         public TitleType TitleType { get; set; } = TitleType.Unknown;
 
+        /// <summary>
+        /// Coarse user-facing bucket (<see cref="NormalizedTitleType.Movies"/> / <see cref="NormalizedTitleType.Short"/>)
+        /// the Browse "Type" filter groups by — a <b>persisted computed column</b> derived from
+        /// <see cref="TitleType"/> in SQL, so it never needs app-side syncing and can be queried directly.
+        /// A Movie row is only ever Movies or Short: series live in the <see cref="Series"/> table
+        /// (always <see cref="NormalizedTitleType.Series"/>) and tt-less videos in MiscVideo
+        /// (always <see cref="NormalizedTitleType.Misc"/>). See <see cref="TitleTypeExtensions.Normalize"/>.
+        /// </summary>
+        public NormalizedTitleType NormalizedTitleType { get; private set; }
+
         // ── Library-ingest review (transient) ──────────────────────────────────────
         // Set on every row the bulk library ingest creates so the whole batch can be
         // reviewed on the site before it's trusted, then cleared. Pending-review rows

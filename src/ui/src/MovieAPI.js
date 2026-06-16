@@ -1,10 +1,14 @@
 import { detectStreamCapabilities } from "./streamCapabilities";
 
-function getMoviePoster(id, posterVersion) {
+// MiscVideo posters live in a separate route namespace (/MiscImage) because misc ids overlap the
+// shared Movie/Series id space. Movie/series keep /Image. Misc videos have no poster version.
+function getMoviePoster(id, posterVersion, kind) {
+  if (kind === "misc") return `/MiscImage/${id}`;
   return posterVersion ? `/Image/${id}?v=${posterVersion}` : `/Image/${id}`;
 }
 
-function getPosterThumbnail(id, posterVersion) {
+function getPosterThumbnail(id, posterVersion, kind) {
+  if (kind === "misc") return `/MiscImageThumb/${id}`;
   return posterVersion ? `/ImageThumb/${id}?v=${posterVersion}` : `/ImageThumb/${id}`;
 }
 

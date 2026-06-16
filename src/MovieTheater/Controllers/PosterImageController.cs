@@ -27,22 +27,38 @@ namespace MovieTheater.Controllers
             return await PosterResponse(id, PosterImageVariant.Thumbnail);
         }
 
-        private async Task<IActionResult> PosterResponse(int movieId, PosterImageVariant variant)
+        // MiscVideo has a disjoint id space from Movie/Series, so its posters are served from a
+        // separate "misc" namespace to avoid colliding with /Image/{id}. Most misc videos have no
+        // poster (no IMDb id / poster source), so a 404 here is expected and the card shows a
+        // placeholder.
+        [HttpGet("/MiscImage/{id}")]
+        public async Task<IActionResult> MiscImageHandler(int id)
+        {
+            return await PosterResponse(id, PosterImageVariant.Main, "misc");
+        }
+
+        [HttpGet("/MiscImageThumb/{id}")]
+        public async Task<IActionResult> MiscImageThumbHandler(int id)
+        {
+            return await PosterResponse(id, PosterImageVariant.Thumbnail, "misc");
+        }
+
+        private async Task<IActionResult> PosterResponse(int movieId, PosterImageVariant variant, string? bucket = null)
         {
             // Try to get the modified date for caching. In dev mode the file may not
             // exist yet but the repository can fetch it on demand (DevPosterImageRepository).
-            var modifiedDate = await imageRepository.GetImageModifiedDate(movieId, variant);
+            var modifiedDate = await imageRepository.GetImageModifiedDate(movieId, variant, bucket);
             byte[]? posterBytes = null;
 
             if (modifiedDate == null)
             {
                 // Attempt to fetch the image (this will download & save in DevPosterImageRepository).
-                posterBytes = await imageRepository.GetImage(movieId, variant);
+                posterBytes = await imageRepository.GetImage(movieId, variant, bucket);
                 if (posterBytes == null)
                     return NotFound();
 
                 // Re-check modified date; if repository doesn't supply it, use now.
-                modifiedDate = await imageRepository.GetImageModifiedDate(movieId, variant) ?? DateTimeOffset.UtcNow;
+                modifiedDate = await imageRepository.GetImageModifiedDate(movieId, variant, bucket) ?? DateTimeOffset.UtcNow;
             }
 
             var etag = $"\"{modifiedDate.Value.Ticks}\"";
@@ -57,7 +73,7 @@ namespace MovieTheater.Controllers
             // If we already fetched the bytes above, use them. Otherwise load from repository.
             if (posterBytes == null)
             {
-                posterBytes = await imageRepository.GetImage(movieId, variant);
+                posterBytes = await imageRepository.GetImage(movieId, variant, bucket);
                 if (posterBytes == null)
                     return NotFound();
             }

@@ -14,15 +14,15 @@ namespace MovieTheater.Services.Poster
             this.options = options.Value;
         }
 
-        public Task<bool> HasImage(int movieId, PosterImageVariant variant)
+        public Task<bool> HasImage(int movieId, PosterImageVariant variant, string? bucket = null)
         {
-            var file = GetFile(movieId, variant);
+            var file = GetFile(movieId, variant, bucket);
             return Task.FromResult(file.Exists);
         }
 
-        public async Task<byte[]> GetImage(int movieId, PosterImageVariant variant)
+        public async Task<byte[]> GetImage(int movieId, PosterImageVariant variant, string? bucket = null)
         {
-            var file = GetFile(movieId, variant);
+            var file = GetFile(movieId, variant, bucket);
 
             if (file.Exists)
             {
@@ -34,31 +34,34 @@ namespace MovieTheater.Services.Poster
             }
         }
 
-        public async Task SaveImage(int movieId, PosterImageVariant variant, byte[] imageContent)
+        public async Task SaveImage(int movieId, PosterImageVariant variant, byte[] imageContent, string? bucket = null)
         {
-            var file = GetFile(movieId, variant);
+            var file = GetFile(movieId, variant, bucket);
 
             await File.WriteAllBytesAsync(file.FullName, imageContent);
         }
 
-        public Task<DateTimeOffset?> GetImageModifiedDate(int movieId, PosterImageVariant variant)
+        public Task<DateTimeOffset?> GetImageModifiedDate(int movieId, PosterImageVariant variant, string? bucket = null)
         {
-            var file = GetFile(movieId, variant);
+            var file = GetFile(movieId, variant, bucket);
             DateTimeOffset? result = file.Exists ? new DateTimeOffset(file.LastWriteTimeUtc) : null;
             return Task.FromResult(result);
         }
 
-        private FileInfo GetFile(int movieId, PosterImageVariant variant)
+        // bucket (e.g. "misc") prefixes the filename so a disjoint id space can't collide with the
+        // shared Movie/Series posters: "{bucket}_{id}.png". Null = the default Movie/Series namespace.
+        private FileInfo GetFile(int movieId, PosterImageVariant variant, string? bucket = null)
         {
+            var prefix = string.IsNullOrEmpty(bucket) ? "" : bucket + "_";
             string path;
 
             if (variant == PosterImageVariant.Main)
             {
-                path = Path.Combine(options.Directory.FullName, movieId + ".png");
+                path = Path.Combine(options.Directory.FullName, prefix + movieId + ".png");
             }
             else if (variant == PosterImageVariant.Thumbnail)
             {
-                path = Path.Combine(options.Directory.FullName, movieId + "_s.png");
+                path = Path.Combine(options.Directory.FullName, prefix + movieId + "_s.png");
             }
             else
             {
