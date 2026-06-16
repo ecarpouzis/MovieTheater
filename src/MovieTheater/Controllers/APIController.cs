@@ -742,6 +742,46 @@ namespace MovieTheater.Controllers
             await movieDb.SaveChangesAsync();
         }
 
+        // Download a poster from a link and persist it for a title by id — movie or series. Bumps the
+        // PosterVersion (cache-bust) and recomputes the dominant color, exactly like DownloadAndSavePoster
+        // but addressable by id+table so the review tool can pull a poster for a pending row. Returns the
+        // new version.
+        private async Task<int> DownloadAndSavePosterByIdAsync(int id, string posterLink, bool isSeries)
+        {
+            var result = await httpClient.GetAsync(posterLink);
+            result.EnsureSuccessStatusCode();
+            var content = await result.Content.ReadAsByteArrayAsync();
+            await imageRepo.SaveImage(id, PosterImageVariant.Main, content);
+            await shrinkService.EnsurePosterThumnailExists(id, true);
+            var thumbnailBytes = await imageRepo.GetImage(id, PosterImageVariant.Thumbnail);
+            var dominantColor = ComputeAverageColor(thumbnailBytes ?? content);
+
+            if (isSeries)
+            {
+                var pd = await movieDb.SeriesPosterDetails.FindAsync(id);
+                if (pd == null)
+                {
+                    pd = new SeriesPosterDetails { SeriesId = id, PosterLink = posterLink, PosterVersion = 1, DominantColor = dominantColor };
+                    movieDb.SeriesPosterDetails.Add(pd);
+                }
+                else { pd.PosterLink = posterLink; pd.PosterVersion++; pd.DominantColor = dominantColor; }
+                await movieDb.SaveChangesAsync();
+                return pd.PosterVersion;
+            }
+            else
+            {
+                var pd = await movieDb.MoviePosterDetails.FindAsync(id);
+                if (pd == null)
+                {
+                    pd = new MoviePosterDetails { MovieId = id, PosterLink = posterLink, PosterVersion = 1, DominantColor = dominantColor };
+                    movieDb.MoviePosterDetails.Add(pd);
+                }
+                else { pd.PosterLink = posterLink; pd.PosterVersion++; pd.DominantColor = dominantColor; }
+                await movieDb.SaveChangesAsync();
+                return pd.PosterVersion;
+            }
+        }
+
         [HttpPost("/API/ScanPosterColors")]
         public async Task<IActionResult> ScanPosterColors(int batchSize = 50)
         {
@@ -2633,8 +2673,13 @@ namespace MovieTheater.Controllers
             // sequence, so every detail/approve/reject must carry this — a bare id is ambiguous.
             public string Kind { get; set; } = "movie";
             public string? Title { get; set; }
+            public string? SimpleTitle { get; set; }
             public string? imdbID { get; set; }
             public string? TitleType { get; set; }
+            /// <summary>Resolved release year — compared to the on-disk folder year to confirm a match.</summary>
+            public int? Year { get; set; }
+            /// <summary>Current stored poster link (pre-fills the editable Poster URL field).</summary>
+            public string? PosterLink { get; set; }
             public string? ReviewBatch { get; set; }
             public string? ReviewProvenance { get; set; }
             public string? ReviewConfidence { get; set; }
@@ -2663,7 +2708,7 @@ namespace MovieTheater.Controllers
             // Movies only — series-typed rows now live in the Series table (added below).
             var raw = await movieDb.Movies
                 .Where(m => m.ReviewBatch != null && m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries)
-                .Select(m => new { m.id, m.Title, m.imdbID, m.TitleType, m.PlayableId, m.ReviewBatch, m.ReviewProvenance, m.ReviewConfidence, m.ReviewSourcePath, m.ImdbNeedsReview, m.ImdbReviewReason })
+                .Select(m => new { m.id, m.Title, m.SimpleTitle, m.imdbID, m.TitleType, m.PlayableId, m.ReviewBatch, m.ReviewProvenance, m.ReviewConfidence, m.ReviewSourcePath, m.ImdbNeedsReview, m.ImdbReviewReason, m.ReleaseDate, m.ImdbReleaseDate, PosterLink = m.PosterDetails != null ? m.PosterDetails.PosterLink : null })
                 .ToListAsync();
 
             // File / episode summaries so each card shows "N files" / "have X of Y" and, crucially,
@@ -2697,8 +2742,11 @@ namespace MovieTheater.Controllers
                     id = m.id,
                     Kind = "movie",
                     Title = m.Title,
+                    SimpleTitle = m.SimpleTitle,
                     imdbID = m.imdbID,
                     TitleType = m.TitleType.ToString(),
+                    Year = m.ReleaseDate != null ? m.ReleaseDate.Value.Year : (m.ImdbReleaseDate != null ? m.ImdbReleaseDate.Value.Year : (int?)null),
+                    PosterLink = m.PosterLink,
                     ReviewBatch = m.ReviewBatch,
                     ReviewProvenance = m.ReviewProvenance,
                     ReviewConfidence = m.ReviewConfidence,
@@ -2715,15 +2763,18 @@ namespace MovieTheater.Controllers
             // Series (their own table now), with "have X of Y" episode summaries via SeriesId.
             var seriesRaw = await movieDb.Series
                 .Where(s => s.ReviewBatch != null)
-                .Select(s => new { s.Id, s.Title, s.imdbID, s.TitleType, s.ReviewBatch, s.ReviewProvenance, s.ReviewConfidence, s.ReviewSourcePath, s.ImdbNeedsReview, s.ImdbReviewReason })
+                .Select(s => new { s.Id, s.Title, s.SimpleTitle, s.imdbID, s.TitleType, s.ReviewBatch, s.ReviewProvenance, s.ReviewConfidence, s.ReviewSourcePath, s.ImdbNeedsReview, s.ImdbReviewReason, s.ReleaseDate, s.ImdbReleaseDate, s.StartYear, PosterLink = s.PosterDetails != null ? s.PosterDetails.PosterLink : null })
                 .ToListAsync();
             items.AddRange(seriesRaw.Select(s => new IngestReviewItemDto
             {
                 id = s.Id,
                 Kind = "series",
                 Title = s.Title,
+                SimpleTitle = s.SimpleTitle,
                 imdbID = s.imdbID,
                 TitleType = s.TitleType.ToString(),
+                Year = s.ReleaseDate != null ? s.ReleaseDate.Value.Year : (s.ImdbReleaseDate != null ? s.ImdbReleaseDate.Value.Year : s.StartYear),
+                PosterLink = s.PosterLink,
                 ReviewBatch = s.ReviewBatch,
                 ReviewProvenance = s.ReviewProvenance,
                 ReviewConfidence = s.ReviewConfidence,
@@ -2746,7 +2797,7 @@ namespace MovieTheater.Controllers
             // Kind="misc". Their related title resolves through Movie (RelatedMovieId) OR Series (RelatedSeriesId).
             var miscRaw = await movieDb.MiscVideos
                 .Where(v => v.ReviewBatch != null)
-                .Select(v => new { v.Id, v.PlayableId, v.Title, v.Category, v.CollectionName, v.RelatedMovieId, v.RelatedSeriesId, v.ReviewBatch, v.ReviewProvenance, v.ReviewSourcePath })
+                .Select(v => new { v.Id, v.PlayableId, v.Title, v.SimpleTitle, v.Year, v.Category, v.CollectionName, v.RelatedMovieId, v.RelatedSeriesId, v.ReviewBatch, v.ReviewProvenance, v.ReviewSourcePath })
                 .ToListAsync();
             if (miscRaw.Count > 0)
             {
@@ -2760,6 +2811,8 @@ namespace MovieTheater.Controllers
                         id = v.Id,
                         Kind = "misc",
                         Title = v.Title,
+                        SimpleTitle = v.SimpleTitle,
+                        Year = v.Year,
                         TitleType = "MiscVideo",
                         Category = v.Category,
                         CollectionName = v.CollectionName,
@@ -2939,12 +2992,18 @@ namespace MovieTheater.Controllers
             public int id { get; set; }
             public string Kind { get; set; } = "movie";   // "movie" | "series"
             public string? Title { get; set; }
+            public string? SimpleTitle { get; set; }
+            public int? Year { get; set; }
             public string? imdbID { get; set; }
             public string? TitleType { get; set; }
+            /// <summary>A poster URL to fetch + persist for this row (so the approved title carries it).</summary>
+            public string? PosterLink { get; set; }
         }
 
-        // Correct a pending row's title / imdbID / type in place (movie or series). It stays pending so
-        // the reviewer can Approve it afterward. A corrected imdbID is validated and must not collide.
+        // Correct a pending row in place before approval — title / simple title / year / imdbID / type, and
+        // the poster (a provided PosterLink that differs from what's stored is downloaded + saved by id).
+        // These are the exact values that go live on Approve. The row stays pending. A corrected imdbID is
+        // validated and must not collide. Returns the new posterVersion when a poster was fetched.
         [HttpPost("/API/Admin/IngestReview/Update")]
         public async Task<IActionResult> IngestReviewUpdate([FromBody] IngestReviewUpdateRequest req)
         {
@@ -2956,6 +3015,12 @@ namespace MovieTheater.Controllers
                 var s = await movieDb.Series.FirstOrDefaultAsync(x => x.Id == req.id && x.ReviewBatch != null);
                 if (s == null) return NotFound(new { Message = "Not a pending-review series" });
                 if (!string.IsNullOrWhiteSpace(req.Title)) s.Title = req.Title.Trim();
+                if (req.SimpleTitle != null) s.SimpleTitle = req.SimpleTitle.Trim();
+                if (req.Year != null && (s.ReleaseDate == null || s.ReleaseDate.Value.Year != req.Year.Value))
+                {
+                    s.ReleaseDate = new DateTime(req.Year.Value, 1, 1);
+                    s.StartYear = req.Year.Value;
+                }
                 if (req.imdbID != null)
                 {
                     var newId = req.imdbID.Trim();
@@ -2970,14 +3035,19 @@ namespace MovieTheater.Controllers
                 if (!string.IsNullOrWhiteSpace(req.TitleType) && Enum.TryParse<TitleType>(req.TitleType, true, out var stt)
                     && (stt == TitleType.TvSeries || stt == TitleType.TvMiniSeries))
                     s.TitleType = stt;
+                int? sVer = await ApplyReviewPosterAsync(s.Id, req.PosterLink, isSeries: true);
+                if (sVer == -1) return BadRequest(new { Success = false, Message = "Poster download failed." });
                 await movieDb.SaveChangesAsync();
-                return Ok(new { Success = true });
+                return Ok(new { Success = true, posterVersion = sVer });
             }
 
             var m = await movieDb.Movies.FirstOrDefaultAsync(x => x.id == req.id && x.ReviewBatch != null);
             if (m == null) return NotFound(new { Message = "Not a pending-review movie" });
 
             if (!string.IsNullOrWhiteSpace(req.Title)) m.Title = req.Title.Trim();
+            if (req.SimpleTitle != null) m.SimpleTitle = req.SimpleTitle.Trim();
+            if (req.Year != null && (m.ReleaseDate == null || m.ReleaseDate.Value.Year != req.Year.Value))
+                m.ReleaseDate = new DateTime(req.Year.Value, 1, 1);
 
             if (req.imdbID != null)
             {
@@ -2997,8 +3067,24 @@ namespace MovieTheater.Controllers
             if (!string.IsNullOrWhiteSpace(req.TitleType) && Enum.TryParse<TitleType>(req.TitleType, true, out var tt))
                 m.TitleType = tt;
 
+            int? ver = await ApplyReviewPosterAsync(m.id, req.PosterLink, isSeries: false);
+            if (ver == -1) return BadRequest(new { Success = false, Message = "Poster download failed." });
             await movieDb.SaveChangesAsync();
-            return Ok(new { Success = true });
+            return Ok(new { Success = true, posterVersion = ver });
+        }
+
+        // Fetch + persist a poster for a review row when a new/changed link is supplied. Returns the new
+        // PosterVersion, null when no fetch was needed, or -1 on download failure (caller surfaces it).
+        private async Task<int?> ApplyReviewPosterAsync(int id, string? posterLink, bool isSeries)
+        {
+            if (string.IsNullOrWhiteSpace(posterLink)) return null;
+            var link = posterLink.Trim();
+            var existing = isSeries
+                ? await movieDb.SeriesPosterDetails.Where(p => p.SeriesId == id).Select(p => p.PosterLink).FirstOrDefaultAsync()
+                : await movieDb.MoviePosterDetails.Where(p => p.MovieId == id).Select(p => p.PosterLink).FirstOrDefaultAsync();
+            if (string.Equals(existing, link, StringComparison.OrdinalIgnoreCase)) return null;  // already have this exact poster
+            try { return await DownloadAndSavePosterByIdAsync(id, link, isSeries); }
+            catch { return -1; }   // bad URL / unreachable — caller surfaces a friendly message
         }
 
         public class IngestReviewReclassifyRequest

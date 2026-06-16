@@ -509,7 +509,7 @@ function ingestReviewReclassify({ id, fromKind, toKind, category, collectionName
   });
 }
 
-function ingestReviewUpdate({ id, kind, title, imdbID, titleType }) {
+function ingestReviewUpdate({ id, kind, title, simpleTitle, year, imdbID, titleType, posterLink }) {
   return fetch("/API/Admin/IngestReview/Update", {
     method: "post",
     headers: { "Content-Type": "application/json" },
@@ -517,8 +517,11 @@ function ingestReviewUpdate({ id, kind, title, imdbID, titleType }) {
       id,
       Kind: kind || "movie",
       Title: title ?? null,
+      SimpleTitle: simpleTitle ?? null,
+      Year: year === "" || year == null ? null : Number(year),
       imdbID: imdbID ?? null,
       TitleType: titleType ?? null,
+      PosterLink: posterLink ?? null,
     }),
   });
 }

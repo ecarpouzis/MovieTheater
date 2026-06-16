@@ -7,21 +7,29 @@ const { Title, Text } = Typography;
 
 // Mirrors the TitleType enum in MovieTheater.Db.
 const TITLE_TYPES = ["Movie", "Short", "TvSeries", "TvMiniSeries", "TvMovie", "TvShort", "TvSpecial", "Video", "Unknown"];
+
+// A lookup's coarse TitleType ("Movie"/"TvSeries" from OMDB) — apply only if it's a real, known value.
+function mapLookupType(tt) {
+  if (!tt || tt === "Unknown") return null;
+  return TITLE_TYPES.includes(tt) ? tt : null;
+}
 const CONF_COLOR = { HIGH: "green", MEDIUM: "gold", LOW: "red", NONE: "red" };
 const PROV_COLOR = { "finalsort-cache": "blue", "suggestion-api": "geekblue", "web-search": "purple", manual: "cyan" };
 const PAGE_SIZE = 12;
 
-// The on-disk folder usually carries the year — show it next to the IMDb-resolved year
-// so a wrong match jumps out.
-function yearFromPath(p) {
-  if (!p) return "";
-  const m = String(p).match(/\((\d{4})(?:\s*[-–]\s*\d{0,4})?\)/);
-  return m ? m[1] : "";
-}
 function folderName(p) {
   if (!p) return "";
   const parts = String(p).split(/[\\/]/).filter(Boolean);
   return parts[parts.length - 1] || String(p);
+}
+// The on-disk folder carries the year — show it next to the IMDb-resolved year so a wrong match
+// jumps out. Read it from the IMMEDIATE folder (the title's own folder), NOT the whole path: a
+// movie inside a collection ("…/Zootopia (2016-2025)/Zootopia 2 (2025)") would otherwise pick up
+// the collection's range-start (1937 from "!Animated Movies (1937-2012)") and false-mismatch.
+function yearFromPath(p) {
+  if (!p) return "";
+  const m = folderName(p).match(/\((\d{4})(?:\s*[-–]\s*\d{0,4})?\)/);
+  return m ? m[1] : "";
 }
 function fetchedYear(d) {
   if (!d) return "";
@@ -217,8 +225,11 @@ function MiscReviewCard({ row, onApprove, onReject, onReclassify }) {
 // Title / IMDb id / Type, with Approve / Reject. Edits are saved automatically on Approve.
 function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onReclassify }) {
   const [title, setTitle] = useState(row.title || "");
+  const [simpleTitle, setSimpleTitle] = useState(row.simpleTitle || "");
+  const [year, setYear] = useState(row.year ?? "");
   const [imdbID, setImdbID] = useState(row.imdbID || "");
   const [titleType, setTitleType] = useState(row.titleType || "Movie");
+  const [posterUrl, setPosterUrl] = useState(row.posterLink || "");
   const [working, setWorking] = useState(false);
   const [detail, setDetail] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -245,12 +256,49 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row.id]);
 
-  const dirty = title !== (row.title || "") || imdbID !== (row.imdbID || "") || titleType !== (row.titleType || "Movie");
-  const edits = dirty ? { title, imdbID, titleType } : null;
   const d = details && details.data;
+  // The poster to fetch on save: a user-typed/overridden URL, else — for a row that has no poster yet —
+  // the one the lookup found. An already-postered row left untouched sends nothing (no needless re-download).
+  const trimmedPoster = (posterUrl || "").trim();
+  let posterToSave = null;
+  if (trimmedPoster && trimmedPoster !== (row.posterLink || "")) posterToSave = trimmedPoster;
+  else if (!row.posterLink && d && d.posterLink) posterToSave = d.posterLink;
+
+  const fieldsDirty =
+    title !== (row.title || "") ||
+    simpleTitle !== (row.simpleTitle || "") ||
+    String(year ?? "") !== String(row.year ?? "") ||
+    imdbID !== (row.imdbID || "") ||
+    titleType !== (row.titleType || "Movie");
+  const dirty = fieldsDirty || !!posterToSave;
+  const edits = dirty ? { title, simpleTitle, year, imdbID, titleType, posterLink: posterToSave } : null;
   const folderYear = yearFromPath(row.reviewSourcePath);
   const fYear = fetchedYear(d);
+  // The on-disk folder year vs the year we'll store. A match is a strong "this resolution is right"
+  // signal; a mismatch (now read from the immediate folder) is worth a closer look.
+  const storedYear = year != null && year !== "" ? String(year) : "";
+  const yearConfirmed = folderYear && storedYear && folderYear === storedYear;
   const yearMismatch = folderYear && fYear && folderYear !== fYear;
+
+  // Re-lookup pulls fresh IMDb/OMDB data for the current id and fills the editable fields the user
+  // would otherwise hand-copy: Title, Year, Type, and the Poster URL. SimpleTitle is left alone
+  // (it's a hand-curated sort key). The poster is downloaded when the row is saved/approved.
+  async function relookup() {
+    setWorking(true);
+    try {
+      const data = await onFetch(row.id, imdbID, true);
+      if (data) {
+        if (data.title) setTitle(data.title);
+        const fy = fetchedYear(data);
+        if (fy) setYear(fy);
+        const lt = mapLookupType(data.titleType);
+        if (lt) setTitleType(lt);
+        if (data.posterLink) setPosterUrl(data.posterLink);
+      }
+    } finally {
+      setWorking(false);
+    }
+  }
 
   async function approve() {
     setWorking(true);
@@ -286,10 +334,10 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
   return (
     <div className="review-card">
       <div className="review-card-poster">
-        {details && details.loading ? (
+        {details && details.loading && !posterUrl ? (
           <Spin />
-        ) : d && d.posterLink ? (
-          <img alt="" src={d.posterLink} />
+        ) : posterUrl || (d && d.posterLink) ? (
+          <img alt="" src={posterUrl || d.posterLink} />
         ) : (
           <div className="review-card-noposter">no&nbsp;poster</div>
         )}
@@ -327,6 +375,7 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
             <Text>
               IMDb resolves to <b>{d.title}</b>
               {fYear ? ` (${fYear})` : ""}
+              {yearConfirmed ? <Tag color="green" style={{ marginLeft: 8 }}>✓ year {folderYear}</Tag> : null}
               {yearMismatch ? <Tag color="red" style={{ marginLeft: 8 }}>folder says {folderYear}</Tag> : null}
             </Text>
           ) : (
@@ -343,11 +392,23 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
               </td>
             </tr>
             <tr>
+              <td>Simple&nbsp;Title</td>
+              <td>
+                <Input value={simpleTitle} onChange={(e) => setSimpleTitle(e.target.value)} placeholder="sort / search key" />
+              </td>
+            </tr>
+            <tr>
+              <td>Year</td>
+              <td>
+                <Input style={{ width: 110 }} value={year} onChange={(e) => setYear(e.target.value.replace(/[^\d]/g, ""))} maxLength={4} />
+              </td>
+            </tr>
+            <tr>
               <td>IMDb&nbsp;ID</td>
               <td>
                 <Input.Group compact>
                   <Input style={{ width: "calc(100% - 110px)" }} value={imdbID} onChange={(e) => setImdbID(e.target.value)} />
-                  <Button style={{ width: 110 }} onClick={() => onFetch(row.id, imdbID, true)}>
+                  <Button style={{ width: 110 }} loading={working} onClick={relookup}>
                     Re-lookup
                   </Button>
                 </Input.Group>
@@ -367,6 +428,12 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
                   onChange={setTitleType}
                   options={TITLE_TYPES.map((t) => ({ value: t, label: t }))}
                 />
+              </td>
+            </tr>
+            <tr>
+              <td>Poster&nbsp;URL</td>
+              <td>
+                <Input value={posterUrl} onChange={(e) => setPosterUrl(e.target.value)} placeholder="https://… (fetched + saved on approve)" />
               </td>
             </tr>
           </tbody>
@@ -512,10 +579,11 @@ export default function IngestReviewPage({ userData }) {
     load();
   }, [load]);
 
+  // Returns the looked-up record (or null) so Re-lookup can populate the editable fields from it.
   const fetchDetails = useCallback(async (id, tt, force) => {
-    if (!tt) return;
+    if (!tt) return null;
     const cur = detailsRef.current[id];
-    if (cur && (cur.loading || (cur.data && !force))) return;
+    if (cur && (cur.loading || (cur.data && !force))) return cur.data || null;
     setDetailsCache((prev) => ({ ...prev, [id]: { loading: true } }));
     try {
       let data = await MovieAPI.omdbLookupImdbID(tt);
@@ -528,8 +596,10 @@ export default function IngestReviewPage({ userData }) {
         }
       }
       setDetailsCache((prev) => ({ ...prev, [id]: { loading: false, data } }));
+      return data || null;
     } catch {
       setDetailsCache((prev) => ({ ...prev, [id]: { loading: false, error: true } }));
+      return null;
     }
   }, []);
 
@@ -633,7 +703,19 @@ export default function IngestReviewPage({ userData }) {
         return false;
       }
       setItems((prev) =>
-        prev.map((it) => (it.id === id ? { ...it, title: edits.title ?? it.title, imdbID: edits.imdbID ?? it.imdbID, titleType: edits.titleType ?? it.titleType } : it))
+        prev.map((it) =>
+          it.id === id && (it.kind || "movie") === (kind || "movie")
+            ? {
+                ...it,
+                title: edits.title ?? it.title,
+                simpleTitle: edits.simpleTitle ?? it.simpleTitle,
+                year: edits.year != null && edits.year !== "" ? Number(edits.year) : it.year,
+                imdbID: edits.imdbID ?? it.imdbID,
+                titleType: edits.titleType ?? it.titleType,
+                posterLink: edits.posterLink ?? it.posterLink,
+              }
+            : it
+        )
       );
       // The id may have changed — refresh the lookup.
       if (edits.imdbID) fetchDetails(id, edits.imdbID, true);

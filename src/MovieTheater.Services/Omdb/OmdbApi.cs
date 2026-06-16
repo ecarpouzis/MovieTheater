@@ -62,6 +62,16 @@ namespace MovieTheater.Services.Omdb
                 UploadedDate = DateTime.Now,
                 RemoveFromRandom = false,
 
+                // OMDB's coarse Type ("movie" / "series" / "episode") — enough for the review tool's
+                // Re-lookup to fill the Type dropdown; the finer TvMiniSeries/TvMovie split comes from
+                // the IMDB classification scrape. Unknown when OMDB doesn't say.
+                TitleType = omdbMovie.Type?.Trim().ToLowerInvariant() switch
+                {
+                    "movie" => TitleType.Movie,
+                    "series" => TitleType.TvSeries,
+                    _ => TitleType.Unknown,
+                },
+
                 // Enrichment fallbacks (Phase A): OMDB-sourced; TMDB later supersedes
                 // OriginalLanguage with an ISO-639-1 code and RevenueUsd with worldwide gross.
                 OriginalLanguage = FirstLanguage(omdbMovie.Language),
