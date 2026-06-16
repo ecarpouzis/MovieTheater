@@ -58,10 +58,11 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
                   />
                 </div>
                 <div className={`card-right-col${isMobile ? " card-right-col--mobile" : ""}`}>
-                  <div onClick={() => onMovieClick(item.id)} className="card-title">
+                  <div onClick={() => onMovieClick(item.id, item.kind)} className="card-title">
                     {item.title} ({new Date(item.releaseDate).getFullYear()})
                   </div>
                   <div className="card-meta-row">
+                    {item.kind === "series" && <span className="badge-rating">📺 Series</span>}
                     {item.rating && <span className="badge-rating">{item.rating}</span>}
                     {item.runtime && <span className="badge-runtime">{item.runtime}</span>}
                     {item.imdbRating && <span className="badge-imdb">&#9733; {item.imdbRating}</span>}
@@ -85,7 +86,7 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
                 </div>
               </div>
               <PlotText text={summaryText} className="card-plot-below" hiddenClass={isMobile ? "card-plot-below--visible" : ""} />
-              <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
+              <UserMovieOptions userData={userData} id={item.id} kind={item.kind} setUserData={setUserData} onToggleViewing={onToggleViewing} />
             </Card>
           </div>
         );

@@ -31,6 +31,15 @@ namespace MovieTheater.Imdb
         public string Title { get; set; }
         public int? Year { get; set; }
         public DateTime? ReleaseDate { get; set; }
+
+        /// <summary>Raw IMDB titleType id, e.g. "movie", "short", "tvSeries", "tvEpisode". Maps to <see cref="MovieTheater.Db.TitleType"/>.</summary>
+        public string TitleTypeId { get; set; }
+
+        /// <summary>IMDB flags this title as a series (it has episodes). Drives the episode-page caching pass.</summary>
+        public bool IsSeries { get; set; }
+
+        /// <summary>IMDB flags this title as a single episode of some series.</summary>
+        public bool IsEpisode { get; set; }
         public int? RuntimeMinutes { get; set; }
         public string MpaaRating { get; set; }
         public decimal? ImdbRating { get; set; }

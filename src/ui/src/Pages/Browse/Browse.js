@@ -61,6 +61,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
   const history = useHistory();
   const location = useLocation();
   const [selectedMovieId, setSelectedMovieId] = useState(null);
+  const [selectedKind, setSelectedKind] = useState("movie");
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   let displayMovies = movieDataArray;
@@ -71,8 +72,9 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
     displayMovies = [...orderedMovies, ...movieDataArray.filter((movie) => !orderedIdSet.has(movie.id))];
   }
 
-  const handleOpenMovie = (movieId) => {
+  const handleOpenMovie = (movieId, kind = "movie") => {
     setSelectedMovieId(movieId);
+    setSelectedKind(kind || "movie");
     setIsModalVisible(true);
   };
 
@@ -299,6 +301,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
       {useSimpleStyle ? (
         <MovieModal
           movieId={selectedMovieId}
+          kind={selectedKind}
           open={isModalVisible}
           onClose={handleCloseModal}
           actorSearch={handleActorSearch}
@@ -309,6 +312,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
       ) : (
         <MovieModal
           movieId={selectedMovieId}
+          kind={selectedKind}
           open={isModalVisible}
           onClose={handleCloseModal}
           actorSearch={handleActorSearch}

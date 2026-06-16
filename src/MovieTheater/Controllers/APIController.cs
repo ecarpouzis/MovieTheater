@@ -8,6 +8,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
@@ -129,8 +130,8 @@ namespace MovieTheater.Controllers
             if (rating <= ageRestriction)
             {
                 // Surface whether the movie is streamable so the UI can show the Watch button.
-                movie.HasFile = await movieDb.MovieFiles
-                    .AnyAsync(f => f.MovieID == movie.id && f.JellyfinItemId != null && f.MissingSinceUtc == null);
+                movie.HasFile = await movieDb.MediaFiles
+                    .AnyAsync(f => f.PlayableId == movie.PlayableId && f.JellyfinItemId != null && f.MissingSinceUtc == null);
                 var normalized = await GetNormalizedMovieData(id, movie);
                 return Ok(new { Success = true, data = movie, normalized });
             }
@@ -165,10 +166,23 @@ namespace MovieTheater.Controllers
                 .Select(c => new { nm = c.Nm, name = c.Name, character = c.Character })
                 .ToList();
 
+            // Media files for this title's Playable — drives the multi-file UI (Primary + any
+            // Part / Variant / Extra). Ordered Primary-first, then split parts in order.
+            var files = movie.PlayableId == null
+                ? new List<object>()
+                : await movieDb.MediaFiles.Where(f => f.PlayableId == movie.PlayableId)
+                    .OrderBy(f => f.Role).ThenBy(f => f.PartNumber).ThenBy(f => f.Id)
+                    // mediaFileId + isPlayable let the modal offer a play button per file (the Primary
+                    // plays via the movie id; a specific Part/Variant/Extra plays by its mediaFileId).
+                    .Select(f => (object)new { mediaFileId = f.Id, path = f.Path, role = f.Role.ToString(), label = f.Label, partNumber = f.PartNumber, isPlayable = f.JellyfinItemId != null && f.MissingSinceUtc == null })
+                    .ToListAsync();
+
+            // Series are their own table now (see GetSeries); a Movie is never a series here.
             return new
             {
                 verified = movie.ImdbVerifiedDate != null,
                 needsReview = movie.ImdbNeedsReview,
+                titleType = movie.TitleType.ToString(),
                 runtimeMinutes = movie.RuntimeMinutes,
                 plotFull = movie.PlotFull,
                 plotSynopsis = movie.PlotSynopsis,
@@ -179,7 +193,10 @@ namespace MovieTheater.Controllers
                 cast = People(CreditRole.Actor),
                 directors = People(CreditRole.Director),
                 writers = People(CreditRole.Writer),
-                summaries
+                summaries,
+                files,
+                isSeries = false,
+                seasons = (object?)null,
             };
         }
 
@@ -188,7 +205,7 @@ namespace MovieTheater.Controllers
         {
             try
             {
-                var count = await movieDb.Movies.CountAsync();
+                var count = await movieDb.Movies.CountAsync(m => m.ReviewBatch == null);
                 return Ok(new { totalCount = count, success = true });
             }
             catch (Exception ex)
@@ -213,11 +230,17 @@ namespace MovieTheater.Controllers
             var baseQuery = await GetBaseMovieQuery();
             var movies = await baseQuery
                 .Where(m => ids.Contains(m.id))
-                .OrderBy(m => m.SimpleTitle)
                 .Select(ToCardDto)
                 .ToListAsync();
+            // ids share a space across the two tables — pull matching series too (the client reorders
+            // by its restore list, so server order doesn't matter).
+            var seriesQuery = await GetBaseSeriesQuery();
+            var series = await seriesQuery
+                .Where(s => ids.Contains(s.Id))
+                .Select(ToSeriesCardDto)
+                .ToListAsync();
 
-            return Ok(movies);
+            return Ok(movies.Concat(series).OrderBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ToList());
         }
 
         // Slim row shape for browse cards. Carries only the columns CardList /
@@ -228,6 +251,8 @@ namespace MovieTheater.Controllers
         public class MovieCardDto
         {
             public int id { get; set; }
+            /// <summary>"movie" or "series" — the id space is shared, so a card states its table.</summary>
+            public string Kind { get; set; } = "movie";
             public string? Title { get; set; }
             public string? SimpleTitle { get; set; }
             public DateTime? ReleaseDate { get; set; }
@@ -246,6 +271,7 @@ namespace MovieTheater.Controllers
         private static readonly System.Linq.Expressions.Expression<Func<Movie, MovieCardDto>> ToCardDto = m => new MovieCardDto
         {
             id = m.id,
+            Kind = "movie",
             Title = m.Title,
             SimpleTitle = m.SimpleTitle,
             ReleaseDate = m.ReleaseDate,
@@ -259,40 +285,235 @@ namespace MovieTheater.Controllers
             PosterVersion = m.PosterDetails != null ? m.PosterDetails.PosterVersion : 0,
         };
 
-        private async Task<IQueryable<Movie>> GetBaseMovieQuery()
+        // Same slim card shape, projected from a Series — so browse/search can interleave series with movies.
+        private static readonly System.Linq.Expressions.Expression<Func<Series, MovieCardDto>> ToSeriesCardDto = s => new MovieCardDto
         {
-            int ageRestriction = 100;
+            id = s.Id,
+            Kind = "series",
+            Title = s.Title,
+            SimpleTitle = s.SimpleTitle,
+            ReleaseDate = s.ReleaseDate,
+            Rating = s.Rating,
+            Runtime = s.Runtime,
+            imdbRating = s.imdbRating,
+            PlotFull = s.PlotFull,
+            Plot = s.Plot,
+            TopCast = s.TopCast,
+            Actors = s.Actors,
+            PosterVersion = s.PosterDetails != null ? s.PosterDetails.PosterVersion : 0,
+        };
+
+        private async Task<int> GetAgeRestrictionAsync()
+        {
             var currentUserId = GetCurrentUserId();
             if (currentUserId.HasValue)
             {
                 var setRestriction = await movieDb.UserSettings
                     .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value);
                 if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction))
-                    ageRestriction = parsedRestriction;
+                    return parsedRestriction;
             }
+            return 100;
+        }
 
+        private async Task<IQueryable<Movie>> GetBaseMovieQuery()
+        {
+            int ageRestriction = await GetAgeRestrictionAsync();
             return movieDb.Movies
                 .Include(m => m.PosterDetails)
+                // Quarantine: hide rows still pending library-ingest review (ReviewBatch != null)
+                // from every browse/odata path until they're approved.
+                .Where(m => m.ReviewBatch == null)
+                // Series live in their own table now; exclude series-typed Movie rows so a series
+                // shows once (from Series), never doubled during the dual-existence window.
+                .Where(m => m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries)
                 .Where(m => !movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID > ageRestriction));
         }
+
+        // Series peer of GetBaseMovieQuery (same quarantine + age gate). Browse/search union the two.
+        private async Task<IQueryable<Series>> GetBaseSeriesQuery()
+        {
+            int ageRestriction = await GetAgeRestrictionAsync();
+            return movieDb.Series
+                .Include(s => s.PosterDetails)
+                .Where(s => s.ReviewBatch == null)
+                .Where(s => !movieDb.RatingMaps.Any(rm => rm.MovieRating == s.Rating && rm.MPARatingID > ageRestriction));
+        }
+
+        // Merge movie + series cards into one SimpleTitle-ordered list (browse stays unified).
+        private static List<MovieCardDto> MergeCards(IEnumerable<MovieCardDto> a, IEnumerable<MovieCardDto> b) =>
+            a.Concat(b).OrderBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ToList();
 
         [HttpGet("/API/GetRandomMovies")]
         public async Task<IActionResult> GetRandomMovies(int take = 50)
         {
-            int ageRestriction = 100;
-            var currentUserId = GetCurrentUserId();
-            if (currentUserId.HasValue)
-            {
-                var setRestriction = await movieDb.UserSettings
-                    .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value);
-                if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction))
-                    ageRestriction = parsedRestriction;
-            }
+            var mq = await GetBaseMovieQuery();
+            var sq = await GetBaseSeriesQuery();
+            var movies = await mq.Where(m => !m.RemoveFromRandom).OrderBy(m => Guid.NewGuid()).Take(take).Select(ToCardDto).ToListAsync();
+            // Sprinkle a proportional number of series into the random landing grid.
+            var series = await sq.Where(s => !s.RemoveFromRandom).OrderBy(s => Guid.NewGuid()).Take(Math.Max(1, take / 10)).Select(ToSeriesCardDto).ToListAsync();
+            var all = movies.Concat(series).ToList();
+            var rng = new Random();
+            for (int i = all.Count - 1; i > 0; i--) { int j = rng.Next(i + 1); (all[i], all[j]) = (all[j], all[i]); }
+            return Ok(all.Take(take).ToList());
+        }
 
-            IQueryable<Movie> movies = movieDb.Movies.Where(m => !m.RemoveFromRandom);
-            movies = movies.Where(m => !movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID > ageRestriction));
-            var result = await movies.OrderBy(m => Guid.NewGuid()).Take(take).Select(ToCardDto).ToListAsync();
-            return Ok(result);
+        // Browse filtered by IMDB-aware TitleType. Series types come from the Series table.
+        [HttpGet("/API/GetMoviesByType")]
+        public async Task<IActionResult> GetMoviesByType(string type)
+        {
+            if (string.IsNullOrWhiteSpace(type) || !Enum.TryParse<TitleType>(type, true, out var tt))
+                return BadRequest(new { Message = $"Unknown title type '{type}'" });
+            if (tt == TitleType.TvSeries || tt == TitleType.TvMiniSeries)
+            {
+                var sq = await GetBaseSeriesQuery();
+                var ser = await sq.Where(s => s.TitleType == tt).OrderBy(s => s.SimpleTitle).Select(ToSeriesCardDto).ToListAsync();
+                return Ok(ser);
+            }
+            var baseQuery = await GetBaseMovieQuery();
+            var movies = await baseQuery.Where(m => m.TitleType == tt).OrderBy(m => m.SimpleTitle).Select(ToCardDto).ToListAsync();
+            return Ok(movies);
+        }
+
+        // ── Unified search over movies + series (the frontend uses these instead of /odata/Movies) ──
+
+        [HttpGet("/API/BrowseTitle")]
+        public async Task<IActionResult> BrowseTitle(string q)
+        {
+            q = (q ?? "").Trim();
+            if (q.Length == 0) return Ok(new List<MovieCardDto>());
+            var mq = await GetBaseMovieQuery();
+            var sq = await GetBaseSeriesQuery();
+            var movies = await mq.Where(m => (m.SimpleTitle != null && m.SimpleTitle.Contains(q)) || (m.Title != null && m.Title.Contains(q))).Select(ToCardDto).ToListAsync();
+            var series = await sq.Where(s => (s.SimpleTitle != null && s.SimpleTitle.Contains(q)) || (s.Title != null && s.Title.Contains(q))).Select(ToSeriesCardDto).ToListAsync();
+            return Ok(MergeCards(movies, series));
+        }
+
+        [HttpGet("/API/BrowseLetter")]
+        public async Task<IActionResult> BrowseLetter(string letter)
+        {
+            letter = (letter ?? "").Trim();
+            if (letter.Length == 0) return Ok(new List<MovieCardDto>());
+            var mq = await GetBaseMovieQuery();
+            var sq = await GetBaseSeriesQuery();
+            List<MovieCardDto> movies, series;
+            if (letter == "#")
+            {
+                movies = await mq.Where(m => EF.Functions.Like(m.SimpleTitle, "[0-9]%")).Select(ToCardDto).ToListAsync();
+                series = await sq.Where(s => EF.Functions.Like(s.SimpleTitle, "[0-9]%")).Select(ToSeriesCardDto).ToListAsync();
+            }
+            else
+            {
+                movies = await mq.Where(m => m.SimpleTitle != null && m.SimpleTitle.StartsWith(letter)).Select(ToCardDto).ToListAsync();
+                series = await sq.Where(s => s.SimpleTitle != null && s.SimpleTitle.StartsWith(letter)).Select(ToSeriesCardDto).ToListAsync();
+            }
+            return Ok(MergeCards(movies, series));
+        }
+
+        [HttpGet("/API/BrowseGenre")]
+        public async Task<IActionResult> BrowseGenre(string genres)
+        {
+            var list = (genres ?? "").Split(',').Select(g => g.Trim()).Where(g => g.Length > 0).ToList();
+            if (list.Count == 0) return Ok(new List<MovieCardDto>());
+            var mq = await GetBaseMovieQuery();
+            var sq = await GetBaseSeriesQuery();
+            foreach (var g in list)
+            {
+                var gg = g;
+                mq = mq.Where(m => m.MovieGenres.Any(x => x.Genre.Name == gg) || (m.Genre != null && m.Genre.Contains(gg)));
+                sq = sq.Where(s => s.SeriesGenres.Any(x => x.Genre.Name == gg) || (s.Genre != null && s.Genre.Contains(gg)));
+            }
+            var movies = await mq.Select(ToCardDto).ToListAsync();
+            var series = await sq.Select(ToSeriesCardDto).ToListAsync();
+            return Ok(MergeCards(movies, series));
+        }
+
+        [HttpGet("/API/BrowsePerson")]
+        public async Task<IActionResult> BrowsePerson(string q)
+        {
+            q = (q ?? "").Trim();
+            if (q.Length == 0) return Ok(new List<MovieCardDto>());
+            var mq = await GetBaseMovieQuery();
+            var sq = await GetBaseSeriesQuery();
+            var movies = await mq.Where(m => m.Credits.Any(c => c.Person.DisplayName.Contains(q))
+                || (m.Actors != null && m.Actors.Contains(q)) || (m.Director != null && m.Director.Contains(q)) || (m.Writer != null && m.Writer.Contains(q)))
+                .Select(ToCardDto).ToListAsync();
+            var series = await sq.Where(s => s.Credits.Any(c => c.Person.DisplayName.Contains(q))
+                || (s.Actors != null && s.Actors.Contains(q)) || (s.Director != null && s.Director.Contains(q)) || (s.Writer != null && s.Writer.Contains(q)))
+                .Select(ToSeriesCardDto).ToListAsync();
+            return Ok(MergeCards(movies, series));
+        }
+
+        // Series detail (mirror of GetMovie): the series + its normalized graph + seasons/episodes.
+        [HttpGet("/API/GetSeries")]
+        public async Task<IActionResult> GetSeries(int id)
+        {
+            int ageRestriction = await GetAgeRestrictionAsync();
+            var series = await movieDb.Series.Include(s => s.PosterDetails).SingleOrDefaultAsync(s => s.Id == id);
+            if (series == null) return BadRequest(new { Success = false, Message = "Series ID not found" });
+            if (GetMPARatingFromMovieRating(series.Rating) > ageRestriction)
+                return BadRequest(new { Success = false, Message = "Series ID not found" });
+            var normalized = await GetNormalizedSeriesData(id, series);
+            return Ok(new { Success = true, data = series, normalized });
+        }
+
+        private async Task<object> GetNormalizedSeriesData(int id, Series series)
+        {
+            var genres = await movieDb.SeriesGenres.Where(g => g.SeriesId == id).OrderBy(g => g.Ordering).Select(g => g.Genre.Name).ToListAsync();
+            var credits = await movieDb.SeriesCredits.Where(c => c.SeriesId == id).OrderBy(c => c.Ordering)
+                .Select(c => new { c.Role, Nm = c.Person.ImdbNameId, Name = c.Person.DisplayName, c.Character }).ToListAsync();
+            var summaries = await movieDb.SeriesPlotSummaries.Where(s => s.SeriesId == id).OrderBy(s => s.Ordering).Select(s => new { s.Author, s.Text }).ToListAsync();
+            object People(CreditRole role) => credits.Where(c => c.Role == role).Select(c => new { nm = c.Nm, name = c.Name, character = c.Character }).ToList();
+
+            var eps = await movieDb.Episodes.Where(e => e.SeriesId == id)
+                .OrderBy(e => e.SeasonNumber).ThenBy(e => e.EpisodeNumber)
+                .Select(e => new { e.SeasonNumber, e.EpisodeNumber, e.Title, e.ImdbId, e.RuntimeMinutes, e.PlayableId }).ToListAsync();
+            var epPids = eps.Where(e => e.PlayableId != null).Select(e => e.PlayableId!.Value).ToList();
+            // hasFile = mapping coverage (any MediaFile); isPlayable = Jellyfin-ready right now
+            // (item synced + not gone missing) — the play button needs the stricter flag.
+            var fileRows = await movieDb.MediaFiles.Where(f => epPids.Contains(f.PlayableId))
+                .Select(f => new { f.PlayableId, Streamable = f.JellyfinItemId != null && f.MissingSinceUtc == null }).ToListAsync();
+            var withFile = fileRows.Select(f => f.PlayableId).Distinct().ToHashSet();
+            var streamable = fileRows.Where(f => f.Streamable).Select(f => f.PlayableId).Distinct().ToHashSet();
+            var seasons = eps.GroupBy(e => e.SeasonNumber).OrderBy(g => g.Key).Select(g => new
+            {
+                season = g.Key,
+                episodes = g.Select(e => new
+                {
+                    episode = e.EpisodeNumber,
+                    title = e.Title,
+                    imdbId = e.ImdbId,
+                    runtimeMinutes = e.RuntimeMinutes,
+                    playableId = e.PlayableId,
+                    hasFile = e.PlayableId != null && withFile.Contains(e.PlayableId.Value),
+                    isPlayable = e.PlayableId != null && streamable.Contains(e.PlayableId.Value),
+                }).ToList(),
+            }).ToList();
+
+            return new
+            {
+                verified = series.ImdbVerifiedDate != null,
+                needsReview = series.ImdbNeedsReview,
+                titleType = series.TitleType.ToString(),
+                runtimeMinutes = series.RuntimeMinutes,
+                plotFull = series.PlotFull,
+                plotSynopsis = series.PlotSynopsis,
+                mpaaRating = series.MpaaRating,
+                imdbReleaseDate = series.ImdbReleaseDate,
+                imdbRating = series.ImdbRatingScraped,
+                genres,
+                cast = People(CreditRole.Actor),
+                directors = People(CreditRole.Director),
+                writers = People(CreditRole.Writer),
+                summaries,
+                isSeries = true,
+                seasons,
+                seasonCount = series.SeasonCount,
+                episodeCount = series.EpisodeCount,
+                network = series.Network,
+                startYear = series.StartYear,
+                endYear = series.EndYear,
+            };
         }
 
         [HttpPost("/API/InsertMovie")]
@@ -317,6 +538,8 @@ namespace MovieTheater.Controllers
             movie.PosterLink = movie.PosterLink?.Trim();
             movie.imdbID = movie.imdbID?.Trim();
             movie.UploadedDate = DateTime.Now;
+            // Every movie gets a Playable (Phase-4 cutover) so files / progress / channel slots attach to it.
+            movie.Playable = new Playable { Kind = PlayableKind.Movie };
 
             movieDb.Movies.Add(movie);
             try
@@ -790,11 +1013,13 @@ namespace MovieTheater.Controllers
 
         private async Task<object> BuildUserPayload(User user)
         {
-            //watched
-            var moviesSeen = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "Seen").Select(d => d.MovieID).ToListAsync();
+            // Seen / Want lists carry both movie and series ids (a viewing targets one or the other;
+            // the shared id space + the card's Kind disambiguate). MovieID ?? SeriesId yields the id either way.
+            var moviesSeen = (await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "Seen")
+                .Select(d => d.MovieID ?? d.SeriesId).ToListAsync()).Where(x => x != null).Select(x => x!.Value).ToList();
 
-            //want to watch
-            var moviesToWatch = await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "WantToWatch").Select(d => d.MovieID).ToListAsync();
+            var moviesToWatch = (await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "WantToWatch")
+                .Select(d => d.MovieID ?? d.SeriesId).ToListAsync()).Where(x => x != null).Select(x => x!.Value).ToList();
 
             //age restriction
             int? ageRestriction = null;
@@ -1066,14 +1291,22 @@ namespace MovieTheater.Controllers
                 return Unauthorized(new { Success = false, Message = "No User Found." });
             }
 
-            var movie = await movieDb.Movies.FirstOrDefaultAsync(m => m.id == viewingState.MovieID);
-            if (movie == null)
+            var action = viewingState.Action == ViewingType.SetWatched ? "Seen" : "WantToWatch";
+            bool isSeries = string.Equals(viewingState.Kind, "series", StringComparison.OrdinalIgnoreCase);
+
+            if (isSeries)
+            {
+                if (!await movieDb.Series.AnyAsync(s => s.Id == viewingState.MovieID))
+                    return BadRequest(new { Success = false, Message = "Invalid Series ID." });
+            }
+            else if (!await movieDb.Movies.AnyAsync(m => m.id == viewingState.MovieID))
             {
                 return BadRequest(new { Success = false, Message = "Invalid Movie ID." });
             }
 
-            var action = viewingState.Action == ViewingType.SetWatched ? "Seen" : "WantToWatch";
-            var existingViewing = await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.MovieID == movie.id && e.ViewingType == action);
+            var existingViewing = isSeries
+                ? await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.SeriesId == viewingState.MovieID && e.ViewingType == action)
+                : await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.MovieID == viewingState.MovieID && e.ViewingType == action);
             bool shouldCreateNew = existingViewing == null && viewingState.SetActive;
             bool shouldDeleteExisting = existingViewing != null && !viewingState.SetActive;
 
@@ -1081,7 +1314,8 @@ namespace MovieTheater.Controllers
             {
                 var newViewing = new Viewing
                 {
-                    MovieID = movie.id,
+                    MovieID = isSeries ? (int?)null : viewingState.MovieID,
+                    SeriesId = isSeries ? viewingState.MovieID : (int?)null,
                     UserID = user.UserID,
                     ViewingType = action,
                 };
@@ -1121,7 +1355,7 @@ namespace MovieTheater.Controllers
         [HttpPost("/API/API_Movies")]
         public async Task<IActionResult> API_Movies([FromBody] search search = null)
         {
-            IQueryable<Movie> movies = movieDb.Movies;
+            IQueryable<Movie> movies = movieDb.Movies.Where(m => m.ReviewBatch == null);
             if (search == null)
                 return BadRequest(new { message = "No Search Data Provided" });
 
@@ -1207,6 +1441,7 @@ namespace MovieTheater.Controllers
             var effectiveMax = Math.Min(maxRatingId, ageRestriction);
 
             var query = movieDb.Movies
+                .Where(m => m.ReviewBatch == null)
                 .Where(m => movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID == effectiveMax));
 
             var moviesList = await query.Select(ToCardDto).ToListAsync();
@@ -2383,6 +2618,684 @@ namespace MovieTheater.Controllers
             if (!userId.HasValue) return false;
             var settings = await movieDb.UserSettings.FirstOrDefaultAsync(s => s.UserID == userId.Value && s.SettingKey == "CanEditMovies");
             return settings != null && string.Equals(settings.SettingValue, "true", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // ── Library-ingest review (editor-gated) ─────────────────────────────────────
+        // Surfaces the rows the bulk library ingest created (ReviewBatch != null) — still
+        // quarantined from browse — so they can be Approved (un-quarantined into the
+        // library), Rejected (deleted), or corrected before they're trusted. The whole
+        // batch is reversible: every ingested row carries its ReviewBatch tag.
+
+        public class IngestReviewItemDto
+        {
+            public int id { get; set; }
+            // Which table this id lives in: "movie" | "series" | "misc". MiscVideo has its own id
+            // sequence, so every detail/approve/reject must carry this — a bare id is ambiguous.
+            public string Kind { get; set; } = "movie";
+            public string? Title { get; set; }
+            public string? imdbID { get; set; }
+            public string? TitleType { get; set; }
+            public string? ReviewBatch { get; set; }
+            public string? ReviewProvenance { get; set; }
+            public string? ReviewConfidence { get; set; }
+            public string? ReviewSourcePath { get; set; }
+            public bool IsSeries { get; set; }
+            public int FileCount { get; set; }      // movie-shaped / misc: mapped media files
+            public int PlayableCount { get; set; }  // …of those, Jellyfin-ready right now (streamable)
+            public int MissingCount { get; set; }   // …of those, flagged gone by a sync (MissingSinceUtc)
+            public int EpisodeTotal { get; set; }   // series: total episodes
+            public int EpisodeHave { get; set; }    // series: episodes that have a file ("have X of Y")
+            public int EpisodePlayable { get; set; }// series: episodes with a Jellyfin-ready file
+            // Scraper's own uncertainty flag (wrong-looking match, ambiguous title, etc.).
+            public bool ImdbNeedsReview { get; set; }
+            public string? ImdbReviewReason { get; set; }
+            // ── misc-video only ──
+            public string? Category { get; set; }
+            public string? RelatedTitle { get; set; }
+            public string? CollectionName { get; set; }
+        }
+
+        [HttpGet("/API/Admin/IngestReview/List")]
+        public async Task<IActionResult> IngestReviewList()
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+
+            // Movies only — series-typed rows now live in the Series table (added below).
+            var raw = await movieDb.Movies
+                .Where(m => m.ReviewBatch != null && m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries)
+                .Select(m => new { m.id, m.Title, m.imdbID, m.TitleType, m.PlayableId, m.ReviewBatch, m.ReviewProvenance, m.ReviewConfidence, m.ReviewSourcePath, m.ImdbNeedsReview, m.ImdbReviewReason })
+                .ToListAsync();
+
+            // File / episode summaries so each card shows "N files" / "have X of Y" and, crucially,
+            // whether those files are actually *streamable* now (synced to Jellyfin, not gone missing)
+            // — an unplayable title is a concern the reviewer must see.
+            var fileByPlayable = (await movieDb.MediaFiles.GroupBy(f => f.PlayableId)
+                .Select(g => new
+                {
+                    g.Key,
+                    n = g.Count(),
+                    playable = g.Count(f => f.JellyfinItemId != null && f.MissingSinceUtc == null),
+                    missing = g.Count(f => f.MissingSinceUtc != null),
+                }).ToListAsync()).ToDictionary(x => x.Key, x => x);
+            var epTotal = await movieDb.Episodes.Where(e => e.SeriesId != null).GroupBy(e => e.SeriesId!.Value)
+                .Select(g => new { g.Key, n = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.n);
+            var epHave = await movieDb.Episodes
+                .Where(e => e.SeriesId != null && e.PlayableId != null && movieDb.MediaFiles.Any(f => f.PlayableId == e.PlayableId))
+                .GroupBy(e => e.SeriesId!.Value).Select(g => new { g.Key, n = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.n);
+            var epPlayable = await movieDb.Episodes
+                .Where(e => e.SeriesId != null && e.PlayableId != null
+                    && movieDb.MediaFiles.Any(f => f.PlayableId == e.PlayableId && f.JellyfinItemId != null && f.MissingSinceUtc == null))
+                .GroupBy(e => e.SeriesId!.Value).Select(g => new { g.Key, n = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.n);
+
+            // Lowest-trust first so the riskiest resolutions get eyeballed before the easy bulk.
+            static int ConfRank(string? c) => (c ?? "").ToUpperInvariant() switch { "LOW" => 0, "MEDIUM" => 1, "NONE" => 0, "HIGH" => 2, _ => 3 };
+            static int ProvRank(string? p) => p switch { "manual" => -1, "web-search" => 0, "suggestion-api" => 1, "finalsort-cache" => 2, _ => 3 };
+
+            var items = raw
+                .Select(m => new IngestReviewItemDto
+                {
+                    id = m.id,
+                    Kind = "movie",
+                    Title = m.Title,
+                    imdbID = m.imdbID,
+                    TitleType = m.TitleType.ToString(),
+                    ReviewBatch = m.ReviewBatch,
+                    ReviewProvenance = m.ReviewProvenance,
+                    ReviewConfidence = m.ReviewConfidence,
+                    ReviewSourcePath = m.ReviewSourcePath,
+                    ImdbNeedsReview = m.ImdbNeedsReview,
+                    ImdbReviewReason = m.ImdbReviewReason,
+                    IsSeries = false,
+                    FileCount = (m.PlayableId != null && fileByPlayable.TryGetValue(m.PlayableId.Value, out var fc)) ? fc.n : 0,
+                    PlayableCount = (m.PlayableId != null && fileByPlayable.TryGetValue(m.PlayableId.Value, out var pc)) ? pc.playable : 0,
+                    MissingCount = (m.PlayableId != null && fileByPlayable.TryGetValue(m.PlayableId.Value, out var mc)) ? mc.missing : 0,
+                })
+                .ToList();
+
+            // Series (their own table now), with "have X of Y" episode summaries via SeriesId.
+            var seriesRaw = await movieDb.Series
+                .Where(s => s.ReviewBatch != null)
+                .Select(s => new { s.Id, s.Title, s.imdbID, s.TitleType, s.ReviewBatch, s.ReviewProvenance, s.ReviewConfidence, s.ReviewSourcePath, s.ImdbNeedsReview, s.ImdbReviewReason })
+                .ToListAsync();
+            items.AddRange(seriesRaw.Select(s => new IngestReviewItemDto
+            {
+                id = s.Id,
+                Kind = "series",
+                Title = s.Title,
+                imdbID = s.imdbID,
+                TitleType = s.TitleType.ToString(),
+                ReviewBatch = s.ReviewBatch,
+                ReviewProvenance = s.ReviewProvenance,
+                ReviewConfidence = s.ReviewConfidence,
+                ReviewSourcePath = s.ReviewSourcePath,
+                ImdbNeedsReview = s.ImdbNeedsReview,
+                ImdbReviewReason = s.ImdbReviewReason,
+                IsSeries = true,
+                EpisodeTotal = epTotal.TryGetValue(s.Id, out var et) ? et : 0,
+                EpisodeHave = epHave.TryGetValue(s.Id, out var eh) ? eh : 0,
+                EpisodePlayable = epPlayable.TryGetValue(s.Id, out var ep) ? ep : 0,
+            }));
+
+            items = items
+                .OrderBy(i => ConfRank(i.ReviewConfidence))
+                .ThenBy(i => ProvRank(i.ReviewProvenance))
+                .ThenBy(i => i.Title, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            // MiscVideos (no own tt: workprints, stage performances, instructional/shorts sets) carry
+            // Kind="misc". Their related title resolves through Movie (RelatedMovieId) OR Series (RelatedSeriesId).
+            var miscRaw = await movieDb.MiscVideos
+                .Where(v => v.ReviewBatch != null)
+                .Select(v => new { v.Id, v.PlayableId, v.Title, v.Category, v.CollectionName, v.RelatedMovieId, v.RelatedSeriesId, v.ReviewBatch, v.ReviewProvenance, v.ReviewSourcePath })
+                .ToListAsync();
+            if (miscRaw.Count > 0)
+            {
+                var relMovieIds = miscRaw.Where(v => v.RelatedMovieId != null).Select(v => v.RelatedMovieId!.Value).Distinct().ToList();
+                var relSeriesIds = miscRaw.Where(v => v.RelatedSeriesId != null).Select(v => v.RelatedSeriesId!.Value).Distinct().ToList();
+                var relMovieTitles = await movieDb.Movies.Where(m => relMovieIds.Contains(m.id)).Select(m => new { m.id, m.Title }).ToDictionaryAsync(x => x.id, x => x.Title);
+                var relSeriesTitles = await movieDb.Series.Where(s => relSeriesIds.Contains(s.Id)).Select(s => new { s.Id, s.Title }).ToDictionaryAsync(x => x.Id, x => x.Title);
+                items.AddRange(miscRaw
+                    .Select(v => new IngestReviewItemDto
+                    {
+                        id = v.Id,
+                        Kind = "misc",
+                        Title = v.Title,
+                        TitleType = "MiscVideo",
+                        Category = v.Category,
+                        CollectionName = v.CollectionName,
+                        RelatedTitle = (v.RelatedMovieId != null && relMovieTitles.TryGetValue(v.RelatedMovieId.Value, out var rmt)) ? rmt
+                                     : (v.RelatedSeriesId != null && relSeriesTitles.TryGetValue(v.RelatedSeriesId.Value, out var rst)) ? rst : null,
+                        ReviewBatch = v.ReviewBatch,
+                        ReviewProvenance = v.ReviewProvenance,
+                        ReviewSourcePath = v.ReviewSourcePath,
+                        IsSeries = false,
+                        FileCount = fileByPlayable.TryGetValue(v.PlayableId, out var mfc) ? mfc.n : 0,
+                        PlayableCount = fileByPlayable.TryGetValue(v.PlayableId, out var mpc) ? mpc.playable : 0,
+                        MissingCount = fileByPlayable.TryGetValue(v.PlayableId, out var mmc) ? mmc.missing : 0,
+                    })
+                    .OrderBy(i => i.CollectionName ?? "")
+                    .ThenBy(i => i.Title, StringComparer.OrdinalIgnoreCase));
+            }
+
+            var batches = items.GroupBy(i => i.ReviewBatch).Select(g => new { batch = g.Key, count = g.Count() }).ToList();
+            var byType = items.GroupBy(i => i.TitleType).Select(g => new { type = g.Key, count = g.Count() }).OrderByDescending(x => x.count).ToList();
+            var byConfidence = items.GroupBy(i => i.ReviewConfidence ?? "?").Select(g => new { confidence = g.Key, count = g.Count() }).ToList();
+
+            return Ok(new { total = items.Count, batches, byType, byConfidence, items });
+        }
+
+        // Per-title detail for the review tool: a movie's media files, or a series' episodes grouped by
+        // season with the file mapped to each and the match strategy (MediaFile.Label "match:<strategy>")
+        // so the position-based matches (absolute/combined/title) can be scrutinized. Lazy-loaded per card.
+        [HttpGet("/API/Admin/IngestReview/Detail")]
+        public async Task<IActionResult> IngestReviewDetail(int id, string kind = "movie")
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+
+            if (string.Equals(kind, "misc", StringComparison.OrdinalIgnoreCase))
+            {
+                var mv = await movieDb.MiscVideos.FirstOrDefaultAsync(v => v.Id == id);
+                if (mv == null) return NotFound(new { Message = "Not found" });
+                var miscFiles = await movieDb.MediaFiles.Where(f => f.PlayableId == mv.PlayableId)
+                    .OrderBy(f => f.Role).ThenBy(f => f.PartNumber).ThenBy(f => f.Id)
+                    .Select(f => (object)new { path = f.Path, role = f.Role.ToString(), label = f.Label })
+                    .ToListAsync();
+                string? relTitle = null, relKind = null;
+                if (mv.RelatedMovieId != null)
+                {
+                    relTitle = await movieDb.Movies.Where(m => m.id == mv.RelatedMovieId).Select(m => m.Title).FirstOrDefaultAsync();
+                    relKind = "movie";
+                }
+                else if (mv.RelatedSeriesId != null)
+                {
+                    relTitle = await movieDb.Series.Where(s => s.Id == mv.RelatedSeriesId).Select(s => s.Title).FirstOrDefaultAsync();
+                    relKind = "series";
+                }
+                return Ok(new { kind = "misc", category = mv.Category, collectionName = mv.CollectionName, relatedTitle = relTitle, relatedKind = relKind, description = mv.Description, files = miscFiles });
+            }
+
+            // ── series (its own table): episodes by SeriesId, grouped by season, with mapped files + strategy ──
+            if (string.Equals(kind, "series", StringComparison.OrdinalIgnoreCase))
+            {
+                var ser = await movieDb.Series.FirstOrDefaultAsync(s => s.Id == id);
+                if (ser == null) return NotFound(new { Message = "Not found" });
+                var seps = await movieDb.Episodes.Where(e => e.SeriesId == id)
+                    .OrderBy(e => e.SeasonNumber).ThenBy(e => e.EpisodeNumber)
+                    .Select(e => new { e.SeasonNumber, e.EpisodeNumber, e.Title, e.PlayableId })
+                    .ToListAsync();
+                var sPlayableIds = seps.Where(e => e.PlayableId != null).Select(e => e.PlayableId!.Value).ToList();
+                var sFilesByPlayable = (await movieDb.MediaFiles.Where(f => sPlayableIds.Contains(f.PlayableId))
+                        .Select(f => new { f.PlayableId, f.Path, f.Label }).ToListAsync())
+                    .GroupBy(f => f.PlayableId).ToDictionary(g => g.Key, g => g.ToList());
+                var sSeasons = seps.GroupBy(e => e.SeasonNumber).OrderBy(g => g.Key).Select(g => new
+                {
+                    season = g.Key,
+                    episodes = g.Select(e => new
+                    {
+                        episode = e.EpisodeNumber,
+                        title = e.Title,
+                        files = (e.PlayableId != null && sFilesByPlayable.TryGetValue(e.PlayableId.Value, out var fl))
+                            ? fl.Select(f => new { path = f.Path, label = f.Label }).ToList()
+                            : new List<object>().Select(_ => new { path = (string)null, label = (string)null }).ToList(),
+                    }).ToList(),
+                }).ToList();
+                return Ok(new
+                {
+                    kind = "series",
+                    episodeTotal = seps.Count,
+                    episodeHave = seps.Count(e => e.PlayableId != null && sFilesByPlayable.ContainsKey(e.PlayableId.Value)),
+                    seasons = sSeasons,
+                });
+            }
+
+            // ── movie ──
+            var movie = await movieDb.Movies.FirstOrDefaultAsync(m => m.id == id);
+            if (movie == null) return NotFound(new { Message = "Not found" });
+            var files = movie.PlayableId == null
+                ? new List<object>()
+                : await movieDb.MediaFiles.Where(f => f.PlayableId == movie.PlayableId)
+                    .OrderBy(f => f.Role).ThenBy(f => f.PartNumber).ThenBy(f => f.Id)
+                    .Select(f => (object)new { path = f.Path, role = f.Role.ToString(), label = f.Label })
+                    .ToListAsync();
+            return Ok(new { kind = "movie", files });
+        }
+
+        // Movie ids in Ids, series ids in SeriesIds, misc-video ids in MiscIds (separate id sequences — see Kind).
+        public class IngestReviewIdsRequest { public List<int> Ids { get; set; } = new(); public List<int> SeriesIds { get; set; } = new(); public List<int> MiscIds { get; set; } = new(); }
+
+        // Approve = clear the quarantine flag so the row joins the library (idempotent;
+        // re-approving an already-cleared id is a no-op). ReviewSourcePath is kept — the
+        // file-mapping pass (Phase 5) needs it.
+        [HttpPost("/API/Admin/IngestReview/Approve")]
+        public async Task<IActionResult> IngestReviewApprove([FromBody] IngestReviewIdsRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (req == null) return Ok(new { approved = 0 });
+
+            var rows = req.Ids.Count == 0 ? new List<Movie>()
+                : await movieDb.Movies.Where(m => req.Ids.Contains(m.id) && m.ReviewBatch != null).ToListAsync();
+            foreach (var m in rows) { m.ReviewBatch = null; m.ReviewProvenance = null; m.ReviewConfidence = null; }
+
+            var seriesRows = req.SeriesIds.Count == 0 ? new List<Series>()
+                : await movieDb.Series.Where(s => req.SeriesIds.Contains(s.Id) && s.ReviewBatch != null).ToListAsync();
+            foreach (var s in seriesRows) { s.ReviewBatch = null; s.ReviewProvenance = null; s.ReviewConfidence = null; }
+
+            var miscRows = req.MiscIds.Count == 0 ? new List<MiscVideo>()
+                : await movieDb.MiscVideos.Where(v => req.MiscIds.Contains(v.Id) && v.ReviewBatch != null).ToListAsync();
+            foreach (var v in miscRows) { v.ReviewBatch = null; v.ReviewProvenance = null; }
+
+            await movieDb.SaveChangesAsync();
+            return Ok(new { approved = rows.Count + seriesRows.Count + miscRows.Count });
+        }
+
+        // Reject = delete the ingested row entirely. Guarded to pending-review rows so this can never
+        // remove an established library entry. A series takes its episodes (+ their Playables/files) and
+        // satellite graph with it; a misc video takes its Playable + files.
+        [HttpPost("/API/Admin/IngestReview/Reject")]
+        public async Task<IActionResult> IngestReviewReject([FromBody] IngestReviewIdsRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (req == null) return Ok(new { rejected = 0 });
+
+            var rows = req.Ids.Count == 0 ? new List<Movie>()
+                : await movieDb.Movies.Where(m => req.Ids.Contains(m.id) && m.ReviewBatch != null).ToListAsync();
+            movieDb.Movies.RemoveRange(rows);
+
+            int seriesCount = 0;
+            if (req.SeriesIds.Count > 0)
+            {
+                var seriesRows = await movieDb.Series.Where(s => req.SeriesIds.Contains(s.Id) && s.ReviewBatch != null).ToListAsync();
+                var sids = seriesRows.Select(s => s.Id).ToList();
+                var eps = await movieDb.Episodes.Where(e => e.SeriesId != null && sids.Contains(e.SeriesId.Value)).ToListAsync();
+                var epPids = eps.Where(e => e.PlayableId != null).Select(e => e.PlayableId!.Value).ToList();
+                var epFiles = await movieDb.MediaFiles.Where(f => epPids.Contains(f.PlayableId)).ToListAsync();
+                var epPlayables = await movieDb.Playables.Where(p => epPids.Contains(p.Id)).ToListAsync();
+                movieDb.MediaFiles.RemoveRange(epFiles);     // episode files…
+                movieDb.Episodes.RemoveRange(eps);           // …episodes (releases Episode→Playable Restrict)…
+                movieDb.Playables.RemoveRange(epPlayables);  // …their Playables…
+                movieDb.Series.RemoveRange(seriesRows);      // …the series (cascades its genre/credit/plot/poster).
+                seriesCount = seriesRows.Count;
+            }
+
+            int miscCount = 0;
+            if (req.MiscIds.Count > 0)
+            {
+                var miscRows = await movieDb.MiscVideos.Where(v => req.MiscIds.Contains(v.Id) && v.ReviewBatch != null).ToListAsync();
+                var pids = miscRows.Select(v => v.PlayableId).ToList();
+                var files = await movieDb.MediaFiles.Where(f => pids.Contains(f.PlayableId)).ToListAsync();
+                var playables = await movieDb.Playables.Where(p => pids.Contains(p.Id)).ToListAsync();
+                movieDb.MediaFiles.RemoveRange(files);
+                movieDb.MiscVideos.RemoveRange(miscRows);
+                movieDb.Playables.RemoveRange(playables);
+                miscCount = miscRows.Count;
+            }
+
+            await movieDb.SaveChangesAsync();
+            return Ok(new { rejected = rows.Count + seriesCount + miscCount });
+        }
+
+        public class IngestReviewUpdateRequest
+        {
+            public int id { get; set; }
+            public string Kind { get; set; } = "movie";   // "movie" | "series"
+            public string? Title { get; set; }
+            public string? imdbID { get; set; }
+            public string? TitleType { get; set; }
+        }
+
+        // Correct a pending row's title / imdbID / type in place (movie or series). It stays pending so
+        // the reviewer can Approve it afterward. A corrected imdbID is validated and must not collide.
+        [HttpPost("/API/Admin/IngestReview/Update")]
+        public async Task<IActionResult> IngestReviewUpdate([FromBody] IngestReviewUpdateRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (req == null || req.id == 0) return BadRequest(new { Message = "id required" });
+
+            if (string.Equals(req.Kind, "series", StringComparison.OrdinalIgnoreCase))
+            {
+                var s = await movieDb.Series.FirstOrDefaultAsync(x => x.Id == req.id && x.ReviewBatch != null);
+                if (s == null) return NotFound(new { Message = "Not a pending-review series" });
+                if (!string.IsNullOrWhiteSpace(req.Title)) s.Title = req.Title.Trim();
+                if (req.imdbID != null)
+                {
+                    var newId = req.imdbID.Trim();
+                    if (newId.Length > 0 && !string.Equals(newId, s.imdbID, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!IsValidImdbId(newId)) return BadRequest(new { Message = $"'{newId}' is not a valid IMDb id" });
+                        if (await movieDb.Series.AnyAsync(x => x.Id != s.Id && x.imdbID == newId))
+                            return Conflict(new { Message = $"Another series already has {newId}" });
+                        s.imdbID = newId; s.ReviewProvenance = "manual"; s.ReviewConfidence = "HIGH";
+                    }
+                }
+                if (!string.IsNullOrWhiteSpace(req.TitleType) && Enum.TryParse<TitleType>(req.TitleType, true, out var stt)
+                    && (stt == TitleType.TvSeries || stt == TitleType.TvMiniSeries))
+                    s.TitleType = stt;
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true });
+            }
+
+            var m = await movieDb.Movies.FirstOrDefaultAsync(x => x.id == req.id && x.ReviewBatch != null);
+            if (m == null) return NotFound(new { Message = "Not a pending-review movie" });
+
+            if (!string.IsNullOrWhiteSpace(req.Title)) m.Title = req.Title.Trim();
+
+            if (req.imdbID != null)
+            {
+                var newId = req.imdbID.Trim();
+                if (newId.Length > 0 && !string.Equals(newId, m.imdbID, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!IsValidImdbId(newId))
+                        return BadRequest(new { Message = $"'{newId}' is not a valid IMDb id" });
+                    if (await movieDb.Movies.AnyAsync(x => x.id != m.id && x.imdbID == newId))
+                        return Conflict(new { Message = $"Another movie already has {newId}" });
+                    m.imdbID = newId;
+                    m.ReviewProvenance = "manual";
+                    m.ReviewConfidence = "HIGH";
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(req.TitleType) && Enum.TryParse<TitleType>(req.TitleType, true, out var tt))
+                m.TitleType = tt;
+
+            await movieDb.SaveChangesAsync();
+            return Ok(new { Success = true });
+        }
+
+        public class IngestReviewReclassifyRequest
+        {
+            public int id { get; set; }
+            // Both are "movie" | "series" | "misc". A bare id is ambiguous (separate id sequences),
+            // so the caller states where the row lives now and where it should go.
+            public string FromKind { get; set; } = "movie";
+            public string ToKind { get; set; } = "misc";
+            public string? Category { get; set; }
+            public string? CollectionName { get; set; }
+            public int? RelatedMovieId { get; set; }
+            public int? RelatedSeriesId { get; set; }
+        }
+
+        // Reclassify a pending-review row among movie / series / misc. Movies and series each have their
+        // own table now, so every direction (bar the no-op) is a real cross-table move: the title's own
+        // metadata — and, for movie↔series, its genre / credit / plot / poster graph — is carried to the
+        // destination table, the poster image is copied by id (PosterLink also carries, for re-download),
+        // and structural children that don't fit the new shape are dropped cleanly. Dropping touches only
+        // DB rows (mappings/episodes), never the files on disk; the reviewer re-scrapes / re-maps for the
+        // corrected kind. The row stays review-pending so it can be Approved afterward. Pending-only.
+        [HttpPost("/API/Admin/IngestReview/Reclassify")]
+        public async Task<IActionResult> IngestReviewReclassify([FromBody] IngestReviewReclassifyRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (req == null || req.id == 0) return BadRequest(new { Message = "id required" });
+            var from = (req.FromKind ?? "").Trim().ToLowerInvariant();
+            var to = (req.ToKind ?? "").Trim().ToLowerInvariant();
+            if (from == to) return Ok(new { Success = true, kind = to });
+
+            string? cat = string.IsNullOrWhiteSpace(req.Category) ? null : req.Category.Trim();
+            string? coll = string.IsNullOrWhiteSpace(req.CollectionName) ? null : req.CollectionName.Trim();
+
+            // (A) Movie -> Series : carry metadata + the genre/credit/plot/poster graph to the Series
+            // table. The movie's own Playable/files are dropped — a series streams through its episodes,
+            // which a re-scrape will create and map (no episodes exist yet).
+            if (from == "movie" && to == "series")
+            {
+                var m = await movieDb.Movies.FirstOrDefaultAsync(x => x.id == req.id && x.ReviewBatch != null);
+                if (m == null) return NotFound(new { Message = "Not a pending-review movie" });
+
+                var s = new Series();
+                CopyTitleScalars(m, s);
+                if (s.TitleType != TitleType.TvSeries && s.TitleType != TitleType.TvMiniSeries) s.TitleType = TitleType.TvSeries;
+                s.ReviewProvenance = "reclassified in review";
+                movieDb.Series.Add(s);
+                await movieDb.SaveChangesAsync();   // assigns s.Id
+
+                movieDb.SeriesGenres.AddRange((await movieDb.MovieGenres.Where(g => g.MovieID == m.id).ToListAsync())
+                    .Select(g => new SeriesGenre { SeriesId = s.Id, GenreId = g.GenreId, Ordering = g.Ordering }));
+                movieDb.SeriesCredits.AddRange((await movieDb.MovieCredits.Where(c => c.MovieID == m.id).ToListAsync())
+                    .Select(c => new SeriesCredit { SeriesId = s.Id, PersonId = c.PersonId, Role = c.Role, Ordering = c.Ordering, Character = c.Character }));
+                movieDb.SeriesPlotSummaries.AddRange((await movieDb.MoviePlotSummaries.Where(p => p.MovieID == m.id).ToListAsync())
+                    .Select(p => new SeriesPlotSummary { SeriesId = s.Id, Ordering = p.Ordering, Author = p.Author, Text = p.Text }));
+                var pd = await movieDb.MoviePosterDetails.FirstOrDefaultAsync(x => x.MovieId == m.id);
+                if (pd != null) movieDb.SeriesPosterDetails.Add(new SeriesPosterDetails { SeriesId = s.Id, PosterLink = pd.PosterLink, PosterVersion = pd.PosterVersion, DominantColor = pd.DominantColor });
+
+                await CopyPosterImagesAsync(m.id, s.Id);
+                await DeleteMovieSubtreeAsync(m);
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true, kind = "series", id = s.Id });
+            }
+
+            // (A') Series -> Movie : the reverse — metadata + graph back into Movie (with a fresh
+            // Playable); the series' episodes + their Playables/files are dropped (a movie has none).
+            if (from == "series" && to == "movie")
+            {
+                var s = await movieDb.Series.FirstOrDefaultAsync(x => x.Id == req.id && x.ReviewBatch != null);
+                if (s == null) return NotFound(new { Message = "Not a pending-review series" });
+
+                var m = new Movie { Playable = new Playable { Kind = PlayableKind.Movie } };
+                CopyTitleScalars(s, m);
+                if (m.TitleType == TitleType.TvSeries || m.TitleType == TitleType.TvMiniSeries) m.TitleType = TitleType.Movie;
+                m.ReviewProvenance = "reclassified in review";
+                movieDb.Movies.Add(m);
+                await movieDb.SaveChangesAsync();   // assigns m.id
+
+                movieDb.MovieGenres.AddRange((await movieDb.SeriesGenres.Where(g => g.SeriesId == s.Id).ToListAsync())
+                    .Select(g => new MovieGenre { MovieID = m.id, GenreId = g.GenreId, Ordering = g.Ordering }));
+                movieDb.MovieCredits.AddRange((await movieDb.SeriesCredits.Where(c => c.SeriesId == s.Id).ToListAsync())
+                    .Select(c => new MovieCredit { MovieID = m.id, PersonId = c.PersonId, Role = c.Role, Ordering = c.Ordering, Character = c.Character }));
+                movieDb.MoviePlotSummaries.AddRange((await movieDb.SeriesPlotSummaries.Where(p => p.SeriesId == s.Id).ToListAsync())
+                    .Select(p => new MoviePlotSummary { MovieID = m.id, Ordering = p.Ordering, Author = p.Author, Text = p.Text }));
+                var pd = await movieDb.SeriesPosterDetails.FirstOrDefaultAsync(x => x.SeriesId == s.Id);
+                if (pd != null) movieDb.MoviePosterDetails.Add(new MoviePosterDetails { MovieId = m.id, PosterLink = pd.PosterLink, PosterVersion = pd.PosterVersion, DominantColor = pd.DominantColor });
+
+                await CopyPosterImagesAsync(s.Id, m.id);
+                await DeleteSeriesSubtreeAsync(s);
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true, kind = "movie", id = m.id });
+            }
+
+            // (A'') Series -> MiscVideo : keep the title as a misc collection (fresh Playable); drop the
+            // series' episodes + their Playables/files.
+            if (from == "series" && to == "misc")
+            {
+                var s = await movieDb.Series.FirstOrDefaultAsync(x => x.Id == req.id && x.ReviewBatch != null);
+                if (s == null) return NotFound(new { Message = "Not a pending-review series" });
+
+                var p = new Playable { Kind = PlayableKind.MiscVideo };
+                movieDb.Playables.Add(p);
+                await movieDb.SaveChangesAsync();
+                movieDb.MiscVideos.Add(new MiscVideo
+                {
+                    PlayableId = p.Id,
+                    Title = s.Title ?? "(untitled)",
+                    SimpleTitle = s.SimpleTitle,
+                    Year = s.ReleaseDate?.Year ?? s.StartYear,
+                    Category = cat,
+                    CollectionName = coll,
+                    RelatedMovieId = req.RelatedMovieId,
+                    RelatedSeriesId = req.RelatedSeriesId,
+                    ReviewBatch = s.ReviewBatch,
+                    ReviewProvenance = "reclassified in review",
+                    ReviewSourcePath = s.ReviewSourcePath,
+                });
+                await DeleteSeriesSubtreeAsync(s);
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true, kind = "misc" });
+            }
+
+            // (A''') MiscVideo -> Series : create the Series shell (reviewer fills tt + re-scrapes
+            // episodes); drop the misc's Playable + files.
+            if (from == "misc" && to == "series")
+            {
+                var mv = await movieDb.MiscVideos.FirstOrDefaultAsync(v => v.Id == req.id && v.ReviewBatch != null);
+                if (mv == null) return NotFound(new { Message = "Not a pending-review misc video" });
+
+                var s = new Series
+                {
+                    Title = mv.Title,
+                    SimpleTitle = string.IsNullOrEmpty(mv.SimpleTitle) ? mv.Title : mv.SimpleTitle,
+                    ReleaseDate = mv.Year != null ? new DateTime(mv.Year.Value, 1, 1) : null,
+                    StartYear = mv.Year,
+                    TitleType = TitleType.TvSeries,
+                    ReviewBatch = mv.ReviewBatch,
+                    ReviewProvenance = "reclassified in review",
+                    ReviewConfidence = "NONE",
+                    ReviewSourcePath = mv.ReviewSourcePath,
+                };
+                movieDb.Series.Add(s);
+                await DeleteMiscSubtreeAsync(mv);
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true, kind = "series", id = s.Id });
+            }
+
+            // (B) Movie -> MiscVideo  (cross-table move; Playable + files come along)
+            if (from == "movie" && to == "misc")
+            {
+                var m = await movieDb.Movies.FirstOrDefaultAsync(x => x.id == req.id && x.ReviewBatch != null);
+                if (m == null) return NotFound(new { Message = "Not a pending-review movie" });
+
+                int playableId;
+                if (m.PlayableId != null) playableId = m.PlayableId.Value;
+                else
+                {
+                    var p = new Playable { Kind = PlayableKind.MiscVideo };
+                    movieDb.Playables.Add(p);
+                    await movieDb.SaveChangesAsync();
+                    playableId = p.Id;
+                }
+
+                movieDb.MiscVideos.Add(new MiscVideo
+                {
+                    PlayableId = playableId,
+                    Title = m.Title ?? "(untitled)",
+                    SimpleTitle = m.SimpleTitle,
+                    Year = m.ReleaseDate?.Year ?? m.ImdbReleaseDate?.Year,
+                    Category = cat,
+                    CollectionName = coll,
+                    RelatedMovieId = req.RelatedMovieId,
+                    RelatedSeriesId = req.RelatedSeriesId,
+                    ReviewBatch = m.ReviewBatch,
+                    ReviewProvenance = "reclassified in review",
+                    ReviewSourcePath = m.ReviewSourcePath,
+                });
+
+                var pl = await movieDb.Playables.FirstOrDefaultAsync(p => p.Id == playableId);
+                if (pl != null) pl.Kind = PlayableKind.MiscVideo;
+
+                // Drop the (often wrong-tt) credit/genre/plot graph explicitly — the live FKs can't be
+                // assumed to cascade — then the Movie row. Files stay on the Playable.
+                movieDb.MovieCredits.RemoveRange(await movieDb.MovieCredits.Where(c => c.MovieID == m.id).ToListAsync());
+                movieDb.MovieGenres.RemoveRange(await movieDb.MovieGenres.Where(g => g.MovieID == m.id).ToListAsync());
+                movieDb.MoviePlotSummaries.RemoveRange(await movieDb.MoviePlotSummaries.Where(s => s.MovieID == m.id).ToListAsync());
+                m.PlayableId = null;
+                movieDb.Movies.Remove(m);
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true, kind = "misc" });
+            }
+
+            // (C) MiscVideo -> Movie  (cross-table move back; reviewer adds the tt via Update)
+            if (from == "misc" && to == "movie")
+            {
+                var mv = await movieDb.MiscVideos.FirstOrDefaultAsync(v => v.Id == req.id && v.ReviewBatch != null);
+                if (mv == null) return NotFound(new { Message = "Not a pending-review misc video" });
+
+                var movie = new Movie
+                {
+                    Title = mv.Title,
+                    SimpleTitle = string.IsNullOrEmpty(mv.SimpleTitle) ? mv.Title : mv.SimpleTitle,
+                    ReleaseDate = mv.Year != null ? new DateTime(mv.Year.Value, 1, 1) : null,
+                    TitleType = TitleType.Movie,
+                    PlayableId = mv.PlayableId,
+                    ReviewBatch = mv.ReviewBatch,
+                    ReviewProvenance = "reclassified in review",
+                    ReviewConfidence = "NONE",
+                    ReviewSourcePath = mv.ReviewSourcePath,
+                };
+                movieDb.Movies.Add(movie);
+
+                var pl = await movieDb.Playables.FirstOrDefaultAsync(p => p.Id == mv.PlayableId);
+                if (pl != null) pl.Kind = PlayableKind.Movie;
+
+                movieDb.MiscVideos.Remove(mv);
+                await movieDb.SaveChangesAsync();
+                return Ok(new { Success = true, kind = "movie", id = movie.id });
+            }
+
+            return BadRequest(new { Message = $"Unsupported reclassify {req.FromKind} -> {req.ToKind}" });
+        }
+
+        // Copy every shared scalar column (string / value-type) from one title entity to another
+        // (Movie ⇄ Series). Skips keys, the NotMapped PosterLink passthrough, and any nav/collection —
+        // so it auto-carries new metadata columns as the schema grows ("no data left behind").
+        private static readonly HashSet<string> TitleScalarSkip = new(StringComparer.Ordinal) { "id", "Id", "PosterLink" };
+        private static void CopyTitleScalars(object src, object dst)
+        {
+            var srcType = src.GetType();
+            foreach (var dp in dst.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (!dp.CanWrite || TitleScalarSkip.Contains(dp.Name)) continue;
+                if (!(dp.PropertyType == typeof(string) || dp.PropertyType.IsValueType)) continue;  // scalars only — skips navs/collections
+                var sp = srcType.GetProperty(dp.Name, BindingFlags.Public | BindingFlags.Instance);
+                if (sp == null || !sp.CanRead || sp.PropertyType != dp.PropertyType) continue;
+                dp.SetValue(dst, sp.GetValue(src));
+            }
+        }
+
+        // Carry the poster image to a new id on a cross-table move (posters are on-disk files keyed by id,
+        // served with no DB lookup). Best-effort: a missing source or write failure is fine — the copied
+        // PosterLink lets enrichment re-download for the new id.
+        private async Task CopyPosterImagesAsync(int fromId, int toId)
+        {
+            if (fromId == toId) return;
+            foreach (var variant in new[] { PosterImageVariant.Main, PosterImageVariant.Thumbnail })
+            {
+                try
+                {
+                    var bytes = await imageRepo.GetImage(fromId, variant);
+                    if (bytes != null && bytes.Length > 0) await imageRepo.SaveImage(toId, variant, bytes);
+                }
+                catch { /* best-effort */ }
+            }
+        }
+
+        // Delete a movie and everything that hangs off it (Playable + files, credit/genre/plot/poster) —
+        // the live FKs can't be assumed to cascade, so each is removed explicitly. Used when its metadata
+        // has already been carried elsewhere (movie → series).
+        private async Task DeleteMovieSubtreeAsync(Movie m)
+        {
+            if (m.PlayableId != null)
+            {
+                var pid = m.PlayableId.Value;
+                movieDb.MediaFiles.RemoveRange(await movieDb.MediaFiles.Where(f => f.PlayableId == pid).ToListAsync());
+                var pl = await movieDb.Playables.FirstOrDefaultAsync(p => p.Id == pid);
+                m.PlayableId = null;
+                if (pl != null) movieDb.Playables.Remove(pl);
+            }
+            movieDb.MovieCredits.RemoveRange(await movieDb.MovieCredits.Where(c => c.MovieID == m.id).ToListAsync());
+            movieDb.MovieGenres.RemoveRange(await movieDb.MovieGenres.Where(g => g.MovieID == m.id).ToListAsync());
+            movieDb.MoviePlotSummaries.RemoveRange(await movieDb.MoviePlotSummaries.Where(s => s.MovieID == m.id).ToListAsync());
+            var pd = await movieDb.MoviePosterDetails.FirstOrDefaultAsync(x => x.MovieId == m.id);
+            if (pd != null) movieDb.MoviePosterDetails.Remove(pd);
+            movieDb.Movies.Remove(m);
+        }
+
+        // Delete a series subtree: episodes + their Playables/files, then the Series row (which cascades
+        // its genre/credit/plot/poster). Mirrors the Reject path. Used when the title moves to movie/misc.
+        private async Task DeleteSeriesSubtreeAsync(Series s)
+        {
+            var eps = await movieDb.Episodes.Where(e => e.SeriesId == s.Id).ToListAsync();
+            var epPids = eps.Where(e => e.PlayableId != null).Select(e => e.PlayableId!.Value).ToList();
+            movieDb.MediaFiles.RemoveRange(await movieDb.MediaFiles.Where(f => epPids.Contains(f.PlayableId)).ToListAsync());
+            movieDb.Episodes.RemoveRange(eps);
+            movieDb.Playables.RemoveRange(await movieDb.Playables.Where(p => epPids.Contains(p.Id)).ToListAsync());
+            movieDb.Series.Remove(s);
+        }
+
+        // Delete a misc video + its Playable/files. Used when the title moves to series.
+        private async Task DeleteMiscSubtreeAsync(MiscVideo mv)
+        {
+            movieDb.MediaFiles.RemoveRange(await movieDb.MediaFiles.Where(f => f.PlayableId == mv.PlayableId).ToListAsync());
+            var pl = await movieDb.Playables.FirstOrDefaultAsync(p => p.Id == mv.PlayableId);
+            movieDb.MiscVideos.Remove(mv);
+            if (pl != null) movieDb.Playables.Remove(pl);
         }
 
         // Scrapes YouTube video metadata for all boardgame videos that are missing or stale (>30 days,

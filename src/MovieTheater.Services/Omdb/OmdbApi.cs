@@ -40,7 +40,7 @@ namespace MovieTheater.Services.Omdb
                                 : null;
 
             decimal? imdbRating = decimal.TryParse(omdbMovie.imdbRating, out decimal parsedRating) ?
-                                  parsedRating 
+                                  parsedRating
                                   : null;
 
             return new Movie()
@@ -60,10 +60,36 @@ namespace MovieTheater.Services.Omdb
                 imdbID = omdbMovie.imdbID,
                 tomatoRating = tomatoRating,
                 UploadedDate = DateTime.Now,
-                RemoveFromRandom = false
+                RemoveFromRandom = false,
+
+                // Enrichment fallbacks (Phase A): OMDB-sourced; TMDB later supersedes
+                // OriginalLanguage with an ISO-639-1 code and RevenueUsd with worldwide gross.
+                OriginalLanguage = FirstLanguage(omdbMovie.Language),
+                Country = NullIfNa(omdbMovie.Country),
+                RevenueUsd = ParseBoxOffice(omdbMovie.BoxOffice)
             };
 
         }
+
+        /// <summary>OMDB lists all spoken languages, original first ("English, French"); take the first as a fallback.</summary>
+        private static string? FirstLanguage(string? language)
+        {
+            var first = NullIfNa(language)?.Split(',', 2)[0].Trim();
+            return string.IsNullOrEmpty(first) ? null : first;
+        }
+
+        /// <summary>OMDB <c>BoxOffice</c> is US domestic gross, e.g. "$28,341,469"; null/"N/A" when unknown.</summary>
+        private static long? ParseBoxOffice(string? boxOffice)
+        {
+            var cleaned = NullIfNa(boxOffice);
+            if (cleaned == null) return null;
+            var digits = new string(cleaned.Where(char.IsDigit).ToArray());
+            return long.TryParse(digits, out var value) && value > 0 ? value : null;
+        }
+
+        private static string? NullIfNa(string? value) =>
+            string.IsNullOrWhiteSpace(value) || value.Trim().Equals("N/A", StringComparison.OrdinalIgnoreCase)
+                ? null : value.Trim();
 
         public async Task<Movie> GetMovieByNameAndYear(string movieName, string movieYear)
         {

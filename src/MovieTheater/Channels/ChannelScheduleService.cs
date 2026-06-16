@@ -30,7 +30,7 @@ namespace MovieTheater.Channels
             this.logger = logger;
         }
 
-        public record EligibleMovie(int MovieId, long DurationTicks, int RatingId);
+        public record EligibleMovie(int MovieId, int PlayableId, long DurationTicks, int RatingId);
 
         /// <summary>
         /// The channel's current eligible set plus its effective rating ceiling (the max
@@ -42,7 +42,7 @@ namespace MovieTheater.Channels
             var filter = ChannelFilter.Parse(channel.FilterJson);
 
             var query = movieDb.Movies
-                .Where(m => m.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null));
+                .Where(m => m.Playable != null && m.Playable.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null));
 
             if (filter.ExcludeRemoveFromRandom)
                 query = query.Where(m => !m.RemoveFromRandom);
@@ -76,9 +76,10 @@ namespace MovieTheater.Channels
                 .Select(m => new
                 {
                     m.id,
+                    m.PlayableId,
                     m.Rating,
                     m.RuntimeMinutes,
-                    DurationTicks = m.Files
+                    DurationTicks = m.Playable!.Files
                         .Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null)
                         .Select(f => f.DurationTicks)
                         .FirstOrDefault(),
@@ -108,9 +109,11 @@ namespace MovieTheater.Channels
                         continue;
                 }
 
+                if (row.PlayableId == null)
+                    continue; // every movie has a Playable post-cutover; skip defensively
                 if (ratingId > ceiling)
                     ceiling = ratingId;
-                eligible.Add(new EligibleMovie(row.id, durationTicks, ratingId));
+                eligible.Add(new EligibleMovie(row.id, row.PlayableId.Value, durationTicks, ratingId));
             }
 
             int effectiveCeiling = filter.MaxMpaRatingId ?? (ceiling == 0 ? 7 : ceiling);
@@ -156,7 +159,7 @@ namespace MovieTheater.Channels
                 var (eligible, _) = await BuildEligibleAsync(channel, cancel);
                 if (eligible.Count > 0)
                 {
-                    int lastMovieId = items.Count > 0 ? items[^1].MovieID : -1;
+                    int lastPlayableId = items.Count > 0 ? items[^1].PlayableId : -1;
                     int round = 0;
                     var queue = new Queue<EligibleMovie>();
 
@@ -167,7 +170,7 @@ namespace MovieTheater.Channels
 
                         var movie = queue.Dequeue();
                         // Avoid playing the same film back-to-back across a round boundary.
-                        if (movie.MovieId == lastMovieId && queue.Count > 0)
+                        if (movie.PlayableId == lastPlayableId && queue.Count > 0)
                         {
                             queue.Enqueue(movie);
                             movie = queue.Dequeue();
@@ -177,13 +180,13 @@ namespace MovieTheater.Channels
                         var item = new ChannelScheduleItem
                         {
                             ChannelId = channel.Id,
-                            MovieID = movie.MovieId,
+                            PlayableId = movie.PlayableId,
                             StartUtc = cursor,
                             EndUtc = end,
                         };
                         movieDb.ChannelScheduleItems.Add(item);
                         items.Add(item);
-                        lastMovieId = movie.MovieId;
+                        lastPlayableId = movie.PlayableId;
                         cursor = end;
                     }
                 }

@@ -17,7 +17,7 @@ namespace MovieTheater.Jellyfin
 {
     /// <summary>
     /// Matches Jellyfin's library against the movies' stored file paths and records the
-    /// result in <see cref="MovieFile"/> (docs/streaming-plan.md §6): Jellyfin item id,
+    /// result in <see cref="MediaFile"/> (docs/streaming-plan.md §6): Jellyfin item id,
     /// real duration, container/codec/size. Re-runnable any time; prints a two-way diff
     /// (DB files Jellyfin doesn't have → MissingSinceUtc; Jellyfin items the DB doesn't
     /// track). IMDB-id fallback candidates are reported for review, never written.
@@ -64,14 +64,14 @@ namespace MovieTheater.Jellyfin
             using var db = await dbFactory.CreateDbContextAsync(cancel);
             var movies = await db.Movies
                 .Where(m => m.FilePath != null && m.FilePath != "")
-                .Select(m => new { m.id, m.Title, m.FilePath, m.imdbID })
+                .Select(m => new { m.id, m.Title, m.FilePath, m.imdbID, m.PlayableId })
                 .ToListAsync(cancel);
-            // Dry-run works before the MovieFile migration has been applied; existing rows
-            // only matter when writing.
-            var existingFiles = DryRun ? new List<MovieFile>() : await db.MovieFiles.ToListAsync(cancel);
-            var filesByMovie = existingFiles.ToLookup(f => f.MovieID);
+            // Files now hang off the movie's Playable (Phase-4 cutover). Dry-run works before any
+            // MediaFile rows exist; existing rows only matter when writing.
+            var existingFiles = DryRun ? new List<MediaFile>() : await db.MediaFiles.ToListAsync(cancel);
+            var filesByPlayable = existingFiles.ToLookup(f => f.PlayableId);
             o.WriteLine($"DB movies with a file path: {movies.Count}" +
-                        (DryRun ? "" : $"   existing MovieFile rows: {existingFiles.Count}"));
+                        (DryRun ? "" : $"   existing MediaFile rows: {existingFiles.Count}"));
 
             // DB path → movie. Duplicate paths (DB duplicate rows) are matched to the first
             // movie and reported rather than guessed at.
@@ -137,12 +137,14 @@ namespace MovieTheater.Jellyfin
                 foreach (var (movieId, (item, _)) in chosen)
                 {
                     var moviePath = movieById[movieId].FilePath!;
-                    var row = filesByMovie[movieId].FirstOrDefault(f =>
+                    var playableId = movieById[movieId].PlayableId;
+                    if (playableId == null) continue;   // a movie with no Playable can't hold a MediaFile
+                    var row = filesByPlayable[playableId.Value].FirstOrDefault(f =>
                         JellyfinPathMapper.NormalizeForCompare(f.Path) == JellyfinPathMapper.NormalizeForCompare(moviePath));
                     if (row == null)
                     {
-                        row = new MovieFile { MovieID = movieId, Path = moviePath };
-                        db.MovieFiles.Add(row);
+                        row = new MediaFile { PlayableId = playableId.Value, Path = moviePath };
+                        db.MediaFiles.Add(row);
                         created++;
                     }
                     else
@@ -175,7 +177,8 @@ namespace MovieTheater.Jellyfin
             {
                 foreach (var m in missing)
                 {
-                    foreach (var row in filesByMovie[m.id])
+                    if (m.PlayableId == null) continue;
+                    foreach (var row in filesByPlayable[m.PlayableId.Value])
                         row.MissingSinceUtc ??= now;
                 }
                 await db.SaveChangesAsync(cancel);
@@ -196,6 +199,64 @@ namespace MovieTheater.Jellyfin
             PrintSection(o, $"Jellyfin paths no mapping covers ({untranslatable.Count})", untranslatable);
             PrintSection(o, $"Duplicate Jellyfin items for one movie — earlier-listed mapping kept ({duplicateItems.Count})", duplicateItems);
             PrintSection(o, $"Duplicate DB file paths ({duplicatePaths.Count})", duplicatePaths);
+
+            // ── Episodes + misc videos ──────────────────────────────────────────────
+            // Their files hang off Episode / MiscVideo Playables (not a Movie.FilePath), so the movie
+            // pass above never touches them — match Jellyfin episode/video items to those MediaFile rows
+            // by path and stamp the same id + media details, so approved series become streamable.
+            var epVidItems = await jellyfin.GetAllEpisodeAndVideoItemsAsync(cancel);
+            o.WriteLine("");
+            o.WriteLine($"Jellyfin episode/video items: {epVidItems.Count}");
+
+            var nonMovieFiles = await (
+                from f in db.MediaFiles
+                join p in db.Playables on f.PlayableId equals p.Id
+                where p.Kind != PlayableKind.Movie
+                select f).ToListAsync(cancel);
+            var nonMovieByPath = new Dictionary<string, MediaFile>();
+            foreach (var f in nonMovieFiles)
+                nonMovieByPath[JellyfinPathMapper.NormalizeForCompare(f.Path)] = f;   // last wins on a dup path (rare)
+
+            var epUntranslatable = new List<string>();
+            var epUntracked = new List<string>();
+            var matchedEpFileIds = new HashSet<int>();
+            foreach (var item in epVidItems)
+            {
+                if (string.IsNullOrEmpty(item.Path)) { epUntracked.Add($"(no path) {item.Name} [{item.Id}]"); continue; }
+                if (!JellyfinPathMapper.TryTranslateToDb(item.Path, config.JellyfinPathMappings, out var dbPath, out _))
+                { epUntranslatable.Add(item.Path); continue; }
+                if (!nonMovieByPath.TryGetValue(JellyfinPathMapper.NormalizeForCompare(dbPath), out var row))
+                { epUntracked.Add(item.Path); continue; }
+                if (!matchedEpFileIds.Add(row.Id)) continue;   // first Jellyfin item wins per file
+
+                if (!DryRun)
+                {
+                    var src = item.MediaSources?.FirstOrDefault();
+                    var vid = src?.MediaStreams?.FirstOrDefault(s => s.Type == "Video");
+                    var aud = src?.MediaStreams?.Where(s => s.Type == "Audio").OrderByDescending(s => s.IsDefault).FirstOrDefault();
+                    row.JellyfinItemId = item.Id;
+                    row.DurationTicks = item.RunTimeTicks;
+                    row.Container = Truncate(src?.Container, 32);
+                    row.VideoCodec = Truncate(vid?.Codec, 32);
+                    row.AudioCodec = Truncate(aud?.Codec, 32);
+                    row.Width = vid?.Width;
+                    row.Height = vid?.Height;
+                    row.SizeBytes = src?.Size;
+                    row.LastSyncedUtc = now;
+                    row.MissingSinceUtc = null;
+                }
+            }
+            if (!DryRun)
+            {
+                foreach (var f in nonMovieFiles)
+                    if (!matchedEpFileIds.Contains(f.Id)) f.MissingSinceUtc ??= now;
+                await db.SaveChangesAsync(cancel);
+            }
+
+            o.WriteLine($"Episode/misc files matched by path: {matchedEpFileIds.Count}/{nonMovieFiles.Count}" +
+                        (nonMovieFiles.Count == 0 ? "" : $" ({100.0 * matchedEpFileIds.Count / nonMovieFiles.Count:F1}%)"));
+            PrintSection(o, $"Episode/misc Jellyfin items the DB doesn't track ({epUntracked.Count})", epUntracked);
+            PrintSection(o, $"Episode/misc Jellyfin paths no mapping covers ({epUntranslatable.Count})", epUntranslatable);
         }
 
         private void PrintSection(ConsoleWriter o, string heading, IEnumerable<string> lines)

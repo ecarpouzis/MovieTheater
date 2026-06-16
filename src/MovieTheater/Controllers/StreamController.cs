@@ -25,7 +25,9 @@ namespace MovieTheater.Controllers
     public class StreamController : Controller
     {
         private const long TicksPerSecond = 10_000_000;
-        private const double AutoSeenThreshold = 0.9;
+        // Past this fraction, resume is "done" — next play starts from the beginning. (This is resume
+        // bookkeeping only; it never marks a title Seen — that's a manual user action.)
+        private const double ResumeCompleteThreshold = 0.9;
 
         private readonly MovieDb movieDb;
         private readonly JellyfinApi jellyfin;
@@ -59,7 +61,9 @@ namespace MovieTheater.Controllers
 
         public class StartRequest
         {
-            public int MovieId { get; set; }
+            public int MovieId { get; set; }                 // legacy: a movie to play (its Primary file)
+            public int? PlayableId { get; set; }             // generic: any title's Playable (movie / episode / misc)
+            public int? MediaFileId { get; set; }            // a specific Part / Variant / Extra to play
             public long? MaxBitrateBps { get; set; }
             public int? AudioStreamIndex { get; set; }
             public int? SubtitleStreamIndex { get; set; }
@@ -86,20 +90,30 @@ namespace MovieTheater.Controllers
             if (userId == null)
                 return Unauthorized();
 
-            var movie = await movieDb.Movies.SingleOrDefaultAsync(m => m.id == request.MovieId);
-            if (movie == null)
-                return NotFound(new { message = "Movie not found." });
+            // Resolve which Playable to stream: an explicit PlayableId (episode / misc / a movie's),
+            // else the legacy MovieId → its Playable. A specific MediaFileId plays that exact
+            // Part/Variant/Extra; otherwise the Playable's Primary (Role order) is chosen.
+            var playableId = request.PlayableId
+                ?? await movieDb.Movies.Where(m => m.id == request.MovieId).Select(m => m.PlayableId).FirstOrDefaultAsync();
+            if (playableId == null)
+                return NotFound(new { message = "Nothing to play." });
+
+            var rating = await ResolveRatingAsync(playableId.Value);
 
             // Age gate: the exact browse-side rule (GetMovie), so the two can't drift.
-            if (!await PassesAgeGateAsync(userId.Value, movie.Rating))
-                return StatusCode(403, new { message = "This movie isn't available on your account." });
+            if (!await PassesAgeGateAsync(userId.Value, rating))
+                return StatusCode(403, new { message = "This title isn't available on your account." });
 
-            var file = await movieDb.MovieFiles
-                .Where(f => f.MovieID == movie.id && f.JellyfinItemId != null && f.MissingSinceUtc == null)
-                .OrderBy(f => f.Id)
+            var fileQuery = movieDb.MediaFiles
+                .Where(f => f.PlayableId == playableId.Value && f.JellyfinItemId != null && f.MissingSinceUtc == null);
+            if (request.MediaFileId != null)
+                fileQuery = fileQuery.Where(f => f.Id == request.MediaFileId.Value);
+            var file = await fileQuery
+                .OrderBy(f => f.Role)   // prefer the Primary feature over any Part/Variant/Extra
+                .ThenBy(f => f.Id)
                 .FirstOrDefaultAsync();
             if (file?.JellyfinItemId == null)
-                return NotFound(new { message = "This movie has no playable file." });
+                return NotFound(new { message = "This title has no playable file." });
 
             // Optional concurrency guard — a friendly "theater full" beats a melted GPU.
             if (config.StreamingMaxConcurrentTranscodes > 0)
@@ -122,7 +136,7 @@ namespace MovieTheater.Controllers
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Jellyfin PlaybackInfo failed for movie {MovieId}", movie.id);
+                logger.LogError(ex, "Jellyfin PlaybackInfo failed for playable {PlayableId}", playableId);
                 return StatusCode(502, new { message = "Could not reach the media server." });
             }
 
@@ -152,7 +166,7 @@ namespace MovieTheater.Controllers
                         }
                         catch (Exception ex)
                         {
-                            logger.LogError(ex, "Jellyfin PlaybackInfo (English audio) failed for movie {MovieId}", movie.id);
+                            logger.LogError(ex, "Jellyfin PlaybackInfo (English audio) failed for playable {PlayableId}", playableId);
                             return StatusCode(502, new { message = "Could not reach the media server." });
                         }
                         source = info.MediaSources[0];
@@ -177,7 +191,7 @@ namespace MovieTheater.Controllers
             var durationTicks = file.DurationTicks ?? source.RunTimeTicks ?? 0;
             var lifetimeSeconds = (long)(durationTicks / TicksPerSecond * 1.5) + 4 * 3600;
             var token = StreamCapabilityToken.Mint(config.StreamTokenSecret, new StreamCapabilityToken.Payload(
-                userId.Value, movie.id, info.PlaySessionId, file.JellyfinItemId,
+                userId.Value, playableId.Value, info.PlaySessionId, file.JellyfinItemId,
                 DateTimeOffset.UtcNow.ToUnixTimeSeconds() + lifetimeSeconds));
 
             string ToGatewayUrl(string jellyfinRelativeUrl) =>
@@ -207,7 +221,7 @@ namespace MovieTheater.Controllers
                 .ToList();
 
             var resume = await movieDb.MoviePlaybackProgresses
-                .Where(p => p.UserID == userId.Value && p.MovieID == movie.id && !p.Completed)
+                .Where(p => p.UserID == userId.Value && p.PlayableId == playableId.Value && !p.Completed)
                 .Select(p => (long?)p.PositionTicks)
                 .FirstOrDefaultAsync();
 
@@ -268,6 +282,8 @@ namespace MovieTheater.Controllers
         {
             public string PlaySessionId { get; set; }
             public int MovieId { get; set; }
+            public int? PlayableId { get; set; }
+            public int? MediaFileId { get; set; }   // the exact file in play (a Part/Variant/Extra) — for the right Jellyfin item
             public long PositionTicks { get; set; }
             public bool Paused { get; set; }
             /// <summary>TV-channel playback: report to Jellyfin but write no resume/Seen.</summary>
@@ -281,7 +297,12 @@ namespace MovieTheater.Controllers
             if (userId == null || string.IsNullOrEmpty(request?.PlaySessionId))
                 return BadRequest();
 
-            var itemId = await ItemIdForMovieAsync(request.MovieId);
+            var playableId = request.PlayableId
+                ?? await movieDb.Movies.Where(m => m.id == request.MovieId).Select(m => m.PlayableId).FirstOrDefaultAsync();
+            if (playableId == null)
+                return Ok(new { success = true });
+
+            var itemId = await ItemIdForFileOrPlayableAsync(request.MediaFileId, playableId.Value);
             if (itemId != null)
             {
                 try
@@ -296,38 +317,28 @@ namespace MovieTheater.Controllers
 
             if (!request.Passive)
             {
+                // Resume progress hangs off the Playable (works for movie / episode / misc alike).
                 var progress = await movieDb.MoviePlaybackProgresses
-                    .SingleOrDefaultAsync(p => p.UserID == userId.Value && p.MovieID == request.MovieId);
-                var durationTicks = await movieDb.MovieFiles
-                    .Where(f => f.MovieID == request.MovieId && f.DurationTicks != null)
+                    .SingleOrDefaultAsync(p => p.UserID == userId.Value && p.PlayableId == playableId.Value);
+                var durationTicks = await movieDb.MediaFiles
+                    .Where(f => f.PlayableId == playableId.Value && f.DurationTicks != null)
                     .Select(f => f.DurationTicks)
                     .FirstOrDefaultAsync() ?? 0;
 
                 if (progress == null)
                 {
-                    progress = new MoviePlaybackProgress { UserID = userId.Value, MovieID = request.MovieId };
+                    progress = new MoviePlaybackProgress { UserID = userId.Value, PlayableId = playableId.Value };
                     movieDb.MoviePlaybackProgresses.Add(progress);
                 }
                 progress.PositionTicks = request.PositionTicks;
                 progress.DurationTicks = durationTicks;
                 progress.UpdatedUtc = DateTime.UtcNow;
 
-                // ≥90% watched marks Seen — streaming feeds the tracker the site exists for.
-                if (durationTicks > 0 && request.PositionTicks >= durationTicks * AutoSeenThreshold && !progress.Completed)
-                {
+                // Reaching ~the end just closes out resume (next time starts from the beginning, not at
+                // 99%). Marking a title *Seen* is a deliberate user action only (the Seen button /
+                // SetViewingState) — playback never writes a Viewing row on its own.
+                if (durationTicks > 0 && request.PositionTicks >= durationTicks * ResumeCompleteThreshold && !progress.Completed)
                     progress.Completed = true;
-                    var alreadySeen = await movieDb.Viewings
-                        .AnyAsync(v => v.UserID == userId.Value && v.MovieID == request.MovieId && v.ViewingType == "Seen");
-                    if (!alreadySeen)
-                    {
-                        movieDb.Viewings.Add(new Viewing
-                        {
-                            UserID = userId.Value,
-                            MovieID = request.MovieId,
-                            ViewingType = "Seen",
-                        });
-                    }
-                }
 
                 await movieDb.SaveChangesAsync();
             }
@@ -339,6 +350,8 @@ namespace MovieTheater.Controllers
         {
             public string PlaySessionId { get; set; }
             public int MovieId { get; set; }
+            public int? PlayableId { get; set; }
+            public int? MediaFileId { get; set; }
         }
 
         [HttpPost("/API/Stream/Stop")]
@@ -347,7 +360,9 @@ namespace MovieTheater.Controllers
             if (string.IsNullOrEmpty(request?.PlaySessionId))
                 return BadRequest();
 
-            var itemId = await ItemIdForMovieAsync(request.MovieId);
+            var playableId = request.PlayableId
+                ?? await movieDb.Movies.Where(m => m.id == request.MovieId).Select(m => m.PlayableId).FirstOrDefaultAsync();
+            var itemId = playableId == null ? null : await ItemIdForFileOrPlayableAsync(request.MediaFileId, playableId.Value);
             try
             {
                 if (itemId != null)
@@ -362,11 +377,42 @@ namespace MovieTheater.Controllers
             return Ok(new { success = true });
         }
 
-        private async Task<string> ItemIdForMovieAsync(int movieId) =>
-            await movieDb.MovieFiles
-                .Where(f => f.MovieID == movieId && f.JellyfinItemId != null)
+        private async Task<string> ItemIdForPlayableAsync(int playableId) =>
+            await movieDb.MediaFiles
+                .Where(f => f.PlayableId == playableId && f.JellyfinItemId != null)
+                .OrderBy(f => f.Role).ThenBy(f => f.Id)
                 .Select(f => f.JellyfinItemId)
                 .FirstOrDefaultAsync();
+
+        // The exact file's Jellyfin item when a specific Part/Variant/Extra is in play; otherwise the
+        // Playable's Primary. Keeps Progress/Stop reporting against the item the session actually opened.
+        private async Task<string> ItemIdForFileOrPlayableAsync(int? mediaFileId, int playableId)
+        {
+            if (mediaFileId != null)
+            {
+                var fileItem = await movieDb.MediaFiles
+                    .Where(f => f.Id == mediaFileId.Value && f.JellyfinItemId != null)
+                    .Select(f => f.JellyfinItemId)
+                    .FirstOrDefaultAsync();
+                if (fileItem != null) return fileItem;
+            }
+            return await ItemIdForPlayableAsync(playableId);
+        }
+
+        // Owning title's rating, for the age gate (a movie's own, or an episode's series'; null = misc, unrestricted).
+        private async Task<string?> ResolveRatingAsync(int playableId)
+        {
+            var movieRating = await movieDb.Movies.Where(m => m.PlayableId == playableId)
+                .Select(m => m.Rating).FirstOrDefaultAsync();
+            if (movieRating != null) return movieRating;
+
+            var seriesId = await movieDb.Episodes.Where(e => e.PlayableId == playableId)
+                .Select(e => e.SeriesId).FirstOrDefaultAsync();
+            if (seriesId != null)
+                return await movieDb.Series.Where(s => s.Id == seriesId.Value).Select(s => s.Rating).FirstOrDefaultAsync();
+
+            return null;   // misc video — no age rating, unrestricted
+        }
 
         private async Task<bool> PassesAgeGateAsync(int userId, string movieRating)
         {

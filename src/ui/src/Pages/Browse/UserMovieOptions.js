@@ -2,7 +2,7 @@ import { MovieAPI } from "../../MovieAPI";
 import { useState, useRef } from "react";
 import "./UserMovieOptions.css";
 
-function UserMovieOptions({ userData, id, setUserData, inline = false, onToggleViewing }) {
+function UserMovieOptions({ userData, id, kind = "movie", setUserData, inline = false, onToggleViewing }) {
   const [activeButton, setActiveButton] = useState(null);
   const clearTimeoutRef = useRef(null);
 if (userData) {
@@ -22,7 +22,7 @@ if (userData) {
                 setUserData(newUserData);
               }
               if (typeof onToggleViewing === "function") onToggleViewing(id, "SetWatched", newIsWatched);
-              MovieAPI.setWatchedState(userData.username, id, newIsWatched)
+              MovieAPI.setWatchedState(userData.username, id, newIsWatched, kind)
                 .then((response) => response.json())
                 .then((response) => {
                   if (!response.success) {
@@ -55,7 +55,7 @@ if (userData) {
                 setUserData(newUserData);
               }
               if (typeof onToggleViewing === "function") onToggleViewing(id, "SetWantToWatch", newIsWanted);
-              MovieAPI.setWantToWatchState(userData.username, id, newIsWanted)
+              MovieAPI.setWantToWatchState(userData.username, id, newIsWanted, kind)
                 .then((response) => response.json())
                 .then((response) => {
                   if (!response.success) {

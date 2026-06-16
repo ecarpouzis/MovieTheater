@@ -239,7 +239,7 @@ namespace MovieTheater.Db.Migrations
                     b.Property<DateTime>("EndUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("MovieID")
+                    b.Property<int>("PlayableId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("StartUtc")
@@ -247,11 +247,71 @@ namespace MovieTheater.Db.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MovieID");
+                    b.HasIndex("PlayableId");
 
                     b.HasIndex("ChannelId", "StartUtc");
 
                     b.ToTable("ChannelScheduleItem");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.Episode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AirDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EpisodeNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImdbId")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<decimal?>("ImdbRating")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("PlayableId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Plot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("RuntimeMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SeasonNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SeriesMovieId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StillPath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayableId")
+                        .IsUnique()
+                        .HasFilter("[PlayableId] IS NOT NULL");
+
+                    b.HasIndex("SeriesId");
+
+                    b.HasIndex("SeriesMovieId", "SeasonNumber", "EpisodeNumber")
+                        .IsUnique();
+
+                    b.ToTable("Episode");
                 });
 
             modelBuilder.Entity("MovieTheater.Db.Genre", b =>
@@ -275,6 +335,164 @@ namespace MovieTheater.Db.Migrations
                     b.ToTable("Genre");
                 });
 
+            modelBuilder.Entity("MovieTheater.Db.MediaFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AudioChannels")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AudioCodec")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("AudioLayout")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<int?>("BitDepth")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Container")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<long?>("DurationTicks")
+                        .HasColumnType("bigint");
+
+                    b.Property<double?>("FrameRate")
+                        .HasColumnType("float");
+
+                    b.Property<string>("HdrFormat")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<int?>("Height")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("IsHdr")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JellyfinItemId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime?>("LastSyncedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("MissingSinceUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("PartNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<int>("PlayableId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("VideoCodec")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int?>("Width")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayableId");
+
+                    b.ToTable("MediaFile");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.MiscVideo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("CollectionName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PlayableId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RelatedMovieId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RelatedSeriesId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReviewBatch")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ReviewProvenance")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ReviewSourcePath")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<string>("SimpleTitle")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<int?>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<int?>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CollectionName");
+
+                    b.HasIndex("PlayableId")
+                        .IsUnique();
+
+                    b.HasIndex("RelatedMovieId");
+
+                    b.HasIndex("RelatedSeriesId");
+
+                    b.HasIndex("ReviewBatch");
+
+                    b.ToTable("MiscVideo");
+                });
+
             modelBuilder.Entity("MovieTheater.Db.Movie", b =>
                 {
                     b.Property<int>("id")
@@ -284,6 +502,15 @@ namespace MovieTheater.Db.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
 
                     b.Property<string>("Actors")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BackdropPath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long?>("BudgetUsd")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Country")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Director")
@@ -317,6 +544,12 @@ namespace MovieTheater.Db.Migrations
                     b.Property<string>("MpaaRating")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("OriginalLanguage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("PlayableId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Plot")
                         .HasColumnType("nvarchar(max)");
 
@@ -334,6 +567,25 @@ namespace MovieTheater.Db.Migrations
 
                     b.Property<bool>("RemoveFromRandom")
                         .HasColumnType("bit");
+
+                    b.Property<long?>("RevenueUsd")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ReviewBatch")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ReviewConfidence")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("ReviewProvenance")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("ReviewSourcePath")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
 
                     b.Property<bool>("RtNeedsReview")
                         .HasColumnType("bit");
@@ -362,10 +614,28 @@ namespace MovieTheater.Db.Migrations
                     b.Property<string>("SimpleTitle")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Tagline")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Title")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("TitleType")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TmdbId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("TmdbPopularity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("TmdbVoteCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("TopCast")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TrailerKey")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UploadedDate")
@@ -384,6 +654,12 @@ namespace MovieTheater.Db.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("id");
+
+                    b.HasIndex("PlayableId")
+                        .IsUnique()
+                        .HasFilter("[PlayableId] IS NOT NULL");
+
+                    b.HasIndex("ReviewBatch");
 
                     b.ToTable("Movie");
                 });
@@ -421,63 +697,6 @@ namespace MovieTheater.Db.Migrations
                     b.ToTable("MovieCredit");
                 });
 
-            modelBuilder.Entity("MovieTheater.Db.MovieFile", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AudioCodec")
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<string>("Container")
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<long?>("DurationTicks")
-                        .HasColumnType("bigint");
-
-                    b.Property<int?>("Height")
-                        .HasColumnType("int");
-
-                    b.Property<string>("JellyfinItemId")
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<DateTime?>("LastSyncedUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("MissingSinceUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("MovieID")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Path")
-                        .IsRequired()
-                        .HasMaxLength(1024)
-                        .HasColumnType("nvarchar(1024)");
-
-                    b.Property<long?>("SizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("VideoCodec")
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<int?>("Width")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MovieID");
-
-                    b.ToTable("MovieFile");
-                });
-
             modelBuilder.Entity("MovieTheater.Db.MovieGenre", b =>
                 {
                     b.Property<int>("MovieID")
@@ -510,7 +729,7 @@ namespace MovieTheater.Db.Migrations
                     b.Property<long>("DurationTicks")
                         .HasColumnType("bigint");
 
-                    b.Property<int>("MovieID")
+                    b.Property<int>("PlayableId")
                         .HasColumnType("int");
 
                     b.Property<long>("PositionTicks")
@@ -524,9 +743,9 @@ namespace MovieTheater.Db.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MovieID");
+                    b.HasIndex("PlayableId");
 
-                    b.HasIndex("UserID", "MovieID")
+                    b.HasIndex("UserID", "PlayableId")
                         .IsUnique();
 
                     b.ToTable("MoviePlaybackProgress");
@@ -612,6 +831,22 @@ namespace MovieTheater.Db.Migrations
                     b.ToTable("Person");
                 });
 
+            modelBuilder.Entity("MovieTheater.Db.Playable", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Playable");
+                });
+
             modelBuilder.Entity("MovieTheater.Db.RatingMPA", b =>
                 {
                     b.Property<int>("RatingID")
@@ -648,6 +883,283 @@ namespace MovieTheater.Db.Migrations
                     b.HasKey("RatingMapID");
 
                     b.ToTable("RatingMap");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.Series", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Actors")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BackdropPath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long?>("BudgetUsd")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Director")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("EndYear")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("EpisodeCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Genre")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("ImdbNeedsReview")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("ImdbRatingScraped")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("ImdbReleaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImdbReviewReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImdbScrapedTitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ImdbVerifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MpaaRating")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Network")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("OriginalLanguage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Plot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlotFull")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlotSynopsis")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Rating")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ReleaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("RemoveFromRandom")
+                        .HasColumnType("bit");
+
+                    b.Property<long?>("RevenueUsd")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ReviewBatch")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ReviewConfidence")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("ReviewProvenance")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("ReviewSourcePath")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<bool>("RtNeedsReview")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("RtPopcornmeter")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RtReviewReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RtScoresUpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RtTomatometer")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RtUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Runtime")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("RuntimeMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SeasonCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SimpleTitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("StartYear")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Tagline")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TitleType")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TmdbId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("TmdbPopularity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("TmdbVoteCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TopCast")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TrailerKey")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UploadedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Writer")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("imdbID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("imdbRating")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("tomatoRating")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewBatch");
+
+                    b.ToTable("Series");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.SeriesCredit", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Character")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Ordering")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PersonId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PersonId");
+
+                    b.HasIndex("SeriesId", "PersonId", "Role")
+                        .IsUnique();
+
+                    b.ToTable("SeriesCredit");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.SeriesGenre", b =>
+                {
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GenreId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Ordering")
+                        .HasColumnType("int");
+
+                    b.HasKey("SeriesId", "GenreId");
+
+                    b.HasIndex("GenreId");
+
+                    b.ToTable("SeriesGenre");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.SeriesPlotSummary", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Author")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Ordering")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeriesId");
+
+                    b.ToTable("SeriesPlotSummary");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.SeriesPosterDetails", b =>
+                {
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DominantColor")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PosterLink")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PosterVersion")
+                        .HasColumnType("int");
+
+                    b.HasKey("SeriesId");
+
+                    b.ToTable("SeriesPosterDetails");
                 });
 
             modelBuilder.Entity("MovieTheater.Db.User", b =>
@@ -706,7 +1218,10 @@ namespace MovieTheater.Db.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ViewingID"));
 
-                    b.Property<int>("MovieID")
+                    b.Property<int?>("MovieID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SeriesId")
                         .HasColumnType("int");
 
                     b.Property<int>("UserID")
@@ -721,6 +1236,8 @@ namespace MovieTheater.Db.Migrations
                     b.HasKey("ViewingID");
 
                     b.HasIndex("MovieID");
+
+                    b.HasIndex("SeriesId");
 
                     b.HasIndex("UserID");
 
@@ -765,15 +1282,86 @@ namespace MovieTheater.Db.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MovieTheater.Db.Movie", "Movie")
+                    b.HasOne("MovieTheater.Db.Playable", "Playable")
                         .WithMany()
-                        .HasForeignKey("MovieID")
+                        .HasForeignKey("PlayableId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Channel");
 
-                    b.Navigation("Movie");
+                    b.Navigation("Playable");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.Episode", b =>
+                {
+                    b.HasOne("MovieTheater.Db.Playable", "Playable")
+                        .WithOne()
+                        .HasForeignKey("MovieTheater.Db.Episode", "PlayableId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MovieTheater.Db.Series", "Series")
+                        .WithMany("Episodes")
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MovieTheater.Db.Movie", "SeriesMovie")
+                        .WithMany()
+                        .HasForeignKey("SeriesMovieId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Playable");
+
+                    b.Navigation("Series");
+
+                    b.Navigation("SeriesMovie");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.MediaFile", b =>
+                {
+                    b.HasOne("MovieTheater.Db.Playable", "Playable")
+                        .WithMany("Files")
+                        .HasForeignKey("PlayableId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Playable");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.MiscVideo", b =>
+                {
+                    b.HasOne("MovieTheater.Db.Playable", "Playable")
+                        .WithOne()
+                        .HasForeignKey("MovieTheater.Db.MiscVideo", "PlayableId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MovieTheater.Db.Movie", "RelatedMovie")
+                        .WithMany()
+                        .HasForeignKey("RelatedMovieId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MovieTheater.Db.Series", "RelatedSeries")
+                        .WithMany()
+                        .HasForeignKey("RelatedSeriesId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Playable");
+
+                    b.Navigation("RelatedMovie");
+
+                    b.Navigation("RelatedSeries");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.Movie", b =>
+                {
+                    b.HasOne("MovieTheater.Db.Playable", "Playable")
+                        .WithOne()
+                        .HasForeignKey("MovieTheater.Db.Movie", "PlayableId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Playable");
                 });
 
             modelBuilder.Entity("MovieTheater.Db.MovieCredit", b =>
@@ -793,17 +1381,6 @@ namespace MovieTheater.Db.Migrations
                     b.Navigation("Movie");
 
                     b.Navigation("Person");
-                });
-
-            modelBuilder.Entity("MovieTheater.Db.MovieFile", b =>
-                {
-                    b.HasOne("MovieTheater.Db.Movie", "Movie")
-                        .WithMany("Files")
-                        .HasForeignKey("MovieID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Movie");
                 });
 
             modelBuilder.Entity("MovieTheater.Db.MovieGenre", b =>
@@ -827,9 +1404,9 @@ namespace MovieTheater.Db.Migrations
 
             modelBuilder.Entity("MovieTheater.Db.MoviePlaybackProgress", b =>
                 {
-                    b.HasOne("MovieTheater.Db.Movie", "Movie")
+                    b.HasOne("MovieTheater.Db.Playable", "Playable")
                         .WithMany()
-                        .HasForeignKey("MovieID")
+                        .HasForeignKey("PlayableId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -839,7 +1416,7 @@ namespace MovieTheater.Db.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Movie");
+                    b.Navigation("Playable");
 
                     b.Navigation("User");
                 });
@@ -866,6 +1443,66 @@ namespace MovieTheater.Db.Migrations
                     b.Navigation("Movie");
                 });
 
+            modelBuilder.Entity("MovieTheater.Db.SeriesCredit", b =>
+                {
+                    b.HasOne("MovieTheater.Db.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MovieTheater.Db.Series", "Series")
+                        .WithMany("Credits")
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Person");
+
+                    b.Navigation("Series");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.SeriesGenre", b =>
+                {
+                    b.HasOne("MovieTheater.Db.Genre", "Genre")
+                        .WithMany()
+                        .HasForeignKey("GenreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MovieTheater.Db.Series", "Series")
+                        .WithMany("SeriesGenres")
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Genre");
+
+                    b.Navigation("Series");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.SeriesPlotSummary", b =>
+                {
+                    b.HasOne("MovieTheater.Db.Series", "Series")
+                        .WithMany("PlotSummaries")
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Series");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.SeriesPosterDetails", b =>
+                {
+                    b.HasOne("MovieTheater.Db.Series", "Series")
+                        .WithOne("PosterDetails")
+                        .HasForeignKey("MovieTheater.Db.SeriesPosterDetails", "SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Series");
+                });
+
             modelBuilder.Entity("MovieTheater.Db.UserSettings", b =>
                 {
                     b.HasOne("MovieTheater.Db.User", "User")
@@ -881,9 +1518,12 @@ namespace MovieTheater.Db.Migrations
                 {
                     b.HasOne("MovieTheater.Db.Movie", "Movie")
                         .WithMany("Viewings")
-                        .HasForeignKey("MovieID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("MovieID");
+
+                    b.HasOne("MovieTheater.Db.Series", "Series")
+                        .WithMany("Viewings")
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("MovieTheater.Db.User", "User")
                         .WithMany()
@@ -892,6 +1532,8 @@ namespace MovieTheater.Db.Migrations
                         .IsRequired();
 
                     b.Navigation("Movie");
+
+                    b.Navigation("Series");
 
                     b.Navigation("User");
                 });
@@ -919,8 +1561,6 @@ namespace MovieTheater.Db.Migrations
                 {
                     b.Navigation("Credits");
 
-                    b.Navigation("Files");
-
                     b.Navigation("MovieGenres");
 
                     b.Navigation("PlotSummaries");
@@ -933,6 +1573,26 @@ namespace MovieTheater.Db.Migrations
             modelBuilder.Entity("MovieTheater.Db.Person", b =>
                 {
                     b.Navigation("Credits");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.Playable", b =>
+                {
+                    b.Navigation("Files");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.Series", b =>
+                {
+                    b.Navigation("Credits");
+
+                    b.Navigation("Episodes");
+
+                    b.Navigation("PlotSummaries");
+
+                    b.Navigation("PosterDetails");
+
+                    b.Navigation("SeriesGenres");
+
+                    b.Navigation("Viewings");
                 });
 #pragma warning restore 612, 618
         }

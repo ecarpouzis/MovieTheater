@@ -5,8 +5,9 @@ namespace MovieTheater.Db
 {
     /// <summary>
     /// Cross-device resume position + completion for streaming (streaming-plan.md §5).
-    /// One row per user per movie; written by /API/Stream/Progress, never by TV
-    /// channel (passive) playback.
+    /// One row per user per <see cref="Playable"/> (movie or episode); written by
+    /// /API/Stream/Progress, never by TV channel (passive) playback. Repointed from Movie to
+    /// Playable by the Phase-4 cutover so episodes get resume + auto-Seen for free.
     /// </summary>
     [Table("MoviePlaybackProgress")]
     public class MoviePlaybackProgress
@@ -19,10 +20,10 @@ namespace MovieTheater.Db
         [ForeignKey(nameof(UserID))]
         public User User { get; set; } = default!;
 
-        public int MovieID { get; set; }
+        public int PlayableId { get; set; }
 
-        [ForeignKey(nameof(MovieID))]
-        public Movie Movie { get; set; } = default!;
+        [ForeignKey(nameof(PlayableId))]
+        public Playable Playable { get; set; } = default!;
 
         public long PositionTicks { get; set; }
 

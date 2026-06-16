@@ -251,7 +251,17 @@ namespace MovieTheater.Services.Jellyfin
         /// Enumerates every movie item in Jellyfin's library with Path, MediaSources and
         /// ProviderIds, paging through the full set.
         /// </summary>
-        public async Task<List<JellyfinItem>> GetAllMovieItemsAsync(CancellationToken cancel = default)
+        public Task<List<JellyfinItem>> GetAllMovieItemsAsync(CancellationToken cancel = default) =>
+            GetAllItemsAsync("Movie", cancel);
+
+        /// <summary>
+        /// Enumerates every episode and standalone video item (series episodes + misc videos) with the
+        /// same fields, so the sync can match their file paths to Episode/MiscVideo MediaFile rows.
+        /// </summary>
+        public Task<List<JellyfinItem>> GetAllEpisodeAndVideoItemsAsync(CancellationToken cancel = default) =>
+            GetAllItemsAsync("Episode,Video", cancel);
+
+        private async Task<List<JellyfinItem>> GetAllItemsAsync(string includeItemTypes, CancellationToken cancel)
         {
             EnsureConfigured();
             var items = new List<JellyfinItem>();
@@ -259,7 +269,7 @@ namespace MovieTheater.Services.Jellyfin
 
             while (true)
             {
-                var url = $"/Items?IncludeItemTypes=Movie&Recursive=true&EnableImages=false" +
+                var url = $"/Items?IncludeItemTypes={Uri.EscapeDataString(includeItemTypes)}&Recursive=true&EnableImages=false" +
                           $"&Fields=Path,MediaSources,ProviderIds&StartIndex={items.Count}&Limit={pageSize}";
                 var page = await httpClient.GetFromJsonAsync<JellyfinItemsResult>(url, JsonOptions, cancel)
                     ?? throw new BusinessException("Jellyfin returned an empty /Items response.");

@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useRef } from "react";
+import { useHistory } from "react-router-dom";
 import { Modal, Spin, Input, Button, Checkbox, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import UserMovieOptions from "./UserMovieOptions";
@@ -37,7 +38,23 @@ function posterRgb(hex) {
   return `${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}`;
 }
 
-function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData, onToggleViewing, onMovieUpdated }) {
+function basename(p) {
+  if (!p) return "";
+  const parts = String(p).split(/[\\/]/).filter(Boolean);
+  return parts[parts.length - 1] || String(p);
+}
+
+// Human labels for TitleType (the enum name) and MovieFileRole.
+const TYPE_LABEL = {
+  Short: "Short", TvSeries: "TV Series", TvMiniSeries: "TV Mini-Series", TvMovie: "TV Movie",
+  TvSpecial: "TV Special", TvShort: "TV Short", Video: "Video",
+};
+const ROLE_LABEL = { Primary: "Feature", Part: "Part", Variant: "Variant", Extra: "Extra" };
+
+function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData, onToggleViewing, onMovieUpdated, kind = "movie" }) {
+  const history = useHistory();
+  const [openSeasons, setOpenSeasons] = useState({});
+  const isSeries = kind === "series";
   const [movie, setMovie] = useState(null);
   const [normalized, setNormalized] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +73,8 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
       setPlotExpanded(false);
       setPlotOverflows(false);
       setSynopsisOpen(false);
-      MovieAPI.getMovie(movieId)
+      setOpenSeasons({});
+      MovieAPI.getTitle(movieId, kind)
         .then((response) => response.json())
         .then((responseData) => {
           setMovie(responseData.data);
@@ -68,7 +86,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
           setLoading(false);
         });
     }
-  }, [movieId, open]);
+  }, [movieId, open, kind]);
 
   useEffect(() => {
     const el = plotRef.current;
@@ -150,6 +168,23 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
       : [];
   const hasSynopsis = !!(n.plotSynopsis || (Array.isArray(n.summaries) && n.summaries.length > 0));
 
+  // Phase-7 surfaces: multi-file list + (for series) episodes by season.
+  const toggleSeason = (s) => setOpenSeasons((prev) => ({ ...prev, [s]: !prev[s] }));
+  const files = Array.isArray(n.files) ? n.files : [];
+  const showFiles = files.length > 1; // a single Feature isn't worth a section
+  const seasons = n.isSeries && Array.isArray(n.seasons) ? n.seasons : [];
+  const totalEps = seasons.reduce((acc, s) => acc + s.episodes.length, 0);
+  const epsWithFile = seasons.reduce((acc, s) => acc + s.episodes.filter((e) => e.hasFile).length, 0);
+  const typeBadge = TYPE_LABEL[n.titleType];
+
+  // Open the screening room for a specific episode / file. Gated on a password the
+  // same way WatchButton is — streaming isn't advertised to accounts that can't use it.
+  const canStream = !!userData?.hasPassword;
+  const goWatch = (qs) => {
+    onClose();
+    history.push(`/watch/${movie.id}${qs}`);
+  };
+
   const searchPerson = (name) => {
     if (!name) return;
     onClose();
@@ -210,6 +245,12 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                     <>
                       <span className="modal-dot">·</span>
                       <span>{displayRuntime}</span>
+                    </>
+                  )}
+                  {typeBadge && (
+                    <>
+                      <span className="modal-dot">·</span>
+                      <span className="modal-type-badge">{typeBadge}</span>
                     </>
                   )}
                 </div>
@@ -285,6 +326,27 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                   </div>
                 )}
 
+                {showFiles && (
+                  <div className="modal-files">
+                    <span className="modal-label">Files ({files.length})</span>
+                    {files.map((f, i) => (
+                      <div className="modal-file-row" key={i}>
+                        <span className={"modal-file-role modal-file-role--" + (f.role || "").toLowerCase()}>
+                          {(ROLE_LABEL[f.role] || f.role)}
+                          {f.partNumber ? " " + f.partNumber : ""}
+                        </span>
+                        {f.label ? <span className="modal-file-label">{f.label}</span> : null}
+                        <span className="modal-file-name" title={f.path}>{basename(f.path)}</span>
+                        {f.isPlayable && canStream && (
+                          <button className="modal-play-btn" title="Watch this file" onClick={() => goWatch(`?mediaFileId=${f.mediaFileId}`)}>
+                            ▶
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="modal-ratings-row">
                   <a className="modal-rating-link" target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID}>
                     <span className="modal-label">IMDb</span>
@@ -326,13 +388,52 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                 </div>
 
                 <div className="modal-actions-row">
-                  <div className="modal-watch-row">
-                    <WatchButton movie={movie} userData={userData} onBeforeNavigate={onClose} />
-                  </div>
-                  <UserMovieOptions userData={userData} id={movie.id} setUserData={setUserData} onToggleViewing={onToggleViewing} />
+                  {!isSeries && (
+                    <div className="modal-watch-row">
+                      <WatchButton movie={movie} userData={userData} onBeforeNavigate={onClose} />
+                    </div>
+                  )}
+                  <UserMovieOptions userData={userData} id={movie.id} kind={kind} setUserData={setUserData} onToggleViewing={onToggleViewing} />
                 </div>
 
-                {userData?.canEditMovies && (
+                {seasons.length > 0 && (
+                  <div className="modal-episodes">
+                    <span className="modal-label">
+                      Episodes — {totalEps} across {seasons.length} season{seasons.length > 1 ? "s" : ""}
+                      {epsWithFile > 0 ? ` · ${epsWithFile} with a file` : ""}
+                    </span>
+                    {seasons.map((s) => (
+                      <div className="modal-season" key={s.season}>
+                        <button className="modal-season-hd" onClick={() => toggleSeason(s.season)}>
+                          <span className="modal-season-caret">{openSeasons[s.season] ? "▾" : "▸"}</span>
+                          {s.season === 0 ? "Specials" : "Season " + s.season}
+                          <span className="modal-season-count">
+                            {s.episodes.filter((e) => e.hasFile).length}/{s.episodes.length}
+                          </span>
+                        </button>
+                        {openSeasons[s.season] && (
+                          <div className="modal-season-eps">
+                            {s.episodes.map((e) => (
+                              <div className={"modal-ep" + (e.hasFile ? " modal-ep--hasfile" : "")} key={e.episode}>
+                                <span className="modal-ep-num">E{e.episode}</span>
+                                <span className="modal-ep-title">{e.title || "—"}</span>
+                                {e.isPlayable && canStream ? (
+                                  <button className="modal-play-btn" title="Watch this episode" onClick={() => goWatch(`?kind=series&playableId=${e.playableId}`)}>
+                                    ▶
+                                  </button>
+                                ) : e.hasFile ? (
+                                  <span className="modal-ep-file" title="file available">●</span>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {userData?.canEditMovies && !isSeries && (
                   <div className="modal-edit-row">
                     <Button type="default" onClick={startEditing}>
                       <span className="fas fa-pen" style={{ marginRight: 6 }} />

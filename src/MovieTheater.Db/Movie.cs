@@ -96,6 +96,78 @@ namespace MovieTheater.Db
         /// <summary>Why the RT row was flagged for manual review.</summary>
         public string? RtReviewReason { get; set; }
 
+        // ── Metadata enrichment (Phase A): data we previously fetched-and-discarded or never ──
+        // fetched. Additive and nullable; the legacy snapshot columns above stay frozen. See
+        // docs/metadata-enrichment-plan.md §3.2.
+
+        /// <summary>TMDB id — the stable re-fetch key. Lets any future TMDB field be backfilled
+        /// without re-running the TMDB→OMDB→IMDb→Google resolution cascade.</summary>
+        public int? TmdbId { get; set; }
+
+        /// <summary>Short marketing tagline (distinct from <see cref="Plot"/>). TMDB.</summary>
+        public string? Tagline { get; set; }
+
+        /// <summary>Original language (ISO-639-1 from TMDB; OMDB name as fallback). For "foreign films" filtering.</summary>
+        public string? OriginalLanguage { get; set; }
+
+        /// <summary>Country/countries of origin (OMDB <c>Country</c> / TMDB production countries).</summary>
+        public string? Country { get; set; }
+
+        /// <summary>Production budget in USD (TMDB).</summary>
+        public long? BudgetUsd { get; set; }
+
+        /// <summary>Box-office revenue in USD (TMDB worldwide; OMDB <c>BoxOffice</c> domestic as fallback).</summary>
+        public long? RevenueUsd { get; set; }
+
+        /// <summary>TMDB popularity score; handy as a default browse sort.</summary>
+        public decimal? TmdbPopularity { get; set; }
+
+        /// <summary>TMDB vote count (paired with the existing rating fields).</summary>
+        public int? TmdbVoteCount { get; set; }
+
+        /// <summary>Wide hero/backdrop image path (TMDB <c>backdrop_path</c>); poster lives in <see cref="MoviePosterDetails"/>.</summary>
+        public string? BackdropPath { get; set; }
+
+        /// <summary>YouTube key for the primary trailer (TMDB <c>videos</c>); pairs with the YouTube service.</summary>
+        public string? TrailerKey { get; set; }
+
+        /// <summary>
+        /// What kind of title this is (IMDB-aware classification). <see cref="TitleType.Unknown"/>
+        /// until the IMDB classification scrape sets it. Series stay here as
+        /// <see cref="TitleType.TvSeries"/>; their episodes live in a separate table. See
+        /// docs/metadata-enrichment-plan.md §3.2 / Phase C1.
+        /// </summary>
+        public TitleType TitleType { get; set; } = TitleType.Unknown;
+
+        // ── Library-ingest review (transient) ──────────────────────────────────────
+        // Set on every row the bulk library ingest creates so the whole batch can be
+        // reviewed on the site before it's trusted, then cleared. Pending-review rows
+        // (ReviewBatch != null) are quarantined from the public browse/random/odata
+        // queries until approved. Distinct from ImdbNeedsReview / RtNeedsReview, which
+        // flag scrape uncertainty (a different axis). See docs/metadata-enrichment-plan
+        // and the library-ingest effort.
+
+        /// <summary>Tag identifying the bulk-ingest batch this row came from (e.g.
+        /// "library-ingest 2026-06-15"); null once reviewed/approved or for organically
+        /// added rows. While set, the row is hidden from browse.</summary>
+        [MaxLength(64)]
+        public string? ReviewBatch { get; set; }
+
+        /// <summary>How this row's <see cref="imdbID"/> was resolved:
+        /// <c>finalsort-cache</c> | <c>suggestion-api</c> | <c>web-search</c>. Lets the
+        /// review queue surface lowest-trust first.</summary>
+        [MaxLength(32)]
+        public string? ReviewProvenance { get; set; }
+
+        /// <summary>Resolver confidence (<c>HIGH</c>/<c>MEDIUM</c>/<c>LOW</c>) at ingest time.</summary>
+        [MaxLength(16)]
+        public string? ReviewConfidence { get; set; }
+
+        /// <summary>On-disk folder the title was ingested from — review context now and
+        /// the seed for file mapping later (Phase 5).</summary>
+        [MaxLength(1024)]
+        public string? ReviewSourcePath { get; set; }
+
         [Key]
         public int id { get; set; }
 
@@ -107,7 +179,16 @@ namespace MovieTheater.Db
 
         public ICollection<MoviePlotSummary> PlotSummaries { get; set; } = [];
 
-        public ICollection<MovieFile> Files { get; set; } = [];
+        /// <summary>
+        /// Unique FK to this movie's <see cref="Playable"/> (Kind = Movie); set for every row by the
+        /// Phase-4 cutover migration. Files, playback progress, and channel slots attach to the
+        /// <see cref="Playable"/> now (so episodes can carry them too) — reach a movie's files via
+        /// <c>Playable.Files</c>. See docs/metadata-enrichment-plan.md §3.1.
+        /// </summary>
+        public int? PlayableId { get; set; }
+
+        [ForeignKey(nameof(PlayableId))]
+        public Playable? Playable { get; set; }
 
         public MoviePosterDetails? PosterDetails { get; set; }
 

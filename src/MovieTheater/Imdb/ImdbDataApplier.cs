@@ -32,6 +32,13 @@ namespace MovieTheater.Imdb
                 return ImdbApplyStatus.NotFound;
             }
 
+            // Classify the title (Phase C1). titleType is a fact about the IMDB id itself, so set it
+            // even on a title mismatch below — that keeps the --retype resume from re-pulling flagged
+            // rows forever. tvEpisode has no Movie-side enum value (episodes live in their own table),
+            // so such rows stay Unknown rather than being mislabeled as movies.
+            var titleType = MapTitleType(result.TitleTypeId);
+            if (titleType != TitleType.Unknown) movie.TitleType = titleType;
+
             if (!TitlesPlausiblyMatch(movie, result))
             {
                 movie.ImdbNeedsReview = true;
@@ -150,6 +157,21 @@ namespace MovieTheater.Imdb
 
             return false;
         }
+
+        // Map IMDB's titleType id to our enum. tvEpisode is intentionally absent (→ Unknown):
+        // episodes live in their own table, not as Movie rows.
+        private static TitleType MapTitleType(string imdbTitleTypeId) => imdbTitleTypeId switch
+        {
+            "movie" => TitleType.Movie,
+            "tvMovie" => TitleType.TvMovie,
+            "short" => TitleType.Short,
+            "tvShort" => TitleType.TvShort,
+            "tvSeries" => TitleType.TvSeries,
+            "tvMiniSeries" => TitleType.TvMiniSeries,
+            "tvSpecial" => TitleType.TvSpecial,
+            "video" => TitleType.Video,
+            _ => TitleType.Unknown,
+        };
 
         private static string Normalize(string title)
         {

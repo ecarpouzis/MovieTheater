@@ -16,6 +16,15 @@ function getMovie(id) {
   });
 }
 
+function getSeries(id) {
+  return fetch("/API/GetSeries?id=" + id, { method: "get" });
+}
+
+// A card carries a kind ("movie" | "series"); fetch the right detail.
+function getTitle(id, kind) {
+  return kind === "series" ? getSeries(id) : getMovie(id);
+}
+
 function insertMovie(movie) {
   const url = "/API/InsertMovie";
   movie.releaseDate = new Date(movie.releaseDate);
@@ -105,50 +114,54 @@ function setPassword(currentPassword, newPassword) {
 // Start returns { playSessionId, hlsUrl, durationTicks, isDirectStream,
 // audioTracks, subtitleTracks, resumePositionTicks }.
 
-function startStream({ movieId, maxBitrateBps = null, audioStreamIndex = null, subtitleStreamIndex = null, startSeconds = null }) {
+// A stream targets a Playable: either a movie (legacy movieId → its Primary file),
+// any title's playableId (episode / misc / movie), and optionally a specific
+// mediaFileId (a Part / Variant / Extra). The server resolves movieId → playableId
+// when playableId is absent.
+function startStream({ movieId = null, playableId = null, mediaFileId = null, maxBitrateBps = null, audioStreamIndex = null, subtitleStreamIndex = null, startSeconds = null }) {
   // Negotiate the codec profile from this browser's real capabilities (§14.1) so
   // HEVC/AV1-capable clients avoid a needless H.264 re-encode.
   const caps = detectStreamCapabilities();
   return fetch("/API/Stream/Start", {
     method: "post",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ movieId, maxBitrateBps, audioStreamIndex, subtitleStreamIndex, startSeconds, ...caps }),
+    body: JSON.stringify({ movieId, playableId, mediaFileId, maxBitrateBps, audioStreamIndex, subtitleStreamIndex, startSeconds, ...caps }),
   });
 }
 
 // passive=true (TV channels) keeps Jellyfin throttling honest without writing
 // resume progress or auto-Seen — background play shouldn't claim you watched it.
-function reportStreamProgress({ playSessionId, movieId, positionTicks, paused, passive = false }) {
+function reportStreamProgress({ playSessionId, movieId = null, playableId = null, mediaFileId = null, positionTicks, paused, passive = false }) {
   // keepalive lets the final progress report survive a navigation away.
   return fetch("/API/Stream/Progress", {
     method: "post",
     headers: { "Content-Type": "application/json" },
     keepalive: true,
-    body: JSON.stringify({ playSessionId, movieId, positionTicks, paused, passive }),
+    body: JSON.stringify({ playSessionId, movieId, playableId, mediaFileId, positionTicks, paused, passive }),
   }).catch(() => {});
 }
 
-function stopStream({ playSessionId, movieId }) {
+function stopStream({ playSessionId, movieId = null, playableId = null, mediaFileId = null }) {
   return fetch("/API/Stream/Stop", {
     method: "post",
     headers: { "Content-Type": "application/json" },
     keepalive: true,
-    body: JSON.stringify({ playSessionId, movieId }),
+    body: JSON.stringify({ playSessionId, movieId, playableId, mediaFileId }),
   }).catch(() => {});
 }
 
 // Fire-and-forget Stop for tab close — sendBeacon survives page teardown,
 // which is what actually kills the server-side ffmpeg process promptly.
-function beaconStopStream({ playSessionId, movieId }) {
-  const payload = JSON.stringify({ playSessionId, movieId });
+function beaconStopStream({ playSessionId, movieId = null, playableId = null, mediaFileId = null }) {
+  const payload = JSON.stringify({ playSessionId, movieId, playableId, mediaFileId });
   if (navigator.sendBeacon) {
     navigator.sendBeacon("/API/Stream/Stop", new Blob([payload], { type: "application/json" }));
   } else {
-    stopStream({ playSessionId, movieId });
+    stopStream({ playSessionId, movieId, playableId, mediaFileId });
   }
 }
 
-function setWatchedState(username, movieID, isActive) {
+function setWatchedState(username, movieID, isActive, kind = "movie") {
   const url = "/API/SetViewingState";
 
   return fetch(url, {
@@ -159,13 +172,14 @@ function setWatchedState(username, movieID, isActive) {
     body: JSON.stringify({
       Username: username,
       MovieID: movieID,
+      Kind: kind,
       SetActive: isActive,
       Action: "SetWatched",
     }),
   });
 }
 
-function setWantToWatchState(username, movieID, isActive) {
+function setWantToWatchState(username, movieID, isActive, kind = "movie") {
   const url = "/API/SetViewingState";
 
   return fetch(url, {
@@ -176,6 +190,7 @@ function setWantToWatchState(username, movieID, isActive) {
     body: JSON.stringify({
       Username: username,
       MovieID: movieID,
+      Kind: kind,
       SetActive: isActive,
       Action: "SetWantToWatch",
     }),
@@ -447,10 +462,73 @@ function adminSetUserSetting(userId, settingKey, settingValue) {
   });
 }
 
+// ── Library-ingest review (editor-gated; quarantined rows pending approval) ───
+// The bulk library ingest tags new rows with a ReviewBatch and hides them from
+// browse; these drive the on-site review queue that approves / rejects / corrects
+// them before they join the library.
+
+function ingestReviewList() {
+  return fetch("/API/Admin/IngestReview/List");
+}
+
+function ingestReviewDetail(id, kind) {
+  return fetch("/API/Admin/IngestReview/Detail?id=" + id + "&kind=" + (kind || "movie"));
+}
+
+// ids = movie ids; seriesIds = Series ids; miscIds = MiscVideo ids (separate id sequences — see Kind).
+function ingestReviewApprove(ids, seriesIds, miscIds) {
+  return fetch("/API/Admin/IngestReview/Approve", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Ids: ids || [], SeriesIds: seriesIds || [], MiscIds: miscIds || [] }),
+  });
+}
+
+function ingestReviewReject(ids, seriesIds, miscIds) {
+  return fetch("/API/Admin/IngestReview/Reject", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Ids: ids || [], SeriesIds: seriesIds || [], MiscIds: miscIds || [] }),
+  });
+}
+
+// Move a pending row between movie / series / misc (see IngestReviewReclassify).
+function ingestReviewReclassify({ id, fromKind, toKind, category, collectionName, relatedMovieId, relatedSeriesId }) {
+  return fetch("/API/Admin/IngestReview/Reclassify", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id,
+      FromKind: fromKind || "movie",
+      ToKind: toKind || "misc",
+      Category: category ?? null,
+      CollectionName: collectionName ?? null,
+      RelatedMovieId: relatedMovieId ?? null,
+      RelatedSeriesId: relatedSeriesId ?? null,
+    }),
+  });
+}
+
+function ingestReviewUpdate({ id, kind, title, imdbID, titleType }) {
+  return fetch("/API/Admin/IngestReview/Update", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id,
+      Kind: kind || "movie",
+      Title: title ?? null,
+      imdbID: imdbID ?? null,
+      TitleType: titleType ?? null,
+    }),
+  });
+}
+
 const MovieAPI = {
   getMoviePoster,
   getPosterThumbnail,
   getMovie,
+  getSeries,
+  getTitle,
   getUsers,
   insertMovie,
   updateMovie,
@@ -493,6 +571,12 @@ const MovieAPI = {
   adminGetUsers,
   adminSetUserPassword,
   adminSetUserSetting,
+  ingestReviewList,
+  ingestReviewDetail,
+  ingestReviewApprove,
+  ingestReviewReject,
+  ingestReviewUpdate,
+  ingestReviewReclassify,
 };
 
 export { MovieAPI };

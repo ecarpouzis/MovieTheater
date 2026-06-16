@@ -47,5 +47,46 @@ namespace MovieTheater.Services.Tmdb
             var movie = root.MovieResults.Single();
             return movie;
         }
+
+        /// <summary>
+        /// Resolves an IMDB id to its TMDB movie via <c>/find</c>, returning null instead of throwing
+        /// when there is no movie match (e.g. the id is a TV series, or TMDB has no record). Used by
+        /// the enrichment backfill, where a miss should skip the row, not abort the run.
+        /// </summary>
+        public async Task<MovieDto?> TryGetMovie(string imdbID)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"/3/find/{imdbID}?api_key={_options.ApiKey}&external_source=imdb_id", UriKind.Relative));
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            string responseContent = await response.Content.ReadAsStringAsync();
+            try
+            {
+                var root = JsonConvert.DeserializeObject<Root>(responseContent);
+                return root?.MovieResults?.FirstOrDefault();
+            }
+            catch (JsonException)
+            {
+                // A malformed/unexpected field shouldn't abort the whole backfill — treat as no match.
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Fetches the full TMDB movie detail (with embedded videos) for a known TMDB id — the source
+        /// of the enrichment fields (<c>tagline</c>, <c>budget</c>, <c>revenue</c>, trailer, …) that the
+        /// flat <c>/find</c> response omits. Returns null on a non-success status.
+        /// </summary>
+        public async Task<TmdbMovieDetailDto?> GetMovieDetail(int tmdbId)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"/3/movie/{tmdbId}?api_key={_options.ApiKey}&append_to_response=videos", UriKind.Relative));
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            string responseContent = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<TmdbMovieDetailDto>(responseContent);
+        }
     }
 }

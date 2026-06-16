@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useHistory } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useParams, useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
 import { initialAutoBps, rungDown, rungUp, shouldStepUp, isBottomRung, autoBpsLabel } from "../../streamAbr";
 import VideoPlayer, { formatTime, TICKS_PER_SECOND, QUALITY_LADDER } from "./VideoPlayer";
@@ -21,6 +21,12 @@ function formatRuntime(minutes) {
 /**
  * /watch/:movieId — the screening room (streaming-plan.md §7).
  *
+ * The path id is the *context* title (a movie, or a series for an episode); the
+ * stream target is refined by query params:
+ *   ?kind=series&playableId=N  → play episode N of the series
+ *   ?mediaFileId=N             → play a specific Part / Variant / Extra of the movie
+ * Bare /watch/:movieId still plays a movie's Primary file (the common case).
+ *
  * Owns the streaming session: Start (with quality/audio/subtitle restarts at
  * position), the ~10s progress beat, and the Stop beacon that kills the
  * server-side transcode when the tab closes.
@@ -28,6 +34,24 @@ function formatRuntime(minutes) {
 function WatchPage({ userData }) {
   const { movieId } = useParams();
   const history = useHistory();
+  const { search } = useLocation();
+
+  // What to stream: a movie id (legacy → its Primary), and/or an explicit
+  // playableId (episode / misc) and a specific mediaFileId. Server resolves
+  // movieId → playableId when playableId is absent; for a series the path id is
+  // only context (poster / title), so movieId is left null.
+  const kind = useMemo(() => new URLSearchParams(search).get("kind") || "movie", [search]);
+  const streamTarget = useMemo(() => {
+    const q = new URLSearchParams(search);
+    const num = (v) => (v != null && v !== "" ? Number(v) : null);
+    return {
+      movieId: kind === "series" ? null : Number(movieId),
+      playableId: num(q.get("playableId")),
+      mediaFileId: num(q.get("mediaFileId")),
+    };
+  }, [search, movieId, kind]);
+  const streamTargetRef = useRef(streamTarget);
+  streamTargetRef.current = streamTarget;
 
   const [movie, setMovie] = useState(null);
   const [normalized, setNormalized] = useState(null);
@@ -61,7 +85,7 @@ function WatchPage({ userData }) {
   const stopCurrentSession = useCallback((useBeacon = false) => {
     const s = sessionRef.current;
     if (!s) return;
-    const payload = { playSessionId: s.playSessionId, movieId: Number(s.movieId) };
+    const payload = { playSessionId: s.playSessionId, ...streamTargetRef.current };
     if (useBeacon) MovieAPI.beaconStopStream(payload);
     else MovieAPI.stopStream(payload);
   }, []);
@@ -77,7 +101,7 @@ function WatchPage({ userData }) {
           ? autoBpsRef.current
           : (QUALITY_LADDER.find((q) => q.key === quality) || QUALITY_LADDER[0]).bps;
       const response = await MovieAPI.startStream({
-        movieId: Number(movieId),
+        ...streamTargetRef.current,
         maxBitrateBps: bps,
         audioStreamIndex: audio,
         subtitleStreamIndex: burnSubtitle ? subtitle : null,
@@ -88,10 +112,9 @@ function WatchPage({ userData }) {
         const err = { status: response.status, message: body.message };
         throw err;
       }
-      const data = await response.json();
-      return { ...data, movieId };
+      return await response.json();
     },
-    [movieId, qualityKey, audioIndex, subtitleIndex]
+    [qualityKey, audioIndex, subtitleIndex]
   );
 
   // ── initial load: movie meta + a session (not yet attached to <video>) ─────
@@ -99,16 +122,16 @@ function WatchPage({ userData }) {
     let cancelled = false;
 
     Promise.all([
-      MovieAPI.getMovie(movieId)
+      MovieAPI.getTitle(movieId, kind)
         .then((r) => r.json())
         .catch(() => null),
       startSession(),
     ])
-      .then(([movieBody, startData]) => {
+      .then(([titleBody, startData]) => {
         if (cancelled) return;
-        if (movieBody?.data) {
-          setMovie(movieBody.data);
-          setNormalized(movieBody.normalized || null);
+        if (titleBody?.data) {
+          setMovie(titleBody.data);
+          setNormalized(titleBody.normalized || null);
         }
         setSession(startData);
         const resumeTicks = startData.resumePositionTicks;
@@ -128,7 +151,7 @@ function WatchPage({ userData }) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movieId]);
+  }, [movieId, search]);
 
   // ── teardown: leaving the page or closing the tab kills the transcode ──────
   useEffect(() => {
@@ -138,7 +161,7 @@ function WatchPage({ userData }) {
       if (document.visibilityState === "hidden" && sessionRef.current) {
         MovieAPI.reportStreamProgress({
           playSessionId: sessionRef.current.playSessionId,
-          movieId: Number(movieId),
+          ...streamTargetRef.current,
           positionTicks: Math.round(positionRef.current * TICKS_PER_SECOND),
           paused: false,
         });
@@ -151,7 +174,7 @@ function WatchPage({ userData }) {
       document.removeEventListener("visibilitychange", onVisibility);
       stopCurrentSession(true);
     };
-  }, [stopCurrentSession, movieId]);
+  }, [stopCurrentSession]);
 
   // ── player callbacks ────────────────────────────────────────────────────────
   const handleProgress = useCallback(
@@ -161,12 +184,12 @@ function WatchPage({ userData }) {
       if (!s) return;
       MovieAPI.reportStreamProgress({
         playSessionId: s.playSessionId,
-        movieId: Number(movieId),
+        ...streamTargetRef.current,
         positionTicks: Math.round(seconds * TICKS_PER_SECOND),
         paused,
       });
     },
-    [movieId]
+    []
   );
 
   const restartAtPosition = useCallback(
@@ -272,9 +295,31 @@ function WatchPage({ userData }) {
 
   // ── derived presentation ───────────────────────────────────────────────────
   const title = movie?.title || "";
+  // When an episode or a specific file is in play, find it for a "S1E2 · Title" /
+  // "Director's Cut" sub-label and a more accurate runtime.
+  const episodeInfo = useMemo(() => {
+    if (streamTarget.playableId == null || !Array.isArray(normalized?.seasons)) return null;
+    for (const s of normalized.seasons) {
+      const ep = (s.episodes || []).find((e) => e.playableId === streamTarget.playableId);
+      if (ep) return { season: s.season, ...ep };
+    }
+    return null;
+  }, [normalized, streamTarget.playableId]);
+  const fileInfo = useMemo(() => {
+    if (streamTarget.mediaFileId == null || !Array.isArray(normalized?.files)) return null;
+    return normalized.files.find((f) => f.mediaFileId === streamTarget.mediaFileId) || null;
+  }, [normalized, streamTarget.mediaFileId]);
+
+  const FILE_ROLE_LABEL = { Part: "Part", Variant: "Variant", Extra: "Extra" };
+  const subLabel = episodeInfo
+    ? `S${episodeInfo.season}E${episodeInfo.episode}${episodeInfo.title ? " · " + episodeInfo.title : ""}`
+    : fileInfo && fileInfo.role && fileInfo.role !== "Primary"
+    ? fileInfo.label || `${FILE_ROLE_LABEL[fileInfo.role] || fileInfo.role}${fileInfo.partNumber ? " " + fileInfo.partNumber : ""}`
+    : null;
+
   const year = movie?.releaseDate ? new Date(movie.releaseDate).getFullYear() : null;
-  const runtime = formatRuntime(normalized?.runtimeMinutes) || movie?.runtime;
-  const metaLine = [year, movie?.rating, runtime].filter(Boolean).join("  ·  ");
+  const runtime = formatRuntime(episodeInfo?.runtimeMinutes || normalized?.runtimeMinutes) || movie?.runtime;
+  const metaLine = [subLabel, year, !episodeInfo ? movie?.rating : null, runtime].filter(Boolean).join("  ·  ");
   const poster = movie ? MovieAPI.getMoviePoster(movie.id, movie.posterVersion) : null;
   const durationSeconds = session ? session.durationTicks / TICKS_PER_SECOND : 0;
   const resumeSeconds = session?.resumePositionTicks ? session.resumePositionTicks / TICKS_PER_SECOND : 0;

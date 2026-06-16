@@ -11,6 +11,7 @@ import BatchInsertPage from "./Pages/BatchInsertPage";
 import BoardgameBatchInsertPage from "./Pages/BoardGames/BoardgameBatchInsertPage";
 import WatchPage from "./Pages/Watch/WatchPage";
 import TvPage from "./Pages/Tv/TvPage";
+import IngestReviewPage from "./Pages/IngestReview/IngestReviewPage";
 import { useMovieSearch } from "./hooks/useMovieSearch";
 
 const storedUsername = window.localStorage.getItem("Username");
@@ -22,7 +23,7 @@ function App() {
   const [isAuthReady, setIsAuthReady] = useState(!storedUsername);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const { search, resetSearch, titleSearch, actorSearch, genreSearch, firstLetterSearch, ratingSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch } =
+  const { search, resetSearch, titleSearch, actorSearch, genreSearch, firstLetterSearch, titleTypeSearch, ratingSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch } =
     useMovieSearch();
 
   function applyUserData(responseData, username) {
@@ -84,6 +85,7 @@ function App() {
           actorSearch={actorSearch}
           genreSearch={genreSearch}
           firstLetterSearch={firstLetterSearch}
+          titleTypeSearch={titleTypeSearch}
           ratingSearch={ratingSearch}
           restoreMovieIdsSearch={restoreMovieIdsSearch}
           moviesSeenSearch={moviesSeenSearch}
@@ -108,6 +110,9 @@ function App() {
             </Route>
             <Route path="/batchinsert" exact>
               <BatchInsertPage />
+            </Route>
+            <Route path="/review-ingest" exact>
+              <IngestReviewPage userData={userData} />
             </Route>
             <Route path="/boardgames/batchinsert" exact>
               <BoardgameBatchInsertPage />

@@ -38,6 +38,9 @@ namespace MovieTheater.Imdb
         [CommandOption("rescrape", Description = "Also reprocess rows already verified (default: only unverified).")]
         public bool Rescrape { get; set; }
 
+        [CommandOption("retype", Description = "Classify+cache rows not yet typed (TitleType=Unknown), ignoring ImdbVerifiedDate. Resumable across the run.")]
+        public bool Retype { get; set; }
+
         [CommandOption("cast-limit", Description = "Max billed actors to capture per movie.")]
         public int CastLimit { get; set; } = 15;
 
@@ -53,6 +56,12 @@ namespace MovieTheater.Imdb
         [CommandOption("headful", Description = "Run the browser with a visible window (debugging).")]
         public bool Headful { get; set; }
 
+        [CommandOption("no-cache", Description = "Don't write scraped pages to the local IMDB page cache.")]
+        public bool NoCache { get; set; }
+
+        [CommandOption("cache-dir", Description = "Root dir for the local IMDB page cache (default: data/imdb-cache).")]
+        public string CacheDir { get; set; }
+
         private const string UserAgent =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -60,6 +69,7 @@ namespace MovieTheater.Imdb
         private readonly ILogger<ScrapeImdbCommand> logger;
         private readonly ImdbTitleScraper scraper = new ImdbTitleScraper();
         private readonly Random rng = new Random();
+        private ImdbPageCache cache;
 
         public ScrapeImdbCommand(MovieTheaterConfiguration config) : base(config)
         {
@@ -70,6 +80,10 @@ namespace MovieTheater.Imdb
         public async ValueTask ExecuteAsync(IConsole console)
         {
             var cancel = console.RegisterCancellationHandler();
+
+            cache = NoCache ? null : new ImdbPageCache(CacheDir);
+            if (cache != null)
+                console.Output.WriteLine($"Caching scraped pages under {cache.Root}");
 
             using var playwright = await Playwright.CreateAsync();
             await using var browser = await playwright.Chromium.LaunchAsync(
@@ -91,9 +105,13 @@ namespace MovieTheater.Imdb
             List<MovieRow> todo;
             using (var db = await dbFactory.CreateDbContextAsync())
             {
-                var query = db.Movies
-                    .Where(m => m.imdbID != null && m.imdbID != "")
-                    .Where(m => Rescrape || m.ImdbVerifiedDate == null)
+                IQueryable<Db.Movie> rows = db.Movies.Where(m => m.imdbID != null && m.imdbID != "");
+                // --retype drives off TitleType (the classification pass): every row is Unknown until
+                // typed, so this covers the already-verified library and resumes on what's left.
+                rows = Retype
+                    ? rows.Where(m => m.TitleType == TitleType.Unknown)
+                    : rows.Where(m => Rescrape || m.ImdbVerifiedDate == null);
+                var query = rows
                     .OrderBy(m => m.id)
                     .Select(m => new MovieRow { Id = m.id, ImdbId = m.imdbID, Title = m.Title, ReleaseDate = m.ReleaseDate });
                 if (Limit.HasValue) query = query.Take(Limit.Value);
@@ -165,7 +183,7 @@ namespace MovieTheater.Imdb
             {
                 try
                 {
-                    return await scraper.ScrapeAsync(page, imdbId, CastLimit, !SkipPlotSummaries);
+                    return await scraper.ScrapeAsync(page, imdbId, CastLimit, !SkipPlotSummaries, cache);
                 }
                 catch (ImdbChallengeException) when (attempt < maxAttempts)
                 {

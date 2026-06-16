@@ -21,6 +21,7 @@ function NavBar({
   actorSearch,
   genreSearch,
   firstLetterSearch,
+  titleTypeSearch,
   ratingSearch,
   restoreMovieIdsSearch,
   moviesSeenSearch,
@@ -114,6 +115,7 @@ function NavBar({
       actor: (v) => (v.trim() ? actorSearch(v) : resetSearch()),
       genre: (v) => (v.trim() ? genreSearch(v) : resetSearch()),
       letter: (v) => (v.trim() ? firstLetterSearch(v) : resetSearch()),
+      type: (v) => (v.trim() ? titleTypeSearch(v) : resetSearch()),
       rating: (v) => (v.trim() ? ratingSearch(v, parseInt(page, 10) || 1) : resetSearch()),
       seen: () => {
         if (!isAuthReady) return;
@@ -148,6 +150,7 @@ function NavBar({
     actorSearch,
     genreSearch,
     firstLetterSearch,
+    titleTypeSearch,
     ratingSearch,
     restoreMovieIdsSearch,
     moviesSeenSearch,
@@ -210,6 +213,11 @@ function NavBar({
                     📺 TV
                   </button>
                 )}
+                {userData?.canEditMovies && (
+                  <button className="navbar-section-item" onClick={() => history.push("/review-ingest")}>
+                    🗂️ Library Review
+                  </button>
+                )}
                 {userData?.comicSiteAccess && (
                   <button className="navbar-section-item" onClick={() => window.open(userData.comicSiteAccess, "_blank", "noopener,noreferrer")}>
                     📚 Comics
@@ -257,6 +265,11 @@ function NavBar({
                 {userData?.hasPassword && (
                   <button className="navbar-section-item" onClick={() => history.push("/tv")}>
                     📺 TV
+                  </button>
+                )}
+                {userData?.canEditMovies && (
+                  <button className="navbar-section-item" onClick={() => history.push("/review-ingest")}>
+                    🗂️ Library Review
                   </button>
                 )}
                 {userData?.comicSiteAccess && (

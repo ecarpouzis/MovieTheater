@@ -10,10 +10,18 @@ namespace MovieTheater.Db
         [Key]
         public int ViewingID { get; set; }
 
-        public int MovieID { get; set; }
+        /// <summary>The movie this viewing is for. Null when the viewing targets a <see cref="Series"/>
+        /// instead (exactly one of MovieID / SeriesId is set).</summary>
+        public int? MovieID { get; set; }
 
         [ForeignKey(nameof(MovieID))]
-        public Movie Movie { get; set; } = default!;
+        public Movie? Movie { get; set; }
+
+        /// <summary>The series this viewing is for (Seen/Want on a whole series); null for movie viewings.</summary>
+        public int? SeriesId { get; set; }
+
+        [ForeignKey(nameof(SeriesId))]
+        public Series? Series { get; set; }
 
         public int UserID { get; set; }
 

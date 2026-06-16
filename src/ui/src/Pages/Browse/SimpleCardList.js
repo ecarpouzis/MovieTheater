@@ -126,7 +126,7 @@ function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, o
                 />
               </div>
               <div
-                onClick={() => onMovieClick(item.id)}
+                onClick={() => onMovieClick(item.id, item.kind)}
                 onMouseEnter={() => setHoveredMovieId(item.id)}
                 onMouseLeave={() => setHoveredMovieId(null)}
                 onTouchStart={() => handleTitleTouchStart(item.id)}
@@ -139,7 +139,7 @@ function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, o
                 </div>
               </div>
               <div style={buttonContainerStyle}>
-                <UserMovieOptions userData={userData} id={item.id} setUserData={setUserData} onToggleViewing={onToggleViewing} inline={true} />
+                <UserMovieOptions userData={userData} id={item.id} kind={item.kind} setUserData={setUserData} onToggleViewing={onToggleViewing} inline={true} />
               </div>
             </Card>
           </List.Item>

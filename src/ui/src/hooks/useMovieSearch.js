@@ -23,28 +23,18 @@ export function useMovieSearch() {
     setSearch({ url: RANDOM_MOVIES_URL });
   }, []);
 
+  // These now hit unified API endpoints that return BOTH movies and series (kind-tagged),
+  // since series live in their own table — OData over /Movies alone would miss them.
   const titleSearch = useCallback((title) => {
-    const escaped = escapeODataString(title);
-    setSearch({ url: buildODataUrl(`contains(simpleTitle,'${escaped}') or contains(title,'${escaped}')`) });
+    setSearch({ url: `/API/BrowseTitle?q=${encodeURIComponent(title)}` });
   }, []);
 
-  // People search across the full normalized credits (actors, directors, writers via
-  // MovieCredit -> Person), falling back to the legacy Actors/Director/Writer strings for
-  // any movie not yet normalized.
+  // People search across movies + series (normalized credits, with a legacy string fallback server-side).
   const actorSearch = useCallback((person) => {
-    const escaped = escapeODataString(person);
-    setSearch({
-      url: buildNavODataUrl(
-        `Credits/any(c: contains(c/Person/DisplayName,'${escaped}')) ` +
-          `or contains(Actors,'${escaped}') or contains(Director,'${escaped}') or contains(Writer,'${escaped}')`
-      ),
-      actor: person,
-    });
+    setSearch({ url: `/API/BrowsePerson?q=${encodeURIComponent(person)}`, actor: person });
   }, []);
 
-  // Filter by one or more normalized genres (Genre table), with a legacy Genre-string
-  // fallback. Multiple genres use AND semantics (a movie must have every selected genre),
-  // so each genre gets its own any() clause with a distinct range variable.
+  // Genre filter (AND semantics across selected genres), movies + series.
   const genreSearch = useCallback((genres) => {
     const list = (Array.isArray(genres) ? genres : String(genres).split(","))
       .map((g) => g.trim())
@@ -53,23 +43,21 @@ export function useMovieSearch() {
       setSearch({ url: RANDOM_MOVIES_URL });
       return;
     }
-    const filter = list
-      .map((g, i) => {
-        const e = escapeODataString(g);
-        return `(MovieGenres/any(g${i}: g${i}/Genre/Name eq '${e}') or contains(Genre,'${e}'))`;
-      })
-      .join(" and ");
-    setSearch({ url: buildNavODataUrl(filter), genre: list });
+    setSearch({ url: `/API/BrowseGenre?genres=${encodeURIComponent(list.join(","))}`, genre: list });
   }, []);
 
   const firstLetterSearch = useCallback((firstLetter) => {
-    if (firstLetter === "#") {
-      const digitFilters = "0123456789".split("").map((d) => `startswith(simpleTitle,'${d}')`).join(" or ");
-      setSearch({ url: buildODataUrl(digitFilters), startsWith: firstLetter });
-    } else {
-      const escaped = escapeODataString(firstLetter);
-      setSearch({ url: buildODataUrl(`startswith(simpleTitle,'${escaped}')`), startsWith: firstLetter });
+    setSearch({ url: `/API/BrowseLetter?letter=${encodeURIComponent(firstLetter)}`, startsWith: firstLetter });
+  }, []);
+
+  // Filter the grid by IMDB-aware TitleType (Movie / Short / TvSeries / TvMiniSeries / ...).
+  // Uses a dedicated API endpoint (OData here has no EDM model, so enum $filter is unreliable).
+  const titleTypeSearch = useCallback((type) => {
+    if (!type) {
+      setSearch({ url: RANDOM_MOVIES_URL });
+      return;
     }
+    setSearch({ url: `/API/GetMoviesByType?type=${encodeURIComponent(type)}`, titleType: type });
   }, []);
 
   const ratingSearch = useCallback((maxRatingId, page = 1) => {
@@ -107,6 +95,7 @@ export function useMovieSearch() {
     actorSearch,
     genreSearch,
     firstLetterSearch,
+    titleTypeSearch,
     ratingSearch,
     movieIDListSearch,
     restoreMovieIdsSearch,

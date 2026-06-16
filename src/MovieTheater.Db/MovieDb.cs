@@ -16,6 +16,12 @@ namespace MovieTheater.Db
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Speeds both the review-queue read (ReviewBatch IS NOT NULL) and the browse
+            // quarantine filter (ReviewBatch IS NULL) that now guards every public movie query.
+            modelBuilder.Entity<Movie>()
+                .HasIndex(m => m.ReviewBatch);
+
             modelBuilder.Entity<Boardgame>()
                 .HasOne(b => b.BaseGame)
                 .WithMany(b => b.Expansions)
@@ -62,17 +68,112 @@ namespace MovieTheater.Db
                 .HasForeignKey(s => s.MovieID)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<MovieFile>()
-                .HasIndex(f => f.MovieID);
+            // ── Phase-4 cutover: files / progress / schedule attach to a Playable (movie or episode) ──
+            // Movie ↔ Playable is 1:1 (Movie holds the FK); deleting a Playable is Restricted so a
+            // movie/episode is never silently removed — reject flows delete the title then its Playable.
+            modelBuilder.Entity<Movie>()
+                .HasOne(m => m.Playable)
+                .WithOne()
+                .HasForeignKey<Movie>(m => m.PlayableId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<MovieFile>()
-                .HasOne(f => f.Movie)
-                .WithMany(m => m.Files)
-                .HasForeignKey(f => f.MovieID)
+            modelBuilder.Entity<MediaFile>()
+                .HasIndex(f => f.PlayableId);
+
+            modelBuilder.Entity<MediaFile>()
+                .HasOne(f => f.Playable)
+                .WithMany(p => p.Files)
+                .HasForeignKey(f => f.PlayableId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Episode>()
+                .HasIndex(e => new { e.SeriesMovieId, e.SeasonNumber, e.EpisodeNumber })
+                .IsUnique();
+
+            // Legacy link to the series' old Movie row (dropped at the Series-split flip).
+            modelBuilder.Entity<Episode>()
+                .HasOne(e => e.SeriesMovie)
+                .WithMany()
+                .HasForeignKey(e => e.SeriesMovieId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Canonical link to the standalone Series (Restrict avoids a 2nd cascade path into Episode).
+            modelBuilder.Entity<Episode>()
+                .HasOne(e => e.Series)
+                .WithMany(s => s.Episodes)
+                .HasForeignKey(e => e.SeriesId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Episode>()
+                .HasOne(e => e.Playable)
+                .WithOne()
+                .HasForeignKey<Episode>(e => e.PlayableId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ── Series: a first-class title, peer of Movie (replaces its old aggregate-only form) ──
+            modelBuilder.Entity<Series>()
+                .HasIndex(s => s.ReviewBatch);
+
+            modelBuilder.Entity<SeriesGenre>()
+                .HasKey(sg => new { sg.SeriesId, sg.GenreId });
+            modelBuilder.Entity<SeriesGenre>()
+                .HasOne(sg => sg.Series).WithMany(s => s.SeriesGenres)
+                .HasForeignKey(sg => sg.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<SeriesGenre>()
+                .HasOne(sg => sg.Genre).WithMany()
+                .HasForeignKey(sg => sg.GenreId).OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SeriesCredit>()
+                .HasIndex(c => new { c.SeriesId, c.PersonId, c.Role }).IsUnique();
+            modelBuilder.Entity<SeriesCredit>()
+                .HasOne(c => c.Series).WithMany(s => s.Credits)
+                .HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<SeriesCredit>()
+                .HasOne(c => c.Person).WithMany()
+                .HasForeignKey(c => c.PersonId).OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SeriesPlotSummary>()
+                .HasOne(s => s.Series).WithMany(x => x.PlotSummaries)
+                .HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SeriesPosterDetails>()
+                .HasOne(p => p.Series).WithOne(s => s.PosterDetails)
+                .HasForeignKey<SeriesPosterDetails>(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
+
+            // A viewing targets a Movie OR a Series; Restrict avoids a multiple-cascade-path error from User.
+            modelBuilder.Entity<Viewing>()
+                .HasOne(v => v.Series).WithMany(s => s.Viewings)
+                .HasForeignKey(v => v.SeriesId).OnDelete(DeleteBehavior.Restrict);
+
+            // A misc video owns its Playable (Restrict, like Episode) and may relate to a Movie OR a
+            // Series via two typed FKs (a bare id is ambiguous; see MiscVideo). Both relations Restrict
+            // so reclassifying/removing a title never silently drops a misc video pointing at it.
+            modelBuilder.Entity<MiscVideo>()
+                .HasOne(mv => mv.Playable)
+                .WithOne()
+                .HasForeignKey<MiscVideo>(mv => mv.PlayableId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MiscVideo>()
+                .HasOne(mv => mv.RelatedMovie)
+                .WithMany()
+                .HasForeignKey(mv => mv.RelatedMovieId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MiscVideo>()
+                .HasOne(mv => mv.RelatedSeries)
+                .WithMany()
+                .HasForeignKey(mv => mv.RelatedSeriesId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MiscVideo>()
+                .HasIndex(mv => mv.ReviewBatch);
+
+            modelBuilder.Entity<MiscVideo>()
+                .HasIndex(mv => mv.CollectionName);
+
             modelBuilder.Entity<MoviePlaybackProgress>()
-                .HasIndex(p => new { p.UserID, p.MovieID })
+                .HasIndex(p => new { p.UserID, p.PlayableId })
                 .IsUnique();
 
             // Restrict on User to avoid SQL Server multiple-cascade-path errors
@@ -84,9 +185,9 @@ namespace MovieTheater.Db
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<MoviePlaybackProgress>()
-                .HasOne(p => p.Movie)
+                .HasOne(p => p.Playable)
                 .WithMany()
-                .HasForeignKey(p => p.MovieID)
+                .HasForeignKey(p => p.PlayableId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<ChannelScheduleItem>()
@@ -106,9 +207,9 @@ namespace MovieTheater.Db
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<ChannelScheduleItem>()
-                .HasOne(i => i.Movie)
+                .HasOne(i => i.Playable)
                 .WithMany()
-                .HasForeignKey(i => i.MovieID)
+                .HasForeignKey(i => i.PlayableId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
 
@@ -127,7 +228,15 @@ namespace MovieTheater.Db
         public DbSet<Genre> Genres { get; set; }
         public DbSet<MovieGenre> MovieGenres { get; set; }
         public DbSet<MoviePlotSummary> MoviePlotSummaries { get; set; }
-        public DbSet<MovieFile> MovieFiles { get; set; }
+        public DbSet<MediaFile> MediaFiles { get; set; }
+        public DbSet<Playable> Playables { get; set; }
+        public DbSet<Episode> Episodes { get; set; }
+        public DbSet<Series> Series { get; set; }
+        public DbSet<SeriesGenre> SeriesGenres { get; set; }
+        public DbSet<SeriesCredit> SeriesCredits { get; set; }
+        public DbSet<SeriesPlotSummary> SeriesPlotSummaries { get; set; }
+        public DbSet<SeriesPosterDetails> SeriesPosterDetails { get; set; }
+        public DbSet<MiscVideo> MiscVideos { get; set; }
         public DbSet<MoviePlaybackProgress> MoviePlaybackProgresses { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<ChannelScheduleItem> ChannelScheduleItems { get; set; }

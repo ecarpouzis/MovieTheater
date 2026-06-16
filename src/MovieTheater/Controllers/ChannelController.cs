@@ -100,12 +100,12 @@ namespace MovieTheater.Controllers
                 return Json(new { current = (object?)null, next = Array.Empty<object>(), paused = false });
 
             var current = items[currentIndex];
-            var titles = await TitlesForAsync(items.Skip(currentIndex).Take(6).Select(i => i.MovieID));
+            var titles = await TitlesForAsync(items.Skip(currentIndex).Take(6).Select(i => i.PlayableId));
 
             var nextItems = items.Skip(currentIndex + 1).Take(5).Select(i => new
             {
-                movieId = i.MovieID,
-                title = titles.GetValueOrDefault(i.MovieID, ""),
+                movieId = titles.GetValueOrDefault(i.PlayableId).MovieId,
+                title = titles.GetValueOrDefault(i.PlayableId).Title ?? "",
                 startsAtUtc = i.StartUtc,
             });
 
@@ -130,8 +130,8 @@ namespace MovieTheater.Controllers
                 current = new
                 {
                     itemId = current.Id,
-                    movieId = current.MovieID,
-                    title = titles.GetValueOrDefault(current.MovieID, ""),
+                    movieId = titles.GetValueOrDefault(current.PlayableId).MovieId,
+                    title = titles.GetValueOrDefault(current.PlayableId).Title ?? "",
                     offsetSeconds = Math.Max(0, (clock - current.StartUtc).TotalSeconds),
                     durationSeconds = (current.EndUtc - current.StartUtc).TotalSeconds,
                     endsAtUtc = current.EndUtc,
@@ -281,12 +281,12 @@ namespace MovieTheater.Controllers
 
             // From the currently-airing item forward through the window.
             var windowed = items.Where(i => i.EndUtc > now && i.StartUtc < until).ToList();
-            var titles = await TitlesForAsync(windowed.Select(i => i.MovieID));
+            var titles = await TitlesForAsync(windowed.Select(i => i.PlayableId));
 
             var guide = windowed.Select(i => new
             {
-                movieId = i.MovieID,
-                title = titles.GetValueOrDefault(i.MovieID, ""),
+                movieId = titles.GetValueOrDefault(i.PlayableId).MovieId,
+                title = titles.GetValueOrDefault(i.PlayableId).Title ?? "",
                 startUtc = i.StartUtc,
                 endUtc = i.EndUtc,
             });
@@ -294,13 +294,16 @@ namespace MovieTheater.Controllers
             return Json(guide);
         }
 
-        private async Task<Dictionary<int, string>> TitlesForAsync(IEnumerable<int> movieIds)
+        // Resolve a set of schedule-item PlayableIds to their movie (id + title) for the lineup readout.
+        // Channels currently air movies; episode playables would resolve here too once scheduled.
+        private async Task<Dictionary<int, (int MovieId, string Title)>> TitlesForAsync(IEnumerable<int> playableIds)
         {
-            var ids = movieIds.Distinct().ToList();
-            return await movieDb.Movies
-                .Where(m => ids.Contains(m.id))
-                .Select(m => new { m.id, m.Title })
-                .ToDictionaryAsync(m => m.id, m => m.Title ?? "");
+            var ids = playableIds.Distinct().ToList();
+            var rows = await movieDb.Movies
+                .Where(m => m.PlayableId != null && ids.Contains(m.PlayableId.Value))
+                .Select(m => new { PlayableId = m.PlayableId!.Value, m.id, m.Title })
+                .ToListAsync();
+            return rows.ToDictionary(r => r.PlayableId, r => (r.id, r.Title ?? ""));
         }
     }
 }

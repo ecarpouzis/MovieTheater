@@ -31,8 +31,10 @@ namespace MovieTheater.Services.Tmdb
         [JsonProperty("overview")]
         public string Overview { get; set; }
 
+        // Nullable: TMDB /find can return release_date: null (e.g. unreleased/undated titles),
+        // which would otherwise throw during deserialization and abort the enrichment run.
         [JsonProperty("release_date")]
-        public DateTime ReleaseDate { get; set; }
+        public DateTime? ReleaseDate { get; set; }
 
         [JsonProperty("poster_path")]
         public string PosterPath { get; set; }

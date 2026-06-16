@@ -5,8 +5,9 @@ namespace MovieTheater.Db
 {
     /// <summary>
     /// One materialized slot in a channel's lineup (streaming-plan.md §8). Rows are
-    /// generated ahead lazily and never rewritten, so every viewer sees the same movie
-    /// at the same offset and history stays stable across library changes.
+    /// generated ahead lazily and never rewritten, so every viewer sees the same content
+    /// at the same offset and history stays stable across library changes. Repointed from
+    /// Movie to <see cref="Playable"/> by the Phase-4 cutover so channels can air episodes too.
     /// </summary>
     [Table("ChannelScheduleItem")]
     public class ChannelScheduleItem
@@ -19,10 +20,10 @@ namespace MovieTheater.Db
         [ForeignKey(nameof(ChannelId))]
         public Channel Channel { get; set; } = default!;
 
-        public int MovieID { get; set; }
+        public int PlayableId { get; set; }
 
-        [ForeignKey(nameof(MovieID))]
-        public Movie Movie { get; set; } = default!;
+        [ForeignKey(nameof(PlayableId))]
+        public Playable Playable { get; set; } = default!;
 
         public DateTime StartUtc { get; set; }
 

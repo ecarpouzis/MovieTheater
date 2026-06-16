@@ -33,12 +33,14 @@ namespace MovieTheater.Imdb
             [JsonPropertyName("character")] public string Character { get; set; }
         }
 
-        public async Task<ImdbScrapeResult> ScrapeAsync(IPage page, string imdbId, int castLimit, bool includePlotSummaries)
+        public async Task<ImdbScrapeResult> ScrapeAsync(IPage page, string imdbId, int castLimit, bool includePlotSummaries,
+            ImdbPageCache cache = null)
         {
             var result = new ImdbScrapeResult { ImdbId = imdbId };
 
+            var titleUrl = $"https://www.imdb.com/title/{imdbId}/";
             var response = await page.GotoAsync(
-                $"https://www.imdb.com/title/{imdbId}/",
+                titleUrl,
                 new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 45000 });
 
             int status = response?.Status ?? 0;
@@ -56,6 +58,11 @@ namespace MovieTheater.Imdb
                 throw new ImdbChallengeException($"No __NEXT_DATA__ for {imdbId} (HTTP {status}); session likely challenged.");
             }
 
+            // Write-through cache: keep the full rendered page so future parser changes can re-derive
+            // fields offline with zero IMDB traffic (§5.4). Only real (non-challenge) pages get here.
+            if (cache != null)
+                await cache.SaveAsync(imdbId, "title", await page.ContentAsync(), titleUrl, status == 0 ? 200 : status);
+
             using var nextDoc = JsonDocument.Parse(nextDataRaw);
             if (!TryPath(nextDoc.RootElement, out var atf, "props", "pageProps", "aboveTheFoldData")
                 || atf.ValueKind != JsonValueKind.Object)
@@ -67,6 +74,16 @@ namespace MovieTheater.Imdb
 
             result.Found = true;
             result.Title = GetString(atf, "titleText", "text");
+
+            // IMDB titleType drives Movie.TitleType and tells us which titles are series (so we
+            // additionally cache their episode pages). Shape: { id, text, isSeries, isEpisode, … }.
+            if (TryPath(atf, out var titleType, "titleType") && titleType.ValueKind == JsonValueKind.Object)
+            {
+                result.TitleTypeId = GetString(titleType, "id");
+                result.IsSeries = GetBool(titleType, "isSeries") ?? false;
+                result.IsEpisode = GetBool(titleType, "isEpisode") ?? false;
+            }
+
             result.Year = GetInt(atf, "releaseYear", "year");
             result.ReleaseDate = ReadReleaseDate(atf) ?? (result.Year.HasValue ? new DateTime(result.Year.Value, 1, 1) : (DateTime?)null);
 
@@ -113,9 +130,52 @@ namespace MovieTheater.Imdb
             }
 
             if (includePlotSummaries)
-                await ReadPlotSummariesAsync(page, imdbId, result);
+                await ReadPlotSummariesAsync(page, imdbId, result, cache);
+
+            // For series, cache the episode pages too — the raw data we'll later map into Episode
+            // rows (docs/metadata-enrichment-plan.md §5.3). We only cache here; parsing/mapping into
+            // the DB comes once the Episode schema exists.
+            if (result.IsSeries && cache != null)
+                await CacheSeriesEpisodesAsync(page, imdbId, cache);
 
             return result;
+        }
+
+        /// <summary>
+        /// Caches the series' episodes pages so every episode is captured for later mapping. Loads the
+        /// base /episodes/ page (carries the season list + first season), then each additional season
+        /// it can find. Best-effort: failures here never abort the title.
+        /// </summary>
+        private async Task CacheSeriesEpisodesAsync(IPage page, string imdbId, ImdbPageCache cache)
+        {
+            try
+            {
+                var baseUrl = $"https://www.imdb.com/title/{imdbId}/episodes/";
+                await page.GotoAsync(baseUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 45000 });
+                var baseHtml = await page.ContentAsync();
+                await cache.SaveAsync(imdbId, "episodes", baseHtml, baseUrl, 200);
+
+                // Discover the season numbers from the season selector embedded in the page, then
+                // cache each season's episode list. Regex over the rendered page is resilient to the
+                // exact __NEXT_DATA__ nesting (which shifts between IMDB releases).
+                var seasons = Regex.Matches(baseHtml, @"[?&]season=(\d{1,3})\b")
+                    .Select(m => int.Parse(m.Groups[1].Value))
+                    .Concat(Regex.Matches(baseHtml, @"""seasonNumber"":\s*(\d{1,3})\b").Select(m => int.Parse(m.Groups[1].Value)))
+                    .Where(n => n >= 1 && n <= 100)
+                    .Distinct()
+                    .OrderBy(n => n)
+                    .ToList();
+
+                foreach (var season in seasons)
+                {
+                    var pageType = $"episodes-s{season}";
+                    if (cache.Has(imdbId, pageType)) continue; // already captured this run/earlier
+                    var url = $"https://www.imdb.com/title/{imdbId}/episodes/?season={season}";
+                    await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 45000 });
+                    await cache.SaveAsync(imdbId, pageType, await page.ContentAsync(), url, 200);
+                }
+            }
+            catch (PlaywrightException) { }
         }
 
         /// <summary>
@@ -123,12 +183,16 @@ namespace MovieTheater.Imdb
         /// contributed summary from its __NEXT_DATA__ contentData.categories. Non-fatal:
         /// failures here leave summaries empty rather than aborting the title.
         /// </summary>
-        private async Task ReadPlotSummariesAsync(IPage page, string imdbId, ImdbScrapeResult result)
+        private async Task ReadPlotSummariesAsync(IPage page, string imdbId, ImdbScrapeResult result, ImdbPageCache cache)
         {
             try
             {
-                await page.GotoAsync($"https://www.imdb.com/title/{imdbId}/plotsummary/",
+                var url = $"https://www.imdb.com/title/{imdbId}/plotsummary/";
+                await page.GotoAsync(url,
                     new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 45000 });
+
+                if (cache != null)
+                    await cache.SaveAsync(imdbId, "plotsummary", await page.ContentAsync(), url, 200);
 
                 var raw = await GetScriptTextAsync(page, "script#__NEXT_DATA__");
                 if (string.IsNullOrWhiteSpace(raw)) return;
@@ -300,6 +364,14 @@ namespace MovieTheater.Imdb
         {
             if (!TryPath(root, out var v, path)) return null;
             if (v.ValueKind == JsonValueKind.Number && v.TryGetDecimal(out var d)) return d;
+            return null;
+        }
+
+        private static bool? GetBool(JsonElement root, params string[] path)
+        {
+            if (!TryPath(root, out var v, path)) return null;
+            if (v.ValueKind == JsonValueKind.True) return true;
+            if (v.ValueKind == JsonValueKind.False) return false;
             return null;
         }
     }
