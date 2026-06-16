@@ -465,9 +465,6 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                       <span className="fas fa-pen" style={{ marginRight: 6 }} />
                       Edit
                     </Button>
-                    <Button type="default" onClick={refetchFromImdb} loading={saving} title="Re-pull rating, year, plot & poster from IMDb for the current id">
-                      ↻ Re-fetch from IMDb
-                    </Button>
                   </div>
                 )}
 
@@ -507,6 +504,9 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                   </Button>
                   <Button className="btn-cancel" onClick={cancelEditing}>
                     Cancel
+                  </Button>
+                  <Button onClick={refetchFromImdb} loading={saving} title="Re-pull rating, year, plot & poster from IMDb for the current id">
+                    ↻ Re-fetch from IMDb
                   </Button>
                 </div>
               </div>
