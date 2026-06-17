@@ -236,8 +236,11 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     if (!isActive) {
       const params = new URLSearchParams(location.search);
       const mode = params.get("mode");
-      if (modeActionMap[mode] === action) {
+      if (modeActionMap[mode] === action && movieDataArray.some((m) => m.id === movieId)) {
         setMovieDataArray((prev) => prev.filter((m) => m.id !== movieId));
+        // Keep the infinite-scroll "Showing X of Y" total in sync with the removal
+        // (no-op when not infinite, where pagination is null).
+        setPagination((prev) => (prev ? { ...prev, totalCount: Math.max(0, prev.totalCount - 1) } : prev));
       }
     }
   };
