@@ -250,8 +250,32 @@ namespace MovieTheater.Ingest
                 foreach (var x in numbered.Skip(1)) res.Add((x.file, MovieFileRole.Part, x.part));
                 return res;
             }
+            var byTrailing = TrailingNumberParts(pool);
+            if (byTrailing != null) return byTrailing;
             var feature = pool.OrderByDescending(c => c.Size).First();
             return new List<(InvFile, MovieFileRole, int?)> { (feature, MovieFileRole.Primary, null) };
+        }
+
+        // Split parts that lack a cd/disc/part token but share a prefix and end in distinct small numbers
+        // ("Millenium Mambo 1.mkv" / "Millenium Mambo 2.mkv"). 2-4 files, numbers 1..N only — conservative.
+        private static List<(InvFile, MovieFileRole, int?)> TrailingNumberParts(List<InvFile> pool)
+        {
+            if (pool.Count < 2 || pool.Count > 4) return null;
+            var rx = new Regex(@"^(.*?)[ ._\-]*(\d{1,2})$");
+            var parsed = new List<(InvFile f, string pre, int n)>();
+            foreach (var c in pool)
+            {
+                var m = rx.Match(Path.GetFileNameWithoutExtension(c.Name));
+                if (!m.Success) return null;
+                parsed.Add((c, m.Groups[1].Value.Trim().ToLowerInvariant(), int.Parse(m.Groups[2].Value)));
+            }
+            if (parsed.Select(p => p.pre).Distinct().Count() != 1) return null;          // must share a prefix
+            if (parsed.Select(p => p.n).Distinct().Count() != parsed.Count) return null; // distinct numbers
+            if (parsed.Max(p => p.n) > pool.Count) return null;                          // 1..N, not a year
+            var ordered = parsed.OrderBy(p => p.n).ToList();
+            var res = new List<(InvFile, MovieFileRole, int?)> { (ordered[0].f, MovieFileRole.Primary, null) };
+            foreach (var x in ordered.Skip(1)) res.Add((x.f, MovieFileRole.Part, x.n));
+            return res;
         }
 
         private sealed class FolderGroup { public string Norm; public HashSet<string> Tokens; public List<int> Years; public List<InvFile> Files = new(); }
