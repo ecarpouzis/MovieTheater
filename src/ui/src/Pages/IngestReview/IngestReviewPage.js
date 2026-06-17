@@ -284,11 +284,13 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row.id]);
 
-  // IMDb's year takes priority for a real tt: if the row has no stored year, pre-fill the field from the
-  // lookup so it's visible before you save AND gets applied on Save/Approve (it wouldn't, left blank).
+  // IMDb's year is the reliable source (Eric's rule), so when the lookup resolves a year it takes
+  // PRIORITY over our stored/ingest year — pre-fill the field with it so it's visible and gets applied
+  // on Save/Approve. Only the original ingest value is overwritten; a year you've hand-edited is kept.
   useEffect(() => {
     const fy = fetchedYear(details && details.data);
-    if (fy) setYear((prev) => (prev ? prev : fy));
+    if (fy) setYear((prev) => (prev === "" || String(prev) === String(row.year ?? "") ? String(fy) : prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [details]);
 
   const d = details && details.data;

@@ -1548,21 +1548,32 @@ namespace MovieTheater.Controllers
             }
 
             var action = viewingState.Action == ViewingType.SetWatched ? "Seen" : "WantToWatch";
+            // movie/series share an id space; misc videos have their own. The card's Kind says which
+            // target the id refers to, and which typed FK on Viewing to read/write.
             bool isSeries = string.Equals(viewingState.Kind, "series", StringComparison.OrdinalIgnoreCase);
+            bool isMisc = string.Equals(viewingState.Kind, "misc", StringComparison.OrdinalIgnoreCase);
+            int id = viewingState.MovieID;
 
             if (isSeries)
             {
-                if (!await movieDb.Series.AnyAsync(s => s.Id == viewingState.MovieID))
+                if (!await movieDb.Series.AnyAsync(s => s.Id == id))
                     return BadRequest(new { Success = false, Message = "Invalid Series ID." });
             }
-            else if (!await movieDb.Movies.AnyAsync(m => m.id == viewingState.MovieID))
+            else if (isMisc)
+            {
+                if (!await movieDb.MiscVideos.AnyAsync(mv => mv.Id == id))
+                    return BadRequest(new { Success = false, Message = "Invalid MiscVideo ID." });
+            }
+            else if (!await movieDb.Movies.AnyAsync(m => m.id == id))
             {
                 return BadRequest(new { Success = false, Message = "Invalid Movie ID." });
             }
 
             var existingViewing = isSeries
-                ? await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.SeriesId == viewingState.MovieID && e.ViewingType == action)
-                : await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.MovieID == viewingState.MovieID && e.ViewingType == action);
+                ? await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.SeriesId == id && e.ViewingType == action)
+                : isMisc
+                    ? await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.MiscVideoId == id && e.ViewingType == action)
+                    : await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.MovieID == id && e.ViewingType == action);
             bool shouldCreateNew = existingViewing == null && viewingState.SetActive;
             bool shouldDeleteExisting = existingViewing != null && !viewingState.SetActive;
 
@@ -1570,8 +1581,9 @@ namespace MovieTheater.Controllers
             {
                 var newViewing = new Viewing
                 {
-                    MovieID = isSeries ? (int?)null : viewingState.MovieID,
-                    SeriesId = isSeries ? viewingState.MovieID : (int?)null,
+                    MovieID = (isSeries || isMisc) ? (int?)null : id,
+                    SeriesId = isSeries ? id : (int?)null,
+                    MiscVideoId = isMisc ? id : (int?)null,
                     UserID = user.UserID,
                     ViewingType = action,
                 };
@@ -2993,10 +3005,13 @@ namespace MovieTheater.Controllers
                 EpisodePlayable = epPlayable.TryGetValue(s.Id, out var ep) ? ep : 0,
             }));
 
+            // Lowest-trust first, then group franchises/related titles by the canonical sort key
+            // (SimpleTitle — same ordering as Browse, so e.g. Star Trek 1/2/3/4 and Dragon Ball Z/Kai/GT/
+            // Super sit together) for a coherent review pass; Title is the fallback.
             items = items
                 .OrderBy(i => ConfRank(i.ReviewConfidence))
                 .ThenBy(i => ProvRank(i.ReviewProvenance))
-                .ThenBy(i => i.Title, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(i => string.IsNullOrEmpty(i.SimpleTitle) ? i.Title : i.SimpleTitle, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             // MiscVideos (no own tt: workprints, stage performances, instructional/shorts sets) carry
@@ -3174,11 +3189,23 @@ namespace MovieTheater.Controllers
 
             var rows = req.Ids.Count == 0 ? new List<Movie>()
                 : await movieDb.Movies.Where(m => req.Ids.Contains(m.id) && m.ReviewBatch != null).ToListAsync();
-            foreach (var m in rows) { m.ReviewBatch = null; m.ReviewProvenance = null; m.ReviewConfidence = null; }
+            foreach (var m in rows)
+            {
+                // IMDb's scraped year wins over ours when they differ — the scrape is the reliable source
+                // (Eric's rule), so persist it onto the canonical ReleaseDate at approve/save time.
+                if (m.ImdbReleaseDate.HasValue && (m.ReleaseDate == null || m.ReleaseDate.Value.Year != m.ImdbReleaseDate.Value.Year))
+                    m.ReleaseDate = m.ImdbReleaseDate;
+                m.ReviewBatch = null; m.ReviewProvenance = null; m.ReviewConfidence = null;
+            }
 
             var seriesRows = req.SeriesIds.Count == 0 ? new List<Series>()
                 : await movieDb.Series.Where(s => req.SeriesIds.Contains(s.Id) && s.ReviewBatch != null).ToListAsync();
-            foreach (var s in seriesRows) { s.ReviewBatch = null; s.ReviewProvenance = null; s.ReviewConfidence = null; }
+            foreach (var s in seriesRows)
+            {
+                if (s.ImdbReleaseDate.HasValue && (s.ReleaseDate == null || s.ReleaseDate.Value.Year != s.ImdbReleaseDate.Value.Year))
+                { s.ReleaseDate = s.ImdbReleaseDate; s.StartYear = s.ImdbReleaseDate.Value.Year; }
+                s.ReviewBatch = null; s.ReviewProvenance = null; s.ReviewConfidence = null;
+            }
 
             var miscRows = req.MiscIds.Count == 0 ? new List<MiscVideo>()
                 : await movieDb.MiscVideos.Where(v => req.MiscIds.Contains(v.Id) && v.ReviewBatch != null).ToListAsync();

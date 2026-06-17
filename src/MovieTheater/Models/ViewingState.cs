@@ -10,7 +10,8 @@ namespace MovieTheater.Models
     {
         public string Username { set; get; }
         public int MovieID { set; get; }
-        /// <summary>"movie" (default) or "series" — the id space is shared, so the caller states which.</summary>
+        /// <summary>"movie" (default), "series", or "misc" — movie/series share an id space and "misc"
+        /// uses MiscVideo's own id space, so the caller states which target the id refers to.</summary>
         public string Kind { set; get; } = "movie";
         public bool SetActive { set; get; }
         public ViewingType Action { set; get; }
