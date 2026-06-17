@@ -387,12 +387,12 @@ namespace MovieTheater.Controllers
             if (nt == NormalizedTitleType.Series)
             {
                 var sq = await GetBaseSeriesQuery();
-                return Ok(await PageCardsAsync(sq.OrderBy(s => s.SimpleTitle).Select(ToSeriesCardDto), page, pageSize));
+                return Ok(await PageCardsAsync(sq.OrderBy(s => s.SimpleTitle).ThenBy(s => s.Id).Select(ToSeriesCardDto), page, pageSize));
             }
             if (nt == NormalizedTitleType.Misc)
                 return Ok(PageCards(await GetMiscCards(), page, pageSize));
             var baseQuery = await GetBaseMovieQuery();
-            return Ok(await PageCardsAsync(baseQuery.Where(m => m.NormalizedTitleType == nt).OrderBy(m => m.SimpleTitle).Select(ToCardDto), page, pageSize));
+            return Ok(await PageCardsAsync(baseQuery.Where(m => m.NormalizedTitleType == nt).OrderBy(m => m.SimpleTitle).ThenBy(m => m.id).Select(ToCardDto), page, pageSize));
         }
 
         // Page a card query at the DB (SELECT just one page + a COUNT). The query MUST already
@@ -1697,7 +1697,7 @@ namespace MovieTheater.Controllers
                 .Where(m => m.ReviewBatch == null)
                 .Where(m => movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID == effectiveMax))
                 .Select(ToCardDto)
-                .OrderBy(c => c.SimpleTitle == null).ThenBy(c => c.SimpleTitle);
+                .OrderBy(c => c.SimpleTitle == null).ThenBy(c => c.SimpleTitle).ThenBy(c => c.id);
 
             return Ok(await PageCardsAsync(query, page, pageSize));
         }
