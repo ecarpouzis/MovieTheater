@@ -77,26 +77,33 @@ namespace MovieTheater.Ingest
             }
             w.WriteLine($"Indexed {videoRows} video files.");
 
-            List<(int Id, string Title)> targets;
+            List<(int Id, string Title, string Scraped, string Tt, int? Year)> targets;
             HashSet<string> mappedPaths;
             await using (var db = await dbFactory.CreateDbContextAsync())
             {
                 targets = (await db.Series
                     .Where(s => db.Episodes.Any(e => e.SeriesId == s.Id)
                         && db.Episodes.Any(e => e.SeriesId == s.Id && !db.MediaFiles.Any(f => f.PlayableId == e.PlayableId)))
-                    .Select(s => new { s.Id, s.Title }).ToListAsync())
-                    .Select(s => (s.Id, s.Title ?? "")).OrderBy(t => t.Item2, StringComparer.OrdinalIgnoreCase).ToList();
+                    .Select(s => new { s.Id, s.Title, s.ImdbScrapedTitle, s.imdbID, s.ReleaseDate, s.ImdbReleaseDate, s.StartYear }).ToListAsync())
+                    .Select(s => (s.Id, s.Title ?? "", s.ImdbScrapedTitle ?? "", s.imdbID ?? "",
+                        (int?)(s.ReleaseDate != null ? s.ReleaseDate.Value.Year : (s.ImdbReleaseDate != null ? s.ImdbReleaseDate.Value.Year : s.StartYear))))
+                    .OrderBy(t => t.Item2, StringComparer.OrdinalIgnoreCase).ToList();
                 if (Limit.HasValue) targets = targets.Take(Limit.Value).ToList();
                 mappedPaths = (await db.MediaFiles.Select(f => f.Path).ToListAsync()).Select(NormPath).ToHashSet();
             }
 
             w.WriteLine($"series with episode-file gaps: {targets.Count}{(Apply ? "" : " — DRY RUN")}\n");
             int noFiles = 0, totalMatched = 0, seriesTouched = 0;
+            var missing = new List<(int Id, string Title, string Scraped, string Tt, int? Year)>();
 
-            foreach (var (id, title) in targets)
+            foreach (var (id, title, scraped, tt, year) in targets)
             {
-                if (!filesBySegment.TryGetValue(NormTitle(title), out var candidates) || candidates.Count == 0)
-                { noFiles++; continue; }
+                // Find the folder by the DB title, then fall back to the IMDb-scraped title (folders are often
+                // named with the canonical/AKA title rather than what's in our Title column).
+                List<InvFile> candidates = null;
+                if (filesBySegment.TryGetValue(NormTitle(title), out var c1) && c1.Count > 0) candidates = c1;
+                else if (scraped.Length > 0 && filesBySegment.TryGetValue(NormTitle(scraped), out var c2) && c2.Count > 0) candidates = c2;
+                if (candidates == null) { noFiles++; missing.Add((id, title, scraped, tt, year)); continue; }
                 var candFiles = candidates.GroupBy(c => NormPath(c.Full)).Select(g => g.First()).ToList();
 
                 List<EpRow> eps;
@@ -152,6 +159,13 @@ namespace MovieTheater.Ingest
             }
 
             w.WriteLine($"\n{(Apply ? "" : "DRY RUN — ")}series touched {seriesTouched}, files mapped {totalMatched}, no-files-found {noFiles}.");
+
+            if (missing.Count > 0)
+            {
+                w.WriteLine($"\n── {missing.Count} series with episode gaps and NO folder found in the inventory (tried DB + IMDb title) ──");
+                foreach (var m in missing.OrderBy(m => m.Title, StringComparer.OrdinalIgnoreCase))
+                    w.WriteLine($"  S{m.Id}  \"{m.Title}\"  | imdb-title: \"{m.Scraped}\"  | {m.Tt}  | {m.Year}");
+            }
         }
 
         private sealed class InvFile { public string Full; public string Rel; public string Name; }
@@ -186,17 +200,17 @@ namespace MovieTheater.Ingest
         private static string NormTitle(string s)
         {
             if (string.IsNullOrWhiteSpace(s)) return "";
-            s = s.ToLowerInvariant();
+            s = TitleNorm.Fold(s);   // ASCII-fold first (Æ→ae, accents) so glyph titles match plain-ASCII folders
             s = Regex.Replace(s, @"\([^)]*\)", " ");
             s = Regex.Replace(s, @"\[[^\]]*\]", " ");
             s = Regex.Replace(s, @"\b(480p|576p|720p|1080p|2160p|4k|uhd|hdr|bluray|web-?dl|webrip|x264|x265|hevc)\b", " ");
             s = s.Replace("&", "and");
-            s = Regex.Replace(s, @",\s*the\b", " the");
+            // Drop the article "the" in ANY position so "The Angry Beavers" and the on-disk ", The"
+            // inversion ("Angry Beavers, The") normalize identically.
+            s = Regex.Replace(s, @"\bthe\b", " ");
             var sb = new StringBuilder();
             foreach (var ch in s) if (char.IsLetterOrDigit(ch)) sb.Append(ch);
-            var n = sb.ToString();
-            if (n.StartsWith("the")) n = n.Substring(3);
-            return n;
+            return sb.ToString();
         }
 
         // Minimal RFC-4180 CSV reader yielding header-keyed rows.
