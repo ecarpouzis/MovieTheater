@@ -399,13 +399,16 @@ namespace MovieTheater.Controllers
         // be ordered so Skip/Take is stable. pageSize <= 0 → return the whole set.
         private static async Task<object> PageCardsAsync(IQueryable<MovieCardDto> ordered, int page, int pageSize)
         {
-            var totalCount = await ordered.CountAsync();
             if (pageSize <= 0)
             {
                 var all = await ordered.ToListAsync();
-                return new { movies = all, totalCount, page = 1, pageSize = totalCount };
+                return new { movies = all, totalCount = all.Count, page = 1, pageSize = all.Count };
             }
             if (page < 1) page = 1;
+            // Only the first page's totalCount is consumed by the client — it sets the "Showing X of Y"
+            // header and the infinite-scroll hasMore bound once, then ignores it on every subsequent
+            // page fetch. So skip the COUNT round-trip on page > 1 (-1 = "not computed").
+            var totalCount = page == 1 ? await ordered.CountAsync() : -1;
             var paged = await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
             return new { movies = paged, totalCount, page, pageSize };
         }
@@ -442,7 +445,6 @@ namespace MovieTheater.Controllers
             var keys = mq.Select(m => new CardKey { Kind = "movie", Id = m.id, SimpleTitle = m.SimpleTitle })
                 .Concat(sq.Select(s => new CardKey { Kind = "series", Id = s.Id, SimpleTitle = s.SimpleTitle }));
 
-            var totalCount = await keys.CountAsync();
             if (pageSize <= 0)
             {
                 var allMovies = await mq.Select(ToCardDto).ToListAsync();
@@ -451,6 +453,10 @@ namespace MovieTheater.Controllers
                 return new { movies = allMerged, totalCount = allMerged.Count, page = 1, pageSize = allMerged.Count };
             }
             if (page < 1) page = 1;
+            // Count only on the first page — the client reads totalCount once and discards it on every
+            // later page fetch. Here that COUNT is a full UNION of both table scans, so skipping it on
+            // page > 1 saves the most expensive query of the request (-1 = "not computed").
+            var totalCount = page == 1 ? await keys.CountAsync() : -1;
 
             var pageKeys = await keys
                 .OrderBy(k => k.SimpleTitle).ThenBy(k => k.Kind).ThenBy(k => k.Id)

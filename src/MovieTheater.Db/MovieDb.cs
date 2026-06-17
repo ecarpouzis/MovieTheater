@@ -22,6 +22,16 @@ namespace MovieTheater.Db
             modelBuilder.Entity<Movie>()
                 .HasIndex(m => m.ReviewBatch);
 
+            // Browse list ordering. Every public movie list (type / rating / title / genre / letter /
+            // person) is ORDER BY SimpleTitle, id over the un-quarantined set, then paged with
+            // OFFSET/FETCH. A filtered composite index matching that predicate + sort lets each
+            // infinite-scroll page seek and range-scan in order, instead of re-sorting the whole
+            // table on every page fetch. The mode-specific predicates (NormalizedTitleType, age gate)
+            // stay residual — the Movies bucket dominates the table, so little is scanned past.
+            modelBuilder.Entity<Movie>()
+                .HasIndex(m => new { m.SimpleTitle, m.id })
+                .HasFilter("[ReviewBatch] IS NULL");
+
             // Coarse Browse "Type" bucket, derived from TitleType in the database so it is always
             // correct with no app-side syncing. Short/TvShort (2,3) ⇒ Short (2); everything else ⇒
             // Movies (0). Series-typed rows are excluded from public movie queries and live in the
@@ -122,6 +132,13 @@ namespace MovieTheater.Db
             // ── Series: a first-class title, peer of Movie (replaces its old aggregate-only form) ──
             modelBuilder.Entity<Series>()
                 .HasIndex(s => s.ReviewBatch);
+
+            // Series peer of the Movie browse-ordering index: the merged movie+series modes order each
+            // table's keys by (SimpleTitle, Id) before the union, so the same filtered composite serves
+            // the series side of every paged browse/search.
+            modelBuilder.Entity<Series>()
+                .HasIndex(s => new { s.SimpleTitle, s.Id })
+                .HasFilter("[ReviewBatch] IS NULL");
 
             modelBuilder.Entity<SeriesGenre>()
                 .HasKey(sg => new { sg.SeriesId, sg.GenreId });
