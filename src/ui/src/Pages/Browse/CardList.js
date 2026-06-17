@@ -2,7 +2,7 @@ import { MovieAPI } from "../../MovieAPI";
 import { Card } from "antd";
 import UserMovieOptions from "./UserMovieOptions";
 import "./CardList.css";
-import { useRef, useLayoutEffect, useState } from "react";
+import { useState } from "react";
 
 // Poster thumbnail with a graceful fallback: when the image 404s (common for Misc videos, which
 // usually have no poster), swap in a placeholder instead of the browser's broken-image glyph.
@@ -29,25 +29,14 @@ function CardPoster({ item, isMobile, isAboveFold }) {
   );
 }
 
+// The plot text is clamped to a fixed-height box and faded at the bottom. The fade was
+// previously gated by a per-card ResizeObserver that measured overflow — at thousands of
+// cards that per-item layout work was a major render cost (views-perf catalog #4), so the
+// fade is now always-on via CSS. When the text is short it sits over empty white space and
+// is invisible anyway, so there's no visual regression.
 function PlotText({ text, className, hiddenClass }) {
-  const ref = useRef(null);
-  const [overflows, setOverflows] = useState(false);
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const check = () => setOverflows(el.scrollHeight > el.clientHeight);
-    check();
-
-    const observer = new ResizeObserver(check);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [text]);
-
-  const classes = [className, hiddenClass, overflows ? "card-plot--faded" : ""].filter(Boolean).join(" ");
-
-  return <p ref={ref} className={classes}>{text}</p>;
+  const classes = [className, hiddenClass, "card-plot--faded"].filter(Boolean).join(" ");
+  return <p className={classes}>{text}</p>;
 }
 
 function CardList({ movieDataArray, userData, setUserData, actorSearch, activePerson, onMovieClick, onToggleViewing, isMobile }) {
@@ -73,7 +62,7 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
         const year = item.releaseDate ? new Date(item.releaseDate).getFullYear() : null;
 
         return (
-          <div key={`${item.kind || "movie"}-${item.id}`}>
+          <div key={`${item.kind || "movie"}-${item.id}`} className="card-cell">
             <Card hoverable className="movie-card">
               <div className={`card-content-wrapper${isMobile ? " card-content-wrapper--mobile" : ""}`}>
                 <div className="card-poster-container">

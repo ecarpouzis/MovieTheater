@@ -26,12 +26,12 @@ export function useMovieSearch() {
   // These now hit unified API endpoints that return BOTH movies and series (kind-tagged),
   // since series live in their own table — OData over /Movies alone would miss them.
   const titleSearch = useCallback((title) => {
-    setSearch({ url: `/API/BrowseTitle?q=${encodeURIComponent(title)}` });
+    setSearch({ url: `/API/BrowseTitle?q=${encodeURIComponent(title)}`, infinite: true });
   }, []);
 
   // People search across movies + series (normalized credits, with a legacy string fallback server-side).
   const actorSearch = useCallback((person) => {
-    setSearch({ url: `/API/BrowsePerson?q=${encodeURIComponent(person)}`, actor: person });
+    setSearch({ url: `/API/BrowsePerson?q=${encodeURIComponent(person)}`, actor: person, infinite: true });
   }, []);
 
   // Genre filter (AND semantics across selected genres), movies + series.
@@ -43,11 +43,11 @@ export function useMovieSearch() {
       setSearch({ url: RANDOM_MOVIES_URL });
       return;
     }
-    setSearch({ url: `/API/BrowseGenre?genres=${encodeURIComponent(list.join(","))}`, genre: list });
+    setSearch({ url: `/API/BrowseGenre?genres=${encodeURIComponent(list.join(","))}`, genre: list, infinite: true });
   }, []);
 
   const firstLetterSearch = useCallback((firstLetter) => {
-    setSearch({ url: `/API/BrowseLetter?letter=${encodeURIComponent(firstLetter)}`, startsWith: firstLetter });
+    setSearch({ url: `/API/BrowseLetter?letter=${encodeURIComponent(firstLetter)}`, startsWith: firstLetter, infinite: true });
   }, []);
 
   // Filter the grid by IMDB-aware TitleType (Movie / Short / TvSeries / TvMiniSeries / ...).
@@ -57,7 +57,8 @@ export function useMovieSearch() {
       setSearch({ url: RANDOM_MOVIES_URL });
       return;
     }
-    setSearch({ url: `/API/GetMoviesByType?type=${encodeURIComponent(type)}`, titleType: type });
+    // infinite: this endpoint is paginated server-side; Browse streams it page-by-page.
+    setSearch({ url: `/API/GetMoviesByType?type=${encodeURIComponent(type)}`, titleType: type, infinite: true });
   }, []);
 
   const ratingSearch = useCallback((maxRatingId, page = 1) => {

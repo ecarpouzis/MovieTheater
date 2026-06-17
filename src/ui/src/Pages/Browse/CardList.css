@@ -6,6 +6,15 @@
   padding: 10px 10px 2px;
 }
 
+/* Off-screen cards skip layout + paint (views-perf catalog #5). Safe here because there's
+   no JS render-window unmounting these nodes — content-visibility is exactly the tool for a
+   long, fully-mounted list. `auto` in contain-intrinsic-size remembers each card's real
+   rendered height so the scrollbar stays stable as cards leave/enter the render zone. */
+.card-cell {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 240px;
+}
+
 @media (min-width: 768px) {
   .card-list { grid-template-columns: repeat(2, 1fr); }
 }

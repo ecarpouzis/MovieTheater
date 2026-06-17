@@ -1,9 +1,32 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import CardList from "./CardList";
 import MovieModal from "./MovieModal";
 import SimpleCardList from "./SimpleCardList";
 import useIsMobile from "../../hooks/useIsMobile";
+
+// Page size for infinite-scroll modes. Matches the server default in GetMoviesByType.
+const INFINITE_PAGE_SIZE = 60;
+
+// Append page/pageSize to a browse URL (preserving its existing query string).
+function withPage(url, page, pageSize) {
+  const u = new URL(url, window.location.origin);
+  u.searchParams.set("page", String(page));
+  u.searchParams.set("pageSize", String(pageSize));
+  return u.pathname + u.search;
+}
+
+// Find the nearest scrollable ancestor so the IntersectionObserver watches the
+// right root — desktop scrolls inside `.app-content`, mobile scrolls the window.
+function getScrollParent(node) {
+  let el = node?.parentElement;
+  while (el) {
+    const oy = window.getComputedStyle(el).overflowY;
+    if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight) return el;
+    el = el.parentElement;
+  }
+  return null; // null root = viewport (mobile / window scroll)
+}
 
 function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enablePagination }) {
   const [movieDataArray, setMovieDataArray] = useState([]);
@@ -12,8 +35,16 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
   const isMobile = useIsMobile();
   const useSimpleStyle = simpleStyle && isMobile;
 
+  // Infinite-scroll modes (server-paginated endpoints flagged via search.infinite):
+  // fetch page 1 here, then stream further pages as a bottom sentinel nears the viewport.
+  const isInfinite = !!search.infinite && !!search.url;
+  const pageRef = useRef(1);
+  const loadingMoreRef = useRef(false);
+  const sentinelRef = useRef(null);
+
+  // ── Non-infinite path: one fetch returns the full result set (or the legacy envelope). ──
   useEffect(() => {
-    if (!isAuthReady) return;
+    if (!isAuthReady || isInfinite) return;
     if (!search.url && !search.movieIds) {
       setMovieDataArray([]);
       setPagination(null);
@@ -56,7 +87,70 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
         if (err.name !== "AbortError") throw err;
       });
     return () => controller.abort();
-  }, [search.url, search.movieIds, isAuthReady, enablePagination]);
+  }, [search.url, search.movieIds, isAuthReady, enablePagination, isInfinite]);
+
+  // ── Infinite path: load the first page, then append on scroll. ──
+  useEffect(() => {
+    if (!isAuthReady || !isInfinite) return;
+    setLoading(true);
+    pageRef.current = 1;
+    loadingMoreRef.current = false;
+    const controller = new AbortController();
+    fetch(withPage(search.url, 1, INFINITE_PAGE_SIZE), { signal: controller.signal })
+      .then((r) => r.json())
+      .then((data) => {
+        setMovieDataArray(Array.isArray(data?.movies) ? data.movies : []);
+        setPagination(
+          typeof data?.totalCount === "number"
+            ? { totalCount: data.totalCount, page: 1, pageSize: INFINITE_PAGE_SIZE }
+            : null
+        );
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") throw err;
+      });
+    return () => controller.abort();
+  }, [search.url, isAuthReady, isInfinite]);
+
+  const hasMore = isInfinite && pagination != null && movieDataArray.length < pagination.totalCount;
+
+  const loadMore = useCallback(() => {
+    if (loadingMoreRef.current || !hasMore) return;
+    loadingMoreRef.current = true;
+    const next = pageRef.current + 1;
+    fetch(withPage(search.url, next, INFINITE_PAGE_SIZE))
+      .then((r) => r.json())
+      .then((data) => {
+        const more = Array.isArray(data?.movies) ? data.movies : [];
+        if (more.length) {
+          pageRef.current = next;
+          setMovieDataArray((prev) => prev.concat(more));
+        }
+      })
+      .finally(() => {
+        loadingMoreRef.current = false;
+      });
+  }, [hasMore, search.url]);
+
+  // Observe the bottom sentinel; fetch the next page ~one screen before it's reached.
+  // Re-created after each append (movieDataArray.length dep) so that if the sentinel is
+  // STILL within the root margin after a page loads, the fresh observer's initial callback
+  // fires again and chains the next page — a single persistent observer wouldn't re-fire
+  // while the sentinel stays continuously intersecting (tall screens / short pages).
+  useEffect(() => {
+    if (!isInfinite || !hasMore) return;
+    const node = sentinelRef.current;
+    if (!node) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMore();
+      },
+      { root: getScrollParent(node), rootMargin: "800px 0px" }
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [isInfinite, hasMore, loadMore, movieDataArray.length]);
 
   const history = useHistory();
   const location = useLocation();
@@ -270,6 +364,23 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
     );
   })() : null;
 
+  // Lightweight count header for infinite-scroll modes (no page buttons — the list streams).
+  const infiniteBar = isInfinite && pagination ? (
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "10px 16px",
+      background: "#001529",
+      borderBottom: "1px solid #1e3a57",
+      borderTop: "1px solid #1e3a57",
+    }}>
+      <span style={{ color: "#8fa8c0", fontSize: "13px", letterSpacing: "0.3px" }}>
+        {pagination.totalCount === 0
+          ? "No movies found"
+          : `Showing ${movieDataArray.length} of ${pagination.totalCount} movie${pagination.totalCount !== 1 ? "s" : ""}`}
+      </span>
+    </div>
+  ) : null;
+
   if (loading) {
     return <span>Loading</span>;
   }
@@ -277,6 +388,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
   return (
     <>
       {enablePagination && paginationBar}
+      {infiniteBar}
       {useSimpleStyle ? (
         <SimpleCardList
           movieDataArray={displayMovies}
@@ -296,6 +408,14 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
           onToggleViewing={handleToggleViewing}
           isMobile={isMobile}
         />
+      )}
+      {isInfinite && (
+        <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />
+      )}
+      {hasMore && (
+        <div style={{ textAlign: "center", padding: "16px", color: "#8fa8c0", fontSize: "13px" }}>
+          Loading more…
+        </div>
       )}
       {enablePagination && paginationBar}
       {useSimpleStyle ? (

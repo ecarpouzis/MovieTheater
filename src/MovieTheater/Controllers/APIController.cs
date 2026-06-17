@@ -375,23 +375,112 @@ namespace MovieTheater.Controllers
         // Series come from the Series table; Movies/Short read Movie.NormalizedTitleType (a persisted
         // computed column off TitleType); Misc reads the MiscVideo table (tt-less library videos —
         // workprints, stage performances, shorts sets).
+        // Paginated browse by title type. Returns the { movies, totalCount, page, pageSize }
+        // envelope so the client can infinite-scroll instead of pulling the whole library at
+        // once (type=Movies is the entire Movie table). pageSize <= 0 returns everything (the
+        // old behavior) for any caller that still wants the full list.
         [HttpGet("/API/GetMoviesByType")]
-        public async Task<IActionResult> GetMoviesByType(string type)
+        public async Task<IActionResult> GetMoviesByType(string type, int page = 1, int pageSize = 60)
         {
             if (string.IsNullOrWhiteSpace(type) || !Enum.TryParse<NormalizedTitleType>(type, true, out var nt))
                 return BadRequest(new { Message = $"Unknown title type '{type}'" });
             if (nt == NormalizedTitleType.Series)
             {
                 var sq = await GetBaseSeriesQuery();
-                var ser = await sq.OrderBy(s => s.SimpleTitle).Select(ToSeriesCardDto).ToListAsync();
-                return Ok(ser);
+                return Ok(await PageCardsAsync(sq.OrderBy(s => s.SimpleTitle).Select(ToSeriesCardDto), page, pageSize));
             }
             if (nt == NormalizedTitleType.Misc)
-                return Ok(await GetMiscCards());
+                return Ok(PageCards(await GetMiscCards(), page, pageSize));
             var baseQuery = await GetBaseMovieQuery();
-            var movies = await baseQuery.Where(m => m.NormalizedTitleType == nt).OrderBy(m => m.SimpleTitle).Select(ToCardDto).ToListAsync();
-            return Ok(movies);
+            return Ok(await PageCardsAsync(baseQuery.Where(m => m.NormalizedTitleType == nt).OrderBy(m => m.SimpleTitle).Select(ToCardDto), page, pageSize));
         }
+
+        // Page a card query at the DB (SELECT just one page + a COUNT). The query MUST already
+        // be ordered so Skip/Take is stable. pageSize <= 0 → return the whole set.
+        private static async Task<object> PageCardsAsync(IQueryable<MovieCardDto> ordered, int page, int pageSize)
+        {
+            var totalCount = await ordered.CountAsync();
+            if (pageSize <= 0)
+            {
+                var all = await ordered.ToListAsync();
+                return new { movies = all, totalCount, page = 1, pageSize = totalCount };
+            }
+            if (page < 1) page = 1;
+            var paged = await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            return new { movies = paged, totalCount, page, pageSize };
+        }
+
+        // In-memory peer of PageCardsAsync for already-materialized card lists (e.g. Misc).
+        private static object PageCards(List<MovieCardDto> all, int page, int pageSize)
+        {
+            var totalCount = all.Count;
+            if (pageSize <= 0)
+                return new { movies = all, totalCount, page = 1, pageSize = totalCount };
+            if (page < 1) page = 1;
+            var paged = all.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            return new { movies = paged, totalCount, page, pageSize };
+        }
+
+        // Lightweight ordering key for the merged movie+series browse modes. Projecting just these
+        // scalars (no navigations) keeps the cross-table UNION trivially translatable.
+        private class CardKey
+        {
+            public string Kind { get; set; } = "movie";
+            public int Id { get; set; }
+            public string? SimpleTitle { get; set; }
+        }
+
+        // Page a merged movie+series browse result at the DB without pulling the whole filtered set
+        // (two-phase, mirroring the MyBooks views-perf "band items" approach):
+        //   1. UNION just the ordering keys (Kind/Id/SimpleTitle) across both tables and Skip/Take
+        //      that — a cheap scalar set-operation. A stable secondary sort (Kind, Id) guarantees the
+        //      page boundaries don't drift between fetches, so infinite scroll never dupes/skips.
+        //   2. Materialize the full card DTOs for just the page's ids and restore the merged order.
+        // pageSize <= 0 returns the whole merged set (back-compat).
+        private static async Task<object> PageMergedAsync(IQueryable<Movie> mq, IQueryable<Series> sq, int page, int pageSize)
+        {
+            var keys = mq.Select(m => new CardKey { Kind = "movie", Id = m.id, SimpleTitle = m.SimpleTitle })
+                .Concat(sq.Select(s => new CardKey { Kind = "series", Id = s.Id, SimpleTitle = s.SimpleTitle }));
+
+            var totalCount = await keys.CountAsync();
+            if (pageSize <= 0)
+            {
+                var allMovies = await mq.Select(ToCardDto).ToListAsync();
+                var allSeries = await sq.Select(ToSeriesCardDto).ToListAsync();
+                var allMerged = MergeCards(allMovies, allSeries);
+                return new { movies = allMerged, totalCount = allMerged.Count, page = 1, pageSize = allMerged.Count };
+            }
+            if (page < 1) page = 1;
+
+            var pageKeys = await keys
+                .OrderBy(k => k.SimpleTitle).ThenBy(k => k.Kind).ThenBy(k => k.Id)
+                .Skip((page - 1) * pageSize).Take(pageSize)
+                .ToListAsync();
+
+            var movieIds = pageKeys.Where(k => k.Kind == "movie").Select(k => k.Id).ToList();
+            var seriesIds = pageKeys.Where(k => k.Kind == "series").Select(k => k.Id).ToList();
+            var movieCards = movieIds.Count > 0
+                ? await mq.Where(m => movieIds.Contains(m.id)).Select(ToCardDto).ToListAsync()
+                : new List<MovieCardDto>();
+            var seriesCards = seriesIds.Count > 0
+                ? await sq.Where(s => seriesIds.Contains(s.Id)).Select(ToSeriesCardDto).ToListAsync()
+                : new List<MovieCardDto>();
+
+            var movieById = movieCards.ToDictionary(c => c.id);
+            var seriesById = seriesCards.ToDictionary(c => c.id);
+            var pageCards = pageKeys
+                .Select(k => k.Kind == "movie"
+                    ? (movieById.TryGetValue(k.Id, out var mc) ? mc : null)
+                    : (seriesById.TryGetValue(k.Id, out var sc) ? sc : null))
+                .Where(c => c != null)
+                .ToList();
+
+            return new { movies = pageCards, totalCount, page, pageSize };
+        }
+
+        // Empty merged result in the paginated envelope shape (for empty queries).
+        private static object EmptyPage(int pageSize) =>
+            new { movies = new List<MovieCardDto>(), totalCount = 0, page = 1, pageSize };
 
         // Approved (un-quarantined) MiscVideos as browse cards. They carry no Rating, so the age gate
         // does not apply; poster (if any) is served from the separate /MiscImage namespace. The card
@@ -421,43 +510,40 @@ namespace MovieTheater.Controllers
         // ── Unified search over movies + series (the frontend uses these instead of /odata/Movies) ──
 
         [HttpGet("/API/BrowseTitle")]
-        public async Task<IActionResult> BrowseTitle(string q)
+        public async Task<IActionResult> BrowseTitle(string q, int page = 1, int pageSize = 60)
         {
             q = (q ?? "").Trim();
-            if (q.Length == 0) return Ok(new List<MovieCardDto>());
-            var mq = await GetBaseMovieQuery();
-            var sq = await GetBaseSeriesQuery();
-            var movies = await mq.Where(m => (m.SimpleTitle != null && m.SimpleTitle.Contains(q)) || (m.Title != null && m.Title.Contains(q))).Select(ToCardDto).ToListAsync();
-            var series = await sq.Where(s => (s.SimpleTitle != null && s.SimpleTitle.Contains(q)) || (s.Title != null && s.Title.Contains(q))).Select(ToSeriesCardDto).ToListAsync();
-            return Ok(MergeCards(movies, series));
+            if (q.Length == 0) return Ok(EmptyPage(pageSize));
+            var mq = (await GetBaseMovieQuery()).Where(m => (m.SimpleTitle != null && m.SimpleTitle.Contains(q)) || (m.Title != null && m.Title.Contains(q)));
+            var sq = (await GetBaseSeriesQuery()).Where(s => (s.SimpleTitle != null && s.SimpleTitle.Contains(q)) || (s.Title != null && s.Title.Contains(q)));
+            return Ok(await PageMergedAsync(mq, sq, page, pageSize));
         }
 
         [HttpGet("/API/BrowseLetter")]
-        public async Task<IActionResult> BrowseLetter(string letter)
+        public async Task<IActionResult> BrowseLetter(string letter, int page = 1, int pageSize = 60)
         {
             letter = (letter ?? "").Trim();
-            if (letter.Length == 0) return Ok(new List<MovieCardDto>());
+            if (letter.Length == 0) return Ok(EmptyPage(pageSize));
             var mq = await GetBaseMovieQuery();
             var sq = await GetBaseSeriesQuery();
-            List<MovieCardDto> movies, series;
             if (letter == "#")
             {
-                movies = await mq.Where(m => EF.Functions.Like(m.SimpleTitle, "[0-9]%")).Select(ToCardDto).ToListAsync();
-                series = await sq.Where(s => EF.Functions.Like(s.SimpleTitle, "[0-9]%")).Select(ToSeriesCardDto).ToListAsync();
+                mq = mq.Where(m => EF.Functions.Like(m.SimpleTitle, "[0-9]%"));
+                sq = sq.Where(s => EF.Functions.Like(s.SimpleTitle, "[0-9]%"));
             }
             else
             {
-                movies = await mq.Where(m => m.SimpleTitle != null && m.SimpleTitle.StartsWith(letter)).Select(ToCardDto).ToListAsync();
-                series = await sq.Where(s => s.SimpleTitle != null && s.SimpleTitle.StartsWith(letter)).Select(ToSeriesCardDto).ToListAsync();
+                mq = mq.Where(m => m.SimpleTitle != null && m.SimpleTitle.StartsWith(letter));
+                sq = sq.Where(s => s.SimpleTitle != null && s.SimpleTitle.StartsWith(letter));
             }
-            return Ok(MergeCards(movies, series));
+            return Ok(await PageMergedAsync(mq, sq, page, pageSize));
         }
 
         [HttpGet("/API/BrowseGenre")]
-        public async Task<IActionResult> BrowseGenre(string genres)
+        public async Task<IActionResult> BrowseGenre(string genres, int page = 1, int pageSize = 60)
         {
             var list = (genres ?? "").Split(',').Select(g => g.Trim()).Where(g => g.Length > 0).ToList();
-            if (list.Count == 0) return Ok(new List<MovieCardDto>());
+            if (list.Count == 0) return Ok(EmptyPage(pageSize));
             var mq = await GetBaseMovieQuery();
             var sq = await GetBaseSeriesQuery();
             foreach (var g in list)
@@ -466,25 +552,19 @@ namespace MovieTheater.Controllers
                 mq = mq.Where(m => m.MovieGenres.Any(x => x.Genre.Name == gg) || (m.Genre != null && m.Genre.Contains(gg)));
                 sq = sq.Where(s => s.SeriesGenres.Any(x => x.Genre.Name == gg) || (s.Genre != null && s.Genre.Contains(gg)));
             }
-            var movies = await mq.Select(ToCardDto).ToListAsync();
-            var series = await sq.Select(ToSeriesCardDto).ToListAsync();
-            return Ok(MergeCards(movies, series));
+            return Ok(await PageMergedAsync(mq, sq, page, pageSize));
         }
 
         [HttpGet("/API/BrowsePerson")]
-        public async Task<IActionResult> BrowsePerson(string q)
+        public async Task<IActionResult> BrowsePerson(string q, int page = 1, int pageSize = 60)
         {
             q = (q ?? "").Trim();
-            if (q.Length == 0) return Ok(new List<MovieCardDto>());
-            var mq = await GetBaseMovieQuery();
-            var sq = await GetBaseSeriesQuery();
-            var movies = await mq.Where(m => m.Credits.Any(c => c.Person.DisplayName.Contains(q))
-                || (m.Actors != null && m.Actors.Contains(q)) || (m.Director != null && m.Director.Contains(q)) || (m.Writer != null && m.Writer.Contains(q)))
-                .Select(ToCardDto).ToListAsync();
-            var series = await sq.Where(s => s.Credits.Any(c => c.Person.DisplayName.Contains(q))
-                || (s.Actors != null && s.Actors.Contains(q)) || (s.Director != null && s.Director.Contains(q)) || (s.Writer != null && s.Writer.Contains(q)))
-                .Select(ToSeriesCardDto).ToListAsync();
-            return Ok(MergeCards(movies, series));
+            if (q.Length == 0) return Ok(EmptyPage(pageSize));
+            var mq = (await GetBaseMovieQuery()).Where(m => m.Credits.Any(c => c.Person.DisplayName.Contains(q))
+                || (m.Actors != null && m.Actors.Contains(q)) || (m.Director != null && m.Director.Contains(q)) || (m.Writer != null && m.Writer.Contains(q)));
+            var sq = (await GetBaseSeriesQuery()).Where(s => s.Credits.Any(c => c.Person.DisplayName.Contains(q))
+                || (s.Actors != null && s.Actors.Contains(q)) || (s.Director != null && s.Director.Contains(q)) || (s.Writer != null && s.Writer.Contains(q)));
+            return Ok(await PageMergedAsync(mq, sq, page, pageSize));
         }
 
         // Series detail (mirror of GetMovie): the series + its normalized graph + seasons/episodes.
