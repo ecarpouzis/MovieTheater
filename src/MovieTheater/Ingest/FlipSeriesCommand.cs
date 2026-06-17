@@ -29,6 +29,9 @@ namespace MovieTheater.Ingest
         [CommandOption("apply", Description = "Execute the flip. Omit for a dry run (default).")]
         public bool Apply { get; set; }
 
+        [CommandOption("finish-orphans", Description = "Post-flip cleanup: delete orphan twin Playables the flip skipped (referenced by a stale channel schedule) + those schedule items.")]
+        public bool FinishOrphans { get; set; }
+
         private readonly IDbContextFactory<MovieDb> dbFactory;
 
         public FlipSeriesCommand(MovieTheaterConfiguration config) : base(config)
@@ -44,6 +47,8 @@ namespace MovieTheater.Ingest
             await using var db = await dbFactory.CreateDbContextAsync();
 
             async Task<int> Count(string sql) => await db.Database.SqlQueryRaw<int>(sql).FirstAsync();
+
+            if (FinishOrphans) { await FinishOrphansAsync(console, db, Count); return; }
 
             int twins = await Count("SELECT COUNT(*) AS Value FROM Movie WHERE TitleType IN (4,5)");
             int episodes = await Count("SELECT COUNT(*) AS Value FROM Episode");
@@ -127,7 +132,42 @@ namespace MovieTheater.Ingest
             catch (Exception ex)
             {
                 await tx.RollbackAsync();
-                console.Error.WriteLine($"\nROLLED BACK — {ex.Message}. No changes committed.");
+                console.Error.WriteLine($"\nROLLED BACK - {ex.Message}. No changes committed.");
+            }
+        }
+
+        // Post-flip cleanup of orphan twin Playables the flip left behind because a (stale, past) channel
+        // schedule item still referenced them (NO_ACTION FK). Drops those schedule items (snapshotted) then
+        // the now-unreferenced Playables. Transactional. Reads the _flip_backup_movie restore table.
+        private const string ORPH = "SELECT PlayableId FROM dbo._flip_backup_movie WHERE PlayableId IS NOT NULL";
+
+        private async Task FinishOrphansAsync(IConsole console, MovieDb db, Func<string, Task<int>> count)
+        {
+            var w = console.Output;
+            if (await count("SELECT COUNT(*) AS Value FROM sys.tables WHERE name='_flip_backup_movie'") == 0)
+            { console.Error.WriteLine("No _flip_backup_movie restore table — run the flip first."); return; }
+
+            int orphans = await count($"SELECT COUNT(*) AS Value FROM Playable WHERE Id IN ({ORPH})");
+            int sched = await count($"SELECT COUNT(*) AS Value FROM ChannelScheduleItem WHERE PlayableId IN ({ORPH})");
+            w.WriteLine($"orphan twin Playables left: {orphans}; stale channel schedule items on them: {sched}{(Apply ? "" : "  (DRY RUN)")}");
+            if (orphans == 0) { w.WriteLine("Nothing to clean."); return; }
+            if (!Apply) { w.WriteLine("DRY RUN — re-run with --finish-orphans --apply."); return; }
+
+            await using var tx = await db.Database.BeginTransactionAsync();
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync($"IF OBJECT_ID('dbo._flip_backup_scheduleitem') IS NOT NULL DROP TABLE dbo._flip_backup_scheduleitem; SELECT * INTO dbo._flip_backup_scheduleitem FROM ChannelScheduleItem WHERE PlayableId IN ({ORPH});");
+                await db.Database.ExecuteSqlRawAsync($"DELETE FROM ChannelScheduleItem WHERE PlayableId IN ({ORPH});");
+                await db.Database.ExecuteSqlRawAsync($"DELETE FROM Playable WHERE Id IN ({ORPH}) AND NOT EXISTS(SELECT 1 FROM Movie m WHERE m.PlayableId=Playable.Id) AND NOT EXISTS(SELECT 1 FROM MiscVideo v WHERE v.PlayableId=Playable.Id) AND NOT EXISTS(SELECT 1 FROM Episode e WHERE e.PlayableId=Playable.Id) AND NOT EXISTS(SELECT 1 FROM ChannelScheduleItem c WHERE c.PlayableId=Playable.Id) AND NOT EXISTS(SELECT 1 FROM MediaFile f WHERE f.PlayableId=Playable.Id);");
+                int left = await count($"SELECT COUNT(*) AS Value FROM Playable WHERE Id IN ({ORPH})");
+                if (left != 0) throw new Exception($"{left} orphan Playable(s) still present after cleanup");
+                await tx.CommitAsync();
+                w.WriteLine($"Cleaned {orphans} orphan Playable(s) + {sched} stale schedule item(s). Schedule items snapshotted to _flip_backup_scheduleitem.");
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                console.Error.WriteLine($"ROLLED BACK - {ex.Message}. No changes committed.");
             }
         }
     }
