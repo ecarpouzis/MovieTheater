@@ -70,7 +70,6 @@ function App() {
   }
 
   const simpleStyle = (userData?.cardStyle ?? storedCardStyle) === "simple";
-  const enablePagination = userData?.enablePagination ?? false;
 
   return (
     <BrowserRouter>
@@ -121,7 +120,7 @@ function App() {
               <BoardGames userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/">
-              <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} simpleStyle={simpleStyle} enablePagination={enablePagination} />
+              <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} simpleStyle={simpleStyle} />
             </Route>
           </Switch>
         </Layout.Content>

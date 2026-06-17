@@ -1676,7 +1676,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpGet("/API/GetMoviesByRating")]
-        public async Task<IActionResult> GetMoviesByRating(int maxRatingId, int page = 1, int pageSize = 50)
+        public async Task<IActionResult> GetMoviesByRating(int maxRatingId, int page = 1, int pageSize = 60)
         {
             int ageRestriction = 100;
             var currentUserId = GetCurrentUserId();
@@ -1690,26 +1690,16 @@ namespace MovieTheater.Controllers
 
             var effectiveMax = Math.Min(maxRatingId, ageRestriction);
 
+            // Order at the DB (nulls last, then collation — digit-titles sort before letters) and
+            // page there, so the infinite-scroll client's repeated page fetches don't each
+            // re-materialize + re-sort the whole rating set.
             var query = movieDb.Movies
                 .Where(m => m.ReviewBatch == null)
-                .Where(m => movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID == effectiveMax));
+                .Where(m => movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID == effectiveMax))
+                .Select(ToCardDto)
+                .OrderBy(c => c.SimpleTitle == null).ThenBy(c => c.SimpleTitle);
 
-            var moviesList = await query.Select(ToCardDto).ToListAsync();
-            var sorted = moviesList
-                .OrderBy(m => string.IsNullOrEmpty(m.SimpleTitle) || !char.IsDigit(m.SimpleTitle[0]))
-                .ThenBy(m => m.SimpleTitle)
-                .ToList();
-            var totalCount = sorted.Count;
-
-            if (pageSize <= 0)
-            {
-                return Ok(new { movies = sorted, totalCount, page = 1, pageSize = totalCount });
-            }
-
-            if (page < 1) page = 1;
-            var skip = (page - 1) * pageSize;
-            var paged = sorted.Skip(skip).Take(pageSize).ToList();
-            return Ok(new { movies = paged, totalCount, page, pageSize });
+            return Ok(await PageCardsAsync(query, page, pageSize));
         }
 
         // Distinct genre names from the normalized Genre table, for the browse genre filter.

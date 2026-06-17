@@ -61,11 +61,11 @@ export function useMovieSearch() {
     setSearch({ url: `/API/GetMoviesByType?type=${encodeURIComponent(type)}`, titleType: type, infinite: true });
   }, []);
 
-  const ratingSearch = useCallback((maxRatingId, page = 1) => {
+  const ratingSearch = useCallback((maxRatingId) => {
     setSearch({
-      url: `/API/GetMoviesByRating?maxRatingId=${maxRatingId}&page=${page}&pageSize=50`,
+      url: `/API/GetMoviesByRating?maxRatingId=${maxRatingId}`,
       maxRatingId: String(maxRatingId),
-      page: Number(page),
+      infinite: true,
     });
   }, []);
 

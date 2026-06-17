@@ -66,7 +66,6 @@ function NavBar({
     const params = new URLSearchParams(location.search);
     const mode = params.get("mode");
     const value = params.get("value") || "";
-    const page = params.get("page") || "1";
 
     if (!mode) {
       // No search mode in the URL. Determine whether this is a hard browser reload
@@ -116,7 +115,7 @@ function NavBar({
       genre: (v) => (v.trim() ? genreSearch(v) : resetSearch()),
       letter: (v) => (v.trim() ? firstLetterSearch(v) : resetSearch()),
       type: (v) => (v.trim() ? titleTypeSearch(v) : resetSearch()),
-      rating: (v) => (v.trim() ? ratingSearch(v, parseInt(page, 10) || 1) : resetSearch()),
+      rating: (v) => (v.trim() ? ratingSearch(v) : resetSearch()),
       seen: () => {
         if (!isAuthReady) return;
         userData ? moviesSeenSearch(userData) : resetSearch();

@@ -28,7 +28,7 @@ function getScrollParent(node) {
   return null; // null root = viewport (mobile / window scroll)
 }
 
-function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enablePagination }) {
+function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   const [movieDataArray, setMovieDataArray] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState(null);
@@ -54,15 +54,6 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
     setLoading(true);
     const controller = new AbortController();
     const { signal } = controller;
-    let effectiveUrl = search.url;
-    if (!enablePagination && effectiveUrl) {
-      const urlObj = new URL(effectiveUrl, window.location.origin);
-      if (urlObj.searchParams.has("pageSize")) {
-        urlObj.searchParams.set("pageSize", "0");
-        urlObj.searchParams.delete("page");
-        effectiveUrl = urlObj.pathname + urlObj.search;
-      }
-    }
     const fetchPromise = search.movieIds
       ? fetch("/API/GetMoviesByIds", {
           method: "POST",
@@ -70,7 +61,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
           body: JSON.stringify(search.movieIds),
           signal,
         })
-      : fetch(effectiveUrl, { signal });
+      : fetch(search.url, { signal });
     fetchPromise
       .then((r) => r.json())
       .then((data) => {
@@ -87,7 +78,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
         if (err.name !== "AbortError") throw err;
       });
     return () => controller.abort();
-  }, [search.url, search.movieIds, isAuthReady, enablePagination, isInfinite]);
+  }, [search.url, search.movieIds, isAuthReady, isInfinite]);
 
   // ── Infinite path: load the first page, then append on scroll. ──
   useEffect(() => {
@@ -242,128 +233,6 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
     );
   };
 
-  const goToPage = (newPage) => {
-    const params = new URLSearchParams(location.search);
-    if (newPage > 1) {
-      params.set("page", String(newPage));
-    } else {
-      params.delete("page");
-    }
-    history.push({ pathname: "/", search: `?${params.toString()}` });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const paginationBar = pagination ? (() => {
-    const { totalCount, page, pageSize } = pagination;
-    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-    const start = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
-    const end = Math.min(page * pageSize, totalCount);
-    const hasPrev = page > 1;
-    const hasNext = page < totalPages;
-
-    const navButtonStyle = {
-      background: "#1890ff",
-      border: "1px solid #1890ff",
-      color: "white",
-      borderRadius: "4px",
-      padding: "6px 16px",
-      cursor: "pointer",
-      fontSize: "13px",
-      fontWeight: 600,
-      letterSpacing: "0.3px",
-      transition: "opacity 0.15s",
-    };
-
-    const pageNumStyle = (isActive) => ({
-      background: isActive ? "#1890ff" : "transparent",
-      border: isActive ? "1px solid #1890ff" : "1px solid rgba(255,255,255,0.15)",
-      color: isActive ? "white" : "#8fa8c0",
-      borderRadius: "4px",
-      padding: "4px 10px",
-      cursor: isActive ? "default" : "pointer",
-      fontSize: "13px",
-      fontWeight: isActive ? 700 : 400,
-      minWidth: "32px",
-      textAlign: "center",
-      transition: "background 0.15s, color 0.15s",
-    });
-
-    const ellipsisStyle = { color: "#8fa8c0", fontSize: "13px", userSelect: "none" };
-
-    // Build the visible page numbers: up to 5 around current, always include last page
-    let pageNumbers = [];
-    if (totalPages > 1) {
-      const maxVisible = 5;
-      let rangeStart = Math.max(1, page - Math.floor(maxVisible / 2));
-      let rangeEnd = rangeStart + maxVisible - 1;
-      if (rangeEnd > totalPages) {
-        rangeEnd = totalPages;
-        rangeStart = Math.max(1, rangeEnd - maxVisible + 1);
-      }
-      for (let i = rangeStart; i <= rangeEnd; i++) {
-        pageNumbers.push(i);
-      }
-      // Ensure last page is always reachable
-      if (pageNumbers[pageNumbers.length - 1] !== totalPages) {
-        pageNumbers.push("...");
-        pageNumbers.push(totalPages);
-      }
-      // Ensure first page is always reachable
-      if (pageNumbers[0] !== 1) {
-        pageNumbers.unshift("...");
-        pageNumbers.unshift(1);
-      }
-    }
-
-    const pageNumberElements = pageNumbers.map((p, idx) =>
-      p === "..." ? (
-        <span key={`ellipsis-${idx}`} style={ellipsisStyle}>…</span>
-      ) : (
-        <button
-          key={p}
-          onClick={() => { if (p !== page) goToPage(p); }}
-          style={pageNumStyle(p === page)}
-        >
-          {p}
-        </button>
-      )
-    );
-
-    const infoText = (
-      <span style={{ color: "#8fa8c0", fontSize: "13px", letterSpacing: "0.3px" }}>
-        {totalCount === 0
-          ? "No movies found"
-          : totalPages > 1
-            ? `Showing ${start}–${end} of ${totalCount} movies (Page ${page} of ${totalPages})`
-            : `${totalCount} movie${totalCount !== 1 ? "s" : ""} found`}
-      </span>
-    );
-
-    return (
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-        padding: "10px 16px",
-        background: "#001529",
-        borderBottom: "1px solid #1e3a57",
-        borderTop: "1px solid #1e3a57",
-        flexWrap: "wrap",
-      }}>
-        {infoText}
-        {hasPrev && (
-          <button onClick={() => goToPage(page - 1)} style={navButtonStyle}>
-            ← Prev
-          </button>
-        )}
-        {pageNumberElements}
-        {hasNext && (
-          <button onClick={() => goToPage(page + 1)} style={navButtonStyle}>
-            Next →
-          </button>
-        )}
-      </div>
-    );
-  })() : null;
-
   // Lightweight count header for infinite-scroll modes (no page buttons — the list streams).
   const infiniteBar = isInfinite && pagination ? (
     <div style={{
@@ -387,7 +256,6 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
 
   return (
     <>
-      {enablePagination && paginationBar}
       {infiniteBar}
       {useSimpleStyle ? (
         <SimpleCardList
@@ -417,7 +285,6 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle, enabl
           Loading more…
         </div>
       )}
-      {enablePagination && paginationBar}
       {useSimpleStyle ? (
         <MovieModal
           movieId={selectedMovieId}
