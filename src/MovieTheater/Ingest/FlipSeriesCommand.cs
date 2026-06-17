@@ -32,6 +32,9 @@ namespace MovieTheater.Ingest
         [CommandOption("finish-orphans", Description = "Post-flip cleanup: delete orphan twin Playables the flip skipped (referenced by a stale channel schedule) + those schedule items.")]
         public bool FinishOrphans { get; set; }
 
+        [CommandOption("drop-column", Description = "Apply migration DropEpisodeSeriesMovieId surgically (drop the orphaned column+index, add the SeriesId unique index, record history). RUN ONLY AFTER the cleaned code is deployed.")]
+        public bool DropColumn { get; set; }
+
         private readonly IDbContextFactory<MovieDb> dbFactory;
 
         public FlipSeriesCommand(MovieTheaterConfiguration config) : base(config)
@@ -49,6 +52,7 @@ namespace MovieTheater.Ingest
             async Task<int> Count(string sql) => await db.Database.SqlQueryRaw<int>(sql).FirstAsync();
 
             if (FinishOrphans) { await FinishOrphansAsync(console, db, Count); return; }
+            if (DropColumn) { await DropColumnAsync(console, db, Count); return; }
 
             int twins = await Count("SELECT COUNT(*) AS Value FROM Movie WHERE TitleType IN (4,5)");
             int episodes = await Count("SELECT COUNT(*) AS Value FROM Episode");
@@ -163,6 +167,48 @@ namespace MovieTheater.Ingest
                 if (left != 0) throw new Exception($"{left} orphan Playable(s) still present after cleanup");
                 await tx.CommitAsync();
                 w.WriteLine($"Cleaned {orphans} orphan Playable(s) + {sched} stale schedule item(s). Schedule items snapshotted to _flip_backup_scheduleitem.");
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                console.Error.WriteLine($"ROLLED BACK - {ex.Message}. No changes committed.");
+            }
+        }
+
+        // Applies migration DropEpisodeSeriesMovieId surgically (not `ef database update`, which would try to
+        // reconcile the whole divergent live history): drop the orphaned FK/indexes/column, add the SeriesId
+        // unique index, record the migration. Every step guarded so it's idempotent. RUN ONLY AFTER the
+        // cleaned code is deployed (the old app maps the column and would 500 once it's gone).
+        private async Task DropColumnAsync(IConsole console, MovieDb db, Func<string, Task<int>> count)
+        {
+            var w = console.Output;
+            int twins = await count("SELECT COUNT(*) AS Value FROM Movie WHERE TitleType IN (4,5)");
+            int colExists = await count("SELECT COUNT(*) AS Value FROM sys.columns WHERE name='SeriesMovieId' AND object_id=OBJECT_ID('dbo.Episode')");
+            int inHistory = await count("SELECT COUNT(*) AS Value FROM [__EFMigrationsHistory] WHERE [MigrationId]='20260617081650_DropEpisodeSeriesMovieId'");
+            w.WriteLine($"twins remaining: {twins} (must be 0); SeriesMovieId column present: {colExists}; migration recorded: {inHistory}{(Apply ? "" : "  (DRY RUN)")}");
+            if (twins != 0) { console.Error.WriteLine("ABORT: series-typed Movie twins still present — run the flip first."); return; }
+            if (colExists == 0 && inHistory == 1) { w.WriteLine("Already applied. Nothing to do."); return; }
+            if (!Apply) { w.WriteLine("DRY RUN — re-run with --drop-column --apply (only AFTER the cleaned code is deployed)."); return; }
+
+            var steps = new[]
+            {
+                "IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Episode_Movie_SeriesMovieId') ALTER TABLE [Episode] DROP CONSTRAINT [FK_Episode_Movie_SeriesMovieId];",
+                "IF EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_Episode_SeriesId' AND object_id=OBJECT_ID('dbo.Episode')) DROP INDEX [IX_Episode_SeriesId] ON [Episode];",
+                "IF EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_Episode_SeriesMovieId_SeasonNumber_EpisodeNumber' AND object_id=OBJECT_ID('dbo.Episode')) DROP INDEX [IX_Episode_SeriesMovieId_SeasonNumber_EpisodeNumber] ON [Episode];",
+                "DECLARE @df sysname; SELECT @df = dc.name FROM sys.default_constraints dc JOIN sys.columns c ON c.default_object_id=dc.object_id WHERE c.object_id=OBJECT_ID('dbo.Episode') AND c.name='SeriesMovieId'; IF @df IS NOT NULL EXEC('ALTER TABLE [Episode] DROP CONSTRAINT [' + @df + ']');",
+                "IF EXISTS (SELECT 1 FROM sys.columns WHERE name='SeriesMovieId' AND object_id=OBJECT_ID('dbo.Episode')) ALTER TABLE [Episode] DROP COLUMN [SeriesMovieId];",
+                "IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_Episode_SeriesId_SeasonNumber_EpisodeNumber' AND object_id=OBJECT_ID('dbo.Episode')) CREATE UNIQUE INDEX [IX_Episode_SeriesId_SeasonNumber_EpisodeNumber] ON [Episode]([SeriesId],[SeasonNumber],[EpisodeNumber]) WHERE [SeriesId] IS NOT NULL;",
+                "IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId]='20260617081650_DropEpisodeSeriesMovieId') INSERT INTO [__EFMigrationsHistory] ([MigrationId],[ProductVersion]) VALUES ('20260617081650_DropEpisodeSeriesMovieId','8.0.22');",
+            };
+            await using var tx = await db.Database.BeginTransactionAsync();
+            try
+            {
+                foreach (var sql in steps) await db.Database.ExecuteSqlRawAsync(sql);
+                int colAfter = await count("SELECT COUNT(*) AS Value FROM sys.columns WHERE name='SeriesMovieId' AND object_id=OBJECT_ID('dbo.Episode')");
+                int eps = await count("SELECT COUNT(*) AS Value FROM Episode");
+                if (colAfter != 0) throw new Exception("SeriesMovieId column still present after drop");
+                await tx.CommitAsync();
+                w.WriteLine($"DONE. SeriesMovieId dropped; unique index on (SeriesId,SeasonNumber,EpisodeNumber) ensured; migration recorded. Episodes intact: {eps}.");
             }
             catch (Exception ex)
             {
