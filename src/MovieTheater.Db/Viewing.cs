@@ -11,7 +11,7 @@ namespace MovieTheater.Db
         public int ViewingID { get; set; }
 
         /// <summary>The movie this viewing is for. Null when the viewing targets a <see cref="Series"/>
-        /// instead (exactly one of MovieID / SeriesId is set).</summary>
+        /// or <see cref="MiscVideo"/> instead (exactly one of MovieID / SeriesId / MiscVideoId is set).</summary>
         public int? MovieID { get; set; }
 
         [ForeignKey(nameof(MovieID))]
@@ -22,6 +22,13 @@ namespace MovieTheater.Db
 
         [ForeignKey(nameof(SeriesId))]
         public Series? Series { get; set; }
+
+        /// <summary>The misc video this viewing is for (Seen/Want on a short, stage performance, etc.);
+        /// null for movie/series viewings. MiscVideo has its own id space, so this is a distinct FK.</summary>
+        public int? MiscVideoId { get; set; }
+
+        [ForeignKey(nameof(MiscVideoId))]
+        public MiscVideo? MiscVideo { get; set; }
 
         public int UserID { get; set; }
 

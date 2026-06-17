@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -76,5 +77,8 @@ namespace MovieTheater.Db
 
         [MaxLength(1024)]
         public string? ReviewSourcePath { get; set; }
+
+        /// <summary>Seen/Want viewings that target this misc video (peer of <see cref="Series.Viewings"/>).</summary>
+        public ICollection<Viewing> Viewings { get; set; } = new List<Viewing>();
     }
 }
