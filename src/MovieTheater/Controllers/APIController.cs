@@ -225,25 +225,25 @@ namespace MovieTheater.Controllers
             return await GetBaseMovieQuery();
         }
 
+        // Cards for an explicit id set (the Seen / Want lists, and the back-nav restore list).
+        // pageSize > 0 streams the list as the paginated envelope (Seen/Want infinite scroll);
+        // pageSize <= 0 (default) returns the full merged list as a bare array, which the restore
+        // path needs so it can reorder client-side by its remembered on-screen order.
         [HttpPost("/API/GetMoviesByIds")]
-        public async Task<IActionResult> GetMoviesByIds([FromBody] List<int> ids)
+        public async Task<IActionResult> GetMoviesByIds([FromBody] List<int> ids, int page = 1, int pageSize = 0)
         {
             if (ids == null || ids.Count == 0)
-                return Ok(new List<MovieCardDto>());
+                return Ok(pageSize > 0 ? (object)EmptyPage(pageSize) : new List<MovieCardDto>());
 
-            var baseQuery = await GetBaseMovieQuery();
-            var movies = await baseQuery
-                .Where(m => ids.Contains(m.id))
-                .Select(ToCardDto)
-                .ToListAsync();
-            // ids share a space across the two tables — pull matching series too (the client reorders
-            // by its restore list, so server order doesn't matter).
-            var seriesQuery = await GetBaseSeriesQuery();
-            var series = await seriesQuery
-                .Where(s => ids.Contains(s.Id))
-                .Select(ToSeriesCardDto)
-                .ToListAsync();
+            // ids share a space across the two tables — match both Movies and Series.
+            var mq = (await GetBaseMovieQuery()).Where(m => ids.Contains(m.id));
+            var sq = (await GetBaseSeriesQuery()).Where(s => ids.Contains(s.Id));
 
+            if (pageSize > 0)
+                return Ok(await PageMergedAsync(mq, sq, page, pageSize));
+
+            var movies = await mq.Select(ToCardDto).ToListAsync();
+            var series = await sq.Select(ToSeriesCardDto).ToListAsync();
             return Ok(movies.Concat(series).OrderBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ToList());
         }
 

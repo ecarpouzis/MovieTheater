@@ -16,6 +16,20 @@ function withPage(url, page, pageSize) {
   return u.pathname + u.search;
 }
 
+// Fetch one page of an infinite-scroll search. Id-list searches (Seen/Want) POST the id
+// set to GetMoviesByIds with paging params; the rest are GET endpoints that take page/pageSize.
+function fetchInfinitePage(search, page, signal) {
+  if (search.movieIds) {
+    return fetch(`/API/GetMoviesByIds?page=${page}&pageSize=${INFINITE_PAGE_SIZE}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(search.movieIds),
+      signal,
+    });
+  }
+  return fetch(withPage(search.url, page, INFINITE_PAGE_SIZE), { signal });
+}
+
 // Find the nearest scrollable ancestor so the IntersectionObserver watches the
 // right root — desktop scrolls inside `.app-content`, mobile scrolls the window.
 function getScrollParent(node) {
@@ -37,7 +51,8 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
 
   // Infinite-scroll modes (server-paginated endpoints flagged via search.infinite):
   // fetch page 1 here, then stream further pages as a bottom sentinel nears the viewport.
-  const isInfinite = !!search.infinite && !!search.url;
+  // Covers both URL endpoints and the id-list (Seen/Want) POST endpoint.
+  const isInfinite = !!search.infinite && (!!search.url || !!search.movieIds);
   const pageRef = useRef(1);
   const loadingMoreRef = useRef(false);
   const sentinelRef = useRef(null);
@@ -87,7 +102,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     pageRef.current = 1;
     loadingMoreRef.current = false;
     const controller = new AbortController();
-    fetch(withPage(search.url, 1, INFINITE_PAGE_SIZE), { signal: controller.signal })
+    fetchInfinitePage(search, 1, controller.signal)
       .then((r) => r.json())
       .then((data) => {
         setMovieDataArray(Array.isArray(data?.movies) ? data.movies : []);
@@ -102,7 +117,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
         if (err.name !== "AbortError") throw err;
       });
     return () => controller.abort();
-  }, [search.url, isAuthReady, isInfinite]);
+  }, [search.url, search.movieIds, isAuthReady, isInfinite]);
 
   const hasMore = isInfinite && pagination != null && movieDataArray.length < pagination.totalCount;
 
@@ -110,7 +125,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     if (loadingMoreRef.current || !hasMore) return;
     loadingMoreRef.current = true;
     const next = pageRef.current + 1;
-    fetch(withPage(search.url, next, INFINITE_PAGE_SIZE))
+    fetchInfinitePage(search, next)
       .then((r) => r.json())
       .then((data) => {
         const more = Array.isArray(data?.movies) ? data.movies : [];
@@ -122,7 +137,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       .finally(() => {
         loadingMoreRef.current = false;
       });
-  }, [hasMore, search.url]);
+  }, [hasMore, search]);
 
   // Observe the bottom sentinel; fetch the next page ~one screen before it's reached.
   // Re-created after each append (movieDataArray.length dep) so that if the sentinel is

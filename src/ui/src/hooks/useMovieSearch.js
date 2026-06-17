@@ -74,7 +74,9 @@ export function useMovieSearch() {
       setSearch({ url: null, restoreOrder });
       return;
     }
-    setSearch({ movieIds, restoreOrder });
+    // Seen/Want (no restore order) stream as infinite scroll; the back-nav restore path
+    // (restoreOrder set) stays a single fetch so it can re-apply the remembered order.
+    setSearch({ movieIds, restoreOrder, infinite: !restoreOrder });
   }, []);
 
   const restoreMovieIdsSearch = useCallback((movieIds) => {
