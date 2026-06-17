@@ -54,7 +54,8 @@ namespace MovieTheater.Ingest
             await using var db = await dbFactory.CreateDbContextAsync();
             var eps = await db.Episodes.ToListAsync();
             var epIndex = new Dictionary<(int, int, int), Episode>();
-            foreach (var e in eps) epIndex[(e.SeriesMovieId, e.SeasonNumber, e.EpisodeNumber)] = e;
+            // Index by SeriesId; the CSV's "SeriesMovieId" column carries the same id value (Series.Id = old Movie.id).
+            foreach (var e in eps) epIndex[(e.SeriesId ?? 0, e.SeasonNumber, e.EpisodeNumber)] = e;
             var existingPaths = (await db.MediaFiles.Select(f => f.Path).ToListAsync()).Select(NormPath).ToHashSet();
 
             int playables = 0, mediafiles = 0, missingEp = 0, dupPath = 0, pending = 0;

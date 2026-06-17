@@ -5,10 +5,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace MovieTheater.Db
 {
     /// <summary>
-    /// One episode of a tvSeries <see cref="Movie"/> (docs/metadata-enrichment-plan.md §3.3). Episodes
+    /// One episode of a <see cref="Db.Series"/> (docs/metadata-enrichment-plan.md §3.3). Episodes
     /// are not movies — they carry lightweight metadata as columns rather than the full credit graph —
     /// and become streamable via their <see cref="Playable"/> (which a <see cref="MediaFile"/> attaches
-    /// to). Unique on (SeriesMovieId, SeasonNumber, EpisodeNumber).
+    /// to). Unique on (SeriesId, SeasonNumber, EpisodeNumber).
     /// </summary>
     [Table("Episode")]
     public class Episode
@@ -16,17 +16,9 @@ namespace MovieTheater.Db
         [Key]
         public int Id { get; set; }
 
-        /// <summary>Legacy link to the tvSeries <see cref="Movie"/> row this episode belonged to,
-        /// back when series lived in the Movie table. Dropped at the Series-split flip; use
-        /// <see cref="SeriesId"/> / <see cref="Series"/> instead.</summary>
-        public int SeriesMovieId { get; set; }
-
-        [ForeignKey(nameof(SeriesMovieId))]
-        public Movie SeriesMovie { get; set; } = default!;
-
-        /// <summary>The <see cref="Db.Series"/> this episode belongs to (canonical after the split;
-        /// equals the old <see cref="SeriesMovieId"/> value — series keep their id). Nullable during
-        /// the dual-existence migration window.</summary>
+        /// <summary>The <see cref="Db.Series"/> this episode belongs to. (The old <c>SeriesMovieId</c>
+        /// link to the series' Movie row was dropped at the Series-split flip 2026-06-17; the orphaned
+        /// DB column is dropped in a later deploy.) Nullable in the DB but always populated.</summary>
         public int? SeriesId { get; set; }
 
         [ForeignKey(nameof(SeriesId))]

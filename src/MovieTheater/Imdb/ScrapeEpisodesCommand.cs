@@ -62,26 +62,26 @@ namespace MovieTheater.Imdb
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
-            // Targets = (seriesMovieId, imdbID, season). Default: capped seasons (exactly 50 parsed).
+            // Targets = (seriesId, imdbID, season). Default: capped seasons (exactly 50 parsed).
             List<(int Sid, string Tt, int Season)> targets;
             using (var db = await dbFactory.CreateDbContextAsync())
             {
-                var seriesIds = await db.Movies
-                    .Where(m => m.ReviewBatch != null && (m.TitleType == TitleType.TvSeries || m.TitleType == TitleType.TvMiniSeries) && m.imdbID != null)
-                    .Select(m => new { m.id, m.imdbID })
+                var seriesIds = await db.Series
+                    .Where(s => s.imdbID != null)
+                    .Select(s => new { s.Id, s.imdbID })
                     .ToListAsync();
-                var ttById = seriesIds.ToDictionary(s => s.id, s => s.imdbID);
+                var ttById = seriesIds.ToDictionary(s => s.Id, s => s.imdbID);
 
                 var seasons = AllSeasons
-                    ? await db.Episodes.Select(e => new { e.SeriesMovieId, e.SeasonNumber }).Distinct().ToListAsync()
-                    : (await db.Episodes.GroupBy(e => new { e.SeriesMovieId, e.SeasonNumber })
+                    ? await db.Episodes.Where(e => e.SeriesId != null).Select(e => new { e.SeriesId, e.SeasonNumber }).Distinct().ToListAsync()
+                    : (await db.Episodes.Where(e => e.SeriesId != null).GroupBy(e => new { e.SeriesId, e.SeasonNumber })
                         .Where(g => g.Count() == 50)
-                        .Select(g => new { g.Key.SeriesMovieId, g.Key.SeasonNumber })
+                        .Select(g => new { g.Key.SeriesId, g.Key.SeasonNumber })
                         .ToListAsync());
 
                 targets = seasons
-                    .Where(s => ttById.ContainsKey(s.SeriesMovieId))
-                    .Select(s => (s.SeriesMovieId, ttById[s.SeriesMovieId], s.SeasonNumber))
+                    .Where(s => s.SeriesId != null && ttById.ContainsKey(s.SeriesId.Value))
+                    .Select(s => (s.SeriesId.Value, ttById[s.SeriesId.Value], s.SeasonNumber))
                     .OrderBy(t => t.Item2).ThenBy(t => t.SeasonNumber)
                     .ToList();
             }
@@ -103,7 +103,7 @@ namespace MovieTheater.Imdb
                     int added = 0;
                     using var db = await dbFactory.CreateDbContextAsync();
                     var existing = await db.Episodes
-                        .Where(e => e.SeriesMovieId == sid && e.SeasonNumber == season)
+                        .Where(e => e.SeriesId == sid && e.SeasonNumber == season)
                         .ToDictionaryAsync(e => e.EpisodeNumber);
                     foreach (var ep in eps)
                     {
@@ -116,7 +116,7 @@ namespace MovieTheater.Imdb
                         {
                             db.Episodes.Add(new Episode
                             {
-                                SeriesMovieId = sid,
+                                SeriesId = sid,
                                 SeasonNumber = season,
                                 EpisodeNumber = ep.Episode,
                                 Title = ep.Title,

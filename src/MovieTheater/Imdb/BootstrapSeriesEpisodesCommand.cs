@@ -145,10 +145,6 @@ namespace MovieTheater.Imdb
                             db.Episodes.Add(new Episode
                             {
                                 SeriesId = id,
-                                // Episode.SeriesMovieId is a non-nullable FK to Movie.id; during dual-existence
-                                // the series exists in both tables with the SAME id, so point it at the twin.
-                                // (Dropped at the Stage-D flip, when episodes link by SeriesId alone.)
-                                SeriesMovieId = id,
                                 SeasonNumber = season,
                                 EpisodeNumber = ep.Episode,
                                 Title = ep.Title,

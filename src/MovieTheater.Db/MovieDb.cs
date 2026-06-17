@@ -106,15 +106,8 @@ namespace MovieTheater.Db
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Episode>()
-                .HasIndex(e => new { e.SeriesMovieId, e.SeasonNumber, e.EpisodeNumber })
+                .HasIndex(e => new { e.SeriesId, e.SeasonNumber, e.EpisodeNumber })
                 .IsUnique();
-
-            // Legacy link to the series' old Movie row (dropped at the Series-split flip).
-            modelBuilder.Entity<Episode>()
-                .HasOne(e => e.SeriesMovie)
-                .WithMany()
-                .HasForeignKey(e => e.SeriesMovieId)
-                .OnDelete(DeleteBehavior.Cascade);
 
             // Canonical link to the standalone Series (Restrict avoids a 2nd cascade path into Episode).
             modelBuilder.Entity<Episode>()
@@ -166,10 +159,15 @@ namespace MovieTheater.Db
                 .HasOne(p => p.Series).WithOne(s => s.PosterDetails)
                 .HasForeignKey<SeriesPosterDetails>(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
 
-            // A viewing targets a Movie OR a Series; Restrict avoids a multiple-cascade-path error from User.
+            // A viewing targets a Movie OR a Series OR a MiscVideo; Restrict avoids a multiple-cascade-path
+            // error from User and keeps a viewing from silently vanishing when its target is reclassified.
             modelBuilder.Entity<Viewing>()
                 .HasOne(v => v.Series).WithMany(s => s.Viewings)
                 .HasForeignKey(v => v.SeriesId).OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Viewing>()
+                .HasOne(v => v.MiscVideo).WithMany(mv => mv.Viewings)
+                .HasForeignKey(v => v.MiscVideoId).OnDelete(DeleteBehavior.Restrict);
 
             // A misc video owns its Playable (Restrict, like Episode) and may relate to a Movie OR a
             // Series via two typed FKs (a bare id is ambiguous; see MiscVideo). Both relations Restrict
