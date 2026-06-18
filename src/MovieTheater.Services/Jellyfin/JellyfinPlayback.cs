@@ -40,6 +40,10 @@ namespace MovieTheater.Services.Jellyfin
         public string? Id { get; set; }
         public JellyfinSessionTranscodingInfo? TranscodingInfo { get; set; }
         public JellyfinSessionNowPlaying? NowPlayingItem { get; set; }
+        /// <summary>Last time the session reported playback progress. Our ~10s Stream/Progress heartbeat
+        /// drives this (via ReportPlaybackProgress), so it goes stale within a beat or two of a client
+        /// disconnecting — a far tighter liveness signal than Jellyfin's own session timeout.</summary>
+        public DateTime? LastPlaybackCheckIn { get; set; }
     }
 
     public class JellyfinSessionTranscodingInfo

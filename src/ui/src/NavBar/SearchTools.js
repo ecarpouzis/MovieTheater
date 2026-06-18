@@ -176,6 +176,7 @@ function SearchTools({ search, userData }) {
             allowClear
             placeholder="Genre (matches all selected)"
             style={{ width: "100%" }}
+            getPopupContainer={(trigger) => trigger.parentNode}
             value={Array.isArray(search.genre) ? search.genre : search.genre ? [search.genre] : []}
             onChange={(vals) => navigateToBrowseSearch(vals.length ? "genre" : undefined, vals.join(","))}
             options={genres.map((g) => ({ label: g, value: g }))}
@@ -188,6 +189,10 @@ function SearchTools({ search, userData }) {
         allowClear
         placeholder="Title type"
         style={{ width: "100%" }}
+        // Render the popup inside the nav drawer's stacking context. Default AntD portals it to
+        // <body> at z-index 1050, which sits BEHIND the mobile nav drawer (z-index 1250) — so the
+        // options were invisible/untappable on mobile. Anchoring to the trigger's parent fixes it.
+        getPopupContainer={(trigger) => trigger.parentNode}
         value={search.titleType || undefined}
         onChange={(val) => navigateToBrowseSearch(val ? "type" : undefined, val || "")}
         options={[

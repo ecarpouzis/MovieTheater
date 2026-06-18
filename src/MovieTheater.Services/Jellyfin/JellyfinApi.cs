@@ -133,12 +133,24 @@ namespace MovieTheater.Services.Jellyfin
                 $"/Videos/ActiveEncodings?deviceId={Uri.EscapeDataString(DeviceId)}&playSessionId={Uri.EscapeDataString(playSessionId)}", cancel);
         }
 
+        /// <summary>A transcode whose session hasn't checked in within this window is treated as
+        /// abandoned and no longer counts against the concurrency limit. Sized to tolerate a couple of
+        /// missed ~10s Stream/Progress heartbeats.</summary>
+        private const int ActiveSessionStaleSeconds = 45;
+
         /// <summary>Active sessions with a video transcode running — the concurrency-guard input.</summary>
         public async Task<int> GetActiveTranscodeCountAsync(CancellationToken cancel = default)
         {
             EnsureConfigured();
             var sessions = await httpClient.GetFromJsonAsync<List<JellyfinSession>>("/Sessions", JsonOptions, cancel) ?? new();
-            return sessions.Count(s => s.TranscodingInfo != null && s.NowPlayingItem != null);
+            // Count a transcode unless its session has gone stale: our ~10s Stream/Progress heartbeat keeps
+            // Jellyfin's LastPlaybackCheckIn fresh, so a client that dropped without a clean Stop (tab close
+            // w/o beacon, network loss, sleep) stops counting within a beat or two instead of lingering as a
+            // ghost until Jellyfin's own reaper clears it. A just-started session with no check-in yet (null)
+            // still counts, so we never undercount a live stream mid-startup.
+            var cutoff = DateTime.UtcNow.AddSeconds(-ActiveSessionStaleSeconds);
+            return sessions.Count(s => s.TranscodingInfo != null && s.NowPlayingItem != null
+                && !(s.LastPlaybackCheckIn is DateTime checkIn && checkIn.ToUniversalTime() <= cutoff));
         }
 
         public const string DeviceId = "movietheater-site";
