@@ -444,11 +444,19 @@ function TvPage({ userData }) {
       if (pausedRef.current) videoRef.current?.pause(); // joined a frozen channel — hold the frame
       else wakeChrome(); // playback is live — start the idle fade countdown
     };
+    // Safety net: if frames are actually advancing, the channel IS tuned — clear the "Tuning in…"
+    // card even when the 'playing' event was missed (a seek-resume that never re-fires it, a reused
+    // prewarm, or a handler that threw before the state flush). No-op once already cleared.
+    const onTimeUpdate = () => {
+      if (video.currentTime > 0 && !video.paused) setTuning(false);
+    };
     video.addEventListener("ended", onEnded);
     video.addEventListener("playing", onPlaying);
+    video.addEventListener("timeupdate", onTimeUpdate);
     return () => {
       video.removeEventListener("ended", onEnded);
       video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("timeupdate", onTimeUpdate);
     };
   }, [channel, tune, wakeChrome]);
 
