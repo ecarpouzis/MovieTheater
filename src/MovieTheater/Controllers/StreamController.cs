@@ -61,7 +61,7 @@ namespace MovieTheater.Controllers
 
         public class StartRequest
         {
-            public int MovieId { get; set; }                 // legacy: a movie to play (its Primary file)
+            public int? MovieId { get; set; }                 // legacy: a movie to play (its Primary file)
             public int? PlayableId { get; set; }             // generic: any title's Playable (movie / episode / misc)
             public int? MediaFileId { get; set; }            // a specific Part / Variant / Extra to play
             public long? MaxBitrateBps { get; set; }
@@ -85,6 +85,9 @@ namespace MovieTheater.Controllers
         {
           try
           {
+            // Without [ApiController], an unbindable body yields a null model rather than an auto-400.
+            if (request == null)
+                return BadRequest(new { message = "Invalid request." });
             if (string.IsNullOrEmpty(config.StreamGatewayBaseUrl) || string.IsNullOrEmpty(config.StreamTokenSecret))
                 return StatusCode(501, new { message = "Streaming is not configured on this server." });
 
@@ -285,20 +288,15 @@ namespace MovieTheater.Controllers
           }
           catch (Exception ex)
           {
-              // Diagnostic: surface the failure (+ the throwing frame) so the watch page shows the real
-              // cause instead of a dead-end 500. (Private app, admin-facing; temporary.)
               logger.LogError(ex, "Stream/Start failed");
-              var frames = string.Join(" <- ", (ex.StackTrace ?? "")
-                  .Split('\n').Select(l => l.Trim()).Where(l => l.StartsWith("at "))
-                  .Take(3));
-              return StatusCode(500, new { message = $"{ex.GetType().Name}: {ex.Message} :: {frames}" });
+              return StatusCode(500, new { message = "The stream could not be started." });
           }
         }
 
         public class ProgressRequest
         {
             public string PlaySessionId { get; set; }
-            public int MovieId { get; set; }
+            public int? MovieId { get; set; }
             public int? PlayableId { get; set; }
             public int? MediaFileId { get; set; }   // the exact file in play (a Part/Variant/Extra) — for the right Jellyfin item
             public long PositionTicks { get; set; }
@@ -366,7 +364,7 @@ namespace MovieTheater.Controllers
         public class StopRequest
         {
             public string PlaySessionId { get; set; }
-            public int MovieId { get; set; }
+            public int? MovieId { get; set; }
             public int? PlayableId { get; set; }
             public int? MediaFileId { get; set; }
         }
