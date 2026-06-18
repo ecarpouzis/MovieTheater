@@ -252,7 +252,7 @@ namespace MovieTheater.RottenTomatoes
             catch (OperationCanceledException) { }
         }
 
-        // Eric's library uses collection/series naming that doesn't match RT's real titles.
+        // The library uses collection/series naming that doesn't match RT's real titles.
         // Rewrite the search query so RT search has a chance:
         //   "Airplane 1: Airplane!"  -> "Airplane!"   (real title after a "<name> NN:" index)
         //   "Anchorman 1"            -> "Anchorman"   (only a trailing "1"/"01": the franchise's

@@ -200,10 +200,12 @@ namespace MovieTheater.Jellyfin
             PrintSection(o, $"Duplicate Jellyfin items for one movie — earlier-listed mapping kept ({duplicateItems.Count})", duplicateItems);
             PrintSection(o, $"Duplicate DB file paths ({duplicatePaths.Count})", duplicatePaths);
 
-            // ── Episodes + misc videos ──────────────────────────────────────────────
-            // Their files hang off Episode / MiscVideo Playables (not a Movie.FilePath), so the movie
-            // pass above never touches them — match Jellyfin items to those MediaFile rows by path and
-            // stamp the same id + media details, so approved series become streamable.
+            // ── Episodes, misc videos + extra movie files (Parts/Variants/Extras) ─────
+            // These hang off Episode / MiscVideo Playables (no Movie.FilePath) OR are a movie's
+            // non-Primary files — the movie pass above keys off the single Movie.FilePath, so it only
+            // ever touches a movie's Primary. Match Jellyfin items to all those MediaFile rows by path
+            // and stamp the same id + media details, so approved series AND multi-part movies (part 2+)
+            // become streamable.
             // We match against Episode + Video items PLUS the movie items: series/misc content filed
             // UNDER 1 - Movies lives in the Movies Jellyfin library, so it surfaces as Movie items rather
             // than Episode/Video. Folding the movie items in lets those interleaved files match by path
@@ -213,11 +215,24 @@ namespace MovieTheater.Jellyfin
             o.WriteLine("");
             o.WriteLine($"Jellyfin episode/video/movie candidate items: {epVidItems.Count}");
 
-            var nonMovieFiles = await (
-                from f in db.MediaFiles
-                join p in db.Playables on f.PlayableId equals p.Id
-                where p.Kind != PlayableKind.Movie
-                select f).ToListAsync(cancel);
+            // Everything the movie pass didn't already stamp: all episode/misc files, a movie's non-Primary
+            // files (split parts, alternate cuts, extras), AND any movie Primary the movie pass couldn't
+            // match. That last case is a movie filed under the series/episode tree (e.g. 2 - Video\Series):
+            // Jellyfin surfaces its file as a Video item, invisible to the movie pass (which only scans
+            // Movie items) — but visible here, since the movie items are folded into epVidItems above.
+            var pass1MatchedPlayables = chosen.Keys
+                .Select(id => movieById[id].PlayableId)
+                .Where(pid => pid != null).Select(pid => pid!.Value)
+                .ToHashSet();
+            var nonMovieFiles = (await (
+                    from f in db.MediaFiles
+                    join p in db.Playables on f.PlayableId equals p.Id
+                    select new { File = f, p.Kind }).ToListAsync(cancel))
+                .Where(x => x.Kind != PlayableKind.Movie
+                            || x.File.Role != MovieFileRole.Primary
+                            || !pass1MatchedPlayables.Contains(x.File.PlayableId))
+                .Select(x => x.File)
+                .ToList();
             var nonMovieByPath = new Dictionary<string, MediaFile>();
             foreach (var f in nonMovieFiles)
                 nonMovieByPath[JellyfinPathMapper.NormalizeForCompare(f.Path)] = f;   // last wins on a dup path (rare)
@@ -258,10 +273,10 @@ namespace MovieTheater.Jellyfin
                 await db.SaveChangesAsync(cancel);
             }
 
-            o.WriteLine($"Episode/misc files matched by path: {matchedEpFileIds.Count}/{nonMovieFiles.Count}" +
+            o.WriteLine($"Episode/movie-part/misc files matched by path: {matchedEpFileIds.Count}/{nonMovieFiles.Count}" +
                         (nonMovieFiles.Count == 0 ? "" : $" ({100.0 * matchedEpFileIds.Count / nonMovieFiles.Count:F1}%)"));
-            PrintSection(o, $"Episode/misc Jellyfin items the DB doesn't track ({epUntracked.Count})", epUntracked);
-            PrintSection(o, $"Episode/misc Jellyfin paths no mapping covers ({epUntranslatable.Count})", epUntranslatable);
+            PrintSection(o, $"Episode/movie-part/misc Jellyfin items the DB doesn't track ({epUntracked.Count})", epUntracked);
+            PrintSection(o, $"Episode/movie-part/misc Jellyfin paths no mapping covers ({epUntranslatable.Count})", epUntranslatable);
         }
 
         private void PrintSection(ConsoleWriter o, string heading, IEnumerable<string> lines)

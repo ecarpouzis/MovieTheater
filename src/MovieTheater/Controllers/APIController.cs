@@ -2924,15 +2924,10 @@ namespace MovieTheater.Controllers
             if (!await IsCurrentUserEditor()) return Forbid();
             bool gapsScope = string.Equals(scope, "gaps", StringComparison.OrdinalIgnoreCase);
 
-            // Movies only — series-typed rows now live in the Series table (added below).
-            var raw = await movieDb.Movies
-                .Where(m => m.ReviewBatch != null && m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries)
-                .Select(m => new { m.id, m.Title, m.SimpleTitle, m.imdbID, m.TitleType, m.PlayableId, m.ReviewBatch, m.ReviewProvenance, m.ReviewConfidence, m.ReviewSourcePath, m.ImdbNeedsReview, m.ImdbReviewReason, m.ReleaseDate, m.ImdbReleaseDate, PosterLink = m.PosterDetails != null ? m.PosterDetails.PosterLink : null })
-                .ToListAsync();
-
             // File / episode summaries so each card shows "N files" / "have X of Y" and, crucially,
             // whether those files are actually *streamable* now (synced to Jellyfin, not gone missing)
-            // — an unplayable title is a concern the reviewer must see.
+            // — an unplayable title is a concern the reviewer must see. Computed first so the "oddities"
+            // scope below can select live titles whose files aren't streamable.
             var fileByPlayable = (await movieDb.MediaFiles.GroupBy(f => f.PlayableId)
                 .Select(g => new
                 {
@@ -2940,6 +2935,7 @@ namespace MovieTheater.Controllers
                     n = g.Count(),
                     playable = g.Count(f => f.JellyfinItemId != null && f.MissingSinceUtc == null),
                     missing = g.Count(f => f.MissingSinceUtc != null),
+                    primary = g.Count(f => f.Role == MovieFileRole.Primary),
                 }).ToListAsync()).ToDictionary(x => x.Key, x => x);
             var epTotal = await movieDb.Episodes.Where(e => e.SeriesId != null).GroupBy(e => e.SeriesId!.Value)
                 .Select(g => new { g.Key, n = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.n);
@@ -2950,6 +2946,25 @@ namespace MovieTheater.Controllers
                 .Where(e => e.SeriesId != null && e.PlayableId != null
                     && movieDb.MediaFiles.Any(f => f.PlayableId == e.PlayableId && f.JellyfinItemId != null && f.MissingSinceUtc == null))
                 .GroupBy(e => e.SeriesId!.Value).Select(g => new { g.Key, n = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.n);
+
+            // "oddities" scope additionally surfaces LIVE (already-approved, ReviewBatch == null) titles
+            // with a file oddity — files present but none streamable, a file gone missing, or no Primary
+            // — that haven't been explicitly acknowledged (OddityAcknowledgedUtc). A live title with no
+            // files at all is a different concern (a gap), not surfaced here.
+            bool oddScope = string.Equals(scope, "oddities", StringComparison.OrdinalIgnoreCase);
+            var oddPlayableIds = oddScope
+                ? fileByPlayable.Where(kv => kv.Value.n > 0 && (kv.Value.playable == 0 || kv.Value.missing > 0 || kv.Value.primary == 0))
+                    .Select(kv => kv.Key).ToHashSet()
+                : new HashSet<int>();
+
+            // Movies only — series-typed rows now live in the Series table (added below).
+            var raw = await movieDb.Movies
+                .Where(m => m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries
+                    && (m.ReviewBatch != null
+                        || (oddScope && m.ReviewBatch == null && m.OddityAcknowledgedUtc == null
+                            && m.PlayableId != null && oddPlayableIds.Contains(m.PlayableId.Value))))
+                .Select(m => new { m.id, m.Title, m.SimpleTitle, m.imdbID, m.TitleType, m.PlayableId, m.ReviewBatch, m.ReviewProvenance, m.ReviewConfidence, m.ReviewSourcePath, m.ImdbNeedsReview, m.ImdbReviewReason, m.ReleaseDate, m.ImdbReleaseDate, PosterLink = m.PosterDetails != null ? m.PosterDetails.PosterLink : null })
+                .ToListAsync();
 
             // Lowest-trust first so the riskiest resolutions get eyeballed before the easy bulk.
             static int ConfRank(string? c) => (c ?? "").ToUpperInvariant() switch { "LOW" => 0, "MEDIUM" => 1, "NONE" => 0, "HIGH" => 2, _ => 3 };
@@ -2985,8 +3000,14 @@ namespace MovieTheater.Controllers
             var gapSeriesIds = gapsScope
                 ? epTotal.Where(kv => (epPlayable.TryGetValue(kv.Key, out var p) ? p : 0) < kv.Value).Select(kv => kv.Key).ToHashSet()
                 : new HashSet<int>();
+            // A series oddity: episodes are mapped but some aren't streamable (file missing / not synced) —
+            // epHave > epPlayable. (Plain unmapped gaps belong to the "gaps" scope, not here.)
+            var oddSeriesIds = oddScope
+                ? epHave.Where(kv => kv.Value > (epPlayable.TryGetValue(kv.Key, out var p) ? p : 0)).Select(kv => kv.Key).ToHashSet()
+                : new HashSet<int>();
             var seriesRaw = await movieDb.Series
-                .Where(s => s.ReviewBatch != null || gapSeriesIds.Contains(s.Id))
+                .Where(s => s.ReviewBatch != null || gapSeriesIds.Contains(s.Id)
+                    || (oddScope && oddSeriesIds.Contains(s.Id) && s.OddityAcknowledgedUtc == null))
                 .Select(s => new { s.Id, s.Title, s.SimpleTitle, s.imdbID, s.TitleType, s.ReviewBatch, s.ReviewProvenance, s.ReviewConfidence, s.ReviewSourcePath, s.ImdbNeedsReview, s.ImdbReviewReason, s.ReleaseDate, s.ImdbReleaseDate, s.StartYear, PosterLink = s.PosterDetails != null ? s.PosterDetails.PosterLink : null })
                 .ToListAsync();
             items.AddRange(seriesRaw.Select(s => new IngestReviewItemDto
@@ -3062,6 +3083,36 @@ namespace MovieTheater.Controllers
             var byConfidence = items.GroupBy(i => i.ReviewConfidence ?? "?").Select(g => new { confidence = g.Key, count = g.Count() }).ToList();
 
             return Ok(new { total = items.Count, batches, byType, byConfidence, items });
+        }
+
+        public class AcknowledgeOddityRequest
+        {
+            public int Id { get; set; }
+            public string Kind { get; set; } = "movie";   // "movie" | "series"
+        }
+
+        // Mark a live title's file oddity as reviewed so it stops surfacing in the "oddities" scope.
+        // Does NOT touch files or ReviewBatch — purely "I've seen this, it's fine / I'll handle it".
+        [HttpPost("/API/Admin/IngestReview/AcknowledgeOddity")]
+        public async Task<IActionResult> AcknowledgeOddity([FromBody] AcknowledgeOddityRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (req == null) return BadRequest(new { Message = "Invalid request." });
+            var now = DateTime.UtcNow;
+            if (string.Equals(req.Kind, "series", StringComparison.OrdinalIgnoreCase))
+            {
+                var s = await movieDb.Series.FirstOrDefaultAsync(x => x.Id == req.Id);
+                if (s == null) return NotFound(new { Message = "Series not found" });
+                s.OddityAcknowledgedUtc = now;
+            }
+            else
+            {
+                var m = await movieDb.Movies.FirstOrDefaultAsync(x => x.id == req.Id);
+                if (m == null) return NotFound(new { Message = "Movie not found" });
+                m.OddityAcknowledgedUtc = now;
+            }
+            await movieDb.SaveChangesAsync();
+            return Ok(new { Success = true });
         }
 
         // Per-title detail for the review tool: a movie's media files, or a series' episodes grouped by
@@ -3292,7 +3343,7 @@ namespace MovieTheater.Controllers
             foreach (var m in rows)
             {
                 // IMDb's scraped year wins over ours when they differ — the scrape is the reliable source
-                // (Eric's rule), so persist it onto the canonical ReleaseDate at approve/save time.
+                // (project rule), so persist it onto the canonical ReleaseDate at approve/save time.
                 if (m.ImdbReleaseDate.HasValue && (m.ReleaseDate == null || m.ReleaseDate.Value.Year != m.ImdbReleaseDate.Value.Year))
                     m.ReleaseDate = m.ImdbReleaseDate;
                 m.ReviewBatch = null; m.ReviewProvenance = null; m.ReviewConfidence = null;

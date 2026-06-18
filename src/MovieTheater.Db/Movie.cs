@@ -178,6 +178,12 @@ namespace MovieTheater.Db
         [MaxLength(1024)]
         public string? ReviewSourcePath { get; set; }
 
+        /// <summary>When a reviewer explicitly acknowledged a <em>file oddity</em> (no playable file,
+        /// missing file, no Primary, extras-only) on this otherwise-live title. While null, an
+        /// odd live title keeps surfacing in the review tool's "oddities" scope; once stamped it
+        /// drops off. Distinct from <see cref="ReviewBatch"/> (fresh-ingest quarantine).</summary>
+        public DateTime? OddityAcknowledgedUtc { get; set; }
+
         [Key]
         public int id { get; set; }
 

@@ -580,6 +580,15 @@ function ingestReviewRemoveFile(mediaFileId) {
   });
 }
 
+// Mark a live title's file oddity as reviewed so it stops surfacing in the "oddities" scope.
+function ingestReviewAcknowledgeOddity(id, kind) {
+  return fetch("/API/Admin/IngestReview/AcknowledgeOddity", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Id: id, Kind: kind || "movie" }),
+  });
+}
+
 function ingestReviewUpdate({ id, kind, title, simpleTitle, year, imdbID, titleType, posterLink }) {
   return fetch("/API/Admin/IngestReview/Update", {
     method: "post",
@@ -657,6 +666,7 @@ const MovieAPI = {
   ingestReviewSetEpisodeFile,
   ingestReviewSetFile,
   ingestReviewRemoveFile,
+  ingestReviewAcknowledgeOddity,
 };
 
 export { MovieAPI };

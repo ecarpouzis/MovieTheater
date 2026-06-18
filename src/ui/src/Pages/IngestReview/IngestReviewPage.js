@@ -223,7 +223,7 @@ function MiscReviewCard({ row, onApprove, onReject, onReclassify }) {
 
 // One BatchInsert-style review card: poster + the IMDb lookup cross-check + editable
 // Title / IMDb id / Type, with Approve / Reject. Edits are saved automatically on Approve.
-function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onReclassify }) {
+function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onReclassify, onAcknowledge }) {
   const [title, setTitle] = useState(row.title || "");
   const [simpleTitle, setSimpleTitle] = useState(row.simpleTitle || "");
   const [year, setYear] = useState(row.year ?? "");
@@ -308,7 +308,7 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row.id]);
 
-  // IMDb's year is the reliable source (Eric's rule), so when the lookup resolves a year it takes
+  // IMDb's year is the reliable source (project rule), so when the lookup resolves a year it takes
   // PRIORITY over our stored/ingest year — pre-fill the field with it so it's visible and gets applied
   // on Save/Approve. Only the original ingest value is overwritten; a year you've hand-edited is kept.
   useEffect(() => {
@@ -387,6 +387,15 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
     setWorking(true);
     try {
       await onReclassify(row, toKind);
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function acknowledge() {
+    setWorking(true);
+    try {
+      await onAcknowledge(row);
     } finally {
       setWorking(false);
     }
@@ -509,6 +518,13 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
               Reject
             </Button>
           </Popconfirm>
+          {/* Live (already-approved) oddity rows get an Acknowledge instead of being re-approved:
+              it just records that the file oddity was seen, so the row stops surfacing. */}
+          {!row.reviewBatch && onAcknowledge && (
+            <Button disabled={working} onClick={acknowledge}>
+              Acknowledge oddity
+            </Button>
+          )}
           {dirty ? (
             <Button disabled={working} onClick={() => onSave(row.id, edits, row.kind)}>
               Save edits
@@ -795,6 +811,23 @@ export default function IngestReviewPage({ userData }) {
     }
   }, []);
 
+  // Acknowledge a live title's file oddity (records it as reviewed; nothing else changes) and drop it
+  // from the list. Movies/series only — misc has no acknowledge flag.
+  const acknowledge = useCallback(async (item) => {
+    try {
+      const res = await MovieAPI.ingestReviewAcknowledgeOddity(item.id, item.kind);
+      if (!res.ok) {
+        message.error("Acknowledge failed.");
+        return false;
+      }
+      dropItems([item]);
+      return true;
+    } catch {
+      message.error("Acknowledge failed.");
+      return false;
+    }
+  }, []);
+
   // Move a row between movie / series / misc, then re-fetch so it reappears in its new form.
   const reclassify = useCallback(
     async (item, toKind, extra) => {
@@ -892,6 +925,7 @@ export default function IngestReviewPage({ userData }) {
           options={[
             { value: "batch", label: "Open ingest batch" },
             { value: "gaps", label: "All series with gaps" },
+            { value: "oddities", label: "Live titles with file oddities" },
           ]}
         />
         <Select
@@ -979,6 +1013,7 @@ export default function IngestReviewPage({ userData }) {
                   onReject={reject}
                   onSave={save}
                   onReclassify={reclassify}
+                  onAcknowledge={acknowledge}
                 />
               )
             )}

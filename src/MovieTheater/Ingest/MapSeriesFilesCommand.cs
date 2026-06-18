@@ -364,7 +364,7 @@ namespace MovieTheater.Ingest
 
         // OVAs/OVA-numbered specials, movies, openings/endings and other bonus material carry their OWN
         // 1..N numbering that collides with the main episode run — they are NOT normal episodes, so they
-        // never get mapped to one. (Eric's rule.)
+        // never get mapped to one. (Project rule.)
         private static bool IsNonEpisode(string name)
         {
             return Regex.IsMatch(name, @"(?i)(?<![a-z])(NCED|NCOP|NCBD|Special|Specials|Picture\s*Drama|Omake|Bonus|Menu|Preview|Trailer|Recap|Extra)(?![a-z])")

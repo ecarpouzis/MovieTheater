@@ -100,6 +100,11 @@ namespace MovieTheater.Db
         [MaxLength(1024)]
         public string? ReviewSourcePath { get; set; }
 
+        /// <summary>When a reviewer acknowledged a file oddity (episodes mapped but not streamable, missing
+        /// episode files) on this otherwise-live series, so it stops surfacing in the review "oddities"
+        /// scope. Distinct from <see cref="ReviewBatch"/>. Mirrors <see cref="Movie.OddityAcknowledgedUtc"/>.</summary>
+        public DateTime? OddityAcknowledgedUtc { get; set; }
+
         // ── Navigation (peers of the Movie graph) ──
         public List<Viewing> Viewings { get; set; } = default!;
         public ICollection<SeriesCredit> Credits { get; set; } = [];

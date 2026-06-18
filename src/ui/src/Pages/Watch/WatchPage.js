@@ -53,6 +53,11 @@ function WatchPage({ userData }) {
   const streamTargetRef = useRef(streamTarget);
   streamTargetRef.current = streamTarget;
 
+  // Ordered, playable segments of a multi-part movie — Primary first, then Parts by number
+  // (normalized.files arrives already in that order). Drives auto-advance: when one part ends we
+  // roll into the next. Only meaningful for movies (a series advances by episode, not by file).
+  const partSequenceRef = useRef([]);
+
   const [movie, setMovie] = useState(null);
   const [normalized, setNormalized] = useState(null);
   const [phase, setPhase] = useState("loading"); // loading | resume | playing | ended | error
@@ -135,7 +140,9 @@ function WatchPage({ userData }) {
         }
         setSession(startData);
         const resumeTicks = startData.resumePositionTicks;
-        if (resumeTicks && resumeTicks / TICKS_PER_SECOND > 60) {
+        // Resume is stored per Playable, so it only makes sense for the title's main entry (no explicit
+        // part). When auto-advancing into a specific part we always start it from the beginning.
+        if (resumeTicks && resumeTicks / TICKS_PER_SECOND > 60 && streamTargetRef.current.mediaFileId == null) {
           setPhase("resume");
         } else {
           setPhase("playing");
@@ -288,9 +295,26 @@ function WatchPage({ userData }) {
     (seconds) => {
       handleProgress(seconds, true);
       stopCurrentSession();
+
+      // Multi-part movie: roll into the next part instead of ending. The URL's mediaFileId is the
+      // source of truth, so we just point it at the next segment — the load effect starts it at 0.
+      const seq = partSequenceRef.current;
+      if (seq.length > 1) {
+        const primaryId = seq.find((f) => f.role === "Primary")?.mediaFileId;
+        const curId = streamTargetRef.current.mediaFileId ?? primaryId;
+        const idx = seq.findIndex((f) => f.mediaFileId === curId);
+        if (idx >= 0 && idx < seq.length - 1) {
+          setStartAt(0);
+          positionRef.current = 0;
+          const params = new URLSearchParams(search);
+          params.set("mediaFileId", String(seq[idx + 1].mediaFileId));
+          history.replace({ search: `?${params.toString()}` });
+          return;
+        }
+      }
       setPhase("ended");
     },
-    [handleProgress, stopCurrentSession]
+    [handleProgress, stopCurrentSession, search, history]
   );
 
   // ── derived presentation ───────────────────────────────────────────────────
@@ -309,6 +333,15 @@ function WatchPage({ userData }) {
     if (streamTarget.mediaFileId == null || !Array.isArray(normalized?.files)) return null;
     return normalized.files.find((f) => f.mediaFileId === streamTarget.mediaFileId) || null;
   }, [normalized, streamTarget.mediaFileId]);
+
+  // The play-through order for a multi-part movie: the playable Primary + Parts, in file order.
+  // Empty unless there's more than one segment, so single-file movies/episodes keep ending normally.
+  const partSequence = useMemo(() => {
+    if (kind !== "movie" || !Array.isArray(normalized?.files)) return [];
+    const segs = normalized.files.filter((f) => (f.role === "Primary" || f.role === "Part") && f.isPlayable);
+    return segs.length > 1 ? segs : [];
+  }, [normalized, kind]);
+  partSequenceRef.current = partSequence;
 
   const FILE_ROLE_LABEL = { Part: "Part", Variant: "Variant", Extra: "Extra" };
   const subLabel = episodeInfo
@@ -430,6 +463,15 @@ function WatchPage({ userData }) {
               onClick={() => {
                 setStartAt(0);
                 positionRef.current = 0;
+                // A multi-part movie ends on its last part — replay from part 1 by dropping the
+                // mediaFileId so the load effect restarts at the Primary.
+                if (partSequence.length > 1 && streamTarget.mediaFileId != null) {
+                  const params = new URLSearchParams(search);
+                  params.delete("mediaFileId");
+                  const qs = params.toString();
+                  history.replace({ search: qs ? `?${qs}` : "" });
+                  return;
+                }
                 startSession({ startSeconds: 0 })
                   .then((next) => {
                     setSession(next);

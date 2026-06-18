@@ -174,6 +174,18 @@ namespace MovieTheater.Ingest
             {
                 rows.Insert(0, new Row { Role = MovieFileRole.Primary, Size = feature[0].Size, Path = feature[0].FullPath });
                 if (feature.Count > 1) return (rows, $"MULTI_PRIMARY({feature.Count})");
+                return (rows, "");
+            }
+
+            // No standalone feature file — every file is a Part (e.g. "Volume I/II", "CD1/CD2"). A title
+            // still needs exactly one Primary to be playable (the movie sync pass + Stream/Start key off
+            // it), so promote the first part (lowest PartNumber) to Primary; the rest stay ordered Parts.
+            var firstPart = rows.Where(r => r.Role == MovieFileRole.Part)
+                .OrderBy(r => r.PartNumber ?? int.MaxValue).FirstOrDefault();
+            if (firstPart != null)
+            {
+                firstPart.Role = MovieFileRole.Primary;
+                firstPart.PartNumber = null;
             }
             return (rows, "");
         }

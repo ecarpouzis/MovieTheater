@@ -25,7 +25,7 @@ namespace MovieTheater.Ingest
     ///   • PASS 2 (token): for franchise/collection folders named "N - Title (Year)" with on-disk typos or
     ///     extra subtitle words ("2 - Star Trek II - The Wrath of Khan (1982)"), match when the year matches
     ///     AND the movie's significant tokens are (almost) a subset of the folder's. Distinct, year-stamped
-    ///     titles only — Eric's call that this is safe.
+    ///     titles only — deemed safe by design.
     /// ASCII-folds via <see cref="TitleNorm"/> (AE-ligature -> "ae", accents stripped) so "AEon Flux" matches
     /// the on-disk "Aeon Flux (2005)". NEVER matches by SimpleTitle (munged for franchise sorting). Pass-2 rows
     /// get Label "match:movie-fuzzy" so review can eyeball them. Idempotent. Dry-run by default.
