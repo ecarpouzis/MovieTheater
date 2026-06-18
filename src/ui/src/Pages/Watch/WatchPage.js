@@ -333,7 +333,14 @@ function WatchPage({ userData }) {
     if (error.status === 503) return { head: "The theater is full", body: error.message || "Too many screens are running right now — try again in a few minutes." };
     if (error.status === 404 || error.status === 501)
       return { head: "The projector isn't installed yet", body: "Streaming hasn't been switched on for this server." };
-    return { head: "Something broke the reel", body: error.message || "The stream could not be started." };
+    // Surface the status + server message so an unexpected failure (500 = server threw,
+    // 502 = Jellyfin/transcode path) is self-diagnosing instead of a dead-end "couldn't start".
+    return {
+      head: "Something broke the reel",
+      body: `${error.message || "The stream could not be started."}${
+        error.status ? ` (error ${error.status})` : " — no response from the server"
+      }`,
+    };
   })();
 
   return (
