@@ -83,6 +83,8 @@ namespace MovieTheater.Controllers
         [HttpPost("/API/Stream/Start")]
         public async Task<IActionResult> Start([FromBody] StartRequest request)
         {
+          try
+          {
             if (string.IsNullOrEmpty(config.StreamGatewayBaseUrl) || string.IsNullOrEmpty(config.StreamTokenSecret))
                 return StatusCode(501, new { message = "Streaming is not configured on this server." });
 
@@ -115,10 +117,14 @@ namespace MovieTheater.Controllers
             if (file?.JellyfinItemId == null)
                 return NotFound(new { message = "This title has no playable file." });
 
-            // Optional concurrency guard — a friendly "theater full" beats a melted GPU.
+            // Optional concurrency guard — a friendly "theater full" beats a melted GPU. A failure to
+            // count (Jellyfin hiccup, unexpected /Sessions payload) must never 500 the stream — log and
+            // allow rather than block.
             if (config.StreamingMaxConcurrentTranscodes > 0)
             {
-                var active = await jellyfin.GetActiveTranscodeCountAsync();
+                int active;
+                try { active = await jellyfin.GetActiveTranscodeCountAsync(); }
+                catch (Exception ex) { logger.LogWarning(ex, "Transcode-count check failed; allowing the stream"); active = 0; }
                 if (active >= config.StreamingMaxConcurrentTranscodes)
                     return StatusCode(503, new { message = "The theater is full — too many streams are running. Try again in a few minutes." });
             }
@@ -276,6 +282,14 @@ namespace MovieTheater.Controllers
                 selectedSubtitleIndex = request.SubtitleStreamIndex,
                 resumePositionTicks = resume,
             });
+          }
+          catch (Exception ex)
+          {
+              // Diagnostic: surface the failure so the watch page shows the real cause instead of a
+              // dead-end 500. (Private app, admin-facing.)
+              logger.LogError(ex, "Stream/Start failed");
+              return StatusCode(500, new { message = $"{ex.GetType().Name}: {ex.Message}" });
+          }
         }
 
         public class ProgressRequest

@@ -237,6 +237,9 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
       onCancel={onClose}
       footer={null}
       width={960}
+      // Above the nav bar (z-index 1300) so the full-screen mobile modal — and its pinned
+      // close button — render over it instead of being trapped beneath it.
+      zIndex={1500}
       wrapClassName="movie-modal"
       style={{ "--poster-rgb": posterRgb(movie?.posterDetails?.dominantColor) }}
     >
