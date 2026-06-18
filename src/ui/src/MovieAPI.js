@@ -504,8 +504,9 @@ function adminSetUserSetting(userId, settingKey, settingValue) {
 // browse; these drive the on-site review queue that approves / rejects / corrects
 // them before they join the library.
 
-function ingestReviewList() {
-  return fetch("/API/Admin/IngestReview/List");
+// scope "gaps" also surfaces already-approved series that still have unmapped/unplayable episodes.
+function ingestReviewList(scope) {
+  return fetch("/API/Admin/IngestReview/List" + (scope ? "?scope=" + encodeURIComponent(scope) : ""));
 }
 
 function ingestReviewDetail(id, kind) {
@@ -557,6 +558,25 @@ function ingestReviewSetEpisodeFile(episodeId, path) {
     method: "post",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ EpisodeId: episodeId, Path: path ?? null }),
+  });
+}
+
+// Assign a file as Primary or Extra, to an episode (targetType "episode", targetId = episodeId) or to the
+// series' Extras holder (targetType "series", targetId = seriesId; optional seasonNumber to scope it).
+function ingestReviewSetFile({ targetType = "episode", targetId, seasonNumber = null, role = "Primary", path }) {
+  return fetch("/API/Admin/IngestReview/SetFile", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ TargetType: targetType, TargetId: targetId, SeasonNumber: seasonNumber, Role: role, Path: path ?? null }),
+  });
+}
+
+// Delete one mapped file by its MediaFile id (used to drop a wrong Primary or remove an Extra).
+function ingestReviewRemoveFile(mediaFileId) {
+  return fetch("/API/Admin/IngestReview/RemoveFile", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ MediaFileId: mediaFileId }),
   });
 }
 
@@ -635,6 +655,8 @@ const MovieAPI = {
   ingestReviewReclassify,
   ingestReviewBackfillPosters,
   ingestReviewSetEpisodeFile,
+  ingestReviewSetFile,
+  ingestReviewRemoveFile,
 };
 
 export { MovieAPI };

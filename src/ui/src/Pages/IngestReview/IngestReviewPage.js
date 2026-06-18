@@ -236,6 +236,8 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [settingEp, setSettingEp] = useState(null); // episodeId whose file is being assigned
   const [epPath, setEpPath] = useState("");
+  const [extraPath, setExtraPath] = useState("");   // series/season-level Extra path
+  const [extraSeason, setExtraSeason] = useState(""); // optional season to scope a series Extra
 
   async function refreshDetail() {
     try {
@@ -246,22 +248,44 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
     }
   }
 
-  async function submitEpFile(episodeId) {
+  async function runFileOp(fn, after) {
     setWorking(true);
     try {
-      const res = await MovieAPI.ingestReviewSetEpisodeFile(episodeId, epPath.trim() || null);
+      const res = await fn();
       if (!res.ok) {
         const b = await res.json().catch(() => ({}));
-        message.error(b.message || "Set file failed.");
-        return;
+        message.error(b.message || "File update failed.");
+        return false;
       }
-      setSettingEp(null);
-      setEpPath("");
+      if (after) after();
       await refreshDetail();
+      return true;
     } finally {
       setWorking(false);
     }
   }
+
+  // Set/clear the episode's PRIMARY file (blank path clears it).
+  const submitEpFile = (episodeId) =>
+    runFileOp(() => MovieAPI.ingestReviewSetEpisodeFile(episodeId, epPath.trim() || null),
+      () => { setSettingEp(null); setEpPath(""); });
+
+  // Add an EXTRA file to the episode (alongside its Primary).
+  const submitEpExtra = (episodeId) => {
+    if (!epPath.trim()) { message.error("Paste a path for the extra."); return; }
+    return runFileOp(() => MovieAPI.ingestReviewSetFile({ targetType: "episode", targetId: episodeId, role: "Extra", path: epPath.trim() }),
+      () => { setSettingEp(null); setEpPath(""); });
+  };
+
+  // Add a SERIES/SEASON-level Extra (attaches to the series' Extras holder).
+  const submitSeriesExtra = () => {
+    if (!extraPath.trim()) { message.error("Paste a path for the extra."); return; }
+    const season = extraSeason.trim() === "" ? null : Number(extraSeason);
+    return runFileOp(() => MovieAPI.ingestReviewSetFile({ targetType: "series", targetId: row.id, seasonNumber: season, role: "Extra", path: extraPath.trim() }),
+      () => { setExtraPath(""); setExtraSeason(""); });
+  };
+
+  const removeFile = (mediaFileId) => runFileOp(() => MovieAPI.ingestReviewRemoveFile(mediaFileId));
 
   async function toggleDetail() {
     if (!detailOpen && !detail) {
@@ -558,44 +582,75 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
                         Season {s.season} · {s.episodes.filter((e) => e.files && e.files.length).length}/{s.episodes.length}
                       </div>
                       {s.episodes.map((e) => {
-                        const f = e.files && e.files[0];
-                        const st = f ? stratOf(f.label) : null;
+                        const files = e.files || [];
+                        const primary = files.find((x) => x.role === "Primary") || files[0] || null;
+                        const extras = files.filter((x) => x !== primary);
+                        const st = primary ? stratOf(primary.label) : null;
                         const editing = settingEp === e.episodeId;
                         return (
-                          <div key={e.episode} className={"rc-ep" + (f ? "" : " rc-ep-missing")}>
+                          <div key={e.episode} className={"rc-ep" + (primary ? "" : " rc-ep-missing")}>
                             <span className="rc-epnum">E{e.episode}</span>
                             <span className="rc-eptitle" title={e.title || ""}>{e.title || "—"}</span>
                             {editing ? (
                               <span className="rc-ep-setfile">
                                 <Input
                                   size="small"
-                                  style={{ width: 300 }}
+                                  style={{ width: 280 }}
                                   value={epPath}
-                                  placeholder="paste full path from the dump (blank clears)"
+                                  placeholder="paste full path (blank clears primary)"
                                   onChange={(ev) => setEpPath(ev.target.value)}
                                   onPressEnter={() => submitEpFile(e.episodeId)}
                                 />
-                                <Button size="small" type="primary" loading={working} onClick={() => submitEpFile(e.episodeId)}>Set</Button>
+                                <Button size="small" type="primary" loading={working} onClick={() => submitEpFile(e.episodeId)}>Set primary</Button>
+                                <Button size="small" loading={working} onClick={() => submitEpExtra(e.episodeId)}>+ extra</Button>
                                 <Button size="small" onClick={() => { setSettingEp(null); setEpPath(""); }}>✕</Button>
                               </span>
                             ) : (
                               <>
-                                {f ? (
+                                {primary ? (
                                   <>
                                     {st ? <Tag color={STRAT_COLOR[st] || "default"}>{st}</Tag> : null}
-                                    <span className="rc-path" title={f.path}>{basename(f.path)}</span>
+                                    <span className="rc-path" title={primary.path}>{basename(primary.path)}</span>
+                                    {primary.mediaFileId ? <a className="rc-ep-rm" title="remove file" onClick={() => removeFile(primary.mediaFileId)}>✕</a> : null}
                                   </>
                                 ) : (
                                   <span className="rc-missing">no file</span>
                                 )}
-                                <a className="rc-ep-setlink" onClick={() => { setSettingEp(e.episodeId); setEpPath(f ? f.path : ""); }}>✎ set file</a>
+                                <a className="rc-ep-setlink" onClick={() => { setSettingEp(e.episodeId); setEpPath(primary ? primary.path : ""); }}>✎ set file</a>
                               </>
                             )}
+                            {extras.map((x) => (
+                              <span key={x.mediaFileId} className="rc-extra">
+                                <Tag color="purple">extra</Tag>
+                                <span className="rc-path" title={x.path}>{basename(x.path)}</span>
+                                <a className="rc-ep-rm" title="remove extra" onClick={() => removeFile(x.mediaFileId)}>✕</a>
+                              </span>
+                            ))}
                           </div>
                         );
                       })}
                     </div>
                   ))}
+                </div>
+                {/* Series / season-level extras — making-ofs & specials not tied to a single episode. */}
+                <div className="rc-season">
+                  <div className="rc-season-hd">Series / season extras</div>
+                  {(detail.seriesExtras || []).map((x) => {
+                    const sm = (x.label || "").match(/:s(\d+)/);
+                    return (
+                      <div key={x.mediaFileId} className="rc-ep">
+                        <Tag color="purple">extra</Tag>
+                        {sm ? <span className="rc-epnum">S{sm[1]}</span> : <span className="rc-epnum">—</span>}
+                        <span className="rc-path" title={x.path}>{basename(x.path)}</span>
+                        <a className="rc-ep-rm" title="remove extra" onClick={() => removeFile(x.mediaFileId)}>✕</a>
+                      </div>
+                    );
+                  })}
+                  <span className="rc-ep-setfile">
+                    <Input size="small" style={{ width: 80 }} value={extraSeason} placeholder="season#" onChange={(ev) => setExtraSeason(ev.target.value)} />
+                    <Input size="small" style={{ width: 260 }} value={extraPath} placeholder="paste extra path (making-of, special…)" onChange={(ev) => setExtraPath(ev.target.value)} onPressEnter={submitSeriesExtra} />
+                    <Button size="small" type="primary" loading={working} onClick={submitSeriesExtra}>Add extra</Button>
+                  </span>
                 </div>
               </>
             )}
@@ -616,6 +671,7 @@ export default function IngestReviewPage({ userData }) {
   const [confFilter, setConfFilter] = useState("ALL");
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [concernFilter, setConcernFilter] = useState("ALL");
+  const [scope, setScope] = useState("batch"); // "batch" = open ingest batch; "gaps" = all series w/ unmapped episodes
   const [page, setPage] = useState(1);
 
   // id -> { loading, data, error } for the per-card poster/detail lookups.
@@ -626,7 +682,7 @@ export default function IngestReviewPage({ userData }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await MovieAPI.ingestReviewList();
+      const res = await MovieAPI.ingestReviewList(scope);
       if (res.status === 401 || res.status === 403) {
         setForbidden(true);
         return;
@@ -639,7 +695,7 @@ export default function IngestReviewPage({ userData }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [scope]);
 
   useEffect(() => {
     load();
@@ -829,6 +885,15 @@ export default function IngestReviewPage({ userData }) {
 
       <div className="ingest-review-toolbar">
         <Input.Search placeholder="Search title / id / folder" allowClear onChange={(e) => setSearch(e.target.value)} style={{ width: 260 }} />
+        <Select
+          value={scope}
+          onChange={setScope}
+          style={{ width: 230 }}
+          options={[
+            { value: "batch", label: "Open ingest batch" },
+            { value: "gaps", label: "All series with gaps" },
+          ]}
+        />
         <Select
           value={confFilter}
           onChange={setConfFilter}

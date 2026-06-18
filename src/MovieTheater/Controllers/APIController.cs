@@ -2919,9 +2919,10 @@ namespace MovieTheater.Controllers
         }
 
         [HttpGet("/API/Admin/IngestReview/List")]
-        public async Task<IActionResult> IngestReviewList()
+        public async Task<IActionResult> IngestReviewList(string scope = "batch")
         {
             if (!await IsCurrentUserEditor()) return Forbid();
+            bool gapsScope = string.Equals(scope, "gaps", StringComparison.OrdinalIgnoreCase);
 
             // Movies only — series-typed rows now live in the Series table (added below).
             var raw = await movieDb.Movies
@@ -2978,9 +2979,14 @@ namespace MovieTheater.Controllers
                 })
                 .ToList();
 
-            // Series (their own table now), with "have X of Y" episode summaries via SeriesId.
+            // Series (their own table now), with "have X of Y" episode summaries via SeriesId. In "gaps"
+            // scope we ALSO surface series that have episodes not yet streamable (epPlayable < total) even
+            // if already approved (ReviewBatch == null), so they can be hand-mapped.
+            var gapSeriesIds = gapsScope
+                ? epTotal.Where(kv => (epPlayable.TryGetValue(kv.Key, out var p) ? p : 0) < kv.Value).Select(kv => kv.Key).ToHashSet()
+                : new HashSet<int>();
             var seriesRaw = await movieDb.Series
-                .Where(s => s.ReviewBatch != null)
+                .Where(s => s.ReviewBatch != null || gapSeriesIds.Contains(s.Id))
                 .Select(s => new { s.Id, s.Title, s.SimpleTitle, s.imdbID, s.TitleType, s.ReviewBatch, s.ReviewProvenance, s.ReviewConfidence, s.ReviewSourcePath, s.ImdbNeedsReview, s.ImdbReviewReason, s.ReleaseDate, s.ImdbReleaseDate, s.StartYear, PosterLink = s.PosterDetails != null ? s.PosterDetails.PosterLink : null })
                 .ToListAsync();
             items.AddRange(seriesRaw.Select(s => new IngestReviewItemDto
@@ -3093,14 +3099,20 @@ namespace MovieTheater.Controllers
             {
                 var ser = await movieDb.Series.FirstOrDefaultAsync(s => s.Id == id);
                 if (ser == null) return NotFound(new { Message = "Not found" });
-                var seps = await movieDb.Episodes.Where(e => e.SeriesId == id)
+                var allEps = await movieDb.Episodes.Where(e => e.SeriesId == id)
                     .OrderBy(e => e.SeasonNumber).ThenBy(e => e.EpisodeNumber)
                     .Select(e => new { e.Id, e.SeasonNumber, e.EpisodeNumber, e.Title, e.PlayableId })
                     .ToListAsync();
-                var sPlayableIds = seps.Where(e => e.PlayableId != null).Select(e => e.PlayableId!.Value).ToList();
+                // The (Season 0, Ep 0, "Extras") pseudo-episode is the holder for series/season-level Extra
+                // files (not a real episode) — pull it out and surface its files separately.
+                static bool IsExtrasHolder(int s, int e, string? t) => s == 0 && e == 0 && t == "Extras";
+                var extrasHolder = allEps.FirstOrDefault(e => IsExtrasHolder(e.SeasonNumber, e.EpisodeNumber, e.Title));
+                var seps = allEps.Where(e => !IsExtrasHolder(e.SeasonNumber, e.EpisodeNumber, e.Title)).ToList();
+                var sPlayableIds = allEps.Where(e => e.PlayableId != null).Select(e => e.PlayableId!.Value).ToList();
                 var sFilesByPlayable = (await movieDb.MediaFiles.Where(f => sPlayableIds.Contains(f.PlayableId))
-                        .Select(f => new { f.PlayableId, f.Path, f.Label }).ToListAsync())
+                        .Select(f => new { f.Id, f.PlayableId, f.Path, f.Label, f.Role }).ToListAsync())
                     .GroupBy(f => f.PlayableId).ToDictionary(g => g.Key, g => g.ToList());
+                var emptyFiles = new List<object>().Select(_ => new { mediaFileId = 0, path = (string)null, role = (string)null, label = (string)null }).ToList();
                 var sSeasons = seps.GroupBy(e => e.SeasonNumber).OrderBy(g => g.Key).Select(g => new
                 {
                     season = g.Key,
@@ -3110,16 +3122,20 @@ namespace MovieTheater.Controllers
                         episode = e.EpisodeNumber,
                         title = e.Title,
                         files = (e.PlayableId != null && sFilesByPlayable.TryGetValue(e.PlayableId.Value, out var fl))
-                            ? fl.Select(f => new { path = f.Path, label = f.Label }).ToList()
-                            : new List<object>().Select(_ => new { path = (string)null, label = (string)null }).ToList(),
+                            ? fl.Select(f => new { mediaFileId = f.Id, path = f.Path, role = f.Role.ToString(), label = f.Label }).ToList()
+                            : emptyFiles,
                     }).ToList(),
                 }).ToList();
+                var seriesExtras = (extrasHolder?.PlayableId != null && sFilesByPlayable.TryGetValue(extrasHolder.PlayableId.Value, out var xf))
+                    ? xf.Select(f => new { mediaFileId = f.Id, path = f.Path, role = f.Role.ToString(), label = f.Label }).ToList()
+                    : emptyFiles;
                 return Ok(new
                 {
                     kind = "series",
                     episodeTotal = seps.Count,
                     episodeHave = seps.Count(e => e.PlayableId != null && sFilesByPlayable.ContainsKey(e.PlayableId.Value)),
                     seasons = sSeasons,
+                    seriesExtras,
                     folderListing = ser.FolderListing,   // on-disk folder dump (from scan-series-folders)
                 });
             }
@@ -3171,6 +3187,90 @@ namespace MovieTheater.Controllers
             var prior = await movieDb.MediaFiles.Where(f => f.PlayableId == playableId && f.Role == MovieFileRole.Primary).ToListAsync();
             movieDb.MediaFiles.RemoveRange(prior);
             movieDb.MediaFiles.Add(new MediaFile { PlayableId = playableId, Path = path, Role = MovieFileRole.Primary, Label = "match:manual" });
+            await movieDb.SaveChangesAsync();
+            return Ok(new { Success = true });
+        }
+
+        // Generalized hand-map: assign a file as Primary or Extra, to an episode OR to the series' Extras
+        // holder (a Season-0 / Ep-0 "Extras" pseudo-episode that carries series/season-level extras).
+        public class SetFileRequest
+        {
+            public string TargetType { get; set; } = "episode";   // "episode" | "series"
+            public int TargetId { get; set; }                      // episodeId, or seriesId for "series"
+            public int? SeasonNumber { get; set; }                 // optional: scope a series Extra to a season
+            public string Role { get; set; } = "Primary";          // "Primary" | "Extra"
+            public string? Path { get; set; }
+        }
+
+        [HttpPost("/API/Admin/IngestReview/SetFile")]
+        public async Task<IActionResult> IngestReviewSetFile([FromBody] SetFileRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (req == null) return BadRequest(new { Message = "Body required" });
+            var path = req.Path?.Trim();
+            if (string.IsNullOrWhiteSpace(path)) return BadRequest(new { Message = "Path required" });
+
+            bool toSeries = string.Equals(req.TargetType, "series", StringComparison.OrdinalIgnoreCase);
+            // A series target is always an Extra (it has no episode of its own); an episode target honors the role.
+            var role = (toSeries || string.Equals(req.Role, "Extra", StringComparison.OrdinalIgnoreCase))
+                ? MovieFileRole.Extra : MovieFileRole.Primary;
+
+            int playableId;
+            if (toSeries)
+            {
+                // Find/create the (Season 0, Ep 0, "Extras") holder for this series.
+                var holder = await movieDb.Episodes.FirstOrDefaultAsync(e =>
+                    e.SeriesId == req.TargetId && e.SeasonNumber == 0 && e.EpisodeNumber == 0 && e.Title == "Extras");
+                if (holder == null)
+                {
+                    holder = new Episode { SeriesId = req.TargetId, SeasonNumber = 0, EpisodeNumber = 0, Title = "Extras" };
+                    movieDb.Episodes.Add(holder);
+                    await movieDb.SaveChangesAsync();
+                }
+                if (holder.PlayableId == null)
+                {
+                    holder.Playable = new Playable { Kind = PlayableKind.Episode };
+                    await movieDb.SaveChangesAsync();
+                }
+                playableId = holder.PlayableId!.Value;
+            }
+            else
+            {
+                var ep = await movieDb.Episodes.FirstOrDefaultAsync(e => e.Id == req.TargetId);
+                if (ep == null) return NotFound(new { Message = "Episode not found" });
+                if (ep.PlayableId == null)
+                {
+                    ep.Playable = new Playable { Kind = PlayableKind.Episode };
+                    await movieDb.SaveChangesAsync();
+                }
+                playableId = ep.PlayableId!.Value;
+            }
+
+            // Primary replaces the existing Primary; an Extra is added alongside (multiple allowed).
+            if (role == MovieFileRole.Primary)
+                movieDb.MediaFiles.RemoveRange(
+                    await movieDb.MediaFiles.Where(f => f.PlayableId == playableId && f.Role == MovieFileRole.Primary).ToListAsync());
+
+            if (!await movieDb.MediaFiles.AnyAsync(f => f.PlayableId == playableId && f.Path == path))
+            {
+                var label = role == MovieFileRole.Extra
+                    ? (req.SeasonNumber != null ? $"manual:extra:s{req.SeasonNumber}" : "manual:extra")
+                    : "match:manual";
+                movieDb.MediaFiles.Add(new MediaFile { PlayableId = playableId, Path = path, Role = role, Label = label });
+                await movieDb.SaveChangesAsync();
+            }
+            return Ok(new { Success = true });
+        }
+
+        public class RemoveFileRequest { public int MediaFileId { get; set; } }
+
+        [HttpPost("/API/Admin/IngestReview/RemoveFile")]
+        public async Task<IActionResult> IngestReviewRemoveFile([FromBody] RemoveFileRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var f = await movieDb.MediaFiles.FirstOrDefaultAsync(x => x.Id == req.MediaFileId);
+            if (f == null) return NotFound(new { Message = "File not found" });
+            movieDb.MediaFiles.Remove(f);
             await movieDb.SaveChangesAsync();
             return Ok(new { Success = true });
         }
