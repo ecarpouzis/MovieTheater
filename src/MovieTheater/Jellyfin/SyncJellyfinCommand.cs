@@ -202,11 +202,16 @@ namespace MovieTheater.Jellyfin
 
             // ── Episodes + misc videos ──────────────────────────────────────────────
             // Their files hang off Episode / MiscVideo Playables (not a Movie.FilePath), so the movie
-            // pass above never touches them — match Jellyfin episode/video items to those MediaFile rows
-            // by path and stamp the same id + media details, so approved series become streamable.
-            var epVidItems = await jellyfin.GetAllEpisodeAndVideoItemsAsync(cancel);
+            // pass above never touches them — match Jellyfin items to those MediaFile rows by path and
+            // stamp the same id + media details, so approved series become streamable.
+            // We match against Episode + Video items PLUS the movie items: series/misc content filed
+            // UNDER 1 - Movies lives in the Movies Jellyfin library, so it surfaces as Movie items rather
+            // than Episode/Video. Folding the movie items in lets those interleaved files match by path
+            // and get a JellyfinItemId — the item TYPE is irrelevant to playback (PlaybackInfo plays any
+            // item id), so no re-foldering or extra library is needed.
+            var epVidItems = (await jellyfin.GetAllEpisodeAndVideoItemsAsync(cancel)).Concat(items).ToList();
             o.WriteLine("");
-            o.WriteLine($"Jellyfin episode/video items: {epVidItems.Count}");
+            o.WriteLine($"Jellyfin episode/video/movie candidate items: {epVidItems.Count}");
 
             var nonMovieFiles = await (
                 from f in db.MediaFiles
