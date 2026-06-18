@@ -285,10 +285,13 @@ namespace MovieTheater.Controllers
           }
           catch (Exception ex)
           {
-              // Diagnostic: surface the failure so the watch page shows the real cause instead of a
-              // dead-end 500. (Private app, admin-facing.)
+              // Diagnostic: surface the failure (+ the throwing frame) so the watch page shows the real
+              // cause instead of a dead-end 500. (Private app, admin-facing; temporary.)
               logger.LogError(ex, "Stream/Start failed");
-              return StatusCode(500, new { message = $"{ex.GetType().Name}: {ex.Message}" });
+              var frames = string.Join(" <- ", (ex.StackTrace ?? "")
+                  .Split('\n').Select(l => l.Trim()).Where(l => l.StartsWith("at "))
+                  .Take(3));
+              return StatusCode(500, new { message = $"{ex.GetType().Name}: {ex.Message} :: {frames}" });
           }
         }
 
