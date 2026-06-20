@@ -109,21 +109,28 @@ function ConcernTags({ row }) {
 function MiscReviewCard({ row, onApprove, onReject, onReclassify }) {
   const [working, setWorking] = useState(false);
   const [detail, setDetail] = useState(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(true); // files are shown open by default — no click to expand
+  const [loadingDetail, setLoadingDetail] = useState(true);
 
-  async function toggleDetail() {
-    if (!detailOpen && !detail) {
-      setLoadingDetail(true);
+  // Load this misc video's files from the DB on open (no external lookup) so they're visible immediately.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
       try {
         const res = await MovieAPI.ingestReviewDetail(row.id, "misc");
-        setDetail(await res.json());
+        const data = await res.json();
+        if (!cancelled) setDetail(data);
       } catch {
         /* leave detail null */
       } finally {
-        setLoadingDetail(false);
+        if (!cancelled) setLoadingDetail(false);
       }
-    }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [row.id]);
+
+  function toggleDetail() {
     setDetailOpen((o) => !o);
   }
   async function act(fn) {
@@ -232,8 +239,8 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
   const [posterUrl, setPosterUrl] = useState(row.posterLink || "");
   const [working, setWorking] = useState(false);
   const [detail, setDetail] = useState(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(true); // files are shown open by default — no click to expand
+  const [loadingDetail, setLoadingDetail] = useState(true);
   const [settingEp, setSettingEp] = useState(null); // episodeId whose file is being assigned
   const [epPath, setEpPath] = useState("");
   const [extraPath, setExtraPath] = useState("");   // series/season-level Extra path
@@ -287,24 +294,27 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
 
   const removeFile = (mediaFileId) => runFileOp(() => MovieAPI.ingestReviewRemoveFile(mediaFileId));
 
-  async function toggleDetail() {
-    if (!detailOpen && !detail) {
-      setLoadingDetail(true);
-      try {
-        const res = await MovieAPI.ingestReviewDetail(row.id, row.kind);
-        setDetail(await res.json());
-      } catch {
-        /* leave detail null */
-      } finally {
-        setLoadingDetail(false);
-      }
-    }
+  function toggleDetail() {
     setDetailOpen((o) => !o);
   }
 
-  // Fetch the poster + details for this id once, when the card first renders on its page.
+  // On open, load the file / episode detail straight from the DB (no external lookup) so every card shows
+  // its mapped files immediately. The IMDb cross-check below reads the stored scraped title — also no live
+  // call. A live OMDB/IMDb lookup now happens only when the reviewer clicks "Re-lookup".
   useEffect(() => {
-    if (row.imdbID) onFetch(row.id, row.imdbID, false);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await MovieAPI.ingestReviewDetail(row.id, row.kind);
+        const data = await res.json();
+        if (!cancelled) setDetail(data);
+      } catch {
+        /* leave detail null */
+      } finally {
+        if (!cancelled) setLoadingDetail(false);
+      }
+    })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row.id]);
 
@@ -335,11 +345,17 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
   const edits = dirty ? { title, simpleTitle, year, imdbID, titleType, posterLink: posterToSave } : null;
   const folderYear = yearFromPath(row.reviewSourcePath);
   const fYear = fetchedYear(d);
+  // The IMDb cross-check title: the stored scraped title by default (no live call), upgraded to a fresh
+  // live result only after the reviewer clicks "Re-lookup".
+  const liveTitle = d && d.title ? d.title : null;
+  const imdbCrossTitle = liveTitle || row.imdbScrapedTitle || null;
   // The on-disk folder year vs the year we'll store. A match is a strong "this resolution is right"
-  // signal; a mismatch (now read from the immediate folder) is worth a closer look.
+  // signal; a mismatch (read from the immediate folder) is worth a closer look. Compares against a fresh
+  // live year if present, else the stored/edited year — so the check works on open without a lookup.
   const storedYear = year != null && year !== "" ? String(year) : "";
-  const yearConfirmed = folderYear && storedYear && folderYear === storedYear;
-  const yearMismatch = folderYear && fYear && folderYear !== fYear;
+  const compareYear = fYear || storedYear;
+  const yearConfirmed = folderYear && compareYear && folderYear === compareYear;
+  const yearMismatch = folderYear && compareYear && folderYear !== compareYear;
 
   // Re-lookup pulls fresh IMDb/OMDB data for the current id and fills the editable fields the user
   // would otherwise hand-copy: Title, Year, Type, and the Poster URL. SimpleTitle is left alone
@@ -441,15 +457,18 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
         <div className="review-card-imdbsays">
           {details && details.loading ? (
             <Text type="secondary">looking up {imdbID}…</Text>
-          ) : d && d.title ? (
+          ) : imdbCrossTitle ? (
             <Text>
-              IMDb resolves to <b>{d.title}</b>
-              {fYear ? ` (${fYear})` : ""}
+              IMDb{liveTitle ? " resolves to" : ":"} <b>{imdbCrossTitle}</b>
+              {(liveTitle ? fYear : storedYear) ? ` (${liveTitle ? fYear : storedYear})` : ""}
+              {!liveTitle ? <Text type="secondary"> · stored</Text> : null}
               {yearConfirmed ? <Tag color="green" style={{ marginLeft: 8 }}>✓ year {folderYear}</Tag> : null}
               {yearMismatch ? <Tag color="red" style={{ marginLeft: 8 }}>folder says {folderYear}</Tag> : null}
             </Text>
+          ) : imdbID ? (
+            <Text type="secondary">no stored IMDb data for {imdbID} — “Re-lookup” to fetch live</Text>
           ) : (
-            <Text type="secondary">no lookup result for {imdbID || "—"}</Text>
+            <Text type="secondary">no IMDb id</Text>
           )}
         </div>
 
@@ -575,6 +594,13 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
                   (detail.files || []).map((f, i) => (
                     <div key={i} className="rc-file">
                       <Tag color={f.role === "Primary" ? "green" : "default"}>{f.role}</Tag>
+                      {f.isPlayable ? (
+                        <Tag color="green">streamable</Tag>
+                      ) : f.missing ? (
+                        <Tag color="gold">missing</Tag>
+                      ) : (
+                        <Tag color="orange">mapped · not synced</Tag>
+                      )}
                       {f.label ? <Tag>{f.label}</Tag> : null}
                       <span className="rc-path" title={f.path}>{basename(f.path)}</span>
                     </div>
@@ -585,8 +611,25 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
               <>
                 {detail.folderListing ? (
                   <div className="rc-folderdump">
-                    <div className="rc-folderdump-hd">📁 on-disk folder — [OK] captured · [??] NOT captured (copy a path, then "set file" on an episode)</div>
-                    <textarea className="rc-folderdump-box" readOnly value={detail.folderListing} spellCheck={false} />
+                    <div className="rc-folderdump-hd">
+                      📁 on-disk folder — <span className="rc-fd-tag rc-fd-ok">[OK] mapped</span>{" "}
+                      <span className="rc-fd-tag rc-fd-no">[??] NOT captured</span> (select a path, then "set file" on an episode)
+                    </div>
+                    {/* Colorized per-line so unmapped ([??]) files stand out at a glance; still plain text you can select/copy. */}
+                    <div className="rc-folderdump-box">
+                      {detail.folderListing.split("\n").map((ln, i) => {
+                        const cls = ln.startsWith("[??]")
+                          ? "rc-fd-line rc-fd-no"
+                          : ln.startsWith("[OK]")
+                          ? "rc-fd-line rc-fd-ok"
+                          : "rc-fd-line";
+                        return (
+                          <div key={i} className={cls}>
+                            {ln || " "}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ) : (
                   <Text type="secondary">No folder scan yet — run <code>scan-series-folders</code>.</Text>

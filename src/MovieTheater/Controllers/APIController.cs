@@ -2896,6 +2896,9 @@ namespace MovieTheater.Controllers
             public string? TitleType { get; set; }
             /// <summary>Resolved release year — compared to the on-disk folder year to confirm a match.</summary>
             public int? Year { get; set; }
+            /// <summary>Authoritative IMDb title from the last scrape/enrich. Lets the card show the IMDb
+            /// cross-check from stored data — no per-card live OMDB lookup on page load.</summary>
+            public string? ImdbScrapedTitle { get; set; }
             /// <summary>Current stored poster link (pre-fills the editable Poster URL field).</summary>
             public string? PosterLink { get; set; }
             public string? ReviewBatch { get; set; }
@@ -2963,7 +2966,7 @@ namespace MovieTheater.Controllers
                     && (m.ReviewBatch != null
                         || (oddScope && m.ReviewBatch == null && m.OddityAcknowledgedUtc == null
                             && m.PlayableId != null && oddPlayableIds.Contains(m.PlayableId.Value))))
-                .Select(m => new { m.id, m.Title, m.SimpleTitle, m.imdbID, m.TitleType, m.PlayableId, m.ReviewBatch, m.ReviewProvenance, m.ReviewConfidence, m.ReviewSourcePath, m.ImdbNeedsReview, m.ImdbReviewReason, m.ReleaseDate, m.ImdbReleaseDate, PosterLink = m.PosterDetails != null ? m.PosterDetails.PosterLink : null })
+                .Select(m => new { m.id, m.Title, m.SimpleTitle, m.imdbID, m.TitleType, m.PlayableId, m.ReviewBatch, m.ReviewProvenance, m.ReviewConfidence, m.ReviewSourcePath, m.ImdbNeedsReview, m.ImdbReviewReason, m.ReleaseDate, m.ImdbReleaseDate, m.ImdbScrapedTitle, PosterLink = m.PosterDetails != null ? m.PosterDetails.PosterLink : null })
                 .ToListAsync();
 
             // Lowest-trust first so the riskiest resolutions get eyeballed before the easy bulk.
@@ -2980,6 +2983,7 @@ namespace MovieTheater.Controllers
                     imdbID = m.imdbID,
                     TitleType = m.TitleType.ToString(),
                     Year = m.ReleaseDate != null ? m.ReleaseDate.Value.Year : (m.ImdbReleaseDate != null ? m.ImdbReleaseDate.Value.Year : (int?)null),
+                    ImdbScrapedTitle = m.ImdbScrapedTitle,
                     PosterLink = m.PosterLink,
                     ReviewBatch = m.ReviewBatch,
                     ReviewProvenance = m.ReviewProvenance,
@@ -3008,7 +3012,7 @@ namespace MovieTheater.Controllers
             var seriesRaw = await movieDb.Series
                 .Where(s => s.ReviewBatch != null || gapSeriesIds.Contains(s.Id)
                     || (oddScope && oddSeriesIds.Contains(s.Id) && s.OddityAcknowledgedUtc == null))
-                .Select(s => new { s.Id, s.Title, s.SimpleTitle, s.imdbID, s.TitleType, s.ReviewBatch, s.ReviewProvenance, s.ReviewConfidence, s.ReviewSourcePath, s.ImdbNeedsReview, s.ImdbReviewReason, s.ReleaseDate, s.ImdbReleaseDate, s.StartYear, PosterLink = s.PosterDetails != null ? s.PosterDetails.PosterLink : null })
+                .Select(s => new { s.Id, s.Title, s.SimpleTitle, s.imdbID, s.TitleType, s.ReviewBatch, s.ReviewProvenance, s.ReviewConfidence, s.ReviewSourcePath, s.ImdbNeedsReview, s.ImdbReviewReason, s.ReleaseDate, s.ImdbReleaseDate, s.StartYear, s.ImdbScrapedTitle, PosterLink = s.PosterDetails != null ? s.PosterDetails.PosterLink : null })
                 .ToListAsync();
             items.AddRange(seriesRaw.Select(s => new IngestReviewItemDto
             {
@@ -3019,6 +3023,7 @@ namespace MovieTheater.Controllers
                 imdbID = s.imdbID,
                 TitleType = s.TitleType.ToString(),
                 Year = s.ReleaseDate != null ? s.ReleaseDate.Value.Year : (s.ImdbReleaseDate != null ? s.ImdbReleaseDate.Value.Year : s.StartYear),
+                ImdbScrapedTitle = s.ImdbScrapedTitle,
                 PosterLink = s.PosterLink,
                 ReviewBatch = s.ReviewBatch,
                 ReviewProvenance = s.ReviewProvenance,
@@ -3198,7 +3203,8 @@ namespace MovieTheater.Controllers
                 ? new List<object>()
                 : await movieDb.MediaFiles.Where(f => f.PlayableId == movie.PlayableId)
                     .OrderBy(f => f.Role).ThenBy(f => f.PartNumber).ThenBy(f => f.Id)
-                    .Select(f => (object)new { path = f.Path, role = f.Role.ToString(), label = f.Label })
+                    .Select(f => (object)new { path = f.Path, role = f.Role.ToString(), label = f.Label,
+                        isPlayable = f.JellyfinItemId != null && f.MissingSinceUtc == null, missing = f.MissingSinceUtc != null })
                     .ToListAsync();
             return Ok(new { kind = "movie", files });
         }
