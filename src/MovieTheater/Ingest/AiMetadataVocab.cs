@@ -50,7 +50,9 @@ namespace MovieTheater.Ingest
                 "horror", "sci-fi", "documentary", "historical drama", "gothic horror",
                 "sitcom", "fantasy adventure", "hard sci-fi", "urban fantasy", "sports drama",
                 "political thriller", "sci-fi thriller", "fantasy comedy", "horror comedy",
-                "paranormal mystery", "cyberpunk", "spy comedy"),
+                "paranormal mystery", "cyberpunk", "spy comedy",
+                "action thriller", "comedy", "romance", "teen drama", "disaster", "vampire",
+                "dark fantasy", "spy"),
             [TagCategory.Mood] = New(
                 "cozy", "bleak", "tense", "whimsical", "melancholic", "uplifting", "dread",
                 "playful", "dreamlike", "gritty", "wholesome", "unsettling", "epic", "intimate"),
@@ -60,25 +62,30 @@ namespace MovieTheater.Ingest
             [TagCategory.Theme] = New(
                 "redemption", "revenge", "coming of age", "identity", "isolation", "obsession",
                 "sacrifice", "found family", "man vs nature", "loss of innocence", "rebellion",
-                "curiosity", "loss", "ambition"),
+                "curiosity", "loss", "ambition", "class", "innocence"),
             [TagCategory.Setting] = New(
                 "small-town", "space station", "post-apocalypse", "high school", "prison",
                 "deep space", "suburbia", "wilderness", "dystopia", "haunted house", "the road",
-                "boarding school", "ancient china", "hospital", "afterlife"),
+                "boarding school", "ancient china", "hospital", "afterlife",
+                "alien world", "desert planet", "desert", "ocean", "jungle", "los angeles",
+                "paris", "liminal space", "summer camp", "one room", "the underworld"),
             [TagCategory.Era] = New(
                 "1920s", "1950s", "1960s", "1970s", "1980s", "1990s", "victorian", "medieval",
-                "near-future", "far-future", "ancient", "wild west", "cold war"),
+                "near-future", "far-future", "ancient", "wild west", "cold war",
+                "1800s", "1860s", "1900s", "1910s", "1930s", "1940s", "2000s", "2010s",
+                "renaissance", "1600s"),
             [TagCategory.VisualStyle] = New(
                 "stop-motion", "rotoscope", "found-footage", "technicolor", "black and white",
                 "cel animation", "claymation", "long takes", "practical effects", "neon-soaked",
-                "hand-drawn", "cgi", "desaturated", "autumnal", "anime"),
+                "hand-drawn", "cgi", "desaturated", "autumnal", "anime",
+                "comic-book", "mixed-media", "painterly"),
             [TagCategory.ContentDescriptor] = New(
                 "gore", "body-horror", "feel-good", "jump-scares", "slow-burn", "tearjerker",
                 "violence", "no dialogue", "non-linear", "one-take", "anthology",
-                "explicit", "raunchy"),
+                "explicit", "raunchy", "disturbing", "gross-out"),
             [TagCategory.Occasion] = New(
                 "halloween", "christmas", "rainy-sunday", "background-noise", "date-night",
-                "family-night", "comfort-watch", "late-night", "party"),
+                "family-night", "comfort-watch", "late-night", "party", "summer"),
             // Theme-like open categories where a seed list is less useful are intentionally left
             // without one (Franchise, CompTitle, Keyword) — every value there is "novel" by nature.
         };
