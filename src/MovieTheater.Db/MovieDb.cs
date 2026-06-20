@@ -235,6 +235,16 @@ namespace MovieTheater.Db
                 .WithMany()
                 .HasForeignKey(i => i.PlayableId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // ── AI-inferred insights (model-sourced discovery metadata; additive side tables) ──
+            // No DB-level FK to the subject: a TitleInsight points at a Movie OR a Series through the
+            // shared id space (SubjectKind + SubjectId), exactly like Viewing/MiscVideo relations are
+            // kept honest in app code rather than by a single-target FK. Its tags cascade with it.
+            modelBuilder.Entity<TitleTag>()
+                .HasOne(t => t.Insight)
+                .WithMany(i => i.Tags)
+                .HasForeignKey(t => t.TitleInsightId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
         public DbSet<Movie> Movies { get; set; }
@@ -264,6 +274,8 @@ namespace MovieTheater.Db
         public DbSet<MoviePlaybackProgress> MoviePlaybackProgresses { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<ChannelScheduleItem> ChannelScheduleItems { get; set; }
+        public DbSet<TitleInsight> TitleInsights { get; set; }
+        public DbSet<TitleTag> TitleTags { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)
