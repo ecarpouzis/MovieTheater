@@ -50,7 +50,7 @@ namespace MovieTheater.Ingest
                 "horror", "sci-fi", "documentary", "historical drama", "gothic horror",
                 "sitcom", "fantasy adventure", "hard sci-fi", "urban fantasy", "sports drama",
                 "political thriller", "sci-fi thriller", "fantasy comedy", "horror comedy",
-                "paranormal mystery", "cyberpunk", "spy comedy",
+                "paranormal mystery", "cyberpunk", "spy comedy", "supernatural",
                 "action thriller", "comedy", "romance", "teen drama", "disaster", "vampire",
                 "dark fantasy", "spy"),
             [TagCategory.Mood] = New(
@@ -68,17 +68,19 @@ namespace MovieTheater.Ingest
                 "deep space", "suburbia", "wilderness", "dystopia", "haunted house", "the road",
                 "boarding school", "ancient china", "hospital", "afterlife",
                 "alien world", "desert planet", "desert", "ocean", "jungle", "los angeles",
-                "paris", "liminal space", "summer camp", "one room", "the underworld"),
+                "paris", "liminal space", "summer camp", "one room", "the underworld",
+                "new york", "san francisco", "las vegas", "london", "japan", "italy",
+                "berlin", "hong kong", "cyberspace", "rural", "medieval", "taiwan"),
             [TagCategory.Era] = New(
                 "1920s", "1950s", "1960s", "1970s", "1980s", "1990s", "victorian", "medieval",
                 "near-future", "far-future", "ancient", "wild west", "cold war",
                 "1800s", "1860s", "1900s", "1910s", "1930s", "1940s", "2000s", "2010s",
-                "renaissance", "1600s"),
+                "renaissance", "1600s", "1700s"),
             [TagCategory.VisualStyle] = New(
                 "stop-motion", "rotoscope", "found-footage", "technicolor", "black and white",
                 "cel animation", "claymation", "long takes", "practical effects", "neon-soaked",
                 "hand-drawn", "cgi", "desaturated", "autumnal", "anime",
-                "comic-book", "mixed-media", "painterly"),
+                "comic-book", "mixed-media", "painterly", "screenlife", "symmetrical"),
             [TagCategory.ContentDescriptor] = New(
                 "gore", "body-horror", "feel-good", "jump-scares", "slow-burn", "tearjerker",
                 "violence", "no dialogue", "non-linear", "one-take", "anthology",
