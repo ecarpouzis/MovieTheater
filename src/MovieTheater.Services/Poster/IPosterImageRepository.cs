@@ -13,5 +13,9 @@ namespace MovieTheater.Services.Poster
         Task<byte[]> GetImage(int movieId, PosterImageVariant variant, string? bucket = null);
         Task SaveImage(int movieId, PosterImageVariant variant, byte[] imageContent, string? bucket = null);
         Task<DateTimeOffset?> GetImageModifiedDate(int movieId, PosterImageVariant variant, string? bucket = null);
+
+        /// <summary>Remove a stored poster image (no-op if absent). Used to clear a bad/placeholder poster
+        /// so the title falls back to the card placeholder (/Image then 404s).</summary>
+        Task DeleteImage(int movieId, PosterImageVariant variant, string? bucket = null);
     }
 }

@@ -71,7 +71,10 @@ namespace MovieTheater.Services.Poster
         }
 
         private static bool IsUsable(string? url) =>
-            !string.IsNullOrWhiteSpace(url) && !url.Equals("N/A", StringComparison.OrdinalIgnoreCase) && url.StartsWith("http");
+            !string.IsNullOrWhiteSpace(url) && !url.Equals("N/A", StringComparison.OrdinalIgnoreCase) && url.StartsWith("http")
+            // IMDb/OMDB hand back their generic logo (…/imdb_logo.png) as the image when a title has no
+            // real poster. That's a "no poster", not a poster — treat it as unusable so we don't cache it.
+            && url.IndexOf("imdb_logo", StringComparison.OrdinalIgnoreCase) < 0;
 
         private async Task SaveFromUrlAsync(int id, string url, bool isSeries)
         {

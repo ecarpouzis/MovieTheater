@@ -69,6 +69,16 @@ namespace MovieTheater.Services.Poster
             return Task.FromResult(result);
         }
 
+        public Task DeleteImage(int movieId, PosterImageVariant variant, string? bucket = null)
+        {
+            // Dev only has the local on-demand cache (it proxies prod for the real file); drop the cached copy.
+            var file = GetFile(movieId, variant, bucket);
+            if (file.Exists) file.Delete();
+            var ver = GetVersionFile(movieId, variant);
+            if (string.IsNullOrEmpty(bucket) && ver.Exists) ver.Delete();
+            return Task.CompletedTask;
+        }
+
         private async Task<byte[]?> FetchAndCacheImage(int movieId, PosterImageVariant variant, FileInfo file, string? bucket = null)
         {
             // Mirror the prod routes so dev pulls a poster on demand: Movie/Series use /Image,

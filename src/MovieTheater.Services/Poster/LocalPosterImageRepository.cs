@@ -48,6 +48,13 @@ namespace MovieTheater.Services.Poster
             return Task.FromResult(result);
         }
 
+        public Task DeleteImage(int movieId, PosterImageVariant variant, string? bucket = null)
+        {
+            var file = GetFile(movieId, variant, bucket);
+            if (file.Exists) file.Delete();
+            return Task.CompletedTask;
+        }
+
         // bucket (e.g. "misc") prefixes the filename so a disjoint id space can't collide with the
         // shared Movie/Series posters: "{bucket}_{id}.png". Null = the default Movie/Series namespace.
         private FileInfo GetFile(int movieId, PosterImageVariant variant, string? bucket = null)
