@@ -3196,8 +3196,12 @@ namespace MovieTheater.Controllers
                 string liveFolderListing = ser.FolderListing;
                 if (!string.IsNullOrEmpty(liveFolderListing))
                 {
+                    // Runs on the Linux server, but the stored paths are Windows ("L:\...\file.mkv") — so
+                    // System.IO.Path.GetFileName would NOT strip them (backslash isn't a Linux separator).
+                    // Split on BOTH separators to get the bare filename regardless of host OS.
+                    static string BaseName(string p) => (p ?? "").Replace('\\', '/').TrimEnd('/').Split('/')[^1];
                     var mappedNames = sFilesByPlayable.Values.SelectMany(v => v)
-                        .Select(f => System.IO.Path.GetFileName(f.Path)?.Trim().ToLowerInvariant())
+                        .Select(f => BaseName(f.Path).Trim().ToLowerInvariant())
                         .Where(n => !string.IsNullOrEmpty(n)).ToHashSet();
                     var lineRx = new System.Text.RegularExpressions.Regex(@"^(\[OK\]|\[\?\?\]) (.*?)(    \S+ [KMG]B)\s*$");
                     int okN = 0, noN = 0;
@@ -3206,7 +3210,7 @@ namespace MovieTheater.Controllers
                         var m = lineRx.Match(line);
                         if (!m.Success) return line;
                         var rel = m.Groups[2].Value;
-                        var name = System.IO.Path.GetFileName(rel).Trim().ToLowerInvariant();
+                        var name = BaseName(rel).Trim().ToLowerInvariant();
                         bool ok = !string.IsNullOrEmpty(name) && mappedNames.Contains(name);
                         if (ok) okN++; else noN++;
                         return (ok ? "[OK]" : "[??]") + " " + rel + m.Groups[3].Value;
