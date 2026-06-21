@@ -131,7 +131,6 @@ namespace MovieTheater
             services.AddSingleton<Channels.ChannelSkipService>();
 
             services.AddHostedService<BoardgameSimilarityStartupService>();
-            services.AddHostedService<PlaceholderPosterCleanupStartupService>();
 
             services.AddMvc()
                 .AddJsonOptions(opts =>
