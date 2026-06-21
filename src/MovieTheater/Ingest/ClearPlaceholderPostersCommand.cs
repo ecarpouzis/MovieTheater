@@ -45,20 +45,8 @@ namespace MovieTheater.Ingest
             foreach (var s in series) w.WriteLine($"  S{s.SeriesId}");
             if (!Apply) { w.WriteLine("\nDRY RUN — re-run with --apply."); return; }
 
-            foreach (var m in movies)
-            {
-                await imageRepo.DeleteImage(m.MovieId, PosterImageVariant.Main);
-                await imageRepo.DeleteImage(m.MovieId, PosterImageVariant.Thumbnail);
-                db.MoviePosterDetails.Remove(m);
-            }
-            foreach (var s in series)
-            {
-                await imageRepo.DeleteImage(s.SeriesId, PosterImageVariant.Main);
-                await imageRepo.DeleteImage(s.SeriesId, PosterImageVariant.Thumbnail);
-                db.SeriesPosterDetails.Remove(s);
-            }
-            await db.SaveChangesAsync();
-            w.WriteLine($"Cleared {movies.Count + series.Count} placeholder poster(s).");
+            var cleared = await PlaceholderPosterCleaner.RunAsync(db, imageRepo);
+            w.WriteLine($"Cleared {cleared} placeholder poster(s).");
         }
     }
 }
