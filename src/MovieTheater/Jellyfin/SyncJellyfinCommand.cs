@@ -233,9 +233,18 @@ namespace MovieTheater.Jellyfin
                             || !pass1MatchedPlayables.Contains(x.File.PlayableId))
                 .Select(x => x.File)
                 .ToList();
-            var nonMovieByPath = new Dictionary<string, MediaFile>();
+            // One physical file can back SEVERAL MediaFile rows: a compilation/stacked file covers
+            // multiple episodes (e.g. "Storyteller Cd 1 - Ep 1 2 3.avi" — one file, three episode
+            // playables). So group by path and stamp the Jellyfin id onto EVERY row sharing it, or the
+            // extra episodes would never become playable (and a later sync would mark them missing).
+            var nonMovieByPath = new Dictionary<string, List<MediaFile>>();
             foreach (var f in nonMovieFiles)
-                nonMovieByPath[JellyfinPathMapper.NormalizeForCompare(f.Path)] = f;   // last wins on a dup path (rare)
+            {
+                var key = JellyfinPathMapper.NormalizeForCompare(f.Path);
+                if (!nonMovieByPath.TryGetValue(key, out var list))
+                    nonMovieByPath[key] = list = new List<MediaFile>();
+                list.Add(f);
+            }
 
             var epUntranslatable = new List<string>();
             var epUntracked = new List<string>();
@@ -245,15 +254,16 @@ namespace MovieTheater.Jellyfin
                 if (string.IsNullOrEmpty(item.Path)) { epUntracked.Add($"(no path) {item.Name} [{item.Id}]"); continue; }
                 if (!JellyfinPathMapper.TryTranslateToDb(item.Path, config.JellyfinPathMappings, out var dbPath, out _))
                 { epUntranslatable.Add(item.Path); continue; }
-                if (!nonMovieByPath.TryGetValue(JellyfinPathMapper.NormalizeForCompare(dbPath), out var row))
+                if (!nonMovieByPath.TryGetValue(JellyfinPathMapper.NormalizeForCompare(dbPath), out var rows))
                 { epUntracked.Add(item.Path); continue; }
-                if (!matchedEpFileIds.Add(row.Id)) continue;   // first Jellyfin item wins per file
 
-                if (!DryRun)
+                var src = item.MediaSources?.FirstOrDefault();
+                var vid = src?.MediaStreams?.FirstOrDefault(s => s.Type == "Video");
+                var aud = src?.MediaStreams?.Where(s => s.Type == "Audio").OrderByDescending(s => s.IsDefault).FirstOrDefault();
+                foreach (var row in rows)
                 {
-                    var src = item.MediaSources?.FirstOrDefault();
-                    var vid = src?.MediaStreams?.FirstOrDefault(s => s.Type == "Video");
-                    var aud = src?.MediaStreams?.Where(s => s.Type == "Audio").OrderByDescending(s => s.IsDefault).FirstOrDefault();
+                    if (!matchedEpFileIds.Add(row.Id)) continue;   // first Jellyfin item wins per file
+                    if (DryRun) continue;
                     row.JellyfinItemId = item.Id;
                     row.DurationTicks = item.RunTimeTicks;
                     row.Container = Truncate(src?.Container, 32);
