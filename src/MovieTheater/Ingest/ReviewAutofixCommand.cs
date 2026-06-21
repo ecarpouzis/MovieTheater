@@ -81,6 +81,36 @@ namespace MovieTheater.Ingest
                 s.Title = s.ImdbScrapedTitle;
             }
 
+            // ── Phase 1.5: clear STALE ImdbNeedsReview flags ──
+            // The flag was set at ingest when our (folder-derived) title/year disagreed with IMDb. Many
+            // were since realigned, so the flag is stale. Recompute against the ON-DISK FOLDER — the
+            // signal independent of which tt we picked — and clear the flag only when the folder's title
+            // AND year agree with the assigned IMDb identity. A folder that still disagrees (e.g. folder
+            // "Fat Albert and the Cosby Kids" vs assigned "The Marvel Super Heroes") is a possible mis-id
+            // and STAYS flagged. NEVER clear just because Title == ImdbScrapedTitle (that's circular —
+            // the title was copied from the tt we may have gotten wrong).
+            var flaggedSeries = await db.Series.Where(s => s.ReviewBatch != null && s.ImdbNeedsReview).ToListAsync();
+            var flaggedMovies = await db.Movies.Where(m => m.ReviewBatch != null && m.ImdbNeedsReview
+                && m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries).ToListAsync();
+            int clearedFlags = 0, keptFlags = 0;
+            void Recompute(string tag, int id, string? title, int? year, string? srcPath, Action clear)
+            {
+                var folder = ImmediateFolder(srcPath);
+                bool titleOk = NormTitle(title).Length > 0 && NormTitle(title) == NormTitle(StripYearAndTags(folder));
+                var fy = YearOf(folder);
+                bool yearOk = fy != null && year != null && fy == year;
+                if (titleOk && yearOk) { clear(); clearedFlags++; w.WriteLine($"    clear {tag}{id} \"{title}\" — folder agrees"); }
+                else { keptFlags++; w.WriteLine($"    KEEP  {tag}{id} \"{title}\" — folder=\"{folder}\" ({(titleOk ? "year" : "title")} differs)"); }
+            }
+            w.WriteLine($"\nPhase 1.5 — recompute {flaggedSeries.Count + flaggedMovies.Count} ImdbNeedsReview flag(s) against the on-disk folder:");
+            foreach (var s in flaggedSeries)
+                Recompute("S", s.Id, s.Title, s.ReleaseDate?.Year ?? s.ImdbReleaseDate?.Year ?? s.StartYear, s.ReviewSourcePath,
+                    () => { s.ImdbNeedsReview = false; s.ImdbReviewReason = null; });
+            foreach (var m in flaggedMovies)
+                Recompute("M", m.id, m.Title, m.ReleaseDate?.Year ?? m.ImdbReleaseDate?.Year, m.ReviewSourcePath,
+                    () => { m.ImdbNeedsReview = false; m.ImdbReviewReason = null; });
+            w.WriteLine($"  -> {clearedFlags} flag(s) cleared (folder validated), {keptFlags} kept (possible mis-id / year gap)");
+
             // ── Phase 2: auto-approve clean series ──
             var pending = await db.Series.Where(s => s.ReviewBatch != null).ToListAsync();
             var ids = pending.Select(s => s.Id).ToList();
@@ -124,7 +154,9 @@ namespace MovieTheater.Ingest
             }
             w.WriteLine($"  held for manual review: {noTitle} title-mismatch, {noYear} year-mismatch, {epGap} episode-gap, {riskyEp} risky-episode-match");
 
-            foreach (var s in approve) { s.ReviewBatch = null; s.ReviewProvenance = null; s.ReviewConfidence = null; }
+            // Auto-approve cleared the title+year check against the folder, so any lingering imdb flag is
+            // validated too — clear it so the now-live row carries no stale concern.
+            foreach (var s in approve) { s.ReviewBatch = null; s.ReviewProvenance = null; s.ReviewConfidence = null; s.ImdbNeedsReview = false; s.ImdbReviewReason = null; }
 
             // ── Phase 3: posters. Newly auto-approved series + (with --backfill-posters) any already-
             // approved movie/series that lacks one. EnsurePosterAsync no-ops when a poster already exists. ──

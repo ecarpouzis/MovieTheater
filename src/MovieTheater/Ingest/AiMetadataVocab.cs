@@ -47,12 +47,12 @@ namespace MovieTheater.Ingest
                 "sword and sorcery", "kaiju", "giallo", "noir", "satire", "musical",
                 "superhero", "spoof", "survival thriller", "art house", "buddy comedy",
                 "crime saga", "prison drama", "rock opera", "mythological fantasy",
-                "horror", "sci-fi", "documentary", "historical drama", "gothic horror",
+                "horror", "sci-fi", "documentary", "historical drama", "gothic horror", "anime",
                 "sitcom", "fantasy adventure", "hard sci-fi", "urban fantasy", "sports drama",
                 "political thriller", "sci-fi thriller", "fantasy comedy", "horror comedy",
                 "paranormal mystery", "cyberpunk", "spy comedy", "supernatural",
                 "action thriller", "comedy", "romance", "teen drama", "disaster", "vampire",
-                "dark fantasy", "spy"),
+                "dark fantasy", "spy", "b movie", "stand-up comedy", "folk horror", "dark comedy"),
             [TagCategory.Mood] = New(
                 "cozy", "bleak", "tense", "whimsical", "melancholic", "uplifting", "dread",
                 "playful", "dreamlike", "gritty", "wholesome", "unsettling", "epic", "intimate"),
@@ -62,7 +62,7 @@ namespace MovieTheater.Ingest
             [TagCategory.Theme] = New(
                 "redemption", "revenge", "coming of age", "identity", "isolation", "obsession",
                 "sacrifice", "found family", "man vs nature", "loss of innocence", "rebellion",
-                "curiosity", "loss", "ambition", "class", "innocence"),
+                "curiosity", "loss", "ambition", "class", "innocence", "trauma"),
             [TagCategory.Setting] = New(
                 "small-town", "space station", "post-apocalypse", "high school", "prison",
                 "deep space", "suburbia", "wilderness", "dystopia", "haunted house", "the road",
@@ -70,24 +70,26 @@ namespace MovieTheater.Ingest
                 "alien world", "desert planet", "desert", "ocean", "jungle", "los angeles",
                 "paris", "liminal space", "summer camp", "one room", "the underworld",
                 "new york", "san francisco", "las vegas", "london", "japan", "italy",
-                "berlin", "hong kong", "cyberspace", "rural", "medieval", "taiwan"),
+                "berlin", "hong kong", "cyberspace", "rural", "medieval", "taiwan",
+                "college", "chicago", "germany", "india"),
             [TagCategory.Era] = New(
                 "1920s", "1950s", "1960s", "1970s", "1980s", "1990s", "victorian", "medieval",
                 "near-future", "far-future", "ancient", "wild west", "cold war",
                 "1800s", "1860s", "1900s", "1910s", "1930s", "1940s", "2000s", "2010s",
-                "renaissance", "1600s", "1700s"),
+                "renaissance", "1600s", "1700s", "2020s", "1500s", "1830s", "1840s", "1850s", "1880s", "1890s"),
             [TagCategory.VisualStyle] = New(
                 "stop-motion", "rotoscope", "found-footage", "technicolor", "black and white",
                 "cel animation", "claymation", "long takes", "practical effects", "neon-soaked",
                 "hand-drawn", "cgi", "desaturated", "autumnal", "anime",
-                "comic-book", "mixed-media", "painterly", "screenlife", "symmetrical"),
+                "comic-book", "mixed-media", "painterly", "screenlife", "symmetrical", "spectacle"),
             [TagCategory.ContentDescriptor] = New(
                 "gore", "body-horror", "feel-good", "jump-scares", "slow-burn", "tearjerker",
                 "violence", "no dialogue", "non-linear", "one-take", "anthology",
                 "explicit", "raunchy", "disturbing", "gross-out"),
             [TagCategory.Occasion] = New(
                 "halloween", "christmas", "rainy-sunday", "background-noise", "date-night",
-                "family-night", "comfort-watch", "late-night", "party", "summer"),
+                "family-night", "comfort-watch", "late-night", "party", "summer", "feel-good",
+                "thanksgiving"),
             // Theme-like open categories where a seed list is less useful are intentionally left
             // without one (Franchise, CompTitle, Keyword) — every value there is "novel" by nature.
         };
