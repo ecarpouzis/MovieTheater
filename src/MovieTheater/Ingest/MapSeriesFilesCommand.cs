@@ -38,6 +38,9 @@ namespace MovieTheater.Ingest
         [CommandOption("limit", Description = "Max series to process this run.")]
         public int? Limit { get; set; }
 
+        [CommandOption("series-id", Description = "Only process this one Series Id (contained run).")]
+        public int? SeriesId { get; set; }
+
         private static readonly HashSet<string> VideoExt = new(StringComparer.OrdinalIgnoreCase)
         { ".mkv", ".mp4", ".avi", ".m4v", ".mov", ".wmv", ".ts", ".m2ts", ".mpg", ".mpeg", ".flv", ".webm", ".divx", ".ogm", ".rmvb" };
 
@@ -91,8 +94,10 @@ namespace MovieTheater.Ingest
             HashSet<string> mappedPaths;
             await using (var db = await dbFactory.CreateDbContextAsync())
             {
+                var onlyId = SeriesId;
                 targets = (await db.Series
-                    .Where(s => db.Episodes.Any(e => e.SeriesId == s.Id)
+                    .Where(s => (onlyId == null || s.Id == onlyId)
+                        && db.Episodes.Any(e => e.SeriesId == s.Id)
                         && db.Episodes.Any(e => e.SeriesId == s.Id && !db.MediaFiles.Any(f => f.PlayableId == e.PlayableId)))
                     .Select(s => new { s.Id, s.Title, s.ImdbScrapedTitle, s.imdbID, s.ReleaseDate, s.ImdbReleaseDate, s.StartYear }).ToListAsync())
                     .Select(s => (s.Id, s.Title ?? "", s.ImdbScrapedTitle ?? "", s.imdbID ?? "",
@@ -204,6 +209,21 @@ namespace MovieTheater.Ingest
                     if (epRow == null) { unmatched.Add(c); continue; }
                     if (!byEp.TryGetValue(epRow.Id, out var lst)) byEp[epRow.Id] = lst = new();
                     lst.Add((epRow, c, strat, extra, ova));
+
+                    // A combined file ("S01E01&E02", "s06e17-e18") holds a whole range — claim EVERY
+                    // episode in it (one file → several episodes), so each is individually playable,
+                    // all backed by the same physical file. Sync stamps the Jellyfin id onto all of them.
+                    if (strat == "combined")
+                    {
+                        var cm = Regex.Match(c.Name, @"(?i)S\d{1,2}\s*E(\d{1,3})\s*[&\-+]\s*(?:S\d{1,2}\s*)?E(\d{1,3})");
+                        if (cm.Success && int.TryParse(cm.Groups[2].Value, out var endEp))
+                            for (int en2 = epRow.Ep + 1; en2 <= endEp; en2++)
+                                if (unmappedByKey.TryGetValue((epRow.Season, en2), out var extraEp))
+                                {
+                                    if (!byEp.TryGetValue(extraEp.Id, out var l2)) byEp[extraEp.Id] = l2 = new();
+                                    l2.Add((extraEp, c, "combined", extra, ova));
+                                }
+                    }
                 }
 
                 // Cumulative-absolute fallback for flat-numbered MULTI-season series (X-Men "01..76" in one
@@ -421,10 +441,12 @@ namespace MovieTheater.Ingest
 
         private static (int season, int ep, string strat)? ParseSe(string rel, string name, bool singleSeason)
         {
-            var c = Regex.Match(name, @"(?i)S(\d{1,2})\s*E(\d{1,3})\s*[&\-+]?\s*E(\d{1,3})");
+            // Combined range: "S01E01&E02", "s06e17-e18", AND the repeated-S form "S08E01-S08E02".
+            var c = Regex.Match(name, @"(?i)S(\d{1,2})\s*E(\d{1,3})\s*[&\-+]\s*(?:S\d{1,2}\s*)?E(\d{1,3})");
             if (c.Success) return (int.Parse(c.Groups[1].Value), int.Parse(c.Groups[2].Value), "combined");
-            // Separators between S## and E## include 'x' ("S04xE09") and the usual . _ - space.
-            var se = Regex.Match(name, @"(?i)S(\d{1,2})[ ._\-x]*E(\d{1,3})");
+            // Separators between S## and E## include 'x' ("S04xE09"), the usual . _ - space, AND a dotted
+            // form with a separator right after S/E ("All.In.The.Family.s.01e.01").
+            var se = Regex.Match(name, @"(?i)S[ ._]?(\d{1,2})[ ._\-x]*E[ ._]?(\d{1,3})");
             if (se.Success) return (int.Parse(se.Groups[1].Value), int.Parse(se.Groups[2].Value), "se");
             var x = Regex.Match(name, @"(?<![\dpP])(\d{1,2})x(\d{1,3})(?![\d])");
             if (x.Success) return (int.Parse(x.Groups[1].Value), int.Parse(x.Groups[2].Value), "se");
