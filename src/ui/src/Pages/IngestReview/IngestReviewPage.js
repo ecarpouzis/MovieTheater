@@ -472,6 +472,22 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
           )}
         </div>
 
+        {detail && detail.meta && (detail.meta.plot || (detail.meta.genres || []).length || (detail.meta.cast || []).length) ? (
+          <div className="review-card-meta">
+            <div className="rc-meta-line">
+              {detail.meta.year ? <span>{detail.meta.year}</span> : null}
+              {detail.meta.runtimeMinutes ? <span>· {detail.meta.runtimeMinutes} min</span> : detail.meta.runtime ? <span>· {detail.meta.runtime}</span> : null}
+              {detail.meta.mpaa ? <span>· {detail.meta.mpaa}</span> : null}
+              {detail.meta.imdbRating ? <span>· ⭐ {detail.meta.imdbRating}</span> : null}
+              {detail.meta.rtTomatometer != null ? <span>· 🍅 {detail.meta.rtTomatometer}%</span> : null}
+              {(detail.meta.genres || []).length ? <span>· {detail.meta.genres.join(", ")}</span> : null}
+            </div>
+            {(detail.meta.directors || []).length ? <div className="rc-meta-line"><b>Dir:</b> {detail.meta.directors.join(", ")}</div> : null}
+            {(detail.meta.cast || []).length ? <div className="rc-meta-line"><b>Cast:</b> {detail.meta.cast.join(", ")}</div> : null}
+            {detail.meta.plot ? <div className="rc-meta-plot">{detail.meta.plot}</div> : null}
+          </div>
+        ) : null}
+
         <table className="review-card-fields">
           <tbody>
             <tr>

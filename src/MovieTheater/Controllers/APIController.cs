@@ -3185,6 +3185,11 @@ namespace MovieTheater.Controllers
                 var seriesExtras = (extrasHolder?.PlayableId != null && sFilesByPlayable.TryGetValue(extrasHolder.PlayableId.Value, out var xf))
                     ? xf.Select(f => new { mediaFileId = f.Id, path = f.Path, role = f.Role.ToString(), label = f.Label }).ToList()
                     : emptyFiles;
+                var sGenres = await movieDb.SeriesGenres.Where(g => g.SeriesId == id).OrderBy(g => g.Ordering).Select(g => g.Genre.Name).ToListAsync();
+                var sCredits = await movieDb.SeriesCredits.Where(cr => cr.SeriesId == id).OrderBy(cr => cr.Ordering)
+                    .Select(cr => new { cr.Role, Name = cr.Person.DisplayName }).ToListAsync();
+                var sPlot = await movieDb.SeriesPlotSummaries.Where(p => p.SeriesId == id).OrderBy(p => p.Ordering).Select(p => p.Text).FirstOrDefaultAsync();
+                string[] SNames(CreditRole r, int take) => sCredits.Where(x => x.Role == r && x.Name != null).Select(x => x.Name!).Distinct().Take(take).ToArray();
                 return Ok(new
                 {
                     kind = "series",
@@ -3193,6 +3198,22 @@ namespace MovieTheater.Controllers
                     seasons = sSeasons,
                     seriesExtras,
                     folderListing = ser.FolderListing,   // on-disk folder dump (from scan-series-folders)
+                    meta = new
+                    {
+                        plot = sPlot ?? ser.Plot,
+                        genres = sGenres,
+                        directors = SNames(CreditRole.Director, 5),
+                        writers = SNames(CreditRole.Writer, 5),
+                        cast = SNames(CreditRole.Actor, 10),
+                        runtime = ser.Runtime,
+                        runtimeMinutes = ser.RuntimeMinutes,
+                        imdbRating = ser.ImdbRatingScraped ?? ser.imdbRating,
+                        rtTomatometer = ser.RtTomatometer,
+                        rtPopcornmeter = ser.RtPopcornmeter,
+                        mpaa = ser.MpaaRating,
+                        tagline = ser.Tagline,
+                        year = ser.ReleaseDate != null ? ser.ReleaseDate.Value.Year : (ser.ImdbReleaseDate != null ? ser.ImdbReleaseDate.Value.Year : (int?)null),
+                    },
                 });
             }
 
@@ -3206,7 +3227,34 @@ namespace MovieTheater.Controllers
                     .Select(f => (object)new { path = f.Path, role = f.Role.ToString(), label = f.Label,
                         isPlayable = f.JellyfinItemId != null && f.MissingSinceUtc == null, missing = f.MissingSinceUtc != null })
                     .ToListAsync();
-            return Ok(new { kind = "movie", files });
+            // Cached IMDb/TMDB metadata (normalized tables) so the review card can show what's being approved
+            // — plot / genres / director / cast / ratings — with no live lookup.
+            var mGenres = await movieDb.MovieGenres.Where(g => g.MovieID == id).OrderBy(g => g.Ordering).Select(g => g.Genre.Name).ToListAsync();
+            var mCredits = await movieDb.MovieCredits.Where(cr => cr.MovieID == id).OrderBy(cr => cr.Ordering)
+                .Select(cr => new { cr.Role, Name = cr.Person.DisplayName }).ToListAsync();
+            var mPlot = await movieDb.MoviePlotSummaries.Where(p => p.MovieID == id).OrderBy(p => p.Ordering).Select(p => p.Text).FirstOrDefaultAsync();
+            string[] MNames(CreditRole r, int take) => mCredits.Where(x => x.Role == r && x.Name != null).Select(x => x.Name!).Distinct().Take(take).ToArray();
+            return Ok(new
+            {
+                kind = "movie",
+                files,
+                meta = new
+                {
+                    plot = mPlot ?? movie.Plot,
+                    genres = mGenres,
+                    directors = MNames(CreditRole.Director, 5),
+                    writers = MNames(CreditRole.Writer, 5),
+                    cast = MNames(CreditRole.Actor, 10),
+                    runtime = movie.Runtime,
+                    runtimeMinutes = movie.RuntimeMinutes,
+                    imdbRating = movie.ImdbRatingScraped ?? movie.imdbRating,
+                    rtTomatometer = movie.RtTomatometer,
+                    rtPopcornmeter = movie.RtPopcornmeter,
+                    mpaa = movie.MpaaRating,
+                    tagline = movie.Tagline,
+                    year = movie.ReleaseDate != null ? movie.ReleaseDate.Value.Year : (movie.ImdbReleaseDate != null ? movie.ImdbReleaseDate.Value.Year : (int?)null),
+                }
+            });
         }
 
         public class SetEpisodeFileRequest { public int EpisodeId { get; set; } public string? Path { get; set; } }
