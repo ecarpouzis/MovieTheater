@@ -247,11 +247,13 @@ namespace MovieTheater.Services.Jellyfin
                 SubtitleProfiles = new object[]
                 {
                     // Text subs ride as sidecar WebVTT; image subs (PGS/VobSub) burn in.
+                    // *Only* vtt is offered as External: the browser's <track> element parses
+                    // WebVTT exclusively, so srt/subrip/ass/ssa must NOT be advertised as
+                    // external-deliverable — doing so makes Jellyfin's exact-codec-match pass
+                    // hand back the raw .srt/.ass as-is, which the player can't render. With vtt
+                    // the only text external format, Jellyfin transcodes any text subtitle to
+                    // WebVTT instead.
                     new { Format = "vtt", Method = "External" },
-                    new { Format = "srt", Method = "External" },
-                    new { Format = "ass", Method = "External" },
-                    new { Format = "ssa", Method = "External" },
-                    new { Format = "subrip", Method = "External" },
                     new { Format = "pgssub", Method = "Encode" },
                     new { Format = "dvdsub", Method = "Encode" },
                     new { Format = "dvbsub", Method = "Encode" },
