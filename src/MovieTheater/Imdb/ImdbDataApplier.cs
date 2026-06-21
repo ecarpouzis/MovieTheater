@@ -15,7 +15,8 @@ namespace MovieTheater.Imdb
     /// Writes an <see cref="ImdbScrapeResult"/> into the normalized columns and FK tables for
     /// a single (already-tracked) <see cref="Movie"/>. Shared by the bulk scrape CLI command
     /// and the movie-insert endpoint so both produce identical normalized data. Legacy columns
-    /// are never overwritten; on a clear id mismatch the row is flagged for review instead.
+    /// are never overwritten; on a title mismatch the scraped detail is still written but the row
+    /// is also flagged for review (a populated row to confirm/edit beats a silent blank).
     /// </summary>
     public static class ImdbDataApplier
     {
@@ -39,18 +40,26 @@ namespace MovieTheater.Imdb
             var titleType = MapTitleType(result.TitleTypeId);
             if (titleType != TitleType.Unknown) movie.TitleType = titleType;
 
-            if (!TitlesPlausiblyMatch(movie, result))
+            // A title mismatch flags the row for a human to confirm the id — but it must NOT
+            // discard the scraped data. The whole point of caching/scraping IMDb is that the
+            // reviewer opens a *populated* row to sanity-check and hand-edit; a genuinely wrong
+            // id is rarer than our own odd "Title, The" / foreign / variant-recut titles, and the
+            // review flag (not a silent skip) is the safeguard. So we always write the detail
+            // below — only the flag differs — and approval never re-fetches, so hand-edits stick.
+            bool mismatch = !TitlesPlausiblyMatch(movie, result);
+            if (mismatch)
             {
                 movie.ImdbNeedsReview = true;
                 movie.ImdbReviewReason =
                     $"Title mismatch: ours='{movie.Title}' imdb='{result.Title}' " +
                     $"(year ours={movie.ReleaseDate?.Year}, imdb={result.Year}).";
-                await db.SaveChangesAsync();
-                return ImdbApplyStatus.Flagged;
+            }
+            else
+            {
+                movie.ImdbNeedsReview = false;
+                movie.ImdbReviewReason = null;
             }
 
-            movie.ImdbNeedsReview = false;
-            movie.ImdbReviewReason = null;
             if (result.RuntimeMinutes.HasValue) movie.RuntimeMinutes = result.RuntimeMinutes;
             if (!string.IsNullOrWhiteSpace(result.Plot)) movie.PlotFull = result.Plot;
             if (!string.IsNullOrWhiteSpace(result.Synopsis)) movie.PlotSynopsis = result.Synopsis;
@@ -65,7 +74,7 @@ namespace MovieTheater.Imdb
             await ReplacePlotSummariesAsync(db, movie.id, result.Summaries);
 
             await db.SaveChangesAsync();
-            return ImdbApplyStatus.Updated;
+            return mismatch ? ImdbApplyStatus.Flagged : ImdbApplyStatus.Updated;
         }
 
         private static async Task ReplaceGenresAsync(MovieDb db, int movieId, List<string> genres)
