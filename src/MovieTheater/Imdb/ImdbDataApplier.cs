@@ -46,7 +46,7 @@ namespace MovieTheater.Imdb
             // id is rarer than our own odd "Title, The" / foreign / variant-recut titles, and the
             // review flag (not a silent skip) is the safeguard. So we always write the detail
             // below — only the flag differs — and approval never re-fetches, so hand-edits stick.
-            bool mismatch = !TitlesPlausiblyMatch(movie, result);
+            bool mismatch = !TitlesPlausiblyMatch(movie.Title, movie.ReleaseDate?.Year, result);
             if (mismatch)
             {
                 movie.ImdbNeedsReview = true;
@@ -72,6 +72,64 @@ namespace MovieTheater.Imdb
             await ReplaceGenresAsync(db, movie.id, result.Genres);
             await ReplaceCreditsAsync(db, movie.id, result);
             await ReplacePlotSummariesAsync(db, movie.id, result.Summaries);
+
+            await db.SaveChangesAsync();
+            return mismatch ? ImdbApplyStatus.Flagged : ImdbApplyStatus.Updated;
+        }
+
+        /// <summary>
+        /// Series peer of <see cref="ApplyAsync(MovieDb, Movie, ImdbScrapeResult)"/>. Writes the same
+        /// normalized columns + FK graph (genres/credits/plot summaries) onto a <see cref="Series"/>,
+        /// plus the series-only StartYear/EndYear aggregates. Episode pages are cached/parsed separately
+        /// (scrape-episodes); this fills the series' own title-level data.
+        /// </summary>
+        public static async Task<ImdbApplyStatus> ApplyAsync(MovieDb db, Series series, ImdbScrapeResult result)
+        {
+            series.ImdbVerifiedDate = DateTime.Now;
+            series.ImdbScrapedTitle = result.Title;
+
+            if (!result.Found)
+            {
+                series.ImdbNeedsReview = true;
+                series.ImdbReviewReason = result.FailureReason ?? "IMDB id did not resolve.";
+                await db.SaveChangesAsync();
+                return ImdbApplyStatus.NotFound;
+            }
+
+            // Only adopt a series-shaped titleType; if IMDB classifies the id as a movie/short the
+            // ids almost certainly disagree, which the mismatch flag below surfaces for review.
+            var titleType = MapTitleType(result.TitleTypeId);
+            if (titleType is TitleType.TvSeries or TitleType.TvMiniSeries or TitleType.TvSpecial)
+                series.TitleType = titleType;
+
+            bool mismatch = !TitlesPlausiblyMatch(series.Title, series.StartYear ?? series.ReleaseDate?.Year, result);
+            if (mismatch)
+            {
+                series.ImdbNeedsReview = true;
+                series.ImdbReviewReason =
+                    $"Title mismatch: ours='{series.Title}' imdb='{result.Title}' " +
+                    $"(year ours={series.StartYear ?? series.ReleaseDate?.Year}, imdb={result.Year}).";
+            }
+            else
+            {
+                series.ImdbNeedsReview = false;
+                series.ImdbReviewReason = null;
+            }
+
+            if (result.RuntimeMinutes.HasValue) series.RuntimeMinutes = result.RuntimeMinutes;
+            if (!string.IsNullOrWhiteSpace(result.Plot)) series.PlotFull = result.Plot;
+            if (!string.IsNullOrWhiteSpace(result.Synopsis)) series.PlotSynopsis = result.Synopsis;
+            if (!string.IsNullOrWhiteSpace(result.MpaaRating)) series.MpaaRating = result.MpaaRating;
+            if (result.ReleaseDate.HasValue) series.ImdbReleaseDate = result.ReleaseDate;
+            if (result.Year.HasValue) series.StartYear = result.Year;
+            if (result.EndYear.HasValue) series.EndYear = result.EndYear;
+            if (result.ImdbRating.HasValue) series.ImdbRatingScraped = result.ImdbRating;
+
+            series.TopCast = CreditFormatting.TopCast(result.Actors.Select(a => a.DisplayName));
+
+            await ReplaceSeriesGenresAsync(db, series.Id, result.Genres);
+            await ReplaceSeriesCreditsAsync(db, series.Id, result);
+            await ReplaceSeriesPlotSummariesAsync(db, series.Id, result.Summaries);
 
             await db.SaveChangesAsync();
             return mismatch ? ImdbApplyStatus.Flagged : ImdbApplyStatus.Updated;
@@ -149,18 +207,91 @@ namespace MovieTheater.Imdb
             }
         }
 
+        // ── Series FK-table replacers (peers of the Movie* ones above) ──────
+
+        private static async Task ReplaceSeriesGenresAsync(MovieDb db, int seriesId, List<string> genres)
+        {
+            var existing = await db.SeriesGenres.Where(g => g.SeriesId == seriesId).ToListAsync();
+            if (existing.Count > 0) { db.SeriesGenres.RemoveRange(existing); await db.SaveChangesAsync(); }
+
+            for (int i = 0; i < genres.Count; i++)
+            {
+                var name = genres[i];
+                if (string.IsNullOrWhiteSpace(name)) continue;
+                var genre = await db.Genres.FirstOrDefaultAsync(g => g.Name == name)
+                            ?? db.Genres.Local.FirstOrDefault(g => g.Name == name);
+                if (genre == null) { genre = new Genre { Name = name }; db.Genres.Add(genre); }
+                db.SeriesGenres.Add(new SeriesGenre { SeriesId = seriesId, Genre = genre, Ordering = i });
+            }
+        }
+
+        private static async Task ReplaceSeriesPlotSummariesAsync(MovieDb db, int seriesId, List<ScrapedSummary> summaries)
+        {
+            var existing = await db.SeriesPlotSummaries.Where(s => s.SeriesId == seriesId).ToListAsync();
+            if (existing.Count > 0) { db.SeriesPlotSummaries.RemoveRange(existing); await db.SaveChangesAsync(); }
+
+            for (int i = 0; i < summaries.Count; i++)
+            {
+                var s = summaries[i];
+                if (string.IsNullOrWhiteSpace(s.Text)) continue;
+                db.SeriesPlotSummaries.Add(new SeriesPlotSummary
+                {
+                    SeriesId = seriesId,
+                    Ordering = i,
+                    Author = s.Author,
+                    Text = s.Text
+                });
+            }
+        }
+
+        private static async Task ReplaceSeriesCreditsAsync(MovieDb db, int seriesId, ImdbScrapeResult result)
+        {
+            var existing = await db.SeriesCredits.Where(c => c.SeriesId == seriesId).ToListAsync();
+            if (existing.Count > 0) { db.SeriesCredits.RemoveRange(existing); await db.SaveChangesAsync(); }
+
+            var added = new HashSet<(string, CreditRole)>();
+            await AddSeriesCreditsAsync(db, seriesId, result.Directors, CreditRole.Director, added);
+            await AddSeriesCreditsAsync(db, seriesId, result.Writers, CreditRole.Writer, added);
+            await AddSeriesCreditsAsync(db, seriesId, result.Actors, CreditRole.Actor, added);
+        }
+
+        private static async Task AddSeriesCreditsAsync(MovieDb db, int seriesId, List<ScrapedPerson> people,
+            CreditRole role, HashSet<(string, CreditRole)> added)
+        {
+            for (int i = 0; i < people.Count; i++)
+            {
+                var p = people[i];
+                var dedupKey = string.IsNullOrWhiteSpace(p.ImdbNameId)
+                    ? PersonResolver.ComputeNameKey(p.DisplayName)
+                    : p.ImdbNameId.Trim();
+                if (string.IsNullOrWhiteSpace(dedupKey)) continue;
+                if (!added.Add((dedupKey, role))) continue;
+
+                var person = await PersonResolver.ResolveAsync(db, p.ImdbNameId, p.DisplayName);
+                if (person == null) continue;
+
+                db.SeriesCredits.Add(new SeriesCredit
+                {
+                    SeriesId = seriesId,
+                    Person = person,
+                    Role = role,
+                    Ordering = i,
+                    Character = role == CreditRole.Actor ? p.Character : null
+                });
+            }
+        }
+
         // Lenient match: normalized (article/punctuation-insensitive) titles must agree, OR the
         // release years must be within one. Avoids false flags from our odd "Title, The"
         // formatting while still catching genuinely wrong ids.
-        private static bool TitlesPlausiblyMatch(Movie movie, ImdbScrapeResult result)
+        private static bool TitlesPlausiblyMatch(string ourTitle, int? ourYear, ImdbScrapeResult result)
         {
-            var ours = Normalize(movie.Title);
+            var ours = Normalize(ourTitle);
             var theirs = Normalize(result.Title);
             if (!string.IsNullOrEmpty(ours) && !string.IsNullOrEmpty(theirs) &&
                 (ours == theirs || ours.Contains(theirs) || theirs.Contains(ours)))
                 return true;
 
-            int? ourYear = movie.ReleaseDate?.Year;
             if (ourYear.HasValue && result.Year.HasValue && Math.Abs(ourYear.Value - result.Year.Value) <= 1)
                 return true;
 

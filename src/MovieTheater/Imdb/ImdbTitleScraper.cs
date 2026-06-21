@@ -85,7 +85,15 @@ namespace MovieTheater.Imdb
             }
 
             result.Year = GetInt(atf, "releaseYear", "year");
-            result.ReleaseDate = ReadReleaseDate(atf) ?? (result.Year.HasValue ? new DateTime(result.Year.Value, 1, 1) : (DateTime?)null);
+            result.EndYear = GetInt(atf, "releaseYear", "endYear");
+            var scrapedDate = ReadReleaseDate(atf);
+            // IMDb's above-the-fold releaseDate can be a re-release/restoration date (e.g. a 2026
+            // 4K re-run of a 1974 film), which would wrongly override the canonical year. The title's
+            // authoritative year is releaseYear — if the scraped date's year disagrees, keep the
+            // canonical year (Jan 1) rather than let the re-release win.
+            if (scrapedDate.HasValue && result.Year.HasValue && scrapedDate.Value.Year != result.Year.Value)
+                scrapedDate = new DateTime(result.Year.Value, 1, 1);
+            result.ReleaseDate = scrapedDate ?? (result.Year.HasValue ? new DateTime(result.Year.Value, 1, 1) : (DateTime?)null);
 
             var seconds = GetInt(atf, "runtime", "seconds");
             if (seconds.HasValue && seconds.Value > 0)

@@ -30,6 +30,8 @@ namespace MovieTheater.Imdb
 
         public string Title { get; set; }
         public int? Year { get; set; }
+        /// <summary>IMDB's <c>releaseYear.endYear</c> — the final year for a series/mini-series (null for movies and ongoing shows).</summary>
+        public int? EndYear { get; set; }
         public DateTime? ReleaseDate { get; set; }
 
         /// <summary>Raw IMDB titleType id, e.g. "movie", "short", "tvSeries", "tvEpisode". Maps to <see cref="MovieTheater.Db.TitleType"/>.</summary>

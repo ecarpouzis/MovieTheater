@@ -69,11 +69,12 @@ namespace MovieTheater.Services
                 {
                     var s = await db.Series.FirstOrDefaultAsync(x => x.Id == id);
                     if (s == null) return false;
-                    s.ImdbScrapedTitle = o.Title;
-                    if (o.ReleaseDate.HasValue && o.ReleaseDate.Value != default) { s.ImdbReleaseDate = o.ReleaseDate; s.StartYear ??= o.ReleaseDate.Value.Year; }
-                    if (o.imdbRating != null) s.ImdbRatingScraped = o.imdbRating;
-                    if (!string.IsNullOrWhiteSpace(o.Rating)) s.MpaaRating = o.Rating;
-                    var rm = RuntimeToMinutes(o.Runtime); if (rm != null) s.RuntimeMinutes = rm;
+                    // OMDB is a gap-filler only: never overwrite IMDb-scraped values. IMDb always trumps.
+                    if (string.IsNullOrWhiteSpace(s.ImdbScrapedTitle)) s.ImdbScrapedTitle = o.Title;
+                    if (s.ImdbReleaseDate == null && o.ReleaseDate.HasValue && o.ReleaseDate.Value != default) { s.ImdbReleaseDate = o.ReleaseDate; s.StartYear ??= o.ReleaseDate.Value.Year; }
+                    if (s.ImdbRatingScraped == null && o.imdbRating != null) s.ImdbRatingScraped = o.imdbRating;
+                    if (string.IsNullOrWhiteSpace(s.MpaaRating) && !string.IsNullOrWhiteSpace(o.Rating)) s.MpaaRating = o.Rating;
+                    if (s.RuntimeMinutes == null) { var rm = RuntimeToMinutes(o.Runtime); if (rm != null) s.RuntimeMinutes = rm; }
                     if (!string.IsNullOrWhiteSpace(o.Plot)) { s.PlotFull = o.Plot; if (string.IsNullOrWhiteSpace(s.Plot)) s.Plot = o.Plot; }
                     if (string.IsNullOrWhiteSpace(s.Genre)) s.Genre = o.Genre;
                     if (string.IsNullOrWhiteSpace(s.Actors)) s.Actors = o.Actors;
@@ -86,11 +87,13 @@ namespace MovieTheater.Services
                 {
                     var m = await db.Movies.FirstOrDefaultAsync(x => x.id == id);
                     if (m == null) return false;
-                    m.ImdbScrapedTitle = o.Title;
-                    if (o.ReleaseDate.HasValue && o.ReleaseDate.Value != default) m.ImdbReleaseDate = o.ReleaseDate;
-                    if (o.imdbRating != null) m.ImdbRatingScraped = o.imdbRating;
-                    if (!string.IsNullOrWhiteSpace(o.Rating)) m.MpaaRating = o.Rating;
-                    var rm = RuntimeToMinutes(o.Runtime); if (rm != null) m.RuntimeMinutes = rm;
+                    // OMDB is a gap-filler only: it never overwrites a value the (authoritative) IMDB
+                    // scrape may have set. IMDb always trumps OMDB — refresh IMDb data via scrape-imdb.
+                    if (string.IsNullOrWhiteSpace(m.ImdbScrapedTitle)) m.ImdbScrapedTitle = o.Title;
+                    if (m.ImdbReleaseDate == null && o.ReleaseDate.HasValue && o.ReleaseDate.Value != default) m.ImdbReleaseDate = o.ReleaseDate;
+                    if (m.ImdbRatingScraped == null && o.imdbRating != null) m.ImdbRatingScraped = o.imdbRating;
+                    if (string.IsNullOrWhiteSpace(m.MpaaRating) && !string.IsNullOrWhiteSpace(o.Rating)) m.MpaaRating = o.Rating;
+                    if (m.RuntimeMinutes == null) { var rm = RuntimeToMinutes(o.Runtime); if (rm != null) m.RuntimeMinutes = rm; }
                     if (!string.IsNullOrWhiteSpace(o.Plot)) { m.PlotFull = o.Plot; if (string.IsNullOrWhiteSpace(m.Plot)) m.Plot = o.Plot; }
                     if (string.IsNullOrWhiteSpace(m.Genre)) m.Genre = o.Genre;
                     if (string.IsNullOrWhiteSpace(m.Actors)) m.Actors = o.Actors;

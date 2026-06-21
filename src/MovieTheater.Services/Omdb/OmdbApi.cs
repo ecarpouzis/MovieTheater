@@ -32,7 +32,15 @@ namespace MovieTheater.Services.Omdb
                 return null;
             }
             DateTime releaseDate;
-            DateTime.TryParse(omdbMovie.Released, out releaseDate);
+            if (!DateTime.TryParse(omdbMovie.Released, out releaseDate))
+            {
+                // OMDB often returns "Released":"N/A" for foreign/festival titles while still carrying
+                // a usable "Year" ("2013" or a "2011–2014" range). Fall back to the leading 4-digit year
+                // so we don't drop the release year entirely (Jan 1 sentinel).
+                var ym = System.Text.RegularExpressions.Regex.Match(omdbMovie.Year ?? "", @"\d{4}");
+                if (ym.Success && int.TryParse(ym.Value, out var y) && y > 1800 && y < 3000)
+                    releaseDate = new DateTime(y, 1, 1);
+            }
             string? tomatoRatingString = omdbMovie.Ratings?.FirstOrDefault(r => r.Source == "Rotten Tomatoes")?.Value;
 
             int? tomatoRating = tomatoRatingString != null ?

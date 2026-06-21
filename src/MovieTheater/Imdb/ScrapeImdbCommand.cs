@@ -38,6 +38,12 @@ namespace MovieTheater.Imdb
         [CommandOption("rescrape", Description = "Also reprocess rows already verified (default: only unverified).")]
         public bool Rescrape { get; set; }
 
+        [CommandOption("missing-cache", Description = "Select titles (movies AND series) whose IMDB title page is NOT in the local cache, regardless of ImdbVerifiedDate — fills coverage gaps left by the OMDB enrich path. Implies --include-series.")]
+        public bool MissingCache { get; set; }
+
+        [CommandOption("include-series", Description = "Also scrape Series rows (not just Movies) using the same resume/rescrape rules.")]
+        public bool IncludeSeries { get; set; }
+
         [CommandOption("retype", Description = "Classify+cache rows not yet typed (TitleType=Unknown), ignoring ImdbVerifiedDate. Resumable across the run.")]
         public bool Retype { get; set; }
 
@@ -102,23 +108,50 @@ namespace MovieTheater.Imdb
                 return;
             }
 
-            List<MovieRow> todo;
+            // --missing-cache covers both tables and ignores ImdbVerifiedDate: it targets titles
+            // whose IMDB page never made it into the local cache (e.g. rows the OMDB enrich path
+            // stamped as verified but never actually IMDB-scraped). It implies series coverage.
+            bool wantSeries = IncludeSeries || MissingCache;
+
+            List<TitleRow> todo;
             using (var db = await dbFactory.CreateDbContextAsync())
             {
-                IQueryable<Db.Movie> rows = db.Movies.Where(m => m.imdbID != null && m.imdbID != "");
-                // --retype drives off TitleType (the classification pass): every row is Unknown until
-                // typed, so this covers the already-verified library and resumes on what's left.
-                rows = Retype
-                    ? rows.Where(m => m.TitleType == TitleType.Unknown)
-                    : rows.Where(m => Rescrape || m.ImdbVerifiedDate == null);
-                var query = rows
-                    .OrderBy(m => m.id)
-                    .Select(m => new MovieRow { Id = m.id, ImdbId = m.imdbID, Title = m.Title, ReleaseDate = m.ReleaseDate });
-                if (Limit.HasValue) query = query.Take(Limit.Value);
-                todo = await query.ToListAsync();
+                IQueryable<Db.Movie> mrows = db.Movies.Where(m => m.imdbID != null && m.imdbID != "");
+                if (!MissingCache)
+                    // --retype drives off TitleType (the classification pass): every row is Unknown until
+                    // typed, so this covers the already-verified library and resumes on what's left.
+                    mrows = Retype
+                        ? mrows.Where(m => m.TitleType == TitleType.Unknown)
+                        : mrows.Where(m => Rescrape || m.ImdbVerifiedDate == null);
+                var movieRows = await mrows.OrderBy(m => m.id)
+                    .Select(m => new TitleRow { Id = m.id, ImdbId = m.imdbID, Title = m.Title, IsSeries = false })
+                    .ToListAsync();
+
+                var seriesRows = new List<TitleRow>();
+                if (wantSeries)
+                {
+                    IQueryable<Db.Series> srows = db.Series.Where(s => s.imdbID != null && s.imdbID != "");
+                    if (!MissingCache)
+                        srows = srows.Where(s => Rescrape || s.ImdbVerifiedDate == null);
+                    seriesRows = await srows.OrderBy(s => s.Id)
+                        .Select(s => new TitleRow { Id = s.Id, ImdbId = s.imdbID, Title = s.Title, IsSeries = true })
+                        .ToListAsync();
+                }
+
+                todo = movieRows.Concat(seriesRows).ToList();
+
+                if (MissingCache)
+                {
+                    var probe = cache ?? new ImdbPageCache(CacheDir);
+                    todo = todo.Where(t => !probe.Has(t.ImdbId, "title")).ToList();
+                }
+
+                todo = todo.OrderBy(t => t.IsSeries).ThenBy(t => t.Id).ToList();
+                if (Limit.HasValue) todo = todo.Take(Limit.Value).ToList();
             }
 
-            console.Output.WriteLine($"Scraping {todo.Count} movie(s){(DryRun ? " (dry-run)" : "")}…");
+            console.Output.WriteLine($"Scraping {todo.Count} title(s) " +
+                $"({todo.Count(t => !t.IsSeries)} movie, {todo.Count(t => t.IsSeries)} series){(DryRun ? " (dry-run)" : "")}…");
             int done = 0, flagged = 0, failed = 0;
 
             foreach (var row in todo)
@@ -205,9 +238,15 @@ namespace MovieTheater.Imdb
             }
         }
 
-        private async Task<ImdbApplyStatus> ApplyAsync(MovieRow row, ImdbScrapeResult result)
+        private async Task<ImdbApplyStatus> ApplyAsync(TitleRow row, ImdbScrapeResult result)
         {
             using var db = await dbFactory.CreateDbContextAsync();
+            if (row.IsSeries)
+            {
+                var series = await db.Series.FirstOrDefaultAsync(s => s.Id == row.Id);
+                if (series == null) return ImdbApplyStatus.NotFound;
+                return await ImdbDataApplier.ApplyAsync(db, series, result);
+            }
             var movie = await db.Movies.FirstOrDefaultAsync(m => m.id == row.Id);
             if (movie == null) return ImdbApplyStatus.NotFound;
             return await ImdbDataApplier.ApplyAsync(db, movie, result);
@@ -238,12 +277,12 @@ namespace MovieTheater.Imdb
                 o.WriteLine($"    - [{s.Author ?? "—"}] {(s.Text.Length > 100 ? s.Text.Substring(0, 100) + "…" : s.Text)}");
         }
 
-        private class MovieRow
+        private class TitleRow
         {
             public int Id { get; set; }
             public string ImdbId { get; set; }
             public string Title { get; set; }
-            public DateTime? ReleaseDate { get; set; }
+            public bool IsSeries { get; set; }
         }
     }
 }
