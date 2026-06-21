@@ -70,15 +70,19 @@ namespace MovieTheater.Ingest
             foreach (var m in movieFixes) w.WriteLine($"    M{m.id}: \"{m.Title}\"  ->  \"{m.ImdbScrapedTitle}\"");
             foreach (var s in seriesFixes) w.WriteLine($"    S{s.Id}: \"{s.Title}\"  ->  \"{s.ImdbScrapedTitle}\"");
 
+            // Apply the leading-article convention while aligning to the scraped title, so we don't
+            // re-introduce the un-inverted "The X" form the scrape returns.
             foreach (var m in movieFixes)
             {
-                if (string.IsNullOrEmpty(m.SimpleTitle) || m.SimpleTitle == m.Title) m.SimpleTitle = m.ImdbScrapedTitle;
-                m.Title = m.ImdbScrapedTitle;
+                var t = TitleNorm.InvertLeadingThe(m.ImdbScrapedTitle);
+                if (string.IsNullOrEmpty(m.SimpleTitle) || m.SimpleTitle == m.Title) m.SimpleTitle = t;
+                m.Title = t;
             }
             foreach (var s in seriesFixes)
             {
-                if (string.IsNullOrEmpty(s.SimpleTitle) || s.SimpleTitle == s.Title) s.SimpleTitle = s.ImdbScrapedTitle;
-                s.Title = s.ImdbScrapedTitle;
+                var t = TitleNorm.InvertLeadingThe(s.ImdbScrapedTitle);
+                if (string.IsNullOrEmpty(s.SimpleTitle) || s.SimpleTitle == s.Title) s.SimpleTitle = t;
+                s.Title = t;
             }
 
             // ── Phase 1.5: clear STALE ImdbNeedsReview flags ──

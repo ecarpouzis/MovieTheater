@@ -79,7 +79,10 @@ namespace MovieTheater.Ingest
 
                 toAdd.Add(new Movie
                 {
-                    Title = NullIfEmpty(r.Get("title")),
+                    // Apply the library's leading-article convention up front so the review card shows the
+                    // sort form ("The Cube" -> "Cube, The") instead of the raw CSV label.
+                    Title = TitleNorm.InvertLeadingThe(NullIfEmpty(r.Get("title"))),
+                    SimpleTitle = TitleNorm.InvertLeadingThe(NullIfEmpty(r.Get("title"))),
                     imdbID = tt,
                     TitleType = titleType,
                     ReviewBatch = NullIfEmpty(r.Get("ReviewBatch")) ?? "library-ingest",

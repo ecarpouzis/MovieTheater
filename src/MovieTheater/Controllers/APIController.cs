@@ -3410,6 +3410,30 @@ namespace MovieTheater.Controllers
         // Movie ids in Ids, series ids in SeriesIds, misc-video ids in MiscIds (separate id sequences — see Kind).
         public class IngestReviewIdsRequest { public List<int> Ids { get; set; } = new(); public List<int> SeriesIds { get; set; } = new(); public List<int> MiscIds { get; set; } = new(); }
 
+        // Apply the library's leading-"The" sort convention at the approve gate — PrepMovieTitle runs only
+        // on manual insert, so ingested rows arrive un-inverted ("The Cube" instead of "Cube, The"). Preserve
+        // a hand-curated SimpleTitle that isn't itself an article form (e.g. franchise numbering).
+        private static void ApplyArticleConvention(Movie m)
+        {
+            var inv = MovieTheater.Ingest.TitleNorm.InvertLeadingThe(m.Title);
+            if (string.Equals(inv, m.Title, StringComparison.Ordinal)) return;
+            if (string.IsNullOrEmpty(m.SimpleTitle) || string.Equals(m.SimpleTitle, m.Title, StringComparison.Ordinal))
+                m.SimpleTitle = inv;
+            else if (m.SimpleTitle.StartsWith("The ", StringComparison.OrdinalIgnoreCase))
+                m.SimpleTitle = MovieTheater.Ingest.TitleNorm.InvertLeadingThe(m.SimpleTitle);
+            m.Title = inv;
+        }
+        private static void ApplyArticleConvention(Series s)
+        {
+            var inv = MovieTheater.Ingest.TitleNorm.InvertLeadingThe(s.Title);
+            if (string.Equals(inv, s.Title, StringComparison.Ordinal)) return;
+            if (string.IsNullOrEmpty(s.SimpleTitle) || string.Equals(s.SimpleTitle, s.Title, StringComparison.Ordinal))
+                s.SimpleTitle = inv;
+            else if (s.SimpleTitle.StartsWith("The ", StringComparison.OrdinalIgnoreCase))
+                s.SimpleTitle = MovieTheater.Ingest.TitleNorm.InvertLeadingThe(s.SimpleTitle);
+            s.Title = inv;
+        }
+
         // Approve = clear the quarantine flag so the row joins the library (idempotent;
         // re-approving an already-cleared id is a no-op). ReviewSourcePath is kept — the
         // file-mapping pass (Phase 5) needs it.
@@ -3427,6 +3451,7 @@ namespace MovieTheater.Controllers
                 // (project rule), so persist it onto the canonical ReleaseDate at approve/save time.
                 if (m.ImdbReleaseDate.HasValue && (m.ReleaseDate == null || m.ReleaseDate.Value.Year != m.ImdbReleaseDate.Value.Year))
                     m.ReleaseDate = m.ImdbReleaseDate;
+                ApplyArticleConvention(m);
                 m.ReviewBatch = null; m.ReviewProvenance = null; m.ReviewConfidence = null;
             }
 
@@ -3436,6 +3461,7 @@ namespace MovieTheater.Controllers
             {
                 if (s.ImdbReleaseDate.HasValue && (s.ReleaseDate == null || s.ReleaseDate.Value.Year != s.ImdbReleaseDate.Value.Year))
                 { s.ReleaseDate = s.ImdbReleaseDate; s.StartYear = s.ImdbReleaseDate.Value.Year; }
+                ApplyArticleConvention(s);
                 s.ReviewBatch = null; s.ReviewProvenance = null; s.ReviewConfidence = null;
             }
 

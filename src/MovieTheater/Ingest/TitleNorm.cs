@@ -43,5 +43,20 @@ namespace MovieTheater.Ingest
                 if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) o.Append(c);
             return o.ToString();
         }
+
+        /// <summary>Move a leading "The " to a trailing ", The" (the library's A-Z sort convention),
+        /// matching APIController.PrepMovieTitle which only runs on manual insert. Null/empty-safe; leaves
+        /// "A"/"An" alone (dropped by hand, not auto-inverted) and won't double-invert an existing ", The".</summary>
+        public static string InvertLeadingThe(string title)
+        {
+            var t = (title ?? "").Trim();
+            if (t.StartsWith("The ", System.StringComparison.OrdinalIgnoreCase) &&
+                !t.EndsWith(", The", System.StringComparison.OrdinalIgnoreCase))
+            {
+                var rest = t.Substring(4).Trim();
+                if (rest.Length > 0) return rest + ", The";
+            }
+            return title;
+        }
     }
 }
