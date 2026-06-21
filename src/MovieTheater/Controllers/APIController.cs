@@ -3190,6 +3190,33 @@ namespace MovieTheater.Controllers
                     .Select(cr => new { cr.Role, Name = cr.Person.DisplayName }).ToListAsync();
                 var sPlot = await movieDb.SeriesPlotSummaries.Where(p => p.SeriesId == id).OrderBy(p => p.Ordering).Select(p => p.Text).FirstOrDefaultAsync();
                 string[] SNames(CreditRole r, int take) => sCredits.Where(x => x.Role == r && x.Name != null).Select(x => x.Name!).Distinct().Take(take).ToArray();
+                // Re-mark the cached folder dump against CURRENT mappings: scan-series-folders bakes the
+                // [OK]/[??] flags at scan time, so files mapped AFTER the last scan wrongly show [??].
+                // Match by filename against the series' live MediaFile names and recompute the header counts.
+                string liveFolderListing = ser.FolderListing;
+                if (!string.IsNullOrEmpty(liveFolderListing))
+                {
+                    var mappedNames = sFilesByPlayable.Values.SelectMany(v => v)
+                        .Select(f => System.IO.Path.GetFileName(f.Path)?.Trim().ToLowerInvariant())
+                        .Where(n => !string.IsNullOrEmpty(n)).ToHashSet();
+                    var lineRx = new System.Text.RegularExpressions.Regex(@"^(\[OK\]|\[\?\?\]) (.*?)(    \S+ [KMG]B)\s*$");
+                    int okN = 0, noN = 0;
+                    var outLines = liveFolderListing.Replace("\r", "").Split('\n').Select(line =>
+                    {
+                        var m = lineRx.Match(line);
+                        if (!m.Success) return line;
+                        var rel = m.Groups[2].Value;
+                        var name = System.IO.Path.GetFileName(rel).Trim().ToLowerInvariant();
+                        bool ok = !string.IsNullOrEmpty(name) && mappedNames.Contains(name);
+                        if (ok) okN++; else noN++;
+                        return (ok ? "[OK]" : "[??]") + " " + rel + m.Groups[3].Value;
+                    }).ToList();
+                    for (int i = 0; i < outLines.Count; i++)
+                        outLines[i] = System.Text.RegularExpressions.Regex.Replace(outLines[i],
+                            @"\(\[OK\] mapped \d+ / \[\?\?\] NOT captured \d+\)",
+                            $"([OK] mapped {okN} / [??] NOT captured {noN})");
+                    liveFolderListing = string.Join("\n", outLines);
+                }
                 return Ok(new
                 {
                     kind = "series",
@@ -3197,7 +3224,7 @@ namespace MovieTheater.Controllers
                     episodeHave = seps.Count(e => e.PlayableId != null && sFilesByPlayable.ContainsKey(e.PlayableId.Value)),
                     seasons = sSeasons,
                     seriesExtras,
-                    folderListing = ser.FolderListing,   // on-disk folder dump (from scan-series-folders)
+                    folderListing = liveFolderListing,   // re-marked live vs current mappings (scan-time flags go stale)
                     meta = new
                     {
                         plot = sPlot ?? ser.Plot,
