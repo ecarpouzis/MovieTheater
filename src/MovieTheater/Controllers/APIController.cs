@@ -3321,6 +3321,65 @@ namespace MovieTheater.Controllers
             }).ToList();
         }
 
+        // A hand-mapped path must be the FULL on-disk path: Jellyfin matches by path, so a bare filename (or
+        // any non-rooted value) looks "mapped" yet never streams (JellyfinItemId stays null). Accept a rooted
+        // Windows/UNC path as-is; otherwise resolve a bare filename against the series' scanned FolderListing
+        // snapshot (the prod web app can't read the NAS, but it has that snapshot) by unique filename. Returns
+        // false with a reason when it can't be resolved, so the caller rejects rather than stores garbage.
+        private static bool TryResolveMappedPath(string? submitted, string? folderListing, out string resolved, out string error)
+        {
+            resolved = (submitted ?? "").Trim();
+            error = "";
+            if (resolved.Length == 0) { error = "Path required"; return false; }
+
+            bool rooted = System.Text.RegularExpressions.Regex.IsMatch(resolved, @"^[A-Za-z]:[\\/]") || resolved.StartsWith(@"\\");
+            if (rooted) return true;
+
+            var fileName = LastPathSegment(resolved);
+            if (string.IsNullOrWhiteSpace(folderListing))
+            {
+                error = $"'{resolved}' isn't a full path and there's no folder scan to resolve it — paste the full L:\\ path (or run scan-series-folders).";
+                return false;
+            }
+            var matches = ParseFolderListingFullPaths(folderListing)
+                .Where(full => string.Equals(LastPathSegment(full), fileName, StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (matches.Count == 1) { resolved = matches[0]; return true; }
+            error = matches.Count == 0
+                ? $"Couldn't find '{fileName}' in this series' scanned folder — paste the full L:\\ path."
+                : $"'{fileName}' matches {matches.Count} files in the folder — paste the full L:\\ path to disambiguate.";
+            return false;
+        }
+
+        private static string LastPathSegment(string p)
+        {
+            var s = (p ?? "").Replace('/', '\\');
+            var i = s.LastIndexOf('\\');
+            return i >= 0 ? s.Substring(i + 1) : s;
+        }
+
+        // Reconstruct full paths from a Series.FolderListing snapshot (see ScanSeriesFoldersCommand): line 0 is
+        // the folder root, then after a "----" separator each line is "<4-char flag> <relative path>    <size>".
+        private static IEnumerable<string> ParseFolderListingFullPaths(string listing)
+        {
+            var lines = listing.Replace("\r\n", "\n").Split('\n');
+            if (lines.Length == 0) yield break;
+            var root = lines[0].Trim().TrimEnd('\\', '/');
+            if (root.Length == 0) yield break;
+            bool past = false;
+            foreach (var raw in lines.Skip(1))
+            {
+                if (!past) { if (raw.StartsWith("----")) past = true; continue; }
+                if (raw.Length < 6) continue;
+                var rel = raw.Substring(5);              // drop the 4-char flag and the space after it
+                var sep = rel.LastIndexOf("    ");        // strip the trailing "    <size>"
+                if (sep > 0) rel = rel.Substring(0, sep);
+                rel = rel.Trim();
+                if (rel.Length == 0) continue;
+                yield return root + "\\" + rel.Replace('/', '\\');
+            }
+        }
+
         public class SetEpisodeFileRequest { public int EpisodeId { get; set; } public string? Path { get; set; } }
 
         // Manually point a series episode at the correct on-disk file (chosen from the folder dump). Ensures
@@ -3352,6 +3411,14 @@ namespace MovieTheater.Controllers
                 return Ok(new { Success = true, cleared = existing.Count });
             }
 
+            // Resolve to a FULL path (reject a bare filename that would map but never stream).
+            var listing = ep.SeriesId != null
+                ? await movieDb.Series.Where(s => s.Id == ep.SeriesId.Value).Select(s => s.FolderListing).FirstOrDefaultAsync()
+                : null;
+            if (!TryResolveMappedPath(path, listing, out var fullPath, out var resolveErr))
+                return BadRequest(new { Message = resolveErr });
+            path = fullPath;
+
             // Replace any current Primary with the chosen file.
             var prior = await movieDb.MediaFiles.Where(f => f.PlayableId == playableId && f.Role == MovieFileRole.Primary).ToListAsync();
             movieDb.MediaFiles.RemoveRange(prior);
@@ -3380,6 +3447,16 @@ namespace MovieTheater.Controllers
             if (string.IsNullOrWhiteSpace(path)) return BadRequest(new { Message = "Path required" });
 
             bool toSeries = string.Equals(req.TargetType, "series", StringComparison.OrdinalIgnoreCase);
+
+            // Resolve to a FULL path before storing (a bare filename maps but never streams via Jellyfin).
+            int? listingSeriesId = toSeries ? req.TargetId
+                : await movieDb.Episodes.Where(e => e.Id == req.TargetId).Select(e => e.SeriesId).FirstOrDefaultAsync();
+            var listing = listingSeriesId != null
+                ? await movieDb.Series.Where(s => s.Id == listingSeriesId.Value).Select(s => s.FolderListing).FirstOrDefaultAsync()
+                : null;
+            if (!TryResolveMappedPath(path, listing, out var fullPath, out var resolveErr))
+                return BadRequest(new { Message = resolveErr });
+            path = fullPath;
             // A series target is always an Extra (it has no episode of its own); an episode target honors the role.
             var role = (toSeries || string.Equals(req.Role, "Extra", StringComparison.OrdinalIgnoreCase))
                 ? MovieFileRole.Extra : MovieFileRole.Primary;
