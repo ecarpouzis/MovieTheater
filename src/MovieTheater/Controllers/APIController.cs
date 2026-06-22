@@ -3200,8 +3200,12 @@ namespace MovieTheater.Controllers
                     // System.IO.Path.GetFileName would NOT strip them (backslash isn't a Linux separator).
                     // Split on BOTH separators to get the bare filename regardless of host OS.
                     static string BaseName(string p) => (p ?? "").Replace('\\', '/').TrimEnd('/').Split('/')[^1];
-                    var mappedNames = sFilesByPlayable.Values.SelectMany(v => v)
-                        .Select(f => BaseName(f.Path).Trim().ToLowerInvariant())
+                    // Mark a line [OK] if its filename is captured by ANY title, not just this series.
+                    // Co-located series share one folder dump (e.g. the 2003 micro-series and the 2008
+                    // series both live under "Star Wars - The Clone Wars (2003-2020)"), so a file mapped
+                    // to a SIBLING title would otherwise show a misleading "[??] NOT captured" here.
+                    var mappedNames = (await movieDb.MediaFiles.Select(f => f.Path).ToListAsync())
+                        .Select(p => BaseName(p).Trim().ToLowerInvariant())
                         .Where(n => !string.IsNullOrEmpty(n)).ToHashSet();
                     var lineRx = new System.Text.RegularExpressions.Regex(@"^(\[OK\]|\[\?\?\]) (.*?)(    \S+ [KMG]B)\s*$");
                     int okN = 0, noN = 0;
