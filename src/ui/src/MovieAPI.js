@@ -1,15 +1,18 @@
 import { detectStreamCapabilities } from "./streamCapabilities";
 
-// MiscVideo posters live in a separate route namespace (/MiscImage) because misc ids overlap the
-// shared Movie/Series id space. Movie/series keep /Image. Misc videos have no poster version.
+// Posters are on-disk files keyed by id, and the Movie / Series / MiscVideo id spaces overlap (a single
+// id can be both a Movie and a Series), so each non-movie kind has its own route namespace or they'd serve
+// each other's poster. Movies keep /Image; series use /SeriesImage; misc videos use /MiscImage (no version).
 function getMoviePoster(id, posterVersion, kind) {
   if (kind === "misc") return `/MiscImage/${id}`;
-  return posterVersion ? `/Image/${id}?v=${posterVersion}` : `/Image/${id}`;
+  const base = kind === "series" ? `/SeriesImage/${id}` : `/Image/${id}`;
+  return posterVersion ? `${base}?v=${posterVersion}` : base;
 }
 
 function getPosterThumbnail(id, posterVersion, kind) {
   if (kind === "misc") return `/MiscImageThumb/${id}`;
-  return posterVersion ? `/ImageThumb/${id}?v=${posterVersion}` : `/ImageThumb/${id}`;
+  const base = kind === "series" ? `/SeriesImageThumb/${id}` : `/ImageThumb/${id}`;
+  return posterVersion ? `${base}?v=${posterVersion}` : base;
 }
 
 function getMovie(id) {
@@ -552,6 +555,12 @@ function ingestReviewBackfillPosters() {
   return fetch("/API/Admin/IngestReview/BackfillPosters", { method: "post" });
 }
 
+// One-shot repair of the Movie/Series poster-namespace collision: gives every series its own bucketed
+// poster file and fixes any movie left showing a same-id series' poster. Prod-only (writes the image store).
+function ingestReviewMigrateSeriesPosters() {
+  return fetch("/API/Admin/IngestReview/MigrateSeriesPosters", { method: "post" });
+}
+
 // Point a series episode at the correct on-disk file (chosen from the folder dump); empty path clears it.
 function ingestReviewSetEpisodeFile(episodeId, path) {
   return fetch("/API/Admin/IngestReview/SetEpisodeFile", {
@@ -663,6 +672,7 @@ const MovieAPI = {
   ingestReviewUpdate,
   ingestReviewReclassify,
   ingestReviewBackfillPosters,
+  ingestReviewMigrateSeriesPosters,
   ingestReviewSetEpisodeFile,
   ingestReviewSetFile,
   ingestReviewRemoveFile,

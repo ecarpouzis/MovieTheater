@@ -24,22 +24,22 @@ namespace MovieTheater.Services.Poster
             this.logger = logger;
         }
 
-        public async Task EnsurePosterThumnailExists(int movieId, bool force = false)
+        public async Task EnsurePosterThumnailExists(int movieId, bool force = false, string? bucket = null)
         {
-            var alreadyExists = await posterRepository.HasImage(movieId, PosterImageVariant.Thumbnail);
+            var alreadyExists = await posterRepository.HasImage(movieId, PosterImageVariant.Thumbnail, bucket);
             if (alreadyExists && !force)
             {
                 logger.LogInformation("Thumbnail poster already exists for {movieId}. Skipping regen...", movieId);
                 return;
             }
 
-            var mainPosterExists = await posterRepository.HasImage(movieId, PosterImageVariant.Main);
+            var mainPosterExists = await posterRepository.HasImage(movieId, PosterImageVariant.Main, bucket);
             if (!mainPosterExists)
             {
                 logger.LogWarning("Main poster doesn't exist for movie {movieId}, so we cannot generate the thumbnail.", movieId);
             }
 
-            var mainPosterBytes = await posterRepository.GetImage(movieId, PosterImageVariant.Main);
+            var mainPosterBytes = await posterRepository.GetImage(movieId, PosterImageVariant.Main, bucket);
 
             logger.LogInformation("Resizing poster for movieId={movieId}", movieId);
 
@@ -65,7 +65,7 @@ namespace MovieTheater.Services.Poster
                 }
             }
 
-            await posterRepository.SaveImage(movieId, PosterImageVariant.Thumbnail, thumbnailPosterBytes);
+            await posterRepository.SaveImage(movieId, PosterImageVariant.Thumbnail, thumbnailPosterBytes, bucket);
         }
 
         private async Task<byte[]> PythonShrinkImage(byte[] sourceImage)

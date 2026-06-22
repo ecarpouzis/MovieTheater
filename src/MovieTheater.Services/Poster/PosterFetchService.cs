@@ -48,7 +48,8 @@ namespace MovieTheater.Services.Poster
         {
             try
             {
-                if (!force && await imageRepo.HasImage(id, PosterImageVariant.Main)) return true;
+                var bucket = PosterBucket.ForTitle(isSeries);
+                if (!force && await imageRepo.HasImage(id, PosterImageVariant.Main, bucket)) return true;
                 var url = await ResolvePosterUrlAsync(imdbID);
                 if (url == null) return false;
                 await SaveFromUrlAsync(id, url, isSeries);
@@ -78,13 +79,14 @@ namespace MovieTheater.Services.Poster
 
         private async Task SaveFromUrlAsync(int id, string url, bool isSeries)
         {
+            var bucket = PosterBucket.ForTitle(isSeries);
             var bytes = await Http.GetByteArrayAsync(url);
-            await imageRepo.SaveImage(id, PosterImageVariant.Main, bytes);
-            try { await shrink.EnsurePosterThumnailExists(id, force: true); }
+            await imageRepo.SaveImage(id, PosterImageVariant.Main, bytes, bucket);
+            try { await shrink.EnsurePosterThumnailExists(id, force: true, bucket); }
             catch (Exception ex) { logger.LogWarning(ex, "Thumbnail generation failed for id {Id}", id); }
 
             string? color = null;
-            try { var thumb = await imageRepo.GetImage(id, PosterImageVariant.Thumbnail); color = ComputeAverageColor(thumb ?? bytes); }
+            try { var thumb = await imageRepo.GetImage(id, PosterImageVariant.Thumbnail, bucket); color = ComputeAverageColor(thumb ?? bytes); }
             catch { /* colour is a nice-to-have */ }
 
             await using var db = await dbFactory.CreateDbContextAsync();

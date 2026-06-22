@@ -30,8 +30,8 @@ namespace MovieTheater.Services.Poster
             }
             foreach (var s in series)
             {
-                await imageRepo.DeleteImage(s.SeriesId, PosterImageVariant.Main);
-                await imageRepo.DeleteImage(s.SeriesId, PosterImageVariant.Thumbnail);
+                await imageRepo.DeleteImage(s.SeriesId, PosterImageVariant.Main, PosterBucket.Series);
+                await imageRepo.DeleteImage(s.SeriesId, PosterImageVariant.Thumbnail, PosterBucket.Series);
                 db.SeriesPosterDetails.Remove(s);
             }
             await db.SaveChangesAsync(ct);

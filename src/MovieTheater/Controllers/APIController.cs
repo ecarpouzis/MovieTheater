@@ -964,12 +964,13 @@ namespace MovieTheater.Controllers
         // new version.
         private async Task<int> DownloadAndSavePosterByIdAsync(int id, string posterLink, bool isSeries)
         {
+            var bucket = PosterBucket.ForTitle(isSeries);
             var result = await httpClient.GetAsync(posterLink);
             result.EnsureSuccessStatusCode();
             var content = await result.Content.ReadAsByteArrayAsync();
-            await imageRepo.SaveImage(id, PosterImageVariant.Main, content);
-            await shrinkService.EnsurePosterThumnailExists(id, true);
-            var thumbnailBytes = await imageRepo.GetImage(id, PosterImageVariant.Thumbnail);
+            await imageRepo.SaveImage(id, PosterImageVariant.Main, content, bucket);
+            await shrinkService.EnsurePosterThumnailExists(id, true, bucket);
+            var thumbnailBytes = await imageRepo.GetImage(id, PosterImageVariant.Thumbnail, bucket);
             var dominantColor = ComputeAverageColor(thumbnailBytes ?? content);
 
             if (isSeries)
@@ -3621,6 +3622,86 @@ namespace MovieTheater.Controllers
             return Ok(new { attempted = targets.Count, got });
         }
 
+        // One-shot repair for the Movie/Series poster-namespace collision. Posters are on-disk files keyed
+        // by id, and Movie & Series ids are NOT disjoint, so before series got their own ("series") bucket a
+        // same-id Movie and Series shared "{id}.png" — one showed the other's poster. This:
+        //   • populates the series bucket for every series (copying the existing file when the id is unique
+        //     to the series, otherwise re-fetching the series' real poster from its tt), and
+        //   • repairs a movie whose default-bucket file is actually a colliding series' leftover (the movie
+        //     has no poster row of its own) by re-fetching from the movie's tt, or clearing it if it has none.
+        // Runs in the web app so it writes the live image store (a dev box can't). Editor-gated; idempotent
+        // (skips a series that already has a bucketed poster unless force=true).
+        [HttpPost("/API/Admin/IngestReview/MigrateSeriesPosters")]
+        public async Task<IActionResult> MigrateSeriesPosters(bool force = false)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+
+            var allSeries = await movieDb.Series.Select(s => new { s.Id, s.imdbID }).ToListAsync();
+            var movieIds = (await movieDb.Movies.Select(m => m.id).ToListAsync()).ToHashSet();
+            var moviePosterIds = (await movieDb.MoviePosterDetails.Select(p => p.MovieId).ToListAsync()).ToHashSet();
+
+            int copied = 0, refetched = 0, movieRepaired = 0, movieCleared = 0, skipped = 0, failed = 0;
+
+            foreach (var s in allSeries)
+            {
+                bool colliding = movieIds.Contains(s.Id);
+
+                // Series side: get a poster into the series bucket.
+                try
+                {
+                    if (!force && await imageRepo.HasImage(s.Id, PosterImageVariant.Main, PosterBucket.Series))
+                    {
+                        skipped++;
+                    }
+                    else if (!colliding && await imageRepo.HasImage(s.Id, PosterImageVariant.Main))
+                    {
+                        // The id is the series' alone, so the existing "{id}.png" is genuinely the series'
+                        // poster — carry it (both variants) into the bucket without a network round-trip.
+                        await CopyPosterImagesAsync(s.Id, null, s.Id, PosterBucket.Series);
+                        copied++;
+                    }
+                    else if (await posterFetchService.EnsurePosterAsync(s.Id, s.imdbID, isSeries: true, force: true))
+                    {
+                        refetched++;
+                    }
+                    else
+                    {
+                        failed++;
+                    }
+                }
+                catch { failed++; }
+
+                // Movie side: only a colliding id can have a movie poster polluted by the series write.
+                if (!colliding) continue;
+                try
+                {
+                    if (moviePosterIds.Contains(s.Id))
+                        continue;   // the movie owns a legit poster row → its default file is its own, leave it.
+
+                    // No movie poster row, yet a default-bucket file exists → it's the series' leftover and is
+                    // wrong for the movie. Re-fetch the movie's own poster; if it has no tt to fetch from,
+                    // clear the file so the movie shows a placeholder rather than the series' art.
+                    if (!await imageRepo.HasImage(s.Id, PosterImageVariant.Main))
+                        continue;
+
+                    var mTt = await movieDb.Movies.Where(m => m.id == s.Id).Select(m => m.imdbID).FirstOrDefaultAsync();
+                    if (!string.IsNullOrWhiteSpace(mTt) && await posterFetchService.EnsurePosterAsync(s.Id, mTt, isSeries: false, force: true))
+                    {
+                        movieRepaired++;
+                    }
+                    else
+                    {
+                        await imageRepo.DeleteImage(s.Id, PosterImageVariant.Main);
+                        await imageRepo.DeleteImage(s.Id, PosterImageVariant.Thumbnail);
+                        movieCleared++;
+                    }
+                }
+                catch { failed++; }
+            }
+
+            return Ok(new { series = allSeries.Count, copied, refetched, skipped, movieRepaired, movieCleared, failed });
+        }
+
         // Reject = delete the ingested row entirely. Guarded to pending-review rows so this can never
         // remove an established library entry. A series takes its episodes (+ their Playables/files) and
         // satellite graph with it; a misc video takes its Playable + files.
@@ -3823,7 +3904,7 @@ namespace MovieTheater.Controllers
                 var pd = await movieDb.MoviePosterDetails.FirstOrDefaultAsync(x => x.MovieId == m.id);
                 if (pd != null) movieDb.SeriesPosterDetails.Add(new SeriesPosterDetails { SeriesId = s.Id, PosterLink = pd.PosterLink, PosterVersion = pd.PosterVersion, DominantColor = pd.DominantColor });
 
-                await CopyPosterImagesAsync(m.id, s.Id);
+                await CopyPosterImagesAsync(m.id, null, s.Id, PosterBucket.Series);
                 await DeleteMovieSubtreeAsync(m);
                 await movieDb.SaveChangesAsync();
                 return Ok(new { Success = true, kind = "series", id = s.Id });
@@ -3852,7 +3933,7 @@ namespace MovieTheater.Controllers
                 var pd = await movieDb.SeriesPosterDetails.FirstOrDefaultAsync(x => x.SeriesId == s.Id);
                 if (pd != null) movieDb.MoviePosterDetails.Add(new MoviePosterDetails { MovieId = m.id, PosterLink = pd.PosterLink, PosterVersion = pd.PosterVersion, DominantColor = pd.DominantColor });
 
-                await CopyPosterImagesAsync(s.Id, m.id);
+                await CopyPosterImagesAsync(s.Id, PosterBucket.Series, m.id, null);
                 await DeleteSeriesSubtreeAsync(s);
                 await movieDb.SaveChangesAsync();
                 return Ok(new { Success = true, kind = "movie", id = m.id });
@@ -4008,15 +4089,15 @@ namespace MovieTheater.Controllers
         // Carry the poster image to a new id on a cross-table move (posters are on-disk files keyed by id,
         // served with no DB lookup). Best-effort: a missing source or write failure is fine — the copied
         // PosterLink lets enrichment re-download for the new id.
-        private async Task CopyPosterImagesAsync(int fromId, int toId)
+        private async Task CopyPosterImagesAsync(int fromId, string? fromBucket, int toId, string? toBucket)
         {
-            if (fromId == toId) return;
+            if (fromId == toId && string.Equals(fromBucket, toBucket, StringComparison.Ordinal)) return;
             foreach (var variant in new[] { PosterImageVariant.Main, PosterImageVariant.Thumbnail })
             {
                 try
                 {
-                    var bytes = await imageRepo.GetImage(fromId, variant);
-                    if (bytes != null && bytes.Length > 0) await imageRepo.SaveImage(toId, variant, bytes);
+                    var bytes = await imageRepo.GetImage(fromId, variant, fromBucket);
+                    if (bytes != null && bytes.Length > 0) await imageRepo.SaveImage(toId, variant, bytes, toBucket);
                 }
                 catch { /* best-effort */ }
             }

@@ -353,7 +353,7 @@ function WatchPage({ userData }) {
   const year = movie?.releaseDate ? new Date(movie.releaseDate).getFullYear() : null;
   const runtime = formatRuntime(episodeInfo?.runtimeMinutes || normalized?.runtimeMinutes) || movie?.runtime;
   const metaLine = [subLabel, year, !episodeInfo ? movie?.rating : null, runtime].filter(Boolean).join("  ·  ");
-  const poster = movie ? MovieAPI.getMoviePoster(movie.id, movie.posterVersion) : null;
+  const poster = movie ? MovieAPI.getMoviePoster(movie.id, movie.posterVersion, kind) : null;
   const durationSeconds = session ? session.durationTicks / TICKS_PER_SECOND : 0;
   const resumeSeconds = session?.resumePositionTicks ? session.resumePositionTicks / TICKS_PER_SECOND : 0;
 

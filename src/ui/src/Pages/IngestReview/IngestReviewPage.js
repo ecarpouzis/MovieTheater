@@ -1099,6 +1099,28 @@ export default function IngestReviewPage({ userData }) {
         >
           <Button>Backfill posters</Button>
         </Popconfirm>
+        <Popconfirm
+          title="Repair series posters? Series share an id space with movies; this gives every series its own poster file and fixes any movie showing a series' poster."
+          okText="Migrate series posters"
+          onConfirm={async () => {
+            const hide = message.loading("Migrating series posters…", 0);
+            try {
+              const res = await MovieAPI.ingestReviewMigrateSeriesPosters();
+              const data = await res.json().catch(() => ({}));
+              hide();
+              if (res.ok)
+                message.success(
+                  `Series posters: ${data.copied ?? 0} copied, ${data.refetched ?? 0} re-fetched; movies repaired ${data.movieRepaired ?? 0}, cleared ${data.movieCleared ?? 0} (${data.failed ?? 0} failed).`
+                );
+              else message.error(data.message || "Migration failed.");
+            } catch {
+              hide();
+              message.error("Migration failed.");
+            }
+          }}
+        >
+          <Button>Migrate series posters</Button>
+        </Popconfirm>
       </div>
 
       {loading ? (
