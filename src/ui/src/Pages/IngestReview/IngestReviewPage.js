@@ -1100,19 +1100,37 @@ export default function IngestReviewPage({ userData }) {
           <Button>Backfill posters</Button>
         </Popconfirm>
         <Popconfirm
-          title="Repair series posters? Series share an id space with movies; this gives every series its own poster file and fixes any movie showing a series' poster."
+          title="Repair series posters? Series share an id space with movies; this gives every series its own poster file. Runs in chunks until done — keep this tab open."
           okText="Migrate series posters"
           onConfirm={async () => {
-            const hide = message.loading("Migrating series posters…", 0);
+            let hide = message.loading("Migrating series posters…", 0);
+            const totals = { copied: 0, refetched: 0, skipped: 0, movieRestored: 0, failed: 0 };
             try {
-              const res = await MovieAPI.ingestReviewMigrateSeriesPosters();
-              const data = await res.json().catch(() => ({}));
+              let afterId = 0;
+              // Drive the cursor-based endpoint to completion; each chunk is bounded so it can't time out.
+              // Stop on done, or if a chunk makes no progress (safety against an unexpected stall).
+              for (let guard = 0; guard < 1000; guard++) {
+                const res = await MovieAPI.ingestReviewMigrateSeriesPosters(afterId, 40);
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                  hide();
+                  message.error(data.message || `Migration failed at id ${afterId}.`);
+                  return;
+                }
+                totals.copied += data.copied ?? 0;
+                totals.refetched += data.refetched ?? 0;
+                totals.skipped += data.skipped ?? 0;
+                totals.movieRestored += data.movieRestored ?? 0;
+                totals.failed += data.failed ?? 0;
+                if (data.done || data.processed === 0) break;
+                afterId = data.nextAfterId;
+                hide();
+                hide = message.loading(`Migrating series posters… ${data.remaining ?? 0} remaining`, 0);
+              }
               hide();
-              if (res.ok)
-                message.success(
-                  `Series posters: ${data.copied ?? 0} copied, ${data.refetched ?? 0} re-fetched; movies repaired ${data.movieRepaired ?? 0}, cleared ${data.movieCleared ?? 0} (${data.failed ?? 0} failed).`
-                );
-              else message.error(data.message || "Migration failed.");
+              message.success(
+                `Series posters done: ${totals.copied} copied, ${totals.refetched} re-fetched, ${totals.skipped} already ok, ${totals.movieRestored} movie poster(s) restored (${totals.failed} no poster found).`
+              );
             } catch {
               hide();
               message.error("Migration failed.");

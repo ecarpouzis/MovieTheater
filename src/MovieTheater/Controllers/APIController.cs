@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -3624,82 +3625,86 @@ namespace MovieTheater.Controllers
 
         // One-shot repair for the Movie/Series poster-namespace collision. Posters are on-disk files keyed
         // by id, and Movie & Series ids are NOT disjoint, so before series got their own ("series") bucket a
-        // same-id Movie and Series shared "{id}.png" — one showed the other's poster. This:
-        //   • populates the series bucket for every series (copying the existing file when the id is unique
-        //     to the series, otherwise re-fetching the series' real poster from its tt), and
-        //   • repairs a movie whose default-bucket file is actually a colliding series' leftover (the movie
-        //     has no poster row of its own) by re-fetching from the movie's tt, or clearing it if it has none.
-        // Runs in the web app so it writes the live image store (a dev box can't). Editor-gated; idempotent
-        // (skips a series that already has a bucketed poster unless force=true).
+        // same-id Movie and Series shared "{id}.png" — a series showed the movie's poster.
+        //
+        // CHUNKED so it can never time out: each call handles the next `limit` series after `afterId`,
+        // in parallel, and returns the cursor + whether more remain — the UI drives it to completion.
+        // For each series it puts a poster in the series bucket (copying the existing "{id}.png" when the id
+        // is the series' alone, else re-fetching the series' real poster from its tt).
+        //
+        // STRICTLY NON-DESTRUCTIVE to movie posters: it only READS the default ("{id}.png") namespace and
+        // WRITES the series bucket; it NEVER deletes or overwrites a movie poster. As a courtesy it also
+        // restores a colliding movie's poster *only when that movie has no poster file at all* (e.g. one an
+        // earlier buggy run removed) by fetching the movie's OWN poster — again, never overwriting an
+        // existing file. Runs in the web app so it writes the live image store (a dev box can't).
+        // Editor-gated; idempotent (a series already in the bucket is skipped unless force=true).
         [HttpPost("/API/Admin/IngestReview/MigrateSeriesPosters")]
-        public async Task<IActionResult> MigrateSeriesPosters(bool force = false)
+        public async Task<IActionResult> MigrateSeriesPosters(int afterId = 0, int limit = 40, bool force = false)
         {
             if (!await IsCurrentUserEditor()) return Forbid();
+            limit = Math.Clamp(limit, 1, 200);
 
-            var allSeries = await movieDb.Series.Select(s => new { s.Id, s.imdbID }).ToListAsync();
-            var movieIds = (await movieDb.Movies.Select(m => m.id).ToListAsync()).ToHashSet();
-            var moviePosterIds = (await movieDb.MoviePosterDetails.Select(p => p.MovieId).ToListAsync()).ToHashSet();
+            var batch = await movieDb.Series.Where(s => s.Id > afterId)
+                .OrderBy(s => s.Id).Take(limit)
+                .Select(s => new { s.Id, s.imdbID }).ToListAsync();
 
-            int copied = 0, refetched = 0, movieRepaired = 0, movieCleared = 0, skipped = 0, failed = 0;
+            if (batch.Count == 0)
+                return Ok(new { done = true, processed = 0, nextAfterId = afterId, copied = 0, refetched = 0, skipped = 0, movieRestored = 0, failed = 0, remaining = 0 });
 
-            foreach (var s in allSeries)
+            var batchIds = batch.Select(b => b.Id).ToList();
+            // Precompute (no DbContext use inside the parallel body — MovieDb isn't thread-safe): which ids in
+            // this chunk are also movies, and those movies' tts (to restore a movie that lost its poster).
+            var collidingMovieTt = await movieDb.Movies.Where(m => batchIds.Contains(m.id))
+                .Select(m => new { m.id, m.imdbID }).ToDictionaryAsync(x => x.id, x => x.imdbID);
+
+            int copied = 0, refetched = 0, skipped = 0, movieRestored = 0, failed = 0;
+
+            await Parallel.ForEachAsync(batch, new ParallelOptions { MaxDegreeOfParallelism = 6 }, async (s, _) =>
             {
-                bool colliding = movieIds.Contains(s.Id);
-
-                // Series side: get a poster into the series bucket.
+                bool colliding = collidingMovieTt.ContainsKey(s.Id);
                 try
                 {
                     if (!force && await imageRepo.HasImage(s.Id, PosterImageVariant.Main, PosterBucket.Series))
                     {
-                        skipped++;
+                        Interlocked.Increment(ref skipped);
                     }
                     else if (!colliding && await imageRepo.HasImage(s.Id, PosterImageVariant.Main))
                     {
                         // The id is the series' alone, so the existing "{id}.png" is genuinely the series'
                         // poster — carry it (both variants) into the bucket without a network round-trip.
                         await CopyPosterImagesAsync(s.Id, null, s.Id, PosterBucket.Series);
-                        copied++;
+                        Interlocked.Increment(ref copied);
                     }
                     else if (await posterFetchService.EnsurePosterAsync(s.Id, s.imdbID, isSeries: true, force: true))
                     {
-                        refetched++;
+                        // Colliding (can't trust "{id}.png" — it may be the movie's), or no source file:
+                        // fetch the series' own poster straight into the series bucket.
+                        Interlocked.Increment(ref refetched);
                     }
                     else
                     {
-                        failed++;
+                        Interlocked.Increment(ref failed);
                     }
                 }
-                catch { failed++; }
+                catch { Interlocked.Increment(ref failed); }
 
-                // Movie side: only a colliding id can have a movie poster polluted by the series write.
-                if (!colliding) continue;
-                try
+                // Courtesy movie restore: ONLY when the colliding movie has no poster file at all (absent),
+                // fetch the movie's own poster. force:false guarantees we never overwrite an existing file.
+                if (colliding && !string.IsNullOrWhiteSpace(collidingMovieTt[s.Id]))
                 {
-                    if (moviePosterIds.Contains(s.Id))
-                        continue;   // the movie owns a legit poster row → its default file is its own, leave it.
-
-                    // No movie poster row, yet a default-bucket file exists → it's the series' leftover and is
-                    // wrong for the movie. Re-fetch the movie's own poster; if it has no tt to fetch from,
-                    // clear the file so the movie shows a placeholder rather than the series' art.
-                    if (!await imageRepo.HasImage(s.Id, PosterImageVariant.Main))
-                        continue;
-
-                    var mTt = await movieDb.Movies.Where(m => m.id == s.Id).Select(m => m.imdbID).FirstOrDefaultAsync();
-                    if (!string.IsNullOrWhiteSpace(mTt) && await posterFetchService.EnsurePosterAsync(s.Id, mTt, isSeries: false, force: true))
+                    try
                     {
-                        movieRepaired++;
+                        if (!await imageRepo.HasImage(s.Id, PosterImageVariant.Main)
+                            && await posterFetchService.EnsurePosterAsync(s.Id, collidingMovieTt[s.Id], isSeries: false, force: false))
+                            Interlocked.Increment(ref movieRestored);
                     }
-                    else
-                    {
-                        await imageRepo.DeleteImage(s.Id, PosterImageVariant.Main);
-                        await imageRepo.DeleteImage(s.Id, PosterImageVariant.Thumbnail);
-                        movieCleared++;
-                    }
+                    catch { /* movie restore is best-effort; never fails the chunk */ }
                 }
-                catch { failed++; }
-            }
+            });
 
-            return Ok(new { series = allSeries.Count, copied, refetched, skipped, movieRepaired, movieCleared, failed });
+            var nextAfterId = batchIds.Max();
+            var remaining = await movieDb.Series.CountAsync(s => s.Id > nextAfterId);
+            return Ok(new { done = remaining == 0, processed = batch.Count, nextAfterId, copied, refetched, skipped, movieRestored, failed, remaining });
         }
 
         // Reject = delete the ingested row entirely. Guarded to pending-review rows so this can never

@@ -555,10 +555,11 @@ function ingestReviewBackfillPosters() {
   return fetch("/API/Admin/IngestReview/BackfillPosters", { method: "post" });
 }
 
-// One-shot repair of the Movie/Series poster-namespace collision: gives every series its own bucketed
-// poster file and fixes any movie left showing a same-id series' poster. Prod-only (writes the image store).
-function ingestReviewMigrateSeriesPosters() {
-  return fetch("/API/Admin/IngestReview/MigrateSeriesPosters", { method: "post" });
+// One chunk of the Movie/Series poster-namespace repair (gives series their own bucketed poster files).
+// Chunked + cursor-driven so it can't time out; the caller loops on the returned { done, nextAfterId }.
+// Prod-only (writes the image store).
+function ingestReviewMigrateSeriesPosters(afterId = 0, limit = 40) {
+  return fetch(`/API/Admin/IngestReview/MigrateSeriesPosters?afterId=${afterId}&limit=${limit}`, { method: "post" });
 }
 
 // Point a series episode at the correct on-disk file (chosen from the folder dump); empty path clears it.
