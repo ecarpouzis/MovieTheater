@@ -51,9 +51,10 @@ function stratOf(label) {
   return label && label.startsWith("match:") ? label.slice(6) : null;
 }
 
-// Extras (MiscVideos) attached to this title via RelatedMovieId/RelatedSeriesId. Surfaced read-only so
-// you can see what's hanging off an item without digging through the misc queue.
-function RelatedExtras({ items }) {
+// Extras (MiscVideos) attached to this title via RelatedMovieId/RelatedSeriesId. Approved extras are
+// read-only here; a PENDING extra can be deleted inline (e.g. a file that's since been mapped to a real
+// episode, leaving a stale misc duplicate) — onDelete rejects the misc row the same as the misc queue.
+function RelatedExtras({ items, onDelete }) {
   if (!items || !items.length) return null;
   return (
     <div className="rc-related-misc">
@@ -68,6 +69,16 @@ function RelatedExtras({ items }) {
           {(m.files || []).map((f, i) => (
             <span key={i} className="rc-path" title={f.path}>{basename(f.path)}</span>
           ))}
+          {m.pending && onDelete ? (
+            <Popconfirm
+              title="Delete this pending extra (misc video + its file rows)?"
+              okText="Delete"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => onDelete(m.id)}
+            >
+              <a className="rc-ep-rm" title="delete pending extra">✕</a>
+            </Popconfirm>
+          ) : null}
         </div>
       ))}
     </div>
@@ -316,6 +327,19 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
   };
 
   const removeFile = (mediaFileId) => runFileOp(() => MovieAPI.ingestReviewRemoveFile(mediaFileId));
+
+  // Delete a pending attached extra (misc video) shown on this card — e.g. a file that's since been mapped
+  // to a real episode, leaving a stale misc duplicate. Rejects it (parent drops its standalone misc card),
+  // then refreshes this card's detail so it falls off the "attached extras" list too.
+  const deleteRelatedExtra = async (miscId) => {
+    setWorking(true);
+    try {
+      const ok = await onReject({ kind: "misc", id: miscId });
+      if (ok) await refreshDetail();
+    } finally {
+      setWorking(false);
+    }
+  };
 
   function toggleDetail() {
     setDetailOpen((o) => !o);
@@ -647,7 +671,7 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
                     ))
                   )}
                 </div>
-                <RelatedExtras items={detail.relatedMisc} />
+                <RelatedExtras items={detail.relatedMisc} onDelete={deleteRelatedExtra} />
               </>
             ) : (
               <>
@@ -753,7 +777,7 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
                     <Button size="small" type="primary" loading={working} onClick={submitSeriesExtra}>Add extra</Button>
                   </span>
                 </div>
-                <RelatedExtras items={detail.relatedMisc} />
+                <RelatedExtras items={detail.relatedMisc} onDelete={deleteRelatedExtra} />
               </>
             )}
           </div>
