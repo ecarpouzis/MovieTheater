@@ -3258,7 +3258,7 @@ namespace MovieTheater.Controllers
                 ? new List<object>()
                 : await movieDb.MediaFiles.Where(f => f.PlayableId == movie.PlayableId)
                     .OrderBy(f => f.Role).ThenBy(f => f.PartNumber).ThenBy(f => f.Id)
-                    .Select(f => (object)new { path = f.Path, role = f.Role.ToString(), label = f.Label,
+                    .Select(f => (object)new { mediaFileId = f.Id, path = f.Path, role = f.Role.ToString(), label = f.Label,
                         isPlayable = f.JellyfinItemId != null && f.MissingSinceUtc == null, missing = f.MissingSinceUtc != null })
                     .ToListAsync();
             // Cached IMDb/TMDB metadata (normalized tables) so the review card can show what's being approved
@@ -3449,9 +3449,12 @@ namespace MovieTheater.Controllers
             if (string.IsNullOrWhiteSpace(path)) return BadRequest(new { Message = "Path required" });
 
             bool toSeries = string.Equals(req.TargetType, "series", StringComparison.OrdinalIgnoreCase);
+            bool toMovie = string.Equals(req.TargetType, "movie", StringComparison.OrdinalIgnoreCase);
 
             // Resolve to a FULL path before storing (a bare filename maps but never streams via Jellyfin).
-            int? listingSeriesId = toSeries ? req.TargetId
+            // A movie has no scanned FolderListing, so its paths must be pasted fully rooted (listing = null).
+            int? listingSeriesId = toMovie ? (int?)null
+                : toSeries ? req.TargetId
                 : await movieDb.Episodes.Where(e => e.Id == req.TargetId).Select(e => e.SeriesId).FirstOrDefaultAsync();
             var listing = listingSeriesId != null
                 ? await movieDb.Series.Where(s => s.Id == listingSeriesId.Value).Select(s => s.FolderListing).FirstOrDefaultAsync()
@@ -3459,12 +3462,23 @@ namespace MovieTheater.Controllers
             if (!TryResolveMappedPath(path, listing, out var fullPath, out var resolveErr))
                 return BadRequest(new { Message = resolveErr });
             path = fullPath;
-            // A series target is always an Extra (it has no episode of its own); an episode target honors the role.
+            // A series target is always an Extra (it has no episode of its own); a movie/episode target honors the role.
             var role = (toSeries || string.Equals(req.Role, "Extra", StringComparison.OrdinalIgnoreCase))
                 ? MovieFileRole.Extra : MovieFileRole.Primary;
 
             int playableId;
-            if (toSeries)
+            if (toMovie)
+            {
+                var mov = await movieDb.Movies.FirstOrDefaultAsync(m => m.id == req.TargetId);
+                if (mov == null) return NotFound(new { Message = "Movie not found" });
+                if (mov.PlayableId == null)
+                {
+                    mov.Playable = new Playable { Kind = PlayableKind.Movie };
+                    await movieDb.SaveChangesAsync();
+                }
+                playableId = mov.PlayableId!.Value;
+            }
+            else if (toSeries)
             {
                 // Find/create the (Season 0, Ep 0, "Extras") holder for this series.
                 var holder = await movieDb.Episodes.FirstOrDefaultAsync(e =>

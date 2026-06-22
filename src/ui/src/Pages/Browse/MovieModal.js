@@ -4,6 +4,7 @@ import { Modal, Spin, Input, Button, Checkbox, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import UserMovieOptions from "./UserMovieOptions";
 import WatchButton from "../Watch/WatchButton";
+import FileMappingEditor from "./FileMappingEditor";
 import "./MovieModal.css";
 
 const { TextArea } = Input;
@@ -181,6 +182,9 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
   const displayWriters =
     Array.isArray(n.writers) && n.writers.length > 0 ? n.writers.map((p) => p.name).join(", ") : movie?.writer;
   const displayPlot = n.plotFull || movie?.plot;
+  // Cards read ImdbRatingScraped (exposed as normalized.imdbRating); the modal must too, or ingested
+  // titles (legacy imdbRating NULL) show a rating on the card but a blank one here.
+  const displayImdbRating = n.imdbRating ?? movie?.imdbRating;
   const castList =
     Array.isArray(n.cast) && n.cast.length > 0
       ? n.cast
@@ -372,13 +376,15 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                 )}
 
                 <div className="modal-ratings-row">
-                  <a className="modal-rating-link" target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID}>
-                    <span className="modal-label">IMDb</span>
-                    <span className="modal-rating-score">
-                      {movie.imdbRating}
-                      <span className="modal-rating-denom"> / 10</span>
-                    </span>
-                  </a>
+                  {displayImdbRating != null && displayImdbRating !== "" && (
+                    <a className="modal-rating-link" target="_blank" rel="noreferrer" href={"http://www.imdb.com/title/" + movie.imdbID}>
+                      <span className="modal-label">IMDb</span>
+                      <span className="modal-rating-score">
+                        {displayImdbRating}
+                        <span className="modal-rating-denom"> / 10</span>
+                      </span>
+                    </a>
+                  )}
                   {movie.rtTomatometer != null && (
                     <a
                       className="modal-rating-link"
@@ -500,6 +506,8 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                     Remove from Random
                   </Checkbox>
                 </div>
+
+                <FileMappingEditor id={movie.id} kind={isSeries ? "series" : "movie"} />
 
                 <div className="modal-edit-actions">
                   <Button type="primary" onClick={saveChanges} loading={saving}>
