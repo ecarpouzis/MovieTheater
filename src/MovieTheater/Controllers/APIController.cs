@@ -3225,6 +3225,7 @@ namespace MovieTheater.Controllers
                             $"([OK] mapped {okN} / [??] NOT captured {noN})");
                     liveFolderListing = string.Join("\n", outLines);
                 }
+                var seriesRelatedMisc = await LoadRelatedMiscAsync(null, id);
                 return Ok(new
                 {
                     kind = "series",
@@ -3232,6 +3233,7 @@ namespace MovieTheater.Controllers
                     episodeHave = seps.Count(e => e.PlayableId != null && sFilesByPlayable.ContainsKey(e.PlayableId.Value)),
                     seasons = sSeasons,
                     seriesExtras,
+                    relatedMisc = seriesRelatedMisc,
                     folderListing = liveFolderListing,   // re-marked live vs current mappings (scan-time flags go stale)
                     meta = new
                     {
@@ -3269,10 +3271,12 @@ namespace MovieTheater.Controllers
                 .Select(cr => new { cr.Role, Name = cr.Person.DisplayName }).ToListAsync();
             var mPlot = await movieDb.MoviePlotSummaries.Where(p => p.MovieID == id).OrderBy(p => p.Ordering).Select(p => p.Text).FirstOrDefaultAsync();
             string[] MNames(CreditRole r, int take) => mCredits.Where(x => x.Role == r && x.Name != null).Select(x => x.Name!).Distinct().Take(take).ToArray();
+            var movieRelatedMisc = await LoadRelatedMiscAsync(id, null);
             return Ok(new
             {
                 kind = "movie",
                 files,
+                relatedMisc = movieRelatedMisc,
                 meta = new
                 {
                     plot = mPlot ?? movie.Plot,
@@ -3290,6 +3294,36 @@ namespace MovieTheater.Controllers
                     year = movie.ReleaseDate != null ? movie.ReleaseDate.Value.Year : (movie.ImdbReleaseDate != null ? movie.ImdbReleaseDate.Value.Year : (int?)null),
                 }
             });
+        }
+
+        // Extras (MiscVideos) that point AT a title via RelatedMovieId/RelatedSeriesId — surfaced on the
+        // movie/series review card so you can see what's attached without hunting the misc queue. Pass the
+        // one relevant id; the other stays null.
+        private async Task<List<object>> LoadRelatedMiscAsync(int? relatedMovieId, int? relatedSeriesId)
+        {
+            var rel = await movieDb.MiscVideos
+                .Where(v => (relatedMovieId != null && v.RelatedMovieId == relatedMovieId)
+                         || (relatedSeriesId != null && v.RelatedSeriesId == relatedSeriesId))
+                .OrderBy(v => v.CollectionName).ThenBy(v => v.SortOrder).ThenBy(v => v.Title)
+                .Select(v => new { v.Id, v.PlayableId, v.Title, v.Category, v.Year, v.CollectionName, Pending = v.ReviewBatch != null })
+                .ToListAsync();
+            if (rel.Count == 0) return new List<object>();
+            var pids = rel.Select(v => v.PlayableId).ToList();
+            var filesByPid = (await movieDb.MediaFiles.Where(f => pids.Contains(f.PlayableId))
+                    .OrderBy(f => f.Role).ThenBy(f => f.PartNumber).ThenBy(f => f.Id)
+                    .Select(f => new { f.PlayableId, f.Path, f.Role }).ToListAsync())
+                .GroupBy(f => f.PlayableId)
+                .ToDictionary(g => g.Key, g => g.Select(f => (object)new { path = f.Path, role = f.Role.ToString() }).ToList());
+            return rel.Select(v => (object)new
+            {
+                id = v.Id,
+                title = v.Title,
+                category = v.Category,
+                year = v.Year,
+                collectionName = v.CollectionName,
+                pending = v.Pending,
+                files = filesByPid.TryGetValue(v.PlayableId, out var ff) ? ff : new List<object>(),
+            }).ToList();
         }
 
         public class SetEpisodeFileRequest { public int EpisodeId { get; set; } public string? Path { get; set; } }

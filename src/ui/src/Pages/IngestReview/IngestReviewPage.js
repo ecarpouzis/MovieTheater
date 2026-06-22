@@ -51,6 +51,29 @@ function stratOf(label) {
   return label && label.startsWith("match:") ? label.slice(6) : null;
 }
 
+// Extras (MiscVideos) attached to this title via RelatedMovieId/RelatedSeriesId. Surfaced read-only so
+// you can see what's hanging off an item without digging through the misc queue.
+function RelatedExtras({ items }) {
+  if (!items || !items.length) return null;
+  return (
+    <div className="rc-related-misc">
+      <div className="rc-season-hd">Attached extras (misc videos) · {items.length}</div>
+      {items.map((m) => (
+        <div key={m.id} className="rc-ep">
+          <Tag color="geekblue">{m.category || "misc"}</Tag>
+          <span className="rc-eptitle" title={m.title}>
+            {m.title}{m.year ? ` (${m.year})` : ""}{m.collectionName ? ` — ${m.collectionName}` : ""}
+          </span>
+          {m.pending ? <Tag color="gold">pending review</Tag> : null}
+          {(m.files || []).map((f, i) => (
+            <span key={i} className="rc-path" title={f.path}>{basename(f.path)}</span>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // MiscVideo has its own id sequence, so identify list rows by (kind, id) — never a bare id.
 function uidOf(it) {
   return (it.kind || "movie") + ":" + it.id;
@@ -603,26 +626,29 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
             ) : !detail ? (
               <Text type="secondary">no detail loaded</Text>
             ) : detail.kind === "movie" ? (
-              <div className="rc-files">
-                {(detail.files || []).length === 0 ? (
-                  <Text type="secondary">no files mapped to this title</Text>
-                ) : (
-                  (detail.files || []).map((f, i) => (
-                    <div key={i} className="rc-file">
-                      <Tag color={f.role === "Primary" ? "green" : "default"}>{f.role}</Tag>
-                      {f.isPlayable ? (
-                        <Tag color="green">streamable</Tag>
-                      ) : f.missing ? (
-                        <Tag color="gold">missing</Tag>
-                      ) : (
-                        <Tag color="orange">mapped · not synced</Tag>
-                      )}
-                      {f.label ? <Tag>{f.label}</Tag> : null}
-                      <span className="rc-path" title={f.path}>{basename(f.path)}</span>
-                    </div>
-                  ))
-                )}
-              </div>
+              <>
+                <div className="rc-files">
+                  {(detail.files || []).length === 0 ? (
+                    <Text type="secondary">no files mapped to this title</Text>
+                  ) : (
+                    (detail.files || []).map((f, i) => (
+                      <div key={i} className="rc-file">
+                        <Tag color={f.role === "Primary" ? "green" : "default"}>{f.role}</Tag>
+                        {f.isPlayable ? (
+                          <Tag color="green">streamable</Tag>
+                        ) : f.missing ? (
+                          <Tag color="gold">missing</Tag>
+                        ) : (
+                          <Tag color="orange">mapped · not synced</Tag>
+                        )}
+                        {f.label ? <Tag>{f.label}</Tag> : null}
+                        <span className="rc-path" title={f.path}>{basename(f.path)}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <RelatedExtras items={detail.relatedMisc} />
+              </>
             ) : (
               <>
                 {detail.folderListing ? (
@@ -727,6 +753,7 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
                     <Button size="small" type="primary" loading={working} onClick={submitSeriesExtra}>Add extra</Button>
                   </span>
                 </div>
+                <RelatedExtras items={detail.relatedMisc} />
               </>
             )}
           </div>
