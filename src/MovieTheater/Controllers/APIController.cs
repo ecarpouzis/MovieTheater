@@ -3518,9 +3518,34 @@ namespace MovieTheater.Controllers
             if (!await IsCurrentUserEditor()) return Forbid();
             var f = await movieDb.MediaFiles.FirstOrDefaultAsync(x => x.Id == req.MediaFileId);
             if (f == null) return NotFound(new { Message = "File not found" });
+            var playableId = f.PlayableId;
+            var wasCreatedEp = (f.Label ?? "").StartsWith("match:created-ep", StringComparison.OrdinalIgnoreCase);
             movieDb.MediaFiles.Remove(f);
             await movieDb.SaveChangesAsync();
-            return Ok(new { Success = true });
+
+            var phantomRemoved = await CleanupEmptyCreatedEpPhantomAsync(playableId, wasCreatedEp);
+            return Ok(new { Success = true, phantomEpisodeRemoved = phantomRemoved });
+        }
+
+        // A "created-ep phantom" is an Episode the bulk mapper fabricated from a filename (no ImdbId, title
+        // taken from the file) purely to hold a file it couldn't match to a real episode — its MediaFile
+        // carries Label "match:created-ep" (data/_create_missing_eps.py). When that file is later remapped to
+        // the correct real episode and removed here, the fabricated episode is left behind as an empty "0/1"
+        // gap that can never be filled (no such episode exists — often a typo/duplicate of a real one). If
+        // removing a created-ep file empties such a phantom, delete the episode + its now-unreferenced
+        // playable so it stops surfacing. Guarded tight: only a created-ep file, only an ImdbId-NULL episode,
+        // and only once no files remain — a real (scraped) episode or one that still has files is never touched.
+        private async Task<bool> CleanupEmptyCreatedEpPhantomAsync(int playableId, bool removedWasCreatedEp)
+        {
+            if (!removedWasCreatedEp) return false;
+            if (await movieDb.MediaFiles.AnyAsync(m => m.PlayableId == playableId)) return false;
+            var ep = await movieDb.Episodes.FirstOrDefaultAsync(e => e.PlayableId == playableId);
+            if (ep == null || ep.ImdbId != null) return false;
+            movieDb.Episodes.Remove(ep);   // episode first (its FK to Playable is Restrict), then the playable
+            var pl = await movieDb.Playables.FirstOrDefaultAsync(p => p.Id == playableId);
+            if (pl != null) movieDb.Playables.Remove(pl);
+            await movieDb.SaveChangesAsync();
+            return true;
         }
 
         // Movie ids in Ids, series ids in SeriesIds, misc-video ids in MiscIds (separate id sequences — see Kind).
