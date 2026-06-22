@@ -44,19 +44,30 @@ namespace MovieTheater.Ingest
             return o.ToString();
         }
 
-        /// <summary>Move a leading "The " to a trailing ", The" (the library's A-Z sort convention),
-        /// matching APIController.PrepMovieTitle which only runs on manual insert. Null/empty-safe; leaves
-        /// "A"/"An" alone (dropped by hand, not auto-inverted) and won't double-invert an existing ", The".</summary>
+        /// <summary>Move a leading "The " to a trailing ", The" (the library's A-Z sort convention).
+        /// The article belongs to the MAIN title, so when a subtitle follows ("The X: Y") the inverted
+        /// article is re-attached right before the first colon -> "X, The: Y", NOT dumped after the
+        /// subtitle ("X: Y, The"). An interior article inside the subtitle ("The X: The Y") is left
+        /// untouched. Null/empty-safe; leaves "A"/"An" alone (dropped by hand, not auto-inverted) and
+        /// won't double-invert a title that already carries ", The".</summary>
         public static string InvertLeadingThe(string title)
         {
             var t = (title ?? "").Trim();
-            if (t.StartsWith("The ", System.StringComparison.OrdinalIgnoreCase) &&
-                !t.EndsWith(", The", System.StringComparison.OrdinalIgnoreCase))
-            {
-                var rest = t.Substring(4).Trim();
-                if (rest.Length > 0) return rest + ", The";
-            }
-            return title;
+            if (!t.StartsWith("The ", System.StringComparison.OrdinalIgnoreCase)) return title;
+            // Already inverted somewhere (end of main title or end of whole string) -> don't double-invert.
+            if (t.EndsWith(", The", System.StringComparison.OrdinalIgnoreCase) ||
+                t.Contains(", The:", System.StringComparison.OrdinalIgnoreCase)) return title;
+
+            var rest = t.Substring(4).Trim(); // drop leading "The "
+            if (rest.Length == 0) return title;
+
+            var colon = rest.IndexOf(':');
+            if (colon < 0) return rest + ", The";
+
+            var head = rest.Substring(0, colon).TrimEnd();
+            var tail = rest.Substring(colon); // includes the ':' and the rest of the subtitle
+            if (head.Length == 0) return rest + ", The"; // pathological "The : foo" -> fall back
+            return head + ", The" + tail;
         }
     }
 }

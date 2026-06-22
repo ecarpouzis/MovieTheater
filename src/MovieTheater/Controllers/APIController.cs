@@ -1394,18 +1394,13 @@ namespace MovieTheater.Controllers
 
         private async Task<Movie> PrepMovieTitle(Movie movie)
         {
-            var trimmedTitle = movie.Title.Trim();
-            if (trimmedTitle.StartsWith("The ", StringComparison.OrdinalIgnoreCase) &&
-                        !trimmedTitle.EndsWith(", The", StringComparison.OrdinalIgnoreCase))
+            // Invert a leading "The " to the library's ", The" sort form. Colon-aware: the article
+            // re-attaches to the main title ("The X: Y" -> "X, The: Y"), not after the subtitle.
+            var inverted = MovieTheater.Ingest.TitleNorm.InvertLeadingThe(movie.Title.Trim());
+            if (!string.Equals(inverted, movie.Title.Trim(), StringComparison.Ordinal))
             {
-                var withoutArticle = trimmedTitle.Substring(4).Trim(); // remove leading "The "
-
-                // If removing the article leaves an empty string, keep original to avoid producing ", The"
-                if (!string.IsNullOrEmpty(withoutArticle))
-                {
-                    movie.Title = $"{withoutArticle}, The";
-                    movie.SimpleTitle = $"{withoutArticle}, The";
-                }
+                movie.Title = inverted;
+                movie.SimpleTitle = inverted;
             }
 
             //Check if we've already got a copy of this movie
