@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -74,7 +73,8 @@ namespace MovieTheater.Services
                     if (s.ImdbReleaseDate == null && o.ReleaseDate.HasValue && o.ReleaseDate.Value != default) { s.ImdbReleaseDate = o.ReleaseDate; s.StartYear ??= o.ReleaseDate.Value.Year; }
                     if (s.ImdbRatingScraped == null && o.imdbRating != null) s.ImdbRatingScraped = o.imdbRating;
                     if (string.IsNullOrWhiteSpace(s.MpaaRating) && !string.IsNullOrWhiteSpace(o.Rating)) s.MpaaRating = o.Rating;
-                    if (s.RuntimeMinutes == null) { var rm = RuntimeToMinutes(o.Runtime); if (rm != null) s.RuntimeMinutes = rm; }
+                    // RuntimeMinutes is IMDB-only (the scrape's aboveTheFoldData.runtime.seconds). OMDB's
+                    // series "Runtime" is unreliable (often a bogus "1 min"), so never source it from OMDB.
                     if (!string.IsNullOrWhiteSpace(o.Plot)) { s.PlotFull = o.Plot; if (string.IsNullOrWhiteSpace(s.Plot)) s.Plot = o.Plot; }
                     if (string.IsNullOrWhiteSpace(s.Genre)) s.Genre = o.Genre;
                     if (string.IsNullOrWhiteSpace(s.Actors)) s.Actors = o.Actors;
@@ -93,7 +93,7 @@ namespace MovieTheater.Services
                     if (m.ImdbReleaseDate == null && o.ReleaseDate.HasValue && o.ReleaseDate.Value != default) m.ImdbReleaseDate = o.ReleaseDate;
                     if (m.ImdbRatingScraped == null && o.imdbRating != null) m.ImdbRatingScraped = o.imdbRating;
                     if (string.IsNullOrWhiteSpace(m.MpaaRating) && !string.IsNullOrWhiteSpace(o.Rating)) m.MpaaRating = o.Rating;
-                    if (m.RuntimeMinutes == null) { var rm = RuntimeToMinutes(o.Runtime); if (rm != null) m.RuntimeMinutes = rm; }
+                    // RuntimeMinutes is IMDB-only (the scrape's aboveTheFoldData.runtime.seconds); never source it from OMDB.
                     if (!string.IsNullOrWhiteSpace(o.Plot)) { m.PlotFull = o.Plot; if (string.IsNullOrWhiteSpace(m.Plot)) m.Plot = o.Plot; }
                     if (string.IsNullOrWhiteSpace(m.Genre)) m.Genre = o.Genre;
                     if (string.IsNullOrWhiteSpace(m.Actors)) m.Actors = o.Actors;
@@ -114,13 +114,6 @@ namespace MovieTheater.Services
                 logger.LogWarning(ex, "Enrich failed for id {Id} (series={IsSeries})", id, isSeries);
                 return false;
             }
-        }
-
-        private static int? RuntimeToMinutes(string runtime)
-        {
-            if (string.IsNullOrWhiteSpace(runtime)) return null;
-            var m = Regex.Match(runtime, @"\d+");
-            return m.Success && int.TryParse(m.Value, out var n) && n > 0 ? n : (int?)null;
         }
     }
 }
