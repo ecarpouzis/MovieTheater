@@ -307,7 +307,9 @@ namespace MovieTheater.Imdb
                 var name = GetString(item, "name");
                 var nm = url != null ? NmRegex.Match(url).Value : null;
                 if (string.IsNullOrEmpty(nm) || !seen.Add(nm)) continue;
-                into.Add(new ScrapedPerson { ImdbNameId = nm, DisplayName = name });
+                // JSON-LD names are HTML-encoded (e.g. "Roscoe &apos;Fatty&apos; Arbuckle"); decode so the
+                // entity never reaches Person.DisplayName. (The DOM cast path gets browser-decoded text.)
+                into.Add(new ScrapedPerson { ImdbNameId = nm, DisplayName = System.Net.WebUtility.HtmlDecode(name) });
             }
         }
 

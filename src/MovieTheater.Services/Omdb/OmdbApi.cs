@@ -51,18 +51,21 @@ namespace MovieTheater.Services.Omdb
                                   parsedRating
                                   : null;
 
+            // OMDB returns HTML-encoded text (e.g. "Roscoe &apos;Fatty&apos; Arbuckle", "Coop &amp; Remer").
+            // Decode the human-readable fields here so the entities never reach the DB / the UI renders them raw.
+            static string? Dec(string? s) => System.Net.WebUtility.HtmlDecode(s);
             return new Movie()
             {
-                Title = omdbMovie.Title,
-                SimpleTitle = omdbMovie.Title,
+                Title = Dec(omdbMovie.Title),
+                SimpleTitle = Dec(omdbMovie.Title),
                 Rating = omdbMovie.Rated,
                 ReleaseDate = releaseDate,
                 Runtime = omdbMovie.Runtime,
-                Genre = omdbMovie.Genre,
-                Director = omdbMovie.Director,
-                Writer = omdbMovie.Writer,
-                Actors = omdbMovie.Actors,
-                Plot = omdbMovie.Plot,
+                Genre = Dec(omdbMovie.Genre),
+                Director = Dec(omdbMovie.Director),
+                Writer = Dec(omdbMovie.Writer),
+                Actors = Dec(omdbMovie.Actors),
+                Plot = Dec(omdbMovie.Plot),
                 PosterLink = omdbMovie.Poster,
                 imdbRating = imdbRating,
                 imdbID = omdbMovie.imdbID,
