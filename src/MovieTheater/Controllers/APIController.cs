@@ -3053,8 +3053,12 @@ namespace MovieTheater.Controllers
             var oddSeriesIds = oddScope
                 ? epHave.Where(kv => kv.Value > (epPlayable.TryGetValue(kv.Key, out var p) ? p : 0)).Select(kv => kv.Key).ToHashSet()
                 : new HashSet<int>();
+            // A gap/oddity on an already-approved series is flagged ONCE for review; once the reviewer
+            // acknowledges it (OddityAcknowledgedUtc), the known gap must not keep re-surfacing. Pending
+            // (ReviewBatch != null) rows always show regardless.
             var seriesRaw = await movieDb.Series
-                .Where(s => s.ReviewBatch != null || gapSeriesIds.Contains(s.Id)
+                .Where(s => s.ReviewBatch != null
+                    || (gapSeriesIds.Contains(s.Id) && s.OddityAcknowledgedUtc == null)
                     || (oddScope && oddSeriesIds.Contains(s.Id) && s.OddityAcknowledgedUtc == null))
                 .Select(s => new { s.Id, s.Title, s.SimpleTitle, s.imdbID, s.TitleType, s.ReviewBatch, s.ReviewProvenance, s.ReviewConfidence, s.ReviewSourcePath, s.ImdbNeedsReview, s.ImdbReviewReason, s.ReleaseDate, s.ImdbReleaseDate, s.StartYear, s.ImdbScrapedTitle, PosterLink = s.PosterDetails != null ? s.PosterDetails.PosterLink : null })
                 .ToListAsync();
