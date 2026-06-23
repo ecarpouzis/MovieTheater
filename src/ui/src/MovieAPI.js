@@ -590,6 +590,16 @@ function ingestReviewRemoveFile(mediaFileId) {
   });
 }
 
+// Reorder a file within its title's Primary+Parts sequence. action: "primary" (promote a part/extra/
+// variant to Primary), "up" / "down" (shift a part one slot). Server renumbers the sequence afterward.
+function ingestReviewMoveFile(mediaFileId, action) {
+  return fetch("/API/Admin/IngestReview/MoveFile", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ MediaFileId: mediaFileId, Action: action }),
+  });
+}
+
 // Mark a live title's file oddity as reviewed so it stops surfacing in the "oddities" scope.
 function ingestReviewAcknowledgeOddity(id, kind) {
   return fetch("/API/Admin/IngestReview/AcknowledgeOddity", {
@@ -677,6 +687,7 @@ const MovieAPI = {
   ingestReviewSetEpisodeFile,
   ingestReviewSetFile,
   ingestReviewRemoveFile,
+  ingestReviewMoveFile,
   ingestReviewAcknowledgeOddity,
 };
 

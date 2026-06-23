@@ -72,17 +72,35 @@ export default function FileMappingEditor({ id, kind }) {
     const files = (detail.files || []).filter((f) => f.path);
     const setPrimary = () => run(() => MovieAPI.ingestReviewSetFile({ targetType: "movie", targetId: id, role: "Primary", path: moviePrimary.trim() }), () => setMoviePrimary(""));
     const addExtra = () => run(() => MovieAPI.ingestReviewSetFile({ targetType: "movie", targetId: id, role: "Extra", path: movieExtra.trim() }), () => setMovieExtra(""));
+    const move = (mediaFileId, action) => run(() => MovieAPI.ingestReviewMoveFile(mediaFileId, action));
+    // The Primary + Parts form one ordered "feature sequence" (Extras/Variants sit outside it).
+    const seq = files.filter((f) => f.role === "Primary" || f.role === "Part");
     return (
       <div className="fme">
         <div className="fme-hd">File mapping</div>
-        {files.length === 0 ? <div className="fme-empty">No file mapped.</div> : files.map((f) => (
+        {files.length === 0 ? <div className="fme-empty">No file mapped.</div> : files.map((f) => {
+          const seqIdx = seq.findIndex((x) => x.mediaFileId === f.mediaFileId);
+          const inSeq = seqIdx >= 0;
+          return (
           <div className="fme-row" key={f.mediaFileId}>
-            <Tag color={f.role === "Primary" ? "green" : "purple"}>{f.role}</Tag>
+            <Tag color={f.role === "Primary" ? "green" : "purple"}>{f.role}{f.role === "Part" && f.partNumber ? " " + f.partNumber : ""}</Tag>
             {f.label ? <Tag>{f.label}</Tag> : null}
             <span className="fme-path" title={f.path}>{basename(f.path)}</span>
+            {inSeq && (
+              <a className="fme-move" title="move up" style={{ visibility: seqIdx > 0 ? "visible" : "hidden" }}
+                 onClick={() => !working && move(f.mediaFileId, "up")}>↑</a>
+            )}
+            {inSeq && (
+              <a className="fme-move" title="move down" style={{ visibility: seqIdx < seq.length - 1 ? "visible" : "hidden" }}
+                 onClick={() => !working && move(f.mediaFileId, "down")}>↓</a>
+            )}
+            {f.role !== "Primary" && (
+              <a className="fme-move" title="make primary" onClick={() => !working && move(f.mediaFileId, "primary")}>★</a>
+            )}
             <RemoveX mediaFileId={f.mediaFileId} />
           </div>
-        ))}
+          );
+        })}
         <div className="fme-add">
           <Input size="small" placeholder="paste full path (L:\…) to set the primary file" value={moviePrimary}
             onChange={(e) => setMoviePrimary(e.target.value)} onPressEnter={() => moviePrimary.trim() && setPrimary()} />

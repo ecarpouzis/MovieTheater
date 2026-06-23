@@ -3315,7 +3315,7 @@ namespace MovieTheater.Controllers
                 ? new List<object>()
                 : await movieDb.MediaFiles.Where(f => f.PlayableId == movie.PlayableId)
                     .OrderBy(f => f.Role).ThenBy(f => f.PartNumber).ThenBy(f => f.Id)
-                    .Select(f => (object)new { mediaFileId = f.Id, path = f.Path, role = f.Role.ToString(), label = f.Label,
+                    .Select(f => (object)new { mediaFileId = f.Id, path = f.Path, role = f.Role.ToString(), label = f.Label, partNumber = f.PartNumber,
                         isPlayable = f.JellyfinItemId != null && f.MissingSinceUtc == null, missing = f.MissingSinceUtc != null })
                     .ToListAsync();
             // Cached IMDb/TMDB metadata (normalized tables) so the review card can show what's being approved
@@ -3578,6 +3578,51 @@ namespace MovieTheater.Controllers
                 movieDb.MediaFiles.Add(new MediaFile { PlayableId = playableId, Path = path, Role = role, Label = label });
                 await movieDb.SaveChangesAsync();
             }
+            return Ok(new { Success = true });
+        }
+
+        public class MoveFileRequest { public int MediaFileId { get; set; } public string Action { get; set; } = "primary"; }
+
+        // Reorder a title's files within its "feature sequence" (the Primary + ordered Parts of one playable).
+        //   action "primary" → make this file the Primary (promotes a Part, Variant, or Extra; the old Primary
+        //                       becomes the next Part). "up"/"down" → shift a Part/Primary one slot in the order.
+        // After any move the sequence is renumbered: first = Primary (Part 1), the rest = Parts 2..N. A lone
+        // file keeps PartNumber NULL. Variants/Extras not pulled in stay as they are. Editor-gated.
+        [HttpPost("/API/Admin/IngestReview/MoveFile")]
+        public async Task<IActionResult> IngestReviewMoveFile([FromBody] MoveFileRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (req == null || req.MediaFileId == 0) return BadRequest(new { Message = "MediaFileId required" });
+            var mf = await movieDb.MediaFiles.FirstOrDefaultAsync(x => x.Id == req.MediaFileId);
+            if (mf == null) return NotFound(new { Message = "File not found" });
+
+            var all = await movieDb.MediaFiles.Where(x => x.PlayableId == mf.PlayableId).ToListAsync();
+            // The feature sequence in current display order; Variants/Extras live outside it.
+            var seq = all.Where(x => x.Role == MovieFileRole.Primary || x.Role == MovieFileRole.Part)
+                .OrderBy(x => x.Role).ThenBy(x => x.PartNumber ?? int.MaxValue).ThenBy(x => x.Id).ToList();
+
+            var action = (req.Action ?? "").Trim().ToLowerInvariant();
+            if (action == "primary")
+            {
+                seq.RemoveAll(x => x.Id == mf.Id);   // a Part/Variant/Extra is pulled into the sequence at the front
+                seq.Insert(0, mf);
+            }
+            else if (action == "up" || action == "down")
+            {
+                var idx = seq.FindIndex(x => x.Id == mf.Id);
+                if (idx < 0) return BadRequest(new { Message = "Only a primary or part can be shifted." });
+                var swap = action == "up" ? idx - 1 : idx + 1;
+                if (swap < 0 || swap >= seq.Count) return Ok(new { Success = true });   // already at the edge
+                (seq[idx], seq[swap]) = (seq[swap], seq[idx]);
+            }
+            else return BadRequest(new { Message = "Action must be primary, up, or down." });
+
+            for (int i = 0; i < seq.Count; i++)
+            {
+                seq[i].Role = i == 0 ? MovieFileRole.Primary : MovieFileRole.Part;
+                seq[i].PartNumber = seq.Count == 1 ? (int?)null : i + 1;
+            }
+            await movieDb.SaveChangesAsync();
             return Ok(new { Success = true });
         }
 
