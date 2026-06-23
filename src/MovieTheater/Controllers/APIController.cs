@@ -3764,7 +3764,12 @@ namespace MovieTheater.Controllers
 
             var rows = req.Ids.Count == 0 ? new List<Movie>()
                 : await movieDb.Movies.Where(m => req.Ids.Contains(m.id) && m.ReviewBatch != null).ToListAsync();
-            movieDb.Movies.RemoveRange(rows);
+            // Use the full subtree delete: a plain Movies.RemoveRange leaves the movie's Playable+files
+            // orphaned and — fatally — trips the NO_ACTION MoviePosterDetails FK when the row got a poster
+            // during enrichment (that's the "Reject Failed" on enriched rows). DeleteMovieSubtreeAsync drops
+            // poster details + playable/files + credit/genre/plot, then the Movie.
+            foreach (var m in rows)
+                await DeleteMovieSubtreeAsync(m);
 
             int seriesCount = 0;
             if (req.SeriesIds.Count > 0)
