@@ -3643,12 +3643,19 @@ namespace MovieTheater.Controllers
         // Runs in the web app so it writes to the live image store — the CLI backfill can't from a dev box.
         // Editor-gated; idempotent (EnsurePosterAsync no-ops where a poster exists).
         [HttpPost("/API/Admin/IngestReview/BackfillPosters")]
-        public async Task<IActionResult> IngestReviewBackfillPosters()
+        public async Task<IActionResult> IngestReviewBackfillPosters([FromQuery] int minId = 0)
         {
             if (!await IsCurrentUserEditor()) return Forbid();
-            var series = await movieDb.Series.Where(s => s.ReviewBatch == null && s.imdbID != null && s.PosterDetails == null)
+            // Target titles with no PosterDetails row AND those whose row never got an image downloaded
+            // (PosterVersion == 0 — e.g. the scrape recorded a URL but the fetch failed). EnsurePosterAsync
+            // no-ops where an on-disk image already exists, so this stays safe for legacy rows.
+            // minId scopes the pass to recent ids (the buggy ingest era) so a run need not iterate the
+            // whole legacy library — pass e.g. minId=9001 to target only recently-ingested titles.
+            var series = await movieDb.Series.Where(s => s.ReviewBatch == null && s.imdbID != null && s.Id >= minId
+                    && (s.PosterDetails == null || s.PosterDetails.PosterVersion == 0))
                 .Select(s => new { s.Id, s.imdbID }).ToListAsync();
-            var movies = await movieDb.Movies.Where(m => m.ReviewBatch == null && m.imdbID != null && m.PosterDetails == null
+            var movies = await movieDb.Movies.Where(m => m.ReviewBatch == null && m.imdbID != null && m.id >= minId
+                    && (m.PosterDetails == null || m.PosterDetails.PosterVersion == 0)
                     && m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries)
                 .Select(m => new { m.id, m.imdbID }).ToListAsync();
             var targets = series.Select(s => (id: s.Id, tt: s.imdbID, isSeries: true))
@@ -3659,7 +3666,7 @@ namespace MovieTheater.Controllers
                 await Parallel.ForEachAsync(targets, new ParallelOptions { MaxDegreeOfParallelism = 6 },
                     async (t, _) => { if (await posterFetchService.EnsurePosterAsync(t.id, t.tt, t.isSeries)) System.Threading.Interlocked.Increment(ref got); });
 
-            return Ok(new { attempted = targets.Count, got });
+            return Ok(new { attempted = targets.Count, got, minId });
         }
 
         // One-shot repair for the Movie/Series poster-namespace collision. Posters are on-disk files keyed

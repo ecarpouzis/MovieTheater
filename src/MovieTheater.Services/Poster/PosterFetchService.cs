@@ -50,7 +50,10 @@ namespace MovieTheater.Services.Poster
             {
                 var bucket = PosterBucket.ForTitle(isSeries);
                 if (!force && await imageRepo.HasImage(id, PosterImageVariant.Main, bucket)) return true;
-                var url = await ResolvePosterUrlAsync(imdbID);
+                // Prefer the URL the scrape already recorded (the IMDb og:image) — it's the authoritative
+                // poster and means we don't depend on a fresh OMDB/IMDb lookup succeeding at fetch time.
+                // Only re-resolve from OMDB/IMDb when no usable link was stored.
+                var url = await GetStoredPosterLinkAsync(id, isSeries) ?? await ResolvePosterUrlAsync(imdbID);
                 if (url == null) return false;
                 await SaveFromUrlAsync(id, url, isSeries);
                 return true;
@@ -60,6 +63,16 @@ namespace MovieTheater.Services.Poster
                 logger.LogWarning(ex, "Poster fetch failed for id {Id} ({Tt})", id, imdbID);
                 return false;
             }
+        }
+
+        /// <summary>The poster URL already recorded on the title (set by the IMDb scrape), if usable.</summary>
+        private async Task<string?> GetStoredPosterLinkAsync(int id, bool isSeries)
+        {
+            await using var db = await dbFactory.CreateDbContextAsync();
+            var link = isSeries
+                ? (await db.SeriesPosterDetails.FindAsync(id))?.PosterLink
+                : (await db.MoviePosterDetails.FindAsync(id))?.PosterLink;
+            return IsUsable(link) ? link : null;
         }
 
         /// <summary>OMDB's poster (the IMDb image) first, then the IMDb API. Null when neither has one.</summary>
