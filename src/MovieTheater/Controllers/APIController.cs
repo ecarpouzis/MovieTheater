@@ -689,9 +689,19 @@ namespace MovieTheater.Controllers
             // hasFile = mapping coverage (any MediaFile); isPlayable = Jellyfin-ready right now
             // (item synced + not gone missing) — the play button needs the stricter flag.
             var fileRows = await movieDb.MediaFiles.Where(f => epPids.Contains(f.PlayableId))
-                .Select(f => new { f.PlayableId, Streamable = f.JellyfinItemId != null && f.MissingSinceUtc == null }).ToListAsync();
+                .OrderBy(f => f.Role).ThenBy(f => f.PartNumber).ThenBy(f => f.Id)
+                .Select(f => new { f.Id, f.PlayableId, f.Path, f.Role, f.Label, f.PartNumber, Streamable = f.JellyfinItemId != null && f.MissingSinceUtc == null }).ToListAsync();
             var withFile = fileRows.Select(f => f.PlayableId).Distinct().ToHashSet();
             var streamable = fileRows.Where(f => f.Streamable).Select(f => f.PlayableId).Distinct().ToHashSet();
+            // Per-episode file list so the modal can surface multi-file episodes (segment Parts / Variants /
+            // Extras), not just a single play button. Windows paths on a Linux host: split on both separators.
+            static string BaseName(string p) => (p ?? "").Replace('\\', '/').TrimEnd('/').Split('/')[^1];
+            var filesByPlayable = fileRows.GroupBy(f => f.PlayableId).ToDictionary(g => g.Key, g => g.Select(f => (object)new
+            {
+                mediaFileId = f.Id, role = f.Role.ToString(), label = f.Label, partNumber = f.PartNumber,
+                isPlayable = f.Streamable, name = BaseName(f.Path),
+            }).ToList());
+            var noFiles = new List<object>();
             var seasons = eps.GroupBy(e => e.SeasonNumber).OrderBy(g => g.Key).Select(g => new
             {
                 season = g.Key,
@@ -704,6 +714,7 @@ namespace MovieTheater.Controllers
                     playableId = e.PlayableId,
                     hasFile = e.PlayableId != null && withFile.Contains(e.PlayableId.Value),
                     isPlayable = e.PlayableId != null && streamable.Contains(e.PlayableId.Value),
+                    files = (e.PlayableId != null && filesByPlayable.TryGetValue(e.PlayableId.Value, out var efl)) ? efl : noFiles,
                 }).ToList(),
             }).ToList();
 

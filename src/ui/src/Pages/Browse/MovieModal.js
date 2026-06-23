@@ -55,6 +55,7 @@ const ROLE_LABEL = { Primary: "Feature", Part: "Part", Variant: "Variant", Extra
 function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData, onToggleViewing, onMovieUpdated, kind = "movie" }) {
   const history = useHistory();
   const [openSeasons, setOpenSeasons] = useState({});
+  const [openEps, setOpenEps] = useState({});
   const isSeries = kind === "series";
   const [movie, setMovie] = useState(null);
   const [normalized, setNormalized] = useState(null);
@@ -195,6 +196,9 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
 
   // Phase-7 surfaces: multi-file list + (for series) episodes by season.
   const toggleSeason = (s) => setOpenSeasons((prev) => ({ ...prev, [s]: !prev[s] }));
+  const toggleEp = (s, e) => setOpenEps((prev) => ({ ...prev, [`${s}-${e}`]: !prev[`${s}-${e}`] }));
+  // Label an episode file's role for the modal (an episode's main file is "Main", not a movie "Feature").
+  const epRoleLabel = (f) => (f.role === "Primary" ? "Main" : (ROLE_LABEL[f.role] || f.role)) + (f.partNumber ? " " + f.partNumber : "");
   const files = Array.isArray(n.files) ? n.files : [];
   const showFiles = files.length > 1; // a single Feature isn't worth a section
   const seasons = n.isSeries && Array.isArray(n.seasons) ? n.seasons : [];
@@ -445,19 +449,46 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                           <div className="modal-season-eps">
                             {s.episodes.map((e) => {
                               const playable = e.isPlayable && canStream;
+                              const epFiles = Array.isArray(e.files) ? e.files : [];
+                              const multi = epFiles.length > 1; // segment parts / variants / extras under one episode
+                              const epOpen = !!openEps[`${s.season}-${e.episode}`];
                               return (
-                                <div
-                                  className={"modal-ep" + (e.hasFile ? " modal-ep--hasfile" : "") + (playable ? " modal-ep--play" : "")}
-                                  key={e.episode}
-                                  onClick={playable ? () => goWatch(`?kind=series&playableId=${e.playableId}`) : undefined}
-                                  role={playable ? "button" : undefined}
-                                  tabIndex={playable ? 0 : undefined}
-                                  onKeyDown={playable ? (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); goWatch(`?kind=series&playableId=${e.playableId}`); } } : undefined}
-                                  title={playable ? "Play episode" : e.hasFile ? "File found — not yet streamable (run a Jellyfin sync)" : undefined}
-                                >
-                                  <span className="modal-ep-num">E{e.episode}</span>
-                                  <span className="modal-ep-title">{e.title || "—"}</span>
-                                  <span className="modal-ep-mark" aria-hidden="true">{playable ? "▶" : e.hasFile ? "●" : ""}</span>
+                                <div className="modal-ep-wrap" key={e.episode}>
+                                  <div
+                                    className={"modal-ep" + (e.hasFile ? " modal-ep--hasfile" : "") + (playable ? " modal-ep--play" : "")}
+                                    onClick={playable ? () => goWatch(`?kind=series&playableId=${e.playableId}`) : undefined}
+                                    role={playable ? "button" : undefined}
+                                    tabIndex={playable ? 0 : undefined}
+                                    onKeyDown={playable ? (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); goWatch(`?kind=series&playableId=${e.playableId}`); } } : undefined}
+                                    title={playable ? "Play episode" : e.hasFile ? "File found — not yet streamable (run a Jellyfin sync)" : undefined}
+                                  >
+                                    <span className="modal-ep-num">E{e.episode}</span>
+                                    <span className="modal-ep-title">{e.title || "—"}</span>
+                                    {multi && (
+                                      <button
+                                        className="modal-ep-files-badge"
+                                        onClick={(ev) => { ev.stopPropagation(); toggleEp(s.season, e.episode); }}
+                                        title="This episode has multiple files (parts / variants / extras)"
+                                      >
+                                        {epOpen ? "▾" : "▸"} {epFiles.length} files
+                                      </button>
+                                    )}
+                                    <span className="modal-ep-mark" aria-hidden="true">{playable ? "▶" : e.hasFile ? "●" : ""}</span>
+                                  </div>
+                                  {multi && epOpen && (
+                                    <div className="modal-ep-files">
+                                      {epFiles.map((f) => (
+                                        <div className={"modal-file-row modal-ep-file" + (f.role && f.role !== "Primary" ? " modal-ep-file--extra" : "")} key={f.mediaFileId}>
+                                          <span className={"modal-file-role modal-file-role--" + (f.role || "").toLowerCase()}>{epRoleLabel(f)}</span>
+                                          {f.label ? <span className="modal-file-label">{f.label}</span> : null}
+                                          <span className="modal-file-name" title={f.name}>{f.name}</span>
+                                          {f.isPlayable && canStream && (
+                                            <button className="modal-play-btn" title="Watch this file" onClick={() => goWatch(`?mediaFileId=${f.mediaFileId}`)}>▶</button>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}

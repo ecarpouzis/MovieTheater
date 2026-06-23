@@ -581,3 +581,18 @@
 }
 .modal-play-btn:hover { background: rgba(var(--poster-rgb), 0.28); transform: scale(1.08); }
 .modal-play-btn:active { transform: scale(0.96); }
+
+/* Multi-file episode: a "N files" badge that expands to the per-file (Part/Variant/Extra) list. */
+.modal-ep-wrap { margin: 0; }
+.modal-ep-files-badge {
+  flex: 0 0 auto; background: #eef1f5; border: 1px solid #dde2e8; border-radius: 10px;
+  padding: 0 8px; height: 18px; line-height: 16px; font-size: 11px; color: #5a6573; cursor: pointer;
+  font-family: monospace; white-space: nowrap;
+}
+.modal-ep-files-badge:hover { background: #e2e7ee; color: #1c64b8; }
+/* When the row also has a play mark, keep the badge just left of it. */
+.modal-ep .modal-ep-files-badge + .modal-ep-mark { margin-left: 6px; }
+.modal-ep-files { padding: 2px 0 6px 44px; }
+.modal-ep-file { font-size: 12px; }
+.modal-ep-file .modal-file-name { color: #777; font-family: monospace; font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.modal-ep-file .modal-file-label { font-size: 11px; color: #999; }
