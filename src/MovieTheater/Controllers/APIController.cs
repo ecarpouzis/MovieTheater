@@ -3096,8 +3096,14 @@ namespace MovieTheater.Controllers
 
             // MiscVideos (no own tt: workprints, stage performances, instructional/shorts sets) carry
             // Kind="misc". Their related title resolves through Movie (RelatedMovieId) OR Series (RelatedSeriesId).
+            // A misc that's ATTACHED to a title AND has no standalone Description is episodic-extra content
+            // (an OP/ED, music video, featurette) — it gets NO card of its own; it's surfaced on its parent's
+            // card (relatedMisc) and approved/rejected along with that parent. Only standalone misc (unrelated)
+            // or a related misc that carries its own Description earns a review card here.
             var miscRaw = await movieDb.MiscVideos
-                .Where(v => v.ReviewBatch != null)
+                .Where(v => v.ReviewBatch != null
+                    && ((v.RelatedMovieId == null && v.RelatedSeriesId == null)
+                        || (v.Description != null && v.Description != "")))
                 .Select(v => new { v.Id, v.PlayableId, v.Title, v.SimpleTitle, v.Year, v.Category, v.CollectionName, v.RelatedMovieId, v.RelatedSeriesId, v.ReviewBatch, v.ReviewProvenance, v.ReviewSourcePath })
                 .ToListAsync();
             if (miscRaw.Count > 0)
@@ -3675,6 +3681,17 @@ namespace MovieTheater.Controllers
                 : await movieDb.MiscVideos.Where(v => req.MiscIds.Contains(v.Id) && v.ReviewBatch != null).ToListAsync();
             foreach (var v in miscRows) { v.ReviewBatch = null; v.ReviewProvenance = null; }
 
+            // Episodic-extra misc (attached, no standalone Description) have no card of their own — approve
+            // them WITH the parent series/movie being approved here, so they go live together.
+            var approvedMovieIds = rows.Select(m => m.id).ToList();
+            var approvedSeriesIds = seriesRows.Select(s => s.Id).ToList();
+            var childMisc = (approvedMovieIds.Count == 0 && approvedSeriesIds.Count == 0) ? new List<MiscVideo>()
+                : await movieDb.MiscVideos.Where(v => v.ReviewBatch != null
+                    && (v.Description == null || v.Description == "")
+                    && ((v.RelatedMovieId != null && approvedMovieIds.Contains(v.RelatedMovieId.Value))
+                     || (v.RelatedSeriesId != null && approvedSeriesIds.Contains(v.RelatedSeriesId.Value)))).ToListAsync();
+            foreach (var v in childMisc) { v.ReviewBatch = null; v.ReviewProvenance = null; }
+
             await movieDb.SaveChangesAsync();
 
             // A newly-approved title should carry a poster — fetch one (from IMDb via OMDB) for any movie /
@@ -3687,7 +3704,7 @@ namespace MovieTheater.Controllers
                 await Parallel.ForEachAsync(posterTargets, new ParallelOptions { MaxDegreeOfParallelism = 6 },
                     async (t, _) => await posterFetchService.EnsurePosterAsync(t.id, t.tt, t.series));
 
-            return Ok(new { approved = rows.Count + seriesRows.Count + miscRows.Count });
+            return Ok(new { approved = rows.Count + seriesRows.Count + miscRows.Count + childMisc.Count });
         }
 
         // Fetch posters for already-approved movies/series that have none (e.g. the auto-approved series).
@@ -3815,6 +3832,33 @@ namespace MovieTheater.Controllers
 
             var rows = req.Ids.Count == 0 ? new List<Movie>()
                 : await movieDb.Movies.Where(m => req.Ids.Contains(m.id) && m.ReviewBatch != null).ToListAsync();
+
+            // Related misc must be cleared off a parent before it can be deleted (MiscVideo->Movie/Series FKs
+            // are NO_ACTION). An episodic-extra misc (attached, no standalone Description) has no card and no
+            // independent existence — delete it (+ its Playable/files) with the parent. A related misc that DOES
+            // carry a Description is substantive — DETACH it (it lives on as a standalone pending misc with its
+            // own card) rather than destroy it.
+            var rejMovieIds = rows.Select(m => m.id).ToList();
+            var rejSeriesIds = req.SeriesIds.Count == 0 ? new List<int>()
+                : await movieDb.Series.Where(s => req.SeriesIds.Contains(s.Id) && s.ReviewBatch != null).Select(s => s.Id).ToListAsync();
+            if (rejMovieIds.Count > 0 || rejSeriesIds.Count > 0)
+            {
+                var related = await movieDb.MiscVideos.Where(v =>
+                    (v.RelatedMovieId != null && rejMovieIds.Contains(v.RelatedMovieId.Value))
+                 || (v.RelatedSeriesId != null && rejSeriesIds.Contains(v.RelatedSeriesId.Value))).ToListAsync();
+                var extra = related.Where(v => string.IsNullOrEmpty(v.Description)).ToList();
+                if (extra.Count > 0)
+                {
+                    var cpids = extra.Select(v => v.PlayableId).ToList();
+                    movieDb.MediaFiles.RemoveRange(await movieDb.MediaFiles.Where(f => cpids.Contains(f.PlayableId)).ToListAsync());
+                    movieDb.MiscVideos.RemoveRange(extra);
+                    movieDb.Playables.RemoveRange(await movieDb.Playables.Where(p => cpids.Contains(p.Id)).ToListAsync());
+                }
+                foreach (var v in related.Where(v => !string.IsNullOrEmpty(v.Description)))
+                    { v.RelatedMovieId = null; v.RelatedSeriesId = null; }
+                await movieDb.SaveChangesAsync();   // release the NO_ACTION FK before deleting the parents
+            }
+
             // Use the full subtree delete: a plain Movies.RemoveRange leaves the movie's Playable+files
             // orphaned and — fatally — trips the NO_ACTION MoviePosterDetails FK when the row got a poster
             // during enrichment (that's the "Reject Failed" on enriched rows). DeleteMovieSubtreeAsync drops
