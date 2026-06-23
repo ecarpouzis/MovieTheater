@@ -200,6 +200,7 @@ namespace MovieTheater.Controllers
                 writers = People(CreditRole.Writer),
                 summaries,
                 files,
+                relatedMisc = await LoadModalMiscAsync(movie.id, null),
                 isSeries = false,
                 seasons = (object?)null,
             };
@@ -674,6 +675,33 @@ namespace MovieTheater.Controllers
             return Ok(new { Success = true });
         }
 
+        private static string FileBaseName(string p) => (p ?? "").Replace('\\', '/').TrimEnd('/').Split('/')[^1];
+
+        // Related misc videos (workprints, featurettes, shorts, specials) attached to a title via
+        // RelatedMovieId/RelatedSeriesId — surfaced in the public modal's "Extras & Specials" section with
+        // enough per-file info to play each. Pass the one relevant id; the other stays null.
+        private async Task<List<object>> LoadModalMiscAsync(int? relatedMovieId, int? relatedSeriesId)
+        {
+            var rel = await movieDb.MiscVideos
+                .Where(v => (relatedMovieId != null && v.RelatedMovieId == relatedMovieId)
+                         || (relatedSeriesId != null && v.RelatedSeriesId == relatedSeriesId))
+                .OrderBy(v => v.CollectionName).ThenBy(v => v.SortOrder).ThenBy(v => v.Title)
+                .Select(v => new { v.Id, v.PlayableId, v.Title, v.Category, v.Year, v.CollectionName })
+                .ToListAsync();
+            if (rel.Count == 0) return new List<object>();
+            var pids = rel.Select(v => v.PlayableId).ToList();
+            var filesByPid = (await movieDb.MediaFiles.Where(f => pids.Contains(f.PlayableId))
+                    .OrderBy(f => f.Role).ThenBy(f => f.PartNumber).ThenBy(f => f.Id)
+                    .Select(f => new { f.Id, f.PlayableId, f.Path, Streamable = f.JellyfinItemId != null && f.MissingSinceUtc == null }).ToListAsync())
+                .GroupBy(f => f.PlayableId)
+                .ToDictionary(g => g.Key, g => g.Select(f => (object)new { mediaFileId = f.Id, name = FileBaseName(f.Path), isPlayable = f.Streamable }).ToList());
+            return rel.Select(v => (object)new
+            {
+                title = v.Title, category = v.Category, year = v.Year, collectionName = v.CollectionName,
+                files = filesByPid.TryGetValue(v.PlayableId, out var ff) ? ff : new List<object>(),
+            }).ToList();
+        }
+
         private async Task<object> GetNormalizedSeriesData(int id, Series series)
         {
             var genres = await movieDb.SeriesGenres.Where(g => g.SeriesId == id).OrderBy(g => g.Ordering).Select(g => g.Genre.Name).ToListAsync();
@@ -702,7 +730,13 @@ namespace MovieTheater.Controllers
                 isPlayable = f.Streamable, name = BaseName(f.Path),
             }).ToList());
             var noFiles = new List<object>();
-            var seasons = eps.GroupBy(e => e.SeasonNumber).OrderBy(g => g.Key).Select(g => new
+            // The (S0,E0,"Extras") pseudo-episode is a holder for series/season-level extras, not a real
+            // episode — pull it out of the season list and surface its files in the "Extras & Specials" section.
+            var extrasHolder = eps.FirstOrDefault(e => e.SeasonNumber == 0 && e.EpisodeNumber == 0 && e.Title == "Extras");
+            var seasonEps = extrasHolder == null ? eps : eps.Where(e => e != extrasHolder).ToList();
+            var seriesExtras = (extrasHolder?.PlayableId != null && filesByPlayable.TryGetValue(extrasHolder.PlayableId.Value, out var xfl)) ? xfl : noFiles;
+            var relatedMisc = await LoadModalMiscAsync(null, id);
+            var seasons = seasonEps.GroupBy(e => e.SeasonNumber).OrderBy(g => g.Key).Select(g => new
             {
                 season = g.Key,
                 episodes = g.Select(e => new
@@ -736,6 +770,8 @@ namespace MovieTheater.Controllers
                 summaries,
                 isSeries = true,
                 seasons,
+                seriesExtras,
+                relatedMisc,
                 seasonCount = series.SeasonCount,
                 episodeCount = series.EpisodeCount,
                 network = series.Network,

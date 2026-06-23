@@ -202,6 +202,8 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
   const files = Array.isArray(n.files) ? n.files : [];
   const showFiles = files.length > 1; // a single Feature isn't worth a section
   const seasons = n.isSeries && Array.isArray(n.seasons) ? n.seasons : [];
+  const seriesExtras = Array.isArray(n.seriesExtras) ? n.seriesExtras : [];
+  const relatedMisc = Array.isArray(n.relatedMisc) ? n.relatedMisc : [];
   const totalEps = seasons.reduce((acc, s) => acc + s.episodes.length, 0);
   const epsWithFile = seasons.reduce((acc, s) => acc + s.episodes.filter((e) => e.hasFile).length, 0);
   const typeBadge = TYPE_LABEL[n.titleType];
@@ -496,6 +498,38 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                         )}
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {(seriesExtras.length > 0 || relatedMisc.length > 0) && (
+                  <div className="modal-extras">
+                    <span className="modal-label">Extras &amp; Specials</span>
+                    {/* Series/season-level extra files (making-ofs, specials not tied to one episode). */}
+                    {seriesExtras.map((f) => (
+                      <div className="modal-file-row" key={`x${f.mediaFileId}`}>
+                        <span className="modal-file-role modal-file-role--extra">{ROLE_LABEL[f.role] || f.role}</span>
+                        {f.label ? <span className="modal-file-label">{f.label}</span> : null}
+                        <span className="modal-file-name" title={f.name}>{f.name}</span>
+                        {f.isPlayable && canStream && (
+                          <button className="modal-play-btn" title="Watch this file" onClick={() => goWatch(`?mediaFileId=${f.mediaFileId}`)}>▶</button>
+                        )}
+                      </div>
+                    ))}
+                    {/* Related misc videos: workprints, featurettes, shorts attached to this title. */}
+                    {relatedMisc.map((m, i) => {
+                      const mf = (m.files || []).find((x) => x.isPlayable) || (m.files || [])[0];
+                      return (
+                        <div className="modal-file-row" key={`m${i}`}>
+                          <span className="modal-file-role modal-file-role--extra">{m.category || "misc"}</span>
+                          <span className="modal-file-name" title={m.title}>
+                            {m.title}{m.year ? ` (${m.year})` : ""}{m.collectionName ? ` — ${m.collectionName}` : ""}
+                          </span>
+                          {mf && mf.isPlayable && canStream && (
+                            <button className="modal-play-btn" title="Watch this extra" onClick={() => goWatch(`?mediaFileId=${mf.mediaFileId}`)}>▶</button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
