@@ -1081,7 +1081,7 @@ export default function IngestReviewPage({ userData }) {
         </Popconfirm>
         <Button onClick={load}>Refresh</Button>
         <Popconfirm
-          title="Fetch posters (from IMDb via OMDB) for every approved movie/series that has none?"
+          title="Fetch posters (IMDb via OMDB) only for approved titles that are MISSING one. Existing posters are never re-fetched or changed."
           okText="Backfill posters"
           onConfirm={async () => {
             const hide = message.loading("Backfilling posters…", 0);
@@ -1089,8 +1089,11 @@ export default function IngestReviewPage({ userData }) {
               const res = await MovieAPI.ingestReviewBackfillPosters();
               const data = await res.json().catch(() => ({}));
               hide();
-              if (res.ok) message.success(`Posters fetched for ${data.got ?? 0} of ${data.attempted ?? 0} title(s).`);
-              else message.error(data.message || "Backfill failed.");
+              if (!res.ok) { message.error(data.message || "Backfill failed."); return; }
+              const attempted = data.attempted ?? 0;
+              const got = data.got ?? 0;
+              if (attempted === 0) message.success("All approved titles already have posters — nothing to fetch.");
+              else message.success(`${attempted} title(s) had no poster; fetched ${got}${got < attempted ? ` (${attempted - got} had none available)` : ""}. Existing posters were left unchanged.`);
             } catch {
               hide();
               message.error("Backfill failed.");
