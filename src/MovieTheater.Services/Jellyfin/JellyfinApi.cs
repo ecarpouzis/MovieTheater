@@ -262,18 +262,14 @@ namespace MovieTheater.Services.Jellyfin
         }
 
         /// <summary>
-        /// Enumerates every movie item in Jellyfin's library with Path, MediaSources and
-        /// ProviderIds, paging through the full set.
+        /// Enumerates every leaf media (video) item in Jellyfin — Movie, Episode AND standalone Video — with
+        /// Path, MediaSources and ProviderIds, paging through the full set. Item TYPE is deliberately NOT
+        /// used for routing: the sync matches each item to a DB row purely by file Path, so this behaves
+        /// identically whether a library is typed (movies/tvshows) or "homevideos" (every file is a Video).
+        /// The union of leaf types excludes folder containers (Series/Season/BoxSet) that carry no file path.
         /// </summary>
-        public Task<List<JellyfinItem>> GetAllMovieItemsAsync(CancellationToken cancel = default) =>
-            GetAllItemsAsync("Movie", cancel);
-
-        /// <summary>
-        /// Enumerates every episode and standalone video item (series episodes + misc videos) with the
-        /// same fields, so the sync can match their file paths to Episode/MiscVideo MediaFile rows.
-        /// </summary>
-        public Task<List<JellyfinItem>> GetAllEpisodeAndVideoItemsAsync(CancellationToken cancel = default) =>
-            GetAllItemsAsync("Episode,Video", cancel);
+        public Task<List<JellyfinItem>> GetAllVideoItemsAsync(CancellationToken cancel = default) =>
+            GetAllItemsAsync("Movie,Episode,Video", cancel);
 
         private async Task<List<JellyfinItem>> GetAllItemsAsync(string includeItemTypes, CancellationToken cancel)
         {

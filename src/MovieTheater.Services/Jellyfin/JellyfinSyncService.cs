@@ -53,7 +53,9 @@ namespace MovieTheater.Services.Jellyfin
             r.ServerName = info.ServerName;
             r.Version = info.Version;
 
-            var items = await jellyfin.GetAllMovieItemsAsync(cancel);
+            // One fetch of every leaf media item (Movie/Episode/Video), routed below PURELY by file path —
+            // never by Jellyfin item type — so the sync is identical for typed and "homevideos" libraries.
+            var items = await jellyfin.GetAllVideoItemsAsync(cancel);
             r.MovieItems = items.Count;
 
             using var db = await dbFactory.CreateDbContextAsync(cancel);
@@ -137,9 +139,9 @@ namespace MovieTheater.Services.Jellyfin
             r.MoviesTotal = movies.Count;
 
             // Pass 2: episode/misc files + a movie's non-Primary files + movie primaries pass 1 missed.
-            // (Series/misc filed UNDER 1 - Movies surfaces as Movie items, so the movie items are folded in;
-            // item TYPE is irrelevant to playback.)
-            var epVidItems = (await jellyfin.GetAllEpisodeAndVideoItemsAsync(cancel)).Concat(items).ToList();
+            // Reuses the single item list fetched above (it already holds every leaf item, regardless of
+            // library type); routing is purely by file path, so nothing here depends on Jellyfin grouping.
+            var epVidItems = items;
             r.EpVidItems = epVidItems.Count;
 
             var pass1MatchedPlayables = chosen.Keys

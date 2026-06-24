@@ -46,7 +46,7 @@ namespace MovieTheater.Jellyfin
             }
 
             o.WriteLine($"Jellyfin: {report.ServerName} {report.Version}{(DryRun ? "   (dry-run)" : "")}");
-            o.WriteLine($"Jellyfin movie items: {report.MovieItems}");
+            o.WriteLine($"Jellyfin media items (all types): {report.MovieItems}");
             o.WriteLine($"DB movies with a file path: {report.MoviesWithPath}" +
                         (DryRun ? "" : $"   existing MediaFile rows: {report.ExistingFileRows}"));
 
@@ -54,7 +54,7 @@ namespace MovieTheater.Jellyfin
             o.WriteLine($"Movies matched by path: {report.MoviesMatched}/{report.MoviesTotal} " +
                         $"({100.0 * report.MoviesMatched / Math.Max(1, report.MoviesTotal):F1}%)" +
                         (DryRun ? "" : $" — rows created {report.Created}, updated {report.Updated}"));
-            o.WriteLine($"Jellyfin episode/video/movie candidate items: {report.EpVidItems}");
+            o.WriteLine($"Jellyfin candidate items for episode/part/misc matching: {report.EpVidItems}");
             o.WriteLine($"Episode/movie-part/misc files matched by path: {report.EpMatched}/{report.EpTotal}" +
                         (report.EpTotal == 0 ? "" : $" ({100.0 * report.EpMatched / report.EpTotal:F1}%)"));
             o.WriteLine($"Moved/renamed files re-pointed by (name+size): {report.Repointed.Count}" +
