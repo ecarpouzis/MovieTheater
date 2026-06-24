@@ -583,6 +583,21 @@ function jellyfinRunSync() {
   return fetch("/API/Admin/Jellyfin/RunSync", { method: "post" });
 }
 
+// ── Subtitle picker (movie modal) — find/download subtitles via Jellyfin's provider ──
+// list current tracks ({ synced, current[] }); search ranked candidates; download a pick; remove a sidecar.
+function jellyfinSubtitlesList(movieId) {
+  return fetch(`/API/Admin/Jellyfin/Subtitles?movieId=${movieId}`);
+}
+function jellyfinSubtitlesSearch(movieId, language = "eng") {
+  return fetch(`/API/Admin/Jellyfin/Subtitles/Search?movieId=${movieId}&language=${encodeURIComponent(language)}`, { method: "post" });
+}
+function jellyfinSubtitlesDownload(movieId, subtitleId) {
+  return fetch(`/API/Admin/Jellyfin/Subtitles/Download?movieId=${movieId}&subtitleId=${encodeURIComponent(subtitleId)}`, { method: "post" });
+}
+function jellyfinSubtitlesDelete(movieId, index) {
+  return fetch(`/API/Admin/Jellyfin/Subtitles/Delete?movieId=${movieId}&index=${index}`, { method: "post" });
+}
+
 // Generate the thumbnail for ONE title from its existing on-disk poster (movie/series edit modal).
 function generateThumbnail(id, isSeries = false) {
   return fetch(`/API/GenerateThumbnail?id=${id}&isSeries=${isSeries}`, { method: "post" });
@@ -714,6 +729,10 @@ const MovieAPI = {
   jellyfinTriggerScan,
   jellyfinScanStatus,
   jellyfinRunSync,
+  jellyfinSubtitlesList,
+  jellyfinSubtitlesSearch,
+  jellyfinSubtitlesDownload,
+  jellyfinSubtitlesDelete,
   generateThumbnail,
   ingestReviewSetEpisodeFile,
   ingestReviewSetFile,

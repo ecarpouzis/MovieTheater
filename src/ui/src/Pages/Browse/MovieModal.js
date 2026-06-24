@@ -5,6 +5,7 @@ import { MovieAPI } from "../../MovieAPI";
 import UserMovieOptions from "./UserMovieOptions";
 import WatchButton from "../Watch/WatchButton";
 import FileMappingEditor from "./FileMappingEditor";
+import SubtitlePicker from "./SubtitlePicker";
 import "./MovieModal.css";
 
 const { TextArea } = Input;
@@ -602,6 +603,8 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                 </div>
 
                 <FileMappingEditor id={movie.id} kind={isSeries ? "series" : "movie"} />
+
+                {!isSeries && <SubtitlePicker movieId={movie.id} />}
 
                 <div className="modal-edit-actions">
                   <Button type="primary" onClick={saveChanges} loading={saving}>

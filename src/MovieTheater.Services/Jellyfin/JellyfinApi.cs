@@ -322,6 +322,55 @@ namespace MovieTheater.Services.Jellyfin
                 ? new JellyfinTaskState { State = "Idle", Found = false }
                 : new JellyfinTaskState { State = scan.State ?? "Idle", Progress = scan.CurrentProgressPercentage, Found = true };
         }
+
+        // ── Subtitles (via a configured provider plugin, e.g. OpenSubtitles) ──────────────────────
+        // The libraries are set with SaveSubtitlesWithMedia=false, so a downloaded subtitle lands in
+        // Jellyfin's own metadata dir (local disk), NEVER the read-only NAS. All four calls below are
+        // therefore Jellyfin DB/metadata operations — none can write or delete a file on the NAS.
+
+        /// <summary>Searches the configured subtitle providers for subtitles matching this item in the
+        /// given 3-letter language (e.g. "eng"). Read-only; downloads nothing. Empty if no provider is
+        /// configured/authenticated.</summary>
+        public async Task<List<JellyfinRemoteSubtitle>> SearchRemoteSubtitlesAsync(string itemId, string language, CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            var url = $"/Items/{Uri.EscapeDataString(itemId)}/RemoteSearch/Subtitles/{Uri.EscapeDataString(language)}";
+            return await httpClient.GetFromJsonAsync<List<JellyfinRemoteSubtitle>>(url, JsonOptions, cancel) ?? new();
+        }
+
+        /// <summary>Downloads a chosen subtitle (id from a prior search) and attaches it to the item, into
+        /// Jellyfin's metadata dir (not the NAS — see note above).</summary>
+        public async Task DownloadRemoteSubtitleAsync(string itemId, string subtitleId, CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            using var resp = await httpClient.PostAsync(
+                $"/Items/{Uri.EscapeDataString(itemId)}/RemoteSearch/Subtitles/{Uri.EscapeDataString(subtitleId)}", null, cancel);
+            resp.EnsureSuccessStatusCode();
+        }
+
+        /// <summary>The subtitle tracks currently on an item, so the picker can show what's attached and let
+        /// the user swap. Reads the item's MediaStreams and returns just the subtitle ones.</summary>
+        public async Task<List<JellyfinSubtitleStream>> GetItemSubtitleStreamsAsync(string itemId, CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            var url = $"/Items?Ids={Uri.EscapeDataString(itemId)}&Fields=MediaSources&EnableImages=false";
+            var result = await httpClient.GetFromJsonAsync<JellyfinItemsResult>(url, JsonOptions, cancel);
+            var streams = result?.Items.FirstOrDefault()?.MediaSources?.FirstOrDefault()?.MediaStreams ?? new();
+            return streams
+                .Where(s => string.Equals(s.Type, "Subtitle", StringComparison.OrdinalIgnoreCase))
+                .Select(s => new JellyfinSubtitleStream { Index = s.Index, Language = s.Language, Title = s.Title, Codec = s.Codec, IsExternal = s.IsExternal })
+                .ToList();
+        }
+
+        /// <summary>Removes an EXTERNAL subtitle track (a previously-downloaded sidecar) by stream index,
+        /// so the user can drop a bad pick and try another. Only ever targets the metadata-dir sidecar;
+        /// the read-only NAS mount is the hard backstop that prevents touching any on-disk video.</summary>
+        public async Task DeleteSubtitleAsync(string itemId, int index, CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            using var resp = await httpClient.DeleteAsync($"/Videos/{Uri.EscapeDataString(itemId)}/Subtitles/{index}", cancel);
+            resp.EnsureSuccessStatusCode();
+        }
     }
 
     /// <summary>
@@ -400,5 +449,37 @@ namespace MovieTheater.Services.Jellyfin
         public int? Width { get; set; }
         public int? Height { get; set; }
         public bool IsDefault { get; set; }
+        public int Index { get; set; }
+        public string? Language { get; set; }
+        public string? Title { get; set; }
+        public bool IsExternal { get; set; }
+    }
+
+    /// <summary>One subtitle candidate from a provider search (<see cref="JellyfinApi.SearchRemoteSubtitlesAsync"/>).
+    /// <c>IsHashMatch</c> — the subtitle was uploaded for this exact file (already in sync) — is the strongest
+    /// "likely correct" signal, stronger than runtime matching.</summary>
+    public class JellyfinRemoteSubtitle
+    {
+        public string Id { get; set; } = default!;
+        public string? ProviderName { get; set; }
+        public string? Name { get; set; }
+        public string? Format { get; set; }
+        public string? Author { get; set; }
+        public string? Comment { get; set; }
+        public string? ThreeLetterISOLanguageName { get; set; }
+        public int? DownloadCount { get; set; }
+        public bool IsHashMatch { get; set; }
+        public float? CommunityRating { get; set; }
+    }
+
+    /// <summary>A subtitle track currently attached to an item (<see cref="JellyfinApi.GetItemSubtitleStreamsAsync"/>).
+    /// <c>IsExternal</c> distinguishes a downloaded sidecar (removable) from one embedded in the video.</summary>
+    public class JellyfinSubtitleStream
+    {
+        public int Index { get; set; }
+        public string? Language { get; set; }
+        public string? Title { get; set; }
+        public string? Codec { get; set; }
+        public bool IsExternal { get; set; }
     }
 }

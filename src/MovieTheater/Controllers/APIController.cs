@@ -3875,6 +3875,107 @@ namespace MovieTheater.Controllers
             }
         }
 
+        // ── Subtitle picker (movie modal) ──────────────────────────────────────────────────────────
+        // Find/download subtitles for a movie through Jellyfin's subtitle provider (the OpenSubtitles
+        // plugin). Libraries are set to NOT save subtitles with media, so downloads land in Jellyfin's
+        // metadata dir, never the read-only NAS. Editor-gated.
+
+        // Resolve a movie to the Jellyfin item id of its streamable Primary file (null if not synced).
+        private async Task<string?> GetMovieJellyfinItemId(int movieId)
+        {
+            var playableId = (await movieDb.Movies.Where(m => m.id == movieId).Select(m => m.PlayableId).FirstOrDefaultAsync());
+            if (playableId == null) return null;
+            return await movieDb.MediaFiles
+                .Where(f => f.PlayableId == playableId && f.JellyfinItemId != null && f.MissingSinceUtc == null)
+                .OrderBy(f => f.Role)
+                .Select(f => f.JellyfinItemId)
+                .FirstOrDefaultAsync();
+        }
+
+        // The subtitle tracks currently attached to the movie + whether it's synced to Jellyfin at all.
+        [HttpGet("/API/Admin/Jellyfin/Subtitles")]
+        public async Task<IActionResult> JellyfinSubtitlesList(int movieId)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var itemId = await GetMovieJellyfinItemId(movieId);
+            if (itemId == null) return Ok(new { synced = false, current = Array.Empty<object>() });
+            try
+            {
+                var subs = await jellyfinApi.GetItemSubtitleStreamsAsync(itemId);
+                return Ok(new { synced = true, current = subs.Select(s => new { index = s.Index, language = s.Language, title = s.Title, codec = s.Codec, external = s.IsExternal }) });
+            }
+            catch (Exception ex) { return StatusCode(502, new { message = "Could not read subtitles from Jellyfin: " + ex.Message }); }
+        }
+
+        // Search providers; returns candidates ranked hash-match-first (made for THIS exact file → in sync),
+        // then most-downloaded, then highest community rating.
+        [HttpPost("/API/Admin/Jellyfin/Subtitles/Search")]
+        public async Task<IActionResult> JellyfinSubtitlesSearch(int movieId, string language = "eng")
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var itemId = await GetMovieJellyfinItemId(movieId);
+            if (itemId == null) return BadRequest(new { message = "This movie isn't synced to Jellyfin yet — run \"Sync from Jellyfin\" first." });
+            try
+            {
+                var subs = await jellyfinApi.SearchRemoteSubtitlesAsync(itemId, string.IsNullOrWhiteSpace(language) ? "eng" : language);
+                var ranked = subs
+                    .OrderByDescending(s => s.IsHashMatch)
+                    .ThenByDescending(s => s.DownloadCount ?? 0)
+                    .ThenByDescending(s => s.CommunityRating ?? 0)
+                    .Select(s => new
+                    {
+                        id = s.Id,
+                        provider = s.ProviderName,
+                        name = s.Name,
+                        format = s.Format,
+                        author = s.Author,
+                        comment = s.Comment,
+                        language = s.ThreeLetterISOLanguageName,
+                        downloads = s.DownloadCount,
+                        hashMatch = s.IsHashMatch,
+                        rating = s.CommunityRating,
+                    })
+                    .ToList();
+                return Ok(new { count = ranked.Count, results = ranked });
+            }
+            catch (Exception ex) { return StatusCode(502, new { message = "Subtitle search failed (is a provider configured and signed in?): " + ex.Message }); }
+        }
+
+        // Download a chosen candidate (subtitleId from a prior search) and attach it.
+        [HttpPost("/API/Admin/Jellyfin/Subtitles/Download")]
+        public async Task<IActionResult> JellyfinSubtitlesDownload(int movieId, string subtitleId)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            if (string.IsNullOrWhiteSpace(subtitleId)) return BadRequest(new { message = "subtitleId is required." });
+            var itemId = await GetMovieJellyfinItemId(movieId);
+            if (itemId == null) return BadRequest(new { message = "Movie isn't synced to Jellyfin." });
+            try
+            {
+                await jellyfinApi.DownloadRemoteSubtitleAsync(itemId, subtitleId);
+                return Ok(new { downloaded = true });
+            }
+            catch (Exception ex) { return StatusCode(502, new { downloaded = false, message = "Download failed: " + ex.Message }); }
+        }
+
+        // Remove a downloaded subtitle (to swap for another). Guarded to EXTERNAL tracks only — never an
+        // embedded subtitle inside the on-disk video — and the read-only NAS mount is the hard backstop.
+        [HttpPost("/API/Admin/Jellyfin/Subtitles/Delete")]
+        public async Task<IActionResult> JellyfinSubtitlesDelete(int movieId, int index)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var itemId = await GetMovieJellyfinItemId(movieId);
+            if (itemId == null) return BadRequest(new { message = "Movie isn't synced to Jellyfin." });
+            try
+            {
+                var target = (await jellyfinApi.GetItemSubtitleStreamsAsync(itemId)).FirstOrDefault(s => s.Index == index);
+                if (target == null) return NotFound(new { message = "No subtitle at that index." });
+                if (!target.IsExternal) return BadRequest(new { message = "That subtitle is embedded in the video file — only downloaded (external) subtitles can be removed." });
+                await jellyfinApi.DeleteSubtitleAsync(itemId, index);
+                return Ok(new { deleted = true });
+            }
+            catch (Exception ex) { return StatusCode(502, new { deleted = false, message = "Remove failed: " + ex.Message }); }
+        }
+
         // One-shot repair for the Movie/Series poster-namespace collision. Posters are on-disk files keyed
         // by id, and Movie & Series ids are NOT disjoint, so before series got their own ("series") bucket a
         // same-id Movie and Series shared "{id}.png" — a series showed the movie's poster.
