@@ -57,7 +57,9 @@ namespace MovieTheater.Jellyfin
             o.WriteLine($"Jellyfin episode/video/movie candidate items: {report.EpVidItems}");
             o.WriteLine($"Episode/movie-part/misc files matched by path: {report.EpMatched}/{report.EpTotal}" +
                         (report.EpTotal == 0 ? "" : $" ({100.0 * report.EpMatched / report.EpTotal:F1}%)"));
-            o.WriteLine($"Moved/renamed files re-pointed by (name+size): {report.Repointed.Count}" + (DryRun ? "   (dry-run — not written)" : ""));
+            o.WriteLine($"Moved/renamed files re-pointed by (name+size): {report.Repointed.Count}" +
+                        (report.SupersededOrphans > 0 ? $" ({report.SupersededOrphans} rescued from renamed-folder leftovers)" : "") +
+                        (DryRun ? "   (dry-run — not written)" : ""));
 
             PrintSection(o, $"Moved files / renamed folders re-pointed ({report.Repointed.Count})", report.Repointed);
             PrintSection(o, $"Possible file renames — same size, name changed, review not applied ({report.PossibleRenames.Count})", report.PossibleRenames);

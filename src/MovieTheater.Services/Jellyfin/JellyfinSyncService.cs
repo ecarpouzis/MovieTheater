@@ -192,19 +192,26 @@ namespace MovieTheater.Services.Jellyfin
                 translatedUntracked.Add((item, dbPath, item.MediaSources?.FirstOrDefault()?.Size));
             }
 
-            var unmatchedRows = existingFiles.Where(f => !matchedRows.Contains(f)).ToList();
-
             static string Base(string p) => Path.GetFileName(p.Replace('/', '\\'));
-            var fileByFp = UniqueByKey(unmatchedRows.Where(f => f.SizeBytes != null), f => (Base(f.Path).ToLowerInvariant(), f.SizeBytes));
+            // Candidate rows = EVERY existing file, not just unmatched ones. A renamed FOLDER leaves a stale
+            // Jellyfin item at the OLD path (incremental scans don't purge it), so the path pass can match a
+            // row to that DEAD item and mask the move. Re-pointing keys off a same-(name,size) UNtracked item
+            // (the file's new location) and skips rows already at the right path, so a correctly-matched row
+            // is left untouched. We never delete anything from Jellyfin — the stale entry is left for
+            // Jellyfin's own scan validation to drop; we just keep OUR row pointing at the live item.
             var itemByFp = UniqueByKey(translatedUntracked.Where(u => u.Size != null), u => (Base(u.DbPath).ToLowerInvariant(), u.Size));
+            var fileByFp = UniqueByKey(existingFiles.Where(f => f.SizeBytes != null), f => (Base(f.Path).ToLowerInvariant(), f.SizeBytes));
 
             var repointedRows = new HashSet<MediaFile>();
             var repointedItemIds = new HashSet<string>();
             var movieFilePathUpdates = new List<(int MovieId, string NewPath)>();
+            int maskedRepoints = 0;
             foreach (var (fp, row) in fileByFp)
             {
                 if (!itemByFp.TryGetValue(fp, out var u)) continue;   // no unique item with same name+size
-                // A move / folder-rename (filename identical, content size identical).
+                if (JellyfinPathMapper.NormalizeForCompare(row.Path) == JellyfinPathMapper.NormalizeForCompare(u.DbPath))
+                    continue;                                          // already sitting at the right path
+                if (matchedRows.Contains(row)) maskedRepoints++;       // was linked to a now-superseded (dead) item
                 if (!dryRun) { row.Path = u.DbPath; StampFromItem(row, u.Item, now); }
                 repointedRows.Add(row);
                 repointedItemIds.Add(u.Item.Id);
@@ -213,10 +220,12 @@ namespace MovieTheater.Services.Jellyfin
                     movieFilePathUpdates.Add((mid, u.DbPath));
                 r.Repointed.Add($"{fp.Item1} → {u.DbPath}");
             }
+            r.SupersededOrphans = maskedRepoints;
 
             // Size matches where the NAME changed (a true file rename) are surfaced for review, not applied:
             // size alone is weaker evidence, so we never guess. Only unique-1:1-by-size pairs are listed.
-            var fileBySize = UniqueByKey(unmatchedRows.Where(f => !repointedRows.Contains(f) && f.SizeBytes != null), f => f.SizeBytes);
+            var stillUnmatched = existingFiles.Where(f => !matchedRows.Contains(f)).ToList();
+            var fileBySize = UniqueByKey(stillUnmatched.Where(f => f.SizeBytes != null), f => f.SizeBytes);
             var itemBySize = UniqueByKey(translatedUntracked.Where(u => !repointedItemIds.Contains(u.Item.Id) && u.Size != null), u => u.Size);
             foreach (var (size, row) in fileBySize)
                 if (itemBySize.TryGetValue(size, out var u))
@@ -319,6 +328,9 @@ namespace MovieTheater.Services.Jellyfin
         public List<string> DuplicatePaths { get; } = new();
         /// <summary>Moved files / renamed folders re-pointed to their new location (name+size matched 1:1).</summary>
         public List<string> Repointed { get; } = new();
+        /// <summary>Of <see cref="Repointed"/>, how many were rescued from a DEAD Jellyfin item the path
+        /// pass had matched (a renamed-folder orphan masking the move) rather than from a clean gap.</summary>
+        public int SupersededOrphans { get; set; }
         /// <summary>Same-size-but-renamed candidates surfaced for review — never auto-applied.</summary>
         public List<string> PossibleRenames { get; } = new();
 

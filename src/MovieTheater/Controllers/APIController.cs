@@ -3852,6 +3852,7 @@ namespace MovieTheater.Controllers
                     created = rep.Created,
                     updated = rep.Updated,
                     repointed = rep.Repointed.Count,
+                    supersededOrphans = rep.SupersededOrphans,
                     possibleRenames = rep.PossibleRenames.Count,
                     moviesMissing = rep.MissingMovies.Count,
                     epMatched = rep.EpMatched,

@@ -1142,6 +1142,7 @@ export default function IngestReviewPage({ userData }) {
               message.success(
                 `Synced. Movies ${r.moviesMatched}/${r.moviesTotal}, episodes/misc ${r.epMatched}/${r.epTotal}. ` +
                 `Re-pointed ${r.repointed ?? 0} moved/renamed file(s)` +
+                ((r.supersededOrphans ?? 0) > 0 ? ` (${r.supersededOrphans} rescued from renamed-folder leftovers)` : "") +
                 ((r.possibleRenames ?? 0) > 0 ? `, ${r.possibleRenames} possible rename(s) to review` : "") +
                 `; ${r.moviesMissing ?? 0} title(s) still show missing.`,
                 10
