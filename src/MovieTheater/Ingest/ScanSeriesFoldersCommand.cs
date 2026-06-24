@@ -33,6 +33,9 @@ namespace MovieTheater.Ingest
         [CommandOption("limit", Description = "Max series to scan this run.")]
         public int? Limit { get; set; }
 
+        [CommandOption("id", Description = "Only this one Series id (regenerate a single folder dump fast). Implies --all.")]
+        public int? OnlyId { get; set; }
+
         private static readonly HashSet<string> VideoExt = new(StringComparer.OrdinalIgnoreCase)
         { ".mkv", ".mp4", ".avi", ".m4v", ".mov", ".wmv", ".ts", ".m2ts", ".mpg", ".mpeg", ".flv", ".webm", ".divx", ".vob", ".ogm", ".rmvb" };
 
@@ -58,7 +61,8 @@ namespace MovieTheater.Ingest
                     (s.ReviewSourcePath != null && s.ReviewSourcePath != "")
                     || db.Episodes.Any(e => e.SeriesId == s.Id && e.PlayableId != null
                         && db.MediaFiles.Any(f => f.PlayableId == e.PlayableId)));
-                if (!All) sq = sq.Where(s => s.ReviewBatch != null);
+                if (OnlyId != null) sq = sq.Where(s => s.Id == OnlyId.Value);
+                else if (!All) sq = sq.Where(s => s.ReviewBatch != null);
                 targets = (await sq.Select(s => new { s.Id, s.Title, s.ReviewSourcePath }).ToListAsync())
                     .Select(s => (s.Id, s.Title ?? "", s.ReviewSourcePath ?? "")).OrderBy(t => t.Item2, StringComparer.OrdinalIgnoreCase).ToList();
                 if (Limit.HasValue) targets = targets.Take(Limit.Value).ToList();

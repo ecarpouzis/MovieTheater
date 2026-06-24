@@ -31,6 +31,7 @@ namespace MovieTheater.Services
             services.AddGoogleServices(config.GoogleSearchApiKey, config.GoogleSearchEngineId);
             services.AddBoardGameGeekServices(config.BggApiToken);
             services.AddJellyfinServices(config);
+            services.AddTransient<Jellyfin.JellyfinSyncService>();
             services.AddTransient<BoardgameRulesService>();
             services.AddTransient<Poster.PosterFetchService>();
             services.AddTransient<TitleEnrichService>();

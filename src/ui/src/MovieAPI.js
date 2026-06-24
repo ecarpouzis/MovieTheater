@@ -569,6 +569,20 @@ function ingestReviewBackfillThumbnails(afterId = 0, limit = 200) {
   return fetch(`/API/Admin/IngestReview/BackfillThumbnails?afterId=${afterId}&limit=${limit}`, { method: "post" });
 }
 
+// ── "Sync from Jellyfin" (3 phases the IngestReview button chains) ──
+// 1) tell Jellyfin to scan the disk (the periodic scan is disabled for NAS health).
+function jellyfinTriggerScan() {
+  return fetch("/API/Admin/Jellyfin/TriggerScan", { method: "post" });
+}
+// 2) poll the scan task state ({ running, progress, found, state }) until it's done.
+function jellyfinScanStatus() {
+  return fetch("/API/Admin/Jellyfin/ScanStatus");
+}
+// 3) run the sync that stamps JellyfinItemId onto MediaFile rows (same logic as the sync-jellyfin CLI).
+function jellyfinRunSync() {
+  return fetch("/API/Admin/Jellyfin/RunSync", { method: "post" });
+}
+
 // Generate the thumbnail for ONE title from its existing on-disk poster (movie/series edit modal).
 function generateThumbnail(id, isSeries = false) {
   return fetch(`/API/GenerateThumbnail?id=${id}&isSeries=${isSeries}`, { method: "post" });
@@ -697,6 +711,9 @@ const MovieAPI = {
   ingestReviewBackfillPosters,
   ingestReviewMigrateSeriesPosters,
   ingestReviewBackfillThumbnails,
+  jellyfinTriggerScan,
+  jellyfinScanStatus,
+  jellyfinRunSync,
   generateThumbnail,
   ingestReviewSetEpisodeFile,
   ingestReviewSetFile,

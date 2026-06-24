@@ -293,6 +293,35 @@ namespace MovieTheater.Services.Jellyfin
                     return items;
             }
         }
+
+        /// <summary>
+        /// Kicks off Jellyfin's library scan (the "Scan Media Library" task, across all libraries) and
+        /// returns immediately — the scan runs in the background. Poll <see cref="GetScanTaskStateAsync"/>
+        /// for completion. We trigger scans on demand because the periodic timer is disabled (NAS health).
+        /// </summary>
+        public async Task TriggerLibraryScanAsync(CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            using var resp = await httpClient.PostAsync("/Library/Refresh", null, cancel);
+            resp.EnsureSuccessStatusCode();
+        }
+
+        /// <summary>
+        /// State of Jellyfin's library-scan task (Key <c>RefreshLibrary</c> / "Scan Media Library"), so a
+        /// caller can wait for a triggered scan to finish before syncing. <c>Running</c> while in flight
+        /// (with a 0-100 progress), <c>Idle</c> when done. <c>Found=false</c> if the task isn't present.
+        /// </summary>
+        public async Task<JellyfinTaskState> GetScanTaskStateAsync(CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            var tasks = await httpClient.GetFromJsonAsync<List<JellyfinScheduledTask>>("/ScheduledTasks", JsonOptions, cancel)
+                ?? throw new BusinessException("Jellyfin returned no scheduled tasks.");
+            var scan = tasks.FirstOrDefault(t => t.Key == "RefreshLibrary")
+                       ?? tasks.FirstOrDefault(t => t.Name == "Scan Media Library");
+            return scan == null
+                ? new JellyfinTaskState { State = "Idle", Found = false }
+                : new JellyfinTaskState { State = scan.State ?? "Idle", Progress = scan.CurrentProgressPercentage, Found = true };
+        }
     }
 
     /// <summary>
@@ -322,6 +351,24 @@ namespace MovieTheater.Services.Jellyfin
     {
         public List<JellyfinItem> Items { get; set; } = new();
         public int TotalRecordCount { get; set; }
+    }
+
+    /// <summary>One Jellyfin scheduled task as returned by <c>/ScheduledTasks</c> (only the fields we read).</summary>
+    public class JellyfinScheduledTask
+    {
+        public string? Name { get; set; }
+        public string? Key { get; set; }
+        public string? State { get; set; }   // "Idle" | "Running" | "Cancelling"
+        public double? CurrentProgressPercentage { get; set; }
+    }
+
+    /// <summary>Library-scan task state for poll-to-completion (see <see cref="JellyfinApi.GetScanTaskStateAsync"/>).</summary>
+    public class JellyfinTaskState
+    {
+        public string State { get; set; } = "Idle";
+        public double? Progress { get; set; }
+        public bool Found { get; set; }
+        public bool IsRunning => string.Equals(State, "Running", System.StringComparison.OrdinalIgnoreCase);
     }
 
     public class JellyfinItem

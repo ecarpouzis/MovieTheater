@@ -58,13 +58,16 @@ namespace MovieTheater.Controllers
         private readonly BoardgameSimilarityService boardgameSimilarityService;
         private readonly PosterFetchService posterFetchService;
         private readonly TitleEnrichService titleEnrichService;
+        private readonly MovieTheater.Services.Jellyfin.JellyfinApi jellyfinApi;
+        private readonly MovieTheater.Services.Jellyfin.JellyfinSyncService jellyfinSyncService;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
             IBoardgameImageRepository boardgameImageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService,
             BoardGameGeekApi boardGameGeekApi, PosterMosaicService posterMosaicService,
             BoardgameRulesService boardgameRulesService, BoardgamePdfRepository boardgamePdfRepository,
             IConfiguration configuration, YouTubeService youTubeService, IMemoryCache memoryCache,
-            BoardgameSimilarityService boardgameSimilarityService, PosterFetchService posterFetchService, TitleEnrichService titleEnrichService)
+            BoardgameSimilarityService boardgameSimilarityService, PosterFetchService posterFetchService, TitleEnrichService titleEnrichService,
+            MovieTheater.Services.Jellyfin.JellyfinApi jellyfinApi, MovieTheater.Services.Jellyfin.JellyfinSyncService jellyfinSyncService)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -86,6 +89,8 @@ namespace MovieTheater.Controllers
             this.boardgameSimilarityService = boardgameSimilarityService;
             this.posterFetchService = posterFetchService;
             this.titleEnrichService = titleEnrichService;
+            this.jellyfinApi = jellyfinApi;
+            this.jellyfinSyncService = jellyfinSyncService;
         }
 
         private int? GetCurrentUserId()
@@ -783,6 +788,7 @@ namespace MovieTheater.Controllers
         [HttpPost("/API/InsertMovie")]
         public async Task<IActionResult> InsertMovie([FromBody] Movie movie)
         {
+            if (!await IsCurrentUserEditor()) return Forbid();
             var checkMovie = await movieDb.Movies.AnyAsync(d => d.imdbID == movie.imdbID);
 
             if (checkMovie)
@@ -860,6 +866,7 @@ namespace MovieTheater.Controllers
         [HttpPost("/API/UpdateMovie")]
         public async Task<IActionResult> UpdateMovie([FromBody] MovieUpdateDto dto)
         {
+            if (!await IsCurrentUserEditor()) return Forbid();
             if (dto == null)
                 return BadRequest(new { Message = "Invalid movie data", Success = false });
 
@@ -3780,6 +3787,91 @@ namespace MovieTheater.Controllers
                     async (t, _) => { if (await posterFetchService.EnsurePosterAsync(t.id, t.tt, t.isSeries)) System.Threading.Interlocked.Increment(ref got); });
 
             return Ok(new { attempted = targets.Count, got, minId });
+        }
+
+        // ── "Sync from Jellyfin" admin button (3 phases, driven by the IngestReview UI) ──────────────
+        // The periodic Jellyfin library scan is disabled (NAS health), so making freshly-mapped content
+        // streamable now takes two manual steps that this button chains: (1) tell Jellyfin to scan the
+        // disk, (2) wait for that scan to finish, (3) run the sync that stamps JellyfinItemId onto our
+        // MediaFile rows. Split into separate endpoints so a slow scan can't time out one request — the
+        // UI triggers, polls status to completion, then runs the sync (caller-driven, observable).
+
+        // Phase 1: kick off Jellyfin's library scan (returns immediately; the scan runs in the background).
+        [HttpPost("/API/Admin/Jellyfin/TriggerScan")]
+        public async Task<IActionResult> JellyfinTriggerScan()
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            try
+            {
+                await jellyfinApi.TriggerLibraryScanAsync();
+                return Ok(new { triggered = true });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(502, new { triggered = false, message = "Could not reach Jellyfin to start a scan: " + ex.Message });
+            }
+        }
+
+        // Phase 2: report the library-scan task state so the UI can poll until it's done.
+        // { running, progress (0-100 or null), found, state }.
+        [HttpGet("/API/Admin/Jellyfin/ScanStatus")]
+        public async Task<IActionResult> JellyfinScanStatus()
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            try
+            {
+                var st = await jellyfinApi.GetScanTaskStateAsync();
+                return Ok(new { running = st.IsRunning, progress = st.Progress, found = st.Found, state = st.State });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(502, new { message = "Could not reach Jellyfin to read scan status: " + ex.Message });
+            }
+        }
+
+        // Phase 3: run the sync (the same logic as the sync-jellyfin CLI) and return a counts summary
+        // plus a few samples of each diff section. Editor-gated; writes JellyfinItemId/codecs onto MediaFiles.
+        [HttpPost("/API/Admin/Jellyfin/RunSync")]
+        public async Task<IActionResult> JellyfinRunSync()
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            try
+            {
+                var rep = await jellyfinSyncService.RunAsync(dryRun: false);
+                if (rep.Aborted != null) return BadRequest(new { message = rep.Aborted });
+
+                static List<string> Sample(IReadOnlyList<string> xs, int n = 20) =>
+                    xs.Count <= n ? new List<string>(xs) : new List<string>(xs).GetRange(0, n);
+
+                return Ok(new
+                {
+                    server = rep.ServerName,
+                    version = rep.Version,
+                    moviesMatched = rep.MoviesMatched,
+                    moviesTotal = rep.MoviesTotal,
+                    created = rep.Created,
+                    updated = rep.Updated,
+                    repointed = rep.Repointed.Count,
+                    possibleRenames = rep.PossibleRenames.Count,
+                    moviesMissing = rep.MissingMovies.Count,
+                    epMatched = rep.EpMatched,
+                    epTotal = rep.EpTotal,
+                    untracked = rep.Untracked.Count,
+                    untranslatable = rep.Untranslatable.Count,
+                    imdbFallbacks = rep.ImdbFallbacks.Count,
+                    samples = new
+                    {
+                        repointed = Sample(rep.Repointed),
+                        possibleRenames = Sample(rep.PossibleRenames),
+                        missingTitles = Sample(rep.MissingMovies),
+                        imdbFallbacks = Sample(rep.ImdbFallbacks),
+                    },
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(502, new { message = "Jellyfin sync failed: " + ex.Message });
+            }
         }
 
         // One-shot repair for the Movie/Series poster-namespace collision. Posters are on-disk files keyed

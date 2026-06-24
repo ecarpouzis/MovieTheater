@@ -1103,6 +1103,58 @@ export default function IngestReviewPage({ userData }) {
           <Button>Backfill posters</Button>
         </Popconfirm>
         <Popconfirm
+          title="Sync from Jellyfin? Triggers a Jellyfin library scan, waits for it to finish, then links the new/changed files to the site so they stream. Keep this tab open — the scan can take a few minutes."
+          okText="Sync from Jellyfin"
+          onConfirm={async () => {
+            const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+            let hide = message.loading("Starting Jellyfin scan…", 0);
+            try {
+              // Phase 1 — trigger the Jellyfin library scan (returns immediately).
+              const trg = await MovieAPI.jellyfinTriggerScan();
+              const tdata = await trg.json().catch(() => ({}));
+              if (!trg.ok) { hide(); message.error(tdata.message || "Could not start the Jellyfin scan."); return; }
+
+              // Phase 2 — poll until the scan finishes. Handles the brief start-up delay (don't bail
+              // before it's seen running) and a fast no-op scan (proceed after ~15s if it never shows
+              // running). Bounded so a stuck scan can't loop forever.
+              let seenRunning = false;
+              for (let guard = 0; guard < 600; guard++) {
+                await sleep(3000);
+                const st = await MovieAPI.jellyfinScanStatus();
+                const sdata = await st.json().catch(() => ({}));
+                if (!st.ok) { hide(); message.error(sdata.message || "Lost contact with Jellyfin during the scan."); return; }
+                if (sdata.running) {
+                  seenRunning = true;
+                  hide();
+                  hide = message.loading(`Jellyfin scanning… ${sdata.progress != null ? Math.round(sdata.progress) + "%" : ""}`, 0);
+                } else if (seenRunning || guard >= 4) {
+                  break; // started-and-done, or never ran within ~15s (fast/no-op) → move on
+                }
+              }
+
+              // Phase 3 — run the sync that stamps JellyfinItemId onto the site's MediaFile rows.
+              hide();
+              hide = message.loading("Linking files to the site…", 0);
+              const syn = await MovieAPI.jellyfinRunSync();
+              const r = await syn.json().catch(() => ({}));
+              hide();
+              if (!syn.ok) { message.error(r.message || "Sync failed."); return; }
+              message.success(
+                `Synced. Movies ${r.moviesMatched}/${r.moviesTotal}, episodes/misc ${r.epMatched}/${r.epTotal}. ` +
+                `Re-pointed ${r.repointed ?? 0} moved/renamed file(s)` +
+                ((r.possibleRenames ?? 0) > 0 ? `, ${r.possibleRenames} possible rename(s) to review` : "") +
+                `; ${r.moviesMissing ?? 0} title(s) still show missing.`,
+                10
+              );
+            } catch {
+              hide();
+              message.error("Sync from Jellyfin failed.");
+            }
+          }}
+        >
+          <Button>Sync from Jellyfin</Button>
+        </Popconfirm>
+        <Popconfirm
           title="Repair series posters? Series share an id space with movies; this gives every series its own poster file. Runs in chunks until done — keep this tab open."
           okText="Migrate series posters"
           onConfirm={async () => {
