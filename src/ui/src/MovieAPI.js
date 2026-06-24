@@ -569,6 +569,11 @@ function ingestReviewBackfillThumbnails(afterId = 0, limit = 200) {
   return fetch(`/API/Admin/IngestReview/BackfillThumbnails?afterId=${afterId}&limit=${limit}`, { method: "post" });
 }
 
+// Generate the thumbnail for ONE title from its existing on-disk poster (movie/series edit modal).
+function generateThumbnail(id, isSeries = false) {
+  return fetch(`/API/GenerateThumbnail?id=${id}&isSeries=${isSeries}`, { method: "post" });
+}
+
 // Point a series episode at the correct on-disk file (chosen from the folder dump); empty path clears it.
 function ingestReviewSetEpisodeFile(episodeId, path) {
   return fetch("/API/Admin/IngestReview/SetEpisodeFile", {
@@ -692,6 +697,7 @@ const MovieAPI = {
   ingestReviewBackfillPosters,
   ingestReviewMigrateSeriesPosters,
   ingestReviewBackfillThumbnails,
+  generateThumbnail,
   ingestReviewSetEpisodeFile,
   ingestReviewSetFile,
   ingestReviewRemoveFile,

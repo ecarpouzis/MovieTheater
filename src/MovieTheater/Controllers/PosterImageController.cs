@@ -60,17 +60,6 @@ namespace MovieTheater.Controllers
 
         private async Task<IActionResult> PosterResponse(int movieId, PosterImageVariant variant, string? bucket = null)
         {
-            // Graceful fallback: legacy rows can have a main "{id}.png" but no "{id}_s.png" thumbnail
-            // (it was never generated). Rather than 404 a thumbnail request — which shows a broken card —
-            // serve the full-size main image. A real thumbnail, when present, always wins. (Run the
-            // "Backfill thumbnails" admin tool to generate the proper small thumbnails.)
-            if (variant == PosterImageVariant.Thumbnail
-                && !await imageRepository.HasImage(movieId, PosterImageVariant.Thumbnail, bucket)
-                && await imageRepository.HasImage(movieId, PosterImageVariant.Main, bucket))
-            {
-                variant = PosterImageVariant.Main;
-            }
-
             // Try to get the modified date for caching. In dev mode the file may not
             // exist yet but the repository can fetch it on demand (DevPosterImageRepository).
             var modifiedDate = await imageRepository.GetImageModifiedDate(movieId, variant, bucket);

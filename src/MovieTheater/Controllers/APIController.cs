@@ -3913,6 +3913,38 @@ namespace MovieTheater.Controllers
             return Ok(new { done = remaining == 0, processed = batch.Count, nextAfterId, generated, coloured, failed, remaining });
         }
 
+        // Generate (or refresh) the thumbnail for a SINGLE title from its existing on-disk main poster.
+        // Used by the movie/series edit modal's "Generate thumbnail" button, which appears when a title has
+        // a full poster but no "{id}_s.png" thumbnail (card shows a broken placeholder). No network fetch —
+        // it shrinks the on-disk main poster — and refreshes the dominant color. Editor-gated; prod-only
+        // (a dev box's image repo can't write).
+        [HttpPost("/API/GenerateThumbnail")]
+        public async Task<IActionResult> GenerateThumbnail(int id, bool isSeries = false)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var bucket = PosterBucket.ForTitle(isSeries);
+            if (!await imageRepo.HasImage(id, PosterImageVariant.Main, bucket))
+                return BadRequest(new { success = false, message = "This title has no poster to make a thumbnail from." });
+
+            await shrinkService.EnsurePosterThumnailExists(id, force: true, bucket);
+
+            var thumb = await imageRepo.GetImage(id, PosterImageVariant.Thumbnail, bucket);
+            if (thumb != null)
+            {
+                if (isSeries)
+                {
+                    var pd = await movieDb.SeriesPosterDetails.FindAsync(id);
+                    if (pd != null) { pd.DominantColor = ComputeAverageColor(thumb); await movieDb.SaveChangesAsync(); }
+                }
+                else
+                {
+                    var pd = await movieDb.MoviePosterDetails.FindAsync(id);
+                    if (pd != null) { pd.DominantColor = ComputeAverageColor(thumb); await movieDb.SaveChangesAsync(); }
+                }
+            }
+            return Ok(new { success = true });
+        }
+
         // Reject = delete the ingested row entirely. Guarded to pending-review rows so this can never
         // remove an established library entry. A series takes its episodes (+ their Playables/files) and
         // satellite graph with it; a misc video takes its Playable + files.

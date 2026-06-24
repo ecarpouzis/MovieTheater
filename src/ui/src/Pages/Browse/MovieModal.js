@@ -66,7 +66,36 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
   const [plotExpanded, setPlotExpanded] = useState(false);
   const [plotOverflows, setPlotOverflows] = useState(false);
   const [synopsisOpen, setSynopsisOpen] = useState(false);
+  const [thumbMissing, setThumbMissing] = useState(false);
+  const [genThumb, setGenThumb] = useState(false);
   const plotRef = useRef(null);
+
+  // Detect a title that has a full poster but no thumbnail (so the card shows a broken placeholder):
+  // probe the thumbnail route and, on error, surface the "Generate thumbnail" button in edit mode.
+  useEffect(() => {
+    if (!movie?.id) { setThumbMissing(false); return; }
+    let cancelled = false;
+    const probe = new Image();
+    probe.onload = () => { if (!cancelled) setThumbMissing(false); };
+    probe.onerror = () => { if (!cancelled) setThumbMissing(true); };
+    probe.src = `${isSeries ? "/SeriesImageThumb" : "/ImageThumb"}/${movie.id}?probe=1`;
+    return () => { cancelled = true; };
+  }, [movie?.id, isSeries]);
+
+  async function generateThumbnail() {
+    setGenThumb(true);
+    try {
+      const res = await MovieAPI.generateThumbnail(movie.id, isSeries);
+      const b = await res.json().catch(() => ({}));
+      if (!res.ok || !b.success) { message.error(b.message || "Thumbnail generation failed"); return; }
+      message.success("Thumbnail generated");
+      setThumbMissing(false);
+    } catch {
+      message.error("Thumbnail generation failed");
+    } finally {
+      setGenThumb(false);
+    }
+  }
 
   useEffect(() => {
     if (open && movieId) {
@@ -584,6 +613,11 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                   <Button onClick={refetchFromImdb} loading={saving} title="Re-pull rating, year, plot & poster from IMDb for the current id">
                     ↻ Re-fetch from IMDb
                   </Button>
+                  {thumbMissing && (
+                    <Button onClick={generateThumbnail} loading={genThumb} title="This title has a poster but no thumbnail (its card shows a placeholder); generate the thumbnail from the existing poster">
+                      Generate thumbnail
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
