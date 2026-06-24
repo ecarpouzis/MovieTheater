@@ -1142,6 +1142,43 @@ export default function IngestReviewPage({ userData }) {
         >
           <Button>Migrate series posters</Button>
         </Popconfirm>
+        <Popconfirm
+          title="Generate missing poster thumbnails? Some movies have a full poster (shows in the modal) but no thumbnail (blank on the card); this regenerates them from the existing poster. Runs in chunks until done — keep this tab open. Existing thumbnails are left unchanged."
+          okText="Backfill thumbnails"
+          onConfirm={async () => {
+            let hide = message.loading("Backfilling thumbnails…", 0);
+            const totals = { generated: 0, coloured: 0, failed: 0 };
+            try {
+              let afterId = 0;
+              // Drive the cursor-based endpoint to completion; each chunk is bounded so it can't time out.
+              for (let guard = 0; guard < 2000; guard++) {
+                const res = await MovieAPI.ingestReviewBackfillThumbnails(afterId, 200);
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                  hide();
+                  message.error(data.message || `Thumbnail backfill failed at id ${afterId}.`);
+                  return;
+                }
+                totals.generated += data.generated ?? 0;
+                totals.coloured += data.coloured ?? 0;
+                totals.failed += data.failed ?? 0;
+                if (data.done || data.processed === 0) break;
+                afterId = data.nextAfterId;
+                hide();
+                hide = message.loading(`Backfilling thumbnails… ${data.remaining ?? 0} remaining`, 0);
+              }
+              hide();
+              message.success(
+                `Thumbnails done: ${totals.generated} generated${totals.coloured ? `, ${totals.coloured} colours computed` : ""}${totals.failed ? ` (${totals.failed} failed)` : ""}.`
+              );
+            } catch {
+              hide();
+              message.error("Thumbnail backfill failed.");
+            }
+          }}
+        >
+          <Button>Backfill thumbnails</Button>
+        </Popconfirm>
       </div>
 
       {loading ? (

@@ -3866,6 +3866,53 @@ namespace MovieTheater.Controllers
             return Ok(new { done = remaining == 0, processed = batch.Count, nextAfterId, copied, refetched, skipped, movieRestored, failed, remaining });
         }
 
+        // Backfill missing poster THUMBNAILS for movies: legacy rows whose main "{id}.png" exists on disk
+        // but the "{id}_s.png" thumbnail was never generated — so /ImageThumb 404s and the card shows no
+        // thumbnail even though the modal's /Image works. EnsurePosterThumnailExists shrinks the existing
+        // on-disk main poster (no network fetch); we also (re)compute the dominant color while we hold the
+        // bytes, since these legacy rows typically lack it too. CHUNKED by movie-id cursor so it can't time
+        // out — the caller drives it to completion. Editor-gated; runs in the web app (writes the live image
+        // store; a dev box can't). Idempotent: a movie that already has a thumbnail (or no main poster) is
+        // skipped, so re-running only fills the gaps.
+        [HttpPost("/API/Admin/IngestReview/BackfillThumbnails")]
+        public async Task<IActionResult> BackfillThumbnails(int afterId = 0, int limit = 200)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            limit = Math.Clamp(limit, 1, 1000);
+
+            var batch = await movieDb.Movies.Where(m => m.id > afterId)
+                .OrderBy(m => m.id).Take(limit)
+                .Select(m => m.id).ToListAsync();
+
+            if (batch.Count == 0)
+                return Ok(new { done = true, processed = 0, nextAfterId = afterId, generated = 0, coloured = 0, failed = 0, remaining = 0 });
+
+            int generated = 0, coloured = 0, failed = 0;
+            foreach (var id in batch)
+            {
+                try
+                {
+                    if (!await imageRepo.HasImage(id, PosterImageVariant.Main)) continue;        // no poster at all
+                    if (await imageRepo.HasImage(id, PosterImageVariant.Thumbnail)) continue;     // already has a thumb
+                    await shrinkService.EnsurePosterThumnailExists(id);
+                    generated++;
+
+                    var pd = await movieDb.MoviePosterDetails.FindAsync(id);
+                    if (pd != null && pd.DominantColor == null)
+                    {
+                        var thumb = await imageRepo.GetImage(id, PosterImageVariant.Thumbnail);
+                        if (thumb != null) { pd.DominantColor = ComputeAverageColor(thumb); coloured++; }
+                    }
+                }
+                catch { failed++; }
+            }
+            await movieDb.SaveChangesAsync();
+
+            var nextAfterId = batch.Max();
+            var remaining = await movieDb.Movies.CountAsync(m => m.id > nextAfterId);
+            return Ok(new { done = remaining == 0, processed = batch.Count, nextAfterId, generated, coloured, failed, remaining });
+        }
+
         // Reject = delete the ingested row entirely. Guarded to pending-review rows so this can never
         // remove an established library entry. A series takes its episodes (+ their Playables/files) and
         // satellite graph with it; a misc video takes its Playable + files.

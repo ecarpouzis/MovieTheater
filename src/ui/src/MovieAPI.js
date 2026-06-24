@@ -562,6 +562,13 @@ function ingestReviewMigrateSeriesPosters(afterId = 0, limit = 40) {
   return fetch(`/API/Admin/IngestReview/MigrateSeriesPosters?afterId=${afterId}&limit=${limit}`, { method: "post" });
 }
 
+// One chunk of the missing-thumbnail backfill: regenerates "{id}_s.png" from the existing on-disk main
+// poster for movies whose thumbnail was never made (modal poster works but the card has no thumbnail).
+// Chunked + cursor-driven so it can't time out; the caller loops on { done, nextAfterId }. Prod-only.
+function ingestReviewBackfillThumbnails(afterId = 0, limit = 200) {
+  return fetch(`/API/Admin/IngestReview/BackfillThumbnails?afterId=${afterId}&limit=${limit}`, { method: "post" });
+}
+
 // Point a series episode at the correct on-disk file (chosen from the folder dump); empty path clears it.
 function ingestReviewSetEpisodeFile(episodeId, path) {
   return fetch("/API/Admin/IngestReview/SetEpisodeFile", {
@@ -684,6 +691,7 @@ const MovieAPI = {
   ingestReviewReclassify,
   ingestReviewBackfillPosters,
   ingestReviewMigrateSeriesPosters,
+  ingestReviewBackfillThumbnails,
   ingestReviewSetEpisodeFile,
   ingestReviewSetFile,
   ingestReviewRemoveFile,
