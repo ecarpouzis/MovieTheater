@@ -184,7 +184,8 @@ namespace MovieTheater.Controllers
                     .OrderBy(f => f.Role).ThenBy(f => f.PartNumber).ThenBy(f => f.Id)
                     // mediaFileId + isPlayable let the modal offer a play button per file (the Primary
                     // plays via the movie id; a specific Part/Variant/Extra plays by its mediaFileId).
-                    .Select(f => (object)new { mediaFileId = f.Id, path = f.Path, role = f.Role.ToString(), label = f.Label, partNumber = f.PartNumber, isPlayable = f.JellyfinItemId != null && f.MissingSinceUtc == null })
+                    // durationTicks lets the watch page stitch a multi-part movie into one virtual timeline.
+                    .Select(f => (object)new { mediaFileId = f.Id, path = f.Path, role = f.Role.ToString(), label = f.Label, partNumber = f.PartNumber, durationTicks = f.DurationTicks, isPlayable = f.JellyfinItemId != null && f.MissingSinceUtc == null })
                     .ToListAsync();
 
             // Series are their own table now (see GetSeries); a Movie is never a series here.

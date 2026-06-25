@@ -271,6 +271,31 @@ namespace MovieTheater.Services.Jellyfin
         public Task<List<JellyfinItem>> GetAllVideoItemsAsync(CancellationToken cancel = default) =>
             GetAllItemsAsync("Movie,Episode,Video", cancel);
 
+        /// <summary>
+        /// Fetches specific items by id, in small batches (URL-length safe). Unlike the recursive enumeration
+        /// in <see cref="GetAllVideoItemsAsync"/>, an explicit id lookup returns items the recursive/parent
+        /// queries hide: when Jellyfin groups multi-part movies (e.g. "Title (CD 1)"/"Title (CD 2)") as
+        /// alternate "versions", the secondary parts get a PrimaryVersionId and are excluded from normal
+        /// listings — yet they remain live and individually streamable. The sync uses this to confirm a row's
+        /// already-stored item id is still valid so it isn't wrongly flagged missing.
+        /// </summary>
+        public async Task<List<JellyfinItem>> GetItemsByIdsAsync(IEnumerable<string> ids, CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            var idList = ids.Where(s => !string.IsNullOrEmpty(s)).Distinct().ToList();
+            var items = new List<JellyfinItem>();
+            const int batchSize = 40;
+            for (int i = 0; i < idList.Count; i += batchSize)
+            {
+                var csv = string.Join(",", idList.Skip(i).Take(batchSize));
+                var url = $"/Items?ids={Uri.EscapeDataString(csv)}&EnableImages=false" +
+                          $"&Fields=Path,MediaSources,ProviderIds&Limit={batchSize}";
+                var page = await httpClient.GetFromJsonAsync<JellyfinItemsResult>(url, JsonOptions, cancel);
+                if (page?.Items != null) items.AddRange(page.Items);
+            }
+            return items;
+        }
+
         private async Task<List<JellyfinItem>> GetAllItemsAsync(string includeItemTypes, CancellationToken cancel)
         {
             EnsureConfigured();

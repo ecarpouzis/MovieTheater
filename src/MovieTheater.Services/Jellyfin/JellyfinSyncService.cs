@@ -250,6 +250,35 @@ namespace MovieTheater.Services.Jellyfin
                     if (newPathById.TryGetValue(m.id, out var np)) m.FilePath = np;
             }
 
+            // Rescue hidden alternate versions: a row that path-matched nothing but whose ALREADY-STORED
+            // JellyfinItemId still resolves to a live item at the same path is NOT missing. Jellyfin groups
+            // multi-part movies ("Title (CD 1)"/"(CD 2)") as alternate versions and excludes the secondary
+            // parts from every path-based listing (server-root AND parentId), so the normal passes can't see
+            // them — but an explicit id lookup does, and they remain streamable. Without this they'd be flagged
+            // MissingSinceUtc and the stream endpoint (which requires MissingSinceUtc == null) would refuse to
+            // play that part. Verified by path so a stale id pointing elsewhere is never silently kept.
+            var rescueCandidates = existingFiles
+                .Where(f => !matchedRows.Contains(f) && !string.IsNullOrEmpty(f.JellyfinItemId))
+                .ToList();
+            if (rescueCandidates.Count > 0)
+            {
+                var liveItems = await jellyfin.GetItemsByIdsAsync(rescueCandidates.Select(f => f.JellyfinItemId!), cancel);
+                var liveByPath = new Dictionary<string, JellyfinItem>();
+                foreach (var it in liveItems)
+                {
+                    if (string.IsNullOrEmpty(it.Path)) continue;
+                    if (JellyfinPathMapper.TryTranslateToDb(it.Path, config.JellyfinPathMappings, out var dbPath, out _))
+                        liveByPath[JellyfinPathMapper.NormalizeForCompare(dbPath)] = it;
+                }
+                foreach (var f in rescueCandidates)
+                    if (liveByPath.TryGetValue(JellyfinPathMapper.NormalizeForCompare(f.Path), out var item))
+                    {
+                        matchedRows.Add(f);
+                        r.RescuedAlternateVersions++;
+                        if (!dryRun) StampFromItem(f, item, now);
+                    }
+            }
+
             // Still unmatched after the move pass → stamp MissingSinceUtc (existing rows only).
             if (!dryRun)
             {
@@ -265,8 +294,8 @@ namespace MovieTheater.Services.Jellyfin
                 .Select(m => $"{m.id} '{m.Title}' → {m.FilePath}"));
             r.ImdbFallbacks.AddRange(imdbFallbackCandidates.Where(c => !chosen.ContainsKey(c.MovieId)).Select(c => c.Line));
 
-            logger.LogInformation("Jellyfin sync ({Mode}): movies {MM}/{MT}, ep/misc {EM}/{ET}, created {C}, updated {U}, re-pointed {R}",
-                dryRun ? "dry-run" : "write", r.MoviesMatched, r.MoviesTotal, r.EpMatched, r.EpTotal, r.Created, r.Updated, r.Repointed.Count);
+            logger.LogInformation("Jellyfin sync ({Mode}): movies {MM}/{MT}, ep/misc {EM}/{ET}, created {C}, updated {U}, re-pointed {R}, rescued-versions {RV}",
+                dryRun ? "dry-run" : "write", r.MoviesMatched, r.MoviesTotal, r.EpMatched, r.EpTotal, r.Created, r.Updated, r.Repointed.Count, r.RescuedAlternateVersions);
             return r;
         }
 
@@ -322,6 +351,7 @@ namespace MovieTheater.Services.Jellyfin
         public int MoviesTotal { get; set; }
         public int Created { get; set; }
         public int Updated { get; set; }
+        public int RescuedAlternateVersions { get; set; }
         public List<string> MissingMovies { get; } = new();
         public List<string> Untracked { get; } = new();
         public List<string> ImdbFallbacks { get; } = new();

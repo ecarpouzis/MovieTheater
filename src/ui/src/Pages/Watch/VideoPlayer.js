@@ -76,6 +76,10 @@ function VideoPlayer({
   onBandwidth,
   onStall,
   onEnded,
+  combinedDuration = 0,
+  partOffset = 0,
+  partBoundaries = [],
+  onSeekGlobal,
   onBack,
 }) {
   const containerRef = useRef(null);
@@ -105,8 +109,14 @@ function VideoPlayer({
   const [flash, setFlash] = useState(null); // transient center icon: 'play' | 'pause'
   const [fatalError, setFatalError] = useState(null);
 
-  const duration = durationSeconds || videoRef.current?.duration || 0;
-  const shownTime = scrubbing && scrubTime != null ? scrubTime : currentTime;
+  const duration = durationSeconds || videoRef.current?.duration || 0; // current part/stream
+  // Combined-timeline mode (multi-part movie): the rail, time readout and scrub all run on the
+  // whole-movie clock; `partOffset` maps this part's local time onto it. combinedDuration is 0 for
+  // single-file titles/episodes, collapsing every expression below back to plain local time.
+  const combined = combinedDuration > 0;
+  const displayDuration = combined ? combinedDuration : duration;
+  const globalCurrent = (combined ? partOffset : 0) + currentTime;
+  const shownTime = scrubbing && scrubTime != null ? scrubTime : globalCurrent;
 
   // ── source lifecycle ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -332,6 +342,22 @@ function VideoPlayer({
 
   const seekBy = useCallback((delta) => seekTo((videoRef.current?.currentTime ?? 0) + delta), [seekTo]);
 
+  // Seek to a point on the (possibly combined) timeline: inside the current part it's a plain local
+  // seek (no reload); a position in another part is handed up so the page loads that part at the
+  // right offset. Defined before the keyboard handler that depends on it (no temporal-dead-zone).
+  const seekDisplay = useCallback(
+    (displaySeconds) => {
+      if (combined) {
+        const local = displaySeconds - partOffset;
+        if (local >= 0 && local <= duration) seekTo(local);
+        else onSeekGlobal?.(displaySeconds);
+      } else {
+        seekTo(displaySeconds);
+      }
+    },
+    [combined, partOffset, duration, seekTo, onSeekGlobal]
+  );
+
   // ── controls visibility: fade like house lights ─────────────────────────────
   const wakeControls = useCallback(() => {
     setControlsVisible(true);
@@ -394,8 +420,8 @@ function VideoPlayer({
             onSelectSubtitle?.(selectedSubtitleIndex == null ? subtitleTracks[0].index : null);
           break;
         default:
-          if (/^[0-9]$/.test(e.key) && duration > 0 && video) {
-            seekTo((duration * parseInt(e.key, 10)) / 10);
+          if (/^[0-9]$/.test(e.key) && displayDuration > 0 && video) {
+            seekDisplay((displayDuration * parseInt(e.key, 10)) / 10);
           } else {
             handled = false;
           }
@@ -405,19 +431,19 @@ function VideoPlayer({
         wakeControls();
       }
     },
-    [togglePlay, seekBy, seekTo, toggleFullscreen, duration, subtitleTracks, selectedSubtitleIndex, onSelectSubtitle, wakeControls]
+    [togglePlay, seekBy, seekDisplay, toggleFullscreen, displayDuration, subtitleTracks, selectedSubtitleIndex, onSelectSubtitle, wakeControls]
   );
 
   // ── scrubber pointer logic ──────────────────────────────────────────────────
   const timeFromPointer = useCallback(
     (clientX) => {
       const rail = scrubRef.current;
-      if (!rail || !duration) return 0;
+      if (!rail || !displayDuration) return 0;
       const rect = rail.getBoundingClientRect();
       const ratio = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
-      return ratio * duration;
+      return ratio * displayDuration;
     },
-    [duration]
+    [displayDuration]
   );
 
   const onScrubPointerDown = (e) => {
@@ -436,7 +462,7 @@ function VideoPlayer({
     setScrubbing(false);
     const t = timeFromPointer(e.clientX);
     setScrubTime(null);
-    seekTo(t);
+    seekDisplay(t);
   };
 
   // Click = play/pause, double-click = fullscreen, without the double-fire.
@@ -459,8 +485,9 @@ function VideoPlayer({
     }
   };
 
-  const playedPct = duration > 0 ? (shownTime / duration) * 100 : 0;
-  const bufferedPct = duration > 0 ? Math.min((bufferedEnd / duration) * 100, 100) : 0;
+  const playedPct = displayDuration > 0 ? (shownTime / displayDuration) * 100 : 0;
+  const bufferedPct =
+    displayDuration > 0 ? Math.min((((combined ? partOffset : 0) + bufferedEnd) / displayDuration) * 100, 100) : 0;
   const activeQuality = QUALITY_LADDER.find((q) => q.key === qualityKey) || QUALITY_LADDER[0];
 
   return (
@@ -536,7 +563,7 @@ function VideoPlayer({
           onPointerUp={onScrubPointerUp}
           onPointerLeave={() => setHoverTime(null)}
         >
-          {hoverTime != null && duration > 0 && (
+          {hoverTime != null && displayDuration > 0 && (
             <div className="vp-rail-tip" style={{ left: hoverX }}>
               {formatTime(hoverTime)}
             </div>
@@ -544,6 +571,11 @@ function VideoPlayer({
           <div className="vp-rail-track">
             <div className="vp-rail-buffered" style={{ width: `${bufferedPct}%` }} />
             <div className="vp-rail-played" style={{ width: `${playedPct}%` }} />
+            {/* faint part seams on the combined timeline (where one CD/disc ends and the next begins) */}
+            {combined &&
+              partBoundaries.map((b, i) => (
+                <div key={i} className="vp-rail-mark" style={{ left: `${(b / displayDuration) * 100}%` }} aria-hidden="true" />
+              ))}
             <div className="vp-rail-head" style={{ left: `${playedPct}%` }} />
           </div>
         </div>
@@ -579,7 +611,7 @@ function VideoPlayer({
           <div className="vp-time">
             <span className="vp-time-now">{formatTime(shownTime)}</span>
             <span className="vp-time-sep">/</span>
-            <span className="vp-time-total">{formatTime(duration)}</span>
+            <span className="vp-time-total">{formatTime(displayDuration)}</span>
           </div>
 
           <div className="vp-spacer" />
