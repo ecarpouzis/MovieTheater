@@ -53,7 +53,7 @@ const TYPE_LABEL = {
 };
 const ROLE_LABEL = { Primary: "Feature", Part: "Part", Variant: "Variant", Extra: "Extra" };
 
-function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData, onToggleViewing, onMovieUpdated, kind = "movie" }) {
+function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, setUserData, onToggleViewing, onMovieUpdated, kind = "movie" }) {
   const history = useHistory();
   const [openSeasons, setOpenSeasons] = useState({});
   const [openEps, setOpenEps] = useState({});
@@ -252,6 +252,23 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
     actorSearch(name);
   };
 
+  // Insight chips jump to a browse search and close the modal. Franchise → the franchise grid;
+  // a "watch if you liked" comp title → a title search (so a library match surfaces, if we have it).
+  const searchFranchise = (f) => {
+    if (!f || !onBrowse) return;
+    onClose();
+    onBrowse("franchise", f);
+  };
+  const searchComp = (title) => {
+    if (!title || !onBrowse) return;
+    onClose();
+    onBrowse("title", title);
+  };
+  // Franchise tags are stored normalized/lowercase ("studio-ghibli", "mcu"); prettify for display
+  // but pass the raw value to the franchise browse.
+  const prettifyTag = (v) =>
+    (v || "").split(/[-_\s]+/).map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w)).join(" ");
+
   // Render a list of people as subtle, comma-separated search links. Prefers the
   // normalized array ([{name}]); falls back to a legacy comma-separated string.
   const renderPeopleLinks = (people, legacy) => {
@@ -328,6 +345,51 @@ function MovieModal({ movieId, open, onClose, actorSearch, userData, setUserData
                     ))}
                   </div>
                 )}
+
+                {n.insight && (n.insight.whyInteresting ||
+                  n.insight.watchIfYouLiked ||
+                  (n.insight.compTitles || []).length > 0 ||
+                  (n.insight.franchises || []).length > 0) ? (
+                  <div className="modal-insight">
+                    {n.insight.whyInteresting && (
+                      <div className="modal-insight-block">
+                        <span className="modal-label">Why it's interesting</span>
+                        <p className="modal-insight-text">{n.insight.whyInteresting}</p>
+                      </div>
+                    )}
+
+                    {(n.insight.watchIfYouLiked || (n.insight.compTitles || []).length > 0) && (
+                      <div className="modal-insight-block">
+                        <span className="modal-label">Watch if you liked</span>
+                        {n.insight.watchIfYouLiked && (
+                          <p className="modal-insight-text">{n.insight.watchIfYouLiked}</p>
+                        )}
+                        {(n.insight.compTitles || []).length > 0 && (
+                          <div className="modal-genre-chips">
+                            {n.insight.compTitles.map((c, i) => (
+                              <button type="button" className="modal-genre-chip modal-chip-link" key={i} onClick={() => searchComp(c)}>
+                                {c}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {(n.insight.franchises || []).length > 0 && (
+                      <div className="modal-insight-block">
+                        <span className="modal-label">Franchise</span>
+                        <div className="modal-genre-chips">
+                          {n.insight.franchises.map((f, i) => (
+                            <button type="button" className="modal-genre-chip modal-chip-link" key={i} onClick={() => searchFranchise(f)}>
+                              {prettifyTag(f)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
 
                 <div className="modal-crew-grid">
                   {displayDirectors && (

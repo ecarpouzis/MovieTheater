@@ -218,6 +218,18 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     });
   };
 
+  // Generic "jump to a browse search" used by the detail modal's insight chips (franchise, comp
+  // title). Pushes ?mode=&value= so NavBar's dispatch picks it up; the modal closes via the
+  // search-change effect below.
+  const handleBrowseSearch = (mode, value) => {
+    const v = (value ?? "").trim();
+    if (!mode || !v) return;
+    const params = new URLSearchParams();
+    params.set("mode", mode);
+    params.set("value", v);
+    history.push({ pathname: "/", search: `?${params.toString()}` });
+  };
+
   // Close modal when search changes (e.g., when actor is clicked)
   useEffect(() => {
     handleCloseModal();
@@ -310,6 +322,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
           open={isModalVisible}
           onClose={handleCloseModal}
           actorSearch={handleActorSearch}
+          onBrowse={handleBrowseSearch}
           userData={userData}
           setUserData={setUserData}
           onToggleViewing={handleToggleViewing}
@@ -321,6 +334,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
           open={isModalVisible}
           onClose={handleCloseModal}
           actorSearch={handleActorSearch}
+          onBrowse={handleBrowseSearch}
           movieDataArray={displayMovies}
           userData={userData}
           setUserData={setUserData}

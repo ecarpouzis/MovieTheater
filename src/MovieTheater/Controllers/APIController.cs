@@ -208,8 +208,45 @@ namespace MovieTheater.Controllers
                 summaries,
                 files,
                 relatedMisc = await LoadModalMiscAsync(movie.id, null),
+                insight = await LoadInsightAsync(InsightSubjectKind.Movie, id),
                 isSeries = false,
                 seasons = (object?)null,
+            };
+        }
+
+        // Model-inferred discovery metadata for the detail modal: the "why interesting" pitch, the
+        // "watch if you liked …" comparisons, and the franchise(s) the title belongs to. Reads the
+        // CURRENT (newest) insight for the subject; returns null when there's nothing worth showing
+        // so the UI can omit the section entirely.
+        private async Task<object?> LoadInsightAsync(InsightSubjectKind kind, int id)
+        {
+            var insight = await movieDb.TitleInsights
+                .Where(ti => ti.SubjectKind == kind && ti.SubjectId == id)
+                .OrderByDescending(ti => ti.GeneratedUtc)
+                .Include(ti => ti.Tags)
+                .FirstOrDefaultAsync();
+            if (insight == null) return null;
+
+            string[] Vals(TagCategory c) => insight.Tags
+                .Where(t => t.Category == c && !string.IsNullOrWhiteSpace(t.Value))
+                .OrderByDescending(t => t.Weight ?? 0)
+                .Select(t => t.Value!)
+                .ToArray();
+
+            var franchises = Vals(TagCategory.Franchise);
+            var compTitles = Vals(TagCategory.CompTitle);
+
+            if (string.IsNullOrWhiteSpace(insight.Vibe) && string.IsNullOrWhiteSpace(insight.WhyInteresting)
+                && string.IsNullOrWhiteSpace(insight.WatchIfYouLiked) && franchises.Length == 0 && compTitles.Length == 0)
+                return null;
+
+            return new
+            {
+                vibe = insight.Vibe,
+                whyInteresting = insight.WhyInteresting,
+                watchIfYouLiked = insight.WatchIfYouLiked,
+                franchises,
+                compTitles,
             };
         }
 
@@ -642,6 +679,26 @@ namespace MovieTheater.Controllers
             return Ok(await PageMergedAsync(mq, sq, page, pageSize));
         }
 
+        // All titles the model tagged as part of a franchise / shared universe (TagCategory.Franchise),
+        // e.g. "mcu", "studio-ghibli". The franchise value is the model's normalized tag (lowercase);
+        // the detail modal's franchise chips pass it through verbatim.
+        [HttpGet("/API/BrowseFranchise")]
+        public async Task<IActionResult> BrowseFranchise(string franchise, int page = 1, int pageSize = 60, string? types = null)
+        {
+            var fx = (franchise ?? "").Trim();
+            if (fx.Length == 0) return Ok(EmptyPage(pageSize));
+            var mq = await GetBaseMovieQuery();
+            var sq = await GetBaseSeriesQuery();
+            mq = mq.Where(m => movieDb.TitleTags.Any(t => t.Category == TagCategory.Franchise && t.Value == fx
+                && movieDb.TitleInsights.Any(ti => ti.Id == t.TitleInsightId
+                    && ti.SubjectKind == InsightSubjectKind.Movie && ti.SubjectId == m.id)));
+            sq = sq.Where(s => movieDb.TitleTags.Any(t => t.Category == TagCategory.Franchise && t.Value == fx
+                && movieDb.TitleInsights.Any(ti => ti.Id == t.TitleInsightId
+                    && ti.SubjectKind == InsightSubjectKind.Series && ti.SubjectId == s.Id)));
+            (mq, sq) = ApplyTypeScope(ParseTypeScope(types), mq, sq);
+            return Ok(await PageMergedAsync(mq, sq, page, pageSize));
+        }
+
         [HttpGet("/API/BrowsePerson")]
         public async Task<IActionResult> BrowsePerson(string q, int page = 1, int pageSize = 60, string? types = null)
         {
@@ -848,6 +905,7 @@ namespace MovieTheater.Controllers
                 directors = People(CreditRole.Director),
                 writers = People(CreditRole.Writer),
                 summaries,
+                insight = await LoadInsightAsync(InsightSubjectKind.Series, id),
                 isSeries = true,
                 seasons,
                 seriesExtras,

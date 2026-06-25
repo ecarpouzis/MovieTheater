@@ -76,6 +76,16 @@ export function useMovieSearch() {
     setSearch({ url: `/API/BrowseGenre?genres=${encodeURIComponent(list.join(","))}${scopeSuffix(types)}`, genre: list, titleTypes: types, infinite: true });
   }, []);
 
+  // All titles in a model-tagged franchise / shared universe, within the Type scope.
+  const franchiseSearch = useCallback((franchise, types) => {
+    const fx = (franchise ?? "").trim();
+    if (!fx) {
+      setSearch({ url: RANDOM_MOVIES_URL, titleTypes: types });
+      return;
+    }
+    setSearch({ url: `/API/BrowseFranchise?franchise=${encodeURIComponent(fx)}${scopeSuffix(types)}`, franchise: fx, titleTypes: types, infinite: true });
+  }, []);
+
   const firstLetterSearch = useCallback((firstLetter, types) => {
     setSearch({ url: `/API/BrowseLetter?letter=${encodeURIComponent(firstLetter)}${scopeSuffix(types)}`, startsWith: firstLetter, titleTypes: types, infinite: true });
   }, []);
@@ -133,6 +143,7 @@ export function useMovieSearch() {
     titleSearch,
     actorSearch,
     genreSearch,
+    franchiseSearch,
     firstLetterSearch,
     titleTypeSearch,
     ratingSearch,

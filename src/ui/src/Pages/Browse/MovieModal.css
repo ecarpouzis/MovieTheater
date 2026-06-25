@@ -139,6 +139,38 @@
   white-space: nowrap;
 }
 
+/* ── AI insight: why-interesting / watch-if-you-liked / franchise ─────── */
+.modal-insight {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-insight-block {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.modal-insight-text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #3a3a44;
+}
+
+/* A genre-style chip that's clickable (franchise / comp-title navigation). Resets button styling. */
+.modal-chip-link {
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.modal-chip-link:hover {
+  background: rgba(var(--poster-rgb), 0.2);
+  border-color: rgba(var(--poster-rgb), 0.35);
+}
+
 /* ── Director / Writer ────────────────────────────────────────────────── */
 .modal-crew-grid {
   display: flex;

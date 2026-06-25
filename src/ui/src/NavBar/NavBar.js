@@ -21,6 +21,7 @@ function NavBar({
   titleSearch,
   actorSearch,
   genreSearch,
+  franchiseSearch,
   firstLetterSearch,
   titleTypeSearch,
   ratingSearch,
@@ -134,6 +135,7 @@ function NavBar({
       title: (v) => (v.trim() ? titleSearch(v, types) : browseDefault()),
       actor: (v) => (v.trim() ? actorSearch(v, types) : browseDefault()),
       genre: (v) => (v.trim() ? genreSearch(v, types) : browseDefault()),
+      franchise: (v) => (v.trim() ? franchiseSearch(v, types) : browseDefault()),
       letter: (v) => (v.trim() ? firstLetterSearch(v, types) : browseDefault()),
       rating: (v) => (v.trim() ? ratingSearch(v, types) : browseDefault()),
       seen: () => {
@@ -168,6 +170,7 @@ function NavBar({
     titleSearch,
     actorSearch,
     genreSearch,
+    franchiseSearch,
     firstLetterSearch,
     titleTypeSearch,
     ratingSearch,
