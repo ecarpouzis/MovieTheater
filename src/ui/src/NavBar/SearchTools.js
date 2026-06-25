@@ -1,6 +1,6 @@
 import { Input, List, Button, Select, message } from "antd";
 import { useState, useEffect } from "react";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
 
 const { Search } = Input;
@@ -75,6 +75,7 @@ const listStyle = {
 
 function SearchTools({ search, userData }) {
   const history = useHistory();
+  const location = useLocation();
   const [mpaRatings, setMpaRatings] = useState([]);
   const [genres, setGenres] = useState([]);
 
@@ -93,7 +94,12 @@ function SearchTools({ search, userData }) {
       .catch(() => {});
   }, []);
 
-  function navigateToBrowseSearch(mode, value = "") {
+  // Navigate the Browse grid. The Type scope (`types` param) persists across mode changes: every
+  // caller leaves it untouched except the Type selector, which passes typesOverride to change it
+  // ("" = all types). So clearing a genre/letter/title search returns to browsing the current scope,
+  // never a hardcoded default.
+  function navigateToBrowseSearch(mode, value = "", typesOverride) {
+    const current = new URLSearchParams(location.search);
     const params = new URLSearchParams();
 
     if (mode) {
@@ -102,6 +108,11 @@ function SearchTools({ search, userData }) {
 
     if (value && value.trim()) {
       params.set("value", value.trim());
+    }
+
+    const types = typesOverride !== undefined ? typesOverride : current.get("types");
+    if (types !== null && types !== undefined) {
+      params.set("types", types);
     }
 
     history.push({
@@ -186,21 +197,29 @@ function SearchTools({ search, userData }) {
       )}
       <span style={inputLabelStyle}>Type</span>
       <Select
+        mode="multiple"
+        showSearch
         allowClear
-        placeholder="Title type"
+        placeholder="Title type (any selected)"
         style={{ width: "100%" }}
         // Render the popup inside the nav drawer's stacking context. Default AntD portals it to
         // <body> at z-index 1050, which sits BEHIND the mobile nav drawer (z-index 1250) — so the
         // options were invisible/untappable on mobile. Anchoring to the trigger's parent fixes it.
         getPopupContainer={(trigger) => trigger.parentNode}
-        value={search.titleType || undefined}
-        onChange={(val) => navigateToBrowseSearch(val ? "type" : undefined, val || "")}
+        value={Array.isArray(search.titleTypes) ? search.titleTypes : []}
+        // Type is an overarching scope, not a one-shot mode: changing it keeps the active search
+        // (mode/value) and just updates the persistent `types` param. "" = all types.
+        onChange={(vals) => {
+          const current = new URLSearchParams(location.search);
+          navigateToBrowseSearch(current.get("mode"), current.get("value") || "", vals.join(","));
+        }}
         options={[
           { label: "Movies", value: "Movies" },
           { label: "Series", value: "Series" },
           { label: "Short", value: "Short" },
           { label: "Misc", value: "Misc" },
         ]}
+        filterOption={(input, option) => option.label.toLowerCase().includes(input.toLowerCase())}
       />
       <span style={inputLabelStyle}>First Letter</span>
       <List

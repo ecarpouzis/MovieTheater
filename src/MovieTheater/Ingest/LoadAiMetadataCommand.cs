@@ -86,14 +86,17 @@ namespace MovieTheater.Ingest
             // Resolve subject existence + existing same-model rows for just the ids in this batch.
             var movieIds = batch.Where(b => b.Kind == InsightSubjectKind.Movie).Select(b => b.SubjectId).Distinct().ToList();
             var seriesIds = batch.Where(b => b.Kind == InsightSubjectKind.Series).Select(b => b.SubjectId).Distinct().ToList();
+            var miscIds = batch.Where(b => b.Kind == InsightSubjectKind.MiscVideo).Select(b => b.SubjectId).Distinct().ToList();
             var liveMovieIds = (await db.Movies.Where(m => movieIds.Contains(m.id)).Select(m => m.id).ToListAsync()).ToHashSet();
             var liveSeriesIds = (await db.Series.Where(s => seriesIds.Contains(s.Id)).Select(s => s.Id).ToListAsync()).ToHashSet();
+            var liveMiscIds = (await db.MiscVideos.Where(mv => miscIds.Contains(mv.Id)).Select(mv => mv.Id).ToListAsync()).ToHashSet();
 
             var subjectKeys = batch.Select(b => new { b.Kind, b.SubjectId }).ToList();
             var existing = await db.TitleInsights
                 .Where(ti => ti.ModelId == ModelId)
                 .Where(ti => (ti.SubjectKind == InsightSubjectKind.Movie && movieIds.Contains(ti.SubjectId))
-                          || (ti.SubjectKind == InsightSubjectKind.Series && seriesIds.Contains(ti.SubjectId)))
+                          || (ti.SubjectKind == InsightSubjectKind.Series && seriesIds.Contains(ti.SubjectId))
+                          || (ti.SubjectKind == InsightSubjectKind.MiscVideo && miscIds.Contains(ti.SubjectId)))
                 .Include(ti => ti.Tags)
                 .ToListAsync();
             TitleInsight? FindExisting(InsightDto d) =>
@@ -106,9 +109,14 @@ namespace MovieTheater.Ingest
             foreach (var d in batch)
             {
                 // ── Validate ──
-                if (d.Kind is not (InsightSubjectKind.Movie or InsightSubjectKind.Series))
-                { w.WriteLine($"  ! invalid subjectKind '{d.SubjectKind}' (id {d.SubjectId}) — Movie|Series only"); invalid++; continue; }
-                bool exists = d.Kind == InsightSubjectKind.Movie ? liveMovieIds.Contains(d.SubjectId) : liveSeriesIds.Contains(d.SubjectId);
+                if (d.Kind is not (InsightSubjectKind.Movie or InsightSubjectKind.Series or InsightSubjectKind.MiscVideo))
+                { w.WriteLine($"  ! invalid subjectKind '{d.SubjectKind}' (id {d.SubjectId}) — Movie|Series|MiscVideo only"); invalid++; continue; }
+                bool exists = d.Kind switch
+                {
+                    InsightSubjectKind.Movie => liveMovieIds.Contains(d.SubjectId),
+                    InsightSubjectKind.Series => liveSeriesIds.Contains(d.SubjectId),
+                    _ => liveMiscIds.Contains(d.SubjectId),
+                };
                 if (!exists)
                 { w.WriteLine($"  ! no such {d.Kind} id {d.SubjectId} — skipping"); invalid++; continue; }
 
@@ -156,7 +164,7 @@ namespace MovieTheater.Ingest
                         $"{planned} to write ({replaced} replace, {planned - replaced} new), {skipped} already-loaded, {invalid} invalid; {novelTags} novel tags.");
 
             var remaining = await RemainingQueueAsync(db);
-            w.WriteLine($"work queue remaining (no {ModelId} insight yet): {remaining.movies} movies + {remaining.series} series.");
+            w.WriteLine($"work queue remaining (no {ModelId} insight yet): {remaining.movies} movies + {remaining.series} series + {remaining.misc} misc.");
 
             if (!Apply) { w.WriteLine("\nDRY RUN — nothing written. Re-run with --apply."); return; }
             if (planned == 0) { w.WriteLine("Nothing to write."); return; }
@@ -167,13 +175,15 @@ namespace MovieTheater.Ingest
             w.WriteLine($"\nDONE. wrote {planned} insight(s) ({replaced} replaced).");
         }
 
-        private async Task<(int movies, int series)> RemainingQueueAsync(MovieDb db)
+        private async Task<(int movies, int series, int misc)> RemainingQueueAsync(MovieDb db)
         {
             var movies = await db.Movies.CountAsync(m => m.ReviewBatch == null && !db.TitleInsights.Any(
                 ti => ti.ModelId == ModelId && ti.SubjectKind == InsightSubjectKind.Movie && ti.SubjectId == m.id));
             var series = await db.Series.CountAsync(s => s.ReviewBatch == null && !db.TitleInsights.Any(
                 ti => ti.ModelId == ModelId && ti.SubjectKind == InsightSubjectKind.Series && ti.SubjectId == s.Id));
-            return (movies, series);
+            var misc = await db.MiscVideos.CountAsync(mv => mv.ReviewBatch == null && !db.TitleInsights.Any(
+                ti => ti.ModelId == ModelId && ti.SubjectKind == InsightSubjectKind.MiscVideo && ti.SubjectId == mv.Id));
+            return (movies, series, misc);
         }
 
         private static string? Trim(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();

@@ -43,6 +43,12 @@ namespace MovieTheater.RottenTomatoes
         [CommandOption("retry-review", Description = "Reprocess only rows currently flagged RtNeedsReview (recover earlier misses).")]
         public bool RetryReview { get; set; }
 
+        [CommandOption("include-series", Description = "Also scrape Series rows (resolved against RT's /tv/ pages) using the same resume/rescrape/retry-review rules. For the --title smoke test, treats the title as a series.")]
+        public bool IncludeSeries { get; set; }
+
+        [CommandOption("series-only", Description = "Scrape ONLY Series rows, skipping Movies. Implies --include-series.")]
+        public bool SeriesOnly { get; set; }
+
         [CommandOption("delay-min", Description = "Minimum delay between titles, ms.")]
         public int DelayMinMs { get; set; } = 2000;
 
@@ -83,35 +89,69 @@ namespace MovieTheater.RottenTomatoes
 
             await WarmUpAsync(page);
 
-            // Single-title smoke test: scrape and print, never write.
+            bool wantSeries = IncludeSeries || SeriesOnly;
+
+            // Single-title smoke test: scrape and print, never write. --include-series/--series-only
+            // searches RT's /tv/ pages instead of /m/.
             if (!string.IsNullOrWhiteSpace(SingleTitle))
             {
-                var single = await ScrapeWithRetryAsync(page, CleanSearchQuery(SingleTitle.Trim()), SingleYear, cancel);
+                var single = await ScrapeWithRetryAsync(page, CleanSearchQuery(SingleTitle.Trim()), SingleYear, wantSeries, cancel);
                 PrintResult(console, single);
                 return;
             }
 
-            List<MovieRow> todo;
+            List<TitleRow> todo;
             using (var db = await dbFactory.CreateDbContextAsync())
             {
-                IQueryable<Db.Movie> rows = db.Movies;
-                rows = RetryReview
-                    ? rows.Where(m => m.RtNeedsReview)
-                    : rows.Where(m => Rescrape || m.RtScoresUpdatedDate == null);
-                var query = rows
-                    .OrderBy(m => m.id)
-                    .Select(m => new MovieRow
-                    {
-                        Id = m.id,
-                        Title = m.Title,
-                        SimpleTitle = m.SimpleTitle,
-                        Year = m.ReleaseDate != null ? (int?)m.ReleaseDate.Value.Year : null
-                    });
-                if (Limit.HasValue) query = query.Take(Limit.Value);
-                todo = await query.ToListAsync();
+                var movieRows = new List<TitleRow>();
+                if (!SeriesOnly)
+                {
+                    IQueryable<Db.Movie> rows = db.Movies;
+                    rows = RetryReview
+                        ? rows.Where(m => m.RtNeedsReview)
+                        : rows.Where(m => Rescrape || m.RtScoresUpdatedDate == null);
+                    movieRows = await rows
+                        .OrderBy(m => m.id)
+                        .Select(m => new TitleRow
+                        {
+                            Id = m.id,
+                            IsSeries = false,
+                            Title = m.Title,
+                            SimpleTitle = m.SimpleTitle,
+                            Year = m.ReleaseDate != null ? (int?)m.ReleaseDate.Value.Year : null
+                        })
+                        .ToListAsync();
+                }
+
+                var seriesRows = new List<TitleRow>();
+                if (wantSeries)
+                {
+                    IQueryable<Db.Series> srows = db.Series;
+                    srows = RetryReview
+                        ? srows.Where(s => s.RtNeedsReview)
+                        : srows.Where(s => Rescrape || s.RtScoresUpdatedDate == null);
+                    seriesRows = await srows
+                        .OrderBy(s => s.Id)
+                        .Select(s => new TitleRow
+                        {
+                            Id = s.Id,
+                            IsSeries = true,
+                            Title = s.Title,
+                            SimpleTitle = s.SimpleTitle,
+                            // Prefer the series' start year; fall back to ReleaseDate's year.
+                            Year = s.StartYear ?? (s.ReleaseDate != null ? (int?)s.ReleaseDate.Value.Year : null)
+                        })
+                        .ToListAsync();
+                }
+
+                // Movies first, then series, each by id — stable, resumable ordering.
+                todo = movieRows.Concat(seriesRows).ToList();
+                if (Limit.HasValue) todo = todo.Take(Limit.Value).ToList();
             }
 
-            console.Output.WriteLine($"Scraping RT scores for {todo.Count} movie(s){(DryRun ? " (dry-run)" : "")}…");
+            console.Output.WriteLine(
+                $"Scraping RT scores for {todo.Count} title(s) " +
+                $"({todo.Count(t => !t.IsSeries)} movie, {todo.Count(t => t.IsSeries)} series){(DryRun ? " (dry-run)" : "")}…");
             int done = 0, scored = 0, flagged = 0, skipped = 0, consecutiveFailures = 0;
             bool throttled = false;
 
@@ -127,7 +167,7 @@ namespace MovieTheater.RottenTomatoes
                 var searchTitle = CleanSearchQuery(rawTitle);
                 try
                 {
-                    var result = await ScrapeWithRetryAsync(page, searchTitle, row.Year, cancel);
+                    var result = await ScrapeWithRetryAsync(page, searchTitle, row.Year, row.IsSeries, cancel);
                     if (DryRun)
                     {
                         PrintResult(console, result);
@@ -142,7 +182,7 @@ namespace MovieTheater.RottenTomatoes
                     }
                     else
                     {
-                        var applied = await ApplyAsync(row.Id, result);
+                        var applied = await ApplyAsync(row, result);
                         if (applied) scored++; else flagged++;
                         consecutiveFailures = 0; // a real DB write means RT is still answering us
                     }
@@ -194,14 +234,14 @@ namespace MovieTheater.RottenTomatoes
             }
         }
 
-        private async Task<RtScoreResult> ScrapeWithRetryAsync(IPage page, string title, int? year, CancellationToken cancel)
+        private async Task<RtScoreResult> ScrapeWithRetryAsync(IPage page, string title, int? year, bool isSeries, CancellationToken cancel)
         {
             const int maxAttempts = 3;
             for (int attempt = 1; ; attempt++)
             {
                 try
                 {
-                    return await scraper.ScrapeAsync(page, title, year);
+                    return await scraper.ScrapeAsync(page, title, year, isSeries);
                 }
                 catch (RtChallengeException) when (attempt < maxAttempts)
                 {
@@ -219,29 +259,69 @@ namespace MovieTheater.RottenTomatoes
             }
         }
 
-        private async Task<bool> ApplyAsync(int movieId, RtScoreResult result)
+        // Writes the scores onto the Movie or Series row. The Movie and Series Rt* columns are
+        // identical, so a tiny abstraction over the two entities keeps one apply path.
+        private async Task<bool> ApplyAsync(TitleRow row, RtScoreResult result)
         {
             using var db = await dbFactory.CreateDbContextAsync();
-            var movie = await db.Movies.FirstOrDefaultAsync(m => m.id == movieId);
-            if (movie == null) return false;
 
-            movie.RtScoresUpdatedDate = DateTime.Now;
+            IRtTarget target = row.IsSeries
+                ? (await db.Series.FirstOrDefaultAsync(s => s.Id == row.Id)) is { } s ? new SeriesRtTarget(s) : null
+                : (await db.Movies.FirstOrDefaultAsync(m => m.id == row.Id)) is { } m ? new MovieRtTarget(m) : null;
+            if (target == null) return false;
+
+            target.RtScoresUpdatedDate = DateTime.Now;
 
             if (!result.Found)
             {
-                movie.RtNeedsReview = true;
-                movie.RtReviewReason = result.FailureReason ?? "Could not resolve on Rotten Tomatoes.";
+                target.RtNeedsReview = true;
+                target.RtReviewReason = result.FailureReason ?? "Could not resolve on Rotten Tomatoes.";
                 await db.SaveChangesAsync();
                 return false;
             }
 
-            movie.RtNeedsReview = false;
-            movie.RtReviewReason = null;
-            movie.RtUrl = result.ResolvedUrl;
-            movie.RtTomatometer = result.Tomatometer;
-            movie.RtPopcornmeter = result.Popcornmeter;
+            target.RtNeedsReview = false;
+            target.RtReviewReason = null;
+            target.RtUrl = result.ResolvedUrl;
+            target.RtTomatometer = result.Tomatometer;
+            target.RtPopcornmeter = result.Popcornmeter;
             await db.SaveChangesAsync();
             return true;
+        }
+
+        // Thin write-shims so movie + series share one apply path (their Rt* columns are identical).
+        private interface IRtTarget
+        {
+            DateTime? RtScoresUpdatedDate { set; }
+            bool RtNeedsReview { set; }
+            string RtReviewReason { set; }
+            string RtUrl { set; }
+            int? RtTomatometer { set; }
+            int? RtPopcornmeter { set; }
+        }
+
+        private sealed class MovieRtTarget : IRtTarget
+        {
+            private readonly Db.Movie m;
+            public MovieRtTarget(Db.Movie m) => this.m = m;
+            public DateTime? RtScoresUpdatedDate { set => m.RtScoresUpdatedDate = value; }
+            public bool RtNeedsReview { set => m.RtNeedsReview = value; }
+            public string RtReviewReason { set => m.RtReviewReason = value; }
+            public string RtUrl { set => m.RtUrl = value; }
+            public int? RtTomatometer { set => m.RtTomatometer = value; }
+            public int? RtPopcornmeter { set => m.RtPopcornmeter = value; }
+        }
+
+        private sealed class SeriesRtTarget : IRtTarget
+        {
+            private readonly Db.Series s;
+            public SeriesRtTarget(Db.Series s) => this.s = s;
+            public DateTime? RtScoresUpdatedDate { set => s.RtScoresUpdatedDate = value; }
+            public bool RtNeedsReview { set => s.RtNeedsReview = value; }
+            public string RtReviewReason { set => s.RtReviewReason = value; }
+            public string RtUrl { set => s.RtUrl = value; }
+            public int? RtTomatometer { set => s.RtTomatometer = value; }
+            public int? RtPopcornmeter { set => s.RtPopcornmeter = value; }
         }
 
         private async Task DelayAsync(CancellationToken cancel)
@@ -288,9 +368,10 @@ namespace MovieTheater.RottenTomatoes
                         $"Popcornmeter: {(r.Popcornmeter.HasValue ? r.Popcornmeter + "%" : "—")}");
         }
 
-        private class MovieRow
+        private class TitleRow
         {
             public int Id { get; set; }
+            public bool IsSeries { get; set; }
             public string Title { get; set; }
             public string SimpleTitle { get; set; }
             public int? Year { get; set; }

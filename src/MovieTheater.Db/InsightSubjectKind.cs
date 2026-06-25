@@ -15,5 +15,10 @@ namespace MovieTheater.Db
 
         /// <summary>Reserved — person-level insights are a later phase.</summary>
         Person = 3,
+
+        /// <summary>A <see cref="MiscVideo"/> — a no-IMDb-id library video (workprint, stage
+        /// performance, instructional set, one-off short). Stored as an int, so no migration is
+        /// needed to add this value; the <see cref="TitleInsight"/> table carries no FK to the subject.</summary>
+        MiscVideo = 4,
     }
 }

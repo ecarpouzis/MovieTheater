@@ -10,6 +10,7 @@ import BoardGameNavContent from "./BoardGameNavContent";
 import UserSettingsModal from "./UserSettingsModal";
 import AdminModal from "./AdminModal";
 import useIsMobile from "../hooks/useIsMobile";
+import { loadTitleTypes, saveTitleTypes } from "../hooks/useMovieSearch";
 
 function NavBar({
   search,
@@ -67,6 +68,20 @@ function NavBar({
     const mode = params.get("mode");
     const value = params.get("value") || "";
 
+    // The Type scope persists across modes via the `types` param. Distinguish: absent (→ the persisted
+    // default, Movies unless the user changed it) vs. empty string (→ explicitly all types) vs. a list.
+    const typesParam = params.get("types");
+    const types =
+      typesParam === null
+        ? loadTitleTypes()
+        : typesParam === ""
+        ? []
+        : typesParam.split(",").map((t) => t.trim()).filter(Boolean);
+    saveTitleTypes(types);
+
+    // With no other filter active, the default browse is the Type scope itself (random when it's empty).
+    const browseDefault = () => (types.length ? titleTypeSearch(types) : resetSearch());
+
     if (!mode) {
       // No search mode in the URL. Determine whether this is a hard browser reload
       // (F5 / Ctrl+R) vs. normal in-app navigation, using the browser Navigation API.
@@ -89,7 +104,8 @@ function NavBar({
           });
         }
 
-        resetSearch();
+        // A reload lands on the default browse for the current Type scope.
+        browseDefault();
         return;
       }
 
@@ -99,30 +115,34 @@ function NavBar({
       const restoreIds = Array.isArray(location.state?.browseMovieIds) ? location.state.browseMovieIds : [];
       const movieIds = restoreIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
       if (movieIds.length > 0) {
-        restoreMovieIdsSearch(movieIds);
+        restoreMovieIdsSearch(movieIds, types);
         return;
       }
 
-      resetSearch();
+      // A clean URL is the default browse view: the Type scope (Movies by default; random when the
+      // user has cleared all types). Deterministic so re-runs of this effect — e.g. when auth resolves
+      // and userData changes — don't flip the grid.
+      browseDefault();
       return;
     }
 
     // Dispatch table — equivalent to a switch statement or Dictionary<string, Action<string>>.
     // Keyed on the URL "mode" param; each entry is a lambda that runs the appropriate search.
+    // Every search mode runs within the current Type scope; an empty value falls back to browsing the
+    // scope itself. (Type is no longer its own mode — it's the orthogonal `types` param above.)
     const modeHandlers = {
-      title: (v) => (v.trim() ? titleSearch(v) : resetSearch()),
-      actor: (v) => (v.trim() ? actorSearch(v) : resetSearch()),
-      genre: (v) => (v.trim() ? genreSearch(v) : resetSearch()),
-      letter: (v) => (v.trim() ? firstLetterSearch(v) : resetSearch()),
-      type: (v) => (v.trim() ? titleTypeSearch(v) : resetSearch()),
-      rating: (v) => (v.trim() ? ratingSearch(v) : resetSearch()),
+      title: (v) => (v.trim() ? titleSearch(v, types) : browseDefault()),
+      actor: (v) => (v.trim() ? actorSearch(v, types) : browseDefault()),
+      genre: (v) => (v.trim() ? genreSearch(v, types) : browseDefault()),
+      letter: (v) => (v.trim() ? firstLetterSearch(v, types) : browseDefault()),
+      rating: (v) => (v.trim() ? ratingSearch(v, types) : browseDefault()),
       seen: () => {
         if (!isAuthReady) return;
-        userData ? moviesSeenSearch(userData) : resetSearch();
+        userData ? moviesSeenSearch(userData, types) : browseDefault();
       },
       want: () => {
         if (!isAuthReady) return;
-        userData ? moviesWantToWatchSearch(userData) : resetSearch();
+        userData ? moviesWantToWatchSearch(userData, types) : browseDefault();
       },
     };
 

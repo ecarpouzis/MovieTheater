@@ -43,18 +43,21 @@ namespace MovieTheater.RottenTomatoes
             [JsonPropertyName("year")] public string Year { get; set; }
         }
 
-        /// <summary>Resolve the best-matching RT movie page for our title/year, then read both scores.</summary>
-        public async Task<RtScoreResult> ScrapeAsync(IPage page, string title, int? year)
+        /// <summary>Resolve the best-matching RT page for our title/year, then read both scores.
+        /// Movies resolve to <c>/m/</c> pages; series (<paramref name="isSeries"/>) to <c>/tv/</c>
+        /// pages. Both render the same <c>rt-text[slot=...]</c> score slots.</summary>
+        public async Task<RtScoreResult> ScrapeAsync(IPage page, string title, int? year, bool isSeries = false)
         {
             var result = new RtScoreResult { SearchTitle = title };
 
-            var rows = await SearchAsync(page, title);
+            var rows = await SearchAsync(page, title, isSeries);
             var match = PickBestMatch(rows, title, year);
             if (match == null)
             {
+                var medium = isSeries ? "TV" : "movie";
                 result.Found = false;
                 result.FailureReason = rows.Count == 0
-                    ? "No RT movie results for the title."
+                    ? $"No RT {medium} results for the title."
                     : $"No RT result confidently matched '{title}'"
                         + (year.HasValue ? $" ({year})." : ".");
                 return result;
@@ -69,8 +72,9 @@ namespace MovieTheater.RottenTomatoes
             return result;
         }
 
-        /// <summary>Loads the search page and returns every movie (/m/) result row.</summary>
-        private async Task<List<RowDto>> SearchAsync(IPage page, string title)
+        /// <summary>Loads the search page and returns every result row for the requested medium
+        /// — movie (<c>/m/</c>) by default, or series (<c>/tv/</c>) when <paramref name="isSeries"/>.</summary>
+        private async Task<List<RowDto>> SearchAsync(IPage page, string title, bool isSeries)
         {
             var url = "https://www.rottentomatoes.com/search?search=" + Uri.EscapeDataString(title);
             await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 45000 });
@@ -103,9 +107,10 @@ namespace MovieTheater.RottenTomatoes
                 };
             })";
 
+            var pathSegment = isSeries ? "/tv/" : "/m/";
             var rows = await page.EvalOnSelectorAllAsync<RowDto[]>("search-page-media-row", js);
             return (rows ?? Array.Empty<RowDto>())
-                .Where(r => !string.IsNullOrWhiteSpace(r.Url) && r.Url.Contains("/m/"))
+                .Where(r => !string.IsNullOrWhiteSpace(r.Url) && r.Url.Contains(pathSegment))
                 .ToList();
         }
 
