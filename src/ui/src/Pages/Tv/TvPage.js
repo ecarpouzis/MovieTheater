@@ -5,6 +5,7 @@ import { MovieAPI } from "../../MovieAPI";
 import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, HLS_LOAD_CONFIG } from "../Watch/VideoPlayer";
 import { initialAutoBps } from "../../streamAbr";
 import ChannelAdminModal from "./ChannelAdminModal";
+import ChannelGrid from "./ChannelGrid";
 import "./TvPage.css";
 
 /**
@@ -26,6 +27,8 @@ function TvPage({ userData }) {
   const advanceTimerRef = useRef(null);
   const wakeLockRef = useRef(null);
   const idleTimerRef = useRef(null);
+  const progressRef = useRef(null);
+  const scrubbingRef = useRef(false);
 
   const [channels, setChannels] = useState(null); // null = loading
   const [channel, setChannel] = useState(null);
@@ -35,7 +38,7 @@ function TvPage({ userData }) {
     const v = parseFloat(window.localStorage.getItem("TvVolume"));
     return Number.isFinite(v) ? Math.min(Math.max(v, 0), 1) : 1;
   });
-  const [pickerOpen, setPickerOpen] = useState(false); // channel picker popout
+  const [gridOpen, setGridOpen] = useState(false); // cross-channel grid guide (the primary chooser)
   const [menuOpen, setMenuOpen] = useState(false); // settings dropdown (quality / guide / manage / off)
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [, setNowTick] = useState(0); // ticks every second to advance the live progress bar
@@ -60,6 +63,7 @@ function TvPage({ userData }) {
   const [tuning, setTuning] = useState(false); // waiting on the (cold) transcode to produce frames
   const [paused, setPaused] = useState(false); // shared channel pause — frozen for everyone watching
   const [chromeVisible, setChromeVisible] = useState(true); // control bar fades out while idle, like the Watch player
+  const [scrubHover, setScrubHover] = useState(null); // { pct, seconds } while pointing at the progress bar (lone viewer only)
 
   const canEdit = userData?.canEditMovies ?? false;
 
@@ -85,7 +89,7 @@ function TvPage({ userData }) {
   // Whether any popout is open — read inside the idle timer (not re-bound per change) so a
   // menu/picker/guide left open keeps the chrome up instead of fading mid-interaction.
   const popoutOpenRef = useRef(false);
-  popoutOpenRef.current = pickerOpen || menuOpen || guideOpen;
+  popoutOpenRef.current = gridOpen || menuOpen || guideOpen;
 
   // The schedule item currently playing — used to scope skip votes and to notice when
   // the channel has moved on (a skip elsewhere, or a natural advance) so we re-tune.
@@ -126,9 +130,8 @@ function TvPage({ userData }) {
     }
   }, []);
 
-  // Dismiss the channel picker / settings menu (e.g. on a click in the video area).
+  // Dismiss the settings menu (e.g. on a click in the video area).
   const closePopouts = useCallback(() => {
-    setPickerOpen(false);
     setMenuOpen(false);
   }, []);
 
@@ -501,7 +504,7 @@ function TvPage({ userData }) {
   // changes so a resume or a just-closed menu restarts the countdown rather than fading instantly.
   useEffect(() => {
     wakeChrome();
-  }, [wakeChrome, channel?.id, paused, pickerOpen, menuOpen, guideOpen]);
+  }, [wakeChrome, channel?.id, paused, gridOpen, menuOpen, guideOpen]);
 
   const switchBy = useCallback(
     (delta) => {
@@ -565,15 +568,19 @@ function TvPage({ userData }) {
     setMuted(v === 0);
   }, []);
 
-  // The picker and the settings menu are mutually exclusive popouts.
-  const togglePicker = useCallback((e) => {
+  // The channel button opens the full grid guide — the primary way to choose a channel.
+  const openGrid = useCallback((e) => {
     e.stopPropagation();
     setMenuOpen(false);
-    setPickerOpen((o) => !o);
+    setGridOpen(true);
+  }, []);
+  // Picking a channel from the grid tunes to it and closes the guide.
+  const pickChannel = useCallback((ch) => {
+    setGridOpen(false);
+    setChannel(ch);
   }, []);
   const toggleMenu = useCallback((e) => {
     e.stopPropagation();
-    setPickerOpen(false);
     setMenuOpen((o) => !o);
   }, []);
 
@@ -683,13 +690,92 @@ function TvPage({ userData }) {
     }
   }, [channel, tune]);
 
+  // Scrubbing the bar moves the shared channel timeline, so it's only offered when you're the lone
+  // viewer (and not frozen). A live tune always sets `viewers`, so treat a not-yet-loaded count as 1.
+  const canSeek = !!now?.current && !paused && (viewers?.count ?? 1) <= 1;
+
+  // Seek the channel to an absolute offset in the current film. The server shifts the schedule (refusing
+  // if anyone else tuned in meanwhile) and we re-tune at the new live position — the mirror of voteRestart.
+  const seekTo = useCallback(
+    async (offsetSeconds) => {
+      if (!channel) return;
+      try {
+        const r = await fetch(`/API/Channel/${channel.id}/Seek`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ itemId: currentItemIdRef.current ?? 0, offsetSeconds }),
+        });
+        if (!r.ok) return;
+        const data = await r.json();
+        if (data.seeked) tune(channel);
+      } catch {
+        /* ignore — they can scrub again */
+      }
+    },
+    [channel, tune]
+  );
+
+  // Map a pointer's x to a position on the bar → { pct 0..1, seconds into the film }.
+  const offsetFromPointer = useCallback(
+    (clientX) => {
+      const el = progressRef.current;
+      const duration = now?.current?.durationSeconds;
+      if (!el || !duration) return null;
+      const rect = el.getBoundingClientRect();
+      const pct = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
+      return { pct, seconds: pct * duration };
+    },
+    [now]
+  );
+
+  const onScrubDown = useCallback(
+    (e) => {
+      if (!canSeek) return;
+      e.stopPropagation();
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+      scrubbingRef.current = true;
+      const p = offsetFromPointer(e.clientX);
+      if (p) setScrubHover(p);
+      wakeChrome();
+    },
+    [canSeek, offsetFromPointer, wakeChrome]
+  );
+
+  const onScrubMove = useCallback(
+    (e) => {
+      if (!canSeek) return;
+      const p = offsetFromPointer(e.clientX);
+      if (p) setScrubHover(p);
+    },
+    [canSeek, offsetFromPointer]
+  );
+
+  const onScrubUp = useCallback(
+    (e) => {
+      if (!scrubbingRef.current) return;
+      e.stopPropagation();
+      scrubbingRef.current = false;
+      const p = offsetFromPointer(e.clientX);
+      setScrubHover(null);
+      if (p) seekTo(p.seconds);
+    },
+    [offsetFromPointer, seekTo]
+  );
+
+  const onScrubLeave = useCallback(() => {
+    if (!scrubbingRef.current) setScrubHover(null);
+  }, []);
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.tagName === "INPUT" || adminOpen) return;
+      // While the grid guide is open it owns the keyboard (its own Esc closes it).
+      if (gridOpen) return;
       if (e.key === "ArrowUp") switchBy(1);
       else if (e.key === "ArrowDown") switchBy(-1);
       else if (e.key === "m") setMuted((m) => !m);
       else if (e.key === "g") setGuideOpen((g) => !g);
+      else if (e.key === "c") setGridOpen(true); // open the channel guide (the grid)
       else if (e.key === "k" || e.key === " ") togglePlayPause();
       else if (e.key === "f") toggleFullscreen();
       else if (/^[1-9]$/.test(e.key) && channels) {
@@ -701,7 +787,7 @@ function TvPage({ userData }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [switchBy, channels, adminOpen, togglePlayPause, toggleFullscreen, wakeChrome]);
+  }, [switchBy, channels, adminOpen, gridOpen, togglePlayPause, toggleFullscreen, wakeChrome]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -765,7 +851,7 @@ function TvPage({ userData }) {
   const volumeIcon = muted || volume === 0 ? "🔇" : volume < 0.5 ? "🔉" : "🔊";
 
   // The bar fades out only once the chrome is idle and nothing is popped out over the picture.
-  const chromeHidden = !chromeVisible && !pickerOpen && !menuOpen && !guideOpen;
+  const chromeHidden = !chromeVisible && !gridOpen && !menuOpen && !guideOpen;
 
   return (
     /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/media-has-caption */
@@ -797,25 +883,6 @@ function TvPage({ userData }) {
           <div className="tv-paused" aria-label="Paused">
             <span className="tv-paused-glyph">❚❚</span>
             <span className="tv-paused-label">Paused</span>
-          </div>
-        )}
-
-        {/* channel picker — pops out over the picture, anchored above the channel button */}
-        {pickerOpen && channels && channels.length > 0 && (
-          <div className="tv-picker" onClick={(e) => e.stopPropagation()}>
-            <div className="tv-picker-head">Channels</div>
-            <div className="tv-picker-list">
-              {channels.map((c, i) => (
-                <button
-                  key={c.id}
-                  className={`tv-channel-item${channel?.id === c.id ? " tv-channel-item--on" : ""}`}
-                  onClick={() => { setChannel(c); setPickerOpen(false); }}
-                >
-                  <span className="tv-channel-num">{i + 1}</span>
-                  {c.name}
-                </button>
-              ))}
-            </div>
           </div>
         )}
 
@@ -966,15 +1033,38 @@ function TvPage({ userData }) {
       {/* flattened control bar — lives below the picture so it never covers it; slides away
           while idle (tap the picture, or move the mouse, to bring it back) */}
       <div className={`tv-bar${chromeHidden ? " tv-bar--hidden" : ""}`}>
-        <div className="tv-bar-progress">
-          <div className="tv-bar-progress-fill" style={{ width: `${progressPct}%` }} />
+        {/* Live progress. For the lone viewer it doubles as a scrubber — drag/click to seek the
+            channel (which shifts the shared schedule); otherwise it's a read-only fill. */}
+        <div
+          ref={progressRef}
+          className={`tv-bar-progress${canSeek ? " tv-bar-progress--seekable" : ""}`}
+          onPointerDown={onScrubDown}
+          onPointerMove={onScrubMove}
+          onPointerUp={onScrubUp}
+          onPointerLeave={onScrubLeave}
+          role={canSeek ? "slider" : undefined}
+          aria-label={canSeek ? "Seek" : undefined}
+          aria-valuemin={canSeek ? 0 : undefined}
+          aria-valuemax={canSeek ? Math.round(now?.current?.durationSeconds || 0) : undefined}
+          aria-valuenow={canSeek ? Math.round(((scrubHover ? scrubHover.pct * 100 : progressPct) / 100) * (now?.current?.durationSeconds || 0)) : undefined}
+        >
+          <div className="tv-bar-progress-fill" style={{ width: `${scrubHover ? scrubHover.pct * 100 : progressPct}%`, transition: scrubHover ? "none" : undefined }} />
+          {canSeek && <div className="tv-bar-progress-thumb" style={{ left: `${scrubHover ? scrubHover.pct * 100 : progressPct}%` }} />}
+          {scrubHover && (
+            <div className="tv-bar-progress-tip" style={{ left: `${scrubHover.pct * 100}%` }}>
+              {formatTime(scrubHover.seconds)}
+            </div>
+          )}
         </div>
         <div className="tv-bar-row">
           {channel && (
-            <button className="tv-bar-channel" onClick={togglePicker} title="Change channel">
+            <button className="tv-bar-channel" onClick={openGrid} title="Open the channel guide (C)">
               <span className="tv-bar-channel-num">{channelNumber}</span>
               <span className="tv-bar-channel-name">{channel.name}</span>
-              <span className="tv-bar-caret">▾</span>
+              <span className="tv-bar-channel-guide">
+                <span className="tv-bar-guide-icon" aria-hidden="true" />
+                <span className="tv-bar-guide-label">Guide</span>
+              </span>
             </button>
           )}
 
@@ -1091,6 +1181,15 @@ function TvPage({ userData }) {
           </button>
         </div>
       </div>
+
+      {/* The cross-channel grid guide — the primary chooser. Overlays the whole room while open. */}
+      <ChannelGrid
+        open={gridOpen}
+        channels={channels || []}
+        currentChannelId={channel?.id ?? null}
+        onPick={pickChannel}
+        onClose={() => setGridOpen(false)}
+      />
 
       {canEdit && (
         <ChannelAdminModal

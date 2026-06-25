@@ -129,6 +129,9 @@ namespace MovieTheater
 
             services.AddScoped<Channels.ChannelScheduleService>();
             services.AddSingleton<Channels.ChannelSkipService>();
+            // Materializes channel schedules + warms rating-ceiling caches in bounded background batches,
+            // so the viewer read paths (List / Now / grid guide) stay cheap as channel count grows.
+            services.AddHostedService<Channels.ChannelScheduleMaintenanceService>();
 
             services.AddHostedService<BoardgameSimilarityStartupService>();
 

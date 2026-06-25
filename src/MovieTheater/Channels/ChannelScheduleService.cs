@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using MovieTheater.Db;
 
@@ -21,14 +23,28 @@ namespace MovieTheater.Channels
         private static readonly TimeSpan ScheduleHorizon = TimeSpan.FromHours(48);
         private static readonly TimeSpan PruneAge = TimeSpan.FromDays(3);
 
+        // The rating ceiling is a full eligible-set scan, so it's cached: the answer only moves when
+        // the filter or the library changes, but the age gate (List, Now, GuideGrid) needs it on every
+        // call. Keyed by channel id + filter so an admin filter edit busts it; a short TTL absorbs
+        // library growth. This is what lets the guide stay cheap with many channels.
+        private static readonly TimeSpan CeilingTtl = TimeSpan.FromMinutes(15);
+
+        // Per-channel generation gates (see EnsureScheduleAsync). Static so all scoped instances share them.
+        private static readonly ConcurrentDictionary<int, SemaphoreSlim> generationGates = new();
+
         private readonly MovieDb movieDb;
+        private readonly IMemoryCache cache;
         private readonly ILogger<ChannelScheduleService> logger;
 
-        public ChannelScheduleService(MovieDb movieDb, ILogger<ChannelScheduleService> logger)
+        public ChannelScheduleService(MovieDb movieDb, IMemoryCache cache, ILogger<ChannelScheduleService> logger)
         {
             this.movieDb = movieDb;
+            this.cache = cache;
             this.logger = logger;
         }
+
+        private static string CeilingKey(Channel channel) =>
+            $"channel-ceiling:{channel.Id}:{(channel.FilterJson ?? string.Empty).GetHashCode()}";
 
         public record EligibleMovie(int MovieId, int PlayableId, long DurationTicks, int RatingId);
 
@@ -120,14 +136,82 @@ namespace MovieTheater.Channels
             return (eligible, effectiveCeiling);
         }
 
-        /// <summary>The effective rating ceiling alone — cheaper for the List visibility gate.</summary>
+        /// <summary>
+        /// The effective rating ceiling alone — for the visibility gate. Cached (see <see cref="CeilingTtl"/>):
+        /// an explicit cap is free, otherwise the eligible-set scan runs at most once per TTL per channel.
+        /// </summary>
         public async Task<int> GetCeilingAsync(Channel channel, CancellationToken cancel = default)
         {
             var filter = ChannelFilter.Parse(channel.FilterJson);
             if (filter.MaxMpaRatingId is int explicitMax)
                 return explicitMax;
+
+            var key = CeilingKey(channel);
+            if (cache.TryGetValue(key, out int cached))
+                return cached;
+
             var (_, ceiling) = await BuildEligibleAsync(channel, cancel);
+            cache.Set(key, ceiling, new MemoryCacheEntryOptions
+            {
+                Size = 1, // the shared cache enforces a size limit, so every entry must declare one
+                AbsoluteExpirationRelativeToNow = CeilingTtl,
+            });
             return ceiling;
+        }
+
+        /// <summary>
+        /// The ceiling if it's free (explicit cap) or already cached, without triggering the expensive
+        /// scan. Lets a hot read path (the guide) gate cheaply and leave any cold channel to the
+        /// background maintainer rather than doing O(channels) scans inside one request.
+        /// </summary>
+        public bool TryGetCachedCeiling(Channel channel, out int ceiling)
+        {
+            var filter = ChannelFilter.Parse(channel.FilterJson);
+            if (filter.MaxMpaRatingId is int explicitMax)
+            {
+                ceiling = explicitMax;
+                return true;
+            }
+            return cache.TryGetValue(CeilingKey(channel), out ceiling);
+        }
+
+        /// <summary>
+        /// Bulk-read the windowed lineup for many channels in a single query — the read primitive behind
+        /// the grid guide. Pure read: no extend, no prune, no writes, so it stays O(1) queries regardless
+        /// of how many channels are passed. Channels not yet materialized simply return no rows (the
+        /// background maintainer fills them); returns a map of channelId → items ordered by start.
+        /// </summary>
+        public async Task<Dictionary<int, List<ChannelScheduleItem>>> WindowedItemsAsync(
+            IReadOnlyCollection<int> channelIds, DateTime fromUtc, DateTime toUtc, CancellationToken cancel = default)
+        {
+            if (channelIds.Count == 0)
+                return new Dictionary<int, List<ChannelScheduleItem>>();
+
+            var rows = await movieDb.ChannelScheduleItems
+                .Where(i => channelIds.Contains(i.ChannelId) && i.EndUtc > fromUtc && i.StartUtc < toUtc)
+                .OrderBy(i => i.StartUtc)
+                .ToListAsync(cancel);
+
+            return rows.GroupBy(i => i.ChannelId).ToDictionary(g => g.Key, g => g.ToList());
+        }
+
+        /// <summary>Enabled channel ids in display order — for the background maintainer's round-robin.</summary>
+        public Task<List<int>> EnabledChannelIdsAsync(CancellationToken cancel = default) =>
+            movieDb.Channels.Where(c => c.Enabled).OrderBy(c => c.SortOrder).ThenBy(c => c.Id)
+                .Select(c => c.Id).ToListAsync(cancel);
+
+        /// <summary>
+        /// Extend one channel's lineup to the horizon and warm its ceiling cache — the unit of work the
+        /// background maintainer repeats. Idempotent: a channel already materialized to the horizon is a
+        /// cheap no-op. No-op too if the channel vanished or was disabled.
+        /// </summary>
+        public async Task EnsureAndWarmChannelAsync(int channelId, DateTime horizonUtc, CancellationToken cancel = default)
+        {
+            var channel = await movieDb.Channels.FirstOrDefaultAsync(c => c.Id == channelId && c.Enabled, cancel);
+            if (channel == null)
+                return;
+            await EnsureScheduleAsync(channel, horizonUtc, cancel);
+            await GetCeilingAsync(channel, cancel);
         }
 
         /// <summary>
@@ -136,6 +220,23 @@ namespace MovieTheater.Channels
         /// start time. Already-written rows are never touched.
         /// </summary>
         public async Task<List<ChannelScheduleItem>> EnsureScheduleAsync(Channel channel, DateTime horizonUtc, CancellationToken cancel = default)
+        {
+            // Serialize generation per channel: the background maintainer and a concurrent viewer request
+            // must not both read the same cursor and append overlapping rows. Per-channel gate, so distinct
+            // channels never contend; static because this service is scoped (a fresh instance per request).
+            var gate = generationGates.GetOrAdd(channel.Id, _ => new SemaphoreSlim(1, 1));
+            await gate.WaitAsync(cancel);
+            try
+            {
+                return await EnsureScheduleCoreAsync(channel, horizonUtc, cancel);
+            }
+            finally
+            {
+                gate.Release();
+            }
+        }
+
+        private async Task<List<ChannelScheduleItem>> EnsureScheduleCoreAsync(Channel channel, DateTime horizonUtc, CancellationToken cancel)
         {
             var now = DateTime.UtcNow;
 
@@ -257,6 +358,46 @@ namespace MovieTheater.Channels
             {
                 item.StartUtc += elapsed;
                 item.EndUtc += elapsed;
+            }
+
+            await movieDb.SaveChangesAsync(cancel);
+            return true;
+        }
+
+        /// <summary>
+        /// Seeks the currently-airing item to <paramref name="targetOffsetSeconds"/>: shifts the item so
+        /// that "now" lands at the requested offset, and slides every later item by the same delta to keep
+        /// the line contiguous. A generalization of skip/restart — a positive delta rewinds the film (like
+        /// <see cref="RestartCurrentAsync"/> to offset 0), a negative delta fast-forwards it (like
+        /// <see cref="SkipCurrentAsync"/> toward the end). Used only for a lone viewer scrubbing the bar,
+        /// since it moves the shared timeline continuously. Guarded by <paramref name="expectedItemId"/>.
+        /// </summary>
+        public async Task<bool> SeekCurrentAsync(Channel channel, long expectedItemId, double targetOffsetSeconds, CancellationToken cancel = default)
+        {
+            var now = DateTime.UtcNow;
+            var items = await EnsureScheduleAsync(channel, now.Add(ScheduleHorizon), cancel);
+
+            var current = items.FirstOrDefault(i => i.StartUtc <= now && now < i.EndUtc);
+            if (current == null || current.Id != expectedItemId)
+                return false;
+
+            // Clamp into the film, leaving a second of tail so a seek-to-end doesn't land on the boundary
+            // and immediately advance.
+            var duration = (current.EndUtc - current.StartUtc).TotalSeconds;
+            var target = TimeSpan.FromSeconds(Math.Clamp(targetOffsetSeconds, 0, Math.Max(0, duration - 1)));
+
+            var newStart = now - target;
+            var delta = newStart - current.StartUtc;
+            if (delta == TimeSpan.Zero)
+                return true;
+
+            var originalEnd = current.EndUtc;
+            current.StartUtc = newStart;
+            current.EndUtc = originalEnd + delta;
+            foreach (var item in items.Where(i => i.StartUtc >= originalEnd))
+            {
+                item.StartUtc += delta;
+                item.EndUtc += delta;
             }
 
             await movieDb.SaveChangesAsync(cancel);

@@ -1,0 +1,324 @@
+/* Cross-channel grid guide (EPG). Sits over the whole TV room as a full overlay. The horizontal
+   scale is driven by --epg-ppm (pixels per minute) and the channel column by --epg-chanw; both shrink
+   at narrower breakpoints so the same grid works on desktop, tablet, and phone (phone accepts the
+   horizontal scroll). --epg-totalmin (the window width in minutes) is set inline from JS. */
+.epg {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  background: rgba(8, 7, 5, 0.97);
+  color: #f2ecdd;
+
+  --epg-ppm: 9px;
+  --epg-chanw: 200px;
+  --epg-rowh: 64px;
+}
+
+.epg-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(227, 179, 65, 0.25);
+  background: linear-gradient(to bottom, #14120d, #0b0a07);
+}
+
+.epg-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #e3b341;
+}
+
+.epg-clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: rgba(242, 236, 221, 0.7);
+}
+
+.epg-close {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(242, 236, 221, 0.08);
+  color: #f2ecdd;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.epg-close:hover {
+  background: rgba(227, 179, 65, 0.18);
+}
+
+/* The single scroll viewport — both axes scroll here, while the channel column and time header
+   stay pinned via position: sticky. */
+.epg-scroll {
+  flex: 1 1 auto;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.epg-body {
+  /* Wide enough to hold the channel column plus the full time window; this is what scrolls. */
+  width: calc(var(--epg-chanw) + var(--epg-totalmin) * var(--epg-ppm));
+  min-width: 100%;
+}
+
+/* ── time axis (sticky top) ─────────────────────────────────────────────────── */
+.epg-timehead {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  height: 30px;
+  background: #0b0a07;
+  border-bottom: 1px solid rgba(227, 179, 65, 0.22);
+}
+
+.epg-corner {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  flex: 0 0 auto;
+  width: var(--epg-chanw);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(242, 236, 221, 0.5);
+  background: #0b0a07;
+  border-right: 1px solid rgba(227, 179, 65, 0.22);
+}
+
+.epg-axis {
+  position: relative;
+  flex: 0 0 auto;
+  width: calc(var(--epg-totalmin) * var(--epg-ppm));
+}
+
+.epg-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid rgba(242, 236, 221, 0.12);
+}
+.epg-tick-label {
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(242, 236, 221, 0.55);
+  white-space: nowrap;
+}
+
+.epg-nowflag {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e3553f;
+  transform: translateX(-1px);
+}
+
+/* ── channel rows ───────────────────────────────────────────────────────────── */
+.epg-row {
+  display: flex;
+  height: var(--epg-rowh);
+  border-bottom: 1px solid rgba(242, 236, 221, 0.07);
+  /* Off-screen rows skip layout/paint — keeps the grid cheap with many channels. */
+  content-visibility: auto;
+  contain-intrinsic-size: var(--epg-rowh) 1200px;
+}
+.epg-row--current .epg-chan {
+  box-shadow: inset 3px 0 0 #e3b341;
+}
+.epg-row--current .epg-track {
+  background: rgba(227, 179, 65, 0.04);
+}
+
+.epg-chan {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  flex: 0 0 auto;
+  width: var(--epg-chanw);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  text-align: left;
+  border: none;
+  border-right: 1px solid rgba(227, 179, 65, 0.22);
+  background: #100e0a;
+  color: #f2ecdd;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.epg-chan:hover {
+  background: #1a1710;
+}
+
+.epg-chan-num {
+  flex: 0 0 auto;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: rgba(227, 179, 65, 0.16);
+  color: #e3b341;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.epg-chan-name {
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.epg-chan-meta {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 10px;
+  color: rgba(242, 236, 221, 0.6);
+}
+.epg-chan-viewers {
+  font-variant-numeric: tabular-nums;
+}
+.epg-chan-paused {
+  color: #e3b341;
+}
+
+.epg-track {
+  position: relative;
+  flex: 0 0 auto;
+  width: calc(var(--epg-totalmin) * var(--epg-ppm));
+}
+
+.epg-nowline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(227, 85, 63, 0.85);
+  transform: translateX(-1px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.epg-prog {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 8px;
+  text-align: left;
+  border: 1px solid rgba(242, 236, 221, 0.12);
+  border-radius: 6px;
+  background: #1c1910;
+  color: #f2ecdd;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.epg-prog:hover {
+  background: #2a2415;
+  border-color: rgba(227, 179, 65, 0.5);
+}
+.epg-prog--live {
+  background: #241f12;
+  border-color: rgba(227, 179, 65, 0.45);
+}
+
+/* Shaded "already aired" portion of the currently-playing block. */
+.epg-prog-elapsed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: rgba(227, 179, 65, 0.16);
+  pointer-events: none;
+}
+
+.epg-prog-title {
+  position: relative;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.epg-prog-time {
+  position: relative;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(242, 236, 221, 0.55);
+}
+
+.epg-filler {
+  position: absolute;
+  inset: 5px 0;
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+  font-size: 12px;
+  color: rgba(242, 236, 221, 0.35);
+  font-style: italic;
+}
+
+.epg-empty {
+  padding: 40px;
+  text-align: center;
+  color: rgba(242, 236, 221, 0.6);
+}
+
+/* ── responsive scale ───────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .epg {
+    --epg-ppm: 7px;
+    --epg-chanw: 168px;
+  }
+}
+
+@media (max-width: 600px) {
+  .epg {
+    --epg-ppm: 5.5px;
+    --epg-chanw: 116px;
+    --epg-rowh: 58px;
+  }
+  .epg-head {
+    padding: 10px 14px;
+  }
+  .epg-chan-name {
+    font-size: 12px;
+    -webkit-line-clamp: 2;
+  }
+  /* Hide the per-channel viewer/paused meta on phones to save the narrow channel column for the name. */
+  .epg-chan-meta {
+    display: none;
+  }
+}

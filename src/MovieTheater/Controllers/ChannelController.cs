@@ -227,6 +227,47 @@ namespace MovieTheater.Controllers
             });
         }
 
+        public class SeekRequest
+        {
+            public long ItemId { get; set; }
+            public double OffsetSeconds { get; set; }
+        }
+
+        [HttpPost("/API/Channel/{id}/Seek")]
+        public async Task<IActionResult> Seek(int id, [FromBody] SeekRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+
+            var channel = await movieDb.Channels.FirstOrDefaultAsync(c => c.Id == id && c.Enabled);
+            if (channel == null)
+                return NotFound(new { message = "Channel not found." });
+
+            if (await scheduleService.GetCeilingAsync(channel) > await GetAgeRestrictionAsync(userId.Value))
+                return StatusCode(403, new { message = "This channel isn't available on your account." });
+
+            var now = DateTime.UtcNow;
+            var items = await scheduleService.EnsureScheduleAsync(channel, now.Add(TimeSpan.FromHours(48)));
+            var current = items.FirstOrDefault(i => i.StartUtc <= now && now < i.EndUtc);
+            if (current == null)
+                return Json(new { seeked = false });
+
+            // Scrubbing moves the whole shared timeline continuously, so unlike skip/restart it can't be a
+            // vote — it's only offered to a lone viewer. Touch first so our own presence counts, then refuse
+            // if anyone else is watching, or if the channel is frozen (resume before seeking).
+            skipService.Touch(id, current.Id, userId.Value);
+            if (skipService.ViewerIds(id).Count > 1 || skipService.PausedSince(id) != null)
+                return Json(new { seeked = false });
+
+            // The seek must be about the item the client is actually watching; a stale itemId just no-ops.
+            if (request == null || (request.ItemId != 0 && request.ItemId != current.Id))
+                return Json(new { seeked = false });
+
+            bool seeked = await scheduleService.SeekCurrentAsync(channel, current.Id, request.OffsetSeconds);
+            return Json(new { seeked });
+        }
+
         [HttpPost("/API/Channel/{id}/PlayPause")]
         public async Task<IActionResult> PlayPause(int id)
         {
@@ -292,6 +333,83 @@ namespace MovieTheater.Controllers
             });
 
             return Json(guide);
+        }
+
+        // How many cold (uncached-ceiling) channels a single GuideGrid request will compute inline before
+        // deferring the rest to the background maintainer. Keeps the request bounded no matter the channel
+        // count — a cold channel just fills in on a later refresh once the maintainer has warmed it.
+        private const int MaxColdCeilingsPerRequest = 8;
+
+        /// <summary>
+        /// Cross-channel "what's on everywhere" for the grid guide (the EPG): every visible channel keyed
+        /// by id, with its lineup across a window from now. Designed to scale to many channels — it's a
+        /// bounded read: ceilings come from cache (the background maintainer keeps them warm), the lineup
+        /// is one bulk query, and it never extends/prunes/touches presence. The client owns row order and
+        /// channel numbers (from <see cref="List"/>); this just supplies lineups to join by id.
+        /// </summary>
+        [HttpGet("/API/Channel/GuideGrid")]
+        public async Task<IActionResult> GuideGrid(int hours = 6)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+
+            var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
+            hours = Math.Clamp(hours, 1, 24);
+            var now = DateTime.UtcNow;
+            var until = now.AddHours(hours);
+
+            var channels = await movieDb.Channels
+                .Where(c => c.Enabled)
+                .OrderBy(c => c.SortOrder)
+                .ThenBy(c => c.Id)
+                .ToListAsync();
+
+            // Gate by the cached ceiling. Compute at most a few cold ones inline; skip the rest (they
+            // surface on the next refresh once warmed) so the request stays bounded regardless of count.
+            var visibleIds = new List<int>();
+            int coldBudget = MaxColdCeilingsPerRequest;
+            foreach (var c in channels)
+            {
+                if (!scheduleService.TryGetCachedCeiling(c, out var ceiling))
+                {
+                    if (coldBudget <= 0)
+                        continue;
+                    coldBudget--;
+                    ceiling = await scheduleService.GetCeilingAsync(c);
+                }
+                if (ceiling <= ageRestriction)
+                    visibleIds.Add(c.Id);
+            }
+
+            // One bulk query for the whole window across all visible channels, then one for titles.
+            var windowed = await scheduleService.WindowedItemsAsync(visibleIds, now, until);
+            var titles = await TitlesForAsync(windowed.Values.SelectMany(list => list.Select(i => i.PlayableId)));
+
+            var result = visibleIds.Select(id =>
+            {
+                var items = windowed.GetValueOrDefault(id) ?? new List<ChannelScheduleItem>();
+                return new
+                {
+                    id,
+                    // paused/viewers are in-memory (the skip singleton) — cheap, no DB.
+                    paused = skipService.PausedSince(id) != null,
+                    viewers = skipService.ViewerIds(id).Count,
+                    items = items.Select(i => new
+                    {
+                        movieId = titles.GetValueOrDefault(i.PlayableId).MovieId,
+                        title = titles.GetValueOrDefault(i.PlayableId).Title ?? "",
+                        // Pin Kind=Utc so these serialize with a trailing 'Z' and the client parses them in
+                        // the same frame as serverNowUtc — EF hands back Unspecified, which would otherwise
+                        // be read as browser-local and slide the blocks off the "now" line by the tz offset.
+                        startUtc = DateTime.SpecifyKind(i.StartUtc, DateTimeKind.Utc),
+                        endUtc = DateTime.SpecifyKind(i.EndUtc, DateTimeKind.Utc),
+                    }),
+                };
+            });
+
+            // serverNowUtc lets the client align the "now" line to the server clock, not the browser's.
+            return Json(new { serverNowUtc = now, hours, items = result });
         }
 
         // Resolve a set of schedule-item PlayableIds to their movie (id + title) for the lineup readout.

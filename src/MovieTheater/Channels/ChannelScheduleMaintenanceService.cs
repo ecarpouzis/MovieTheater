@@ -1,0 +1,95 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace MovieTheater.Channels
+{
+    /// <summary>
+    /// Keeps every channel's lineup materialized ahead and its rating ceiling warm, so the viewer-facing
+    /// read paths (List / Now / the grid guide) never have to do per-channel scans inline. This is what
+    /// makes the feature scale to many channels: the O(channels) heavy work (eligible-set scans, schedule
+    /// generation) happens here in bounded batches on a timer, not inside a user request.
+    ///
+    /// Bounded + resumable per the project's long-job rule: each tick processes a small, capped batch and
+    /// advances a round-robin cursor, so a large channel list is covered over several ticks rather than in
+    /// one long pass. EnsureScheduleAsync is idempotent (already-materialized channels are a cheap no-op),
+    /// so re-running never double-generates.
+    /// </summary>
+    public class ChannelScheduleMaintenanceService : BackgroundService
+    {
+        private static readonly TimeSpan Tick = TimeSpan.FromSeconds(15);
+        private static readonly TimeSpan Horizon = TimeSpan.FromHours(48);
+        private const int BatchSize = 8; // channels touched per tick — keeps per-tick DB work tiny
+
+        private readonly IServiceScopeFactory scopeFactory;
+        private readonly ILogger<ChannelScheduleMaintenanceService> logger;
+        private int cursor; // index into the enabled-channel list; wraps, so coverage is round-robin
+
+        public ChannelScheduleMaintenanceService(
+            IServiceScopeFactory scopeFactory, ILogger<ChannelScheduleMaintenanceService> logger)
+        {
+            this.scopeFactory = scopeFactory;
+            this.logger = logger;
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            // A small initial delay so startup isn't competing with the first requests.
+            try { await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken); }
+            catch (OperationCanceledException) { return; }
+
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await TickAsync(stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    // Never let a transient failure kill the loop — the next tick retries.
+                    logger.LogWarning(ex, "Channel schedule maintenance tick failed; will retry.");
+                }
+
+                try { await Task.Delay(Tick, stoppingToken); }
+                catch (OperationCanceledException) { break; }
+            }
+        }
+
+        private async Task TickAsync(CancellationToken cancel)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var schedule = scope.ServiceProvider.GetRequiredService<ChannelScheduleService>();
+
+            var ids = await schedule.EnabledChannelIdsAsync(cancel);
+            if (ids.Count == 0)
+                return;
+
+            if (cursor >= ids.Count)
+                cursor = 0;
+
+            var horizon = DateTime.UtcNow.Add(Horizon);
+            int processed = 0;
+            for (int n = 0; n < BatchSize && n < ids.Count; n++)
+            {
+                cancel.ThrowIfCancellationRequested();
+                var id = ids[(cursor + n) % ids.Count];
+
+                // Extend the lineup to the horizon (no-op when already covered) and warm the ceiling
+                // cache so the age gate is free for the next reader.
+                await schedule.EnsureAndWarmChannelAsync(id, horizon, cancel);
+                processed++;
+            }
+
+            cursor = (cursor + BatchSize) % ids.Count;
+            if (processed > 0)
+                logger.LogDebug("Channel schedule maintenance: refreshed {Count} channel(s).", processed);
+        }
+    }
+}

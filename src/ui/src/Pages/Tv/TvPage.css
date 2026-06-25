@@ -154,15 +154,69 @@
 }
 
 .tv-bar-progress {
+  position: relative;
   height: 3px;
   width: 100%;
   background: rgba(242, 236, 221, 0.14);
+}
+
+/* Lone-viewer scrubber: pointer cursor + a taller invisible hit target above the thin line so
+   it's actually grabbable. touch-action: none lets a drag scrub instead of scrolling the page. */
+.tv-bar-progress--seekable {
+  cursor: pointer;
+  touch-action: none;
+}
+
+.tv-bar-progress--seekable::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  bottom: 0;
 }
 
 .tv-bar-progress-fill {
   height: 100%;
   background: linear-gradient(to right, #9a7f3f, #e3b341);
   transition: width 1s linear;
+}
+
+/* Drag handle — hidden until you hover/grab the seekable bar. */
+.tv-bar-progress-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: #e3b341;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
+  transform: translateY(-50%) scale(0);
+  transition: transform 0.12s ease;
+  pointer-events: none;
+}
+
+.tv-bar-progress--seekable:hover .tv-bar-progress-thumb,
+.tv-bar-progress--seekable:active .tv-bar-progress-thumb {
+  transform: translateY(-50%) scale(1);
+}
+
+/* Time readout that follows the pointer while scrubbing. */
+.tv-bar-progress-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(10, 9, 7, 0.95);
+  border: 1px solid rgba(227, 179, 65, 0.3);
+  color: #f2ecdd;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
 }
 
 .tv-bar-row {
@@ -209,9 +263,53 @@
   white-space: nowrap;
 }
 
-.tv-bar-caret {
-  color: rgba(242, 236, 221, 0.5);
-  font-size: 10px;
+/* The channel button opens the full grid guide, so it carries a small EPG-grid icon + "Guide"
+   label rather than a dropdown caret (which read as a small menu). */
+.tv-bar-channel-guide {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 8px;
+  margin-left: 2px;
+  border-left: 1px solid rgba(227, 179, 65, 0.25);
+  color: rgba(242, 236, 221, 0.6);
+}
+.tv-bar-channel:hover .tv-bar-channel-guide {
+  color: #e3b341;
+}
+
+.tv-bar-guide-icon {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 12px;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+}
+/* vertical divider = the guide's channel column */
+.tv-bar-guide-icon::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  border-left: 1.5px solid currentColor;
+}
+/* horizontal divider = the guide's rows */
+.tv-bar-guide-icon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1.5px solid currentColor;
+  transform: translateY(-0.75px);
+}
+
+.tv-bar-guide-label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 /* now / next info — two flat lines */
@@ -710,6 +808,11 @@
   .tv-bar-channel-name {
     max-width: 110px;
     letter-spacing: 0.08em;
+  }
+
+  /* tight on phones — the grid icon alone signals the guide */
+  .tv-bar-guide-label {
+    display: none;
   }
 
   /* phones have hardware volume — the mute toggle is enough */
