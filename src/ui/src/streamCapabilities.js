@@ -49,8 +49,13 @@ export function detectStreamCapabilities() {
   // fMP4/CMAF support tracks plain H.264-in-mp4 support: hls.js plays fMP4 wherever
   // it plays H.264 MSE, and Safari has native fMP4 HLS since Safari 10.
   const supportsFmp4 = canPlay('video/mp4; codecs="avc1.42E01E"');
+  // MP3 audio over MSE (hls.js path): Firefox's MSE has no MP3 decoder, so a server that
+  // copies MP3 into the HLS leaves playback frozen at 0:00. mp4a.40.34 is MP3-in-mp4; when
+  // this is false the server transcodes audio to AAC instead. (Safari uses native HLS and
+  // plays MP3 regardless; unknown/old → false → AAC, the safe baseline.)
+  const supportsMp3 = canPlay('audio/mp4; codecs="mp4a.40.34"');
   const supportsHdr = detectHdr();
 
-  cached = { supportsHevc, supportsAv1, supportsHdr, supportsFmp4 };
+  cached = { supportsHevc, supportsAv1, supportsHdr, supportsFmp4, supportsMp3 };
   return cached;
 }

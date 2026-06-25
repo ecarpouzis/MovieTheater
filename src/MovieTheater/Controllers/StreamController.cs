@@ -75,9 +75,10 @@ namespace MovieTheater.Controllers
             public bool SupportsAv1 { get; set; }
             public bool SupportsHdr { get; set; }
             public bool SupportsFmp4 { get; set; }
+            public bool SupportsMp3 { get; set; }   // MSE can decode MP3 audio (Chrome/Safari yes, Firefox no)
 
             public ClientCapabilities ToCapabilities() =>
-                new(SupportsHevc, SupportsAv1, SupportsHdr, SupportsFmp4);
+                new(SupportsHevc, SupportsAv1, SupportsHdr, SupportsFmp4, SupportsMp3);
         }
 
         [HttpPost("/API/Stream/Start")]

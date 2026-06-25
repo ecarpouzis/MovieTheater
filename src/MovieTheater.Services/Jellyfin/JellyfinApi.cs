@@ -220,7 +220,10 @@ namespace MovieTheater.Services.Jellyfin
                         Container = segmentContainer,
                         Type = "Video",
                         VideoCodec = videoCodec,
-                        AudioCodec = "aac,mp3",
+                        // AAC unless the client's MSE actually decodes MP3 (caps.Mp3). Firefox's MSE has
+                        // no MP3 decoder, so copying MP3 into the HLS froze playback at 0:00 on an MP3-audio
+                        // source (e.g. Gandhi's .avi); Chrome/Safari that can play MP3 keep copying it.
+                        AudioCodec = caps.Mp3 ? "aac,mp3" : "aac",
                         Protocol = "hls",
                         Context = "Streaming",
                         MaxAudioChannels = "2",
@@ -398,7 +401,7 @@ namespace MovieTheater.Services.Jellyfin
     /// What the calling browser can decode, detected client-side (§14.1) and used to
     /// build a per-request <c>DeviceProfile</c>. Defaults are the safe H.264/TS baseline.
     /// </summary>
-    public record ClientCapabilities(bool Hevc = false, bool Av1 = false, bool Hdr = false, bool Fmp4 = false)
+    public record ClientCapabilities(bool Hevc = false, bool Av1 = false, bool Hdr = false, bool Fmp4 = false, bool Mp3 = false)
     {
         /// <summary>The pre-§14 universal baseline: H.264 in MPEG-TS, nothing fancy.</summary>
         public static readonly ClientCapabilities H264Baseline = new();
