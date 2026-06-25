@@ -71,7 +71,12 @@ function WatchPage({ userData }) {
 
   const sessionRef = useRef(null);
   sessionRef.current = session;
-  const positionRef = useRef(0);
+  const positionRef = useRef(0); // local seconds within the current part/stream
+  // Combined-timeline plumbing (multi-part movies only): the on-screen part's global start offset
+  // (so progress is reported on the whole-movie clock), and a one-shot local start position handed to
+  // the load effect when a scrub crosses into another part.
+  const currentPartOffsetRef = useRef(0);
+  const pendingPartStartRef = useRef(null);
 
   // ── adaptive-bitrate state (read inside callbacks without re-binding them) ──
   const qualityKeyRef = useRef(qualityKey);
@@ -126,11 +131,14 @@ function WatchPage({ userData }) {
   useEffect(() => {
     let cancelled = false;
 
+    // A cross-part scrub sets where in the new part to begin; consume it once (normal loads resume/0).
+    const pendingStart = pendingPartStartRef.current;
+    pendingPartStartRef.current = null;
     Promise.all([
       MovieAPI.getTitle(movieId, kind)
         .then((r) => r.json())
         .catch(() => null),
-      startSession(),
+      startSession({ startSeconds: pendingStart }),
     ])
       .then(([titleBody, startData]) => {
         if (cancelled) return;
@@ -189,10 +197,13 @@ function WatchPage({ userData }) {
       positionRef.current = seconds;
       const s = sessionRef.current;
       if (!s) return;
+      // Multi-part movie: report on the whole-movie clock (this part's offset + local seconds) so the
+      // single per-Playable resume returns to the right part. Single-file titles have offset 0.
+      const globalSeconds = currentPartOffsetRef.current + seconds;
       MovieAPI.reportStreamProgress({
         playSessionId: s.playSessionId,
         ...streamTargetRef.current,
-        positionTicks: Math.round(seconds * TICKS_PER_SECOND),
+        positionTicks: Math.round(globalSeconds * TICKS_PER_SECOND),
         paused,
       });
     },
@@ -317,6 +328,33 @@ function WatchPage({ userData }) {
     [handleProgress, stopCurrentSession, search, history]
   );
 
+  // Seek the combined timeline: find which part a global-second position lands in and load it at the
+  // right local offset (the load effect starts the new part's transcode there). The player handles
+  // seeks that stay inside the current part directly; only a cross-part jump reaches here.
+  const seekGlobal = useCallback(
+    (globalSeconds) => {
+      const seq = partSequenceRef.current;
+      if (seq.length < 2) return;
+      let idx = seq.length - 1;
+      let acc = 0;
+      for (let i = 0; i < seq.length; i++) {
+        const d = (seq[i].durationTicks || 0) / TICKS_PER_SECOND;
+        if (globalSeconds < acc + d) { idx = i; break; }
+        acc += d;
+      }
+      const offset = (seq.slice(0, idx).reduce((t, f) => t + (f.durationTicks || 0) / TICKS_PER_SECOND, 0));
+      const local = Math.max(0, globalSeconds - offset);
+      stopCurrentSession();
+      pendingPartStartRef.current = local;
+      setStartAt(local);
+      positionRef.current = local;
+      const params = new URLSearchParams(search);
+      params.set("mediaFileId", String(seq[idx].mediaFileId));
+      history.replace({ search: `?${params.toString()}` });
+    },
+    [search, history, stopCurrentSession]
+  );
+
   // ── derived presentation ───────────────────────────────────────────────────
   const title = movie?.title || "";
   // When an episode or a specific file is in play, find it for a "S1E2 · Title" /
@@ -342,6 +380,34 @@ function WatchPage({ userData }) {
     return segs.length > 1 ? segs : [];
   }, [normalized, kind]);
   partSequenceRef.current = partSequence;
+
+  // Stitch the parts into one virtual timeline: each part's start offset (seconds) + the combined
+  // runtime. combinedDuration is 0 unless every part reports a duration (then the player falls back
+  // to a plain per-part timeline rather than guessing boundaries).
+  const { partOffsets, combinedDuration } = useMemo(() => {
+    const offs = [];
+    let acc = 0;
+    let complete = partSequence.length > 1;
+    for (const f of partSequence) {
+      offs.push(acc);
+      const d = (f.durationTicks || 0) / TICKS_PER_SECOND;
+      if (d <= 0) complete = false;
+      acc += d;
+    }
+    return { partOffsets: offs, combinedDuration: complete ? acc : 0 };
+  }, [partSequence]);
+
+  // Which part is on screen (the explicit mediaFileId, or the Primary when bare).
+  const currentPartIndex = useMemo(() => {
+    if (partSequence.length < 2) return -1;
+    const primaryId = partSequence.find((f) => f.role === "Primary")?.mediaFileId;
+    const curId = streamTarget.mediaFileId ?? primaryId;
+    const i = partSequence.findIndex((f) => f.mediaFileId === curId);
+    return i < 0 ? 0 : i;
+  }, [partSequence, streamTarget.mediaFileId]);
+
+  const currentPartOffset = currentPartIndex >= 0 ? partOffsets[currentPartIndex] || 0 : 0;
+  currentPartOffsetRef.current = currentPartOffset;
 
   const FILE_ROLE_LABEL = { Part: "Part", Variant: "Variant", Extra: "Extra" };
   const subLabel = episodeInfo
@@ -403,9 +469,15 @@ function WatchPage({ userData }) {
             <button
               className="watch-ticket-btn watch-ticket-btn--primary"
               onClick={() => {
-                setStartAt(resumeSeconds);
-                positionRef.current = resumeSeconds;
-                setPhase("playing");
+                // resumeSeconds is the whole-movie clock. If it falls past the loaded first part, jump
+                // to the part it belongs to; otherwise just start the current part there.
+                if (combinedDuration > 0 && resumeSeconds >= durationSeconds) {
+                  seekGlobal(resumeSeconds);
+                } else {
+                  setStartAt(resumeSeconds);
+                  positionRef.current = resumeSeconds;
+                  setPhase("playing");
+                }
               }}
             >
               ▶&nbsp; Resume
@@ -448,6 +520,10 @@ function WatchPage({ userData }) {
           onBandwidth={handleBandwidth}
           onStall={handleStall}
           onEnded={handleEnded}
+          combinedDuration={combinedDuration}
+          partOffset={currentPartOffset}
+          partBoundaries={partOffsets.slice(1)}
+          onSeekGlobal={seekGlobal}
           onBack={goBack}
         />
       )}
