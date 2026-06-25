@@ -40,6 +40,20 @@ namespace MovieTheater.Db
         public string? MpaaRating { get; set; }
 
         /// <summary>
+        /// A ROUGH, inferred MPAA-equivalent for titles that have no real certificate (so the
+        /// age-gate has something to work with instead of treating them as Unknown/blocked).
+        /// Lowest-priority source: the effective rating resolves <see cref="MpaaRating"/> →
+        /// legacy <see cref="Rating"/> → this. NEVER overwrites a real certificate.
+        /// See <see cref="MovieTheater.Web.RatingGate"/> and the backfill command.
+        /// </summary>
+        public string? MpaaRatingInferred { get; set; }
+
+        /// <summary>Provenance of <see cref="MpaaRatingInferred"/> (e.g. "omdb", "tmdb",
+        /// "imdb-cache:region", "ai:intensity+genre", "inherit:parent") so an inferred guess is
+        /// always distinguishable from a real cert and the backfill stays idempotent/re-runnable.</summary>
+        public string? MpaaRatingInferredSource { get; set; }
+
+        /// <summary>
         /// Top-billed actor names (comma-separated) derived from the <see cref="MovieCredit"/>
         /// FK cast — a lightweight read cache so browse cards can show cast without expanding
         /// the credit graph. Source of truth remains <see cref="Credits"/>; kept in sync when

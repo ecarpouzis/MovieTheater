@@ -44,6 +44,14 @@ namespace MovieTheater.Db
         public string? PlotFull { get; set; }
         public string? PlotSynopsis { get; set; }
         public string? MpaaRating { get; set; }
+
+        /// <summary>Rough, inferred MPAA-equivalent for series with no real certificate; lowest
+        /// priority behind <see cref="MpaaRating"/> and legacy <see cref="Rating"/>. Mirrors
+        /// <see cref="Movie.MpaaRatingInferred"/>.</summary>
+        public string? MpaaRatingInferred { get; set; }
+        /// <summary>Provenance of <see cref="MpaaRatingInferred"/>. Mirrors <see cref="Movie.MpaaRatingInferredSource"/>.</summary>
+        public string? MpaaRatingInferredSource { get; set; }
+
         public string? TopCast { get; set; }
         public DateTime? ImdbReleaseDate { get; set; }
         public decimal? ImdbRatingScraped { get; set; }

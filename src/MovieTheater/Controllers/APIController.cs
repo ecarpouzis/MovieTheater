@@ -115,6 +115,7 @@ namespace MovieTheater.Controllers
         }
 
         // Delegates to the shared gate so the browse and streaming paths can't drift.
+        // Single-field overload kept for callers that only hold one rating string.
         private int GetMPARatingFromMovieRating(string movieRating) =>
             Web.RatingGate.MpaRatingIdFor(movieDb, movieRating);
 
@@ -136,7 +137,7 @@ namespace MovieTheater.Controllers
             var movie = await movieDb.Movies.Include(m => m.PosterDetails).SingleOrDefaultAsync(m => m.id == id);
             if (movie == null)
                 return BadRequest(new { Success = false, Message = "Movie ID not found" });
-            var rating = GetMPARatingFromMovieRating(movie.Rating);
+            var rating = Web.RatingGate.EffectiveMpaRatingId(movieDb, movie.MpaaRating, movie.Rating, movie.MpaaRatingInferred);
             if (rating <= ageRestriction)
             {
                 // Surface whether the movie is streamable so the UI can show the Watch button.
@@ -269,6 +270,9 @@ namespace MovieTheater.Controllers
             public string? SimpleTitle { get; set; }
             public DateTime? ReleaseDate { get; set; }
             public string? Rating { get; set; }
+            /// <summary>True when <see cref="Rating"/> is a rough inferred estimate (no real
+            /// certificate exists), so the UI can mark it (e.g. "PG ~").</summary>
+            public bool RatingEstimated { get; set; }
             public string? Runtime { get; set; }
             public decimal? imdbRating { get; set; }
             public string? PlotFull { get; set; }
@@ -296,7 +300,8 @@ namespace MovieTheater.Controllers
             Title = m.Title,
             SimpleTitle = m.SimpleTitle,
             ReleaseDate = m.ReleaseDate ?? m.ImdbReleaseDate,
-            Rating = m.MpaaRating ?? m.Rating,
+            Rating = m.MpaaRating ?? m.Rating ?? m.MpaaRatingInferred,
+            RatingEstimated = m.MpaaRating == null && m.Rating == null && m.MpaaRatingInferred != null,
             Runtime = m.Runtime,
             imdbRating = m.ImdbRatingScraped ?? m.imdbRating,
             PlotFull = m.PlotFull,
@@ -314,7 +319,8 @@ namespace MovieTheater.Controllers
             Title = s.Title,
             SimpleTitle = s.SimpleTitle,
             ReleaseDate = s.ReleaseDate ?? s.ImdbReleaseDate,
-            Rating = s.MpaaRating ?? s.Rating,
+            Rating = s.MpaaRating ?? s.Rating ?? s.MpaaRatingInferred,
+            RatingEstimated = s.MpaaRating == null && s.Rating == null && s.MpaaRatingInferred != null,
             Runtime = s.Runtime,
             imdbRating = s.ImdbRatingScraped ?? s.imdbRating,
             PlotFull = s.PlotFull,
@@ -348,7 +354,9 @@ namespace MovieTheater.Controllers
                 // Series live in their own table now; exclude series-typed Movie rows so a series
                 // shows once (from Series), never doubled during the dual-existence window.
                 .Where(m => m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries)
-                .Where(m => !movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID > ageRestriction));
+                // Age gate on the EFFECTIVE rating (real cert → legacy → inferred), so freshly
+                // scraped rows (MpaaRating only) and inferred rows gate correctly, not just legacy.
+                .Where(Web.RatingGate.MovieVisibleAtAge(movieDb, ageRestriction));
         }
 
         // Series peer of GetBaseMovieQuery (same quarantine + age gate). Browse/search union the two.
@@ -358,7 +366,9 @@ namespace MovieTheater.Controllers
             return movieDb.Series
                 .Include(s => s.PosterDetails)
                 .Where(s => s.ReviewBatch == null)
-                .Where(s => !movieDb.RatingMaps.Any(rm => rm.MovieRating == s.Rating && rm.MPARatingID > ageRestriction));
+                // Effective-rating gate (see GetBaseMovieQuery). Critical for series: most carry only
+                // a scraped MpaaRating, so gating on the legacy Rating alone leaked adult series.
+                .Where(Web.RatingGate.SeriesVisibleAtAge(movieDb, ageRestriction));
         }
 
         // Merge movie + series cards into one SimpleTitle-ordered list (browse stays unified).
@@ -379,28 +389,83 @@ namespace MovieTheater.Controllers
             return Ok(all.Take(take).ToList());
         }
 
-        // Browse filtered by the coarse, normalized Title Type bucket (Movies / Series / Short / Misc).
-        // Series come from the Series table; Movies/Short read Movie.NormalizedTitleType (a persisted
-        // computed column off TitleType); Misc reads the MiscVideo table (tt-less library videos —
-        // workprints, stage performances, shorts sets).
-        // Paginated browse by title type. Returns the { movies, totalCount, page, pageSize }
-        // envelope so the client can infinite-scroll instead of pulling the whole library at
-        // once (type=Movies is the entire Movie table). pageSize <= 0 returns everything (the
-        // old behavior) for any caller that still wants the full list.
+        // Browse filtered by the coarse, normalized Title Type bucket(s). `type` is a comma-separated
+        // list (OR across types, like the multi-select genre filter): a title shows if its bucket is any
+        // selected. Movies/Short read Movie.NormalizedTitleType (a persisted computed column off
+        // TitleType); Series come from the Series table; Misc from the MiscVideo table (tt-less library
+        // videos — workprints, stage performances, shorts sets).
+        // Returns the { movies, totalCount, page, pageSize } envelope so the client can infinite-scroll
+        // instead of pulling the whole library at once. pageSize <= 0 returns everything (the old
+        // behavior) for any caller that still wants the full list. Combos without Misc stay fully
+        // DB-paged; only Misc-inclusive combos pay an in-memory merge (Misc is a materialized list).
         [HttpGet("/API/GetMoviesByType")]
         public async Task<IActionResult> GetMoviesByType(string type, int page = 1, int pageSize = 60)
         {
-            if (string.IsNullOrWhiteSpace(type) || !Enum.TryParse<NormalizedTitleType>(type, true, out var nt))
+            var types = ParseTypeScope(type);
+            if (types.Count == 0)
                 return BadRequest(new { Message = $"Unknown title type '{type}'" });
-            if (nt == NormalizedTitleType.Series)
-            {
-                var sq = await GetBaseSeriesQuery();
-                return Ok(await PageCardsAsync(sq.OrderBy(s => s.SimpleTitle).ThenBy(s => s.Id).Select(ToSeriesCardDto), page, pageSize));
-            }
-            if (nt == NormalizedTitleType.Misc)
+
+            bool wantSeries = types.Contains(NormalizedTitleType.Series);
+            bool wantMisc = types.Contains(NormalizedTitleType.Misc);
+            // Movies and Short both live in the Movie table, keyed by the NormalizedTitleType column.
+            var movieBuckets = types.Where(t => t == NormalizedTitleType.Movies || t == NormalizedTitleType.Short).ToList();
+
+            IQueryable<Movie>? mq = movieBuckets.Count > 0
+                ? (await GetBaseMovieQuery()).Where(m => movieBuckets.Contains(m.NormalizedTitleType))
+                : null;
+            IQueryable<Series>? sq = wantSeries ? await GetBaseSeriesQuery() : null;
+
+            // Misc alone keeps its curated collection ordering (the original behavior).
+            if (wantMisc && mq == null && sq == null)
                 return Ok(PageCards(await GetMiscCards(), page, pageSize));
-            var baseQuery = await GetBaseMovieQuery();
-            return Ok(await PageCardsAsync(baseQuery.Where(m => m.NormalizedTitleType == nt).OrderBy(m => m.SimpleTitle).ThenBy(m => m.id).Select(ToCardDto), page, pageSize));
+
+            if (!wantMisc)
+            {
+                // Pure-DB paths — no Misc, so everything pages at the database.
+                if (mq != null && sq != null)
+                    return Ok(await PageMergedAsync(mq, sq, page, pageSize));
+                if (mq != null)
+                    return Ok(await PageCardsAsync(mq.OrderBy(m => m.SimpleTitle).ThenBy(m => m.id).Select(ToCardDto), page, pageSize));
+                return Ok(await PageCardsAsync(sq!.OrderBy(s => s.SimpleTitle).ThenBy(s => s.Id).Select(ToSeriesCardDto), page, pageSize));
+            }
+
+            // Misc mixed with movies/series → merge all selected sources in memory, ordered uniformly by
+            // the sort key (Misc's own table can't UNION with the Movie/Series queries).
+            var cards = new List<MovieCardDto>();
+            if (mq != null) cards.AddRange(await mq.Select(ToCardDto).ToListAsync());
+            if (sq != null) cards.AddRange(await sq.Select(ToSeriesCardDto).ToListAsync());
+            cards.AddRange(await GetMiscCards());
+            var ordered = cards
+                .OrderBy(c => c.SimpleTitle ?? c.Title ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(c => c.Kind)
+                .ThenBy(c => c.id)
+                .ToList();
+            return Ok(PageCards(ordered, page, pageSize));
+        }
+
+        // Parse the comma-separated Title-Type scope — the persistent Browse "Type" filter, applied as an
+        // overarching scope across every browse mode. An empty result means no scope (all types).
+        private static HashSet<NormalizedTitleType> ParseTypeScope(string? types) =>
+            (types ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(t => Enum.TryParse<NormalizedTitleType>(t, true, out var nt) ? nt : (NormalizedTitleType?)null)
+                .Where(nt => nt.HasValue)
+                .Select(nt => nt!.Value)
+                .ToHashSet();
+
+        // Narrow base movie/series queries to a Type scope. Movies/Short live in the Movie table (keyed by
+        // NormalizedTitleType); Series is the whole Series table; Misc has no genre/cast/title-search
+        // presence so it never participates here. An empty scope is a no-op (all types). A kind absent from
+        // the scope is emptied so it contributes nothing to the merged result.
+        private static (IQueryable<Movie> Movies, IQueryable<Series> Series) ApplyTypeScope(
+            HashSet<NormalizedTitleType> scope, IQueryable<Movie> mq, IQueryable<Series> sq)
+        {
+            if (scope.Count == 0)
+                return (mq, sq);
+            var movieBuckets = scope.Where(t => t == NormalizedTitleType.Movies || t == NormalizedTitleType.Short).ToList();
+            mq = movieBuckets.Count > 0 ? mq.Where(m => movieBuckets.Contains(m.NormalizedTitleType)) : mq.Where(m => false);
+            sq = scope.Contains(NormalizedTitleType.Series) ? sq : sq.Where(s => false);
+            return (mq, sq);
         }
 
         // Page a card query at the DB (SELECT just one page + a COUNT). The query MUST already
@@ -496,17 +561,20 @@ namespace MovieTheater.Controllers
         private static object EmptyPage(int pageSize) =>
             new { movies = new List<MovieCardDto>(), totalCount = 0, page = 1, pageSize };
 
-        // Approved (un-quarantined) MiscVideos as browse cards. They carry no Rating, so the age gate
-        // does not apply; poster (if any) is served from the separate /MiscImage namespace. The card
-        // builds the poster URL off Kind="misc", not the shared id space.
+        // Approved (un-quarantined) MiscVideos as browse cards. They carry only an inferred rating
+        // (a related misc inherits its parent's; a standalone one is judged on its own), gated the
+        // same way every other title is. Poster (if any) is served from the separate /MiscImage
+        // namespace; the card builds the poster URL off Kind="misc", not the shared id space.
         private async Task<List<MovieCardDto>> GetMiscCards()
         {
+            int ageRestriction = await GetAgeRestrictionAsync();
             var raw = await movieDb.MiscVideos
                 .Where(v => v.ReviewBatch == null)
+                .Where(Web.RatingGate.MiscVisibleAtAge(movieDb, ageRestriction))
                 .OrderBy(v => v.CollectionName ?? "")
                 .ThenBy(v => v.SortOrder ?? int.MaxValue)
                 .ThenBy(v => v.SimpleTitle ?? v.Title)
-                .Select(v => new { v.Id, v.Title, v.SimpleTitle, v.Year, v.Description, v.Category, v.PlayableId })
+                .Select(v => new { v.Id, v.Title, v.SimpleTitle, v.Year, v.Description, v.Category, v.PlayableId, v.MpaaRatingInferred })
                 .ToListAsync();
             return raw.Select(v => new MovieCardDto
             {
@@ -515,6 +583,8 @@ namespace MovieTheater.Controllers
                 Title = v.Title,
                 SimpleTitle = v.SimpleTitle,
                 ReleaseDate = v.Year.HasValue ? new DateTime(v.Year.Value, 1, 1) : (DateTime?)null,
+                Rating = v.MpaaRatingInferred,
+                RatingEstimated = v.MpaaRatingInferred != null,
                 Plot = v.Description,
                 Category = v.Category,
                 PlayableId = v.PlayableId,
@@ -524,17 +594,18 @@ namespace MovieTheater.Controllers
         // ── Unified search over movies + series (the frontend uses these instead of /odata/Movies) ──
 
         [HttpGet("/API/BrowseTitle")]
-        public async Task<IActionResult> BrowseTitle(string q, int page = 1, int pageSize = 60)
+        public async Task<IActionResult> BrowseTitle(string q, int page = 1, int pageSize = 60, string? types = null)
         {
             q = (q ?? "").Trim();
             if (q.Length == 0) return Ok(EmptyPage(pageSize));
             var mq = (await GetBaseMovieQuery()).Where(m => (m.SimpleTitle != null && m.SimpleTitle.Contains(q)) || (m.Title != null && m.Title.Contains(q)));
             var sq = (await GetBaseSeriesQuery()).Where(s => (s.SimpleTitle != null && s.SimpleTitle.Contains(q)) || (s.Title != null && s.Title.Contains(q)));
+            (mq, sq) = ApplyTypeScope(ParseTypeScope(types), mq, sq);
             return Ok(await PageMergedAsync(mq, sq, page, pageSize));
         }
 
         [HttpGet("/API/BrowseLetter")]
-        public async Task<IActionResult> BrowseLetter(string letter, int page = 1, int pageSize = 60)
+        public async Task<IActionResult> BrowseLetter(string letter, int page = 1, int pageSize = 60, string? types = null)
         {
             letter = (letter ?? "").Trim();
             if (letter.Length == 0) return Ok(EmptyPage(pageSize));
@@ -550,11 +621,12 @@ namespace MovieTheater.Controllers
                 mq = mq.Where(m => m.SimpleTitle != null && m.SimpleTitle.StartsWith(letter));
                 sq = sq.Where(s => s.SimpleTitle != null && s.SimpleTitle.StartsWith(letter));
             }
+            (mq, sq) = ApplyTypeScope(ParseTypeScope(types), mq, sq);
             return Ok(await PageMergedAsync(mq, sq, page, pageSize));
         }
 
         [HttpGet("/API/BrowseGenre")]
-        public async Task<IActionResult> BrowseGenre(string genres, int page = 1, int pageSize = 60)
+        public async Task<IActionResult> BrowseGenre(string genres, int page = 1, int pageSize = 60, string? types = null)
         {
             var list = (genres ?? "").Split(',').Select(g => g.Trim()).Where(g => g.Length > 0).ToList();
             if (list.Count == 0) return Ok(EmptyPage(pageSize));
@@ -566,11 +638,12 @@ namespace MovieTheater.Controllers
                 mq = mq.Where(m => m.MovieGenres.Any(x => x.Genre.Name == gg) || (m.Genre != null && m.Genre.Contains(gg)));
                 sq = sq.Where(s => s.SeriesGenres.Any(x => x.Genre.Name == gg) || (s.Genre != null && s.Genre.Contains(gg)));
             }
+            (mq, sq) = ApplyTypeScope(ParseTypeScope(types), mq, sq);
             return Ok(await PageMergedAsync(mq, sq, page, pageSize));
         }
 
         [HttpGet("/API/BrowsePerson")]
-        public async Task<IActionResult> BrowsePerson(string q, int page = 1, int pageSize = 60)
+        public async Task<IActionResult> BrowsePerson(string q, int page = 1, int pageSize = 60, string? types = null)
         {
             q = (q ?? "").Trim();
             if (q.Length == 0) return Ok(EmptyPage(pageSize));
@@ -578,6 +651,7 @@ namespace MovieTheater.Controllers
                 || (m.Actors != null && m.Actors.Contains(q)) || (m.Director != null && m.Director.Contains(q)) || (m.Writer != null && m.Writer.Contains(q)));
             var sq = (await GetBaseSeriesQuery()).Where(s => s.Credits.Any(c => c.Person.DisplayName.Contains(q))
                 || (s.Actors != null && s.Actors.Contains(q)) || (s.Director != null && s.Director.Contains(q)) || (s.Writer != null && s.Writer.Contains(q)));
+            (mq, sq) = ApplyTypeScope(ParseTypeScope(types), mq, sq);
             return Ok(await PageMergedAsync(mq, sq, page, pageSize));
         }
 
@@ -588,7 +662,7 @@ namespace MovieTheater.Controllers
             int ageRestriction = await GetAgeRestrictionAsync();
             var series = await movieDb.Series.Include(s => s.PosterDetails).SingleOrDefaultAsync(s => s.Id == id);
             if (series == null) return BadRequest(new { Success = false, Message = "Series ID not found" });
-            if (GetMPARatingFromMovieRating(series.Rating) > ageRestriction)
+            if (Web.RatingGate.EffectiveMpaRatingId(movieDb, series.MpaaRating, series.Rating, series.MpaaRatingInferred) > ageRestriction)
                 return BadRequest(new { Success = false, Message = "Series ID not found" });
             var normalized = await GetNormalizedSeriesData(id, series);
             return Ok(new { Success = true, data = series, normalized });
@@ -1746,7 +1820,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpGet("/API/GetMoviesByRating")]
-        public async Task<IActionResult> GetMoviesByRating(int maxRatingId, int page = 1, int pageSize = 60)
+        public async Task<IActionResult> GetMoviesByRating(int maxRatingId, int page = 1, int pageSize = 60, string? types = null)
         {
             int ageRestriction = 100;
             var currentUserId = GetCurrentUserId();
@@ -1763,9 +1837,22 @@ namespace MovieTheater.Controllers
             // Order at the DB (nulls last, then collation — digit-titles sort before letters) and
             // page there, so the infinite-scroll client's repeated page fetches don't each
             // re-materialize + re-sort the whole rating set.
-            var query = movieDb.Movies
+            var baseQuery = movieDb.Movies
                 .Where(m => m.ReviewBatch == null)
-                .Where(m => movieDb.RatingMaps.Any(rm => rm.MovieRating == m.Rating && rm.MPARatingID == effectiveMax))
+                .Where(Web.RatingGate.MovieEffectiveBucketIs(movieDb, effectiveMax));
+
+            // Rating browse is movie-only, so apply just the Movie-bucket part of the Type scope.
+            // (A scope without any movie bucket — e.g. Series-only — yields no rating results.)
+            var scope = ParseTypeScope(types);
+            if (scope.Count > 0)
+            {
+                var movieBuckets = scope.Where(t => t == NormalizedTitleType.Movies || t == NormalizedTitleType.Short).ToList();
+                baseQuery = movieBuckets.Count > 0
+                    ? baseQuery.Where(m => movieBuckets.Contains(m.NormalizedTitleType))
+                    : baseQuery.Where(m => false);
+            }
+
+            var query = baseQuery
                 .Select(ToCardDto)
                 .OrderBy(c => c.SimpleTitle == null).ThenBy(c => c.SimpleTitle).ThenBy(c => c.id);
 

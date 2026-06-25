@@ -104,10 +104,10 @@ namespace MovieTheater.Controllers
             if (playableId == null)
                 return NotFound(new { message = "Nothing to play." });
 
-            var rating = await ResolveRatingAsync(playableId.Value);
+            var ratingId = await ResolveEffectiveRatingIdAsync(playableId.Value);
 
             // Age gate: the exact browse-side rule (GetMovie), so the two can't drift.
-            if (!await PassesAgeGateAsync(userId.Value, rating))
+            if (!await PassesAgeGateAsync(userId.Value, ratingId))
                 return StatusCode(403, new { message = "This title isn't available on your account." });
 
             var fileQuery = movieDb.MediaFiles
@@ -415,29 +415,63 @@ namespace MovieTheater.Controllers
             return await ItemIdForPlayableAsync(playableId);
         }
 
-        // Owning title's rating, for the age gate (a movie's own, or an episode's series'; null = misc, unrestricted).
-        private async Task<string?> ResolveRatingAsync(int playableId)
+        // The owning title's EFFECTIVE MPA rating id (real cert → legacy → inferred), for the age
+        // gate. A movie uses its own; an episode inherits its series'; a misc video inherits its
+        // related movie/series (so extras/shorts are gated like the title they hang off, not left
+        // wide open). A misc video with no related title stays unrestricted (id 0).
+        private async Task<int> ResolveEffectiveRatingIdAsync(int playableId)
         {
-            var movieRating = await movieDb.Movies.Where(m => m.PlayableId == playableId)
-                .Select(m => m.Rating).FirstOrDefaultAsync();
-            if (movieRating != null) return movieRating;
+            var movie = await movieDb.Movies.Where(m => m.PlayableId == playableId)
+                .Select(m => new { m.MpaaRating, m.Rating, m.MpaaRatingInferred }).FirstOrDefaultAsync();
+            if (movie != null)
+                return RatingGate.EffectiveMpaRatingId(movieDb, movie.MpaaRating, movie.Rating, movie.MpaaRatingInferred);
 
             var seriesId = await movieDb.Episodes.Where(e => e.PlayableId == playableId)
                 .Select(e => e.SeriesId).FirstOrDefaultAsync();
             if (seriesId != null)
-                return await movieDb.Series.Where(s => s.Id == seriesId.Value).Select(s => s.Rating).FirstOrDefaultAsync();
+            {
+                var s = await movieDb.Series.Where(x => x.Id == seriesId.Value)
+                    .Select(x => new { x.MpaaRating, x.Rating, x.MpaaRatingInferred }).FirstOrDefaultAsync();
+                if (s != null)
+                    return RatingGate.EffectiveMpaRatingId(movieDb, s.MpaaRating, s.Rating, s.MpaaRatingInferred);
+            }
 
-            return null;   // misc video — no age rating, unrestricted
+            // Misc video: prefer its own inferred rating (a standalone art piece is rated directly);
+            // otherwise inherit the related movie/series rating so an extra can't be streamed by a
+            // child whose account can't see the parent title.
+            var misc = await movieDb.MiscVideos.Where(mv => mv.PlayableId == playableId)
+                .Select(mv => new { mv.MpaaRatingInferred, mv.RelatedMovieId, mv.RelatedSeriesId }).FirstOrDefaultAsync();
+            if (misc != null)
+            {
+                if (!string.IsNullOrWhiteSpace(misc.MpaaRatingInferred))
+                    return RatingGate.MpaRatingIdFor(movieDb, misc.MpaaRatingInferred);
+                if (misc.RelatedMovieId != null)
+                {
+                    var pm = await movieDb.Movies.Where(m => m.id == misc.RelatedMovieId.Value)
+                        .Select(m => new { m.MpaaRating, m.Rating, m.MpaaRatingInferred }).FirstOrDefaultAsync();
+                    if (pm != null)
+                        return RatingGate.EffectiveMpaRatingId(movieDb, pm.MpaaRating, pm.Rating, pm.MpaaRatingInferred);
+                }
+                if (misc.RelatedSeriesId != null)
+                {
+                    var ps = await movieDb.Series.Where(s => s.Id == misc.RelatedSeriesId.Value)
+                        .Select(s => new { s.MpaaRating, s.Rating, s.MpaaRatingInferred }).FirstOrDefaultAsync();
+                    if (ps != null)
+                        return RatingGate.EffectiveMpaRatingId(movieDb, ps.MpaaRating, ps.Rating, ps.MpaaRatingInferred);
+                }
+            }
+
+            return 0;   // unmapped / orphan misc — unrestricted
         }
 
-        private async Task<bool> PassesAgeGateAsync(int userId, string movieRating)
+        private async Task<bool> PassesAgeGateAsync(int userId, int ratingId)
         {
             int ageRestriction = 100;
             var setting = await movieDb.UserSettings
                 .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == userId);
             if (setting != null && int.TryParse(setting.SettingValue, out var parsed))
                 ageRestriction = parsed;
-            return RatingGate.MpaRatingIdFor(movieDb, movieRating) <= ageRestriction;
+            return ratingId <= ageRestriction;
         }
 
         /// <summary>The first VideoCodec Jellyfin chose for the HLS output (e.g. "hevc"/"h264"),

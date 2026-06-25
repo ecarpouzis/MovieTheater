@@ -46,6 +46,15 @@ namespace MovieTheater.Db
 
         public string? Description { get; set; }
 
+        /// <summary>Rough, inferred MPAA equivalent so a misc video can be age-gated like any title
+        /// (it carries no real certificate). A related misc inherits its parent movie/series effective
+        /// rating; a standalone one is judged on its own. Mirrors <see cref="Movie.MpaaRatingInferred"/>.</summary>
+        [MaxLength(16)]
+        public string? MpaaRatingInferred { get; set; }
+        /// <summary>Provenance of <see cref="MpaaRatingInferred"/> (e.g. "inherit:movie:123", "ai:model").</summary>
+        [MaxLength(64)]
+        public string? MpaaRatingInferredSource { get; set; }
+
         // ── Optional relation to an existing title (at most one set; both null = standalone) ──
 
         /// <summary>The <see cref="Movie"/> this misc video belongs to (e.g. a workprint of a film).</summary>

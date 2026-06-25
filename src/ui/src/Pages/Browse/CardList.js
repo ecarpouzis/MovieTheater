@@ -78,7 +78,14 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
                   <div className="card-meta-row">
                     {item.kind === "series" && <span className="badge-rating">📺 Series</span>}
                     {isMisc && <span className="badge-misc">🎞 {item.category || "Misc"}</span>}
-                    {item.rating && <span className="badge-rating">{item.rating}</span>}
+                    {item.rating && (
+                      <span
+                        className="badge-rating"
+                        title={item.ratingEstimated ? "Estimated rating — no official certificate" : undefined}
+                      >
+                        {item.rating}{item.ratingEstimated ? " ~" : ""}
+                      </span>
+                    )}
                     {item.runtime && <span className="badge-runtime">{item.runtime}</span>}
                     {item.imdbRating && <span className="badge-imdb">&#9733; {item.imdbRating}</span>}
                   </div>

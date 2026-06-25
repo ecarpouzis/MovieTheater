@@ -33,7 +33,10 @@ function MoviePage({ userData }) {
             <u>Release Date:</u> {new Date(movie.releaseDate).getFullYear()}
           </div>
           <div className="movie-detail">
-            <u>Rating:</u> {movie.rating}
+            <u>Rating:</u> {movie.mpaaRating || movie.rating || movie.mpaaRatingInferred}
+            {!movie.mpaaRating && !movie.rating && movie.mpaaRatingInferred && (
+              <span title="Estimated rating — no official certificate"> (estimated)</span>
+            )}
           </div>
           <div className="movie-detail">
             <u>Runtime:</u> {movie.runtime}
