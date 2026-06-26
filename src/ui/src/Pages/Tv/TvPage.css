@@ -1,7 +1,8 @@
 /* The TV: same screening-room palette, but ambient — built to be left on.
-   The picture fills the area above a flattened control bar; the bar lives in the
-   layout (not over the video), so on desktop nothing covers the picture. Only the
-   channel picker / settings menu / guide pop out over the video, and only while open. */
+   The picture fills the whole screen; the flattened control bar overlays the bottom and slides fully
+   off-screen when idle, so a left-on channel uses the entire display with no reserved band (this is
+   most visible in fullscreen). The channel picker / settings menu / guide also pop out over the video
+   while open. */
 .tv-room {
   position: fixed;
   inset: 0;
@@ -136,8 +137,13 @@
 
 /* ── flattened control bar ──────────────────────────────────────────────────── */
 .tv-bar {
-  flex: 0 0 auto;
-  position: relative;
+  /* Overlay the bottom of the picture rather than taking a flex slot — the slot used to stay reserved
+     as a black band when the bar hid (most visible in fullscreen, where it shrank the picture). Now the
+     video fills the whole screen and the bar floats on top, sliding fully off-screen when idle. */
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 6;
   background: linear-gradient(to bottom, #0a0c11, #070605);
   border-top: 1px solid rgba(64, 169, 255, 0.25);
