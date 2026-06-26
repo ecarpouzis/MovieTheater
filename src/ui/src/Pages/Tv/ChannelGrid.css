@@ -13,7 +13,7 @@
 
   --epg-ppm: 9px;
   --epg-chanw: 248px;
-  --epg-rowh: 90px;
+  --epg-rowh: 96px;
 }
 
 /* /channels page: render the guide full-screen (the .epg overlay fills this fixed wrapper). */
@@ -341,7 +341,9 @@
 .epg-prog:hover {
   background: #213152;
   border-color: rgba(64, 169, 255, 0.5);
-  z-index: 3;
+  /* Above abutting neighbour blocks, but below the sticky channel column (z-index 3) so a hovered/tapped
+     block never floats over the channel name to its left. */
+  z-index: 1;
 }
 /* Currently airing — a quiet tint; the now-line and the shaded elapsed portion already mark it, and
    the sticky channel cell is where you actually read what's on. Kept subtle to stay consistent. */
@@ -388,9 +390,9 @@
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  font-size: 11px;
-  line-height: 1.32;
-  color: rgba(232, 238, 246, 0.66);
+  font-size: 12.5px;
+  line-height: 1.36;
+  color: rgba(232, 238, 246, 0.72);
   overflow: hidden;
   -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent);
   mask-image: linear-gradient(to bottom, #000 80%, transparent);
@@ -443,21 +445,30 @@
     display: none;
   }
   .epg-chan {
-    padding: 6px 9px;
+    padding: 7px 9px;
     gap: 0;
   }
   .epg-chan-now-title {
     font-size: 12px;
   }
-  /* Per-block descriptions are a wall of text across every cell on a phone. Drop them — the pinned
-     channel cell already answers "what's on now" — and show just time + title, vertically centered so
-     the short content sits mid-block instead of stranded at the top of a tall cell. */
-  .epg-prog-desc {
-    display: none;
-  }
+  /* Keep a description in each block on phones too, but a short clamped 2-line one (no full-height fill
+     or fade) so it informs without turning every cell into a wall of text. */
   .epg-prog {
     justify-content: center;
     gap: 2px;
-    padding: 5px 9px;
+    padding: 6px 9px;
+  }
+  .epg-prog-title {
+    font-size: 12px;
+  }
+  .epg-prog-desc {
+    flex: 0 1 auto;
+    font-size: 10.5px;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 }
