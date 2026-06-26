@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { MovieAPI } from "../../MovieAPI";
+import { preloadImages } from "../../preloadImages";
 import "./ChannelGrid.css";
 
 const MS_PER_MIN = 60_000;
@@ -39,6 +40,15 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
       const serverNow = Date.parse(data.serverNowUtc);
       skewRef.current = Number.isFinite(serverNow) ? serverNow - Date.now() : 0;
       setLineup({ serverNowUtc: data.serverNowUtc, hours: data.hours || 6, byId });
+
+      // Preload every channel's now-playing poster up front (~121 small thumbs, one per row) so
+      // scrolling the guide never snaps a poster in. "auto" priority — here the posters are the content.
+      preloadImages(
+        (data.items || [])
+          .map((c) => { const np = c.items?.[0]; return np?.posterId ? MovieAPI.getPosterThumbnail(np.posterId, np.posterVersion, np.kind) : null; })
+          .filter(Boolean),
+        "auto"
+      );
     } catch {
       /* transient — a later refresh retries */
     }

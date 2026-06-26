@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { MovieAPI } from "../../MovieAPI";
+import { preloadImages } from "../../preloadImages";
 
 /**
  * Fetches the visible channel list once and the cross-channel GuideGrid (now + upcoming per channel)
@@ -24,18 +25,26 @@ export default function useChannelLineup({ poll = true } = {}) {
       const byId = new Map();
       for (const c of grid.items || []) byId.set(c.id, c);
 
-      setLineup(
-        channelsRef.current.map((ch) => {
-          const g = byId.get(ch.id);
-          const items = g?.items || [];
-          return {
-            ...ch,
-            viewers: g?.viewers || 0,
-            paused: g?.paused || false,
-            now: items[0] || null,
-            next: items.slice(1, 4),
-          };
-        })
+      const built = channelsRef.current.map((ch) => {
+        const g = byId.get(ch.id);
+        const items = g?.items || [];
+        return {
+          ...ch,
+          viewers: g?.viewers || 0,
+          paused: g?.paused || false,
+          now: items[0] || null,
+          next: items.slice(1, 4),
+        };
+      });
+      setLineup(built);
+
+      // Warm now-playing posters ahead of scroll so channel cards never snap in (covers the homepage
+      // rail and the /channels browser, which both consume this lineup). Low priority so they don't
+      // out-compete the page's own content; on poll, only newly-changed posters fetch.
+      preloadImages(
+        built
+          .map((c) => (c.now?.posterId ? MovieAPI.getPosterThumbnail(c.now.posterId, c.now.posterVersion, c.now.kind) : null))
+          .filter(Boolean)
       );
     } catch {
       /* transient — a later refresh retries */

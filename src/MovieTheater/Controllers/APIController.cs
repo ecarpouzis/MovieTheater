@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MovieTheater.Db;
 using MovieTheater.Models;
 using MovieTheater.Normalization;
@@ -60,6 +61,7 @@ namespace MovieTheater.Controllers
         private readonly TitleEnrichService titleEnrichService;
         private readonly MovieTheater.Services.Jellyfin.JellyfinApi jellyfinApi;
         private readonly MovieTheater.Services.Jellyfin.JellyfinSyncService jellyfinSyncService;
+        private readonly ILogger<APIController> logger;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
             IBoardgameImageRepository boardgameImageRepo, ImageShrinkService shrinkService, GoogleSearchService googleSearchService, IMDBApiService imdbApiService,
@@ -67,7 +69,8 @@ namespace MovieTheater.Controllers
             BoardgameRulesService boardgameRulesService, BoardgamePdfRepository boardgamePdfRepository,
             IConfiguration configuration, YouTubeService youTubeService, IMemoryCache memoryCache,
             BoardgameSimilarityService boardgameSimilarityService, PosterFetchService posterFetchService, TitleEnrichService titleEnrichService,
-            MovieTheater.Services.Jellyfin.JellyfinApi jellyfinApi, MovieTheater.Services.Jellyfin.JellyfinSyncService jellyfinSyncService)
+            MovieTheater.Services.Jellyfin.JellyfinApi jellyfinApi, MovieTheater.Services.Jellyfin.JellyfinSyncService jellyfinSyncService,
+            ILogger<APIController> logger)
         {
             this.movieDb = movieDb;
             this.tmdb = tmdb;
@@ -91,6 +94,7 @@ namespace MovieTheater.Controllers
             this.titleEnrichService = titleEnrichService;
             this.jellyfinApi = jellyfinApi;
             this.jellyfinSyncService = jellyfinSyncService;
+            this.logger = logger;
         }
 
         private int? GetCurrentUserId()
@@ -1138,7 +1142,12 @@ namespace MovieTheater.Controllers
             result.EnsureSuccessStatusCode();
             var content = await result.Content.ReadAsByteArrayAsync();
             await imageRepo.SaveImage(movie.id, PosterImageVariant.Main, content);
-            await shrinkService.EnsurePosterThumnailExists(movie.id, force);
+            // The main image is already on disk; a thumbnail failure must not abort the save (which would
+            // leave the title with a main poster but PosterVersion unbumped and no thumb — a blank card
+            // even though /Image works). Isolate it like PosterFetchService does; BackfillThumbnails can
+            // regenerate a missed thumb later from the on-disk main.
+            try { await shrinkService.EnsurePosterThumnailExists(movie.id, force); }
+            catch (Exception ex) { logger.LogWarning(ex, "Thumbnail generation failed for movie {Id}; saving poster without it", movie.id); }
 
             var thumbnailBytes = await imageRepo.GetImage(movie.id, PosterImageVariant.Thumbnail);
             var dominantColor = ComputeAverageColor(thumbnailBytes ?? content);
@@ -4251,7 +4260,8 @@ namespace MovieTheater.Controllers
             if (batch.Count == 0)
                 return Ok(new { done = true, processed = 0, nextAfterId = afterId, generated = 0, coloured = 0, failed = 0, remaining = 0 });
 
-            int generated = 0, coloured = 0, failed = 0;
+            int generated = 0, coloured = 0;
+            var failedIds = new List<int>();
             foreach (var id in batch)
             {
                 try
@@ -4268,13 +4278,20 @@ namespace MovieTheater.Controllers
                         if (thumb != null) { pd.DominantColor = ComputeAverageColor(thumb); coloured++; }
                     }
                 }
-                catch { failed++; }
+                catch (Exception ex)
+                {
+                    // Don't let one bad poster sink the batch, but make the skip visible — a silently
+                    // swallowed failure here is exactly how a title ends up stuck with a main image and
+                    // no thumb (a blank card). Log it and report the ids back to the caller.
+                    failedIds.Add(id);
+                    logger.LogWarning(ex, "BackfillThumbnails: thumbnail generation failed for movie {Id}", id);
+                }
             }
             await movieDb.SaveChangesAsync();
 
             var nextAfterId = batch.Max();
             var remaining = await movieDb.Movies.CountAsync(m => m.id > nextAfterId);
-            return Ok(new { done = remaining == 0, processed = batch.Count, nextAfterId, generated, coloured, failed, remaining });
+            return Ok(new { done = remaining == 0, processed = batch.Count, nextAfterId, generated, coloured, failed = failedIds.Count, failedIds, remaining });
         }
 
         // Generate (or refresh) the thumbnail for a SINGLE title from its existing on-disk main poster.

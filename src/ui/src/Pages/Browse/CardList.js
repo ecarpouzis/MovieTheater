@@ -2,7 +2,8 @@ import { MovieAPI } from "../../MovieAPI";
 import { Card } from "antd";
 import UserMovieOptions from "./UserMovieOptions";
 import "./CardList.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { preloadImages } from "../../preloadImages";
 
 // Poster thumbnail with a graceful fallback: when the image 404s (common for Misc videos, which
 // usually have no poster), swap in a placeholder instead of the browser's broken-image glyph.
@@ -41,6 +42,13 @@ function PlotText({ text, className, hiddenClass }) {
 
 function CardList({ movieDataArray, userData, setUserData, actorSearch, activePerson, onMovieClick, onToggleViewing, isMobile }) {
   const activeName = (activePerson || "").trim().toLowerCase();
+
+  // Preload loaded cards' poster thumbnails (deduped) so below-the-fold lazy <img>s render from cache
+  // instead of snapping in on scroll. Bounded by what infinite-scroll has loaded.
+  useEffect(() => {
+    preloadImages((movieDataArray || []).map((m) => MovieAPI.getPosterThumbnail(m.id, m.posterVersion, m.kind)));
+  }, [movieDataArray]);
+
   return (
     <div className="card-list">
       {movieDataArray.map((item, index) => {

@@ -1,7 +1,8 @@
 import { MovieAPI } from "../../MovieAPI";
 import { Card, List } from "antd";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import UserMovieOptions from "./UserMovieOptions";
+import { preloadImages } from "../../preloadImages";
 
 const listStyle = {
   width: "100%",
@@ -83,6 +84,13 @@ const buttonContainerStyle = {
 function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, onToggleViewing }) {
   const [hoveredMovieId, setHoveredMovieId] = useState(null);
   const hoverTimeoutRef = useRef(null);
+
+  // Preload every loaded card's poster thumbnail as soon as the page data arrives (deduped), so the
+  // below-the-fold lazy <img>s render from cache instead of snapping in when scrolled to. Bounded by
+  // what infinite-scroll has loaded; a new page adds only its new thumbs.
+  useEffect(() => {
+    preloadImages((movieDataArray || []).map((m) => MovieAPI.getPosterThumbnail(m.id, m.posterVersion, m.kind)));
+  }, [movieDataArray]);
 
   const handleTitleTouchStart = (id) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);

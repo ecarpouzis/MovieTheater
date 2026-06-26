@@ -1200,7 +1200,7 @@ export default function IngestReviewPage({ userData }) {
           okText="Backfill thumbnails"
           onConfirm={async () => {
             let hide = message.loading("Backfilling thumbnails…", 0);
-            const totals = { generated: 0, coloured: 0, failed: 0 };
+            const totals = { generated: 0, coloured: 0, failed: 0, failedIds: [] };
             try {
               let afterId = 0;
               // Drive the cursor-based endpoint to completion; each chunk is bounded so it can't time out.
@@ -1215,14 +1215,21 @@ export default function IngestReviewPage({ userData }) {
                 totals.generated += data.generated ?? 0;
                 totals.coloured += data.coloured ?? 0;
                 totals.failed += data.failed ?? 0;
+                if (Array.isArray(data.failedIds)) totals.failedIds.push(...data.failedIds);
                 if (data.done || data.processed === 0) break;
                 afterId = data.nextAfterId;
                 hide();
                 hide = message.loading(`Backfilling thumbnails… ${data.remaining ?? 0} remaining`, 0);
               }
               hide();
+              // Surface which ids were skipped — a silent failure here is how a title ends up with a main
+              // poster but no thumb (a blank card). Full list to the console for follow-up.
+              if (totals.failedIds.length) console.warn("Thumbnail backfill skipped ids:", totals.failedIds);
+              const failedNote = totals.failed
+                ? ` (${totals.failed} failed${totals.failedIds.length ? `: ${totals.failedIds.slice(0, 10).join(", ")}${totals.failedIds.length > 10 ? "…" : ""}` : ""})`
+                : "";
               message.success(
-                `Thumbnails done: ${totals.generated} generated${totals.coloured ? `, ${totals.coloured} colours computed` : ""}${totals.failed ? ` (${totals.failed} failed)` : ""}.`
+                `Thumbnails done: ${totals.generated} generated${totals.coloured ? `, ${totals.coloured} colours computed` : ""}${failedNote}.`
               );
             } catch {
               hide();
