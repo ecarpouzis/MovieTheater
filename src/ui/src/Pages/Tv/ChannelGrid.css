@@ -423,9 +423,9 @@
 
 @media (max-width: 600px) {
   .epg {
-    --epg-ppm: 5.5px;
-    --epg-chanw: 168px;
-    --epg-rowh: 78px;
+    --epg-ppm: 6px;
+    --epg-chanw: 158px;
+    --epg-rowh: 60px;
   }
   .epg-head {
     padding: 10px 14px;
@@ -441,5 +441,23 @@
   .epg-chan-viewers,
   .epg-chan-paused {
     display: none;
+  }
+  .epg-chan {
+    padding: 6px 9px;
+    gap: 0;
+  }
+  .epg-chan-now-title {
+    font-size: 12px;
+  }
+  /* Per-block descriptions are a wall of text across every cell on a phone. Drop them — the pinned
+     channel cell already answers "what's on now" — and show just time + title, vertically centered so
+     the short content sits mid-block instead of stranded at the top of a tall cell. */
+  .epg-prog-desc {
+    display: none;
+  }
+  .epg-prog {
+    justify-content: center;
+    gap: 2px;
+    padding: 5px 9px;
   }
 }

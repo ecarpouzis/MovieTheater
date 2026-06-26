@@ -867,3 +867,22 @@
     display: none;
   }
 }
+
+/* Landscape phones are wide (so the width queries above don't fire) but very short — the stacked
+   now+next bar with full-size posters eats into the video. Collapse to a single compact now-row. */
+@media (max-height: 500px) {
+  .tv-bar-row {
+    gap: 12px;
+    padding: 7px 14px;
+  }
+  .tv-bar-next {
+    display: none;
+  }
+  .tv-bar-poster {
+    width: 30px;
+    height: 44px;
+  }
+  .tv-bar-plot {
+    -webkit-line-clamp: 1;
+  }
+}
