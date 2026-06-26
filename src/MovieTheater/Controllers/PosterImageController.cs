@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using MovieTheater.Services;
 using MovieTheater.Services.Poster;
 using System;
@@ -9,6 +10,15 @@ namespace MovieTheater.Controllers
     public class PosterImageController : ControllerBase
     {
         private readonly IPosterImageRepository imageRepository;
+
+        // A small in-memory cache of poster bytes keyed by id+variant+bucket+version. A versioned
+        // request (?v=) is immutable for that version, so once a poster is read from disk it's served
+        // from RAM — no stat, no file read — across all viewers. The guide/browse fire bursts of poster
+        // requests; this turns the repeat ones into memory hits. Bounded so it can't grow unbounded.
+        private static readonly MemoryCache PosterByteCache = new(new MemoryCacheOptions
+        {
+            SizeLimit = 128L * 1024 * 1024, // 128 MB of poster bytes (thumbs are small → thousands of them)
+        });
 
         public PosterImageController(IPosterImageRepository imageProvider)
         {
@@ -60,6 +70,17 @@ namespace MovieTheater.Controllers
 
         private async Task<IActionResult> PosterResponse(int movieId, PosterImageVariant variant, string? bucket = null)
         {
+            // Fast path: a versioned request (?v=<posterVersion>) is immutable for that version — the UI
+            // always passes it — so serve the bytes straight from RAM, skipping the disk stat + read. A
+            // new poster gets a new version, hence a new key, so this never goes stale.
+            bool versioned = Request.Query.TryGetValue("v", out var ver) && !string.IsNullOrEmpty(ver);
+            string? cacheKey = versioned ? $"{bucket ?? "movie"}|{variant}|{movieId}|{ver}" : null;
+            if (cacheKey != null && PosterByteCache.TryGetValue(cacheKey, out byte[]? cachedBytes) && cachedBytes != null)
+            {
+                Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+                return File(cachedBytes, "image/png");
+            }
+
             // Try to get the modified date for caching. In dev mode the file may not
             // exist yet but the repository can fetch it on demand (DevPosterImageRepository).
             var modifiedDate = await imageRepository.GetImageModifiedDate(movieId, variant, bucket);
@@ -78,8 +99,7 @@ namespace MovieTheater.Controllers
 
             var etag = $"\"{modifiedDate.Value.Ticks}\"";
 
-            var hasVersion = Request.Query.ContainsKey("v");
-            Response.Headers["Cache-Control"] = hasVersion ? "public, max-age=31536000, immutable" : "public, max-age=3600";
+            Response.Headers["Cache-Control"] = versioned ? "public, max-age=31536000, immutable" : "public, max-age=3600";
             Response.Headers["ETag"] = etag;
 
             if (Request.Headers.TryGetValue("If-None-Match", out var ifNoneMatch) && ifNoneMatch == etag)
@@ -92,6 +112,14 @@ namespace MovieTheater.Controllers
                 if (posterBytes == null)
                     return NotFound();
             }
+
+            // Cache versioned bytes so the next request (any viewer) is a memory hit, not a disk read.
+            if (cacheKey != null)
+                PosterByteCache.Set(cacheKey, posterBytes, new MemoryCacheEntryOptions
+                {
+                    Size = posterBytes.Length,
+                    SlidingExpiration = TimeSpan.FromHours(12),
+                });
 
             return File(posterBytes, "image/png");
         }

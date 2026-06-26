@@ -24,9 +24,17 @@ namespace MovieTheater.Channels
         private static readonly TimeSpan Horizon = TimeSpan.FromHours(48);
         private const int BatchSize = 8; // channels touched per tick — keeps per-tick DB work tiny
 
+        // On a cold start (every deploy/restart wipes the in-memory ceiling + schedule caches) the first
+        // pass over all channels is what makes the guide "come up". Cover it faster — bigger batch, shorter
+        // gap — until every channel has been warmed once, then drop to the gentle steady-state cadence.
+        private static readonly TimeSpan WarmupTick = TimeSpan.FromSeconds(4);
+        private const int WarmupBatchSize = 12;
+
         private readonly IServiceScopeFactory scopeFactory;
         private readonly ILogger<ChannelScheduleMaintenanceService> logger;
         private int cursor; // index into the enabled-channel list; wraps, so coverage is round-robin
+        private bool firstPassDone;
+        private int firstPassCovered;
 
         public ChannelScheduleMaintenanceService(
             IServiceScopeFactory scopeFactory, ILogger<ChannelScheduleMaintenanceService> logger)
@@ -57,7 +65,7 @@ namespace MovieTheater.Channels
                     logger.LogWarning(ex, "Channel schedule maintenance tick failed; will retry.");
                 }
 
-                try { await Task.Delay(Tick, stoppingToken); }
+                try { await Task.Delay(firstPassDone ? Tick : WarmupTick, stoppingToken); }
                 catch (OperationCanceledException) { break; }
             }
         }
@@ -74,9 +82,10 @@ namespace MovieTheater.Channels
             if (cursor >= ids.Count)
                 cursor = 0;
 
+            int batchSize = firstPassDone ? BatchSize : WarmupBatchSize;
             var horizon = DateTime.UtcNow.Add(Horizon);
             int processed = 0;
-            for (int n = 0; n < BatchSize && n < ids.Count; n++)
+            for (int n = 0; n < batchSize && n < ids.Count; n++)
             {
                 cancel.ThrowIfCancellationRequested();
                 var id = ids[(cursor + n) % ids.Count];
@@ -87,7 +96,16 @@ namespace MovieTheater.Channels
                 processed++;
             }
 
-            cursor = (cursor + BatchSize) % ids.Count;
+            cursor = (cursor + batchSize) % ids.Count;
+            if (!firstPassDone)
+            {
+                firstPassCovered += processed;
+                if (firstPassCovered >= ids.Count)
+                {
+                    firstPassDone = true;
+                    logger.LogInformation("Channel schedule maintenance: initial warm-up of {Count} channels complete.", ids.Count);
+                }
+            }
             if (processed > 0)
                 logger.LogDebug("Channel schedule maintenance: refreshed {Count} channel(s).", processed);
         }
