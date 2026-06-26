@@ -58,7 +58,10 @@ namespace MovieTheater.Controllers
             var now = DateTime.UtcNow;
             // Global shelf (category) order — admins arrange it; a category with no row sorts last (a new
             // catalog category just appends until placed). Channels then group by shelf in the guide/rail.
-            var shelfOrder = await movieDb.ChannelShelves.ToDictionaryAsync(s => s.Category, s => s.SortOrder);
+            // Defensive: a missing table just means "no custom order" rather than failing the whole list.
+            Dictionary<string, int> shelfOrder;
+            try { shelfOrder = await movieDb.ChannelShelves.ToDictionaryAsync(s => s.Category, s => s.SortOrder); }
+            catch { shelfOrder = new(); }
             int ShelfRank(string? cat) => cat != null && shelfOrder.TryGetValue(cat, out var so) ? so : int.MaxValue;
             var channels = (await movieDb.Channels.Where(c => c.Enabled).ToListAsync())
                 .OrderBy(c => ShelfRank(c.Category))
@@ -66,14 +69,29 @@ namespace MovieTheater.Controllers
                 .ThenBy(c => c.Id)
                 .ToList();
 
+            // The age gate only matters for an age-restricted viewer; ceilings top out at 7 (Unknown) and an
+            // unrestricted viewer defaults to 100, so skip the (cold, expensive) ceiling computation for them.
+            // Computing every channel's ceiling inline is what made List stall and return "no channels" right
+            // after a restart. For a restricted viewer, bound the cold work like GuideGrid: cached ceilings
+            // are free, compute a few cold ones, skip the rest (they appear once the maintainer warms them).
+            bool unrestricted = ageRestriction >= 7;
             var visible = new List<object>();
+            int coldBudget = MaxColdCeilingsPerRequest;
             foreach (var c in channels)
             {
                 if (!ChannelSeason.InSeason(c, now))
                     continue; // seasonal channels are hidden outside their window (lineup stays warm)
-                var ceiling = await scheduleService.GetCeilingAsync(c);
-                if (ceiling <= ageRestriction)
-                    visible.Add(new { id = c.Id, name = c.Name, description = c.Description, category = c.Category, logoPath = c.LogoPath });
+                if (!unrestricted)
+                {
+                    if (!scheduleService.TryGetCachedCeiling(c, out var ceiling))
+                    {
+                        if (coldBudget <= 0) continue;
+                        coldBudget--;
+                        ceiling = await scheduleService.GetCeilingAsync(c);
+                    }
+                    if (ceiling > ageRestriction) continue;
+                }
+                visible.Add(new { id = c.Id, name = c.Name, description = c.Description, category = c.Category, logoPath = c.LogoPath });
             }
 
             return Json(visible);
