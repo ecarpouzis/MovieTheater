@@ -1508,6 +1508,18 @@ namespace MovieTheater.Controllers
                 .FirstOrDefaultAsync(u => u.SettingKey == "ComicSiteAccess" && u.UserID == user.UserID);
             var comicSiteAccess = comicSiteAccessSetting?.SettingValue;
 
+            // favorite channels — SettingValue is a JSON int array; parse defensively (empty on malformed)
+            var favSetting = await movieDb.UserSettings
+                .FirstOrDefaultAsync(u => u.SettingKey == "FavoriteChannels" && u.UserID == user.UserID);
+            int[] favoriteChannels;
+            try
+            {
+                favoriteChannels = string.IsNullOrWhiteSpace(favSetting?.SettingValue)
+                    ? Array.Empty<int>()
+                    : (System.Text.Json.JsonSerializer.Deserialize<int[]>(favSetting!.SettingValue) ?? Array.Empty<int>());
+            }
+            catch (System.Text.Json.JsonException) { favoriteChannels = Array.Empty<int>(); }
+
             var hasPassword = user.PasswordHash != null;
 
             // Drives whether the SPA shows the admin tools. Mirrors the server gate: a config admin
@@ -1515,7 +1527,7 @@ namespace MovieTheater.Controllers
             // false here, which is correct — they must set their password before they can administer.
             var isAdmin = IsAdminUsername(user.Username) && hasPassword;
 
-            return new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess, hasPassword, isAdmin };
+            return new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess, favoriteChannels, hasPassword, isAdmin };
         }
 
         [HttpPost("/API/Logout")]

@@ -69,7 +69,7 @@ namespace MovieTheater.Controllers
                     continue; // seasonal channels are hidden outside their window (lineup stays warm)
                 var ceiling = await scheduleService.GetCeilingAsync(c);
                 if (ceiling <= ageRestriction)
-                    visible.Add(new { id = c.Id, name = c.Name, description = c.Description, category = c.Category });
+                    visible.Add(new { id = c.Id, name = c.Name, description = c.Description, category = c.Category, logoPath = c.LogoPath });
             }
 
             return Json(visible);
@@ -105,11 +105,19 @@ namespace MovieTheater.Controllers
             var current = items[currentIndex];
             var titles = await TitlesForAsync(items.Skip(currentIndex).Take(6).Select(i => i.PlayableId));
 
-            var nextItems = items.Skip(currentIndex + 1).Take(5).Select(i => new
+            var nextItems = items.Skip(currentIndex + 1).Take(5).Select(i =>
             {
-                movieId = titles.GetValueOrDefault(i.PlayableId).MovieId,
-                title = titles.GetValueOrDefault(i.PlayableId).Title ?? "",
-                startsAtUtc = i.StartUtc,
+                var t = titles.GetValueOrDefault(i.PlayableId);
+                return new
+                {
+                    playableId = i.PlayableId,
+                    movieId = t.LinkId,
+                    posterId = t.PosterId,
+                    kind = t.Kind ?? "movie",
+                    posterVersion = t.PosterVersion,
+                    title = t.Title ?? "",
+                    startsAtUtc = i.StartUtc,
+                };
             });
 
             // Polling Now is also the presence heartbeat for the skip/restart tallies (§8).
@@ -128,13 +136,18 @@ namespace MovieTheater.Controllers
                 .Select(u => new { name = u.Username ?? "Someone", you = u.UserID == userId.Value })
                 .ToList();
 
+            var cur = titles.GetValueOrDefault(current.PlayableId);
             return Json(new
             {
                 current = new
                 {
                     itemId = current.Id,
-                    movieId = titles.GetValueOrDefault(current.PlayableId).MovieId,
-                    title = titles.GetValueOrDefault(current.PlayableId).Title ?? "",
+                    playableId = current.PlayableId,
+                    movieId = cur.LinkId,
+                    posterId = cur.PosterId,
+                    kind = cur.Kind ?? "movie",
+                    posterVersion = cur.PosterVersion,
+                    title = cur.Title ?? "",
                     offsetSeconds = Math.Max(0, (clock - current.StartUtc).TotalSeconds),
                     durationSeconds = (current.EndUtc - current.StartUtc).TotalSeconds,
                     endsAtUtc = current.EndUtc,
@@ -327,12 +340,20 @@ namespace MovieTheater.Controllers
             var windowed = items.Where(i => i.EndUtc > now && i.StartUtc < until).ToList();
             var titles = await TitlesForAsync(windowed.Select(i => i.PlayableId));
 
-            var guide = windowed.Select(i => new
+            var guide = windowed.Select(i =>
             {
-                movieId = titles.GetValueOrDefault(i.PlayableId).MovieId,
-                title = titles.GetValueOrDefault(i.PlayableId).Title ?? "",
-                startUtc = i.StartUtc,
-                endUtc = i.EndUtc,
+                var t = titles.GetValueOrDefault(i.PlayableId);
+                return new
+                {
+                    playableId = i.PlayableId,
+                    movieId = t.LinkId,
+                    posterId = t.PosterId,
+                    kind = t.Kind ?? "movie",
+                    posterVersion = t.PosterVersion,
+                    title = t.Title ?? "",
+                    startUtc = i.StartUtc,
+                    endUtc = i.EndUtc,
+                };
             });
 
             return Json(guide);
@@ -400,15 +421,23 @@ namespace MovieTheater.Controllers
                     // paused/viewers are in-memory (the skip singleton) — cheap, no DB.
                     paused = skipService.PausedSince(id) != null,
                     viewers = skipService.ViewerIds(id).Count,
-                    items = items.Select(i => new
+                    items = items.Select(i =>
                     {
-                        movieId = titles.GetValueOrDefault(i.PlayableId).MovieId,
-                        title = titles.GetValueOrDefault(i.PlayableId).Title ?? "",
-                        // Pin Kind=Utc so these serialize with a trailing 'Z' and the client parses them in
-                        // the same frame as serverNowUtc — EF hands back Unspecified, which would otherwise
-                        // be read as browser-local and slide the blocks off the "now" line by the tz offset.
-                        startUtc = DateTime.SpecifyKind(i.StartUtc, DateTimeKind.Utc),
-                        endUtc = DateTime.SpecifyKind(i.EndUtc, DateTimeKind.Utc),
+                        var t = titles.GetValueOrDefault(i.PlayableId);
+                        return new
+                        {
+                            playableId = i.PlayableId,
+                            movieId = t.LinkId,
+                            posterId = t.PosterId,
+                            kind = t.Kind ?? "movie",
+                            posterVersion = t.PosterVersion,
+                            title = t.Title ?? "",
+                            // Pin Kind=Utc so these serialize with a trailing 'Z' and the client parses them
+                            // in the same frame as serverNowUtc — EF hands back Unspecified, which would
+                            // otherwise be read as browser-local and slide blocks off the "now" line.
+                            startUtc = DateTime.SpecifyKind(i.StartUtc, DateTimeKind.Utc),
+                            endUtc = DateTime.SpecifyKind(i.EndUtc, DateTimeKind.Utc),
+                        };
                     }),
                 };
             });
@@ -417,24 +446,38 @@ namespace MovieTheater.Controllers
             return Json(new { serverNowUtc = now, hours, items = result });
         }
 
-        // Resolve a set of schedule-item PlayableIds to a (posterId, title) for the lineup readout.
-        // Channels air movies, episodes, and misc videos, so resolve all three kinds. The posterId is the
-        // /Image id the client shows: a movie's own id, an episode's series id (series poster), or a misc
-        // video's related title (else 0 = no poster).
-        private async Task<Dictionary<int, (int MovieId, string Title)>> TitlesForAsync(IEnumerable<int> playableIds)
+        // Poster + link info for one schedule item. PosterId + Kind ("movie"|"series"|"misc") pick the
+        // right /Image route; PosterVersion cache-busts; LinkId is the watch-link id (0 = no link). A
+        // value struct so a missing dictionary entry defaults cleanly (Kind/Title null → handled at use).
+        private readonly struct TitleInfo
+        {
+            public TitleInfo(int posterId, string kind, int posterVersion, int linkId, string title)
+            { PosterId = posterId; Kind = kind; PosterVersion = posterVersion; LinkId = linkId; Title = title; }
+            public int PosterId { get; }
+            public string Kind { get; }
+            public int PosterVersion { get; }
+            public int LinkId { get; }
+            public string Title { get; }
+        }
+
+        // Resolve schedule-item PlayableIds to poster/link info for the lineup readout. Channels air
+        // movies, episodes, and misc — each needs the right poster route. An episode shows its SERIES
+        // poster (Kind="series", PosterId=SeriesId). PosterVersion is a column join (no N+1), same as
+        // APIController.ToCardDto. LinkId stays the legacy movie/series id the watch link uses.
+        private async Task<Dictionary<int, TitleInfo>> TitlesForAsync(IEnumerable<int> playableIds)
         {
             var ids = playableIds.Distinct().ToList();
-            var map = new Dictionary<int, (int MovieId, string Title)>();
+            var map = new Dictionary<int, TitleInfo>();
 
             var movies = await movieDb.Movies
                 .Where(m => m.PlayableId != null && ids.Contains(m.PlayableId.Value))
-                .Select(m => new { Pid = m.PlayableId!.Value, m.id, m.Title })
+                .Select(m => new { Pid = m.PlayableId!.Value, m.id, m.Title, Ver = m.PosterDetails != null ? m.PosterDetails.PosterVersion : 0 })
                 .ToListAsync();
-            foreach (var m in movies) map[m.Pid] = (m.id, m.Title ?? "");
+            foreach (var m in movies) map[m.Pid] = new TitleInfo(m.id, "movie", m.Ver, m.id, m.Title ?? "");
 
             var eps = await movieDb.Episodes
                 .Where(e => e.PlayableId != null && ids.Contains(e.PlayableId.Value))
-                .Select(e => new { Pid = e.PlayableId!.Value, e.SeriesId, SeriesTitle = e.Series!.Title, e.SeasonNumber, e.EpisodeNumber, e.Title })
+                .Select(e => new { Pid = e.PlayableId!.Value, e.SeriesId, SeriesTitle = e.Series!.Title, e.SeasonNumber, e.EpisodeNumber, e.Title, Ver = e.Series!.PosterDetails != null ? e.Series.PosterDetails.PosterVersion : 0 })
                 .ToListAsync();
             foreach (var e in eps)
             {
@@ -442,14 +485,20 @@ namespace MovieTheater.Controllers
                 var title = string.IsNullOrWhiteSpace(e.Title)
                     ? $"{e.SeriesTitle} – {code}"
                     : $"{e.SeriesTitle} – {code} {e.Title}";
-                map[e.Pid] = (e.SeriesId ?? 0, title);
+                int sid = e.SeriesId ?? 0;
+                map[e.Pid] = new TitleInfo(sid, "series", e.Ver, sid, title);
             }
 
             var misc = await movieDb.MiscVideos
                 .Where(mv => ids.Contains(mv.PlayableId))
-                .Select(mv => new { mv.PlayableId, mv.Title, mv.RelatedMovieId, mv.RelatedSeriesId })
+                .Select(mv => new { mv.PlayableId, mv.Id, mv.Title, mv.RelatedMovieId, mv.RelatedSeriesId })
                 .ToListAsync();
-            foreach (var mv in misc) map[mv.PlayableId] = (mv.RelatedMovieId ?? mv.RelatedSeriesId ?? 0, mv.Title ?? "");
+            foreach (var mv in misc)
+            {
+                if (mv.RelatedMovieId is int rm) map[mv.PlayableId] = new TitleInfo(rm, "movie", 0, rm, mv.Title ?? "");
+                else if (mv.RelatedSeriesId is int rs) map[mv.PlayableId] = new TitleInfo(rs, "series", 0, rs, mv.Title ?? "");
+                else map[mv.PlayableId] = new TitleInfo(mv.Id, "misc", 0, 0, mv.Title ?? "");
+            }
 
             return map;
         }

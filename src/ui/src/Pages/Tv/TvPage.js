@@ -97,7 +97,7 @@ function TvPage({ userData }) {
 
   // The movie last tuned to — a pinned audio/subtitle choice is scoped to that film, so we
   // can drop the override when the channel rolls to a different movie.
-  const tunedMovieIdRef = useRef(null);
+  const tunedPlayableIdRef = useRef(null);
 
   // The current item's scheduled end. A restart keeps the same itemId but pushes the end later
   // (the film replays from the top), so a later end on the same item is how other viewers notice.
@@ -118,7 +118,7 @@ function TvPage({ userData }) {
     const s = sessionRef.current;
     if (!s) return;
     sessionRef.current = null;
-    const payload = { playSessionId: s.playSessionId, movieId: s.movieId };
+    const payload = { playSessionId: s.playSessionId, playableId: s.playableId };
     if (useBeacon) MovieAPI.beaconStopStream(payload);
     else MovieAPI.stopStream(payload);
   }, []);
@@ -174,7 +174,7 @@ function TvPage({ userData }) {
   // Start the next item's transcode ahead of the boundary and warm it (fetch its
   // playlist), so the advance can reuse it instead of paying the cold start.
   const prewarmNext = useCallback(
-    async (movieId) => {
+    async (playableId) => {
       // Pin the same track selection the live tune will ask for, so the warmed transcode
       // matches — otherwise the reuse check below would reject it. Only a burned-in (image)
       // subtitle reaches the transcode; text subs ride along as sidecars regardless.
@@ -182,7 +182,7 @@ function TvPage({ userData }) {
       const subtitleStreamIndex = burnSubIndexRef.current;
       try {
         const r = await MovieAPI.startStream({
-          movieId,
+          playableId,
           maxBitrateBps: resolveBitrate(),
           startSeconds: 0,
           audioStreamIndex,
@@ -193,7 +193,7 @@ function TvPage({ userData }) {
         // For a transcode, pull the playlist to actually spawn ffmpeg; direct play has
         // nothing to warm (it's a static file).
         if (session.isHls !== false) fetch(session.hlsUrl).catch(() => {});
-        prewarmRef.current = { movieId, session, audioStreamIndex, subtitleStreamIndex };
+        prewarmRef.current = { playableId, session, audioStreamIndex, subtitleStreamIndex };
       } catch {
         /* prewarm is best-effort */
       }
@@ -244,8 +244,8 @@ function TvPage({ userData }) {
         // A pinned audio/subtitle choice is per-film. When the channel rolls to a different movie
         // (a natural advance, a skip, or a channel switch) drop the override so the next film
         // English-defaults again instead of inheriting a stream index that doesn't map to it.
-        if (tunedMovieIdRef.current !== nowData.current.movieId) {
-          tunedMovieIdRef.current = nowData.current.movieId;
+        if (tunedPlayableIdRef.current !== nowData.current.playableId) {
+          tunedPlayableIdRef.current = nowData.current.playableId;
           if (audioIndexRef.current != null) {
             audioIndexRef.current = null;
             setAudioIndex(null);
@@ -266,14 +266,14 @@ function TvPage({ userData }) {
           // Only reuse a prewarm for the same movie *and* the same track selection — a mid-flight
           // audio/subtitle change makes the warmed transcode wrong even if the movie matches.
           if (
-            pw.movieId === nowData.current.movieId &&
+            pw.playableId === nowData.current.playableId &&
             pw.audioStreamIndex === audioIndexRef.current &&
             pw.subtitleStreamIndex === burnSubIndexRef.current &&
             nowData.current.offsetSeconds < 8
           ) {
             session = pw.session;
           } else {
-            MovieAPI.stopStream({ playSessionId: pw.session.playSessionId, movieId: pw.movieId });
+            MovieAPI.stopStream({ playSessionId: pw.session.playSessionId, playableId: pw.playableId });
           }
         }
 
@@ -281,7 +281,7 @@ function TvPage({ userData }) {
           // "Auto" (the default) maps to a connection-based fixed cap rather than streaming
           // uncapped — important on phones, where uncapped channels buffer and drift A/V.
           const startResponse = await MovieAPI.startStream({
-            movieId: nowData.current.movieId,
+            playableId: nowData.current.playableId,
             maxBitrateBps: resolveBitrate(),
             startSeconds: Math.floor(nowData.current.offsetSeconds),
             audioStreamIndex: audioIndexRef.current,
@@ -297,10 +297,10 @@ function TvPage({ userData }) {
         if (superseded()) {
           // A newer tune started while we were mid-request — drop this stream so we
           // don't leak a transcode or attach a stale source.
-          MovieAPI.stopStream({ playSessionId: session.playSessionId, movieId: nowData.current.movieId });
+          MovieAPI.stopStream({ playSessionId: session.playSessionId, playableId: nowData.current.playableId });
           return;
         }
-        sessionRef.current = { playSessionId: session.playSessionId, movieId: nowData.current.movieId };
+        sessionRef.current = { playSessionId: session.playSessionId, playableId: nowData.current.playableId };
 
         // Surface the track menus and reflect what's actually playing (incl. the server's English
         // auto-default) so the settings menu highlights the live audio track.
@@ -364,7 +364,7 @@ function TvPage({ userData }) {
           // worth it when there's enough lead and we're not joining right at the end.
           const nextItem = nowData.next?.[0];
           if (nextItem && msUntilEnd > 30_000) {
-            prewarmTimerRef.current = setTimeout(() => prewarmNext(nextItem.movieId), msUntilEnd - 20_000);
+            prewarmTimerRef.current = setTimeout(() => prewarmNext(nextItem.playableId), msUntilEnd - 20_000);
           }
         }
       } catch (err) {
@@ -428,7 +428,7 @@ function TvPage({ userData }) {
       if (video && s && !video.paused) {
         MovieAPI.reportStreamProgress({
           playSessionId: s.playSessionId,
-          movieId: s.movieId,
+          playableId: s.playableId,
           positionTicks: Math.round(video.currentTime * TICKS_PER_SECOND),
           paused: false,
           passive: true,
@@ -477,7 +477,7 @@ function TvPage({ userData }) {
       if (prewarmRef.current) {
         MovieAPI.stopStream({
           playSessionId: prewarmRef.current.session.playSessionId,
-          movieId: prewarmRef.current.movieId,
+          playableId: prewarmRef.current.playableId,
         });
         prewarmRef.current = null;
       }
