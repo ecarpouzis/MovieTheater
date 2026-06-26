@@ -80,7 +80,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #e3b341;
+  background: #40a9ff;
   opacity: 0.35;
   animation: tv-tuning-pulse 1.2s ease-in-out infinite;
 }
@@ -98,7 +98,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-size: 13px;
-  color: rgba(242, 236, 221, 0.62);
+  color: rgba(232, 238, 246, 0.62);
 }
 
 @keyframes tv-tuning-pulse {
@@ -123,7 +123,7 @@
 .tv-paused-glyph {
   font-size: 64px;
   letter-spacing: 4px;
-  color: #e3b341;
+  color: #40a9ff;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
 }
 
@@ -131,7 +131,7 @@
   font-size: 14px;
   letter-spacing: 0.32em;
   text-transform: uppercase;
-  color: rgba(242, 236, 221, 0.78);
+  color: rgba(232, 238, 246, 0.78);
 }
 
 /* ── flattened control bar ──────────────────────────────────────────────────── */
@@ -139,8 +139,8 @@
   flex: 0 0 auto;
   position: relative;
   z-index: 6;
-  background: linear-gradient(to bottom, #0d0c0a, #070605);
-  border-top: 1px solid rgba(227, 179, 65, 0.25);
+  background: linear-gradient(to bottom, #0a0c11, #070605);
+  border-top: 1px solid rgba(64, 169, 255, 0.25);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
@@ -157,7 +157,7 @@
   position: relative;
   height: 3px;
   width: 100%;
-  background: rgba(242, 236, 221, 0.14);
+  background: rgba(232, 238, 246, 0.14);
 }
 
 /* Lone-viewer scrubber: pointer cursor + a taller invisible hit target above the thin line so
@@ -178,7 +178,7 @@
 
 .tv-bar-progress-fill {
   height: 100%;
-  background: linear-gradient(to right, #9a7f3f, #e3b341);
+  background: linear-gradient(to right, #3f72a9, #40a9ff);
   transition: width 1s linear;
 }
 
@@ -190,7 +190,7 @@
   height: 12px;
   margin-left: -6px;
   border-radius: 50%;
-  background: #e3b341;
+  background: #40a9ff;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
   transform: translateY(-50%) scale(0);
   transition: transform 0.12s ease;
@@ -210,8 +210,8 @@
   padding: 2px 6px;
   border-radius: 4px;
   background: rgba(10, 9, 7, 0.95);
-  border: 1px solid rgba(227, 179, 65, 0.3);
-  color: #f2ecdd;
+  border: 1px solid rgba(64, 169, 255, 0.3);
+  color: #e8eef6;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -232,25 +232,25 @@
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  background: rgba(227, 179, 65, 0.06);
-  border: 1px solid rgba(227, 179, 65, 0.3);
+  background: rgba(64, 169, 255, 0.06);
+  border: 1px solid rgba(64, 169, 255, 0.3);
   border-radius: 8px;
   padding: 6px 12px;
   cursor: pointer;
-  color: #f2ecdd;
+  color: #e8eef6;
   transition: border-color 0.15s, background 0.15s;
 }
 
 .tv-bar-channel:hover {
-  border-color: #e3b341;
-  background: rgba(227, 179, 65, 0.12);
+  border-color: #40a9ff;
+  background: rgba(64, 169, 255, 0.12);
 }
 
 .tv-bar-channel-num {
   font-family: var(--vp-display, "Marcellus", Georgia, serif);
   font-size: 22px;
   line-height: 1;
-  color: #e3b341;
+  color: #40a9ff;
 }
 
 .tv-bar-channel-name {
@@ -271,11 +271,11 @@
   gap: 6px;
   padding-left: 8px;
   margin-left: 2px;
-  border-left: 1px solid rgba(227, 179, 65, 0.25);
-  color: rgba(242, 236, 221, 0.6);
+  border-left: 1px solid rgba(64, 169, 255, 0.25);
+  color: rgba(232, 238, 246, 0.6);
 }
 .tv-bar-channel:hover .tv-bar-channel-guide {
-  color: #e3b341;
+  color: #40a9ff;
 }
 
 .tv-bar-guide-icon {
@@ -356,7 +356,7 @@
 .tv-bar-plot {
   font-size: 11px;
   line-height: 1.25;
-  color: rgba(242, 236, 221, 0.58);
+  color: rgba(232, 238, 246, 0.58);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -372,14 +372,14 @@
   font-size: 9px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #e3b341;
+  color: #40a9ff;
   flex-shrink: 0;
 }
 
 .tv-bar-title {
   font-family: var(--vp-display, "Marcellus", Georgia, serif);
   font-size: 15px;
-  color: #f2ecdd;
+  color: #e8eef6;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -389,7 +389,7 @@
 
 .tv-bar-time {
   font-size: 11px;
-  color: rgba(242, 236, 221, 0.55);
+  color: rgba(232, 238, 246, 0.55);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -406,7 +406,7 @@
   gap: 6px;
   flex-shrink: 0;
   font-size: 12px;
-  color: rgba(242, 236, 221, 0.7);
+  color: rgba(232, 238, 246, 0.7);
   padding: 4px 7px;
   border-radius: 6px;
   cursor: default;
@@ -416,8 +416,8 @@
 
 .tv-bar-viewers:hover,
 .tv-bar-viewers:focus-visible {
-  color: #f2ecdd;
-  background: rgba(227, 179, 65, 0.08);
+  color: #e8eef6;
+  background: rgba(64, 169, 255, 0.08);
 }
 
 .tv-bar-viewers-eye {
@@ -428,7 +428,7 @@
 .tv-bar-viewers-count {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  color: #e3b341;
+  color: #40a9ff;
 }
 
 .tv-viewers-tip {
@@ -440,7 +440,7 @@
   max-height: 240px;
   overflow-y: auto;
   background: rgba(11, 10, 8, 0.96);
-  border: 1px solid rgba(227, 179, 65, 0.3);
+  border: 1px solid rgba(64, 169, 255, 0.3);
   border-radius: 10px;
   backdrop-filter: blur(10px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
@@ -462,7 +462,7 @@
   font-size: 9px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #e3b341;
+  color: #40a9ff;
   padding: 4px 8px 8px;
 }
 
@@ -471,7 +471,7 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: rgba(242, 236, 221, 0.9);
+  color: rgba(232, 238, 246, 0.9);
   padding: 5px 8px;
   white-space: nowrap;
 }
@@ -481,8 +481,8 @@
   font-size: 9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #e3b341;
-  border: 1px solid rgba(227, 179, 65, 0.4);
+  color: #40a9ff;
+  border: 1px solid rgba(64, 169, 255, 0.4);
   border-radius: 999px;
   padding: 1px 7px;
 }
@@ -515,9 +515,9 @@
   width: 38px;
   height: 34px;
   background: rgba(11, 10, 8, 0.6);
-  border: 1px solid rgba(227, 179, 65, 0.25);
+  border: 1px solid rgba(64, 169, 255, 0.25);
   border-radius: 8px;
-  color: #f2ecdd;
+  color: #e8eef6;
   font-size: 16px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
@@ -525,11 +525,11 @@
 
 .tv-bar-icon-btn:hover,
 .tv-bar-icon-btn--on {
-  border-color: #e3b341;
+  border-color: #40a9ff;
 }
 
 .tv-bar-icon-btn--pulse {
-  border-color: rgba(227, 179, 65, 0.55);
+  border-color: rgba(64, 169, 255, 0.55);
   animation: tv-unmute-pulse 2.4s ease-in-out infinite;
 }
 
@@ -549,8 +549,8 @@
 }
 
 @keyframes tv-unmute-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(227, 179, 65, 0.35); }
-  50% { box-shadow: 0 0 0 8px rgba(227, 179, 65, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(64, 169, 255, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(64, 169, 255, 0); }
 }
 
 .tv-bar-volume-slider {
@@ -559,7 +559,7 @@
   width: 92px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(242, 236, 221, 0.2);
+  background: rgba(232, 238, 246, 0.2);
   cursor: pointer;
   outline: none;
 }
@@ -570,7 +570,7 @@
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: #e3b341;
+  background: #40a9ff;
   border: none;
   cursor: pointer;
 }
@@ -579,7 +579,7 @@
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: #e3b341;
+  background: #40a9ff;
   border: none;
   cursor: pointer;
 }
@@ -590,8 +590,8 @@
   align-items: center;
   gap: 8px;
   background: rgba(11, 10, 8, 0.78);
-  border: 1px solid rgba(227, 179, 65, 0.45);
-  color: #f2ecdd;
+  border: 1px solid rgba(64, 169, 255, 0.45);
+  color: #e8eef6;
   font-size: 12.5px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -602,22 +602,22 @@
 }
 
 .tv-skip:hover {
-  border-color: #e3b341;
+  border-color: #40a9ff;
 }
 
 .tv-skip--voted {
-  background: rgba(227, 179, 65, 0.16);
-  border-color: #e3b341;
+  background: rgba(64, 169, 255, 0.16);
+  border-color: #40a9ff;
 }
 
 .tv-skip-glyph {
-  color: #e3b341;
+  color: #40a9ff;
   font-size: 13px;
 }
 
 .tv-skip-tally {
   font-variant-numeric: tabular-nums;
-  color: #e3b341;
+  color: #40a9ff;
   font-weight: 600;
 }
 
@@ -633,7 +633,7 @@
   bottom: 14px;
   z-index: 8;
   background: rgba(11, 10, 8, 0.94);
-  border: 1px solid rgba(227, 179, 65, 0.3);
+  border: 1px solid rgba(64, 169, 255, 0.3);
   border-radius: 10px;
   backdrop-filter: blur(10px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
@@ -658,7 +658,7 @@
   font-size: 10px;
   letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: #e3b341;
+  color: #40a9ff;
   padding: 12px 14px 8px;
 }
 
@@ -685,7 +685,7 @@
   gap: 10px;
   background: rgba(11, 10, 8, 0.5);
   border: 1px solid transparent;
-  color: rgba(242, 236, 221, 0.85);
+  color: rgba(232, 238, 246, 0.85);
   font-size: 13px;
   letter-spacing: 0.04em;
   border-radius: 6px;
@@ -696,12 +696,12 @@
 }
 
 .tv-channel-item:hover {
-  border-color: rgba(227, 179, 65, 0.45);
+  border-color: rgba(64, 169, 255, 0.45);
 }
 
 .tv-channel-item--on {
-  border-color: #e3b341;
-  color: #f2ecdd;
+  border-color: #40a9ff;
+  color: #e8eef6;
 }
 
 .tv-channel-item--off {
@@ -718,13 +718,13 @@
 .tv-qopt-hint {
   margin-left: auto;
   padding-left: 10px;
-  color: rgba(242, 236, 221, 0.45);
+  color: rgba(232, 238, 246, 0.45);
   font-size: 11px;
 }
 
 .tv-channel-num {
   font-family: var(--vp-display, "Marcellus", Georgia, serif);
-  color: #e3b341;
+  color: #40a9ff;
   width: 20px;
   text-align: center;
   font-size: 14px;
@@ -742,7 +742,7 @@
   gap: 1px;
   overflow-x: auto;
   background: rgba(8, 7, 5, 0.94);
-  border-top: 1px solid rgba(227, 179, 65, 0.3);
+  border-top: 1px solid rgba(64, 169, 255, 0.3);
   padding: 14px 18px;
   backdrop-filter: blur(10px);
 }
@@ -752,7 +752,7 @@
   min-width: 170px;
   max-width: 240px;
   padding: 6px 16px;
-  border-left: 1px solid rgba(242, 236, 221, 0.12);
+  border-left: 1px solid rgba(232, 238, 246, 0.12);
 }
 
 .tv-guide-item:first-child {
@@ -762,13 +762,13 @@
 .tv-guide-time {
   font-size: 11px;
   letter-spacing: 0.18em;
-  color: #e3b341;
+  color: #40a9ff;
 }
 
 .tv-guide-title {
   font-family: var(--vp-display, "Marcellus", Georgia, serif);
   font-size: 14.5px;
-  color: #f2ecdd;
+  color: #e8eef6;
   margin-top: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -776,7 +776,7 @@
 }
 
 .tv-guide-item--empty {
-  color: rgba(242, 236, 221, 0.5);
+  color: rgba(232, 238, 246, 0.5);
   font-size: 13px;
 }
 
@@ -790,8 +790,8 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
-  color: rgba(242, 236, 221, 0.85);
-  background: radial-gradient(ellipse at center, #121009 0%, #050505 75%);
+  color: rgba(232, 238, 246, 0.85);
+  background: radial-gradient(ellipse at center, #0a0d16 0%, #050505 75%);
   text-align: center;
   padding: 0 8vw;
 }
@@ -800,13 +800,13 @@
   font-family: var(--vp-display, "Marcellus", Georgia, serif);
   font-size: clamp(24px, 4vw, 36px);
   letter-spacing: 0.04em;
-  color: #f2ecdd;
+  color: #e8eef6;
 }
 
 .tv-state p {
   margin: 0;
   font-size: 14.5px;
-  color: rgba(242, 236, 221, 0.65);
+  color: rgba(232, 238, 246, 0.65);
 }
 
 .tv-state-btn {
@@ -816,16 +816,16 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   background: transparent;
-  border: 1px solid rgba(242, 236, 221, 0.35);
-  color: #f2ecdd;
+  border: 1px solid rgba(232, 238, 246, 0.35);
+  color: #e8eef6;
   border-radius: 3px;
   padding: 11px 24px;
   cursor: pointer;
 }
 
 .tv-state-btn:hover {
-  border-color: #e3b341;
-  color: #e3b341;
+  border-color: #40a9ff;
+  color: #40a9ff;
 }
 
 /* ── compact the bar on small screens ───────────────────────────────────────── */

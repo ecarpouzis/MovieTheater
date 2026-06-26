@@ -214,9 +214,9 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
                         title={`${prog.title} · ${clockLabel(startMs)}–${clockLabel(endMs)}`}
                       >
                         {live && <span className="epg-prog-elapsed" style={{ width: `${elapsedPct}%` }} aria-hidden="true" />}
+                        <span className="epg-prog-time">{clockLabel(startMs)}</span>
                         <span className="epg-prog-title">{prog.title}</span>
                         {prog.plot && <span className="epg-prog-desc">{prog.plot}</span>}
-                        <span className="epg-prog-time">{clockLabel(startMs)}</span>
                       </button>
                     );
                   })}
