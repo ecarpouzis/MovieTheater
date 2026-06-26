@@ -33,7 +33,7 @@ namespace MovieTheater.Services.Tmdb
             var country = FormatCountries(detail.ProductionCountries);
             if (country != null) movie.Country = country;
 
-            var trailer = PickTrailerKey(detail.Videos);
+            var trailer = PickYouTubeTrailerKey(detail.Videos);
             if (trailer != null) movie.TrailerKey = trailer;
 
             return true;
@@ -49,7 +49,8 @@ namespace MovieTheater.Services.Tmdb
         }
 
         // Prefer an official YouTube trailer, then any YouTube trailer, then any YouTube video.
-        private static string? PickTrailerKey(TmdbVideos videos)
+        // Public so the series-trailer backfill picks keys identically off TV /videos.
+        public static string? PickYouTubeTrailerKey(TmdbVideos videos)
         {
             var all = videos?.Results;
             if (all == null || all.Count == 0) return null;

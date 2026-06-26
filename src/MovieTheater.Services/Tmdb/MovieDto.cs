@@ -55,6 +55,16 @@ namespace MovieTheater.Services.Tmdb
         public int VoteCount { get; set; }
     }
 
+    // A TV hit from /find — only the id (and name, for logging) is needed to then fetch /tv/{id}.
+    public class TmdbTvResultDto
+    {
+        [JsonProperty("id")]
+        public int Id { get; set; }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
+    }
+
     public class Root
     {
         [JsonProperty("movie_results")]
@@ -64,7 +74,7 @@ namespace MovieTheater.Services.Tmdb
         public List<object> PersonResults { get; set; }
 
         [JsonProperty("tv_results")]
-        public List<object> TvResults { get; set; }
+        public List<TmdbTvResultDto> TvResults { get; set; }
 
         [JsonProperty("tv_episode_results")]
         public List<object> TvEpisodeResults { get; set; }

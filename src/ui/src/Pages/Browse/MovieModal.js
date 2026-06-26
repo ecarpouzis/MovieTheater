@@ -67,6 +67,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
   const [plotExpanded, setPlotExpanded] = useState(false);
   const [plotOverflows, setPlotOverflows] = useState(false);
   const [synopsisOpen, setSynopsisOpen] = useState(false);
+  const [trailerOpen, setTrailerOpen] = useState(false);
   const [thumbMissing, setThumbMissing] = useState(false);
   const [genThumb, setGenThumb] = useState(false);
   const plotRef = useRef(null);
@@ -105,6 +106,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
       setPlotExpanded(false);
       setPlotOverflows(false);
       setSynopsisOpen(false);
+      setTrailerOpen(false);
       setOpenSeasons({});
       MovieAPI.getTitle(movieId, kind)
         .then((response) => response.json())
@@ -223,6 +225,8 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
       ? movie.actors.split(",").map((a) => ({ name: a.trim(), character: null })).filter((a) => a.name)
       : [];
   const hasSynopsis = !!(n.plotSynopsis || (Array.isArray(n.summaries) && n.summaries.length > 0));
+  // TMDB-sourced YouTube trailer key (Movie/Series share the column). Embedded on demand below.
+  const trailerKey = movie?.trailerKey;
 
   // Phase-7 surfaces: multi-file list + (for series) episodes by season.
   const toggleSeason = (s) => setOpenSeasons((prev) => ({ ...prev, [s]: !prev[s] }));
@@ -343,6 +347,26 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
                         {g}
                       </span>
                     ))}
+                  </div>
+                )}
+
+                {trailerKey && (
+                  <div className="modal-trailer">
+                    {!trailerOpen ? (
+                      <button type="button" className="modal-trailer-btn" onClick={() => setTrailerOpen(true)}>
+                        <span className="modal-trailer-play" aria-hidden="true">▶</span>
+                        Watch Trailer
+                      </button>
+                    ) : (
+                      <div className="modal-trailer-player">
+                        <iframe
+                          src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
+                          title={`${movie.title} — trailer`}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 

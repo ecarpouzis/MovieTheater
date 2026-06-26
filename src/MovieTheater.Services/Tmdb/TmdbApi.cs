@@ -88,5 +88,44 @@ namespace MovieTheater.Services.Tmdb
             string responseContent = await response.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<TmdbMovieDetailDto>(responseContent);
         }
+
+        /// <summary>
+        /// Resolves an IMDB id to its TMDB <em>TV</em> id via <c>/find</c> (<c>tv_results</c>), returning
+        /// null when there is no TV match. The series-trailer backfill uses this to bridge from our stored
+        /// IMDB id to TMDB's TV record, the same way <see cref="TryGetMovie"/> does for films.
+        /// </summary>
+        public async Task<TmdbTvResultDto?> TryGetTvId(string imdbID)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"/3/find/{imdbID}?api_key={_options.ApiKey}&external_source=imdb_id", UriKind.Relative));
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            string responseContent = await response.Content.ReadAsStringAsync();
+            try
+            {
+                var root = JsonConvert.DeserializeObject<Root>(responseContent);
+                return root?.TvResults?.FirstOrDefault();
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Fetches the full TMDB TV detail (with embedded videos) for a known TMDB TV id — the source of
+        /// the series trailer key. Returns null on a non-success status.
+        /// </summary>
+        public async Task<TmdbTvDetailDto?> GetTvDetail(int tvId)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"/3/tv/{tvId}?api_key={_options.ApiKey}&append_to_response=videos", UriKind.Relative));
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            string responseContent = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<TmdbTvDetailDto>(responseContent);
+        }
     }
 }

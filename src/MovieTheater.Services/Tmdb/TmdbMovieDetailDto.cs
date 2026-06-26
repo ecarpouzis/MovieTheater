@@ -45,6 +45,39 @@ namespace MovieTheater.Services.Tmdb
         public TmdbVideos Videos { get; set; }
     }
 
+    /// <summary>
+    /// Subset of TMDB's <c>/3/tv/{id}?append_to_response=videos</c> detail response. TV uses different
+    /// shapes than movie (no budget/revenue, country is <c>origin_country</c> codes, dates are
+    /// <c>first_air_date</c>), so the trailer backfill only pulls the fields that map cleanly onto the
+    /// shared Series enrichment columns — the trailer key above all.
+    /// </summary>
+    public class TmdbTvDetailDto
+    {
+        [JsonProperty("id")]
+        public int Id { get; set; }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("tagline")]
+        public string Tagline { get; set; }
+
+        [JsonProperty("original_language")]
+        public string OriginalLanguage { get; set; }
+
+        [JsonProperty("backdrop_path")]
+        public string BackdropPath { get; set; }
+
+        [JsonProperty("popularity")]
+        public decimal Popularity { get; set; }
+
+        [JsonProperty("vote_count")]
+        public int VoteCount { get; set; }
+
+        [JsonProperty("videos")]
+        public TmdbVideos Videos { get; set; }
+    }
+
     public class TmdbCountry
     {
         [JsonProperty("iso_3166_1")]

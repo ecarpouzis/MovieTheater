@@ -177,10 +177,16 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
             const { ch, idx } = g;
             const row = lineup?.byId.get(ch.id);
             const isCurrent = ch.id === currentChannelId;
-            const np = row?.items?.[0]; // now-playing item carries posterId/kind/posterVersion
+            // The truly-airing program (a long movie that started before the window has its block
+            // scrolled off the left, so this is the only place its title/plot stays readable). Falls
+            // back to the first listed item, which also supplies the poster/kind.
+            const np = row?.items?.find((p) => {
+              const s = Date.parse(p.startUtc), e = Date.parse(p.endUtc);
+              return s <= nowMs && nowMs < e;
+            }) || row?.items?.[0];
             return (
               <div key={ch.id} className={`epg-row${isCurrent ? " epg-row--current" : ""}`}>
-                <button className="epg-chan" onClick={() => onPick(ch)} title={`Watch ${ch.name}`}>
+                <button className="epg-chan" onClick={() => onPick(ch)} title={np ? `${ch.name} — now: ${np.title}` : `Watch ${ch.name}`}>
                   {np?.posterId ? (
                     <img
                       className="epg-chan-poster"
@@ -193,11 +199,21 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
                   ) : (
                     <span className="epg-chan-poster epg-chan-poster--blank" aria-hidden="true" />
                   )}
-                  <span className="epg-chan-num">{idx + 1}</span>
-                  <span className="epg-chan-name">{ch.name}</span>
-                  <span className="epg-chan-meta">
-                    {row?.viewers > 0 && <span className="epg-chan-viewers">👁 {row.viewers}</span>}
-                    {row?.paused && <span className="epg-chan-paused" title="Paused">❚❚</span>}
+                  <span className="epg-chan-body">
+                    <span className="epg-chan-id">
+                      <span className="epg-chan-num">{idx + 1}</span>
+                      <span className="epg-chan-name">{ch.name}</span>
+                      {row?.viewers > 0 && <span className="epg-chan-viewers">👁 {row.viewers}</span>}
+                      {row?.paused && <span className="epg-chan-paused" title="Paused">❚❚</span>}
+                    </span>
+                    {np ? (
+                      <span className="epg-chan-now">
+                        <span className="epg-chan-now-title">{np.title}</span>
+                        {np.plot && <span className="epg-chan-now-desc">{np.plot}</span>}
+                      </span>
+                    ) : (
+                      <span className="epg-chan-now epg-chan-now--off">Off air</span>
+                    )}
                   </span>
                 </button>
 
@@ -224,8 +240,12 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
                         title={`${prog.title} · ${clockLabel(startMs)}–${clockLabel(endMs)}`}
                       >
                         {live && <span className="epg-prog-elapsed" style={{ width: `${elapsedPct}%` }} aria-hidden="true" />}
-                        <span className="epg-prog-time">{clockLabel(startMs)}</span>
-                        <span className="epg-prog-title">{prog.title}</span>
+                        {/* Title + time share one line so the plot below gets the full remaining height.
+                            Title leads (aligns down the left edge for scanning); start time sits at right. */}
+                        <span className="epg-prog-head">
+                          <span className="epg-prog-title">{prog.title}</span>
+                          <span className="epg-prog-time">{clockLabel(startMs)}</span>
+                        </span>
                         {prog.plot && <span className="epg-prog-desc">{prog.plot}</span>}
                       </button>
                     );

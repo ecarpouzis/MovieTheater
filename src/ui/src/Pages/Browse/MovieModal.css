@@ -241,6 +241,58 @@
   text-decoration: underline;
 }
 
+/* ── Trailer (TMDB YouTube key, embedded on demand) ───────────────────── */
+.modal-trailer {
+  margin: 4px 0 2px;
+}
+.modal-trailer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 16px 8px 13px;
+  border: 1px solid #ececf0;
+  border-radius: 999px;
+  background: #fafafa;
+  color: #222;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+}
+.modal-trailer-btn:hover {
+  background: #eef5ff;
+  border-color: #91caff;
+  transform: translateY(-1px);
+}
+.modal-trailer-play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e50914; /* trailer = play; the familiar red reads instantly */
+  color: #fff;
+  font-size: 10px;
+  padding-left: 2px; /* optically centre the triangle */
+}
+.modal-trailer-player {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
+}
+.modal-trailer-player iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 /* ── Cast (two-column "Name as Character") ────────────────────────────── */
 .modal-cast {
   display: grid;

@@ -12,8 +12,8 @@
   color: #e8eef6;
 
   --epg-ppm: 9px;
-  --epg-chanw: 200px;
-  --epg-rowh: 84px;
+  --epg-chanw: 248px;
+  --epg-rowh: 90px;
 }
 
 /* /channels page: render the guide full-screen (the .epg overlay fills this fixed wrapper). */
@@ -189,9 +189,9 @@
   flex: 0 0 auto;
   width: var(--epg-chanw);
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 10px;
+  align-items: stretch;
+  gap: 9px;
+  padding: 8px 10px;
   text-align: left;
   border: none;
   border-right: 1px solid rgba(64, 169, 255, 0.22);
@@ -207,55 +207,100 @@
 /* Now-playing poster on the sticky channel column (Channels 2.0). */
 .epg-chan-poster {
   flex: 0 0 auto;
-  width: 42px;
-  height: calc(var(--epg-rowh) - 16px);
+  width: 44px;
+  height: 100%;
   object-fit: cover;
-  border-radius: 5px;
+  border-radius: 4px;
   background: #090d14;
 }
 .epg-chan-poster--blank {
   background: rgba(64, 169, 255, 0.1);
 }
 
+/* Stacked cell: channel id line on top, then the always-visible "what's on now" title + plot. This
+   is the answer to "what's playing" no matter how far the timeline is scrolled — the live block itself
+   can be scrolled off the left, but this stays pinned. */
+.epg-chan-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+.epg-chan-id {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
 .epg-chan-num {
   flex: 0 0 auto;
-  min-width: 24px;
-  height: 24px;
+  min-width: 22px;
+  height: 18px;
   padding: 0 5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 5px;
+  border-radius: 4px;
   background: rgba(64, 169, 255, 0.16);
   color: #40a9ff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .epg-chan-name {
   flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgba(232, 238, 246, 0.62);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.epg-chan-viewers {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(232, 238, 246, 0.55);
+}
+.epg-chan-paused {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: #40a9ff;
+}
+.epg-chan-now {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.epg-chan-now-title {
   font-size: 13px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.18;
+  color: #f3f6fb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.epg-chan-now-desc {
+  font-size: 10.5px;
+  line-height: 1.28;
+  color: rgba(232, 238, 246, 0.58);
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
-.epg-chan-meta {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  font-size: 10px;
-  color: rgba(232, 238, 246, 0.6);
-}
-.epg-chan-viewers {
-  font-variant-numeric: tabular-nums;
-}
-.epg-chan-paused {
-  color: #40a9ff;
+.epg-chan-now--off {
+  font-size: 12px;
+  font-style: italic;
+  color: rgba(232, 238, 246, 0.4);
 }
 
 .epg-track {
@@ -277,18 +322,18 @@
 
 .epg-prog {
   position: absolute;
-  top: 5px;
-  bottom: 5px;
+  top: 0;
+  bottom: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 2px;
-  padding: 5px 8px;
+  gap: 3px;
+  padding: 7px 9px;
   text-align: left;
-  border: 1px solid rgba(232, 238, 246, 0.12);
-  border-radius: 6px;
-  background: #172033;
+  border: 1px solid rgba(232, 238, 246, 0.1);
+  border-left: none; /* abutting blocks share one seam → a clean continuous schedule, not a chain of pills */
+  background: #141d2e;
   color: #e8eef6;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
@@ -296,10 +341,12 @@
 .epg-prog:hover {
   background: #213152;
   border-color: rgba(64, 169, 255, 0.5);
+  z-index: 3;
 }
+/* Currently airing — a quiet tint; the now-line and the shaded elapsed portion already mark it, and
+   the sticky channel cell is where you actually read what's on. Kept subtle to stay consistent. */
 .epg-prog--live {
-  background: #1a2540;
-  border-color: rgba(64, 169, 255, 0.45);
+  background: #16223a;
 }
 
 /* Shaded "already aired" portion of the currently-playing block. */
@@ -308,18 +355,32 @@
   top: 0;
   left: 0;
   bottom: 0;
-  background: rgba(64, 169, 255, 0.16);
+  background: rgba(64, 169, 255, 0.18);
   pointer-events: none;
 }
 
-.epg-prog-title {
+/* Time/badge + title on one row: title takes the space, the time/NOW sits at the right. */
+.epg-prog-head {
   position: relative;
-  font-size: 12px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.epg-prog-title {
+  flex: 1 1 auto;
+  font-size: 12.5px;
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.epg-prog-time {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(64, 169, 255, 0.85);
 }
 /* Plot blurb — fills the rest of the block height (time + title sit above it) so it uses the full bar
    instead of being cut by a line beneath it. A soft bottom fade makes any overflow clip look intentional. */
@@ -327,19 +388,12 @@
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  font-size: 10.5px;
-  line-height: 1.3;
-  color: rgba(232, 238, 246, 0.62);
+  font-size: 11px;
+  line-height: 1.32;
+  color: rgba(232, 238, 246, 0.66);
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent);
-  mask-image: linear-gradient(to bottom, #000 82%, transparent);
-}
-.epg-prog-time {
-  position: relative;
-  flex: 0 0 auto;
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  color: rgba(64, 169, 255, 0.85);
+  -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent);
+  mask-image: linear-gradient(to bottom, #000 80%, transparent);
 }
 
 .epg-filler {
@@ -363,30 +417,29 @@
 @media (max-width: 1024px) {
   .epg {
     --epg-ppm: 7px;
-    --epg-chanw: 168px;
+    --epg-chanw: 212px;
   }
 }
 
 @media (max-width: 600px) {
   .epg {
     --epg-ppm: 5.5px;
-    --epg-chanw: 132px;
-    --epg-rowh: 72px;
+    --epg-chanw: 168px;
+    --epg-rowh: 78px;
   }
   .epg-head {
     padding: 10px 14px;
   }
-  /* Drop the poster on phones so the narrow channel column has room for the name. */
+  /* Drop the poster on phones so the narrow column keeps room for the name + now-playing title. */
   .epg-chan-poster {
     display: none;
   }
-  .epg-chan-name {
-    font-size: 12.5px;
-    font-weight: 700;
-    -webkit-line-clamp: 2;
+  /* On phones the now-playing title is the priority; drop its plot blurb to keep the row compact. */
+  .epg-chan-now-desc {
+    display: none;
   }
-  /* Hide the per-channel viewer/paused meta on phones to save the narrow channel column for the name. */
-  .epg-chan-meta {
+  .epg-chan-viewers,
+  .epg-chan-paused {
     display: none;
   }
 }
