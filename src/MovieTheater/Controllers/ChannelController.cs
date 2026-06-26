@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MovieTheater.Channels;
 using MovieTheater.Db;
 
@@ -25,12 +26,15 @@ namespace MovieTheater.Controllers
         private readonly MovieDb movieDb;
         private readonly ChannelScheduleService scheduleService;
         private readonly ChannelSkipService skipService;
+        private readonly Microsoft.Extensions.Logging.ILogger<ChannelController> logger;
 
-        public ChannelController(MovieDb movieDb, ChannelScheduleService scheduleService, ChannelSkipService skipService)
+        public ChannelController(MovieDb movieDb, ChannelScheduleService scheduleService, ChannelSkipService skipService,
+            Microsoft.Extensions.Logging.ILogger<ChannelController> logger)
         {
             this.movieDb = movieDb;
             this.scheduleService = scheduleService;
             this.skipService = skipService;
+            this.logger = logger;
         }
 
         private int? GetCurrentUserId()
@@ -53,6 +57,7 @@ namespace MovieTheater.Controllers
             if (userId == null)
                 return Unauthorized();
 
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
 
             var now = DateTime.UtcNow;
@@ -94,6 +99,8 @@ namespace MovieTheater.Controllers
                 visible.Add(new { id = c.Id, name = c.Name, description = c.Description, category = c.Category, logoPath = c.LogoPath });
             }
 
+            if (sw.ElapsedMilliseconds > 1000)
+                logger.LogWarning("Channel List slow: {Ms}ms ({Visible} of {Total} channels visible)", sw.ElapsedMilliseconds, visible.Count, channels.Count);
             return Json(visible);
         }
 
@@ -401,6 +408,7 @@ namespace MovieTheater.Controllers
             if (userId == null)
                 return Unauthorized();
 
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
             hours = Math.Clamp(hours, 1, 24);
             var now = DateTime.UtcNow;
@@ -414,12 +422,16 @@ namespace MovieTheater.Controllers
                 .Where(c => ChannelSeason.InSeason(c, now))
                 .ToList();
 
-            // Gate by the cached ceiling. Compute at most a few cold ones inline; skip the rest (they
-            // surface on the next refresh once warmed) so the request stays bounded regardless of count.
+            // Unrestricted viewers (the common case) see every channel — skip the ceiling gating entirely so
+            // scrolling never reveals a "missing" channel that was merely deferred as cold. For a restricted
+            // viewer, bound the cold work: cached ceilings are free, compute at most a few cold ones inline,
+            // skip the rest (they surface on the next 60s refresh once the maintainer has warmed them).
+            bool unrestricted = ageRestriction >= 7;
             var visibleIds = new List<int>();
             int coldBudget = MaxColdCeilingsPerRequest;
             foreach (var c in channels)
             {
+                if (unrestricted) { visibleIds.Add(c.Id); continue; }
                 if (!scheduleService.TryGetCachedCeiling(c, out var ceiling))
                 {
                     if (coldBudget <= 0)
@@ -466,6 +478,9 @@ namespace MovieTheater.Controllers
                 };
             });
 
+            if (sw.ElapsedMilliseconds > 1500)
+                logger.LogWarning("Channel GuideGrid slow: {Ms}ms ({Visible} of {Total} channels, {Cold} cold ceilings computed)",
+                    sw.ElapsedMilliseconds, visibleIds.Count, channels.Count, MaxColdCeilingsPerRequest - coldBudget);
             // serverNowUtc lets the client align the "now" line to the server clock, not the browser's.
             return Json(new { serverNowUtc = now, hours, items = result });
         }

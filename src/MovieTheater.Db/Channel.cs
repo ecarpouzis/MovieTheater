@@ -77,6 +77,12 @@ namespace MovieTheater.Db
         [MaxLength(256)]
         public string? LogoPath { get; set; }
 
+        /// <summary>The channel's effective rating ceiling, persisted by the maintainer. A restart wipes the
+        /// in-memory ceiling cache but the schedule itself is already persisted, so storing the ceiling too
+        /// lets the guide/list gate visibility instantly after a deploy instead of re-running the expensive
+        /// eligible-set scan. NULL = not yet computed (a brand-new channel, until the maintainer warms it).</summary>
+        public int? CachedCeiling { get; set; }
+
         public ICollection<ChannelScheduleItem> ScheduleItems { get; set; } = [];
     }
 }

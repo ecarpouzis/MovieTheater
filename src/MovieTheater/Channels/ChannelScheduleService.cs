@@ -417,7 +417,16 @@ namespace MovieTheater.Channels
                 ceiling = explicitMax;
                 return true;
             }
-            return cache.TryGetValue(CeilingKey(channel), out ceiling);
+            if (cache.TryGetValue(CeilingKey(channel), out ceiling))
+                return true;
+            // Fall back to the persisted ceiling so a hot read (guide/list) stays cheap across restarts —
+            // the in-memory cache is empty after a deploy, but the maintainer-stored value survives.
+            if (channel.CachedCeiling is int persisted)
+            {
+                ceiling = persisted;
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -456,7 +465,15 @@ namespace MovieTheater.Channels
             if (channel == null)
                 return;
             await EnsureScheduleAsync(channel, horizonUtc, cancel);
-            await GetCeilingAsync(channel, cancel);
+            var ceiling = await GetCeilingAsync(channel, cancel);
+            // Persist the ceiling so a restart (which empties the in-memory cache) doesn't re-scan to gate
+            // visibility — readers fall back to this stored value. EnsureScheduleAsync just warmed the
+            // eligible set, so GetCeilingAsync here is a cache hit, not a fresh scan.
+            if (channel.CachedCeiling != ceiling)
+            {
+                channel.CachedCeiling = ceiling;
+                await movieDb.SaveChangesAsync(cancel);
+            }
         }
 
         /// <summary>
