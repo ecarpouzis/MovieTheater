@@ -137,14 +137,6 @@ namespace MovieTheater.Controllers
                 .ToList();
 
             var cur = titles.GetValueOrDefault(current.PlayableId);
-            // A short plot for the now-playing title (a movie's own, or an episode's series) — feeds the
-            // in-player bar's "what's on" blurb. One PK lookup; null when there's no plot (e.g. misc).
-            string? nowPlot = cur.Kind switch
-            {
-                "movie" => await movieDb.Movies.Where(m => m.id == cur.PosterId).Select(m => m.Plot).FirstOrDefaultAsync(),
-                "series" => await movieDb.Series.Where(s => s.Id == cur.PosterId).Select(s => s.Plot).FirstOrDefaultAsync(),
-                _ => null,
-            };
             return Json(new
             {
                 current = new
@@ -156,7 +148,7 @@ namespace MovieTheater.Controllers
                     kind = cur.Kind ?? "movie",
                     posterVersion = cur.PosterVersion,
                     title = cur.Title ?? "",
-                    plot = nowPlot,
+                    plot = cur.Plot,
                     offsetSeconds = Math.Max(0, (clock - current.StartUtc).TotalSeconds),
                     durationSeconds = (current.EndUtc - current.StartUtc).TotalSeconds,
                     endsAtUtc = current.EndUtc,
@@ -441,6 +433,7 @@ namespace MovieTheater.Controllers
                             kind = t.Kind ?? "movie",
                             posterVersion = t.PosterVersion,
                             title = t.Title ?? "",
+                            plot = t.Plot,
                             // Pin Kind=Utc so these serialize with a trailing 'Z' and the client parses them
                             // in the same frame as serverNowUtc — EF hands back Unspecified, which would
                             // otherwise be read as browser-local and slide blocks off the "now" line.
@@ -460,14 +453,20 @@ namespace MovieTheater.Controllers
         // value struct so a missing dictionary entry defaults cleanly (Kind/Title null → handled at use).
         private readonly struct TitleInfo
         {
-            public TitleInfo(int posterId, string kind, int posterVersion, int linkId, string title)
-            { PosterId = posterId; Kind = kind; PosterVersion = posterVersion; LinkId = linkId; Title = title; }
+            public TitleInfo(int posterId, string kind, int posterVersion, int linkId, string title, string? plot)
+            { PosterId = posterId; Kind = kind; PosterVersion = posterVersion; LinkId = linkId; Title = title; Plot = plot; }
             public int PosterId { get; }
             public string Kind { get; }
             public int PosterVersion { get; }
             public int LinkId { get; }
             public string Title { get; }
+            public string? Plot { get; }
         }
+
+        // A one-liner for the guide blocks — trim a plot to a bounded length so the cross-channel payload
+        // stays small (the block clamps it to a couple of lines anyway).
+        private static string? ShortPlot(string? s) =>
+            string.IsNullOrWhiteSpace(s) ? null : (s.Length > 160 ? s.Substring(0, 160).TrimEnd() + "…" : s);
 
         // Resolve schedule-item PlayableIds to poster/link info for the lineup readout. Channels air
         // movies, episodes, and misc — each needs the right poster route. An episode shows its SERIES
@@ -480,13 +479,13 @@ namespace MovieTheater.Controllers
 
             var movies = await movieDb.Movies
                 .Where(m => m.PlayableId != null && ids.Contains(m.PlayableId.Value))
-                .Select(m => new { Pid = m.PlayableId!.Value, m.id, m.Title, Ver = m.PosterDetails != null ? m.PosterDetails.PosterVersion : 0 })
+                .Select(m => new { Pid = m.PlayableId!.Value, m.id, m.Title, m.Plot, Ver = m.PosterDetails != null ? m.PosterDetails.PosterVersion : 0 })
                 .ToListAsync();
-            foreach (var m in movies) map[m.Pid] = new TitleInfo(m.id, "movie", m.Ver, m.id, m.Title ?? "");
+            foreach (var m in movies) map[m.Pid] = new TitleInfo(m.id, "movie", m.Ver, m.id, m.Title ?? "", ShortPlot(m.Plot));
 
             var eps = await movieDb.Episodes
                 .Where(e => e.PlayableId != null && ids.Contains(e.PlayableId.Value))
-                .Select(e => new { Pid = e.PlayableId!.Value, e.SeriesId, SeriesTitle = e.Series!.Title, e.SeasonNumber, e.EpisodeNumber, e.Title, Ver = e.Series!.PosterDetails != null ? e.Series.PosterDetails.PosterVersion : 0 })
+                .Select(e => new { Pid = e.PlayableId!.Value, e.SeriesId, SeriesTitle = e.Series!.Title, SeriesPlot = e.Series!.Plot, e.SeasonNumber, e.EpisodeNumber, e.Title, Ver = e.Series!.PosterDetails != null ? e.Series.PosterDetails.PosterVersion : 0 })
                 .ToListAsync();
             foreach (var e in eps)
             {
@@ -495,7 +494,7 @@ namespace MovieTheater.Controllers
                     ? $"{e.SeriesTitle} – {code}"
                     : $"{e.SeriesTitle} – {code} {e.Title}";
                 int sid = e.SeriesId ?? 0;
-                map[e.Pid] = new TitleInfo(sid, "series", e.Ver, sid, title);
+                map[e.Pid] = new TitleInfo(sid, "series", e.Ver, sid, title, ShortPlot(e.SeriesPlot));
             }
 
             var misc = await movieDb.MiscVideos
@@ -504,9 +503,9 @@ namespace MovieTheater.Controllers
                 .ToListAsync();
             foreach (var mv in misc)
             {
-                if (mv.RelatedMovieId is int rm) map[mv.PlayableId] = new TitleInfo(rm, "movie", 0, rm, mv.Title ?? "");
-                else if (mv.RelatedSeriesId is int rs) map[mv.PlayableId] = new TitleInfo(rs, "series", 0, rs, mv.Title ?? "");
-                else map[mv.PlayableId] = new TitleInfo(mv.Id, "misc", 0, 0, mv.Title ?? "");
+                if (mv.RelatedMovieId is int rm) map[mv.PlayableId] = new TitleInfo(rm, "movie", 0, rm, mv.Title ?? "", null);
+                else if (mv.RelatedSeriesId is int rs) map[mv.PlayableId] = new TitleInfo(rs, "series", 0, rs, mv.Title ?? "", null);
+                else map[mv.PlayableId] = new TitleInfo(mv.Id, "misc", 0, 0, mv.Title ?? "", null);
             }
 
             return map;

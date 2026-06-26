@@ -139,7 +139,7 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
     <div className="epg" role="dialog" aria-label="Channel guide">
       <div className="epg-head">
         <span className="epg-title">Channel Guide</span>
-        <span className="epg-clock">{clockLabel(nowMs)}</span>
+        <span className="epg-clock">{new Date(nowMs).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })} · {clockLabel(nowMs)}</span>
         <button className="epg-close" onClick={onClose} aria-label="Close guide">×</button>
       </div>
 
@@ -215,6 +215,7 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
                       >
                         {live && <span className="epg-prog-elapsed" style={{ width: `${elapsedPct}%` }} aria-hidden="true" />}
                         <span className="epg-prog-title">{prog.title}</span>
+                        {prog.plot && <span className="epg-prog-desc">{prog.plot}</span>}
                         <span className="epg-prog-time">{clockLabel(startMs)}</span>
                       </button>
                     );
