@@ -457,6 +457,10 @@ function getChannelAdminMeta() {
   return fetch("/API/Channel/Admin/Meta");
 }
 
+function getChannelAdminPeople(q) {
+  return fetch(`/API/Channel/Admin/People?q=${encodeURIComponent(q)}`);
+}
+
 function getChannelAdminList() {
   return fetch("/API/Channel/Admin/List");
 }
@@ -475,6 +479,20 @@ function deleteChannel(id) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ Id: id }),
   });
+}
+
+// ── Channel viewer surface (the poster browser, homepage rail, EPG) ──
+function getChannelList() {
+  return fetch("/API/Channel/List");
+}
+
+function getGuideGrid(hours = 6) {
+  return fetch(`/API/Channel/GuideGrid?hours=${hours}`);
+}
+
+// Channel favorites ride on the generic per-user settings store as a JSON id array.
+function setFavoriteChannels(ids) {
+  return setUserSetting("FavoriteChannels", JSON.stringify(ids));
 }
 
 // ── User administration (admin-only; gated by AdminUsernames config + a
@@ -711,9 +729,13 @@ const MovieAPI = {
   updateBoardgameRules,
   getSimilarBoardgames,
   getChannelAdminMeta,
+  getChannelAdminPeople,
   getChannelAdminList,
   saveChannel,
   deleteChannel,
+  getChannelList,
+  getGuideGrid,
+  setFavoriteChannels,
   adminGetUsers,
   adminSetUserPassword,
   adminSetUserSetting,

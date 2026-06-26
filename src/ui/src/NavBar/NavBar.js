@@ -235,6 +235,11 @@ function NavBar({
                     📺 TV
                   </button>
                 )}
+                {userData?.hasPassword && (
+                  <button className="navbar-section-item" onClick={() => history.push("/channels")}>
+                    🗂️ Channels
+                  </button>
+                )}
                 {userData?.canEditMovies && (
                   <button className="navbar-section-item" onClick={() => history.push("/review-ingest")}>
                     🗂️ Library Review
@@ -287,6 +292,11 @@ function NavBar({
                 {userData?.hasPassword && (
                   <button className="navbar-section-item" onClick={() => history.push("/tv")}>
                     📺 TV
+                  </button>
+                )}
+                {userData?.hasPassword && (
+                  <button className="navbar-section-item" onClick={() => history.push("/channels")}>
+                    🗂️ Channels
                   </button>
                 )}
                 {userData?.canEditMovies && (

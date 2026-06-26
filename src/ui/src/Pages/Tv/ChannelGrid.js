@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { MovieAPI } from "../../MovieAPI";
 import "./ChannelGrid.css";
 
 const MS_PER_MIN = 60_000;
@@ -159,9 +160,22 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
             const { ch, idx } = g;
             const row = lineup?.byId.get(ch.id);
             const isCurrent = ch.id === currentChannelId;
+            const np = row?.items?.[0]; // now-playing item carries posterId/kind/posterVersion
             return (
               <div key={ch.id} className={`epg-row${isCurrent ? " epg-row--current" : ""}`}>
                 <button className="epg-chan" onClick={() => onPick(ch)} title={`Watch ${ch.name}`}>
+                  {np?.posterId ? (
+                    <img
+                      className="epg-chan-poster"
+                      src={MovieAPI.getPosterThumbnail(np.posterId, np.posterVersion, np.kind)}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+                    />
+                  ) : (
+                    <span className="epg-chan-poster epg-chan-poster--blank" aria-hidden="true" />
+                  )}
                   <span className="epg-chan-num">{idx + 1}</span>
                   <span className="epg-chan-name">{ch.name}</span>
                   <span className="epg-chan-meta">

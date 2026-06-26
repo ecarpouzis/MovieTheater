@@ -13,7 +13,7 @@
 
   --epg-ppm: 9px;
   --epg-chanw: 200px;
-  --epg-rowh: 64px;
+  --epg-rowh: 84px;
 }
 
 /* Category band between channel groups (Channels 2.0). Sticky-left so the label stays visible while
@@ -185,6 +185,19 @@
   background: #1a1710;
 }
 
+/* Now-playing poster on the sticky channel column (Channels 2.0). */
+.epg-chan-poster {
+  flex: 0 0 auto;
+  width: 42px;
+  height: calc(var(--epg-rowh) - 16px);
+  object-fit: cover;
+  border-radius: 5px;
+  background: #0a0907;
+}
+.epg-chan-poster--blank {
+  background: rgba(227, 179, 65, 0.1);
+}
+
 .epg-chan-num {
   flex: 0 0 auto;
   min-width: 24px;
@@ -325,7 +338,7 @@
   .epg {
     --epg-ppm: 5.5px;
     --epg-chanw: 116px;
-    --epg-rowh: 58px;
+    --epg-rowh: 72px;
   }
   .epg-head {
     padding: 10px 14px;

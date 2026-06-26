@@ -3,6 +3,7 @@ import { useHistory, useLocation } from "react-router-dom";
 import CardList from "./CardList";
 import MovieModal from "./MovieModal";
 import SimpleCardList from "./SimpleCardList";
+import NowOnTvRail from "./NowOnTvRail";
 import useIsMobile from "../../hooks/useIsMobile";
 
 // Page size for infinite-scroll modes. Matches the server default in GetMoviesByType.
@@ -287,6 +288,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   return (
     <>
       {infiniteBar}
+      {!location.search && <NowOnTvRail userData={userData} setUserData={setUserData} />}
       {useSimpleStyle ? (
         <SimpleCardList
           movieDataArray={displayMovies}

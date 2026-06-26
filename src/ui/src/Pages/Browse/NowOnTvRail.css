@@ -1,0 +1,48 @@
+/* "Now on TV" rail at the top of Browse — a dark TV strip so the channel cards (dark/cream themed)
+   read against the otherwise-light homepage. */
+.nowtv {
+  background: linear-gradient(to bottom, #14120d, #1c1a14);
+  border: 1px solid rgba(227, 179, 65, 0.18);
+  border-radius: 12px;
+  margin: 0 0 18px;
+  padding: 12px 0 14px;
+  color: #f2ecdd;
+}
+.nowtv-head {
+  display: flex;
+  align-items: center;
+  padding: 0 16px 8px;
+}
+.nowtv-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.nowtv-all {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #e3b341;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.nowtv-all:hover {
+  text-decoration: underline;
+}
+.nowtv-rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  padding: 2px 16px 4px;
+  scrollbar-width: thin;
+}
+.nowtv-rail::-webkit-scrollbar {
+  height: 8px;
+}
+.nowtv-rail::-webkit-scrollbar-thumb {
+  background: rgba(227, 179, 65, 0.3);
+  border-radius: 4px;
+}

@@ -11,6 +11,7 @@ import BatchInsertPage from "./Pages/BatchInsertPage";
 import BoardgameBatchInsertPage from "./Pages/BoardGames/BoardgameBatchInsertPage";
 import WatchPage from "./Pages/Watch/WatchPage";
 import TvPage from "./Pages/Tv/TvPage";
+import ChannelBrowser from "./Pages/Tv/ChannelBrowser";
 import IngestReviewPage from "./Pages/IngestReview/IngestReviewPage";
 import { useMovieSearch } from "./hooks/useMovieSearch";
 
@@ -103,7 +104,10 @@ function App() {
               <WatchPage userData={userData} />
             </Route>
             <Route path="/tv/:channelId?" exact>
-              <TvPage userData={userData} />
+              <TvPage userData={userData} setUserData={setUserData} />
+            </Route>
+            <Route path="/channels" exact>
+              <ChannelBrowser userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/insert" exact>
               <InsertPage />

@@ -6,6 +6,7 @@ import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, HLS_LOAD_CONFIG } from ".
 import { initialAutoBps } from "../../streamAbr";
 import ChannelAdminModal from "./ChannelAdminModal";
 import ChannelGrid from "./ChannelGrid";
+import ChannelBrowser from "./ChannelBrowser";
 import "./TvPage.css";
 
 /**
@@ -16,7 +17,7 @@ import "./TvPage.css";
  * autoplay policy, with a tap-to-unmute affordance. Progress is reported with
  * passive=true so background play never claims you watched Heat.
  */
-function TvPage({ userData }) {
+function TvPage({ userData, setUserData }) {
   const { channelId } = useParams();
   const history = useHistory();
 
@@ -38,7 +39,8 @@ function TvPage({ userData }) {
     const v = parseFloat(window.localStorage.getItem("TvVolume"));
     return Number.isFinite(v) ? Math.min(Math.max(v, 0), 1) : 1;
   });
-  const [gridOpen, setGridOpen] = useState(false); // cross-channel grid guide (the primary chooser)
+  const [gridOpen, setGridOpen] = useState(false); // cross-channel grid guide (the EPG / power view)
+  const [browserOpen, setBrowserOpen] = useState(false); // poster channel browser (the friendly chooser)
   const [menuOpen, setMenuOpen] = useState(false); // settings dropdown (quality / guide / manage / off)
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [, setNowTick] = useState(0); // ticks every second to advance the live progress bar
@@ -89,7 +91,7 @@ function TvPage({ userData }) {
   // Whether any popout is open — read inside the idle timer (not re-bound per change) so a
   // menu/picker/guide left open keeps the chrome up instead of fading mid-interaction.
   const popoutOpenRef = useRef(false);
-  popoutOpenRef.current = gridOpen || menuOpen || guideOpen;
+  popoutOpenRef.current = gridOpen || menuOpen || guideOpen || browserOpen;
 
   // The schedule item currently playing — used to scope skip votes and to notice when
   // the channel has moved on (a skip elsewhere, or a natural advance) so we re-tune.
@@ -568,15 +570,24 @@ function TvPage({ userData }) {
     setMuted(v === 0);
   }, []);
 
-  // The channel button opens the full grid guide — the primary way to choose a channel.
-  const openGrid = useCallback((e) => {
-    e.stopPropagation();
+  // The channel button opens the poster browser — the friendly default chooser; the EPG grid is one
+  // tap away (via the browser's Guide button, or the C hotkey for power users).
+  const openBrowser = useCallback((e) => {
+    e?.stopPropagation();
     setMenuOpen(false);
+    setGridOpen(false);
+    setBrowserOpen(true);
+  }, []);
+  const openGrid = useCallback((e) => {
+    e?.stopPropagation();
+    setMenuOpen(false);
+    setBrowserOpen(false);
     setGridOpen(true);
   }, []);
-  // Picking a channel from the grid tunes to it and closes the guide.
+  // Picking a channel from either chooser tunes to it and closes the overlays.
   const pickChannel = useCallback((ch) => {
     setGridOpen(false);
+    setBrowserOpen(false);
     setChannel(ch);
   }, []);
   const toggleMenu = useCallback((e) => {
@@ -769,13 +780,13 @@ function TvPage({ userData }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.tagName === "INPUT" || adminOpen) return;
-      // While the grid guide is open it owns the keyboard (its own Esc closes it).
-      if (gridOpen) return;
+      // While a chooser overlay is open it owns the keyboard (its own Esc closes it).
+      if (gridOpen || browserOpen) return;
       if (e.key === "ArrowUp") switchBy(1);
       else if (e.key === "ArrowDown") switchBy(-1);
       else if (e.key === "m") setMuted((m) => !m);
       else if (e.key === "g") setGuideOpen((g) => !g);
-      else if (e.key === "c") setGridOpen(true); // open the channel guide (the grid)
+      else if (e.key === "c") setBrowserOpen(true); // open the poster channel browser
       else if (e.key === "k" || e.key === " ") togglePlayPause();
       else if (e.key === "f") toggleFullscreen();
       else if (/^[1-9]$/.test(e.key) && channels) {
@@ -787,7 +798,7 @@ function TvPage({ userData }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [switchBy, channels, adminOpen, gridOpen, togglePlayPause, toggleFullscreen, wakeChrome]);
+  }, [switchBy, channels, adminOpen, gridOpen, browserOpen, togglePlayPause, toggleFullscreen, wakeChrome]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -851,7 +862,7 @@ function TvPage({ userData }) {
   const volumeIcon = muted || volume === 0 ? "🔇" : volume < 0.5 ? "🔉" : "🔊";
 
   // The bar fades out only once the chrome is idle and nothing is popped out over the picture.
-  const chromeHidden = !chromeVisible && !gridOpen && !menuOpen && !guideOpen;
+  const chromeHidden = !chromeVisible && !gridOpen && !menuOpen && !guideOpen && !browserOpen;
 
   return (
     /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/media-has-caption */
@@ -1058,7 +1069,7 @@ function TvPage({ userData }) {
         </div>
         <div className="tv-bar-row">
           {channel && (
-            <button className="tv-bar-channel" onClick={openGrid} title="Open the channel guide (C)">
+            <button className="tv-bar-channel" onClick={openBrowser} title="Browse channels (C)">
               <span className="tv-bar-channel-num">{channelNumber}</span>
               <span className="tv-bar-channel-name">{channel.name}</span>
               <span className="tv-bar-channel-guide">
@@ -1071,15 +1082,39 @@ function TvPage({ userData }) {
           {now?.current && (
             <div className="tv-bar-info">
               <div className="tv-bar-now">
-                <span className="tv-bar-tag">Now</span>
-                <span className="tv-bar-title">{now.current.title}</span>
-                <span className="tv-bar-time">ends {new Date(now.current.endsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                {now.current.posterId ? (
+                  <img
+                    className="tv-bar-poster"
+                    src={MovieAPI.getPosterThumbnail(now.current.posterId, now.current.posterVersion, now.current.kind)}
+                    alt=""
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                ) : null}
+                <span className="tv-bar-textcol">
+                  <span className="tv-bar-titleline">
+                    <span className="tv-bar-tag">Now</span>
+                    <span className="tv-bar-title">{now.current.title}</span>
+                  </span>
+                  <span className="tv-bar-time">ends {new Date(now.current.endsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                </span>
               </div>
               {now.next?.[0] && (
                 <div className="tv-bar-next">
-                  <span className="tv-bar-tag">Next</span>
-                  <span className="tv-bar-title">{now.next[0].title}</span>
-                  <span className="tv-bar-time">{new Date(now.next[0].startsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                  {now.next[0].posterId ? (
+                    <img
+                      className="tv-bar-poster tv-bar-poster--sm"
+                      src={MovieAPI.getPosterThumbnail(now.next[0].posterId, now.next[0].posterVersion, now.next[0].kind)}
+                      alt=""
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  ) : null}
+                  <span className="tv-bar-textcol">
+                    <span className="tv-bar-titleline">
+                      <span className="tv-bar-tag">Next</span>
+                      <span className="tv-bar-title">{now.next[0].title}</span>
+                    </span>
+                    <span className="tv-bar-time">{new Date(now.next[0].startsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                  </span>
                 </div>
               )}
             </div>
@@ -1182,7 +1217,17 @@ function TvPage({ userData }) {
         </div>
       </div>
 
-      {/* The cross-channel grid guide — the primary chooser. Overlays the whole room while open. */}
+      {/* The poster channel browser — the friendly default chooser; its Guide button opens the grid. */}
+      <ChannelBrowser
+        open={browserOpen}
+        onPick={pickChannel}
+        onClose={() => setBrowserOpen(false)}
+        onGuide={openGrid}
+        userData={userData}
+        setUserData={setUserData}
+      />
+
+      {/* The cross-channel grid guide (EPG) — the power view, reachable from the browser or the C key. */}
       <ChannelGrid
         open={gridOpen}
         channels={channels || []}
