@@ -1,5 +1,9 @@
-# Build react app
-FROM node:20-alpine AS reactapp-build
+# Build react app on glibc (node:20-slim), not alpine/musl. Vite 8 bundles via rolldown, whose native
+# bundler binding ships as a per-platform optionalDependency; npm doesn't reliably install the *musl*
+# binding from a lock generated on another OS/libc (npm/cli#4828), so the alpine build can't find
+# @rolldown/binding-linux-x64-musl. glibc uses the linux-x64-gnu binding (also present in the lock) and
+# avoids the issue. The release stage stays alpine — it only serves the platform-independent static build.
+FROM node:20-slim AS reactapp-build
 WORKDIR /build
 COPY src/ui/package.json .
 COPY src/ui/package-lock.json .
