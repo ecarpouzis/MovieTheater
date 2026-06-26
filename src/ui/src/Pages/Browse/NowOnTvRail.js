@@ -6,7 +6,7 @@ import ChannelCard from "../Tv/ChannelCard";
 import "./NowOnTvRail.css";
 
 /**
- * A "Now on TV" poster rail at the top of Browse — surfaces channels from the homepage so the lineup
+ * A "Now Playing" poster rail at the top of Browse — surfaces channels from the homepage so the lineup
  * gets discovered, not just hidden in /tv. Favorites first, then a curated slice. Only shown to
  * streaming-enabled users; a card tunes straight to the channel.
  */
@@ -35,13 +35,11 @@ export default function NowOnTvRail({ userData, setUserData }) {
     if (!lineup) return [];
     const favs = lineup.filter((c) => isFavorite(c.id));
     const favIds = new Set(favs.map((c) => c.id));
-    // Favorites first, then the busiest (most viewers). Capped well above what fits on screen so the
-    // rail always overflows into a scroll (no dead space on wide monitors) — the full guide is one
-    // "All channels" click away.
+    // Favorites first, then the rest busiest-first — the whole lineup, uncapped, so the rail scrolls
+    // through every channel that's on right now (the /channels guide shows the same set by category).
     const rest = lineup
       .filter((c) => !favIds.has(c.id))
-      .sort((a, b) => (b.viewers || 0) - (a.viewers || 0))
-      .slice(0, Math.max(0, 40 - favs.length));
+      .sort((a, b) => (b.viewers || 0) - (a.viewers || 0));
     return [...favs, ...rest];
   }, [lineup, isFavorite]);
 
@@ -52,7 +50,7 @@ export default function NowOnTvRail({ userData, setUserData }) {
     <div className="nowtv">
       <div className="nowtv-head">
         <span className="nowtv-live" aria-hidden="true" />
-        <span className="nowtv-title">Now on TV</span>
+        <span className="nowtv-title">Now Playing</span>
         <button className="nowtv-all" onClick={() => history.push("/channels")}>All channels →</button>
       </div>
       <div className="nowtv-rail" ref={railRef}>
