@@ -111,6 +111,19 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
     didScrollRef.current = true;
   }, [open, lineup, nowPct]);
 
+  // Inject a category header before the first channel of each group. Channels arrive pre-sorted in
+  // catalog order, so categories are contiguous; numbering still follows channel position.
+  const grouped = useMemo(() => {
+    const out = [];
+    let last = null;
+    channels.forEach((ch, idx) => {
+      const cat = ch.category || "Channels";
+      if (cat !== last) { out.push({ header: cat }); last = cat; }
+      out.push({ ch, idx });
+    });
+    return out;
+  }, [channels]);
+
   if (!open) return null;
 
   return (
@@ -137,8 +150,13 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
             </div>
           </div>
 
-          {/* one row per channel (rows come from the caller, numbered by position) */}
-          {channels.map((ch, idx) => {
+          {/* one row per channel, grouped by category (rows numbered by position) */}
+          {grouped.map((g) => {
+            if (g.header)
+              return (
+                <div key={`h-${g.header}`} className="epg-group">{g.header}</div>
+              );
+            const { ch, idx } = g;
             const row = lineup?.byId.get(ch.id);
             const isCurrent = ch.id === currentChannelId;
             return (

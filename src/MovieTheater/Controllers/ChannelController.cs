@@ -55,6 +55,7 @@ namespace MovieTheater.Controllers
 
             var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
 
+            var now = DateTime.UtcNow;
             var channels = await movieDb.Channels
                 .Where(c => c.Enabled)
                 .OrderBy(c => c.SortOrder)
@@ -64,9 +65,11 @@ namespace MovieTheater.Controllers
             var visible = new List<object>();
             foreach (var c in channels)
             {
+                if (!ChannelSeason.InSeason(c, now))
+                    continue; // seasonal channels are hidden outside their window (lineup stays warm)
                 var ceiling = await scheduleService.GetCeilingAsync(c);
                 if (ceiling <= ageRestriction)
-                    visible.Add(new { id = c.Id, name = c.Name, description = c.Description });
+                    visible.Add(new { id = c.Id, name = c.Name, description = c.Description, category = c.Category });
             }
 
             return Json(visible);
@@ -359,11 +362,13 @@ namespace MovieTheater.Controllers
             var now = DateTime.UtcNow;
             var until = now.AddHours(hours);
 
-            var channels = await movieDb.Channels
+            var channels = (await movieDb.Channels
                 .Where(c => c.Enabled)
                 .OrderBy(c => c.SortOrder)
                 .ThenBy(c => c.Id)
-                .ToListAsync();
+                .ToListAsync())
+                .Where(c => ChannelSeason.InSeason(c, now))
+                .ToList();
 
             // Gate by the cached ceiling. Compute at most a few cold ones inline; skip the rest (they
             // surface on the next refresh once warmed) so the request stays bounded regardless of count.
@@ -412,16 +417,41 @@ namespace MovieTheater.Controllers
             return Json(new { serverNowUtc = now, hours, items = result });
         }
 
-        // Resolve a set of schedule-item PlayableIds to their movie (id + title) for the lineup readout.
-        // Channels currently air movies; episode playables would resolve here too once scheduled.
+        // Resolve a set of schedule-item PlayableIds to a (posterId, title) for the lineup readout.
+        // Channels air movies, episodes, and misc videos, so resolve all three kinds. The posterId is the
+        // /Image id the client shows: a movie's own id, an episode's series id (series poster), or a misc
+        // video's related title (else 0 = no poster).
         private async Task<Dictionary<int, (int MovieId, string Title)>> TitlesForAsync(IEnumerable<int> playableIds)
         {
             var ids = playableIds.Distinct().ToList();
-            var rows = await movieDb.Movies
+            var map = new Dictionary<int, (int MovieId, string Title)>();
+
+            var movies = await movieDb.Movies
                 .Where(m => m.PlayableId != null && ids.Contains(m.PlayableId.Value))
-                .Select(m => new { PlayableId = m.PlayableId!.Value, m.id, m.Title })
+                .Select(m => new { Pid = m.PlayableId!.Value, m.id, m.Title })
                 .ToListAsync();
-            return rows.ToDictionary(r => r.PlayableId, r => (r.id, r.Title ?? ""));
+            foreach (var m in movies) map[m.Pid] = (m.id, m.Title ?? "");
+
+            var eps = await movieDb.Episodes
+                .Where(e => e.PlayableId != null && ids.Contains(e.PlayableId.Value))
+                .Select(e => new { Pid = e.PlayableId!.Value, e.SeriesId, SeriesTitle = e.Series!.Title, e.SeasonNumber, e.EpisodeNumber, e.Title })
+                .ToListAsync();
+            foreach (var e in eps)
+            {
+                var code = $"S{e.SeasonNumber:00}E{e.EpisodeNumber:00}";
+                var title = string.IsNullOrWhiteSpace(e.Title)
+                    ? $"{e.SeriesTitle} – {code}"
+                    : $"{e.SeriesTitle} – {code} {e.Title}";
+                map[e.Pid] = (e.SeriesId ?? 0, title);
+            }
+
+            var misc = await movieDb.MiscVideos
+                .Where(mv => ids.Contains(mv.PlayableId))
+                .Select(mv => new { mv.PlayableId, mv.Title, mv.RelatedMovieId, mv.RelatedSeriesId })
+                .ToListAsync();
+            foreach (var mv in misc) map[mv.PlayableId] = (mv.RelatedMovieId ?? mv.RelatedSeriesId ?? 0, mv.Title ?? "");
+
+            return map;
         }
     }
 }

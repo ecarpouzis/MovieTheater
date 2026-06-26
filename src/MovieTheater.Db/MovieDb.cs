@@ -236,6 +236,13 @@ namespace MovieTheater.Db
                 .HasForeignKey(i => i.PlayableId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // A code-catalog channel is identified by CatalogKey (so it survives a rename); the index is
+            // filtered so the many NULL keys of hand-made channels don't collide. Mirrors Person.ImdbNameId.
+            modelBuilder.Entity<Channel>()
+                .HasIndex(c => c.CatalogKey)
+                .IsUnique()
+                .HasFilter("[CatalogKey] IS NOT NULL");
+
             // ── AI-inferred insights (model-sourced discovery metadata; additive side tables) ──
             // No DB-level FK to the subject: a TitleInsight points at a Movie OR a Series through the
             // shared id space (SubjectKind + SubjectId), exactly like Viewing/MiscVideo relations are
@@ -245,6 +252,13 @@ namespace MovieTheater.Db
                 .WithMany(i => i.Tags)
                 .HasForeignKey(t => t.TitleInsightId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Picking the "current" insight per subject (highest SpecVersion, then latest GeneratedUtc,
+            // then Id) is a correlated "no strictly-better row exists" predicate run for every channel's
+            // eligible set. This composite makes that probe an index seek. Supersedes the plain
+            // (SubjectKind, SubjectId) annotation index for these lookups.
+            modelBuilder.Entity<TitleInsight>()
+                .HasIndex(ti => new { ti.SubjectKind, ti.SubjectId, ti.SpecVersion, ti.GeneratedUtc, ti.Id });
         }
 
         public DbSet<Movie> Movies { get; set; }

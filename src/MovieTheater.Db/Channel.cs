@@ -25,19 +25,57 @@ namespace MovieTheater.Db
         public bool Enabled { get; set; } = true;
 
         /// <summary>
-        /// JSON: { genreIds:[..], genreMode:"all"|"any", yearMin?, yearMax?,
-        /// maxMpaRatingId?, unwatchedByUserId?, excludeRemoveFromRandom:true }.
+        /// Serialized <c>ChannelFilter</c> — the eligibility predicate bag. Beyond the original
+        /// genre/year/MPAA/unwatched fields it now carries content kinds, numeric ranges (IMDb/RT/
+        /// popularity/runtime), AI slider ranges + tag rules, language/country, credits, and
+        /// freshness. All fields optional, so old FilterJson deserializes unchanged.
         /// </summary>
         public string? FilterJson { get; set; }
 
         public int Seed { get; set; }
 
-        /// <summary>"SeededShuffle" (default) or "ReleaseDate" (ascending, looping).</summary>
+        /// <summary>"SeededShuffle" (default) or "ReleaseDate" (ascending, looping). Superseded by
+        /// <see cref="ScheduleStrategy"/> when that is set; kept for back-compat with existing rows.</summary>
         [MaxLength(32)]
         public string ShuffleMode { get; set; } = "SeededShuffle";
 
         /// <summary>Schedule epoch — items are only generated after this instant.</summary>
         public DateTime AnchorUtc { get; set; }
+
+        // ── Channels 2.0 (additive, nullable) ──
+
+        /// <summary>Stable identity for a code-defined catalog channel, so the upsert can find it even
+        /// after a rename. NULL = a hand-made (admin-created) channel the catalog never touches.</summary>
+        [MaxLength(64)]
+        public string? CatalogKey { get; set; }
+
+        /// <summary>How the lineup is ordered: "SeededShuffle" | "WeightedShuffle" | "ReleaseDate" |
+        /// "NewestFirst" | "Marathon" | "EpisodeRoundRobin". NULL ⇒ map from the legacy
+        /// <see cref="ShuffleMode"/>.</summary>
+        [MaxLength(32)]
+        public string? ScheduleStrategy { get; set; }
+
+        /// <summary>Serialized <c>ChannelRotation</c> for a rotating spotlight (Director/Franchise of
+        /// the Week, …): a cadence + an ordered list of subject filters resolved deterministically from
+        /// the date. NULL = not a rotating channel.</summary>
+        public string? RotationJson { get; set; }
+
+        // Seasonal window (deterministic from the current date; null parts ⇒ always in-season). The
+        // channel stays Enabled year-round; only its visibility/sort in the guide is gated, so its
+        // lineup never goes cold off-season.
+        public int? SeasonStartMonth { get; set; }
+        public int? SeasonStartDay { get; set; }
+        public int? SeasonEndMonth { get; set; }
+        public int? SeasonEndDay { get; set; }
+
+        /// <summary>UI grouping / family label ("Genres", "Anime", "Seasonal", …) for the channel browser.</summary>
+        [MaxLength(48)]
+        public string? Category { get; set; }
+
+        /// <summary>Optional hand-set channel logo path; the UI otherwise derives a tile from a
+        /// representative title's poster.</summary>
+        [MaxLength(256)]
+        public string? LogoPath { get; set; }
 
         public ICollection<ChannelScheduleItem> ScheduleItems { get; set; } = [];
     }
