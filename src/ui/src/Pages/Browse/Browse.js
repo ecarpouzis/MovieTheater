@@ -252,7 +252,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       const mode = params.get("mode");
       if (modeActionMap[mode] === action && movieDataArray.some((m) => m.id === movieId)) {
         setMovieDataArray((prev) => prev.filter((m) => m.id !== movieId));
-        // Keep the infinite-scroll "Showing X of Y" total in sync with the removal
+        // Keep the infinite-scroll total in sync with the removal so hasMore stays correct
         // (no-op when not infinite, where pagination is null).
         setPagination((prev) => (prev ? { ...prev, totalCount: Math.max(0, prev.totalCount - 1) } : prev));
       }
@@ -265,23 +265,6 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     );
   };
 
-  // Lightweight count header for infinite-scroll modes (no page buttons — the list streams).
-  const infiniteBar = isInfinite && pagination ? (
-    <div style={{
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: "10px 16px",
-      background: "#001529",
-      borderBottom: "1px solid #1e3a57",
-      borderTop: "1px solid #1e3a57",
-    }}>
-      <span style={{ color: "#8fa8c0", fontSize: "13px", letterSpacing: "0.3px" }}>
-        {pagination.totalCount === 0
-          ? "No movies found"
-          : `Showing ${movieDataArray.length} of ${pagination.totalCount} movie${pagination.totalCount !== 1 ? "s" : ""}`}
-      </span>
-    </div>
-  ) : null;
-
   if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", padding: "64px" }}>
@@ -292,7 +275,6 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
 
   return (
     <>
-      {infiniteBar}
       {!location.search && <NowOnTvRail userData={userData} setUserData={setUserData} />}
       {useSimpleStyle ? (
         <SimpleCardList

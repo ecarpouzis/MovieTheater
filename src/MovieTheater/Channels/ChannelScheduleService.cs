@@ -99,7 +99,7 @@ namespace MovieTheater.Channels
         private sealed record Cand(
             int PlayableId, long? DurationTicks, int? RuntimeMinutes,
             string? RatingA, string? RatingB, string? RatingC,
-            decimal? ImdbRating, int? Tomatometer, int? Rewatchability,
+            decimal? ImdbRating, int? Tomatometer,
             long OrderRank, int GroupId, string? SortKey);
 
         /// <summary>
@@ -118,6 +118,19 @@ namespace MovieTheater.Channels
                 cands.AddRange(await EpisodeCandidates(filter).ToListAsync(cancel));
             if (filter.Kinds.HasFlag(ContentKinds.Misc))
                 cands.AddRange(await MiscCandidates(filter).ToListAsync(cancel));
+
+            // Resolve each candidate's current-insight rewatchability with one map per kind, rather than a
+            // correlated best-insight subquery per candidate (identical value — CurrentInsights is unique
+            // per subject). Movies/misc key on the title id (OrderRank; a misc id misses the movie map →
+            // null, as before); episodes key on the series id (GroupId).
+            var movieSubjectIds = cands.Where(c => c.GroupId == 0).Select(c => (int)c.OrderRank).Distinct().ToList();
+            var seriesSubjectIds = cands.Where(c => c.GroupId != 0).Select(c => c.GroupId).Distinct().ToList();
+            var movieRewatch = movieSubjectIds.Count == 0 ? new Dictionary<int, int?>()
+                : await CurrentInsights(InsightSubjectKind.Movie).Where(ti => movieSubjectIds.Contains(ti.SubjectId))
+                    .Select(ti => new { ti.SubjectId, ti.Rewatchability }).ToDictionaryAsync(x => x.SubjectId, x => x.Rewatchability, cancel);
+            var seriesRewatch = seriesSubjectIds.Count == 0 ? new Dictionary<int, int?>()
+                : await CurrentInsights(InsightSubjectKind.Series).Where(ti => seriesSubjectIds.Contains(ti.SubjectId))
+                    .Select(ti => new { ti.SubjectId, ti.Rewatchability }).ToDictionaryAsync(x => x.SubjectId, x => x.Rewatchability, cancel);
 
             // Real-bucket (1..6) rating map, resolved in memory like the rest of the age gate (RatingGate).
             var ratingRows = await movieDb.RatingMaps
@@ -159,8 +172,11 @@ namespace MovieTheater.Channels
                     : (c.Tomatometer.HasValue ? c.Tomatometer.Value / 100.0 : (double?)null);
 
                 if (ratingId > maxRating) maxRating = ratingId;
+                int? rewatch = c.GroupId != 0
+                    ? seriesRewatch.GetValueOrDefault(c.GroupId)
+                    : movieRewatch.GetValueOrDefault((int)c.OrderRank);
                 items.Add(new EligibleItem(c.PlayableId, durationTicks, ratingId,
-                    c.Rewatchability, quality, c.OrderRank, c.GroupId, c.SortKey ?? ""));
+                    rewatch, quality, c.OrderRank, c.GroupId, c.SortKey ?? ""));
             }
 
             int ceiling = filter.MaxMpaRatingId ?? (maxRating == 0 ? RatingGate.UnknownRatingId : maxRating);
@@ -257,14 +273,14 @@ namespace MovieTheater.Channels
 
         private IQueryable<Cand> MovieCandidates(ChannelFilter filter)
         {
-            var cur = CurrentInsights(InsightSubjectKind.Movie);
+            // Rewatchability is resolved in BuildEligibleCoreAsync via one map per kind (keyed by the title
+            // id carried in OrderRank), not a correlated best-insight subquery per row.
             return MovieQuery(filter).Select(m => new Cand(
                 m.PlayableId!.Value,
                 m.Playable!.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
                 m.RuntimeMinutes,
                 m.MpaaRating, m.Rating, m.MpaaRatingInferred,
                 m.ImdbRatingScraped, m.RtTomatometer,
-                cur.Where(ti => ti.SubjectId == m.id).Select(ti => (int?)ti.Rewatchability).FirstOrDefault(),
                 (long)m.id, 0, m.SimpleTitle));
         }
 
@@ -327,7 +343,8 @@ namespace MovieTheater.Channels
         private IQueryable<Cand> EpisodeCandidates(ChannelFilter filter)
         {
             var sq = SeriesQuery(filter);
-            var cur = CurrentInsights(InsightSubjectKind.Series);
+            // Rewatchability (the series' current insight) is resolved in BuildEligibleCoreAsync via a map
+            // keyed by GroupId (the series id), not a correlated subquery per episode.
             return movieDb.Episodes
                 .Where(e => e.SeriesId != null && e.PlayableId != null
                     && sq.Any(s => s.Id == e.SeriesId)
@@ -338,7 +355,6 @@ namespace MovieTheater.Channels
                     e.RuntimeMinutes,
                     e.Series!.MpaaRating, e.Series.Rating, e.Series.MpaaRatingInferred,
                     e.Series.ImdbRatingScraped, e.Series.RtTomatometer,
-                    cur.Where(ti => ti.SubjectId == e.SeriesId).Select(ti => (int?)ti.Rewatchability).FirstOrDefault(),
                     (long)e.SeriesId!.Value * 1_000_000L + e.SeasonNumber * 1000 + e.EpisodeNumber,
                     e.SeriesId!.Value,
                     e.Series.SimpleTitle));
@@ -372,12 +388,14 @@ namespace MovieTheater.Channels
 
         private IQueryable<Cand> MiscCandidates(ChannelFilter filter)
         {
+            // Misc has no insight rewatchability; the movie-map lookup in BuildEligibleCoreAsync misses its
+            // (disjoint) id → null, exactly as the old per-row subquery returned.
             return MiscQuery(filter).Select(mv => new Cand(
                 mv.PlayableId,
                 mv.Playable.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
                 null,
                 null, null, mv.MpaaRatingInferred,
-                null, null, null,
+                null, null,
                 (long)mv.Id, 0, mv.SimpleTitle));
         }
 
