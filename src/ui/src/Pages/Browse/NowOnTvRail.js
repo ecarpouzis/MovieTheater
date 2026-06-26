@@ -32,7 +32,7 @@ export default function NowOnTvRail({ userData, setUserData }) {
 
   return (
     <div className="nowtv">
-      <div className="nowtv-label">
+      <div className="nowtv-head">
         <span className="nowtv-title">Now on TV</span>
         <button className="nowtv-all" onClick={() => history.push("/channels")}>All channels →</button>
       </div>

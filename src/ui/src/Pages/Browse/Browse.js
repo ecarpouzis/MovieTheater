@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
+import { Spin } from "antd";
 import CardList from "./CardList";
 import MovieModal from "./MovieModal";
 import SimpleCardList from "./SimpleCardList";
@@ -282,7 +283,11 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   ) : null;
 
   if (loading) {
-    return <span>Loading</span>;
+    return (
+      <div style={{ display: "flex", justifyContent: "center", padding: "64px" }}>
+        <Spin size="large" />
+      </div>
+    );
   }
 
   return (

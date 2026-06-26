@@ -100,8 +100,11 @@ export function useMovieSearch() {
       setSearch({ url: RANDOM_MOVIES_URL, titleTypes: [] });
       return;
     }
-    // infinite: this endpoint is paginated server-side; Browse streams it page-by-page.
-    setSearch({ url: `/API/GetMoviesByType?type=${encodeURIComponent(list.join(","))}`, titleTypes: list, infinite: true });
+    // infinite: this endpoint is paginated server-side; Browse streams it page-by-page. A fresh seed
+    // per call gives a random assortment that's stable across pages (infinite scroll won't dupe/skip)
+    // yet different on each visit/refresh.
+    const seed = Math.floor(Math.random() * 1_000_000_000);
+    setSearch({ url: `/API/GetMoviesByType?type=${encodeURIComponent(list.join(","))}&seed=${seed}`, titleTypes: list, infinite: true });
   }, []);
 
   const ratingSearch = useCallback((maxRatingId, types) => {

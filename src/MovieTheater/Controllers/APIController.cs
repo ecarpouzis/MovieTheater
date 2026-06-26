@@ -436,7 +436,7 @@ namespace MovieTheater.Controllers
         // behavior) for any caller that still wants the full list. Combos without Misc stay fully
         // DB-paged; only Misc-inclusive combos pay an in-memory merge (Misc is a materialized list).
         [HttpGet("/API/GetMoviesByType")]
-        public async Task<IActionResult> GetMoviesByType(string type, int page = 1, int pageSize = 60)
+        public async Task<IActionResult> GetMoviesByType(string type, int page = 1, int pageSize = 60, int? seed = null)
         {
             var types = ParseTypeScope(type);
             if (types.Count == 0)
@@ -462,8 +462,20 @@ namespace MovieTheater.Controllers
                 if (mq != null && sq != null)
                     return Ok(await PageMergedAsync(mq, sq, page, pageSize));
                 if (mq != null)
-                    return Ok(await PageCardsAsync(mq.OrderBy(m => m.SimpleTitle).ThenBy(m => m.id).Select(ToCardDto), page, pageSize));
-                return Ok(await PageCardsAsync(sq!.OrderBy(s => s.SimpleTitle).ThenBy(s => s.Id).Select(ToSeriesCardDto), page, pageSize));
+                {
+                    // A seed (the landing/discovery grid) shuffles deterministically: (id+seed)*C mod a
+                    // prime (C a large constant coprime to it) is a permutation, so the order is stable
+                    // across pages (infinite scroll stays consistent) yet different per seed. No seed →
+                    // A→Z by title (the letter nav relies on it).
+                    var mo = seed is int sm
+                        ? mq.OrderBy(m => ((long)m.id + sm) * 2654435761L % 2147483647L)
+                        : mq.OrderBy(m => m.SimpleTitle).ThenBy(m => m.id);
+                    return Ok(await PageCardsAsync(mo.Select(ToCardDto), page, pageSize));
+                }
+                var so = seed is int ss
+                    ? sq!.OrderBy(s => ((long)s.Id + ss) * 2654435761L % 2147483647L)
+                    : sq!.OrderBy(s => s.SimpleTitle).ThenBy(s => s.Id);
+                return Ok(await PageCardsAsync(so.Select(ToSeriesCardDto), page, pageSize));
             }
 
             // Misc mixed with movies/series → merge all selected sources in memory, ordered uniformly by

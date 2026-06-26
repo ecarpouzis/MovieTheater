@@ -1,21 +1,16 @@
-/* "Now on TV" — one sleek strip on the Browse homepage: a small inline label, then a row of compact
-   now-playing channel cards. No box, no header bar; it blends into the (dark) page. */
+/* "Now on TV" — a tight, sleek strip on the Browse homepage: a minimal text header, then a row of
+   small now-playing channel tiles (poster + channel + "▸ what's on"). No box; blends into the page. */
 .nowtv {
-  display: flex;
-  align-items: stretch;
-  gap: 16px;
-  margin: 0 0 16px;
-  padding: 0 0 12px;
+  margin: 0 0 14px;
+  padding: 0 0 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.nowtv-label {
-  flex: 0 0 auto;
-  width: 92px;
+.nowtv-head {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 .nowtv-title {
   font-size: 12px;
@@ -25,11 +20,11 @@
   color: #e3b341;
 }
 .nowtv-all {
+  margin-left: auto;
   background: none;
   border: none;
   padding: 0;
-  text-align: left;
-  color: rgba(235, 235, 235, 0.55);
+  color: rgba(235, 235, 235, 0.5);
   font-size: 11px;
   cursor: pointer;
 }
@@ -38,8 +33,6 @@
 }
 
 .nowtv-rail {
-  flex: 1 1 auto;
-  min-width: 0;
   display: flex;
   gap: 10px;
   overflow-x: auto;
@@ -49,27 +42,62 @@
   scrollbar-width: thin;
 }
 .nowtv-rail::-webkit-scrollbar {
-  height: 7px;
+  height: 6px;
 }
 .nowtv-rail::-webkit-scrollbar-thumb {
-  background: rgba(227, 179, 65, 0.28);
+  background: rgba(227, 179, 65, 0.25);
   border-radius: 4px;
 }
 
-/* Compact cards in the rail: smaller posters, just "now" (the grid is for what's coming up). */
+/* Compact tiles: small poster, channel name, "▸ now-playing". Tight — no wasted margin, no tags/Next. */
 .nowtv .chcard {
-  width: 96px;
+  width: 66px;
 }
-.nowtv .chcard-line--next {
-  display: none;
+.nowtv .chcard-art {
+  border-radius: 6px;
+}
+.nowtv .chcard-meta {
+  padding: 4px 0 0;
 }
 .nowtv .chcard-name {
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .nowtv .chcard-line {
-  font-size: 10px;
+  font-size: 9px;
+  line-height: 1.2;
+  margin-top: 1px;
+  color: rgba(235, 235, 235, 0.62);
 }
-.nowtv .chcard-tag {
-  font-size: 8px;
-  margin-right: 3px;
+.nowtv .chcard-line::before {
+  content: "▸ ";
+  color: #e3b341;
+}
+.nowtv .chcard-line--next,
+.nowtv .chcard-tag,
+.nowtv .chcard-fav {
+  display: none;
+}
+.nowtv .chcard-viewers,
+.nowtv .chcard-paused {
+  font-size: 9px;
+  padding: 0 4px;
+  bottom: 4px;
+}
+
+/* Mobile: even smaller, poster + channel name only (drop the now-playing line to save space). */
+@media (max-width: 640px) {
+  .nowtv .chcard {
+    width: 54px;
+  }
+  .nowtv .chcard-name {
+    font-size: 9px;
+  }
+  .nowtv .chcard-line {
+    display: none;
+  }
 }
