@@ -137,6 +137,14 @@ namespace MovieTheater.Controllers
                 .ToList();
 
             var cur = titles.GetValueOrDefault(current.PlayableId);
+            // A short plot for the now-playing title (a movie's own, or an episode's series) — feeds the
+            // in-player bar's "what's on" blurb. One PK lookup; null when there's no plot (e.g. misc).
+            string? nowPlot = cur.Kind switch
+            {
+                "movie" => await movieDb.Movies.Where(m => m.id == cur.PosterId).Select(m => m.Plot).FirstOrDefaultAsync(),
+                "series" => await movieDb.Series.Where(s => s.Id == cur.PosterId).Select(s => s.Plot).FirstOrDefaultAsync(),
+                _ => null,
+            };
             return Json(new
             {
                 current = new
@@ -148,6 +156,7 @@ namespace MovieTheater.Controllers
                     kind = cur.Kind ?? "movie",
                     posterVersion = cur.PosterVersion,
                     title = cur.Title ?? "",
+                    plot = nowPlot,
                     offsetSeconds = Math.Max(0, (clock - current.StartUtc).TotalSeconds),
                     durationSeconds = (current.EndUtc - current.StartUtc).TotalSeconds,
                     endsAtUtc = current.EndUtc,

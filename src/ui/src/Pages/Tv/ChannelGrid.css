@@ -16,21 +16,38 @@
   --epg-rowh: 84px;
 }
 
+/* /channels page: render the guide full-screen (the .epg overlay fills this fixed wrapper). */
+.channel-guide-page {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
 /* Category band between channel groups (Channels 2.0). Sticky-left so the label stays visible while
    the program track scrolls horizontally. */
 .epg-group {
+  display: flex;
+  align-items: stretch;
+  min-width: 100%;
+  width: max-content;
+  border-top: 1px solid rgba(227, 179, 65, 0.18);
+  background: linear-gradient(to bottom, rgba(227, 179, 65, 0.1), rgba(227, 179, 65, 0.02));
+}
+/* The band is full-width and scrolls; this label sticks to the left so the shelf title stays visible
+   (a full-width sticky element can't pin its own text). Opaque bg so it's readable when pinned. */
+.epg-group-label {
   position: sticky;
   left: 0;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
   padding: 7px 14px 5px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: #e3b341;
-  background: linear-gradient(to bottom, rgba(227, 179, 65, 0.1), rgba(227, 179, 65, 0.02));
-  border-top: 1px solid rgba(227, 179, 65, 0.18);
-  min-width: 100%;
-  width: max-content;
+  background: #1a1509;
 }
 
 .epg-head {

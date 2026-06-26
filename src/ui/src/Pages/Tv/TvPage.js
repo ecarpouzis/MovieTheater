@@ -1083,8 +1083,9 @@ function TvPage({ userData }) {
                   <span className="tv-bar-titleline">
                     <span className="tv-bar-tag">Now</span>
                     <span className="tv-bar-title">{now.current.title}</span>
+                    <span className="tv-bar-time">ends {new Date(now.current.endsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                   </span>
-                  <span className="tv-bar-time">ends {new Date(now.current.endsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                  {now.current.plot ? <span className="tv-bar-plot">{now.current.plot}</span> : null}
                 </span>
               </div>
               {now.next?.[0] && (
@@ -1101,8 +1102,8 @@ function TvPage({ userData }) {
                     <span className="tv-bar-titleline">
                       <span className="tv-bar-tag">Next</span>
                       <span className="tv-bar-title">{now.next[0].title}</span>
+                      <span className="tv-bar-time">{new Date(now.next[0].startsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                     </span>
-                    <span className="tv-bar-time">{new Date(now.next[0].startsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                   </span>
                 </div>
               )}

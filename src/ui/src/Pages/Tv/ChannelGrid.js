@@ -112,16 +112,23 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
     didScrollRef.current = true;
   }, [open, lineup, nowPct]);
 
-  // Inject a category header before the first channel of each group. Channels arrive pre-sorted in
-  // catalog order, so categories are contiguous; numbering still follows channel position.
+  // Group channels by category so each shelf appears exactly once, even when a category's channels
+  // aren't contiguous in sort order (e.g. a non-catalog channel wedged between them, or a sort-order
+  // collision). Category order = first appearance; channel order within a category preserves the
+  // incoming sort; the channel number stays its own position (so it still matches the tune hotkeys).
   const grouped = useMemo(() => {
-    const out = [];
-    let last = null;
+    const order = [];
+    const byCat = new Map();
     channels.forEach((ch, idx) => {
       const cat = ch.category || "Channels";
-      if (cat !== last) { out.push({ header: cat }); last = cat; }
-      out.push({ ch, idx });
+      if (!byCat.has(cat)) { byCat.set(cat, []); order.push(cat); }
+      byCat.get(cat).push({ ch, idx });
     });
+    const out = [];
+    for (const cat of order) {
+      out.push({ header: cat });
+      for (const item of byCat.get(cat)) out.push(item);
+    }
     return out;
   }, [channels]);
 
@@ -155,7 +162,7 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
           {grouped.map((g) => {
             if (g.header)
               return (
-                <div key={`h-${g.header}`} className="epg-group">{g.header}</div>
+                <div key={`h-${g.header}`} className="epg-group"><span className="epg-group-label">{g.header}</span></div>
               );
             const { ch, idx } = g;
             const row = lineup?.byId.get(ch.id);
