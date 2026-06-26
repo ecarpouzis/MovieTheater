@@ -127,6 +127,15 @@ namespace MovieTheater
 
             services.AddMemoryCache(opts => opts.SizeLimit = 200 * 1024 * 1024); // 200 MB cap, evicts LRU when full
 
+            // Compress API JSON (the channel guide is large) so a slow mobile connection isn't left showing
+            // "Updating…" while an uncompressed body downloads. JSON only — the SPA assets are served (and
+            // compressed) by the UI container, so this doesn't wrap the reverse proxy's responses.
+            services.AddResponseCompression(options =>
+            {
+                options.EnableForHttps = true; // guide/browse JSON is public and reflects no secret (BREACH n/a)
+                options.MimeTypes = new[] { "application/json" };
+            });
+
             services.AddScoped<Channels.ChannelScheduleService>();
             services.AddSingleton<Channels.ChannelSkipService>();
             // Materializes channel schedules + warms rating-ceiling caches in bounded background batches,
@@ -180,6 +189,7 @@ namespace MovieTheater
                 await next();
             });
 
+            app.UseResponseCompression();
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
