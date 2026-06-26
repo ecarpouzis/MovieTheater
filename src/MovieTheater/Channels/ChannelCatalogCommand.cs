@@ -69,6 +69,17 @@ namespace MovieTheater.Channels
             var genres = await db.Genres.ToDictionaryAsync(g => g.Name, g => g.Id, StringComparer.OrdinalIgnoreCase);
             var peopleRows = await db.People.Where(p => p.DisplayName != null)
                 .Select(p => new { p.Id, p.DisplayName }).ToListAsync();
+
+            // Credit counts per person, so a name shared by several people (a famous actor + an obscure
+            // namesake) resolves to the MOST-credited one. Without this, a name maps to every namesake's
+            // id and the channel airs all their films — a "Bill Murray" channel was airing Saw VI via a
+            // different Bill Murray credited on it.
+            var creditCount = new Dictionary<int, int>();
+            foreach (var x in await db.MovieCredits.GroupBy(c => c.PersonId).Select(g => new { Id = g.Key, N = g.Count() }).ToListAsync())
+                creditCount[x.Id] = x.N;
+            foreach (var x in await db.SeriesCredits.GroupBy(c => c.PersonId).Select(g => new { Id = g.Key, N = g.Count() }).ToListAsync())
+                creditCount[x.Id] = creditCount.GetValueOrDefault(x.Id) + x.N;
+
             var peopleByName = new Dictionary<string, List<int>>();
             foreach (var p in peopleRows)
             {
@@ -76,6 +87,9 @@ namespace MovieTheater.Channels
                 if (!peopleByName.TryGetValue(k, out var l)) peopleByName[k] = l = new List<int>();
                 l.Add(p.Id);
             }
+            // Most-credited first, so name resolution can take [0] (the famous person) per name.
+            foreach (var l in peopleByName.Values)
+                l.Sort((a, b) => creditCount.GetValueOrDefault(b).CompareTo(creditCount.GetValueOrDefault(a)));
 
             var warnings = new List<string>();
 

@@ -6,7 +6,6 @@ import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, HLS_LOAD_CONFIG } from ".
 import { initialAutoBps } from "../../streamAbr";
 import ChannelAdminModal from "./ChannelAdminModal";
 import ChannelGrid from "./ChannelGrid";
-import ChannelBrowser from "./ChannelBrowser";
 import "./TvPage.css";
 
 /**
@@ -17,7 +16,7 @@ import "./TvPage.css";
  * autoplay policy, with a tap-to-unmute affordance. Progress is reported with
  * passive=true so background play never claims you watched Heat.
  */
-function TvPage({ userData, setUserData }) {
+function TvPage({ userData }) {
   const { channelId } = useParams();
   const history = useHistory();
 
@@ -39,8 +38,7 @@ function TvPage({ userData, setUserData }) {
     const v = parseFloat(window.localStorage.getItem("TvVolume"));
     return Number.isFinite(v) ? Math.min(Math.max(v, 0), 1) : 1;
   });
-  const [gridOpen, setGridOpen] = useState(false); // cross-channel grid guide (the EPG / power view)
-  const [browserOpen, setBrowserOpen] = useState(false); // poster channel browser (the friendly chooser)
+  const [gridOpen, setGridOpen] = useState(false); // cross-channel grid guide (the EPG / what's-coming-up)
   const [menuOpen, setMenuOpen] = useState(false); // settings dropdown (quality / guide / manage / off)
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [, setNowTick] = useState(0); // ticks every second to advance the live progress bar
@@ -91,7 +89,7 @@ function TvPage({ userData, setUserData }) {
   // Whether any popout is open — read inside the idle timer (not re-bound per change) so a
   // menu/picker/guide left open keeps the chrome up instead of fading mid-interaction.
   const popoutOpenRef = useRef(false);
-  popoutOpenRef.current = gridOpen || menuOpen || guideOpen || browserOpen;
+  popoutOpenRef.current = gridOpen || menuOpen || guideOpen;
 
   // The schedule item currently playing — used to scope skip votes and to notice when
   // the channel has moved on (a skip elsewhere, or a natural advance) so we re-tune.
@@ -570,24 +568,15 @@ function TvPage({ userData, setUserData }) {
     setMuted(v === 0);
   }, []);
 
-  // The channel button opens the poster browser — the friendly default chooser; the EPG grid is one
-  // tap away (via the browser's Guide button, or the C hotkey for power users).
-  const openBrowser = useCallback((e) => {
-    e?.stopPropagation();
-    setMenuOpen(false);
-    setGridOpen(false);
-    setBrowserOpen(true);
-  }, []);
+  // The channel button opens the cross-channel grid guide — the classic "what's coming up" view.
   const openGrid = useCallback((e) => {
     e?.stopPropagation();
     setMenuOpen(false);
-    setBrowserOpen(false);
     setGridOpen(true);
   }, []);
-  // Picking a channel from either chooser tunes to it and closes the overlays.
+  // Picking a channel from the guide tunes to it and closes it.
   const pickChannel = useCallback((ch) => {
     setGridOpen(false);
-    setBrowserOpen(false);
     setChannel(ch);
   }, []);
   const toggleMenu = useCallback((e) => {
@@ -780,13 +769,13 @@ function TvPage({ userData, setUserData }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.tagName === "INPUT" || adminOpen) return;
-      // While a chooser overlay is open it owns the keyboard (its own Esc closes it).
-      if (gridOpen || browserOpen) return;
+      // While the guide is open it owns the keyboard (its own Esc closes it).
+      if (gridOpen) return;
       if (e.key === "ArrowUp") switchBy(1);
       else if (e.key === "ArrowDown") switchBy(-1);
       else if (e.key === "m") setMuted((m) => !m);
       else if (e.key === "g") setGuideOpen((g) => !g);
-      else if (e.key === "c") setBrowserOpen(true); // open the poster channel browser
+      else if (e.key === "c") setGridOpen(true); // open the channel guide
       else if (e.key === "k" || e.key === " ") togglePlayPause();
       else if (e.key === "f") toggleFullscreen();
       else if (/^[1-9]$/.test(e.key) && channels) {
@@ -798,7 +787,7 @@ function TvPage({ userData, setUserData }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [switchBy, channels, adminOpen, gridOpen, browserOpen, togglePlayPause, toggleFullscreen, wakeChrome]);
+  }, [switchBy, channels, adminOpen, gridOpen, togglePlayPause, toggleFullscreen, wakeChrome]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -862,7 +851,7 @@ function TvPage({ userData, setUserData }) {
   const volumeIcon = muted || volume === 0 ? "🔇" : volume < 0.5 ? "🔉" : "🔊";
 
   // The bar fades out only once the chrome is idle and nothing is popped out over the picture.
-  const chromeHidden = !chromeVisible && !gridOpen && !menuOpen && !guideOpen && !browserOpen;
+  const chromeHidden = !chromeVisible && !gridOpen && !menuOpen && !guideOpen;
 
   return (
     /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/media-has-caption */
@@ -1069,7 +1058,7 @@ function TvPage({ userData, setUserData }) {
         </div>
         <div className="tv-bar-row">
           {channel && (
-            <button className="tv-bar-channel" onClick={openBrowser} title="Browse channels (C)">
+            <button className="tv-bar-channel" onClick={openGrid} title="Open the channel guide (C)">
               <span className="tv-bar-channel-num">{channelNumber}</span>
               <span className="tv-bar-channel-name">{channel.name}</span>
               <span className="tv-bar-channel-guide">
@@ -1217,17 +1206,7 @@ function TvPage({ userData, setUserData }) {
         </div>
       </div>
 
-      {/* The poster channel browser — the friendly default chooser; its Guide button opens the grid. */}
-      <ChannelBrowser
-        open={browserOpen}
-        onPick={pickChannel}
-        onClose={() => setBrowserOpen(false)}
-        onGuide={openGrid}
-        userData={userData}
-        setUserData={setUserData}
-      />
-
-      {/* The cross-channel grid guide (EPG) — the power view, reachable from the browser or the C key. */}
+      {/* The cross-channel grid guide (EPG) — the classic "what's coming up" chooser (channel button + C). */}
       <ChannelGrid
         open={gridOpen}
         channels={channels || []}
