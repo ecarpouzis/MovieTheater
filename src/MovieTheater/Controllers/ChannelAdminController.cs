@@ -394,6 +394,48 @@ namespace MovieTheater.Controllers
             return Json(new { success = true });
         }
 
+        /// <summary>The guide shelves (categories) in their current global order — for the admin reorder
+        /// list. Categories with no saved order fall to the end in first-appearance order.</summary>
+        [HttpGet("/API/Channel/Admin/Shelves")]
+        public async Task<IActionResult> Shelves()
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+
+            var cats = new List<string>();
+            foreach (var c in await movieDb.Channels.OrderBy(c => c.SortOrder).ThenBy(c => c.Id).Select(c => c.Category).ToListAsync())
+            {
+                var name = string.IsNullOrWhiteSpace(c) ? "Channels" : c!;
+                if (!cats.Contains(name)) cats.Add(name);
+            }
+            var order = await movieDb.ChannelShelves.ToDictionaryAsync(s => s.Category, s => s.SortOrder);
+            var ordered = cats
+                .Select((name, idx) => (name, idx))
+                .OrderBy(x => order.TryGetValue(x.name, out var so) ? so : int.MaxValue)
+                .ThenBy(x => x.idx)
+                .Select(x => x.name)
+                .ToList();
+            return Json(ordered);
+        }
+
+        public class SaveShelvesRequest
+        {
+            public List<string>? Categories { get; set; }
+        }
+
+        [HttpPost("/API/Channel/Admin/Shelves")]
+        public async Task<IActionResult> SaveShelves([FromBody] SaveShelvesRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+
+            // Replace the whole order with the supplied list (list index = sort order).
+            movieDb.ChannelShelves.RemoveRange(await movieDb.ChannelShelves.ToListAsync());
+            var cats = (req.Categories ?? new()).Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()).Distinct().ToList();
+            for (int i = 0; i < cats.Count; i++)
+                movieDb.ChannelShelves.Add(new ChannelShelf { Category = cats[i], SortOrder = i });
+            await movieDb.SaveChangesAsync();
+            return Json(new { success = true });
+        }
+
         // ── helpers ──
         private static ContentKinds ParseKinds(List<string>? kinds)
         {

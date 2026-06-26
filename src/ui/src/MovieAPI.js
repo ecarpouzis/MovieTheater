@@ -481,6 +481,18 @@ function deleteChannel(id) {
   });
 }
 
+function getChannelShelves() {
+  return fetch("/API/Channel/Admin/Shelves");
+}
+
+function saveChannelShelves(categories) {
+  return fetch("/API/Channel/Admin/Shelves", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Categories: categories }),
+  });
+}
+
 // ── Channel viewer surface (the poster browser, homepage rail, EPG) ──
 function getChannelList() {
   return fetch("/API/Channel/List");
@@ -732,6 +744,8 @@ const MovieAPI = {
   getChannelAdminPeople,
   getChannelAdminList,
   saveChannel,
+  getChannelShelves,
+  saveChannelShelves,
   deleteChannel,
   getChannelList,
   getGuideGrid,

@@ -56,11 +56,15 @@ namespace MovieTheater.Controllers
             var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
 
             var now = DateTime.UtcNow;
-            var channels = await movieDb.Channels
-                .Where(c => c.Enabled)
-                .OrderBy(c => c.SortOrder)
+            // Global shelf (category) order — admins arrange it; a category with no row sorts last (a new
+            // catalog category just appends until placed). Channels then group by shelf in the guide/rail.
+            var shelfOrder = await movieDb.ChannelShelves.ToDictionaryAsync(s => s.Category, s => s.SortOrder);
+            int ShelfRank(string? cat) => cat != null && shelfOrder.TryGetValue(cat, out var so) ? so : int.MaxValue;
+            var channels = (await movieDb.Channels.Where(c => c.Enabled).ToListAsync())
+                .OrderBy(c => ShelfRank(c.Category))
+                .ThenBy(c => c.SortOrder)
                 .ThenBy(c => c.Id)
-                .ToListAsync();
+                .ToList();
 
             var visible = new List<object>();
             foreach (var c in channels)

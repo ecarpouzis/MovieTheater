@@ -128,6 +128,7 @@ function ChannelAdminModal({ open, onClose, onChanged }) {
   const [editing, setEditing] = useState(null); // null = list view; object = form view
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [shelves, setShelves] = useState(null); // null = not in shelves mode; array of category names = reorder view
 
   const loadList = useCallback(async () => {
     try {
@@ -143,6 +144,7 @@ function ChannelAdminModal({ open, onClose, onChanged }) {
   useEffect(() => {
     if (!open) return;
     setEditing(null);
+    setShelves(null);
     setDirty(false);
     setChannels(null);
     loadList();
@@ -169,6 +171,38 @@ function ChannelAdminModal({ open, onClose, onChanged }) {
   const updateCreditRule = (i, patch) =>
     setFilterField("credits", editing.filter.credits.map((c, j) => (j === i ? { ...c, ...patch } : c)));
   const removeCreditRule = (i) => setFilterField("credits", editing.filter.credits.filter((_, j) => j !== i));
+
+  // ── shelves (category) order ──
+  const openShelves = async () => {
+    try {
+      const res = await MovieAPI.getChannelShelves();
+      setShelves(res.ok ? await res.json() : []);
+    } catch {
+      setShelves([]);
+    }
+  };
+  const moveShelf = (i, dir) =>
+    setShelves((s) => {
+      const j = i + dir;
+      if (j < 0 || j >= s.length) return s;
+      const next = s.slice();
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  const handleSaveShelves = async () => {
+    setSaving(true);
+    try {
+      const res = await MovieAPI.saveChannelShelves(shelves);
+      if (!res.ok) throw new Error();
+      message.success("Shelf order saved.");
+      setDirty(true);
+      setShelves(null);
+    } catch {
+      message.error("Couldn't save shelf order.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!editing.name?.trim()) {
@@ -251,7 +285,10 @@ function ChannelAdminModal({ open, onClose, onChanged }) {
     <div className="cha-list">
       <div className="cha-list-head">
         <span>{channels?.length ?? 0} channel{channels?.length === 1 ? "" : "s"}</span>
-        <Button type="primary" size="small" onClick={() => setEditing(blankChannel())}>+ New channel</Button>
+        <span className="cha-list-head-actions">
+          <Button size="small" onClick={openShelves}>Reorder shelves</Button>
+          <Button type="primary" size="small" onClick={() => setEditing(blankChannel())}>+ New channel</Button>
+        </span>
       </div>
       {channels === null && <div className="cha-empty">Loading…</div>}
       {channels?.length === 0 && <div className="cha-empty">No channels yet.</div>}
@@ -471,16 +508,38 @@ function ChannelAdminModal({ open, onClose, onChanged }) {
     </div>
   );
 
+  const shelvesView = shelves && (
+    <div className="cha-shelves">
+      <div className="cha-shelves-hint">The order shelves appear in the guide and the homepage rail.</div>
+      {shelves.map((name, i) => (
+        <div key={name} className="cha-shelf-row">
+          <span className="cha-shelf-num">{i + 1}</span>
+          <span className="cha-shelf-name">{name}</span>
+          <span className="cha-shelf-actions">
+            <Button size="small" disabled={i === 0} onClick={() => moveShelf(i, -1)}>↑</Button>
+            <Button size="small" disabled={i === shelves.length - 1} onClick={() => moveShelf(i, 1)}>↓</Button>
+          </span>
+        </div>
+      ))}
+      {shelves.length === 0 && <div className="cha-empty">No shelves.</div>}
+    </div>
+  );
+
   return (
     <Modal
       open={open}
       onCancel={handleClose}
-      title={editing ? (editing.id ? "Edit channel" : "New channel") : "TV channels"}
+      title={shelves ? "Reorder shelves" : editing ? (editing.id ? "Edit channel" : "New channel") : "TV channels"}
       width={600}
       centered
       bodyStyle={{ maxHeight: "calc(100vh - 200px)", overflowY: "auto" }}
       footer={
-        editing
+        shelves
+          ? [
+              <Button key="back" onClick={() => setShelves(null)}>Back</Button>,
+              <Button key="save" type="primary" loading={saving} onClick={handleSaveShelves}>Save order</Button>,
+            ]
+          : editing
           ? [
               <Button key="back" onClick={() => setEditing(null)}>Back</Button>,
               <Button key="save" type="primary" loading={saving} onClick={handleSave}>Save</Button>,
@@ -488,7 +547,7 @@ function ChannelAdminModal({ open, onClose, onChanged }) {
           : [<Button key="done" onClick={handleClose}>Done</Button>]
       }
     >
-      {editing ? formView : listView}
+      {shelves ? shelvesView : editing ? formView : listView}
     </Modal>
   );
 }

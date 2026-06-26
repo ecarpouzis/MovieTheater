@@ -288,6 +288,7 @@ namespace MovieTheater.Db
         public DbSet<MoviePlaybackProgress> MoviePlaybackProgresses { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<ChannelScheduleItem> ChannelScheduleItems { get; set; }
+        public DbSet<ChannelShelf> ChannelShelves { get; set; }
         public DbSet<TitleInsight> TitleInsights { get; set; }
         public DbSet<TitleTag> TitleTags { get; set; }
 
