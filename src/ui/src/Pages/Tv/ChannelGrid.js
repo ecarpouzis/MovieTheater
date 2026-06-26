@@ -32,8 +32,17 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
 
   const load = useCallback(async () => {
     try {
-      const r = await fetch("/API/Channel/GuideGrid?hours=6");
-      if (!r.ok) return;
+      // Time-bound the request: on a stalled connection (congested public Wi-Fi, etc.) a hung fetch would
+      // otherwise leave the guide on "Updating…" until the next slow poll. Aborting lets the caller retry.
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 12_000);
+      let r;
+      try {
+        r = await fetch("/API/Channel/GuideGrid?hours=6", { signal: ctrl.signal });
+      } finally {
+        clearTimeout(timeout);
+      }
+      if (!r.ok) return false;
       const data = await r.json();
       const byId = new Map();
       for (const c of data.items || []) byId.set(c.id, c);
@@ -49,8 +58,9 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
           .filter(Boolean),
         "auto"
       );
+      return true;
     } catch {
-      /* transient — a later refresh retries */
+      return false; // transient (network/abort) — the caller retries
     }
   }, []);
 
@@ -59,9 +69,23 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
   useEffect(() => {
     if (!open) return undefined;
     didScrollRef.current = false;
-    load();
-    const refresh = setInterval(load, 60_000);
-    return () => clearInterval(refresh);
+    let stopped = false;
+    let handle;
+    let attempt = 0;
+    // Retry quickly until the first successful load (so a flaky connection doesn't leave every channel on
+    // "Updating…" for a full minute), then settle into the slow 60s poll.
+    const run = async () => {
+      const ok = await load();
+      if (stopped) return;
+      if (ok) {
+        handle = setInterval(load, 60_000);
+      } else {
+        attempt += 1;
+        handle = setTimeout(run, Math.min(2_000 * 2 ** (attempt - 1), 15_000)); // 2s,4s,8s,15s…
+      }
+    };
+    run();
+    return () => { stopped = true; clearTimeout(handle); clearInterval(handle); };
   }, [open, load]);
 
   // Advance the now line + airing shading without re-fetching.
