@@ -76,9 +76,13 @@ namespace MovieTheater.Controllers
             public bool SupportsHdr { get; set; }
             public bool SupportsFmp4 { get; set; }
             public bool SupportsMp3 { get; set; }   // MSE can decode MP3 audio (Chrome/Safari yes, Firefox no)
+            public bool SupportsAc3 { get; set; }   // MSE decodes Dolby Digital (AC-3) → copy/keep surround
+            public bool SupportsEac3 { get; set; }  // MSE decodes Dolby Digital Plus (E-AC-3)
+            public int? MaxAudioChannels { get; set; } // output channels the client can emit (5.1 = 6)
 
             public ClientCapabilities ToCapabilities() =>
-                new(SupportsHevc, SupportsAv1, SupportsHdr, SupportsFmp4, SupportsMp3);
+                new(SupportsHevc, SupportsAv1, SupportsHdr, SupportsFmp4, SupportsMp3,
+                    SupportsAc3, SupportsEac3, MaxAudioChannels ?? 2);
         }
 
         [HttpPost("/API/Stream/Start")]
@@ -209,7 +213,7 @@ namespace MovieTheater.Controllers
 
             var audioStreamList = source.MediaStreams.Where(s => s.Type == "Audio").ToList();
             var audioTracks = audioStreamList
-                .Select(s => new { index = s.Index, label = s.DisplayTitle ?? s.Codec ?? $"Track {s.Index}", language = s.Language })
+                .Select(s => new { index = s.Index, label = s.DisplayTitle ?? s.Codec ?? $"Track {s.Index}", language = s.Language, channels = s.Channels })
                 .ToList();
 
             // What's actually playing — an explicit/auto English pick, else the container default

@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
+import { detectStreamCapabilities } from "../../streamCapabilities";
 import "./VideoPlayer.css";
+
+// The delivered layout is capped at what this client can actually emit, so a stereo machine reads
+// "2.0" for a 5.1 source (which it gets downmixed) instead of falsely claiming surround.
+export function deliveredLayout(channels) {
+  if (!channels) return null;
+  const max = detectStreamCapabilities().maxAudioChannels || 2;
+  return channelLayout(Math.min(channels, max));
+}
 
 const TICKS_PER_SECOND = 10_000_000;
 
@@ -40,13 +49,35 @@ export function codecLabel(codec) {
 // quality identically and truthfully: the active quality, the output codec, and — the part the viewer
 // actually cares about — whether the video is the original copied bit-for-bit ("no re-encode") or a
 // transcode. `autoLabel` is the live adaptive-cap label (e.g. "Auto · Original" / "Auto · 8 Mbps").
-export function formatPlaying({ qualityKey, autoLabel, videoCodec, isDirectStream }) {
+export function formatPlaying({ qualityKey, autoLabel, videoCodec, isDirectStream, audio }) {
   const rung = QUALITY_LADDER.find((q) => q.key === qualityKey);
-  const parts = [qualityKey === "auto" ? autoLabel || "Auto" : rung?.label || "—"];
-  if (qualityKey !== "auto" && rung?.hint) parts.push(rung.hint);
+  // Lead with the unambiguous live verdict — the question is always "original, or a transcode?" — then
+  // the supporting detail. The option's "…when possible" marketing hint stays in the Quality menu, not
+  // here, so this line never hedges about what's actually being delivered right now.
+  const parts = [isDirectStream ? "Original · no re-encode" : "Transcoded"];
+  if (!isDirectStream) {
+    parts.push(
+      qualityKey === "auto"
+        ? (autoLabel || "Auto").replace(/^Auto · /, "")
+        : [rung?.label, rung?.hint].filter(Boolean).join(" ")
+    );
+  }
   if (videoCodec) parts.push(codecLabel(videoCodec));
-  parts.push(isDirectStream ? "no re-encode" : "transcoded");
+  if (audio) parts.push(audio);
   return parts.join(" · ");
+}
+
+// Speaker layout from a channel count, for the "Playing" readout (so 5.1 surround is visible, not
+// just assumed). The server now preserves the source channel count up to the client's output, so
+// this reflects what's actually delivered.
+export function channelLayout(channels) {
+  if (!channels) return null;
+  if (channels >= 8) return "7.1";
+  if (channels === 7) return "6.1";
+  if (channels === 6) return "5.1";
+  if (channels === 2) return "2.0";
+  if (channels === 1) return "Mono";
+  return `${channels}ch`;
 }
 
 function formatTime(totalSeconds) {
@@ -724,7 +755,13 @@ function VideoPlayer({
 
                 <div className="vp-menu-section">Playing</div>
                 <div className="vp-menu-readout">
-                  {formatPlaying({ qualityKey, autoLabel: qualityDetail, videoCodec, isDirectStream })}
+                  {formatPlaying({
+                    qualityKey,
+                    autoLabel: qualityDetail,
+                    videoCodec,
+                    isDirectStream,
+                    audio: deliveredLayout((audioTracks.find((t) => t.index === selectedAudioIndex) || audioTracks[0])?.channels),
+                  })}
                 </div>
               </div>
             )}

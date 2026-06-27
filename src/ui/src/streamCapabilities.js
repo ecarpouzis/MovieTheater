@@ -24,6 +24,23 @@ function canPlay(mime) {
   }
 }
 
+// Output channel capacity (5.1 = 6, 7.1 = 8): how many channels the OS audio device exposes, so we
+// only ask the server to *preserve* surround when the browser can actually emit it. The catch — this
+// reflects the SYSTEM audio config: a stereo-configured output reports 2 even with a 5.1 receiver
+// attached, so the OS must be set to 5.1 for this to read 6. Unknown/blocked → 2 (safe stereo).
+function detectMaxAudioChannels() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return 2;
+    const ctx = new Ctx();
+    const max = ctx.destination.maxChannelCount || 2;
+    if (ctx.close) ctx.close();
+    return Math.max(2, Math.min(max, 8));
+  } catch {
+    return 2;
+  }
+}
+
 // Display capability, not decode: only pass HDR through to a display that can show
 // it, so an SDR screen gets a tonemapped transcode instead of washed-out HDR.
 function detectHdr() {
@@ -54,8 +71,14 @@ export function detectStreamCapabilities() {
   // this is false the server transcodes audio to AAC instead. (Safari uses native HLS and
   // plays MP3 regardless; unknown/old → false → AAC, the safe baseline.)
   const supportsMp3 = canPlay('audio/mp4; codecs="mp4a.40.34"');
+  // Dolby Digital (AC-3) and Dolby Digital Plus (E-AC-3): if MSE/the <video> element decodes these,
+  // the server can copy a surround track losslessly (or transcode a DTS source to it) instead of
+  // downmixing to stereo. Chrome/Edge desktop decode both; the browser then emits multichannel LPCM.
+  const supportsAc3 = canPlay('audio/mp4; codecs="ac-3"');
+  const supportsEac3 = canPlay('audio/mp4; codecs="ec-3"');
+  const maxAudioChannels = detectMaxAudioChannels();
   const supportsHdr = detectHdr();
 
-  cached = { supportsHevc, supportsAv1, supportsHdr, supportsFmp4, supportsMp3 };
+  cached = { supportsHevc, supportsAv1, supportsHdr, supportsFmp4, supportsMp3, supportsAc3, supportsEac3, maxAudioChannels };
   return cached;
 }

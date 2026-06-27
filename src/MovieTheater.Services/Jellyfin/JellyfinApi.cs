@@ -177,6 +177,13 @@ namespace MovieTheater.Services.Jellyfin
             if (caps.Av1 && useFmp4) videoCodecs.Add("av1");
             string videoCodec = string.Join(',', videoCodecs);
 
+            // Audio: preserve surround up to the client's output channels (5.1 = 6) instead of force-
+            // downmixing to stereo. AC-3/E-AC-3 the client can decode join the copy set, so a Dolby
+            // surround track rides through losslessly; when a transcode is unavoidable (e.g. DTS) the
+            // channel count is kept. A non-reporting client stays at the stereo baseline (MaxChannels 2).
+            int maxAudioChannels = Math.Clamp(caps.MaxAudioChannels, 2, 8);
+            string directPlayAudio = "aac,mp3" + (caps.Ac3 ? ",ac3" : "") + (caps.Eac3 ? ",eac3" : "");
+
             // HDR passthrough only to HDR-capable clients (§14.5 stretch, done here for the
             // copy path): an SDR client that *copies* an HDR HEVC source renders washed-out,
             // so restrict which ranges may be copied — non-HDR clients fall through to a
@@ -226,7 +233,7 @@ namespace MovieTheater.Services.Jellyfin
                         AudioCodec = caps.Mp3 ? "aac,mp3" : "aac",
                         Protocol = "hls",
                         Context = "Streaming",
-                        MaxAudioChannels = "2",
+                        MaxAudioChannels = maxAudioChannels.ToString(),
                         MinSegments = 1,
                         // TS needs splitting on non-keyframes; fMP4 segments on GOP boundaries.
                         BreakOnNonKeyFrames = !useFmp4,
@@ -243,7 +250,7 @@ namespace MovieTheater.Services.Jellyfin
                         Container = "mp4,m4v,mov",
                         Type = "Video",
                         VideoCodec = caps.Hevc ? "h264,hevc" : "h264",
-                        AudioCodec = "aac,mp3",
+                        AudioCodec = directPlayAudio,
                     },
                 },
                 CodecProfiles = codecProfiles.ToArray(),
@@ -401,9 +408,11 @@ namespace MovieTheater.Services.Jellyfin
     /// What the calling browser can decode, detected client-side (§14.1) and used to
     /// build a per-request <c>DeviceProfile</c>. Defaults are the safe H.264/TS baseline.
     /// </summary>
-    public record ClientCapabilities(bool Hevc = false, bool Av1 = false, bool Hdr = false, bool Fmp4 = false, bool Mp3 = false)
+    public record ClientCapabilities(
+        bool Hevc = false, bool Av1 = false, bool Hdr = false, bool Fmp4 = false, bool Mp3 = false,
+        bool Ac3 = false, bool Eac3 = false, int MaxAudioChannels = 2)
     {
-        /// <summary>The pre-§14 universal baseline: H.264 in MPEG-TS, nothing fancy.</summary>
+        /// <summary>The pre-§14 universal baseline: H.264 in MPEG-TS, stereo, nothing fancy.</summary>
         public static readonly ClientCapabilities H264Baseline = new();
     }
 

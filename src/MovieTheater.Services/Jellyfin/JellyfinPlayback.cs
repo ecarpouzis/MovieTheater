@@ -28,6 +28,7 @@ namespace MovieTheater.Services.Jellyfin
         public string? Codec { get; set; }
         public string? DisplayTitle { get; set; }
         public string? Language { get; set; }
+        public int? Channels { get; set; }
         public bool IsDefault { get; set; }
         public bool IsExternal { get; set; }
         public string? DeliveryUrl { get; set; }

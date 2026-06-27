@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
-import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, HLS_LOAD_CONFIG, formatPlaying } from "../Watch/VideoPlayer";
+import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, HLS_LOAD_CONFIG, formatPlaying, deliveredLayout } from "../Watch/VideoPlayer";
 import { autoBpsLabel, rungDown, rungUp, shouldStepUp, isBottomRung, DIRECT_BPS } from "../../streamAbr";
 
 // Adaptive-bitrate pacing (matches the Watch player): at most one switch per window, and only climb
@@ -1079,6 +1079,7 @@ function TvPage({ userData }) {
                     autoLabel: autoBpsLabel(autoBps),
                     videoCodec: playingVideoCodec,
                     isDirectStream: playingDirect,
+                    audio: deliveredLayout((audioTracks.find((t) => t.index === (audioIndex ?? playingAudioIndex)) || audioTracks[0])?.channels),
                   })}
                 </div>
               </>
