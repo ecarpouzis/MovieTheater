@@ -51,6 +51,13 @@ namespace MovieTheater.Services
 
         public string? BggApiToken { get; set; }
 
+        /// <summary>OpenSubtitles.com REST API consumer key (opensubtitles.com/en/consumers); enables the
+        /// direct subtitle search/download that replaces the rate-limited Jellyfin plugin.</summary>
+        public string? OpenSubtitlesApiKey { get; set; }
+        /// <summary>OpenSubtitles account login — needed for the download token / daily quota (search needs only the key).</summary>
+        public string? OpenSubtitlesUsername { get; set; }
+        public string? OpenSubtitlesPassword { get; set; }
+
         public string? PyPath { get; set; }
 
         /// <summary>

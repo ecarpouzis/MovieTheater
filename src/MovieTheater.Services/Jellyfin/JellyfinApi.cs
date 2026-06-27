@@ -402,6 +402,26 @@ namespace MovieTheater.Services.Jellyfin
             using var resp = await httpClient.DeleteAsync($"/Videos/{Uri.EscapeDataString(itemId)}/Subtitles/{index}", cancel);
             resp.EnsureSuccessStatusCode();
         }
+
+        /// <summary>Attaches a text subtitle to an item as a new EXTERNAL sidecar (lands in Jellyfin's
+        /// metadata dir, never the read-only NAS — libraries are SaveSubtitlesWithMedia=false). Used to
+        /// store a subtitle fetched from OpenSubtitles so the streaming path then delivers it as WebVTT.
+        /// <paramref name="language"/> is the 3-letter code (e.g. "eng"); <paramref name="format"/> the
+        /// subtitle format/extension (e.g. "srt").</summary>
+        public async Task UploadSubtitleAsync(string itemId, string language, string format, bool isForced, bool isHearingImpaired, byte[] data, CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            var body = new
+            {
+                Language = language,
+                Format = format,
+                IsForced = isForced,
+                IsHearingImpaired = isHearingImpaired,
+                Data = Convert.ToBase64String(data),
+            };
+            using var resp = await httpClient.PostAsJsonAsync($"/Videos/{Uri.EscapeDataString(itemId)}/Subtitles", body, JsonOptions, cancel);
+            resp.EnsureSuccessStatusCode();
+        }
     }
 
     /// <summary>

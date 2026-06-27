@@ -60,6 +60,7 @@ namespace MovieTheater.Controllers
         private readonly PosterFetchService posterFetchService;
         private readonly TitleEnrichService titleEnrichService;
         private readonly MovieTheater.Services.Jellyfin.JellyfinApi jellyfinApi;
+        private readonly MovieTheater.Services.OpenSubtitles.OpenSubtitlesApi openSubtitles;
         private readonly MovieTheater.Services.Jellyfin.JellyfinSyncService jellyfinSyncService;
         private readonly ILogger<APIController> logger;
 
@@ -70,6 +71,7 @@ namespace MovieTheater.Controllers
             IConfiguration configuration, YouTubeService youTubeService, IMemoryCache memoryCache,
             BoardgameSimilarityService boardgameSimilarityService, PosterFetchService posterFetchService, TitleEnrichService titleEnrichService,
             MovieTheater.Services.Jellyfin.JellyfinApi jellyfinApi, MovieTheater.Services.Jellyfin.JellyfinSyncService jellyfinSyncService,
+            MovieTheater.Services.OpenSubtitles.OpenSubtitlesApi openSubtitles,
             ILogger<APIController> logger)
         {
             this.movieDb = movieDb;
@@ -94,6 +96,7 @@ namespace MovieTheater.Controllers
             this.titleEnrichService = titleEnrichService;
             this.jellyfinApi = jellyfinApi;
             this.jellyfinSyncService = jellyfinSyncService;
+            this.openSubtitles = openSubtitles;
             this.logger = logger;
         }
 
@@ -4092,11 +4095,51 @@ namespace MovieTheater.Controllers
         public async Task<IActionResult> JellyfinSubtitlesSearch(int movieId, string language = "eng")
         {
             if (!await IsCurrentUserEditor()) return Forbid();
+            var lang = string.IsNullOrWhiteSpace(language) ? "eng" : language;
+
+            // Preferred path: search OpenSubtitles.com directly by the IMDb id our DB holds. Jellyfin's
+            // items are metadata-less homevideos (no IMDb id), so its own RemoteSearch can't match — and
+            // its plugin's shared key is rate-limited besides.
+            if (openSubtitles.IsConfigured)
+            {
+                var imdbId = await movieDb.Movies.Where(m => m.id == movieId).Select(m => m.imdbID).FirstOrDefaultAsync();
+                if (string.IsNullOrWhiteSpace(imdbId))
+                    return BadRequest(new { message = "This movie has no IMDb id on file, so subtitles can't be matched. Set its IMDb id, then search." });
+                try
+                {
+                    var subs = await openSubtitles.SearchAsync(imdbId, lang);
+                    var ranked = subs
+                        .OrderByDescending(s => s.HashMatch)        // made for THIS exact file → already in sync
+                        .ThenBy(s => s.AiTranslated)                 // demote machine/AI translations
+                        .ThenByDescending(s => s.FromTrusted)
+                        .ThenByDescending(s => s.DownloadCount ?? 0)
+                        .ThenByDescending(s => s.Rating ?? 0)
+                        .Select(s => new
+                        {
+                            id = s.FileId.ToString(),
+                            provider = "OpenSubtitles",
+                            name = s.Name,
+                            language = s.Language,
+                            downloads = s.DownloadCount,
+                            rating = s.Rating,
+                            hashMatch = s.HashMatch,
+                            hearingImpaired = s.HearingImpaired,
+                            trusted = s.FromTrusted,
+                            aiTranslated = s.AiTranslated,
+                            uploader = s.Uploader,
+                        })
+                        .ToList();
+                    return Ok(new { count = ranked.Count, results = ranked });
+                }
+                catch (Exception ex) { return StatusCode(502, new { message = "Subtitle search failed: " + ex.Message }); }
+            }
+
+            // Fallback: the legacy Jellyfin plugin search (only when OpenSubtitles isn't configured).
             var itemId = await GetMovieJellyfinItemId(movieId);
             if (itemId == null) return BadRequest(new { message = "This movie isn't synced to Jellyfin yet — run \"Sync from Jellyfin\" first." });
             try
             {
-                var subs = await jellyfinApi.SearchRemoteSubtitlesAsync(itemId, string.IsNullOrWhiteSpace(language) ? "eng" : language);
+                var subs = await jellyfinApi.SearchRemoteSubtitlesAsync(itemId, lang);
                 var ranked = subs
                     .OrderByDescending(s => s.IsHashMatch)
                     .ThenByDescending(s => s.DownloadCount ?? 0)
@@ -4120,9 +4163,9 @@ namespace MovieTheater.Controllers
             catch (Exception ex) { return StatusCode(502, new { message = "Subtitle search failed (is a provider configured and signed in?): " + ex.Message }); }
         }
 
-        // Download a chosen candidate (subtitleId from a prior search) and attach it.
+        // Download a chosen candidate (subtitleId from a prior search) and attach it to the movie.
         [HttpPost("/API/Admin/Jellyfin/Subtitles/Download")]
-        public async Task<IActionResult> JellyfinSubtitlesDownload(int movieId, string subtitleId)
+        public async Task<IActionResult> JellyfinSubtitlesDownload(int movieId, string subtitleId, string language = "eng")
         {
             if (!await IsCurrentUserEditor()) return Forbid();
             if (string.IsNullOrWhiteSpace(subtitleId)) return BadRequest(new { message = "subtitleId is required." });
@@ -4130,6 +4173,17 @@ namespace MovieTheater.Controllers
             if (itemId == null) return BadRequest(new { message = "Movie isn't synced to Jellyfin." });
             try
             {
+                // OpenSubtitles path: the id is a numeric file_id — download the text and attach it to the
+                // Jellyfin item as an external sidecar (so the streaming path then serves it as WebVTT).
+                if (openSubtitles.IsConfigured && int.TryParse(subtitleId, out var fileId))
+                {
+                    var (content, _) = await openSubtitles.DownloadAsync(fileId);
+                    await jellyfinApi.UploadSubtitleAsync(
+                        itemId, string.IsNullOrWhiteSpace(language) ? "eng" : language, "srt",
+                        isForced: false, isHearingImpaired: false, System.Text.Encoding.UTF8.GetBytes(content));
+                    return Ok(new { downloaded = true });
+                }
+
                 await jellyfinApi.DownloadRemoteSubtitleAsync(itemId, subtitleId);
                 return Ok(new { downloaded = true });
             }

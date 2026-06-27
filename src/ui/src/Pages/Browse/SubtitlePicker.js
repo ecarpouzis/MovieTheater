@@ -68,7 +68,7 @@ export default function SubtitlePicker({ movieId }) {
   async function download(sub) {
     setBusyId(sub.id);
     try {
-      const res = await MovieAPI.jellyfinSubtitlesDownload(movieId, sub.id);
+      const res = await MovieAPI.jellyfinSubtitlesDownload(movieId, sub.id, language);
       const b = await res.json().catch(() => ({}));
       if (!res.ok || !b.downloaded) {
         message.error(b.message || "Download failed");
@@ -145,6 +145,9 @@ export default function SubtitlePicker({ movieId }) {
                   {s.hashMatch ? (
                     <Tag color="green" title="Uploaded for this exact file — already in sync">✓ exact match</Tag>
                   ) : null}
+                  {s.trusted ? <Tag color="gold" title="From a trusted uploader">trusted</Tag> : null}
+                  {s.hearingImpaired ? <Tag title="Hearing-impaired (SDH)">SDH</Tag> : null}
+                  {s.aiTranslated ? <Tag color="orange" title="Machine/AI translated — lower quality">AI</Tag> : null}
                   <span className="subtitle-name" title={s.comment || s.name}>{s.name || "(unnamed)"}</span>
                   <span className="subtitle-meta">
                     {s.provider}

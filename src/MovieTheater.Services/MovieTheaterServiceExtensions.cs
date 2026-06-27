@@ -10,6 +10,7 @@ using MovieTheater.Services.Omdb;
 using MovieTheater.Services.Google;
 using MovieTheater.Services.Bgg;
 using MovieTheater.Services.Jellyfin;
+using MovieTheater.Services.OpenSubtitles;
 
 namespace MovieTheater.Services
 {
@@ -31,6 +32,7 @@ namespace MovieTheater.Services
             services.AddGoogleServices(config.GoogleSearchApiKey, config.GoogleSearchEngineId);
             services.AddBoardGameGeekServices(config.BggApiToken);
             services.AddJellyfinServices(config);
+            services.AddOpenSubtitlesServices(config.OpenSubtitlesApiKey, config.OpenSubtitlesUsername, config.OpenSubtitlesPassword);
             services.AddTransient<Jellyfin.JellyfinSyncService>();
             services.AddTransient<BoardgameRulesService>();
             services.AddTransient<Poster.PosterFetchService>();

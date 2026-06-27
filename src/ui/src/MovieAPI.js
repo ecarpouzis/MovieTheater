@@ -621,8 +621,8 @@ function jellyfinSubtitlesList(movieId) {
 function jellyfinSubtitlesSearch(movieId, language = "eng") {
   return fetch(`/API/Admin/Jellyfin/Subtitles/Search?movieId=${movieId}&language=${encodeURIComponent(language)}`, { method: "post" });
 }
-function jellyfinSubtitlesDownload(movieId, subtitleId) {
-  return fetch(`/API/Admin/Jellyfin/Subtitles/Download?movieId=${movieId}&subtitleId=${encodeURIComponent(subtitleId)}`, { method: "post" });
+function jellyfinSubtitlesDownload(movieId, subtitleId, language = "eng") {
+  return fetch(`/API/Admin/Jellyfin/Subtitles/Download?movieId=${movieId}&subtitleId=${encodeURIComponent(subtitleId)}&language=${encodeURIComponent(language)}`, { method: "post" });
 }
 function jellyfinSubtitlesDelete(movieId, index) {
   return fetch(`/API/Admin/Jellyfin/Subtitles/Delete?movieId=${movieId}&index=${index}`, { method: "post" });
