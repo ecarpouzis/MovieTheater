@@ -184,6 +184,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
       }
       // Poll the idempotent probe until Jellyfin has indexed the new file (bounded ~60s).
       let done = null;
+      let lastMsg = "";
       for (let i = 0; i < 20; i++) {
         await sleep(3000);
         const ap = await MovieAPI.relinkApply(movie.id);
@@ -193,6 +194,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
           message.error(r.message || "Re-link failed.");
           return;
         }
+        if (r.message) lastMsg = r.message;
         if (r.done) {
           done = r;
           break;
@@ -200,7 +202,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
       }
       hide();
       if (!done) {
-        message.warning("Still indexing — give it a moment and click again.");
+        message.warning(lastMsg ? `Still indexing — ${lastMsg}` : "Still indexing — give it a moment and click again.");
         return;
       }
       const fresh = await MovieAPI.getTitle(movie.id, kind).then((r) => r.json());

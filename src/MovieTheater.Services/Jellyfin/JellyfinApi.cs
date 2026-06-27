@@ -332,6 +332,27 @@ namespace MovieTheater.Services.Jellyfin
         public Task<List<JellyfinItem>> GetAllVideoItemPathsAsync(CancellationToken cancel = default) =>
             GetAllItemsAsync("Movie,Episode,Video", "Path", cancel);
 
+        /// <summary>
+        /// Folder/container items with their paths, so the re-link flow can resolve a shelf's Jellyfin item id
+        /// by on-disk path and then trigger a scoped folder re-scan of it.
+        /// </summary>
+        public Task<List<JellyfinItem>> GetFoldersAsync(CancellationToken cancel = default) =>
+            GetAllItemsAsync("Folder", "Path", cancel);
+
+        /// <summary>
+        /// Triggers a SCOPED re-scan of a single folder item: Jellyfin validates the folder's children, so a
+        /// newly-added file is indexed and a deleted one is dropped — the per-folder alternative to the full
+        /// <c>/Library/Refresh</c>. Returns immediately; the scan runs in the background (poll the item list).
+        /// </summary>
+        public async Task RefreshItemAsync(string itemId, CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            var url = $"/Items/{Uri.EscapeDataString(itemId)}/Refresh" +
+                      $"?Recursive=true&MetadataRefreshMode=Default&ImageRefreshMode=None&ReplaceAllMetadata=false";
+            using var resp = await httpClient.PostAsync(url, null, cancel);
+            resp.EnsureSuccessStatusCode();
+        }
+
         private async Task<List<JellyfinItem>> GetAllItemsAsync(string includeItemTypes, CancellationToken cancel) =>
             await GetAllItemsAsync(includeItemTypes, "Path,MediaSources,ProviderIds", cancel);
 
