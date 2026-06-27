@@ -31,9 +31,22 @@ export const QUALITY_LADDER = [
 ];
 
 // Pretty-print the negotiated output codec for the player readout (§14.1).
-function codecLabel(codec) {
+export function codecLabel(codec) {
   const map = { hevc: "HEVC", h265: "HEVC", h264: "H.264", avc: "H.264", av1: "AV1", vp9: "VP9" };
   return map[String(codec).toLowerCase()] || String(codec).toUpperCase();
+}
+
+// The "Playing" readout, shared by the Watch player and the TV/channel menu so both report delivery
+// quality identically and truthfully: the active quality, the output codec, and — the part the viewer
+// actually cares about — whether the video is the original copied bit-for-bit ("no re-encode") or a
+// transcode. `autoLabel` is the live adaptive-cap label (e.g. "Auto · Original" / "Auto · 8 Mbps").
+export function formatPlaying({ qualityKey, autoLabel, videoCodec, isDirectStream }) {
+  const rung = QUALITY_LADDER.find((q) => q.key === qualityKey);
+  const parts = [qualityKey === "auto" ? autoLabel || "Auto" : rung?.label || "—"];
+  if (qualityKey !== "auto" && rung?.hint) parts.push(rung.hint);
+  if (videoCodec) parts.push(codecLabel(videoCodec));
+  parts.push(isDirectStream ? "no re-encode" : "transcoded");
+  return parts.join(" · ");
 }
 
 function formatTime(totalSeconds) {
@@ -488,7 +501,6 @@ function VideoPlayer({
   const playedPct = displayDuration > 0 ? (shownTime / displayDuration) * 100 : 0;
   const bufferedPct =
     displayDuration > 0 ? Math.min((((combined ? partOffset : 0) + bufferedEnd) / displayDuration) * 100, 100) : 0;
-  const activeQuality = QUALITY_LADDER.find((q) => q.key === qualityKey) || QUALITY_LADDER[0];
 
   return (
     /* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/media-has-caption */
@@ -509,9 +521,6 @@ function VideoPlayer({
             <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
           ))}
       </video>
-
-      {/* film grain + vignette atmosphere */}
-      <div className="vp-grain" aria-hidden="true" />
 
       {/* transient center play/pause bloom */}
       {flash && (
@@ -715,10 +724,7 @@ function VideoPlayer({
 
                 <div className="vp-menu-section">Playing</div>
                 <div className="vp-menu-readout">
-                  {qualityKey === "auto" && qualityDetail ? qualityDetail : activeQuality.label}
-                  {qualityKey !== "auto" && activeQuality.hint ? ` · ${activeQuality.hint}` : ""}
-                  {videoCodec ? ` · ${codecLabel(videoCodec)}` : ""}
-                  {isDirectStream && (qualityKey === "original" || qualityKey === "auto") ? " · no re-encode" : ""}
+                  {formatPlaying({ qualityKey, autoLabel: qualityDetail, videoCodec, isDirectStream })}
                 </div>
               </div>
             )}

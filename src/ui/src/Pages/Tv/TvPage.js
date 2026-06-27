@@ -2,8 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
-import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, HLS_LOAD_CONFIG } from "../Watch/VideoPlayer";
-import { initialAutoBps } from "../../streamAbr";
+import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, HLS_LOAD_CONFIG, formatPlaying } from "../Watch/VideoPlayer";
+import { autoBpsLabel, rungDown, rungUp, shouldStepUp, isBottomRung, DIRECT_BPS } from "../../streamAbr";
+
+// Adaptive-bitrate pacing (matches the Watch player): at most one switch per window, and only climb
+// after a sustained good streak — each switch is a visible re-tune.
+const ABR_COOLDOWN_MS = 20_000;
+const ABR_STABLE_FOR_UP_MS = 90_000;
 import ChannelAdminModal from "./ChannelAdminModal";
 import ChannelGrid from "./ChannelGrid";
 import "./TvPage.css";
@@ -50,10 +55,15 @@ function TvPage({ userData }) {
   const [adminOpen, setAdminOpen] = useState(false);
   const [quality, setQuality] = useState(() => window.localStorage.getItem("StreamQuality") || "auto");
   const [qualityOpen, setQualityOpen] = useState(false);
+  // Channel Auto opens at the lossless/uncapped tier and drops on stall — a solo viewer on a good
+  // connection gets the original copied bit-for-bit; a constrained one falls back to a transcode.
+  const [autoBps, setAutoBps] = useState(DIRECT_BPS);
   const [audioTracks, setAudioTracks] = useState([]);
   const [subtitleTracks, setSubtitleTracks] = useState([]);
   const [audioIndex, setAudioIndex] = useState(null); // explicit pick; null = let the server auto-default (English)
   const [playingAudioIndex, setPlayingAudioIndex] = useState(null); // what's actually playing, for the menu highlight
+  const [playingVideoCodec, setPlayingVideoCodec] = useState(null); // delivered video codec, for the "Playing" readout
+  const [playingDirect, setPlayingDirect] = useState(false); // true = original copied (no re-encode), for the readout
   const [subtitleIndex, setSubtitleIndex] = useState(null); // burned-in subtitle stream; null = off
   const [audioOpen, setAudioOpen] = useState(false);
   const [subsOpen, setSubsOpen] = useState(false);
@@ -70,6 +80,15 @@ function TvPage({ userData }) {
   // tune() reads the current quality without re-binding on every change.
   const qualityRef = useRef(quality);
   qualityRef.current = quality;
+
+  // Adaptive-bitrate state for channel Auto, read inside callbacks without re-binding them.
+  const autoBpsRef = useRef(autoBps);
+  autoBpsRef.current = autoBps;
+  const lastSwitchAtRef = useRef(0);
+  const stableSinceRef = useRef(0);
+  const channelRef = useRef(null);
+  channelRef.current = channel;
+  const tuneRef = useRef(null);
 
   // tune() (and prewarm) read the current track selection without re-binding on every change.
   const audioIndexRef = useRef(audioIndex);
@@ -164,12 +183,46 @@ function TvPage({ userData }) {
     }
   }, [chromeVisible, closePopouts, wakeChrome]);
 
-  // The bitrate cap for the current quality (Auto → a connection-based fixed cap).
+  // The bitrate cap for the current quality. A manual rung uses its own cap (incl. the uncapped
+  // "Original"); Auto uses the live adaptive cap, which climbs to the lossless/uncapped tier — so a
+  // channel watcher with the bandwidth for it gets the original copied bit-for-bit, dropping to a
+  // transcode only on stall. Streams are per-viewer, so one viewer adapting never disturbs anyone
+  // else sharing the channel.
   const resolveBitrate = useCallback(() => {
     const rungKey = qualityRef.current;
     const rung = QUALITY_LADDER.find((q) => q.key === rungKey) || QUALITY_LADDER[0];
-    return rungKey === "auto" ? initialAutoBps() : rung.bps;
+    if (rungKey !== "auto") return rung.bps; // manual rung (incl. uncapped "Original")
+    const cap = autoBpsRef.current;
+    return isFinite(cap) ? cap : null; // lossless tier → uncapped (the server copies the source)
   }, []);
+
+  // Move the adaptive cap and re-tune at the live offset (the same machinery a quality change uses).
+  // tune() is reached via a ref so these stay free of the tune/adapt dependency cycle.
+  const adaptTo = useCallback((nextBps) => {
+    if (nextBps === autoBpsRef.current) return;
+    autoBpsRef.current = nextBps;
+    setAutoBps(nextBps);
+    lastSwitchAtRef.current = Date.now();
+    stableSinceRef.current = Date.now();
+    const ch = channelRef.current;
+    if (ch) tuneRef.current?.(ch);
+  }, []);
+
+  // Stall = the connection can't carry this rung: drop one immediately (respecting the cooldown).
+  const handleStall = useCallback(() => {
+    if (qualityRef.current !== "auto" || isBottomRung(autoBpsRef.current)) return;
+    if (Date.now() - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
+    adaptTo(rungDown(autoBpsRef.current));
+  }, [adaptTo]);
+
+  // Throughput telemetry: climb back toward lossless only after a sustained streak with clear
+  // headroom; any sample short of that resets the streak.
+  const handleBandwidth = useCallback((estimateBps) => {
+    if (qualityRef.current !== "auto") return;
+    if (!shouldStepUp(autoBpsRef.current, estimateBps)) { stableSinceRef.current = Date.now(); return; }
+    if (Date.now() - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
+    if (Date.now() - stableSinceRef.current >= ABR_STABLE_FOR_UP_MS) adaptTo(rungUp(autoBpsRef.current));
+  }, [adaptTo]);
 
   // Start the next item's transcode ahead of the boundary and warm it (fetch its
   // playlist), so the advance can reuse it instead of paying the cold start.
@@ -278,8 +331,9 @@ function TvPage({ userData }) {
         }
 
         if (!session) {
-          // "Auto" (the default) maps to a connection-based fixed cap rather than streaming
-          // uncapped — important on phones, where uncapped channels buffer and drift A/V.
+          // "Auto" uses the live adaptive cap (resolveBitrate) — optimistic at the lossless tier,
+          // dropping a rung on stall. A solo viewer with the bandwidth gets the original copied;
+          // a constrained one falls back to a transcode instead of buffering.
           const startResponse = await MovieAPI.startStream({
             playableId: nowData.current.playableId,
             maxBitrateBps: resolveBitrate(),
@@ -307,6 +361,8 @@ function TvPage({ userData }) {
         setAudioTracks(session.audioTracks || []);
         setSubtitleTracks(session.subtitleTracks || []);
         setPlayingAudioIndex(session.selectedAudioIndex ?? null);
+        setPlayingVideoCodec(session.videoCodec ?? null);
+        setPlayingDirect(!!session.isDirectStream);
 
         const video = videoRef.current;
         if (!video) return;
@@ -332,6 +388,8 @@ function TvPage({ userData }) {
             video.play().catch(() => {});
           });
           hls.on(Hls.Events.ERROR, (_e, data) => {
+            // A buffer stall is the adaptive-downshift signal — drop a rung (Auto only).
+            if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) handleStall();
             if (!data.fatal) return;
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
             else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
@@ -376,8 +434,10 @@ function TvPage({ userData }) {
         }
       }
     },
-    [stopSession, destroyHls, resolveBitrate, prewarmNext]
+    [stopSession, destroyHls, resolveBitrate, prewarmNext, handleStall]
   );
+  // tune() is invoked from adaptTo via this ref to avoid a tune/adapt useCallback dependency cycle.
+  tuneRef.current = tune;
 
   // ── channel list ────────────────────────────────────────────────────────────
   // keepSelection: after an admin edit, hold the current channel if it still exists
@@ -463,6 +523,19 @@ function TvPage({ userData }) {
     };
   }, [channel, tune, wakeChrome]);
 
+  // ── adaptive-bitrate sampler (channel Auto) ─────────────────────────────────
+  // hls.js refines bandwidthEstimate as segments load; sample it while playing so Auto can climb
+  // back toward lossless after a drop. Direct-play has no hls.js/estimate — but that's already the
+  // original file, so there's nothing to climb to.
+  useEffect(() => {
+    const sample = setInterval(() => {
+      if (qualityRef.current !== "auto") return;
+      const est = hlsRef.current?.bandwidthEstimate;
+      if (est && isFinite(est)) handleBandwidth(est);
+    }, 5000);
+    return () => clearInterval(sample);
+  }, [handleBandwidth]);
+
   // ── teardown / wake lock / keyboard ─────────────────────────────────────────
   useEffect(() => {
     const onPageHide = () => stopSession(true);
@@ -524,6 +597,13 @@ function TvPage({ userData }) {
       setQuality(key);
       window.localStorage.setItem("StreamQuality", key);
       setQualityOpen(false);
+      // Re-entering Auto reseeds optimistic (lossless) with a fresh streak.
+      if (key === "auto") {
+        autoBpsRef.current = DIRECT_BPS;
+        setAutoBps(DIRECT_BPS);
+        lastSwitchAtRef.current = Date.now();
+        stableSinceRef.current = Date.now();
+      }
       if (channel) tune(channel);
     },
     [channel, tune]
@@ -987,6 +1067,22 @@ function TvPage({ userData }) {
               <span className="tv-channel-num">⏻</span>
               Off
             </button>
+
+            {/* What's actually being delivered — quality, codec, and whether it's the original copied
+                bit-for-bit (no re-encode) or a transcode. */}
+            {now?.current && (
+              <>
+                <div className="tv-menu-section">Playing</div>
+                <div className="tv-menu-readout">
+                  {formatPlaying({
+                    qualityKey: quality,
+                    autoLabel: autoBpsLabel(autoBps),
+                    videoCodec: playingVideoCodec,
+                    isDirectStream: playingDirect,
+                  })}
+                </div>
+              </>
+            )}
           </div>
         )}
 

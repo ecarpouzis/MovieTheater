@@ -110,9 +110,12 @@ function WatchPage({ userData }) {
           : quality === "auto"
           ? autoBpsRef.current
           : (QUALITY_LADDER.find((q) => q.key === quality) || QUALITY_LADDER[0]).bps;
+      // The lossless tier (Auto at the top, or manual "Original") carries no cap — a null bitrate tells
+      // the server to copy the original video rather than re-encode it. Only finite caps go on the wire.
+      const maxBitrateBps = bps != null && isFinite(bps) ? bps : null;
       const response = await MovieAPI.startStream({
         ...streamTargetRef.current,
-        maxBitrateBps: bps,
+        maxBitrateBps,
         audioStreamIndex: audio,
         subtitleStreamIndex: burnSubtitle ? subtitle : null,
         startSeconds,
