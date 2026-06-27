@@ -77,6 +77,8 @@ function WatchPage({ userData }) {
   // the load effect when a scrub crosses into another part.
   const currentPartOffsetRef = useRef(0);
   const pendingPartStartRef = useRef(null);
+  // The image-subtitle index currently burned into the live transcode (null = none).
+  const burnedSubRef = useRef(null);
 
   // ── adaptive-bitrate state (read inside callbacks without re-binding them) ──
   const qualityKeyRef = useRef(qualityKey);
@@ -101,7 +103,7 @@ function WatchPage({ userData }) {
   }, []);
 
   const startSession = useCallback(
-    async ({ startSeconds = null, quality = qualityKey, audio = audioIndex, subtitle = subtitleIndex, burnSubtitle = false, bpsOverride } = {}) => {
+    async ({ startSeconds = null, quality = qualityKey, audio = audioIndex, bpsOverride } = {}) => {
       // Auto walks the adaptive ladder (current cap in autoBpsRef); the fixed rungs
       // use their own cap; an explicit override (an adaptive switch) wins.
       const bps =
@@ -117,7 +119,9 @@ function WatchPage({ userData }) {
         ...streamTargetRef.current,
         maxBitrateBps,
         audioStreamIndex: audio,
-        subtitleStreamIndex: burnSubtitle ? subtitle : null,
+        // The burned-in image subtitle (null = none), threaded through *every* (re)start so a quality
+        // or audio change keeps it — and turning it off actually drops it from the transcode.
+        subtitleStreamIndex: burnedSubRef.current,
         startSeconds,
       });
       if (!response.ok) {
@@ -127,7 +131,7 @@ function WatchPage({ userData }) {
       }
       return await response.json();
     },
-    [qualityKey, audioIndex, subtitleIndex]
+    [qualityKey, audioIndex]
   );
 
   // ── initial load: movie meta + a session (not yet attached to <video>) ─────
@@ -297,9 +301,13 @@ function WatchPage({ userData }) {
     (index) => {
       setSubtitleIndex(index);
       const track = session?.subtitleTracks?.find((t) => t.index === index);
-      // Sidecar text tracks toggle client-side; image subs need a burn-in restart.
-      if (track && !track.deliveryUrl) {
-        restartAtPosition({ subtitle: index, burnSubtitle: true });
+      // Sidecar text tracks toggle client-side (no restart). Image subs can only be burned in, so the
+      // stream must restart when the burned-in selection changes — including turning it OFF (index →
+      // null) or switching to a text track, which otherwise leaves the old sub baked into the picture.
+      const nextBurn = track && !track.deliveryUrl ? index : null;
+      if (nextBurn !== burnedSubRef.current) {
+        burnedSubRef.current = nextBurn;
+        restartAtPosition();
       }
     },
     [session, restartAtPosition]
