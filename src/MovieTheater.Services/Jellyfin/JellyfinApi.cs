@@ -307,49 +307,35 @@ namespace MovieTheater.Services.Jellyfin
         }
 
         /// <summary>
-        /// Items carrying a given IMDb id (provider key <c>Imdb</c>), server-wide. A targeted lookup used by
-        /// the per-movie "re-link files from disk" flow: it re-finds a title's file even after its FOLDER was
-        /// renamed (the path changed but the IMDb id didn't), without enumerating the whole library.
+        /// Tells Jellyfin one or more on-disk paths changed so it re-scans JUST those (the per-path scoped
+        /// alternative to the full <c>/Library/Refresh</c>). The per-movie "re-link files from disk" flow
+        /// posts the title's shelf folder here to pick up a replaced/renamed file without a deep full-library
+        /// scan. <paramref name="paths"/> are Jellyfin-side paths. Returns immediately; the scan runs in the
+        /// background (poll <see cref="GetAllVideoItemPathsAsync"/> for the new file to appear).
         /// </summary>
-        public async Task<List<JellyfinItem>> GetItemsByImdbAsync(string imdbId, CancellationToken cancel = default)
+        public async Task NotifyPathsUpdatedAsync(IEnumerable<string> paths, CancellationToken cancel = default)
         {
             EnsureConfigured();
-            var url = $"/Items?Recursive=true&AnyProviderIdEquals={Uri.EscapeDataString("imdb." + imdbId)}" +
-                      $"&IncludeItemTypes=Movie,Video&EnableImages=false&Fields=Path,MediaSources,ProviderIds";
-            var page = await httpClient.GetFromJsonAsync<JellyfinItemsResult>(url, JsonOptions, cancel);
-            return page?.Items ?? new();
-        }
-
-        /// <summary>
-        /// Every leaf video item under a folder/parent item (recursively), so the re-link flow can see a
-        /// title's primary file plus any sibling Extras (in the folder or an <c>Extras/</c> subfolder)
-        /// without scanning the whole library.
-        /// </summary>
-        public async Task<List<JellyfinItem>> GetItemsUnderParentAsync(string parentId, CancellationToken cancel = default)
-        {
-            EnsureConfigured();
-            var url = $"/Items?ParentId={Uri.EscapeDataString(parentId)}&Recursive=true" +
-                      $"&IncludeItemTypes=Movie,Video,Episode&EnableImages=false&Fields=Path,MediaSources,ProviderIds";
-            var page = await httpClient.GetFromJsonAsync<JellyfinItemsResult>(url, JsonOptions, cancel);
-            return page?.Items ?? new();
-        }
-
-        /// <summary>
-        /// Triggers a SCOPED re-scan of a single item (a folder/shelf) so Jellyfin picks up a replaced or
-        /// renamed file under it — the per-folder equivalent of the full <c>/Library/Refresh</c>. Recursive
-        /// so a renamed child folder is rediscovered. Returns immediately; the scan runs in the background
-        /// (poll by re-querying the item, as the re-link flow does).
-        /// </summary>
-        public async Task RefreshItemAsync(string itemId, CancellationToken cancel = default)
-        {
-            EnsureConfigured();
-            var url = $"/Items/{Uri.EscapeDataString(itemId)}/Refresh" +
-                      $"?Recursive=true&MetadataRefreshMode=Default&ImageRefreshMode=None&ReplaceAllMetadata=false";
-            using var resp = await httpClient.PostAsync(url, null, cancel);
+            var updates = paths.Where(p => !string.IsNullOrWhiteSpace(p))
+                .Select(p => new { Path = p, UpdateType = "Modified" }).ToArray();
+            if (updates.Length == 0) return;
+            using var resp = await httpClient.PostAsJsonAsync("/Library/Media/Updated", new { Updates = updates }, JsonOptions, cancel);
             resp.EnsureSuccessStatusCode();
         }
 
-        private async Task<List<JellyfinItem>> GetAllItemsAsync(string includeItemTypes, CancellationToken cancel)
+        /// <summary>
+        /// Lightweight enumeration of every leaf video item's id + path ONLY (no MediaSources payload), for
+        /// cheap repeated polling: the re-link probe scans this to spot a new untracked file under one shelf
+        /// without pulling the heavy media-source data each poll. Fetch the chosen item's full detail with
+        /// <see cref="GetItemsByIdsAsync"/> once it's identified.
+        /// </summary>
+        public Task<List<JellyfinItem>> GetAllVideoItemPathsAsync(CancellationToken cancel = default) =>
+            GetAllItemsAsync("Movie,Episode,Video", "Path", cancel);
+
+        private async Task<List<JellyfinItem>> GetAllItemsAsync(string includeItemTypes, CancellationToken cancel) =>
+            await GetAllItemsAsync(includeItemTypes, "Path,MediaSources,ProviderIds", cancel);
+
+        private async Task<List<JellyfinItem>> GetAllItemsAsync(string includeItemTypes, string fields, CancellationToken cancel)
         {
             EnsureConfigured();
             var items = new List<JellyfinItem>();
@@ -358,7 +344,7 @@ namespace MovieTheater.Services.Jellyfin
             while (true)
             {
                 var url = $"/Items?IncludeItemTypes={Uri.EscapeDataString(includeItemTypes)}&Recursive=true&EnableImages=false" +
-                          $"&Fields=Path,MediaSources,ProviderIds&StartIndex={items.Count}&Limit={pageSize}";
+                          $"&Fields={Uri.EscapeDataString(fields)}&StartIndex={items.Count}&Limit={pageSize}";
                 var page = await httpClient.GetFromJsonAsync<JellyfinItemsResult>(url, JsonOptions, cancel)
                     ?? throw new BusinessException("Jellyfin returned an empty /Items response.");
 
@@ -521,9 +507,6 @@ namespace MovieTheater.Services.Jellyfin
         public string Id { get; set; } = default!;
         public string? Name { get; set; }
         public string? Path { get; set; }
-        /// <summary>Container item this is filed under (the folder/shelf). Used by the re-link flow to scope a
-        /// folder re-scan; a Jellyfin base property, returned regardless of the Fields list.</summary>
-        public string? ParentId { get; set; }
         public long? RunTimeTicks { get; set; }
         public Dictionary<string, string>? ProviderIds { get; set; }
         public List<JellyfinMediaSource>? MediaSources { get; set; }

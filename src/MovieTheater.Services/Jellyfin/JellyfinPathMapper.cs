@@ -40,5 +40,33 @@ namespace MovieTheater.Services.Jellyfin
             mappingIndex = -1;
             return false;
         }
+
+        /// <summary>
+        /// The inverse of <see cref="TryTranslateToDb"/>: turns a DB path back into the Jellyfin-side path
+        /// using the first mapping whose DbPrefix matches, preserving the JellyfinPrefix's own separator
+        /// style. Used to tell Jellyfin which on-disk path to re-scan (per-path scoped scan). Returns false
+        /// when no mapping applies.
+        /// </summary>
+        public static bool TryTranslateToJellyfin(string dbPath, IReadOnlyList<JellyfinPathMapping> mappings, out string jellyfinPath)
+        {
+            var unified = dbPath.Replace('/', '\\');
+            for (int i = 0; i < mappings.Count; i++)
+            {
+                var dbPrefix = mappings[i].DbPrefix.Replace('/', '\\');
+                if (unified.StartsWith(dbPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    var jellyfinPrefix = mappings[i].JellyfinPrefix;
+                    var suffix = unified.Substring(dbPrefix.Length);
+                    // Match the suffix separators to whatever the Jellyfin prefix uses (Linux '/' vs Windows '\').
+                    if (jellyfinPrefix.Contains('/') && !jellyfinPrefix.Contains('\\'))
+                        suffix = suffix.Replace('\\', '/');
+                    jellyfinPath = jellyfinPrefix + suffix;
+                    return true;
+                }
+            }
+
+            jellyfinPath = string.Empty;
+            return false;
+        }
     }
 }

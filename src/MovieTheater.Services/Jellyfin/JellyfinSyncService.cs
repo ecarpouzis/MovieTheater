@@ -307,14 +307,17 @@ namespace MovieTheater.Services.Jellyfin
         // row, so re-pointing the file row IN PLACE keeps all of it — nothing is deleted or recreated.
 
         /// <summary>
-        /// Kicks a SCOPED Jellyfin re-scan of just this title's shelf so a replaced/renamed file is indexed,
-        /// without the full-library scan. Anchors on the stored Jellyfin item id (or the movie's IMDb id),
-        /// then refreshes the GRANDPARENT folder so a RENAMED movie folder is rediscovered (falling back to
-        /// the movie folder for an in-place swap). Returns immediately; poll <see cref="TryRelinkMovieFilesAsync"/>.
+        /// Kicks a SCOPED Jellyfin re-scan of just this title's shelf (the alpha bucket above the movie
+        /// folder) so a replaced/renamed file is indexed, without the full-library scan. Path-based: derives
+        /// the shelf from the recorded path and posts it to Jellyfin's per-path "media updated" hook — no
+        /// dependence on an existing item, IMDb provider id, or parent-id navigation (a homevideos library
+        /// has no IMDb ids). Returns immediately; poll <see cref="TryRelinkMovieFilesAsync"/>.
         /// </summary>
         public async Task<MovieRelinkRefreshResult> TriggerMovieFolderRefreshAsync(int movieId, CancellationToken cancel = default)
         {
             var res = new MovieRelinkRefreshResult();
+            if (config.JellyfinPathMappings.Count == 0) { res.Message = "No JellyfinPathMappings configured."; return res; }
+
             using var db = await dbFactory.CreateDbContextAsync(cancel);
             var movie = await db.Movies.FirstOrDefaultAsync(m => m.id == movieId, cancel);
             if (movie == null) { res.Message = "Movie not found."; return res; }
@@ -324,35 +327,34 @@ namespace MovieTheater.Services.Jellyfin
                 .Where(f => f.PlayableId == movie.PlayableId.Value)
                 .OrderBy(f => f.Role)   // Primary (0) first
                 .FirstOrDefaultAsync(cancel);
+            var recorded = primary?.Path ?? movie.FilePath;
+            if (string.IsNullOrEmpty(recorded)) { res.Message = "No recorded path to locate this title's folder."; return res; }
 
-            // Anchor item in Jellyfin: the stored item id is most direct; the IMDb id re-finds it across a
-            // folder rename. Either still resolves before the re-scan (the old item lingers until then).
-            JellyfinItem? anchor = null;
-            if (!string.IsNullOrEmpty(primary?.JellyfinItemId))
-                anchor = (await jellyfin.GetItemsByIdsAsync(new[] { primary!.JellyfinItemId! }, cancel)).FirstOrDefault();
-            if (anchor == null && !string.IsNullOrEmpty(movie.imdbID))
-                anchor = (await jellyfin.GetItemsByImdbAsync(movie.imdbID!, cancel)).FirstOrDefault(i => !string.IsNullOrEmpty(i.Path));
+            // Shelf = the bucket above the movie folder (e.g. ...\K). Scanning the bucket re-discovers a
+            // RENAMED movie folder; scanning only the old folder would miss it (the folder no longer exists).
+            var shelf = ParentDir(ParentDir(recorded));
+            if (shelf == null) { res.Message = $"Couldn't determine a shelf folder from '{recorded}'."; return res; }
 
-            if (anchor?.ParentId is not string movieFolderId)
+            if (!JellyfinPathMapper.TryTranslateToJellyfin(shelf, config.JellyfinPathMappings, out var shelfJf))
             {
-                res.Message = "Couldn't locate this title in Jellyfin to scope a re-scan — use the full Sync from Jellyfin.";
+                var prefixes = string.Join(" | ", config.JellyfinPathMappings.Select(m => m.DbPrefix));
+                res.Message = $"No path mapping covers this title's shelf '{shelf}'. Configured DB prefixes: {prefixes}.";
                 return res;
             }
 
-            // Refresh the shelf ABOVE the movie folder so a renamed folder is rediscovered; if Jellyfin
-            // doesn't expose the grandparent, fall back to the movie folder (covers a same-folder swap).
-            var folderItem = (await jellyfin.GetItemsByIdsAsync(new[] { movieFolderId }, cancel)).FirstOrDefault();
-            var refreshId = folderItem?.ParentId ?? movieFolderId;
-            await jellyfin.RefreshItemAsync(refreshId, cancel);
+            await jellyfin.NotifyPathsUpdatedAsync(new[] { shelfJf }, cancel);
             res.Ok = true;
-            res.Message = "Re-scan started.";
+            res.Message = $"Re-scan started for {shelfJf}.";
+            logger.LogInformation("Re-link: notified Jellyfin of changes under shelf {Shelf} (movie {Id} '{Title}')",
+                shelfJf, movieId, movie.Title);
             return res;
         }
 
         /// <summary>
-        /// One idempotent probe of the title's current Jellyfin items: if the replaced file is now indexed,
-        /// re-points the existing Primary <see cref="MediaFile"/> to it IN PLACE (refreshing item id, codec,
-        /// size, duration; clearing MissingSinceUtc) and ingests any new sibling Extras; otherwise reports
+        /// One idempotent probe: a cheap path-only enumeration (Jellyfin DB query, NOT a disk scan) restricted
+        /// to this title's shelf. If a NEW untracked video has appeared there (the replaced rip), re-points the
+        /// existing Primary <see cref="MediaFile"/> to it IN PLACE (refreshing item id, codec, size, duration;
+        /// clearing MissingSinceUtc) and ingests any new sibling Extras in the same folder; otherwise reports
         /// <see cref="MovieRelinkResult.Scanning"/> so the caller polls again. Re-running after success is a
         /// no-op ("already linked"). The Movie row and everything attached to it are never touched.
         /// </summary>
@@ -370,49 +372,71 @@ namespace MovieTheater.Services.Jellyfin
 
             var files = await db.MediaFiles.Where(f => f.PlayableId == playableId).ToListAsync(cancel);
             var primary = files.FirstOrDefault(f => f.Role == MovieFileRole.Primary) ?? files.FirstOrDefault();
-            var oldPath = primary?.Path ?? movie.FilePath;
-            if (string.IsNullOrEmpty(oldPath)) { res.Message = "No recorded path to locate this title's folder."; return res; }
-            res.OldPath = oldPath;
-            var oldNorm = JellyfinPathMapper.NormalizeForCompare(oldPath);
-            var oldSize = primary?.SizeBytes;
+            var recorded = primary?.Path ?? movie.FilePath;
+            if (string.IsNullOrEmpty(recorded)) { res.Message = "No recorded path to locate this title's folder."; return res; }
+            res.OldPath = recorded;
 
-            // Candidate Jellyfin items for this movie: by IMDb id (re-finds across a folder rename) plus the
-            // old stored item id (covers an in-place swap that kept the same item).
-            var candidates = new List<JellyfinItem>();
-            if (!string.IsNullOrEmpty(movie.imdbID))
-                candidates.AddRange(await jellyfin.GetItemsByImdbAsync(movie.imdbID!, cancel));
-            if (!string.IsNullOrEmpty(primary?.JellyfinItemId))
-                candidates.AddRange(await jellyfin.GetItemsByIdsAsync(new[] { primary!.JellyfinItemId! }, cancel));
+            var shelf = ParentDir(ParentDir(recorded));
+            if (shelf == null) { res.Message = "Couldn't determine this title's shelf folder."; return res; }
+            var shelfNorm = JellyfinPathMapper.NormalizeForCompare(shelf);
 
-            var resolved = new List<(JellyfinItem Item, string DbPath, long? Size)>();
-            foreach (var it in candidates.GroupBy(i => i.Id).Select(g => g.First()))
-                if (!string.IsNullOrEmpty(it.Path)
-                    && JellyfinPathMapper.TryTranslateToDb(it.Path!, config.JellyfinPathMappings, out var dp, out _))
-                    resolved.Add((it, dp, it.MediaSources?.FirstOrDefault()?.Size));
-
-            if (resolved.Count == 0) { res.Scanning = true; res.Message = "Jellyfin hasn't indexed a file for this title yet."; return res; }
-
-            // The "new" primary: a path that differs from the recorded one, OR the same path with a changed
-            // size (an in-place re-rip). If all we still see is the old path at the old size, the re-scan
-            // hasn't landed yet → report scanning so the caller polls again.
-            var change = resolved.FirstOrDefault(x =>
-                JellyfinPathMapper.NormalizeForCompare(x.DbPath) != oldNorm
-                || (x.Size != null && oldSize != null && x.Size != oldSize));
-            if (change.Item == null)
+            // Cheap path-only enumeration (Jellyfin's DB, not a disk scan), narrowed to this shelf.
+            var allItems = await jellyfin.GetAllVideoItemPathsAsync(cancel);
+            var shelfItems = new List<(JellyfinItem Item, string DbPath)>();
+            foreach (var it in allItems)
             {
-                var same = resolved.FirstOrDefault(x => JellyfinPathMapper.NormalizeForCompare(x.DbPath) == oldNorm);
-                if (same.Item != null && primary != null && primary.JellyfinItemId == same.Item.Id && primary.MissingSinceUtc == null)
+                if (string.IsNullOrEmpty(it.Path)) continue;
+                if (!JellyfinPathMapper.TryTranslateToDb(it.Path!, config.JellyfinPathMappings, out var dp, out _)) continue;
+                var dn = JellyfinPathMapper.NormalizeForCompare(dp);
+                if (dn == shelfNorm || dn.StartsWith(shelfNorm + "\\")) shelfItems.Add((it, dp));
+            }
+
+            // Already linked & current? (an item still sits at our primary's path with our stored id, not missing)
+            if (primary != null && primary.JellyfinItemId != null && primary.MissingSinceUtc == null)
+            {
+                var atPrimary = shelfItems.FirstOrDefault(x =>
+                    JellyfinPathMapper.NormalizeForCompare(x.DbPath) == JellyfinPathMapper.NormalizeForCompare(primary.Path)
+                    && x.Item.Id == primary.JellyfinItemId);
+                if (atPrimary.Item != null)
                 {
-                    res.Done = true; res.NewPath = oldPath; res.NowStreamable = true;
+                    res.Done = true; res.NewPath = primary.Path; res.NowStreamable = true;
                     res.Message = "Already linked to the current file.";
                     return res;
                 }
-                res.Scanning = true; res.Message = "Waiting for Jellyfin to pick up the new file…";
-                return res;
             }
 
-            var newItem = change.Item;
-            var newPath = change.DbPath;
+            // Untracked videos under the shelf (mapped to no MediaFile row anywhere) = candidate new files.
+            // The old (now-deleted) file's row keeps its path mapped, so a stale Jellyfin entry at it is never
+            // a candidate; only a genuinely new file is.
+            var mappedNorms = (await db.MediaFiles.Select(f => f.Path).ToListAsync(cancel))
+                .Select(JellyfinPathMapper.NormalizeForCompare).ToHashSet();
+            var untracked = shelfItems
+                .Where(x => !mappedNorms.Contains(JellyfinPathMapper.NormalizeForCompare(x.DbPath)))
+                .ToList();
+            if (untracked.Count == 0) { res.Scanning = true; res.Message = "Waiting for Jellyfin to pick up the new file…"; return res; }
+
+            // Choose the new PRIMARY for this title. One untracked file is taken as-is; with several, require a
+            // title-token match on the containing folder so we never grab an unrelated new file in the shelf.
+            var titleTokens = Tokens(movie.SimpleTitle ?? movie.Title ?? "");
+            (JellyfinItem Item, string DbPath) chosen;
+            if (untracked.Count == 1) chosen = untracked[0];
+            else
+            {
+                var ranked = untracked
+                    .Select(x => (x, score: TokenOverlap(titleTokens, Tokens(ParentDir(x.DbPath) ?? x.DbPath))))
+                    .OrderByDescending(t => t.score).ToList();
+                if (ranked[0].score == 0)
+                {
+                    res.Scanning = true;
+                    res.Message = $"Found {untracked.Count} new file(s) under this shelf but none clearly matches '{movie.Title}' yet — the re-scan may still be running.";
+                    return res;
+                }
+                chosen = ranked[0].x;
+            }
+
+            // Pull the chosen item's full detail (MediaSources etc.) so the row gets codec/size/duration.
+            var detail = (await jellyfin.GetItemsByIdsAsync(new[] { chosen.Item.Id }, cancel)).FirstOrDefault() ?? chosen.Item;
+            var newPath = chosen.DbPath;
             var now = DateTime.UtcNow;
 
             if (primary == null)
@@ -421,38 +445,65 @@ namespace MovieTheater.Services.Jellyfin
                 db.MediaFiles.Add(primary);
             }
             else primary.Path = newPath;
-            StampFromItem(primary, newItem, now);
+            StampFromItem(primary, detail, now);
             movie.FilePath = newPath;
             res.PrimaryRepointed = true;
             res.NewPath = newPath;
             res.NowStreamable = primary.JellyfinItemId != null;
 
-            // Sibling Extras: other video files in the same folder not already mapped to this title. Added as
-            // Extra-role rows and reported, never deleted — re-running just picks up anything missed.
-            if (!string.IsNullOrEmpty(newItem.ParentId))
+            // Extras: any OTHER untracked video in the SAME (new) movie folder. Added as Extra-role rows and
+            // reported, never deleted — re-running just picks up anything missed.
+            var newFolderNorm = JellyfinPathMapper.NormalizeForCompare(ParentDir(newPath) ?? "");
+            var primaryNorm = JellyfinPathMapper.NormalizeForCompare(newPath);
+            foreach (var x in untracked)
             {
-                var siblings = await jellyfin.GetItemsUnderParentAsync(newItem.ParentId!, cancel);
-                var mapped = files.Select(f => JellyfinPathMapper.NormalizeForCompare(f.Path)).ToHashSet();
-                mapped.Add(JellyfinPathMapper.NormalizeForCompare(newPath));
-                foreach (var sib in siblings.GroupBy(i => i.Id).Select(g => g.First()))
-                {
-                    if (sib.Id == newItem.Id || string.IsNullOrEmpty(sib.Path)) continue;
-                    if (!JellyfinPathMapper.TryTranslateToDb(sib.Path!, config.JellyfinPathMappings, out var sp, out _)) continue;
-                    if (!mapped.Add(JellyfinPathMapper.NormalizeForCompare(sp))) continue;   // already mapped / the primary
-                    var extra = new MediaFile { PlayableId = playableId, Path = sp, Role = MovieFileRole.Extra, Label = Truncate(sib.Name, 128) };
-                    StampFromItem(extra, sib, now);
-                    db.MediaFiles.Add(extra);
-                    res.ExtrasAdded.Add(sib.Name ?? sp);
-                }
+                if (x.Item.Id == chosen.Item.Id) continue;
+                var xn = JellyfinPathMapper.NormalizeForCompare(x.DbPath);
+                if (xn == primaryNorm) continue;
+                var xFolder = JellyfinPathMapper.NormalizeForCompare(ParentDir(x.DbPath) ?? "");
+                if (xFolder != newFolderNorm && !xFolder.StartsWith(newFolderNorm + "\\")) continue;   // only this movie's folder
+                var exDetail = (await jellyfin.GetItemsByIdsAsync(new[] { x.Item.Id }, cancel)).FirstOrDefault() ?? x.Item;
+                var extra = new MediaFile { PlayableId = playableId, Path = x.DbPath, Role = MovieFileRole.Extra, Label = Truncate(x.Item.Name, 128) };
+                StampFromItem(extra, exDetail, now);
+                db.MediaFiles.Add(extra);
+                res.ExtrasAdded.Add(x.Item.Name ?? x.DbPath);
             }
 
             await db.SaveChangesAsync(cancel);
             res.Done = true;
             res.Message = $"Re-linked '{movie.Title}' to the new file.";
             logger.LogInformation("Re-linked movie {Id} '{Title}': {Old} → {New} (+{Extras} extras)",
-                movieId, movie.Title, oldPath, newPath, res.ExtrasAdded.Count);
+                movieId, movie.Title, recorded, newPath, res.ExtrasAdded.Count);
             return res;
         }
+
+        /// <summary>Parent directory of a Windows-style path, split on backslash MANUALLY (prod is Linux, so
+        /// Path.GetDirectoryName wouldn't split the DB's <c>\</c> separators). Null if there's no parent.</summary>
+        private static string? ParentDir(string? p)
+        {
+            if (string.IsNullOrEmpty(p)) return null;
+            var s = p.Replace('/', '\\').TrimEnd('\\');
+            var i = s.LastIndexOf('\\');
+            return i <= 0 ? null : s.Substring(0, i);
+        }
+
+        /// <summary>Lower-case alphanumeric word tokens of a title/folder name, dropping articles, a 4-digit
+        /// year, and common quality/source tags — so a folder matches its title on the meaningful words.</summary>
+        private static HashSet<string> Tokens(string s)
+        {
+            var set = new HashSet<string>();
+            foreach (var t in System.Text.RegularExpressions.Regex.Split(s.ToLowerInvariant(), "[^a-z0-9]+"))
+                if (t.Length >= 2 && !IsNoiseToken(t)) set.Add(t);
+            return set;
+        }
+
+        private static bool IsNoiseToken(string t) =>
+            t is "the" or "an" or "of" or "and"
+            || (t.Length == 4 && int.TryParse(t, out var y) && y >= 1900 && y <= 2100)
+            || t is "1080p" or "720p" or "2160p" or "480p" or "4k" or "bluray" or "brrip" or "webrip"
+                or "web" or "hdtv" or "x264" or "x265" or "hevc" or "remux" or "dvdrip" or "proper";
+
+        private static int TokenOverlap(HashSet<string> a, HashSet<string> b) => a.Count(b.Contains);
 
         private static void StampFromItem(MediaFile row, JellyfinItem item, DateTime now)
         {
