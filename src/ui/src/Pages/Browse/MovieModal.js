@@ -167,6 +167,61 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
     }
   }
 
+  // The movie's file was replaced on disk (new rip / renamed folder)? Re-scan just this title's shelf in
+  // Jellyfin, then re-point the existing file row to the new file (+ any new extras) in place — keeping
+  // every rating/viewing/poster/tag (those live on the movie, not the file). No full-library scan.
+  async function relinkFromDisk() {
+    setSaving(true);
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    let hide = message.loading("Re-scanning this title's folder…", 0);
+    try {
+      const trg = await MovieAPI.relinkRefresh(movie.id);
+      const td = await trg.json().catch(() => ({}));
+      if (!trg.ok) {
+        hide();
+        message.error(td.message || "Couldn't start the re-scan.");
+        return;
+      }
+      // Poll the idempotent probe until Jellyfin has indexed the new file (bounded ~60s).
+      let done = null;
+      for (let i = 0; i < 20; i++) {
+        await sleep(3000);
+        const ap = await MovieAPI.relinkApply(movie.id);
+        const r = await ap.json().catch(() => ({}));
+        if (!ap.ok) {
+          hide();
+          message.error(r.message || "Re-link failed.");
+          return;
+        }
+        if (r.done) {
+          done = r;
+          break;
+        }
+      }
+      hide();
+      if (!done) {
+        message.warning("Still indexing — give it a moment and click again.");
+        return;
+      }
+      const fresh = await MovieAPI.getTitle(movie.id, kind).then((r) => r.json());
+      setMovie(fresh.data);
+      setNormalized(fresh.normalized || null);
+      if (onMovieUpdated) onMovieUpdated(fresh.data);
+      const extras = (done.extrasAdded || []).length;
+      const extraNote = extras ? ` (+${extras} extra${extras > 1 ? "s" : ""})` : "";
+      message.success(
+        done.primaryRepointed
+          ? `Re-linked to the new file${extraNote}. Watch is fixed.`
+          : `Already linked to the current file${extraNote}.`
+      );
+    } catch {
+      hide();
+      message.error("Re-link failed.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function saveChanges() {
     setSaving(true);
     try {
@@ -702,6 +757,11 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
                   <Button onClick={refetchFromImdb} loading={saving} title="Re-pull rating, year, plot & poster from IMDb for the current id">
                     ↻ Re-fetch from IMDb
                   </Button>
+                  {!isSeries && (
+                    <Button onClick={relinkFromDisk} loading={saving} title="Replaced this movie's file on disk (new rip / renamed folder)? Re-scan just this folder and re-point to the new file + extras — keeps all ratings, viewings, poster & tags.">
+                      ⟳ Re-link file from disk
+                    </Button>
+                  )}
                   {thumbMissing && (
                     <Button onClick={generateThumbnail} loading={genThumb} title="This title has a poster but no thumbnail (its card shows a placeholder); generate the thumbnail from the existing poster">
                       Generate thumbnail

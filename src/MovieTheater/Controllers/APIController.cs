@@ -4057,6 +4057,55 @@ namespace MovieTheater.Controllers
             }
         }
 
+        // ── Per-movie "Re-link files from disk" (movie edit page) ─────────────────────────────────────
+        // When a movie's video file is replaced on disk (new rip, old file deleted, folder renamed), its DB
+        // path goes stale and the watch button breaks. These two endpoints re-associate the NEW file to the
+        // SAME movie row IN PLACE — every rating/viewing/poster/tag is kept — without a full-library scan.
+        // Split so neither call has to outlive a proxy timeout: RelinkRefresh kicks a SCOPED re-scan of just
+        // this title's shelf; Relink is a single idempotent probe the UI polls until the file is re-pointed.
+
+        [HttpPost("/API/Admin/Movie/RelinkRefresh")]
+        public async Task<IActionResult> MovieRelinkRefresh(int movieId)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            try
+            {
+                var r = await jellyfinSyncService.TriggerMovieFolderRefreshAsync(movieId);
+                return r.Ok
+                    ? Ok(new { ok = true, message = r.Message })
+                    : BadRequest(new { ok = false, message = r.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(502, new { ok = false, message = "Could not reach Jellyfin to start a re-scan: " + ex.Message });
+            }
+        }
+
+        [HttpPost("/API/Admin/Movie/Relink")]
+        public async Task<IActionResult> MovieRelink(int movieId)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            try
+            {
+                var r = await jellyfinSyncService.TryRelinkMovieFilesAsync(movieId);
+                return Ok(new
+                {
+                    done = r.Done,
+                    scanning = r.Scanning,
+                    primaryRepointed = r.PrimaryRepointed,
+                    nowStreamable = r.NowStreamable,
+                    oldPath = r.OldPath,
+                    newPath = r.NewPath,
+                    extrasAdded = r.ExtrasAdded,
+                    message = r.Message,
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(502, new { done = false, message = "Re-link failed: " + ex.Message });
+            }
+        }
+
         // ── Subtitle picker (movie modal) ──────────────────────────────────────────────────────────
         // Find/download subtitles for a movie through Jellyfin's subtitle provider (the OpenSubtitles
         // plugin). Libraries are set to NOT save subtitles with media, so downloads land in Jellyfin's

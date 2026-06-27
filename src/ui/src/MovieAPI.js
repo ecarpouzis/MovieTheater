@@ -613,6 +613,17 @@ function jellyfinRunSync() {
   return fetch("/API/Admin/Jellyfin/RunSync", { method: "post" });
 }
 
+// ── Per-movie "Re-link files from disk" (movie edit page) ──
+// The movie's file got replaced (new rip / renamed folder)? 1) scoped re-scan of just this title's shelf;
+// 2) poll the probe until the new file is indexed and re-pointed in place (+ any new extras). No full
+// library scan, and every attached detail is kept (it all lives on the Movie row, not the file row).
+function relinkRefresh(movieId) {
+  return fetch(`/API/Admin/Movie/RelinkRefresh?movieId=${movieId}`, { method: "post" });
+}
+function relinkApply(movieId) {
+  return fetch(`/API/Admin/Movie/Relink?movieId=${movieId}`, { method: "post" });
+}
+
 // ── Subtitle picker (movie modal) — find/download subtitles via Jellyfin's provider ──
 // list current tracks ({ synced, current[] }); search ranked candidates; download a pick; remove a sidecar.
 function jellyfinSubtitlesList(movieId) {
@@ -765,6 +776,8 @@ const MovieAPI = {
   jellyfinTriggerScan,
   jellyfinScanStatus,
   jellyfinRunSync,
+  relinkRefresh,
+  relinkApply,
   jellyfinSubtitlesList,
   jellyfinSubtitlesSearch,
   jellyfinSubtitlesDownload,
