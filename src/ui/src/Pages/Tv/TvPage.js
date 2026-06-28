@@ -4,11 +4,20 @@ import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
 import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, HLS_LOAD_CONFIG, formatPlaying, deliveredLayout } from "../Watch/VideoPlayer";
 import { autoBpsLabel, rungDown, rungUp, shouldStepUp, isBottomRung, DIRECT_BPS } from "../../streamAbr";
+import { useSubtitleStyle, useCueLift } from "../../subtitleStyle";
+import { SubtitleStyleControls, SubtitleStylePreview } from "../../SubtitleStyleEditor";
 
 // Adaptive-bitrate pacing (matches the Watch player): at most one switch per window, and only climb
 // after a sustained good streak — each switch is a visible re-tune.
 const ABR_COOLDOWN_MS = 20_000;
 const ABR_STABLE_FOR_UP_MS = 90_000;
+// Stall debounce (matches the Watch player): a lone stall is usually a transient bitrate spike the
+// buffer rides out — only a repeated pattern means the rung is genuinely too high. Require a few
+// DISTINCT stall episodes within a window before dropping a rung (a downshift re-tunes the channel,
+// a visible blip), collapsing hls.js's repeated stalled-error fires into one episode.
+const ABR_STALL_WINDOW_MS = 30_000;
+const ABR_STALL_EPISODE_GAP_MS = 6_000;
+const ABR_STALLS_TO_DOWNSHIFT = 2;
 import ChannelAdminModal from "./ChannelAdminModal";
 import ChannelGrid from "./ChannelGrid";
 import "./TvPage.css";
@@ -67,6 +76,8 @@ function TvPage({ userData }) {
   const [subtitleIndex, setSubtitleIndex] = useState(null); // burned-in subtitle stream; null = off
   const [audioOpen, setAudioOpen] = useState(false);
   const [subsOpen, setSubsOpen] = useState(false);
+  // Caption appearance — shared with the Watch player (same hook + persisted settings + injected ::cue).
+  const { subStyle, setSubStyle, setStyle, styleOpen, setStyleOpen } = useSubtitleStyle();
   const [skip, setSkip] = useState(null); // { viewers, votes, required, youVoted }
   const [restart, setRestart] = useState(null); // { viewers, votes, required, youVoted }
   const [viewers, setViewers] = useState(null); // { count, names: [{ name, you }] } — who's tuned in
@@ -86,6 +97,8 @@ function TvPage({ userData }) {
   autoBpsRef.current = autoBps;
   const lastSwitchAtRef = useRef(0);
   const stableSinceRef = useRef(0);
+  const stallEpisodesRef = useRef([]); // timestamps of recent DISTINCT stall episodes (downshift debounce)
+  const lastStallSeenRef = useRef(0);  // last stall fire, to collapse a burst of fires into one episode
   const channelRef = useRef(null);
   channelRef.current = channel;
   const tuneRef = useRef(null);
@@ -208,10 +221,25 @@ function TvPage({ userData }) {
     if (ch) tuneRef.current?.(ch);
   }, []);
 
-  // Stall = the connection can't carry this rung: drop one immediately (respecting the cooldown).
+  // Stall handling (debounced): a lone stall is usually a transient bitrate spike the buffer rides
+  // out, so we don't react to it — only a repeated pattern within the window means the rung is
+  // genuinely too high. This stops one hiccup (e.g. a high-bitrate scene) from re-tuning the channel.
   const handleStall = useCallback(() => {
     if (qualityRef.current !== "auto" || isBottomRung(autoBpsRef.current)) return;
-    if (Date.now() - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
+    const now = Date.now();
+    // hls.js re-fires the stalled error repeatedly during one stall; treat closely-spaced fires as
+    // the same episode so a single stall counts once.
+    if (now - lastStallSeenRef.current < ABR_STALL_EPISODE_GAP_MS) {
+      lastStallSeenRef.current = now;
+      return;
+    }
+    lastStallSeenRef.current = now;
+    const recent = stallEpisodesRef.current.filter((t) => now - t < ABR_STALL_WINDOW_MS);
+    recent.push(now);
+    stallEpisodesRef.current = recent;
+    if (recent.length < ABR_STALLS_TO_DOWNSHIFT) return; // a lone transient stall — let the buffer recover
+    if (now - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
+    stallEpisodesRef.current = []; // consumed — start the count fresh after a downshift
     adaptTo(rungDown(autoBpsRef.current));
   }, [adaptTo]);
 
@@ -382,7 +410,19 @@ function TvPage({ userData }) {
         } else if (Hls.isSupported()) {
           // startPosition joins at the live offset directly instead of loading from 0 and
           // seeking — the seek churn was a source of the join-time A/V desync on mobile.
-          const hls = new Hls({ maxBufferLength: 30, backBufferLength: 10, startPosition: joinAt, ...HLS_LOAD_CONFIG });
+          // We serve "Original" by COPYING the source, so the stream carries the file's spiky real
+          // bitrate (a high-motion scene can peak 25-45 Mbps). hls.js's DEFAULT maxBufferSize is only
+          // 60 MB — ~10-15s at a 40 Mbps peak — so the byte cap collapses the buffer exactly at a
+          // high-bitrate scene and a fat segment stalls playback. Give it a large byte budget plus
+          // more lead so calm scenes pre-buffer through the spike. backBufferLength stays small: a
+          // channel is forward-only (a lone-viewer scrub re-tunes a fresh stream, not the back buffer).
+          const hls = new Hls({
+            maxBufferLength: 120,
+            maxBufferSize: 400 * 1000 * 1000,
+            backBufferLength: 10,
+            startPosition: joinAt,
+            ...HLS_LOAD_CONFIG,
+          });
           hlsRef.current = hls;
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             video.play().catch(() => {});
@@ -886,6 +926,11 @@ function TvPage({ userData }) {
     }
   }, [subtitleIndex, subtitleTracks]);
 
+  // Vertical lift for the showing track's cues (size/color/font/edge/box ride on the injected ::cue
+  // rule from useSubtitleStyle). reloadKey = subtitleTracks: a new film replaces the <track> set, so
+  // re-apply when it changes.
+  useCueLift(videoRef, subtitleIndex, subtitleTracks, subStyle.liftPct);
+
   // Keep the fullscreen button's icon in sync with the actual state (incl. Esc to exit).
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -946,6 +991,9 @@ function TvPage({ userData }) {
               <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
             ))}
         </video>
+
+        {/* live caption-style preview (shared component): faithful sample at the real caption height */}
+        {styleOpen && <SubtitleStylePreview subStyle={subStyle} />}
 
         {/* channel-change static burst */}
         <div className={`tv-static${staticBurst ? " tv-static--on" : ""}`} aria-hidden="true" />
@@ -1046,6 +1094,19 @@ function TvPage({ userData }) {
                         {!t.deliveryUrl && <span className="tv-qopt-hint">burned in</span>}
                       </button>
                     ))}
+                    {/* caption appearance editor (shared with the Watch player) + live on-video preview */}
+                    <button
+                      className={`tv-channel-item${styleOpen ? " tv-channel-item--on" : ""}`}
+                      onClick={() => setStyleOpen((o) => !o)}
+                      aria-expanded={styleOpen}
+                    >
+                      <span className="tv-channel-num">✦</span>
+                      Subtitle style
+                      <span className="tv-qopt-hint">{styleOpen ? "▾" : "▸"}</span>
+                    </button>
+                    {styleOpen && (
+                      <SubtitleStyleControls subStyle={subStyle} setStyle={setStyle} setSubStyle={setSubStyle} />
+                    )}
                   </>
                 )}
               </>

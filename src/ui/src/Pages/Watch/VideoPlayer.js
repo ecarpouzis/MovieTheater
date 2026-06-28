@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
 import { detectStreamCapabilities } from "../../streamCapabilities";
+import { useSubtitleStyle, useCueLift } from "../../subtitleStyle";
+import { SubtitleStyleControls, SubtitleStylePreview } from "../../SubtitleStyleEditor";
 import "./VideoPlayer.css";
 
 // The delivered layout is capped at what this client can actually emit, so a stereo machine reads
@@ -101,54 +103,6 @@ function formatDelay(ms) {
 const SUBTITLE_NUDGE_MS = 100;
 const SUBTITLE_OFFSET_LIMIT_MS = 30_000;
 
-// ── subtitle appearance ──────────────────────────────────────────────────────
-// The viewer's caption look, persisted across sessions. Native WebVTT cues can only be styled
-// via a stylesheet (no per-element inline style), so the size/color/font/edge here are written
-// into a single injected `::cue` rule; vertical lift is applied per-cue via cue.line. Size is in
-// vh so it scales with the player (and reads consistently across browsers — the Firefox fix).
-// liftPct is "% raised off the very bottom": 0 = flush at the bottom edge (the slider's low end),
-// higher = raised. Default to a small inset so captions don't sit flush by default, while the slider
-// can still be dragged all the way down to the true bottom.
-const SUB_STYLE_DEFAULTS = { sizeVh: 3.0, color: "#f2ecdd", font: "sans", edge: "shadow", liftPct: 5, bgOpacity: 0.78 };
-const SUB_SIZE_MIN = 1.8;
-const SUB_SIZE_MAX = 5.5;
-const SUB_LIFT_MAX = 40;
-
-const SUB_FONTS = {
-  sans: '"Segoe UI", system-ui, Arial, sans-serif',
-  serif: 'Georgia, "Times New Roman", serif',
-  cinema: '"Marcellus", Georgia, serif',
-};
-const SUB_FONT_OPTIONS = [
-  { key: "sans", label: "Sans" },
-  { key: "serif", label: "Serif" },
-  { key: "cinema", label: "Cinema" },
-];
-
-// text-shadow strings: a soft drop shadow, or a 4-way faux outline that holds the glyph against
-// bright scenes. ::cue honors text-shadow (one of its few allowed properties).
-const SUB_EDGES = {
-  none: "none",
-  shadow: "0 1px 3px rgba(0,0,0,0.95), 0 2px 8px rgba(0,0,0,0.7)",
-  outline:
-    "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px rgba(0,0,0,0.9)",
-};
-const SUB_EDGE_OPTIONS = [
-  { key: "none", label: "None" },
-  { key: "shadow", label: "Shadow" },
-  { key: "outline", label: "Outline" },
-];
-
-const SUB_COLORS = [
-  { label: "White", value: "#ffffff" },
-  { label: "Cream", value: "#f2ecdd" },
-  { label: "Yellow", value: "#f2e36b" },
-  { label: "Gold", value: "#f5cf72" },
-];
-
-// The dark box behind the text. Opacity 0 renders no box at all (fully transparent).
-const subBg = (opacity) => (opacity <= 0 ? "transparent" : `rgba(8, 7, 5, ${opacity})`);
-
 /**
  * The screening-room player (streaming-plan.md §7). Self-contained dark UI —
  * deliberately no AntD in here. Shared later by the TV channel page.
@@ -220,17 +174,9 @@ function VideoPlayer({
   const offsetToastTimer = useRef(null);
   const cueOriginalsRef = useRef(new WeakMap()); // cue → its un-shifted {start,end}, so nudges don't compound
 
-  // Caption appearance (size/color/font/edge/lift), restored from localStorage and persisted on change.
-  // `styleOpen` reveals the editor sub-panel and turns on the on-video sample preview.
-  const [subStyle, setSubStyle] = useState(() => {
-    try {
-      return { ...SUB_STYLE_DEFAULTS, ...JSON.parse(window.localStorage.getItem("SubtitleStyle") || "{}") };
-    } catch {
-      return { ...SUB_STYLE_DEFAULTS };
-    }
-  });
-  const [styleOpen, setStyleOpen] = useState(false);
-  const setStyle = useCallback((patch) => setSubStyle((s) => ({ ...s, ...patch })), []);
+  // Caption appearance (size/color/font/edge/box/lift), shared with the TV player via a hook that
+  // owns persistence and the injected ::cue rule. `styleOpen` reveals the editor + on-video preview.
+  const { subStyle, setSubStyle, setStyle, styleOpen, setStyleOpen } = useSubtitleStyle();
 
   // ── backward-seek watchdog (diagnostic) ──────────────────────────────────────
   // Hunts the rare "video pops backward ~5s on its own" report: logs any spontaneous backward jump in
@@ -277,7 +223,20 @@ function VideoPlayer({
       video.src = src;
       video.addEventListener("loadedmetadata", seekToStart, { once: true });
     } else if (Hls.isSupported()) {
-      hls = new Hls({ maxBufferLength: 60, backBufferLength: 90, ...HLS_LOAD_CONFIG });
+      // We serve "Original" by COPYING the source (no re-encode), so the stream carries the file's
+      // real, spiky bitrate: a calm scene runs a few Mbps, a high-motion scene can peak 25-45 Mbps.
+      // hls.js buffers up to whichever of {seconds, bytes} it hits first, and its DEFAULT maxBufferSize
+      // is only 60 MB — about 10-15s at a 40 Mbps peak. So the byte cap silently collapses the buffer
+      // exactly when entering a high-bitrate scene (a scene-change keyframe begins a fat GOP), and a
+      // single fat segment outruns the buffer → a deterministic "loading dots" hitch at that timestamp,
+      // on every device, even after rewinding back into it. Give the player a much larger byte budget
+      // (and more lead time) so it banks the calm-scene slack and rides through the spike.
+      hls = new Hls({
+        maxBufferLength: 120,            // target ~2 min of lead so calm scenes pre-buffer the next spike
+        maxBufferSize: 400 * 1000 * 1000, // 400 MB: don't let the byte cap bind during a 40 Mbps scene
+        backBufferLength: 90,
+        ...HLS_LOAD_CONFIG,
+      });
       hlsRef.current = hls;
       // watchdog: remember the most recent of the hls.js events that can move/flush the playhead, so a
       // backward jump can be correlated with (e.g.) a manifest re-parse or buffer flush that just fired.
@@ -499,62 +458,9 @@ function VideoPlayer({
 
   useEffect(() => () => clearTimeout(offsetToastTimer.current), []);
 
-  // Persist caption appearance across sessions.
-  useEffect(() => {
-    window.localStorage.setItem("SubtitleStyle", JSON.stringify(subStyle));
-  }, [subStyle]);
-
-  // Write the chosen look into a single injected `::cue` rule. Appended to <head> at runtime so it
-  // sits after the bundled stylesheet and wins (equal specificity, later in source order). Shared
-  // by every player instance via a stable id; reflects whatever the current settings are.
-  useEffect(() => {
-    const css =
-      `.vp-video::cue{` +
-      `font-size:${subStyle.sizeVh}vh;` +
-      `color:${subStyle.color};` +
-      `font-family:${SUB_FONTS[subStyle.font] || SUB_FONTS.sans};` +
-      `text-shadow:${SUB_EDGES[subStyle.edge] || "none"};` +
-      `background:${subBg(subStyle.bgOpacity)};` +
-      `}`;
-    let el = document.getElementById("vp-cue-style");
-    if (!el) {
-      el = document.createElement("style");
-      el.id = "vp-cue-style";
-      document.head.appendChild(el);
-    }
-    el.textContent = css;
-  }, [subStyle.sizeVh, subStyle.color, subStyle.font, subStyle.edge, subStyle.bgOpacity]);
-
-  // Vertical lift: ::cue can't set position, but cue.line can. With snapToLines off, line is a
-  // percentage of the video box from the top (100 = bottom), so 100 − liftPct raises the caption.
-  // liftPct 0 restores the browser default (auto), which keeps its tasteful bottom inset.
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return undefined;
-    const apply = () => {
-      for (const track of Array.from(video.textTracks)) {
-        if (String(track.id) !== String(selectedSubtitleIndex)) continue;
-        if (!track.cues) continue;
-        for (const cue of Array.from(track.cues)) {
-          try {
-            // snapToLines off lets us position by percentage. lineAlign "end" makes `line` pin the
-            // BOTTOM of the caption box, so 100 − liftPct puts liftPct=0 flush at the very bottom
-            // (line=100 with the default top-align would hang the box off-screen) and raises from
-            // there. (cue.line = "auto" only reached the browser's default inset, never the bottom.)
-            cue.snapToLines = false;
-            cue.lineAlign = "end";
-            cue.line = Math.max(50, 100 - subStyle.liftPct);
-          } catch {
-            /* a browser that disallows mutating cue.line — lift simply won't apply */
-          }
-        }
-      }
-    };
-    apply();
-    const tracks = Array.from(video.querySelectorAll("track"));
-    tracks.forEach((t) => t.addEventListener("load", apply));
-    return () => tracks.forEach((t) => t.removeEventListener("load", apply));
-  }, [subStyle.liftPct, selectedSubtitleIndex, src]);
+  // Vertical lift for the showing track's cues. Size/color/font/edge/box ride on the injected
+  // ::cue rule from useSubtitleStyle; position can't be set via ::cue, so it's applied per-cue here.
+  useCueLift(videoRef, selectedSubtitleIndex, src, subStyle.liftPct);
 
   // ── Media Session: title + poster on the OS media overlay ──────────────────
   useEffect(() => {
@@ -820,26 +726,8 @@ function VideoPlayer({
         </div>
       )}
 
-      {/* live caption-style preview: a real sample line, styled identically to the injected ::cue rule
-          and placed at the same height the real cue lands (a small base inset + liftPct), so it's a
-          faithful guide. Raised above the controls (z-index in CSS) so the bottom-most positions
-          aren't hidden behind them. */}
-      {styleOpen && (
-        <div className="vp-sub-preview" style={{ bottom: `${subStyle.liftPct}%` }} aria-hidden="true">
-          <span
-            className="vp-sub-preview-text"
-            style={{
-              fontSize: `${subStyle.sizeVh}vh`,
-              color: subStyle.color,
-              fontFamily: SUB_FONTS[subStyle.font] || SUB_FONTS.sans,
-              textShadow: SUB_EDGES[subStyle.edge] || "none",
-              background: subBg(subStyle.bgOpacity),
-            }}
-          >
-            Sample subtitle — how this looks
-          </span>
-        </div>
-      )}
+      {/* live caption-style preview (shared component): faithful sample at the real caption height */}
+      {styleOpen && <SubtitleStylePreview subStyle={subStyle} />}
 
       {/* buffering: three marquee bulbs */}
       {buffering && !needsTap && !fatalError && (
@@ -1072,127 +960,7 @@ function VideoPlayer({
                       <span className="vp-menu-hint">{styleOpen ? "▾" : "▸"}</span>
                     </button>
                     {styleOpen && (
-                      <div className="vp-substyle">
-                        <div className="vp-substyle-row">
-                          <span className="vp-substyle-label">Size</span>
-                          <input
-                            className="vp-substyle-slider"
-                            type="range"
-                            min={SUB_SIZE_MIN}
-                            max={SUB_SIZE_MAX}
-                            step="0.1"
-                            value={subStyle.sizeVh}
-                            aria-label="Subtitle size"
-                            onChange={(e) => setStyle({ sizeVh: parseFloat(e.target.value) })}
-                          />
-                          <span className="vp-substyle-val">
-                            {Math.round((subStyle.sizeVh / 100) * (typeof window !== "undefined" ? window.innerHeight : 1080))}px
-                          </span>
-                        </div>
-
-                        <div className="vp-substyle-row">
-                          <span className="vp-substyle-label">Color</span>
-                          <div className="vp-substyle-swatches">
-                            {SUB_COLORS.map((c) => (
-                              <button
-                                key={c.value}
-                                type="button"
-                                className={`vp-substyle-swatch${subStyle.color === c.value ? " vp-substyle-swatch--on" : ""}`}
-                                style={{ background: c.value }}
-                                onClick={() => setStyle({ color: c.value })}
-                                aria-label={c.label}
-                                aria-pressed={subStyle.color === c.value}
-                                title={c.label}
-                              />
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="vp-substyle-row">
-                          <span className="vp-substyle-label">Box</span>
-                          <input
-                            className="vp-substyle-slider"
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={subStyle.bgOpacity}
-                            aria-label="Subtitle background opacity"
-                            onChange={(e) => setStyle({ bgOpacity: parseFloat(e.target.value) })}
-                          />
-                          <span className="vp-substyle-val">
-                            {subStyle.bgOpacity <= 0 ? "Off" : `${Math.round(subStyle.bgOpacity * 100)}%`}
-                          </span>
-                        </div>
-
-                        <div className="vp-substyle-row">
-                          <span className="vp-substyle-label">Font</span>
-                          <div className="vp-substyle-seg">
-                            {SUB_FONT_OPTIONS.map((f) => (
-                              <button
-                                key={f.key}
-                                type="button"
-                                className={`vp-substyle-segbtn${subStyle.font === f.key ? " vp-substyle-segbtn--on" : ""}`}
-                                style={{ fontFamily: SUB_FONTS[f.key] }}
-                                onClick={() => setStyle({ font: f.key })}
-                                aria-pressed={subStyle.font === f.key}
-                              >
-                                {f.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="vp-substyle-row">
-                          <span className="vp-substyle-label">Edge</span>
-                          <div className="vp-substyle-seg">
-                            {SUB_EDGE_OPTIONS.map((ed) => (
-                              <button
-                                key={ed.key}
-                                type="button"
-                                className={`vp-substyle-segbtn${subStyle.edge === ed.key ? " vp-substyle-segbtn--on" : ""}`}
-                                onClick={() => setStyle({ edge: ed.key })}
-                                aria-pressed={subStyle.edge === ed.key}
-                              >
-                                {ed.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="vp-substyle-row">
-                          <span className="vp-substyle-label">Position</span>
-                          <input
-                            className="vp-substyle-slider"
-                            type="range"
-                            min="0"
-                            max={SUB_LIFT_MAX}
-                            step="1"
-                            value={subStyle.liftPct}
-                            aria-label="Subtitle vertical position"
-                            onChange={(e) => setStyle({ liftPct: parseInt(e.target.value, 10) })}
-                          />
-                          <span className="vp-substyle-val">
-                            {subStyle.liftPct === 0 ? "Bottom" : `+${subStyle.liftPct}`}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="vp-substyle-reset"
-                          onClick={() => setSubStyle({ ...SUB_STYLE_DEFAULTS })}
-                          disabled={
-                            subStyle.sizeVh === SUB_STYLE_DEFAULTS.sizeVh &&
-                            subStyle.color === SUB_STYLE_DEFAULTS.color &&
-                            subStyle.font === SUB_STYLE_DEFAULTS.font &&
-                            subStyle.edge === SUB_STYLE_DEFAULTS.edge &&
-                            subStyle.liftPct === SUB_STYLE_DEFAULTS.liftPct &&
-                            subStyle.bgOpacity === SUB_STYLE_DEFAULTS.bgOpacity
-                          }
-                        >
-                          Reset to defaults
-                        </button>
-                      </div>
+                      <SubtitleStyleControls subStyle={subStyle} setStyle={setStyle} setSubStyle={setSubStyle} />
                     )}
                   </>
                 )}
