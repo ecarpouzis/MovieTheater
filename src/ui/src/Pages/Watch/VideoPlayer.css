@@ -647,14 +647,15 @@
   cursor: default;
 }
 
-/* live on-video sample caption shown while the editor is open */
+/* live on-video sample caption shown while the editor is open. z-index above the controls (4) so
+   the bottom-most positions stay visible while tuning, rather than hiding behind the controls bar. */
 .vp-sub-preview {
   position: absolute;
   left: 0;
   right: 0;
   display: flex;
   justify-content: center;
-  z-index: 3;
+  z-index: 5;
   pointer-events: none;
   padding: 0 8%;
   text-align: center;

@@ -106,7 +106,10 @@ const SUBTITLE_OFFSET_LIMIT_MS = 30_000;
 // via a stylesheet (no per-element inline style), so the size/color/font/edge here are written
 // into a single injected `::cue` rule; vertical lift is applied per-cue via cue.line. Size is in
 // vh so it scales with the player (and reads consistently across browsers — the Firefox fix).
-const SUB_STYLE_DEFAULTS = { sizeVh: 3.0, color: "#f2ecdd", font: "sans", edge: "shadow", liftPct: 0 };
+// liftPct is "% raised off the very bottom": 0 = flush at the bottom edge (the slider's low end),
+// higher = raised. Default to a small inset so captions don't sit flush by default, while the slider
+// can still be dragged all the way down to the true bottom.
+const SUB_STYLE_DEFAULTS = { sizeVh: 3.0, color: "#f2ecdd", font: "sans", edge: "shadow", liftPct: 5, bgOpacity: 0.78 };
 const SUB_SIZE_MIN = 1.8;
 const SUB_SIZE_MAX = 5.5;
 const SUB_LIFT_MAX = 40;
@@ -143,8 +146,8 @@ const SUB_COLORS = [
   { label: "Gold", value: "#f5cf72" },
 ];
 
-// The dark box behind the text — kept fixed (no control was requested for it).
-const SUB_BG = "rgba(8, 7, 5, 0.78)";
+// The dark box behind the text. Opacity 0 renders no box at all (fully transparent).
+const subBg = (opacity) => (opacity <= 0 ? "transparent" : `rgba(8, 7, 5, ${opacity})`);
 
 /**
  * The screening-room player (streaming-plan.md §7). Self-contained dark UI —
@@ -511,7 +514,7 @@ function VideoPlayer({
       `color:${subStyle.color};` +
       `font-family:${SUB_FONTS[subStyle.font] || SUB_FONTS.sans};` +
       `text-shadow:${SUB_EDGES[subStyle.edge] || "none"};` +
-      `background:${SUB_BG};` +
+      `background:${subBg(subStyle.bgOpacity)};` +
       `}`;
     let el = document.getElementById("vp-cue-style");
     if (!el) {
@@ -520,7 +523,7 @@ function VideoPlayer({
       document.head.appendChild(el);
     }
     el.textContent = css;
-  }, [subStyle.sizeVh, subStyle.color, subStyle.font, subStyle.edge]);
+  }, [subStyle.sizeVh, subStyle.color, subStyle.font, subStyle.edge, subStyle.bgOpacity]);
 
   // Vertical lift: ::cue can't set position, but cue.line can. With snapToLines off, line is a
   // percentage of the video box from the top (100 = bottom), so 100 − liftPct raises the caption.
@@ -534,13 +537,13 @@ function VideoPlayer({
         if (!track.cues) continue;
         for (const cue of Array.from(track.cues)) {
           try {
-            if (subStyle.liftPct > 0) {
-              cue.snapToLines = false;
-              cue.line = Math.max(50, 100 - subStyle.liftPct);
-            } else {
-              cue.snapToLines = true;
-              cue.line = "auto";
-            }
+            // snapToLines off lets us position by percentage. lineAlign "end" makes `line` pin the
+            // BOTTOM of the caption box, so 100 − liftPct puts liftPct=0 flush at the very bottom
+            // (line=100 with the default top-align would hang the box off-screen) and raises from
+            // there. (cue.line = "auto" only reached the browser's default inset, never the bottom.)
+            cue.snapToLines = false;
+            cue.lineAlign = "end";
+            cue.line = Math.max(50, 100 - subStyle.liftPct);
           } catch {
             /* a browser that disallows mutating cue.line — lift simply won't apply */
           }
@@ -817,11 +820,12 @@ function VideoPlayer({
         </div>
       )}
 
-      {/* live caption-style preview: a real sample line, styled identically to the injected ::cue rule,
-          shown while the style editor is open. Sits a touch higher than real captions so the controls
-          bar doesn't cover it; it lifts as the lift control raises it. */}
+      {/* live caption-style preview: a real sample line, styled identically to the injected ::cue rule
+          and placed at the same height the real cue lands (a small base inset + liftPct), so it's a
+          faithful guide. Raised above the controls (z-index in CSS) so the bottom-most positions
+          aren't hidden behind them. */}
       {styleOpen && (
-        <div className="vp-sub-preview" style={{ bottom: `${22 + subStyle.liftPct}%` }} aria-hidden="true">
+        <div className="vp-sub-preview" style={{ bottom: `${subStyle.liftPct}%` }} aria-hidden="true">
           <span
             className="vp-sub-preview-text"
             style={{
@@ -829,7 +833,7 @@ function VideoPlayer({
               color: subStyle.color,
               fontFamily: SUB_FONTS[subStyle.font] || SUB_FONTS.sans,
               textShadow: SUB_EDGES[subStyle.edge] || "none",
-              background: SUB_BG,
+              background: subBg(subStyle.bgOpacity),
             }}
           >
             Sample subtitle — how this looks
@@ -1105,6 +1109,23 @@ function VideoPlayer({
                         </div>
 
                         <div className="vp-substyle-row">
+                          <span className="vp-substyle-label">Box</span>
+                          <input
+                            className="vp-substyle-slider"
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={subStyle.bgOpacity}
+                            aria-label="Subtitle background opacity"
+                            onChange={(e) => setStyle({ bgOpacity: parseFloat(e.target.value) })}
+                          />
+                          <span className="vp-substyle-val">
+                            {subStyle.bgOpacity <= 0 ? "Off" : `${Math.round(subStyle.bgOpacity * 100)}%`}
+                          </span>
+                        </div>
+
+                        <div className="vp-substyle-row">
                           <span className="vp-substyle-label">Font</span>
                           <div className="vp-substyle-seg">
                             {SUB_FONT_OPTIONS.map((f) => (
@@ -1165,7 +1186,8 @@ function VideoPlayer({
                             subStyle.color === SUB_STYLE_DEFAULTS.color &&
                             subStyle.font === SUB_STYLE_DEFAULTS.font &&
                             subStyle.edge === SUB_STYLE_DEFAULTS.edge &&
-                            subStyle.liftPct === SUB_STYLE_DEFAULTS.liftPct
+                            subStyle.liftPct === SUB_STYLE_DEFAULTS.liftPct &&
+                            subStyle.bgOpacity === SUB_STYLE_DEFAULTS.bgOpacity
                           }
                         >
                           Reset to defaults
