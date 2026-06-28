@@ -90,6 +90,17 @@ function formatTime(totalSeconds) {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+// Subtitle-delay readout. Positive = subtitles show later than the audio; negative = earlier.
+// Uses a real minus glyph so the sign reads cleanly in the player chrome.
+function formatDelay(ms) {
+  const sign = ms > 0 ? "+" : ms < 0 ? "−" : "";
+  return `${sign}${Math.abs(ms)} ms`;
+}
+
+// Step per nudge (keyboard or ± buttons) and the clamp on total offset.
+const SUBTITLE_NUDGE_MS = 100;
+const SUBTITLE_OFFSET_LIMIT_MS = 30_000;
+
 /**
  * The screening-room player (streaming-plan.md §7). Self-contained dark UI —
  * deliberately no AntD in here. Shared later by the TV channel page.
@@ -153,6 +164,28 @@ function VideoPlayer({
   const [flash, setFlash] = useState(null); // transient center icon: 'play' | 'pause'
   const [fatalError, setFatalError] = useState(null);
 
+  // Subtitle timing nudge: shift the active text track's cues by this many ms so the viewer can
+  // fix small sync drift live. Only meaningful for soft (sidecar VTT) tracks — burned-in image
+  // subs are baked into the picture server-side and can't be moved client-side.
+  const [subtitleOffsetMs, setSubtitleOffsetMs] = useState(0);
+  const [offsetToast, setOffsetToast] = useState(false); // transient delay readout on nudge
+  const offsetToastTimer = useRef(null);
+  const cueOriginalsRef = useRef(new WeakMap()); // cue → its un-shifted {start,end}, so nudges don't compound
+
+  // ── backward-seek watchdog (diagnostic) ──────────────────────────────────────
+  // Hunts the rare "video pops backward ~5s on its own" report: logs any spontaneous backward jump in
+  // currentTime with the context that separates the likely causes (a recent hls.js playlist reload /
+  // manifest re-parse, a source-effect reload, or neither). Ignores the viewer's own scrubs.
+  const lastSteadyTimeRef = useRef(0); // last currentTime seen while playing & not seeking
+  const lastHlsEventRef = useRef(null); // { name, at } of the most recent recorded hls.js event
+  const sourceReloadRef = useRef(null); // { at, startAt } when the source lifecycle effect (re)ran
+  const scrubbingRef = useRef(false); // mirror of `scrubbing` for use inside native event handlers
+  const lastScrubEndRef = useRef(0); // performance.now() when a scrub last ended (grace window)
+  useEffect(() => {
+    scrubbingRef.current = scrubbing;
+    if (!scrubbing) lastScrubEndRef.current = performance.now();
+  }, [scrubbing]);
+
   const duration = durationSeconds || videoRef.current?.duration || 0; // current part/stream
   // Combined-timeline mode (multi-part movie): the rail, time readout and scrub all run on the
   // whole-movie clock; `partOffset` maps this part's local time onto it. combinedDuration is 0 for
@@ -169,6 +202,7 @@ function VideoPlayer({
 
     setBuffering(true);
     setFatalError(null);
+    sourceReloadRef.current = { at: performance.now(), startAt }; // watchdog: note (re)loads of the source
 
     const seekToStart = () => {
       if (startAt > 0.5) video.currentTime = startAt;
@@ -185,6 +219,11 @@ function VideoPlayer({
     } else if (Hls.isSupported()) {
       hls = new Hls({ maxBufferLength: 60, backBufferLength: 90, ...HLS_LOAD_CONFIG });
       hlsRef.current = hls;
+      // watchdog: remember the most recent of the hls.js events that can move/flush the playhead, so a
+      // backward jump can be correlated with (e.g.) a manifest re-parse or buffer flush that just fired.
+      const recordHls = (name) => () => { lastHlsEventRef.current = { name, at: performance.now() }; };
+      [Hls.Events.MANIFEST_PARSED, Hls.Events.LEVEL_LOADED, Hls.Events.LEVEL_SWITCHED,
+        Hls.Events.FRAG_CHANGED, Hls.Events.BUFFER_FLUSHED].forEach((ev) => hls.on(ev, recordHls(ev)));
       hls.on(Hls.Events.MANIFEST_PARSED, seekToStart);
       hls.on(Hls.Events.ERROR, (_event, data) => {
         // A buffer stall (non-fatal) is the adaptive-downshift signal (§14.4).
@@ -227,6 +266,31 @@ function VideoPlayer({
       // resume after a `waiting` without firing `playing`, which would leave
       // the buffering bulbs stuck over a running video.
       if (!video.paused) setBuffering(false);
+      // watchdog: remember the last good (playing, not-seeking) position to compare against on a seek.
+      if (!video.paused && !video.seeking) lastSteadyTimeRef.current = video.currentTime;
+    };
+
+    // watchdog: a `seeking` we didn't initiate (no active/recent scrub) that moves the playhead
+    // meaningfully BACKWARD is the "pops backwards on its own" bug — log it with the surrounding context.
+    const onSeekingWatch = () => {
+      const from = lastSteadyTimeRef.current;
+      const delta = video.currentTime - from;
+      const recentlyScrubbed = scrubbingRef.current || performance.now() - lastScrubEndRef.current < 700;
+      if (delta < -1.5 && !recentlyScrubbed) {
+        const now = performance.now();
+        const hev = lastHlsEventRef.current;
+        const src = sourceReloadRef.current;
+        let bufEnd = NaN;
+        try { if (video.buffered.length) bufEnd = video.buffered.end(video.buffered.length - 1); } catch { /* transient */ }
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[backseek] ${from.toFixed(1)}s → ${video.currentTime.toFixed(1)}s (Δ${delta.toFixed(1)}s) ` +
+            `${video.paused ? "paused" : "playing"} | ` +
+            `lastHls: ${hev ? `${hev.name} ${Math.round(now - hev.at)}ms ago` : "none"} | ` +
+            `srcReload: ${src ? `${Math.round(now - src.at)}ms ago` : "none"} | ` +
+            `bufferedEnd: ${isFinite(bufEnd) ? bufEnd.toFixed(1) : "?"}`
+        );
+      }
     };
     const onPlay = () => {
       setPlaying(true);
@@ -250,6 +314,7 @@ function VideoPlayer({
     const onVideoEnded = () => onEnded?.(video.currentTime);
 
     video.addEventListener("timeupdate", onTime);
+    video.addEventListener("seeking", onSeekingWatch);
     video.addEventListener("play", onPlay);
     video.addEventListener("pause", onPause);
     video.addEventListener("seeked", onSeeked);
@@ -259,6 +324,7 @@ function VideoPlayer({
     video.addEventListener("ended", onVideoEnded);
     return () => {
       video.removeEventListener("timeupdate", onTime);
+      video.removeEventListener("seeking", onSeekingWatch);
       video.removeEventListener("play", onPlay);
       video.removeEventListener("pause", onPause);
       video.removeEventListener("seeked", onSeeked);
@@ -311,6 +377,67 @@ function VideoPlayer({
       track.mode = matches ? "showing" : "hidden";
     }
   }, [selectedSubtitleIndex, src]);
+
+  // The currently-selected SOFT subtitle (sidecar VTT). null when off or when a burned-in image
+  // sub is selected — only soft tracks can be re-timed client-side.
+  const activeTextSub = subtitleTracks.find((t) => t.index === selectedSubtitleIndex && !!t.deliveryUrl) || null;
+
+  // Picking a different subtitle starts its timing fresh (each file has its own sync); a stream
+  // restart (quality/audio change) keeps `selectedSubtitleIndex`, so the nudge survives those.
+  useEffect(() => {
+    setSubtitleOffsetMs(0);
+  }, [selectedSubtitleIndex]);
+
+  // Apply the timing nudge by shifting the showing track's cue times. We stash each cue's original
+  // times (keyed by the cue itself) so repeated nudges measure from the source timing, never compound.
+  // Cues load asynchronously and a stream restart reloads the VTT with fresh cue objects, so we also
+  // re-apply on the <track> 'load' event.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return undefined;
+    const offsetSec = subtitleOffsetMs / 1000;
+    const apply = () => {
+      for (const track of Array.from(video.textTracks)) {
+        if (String(track.id) !== String(selectedSubtitleIndex)) continue;
+        const cues = track.cues;
+        if (!cues) continue;
+        for (const cue of Array.from(cues)) {
+          let orig = cueOriginalsRef.current.get(cue);
+          if (!orig) {
+            orig = { start: cue.startTime, end: cue.endTime };
+            cueOriginalsRef.current.set(cue, orig);
+          }
+          const ns = Math.max(0, orig.start + offsetSec);
+          const ne = Math.max(ns + 0.001, orig.end + offsetSec);
+          // Set in the order that keeps start <= end at every step, or the assignment throws.
+          try {
+            if (offsetSec >= 0) {
+              if (cue.endTime !== ne) cue.endTime = ne;
+              if (cue.startTime !== ns) cue.startTime = ns;
+            } else {
+              if (cue.startTime !== ns) cue.startTime = ns;
+              if (cue.endTime !== ne) cue.endTime = ne;
+            }
+          } catch {
+            /* a browser that disallows mutating cue times — nudge simply won't apply there */
+          }
+        }
+      }
+    };
+    apply();
+    const tracks = Array.from(video.querySelectorAll("track"));
+    tracks.forEach((t) => t.addEventListener("load", apply));
+    return () => tracks.forEach((t) => t.removeEventListener("load", apply));
+  }, [subtitleOffsetMs, selectedSubtitleIndex, src]);
+
+  const nudgeSubtitle = useCallback((deltaMs) => {
+    setSubtitleOffsetMs((v) => Math.max(-SUBTITLE_OFFSET_LIMIT_MS, Math.min(SUBTITLE_OFFSET_LIMIT_MS, v + deltaMs)));
+    setOffsetToast(true);
+    clearTimeout(offsetToastTimer.current);
+    offsetToastTimer.current = setTimeout(() => setOffsetToast(false), 1400);
+  }, []);
+
+  useEffect(() => () => clearTimeout(offsetToastTimer.current), []);
 
   // ── Media Session: title + poster on the OS media overlay ──────────────────
   useEffect(() => {
@@ -463,6 +590,15 @@ function VideoPlayer({
           if (subtitleTracks.length > 0)
             onSelectSubtitle?.(selectedSubtitleIndex == null ? subtitleTracks[0].index : null);
           break;
+        // g/h nudge subtitle timing earlier/later (VLC-style), only when a soft text sub is showing.
+        case "g":
+          if (activeTextSub) nudgeSubtitle(-SUBTITLE_NUDGE_MS);
+          else handled = false;
+          break;
+        case "h":
+          if (activeTextSub) nudgeSubtitle(SUBTITLE_NUDGE_MS);
+          else handled = false;
+          break;
         default:
           if (/^[0-9]$/.test(e.key) && displayDuration > 0 && video) {
             seekDisplay((displayDuration * parseInt(e.key, 10)) / 10);
@@ -475,7 +611,7 @@ function VideoPlayer({
         wakeControls();
       }
     },
-    [togglePlay, seekBy, seekDisplay, toggleFullscreen, displayDuration, subtitleTracks, selectedSubtitleIndex, onSelectSubtitle, wakeControls]
+    [togglePlay, seekBy, seekDisplay, toggleFullscreen, displayDuration, subtitleTracks, selectedSubtitleIndex, onSelectSubtitle, wakeControls, activeTextSub, nudgeSubtitle]
   );
 
   // ── scrubber pointer logic ──────────────────────────────────────────────────
@@ -557,6 +693,13 @@ function VideoPlayer({
       {flash && (
         <div className="vp-flash" aria-hidden="true">
           <span className={`vp-flash-glyph vp-flash-glyph--${flash}`} />
+        </div>
+      )}
+
+      {/* transient subtitle-delay readout while nudging */}
+      {offsetToast && activeTextSub && (
+        <div className="vp-sub-toast" aria-live="polite">
+          Subtitle delay {formatDelay(subtitleOffsetMs)}
         </div>
       )}
 
@@ -750,6 +893,35 @@ function VideoPlayer({
                         {!t.deliveryUrl && <span className="vp-menu-hint">burned in</span>}
                       </button>
                     ))}
+                    {activeTextSub && (
+                      <div className="vp-menu-delay">
+                        <span className="vp-menu-delay-label">Delay</span>
+                        <button
+                          className="vp-menu-delay-btn"
+                          onClick={() => nudgeSubtitle(-SUBTITLE_NUDGE_MS)}
+                          aria-label="Subtitles earlier"
+                          title="Earlier (g)"
+                        >
+                          −
+                        </button>
+                        <span className="vp-menu-delay-val">{formatDelay(subtitleOffsetMs)}</span>
+                        <button
+                          className="vp-menu-delay-btn"
+                          onClick={() => nudgeSubtitle(SUBTITLE_NUDGE_MS)}
+                          aria-label="Subtitles later"
+                          title="Later (h)"
+                        >
+                          +
+                        </button>
+                        <button
+                          className="vp-menu-delay-reset"
+                          onClick={() => setSubtitleOffsetMs(0)}
+                          disabled={subtitleOffsetMs === 0}
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
 
