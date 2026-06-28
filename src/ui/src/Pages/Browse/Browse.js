@@ -141,23 +141,43 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       });
   }, [hasMore, search]);
 
-  // Observe the bottom sentinel; fetch the next page ~one screen before it's reached.
-  // Re-created after each append (movieDataArray.length dep) so that if the sentinel is
-  // STILL within the root margin after a page loads, the fresh observer's initial callback
-  // fires again and chains the next page — a single persistent observer wouldn't re-fire
-  // while the sentinel stays continuously intersecting (tall screens / short pages).
+  // A bottom "sentinel" element drives infinite loading: whenever it comes within ~one screen of
+  // the scroll viewport, load the next page. We measure the sentinel's position directly on each
+  // scroll (rAF-throttled) rather than via an IntersectionObserver. An observer here proved fragile
+  // — its callback only reports intersection *changes*, and a fresh-per-page observer's initial
+  // callback raced with layout and could report "not intersecting"; once the user was at the bottom
+  // there was no further scroll to correct it, so the chain stalled (most visibly on a short list's
+  // final partial page). A direct position check on every scroll has no such transition/timing
+  // dependency. loadMore is idempotent (guarded by loadingMoreRef + pageRef), so repeated calls
+  // while a fetch is in flight are harmless.
+  const PREFETCH_MARGIN = 800; // px — start loading ~one screen before the sentinel is reached.
   useEffect(() => {
     if (!isInfinite || !hasMore) return;
     const node = sentinelRef.current;
     if (!node) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) loadMore();
-      },
-      { root: getScrollParent(node), rootMargin: "800px 0px" }
-    );
-    io.observe(node);
-    return () => io.disconnect();
+    const root = getScrollParent(node);
+    const scrollTarget = root || window;
+    let scheduled = false;
+    const maybeLoad = () => {
+      scheduled = false;
+      const viewBottom = root ? root.getBoundingClientRect().bottom : window.innerHeight;
+      if (node.getBoundingClientRect().top <= viewBottom + PREFETCH_MARGIN) loadMore();
+    };
+    const onScroll = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(maybeLoad);
+    };
+    scrollTarget.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    // Initial check — and re-checked after each append via the length dep — so the list auto-fills
+    // when the sentinel is already within reach (short content / sitting at the bottom) without
+    // waiting for a scroll.
+    onScroll();
+    return () => {
+      scrollTarget.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, [isInfinite, hasMore, loadMore, movieDataArray.length]);
 
   const history = useHistory();

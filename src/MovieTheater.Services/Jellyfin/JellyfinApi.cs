@@ -340,6 +340,28 @@ namespace MovieTheater.Services.Jellyfin
             GetAllItemsAsync("Folder", "Path", cancel);
 
         /// <summary>
+        /// Path-only listing of video items under a folder/parent (recursive) — the SCOPED counterpart of
+        /// <see cref="GetAllVideoItemPathsAsync"/>, so the re-link probe can poll a single shelf cheaply
+        /// instead of re-listing the whole library every few seconds.
+        /// </summary>
+        public async Task<List<JellyfinItem>> GetVideoItemPathsUnderParentAsync(string parentId, CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            var items = new List<JellyfinItem>();
+            const int pageSize = 1000;
+            while (true)
+            {
+                var url = $"/Items?ParentId={Uri.EscapeDataString(parentId)}&IncludeItemTypes=Movie,Episode,Video&Recursive=true" +
+                          $"&EnableImages=false&Fields=Path&StartIndex={items.Count}&Limit={pageSize}";
+                var page = await httpClient.GetFromJsonAsync<JellyfinItemsResult>(url, JsonOptions, cancel);
+                if (page == null) break;
+                items.AddRange(page.Items);
+                if (page.Items.Count == 0 || items.Count >= page.TotalRecordCount) break;
+            }
+            return items;
+        }
+
+        /// <summary>
         /// Triggers a SCOPED re-scan of a single folder item: Jellyfin validates the folder's children, so a
         /// newly-added file is indexed and a deleted one is dropped — the per-folder alternative to the full
         /// <c>/Library/Refresh</c>. Returns immediately; the scan runs in the background (poll the item list).

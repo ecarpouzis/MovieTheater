@@ -4072,7 +4072,7 @@ namespace MovieTheater.Controllers
             {
                 var r = await jellyfinSyncService.TriggerMovieFolderRefreshAsync(movieId);
                 return r.Ok
-                    ? Ok(new { ok = true, message = r.Message })
+                    ? Ok(new { ok = true, message = r.Message, shelfItemId = r.ShelfItemId })
                     : BadRequest(new { ok = false, message = r.Message });
             }
             catch (Exception ex)
@@ -4082,12 +4082,12 @@ namespace MovieTheater.Controllers
         }
 
         [HttpPost("/API/Admin/Movie/Relink")]
-        public async Task<IActionResult> MovieRelink(int movieId)
+        public async Task<IActionResult> MovieRelink(int movieId, string? shelfItemId = null)
         {
             if (!await IsCurrentUserEditor()) return Forbid();
             try
             {
-                var r = await jellyfinSyncService.TryRelinkMovieFilesAsync(movieId);
+                var r = await jellyfinSyncService.TryRelinkMovieFilesAsync(movieId, shelfItemId);
                 return Ok(new
                 {
                     done = r.Done,

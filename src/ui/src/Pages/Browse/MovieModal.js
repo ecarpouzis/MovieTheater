@@ -173,7 +173,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
   async function relinkFromDisk() {
     setSaving(true);
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-    let hide = message.loading("Re-scanning this title's folder…", 0);
+    let hide = message.loading("Locating this title's folder in Jellyfin…", 0);
     try {
       const trg = await MovieAPI.relinkRefresh(movie.id);
       const td = await trg.json().catch(() => ({}));
@@ -182,12 +182,15 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
         message.error(td.message || "Couldn't start the re-scan.");
         return;
       }
-      // Poll the idempotent probe until Jellyfin has indexed the new file (bounded ~60s).
+      // Poll the idempotent probe until Jellyfin has indexed the new file (bounded ~60s). The shelf folder
+      // id from the trigger scopes each poll to just that folder.
       let done = null;
       let lastMsg = "";
       for (let i = 0; i < 20; i++) {
+        hide();
+        hide = message.loading(`Waiting for Jellyfin to index the new file… (${i + 1}/20)`, 0);
         await sleep(3000);
-        const ap = await MovieAPI.relinkApply(movie.id);
+        const ap = await MovieAPI.relinkApply(movie.id, td.shelfItemId);
         const r = await ap.json().catch(() => ({}));
         if (!ap.ok) {
           hide();

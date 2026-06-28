@@ -620,8 +620,9 @@ function jellyfinRunSync() {
 function relinkRefresh(movieId) {
   return fetch(`/API/Admin/Movie/RelinkRefresh?movieId=${movieId}`, { method: "post" });
 }
-function relinkApply(movieId) {
-  return fetch(`/API/Admin/Movie/Relink?movieId=${movieId}`, { method: "post" });
+function relinkApply(movieId, shelfItemId) {
+  const q = shelfItemId ? `&shelfItemId=${encodeURIComponent(shelfItemId)}` : "";
+  return fetch(`/API/Admin/Movie/Relink?movieId=${movieId}${q}`, { method: "post" });
 }
 
 // ── Subtitle picker (movie modal) — find/download subtitles via Jellyfin's provider ──

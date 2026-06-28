@@ -353,6 +353,7 @@ namespace MovieTheater.Services.Jellyfin
             {
                 await jellyfin.RefreshItemAsync(shelfItemId, cancel);
                 res.Ok = true;
+                res.ShelfItemId = shelfItemId;
                 res.Message = $"Re-scan started for shelf '{shelf}'.";
             }
             else if (JellyfinPathMapper.TryTranslateToJellyfin(shelf, config.JellyfinPathMappings, out var shelfJf))
@@ -381,7 +382,7 @@ namespace MovieTheater.Services.Jellyfin
         /// <see cref="MovieRelinkResult.Scanning"/> so the caller polls again. Re-running after success is a
         /// no-op ("already linked"). The Movie row and everything attached to it are never touched.
         /// </summary>
-        public async Task<MovieRelinkResult> TryRelinkMovieFilesAsync(int movieId, CancellationToken cancel = default)
+        public async Task<MovieRelinkResult> TryRelinkMovieFilesAsync(int movieId, string? shelfItemId = null, CancellationToken cancel = default)
         {
             var res = new MovieRelinkResult();
             if (config.JellyfinPathMappings.Count == 0) { res.Message = "No JellyfinPathMappings configured."; return res; }
@@ -403,8 +404,12 @@ namespace MovieTheater.Services.Jellyfin
             if (shelf == null) { res.Message = "Couldn't determine this title's shelf folder."; return res; }
             var shelfNorm = JellyfinPathMapper.NormalizeForCompare(shelf);
 
-            // Cheap path-only enumeration (Jellyfin's DB, not a disk scan), narrowed to this shelf.
-            var allItems = await jellyfin.GetAllVideoItemPathsAsync(cancel);
+            // Cheap path-only enumeration (Jellyfin's DB, not a disk scan), narrowed to this shelf. When the
+            // trigger handed us the shelf's folder id, poll just that folder; otherwise fall back to a full
+            // listing filtered by path.
+            var allItems = string.IsNullOrEmpty(shelfItemId)
+                ? await jellyfin.GetAllVideoItemPathsAsync(cancel)
+                : await jellyfin.GetVideoItemPathsUnderParentAsync(shelfItemId!, cancel);
             var shelfItems = new List<(JellyfinItem Item, string DbPath)>();
             foreach (var it in allItems)
             {
@@ -597,6 +602,9 @@ namespace MovieTheater.Services.Jellyfin
     {
         public bool Ok { get; set; }
         public string? Message { get; set; }
+        /// <summary>The Jellyfin folder item id that was refreshed — threaded into the probe so it can poll
+        /// just this shelf instead of re-listing the whole library. Null when the path-hook fallback was used.</summary>
+        public string? ShelfItemId { get; set; }
     }
 
     /// <summary>Result of one <see cref="JellyfinSyncService.TryRelinkMovieFilesAsync"/> probe. <see cref="Scanning"/>
