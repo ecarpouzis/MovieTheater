@@ -424,10 +424,16 @@ namespace MovieTheater.Ingest
 
         // A file living under an Extras/Featurettes/Deleted-Scenes/Bonus/Specials/Behind-the-Scenes folder
         // is bonus content for its episode, mapped as MovieFileRole.Extra (just like a movie's extras) so
-        // it never collides with the real episode file.
+        // it never collides with the real episode file. The keyword may be CONTAINED in the segment, not just
+        // be the whole segment — so the library's "Extras Content"/"Featurettes Content" folders match (the
+        // old end-anchored form missed them). Parallels ExtrasClassifier (movies); series adds Specials/
+        // Commentary, which aren't movie-safe.
         private static bool IsExtraPath(string rel)
         {
-            return Regex.IsMatch(rel ?? "", @"(?i)[\\/](Featurettes?|Deleted[ ._-]?Scenes|Extras?|Bonus(?:[ ._-]?Features?)?|Specials?|Behind[ ._-]the[ ._-]Scenes|Interviews?|Commentary)[\\/]");
+            // NB: "Special Features" (an extras folder), NOT bare "Specials" / "Season 0 … Specials" — those
+            // are real season-0 special EPISODES, not bonus content, and must stay playable.
+            return Regex.IsMatch(rel ?? "",
+                @"(?i)[\\/][^\\/]*\b(Featurettes?|Deleted[ ._-]?Scenes?|Extras?|Bonus(?:[ ._-]?Features?)?|Special[ ._-]?Features?|Behind[ ._-]the[ ._-]Scenes|Interviews?|Commentary|Making[ ._-]?of|Outtakes?|Gag[ ._-]?Reels?|Trailers?)\b[^\\/]*[\\/]");
         }
 
         // The same bonus-content signal carried in the FILENAME rather than a parent folder — a "making of",
