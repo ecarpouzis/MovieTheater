@@ -339,15 +339,7 @@ namespace MovieTheater.Services.Jellyfin
             // Preferred trigger: resolve the shelf's Jellyfin FOLDER item and refresh it. A folder refresh
             // validates the folder's children — reliably indexing the new file and dropping the deleted one
             // (a per-path "media updated" hook is flakier across setups, so it's only the fallback).
-            var folders = await jellyfin.GetFoldersAsync(cancel);
-            string? shelfItemId = null;
-            foreach (var f in folders)
-            {
-                if (string.IsNullOrEmpty(f.Path)) continue;
-                if (JellyfinPathMapper.TryTranslateToDb(f.Path!, config.JellyfinPathMappings, out var dp, out _)
-                    && JellyfinPathMapper.NormalizeForCompare(dp) == shelfNorm)
-                { shelfItemId = f.Id; break; }
-            }
+            var shelfItemId = await ResolveShelfFolderIdAsync(shelfNorm, cancel);
 
             if (shelfItemId != null)
             {
@@ -404,12 +396,20 @@ namespace MovieTheater.Services.Jellyfin
             if (shelf == null) { res.Message = "Couldn't determine this title's shelf folder."; return res; }
             var shelfNorm = JellyfinPathMapper.NormalizeForCompare(shelf);
 
-            // Cheap path-only enumeration (Jellyfin's DB, not a disk scan), narrowed to this shelf. When the
-            // trigger handed us the shelf's folder id, poll just that folder; otherwise fall back to a full
-            // listing filtered by path.
-            var allItems = string.IsNullOrEmpty(shelfItemId)
-                ? await jellyfin.GetAllVideoItemPathsAsync(cancel)
-                : await jellyfin.GetVideoItemPathsUnderParentAsync(shelfItemId!, cancel);
+            // Enumerate the shelf's videos via a ParentId-SCOPED query. This is essential, not just cheaper:
+            // the global /Items?Recursive listing HIDES a file Jellyfin has grouped as an alternate "version"
+            // (a re-rip sitting beside the old one gets a PrimaryVersionId and is excluded) — exactly the file
+            // we're trying to find. A ParentId-scoped query reveals it. Resolve the shelf folder ourselves
+            // when the trigger didn't hand us its id, so the probe never silently degrades to the global list.
+            if (string.IsNullOrEmpty(shelfItemId))
+                shelfItemId = await ResolveShelfFolderIdAsync(shelfNorm, cancel);
+            if (string.IsNullOrEmpty(shelfItemId))
+            {
+                res.Scanning = true;
+                res.Message = $"Couldn't find shelf '{shelf}' as a Jellyfin folder to scan — try the full Sync from Jellyfin.";
+                return res;
+            }
+            var allItems = await jellyfin.GetVideoItemPathsUnderParentAsync(shelfItemId!, cancel);
             var shelfItems = new List<(JellyfinItem Item, string DbPath)>();
             foreach (var it in allItems)
             {
@@ -492,6 +492,19 @@ namespace MovieTheater.Services.Jellyfin
             logger.LogInformation("Re-linked movie {Id} '{Title}': {Old} → {New} (+{Extras} extras)",
                 movieId, movie.Title, recorded, newPath, res.ExtrasAdded.Count);
             return res;
+        }
+
+        /// <summary>The Jellyfin folder item id whose on-disk path equals <paramref name="shelfNorm"/> (an
+        /// already-normalized DB path), or null if none — found by listing folder items and translating each
+        /// back to a DB path. Used to scope both the re-scan and the probe to one shelf.</summary>
+        private async Task<string?> ResolveShelfFolderIdAsync(string shelfNorm, CancellationToken cancel)
+        {
+            foreach (var f in await jellyfin.GetFoldersAsync(cancel))
+                if (!string.IsNullOrEmpty(f.Path)
+                    && JellyfinPathMapper.TryTranslateToDb(f.Path!, config.JellyfinPathMappings, out var dp, out _)
+                    && JellyfinPathMapper.NormalizeForCompare(dp) == shelfNorm)
+                    return f.Id;
+            return null;
         }
 
         /// <summary>Parent directory of a Windows-style path, split on backslash MANUALLY (prod is Linux, so
