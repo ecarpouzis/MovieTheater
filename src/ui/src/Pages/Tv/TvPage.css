@@ -12,6 +12,9 @@
   display: flex;
   flex-direction: column;
   cursor: default;
+  /* The TV uses a blue accent; the shared subtitle-style editor reads these to match this menu. */
+  --ss-accent: #40a9ff;
+  --ss-accent-dim: rgba(64, 169, 255, 0.7);
 }
 
 /* while idle the chrome has faded — hide the pointer too, like a TV left running */
@@ -908,4 +911,81 @@
   .tv-bar-plot {
     -webkit-line-clamp: 1;
   }
+}
+
+/* ── subtitle timing nudge (soft text tracks) ──────────────────────────────── */
+.tv-sub-delay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 8px;
+}
+
+.tv-sub-delay-label {
+  font-size: 13px;
+  color: rgba(232, 238, 246, 0.62);
+}
+
+.tv-sub-delay-btn {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(64, 169, 255, 0.12);
+  border: 1px solid rgba(64, 169, 255, 0.3);
+  border-radius: 5px;
+  color: #e8eef6;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tv-sub-delay-btn:hover {
+  background: rgba(64, 169, 255, 0.24);
+}
+
+.tv-sub-delay-val {
+  min-width: 64px;
+  text-align: center;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: #e8eef6;
+}
+
+.tv-sub-delay-reset {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: rgba(232, 238, 246, 0.6);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.tv-sub-delay-reset:hover:not(:disabled) {
+  color: #40a9ff;
+}
+
+.tv-sub-delay-reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* transient subtitle-delay readout while nudging */
+.tv-sub-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  transform: translateX(-50%);
+  background: rgba(10, 9, 7, 0.92);
+  border: 1px solid rgba(64, 169, 255, 0.3);
+  border-radius: 6px;
+  padding: 8px 16px;
+  color: #e8eef6;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  z-index: 9;
 }

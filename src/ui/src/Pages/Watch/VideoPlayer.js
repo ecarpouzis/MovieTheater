@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
+import { createHls } from "../../streamEngine";
+import { useWakeLock } from "../../useWakeLock";
 import { detectStreamCapabilities } from "../../streamCapabilities";
-import { useSubtitleStyle, useCueLift } from "../../subtitleStyle";
+import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay, SUBTITLE_NUDGE_MS } from "../../subtitleStyle";
 import { SubtitleStyleControls, SubtitleStylePreview } from "../../SubtitleStyleEditor";
 import "./VideoPlayer.css";
 
@@ -14,20 +16,6 @@ export function deliveredLayout(channels) {
 }
 
 const TICKS_PER_SECOND = 10_000_000;
-
-// Jellyfin spawns the transcode and opens the (networked) source file on the first
-// playlist/segment request, so a cold start can take ~10s before anything is playable.
-// hls.js's default manifest timeout is only 10s — it would give up and show nothing,
-// which a refresh then "fixes" by hitting a warm transcode. Be patient instead.
-export const HLS_LOAD_CONFIG = {
-  manifestLoadingTimeOut: 30_000,
-  manifestLoadingMaxRetry: 6,
-  manifestLoadingRetryDelay: 1_000,
-  levelLoadingTimeOut: 30_000,
-  levelLoadingMaxRetry: 6,
-  fragLoadingTimeOut: 60_000,
-  fragLoadingMaxRetry: 6,
-};
 
 // The quality ladder from streaming-plan.md §7. "Auto" (§14.4) adapts the cap to
 // measured bandwidth; "Original" omits the cap entirely, letting compatible sources
@@ -92,17 +80,6 @@ function formatTime(totalSeconds) {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-// Subtitle-delay readout. Positive = subtitles show later than the audio; negative = earlier.
-// Uses a real minus glyph so the sign reads cleanly in the player chrome.
-function formatDelay(ms) {
-  const sign = ms > 0 ? "+" : ms < 0 ? "−" : "";
-  return `${sign}${Math.abs(ms)} ms`;
-}
-
-// Step per nudge (keyboard or ± buttons) and the clamp on total offset.
-const SUBTITLE_NUDGE_MS = 100;
-const SUBTITLE_OFFSET_LIMIT_MS = 30_000;
-
 /**
  * The screening-room player (streaming-plan.md §7). Self-contained dark UI —
  * deliberately no AntD in here. Shared later by the TV channel page.
@@ -166,13 +143,15 @@ function VideoPlayer({
   const [flash, setFlash] = useState(null); // transient center icon: 'play' | 'pause'
   const [fatalError, setFatalError] = useState(null);
 
-  // Subtitle timing nudge: shift the active text track's cues by this many ms so the viewer can
-  // fix small sync drift live. Only meaningful for soft (sidecar VTT) tracks — burned-in image
-  // subs are baked into the picture server-side and can't be moved client-side.
-  const [subtitleOffsetMs, setSubtitleOffsetMs] = useState(0);
-  const [offsetToast, setOffsetToast] = useState(false); // transient delay readout on nudge
-  const offsetToastTimer = useRef(null);
-  const cueOriginalsRef = useRef(new WeakMap()); // cue → its un-shifted {start,end}, so nudges don't compound
+  // Subtitle timing nudge — shift the showing soft (sidecar VTT) track's cues so the viewer can fix
+  // small sync drift. Shared with the TV player; only meaningful for soft tracks (burned-in image
+  // subs are baked into the picture server-side and can't be moved client-side).
+  const {
+    offsetMs: subtitleOffsetMs,
+    nudge: nudgeSubtitle,
+    reset: resetSubtitleOffset,
+    toast: offsetToast,
+  } = useSubtitleOffset(videoRef, selectedSubtitleIndex, src);
 
   // Caption appearance (size/color/font/edge/box/lift), shared with the TV player via a hook that
   // owns persistence and the injected ::cue rule. `styleOpen` reveals the editor + on-video preview.
@@ -223,19 +202,12 @@ function VideoPlayer({
       video.src = src;
       video.addEventListener("loadedmetadata", seekToStart, { once: true });
     } else if (Hls.isSupported()) {
-      // We serve "Original" by COPYING the source (no re-encode), so the stream carries the file's
-      // real, spiky bitrate: a calm scene runs a few Mbps, a high-motion scene can peak 25-45 Mbps.
-      // hls.js buffers up to whichever of {seconds, bytes} it hits first, and its DEFAULT maxBufferSize
-      // is only 60 MB — about 10-15s at a 40 Mbps peak. So the byte cap silently collapses the buffer
-      // exactly when entering a high-bitrate scene (a scene-change keyframe begins a fat GOP), and a
-      // single fat segment outruns the buffer → a deterministic "loading dots" hitch at that timestamp,
-      // on every device, even after rewinding back into it. Give the player a much larger byte budget
-      // (and more lead time) so it banks the calm-scene slack and rides through the spike.
-      hls = new Hls({
-        maxBufferLength: 120,            // target ~2 min of lead so calm scenes pre-buffer the next spike
-        maxBufferSize: 400 * 1000 * 1000, // 400 MB: don't let the byte cap bind during a 40 Mbps scene
+      // Shared engine: buffer config + error recovery live in createHls (see streamEngine.js) so the
+      // Watch and TV players can't drift. Watch keeps a 90s back buffer (it's freely rewindable).
+      hls = createHls({
         backBufferLength: 90,
-        ...HLS_LOAD_CONFIG,
+        onStall,
+        onFatal: () => setFatalError("Playback failed — the stream could not be decoded."),
       });
       hlsRef.current = hls;
       // watchdog: remember the most recent of the hls.js events that can move/flush the playhead, so a
@@ -244,15 +216,6 @@ function VideoPlayer({
       [Hls.Events.MANIFEST_PARSED, Hls.Events.LEVEL_LOADED, Hls.Events.LEVEL_SWITCHED,
         Hls.Events.FRAG_CHANGED, Hls.Events.BUFFER_FLUSHED].forEach((ev) => hls.on(ev, recordHls(ev)));
       hls.on(Hls.Events.MANIFEST_PARSED, seekToStart);
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        // A buffer stall (non-fatal) is the adaptive-downshift signal (§14.4).
-        if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) onStall?.();
-        if (!data.fatal) return;
-        // Standard hls.js recovery dance before giving up.
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
-        else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-        else setFatalError("Playback failed — the stream could not be decoded.");
-      });
       hls.loadSource(src);
       hls.attachMedia(video);
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
@@ -398,69 +361,15 @@ function VideoPlayer({
   }, [selectedSubtitleIndex, src]);
 
   // The currently-selected SOFT subtitle (sidecar VTT). null when off or when a burned-in image
-  // sub is selected — only soft tracks can be re-timed client-side.
+  // sub is selected — only soft tracks can be re-timed client-side, so the delay UI gates on this.
   const activeTextSub = subtitleTracks.find((t) => t.index === selectedSubtitleIndex && !!t.deliveryUrl) || null;
-
-  // Picking a different subtitle starts its timing fresh (each file has its own sync); a stream
-  // restart (quality/audio change) keeps `selectedSubtitleIndex`, so the nudge survives those.
-  useEffect(() => {
-    setSubtitleOffsetMs(0);
-  }, [selectedSubtitleIndex]);
-
-  // Apply the timing nudge by shifting the showing track's cue times. We stash each cue's original
-  // times (keyed by the cue itself) so repeated nudges measure from the source timing, never compound.
-  // Cues load asynchronously and a stream restart reloads the VTT with fresh cue objects, so we also
-  // re-apply on the <track> 'load' event.
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return undefined;
-    const offsetSec = subtitleOffsetMs / 1000;
-    const apply = () => {
-      for (const track of Array.from(video.textTracks)) {
-        if (String(track.id) !== String(selectedSubtitleIndex)) continue;
-        const cues = track.cues;
-        if (!cues) continue;
-        for (const cue of Array.from(cues)) {
-          let orig = cueOriginalsRef.current.get(cue);
-          if (!orig) {
-            orig = { start: cue.startTime, end: cue.endTime };
-            cueOriginalsRef.current.set(cue, orig);
-          }
-          const ns = Math.max(0, orig.start + offsetSec);
-          const ne = Math.max(ns + 0.001, orig.end + offsetSec);
-          // Set in the order that keeps start <= end at every step, or the assignment throws.
-          try {
-            if (offsetSec >= 0) {
-              if (cue.endTime !== ne) cue.endTime = ne;
-              if (cue.startTime !== ns) cue.startTime = ns;
-            } else {
-              if (cue.startTime !== ns) cue.startTime = ns;
-              if (cue.endTime !== ne) cue.endTime = ne;
-            }
-          } catch {
-            /* a browser that disallows mutating cue times — nudge simply won't apply there */
-          }
-        }
-      }
-    };
-    apply();
-    const tracks = Array.from(video.querySelectorAll("track"));
-    tracks.forEach((t) => t.addEventListener("load", apply));
-    return () => tracks.forEach((t) => t.removeEventListener("load", apply));
-  }, [subtitleOffsetMs, selectedSubtitleIndex, src]);
-
-  const nudgeSubtitle = useCallback((deltaMs) => {
-    setSubtitleOffsetMs((v) => Math.max(-SUBTITLE_OFFSET_LIMIT_MS, Math.min(SUBTITLE_OFFSET_LIMIT_MS, v + deltaMs)));
-    setOffsetToast(true);
-    clearTimeout(offsetToastTimer.current);
-    offsetToastTimer.current = setTimeout(() => setOffsetToast(false), 1400);
-  }, []);
-
-  useEffect(() => () => clearTimeout(offsetToastTimer.current), []);
 
   // Vertical lift for the showing track's cues. Size/color/font/edge/box ride on the injected
   // ::cue rule from useSubtitleStyle; position can't be set via ::cue, so it's applied per-cue here.
   useCueLift(videoRef, selectedSubtitleIndex, src, subStyle.liftPct);
+
+  // Keep the screen awake during a film — shared with the TV player.
+  useWakeLock();
 
   // ── Media Session: title + poster on the OS media overlay ──────────────────
   useEffect(() => {
@@ -941,7 +850,7 @@ function VideoPlayer({
                         </button>
                         <button
                           className="vp-menu-delay-reset"
-                          onClick={() => setSubtitleOffsetMs(0)}
+                          onClick={resetSubtitleOffset}
                           disabled={subtitleOffsetMs === 0}
                         >
                           Reset

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // ── subtitle appearance (shared by the Watch player and the TV/channel player) ──────────────────
 // The viewer's caption look, persisted across sessions in ONE localStorage key so both players agree.
@@ -123,4 +123,92 @@ export function useCueLift(videoRef, selectedSubtitleIndex, reloadKey, liftPct) 
     tracks.forEach((t) => t.addEventListener("load", apply));
     return () => tracks.forEach((t) => t.removeEventListener("load", apply));
   }, [videoRef, selectedSubtitleIndex, reloadKey, liftPct]);
+}
+
+// ── subtitle timing nudge (shared) ──────────────────────────────────────────────────────────────
+// Step per nudge (keyboard / ± buttons) and the clamp on total offset.
+export const SUBTITLE_NUDGE_MS = 100;
+const SUBTITLE_OFFSET_LIMIT_MS = 30_000;
+
+// Subtitle-delay readout. Positive = subtitles show later than the audio; negative = earlier.
+// Uses a real minus glyph so the sign reads cleanly in the player chrome.
+export function formatDelay(ms) {
+  const sign = ms > 0 ? "+" : ms < 0 ? "−" : "";
+  return `${sign}${Math.abs(ms)} ms`;
+}
+
+/**
+ * Live subtitle timing offset for the showing SOFT (sidecar VTT) track — shift its cues by ±ms so the
+ * viewer can fix small sync drift. This is a purely client-side re-time of the local text track, so it
+ * works in BOTH the Watch player and the (otherwise synchronized) TV/channel player without disturbing
+ * anyone else. Burned-in image subs can't be moved — gate the UI on there being a soft track selected.
+ *
+ * We stash each cue's original times (keyed by the cue) so repeated nudges measure from the source
+ * timing and never compound. Cues load async and a source change reloads the VTT with fresh cue
+ * objects, so we re-apply on the <track> 'load' too; `reloadKey` should change when the track set is
+ * replaced (e.g. the stream src / track list). Picking a different subtitle resets the offset to 0.
+ *
+ * Returns { offsetMs, nudge(deltaMs), reset(), toast } where `toast` briefly flips true after a nudge.
+ */
+export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey) {
+  const [offsetMs, setOffsetMs] = useState(0);
+  const [toast, setToast] = useState(false);
+  const toastTimer = useRef(null);
+  const cueOriginalsRef = useRef(new WeakMap());
+
+  // Picking a different subtitle starts its timing fresh (each file has its own sync).
+  useEffect(() => {
+    setOffsetMs(0);
+  }, [selectedSubtitleIndex]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return undefined;
+    const offsetSec = offsetMs / 1000;
+    const apply = () => {
+      for (const track of Array.from(video.textTracks)) {
+        if (String(track.id) !== String(selectedSubtitleIndex)) continue;
+        const cues = track.cues;
+        if (!cues) continue;
+        for (const cue of Array.from(cues)) {
+          let orig = cueOriginalsRef.current.get(cue);
+          if (!orig) {
+            orig = { start: cue.startTime, end: cue.endTime };
+            cueOriginalsRef.current.set(cue, orig);
+          }
+          const ns = Math.max(0, orig.start + offsetSec);
+          const ne = Math.max(ns + 0.001, orig.end + offsetSec);
+          // Set in the order that keeps start <= end at every step, or the assignment throws.
+          try {
+            if (offsetSec >= 0) {
+              if (cue.endTime !== ne) cue.endTime = ne;
+              if (cue.startTime !== ns) cue.startTime = ns;
+            } else {
+              if (cue.startTime !== ns) cue.startTime = ns;
+              if (cue.endTime !== ne) cue.endTime = ne;
+            }
+          } catch {
+            /* a browser that disallows mutating cue times — nudge simply won't apply there */
+          }
+        }
+      }
+    };
+    apply();
+    const tracks = Array.from(video.querySelectorAll("track"));
+    tracks.forEach((t) => t.addEventListener("load", apply));
+    return () => tracks.forEach((t) => t.removeEventListener("load", apply));
+  }, [videoRef, offsetMs, selectedSubtitleIndex, reloadKey]);
+
+  const nudge = useCallback((deltaMs) => {
+    setOffsetMs((v) => Math.max(-SUBTITLE_OFFSET_LIMIT_MS, Math.min(SUBTITLE_OFFSET_LIMIT_MS, v + deltaMs)));
+    setToast(true);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(false), 1400);
+  }, []);
+
+  const reset = useCallback(() => setOffsetMs(0), []);
+
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  return { offsetMs, nudge, reset, toast };
 }

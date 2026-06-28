@@ -1,14 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
-import { initialAutoBps, rungDown, rungUp, shouldStepUp, isBottomRung, autoBpsLabel } from "../../streamAbr";
+import { initialAutoBps, autoBpsLabel } from "../../streamAbr";
+import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
 import VideoPlayer, { formatTime, TICKS_PER_SECOND, QUALITY_LADDER } from "./VideoPlayer";
 import "./WatchPage.css";
-
-// Adaptive-bitrate pacing (§14.4): don't switch rungs more than once per window,
-// and only climb after a sustained good streak — each switch is a visible reload.
-const ABR_COOLDOWN_MS = 20_000;
-const ABR_STABLE_FOR_UP_MS = 90_000;
 
 // Format whole minutes as "2h 16m", matching the modal's convention.
 function formatRuntime(minutes) {
@@ -67,7 +63,6 @@ function WatchPage({ userData }) {
   const [qualityKey, setQualityKey] = useState(() => window.localStorage.getItem("StreamQuality") || "auto");
   const [audioIndex, setAudioIndex] = useState(null);
   const [subtitleIndex, setSubtitleIndex] = useState(null);
-  const [autoBps, setAutoBps] = useState(() => initialAutoBps());
 
   const sessionRef = useRef(null);
   sessionRef.current = session;
@@ -80,13 +75,17 @@ function WatchPage({ userData }) {
   // The image-subtitle index currently burned into the live transcode (null = none).
   const burnedSubRef = useRef(null);
 
-  // ── adaptive-bitrate state (read inside callbacks without re-binding them) ──
+  // ── adaptive bitrate (shared state machine) ──────────────────────────────────
   const qualityKeyRef = useRef(qualityKey);
   qualityKeyRef.current = qualityKey;
-  const autoBpsRef = useRef(autoBps);
-  autoBpsRef.current = autoBps;
-  const lastSwitchAtRef = useRef(0);
-  const stableSinceRef = useRef(Date.now());
+  // An adapt restarts the stream at the live position. Late-bound through a ref because
+  // restartAtPosition is defined below (it depends on the autoBpsRef this hook owns).
+  const restartAtPositionRef = useRef(null);
+  const { autoBps, autoBpsRef, handleStall, handleBandwidth, reseed } = useAdaptiveBitrate({
+    qualityKeyRef,
+    initialBps: initialAutoBps(),
+    onAdapt: (nextBps) => restartAtPositionRef.current?.({ quality: "auto", bpsOverride: nextBps }),
+  });
 
   const goBack = useCallback(() => {
     if (history.length > 1) history.goBack();
@@ -131,7 +130,7 @@ function WatchPage({ userData }) {
       }
       return await response.json();
     },
-    [qualityKey, audioIndex]
+    [qualityKey, audioIndex, autoBpsRef]
   );
 
   // ── initial load: movie meta + a session (not yet attached to <video>) ─────
@@ -232,44 +231,7 @@ function WatchPage({ userData }) {
     },
     [startSession, stopCurrentSession]
   );
-
-  // Move the adaptive cap and restart at the live position. Updates the ref first so
-  // the restart picks up the new cap synchronously, ahead of the state re-render.
-  const adaptTo = useCallback(
-    (nextBps) => {
-      if (nextBps === autoBpsRef.current) return;
-      autoBpsRef.current = nextBps;
-      setAutoBps(nextBps);
-      lastSwitchAtRef.current = Date.now();
-      stableSinceRef.current = Date.now();
-      restartAtPosition({ quality: "auto", bpsOverride: nextBps });
-    },
-    [restartAtPosition]
-  );
-
-  // Stall = the connection can't keep up: drop a rung immediately (within cooldown).
-  const handleStall = useCallback(() => {
-    if (qualityKeyRef.current !== "auto" || isBottomRung(autoBpsRef.current)) return;
-    if (Date.now() - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
-    adaptTo(rungDown(autoBpsRef.current));
-  }, [adaptTo]);
-
-  // Throughput telemetry: climb a rung only after a sustained streak with clear
-  // headroom; any sample short of that headroom resets the streak.
-  const handleBandwidth = useCallback(
-    (estimateBps) => {
-      if (qualityKeyRef.current !== "auto") return;
-      if (!shouldStepUp(autoBpsRef.current, estimateBps)) {
-        stableSinceRef.current = Date.now();
-        return;
-      }
-      if (Date.now() - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
-      if (Date.now() - stableSinceRef.current >= ABR_STABLE_FOR_UP_MS) {
-        adaptTo(rungUp(autoBpsRef.current));
-      }
-    },
-    [adaptTo]
-  );
+  restartAtPositionRef.current = restartAtPosition;
 
   const handleSelectQuality = useCallback(
     (rung) => {
@@ -278,15 +240,13 @@ function WatchPage({ userData }) {
       // Re-entering Auto reseeds from the connection estimate and a fresh streak.
       if (rung.key === "auto") {
         const seed = initialAutoBps();
-        autoBpsRef.current = seed;
-        setAutoBps(seed);
-        stableSinceRef.current = Date.now();
+        reseed(seed);
         restartAtPosition({ quality: "auto", bpsOverride: seed });
       } else {
         restartAtPosition({ quality: rung.key });
       }
     },
-    [restartAtPosition]
+    [restartAtPosition, reseed]
   );
 
   const handleSelectAudio = useCallback(

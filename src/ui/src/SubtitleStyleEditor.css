@@ -1,8 +1,10 @@
 /* Shared subtitle-appearance editor — used in both the Watch player and the TV/channel player.
    Self-contained palette (own vars) so it renders consistently regardless of which player hosts it. */
 .substyle {
-  --ss-gold: #e3b341;
-  --ss-gold-dim: #9a7f3f;
+  /* Accent is themeable per host: the Watch player defaults to gold; the TV player sets --ss-accent
+     to its blue on an ancestor so the editor matches whichever menu hosts it. */
+  --ss-gold: var(--ss-accent, #e3b341);
+  --ss-gold-dim: var(--ss-accent-dim, #9a7f3f);
   --ss-cream: #f2ecdd;
   --ss-cream-dim: rgba(242, 236, 221, 0.62);
   --ss-black: #0b0a08;

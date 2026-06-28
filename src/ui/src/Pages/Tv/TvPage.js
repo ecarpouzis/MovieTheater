@@ -2,22 +2,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
-import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, HLS_LOAD_CONFIG, formatPlaying, deliveredLayout } from "../Watch/VideoPlayer";
-import { autoBpsLabel, rungDown, rungUp, shouldStepUp, isBottomRung, DIRECT_BPS } from "../../streamAbr";
-import { useSubtitleStyle, useCueLift } from "../../subtitleStyle";
+import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, formatPlaying, deliveredLayout } from "../Watch/VideoPlayer";
+import { createHls } from "../../streamEngine";
+import { autoBpsLabel, DIRECT_BPS } from "../../streamAbr";
+import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
+import { useWakeLock } from "../../useWakeLock";
+import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay, SUBTITLE_NUDGE_MS } from "../../subtitleStyle";
 import { SubtitleStyleControls, SubtitleStylePreview } from "../../SubtitleStyleEditor";
 
-// Adaptive-bitrate pacing (matches the Watch player): at most one switch per window, and only climb
-// after a sustained good streak — each switch is a visible re-tune.
-const ABR_COOLDOWN_MS = 20_000;
-const ABR_STABLE_FOR_UP_MS = 90_000;
-// Stall debounce (matches the Watch player): a lone stall is usually a transient bitrate spike the
-// buffer rides out — only a repeated pattern means the rung is genuinely too high. Require a few
-// DISTINCT stall episodes within a window before dropping a rung (a downshift re-tunes the channel,
-// a visible blip), collapsing hls.js's repeated stalled-error fires into one episode.
-const ABR_STALL_WINDOW_MS = 30_000;
-const ABR_STALL_EPISODE_GAP_MS = 6_000;
-const ABR_STALLS_TO_DOWNSHIFT = 2;
 import ChannelAdminModal from "./ChannelAdminModal";
 import ChannelGrid from "./ChannelGrid";
 import "./TvPage.css";
@@ -39,7 +31,6 @@ function TvPage({ userData }) {
   const hlsRef = useRef(null);
   const sessionRef = useRef(null);
   const advanceTimerRef = useRef(null);
-  const wakeLockRef = useRef(null);
   const idleTimerRef = useRef(null);
   const progressRef = useRef(null);
   const scrubbingRef = useRef(false);
@@ -64,9 +55,6 @@ function TvPage({ userData }) {
   const [adminOpen, setAdminOpen] = useState(false);
   const [quality, setQuality] = useState(() => window.localStorage.getItem("StreamQuality") || "auto");
   const [qualityOpen, setQualityOpen] = useState(false);
-  // Channel Auto opens at the lossless/uncapped tier and drops on stall — a solo viewer on a good
-  // connection gets the original copied bit-for-bit; a constrained one falls back to a transcode.
-  const [autoBps, setAutoBps] = useState(DIRECT_BPS);
   const [audioTracks, setAudioTracks] = useState([]);
   const [subtitleTracks, setSubtitleTracks] = useState([]);
   const [audioIndex, setAudioIndex] = useState(null); // explicit pick; null = let the server auto-default (English)
@@ -78,6 +66,17 @@ function TvPage({ userData }) {
   const [subsOpen, setSubsOpen] = useState(false);
   // Caption appearance — shared with the Watch player (same hook + persisted settings + injected ::cue).
   const { subStyle, setSubStyle, setStyle, styleOpen, setStyleOpen } = useSubtitleStyle();
+  // Subtitle timing nudge — client-side re-time of the showing soft track; per-viewer, so it works
+  // here despite the channel being a shared broadcast (it never touches the stream itself).
+  const {
+    offsetMs: subtitleOffsetMs,
+    nudge: nudgeSubtitle,
+    reset: resetSubtitleOffset,
+    toast: offsetToast,
+  } = useSubtitleOffset(videoRef, subtitleIndex, subtitleTracks);
+  // The selected SOFT (sidecar VTT) subtitle — only these can be re-timed client-side, so the delay
+  // UI gates on it (burned-in image subs are baked into the transcode and can't be moved).
+  const activeTextSub = subtitleTracks.find((t) => t.index === subtitleIndex && !!t.deliveryUrl) || null;
   const [skip, setSkip] = useState(null); // { viewers, votes, required, youVoted }
   const [restart, setRestart] = useState(null); // { viewers, votes, required, youVoted }
   const [viewers, setViewers] = useState(null); // { count, names: [{ name, you }] } — who's tuned in
@@ -92,16 +91,20 @@ function TvPage({ userData }) {
   const qualityRef = useRef(quality);
   qualityRef.current = quality;
 
-  // Adaptive-bitrate state for channel Auto, read inside callbacks without re-binding them.
-  const autoBpsRef = useRef(autoBps);
-  autoBpsRef.current = autoBps;
-  const lastSwitchAtRef = useRef(0);
-  const stableSinceRef = useRef(0);
-  const stallEpisodesRef = useRef([]); // timestamps of recent DISTINCT stall episodes (downshift debounce)
-  const lastStallSeenRef = useRef(0);  // last stall fire, to collapse a burst of fires into one episode
   const channelRef = useRef(null);
   channelRef.current = channel;
   const tuneRef = useRef(null);
+
+  // Adaptive bitrate: shared state machine. A channel opens optimistically at the lossless tier; an
+  // adapt re-tunes the channel at the live offset (per-viewer — never disturbs others on the channel).
+  const { autoBps, autoBpsRef, handleStall, handleBandwidth, reseed } = useAdaptiveBitrate({
+    qualityKeyRef: qualityRef,
+    initialBps: DIRECT_BPS,
+    onAdapt: () => {
+      const ch = channelRef.current;
+      if (ch) tuneRef.current?.(ch);
+    },
+  });
 
   // tune() (and prewarm) read the current track selection without re-binding on every change.
   const audioIndexRef = useRef(audioIndex);
@@ -159,6 +162,11 @@ function TvPage({ userData }) {
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
+    } else if (videoRef.current) {
+      // Direct-play / Safari set video.src directly (no hls instance to clean up); release it so the
+      // static-file connection doesn't linger after a tune-away or unmount (mirrors the Watch player).
+      videoRef.current.removeAttribute("src");
+      videoRef.current.load();
     }
   }, []);
 
@@ -207,50 +215,7 @@ function TvPage({ userData }) {
     if (rungKey !== "auto") return rung.bps; // manual rung (incl. uncapped "Original")
     const cap = autoBpsRef.current;
     return isFinite(cap) ? cap : null; // lossless tier → uncapped (the server copies the source)
-  }, []);
-
-  // Move the adaptive cap and re-tune at the live offset (the same machinery a quality change uses).
-  // tune() is reached via a ref so these stay free of the tune/adapt dependency cycle.
-  const adaptTo = useCallback((nextBps) => {
-    if (nextBps === autoBpsRef.current) return;
-    autoBpsRef.current = nextBps;
-    setAutoBps(nextBps);
-    lastSwitchAtRef.current = Date.now();
-    stableSinceRef.current = Date.now();
-    const ch = channelRef.current;
-    if (ch) tuneRef.current?.(ch);
-  }, []);
-
-  // Stall handling (debounced): a lone stall is usually a transient bitrate spike the buffer rides
-  // out, so we don't react to it — only a repeated pattern within the window means the rung is
-  // genuinely too high. This stops one hiccup (e.g. a high-bitrate scene) from re-tuning the channel.
-  const handleStall = useCallback(() => {
-    if (qualityRef.current !== "auto" || isBottomRung(autoBpsRef.current)) return;
-    const now = Date.now();
-    // hls.js re-fires the stalled error repeatedly during one stall; treat closely-spaced fires as
-    // the same episode so a single stall counts once.
-    if (now - lastStallSeenRef.current < ABR_STALL_EPISODE_GAP_MS) {
-      lastStallSeenRef.current = now;
-      return;
-    }
-    lastStallSeenRef.current = now;
-    const recent = stallEpisodesRef.current.filter((t) => now - t < ABR_STALL_WINDOW_MS);
-    recent.push(now);
-    stallEpisodesRef.current = recent;
-    if (recent.length < ABR_STALLS_TO_DOWNSHIFT) return; // a lone transient stall — let the buffer recover
-    if (now - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
-    stallEpisodesRef.current = []; // consumed — start the count fresh after a downshift
-    adaptTo(rungDown(autoBpsRef.current));
-  }, [adaptTo]);
-
-  // Throughput telemetry: climb back toward lossless only after a sustained streak with clear
-  // headroom; any sample short of that resets the streak.
-  const handleBandwidth = useCallback((estimateBps) => {
-    if (qualityRef.current !== "auto") return;
-    if (!shouldStepUp(autoBpsRef.current, estimateBps)) { stableSinceRef.current = Date.now(); return; }
-    if (Date.now() - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
-    if (Date.now() - stableSinceRef.current >= ABR_STABLE_FOR_UP_MS) adaptTo(rungUp(autoBpsRef.current));
-  }, [adaptTo]);
+  }, [autoBpsRef]);
 
   // Start the next item's transcode ahead of the boundary and warm it (fetch its
   // playlist), so the advance can reuse it instead of paying the cold start.
@@ -408,31 +373,21 @@ function TvPage({ userData }) {
             { once: true }
           );
         } else if (Hls.isSupported()) {
-          // startPosition joins at the live offset directly instead of loading from 0 and
-          // seeking — the seek churn was a source of the join-time A/V desync on mobile.
-          // We serve "Original" by COPYING the source, so the stream carries the file's spiky real
-          // bitrate (a high-motion scene can peak 25-45 Mbps). hls.js's DEFAULT maxBufferSize is only
-          // 60 MB — ~10-15s at a 40 Mbps peak — so the byte cap collapses the buffer exactly at a
-          // high-bitrate scene and a fat segment stalls playback. Give it a large byte budget plus
-          // more lead so calm scenes pre-buffer through the spike. backBufferLength stays small: a
-          // channel is forward-only (a lone-viewer scrub re-tunes a fresh stream, not the back buffer).
-          const hls = new Hls({
-            maxBufferLength: 120,
-            maxBufferSize: 400 * 1000 * 1000,
+          // Join at the live channel offset directly (startPosition) instead of loading from 0 and
+          // seeking — that seek churn was a source of join-time A/V desync on mobile. Buffer config +
+          // error recovery are shared with the Watch player (createHls); backBufferLength stays small
+          // because a channel is forward-only (a lone-viewer scrub re-tunes a fresh stream).
+          const hls = createHls({
             backBufferLength: 10,
             startPosition: joinAt,
-            ...HLS_LOAD_CONFIG,
+            onStall: handleStall,
+            // A truly fatal decode error (past the standard network/media recovery) drops the channel
+            // to "No signal" instead of leaving the picture silently stuck.
+            onFatal: () => setError(new Error("The signal dropped.")),
           });
           hlsRef.current = hls;
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             video.play().catch(() => {});
-          });
-          hls.on(Hls.Events.ERROR, (_e, data) => {
-            // A buffer stall is the adaptive-downshift signal — drop a rung (Auto only).
-            if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) handleStall();
-            if (!data.fatal) return;
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
-            else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
           });
           hls.loadSource(session.hlsUrl);
           hls.attachMedia(video);
@@ -476,7 +431,8 @@ function TvPage({ userData }) {
     },
     [stopSession, destroyHls, resolveBitrate, prewarmNext, handleStall]
   );
-  // tune() is invoked from adaptTo via this ref to avoid a tune/adapt useCallback dependency cycle.
+  // tune() is invoked from the ABR adapt path (useAdaptiveBitrate onAdapt) via this ref, avoiding a
+  // tune/adapt dependency cycle.
   tuneRef.current = tune;
 
   // ── channel list ────────────────────────────────────────────────────────────
@@ -595,23 +551,11 @@ function TvPage({ userData }) {
         prewarmRef.current = null;
       }
       destroyHls();
-      wakeLockRef.current?.release?.().catch(() => {});
     };
   }, [stopSession, destroyHls]);
 
-  useEffect(() => {
-    const acquire = async () => {
-      try {
-        wakeLockRef.current = await navigator.wakeLock?.request("screen");
-      } catch {
-        /* not supported / denied — fine */
-      }
-    };
-    acquire();
-    const onVisibility = () => document.visibilityState === "visible" && acquire();
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, []);
+  // Keep the screen awake while a channel is up — shared with the Watch player.
+  useWakeLock();
 
   // Arm the idle fade once playing starts. Re-arm when the channel, pause, or popout state
   // changes so a resume or a just-closed menu restarts the countdown rather than fading instantly.
@@ -638,15 +582,10 @@ function TvPage({ userData }) {
       window.localStorage.setItem("StreamQuality", key);
       setQualityOpen(false);
       // Re-entering Auto reseeds optimistic (lossless) with a fresh streak.
-      if (key === "auto") {
-        autoBpsRef.current = DIRECT_BPS;
-        setAutoBps(DIRECT_BPS);
-        lastSwitchAtRef.current = Date.now();
-        stableSinceRef.current = Date.now();
-      }
+      if (key === "auto") reseed(DIRECT_BPS);
       if (channel) tune(channel);
     },
-    [channel, tune]
+    [channel, tune, reseed]
   );
 
   // Pin a specific audio track and re-tune at the live offset. No "auto" entry is needed —
@@ -995,6 +934,13 @@ function TvPage({ userData }) {
         {/* live caption-style preview (shared component): faithful sample at the real caption height */}
         {styleOpen && <SubtitleStylePreview subStyle={subStyle} />}
 
+        {/* transient subtitle-delay readout while nudging */}
+        {offsetToast && activeTextSub && (
+          <div className="tv-sub-toast" aria-live="polite">
+            Subtitle delay {formatDelay(subtitleOffsetMs)}
+          </div>
+        )}
+
         {/* channel-change static burst */}
         <div className={`tv-static${staticBurst ? " tv-static--on" : ""}`} aria-hidden="true" />
 
@@ -1094,6 +1040,34 @@ function TvPage({ userData }) {
                         {!t.deliveryUrl && <span className="tv-qopt-hint">burned in</span>}
                       </button>
                     ))}
+                    {/* subtitle timing nudge — only for soft text tracks (client-side re-time, per-viewer) */}
+                    {activeTextSub && (
+                      <div className="tv-sub-delay">
+                        <span className="tv-sub-delay-label">Delay</span>
+                        <button
+                          className="tv-sub-delay-btn"
+                          onClick={() => nudgeSubtitle(-SUBTITLE_NUDGE_MS)}
+                          aria-label="Subtitles earlier"
+                        >
+                          −
+                        </button>
+                        <span className="tv-sub-delay-val">{formatDelay(subtitleOffsetMs)}</span>
+                        <button
+                          className="tv-sub-delay-btn"
+                          onClick={() => nudgeSubtitle(SUBTITLE_NUDGE_MS)}
+                          aria-label="Subtitles later"
+                        >
+                          +
+                        </button>
+                        <button
+                          className="tv-sub-delay-reset"
+                          onClick={resetSubtitleOffset}
+                          disabled={subtitleOffsetMs === 0}
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    )}
                     {/* caption appearance editor (shared with the Watch player) + live on-video preview */}
                     <button
                       className={`tv-channel-item${styleOpen ? " tv-channel-item--on" : ""}`}
