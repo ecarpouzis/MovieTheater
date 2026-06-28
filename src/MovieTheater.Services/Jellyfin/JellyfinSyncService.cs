@@ -279,10 +279,12 @@ namespace MovieTheater.Services.Jellyfin
                     }
             }
 
-            // ── Extras pass: attach Jellyfin "special features" (featurettes, deleted scenes, behind-the-
-            // scenes, trailers) to their owner movie. They're EXCLUDED from the normal listings, so they're
-            // fetched separately and placed by FOLDER: an extra lives in the movie's folder or a subfolder of
-            // it (e.g. ...\Title (Year)\Featurettes\X.mkv). Added as Role=Extra; existing rows never touched.
+            // ── Extras pass: attach movie bonus content (featurettes, deleted scenes, …) to its owner movie.
+            // PRIMARY signal is this library's on-disk CONVENTION (shared with the file-mapping ingest via
+            // ExtrasClassifier): a video in a subfolder whose name contains an extras keyword — "Extras
+            // Content", "Featurettes Content", etc. The " Content" suffix is deliberate so Jellyfin scans them
+            // as ORDINARY videos (here in `items`) rather than hiding them. Each is placed under the movie
+            // whose folder is its nearest ancestor; never overwrites; idempotent (skips already-mapped).
             var folderToPlayable = new Dictionary<string, int>();
             foreach (var m in movies)
             {
@@ -291,20 +293,44 @@ namespace MovieTheater.Services.Jellyfin
                 if (folder != null) folderToPlayable[JellyfinPathMapper.NormalizeForCompare(folder)] = m.PlayableId.Value;
             }
             var extraMapped = new HashSet<string>(existingFiles.Select(f => JellyfinPathMapper.NormalizeForCompare(f.Path)));
+
+            // Nearest ancestor folder that is a movie's folder, plus the path RELATIVE to it (for the keyword
+            // check). dir comes from dp, so it's a real prefix → Substring is safe.
+            (int? Owner, string? Rel) OwnerOf(string dp)
+            {
+                var dir = ParentDir(dp);
+                for (int i = 0; i < 6 && dir != null; i++)
+                {
+                    if (folderToPlayable.TryGetValue(JellyfinPathMapper.NormalizeForCompare(dir), out var pid))
+                        return (pid, dp.Substring(dir.Length));
+                    dir = ParentDir(dir);
+                }
+                return (null, null);
+            }
+
+            // (A) convention pass over the ordinary video listing.
+            foreach (var it in items)
+            {
+                if (string.IsNullOrEmpty(it.Path)) continue;
+                if (!JellyfinPathMapper.TryTranslateToDb(it.Path!, config.JellyfinPathMappings, out var dp, out _)) continue;
+                if (extraMapped.Contains(JellyfinPathMapper.NormalizeForCompare(dp))) continue;
+                var (owner, rel) = OwnerOf(dp);
+                if (owner == null || ExtrasClassifier.ExtraKeyword(rel) == null) continue;
+                extraMapped.Add(JellyfinPathMapper.NormalizeForCompare(dp));
+                if (!dryRun) db.MediaFiles.Add(NewExtraRow(owner.Value, dp, it, now));
+                r.ExtrasAttached++;
+            }
+
+            // (B) fallback for the rare rip Jellyfin DID hide as special features (a plain "Featurettes"
+            // folder the library hadn't renamed to "…Content"): fetch those hidden extras and place them too.
             foreach (var ex in await jellyfin.GetAllExtraItemsAsync(cancel))
             {
                 if (string.IsNullOrEmpty(ex.Path)) continue;
                 if (!JellyfinPathMapper.TryTranslateToDb(ex.Path!, config.JellyfinPathMappings, out var dp, out _)) continue;
-                // Owner = nearest ancestor folder that is a movie's folder (extras can be 1+ subfolders deep).
-                int? owner = null;
-                var dir = ParentDir(dp);
-                for (int i = 0; i < 4 && dir != null; i++)
-                {
-                    if (folderToPlayable.TryGetValue(JellyfinPathMapper.NormalizeForCompare(dir), out var pid)) { owner = pid; break; }
-                    dir = ParentDir(dir);
-                }
+                if (extraMapped.Contains(JellyfinPathMapper.NormalizeForCompare(dp))) continue;
+                var (owner, _) = OwnerOf(dp);
                 if (owner == null) { r.ExtrasUnplaced++; continue; }
-                if (!extraMapped.Add(JellyfinPathMapper.NormalizeForCompare(dp))) continue;   // already mapped
+                extraMapped.Add(JellyfinPathMapper.NormalizeForCompare(dp));
                 if (!dryRun) db.MediaFiles.Add(NewExtraRow(owner.Value, dp, ex, now));
                 r.ExtrasAttached++;
             }
@@ -499,18 +525,22 @@ namespace MovieTheater.Services.Jellyfin
             res.NowStreamable = primary.JellyfinItemId != null;
 
             // Extras for this movie, both kinds — added as Role=Extra, never deleted:
-            //  (a) other untracked sibling videos in the new folder;
-            //  (b) Jellyfin "special features" (featurettes/deleted scenes, typically in an Extras subfolder —
-            //      hidden from the folder listing, so reached via the per-item SpecialFeatures endpoint).
+            //  (a) videos in an extras-type subfolder of the new movie folder, per the on-disk CONVENTION
+            //      ("Extras Content"/"Featurettes Content"/… — ExtrasClassifier, same as the ingest). Only
+            //      these, NOT every sibling video, so an alt cut sitting beside the feature isn't mislabelled.
+            //  (b) Jellyfin "special features" (a plain "Featurettes" rip Jellyfin hid) via SpecialFeatures.
             var attachedNorms = new HashSet<string>(files.Select(f => JellyfinPathMapper.NormalizeForCompare(f.Path)));
             attachedNorms.Add(JellyfinPathMapper.NormalizeForCompare(newPath));
-            var newFolderNorm = JellyfinPathMapper.NormalizeForCompare(ParentDir(newPath) ?? "");
+            var newMovieFolder = ParentDir(newPath) ?? "";
+            var newFolderNorm = JellyfinPathMapper.NormalizeForCompare(newMovieFolder);
 
             foreach (var x in untracked)
             {
                 if (x.Item.Id == chosen.Item.Id) continue;
                 var xFolder = JellyfinPathMapper.NormalizeForCompare(ParentDir(x.DbPath) ?? "");
                 if (xFolder != newFolderNorm && !xFolder.StartsWith(newFolderNorm + "\\")) continue;   // only this movie's folder
+                var rel = x.DbPath.Length > newMovieFolder.Length ? x.DbPath.Substring(newMovieFolder.Length) : x.DbPath;
+                if (ExtrasClassifier.ExtraKeyword(rel) == null) continue;   // only files in an extras subfolder
                 if (!attachedNorms.Add(JellyfinPathMapper.NormalizeForCompare(x.DbPath))) continue;
                 var exDetail = (await jellyfin.GetItemsByIdsAsync(new[] { x.Item.Id }, cancel)).FirstOrDefault() ?? x.Item;
                 db.MediaFiles.Add(NewExtraRow(playableId, x.DbPath, exDetail, now));

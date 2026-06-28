@@ -33,7 +33,9 @@ namespace MovieTheater.Ingest
         [CommandOption("dry-run", Description = "Report the mapping without writing MediaFile rows.")]
         public bool DryRun { get; set; }
 
-        private static readonly Regex ExtraDir = new(@"(?i)[\\/](extras?|featurettes?|behind[ ._-]the[ ._-]scenes|bonus|deleted[ ._-]scenes?|interviews?|making[ ._-]of|trailers?)([\\/]|$)", RegexOptions.Compiled);
+        // Extras are classified by the shared ExtrasClassifier (also used by the Jellyfin sync + re-link) so
+        // all three agree — notably it matches the library's "Extras Content"/"Featurettes Content" folders
+        // (keyword CONTAINED in the segment), which the old end-anchored regex here missed.
         private static readonly Regex VariantRe = new(@"(?i)\b(director'?s? ?cut|extended|theatrical|unrated|uncut|remastered|alternate|special[ ._-]edition|redux|final[ ._-]cut|imax)\b", RegexOptions.Compiled);
         private static readonly Regex PartRe = new(@"(?i)\b(?:cd|disc|disk|part|pt)[ ._-]*([0-9]+)\b", RegexOptions.Compiled);
         private static readonly Regex SampleRe = new(@"(?i)\bsample\b", RegexOptions.Compiled);
@@ -158,8 +160,8 @@ namespace MovieTheater.Ingest
             foreach (var f in real)
             {
                 var rel = Norm(f.FullPath).StartsWith(key) ? f.FullPath.Substring(Math.Min(titlePath.Length, f.FullPath.Length)) : f.Name;
-                var em = ExtraDir.Match(rel);
-                if (em.Success) { rows.Add(new Row { Role = MovieFileRole.Extra, Label = em.Groups[1].Value, Size = f.Size, Path = f.FullPath }); continue; }
+                var ek = ExtrasClassifier.ExtraKeyword(rel);
+                if (ek != null) { rows.Add(new Row { Role = MovieFileRole.Extra, Label = ek, Size = f.Size, Path = f.FullPath }); continue; }
                 var pm = PartRe.Match(f.Name);
                 if (pm.Success) { rows.Add(new Row { Role = MovieFileRole.Part, PartNumber = int.TryParse(pm.Groups[1].Value, out var pn) ? pn : (int?)null, Size = f.Size, Path = f.FullPath }); continue; }
                 var vm = VariantRe.Match(f.Name);
