@@ -279,6 +279,36 @@ namespace MovieTheater.Services.Jellyfin
                     }
             }
 
+            // ── Extras pass: attach Jellyfin "special features" (featurettes, deleted scenes, behind-the-
+            // scenes, trailers) to their owner movie. They're EXCLUDED from the normal listings, so they're
+            // fetched separately and placed by FOLDER: an extra lives in the movie's folder or a subfolder of
+            // it (e.g. ...\Title (Year)\Featurettes\X.mkv). Added as Role=Extra; existing rows never touched.
+            var folderToPlayable = new Dictionary<string, int>();
+            foreach (var m in movies)
+            {
+                if (m.PlayableId == null) continue;
+                var folder = ParentDir(m.FilePath);
+                if (folder != null) folderToPlayable[JellyfinPathMapper.NormalizeForCompare(folder)] = m.PlayableId.Value;
+            }
+            var extraMapped = new HashSet<string>(existingFiles.Select(f => JellyfinPathMapper.NormalizeForCompare(f.Path)));
+            foreach (var ex in await jellyfin.GetAllExtraItemsAsync(cancel))
+            {
+                if (string.IsNullOrEmpty(ex.Path)) continue;
+                if (!JellyfinPathMapper.TryTranslateToDb(ex.Path!, config.JellyfinPathMappings, out var dp, out _)) continue;
+                // Owner = nearest ancestor folder that is a movie's folder (extras can be 1+ subfolders deep).
+                int? owner = null;
+                var dir = ParentDir(dp);
+                for (int i = 0; i < 4 && dir != null; i++)
+                {
+                    if (folderToPlayable.TryGetValue(JellyfinPathMapper.NormalizeForCompare(dir), out var pid)) { owner = pid; break; }
+                    dir = ParentDir(dir);
+                }
+                if (owner == null) { r.ExtrasUnplaced++; continue; }
+                if (!extraMapped.Add(JellyfinPathMapper.NormalizeForCompare(dp))) continue;   // already mapped
+                if (!dryRun) db.MediaFiles.Add(NewExtraRow(owner.Value, dp, ex, now));
+                r.ExtrasAttached++;
+            }
+
             // Still unmatched after the move pass → stamp MissingSinceUtc (existing rows only).
             if (!dryRun)
             {
@@ -294,8 +324,8 @@ namespace MovieTheater.Services.Jellyfin
                 .Select(m => $"{m.id} '{m.Title}' → {m.FilePath}"));
             r.ImdbFallbacks.AddRange(imdbFallbackCandidates.Where(c => !chosen.ContainsKey(c.MovieId)).Select(c => c.Line));
 
-            logger.LogInformation("Jellyfin sync ({Mode}): movies {MM}/{MT}, ep/misc {EM}/{ET}, created {C}, updated {U}, re-pointed {R}, rescued-versions {RV}",
-                dryRun ? "dry-run" : "write", r.MoviesMatched, r.MoviesTotal, r.EpMatched, r.EpTotal, r.Created, r.Updated, r.Repointed.Count, r.RescuedAlternateVersions);
+            logger.LogInformation("Jellyfin sync ({Mode}): movies {MM}/{MT}, ep/misc {EM}/{ET}, created {C}, updated {U}, re-pointed {R}, rescued-versions {RV}, extras {EX}",
+                dryRun ? "dry-run" : "write", r.MoviesMatched, r.MoviesTotal, r.EpMatched, r.EpTotal, r.Created, r.Updated, r.Repointed.Count, r.RescuedAlternateVersions, r.ExtrasAttached);
             return r;
         }
 
@@ -468,23 +498,35 @@ namespace MovieTheater.Services.Jellyfin
             res.NewPath = newPath;
             res.NowStreamable = primary.JellyfinItemId != null;
 
-            // Extras: any OTHER untracked video in the SAME (new) movie folder. Added as Extra-role rows and
-            // reported, never deleted — re-running just picks up anything missed.
+            // Extras for this movie, both kinds — added as Role=Extra, never deleted:
+            //  (a) other untracked sibling videos in the new folder;
+            //  (b) Jellyfin "special features" (featurettes/deleted scenes, typically in an Extras subfolder —
+            //      hidden from the folder listing, so reached via the per-item SpecialFeatures endpoint).
+            var attachedNorms = new HashSet<string>(files.Select(f => JellyfinPathMapper.NormalizeForCompare(f.Path)));
+            attachedNorms.Add(JellyfinPathMapper.NormalizeForCompare(newPath));
             var newFolderNorm = JellyfinPathMapper.NormalizeForCompare(ParentDir(newPath) ?? "");
-            var primaryNorm = JellyfinPathMapper.NormalizeForCompare(newPath);
+
             foreach (var x in untracked)
             {
                 if (x.Item.Id == chosen.Item.Id) continue;
-                var xn = JellyfinPathMapper.NormalizeForCompare(x.DbPath);
-                if (xn == primaryNorm) continue;
                 var xFolder = JellyfinPathMapper.NormalizeForCompare(ParentDir(x.DbPath) ?? "");
                 if (xFolder != newFolderNorm && !xFolder.StartsWith(newFolderNorm + "\\")) continue;   // only this movie's folder
+                if (!attachedNorms.Add(JellyfinPathMapper.NormalizeForCompare(x.DbPath))) continue;
                 var exDetail = (await jellyfin.GetItemsByIdsAsync(new[] { x.Item.Id }, cancel)).FirstOrDefault() ?? x.Item;
-                var extra = new MediaFile { PlayableId = playableId, Path = x.DbPath, Role = MovieFileRole.Extra, Label = Truncate(x.Item.Name, 128) };
-                StampFromItem(extra, exDetail, now);
-                db.MediaFiles.Add(extra);
-                res.ExtrasAdded.Add(x.Item.Name ?? x.DbPath);
+                db.MediaFiles.Add(NewExtraRow(playableId, x.DbPath, exDetail, now));
+                res.ExtrasAdded.Add(LeafLabel(x.DbPath));
             }
+
+            var specials = await jellyfin.GetSpecialFeaturesAsync(detail.Id, cancel);
+            if (specials.Count > 0)
+                foreach (var sd in await jellyfin.GetItemsByIdsAsync(specials.Select(s => s.Id), cancel))
+                {
+                    if (string.IsNullOrEmpty(sd.Path)) continue;
+                    if (!JellyfinPathMapper.TryTranslateToDb(sd.Path!, config.JellyfinPathMappings, out var sdp, out _)) continue;
+                    if (!attachedNorms.Add(JellyfinPathMapper.NormalizeForCompare(sdp))) continue;
+                    db.MediaFiles.Add(NewExtraRow(playableId, sdp, sd, now));
+                    res.ExtrasAdded.Add(LeafLabel(sdp));
+                }
 
             await db.SaveChangesAsync(cancel);
             res.Done = true;
@@ -505,6 +547,25 @@ namespace MovieTheater.Services.Jellyfin
                     && JellyfinPathMapper.NormalizeForCompare(dp) == shelfNorm)
                     return f.Id;
             return null;
+        }
+
+        /// <summary>A new Role=Extra MediaFile for a Jellyfin extra at <paramref name="dp"/> (DB path),
+        /// labelled from its filename and stamped with the item's id/codec/size. Caller owns add + save.</summary>
+        private static MediaFile NewExtraRow(int playableId, string dp, JellyfinItem item, DateTime now)
+        {
+            var row = new MediaFile { PlayableId = playableId, Path = dp, Role = MovieFileRole.Extra, Label = Truncate(LeafLabel(dp), 128) };
+            StampFromItem(row, item, now);
+            return row;
+        }
+
+        /// <summary>Filename without extension, from a Windows-style path (backslash split done MANUALLY —
+        /// prod is Linux). Used as an extra's human label.</summary>
+        private static string LeafLabel(string path)
+        {
+            var s = path.Replace('/', '\\').TrimEnd('\\');
+            var name = s.Substring(s.LastIndexOf('\\') + 1);
+            var dot = name.LastIndexOf('.');
+            return dot > 0 ? name.Substring(0, dot) : name;
         }
 
         /// <summary>Parent directory of a Windows-style path, split on backslash MANUALLY (prod is Linux, so
@@ -607,6 +668,11 @@ namespace MovieTheater.Services.Jellyfin
         public int EpTotal { get; set; }
         public List<string> EpUntracked { get; } = new();
         public List<string> EpUntranslatable { get; } = new();
+
+        /// <summary>Jellyfin extras (featurettes/deleted scenes/etc.) attached to their owner movie this run.</summary>
+        public int ExtrasAttached { get; set; }
+        /// <summary>Extras whose folder didn't map to any known movie folder — left unattached.</summary>
+        public int ExtrasUnplaced { get; set; }
     }
 
     /// <summary>Result of <see cref="JellyfinSyncService.TriggerMovieFolderRefreshAsync"/> — did the scoped

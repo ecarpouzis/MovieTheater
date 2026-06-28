@@ -333,6 +333,38 @@ namespace MovieTheater.Services.Jellyfin
             GetAllItemsAsync("Movie,Episode,Video", "Path", cancel);
 
         /// <summary>
+        /// Every Jellyfin "extra" (special feature: featurette, deleted scene, behind-the-scenes, trailer…)
+        /// across the library, with path + media detail. Extras carry an <c>ExtraType</c> and are EXCLUDED
+        /// from the normal movie/episode listings (and from ParentId/Recursive queries), so they're fetched
+        /// separately here — via an IncludeItemTypes=Video sweep, kept only where ExtraType is set — and then
+        /// attached to their owner movie by folder. One bulk call, no per-movie lookups.
+        /// </summary>
+        public async Task<List<JellyfinItem>> GetAllExtraItemsAsync(CancellationToken cancel = default)
+        {
+            // Light sweep (path + ExtraType only) to FIND the extras, then enrich just those few with the
+            // heavier MediaSources detail — instead of pulling media sources for every video in the library.
+            var all = await GetAllItemsAsync("Video", "Path,ExtraType", cancel);
+            var extras = all.Where(i => !string.IsNullOrEmpty(i.ExtraType)).ToList();
+            if (extras.Count == 0) return extras;
+            var detail = await GetItemsByIdsAsync(extras.Select(e => e.Id), cancel);
+            return detail.Count > 0 ? detail : extras;
+        }
+
+        /// <summary>
+        /// The special features (extras) attached to ONE item, via the per-item endpoint — the only way to
+        /// reach an extra from its owner (extras are hidden from ParentId/Recursive listings). Returns the
+        /// extra items (ids + paths); enrich with <see cref="GetItemsByIdsAsync"/> for MediaSources. Used by
+        /// the per-movie re-link so a replaced rip's featurettes follow it.
+        /// </summary>
+        public async Task<List<JellyfinItem>> GetSpecialFeaturesAsync(string itemId, CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            var userId = await GetUserIdAsync(cancel);
+            var url = $"/Users/{Uri.EscapeDataString(userId)}/Items/{Uri.EscapeDataString(itemId)}/SpecialFeatures?EnableImages=false";
+            return await httpClient.GetFromJsonAsync<List<JellyfinItem>>(url, JsonOptions, cancel) ?? new();
+        }
+
+        /// <summary>
         /// Folder/container items with their paths, so the re-link flow can resolve a shelf's Jellyfin item id
         /// by on-disk path and then trigger a scoped folder re-scan of it.
         /// </summary>
@@ -550,6 +582,9 @@ namespace MovieTheater.Services.Jellyfin
         public string Id { get; set; } = default!;
         public string? Name { get; set; }
         public string? Path { get; set; }
+        /// <summary>Set when this item is an "extra" (special feature) of another title — "Featurette",
+        /// "BehindTheScenes", "DeletedScene", "Trailer", etc. Null for a normal movie/episode/video.</summary>
+        public string? ExtraType { get; set; }
         public long? RunTimeTicks { get; set; }
         public Dictionary<string, string>? ProviderIds { get; set; }
         public List<JellyfinMediaSource>? MediaSources { get; set; }
