@@ -43,7 +43,11 @@
   background: rgba(8, 7, 5, 0.78);
   color: var(--vp-cream);
   font-family: inherit;
-  font-size: 1.05em;
+  /* Size in viewport units, not em: `em` on ::cue resolves against each browser's
+     default cue font size, and those differ wildly — Chrome's scales with the video,
+     Firefox's is small and fixed, so `1.05em` rendered tiny there. vh scales with the
+     video in fullscreen and reads consistently across browsers. */
+  font-size: clamp(18px, 3vh, 36px);
 }
 
 /* The movie is shown exactly as mastered — no grain, no vignette, no filters over the picture. */
@@ -458,6 +462,209 @@
   font-size: 12px;
   color: var(--vp-cream-dim);
   padding: 4px 12px 8px;
+}
+
+/* ── subtitle delay nudge ────────────────────────────────────────────────── */
+.vp-menu-delay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 8px;
+}
+
+.vp-menu-delay-label {
+  font-size: 13px;
+  color: var(--vp-cream-dim);
+}
+
+.vp-menu-delay-btn {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(227, 179, 65, 0.12);
+  border: 1px solid rgba(227, 179, 65, 0.28);
+  border-radius: 5px;
+  color: var(--vp-cream);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.vp-menu-delay-btn:hover {
+  background: rgba(227, 179, 65, 0.22);
+}
+
+.vp-menu-delay-val {
+  min-width: 64px;
+  text-align: center;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--vp-cream);
+}
+
+.vp-menu-delay-reset {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--vp-gold-dim);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.vp-menu-delay-reset:hover:not(:disabled) {
+  color: var(--vp-gold);
+}
+
+.vp-menu-delay-reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* transient subtitle-delay readout (keyboard or ± nudge) */
+.vp-sub-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  transform: translateX(-50%);
+  background: rgba(16, 14, 11, 0.92);
+  border: 1px solid rgba(227, 179, 65, 0.28);
+  border-radius: 6px;
+  padding: 8px 16px;
+  color: var(--vp-cream);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  animation: vp-menu-in 0.18s ease;
+}
+
+/* ── subtitle appearance editor ──────────────────────────────────────────── */
+.vp-substyle {
+  padding: 4px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.vp-substyle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vp-substyle-label {
+  flex: 0 0 58px;
+  font-size: 12px;
+  color: var(--vp-cream-dim);
+}
+
+.vp-substyle-slider {
+  flex: 1;
+  accent-color: var(--vp-gold);
+  cursor: pointer;
+}
+
+.vp-substyle-val {
+  flex: 0 0 48px;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--vp-cream);
+}
+
+.vp-substyle-swatches {
+  display: flex;
+  gap: 8px;
+}
+
+.vp-substyle-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(242, 236, 221, 0.35);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.vp-substyle-swatch:hover {
+  transform: scale(1.12);
+}
+
+.vp-substyle-swatch--on {
+  box-shadow: 0 0 0 2px var(--vp-black), 0 0 0 3.5px var(--vp-gold);
+}
+
+/* segmented toggles (font / edge) */
+.vp-substyle-seg {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+}
+
+.vp-substyle-segbtn {
+  flex: 1;
+  padding: 5px 4px;
+  font-size: 11.5px;
+  color: var(--vp-cream);
+  background: rgba(242, 236, 221, 0.06);
+  border: 1px solid rgba(227, 179, 65, 0.22);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.vp-substyle-segbtn:hover {
+  background: rgba(227, 179, 65, 0.12);
+}
+
+.vp-substyle-segbtn--on {
+  color: var(--vp-black);
+  background: var(--vp-gold);
+  border-color: var(--vp-gold);
+}
+
+.vp-substyle-reset {
+  align-self: flex-start;
+  margin-top: 2px;
+  background: none;
+  border: none;
+  color: var(--vp-gold-dim);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.vp-substyle-reset:hover:not(:disabled) {
+  color: var(--vp-gold);
+}
+
+.vp-substyle-reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* live on-video sample caption shown while the editor is open */
+.vp-sub-preview {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 3;
+  pointer-events: none;
+  padding: 0 8%;
+  text-align: center;
+}
+
+.vp-sub-preview-text {
+  display: inline-block;
+  padding: 0.08em 0.34em;
+  border-radius: 3px;
+  line-height: 1.3;
 }
 
 /* ── center states ───────────────────────────────────────────────────────── */
