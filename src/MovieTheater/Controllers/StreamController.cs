@@ -258,8 +258,23 @@ namespace MovieTheater.Controllers
             }
             else
             {
-                videoIsCopied = source.TranscodeReasons == null
-                    || !source.TranscodeReasons.Any(r => r.Contains("Video", StringComparison.OrdinalIgnoreCase));
+                // A burned-in image subtitle forces ffmpeg to rasterize the sub onto every frame, so the
+                // video is necessarily re-encoded — even though we force the burn via the params we
+                // re-append below (see note) rather than through Jellyfin's negotiation, so its
+                // TranscodeReasons often omits a "Video" reason. Detect the burn-in case up front and
+                // treat the video as not-copied, so the "Playing" readout honestly reports a transcode.
+                int? burnInImageIndex = null;
+                if (request.SubtitleStreamIndex is int subIndex)
+                {
+                    var burnStream = source.MediaStreams.FirstOrDefault(s => s.Type == "Subtitle" && s.Index == subIndex);
+                    if (burnStream != null && !burnStream.IsTextSubtitleStream)
+                        burnInImageIndex = subIndex;
+                }
+                var burningInSubtitle = burnInImageIndex != null;
+
+                videoIsCopied = !burningInSubtitle
+                    && (source.TranscodeReasons == null
+                        || !source.TranscodeReasons.Any(r => r.Contains("Video", StringComparison.OrdinalIgnoreCase)));
                 // The codec the player actually receives: when the video is copied it's the source
                 // codec; when re-encoded it's the first of the negotiated list (the encode target).
                 // The transcoding url only carries the candidate list, so a copied H.264 source to
@@ -274,12 +289,8 @@ namespace MovieTheater.Controllers
                 // paints the subtitle, so a selected "burned-in" sub silently fails to appear. Re-append
                 // them — exactly what the official Jellyfin web client does — so the sub is burned in.
                 // Guarded to image subs: text subs ride as sidecar WebVTT and are never burned.
-                if (request.SubtitleStreamIndex is int burnIndex)
-                {
-                    var burnStream = source.MediaStreams.FirstOrDefault(s => s.Type == "Subtitle" && s.Index == burnIndex);
-                    if (burnStream != null && !burnStream.IsTextSubtitleStream)
-                        transcodingUrl += $"&SubtitleStreamIndex={burnIndex}&SubtitleMethod=Encode";
-                }
+                if (burnInImageIndex is int burnIndex)
+                    transcodingUrl += $"&SubtitleStreamIndex={burnIndex}&SubtitleMethod=Encode";
                 playbackUrl = ToGatewayUrl(transcodingUrl);
                 isHls = true;
             }
