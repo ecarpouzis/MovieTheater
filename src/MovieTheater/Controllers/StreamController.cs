@@ -267,7 +267,20 @@ namespace MovieTheater.Controllers
                 outputVideoCodec = videoIsCopied
                     ? sourceVideoCodec ?? VideoCodecFromTranscodingUrl(source.TranscodingUrl)
                     : VideoCodecFromTranscodingUrl(source.TranscodingUrl);
-                playbackUrl = ToGatewayUrl(source.TranscodingUrl);
+                var transcodingUrl = source.TranscodingUrl;
+                // Jellyfin's PlaybackInfo drops the subtitle params from the TranscodingUrl even when an
+                // image subtitle is selected to be burned in (its SubtitleDeliveryMethod is "Encode").
+                // Without them the transcode still runs (for container/audio reasons) but ffmpeg never
+                // paints the subtitle, so a selected "burned-in" sub silently fails to appear. Re-append
+                // them — exactly what the official Jellyfin web client does — so the sub is burned in.
+                // Guarded to image subs: text subs ride as sidecar WebVTT and are never burned.
+                if (request.SubtitleStreamIndex is int burnIndex)
+                {
+                    var burnStream = source.MediaStreams.FirstOrDefault(s => s.Type == "Subtitle" && s.Index == burnIndex);
+                    if (burnStream != null && !burnStream.IsTextSubtitleStream)
+                        transcodingUrl += $"&SubtitleStreamIndex={burnIndex}&SubtitleMethod=Encode";
+                }
+                playbackUrl = ToGatewayUrl(transcodingUrl);
                 isHls = true;
             }
 
