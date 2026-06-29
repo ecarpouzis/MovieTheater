@@ -67,7 +67,6 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
   const [plotExpanded, setPlotExpanded] = useState(false);
   const [plotOverflows, setPlotOverflows] = useState(false);
   const [synopsisOpen, setSynopsisOpen] = useState(false);
-  const [trailerOpen, setTrailerOpen] = useState(false);
   const [thumbMissing, setThumbMissing] = useState(false);
   const [genThumb, setGenThumb] = useState(false);
   const plotRef = useRef(null);
@@ -106,7 +105,6 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
       setPlotExpanded(false);
       setPlotOverflows(false);
       setSynopsisOpen(false);
-      setTrailerOpen(false);
       setOpenSeasons({});
       MovieAPI.getTitle(movieId, kind)
         .then((response) => response.json())
@@ -412,21 +410,17 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
 
                 {trailerKey && (
                   <div className="modal-trailer">
-                    {!trailerOpen ? (
-                      <button type="button" className="modal-trailer-btn" onClick={() => setTrailerOpen(true)}>
-                        <span className="modal-trailer-play" aria-hidden="true">▶</span>
-                        Watch Trailer
-                      </button>
-                    ) : (
-                      <div className="modal-trailer-player">
-                        <iframe
-                          src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
-                          title={`${movie.title} — trailer`}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    )}
+                    {/* Show the trailer player inline (IMDB-style) — the YouTube embed
+                        renders the trailer thumbnail with a large play button, so it
+                        reads as a trailer at a glance without autoplaying on open. */}
+                    <div className="modal-trailer-player">
+                      <iframe
+                        src={`https://www.youtube-nocookie.com/embed/${trailerKey}?rel=0&modestbranding=1`}
+                        title={`${movie.title} — trailer`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
                   </div>
                 )}
 
