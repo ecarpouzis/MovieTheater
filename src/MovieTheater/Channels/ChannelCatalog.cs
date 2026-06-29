@@ -126,11 +126,11 @@ namespace MovieTheater.Channels
             {
                 // ── The Marquee ──
                 D("everything","Everything","The whole library on smart shuffle","The Marquee").In(MT),
-                D("the-canon","The Canon","The all-time greats","The Marquee").In(MT).Imdb(8.0),
-                D("certified-fresh","Certified Fresh","Critics' darlings","The Marquee").In(MT).Tomato(90),
-                D("crowd-pleasers","Crowd-Pleasers","Films people love","The Marquee").In(MT).Popcorn(80),
+                D("the-canon","The Canon","The all-time great films","The Marquee").Imdb(8.0),
+                D("certified-fresh","Certified Fresh","Critics' darlings","The Marquee").Tomato(90),
+                D("crowd-pleasers","Crowd-Pleasers","Films people love","The Marquee").Popcorn(80),
                 D("hidden-gems","Hidden Gems","Great and under-seen","The Marquee").Imdb(7.5).Popular(null,8).Novelty(55),
-                D("community-favorites","Community Favorites","Most-watched by our viewers","The Marquee").In(MT).MinViewers(3),
+                D("community-favorites","Community Favorites","Most-watched by our viewers","The Marquee").MinViewers(3),
 
                 // ── The Auteurs ──
                 D("hitchcock","The Hitchcock Hour","The Master of Suspense","The Auteurs").Dir("Alfred Hitchcock"),
@@ -162,14 +162,14 @@ namespace MovieTheater.Channels
                 D("murray","Bill Murray","Deadpan legend","Star Power").Star("Bill Murray"),
 
                 // ── Japanese Cinema & Samurai ──
-                D("japanese-cinema","Japanese Cinema","From Ozu to Miike","Japanese Cinema & Samurai").In(MT).Lang("ja"),
+                D("japanese-cinema","Japanese Cinema","From Ozu to Miike — Japanese films","Japanese Cinema & Samurai").Lang("ja"),
                 D("zatoichi","Zatoichi: Blind Swordsman","The legendary samurai series","Japanese Cinema & Samurai").Star("Shintaro Katsu","Shintarô Katsu"),
                 D("toho-kaiju","Godzilla & the Kaiju","Giant monsters stomp Tokyo","Japanese Cinema & Samurai").Franchise("godzilla"),
 
                 // ── Horror ──
-                D("horror","Horror","Frights all night","Horror").In(MT).Genre("Horror"),
+                D("horror","Horror","Frights all night","Horror").Genre("Horror"),
                 D("stephen-king","Stephen King","Adaptations of the King","Horror").In(MT).Franchise("stephen king"),
-                D("hammer-icons","Hammer Horror & Icons","Lee, Cushing & Vincent Price","Horror").Star("Christopher Lee","Peter Cushing","Vincent Price"),
+                D("hammer-icons","Hammer Horror & Icons","Lee, Cushing & Vincent Price","Horror").Star("Christopher Lee","Peter Cushing","Vincent Price").Genre("Horror"),
                 D("monster-movies","Classic Monster Movies","Black-and-white frights","Horror").Genre("Horror").Visual("black and white"),
                 D("slasher-night","Slasher Night","Stalk, slash, sequel","Horror").Sub("slasher"),
                 D("creature-features","Creature Features","Things with teeth","Horror").Sub("creature feature","kaiju"),
@@ -178,7 +178,7 @@ namespace MovieTheater.Channels
                 // ── Cult, Weird & Arthouse ──
                 D("criterion","The Criterion Closet","Cinema as art","Cult, Weird & Arthouse").Path("Criterion"),
                 D("arthouse","The Arthouse","The artistic canon","Cult, Weird & Arthouse").Sub("art house"),
-                D("cult-vault","The Cult Vault","Beloved oddities","Cult, Weird & Arthouse").Cult(60),
+                D("cult-vault","The Cult Vault","Beloved oddities","Cult, Weird & Arthouse").Cult(75),
                 D("schlock","Schlock Theater","Gloriously bad B-movies","Cult, Weird & Arthouse").Sub("b movie"),
                 D("so-bad-good","So Bad It's Good","The disasterpieces","Cult, Weird & Arthouse").Imdb(null,5.0).Cult(45),
                 D("bw","In Glorious Black & White","Monochrome cinema","Cult, Weird & Arthouse").Visual("black and white"),
@@ -188,19 +188,19 @@ namespace MovieTheater.Channels
                 D("off-beaten","Off the Beaten Path","Deep cuts and obscurities","Cult, Weird & Arthouse").Novelty(70),
 
                 // ── Genres ──
-                D("comedy","Comedy","Laughs around the clock","Genres").In(MT).Genre("Comedy"),
-                D("drama","Drama","Serious cinema","Genres").In(MT).Genre("Drama"),
-                D("action","Action & Adventure","Explosions and quests","Genres").In(MT).Genre("Action","Adventure"),
-                D("thrillers","Thrillers","Suspense and tension","Genres").In(MT).Genre("Thriller"),
-                D("scifi-fantasy","Sci-Fi & Fantasy","Other worlds","Genres").In(MT).Genre("Sci-Fi","Fantasy"),
-                D("crime","Crime & Mob","Gangsters and capers","Genres").In(MT).Genre("Crime"),
-                D("romance","Romance","Love stories","Genres").In(MT).Genre("Romance"),
-                D("documentaries","Documentaries","Real stories","Genres").In(MT).Genre("Documentary"),
-                D("musicals","Musicals & Music","Song, dance, and bands","Genres").In(MT).Genre("Musical","Music"),
+                D("comedy","Comedy","Laughs around the clock","Genres").Genre("Comedy"),
+                D("drama","Drama","Serious cinema","Genres").Genre("Drama"),
+                D("action","Action & Adventure","Explosions and quests","Genres").Genre("Action","Adventure"),
+                D("thrillers","Thrillers","Suspense and tension","Genres").Genre("Thriller"),
+                D("scifi-fantasy","Sci-Fi & Fantasy","Other worlds","Genres").Genre("Sci-Fi","Fantasy"),
+                D("crime","Crime & Mob","Gangsters and capers","Genres").Genre("Crime"),
+                D("romance","Romance","Love stories","Genres").Genre("Romance"),
+                D("documentaries","Documentaries","Real stories","Genres").Genre("Documentary"),
+                D("musicals","Musicals & Music","Song, dance, and bands","Genres").Genre("Musical","Music"),
 
                 // ── Subgenre Spotlights ──
                 D("film-noir","Film Noir","Shadows and moral fog","Subgenre Spotlights").Sub("noir","neo-noir"),
-                D("spaghetti-western","Spaghetti Westerns","Leone and the dusty operatic","Subgenre Spotlights").Sub("spaghetti western"),
+                D("spaghetti-western","Westerns","Saddle up — Leone to Eastwood","Subgenre Spotlights").Genre("Western"),
                 D("psych-thriller","Psychological Thrillers","Mind games","Subgenre Spotlights").Sub("psychological thriller"),
                 D("heist","Heist & Capers","Plans and double-crosses","Subgenre Spotlights").Sub("heist"),
                 D("superhero","Superhero","Capes and cowls","Subgenre Spotlights").In(MT).Sub("superhero"),
@@ -218,22 +218,22 @@ namespace MovieTheater.Channels
                 D("silent-era","Silent & Pre-Code","Before 1930","Decades").Year(null,1929).Strat(ScheduleStrategies.SeededShuffle),
                 D("golden-age","Golden Age Hollywood","1930s-1940s","Decades").Year(1930,1949),
                 D("new-hollywood","New Hollywood","1970s","Decades").Year(1970,1979),
-                D("eighties","Totally '80s","1980-1989","Decades").In(MT).Year(1980,1989),
-                D("nineties","The '90s","1990-1999","Decades").In(MT).Year(1990,1999),
-                D("twothousands","The 2000s","2000-2009","Decades").In(MT).Year(2000,2009),
+                D("eighties","Totally '80s","1980-1989","Decades").Year(1980,1989),
+                D("nineties","The '90s","1990-1999","Decades").Year(1990,1999),
+                D("twothousands","The 2000s","2000-2009","Decades").Year(2000,2009),
                 D("eighties-horror","That '80s Horror","Slashers and synth screams","Decades").Year(1980,1989).Genre("Horror"),
                 D("eighties-scifi","'80s Sci-Fi","Neon futures","Decades").Year(1980,1989).Genre("Sci-Fi"),
 
                 // ── Moods & Vibes ──
                 D("bleak","Bleak & Beautiful","Heavy and haunting","Moods & Vibes").Mood("melancholic","bleak"),
                 D("dreamlike","Dreamlike","Hazy and strange","Moods & Vibes").Mood("dreamlike"),
-                D("feel-good","Feel-Good & Wholesome","Leaves you smiling","Moods & Vibes").In(MT).Mood("wholesome","uplifting"),
-                D("whimsical","Whimsical & Quirky","Offbeat charm","Moods & Vibes").In(MT).Mood("whimsical"),
+                D("feel-good","Feel-Good & Wholesome","Leaves you smiling","Moods & Vibes").Mood("wholesome","uplifting"),
+                D("whimsical","Whimsical & Quirky","Offbeat charm","Moods & Vibes").Mood("whimsical"),
                 D("tense","Tense & Dreadful","White-knuckle dread","Moods & Vibes").Mood("tense","dread","unsettling"),
                 D("adrenaline","Pure Adrenaline","Nonstop motion","Moods & Vibes").Energy(80),
 
                 // ── Animation Hall of Fame ──
-                D("looney-tunes","Looney Tunes","That's all, folks","Animation Hall of Fame").In(MT).Path("Looney Tunes").Strat(err),
+                D("cartoon-shorts","Cartoon Shorts Theater","Looney Tunes, Tom & Jerry & the golden-age greats","Animation Hall of Fame").In(T).Path("Looney Tunes","Merrie Melodies","Tom and Jerry","Walt Disney Treasures","Tex Avery").Strat(err),
                 D("disney-classics","Disney Animated Classics","The Disney film canon","Animation Hall of Fame").Path("Disney Films","Walt Disney"),
                 D("hanna-barbera","Hanna-Barbera Classics","Yabba dabba doo","Animation Hall of Fame").In(T).Path("Flintstones","Jetsons","Scooby Doo","Wacky Races","Atom Ant","Rocky and Bullwinkle").Strat(err),
                 D("disney-afternoon","The Disney Afternoon","Classic Disney TV animation","Animation Hall of Fame").In(T).Path("DuckTales","TaleSpin","Darkwing Duck","Chip 'n' Dale","Gargoyles").Strat(err),
@@ -249,6 +249,7 @@ namespace MovieTheater.Channels
                 D("family-night","Family Movie Night","Something for everyone","Kids & Family").In(MT).Mpaa(3).Occasion("family-night"),
                 D("read-learn","Read & Learn","Educational classics","Kids & Family").In(T).Path("Reading Rainbow","Magic School Bus","Schoolhouse Rock","Ada Twist","Hilda").Strat(err),
                 D("sing-along","Sing-Along Musicals","Songs for all ages","Kids & Family").In(MT).Genre("Musical").Mpaa(2),
+                D("kid-shorts","Kid-Friendly Shorts","Gentle short cartoons for the littlest","Kids & Family").In(T).Path("Schoolhouse Rock","Wonderful World of Mickey","Mickey Mouse (2013","Bluey Minisode","Cracking Contraption").Strat(err),
 
                 // ── Anime ──
                 D("anime-central","Anime Central","All anime, all day","Anime").In(MT).Sub("anime").Strat(err),
@@ -257,29 +258,31 @@ namespace MovieTheater.Channels
                 D("dragon-ball","Dragon Ball","Saiyan saga","Anime").In(MT).Path("Dragon Ball").Strat(mar),
                 D("anime-arthouse","Anime Arthouse","The bold, strange & sublime","Anime").In(MT).Path("Odd Taxi","Redline","Paprika","Perfect Blue","Paranoia Agent","Tatami","Lain","Cat Soup","Belladonna","Angel's Egg","Mind Game","Tekkon","Millennium Actress","Tokyo Godfathers","Ping Pong","Mononoke","Kaiba","Dead Leaves","Texhnolyze","Space Dandy").Strat(err),
                 D("modern-anime","Modern Anime","Today's hits","Anime").In(MT).Path("Demon Slayer","Jujutsu Kaisen","Attack on Titan","One Punch Man","Re - Zero","Steins","Chainsaw").Strat(err),
-                D("classic-anime","Classic Anime","The canon","Anime").In(MT).Path("Ranma","Cowboy Bebop","Trigun","Evangelion","Samurai Champloo","Ghost in the Shell","Fullmetal Alchemist","Monster","Death Note").Strat(err),
+                D("classic-anime","Classic Anime","The canon","Anime").In(MT).Path("Ranma","Cowboy Bebop","Trigun","Evangelion","Samurai Champloo","Ghost in the Shell","Fullmetal Alchemist","Monster (2004","Death Note").Strat(err),
                 D("anime-films","Anime Films","Feature-length anime","Anime").Lang("ja").Genre("Animation"),
 
                 // ── The TV Vault ──
                 D("cult-tv","Cult TV","Riff-worthy and strange","The TV Vault").In(T).Path("Twilight Zone","Doctor Who","Lexx","Are You Afraid of the Dark","Tales from").Strat(err),
                 D("classic-scifi-tv","Classic Sci-Fi TV","Final frontiers","The TV Vault").In(T).Path("Star Trek","Battlestar Galactica","Farscape","Buck Rogers","Quantum Leap").Strat(err),
-                D("prestige-drama","Prestige Drama","Appointment television","The TV Vault").In(T).Path("Game of Thrones","Breaking Bad","Lost","Twin Peaks","The Boys").Strat(err),
+                D("prestige-drama","Prestige Drama","Appointment television","The TV Vault").In(T).Path("Game of Thrones","Breaking Bad","Lost (2004","Twin Peaks","The Boys").Strat(err),
                 D("classic-sitcoms","Classic Sitcoms","Comfort comedy","The TV Vault").In(T).Path("Seinfeld","All in the Family","Community","Arrested Development","Archer").Strat(err),
                 D("science-tv","Science & How-To","How the world works","The TV Vault").In(T).Path("How It's Made","MythBusters","Penn & Teller").Strat(err),
                 D("muppets","The Muppets & Jim Henson","Felt and felt deeply","The TV Vault").In(MT).Path("Jim Henson","Muppet").Strat(err),
+                D("primetime-toons","Primetime Animation","The Simpsons, Futurama & adult-cartoon primetime","The TV Vault").In(T).Path("Simpsons","Futurama","Daria","Beavis and Butt-Head","Duckman","Critic","Clone High").Strat(err),
+                D("sketch-comedy","Sketch Comedy","Monty Python to the Whitest Kids","The TV Vault").In(T).Path("Monty Python","Whitest Kids","Liquid Television","Banzai","Mr. Show","Kids in the Hall").Strat(err),
 
                 // ── International ──
-                D("world-cinema","World Cinema","Beyond Hollywood","International").In(MT).NotLang("en"),
-                D("french-cinema","French Cinema","La Nouvelle Vague & beyond","International").In(MT).Lang("fr"),
-                D("german-cinema","German Cinema","Expressionism to New German","International").In(MT).Lang("de"),
-                D("italian-cinema","Italian Cinema","Neorealism to giallo","International").In(MT).Lang("it"),
-                D("spanish-cinema","Spanish-Language","Films in Spanish","International").In(MT).Lang("es"),
+                D("world-cinema","World Cinema","Beyond Hollywood","International").NotLang("en"),
+                D("french-cinema","French Cinema","La Nouvelle Vague & beyond","International").Lang("fr"),
+                D("german-cinema","German Cinema","Expressionism to New German","International").Lang("de"),
+                D("italian-cinema","Italian Cinema","Neorealism to giallo","International").Lang("it"),
+                D("spanish-cinema","Spanish-Language","Films in Spanish","International").Lang("es"),
 
                 // ── Seasonal (date-windowed) ──
-                D("spooky-season","Spooky Season","Halloween horror","Seasonal").In(MT).Genre("Horror").Season(10,1,11,1),
-                D("holiday-cheer","Holiday Cheer","Christmas & winter holidays","Seasonal").In(MT).Occasion("christmas","holiday").Season(12,1,1,2),
+                D("spooky-season","Spooky Season","Halloween horror","Seasonal").Genre("Horror").Season(10,1,11,1),
+                D("holiday-cheer","Holiday Cheer","Christmas & winter holidays","Seasonal").Occasion("christmas","holiday").Season(12,1,1,2),
                 D("summer-blockbusters","Summer Blockbusters","Big summer fun","Seasonal").Genre("Action","Adventure").Energy(70).Season(5,25,9,5),
-                D("sweethearts","Sweetheart Cinema","Valentine's romance","Seasonal").In(MT).Genre("Romance").Season(2,1,2,15),
+                D("sweethearts","Sweetheart Cinema","Valentine's romance","Seasonal").Genre("Romance").Season(2,1,2,15),
             };
             return list;
         }

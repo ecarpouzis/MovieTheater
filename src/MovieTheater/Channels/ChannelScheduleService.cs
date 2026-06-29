@@ -24,6 +24,10 @@ namespace MovieTheater.Channels
         private static readonly TimeSpan ScheduleHorizon = TimeSpan.FromHours(48);
         private static readonly TimeSpan PruneAge = TimeSpan.FromDays(3);
 
+        // A weighted shuffle re-rolls its order on this cadence (keyed by slot start time) so a large pool
+        // rotates through its whole catalog over days instead of forever cycling one anti-repeat window.
+        private static readonly TimeSpan ShuffleRotation = TimeSpan.FromHours(3);
+
         // The rating ceiling is a full eligible-set scan, so it's cached: the answer only moves when
         // the filter or the library changes, but the age gate (List, Now, GuideGrid) needs it on every
         // call. Keyed by channel id + filter so an admin filter edit busts it; a short TTL absorbs
@@ -245,7 +249,7 @@ namespace MovieTheater.Channels
             if (filter.Runtime?.Max is double r1) q = q.Where(m => m.RuntimeMinutes <= (int)r1);
 
             if (filter.Languages.Count > 0) { var langs = filter.Languages; q = q.Where(m => m.OriginalLanguage != null && langs.Contains(m.OriginalLanguage)); }
-            if (filter.ExcludeLanguages.Count > 0) { var ex = filter.ExcludeLanguages; q = q.Where(m => m.OriginalLanguage == null || !ex.Contains(m.OriginalLanguage)); }
+            if (filter.ExcludeLanguages.Count > 0) { var ex = filter.ExcludeLanguages; q = q.Where(m => m.OriginalLanguage != null && !ex.Contains(m.OriginalLanguage)); } // "World Cinema" = a KNOWN non-English language, not unknown/null
             if (filter.Countries.Count > 0) { var cos = filter.Countries; q = q.Where(m => m.Country != null && cos.Any(c => m.Country.Contains(c))); }
 
             // Networks are a TV-only facet; a movie can't satisfy one, so a network channel excludes movies.
@@ -314,7 +318,7 @@ namespace MovieTheater.Channels
             if (filter.Runtime?.Max is double r1) q = q.Where(s => s.RuntimeMinutes <= (int)r1);
 
             if (filter.Languages.Count > 0) { var langs = filter.Languages; q = q.Where(s => s.OriginalLanguage != null && langs.Contains(s.OriginalLanguage)); }
-            if (filter.ExcludeLanguages.Count > 0) { var ex = filter.ExcludeLanguages; q = q.Where(s => s.OriginalLanguage == null || !ex.Contains(s.OriginalLanguage)); }
+            if (filter.ExcludeLanguages.Count > 0) { var ex = filter.ExcludeLanguages; q = q.Where(s => s.OriginalLanguage != null && !ex.Contains(s.OriginalLanguage)); }
             if (filter.Countries.Count > 0) { var cos = filter.Countries; q = q.Where(s => s.Country != null && cos.Any(c => s.Country.Contains(c))); }
 
             if (filter.Networks.Count > 0) { var nets = filter.Networks; q = q.Where(s => s.Network != null && nets.Any(n => s.Network.Contains(n))); }
@@ -326,8 +330,18 @@ namespace MovieTheater.Channels
                 q = q.Where(s => s.Credits.Any(c => pids.Contains(c.PersonId) && (role == null || c.Role == role)));
             }
 
-            // A series matches a path channel (e.g. "Looney Tunes") when any of its episodes' files do.
-            if (filter.PathContains.Count > 0) { var pats = filter.PathContains; q = q.Where(s => s.Episodes.Any(e => e.Playable != null && e.Playable.Files.Any(f => pats.Any(p => f.Path.Contains(p))))); }
+            // A series matches a path channel when a MAJORITY of its streamable episodes live under a
+            // matching path. Matching *any* episode let one stray file whose name happens to contain a
+            // short pattern ("Lost", "Monster", "Chainsaw") drag in a whole 900-episode show; a real
+            // show/collection folder satisfies the majority for every episode. (Movies still match on
+            // their single file in MovieQuery — a film has no episodes for a stray to outvote.)
+            if (filter.PathContains.Count > 0)
+            {
+                var pats = filter.PathContains;
+                q = q.Where(s =>
+                    s.Episodes.Count(e => e.Playable!.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null && pats.Any(p => f.Path.Contains(p)))) * 2
+                    >= s.Episodes.Count(e => e.Playable!.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null)));
+            }
 
             if (filter.UnwatchedByUserId is int uid) q = q.Where(s => !movieDb.Viewings.Any(v => v.UserID == uid && v.SeriesId == s.Id && v.ViewingType == "Seen"));
             if (filter.WantedByUserId is int wid) q = q.Where(s => movieDb.Viewings.Any(v => v.UserID == wid && v.SeriesId == s.Id && v.ViewingType == "WantToWatch"));
@@ -545,19 +559,51 @@ namespace MovieTheater.Channels
                     // sequenced, so no anti-repeat cooldown; shuffles get one bounded by the pool size.
                     bool ordered = strategy is "Marathon" or "EpisodeRoundRobin" or "ReleaseDate" or "NewestFirst";
                     int cooldownK = ordered ? 0 : Math.Min(100, Math.Max(1, eligible.Count - 1));
-                    var recent = new Queue<int>();
-                    if (items.Count > 0) recent.Enqueue(items[^1].PlayableId);
 
-                    int round = 0;
+                    // Resume from the already-materialized tail so each *incremental* extension continues the
+                    // lineup instead of restarting at the head of the canonical sequence. In steady state the
+                    // maintainer appends ~1 item per tick; the old code re-seeded `round` to 0 and `recent` to
+                    // just the last item every call, so it kept re-picking that head — collapsing a channel to
+                    // one looping episode (round-robin) or two ping-ponging films (weighted shuffle). Seed the
+                    // cooldown from the real last K titles; the ordered resume-skip below covers the
+                    // no-cooldown strategies.
+                    var recent = new Queue<int>();
+                    if (cooldownK > 0)
+                        foreach (var prev in items.Skip(Math.Max(0, items.Count - cooldownK)))
+                            recent.Enqueue(prev.PlayableId);
+
                     var queue = new Queue<EligibleItem>();
+                    int reroll = 0;       // shuffles regenerated within this call (disambiguates a tiny pool re-shuffling inside one rotation window)
+                    bool resumed = false;
                     while (cursor < horizonUtc)
                     {
                         if (queue.Count == 0)
-                            queue = GenerateRound(eligible, channel.Seed, round++, strategy);
+                        {
+                            // Shuffles re-roll on a time cadence (by slot start) so a large pool rotates
+                            // through its whole catalog over days instead of cycling one window forever;
+                            // ordered strategies ignore the round number.
+                            int round = ordered ? 0 : unchecked((int)(cursor.Ticks / ShuffleRotation.Ticks) + reroll++);
+                            queue = GenerateRound(eligible, channel.Seed, round, strategy);
+                        }
+
+                        // First round of an ordered strategy (no cooldown to lean on): advance past the
+                        // last-aired title so the rotation resumes where it left off — round-robin moves to
+                        // the next show, marathon to the next entry — instead of replaying element 0 each tick.
+                        if (ordered && !resumed)
+                        {
+                            resumed = true;
+                            if (items.Count > 0)
+                            {
+                                int lastPid = items[^1].PlayableId;
+                                while (queue.Count > 0 && queue.Peek().PlayableId != lastPid) queue.Dequeue();
+                                if (queue.Count > 0) queue.Dequeue(); // drop the last-aired item itself
+                            }
+                            if (queue.Count == 0) continue; // round consumed by the skip; regenerate the next one
+                        }
 
                         var pick = queue.Dequeue();
                         // Cooldown: defer a title that aired within the last K slots (bounded retries so a
-                        // tiny pool can't spin).
+                        // tiny pool can't spin). Seeded from the real tail above, so it holds across ticks.
                         for (int attempt = 0; cooldownK > 0 && queue.Count > 0 && attempt < queue.Count && recent.Contains(pick.PlayableId); attempt++)
                         {
                             queue.Enqueue(pick);
