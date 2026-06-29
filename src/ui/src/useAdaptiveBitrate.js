@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { rungDown, rungUp, shouldStepUp, isBottomRung } from "./streamAbr";
+import { rungDown, isBottomRung, climbTarget, isAutoQuality } from "./streamAbr";
 
 // Adaptive-bitrate state machine, shared by the Watch player and the TV/channel player so the two
 // can't drift (they used to carry byte-identical copies of this). Jellyfin hands out one rendition
@@ -9,11 +9,10 @@ import { rungDown, rungUp, shouldStepUp, isBottomRung } from "./streamAbr";
 // (each switch costs a reload, so churn is the thing to avoid).
 //
 // The page supplies what an adapt *does* (`onAdapt` — Watch restarts at the live position; TV
-// re-tunes the channel) and the opening cap (`initialBps` — Watch seeds from the connection estimate,
-// TV opens optimistically at the lossless tier). Everything else — the math, the cooldown, the
-// stall debounce — lives here, once.
+// re-tunes the channel) and a `profile` (ABR_PROFILES.desktop / .phone) that sets the opening cap,
+// the ceiling, the climb style (jump vs step) and how long a good streak must hold before climbing.
+// Everything else — the math, the cooldown, the stall debounce — lives here, once.
 const ABR_COOLDOWN_MS = 20_000;       // at most one switch per this window
-const ABR_STABLE_FOR_UP_MS = 90_000;  // only climb after a sustained good streak
 
 // Stall debounce: a single buffer stall is usually a transient bitrate spike the buffer rides out on
 // its own — only a repeated pattern means the rung is genuinely too high. Require a few DISTINCT
@@ -26,14 +25,20 @@ const ABR_STALLS_TO_DOWNSHIFT = 2;
 
 /**
  * @param qualityKeyRef ref whose `.current` is the active quality key; adaptation only runs on "auto".
- * @param initialBps    opening adaptive cap (read once at mount).
+ * @param profile       device ABR profile (ABR_PROFILES.desktop / .phone): openBps, ceilingBps,
+ *                      climbMode, stableForUpMs. openBps is read once at mount as the opening cap.
  * @param onAdapt       (nextBps) => void — apply the new cap (restart/re-tune at the live position).
  * @returns { autoBps, autoBpsRef, handleStall, handleBandwidth, adaptTo, reseed }
  */
-export function useAdaptiveBitrate({ qualityKeyRef, initialBps, onAdapt }) {
-  const [autoBps, setAutoBps] = useState(initialBps);
+export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt }) {
+  const [autoBps, setAutoBps] = useState(profile.openBps);
   const autoBpsRef = useRef(autoBps);
   autoBpsRef.current = autoBps;
+
+  // profile is read through a ref so the climb math always sees the live profile (e.g. if device
+  // class ever changes) without re-binding handleBandwidth's identity.
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
 
   // onAdapt is read through a ref so adaptTo (and thus handleStall/handleBandwidth) stay stable
   // identities across renders — the page's restart/re-tune callback is defined after this hook runs
@@ -59,7 +64,7 @@ export function useAdaptiveBitrate({ qualityKeyRef, initialBps, onAdapt }) {
 
   // Stall (debounced): only drop a rung once a repeated pattern confirms the rung is too high.
   const handleStall = useCallback(() => {
-    if (qualityKeyRef.current !== "auto" || isBottomRung(autoBpsRef.current)) return;
+    if (!isAutoQuality(qualityKeyRef.current) || isBottomRung(autoBpsRef.current)) return;
     const now = Date.now();
     if (now - lastStallSeenRef.current < ABR_STALL_EPISODE_GAP_MS) {
       lastStallSeenRef.current = now; // same ongoing stall — extend the episode, don't count it twice
@@ -75,16 +80,18 @@ export function useAdaptiveBitrate({ qualityKeyRef, initialBps, onAdapt }) {
     adaptTo(rungDown(autoBpsRef.current));
   }, [qualityKeyRef, adaptTo]);
 
-  // Throughput telemetry: climb a rung only after a sustained streak with clear headroom; any sample
-  // short of that headroom resets the streak.
+  // Throughput telemetry: climb only after a sustained streak with clear headroom; any sample short of
+  // a climb-worthy estimate resets the streak. The target (one rung up, or a jump straight to the best
+  // supported rung) and the streak length both come from the device profile.
   const handleBandwidth = useCallback((estimateBps) => {
-    if (qualityKeyRef.current !== "auto") return;
-    if (!shouldStepUp(autoBpsRef.current, estimateBps)) {
+    if (!isAutoQuality(qualityKeyRef.current)) return;
+    const target = climbTarget(autoBpsRef.current, estimateBps, profileRef.current);
+    if (target === autoBpsRef.current) {
       stableSinceRef.current = Date.now();
       return;
     }
     if (Date.now() - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
-    if (Date.now() - stableSinceRef.current >= ABR_STABLE_FOR_UP_MS) adaptTo(rungUp(autoBpsRef.current));
+    if (Date.now() - stableSinceRef.current >= profileRef.current.stableForUpMs) adaptTo(target);
   }, [qualityKeyRef, adaptTo]);
 
   // Re-seed when re-entering Auto: reset the cap and arm a fresh cooldown + streak (so a manual

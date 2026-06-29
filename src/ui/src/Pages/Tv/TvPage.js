@@ -4,7 +4,7 @@ import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
 import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, formatPlaying, deliveredLayout } from "../Watch/VideoPlayer";
 import { createHls } from "../../streamEngine";
-import { autoBpsLabel, DIRECT_BPS } from "../../streamAbr";
+import { autoBpsLabel, abrProfileFor, isAutoQuality } from "../../streamAbr";
 import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
 import { useWakeLock } from "../../useWakeLock";
 import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay, SUBTITLE_NUDGE_MS } from "../../subtitleStyle";
@@ -95,11 +95,14 @@ function TvPage({ userData }) {
   channelRef.current = channel;
   const tuneRef = useRef(null);
 
-  // Adaptive bitrate: shared state machine. A channel opens optimistically at the lossless tier; an
-  // adapt re-tunes the channel at the live offset (per-viewer — never disturbs others on the channel).
+  // Adaptive bitrate: shared state machine. The active quality picks the strategy — "Auto" opens at
+  // the lossless tier and only drops on stalls; "Mobile Auto" opens low and climbs fast to a 1080p/
+  // 8 Mbps cap (see ABR_PROFILES). An adapt re-tunes the channel at the live offset (per-viewer —
+  // never disturbs others on the channel).
+  const abrProfile = abrProfileFor(quality);
   const { autoBps, autoBpsRef, handleStall, handleBandwidth, reseed } = useAdaptiveBitrate({
     qualityKeyRef: qualityRef,
-    initialBps: DIRECT_BPS,
+    profile: abrProfile,
     onAdapt: () => {
       const ch = channelRef.current;
       if (ch) tuneRef.current?.(ch);
@@ -212,7 +215,7 @@ function TvPage({ userData }) {
   const resolveBitrate = useCallback(() => {
     const rungKey = qualityRef.current;
     const rung = QUALITY_LADDER.find((q) => q.key === rungKey) || QUALITY_LADDER[0];
-    if (rungKey !== "auto") return rung.bps; // manual rung (incl. uncapped "Original")
+    if (!isAutoQuality(rungKey)) return rung.bps; // manual rung (incl. uncapped "Original")
     const cap = autoBpsRef.current;
     return isFinite(cap) ? cap : null; // lossless tier → uncapped (the server copies the source)
   }, [autoBpsRef]);
@@ -525,7 +528,7 @@ function TvPage({ userData }) {
   // original file, so there's nothing to climb to.
   useEffect(() => {
     const sample = setInterval(() => {
-      if (qualityRef.current !== "auto") return;
+      if (!isAutoQuality(qualityRef.current)) return;
       const est = hlsRef.current?.bandwidthEstimate;
       if (est && isFinite(est)) handleBandwidth(est);
     }, 5000);
@@ -581,8 +584,8 @@ function TvPage({ userData }) {
       setQuality(key);
       window.localStorage.setItem("StreamQuality", key);
       setQualityOpen(false);
-      // Re-entering Auto reseeds optimistic (lossless) with a fresh streak.
-      if (key === "auto") reseed(DIRECT_BPS);
+      // Selecting an Auto mode reseeds at that mode's opener with a fresh streak.
+      if (isAutoQuality(key)) reseed(abrProfileFor(key).openBps);
       if (channel) tune(channel);
     },
     [channel, tune, reseed]

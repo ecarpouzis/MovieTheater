@@ -4,9 +4,9 @@
 // throughput + stalls and the page restarts the session at a new bitrate cap
 // (the same restart-at-offset machinery the manual quality menu already uses).
 //
-// The bias is deliberately asymmetric: drop fast when the connection can't keep
-// up (reliability), climb slowly and only with clear headroom (each switch costs
-// a ~2s reload and a fresh transcode, so churn is the thing to avoid).
+// Each switch costs a ~2s reload and a fresh transcode, so churn is the thing to avoid. Behavior is
+// chosen per device via ABR_PROFILES (desktop opens high and only drops; phone opens low and jumps up
+// to a 720p cap) — see those profiles for the rationale.
 
 // The uncapped/lossless tier: the server serves the original video copied bit-for-bit (a remux, no
 // re-encode), so the picture is identical to the raw file. Represented as Infinity here so the ladder
@@ -23,20 +23,30 @@ export const ABR_LADDER = [DIRECT_BPS, 12_000_000, 8_000_000, 4_000_000, 1_500_0
 const TOP_FINITE = 12_000_000;
 const BOTTOM = ABR_LADDER[ABR_LADDER.length - 1];
 
-// Pick the opening cap before any segment has loaded. navigator.connection.downlink
-// (Mbps) exists on Chromium/Android; elsewhere we can't measure yet, so start at a
-// safe middle rung and let the running estimate climb it.
-export function initialAutoBps() {
-  const downlinkMbps = navigator.connection && navigator.connection.downlink;
-  if (!downlinkMbps || !isFinite(downlinkMbps) || downlinkMbps <= 0) {
-    return 4_000_000; // unknown: 720p/4M is a reliable opener
-  }
-  const usableBps = downlinkMbps * 1_000_000 * 0.7; // leave headroom for variability
-  // A genuinely fat link opens straight at the lossless tier; otherwise the highest transcode rung
-  // that fits, and the running estimate climbs from there (possibly all the way to lossless).
-  if (usableBps >= TOP_FINITE * 1.5) return DIRECT_BPS;
-  return ABR_LADDER.find((bps) => isFinite(bps) && bps <= usableBps) ?? BOTTOM;
-}
+// Two user-selectable Auto modes (each a menu item, alongside the fixed rungs and "Original"). The
+// active quality key picks the profile — there is NO device sniffing; the viewer chooses.
+//   "auto"        — open at the lossless tier and only ever DROP on sustained stalls. Best picture by
+//                   default; a wired/fast link rarely needs to back off. (Climbing the ladder from a
+//                   low opener forced a transcode restart — a multi-second rebuffer — at every rung,
+//                   which on an on-network link is pure churn.)
+//   "auto-mobile" — "Mobile Auto": open LOW for an instant first frame and a small data hit on
+//                   cellular/flaky links, then climb FAST. Capped at 1080p/8 Mbps (full-quality 1080p
+//                   — streaming-service territory; the 12 Mbps rung is wasted cellular data on a phone
+//                   screen, and decode was never the limit), and the climb JUMPS straight to the best
+//                   rung the link supports, so it reaches its ceiling in ONE restart instead of
+//                   stalling at every rung on the way up. The shared 400MB/120s player buffer
+//                   (streamEngine.createHls) covers this path too, so the cap is safe from the
+//                   bitrate-spike starvation we hit on uncapped streams.
+export const ABR_PROFILES = {
+  auto: { openBps: DIRECT_BPS, ceilingBps: DIRECT_BPS, climbMode: "step", stableForUpMs: 90_000 },
+  "auto-mobile": { openBps: 1_500_000, ceilingBps: 8_000_000, climbMode: "jump", stableForUpMs: 8_000 },
+};
+
+// The quality keys that engage adaptation (vs a fixed rung / "Original"). Both Auto modes do.
+export const isAutoQuality = (key) => key === "auto" || key === "auto-mobile";
+
+// The ABR profile for an active quality key (defaults to the standard "auto" profile).
+export const abrProfileFor = (key) => ABR_PROFILES[key] || ABR_PROFILES.auto;
 
 // One rung down, clamped at the bottom (DIRECT_BPS → the top transcode rung, etc.).
 export function rungDown(bps) {
@@ -44,24 +54,22 @@ export function rungDown(bps) {
   return next ?? BOTTOM;
 }
 
-// One rung up, clamped at the top (the lossless tier).
-export function rungUp(bps) {
-  const higher = ABR_LADDER.filter((rung) => rung > (bps ?? BOTTOM));
-  return higher.length ? higher[higher.length - 1] : DIRECT_BPS;
-}
-
-export const isTopRung = (bps) => (bps ?? DIRECT_BPS) >= DIRECT_BPS;
 export const isBottomRung = (bps) => (bps ?? DIRECT_BPS) <= BOTTOM;
 
-// Headroom rule for climbing: only step up when the measured throughput comfortably exceeds the
-// *next* rung's bitrate (1.5×), so we don't immediately stall back down. The next rung up from the
-// top transcode cap is the lossless tier (infinite target) — there, gate on clearly beating the top
-// transcode rung, since a connection that sustains >18 Mbps will almost always carry our originals.
-export function shouldStepUp(bps, estimateBps) {
-  if (isTopRung(bps) || !estimateBps || !isFinite(estimateBps)) return false;
-  const next = rungUp(bps);
-  const target = isFinite(next) ? next : TOP_FINITE;
-  return estimateBps >= target * 1.5;
+// The rung Auto should climb UP to given a fresh throughput estimate, honoring the profile's ceiling
+// and climb style — or the current cap unchanged when no climb is warranted. A rung is eligible only
+// when the link clears it with headroom (1.5×) so we don't immediately stall back down; the lossless
+// tier (infinite) gates on clearly beating the top transcode rung. "jump" returns the HIGHEST eligible
+// rung (one restart instead of four); "step" advances a single rung.
+export function climbTarget(currentBps, estimateBps, profile) {
+  if (!estimateBps || !isFinite(estimateBps)) return currentBps;
+  const cur = currentBps ?? BOTTOM;
+  const eff = ABR_LADDER.filter((rung) => rung <= profile.ceilingBps); // top→bottom, capped at ceiling
+  const supported = (rung) =>
+    isFinite(rung) ? estimateBps >= rung * 1.5 : estimateBps >= TOP_FINITE * 1.5;
+  const higher = eff.filter((rung) => rung > cur && supported(rung)); // top→bottom
+  if (!higher.length) return currentBps;
+  return profile.climbMode === "jump" ? higher[0] : higher[higher.length - 1];
 }
 
 // Human label for the active adaptive cap, e.g. "Auto · 4 Mbps" — or "Auto · Original" at the

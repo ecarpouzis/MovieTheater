@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
-import { initialAutoBps, autoBpsLabel } from "../../streamAbr";
+import { autoBpsLabel, abrProfileFor, isAutoQuality } from "../../streamAbr";
 import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
 import VideoPlayer, { formatTime, TICKS_PER_SECOND, QUALITY_LADDER } from "./VideoPlayer";
 import "./WatchPage.css";
@@ -81,10 +81,15 @@ function WatchPage({ userData }) {
   // An adapt restarts the stream at the live position. Late-bound through a ref because
   // restartAtPosition is defined below (it depends on the autoBpsRef this hook owns).
   const restartAtPositionRef = useRef(null);
+  // The active quality picks the ABR strategy: "Auto" opens at the lossless tier and only drops on
+  // stalls; "Mobile Auto" opens low and climbs fast to a 1080p/8 Mbps cap (see ABR_PROFILES). Fixed
+  // rungs ignore the profile entirely.
+  const abrProfile = abrProfileFor(qualityKey);
   const { autoBps, autoBpsRef, handleStall, handleBandwidth, reseed } = useAdaptiveBitrate({
     qualityKeyRef,
-    initialBps: initialAutoBps(),
-    onAdapt: (nextBps) => restartAtPositionRef.current?.({ quality: "auto", bpsOverride: nextBps }),
+    profile: abrProfile,
+    onAdapt: (nextBps) =>
+      restartAtPositionRef.current?.({ quality: qualityKeyRef.current, bpsOverride: nextBps }),
   });
 
   const goBack = useCallback(() => {
@@ -108,7 +113,7 @@ function WatchPage({ userData }) {
       const bps =
         bpsOverride !== undefined
           ? bpsOverride
-          : quality === "auto"
+          : isAutoQuality(quality)
           ? autoBpsRef.current
           : (QUALITY_LADDER.find((q) => q.key === quality) || QUALITY_LADDER[0]).bps;
       // The lossless tier (Auto at the top, or manual "Original") carries no cap — a null bitrate tells
@@ -237,11 +242,12 @@ function WatchPage({ userData }) {
     (rung) => {
       setQualityKey(rung.key);
       window.localStorage.setItem("StreamQuality", rung.key);
-      // Re-entering Auto reseeds from the connection estimate and a fresh streak.
-      if (rung.key === "auto") {
-        const seed = initialAutoBps();
-        reseed(seed);
-        restartAtPosition({ quality: "auto", bpsOverride: seed });
+      // Selecting an Auto mode reseeds at that mode's opener with a fresh streak, then adapts from
+      // there; a fixed rung just restarts at its cap.
+      if (isAutoQuality(rung.key)) {
+        const opener = abrProfileFor(rung.key).openBps;
+        reseed(opener);
+        restartAtPosition({ quality: rung.key, bpsOverride: opener });
       } else {
         restartAtPosition({ quality: rung.key });
       }

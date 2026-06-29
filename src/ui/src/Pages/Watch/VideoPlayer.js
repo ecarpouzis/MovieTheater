@@ -3,6 +3,7 @@ import Hls from "hls.js";
 import { createHls } from "../../streamEngine";
 import { useWakeLock } from "../../useWakeLock";
 import { detectStreamCapabilities } from "../../streamCapabilities";
+import { isAutoQuality } from "../../streamAbr";
 import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay, SUBTITLE_NUDGE_MS } from "../../subtitleStyle";
 import { SubtitleStyleControls, SubtitleStylePreview } from "../../SubtitleStyleEditor";
 import "./VideoPlayer.css";
@@ -22,6 +23,7 @@ const TICKS_PER_SECOND = 10_000_000;
 // direct-stream with no re-encode. The numbered rungs pin a fixed cap.
 export const QUALITY_LADDER = [
   { key: "auto", label: "Auto", bps: null, hint: "adapts to your connection" },
+  { key: "auto-mobile", label: "Mobile Auto", bps: null, hint: "low data · caps at 1080p" },
   { key: "original", label: "Original", bps: null, hint: "direct stream when possible" },
   { key: "1080-12", label: "1080p", bps: 12_000_000, hint: "12 Mbps" },
   { key: "1080-8", label: "1080p", bps: 8_000_000, hint: "8 Mbps" },
@@ -47,7 +49,7 @@ export function formatPlaying({ qualityKey, autoLabel, videoCodec, isDirectStrea
   const parts = [isDirectStream ? "Original · no re-encode" : "Transcoded"];
   if (!isDirectStream) {
     parts.push(
-      qualityKey === "auto"
+      isAutoQuality(qualityKey)
         ? (autoLabel || "Auto").replace(/^Auto · /, "")
         : [rung?.label, rung?.hint].filter(Boolean).join(" ")
     );
@@ -546,6 +548,15 @@ function VideoPlayer({
     [togglePlay, seekBy, seekDisplay, toggleFullscreen, displayDuration, subtitleTracks, selectedSubtitleIndex, onSelectSubtitle, wakeControls, activeTextSub, nudgeSubtitle]
   );
 
+  // Listen on window (not just the focused stage) so the spacebar pauses the moment the player is up —
+  // no click-to-focus first — matching the TV player. The INPUT/TEXTAREA guard inside keeps the volume
+  // slider and any field typing intact. VideoPlayer is only mounted while a film is playing, so this
+  // never steals keys from the resume/ended cards.
+  useEffect(() => {
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onKeyDown]);
+
   // ── scrubber pointer logic ──────────────────────────────────────────────────
   const timeFromPointer = useCallback(
     (clientX) => {
@@ -609,7 +620,6 @@ function VideoPlayer({
       tabIndex={0}
       role="application"
       aria-label={`Video player: ${title || ""}`}
-      onKeyDown={onKeyDown}
       onMouseMove={wakeControls}
       onMouseLeave={() => playing && setControlsVisible(false)}
     >
