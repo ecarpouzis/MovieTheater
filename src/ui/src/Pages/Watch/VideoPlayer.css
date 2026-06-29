@@ -283,6 +283,30 @@
   mask: linear-gradient(#000 0 0) top right / 6px 6px no-repeat, linear-gradient(#000 0 0) bottom left / 6px 6px no-repeat;
 }
 
+/* Picture-in-picture: outer frame with a small inset box in the lower-right corner. */
+.vp-glyph-pip {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+.vp-glyph-pip::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 7px;
+  height: 6px;
+  background: currentColor;
+  border-radius: 1px;
+}
+.vp-btn-pip--on {
+  color: var(--vp-gold);
+}
+
 .vp-volume {
   display: inline-flex;
   align-items: center;

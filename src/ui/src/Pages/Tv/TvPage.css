@@ -557,6 +557,27 @@
   mask: linear-gradient(#000 0 0) top right / 6px 6px no-repeat, linear-gradient(#000 0 0) bottom left / 6px 6px no-repeat;
 }
 
+/* Picture-in-picture: outer frame with a small inset box in the lower-right corner. */
+.tv-glyph-pip {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+.tv-glyph-pip::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 7px;
+  height: 6px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
 @keyframes tv-unmute-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(64, 169, 255, 0.35); }
   50% { box-shadow: 0 0 0 8px rgba(64, 169, 255, 0); }

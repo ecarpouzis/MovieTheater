@@ -79,10 +79,15 @@ namespace MovieTheater.Controllers
             public bool SupportsAc3 { get; set; }   // MSE decodes Dolby Digital (AC-3) → copy/keep surround
             public bool SupportsEac3 { get; set; }  // MSE decodes Dolby Digital Plus (E-AC-3)
             public int? MaxAudioChannels { get; set; } // output channels the client can emit (5.1 = 6)
+            public bool SupportsHevcMain10 { get; set; }  // MSE decodes 10-bit HEVC (Main 10) → may copy it
+            public bool SupportsAv110Bit { get; set; }    // MSE decodes 10-bit AV1 → may copy HDR/10-bit AV1
+            public bool SupportsHeAac { get; set; }       // MSE decodes HE-AAC (SBR); else HE-AAC must transcode
+            public bool SupportsDolbyVision { get; set; } // decodes Dolby Vision → DOVI ranges may pass through
 
             public ClientCapabilities ToCapabilities() =>
                 new(SupportsHevc, SupportsAv1, SupportsHdr, SupportsFmp4, SupportsMp3,
-                    SupportsAc3, SupportsEac3, MaxAudioChannels ?? 2);
+                    SupportsAc3, SupportsEac3, MaxAudioChannels ?? 2,
+                    SupportsHevcMain10, SupportsAv110Bit, SupportsHeAac, SupportsDolbyVision);
         }
 
         [HttpPost("/API/Stream/Start")]

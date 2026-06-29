@@ -188,7 +188,12 @@ namespace MovieTheater.Services.Jellyfin
             // copy path): an SDR client that *copies* an HDR HEVC source renders washed-out,
             // so restrict which ranges may be copied — non-HDR clients fall through to a
             // tonemapping transcode. The copy path is the only no-cost HDR passthrough.
-            string allowedRanges = caps.Hdr ? "SDR|HDR10|HLG|HDR10Plus|DOVI" : "SDR";
+            // Dolby Vision (DOVI*) is split out: only a client that actually DECODES DV (≈Safari)
+            // may copy a DOVI source — a non-DV browser that copies it renders broken, so without
+            // the DV flag DOVI is excluded and the source tonemaps/transcodes instead.
+            string allowedRanges = caps.Hdr ? "SDR|HDR10|HLG|HDR10Plus" : "SDR";
+            if (caps.DolbyVision)
+                allowedRanges += "|DOVI|DOVIWithHDR10|DOVIWithHLG|DOVIWithSDR|DOVIWithHDR10Plus";
 
             var codecProfiles = new List<object>
             {
@@ -199,6 +204,12 @@ namespace MovieTheater.Services.Jellyfin
                     Conditions = new object[]
                     {
                         new { Condition = "LessThanEqual", Property = "VideoLevel", Value = "51", IsRequired = false },
+                        // Exclude 10-bit H.264 (profile "high 10", i.e. Hi10P — common in fansub anime) and
+                        // other exotic profiles from the copy path: browser MSE can't decode them, so a copied
+                        // Hi10P source plays as green/garbage/audio-only with no fallback. Failing this
+                        // condition forces an 8-bit transcode instead. We don't probe high-10 client support,
+                        // so allow only the universally-decodable profiles.
+                        new { Condition = "EqualsAny", Property = "VideoProfile", Value = "high|main|baseline|constrained baseline", IsRequired = false },
                     },
                 },
             };
@@ -212,6 +223,38 @@ namespace MovieTheater.Services.Jellyfin
                     {
                         new { Condition = "LessThanEqual", Property = "VideoLevel", Value = HevcMaxLevel, IsRequired = false },
                         new { Condition = "EqualsAny", Property = "VideoRangeType", Value = allowedRanges, IsRequired = false },
+                        // Only copy 10-bit HEVC (profile "main 10") when the client decoded the Main-10 probe;
+                        // otherwise restrict to 8-bit "main" so a Main-only decoder doesn't get garbage.
+                        new { Condition = "EqualsAny", Property = "VideoProfile", Value = caps.HevcMain10 ? "main|main 10" : "main", IsRequired = false },
+                    },
+                });
+            }
+            if (caps.Av1 && useFmp4)
+            {
+                // AV1 is copy-only (we never AV1-encode), so guard what may be copied: profile "main" (our
+                // probe is profile 0), 8-bit unless the client decoded the 10-bit probe, and HDR ranges only
+                // when it's both an HDR display and 10-bit-capable. Without this, any AV1 (4K / 10-bit / HDR)
+                // was copied on the strength of an 8-bit, low-level probe.
+                var av1Conditions = new List<object>
+                {
+                    new { Condition = "EqualsAny", Property = "VideoProfile", Value = "main", IsRequired = false },
+                    new { Condition = "EqualsAny", Property = "VideoRangeType", Value = caps.Hdr && caps.Av110Bit ? "SDR|HDR10|HLG" : "SDR", IsRequired = false },
+                };
+                if (!caps.Av110Bit)
+                    av1Conditions.Add(new { Condition = "LessThanEqual", Property = "VideoBitDepth", Value = "8", IsRequired = false });
+                codecProfiles.Add(new { Type = "Video", Codec = "av1", Conditions = av1Conditions.ToArray() });
+            }
+            if (!caps.HeAac)
+            {
+                // Client can't decode HE-AAC (SBR) → don't copy an HE-AAC track; transcode it to LC-AAC.
+                // (Most browsers decode HE-AAC, so this is usually inert.)
+                codecProfiles.Add(new
+                {
+                    Type = "VideoAudio",
+                    Codec = "aac",
+                    Conditions = new object[]
+                    {
+                        new { Condition = "NotEquals", Property = "AudioProfile", Value = "HE-AAC", IsRequired = false },
                     },
                 });
             }
@@ -227,10 +270,18 @@ namespace MovieTheater.Services.Jellyfin
                         Container = segmentContainer,
                         Type = "Video",
                         VideoCodec = videoCodec,
-                        // AAC unless the client's MSE actually decodes MP3 (caps.Mp3). Firefox's MSE has
-                        // no MP3 decoder, so copying MP3 into the HLS froze playback at 0:00 on an MP3-audio
-                        // source (e.g. Gandhi's .avi); Chrome/Safari that can play MP3 keep copying it.
-                        AudioCodec = caps.Mp3 ? "aac,mp3" : "aac",
+                        // AAC is the transcode target (first in the list); the client's decodable extras
+                        // ride as COPY candidates so a matching source track is remuxed losslessly instead
+                        // of re-encoded. MP3-over-MSE is Firefox-broken (copying MP3 froze playback at 0:00
+                        // on an MP3-audio source, e.g. Gandhi's .avi), so it's gated on caps.Mp3. AC-3/E-AC-3
+                        // (Dolby surround) are gated on real MSE decode support (Edge/Safari) — previously a
+                        // Dolby track in an MKV always re-encoded to AAC because it was only in the (mp4-only)
+                        // DirectPlay list, never the HLS path. Copying a 5.1 track still needs MaxAudioChannels
+                        // >= the source's channels (set below), so stereo clients correctly fall back to a downmix.
+                        AudioCodec = "aac"
+                            + (caps.Mp3 ? ",mp3" : "")
+                            + (caps.Ac3 ? ",ac3" : "")
+                            + (caps.Eac3 ? ",eac3" : ""),
                         Protocol = "hls",
                         Context = "Streaming",
                         MaxAudioChannels = maxAudioChannels.ToString(),
@@ -534,7 +585,8 @@ namespace MovieTheater.Services.Jellyfin
     /// </summary>
     public record ClientCapabilities(
         bool Hevc = false, bool Av1 = false, bool Hdr = false, bool Fmp4 = false, bool Mp3 = false,
-        bool Ac3 = false, bool Eac3 = false, int MaxAudioChannels = 2)
+        bool Ac3 = false, bool Eac3 = false, int MaxAudioChannels = 2,
+        bool HevcMain10 = false, bool Av110Bit = false, bool HeAac = false, bool DolbyVision = false)
     {
         /// <summary>The pre-§14 universal baseline: H.264 in MPEG-TS, stereo, nothing fancy.</summary>
         public static readonly ClientCapabilities H264Baseline = new();

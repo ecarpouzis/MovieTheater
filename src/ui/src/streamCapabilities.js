@@ -58,11 +58,26 @@ function detectHdr() {
 export function detectStreamCapabilities() {
   if (cached) return cached;
 
-  // hvc1 (Safari/most) and hev1 (some MSE builds) both denote HEVC; either is enough.
+  // hvc1 (Safari/most) and hev1 (some MSE builds) both denote HEVC; either is enough. The base probe is
+  // Main profile, 8-bit (".1").
   const supportsHevc =
     canPlay('video/mp4; codecs="hvc1.1.6.L93.B0"') ||
     canPlay('video/mp4; codecs="hev1.1.6.L93.B0"');
+  // HEVC Main 10 (10-bit, ".2"): nearly all HEVC decoders handle it (all HDR HEVC is 10-bit), but probe
+  // it so the copy path doesn't hand a Main-10 source to a Main-only 8-bit decoder (→ green/garbage).
+  const supportsHevcMain10 =
+    canPlay('video/mp4; codecs="hvc1.2.4.L153.B0"') ||
+    canPlay('video/mp4; codecs="hev1.2.4.L153.B0"');
   const supportsAv1 = canPlay('video/mp4; codecs="av01.0.05M.08"');
+  // AV1 10-bit (Main profile, high tier). Base supportsAv1 is 8-bit; this gates HDR/10-bit AV1 copy.
+  const supportsAv110bit = canPlay('video/mp4; codecs="av01.0.15M.10"');
+  // Dolby Vision decode — effectively Safari only. Copying a DOVI source to a non-DV browser renders
+  // broken, so we only advertise DOVI passthrough when the client truly decodes it (else it tonemaps).
+  const supportsDolbyVision =
+    canPlay('video/mp4; codecs="dvh1.05.06"') ||
+    canPlay('video/mp4; codecs="dvh1.08.06"') ||
+    canPlay('video/mp4; codecs="dvhe.05.06"') ||
+    canPlay('video/mp4; codecs="dvhe.08.06"');
   // fMP4/CMAF support tracks plain H.264-in-mp4 support: hls.js plays fMP4 wherever
   // it plays H.264 MSE, and Safari has native fMP4 HLS since Safari 10.
   const supportsFmp4 = canPlay('video/mp4; codecs="avc1.42E01E"');
@@ -71,6 +86,9 @@ export function detectStreamCapabilities() {
   // this is false the server transcodes audio to AAC instead. (Safari uses native HLS and
   // plays MP3 regardless; unknown/old → false → AAC, the safe baseline.)
   const supportsMp3 = canPlay('audio/mp4; codecs="mp4a.40.34"');
+  // HE-AAC (SBR, mp4a.40.5). Near-universal, but when a client can't decode it an HE-AAC source must be
+  // transcoded to LC-AAC rather than copied (a copied HE-AAC track would play silent/broken there).
+  const supportsHeAac = canPlay('audio/mp4; codecs="mp4a.40.5"');
   // Dolby Digital (AC-3) and Dolby Digital Plus (E-AC-3): if MSE/the <video> element decodes these,
   // the server can copy a surround track losslessly (or transcode a DTS source to it) instead of
   // downmixing to stereo. Chrome/Edge desktop decode both; the browser then emits multichannel LPCM.
@@ -79,6 +97,9 @@ export function detectStreamCapabilities() {
   const maxAudioChannels = detectMaxAudioChannels();
   const supportsHdr = detectHdr();
 
-  cached = { supportsHevc, supportsAv1, supportsHdr, supportsFmp4, supportsMp3, supportsAc3, supportsEac3, maxAudioChannels };
+  cached = {
+    supportsHevc, supportsHevcMain10, supportsAv1, supportsAv110bit, supportsHdr, supportsDolbyVision,
+    supportsFmp4, supportsMp3, supportsAc3, supportsEac3, supportsHeAac, maxAudioChannels,
+  };
   return cached;
 }

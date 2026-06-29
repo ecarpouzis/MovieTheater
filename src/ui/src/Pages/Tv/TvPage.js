@@ -7,6 +7,8 @@ import { createHls } from "../../streamEngine";
 import { autoBpsLabel, abrProfileFor, isAutoQuality } from "../../streamAbr";
 import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
 import { useWakeLock } from "../../useWakeLock";
+import { useMediaSession } from "../../useMediaSession";
+import { usePictureInPicture } from "../../usePictureInPicture";
 import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay } from "../../subtitleStyle";
 import { SubtitleStyleControls, SubtitleStylePreview, SubtitleSyncControls } from "../../SubtitleStyleEditor";
 
@@ -783,6 +785,25 @@ function TvPage({ userData }) {
     [channel, tune]
   );
 
+  // OS media integration (shared hook): lock-screen now-playing + media keys. TV maps play/pause to the
+  // SHARED channel pause (same as the on-screen button) and prev/next to channel down/up; no seek (the
+  // channel timeline is shared and forward-only). Position state still drives a read-only lock scrubber.
+  const pip = usePictureInPicture(videoRef);
+  useMediaSession({
+    videoRef,
+    title: now?.current?.title,
+    subtitle: channel?.name,
+    poster: now?.current?.posterId
+      ? MovieAPI.getPosterThumbnail(now.current.posterId, now.current.posterVersion, now.current.kind)
+      : null,
+    actions: {
+      play: () => { if (pausedRef.current) togglePlayPause(); },
+      pause: () => { if (!pausedRef.current) togglePlayPause(); },
+      previoustrack: () => switchBy(-1),
+      nexttrack: () => switchBy(1),
+    },
+  });
+
   // Map a pointer's x to a position on the bar → { pct 0..1, seconds into the film }.
   const offsetFromPointer = useCallback(
     (clientX) => {
@@ -1315,6 +1336,16 @@ function TvPage({ userData }) {
               aria-label="Volume"
             />
           </div>
+
+          {pip.supported && (
+            <button
+              className={`tv-bar-icon-btn${pip.active ? " tv-bar-icon-btn--on" : ""}`}
+              onClick={(e) => { e.stopPropagation(); pip.toggle(); }}
+              title="Picture in picture"
+            >
+              <span className="tv-glyph-pip" />
+            </button>
+          )}
 
           <button
             className="tv-bar-icon-btn"

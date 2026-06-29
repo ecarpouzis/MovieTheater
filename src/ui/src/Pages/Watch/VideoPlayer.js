@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
 import { createHls } from "../../streamEngine";
 import { useWakeLock } from "../../useWakeLock";
+import { useMediaSession } from "../../useMediaSession";
+import { usePictureInPicture } from "../../usePictureInPicture";
+import { usePlaybackRate, PLAYBACK_RATES } from "../../usePlaybackRate";
 import { detectStreamCapabilities } from "../../streamCapabilities";
 import { isAutoQuality } from "../../streamAbr";
 import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay, SUBTITLE_NUDGE_MS } from "../../subtitleStyle";
@@ -197,10 +200,15 @@ function VideoPlayer({
     setFatalError(null);
     sourceReloadRef.current = { at: performance.now(), startAt }; // watchdog: note (re)loads of the source
 
-    const seekToStart = () => {
-      if (startAt > 0.5) video.currentTime = startAt;
+    const tryPlay = () => {
       const attempt = video.play();
       if (attempt) attempt.then(() => setNeedsTap(false)).catch(() => setNeedsTap(true));
+    };
+    // Native branches (direct play, Safari HLS) have no startPosition knob, so they seek the element
+    // once metadata is in. The hls.js branch instead opens AT the offset (see startPosition below).
+    const seekToStart = () => {
+      if (startAt > 0.5) video.currentTime = startAt;
+      tryPlay();
     };
 
     let hls = null;
@@ -214,6 +222,11 @@ function VideoPlayer({
       // Watch and TV players can't drift. Watch keeps a 90s back buffer (it's freely rewindable).
       hls = createHls({
         backBufferLength: 90,
+        // Open AT the resume/restart offset rather than loading from 0 then seeking — load-then-seek
+        // wastes a segment-0 fetch (a second cold transcode start) and is the join-time A/V-desync churn
+        // our TV player already avoids this way. This effect re-runs with startAt at the live position on
+        // every resume / quality-audio-subtitle change / ABR adapt, so each restart re-seeds cleanly.
+        startPosition: startAt > 0.5 ? startAt : undefined,
         onStall,
         onFatal: () => setFatalError("Playback failed — the stream could not be decoded."),
       });
@@ -223,7 +236,7 @@ function VideoPlayer({
       const recordHls = (name) => () => { lastHlsEventRef.current = { name, at: performance.now() }; };
       [Hls.Events.MANIFEST_PARSED, Hls.Events.LEVEL_LOADED, Hls.Events.LEVEL_SWITCHED,
         Hls.Events.FRAG_CHANGED, Hls.Events.BUFFER_FLUSHED].forEach((ev) => hls.on(ev, recordHls(ev)));
-      hls.on(Hls.Events.MANIFEST_PARSED, seekToStart);
+      hls.on(Hls.Events.MANIFEST_PARSED, tryPlay); // position handled by startPosition, not a post-load seek
       hls.loadSource(src);
       hls.attachMedia(video);
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
@@ -379,41 +392,6 @@ function VideoPlayer({
   // Keep the screen awake during a film — shared with the TV player.
   useWakeLock();
 
-  // ── Media Session: title + poster on the OS media overlay ──────────────────
-  useEffect(() => {
-    if (!("mediaSession" in navigator)) return undefined;
-    navigator.mediaSession.metadata = new window.MediaMetadata({
-      title: title || "MovieTheater",
-      artist: metaLine || "",
-      artwork: poster ? [{ src: poster, sizes: "512x512", type: "image/jpeg" }] : [],
-    });
-    const video = () => videoRef.current;
-    const handlers = [
-      ["play", () => video()?.play()],
-      ["pause", () => video()?.pause()],
-      ["seekbackward", () => seekBy(-10)],
-      ["seekforward", () => seekBy(10)],
-      ["seekto", (e) => seekTo(e.seekTime)],
-    ];
-    for (const [action, handler] of handlers) {
-      try {
-        navigator.mediaSession.setActionHandler(action, handler);
-      } catch {
-        /* action unsupported */
-      }
-    }
-    return () => {
-      for (const [action] of handlers) {
-        try {
-          navigator.mediaSession.setActionHandler(action, null);
-        } catch {
-          /* ignore */
-        }
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, metaLine, poster]);
-
   // ── fullscreen ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const onChange = () => setFullscreen(!!document.fullscreenElement);
@@ -469,6 +447,25 @@ function VideoPlayer({
     [combined, partOffset, duration, seekTo, onSeekGlobal]
   );
 
+  // ── OS media integration + extra playback controls (shared hooks) ────────────
+  const { rate: playbackRate, setRate: setPlaybackRate, cycleRate } = usePlaybackRate(videoRef, src);
+  const pip = usePictureInPicture(videoRef);
+  // Lock-screen / media-key now-playing + an accurate position scrubber (setPositionState lives in the
+  // hook). Defined here so the seek handlers it references are already in scope.
+  useMediaSession({
+    videoRef,
+    title,
+    subtitle: metaLine,
+    poster,
+    actions: {
+      play: () => videoRef.current?.play(),
+      pause: () => videoRef.current?.pause(),
+      seekbackward: () => seekBy(-10),
+      seekforward: () => seekBy(10),
+      seekto: (d) => { if (d?.seekTime != null) seekTo(d.seekTime); },
+    },
+  });
+
   // ── controls visibility: fade like house lights ─────────────────────────────
   const wakeControls = useCallback(() => {
     setControlsVisible(true);
@@ -523,6 +520,12 @@ function VideoPlayer({
         case "m":
           setMuted((m) => !m);
           break;
+        case "<":
+          cycleRate(-1);
+          break;
+        case ">":
+          cycleRate(1);
+          break;
         case "f":
           toggleFullscreen();
           break;
@@ -551,7 +554,7 @@ function VideoPlayer({
         wakeControls();
       }
     },
-    [togglePlay, seekBy, seekDisplay, toggleFullscreen, displayDuration, subtitleTracks, selectedSubtitleIndex, onSelectSubtitle, wakeControls, activeTextSub, nudgeSubtitle]
+    [togglePlay, seekBy, seekDisplay, toggleFullscreen, displayDuration, subtitleTracks, selectedSubtitleIndex, onSelectSubtitle, wakeControls, activeTextSub, nudgeSubtitle, cycleRate]
   );
 
   // Listen on window (not just the focused stage) so the spacebar pauses the moment the player is up —
@@ -874,6 +877,23 @@ function VideoPlayer({
                   </>
                 )}
 
+                <div className="vp-menu-section">Speed</div>
+                {PLAYBACK_RATES.map((r) => (
+                  <button
+                    key={r}
+                    role="menuitemradio"
+                    aria-checked={playbackRate === r}
+                    className={`vp-menu-item${playbackRate === r ? " vp-menu-item--on" : ""}`}
+                    onClick={() => {
+                      setOpenMenu(null);
+                      setPlaybackRate(r);
+                    }}
+                  >
+                    <span className="vp-menu-dot" />
+                    {r === 1 ? "Normal" : `${r}×`}
+                  </button>
+                ))}
+
                 <div className="vp-menu-section">Playing</div>
                 <div className="vp-menu-readout">
                   {formatPlaying({
@@ -887,6 +907,17 @@ function VideoPlayer({
               </div>
             )}
           </div>
+
+          {pip.supported && (
+            <button
+              className={`vp-btn vp-btn-pip${pip.active ? " vp-btn-pip--on" : ""}`}
+              onClick={pip.toggle}
+              aria-label="Picture in picture"
+              title="Picture in picture"
+            >
+              <span className="vp-glyph-pip" />
+            </button>
+          )}
 
           <button className="vp-btn" onClick={toggleFullscreen} aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"}>
             <span className={`vp-glyph-fs${fullscreen ? " vp-glyph-fs--exit" : ""}`} />
