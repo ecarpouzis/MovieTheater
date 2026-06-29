@@ -7,8 +7,8 @@ import { createHls } from "../../streamEngine";
 import { autoBpsLabel, abrProfileFor, isAutoQuality } from "../../streamAbr";
 import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
 import { useWakeLock } from "../../useWakeLock";
-import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay, SUBTITLE_NUDGE_MS } from "../../subtitleStyle";
-import { SubtitleStyleControls, SubtitleStylePreview } from "../../SubtitleStyleEditor";
+import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay } from "../../subtitleStyle";
+import { SubtitleStyleControls, SubtitleStylePreview, SubtitleSyncControls } from "../../SubtitleStyleEditor";
 
 import ChannelAdminModal from "./ChannelAdminModal";
 import ChannelGrid from "./ChannelGrid";
@@ -61,6 +61,7 @@ function TvPage({ userData }) {
   const [playingAudioIndex, setPlayingAudioIndex] = useState(null); // what's actually playing, for the menu highlight
   const [playingVideoCodec, setPlayingVideoCodec] = useState(null); // delivered video codec, for the "Playing" readout
   const [playingDirect, setPlayingDirect] = useState(false); // true = original copied (no re-encode), for the readout
+  const [playingFrameRate, setPlayingFrameRate] = useState(null); // source video fps, for the subtitle frame-rate fix
   const [subtitleIndex, setSubtitleIndex] = useState(null); // burned-in subtitle stream; null = off
   const [audioOpen, setAudioOpen] = useState(false);
   const [subsOpen, setSubsOpen] = useState(false);
@@ -73,7 +74,10 @@ function TvPage({ userData }) {
     nudge: nudgeSubtitle,
     reset: resetSubtitleOffset,
     toast: offsetToast,
-  } = useSubtitleOffset(videoRef, subtitleIndex, subtitleTracks);
+    subFps,
+    setSubFps,
+    fpsOptions,
+  } = useSubtitleOffset(videoRef, subtitleIndex, subtitleTracks, playingFrameRate);
   // The selected SOFT (sidecar VTT) subtitle — only these can be re-timed client-side, so the delay
   // UI gates on it (burned-in image subs are baked into the transcode and can't be moved).
   const activeTextSub = subtitleTracks.find((t) => t.index === subtitleIndex && !!t.deliveryUrl) || null;
@@ -359,6 +363,7 @@ function TvPage({ userData }) {
         setPlayingAudioIndex(session.selectedAudioIndex ?? null);
         setPlayingVideoCodec(session.videoCodec ?? null);
         setPlayingDirect(!!session.isDirectStream);
+        setPlayingFrameRate(session.videoFrameRate ?? null);
 
         const video = videoRef.current;
         if (!video) return;
@@ -1043,33 +1048,17 @@ function TvPage({ userData }) {
                         {!t.deliveryUrl && <span className="tv-qopt-hint">burned in</span>}
                       </button>
                     ))}
-                    {/* subtitle timing nudge — only for soft text tracks (client-side re-time, per-viewer) */}
+                    {/* subtitle timing fix — soft text tracks only (client-side re-time, per-viewer) */}
                     {activeTextSub && (
-                      <div className="tv-sub-delay">
-                        <span className="tv-sub-delay-label">Delay</span>
-                        <button
-                          className="tv-sub-delay-btn"
-                          onClick={() => nudgeSubtitle(-SUBTITLE_NUDGE_MS)}
-                          aria-label="Subtitles earlier"
-                        >
-                          −
-                        </button>
-                        <span className="tv-sub-delay-val">{formatDelay(subtitleOffsetMs)}</span>
-                        <button
-                          className="tv-sub-delay-btn"
-                          onClick={() => nudgeSubtitle(SUBTITLE_NUDGE_MS)}
-                          aria-label="Subtitles later"
-                        >
-                          +
-                        </button>
-                        <button
-                          className="tv-sub-delay-reset"
-                          onClick={resetSubtitleOffset}
-                          disabled={subtitleOffsetMs === 0}
-                        >
-                          Reset
-                        </button>
-                      </div>
+                      <SubtitleSyncControls
+                        offsetMs={subtitleOffsetMs}
+                        nudge={nudgeSubtitle}
+                        reset={resetSubtitleOffset}
+                        subFps={subFps}
+                        setSubFps={setSubFps}
+                        fpsOptions={fpsOptions}
+                        videoFrameRate={playingFrameRate}
+                      />
                     )}
                     {/* caption appearance editor (shared with the Watch player) + live on-video preview */}
                     <button

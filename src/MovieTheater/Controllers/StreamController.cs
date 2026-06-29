@@ -239,7 +239,11 @@ namespace MovieTheater.Controllers
                 .Select(p => (long?)p.PositionTicks)
                 .FirstOrDefaultAsync();
 
-            var sourceVideoCodec = source.MediaStreams.FirstOrDefault(s => s.Type == "Video")?.Codec;
+            var sourceVideoStream = source.MediaStreams.FirstOrDefault(s => s.Type == "Video");
+            var sourceVideoCodec = sourceVideoStream?.Codec;
+            // The source's true frame rate, so the client can offer a frame-rate subtitle-sync fix
+            // (an external sub authored for a different fps drifts linearly — no constant delay fixes it).
+            var videoFrameRate = sourceVideoStream?.RealFrameRate ?? sourceVideoStream?.AverageFrameRate;
 
             string playbackUrl;
             bool isHls;
@@ -306,6 +310,7 @@ namespace MovieTheater.Controllers
                 // The codec the player will actually receive (copied or encoded) — drives the
                 // "HEVC"/"Direct" readout and confirms §14.1 negotiation worked.
                 videoCodec = outputVideoCodec,
+                videoFrameRate,
                 audioTracks,
                 subtitleTracks,
                 // The tracks currently playing, so the player highlights them and (for audio) reflects

@@ -5,7 +5,7 @@ import { useWakeLock } from "../../useWakeLock";
 import { detectStreamCapabilities } from "../../streamCapabilities";
 import { isAutoQuality } from "../../streamAbr";
 import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay, SUBTITLE_NUDGE_MS } from "../../subtitleStyle";
-import { SubtitleStyleControls, SubtitleStylePreview } from "../../SubtitleStyleEditor";
+import { SubtitleStyleControls, SubtitleStylePreview, SubtitleSyncControls } from "../../SubtitleStyleEditor";
 import "./VideoPlayer.css";
 
 // The delivered layout is capped at what this client can actually emit, so a stereo machine reads
@@ -99,6 +99,7 @@ function VideoPlayer({
   isHls = true,
   isDirectStream = false,
   videoCodec = null,
+  videoFrameRate = null,
   qualityKey = "original",
   qualityDetail = null,
   audioTracks = [],
@@ -153,7 +154,10 @@ function VideoPlayer({
     nudge: nudgeSubtitle,
     reset: resetSubtitleOffset,
     toast: offsetToast,
-  } = useSubtitleOffset(videoRef, selectedSubtitleIndex, src);
+    subFps,
+    setSubFps,
+    fpsOptions,
+  } = useSubtitleOffset(videoRef, selectedSubtitleIndex, src, videoFrameRate);
 
   // Caption appearance (size/color/font/edge/box/lift), shared with the TV player via a hook that
   // owns persistence and the injected ::cue rule. `styleOpen` reveals the editor + on-video preview.
@@ -839,33 +843,15 @@ function VideoPlayer({
                       </button>
                     ))}
                     {activeTextSub && (
-                      <div className="vp-menu-delay">
-                        <span className="vp-menu-delay-label">Delay</span>
-                        <button
-                          className="vp-menu-delay-btn"
-                          onClick={() => nudgeSubtitle(-SUBTITLE_NUDGE_MS)}
-                          aria-label="Subtitles earlier"
-                          title="Earlier (g)"
-                        >
-                          −
-                        </button>
-                        <span className="vp-menu-delay-val">{formatDelay(subtitleOffsetMs)}</span>
-                        <button
-                          className="vp-menu-delay-btn"
-                          onClick={() => nudgeSubtitle(SUBTITLE_NUDGE_MS)}
-                          aria-label="Subtitles later"
-                          title="Later (h)"
-                        >
-                          +
-                        </button>
-                        <button
-                          className="vp-menu-delay-reset"
-                          onClick={resetSubtitleOffset}
-                          disabled={subtitleOffsetMs === 0}
-                        >
-                          Reset
-                        </button>
-                      </div>
+                      <SubtitleSyncControls
+                        offsetMs={subtitleOffsetMs}
+                        nudge={nudgeSubtitle}
+                        reset={resetSubtitleOffset}
+                        subFps={subFps}
+                        setSubFps={setSubFps}
+                        fpsOptions={fpsOptions}
+                        videoFrameRate={videoFrameRate}
+                      />
                     )}
 
                     {/* caption appearance editor — toggling it reveals the live on-video sample */}

@@ -484,6 +484,7 @@ function WatchPage({ userData }) {
           isHls={session.isHls !== false}
           isDirectStream={session.isDirectStream}
           videoCodec={session.videoCodec}
+          videoFrameRate={session.videoFrameRate}
           qualityKey={qualityKey}
           qualityDetail={autoBpsLabel(autoBps)}
           audioTracks={session.audioTracks || []}

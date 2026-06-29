@@ -9,6 +9,9 @@ import {
   SUB_COLORS,
   SUB_STYLE_DEFAULTS,
   subBg,
+  formatDelay,
+  formatFps,
+  SUBTITLE_NUDGE_MS,
 } from "./subtitleStyle";
 import "./SubtitleStyleEditor.css";
 
@@ -136,6 +139,67 @@ export function SubtitleStyleControls({ subStyle, setStyle, setSubStyle }) {
         disabled={atDefaults}
       >
         Reset to defaults
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Subtitle timing-sync controls for the showing soft track: a constant Delay (±) and — when the video's
+ * frame rate is known — a "Fix sync" frame-rate rescale for subs that drift (a constant delay can't fix
+ * linear drift). Driven entirely by the useSubtitleOffset hook; render only when a soft track is active.
+ */
+export function SubtitleSyncControls({ offsetMs, nudge, reset, subFps, setSubFps, fpsOptions, videoFrameRate }) {
+  const dirty = offsetMs !== 0 || subFps != null;
+  return (
+    <div className="substyle">
+      <div className="substyle-row">
+        <span className="substyle-label">Delay</span>
+        <div className="subsync-delay">
+          <button type="button" className="subsync-btn" onClick={() => nudge(-SUBTITLE_NUDGE_MS)} aria-label="Subtitles earlier" title="Earlier (g)">
+            −
+          </button>
+          <span className="subsync-val">{formatDelay(offsetMs)}</span>
+          <button type="button" className="subsync-btn" onClick={() => nudge(SUBTITLE_NUDGE_MS)} aria-label="Subtitles later" title="Later (h)">
+            +
+          </button>
+        </div>
+      </div>
+
+      {fpsOptions.length > 0 && (
+        <>
+          <div className="substyle-row">
+            <span className="substyle-label">Fix sync</span>
+            <div className="substyle-seg">
+              <button
+                type="button"
+                className={`substyle-segbtn${subFps == null ? " substyle-segbtn--on" : ""}`}
+                onClick={() => setSubFps(null)}
+                aria-pressed={subFps == null}
+              >
+                Off
+              </button>
+              {fpsOptions.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  className={`substyle-segbtn${subFps === f ? " substyle-segbtn--on" : ""}`}
+                  onClick={() => setSubFps(f)}
+                  aria-pressed={subFps === f}
+                >
+                  {formatFps(f)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="subsync-hint">
+            Drifts and no delay works? Video is {formatFps(videoFrameRate)} fps — pick the subtitle&rsquo;s original rate.
+          </div>
+        </>
+      )}
+
+      <button type="button" className="substyle-reset" onClick={reset} disabled={!dirty}>
+        Reset sync
       </button>
     </div>
   );

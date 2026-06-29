@@ -34,6 +34,11 @@ namespace MovieTheater.Services.Jellyfin
         public string? DeliveryUrl { get; set; }
         public string? DeliveryMethod { get; set; }
         public bool IsTextSubtitleStream { get; set; }
+        // Frames per second of a video stream (e.g. 23.976025). Lets the client offer a frame-rate
+        // subtitle-sync fix: an external sub authored for a different fps drifts linearly, which no
+        // constant delay can correct. RealFrameRate is the precise value; AverageFrameRate backs it up.
+        public double? RealFrameRate { get; set; }
+        public double? AverageFrameRate { get; set; }
     }
 
     public class JellyfinSession

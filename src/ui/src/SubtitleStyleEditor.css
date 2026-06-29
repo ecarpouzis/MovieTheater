@@ -112,6 +112,48 @@
   cursor: default;
 }
 
+/* ── subtitle timing-sync controls (delay + frame-rate fix) ─────────────────── */
+.subsync-delay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subsync-btn {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--ss-gold);
+  border-radius: 5px;
+  color: var(--ss-cream);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.subsync-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.subsync-val {
+  min-width: 60px;
+  text-align: center;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ss-cream);
+}
+
+.subsync-hint {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ss-cream-dim);
+  padding: 0 0 2px;
+}
+
 /* live on-video sample caption shown while the editor is open. z-index above both players' chrome
    so the bottom-most positions stay visible while tuning; pointer-events none so it never blocks. */
 .substyle-preview {

@@ -137,29 +137,49 @@ export function formatDelay(ms) {
   return `${sign}${Math.abs(ms)} ms`;
 }
 
+// Common subtitle authoring frame rates. When a sub drifts *linearly* (no constant delay fixes it),
+// it was almost always authored for one of these against a video running at a different rate — most
+// often a 25 fps (PAL) sub on a 23.976 fps film. The fix is to rescale the cue times, not shift them.
+export const SUB_FPS_OPTIONS = [23.976, 24, 25, 29.97];
+
+// Short fps label: 25 → "25", 23.976 → "23.98", 29.97 → "29.97".
+export function formatFps(fps) {
+  if (!fps) return "";
+  const r = Math.round(fps * 100) / 100;
+  return Number.isInteger(r) ? String(r) : r.toFixed(2);
+}
+
 /**
- * Live subtitle timing offset for the showing SOFT (sidecar VTT) track — shift its cues by ±ms so the
- * viewer can fix small sync drift. This is a purely client-side re-time of the local text track, so it
- * works in BOTH the Watch player and the (otherwise synchronized) TV/channel player without disturbing
- * anyone else. Burned-in image subs can't be moved — gate the UI on there being a soft track selected.
+ * Live subtitle timing correction for the showing SOFT (sidecar VTT) track. Two knobs, both applied
+ * from each cue's ORIGINAL times so they never compound:
+ *   • a constant delay (±ms) for subs uniformly early/late, and
+ *   • a frame-rate rescale for subs that *drift* (a constant delay can't fix linear drift). When the
+ *     sub was authored for `subFps` but the video runs at `videoFrameRate`, multiplying every cue time
+ *     by subFps/videoFrameRate realigns it. new = orig × scale + offset.
+ * Purely client-side, so it works in BOTH the Watch player and the (synchronized) TV/channel player
+ * without disturbing anyone else. Burned-in image subs can't be moved — gate the UI on a soft track.
  *
- * We stash each cue's original times (keyed by the cue) so repeated nudges measure from the source
- * timing and never compound. Cues load async and a source change reloads the VTT with fresh cue
- * objects, so we re-apply on the <track> 'load' too; `reloadKey` should change when the track set is
- * replaced (e.g. the stream src / track list). Picking a different subtitle resets the offset to 0.
+ * Cues load async and a source change reloads the VTT with fresh cue objects, so we re-apply on the
+ * <track> 'load' too; `reloadKey` should change when the track set is replaced. Picking a different
+ * subtitle resets both knobs. `videoFrameRate` (from Stream/Start) enables the fps presets.
  *
- * Returns { offsetMs, nudge(deltaMs), reset(), toast } where `toast` briefly flips true after a nudge.
+ * Returns { offsetMs, nudge, reset, toast, subFps, setSubFps, fpsOptions, videoFrameRate }.
  */
-export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey) {
+export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey, videoFrameRate = null) {
   const [offsetMs, setOffsetMs] = useState(0);
+  const [subFps, setSubFps] = useState(null); // assumed source fps of the sub; null = matched (scale 1)
   const [toast, setToast] = useState(false);
   const toastTimer = useRef(null);
   const cueOriginalsRef = useRef(new WeakMap());
 
-  // Picking a different subtitle starts its timing fresh (each file has its own sync).
+  // Picking a different subtitle starts its timing fresh (each file has its own sync + rate).
   useEffect(() => {
     setOffsetMs(0);
+    setSubFps(null);
   }, [selectedSubtitleIndex]);
+
+  // subs authored for subFps played on a videoFrameRate video need every timestamp × subFps/videoFps.
+  const scale = subFps && videoFrameRate ? subFps / videoFrameRate : 1;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -176,11 +196,11 @@ export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey) {
             orig = { start: cue.startTime, end: cue.endTime };
             cueOriginalsRef.current.set(cue, orig);
           }
-          const ns = Math.max(0, orig.start + offsetSec);
-          const ne = Math.max(ns + 0.001, orig.end + offsetSec);
-          // Set in the order that keeps start <= end at every step, or the assignment throws.
+          const ns = Math.max(0, orig.start * scale + offsetSec);
+          const ne = Math.max(ns + 0.001, orig.end * scale + offsetSec);
+          // Assign in whichever order keeps start <= end at every step (a transient start > end can throw).
           try {
-            if (offsetSec >= 0) {
+            if (ne >= cue.startTime) {
               if (cue.endTime !== ne) cue.endTime = ne;
               if (cue.startTime !== ns) cue.startTime = ns;
             } else {
@@ -188,7 +208,7 @@ export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey) {
               if (cue.endTime !== ne) cue.endTime = ne;
             }
           } catch {
-            /* a browser that disallows mutating cue times — nudge simply won't apply there */
+            /* a browser that disallows mutating cue times — correction simply won't apply there */
           }
         }
       }
@@ -197,18 +217,35 @@ export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey) {
     const tracks = Array.from(video.querySelectorAll("track"));
     tracks.forEach((t) => t.addEventListener("load", apply));
     return () => tracks.forEach((t) => t.removeEventListener("load", apply));
-  }, [videoRef, offsetMs, selectedSubtitleIndex, reloadKey]);
+  }, [videoRef, offsetMs, scale, selectedSubtitleIndex, reloadKey]);
 
-  const nudge = useCallback((deltaMs) => {
-    setOffsetMs((v) => Math.max(-SUBTITLE_OFFSET_LIMIT_MS, Math.min(SUBTITLE_OFFSET_LIMIT_MS, v + deltaMs)));
+  const flashToast = useCallback(() => {
     setToast(true);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(false), 1400);
   }, []);
 
-  const reset = useCallback(() => setOffsetMs(0), []);
+  const nudge = useCallback((deltaMs) => {
+    setOffsetMs((v) => Math.max(-SUBTITLE_OFFSET_LIMIT_MS, Math.min(SUBTITLE_OFFSET_LIMIT_MS, v + deltaMs)));
+    flashToast();
+  }, [flashToast]);
+
+  const chooseFps = useCallback((fps) => {
+    setSubFps(fps);
+    flashToast();
+  }, [flashToast]);
+
+  const reset = useCallback(() => {
+    setOffsetMs(0);
+    setSubFps(null);
+  }, []);
 
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
-  return { offsetMs, nudge, reset, toast };
+  // Offer every common authoring rate except the one matching the video (only when we know the video fps).
+  const fpsOptions = videoFrameRate
+    ? SUB_FPS_OPTIONS.filter((f) => Math.abs(f - videoFrameRate) > 0.05)
+    : [];
+
+  return { offsetMs, nudge, reset, toast, subFps, setSubFps: chooseFps, fpsOptions, videoFrameRate };
 }
