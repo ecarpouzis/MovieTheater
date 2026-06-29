@@ -69,14 +69,13 @@ Three new shared hooks, wired into both players (Watch `VideoPlayer.js` + TV `Tv
   (text/image-pgs/image-burn) + never burns PGS; both players draw it via `usePgsSubtitle.js` (libpgs
   canvas overlay; self-contained wasm-free worker bundled via Vite `?url`). libpgs is wasm-free so it
   bundled cleanly. Verify: PGS rendering, canvas overlay alignment, timing.
-- **ASS/SSA fidelity via `@jellyfin/libass-wasm`** — NOT done; needs a SHIPPING DECISION. Unlike libpgs it
-  carries a **2.3 MB wasm** the worker fetches as a sibling (no `wasmUrl` option), so it can't be `?url`-
-  bundled — must either commit the wasm+worker+legacy+font into `public/libass/` OR add a build-time copy
-  (e.g. vite-plugin-static-copy). Also needs: font plumbing (server MediaAttachments → `fonts`/`availableFonts`
-  for correct sign rendering; fallback font only otherwise), gating our `::cue` style editor + cue-offset UI
-  off for ASS tracks (route delay to libass `timeOffset`), and it switches ASS from always-working VTT to
-  raw-ASS-that-needs-libass (regression risk on a working path). Do as a focused, browser-tested pass once
-  the wasm-shipping approach is chosen.
+- **ASS/SSA fidelity via `@jellyfin/libass-wasm`** — **DONE** (commit 4a10e31, needs browser test).
+  Server advertises ass/ssa External; StreamController `IsAssSubtitle` tags kind="ass"; both players render
+  via `useAssSubtitle.js` (SubtitlesOctopus). The 2.3 MB wasm + worker + legacy + fallback font are staged
+  to `public/libass/` by `scripts/copy-libass.mjs` (prestart/prebuild hooks; gitignored; plain-Node copy to
+  dodge a rolldown-vite plugin; Docker `npm run build` fires prebuild too). ASS excluded from `<track>` and
+  the VTT-only style/delay UI. FOLLOW-UPS: embedded fonts (server MediaAttachments → libass `fonts`) so
+  signs use the right face (fallback font until then); routing the delay UI to libass `timeOffset` for ASS.
 - **Custom `<div>` subtitle renderer** (`plugin.js:1366-1403`) — beats `::cue` on iOS/macOS (system caption
   override) and unlocks secondary subtitles; an enhancement (current `::cue` works), needs browser test.
 - **Bandwidth probe for the opener** — TENSION with the deliberate "Auto opens at Original, drops on stall"
