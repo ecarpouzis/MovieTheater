@@ -53,6 +53,9 @@ namespace MovieTheater.Ingest
         [CommandOption("limit", Description = "Max insights to load this run.")]
         public int? Limit { get; set; }
 
+        [CommandOption("franchises-only", Description = "Surgically replace ONLY the Franchise tags on each subject's newest insight (any model), leaving every other facet untouched. For franchise re-curation batches — see docs/franchise-tagging-spec.md.")]
+        public bool FranchisesOnly { get; set; }
+
         private static readonly JsonSerializerOptions JsonOpts = new()
         {
             PropertyNameCaseInsensitive = true,
@@ -90,6 +93,14 @@ namespace MovieTheater.Ingest
             var liveMovieIds = (await db.Movies.Where(m => movieIds.Contains(m.id)).Select(m => m.id).ToListAsync()).ToHashSet();
             var liveSeriesIds = (await db.Series.Where(s => seriesIds.Contains(s.Id)).Select(s => s.Id).ToListAsync()).ToHashSet();
             var liveMiscIds = (await db.MiscVideos.Where(mv => miscIds.Contains(mv.Id)).Select(mv => mv.Id).ToListAsync()).ToHashSet();
+
+            // Franchise re-curation: don't insert a fresh whole insight (which would churn the good
+            // narrative/slider facets) — surgically swap just the Franchise tags on the newest insight.
+            if (FranchisesOnly)
+            {
+                await ApplyFranchisesOnlyAsync(db, batch, movieIds, seriesIds, miscIds, liveMovieIds, liveSeriesIds, liveMiscIds, w);
+                return;
+            }
 
             var subjectKeys = batch.Select(b => new { b.Kind, b.SubjectId }).ToList();
             var existing = await db.TitleInsights
@@ -174,6 +185,93 @@ namespace MovieTheater.Ingest
             await db.SaveChangesAsync();
             w.WriteLine($"\nDONE. wrote {planned} insight(s) ({replaced} replaced).");
         }
+
+        // Replace only the Franchise-category tags on each subject's newest insight (any model), leaving
+        // narrative/sliders/other tag categories intact and GeneratedUtc unchanged. Idempotent: a subject
+        // whose newest insight already carries exactly the desired franchise set is skipped. Dry-run by
+        // default; honors --limit (applied to the batch upstream). See docs/franchise-tagging-spec.md.
+        private async Task ApplyFranchisesOnlyAsync(
+            MovieDb db, List<InsightDto> batch,
+            List<int> movieIds, List<int> seriesIds, List<int> miscIds,
+            HashSet<int> liveMovieIds, HashSet<int> liveSeriesIds, HashSet<int> liveMiscIds,
+            TextWriter w)
+        {
+            // Load every insight for the batch's subjects, then index the newest per subject.
+            var insights = await db.TitleInsights
+                .Where(ti => (ti.SubjectKind == InsightSubjectKind.Movie && movieIds.Contains(ti.SubjectId))
+                          || (ti.SubjectKind == InsightSubjectKind.Series && seriesIds.Contains(ti.SubjectId))
+                          || (ti.SubjectKind == InsightSubjectKind.MiscVideo && miscIds.Contains(ti.SubjectId)))
+                .Include(ti => ti.Tags)
+                .ToListAsync();
+            var newest = insights
+                .GroupBy(ti => (ti.SubjectKind, ti.SubjectId))
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(ti => ti.GeneratedUtc).First());
+
+            int changed = 0, unchanged = 0, noInsight = 0, invalid = 0, novelTags = 0;
+
+            foreach (var d in batch)
+            {
+                if (d.Kind is not (InsightSubjectKind.Movie or InsightSubjectKind.Series or InsightSubjectKind.MiscVideo))
+                { w.WriteLine($"  ! invalid subjectKind '{d.SubjectKind}' (id {d.SubjectId})"); invalid++; continue; }
+                bool exists = d.Kind switch
+                {
+                    InsightSubjectKind.Movie => liveMovieIds.Contains(d.SubjectId),
+                    InsightSubjectKind.Series => liveSeriesIds.Contains(d.SubjectId),
+                    _ => liveMiscIds.Contains(d.SubjectId),
+                };
+                if (!exists) { w.WriteLine($"  ! no such {d.Kind} id {d.SubjectId} — skipping"); invalid++; continue; }
+
+                // Desired franchise set from the batch entry — Franchise tags only.
+                var desired = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase);
+                foreach (var t in d.Tags ?? new List<TagDto>())
+                {
+                    if (!Enum.TryParse<TagCategory>(t.Category, ignoreCase: true, out var cat))
+                    { w.WriteLine($"  ! {d.Kind} {d.SubjectId}: unknown tag category '{t.Category}' — skipping tag"); continue; }
+                    if (cat != TagCategory.Franchise)
+                    { w.WriteLine($"  ! {d.Kind} {d.SubjectId}: --franchises-only ignores non-Franchise tag '{t.Category}={t.Value}'"); continue; }
+                    var value = AiMetadataVocab.Normalize(t.Value ?? "");
+                    if (value.Length == 0) continue;
+                    if (!AiMetadataVocab.IsKnown(cat, value))
+                    { w.WriteLine($"  · novel franchise '{value}' ({d.Kind} {d.SubjectId})"); novelTags++; }
+                    var weight = Clamp(t.Weight);
+                    if (!desired.TryGetValue(value, out var prior) || (weight ?? -1) > (prior ?? -1)) desired[value] = weight;
+                }
+
+                if (!newest.TryGetValue((d.Kind, d.SubjectId), out var insight))
+                { w.WriteLine($"  ! {d.Kind} {d.SubjectId}: no insight to attach franchises to — skipping"); noInsight++; continue; }
+
+                var current = insight.Tags.Where(t => t.Category == TagCategory.Franchise && t.Value != null)
+                    .GroupBy(t => t.Value!, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.OrderByDescending(t => t.Weight ?? -1).First().Weight, StringComparer.OrdinalIgnoreCase);
+
+                bool same = current.Count == desired.Count
+                    && current.All(kv => desired.TryGetValue(kv.Key, out var dw) && dw == kv.Value);
+                if (same) { unchanged++; continue; }
+
+                w.WriteLine($"  ~ {d.Kind} {d.SubjectId}: [{string.Join(", ", current.Select(FmtTag))}] -> [{string.Join(", ", desired.Select(FmtTag))}]");
+                changed++;
+
+                if (Apply)
+                {
+                    var remove = insight.Tags.Where(t => t.Category == TagCategory.Franchise).ToList();
+                    foreach (var t in remove) insight.Tags.Remove(t);
+                    db.RemoveRange(remove);
+                    foreach (var kv in desired)
+                        insight.Tags.Add(new TitleTag { Category = TagCategory.Franchise, Value = kv.Key, Weight = kv.Value });
+                }
+            }
+
+            // "changed" doubles as the remaining-to-apply count: on a dry run it's the work left; after an
+            // --apply it's how many were written, and a re-run reports 0 (idempotent) — the resumability signal.
+            w.WriteLine($"\nfranchises-only {Path.GetFileName(File)}: {changed} to change, {unchanged} already-correct, " +
+                        $"{noInsight} no-insight, {invalid} invalid; {novelTags} novel franchise(s).");
+            if (!Apply) { w.WriteLine("\nDRY RUN — nothing written. Re-run with --apply."); return; }
+            if (changed == 0) { w.WriteLine("Nothing to write."); return; }
+            await db.SaveChangesAsync();
+            w.WriteLine($"\nDONE. updated franchises on {changed} insight(s).");
+        }
+
+        private static string FmtTag(KeyValuePair<string, int?> kv) => kv.Value is null ? kv.Key : $"{kv.Key}:{kv.Value}";
 
         private async Task<(int movies, int series, int misc)> RemainingQueueAsync(MovieDb db)
         {

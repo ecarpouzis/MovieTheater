@@ -208,6 +208,104 @@
   border-color: rgba(var(--poster-rgb), 0.35);
 }
 
+/* The selected franchise chip when a title belongs to several (toggles the rail below). */
+.modal-chip-active,
+.modal-chip-active:hover {
+  background: rgba(var(--poster-rgb), 0.55);
+  border-color: rgba(var(--poster-rgb), 0.7);
+  color: #fff;
+}
+
+/* ── Franchise rail: posters in release order, current title highlighted ─ */
+.modal-franchise-rail {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.modal-franchise-item {
+  position: relative;
+  flex: 0 0 auto;
+  width: 92px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  scroll-snap-align: start;
+  text-align: center;
+}
+
+.modal-franchise-item[disabled] {
+  cursor: default;
+}
+
+.modal-franchise-poster {
+  width: 92px;
+  height: 138px;
+  object-fit: cover;
+  border-radius: 7px;
+  border: 1px solid rgba(var(--poster-rgb), 0.22);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.modal-franchise-item:not([disabled]):hover .modal-franchise-poster {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+}
+
+/* "You're here" — ring the current title so the sequence reads at a glance. */
+.modal-franchise-item.is-current .modal-franchise-poster {
+  border-color: rgba(var(--poster-rgb), 0.95);
+  box-shadow: 0 0 0 2px rgba(var(--poster-rgb), 0.9);
+}
+
+.modal-franchise-here {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: rgba(var(--poster-rgb), 0.92);
+  border-radius: 999px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+/* Members we can't stream yet (e.g. catalogue entries with no file) read as faded. */
+.modal-franchise-item.is-unstreamable .modal-franchise-poster {
+  filter: grayscale(0.5);
+  opacity: 0.62;
+}
+
+.modal-franchise-year {
+  font-size: 11px;
+  color: #5a5a64;
+  line-height: 1.2;
+}
+
+.modal-franchise-item.is-current .modal-franchise-year {
+  font-weight: 700;
+  color: #2c2c34;
+}
+
+.modal-franchise-browseall {
+  align-self: flex-start;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
 /* ── Director / Writer ────────────────────────────────────────────────── */
 .modal-crew-grid {
   display: flex;

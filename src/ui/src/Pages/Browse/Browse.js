@@ -332,6 +332,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
           onClose={handleCloseModal}
           actorSearch={handleActorSearch}
           onBrowse={handleBrowseSearch}
+          onOpenTitle={handleOpenMovie}
           userData={userData}
           setUserData={setUserData}
           onToggleViewing={handleToggleViewing}
@@ -344,6 +345,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
           onClose={handleCloseModal}
           actorSearch={handleActorSearch}
           onBrowse={handleBrowseSearch}
+          onOpenTitle={handleOpenMovie}
           movieDataArray={displayMovies}
           userData={userData}
           setUserData={setUserData}

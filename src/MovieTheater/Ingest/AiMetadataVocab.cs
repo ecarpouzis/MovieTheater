@@ -35,6 +35,15 @@ namespace MovieTheater.Ingest
             ["neo noir"] = "neo-noir",
             ["b-movie"] = "b movie",
             ["bmovie"] = "b movie",
+            // Franchise spellings that drifted — collapse to one canonical slug so a franchise's
+            // members don't scatter across near-duplicate tags (see docs/franchise-tagging-spec.md).
+            ["marvel cinematic universe"] = "mcu",
+            ["fast and the furious"] = "fast and furious",
+            ["the fast and the furious"] = "fast and furious",
+            ["the lord of the rings"] = "lord of the rings",
+            ["texas chain saw massacre"] = "texas chainsaw massacre",
+            ["the texas chain saw massacre"] = "texas chainsaw massacre",
+            ["the texas chainsaw massacre"] = "texas chainsaw massacre",
         };
 
         /// <summary>Seed values we already recognize, per category. Not exhaustive — grown over time.</summary>
@@ -90,8 +99,54 @@ namespace MovieTheater.Ingest
                 "halloween", "christmas", "rainy-sunday", "background-noise", "date-night",
                 "family-night", "comfort-watch", "late-night", "party", "summer", "feel-good",
                 "thanksgiving"),
-            // Theme-like open categories where a seed list is less useful are intentionally left
-            // without one (Franchise, CompTitle, Keyword) — every value there is "novel" by nature.
+            // Canonical franchise slugs (the library's existing franchises, normalized + the
+            // continuity-specific ones the franchise-spec introduces). Kept seeded so the loader
+            // only flags a genuinely-new franchise as novel — see docs/franchise-tagging-spec.md.
+            // CompTitle / Keyword stay seedless: every value there is "novel" by nature.
+            [TagCategory.Franchise] = New(
+                // umbrellas + continuity-specific (a title may carry both, e.g. godzilla + monsterverse)
+                "mcu", "marvel", "x-men", "spider-man", "spider-man tv", "spider-verse", "deadpool",
+                "blade", "fantastic four", "dc", "dceu", "batman", "superman", "wonder woman",
+                "justice league", "green lantern", "the boys",
+                "godzilla", "godzilla anime", "monsterverse", "kaiju",
+                "star wars", "star trek", "star trek prime films", "star trek kelvin",
+                "alien", "predator", "blade runner", "dune", "the matrix",
+                "terminator", "robocop", "tron", "riddick", "starship troopers",
+                "back to the future", "indiana jones", "jurassic park", "men in black", "ghostbusters",
+                "james bond", "mission impossible", "jason bourne", "jack reacher", "john wick",
+                "fast and furious", "die hard", "lethal weapon", "beverly hills cop", "rambo", "rocky",
+                "mad max", "the expendables", "kingsman", "bad boys",
+                "harry potter", "lord of the rings", "the hobbit", "narnia", "the hunger games",
+                "maze runner", "twilight", "pirates of the caribbean", "planet of the apes",
+                "transformers", "g.i. joe", "sonic the hedgehog", "super mario", "tomb raider",
+                "resident evil", "mortal kombat", "warcraft", "power rangers", "teenage mutant ninja turtles",
+                "planet of the apes", "planet of the apes original", "planet of the apes reboot",
+                // horror
+                "halloween", "friday the 13th", "a nightmare on elm street", "scream", "saw",
+                "final destination", "the conjuring", "hellraiser", "hellboy", "chucky", "child's play",
+                "the purge", "candyman", "the omen", "the texas chainsaw massacre", "texas chainsaw massacre",
+                "wrong turn", "tremors", "leprechaun", "children of the corn", "phantasm", "maniac cop",
+                "pumpkinhead", "puppet master", "critters", "species", "underworld", "the mummy",
+                "dracula", "ju-on", "ring", "return of the living dead", "i know what you did last summer",
+                "anaconda", "jaws", "cube",
+                // animation / family
+                "toy story", "cars", "inside out", "finding nemo", "the incredibles", "monsters inc",
+                "shrek", "despicable me", "frozen", "how to train your dragon", "land before time",
+                "scooby-doo", "winnie the pooh", "wallace and gromit", "spongebob squarepants",
+                "spy kids", "night at the museum", "honey i shrunk the kids", "the karate kid",
+                "zootopia", "moana", "brave", "up", "wall-e", "ratatouille", "k-pop demon hunters",
+                "blue's clues", "bluey", "mickey mouse",
+                // anime
+                "dragon ball", "evangelion", "fullmetal alchemist", "gurren lagann", "hellsing",
+                "pokemon", "naruto", "ne zha", "futurama", "archer", "avatar the last airbender",
+                // comedy
+                "austin powers", "naked gun", "scary movie", "police academy", "the hangover",
+                "meet the parents", "anchorman", "jackass", "american pie", "3 ninjas",
+                "once upon a time in china", "highlander", "beetlejuice", "men in black",
+                // misc / author
+                "stephen king", "neil gaiman", "hannibal lecter", "thin man", "oceans", "knives out",
+                "avatar", "independence day", "the karate kid", "twin peaks", "lost",
+                "discworld", "dragon age", "disgaea"),
         };
 
         private static HashSet<string> New(params string[] values) =>

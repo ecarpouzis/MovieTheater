@@ -32,6 +32,11 @@ function getTitle(id, kind) {
   return kind === "series" ? getSeries(id) : getMovie(id);
 }
 
+// The franchise rail for the modal: the title's franchise(s), each an ordered list of fellow members.
+function getFranchiseRail(id, kind) {
+  return fetch(`/API/GetFranchiseRail?id=${id}&kind=${kind === "series" ? "series" : "movie"}`, { method: "get" });
+}
+
 function insertMovie(movie) {
   const url = "/API/InsertMovie";
   movie.releaseDate = new Date(movie.releaseDate);
@@ -715,6 +720,7 @@ const MovieAPI = {
   getMovie,
   getSeries,
   getTitle,
+  getFranchiseRail,
   getUsers,
   insertMovie,
   updateMovie,

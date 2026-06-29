@@ -257,6 +257,138 @@ namespace MovieTheater.Controllers
             };
         }
 
+        // Drives the modal's "franchise rail": the title's franchise(s), each as an ordered (by release
+        // date) strip of fellow members so you can see what comes next/before. Franchise membership comes
+        // from the newest TitleInsight's Franchise tags (newest-wins, so a superseded tag doesn't count);
+        // members are age-gated with the same rule as the rest of the browse path. Returns one entry per
+        // franchise the title belongs to (the UI toggles between them) plus the most-specific default —
+        // fewest members, so a title tagged both `godzilla` + `monsterverse` sequences within the latter.
+        [HttpGet("/API/GetFranchiseRail")]
+        public async Task<IActionResult> GetFranchiseRail(int id, string kind = "movie")
+        {
+            var subjectKind = string.Equals(kind, "series", StringComparison.OrdinalIgnoreCase)
+                ? InsightSubjectKind.Series : InsightSubjectKind.Movie;
+            int ageRestriction = await GetAgeRestrictionAsync();
+            object Empty() => new { defaultFranchise = (string?)null, franchises = Array.Empty<object>() };
+
+            // 1. This title's franchise tags (from its newest insight), with their weights.
+            var myInsight = await movieDb.TitleInsights
+                .Where(ti => ti.SubjectKind == subjectKind && ti.SubjectId == id)
+                .OrderByDescending(ti => ti.GeneratedUtc)
+                .Include(ti => ti.Tags)
+                .FirstOrDefaultAsync();
+            var myFranchises = (myInsight?.Tags ?? new List<TitleTag>())
+                .Where(t => t.Category == TagCategory.Franchise && !string.IsNullOrWhiteSpace(t.Value))
+                .Select(t => t.Value).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (myFranchises.Count == 0) return Ok(Empty());
+            var myFrSet = new HashSet<string>(myFranchises, StringComparer.OrdinalIgnoreCase);
+            var myWeights = (myInsight?.Tags ?? new List<TitleTag>())
+                .Where(t => t.Category == TagCategory.Franchise && !string.IsNullOrWhiteSpace(t.Value))
+                .GroupBy(t => t.Value, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.Max(t => t.Weight ?? 0), StringComparer.OrdinalIgnoreCase);
+
+            // 2. Candidate subjects carrying any of those franchise values (on any insight)…
+            var candidates = await movieDb.TitleTags
+                .Where(t => t.Category == TagCategory.Franchise && t.Value != null && myFranchises.Contains(t.Value))
+                .Select(t => new { t.Insight.SubjectKind, t.Insight.SubjectId })
+                .Distinct().ToListAsync();
+            var candMovieIds = candidates.Where(c => c.SubjectKind == InsightSubjectKind.Movie).Select(c => c.SubjectId).Distinct().ToList();
+            var candSeriesIds = candidates.Where(c => c.SubjectKind == InsightSubjectKind.Series).Select(c => c.SubjectId).Distinct().ToList();
+
+            // 3. …confirmed against each candidate's NEWEST insight, so a stale (superseded) tag doesn't count.
+            var candInsights = await movieDb.TitleInsights
+                .Where(ti => (ti.SubjectKind == InsightSubjectKind.Movie && candMovieIds.Contains(ti.SubjectId))
+                          || (ti.SubjectKind == InsightSubjectKind.Series && candSeriesIds.Contains(ti.SubjectId)))
+                .Include(ti => ti.Tags)
+                .ToListAsync();
+            var members = candInsights
+                .GroupBy(ti => new { ti.SubjectKind, ti.SubjectId })
+                .Select(g => g.OrderByDescending(ti => ti.GeneratedUtc).First())
+                .Select(ti => new
+                {
+                    ti.SubjectKind,
+                    ti.SubjectId,
+                    Franchises = ti.Tags.Where(t => t.Category == TagCategory.Franchise && t.Value != null)
+                        .GroupBy(t => t.Value, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(g => g.Key, g => g.Max(t => t.Weight ?? 0), StringComparer.OrdinalIgnoreCase),
+                })
+                .Where(m => m.Franchises.Keys.Any(myFrSet.Contains))
+                .ToList();
+
+            // 4. Pull the display rows for the member subjects, age-gated. Movie + Series share one shape
+            //    (startYear is series-only) so they can be concatenated and keyed together.
+            var memMovieIds = members.Where(m => m.SubjectKind == InsightSubjectKind.Movie).Select(m => m.SubjectId).ToList();
+            var memSeriesIds = members.Where(m => m.SubjectKind == InsightSubjectKind.Series).Select(m => m.SubjectId).ToList();
+            var movieRows = await movieDb.Movies
+                .Where(m => memMovieIds.Contains(m.id))
+                .Where(Web.RatingGate.MovieVisibleAtAge(movieDb, ageRestriction))
+                .Select(m => new
+                {
+                    kind = "movie",
+                    id = m.id,
+                    title = m.Title,
+                    release = m.ImdbReleaseDate ?? m.ReleaseDate,
+                    startYear = (int?)null,
+                    posterVersion = m.PosterDetails != null ? m.PosterDetails.PosterVersion : 0,
+                    streamable = m.PlayableId != null && movieDb.MediaFiles.Any(f => f.PlayableId == m.PlayableId && f.JellyfinItemId != null && f.MissingSinceUtc == null),
+                }).ToListAsync();
+            var seriesRows = await movieDb.Series
+                .Where(s => memSeriesIds.Contains(s.Id))
+                .Where(Web.RatingGate.SeriesVisibleAtAge(movieDb, ageRestriction))
+                .Select(s => new
+                {
+                    kind = "series",
+                    id = s.Id,
+                    title = s.Title,
+                    release = s.ImdbReleaseDate ?? s.ReleaseDate,
+                    startYear = s.StartYear,
+                    posterVersion = s.PosterDetails != null ? s.PosterDetails.PosterVersion : 0,
+                    streamable = movieDb.Episodes.Any(e => e.SeriesId == s.Id && e.PlayableId != null
+                        && movieDb.MediaFiles.Any(f => f.PlayableId == e.PlayableId && f.JellyfinItemId != null && f.MissingSinceUtc == null)),
+                }).ToListAsync();
+            var rowByKey = movieRows.Concat(seriesRows).ToDictionary(r => (r.kind, r.id));
+
+            // 5. Assemble one ordered rail per franchise; drop franchises with < 2 visible members.
+            string KindStr(InsightSubjectKind k) => k == InsightSubjectKind.Series ? "series" : "movie";
+            var built = new List<(string value, int count, List<object> items)>();
+            foreach (var f in myFranchises)
+            {
+                var rows = new List<(DateTime sort, object item)>();
+                foreach (var m in members)
+                {
+                    if (!m.Franchises.ContainsKey(f)) continue;
+                    if (!rowByKey.TryGetValue((KindStr(m.SubjectKind), m.SubjectId), out var r)) continue; // age-gated out
+                    var year = r.release?.Year ?? r.startYear;
+                    var sort = r.release ?? (r.startYear != null ? new DateTime(r.startYear.Value, 1, 1) : DateTime.MaxValue);
+                    rows.Add((sort, new
+                    {
+                        r.id,
+                        r.kind,
+                        r.title,
+                        year,
+                        r.posterVersion,
+                        r.streamable,
+                        isCurrent = m.SubjectKind == subjectKind && m.SubjectId == id,
+                    }));
+                }
+                if (rows.Count < 2) continue;
+                built.Add((f, rows.Count, rows.OrderBy(x => x.sort).Select(x => x.item).ToList()));
+            }
+            if (built.Count == 0) return Ok(Empty());
+
+            // Default to the most specific franchise (fewest members); ties → this title's higher tag weight.
+            var defaultFranchise = built
+                .OrderBy(b => b.count)
+                .ThenByDescending(b => myWeights.TryGetValue(b.value, out var wv) ? wv : 0)
+                .First().value;
+
+            return Ok(new
+            {
+                defaultFranchise,
+                franchises = built.Select(b => new { value = b.value, count = b.count, items = b.items }).ToList(),
+            });
+        }
+
         [HttpGet("/API/GetTotalMovieCount")]
         public async Task<IActionResult> GetTotalMovieCount()
         {

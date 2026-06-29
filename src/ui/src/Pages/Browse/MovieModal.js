@@ -53,13 +53,16 @@ const TYPE_LABEL = {
 };
 const ROLE_LABEL = { Primary: "Feature", Part: "Part", Variant: "Variant", Extra: "Extra" };
 
-function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, setUserData, onToggleViewing, onMovieUpdated, kind = "movie" }) {
+function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle, userData, setUserData, onToggleViewing, onMovieUpdated, kind = "movie" }) {
   const history = useHistory();
   const [openSeasons, setOpenSeasons] = useState({});
   const [openEps, setOpenEps] = useState({});
   const isSeries = kind === "series";
   const [movie, setMovie] = useState(null);
   const [normalized, setNormalized] = useState(null);
+  // Franchise rail: { defaultFranchise, franchises:[{value,count,items}] } + which franchise is shown.
+  const [franchiseRail, setFranchiseRail] = useState(null);
+  const [activeFranchise, setActiveFranchise] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editState, setEditState] = useState({});
@@ -118,6 +121,23 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
           setLoading(false);
         });
     }
+  }, [movieId, open, kind]);
+
+  // Franchise rail — fetched on its own so the modal opens fast; the endpoint returns an empty set
+  // when the title has no franchise, so we just hide the section then.
+  useEffect(() => {
+    if (!open || !movieId) { setFranchiseRail(null); setActiveFranchise(null); return; }
+    let cancelled = false;
+    MovieAPI.getFranchiseRail(movieId, kind)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const fr = data && Array.isArray(data.franchises) ? data : null;
+        setFranchiseRail(fr && fr.franchises.length ? fr : null);
+        setActiveFranchise(fr && fr.franchises.length ? fr.defaultFranchise : null);
+      })
+      .catch(() => { if (!cancelled) { setFranchiseRail(null); setActiveFranchise(null); } });
+    return () => { cancelled = true; };
   }, [movieId, open, kind]);
 
   useEffect(() => {
@@ -261,6 +281,11 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
   // Prefer the normalized IMDB data; fall back to the legacy comma-separated
   // columns for movies the scrape hasn't reached yet.
   const n = normalized || {};
+  // The franchise whose rail is currently shown (toggled via the chips when a title is in several).
+  const activeRail =
+    franchiseRail && activeFranchise
+      ? franchiseRail.franchises.find((f) => f.value === activeFranchise) || franchiseRail.franchises[0]
+      : null;
   const displayRuntime = formatRuntime(n.runtimeMinutes) || movie?.runtime;
   const genreList =
     Array.isArray(n.genres) && n.genres.length > 0
@@ -457,13 +482,63 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, userData, s
                     {(n.insight.franchises || []).length > 0 && (
                       <div className="modal-insight-block">
                         <span className="modal-label">Franchise</span>
-                        <div className="modal-genre-chips">
-                          {n.insight.franchises.map((f, i) => (
-                            <button type="button" className="modal-genre-chip modal-chip-link" key={i} onClick={() => searchFranchise(f)}>
-                              {prettifyTag(f)}
+                        {activeRail ? (
+                          <>
+                            {/* Several franchises? Chips toggle which rail is shown. */}
+                            {franchiseRail.franchises.length > 1 && (
+                              <div className="modal-genre-chips">
+                                {franchiseRail.franchises.map((f) => (
+                                  <button
+                                    type="button"
+                                    key={f.value}
+                                    className={`modal-genre-chip modal-chip-link${f.value === activeRail.value ? " modal-chip-active" : ""}`}
+                                    onClick={() => setActiveFranchise(f.value)}
+                                  >
+                                    {prettifyTag(f.value)}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {/* The rail: members in release order, current one highlighted. */}
+                            <div className="modal-franchise-rail">
+                              {activeRail.items.map((it) => (
+                                <button
+                                  type="button"
+                                  key={`${it.kind}-${it.id}`}
+                                  className={`modal-franchise-item${it.isCurrent ? " is-current" : ""}${it.streamable ? "" : " is-unstreamable"}`}
+                                  onClick={() => { if (!it.isCurrent && onOpenTitle) onOpenTitle(it.id, it.kind); }}
+                                  disabled={it.isCurrent}
+                                  title={it.year ? `${it.title} (${it.year})` : it.title}
+                                >
+                                  <img
+                                    className="modal-franchise-poster"
+                                    alt={`${it.title} poster`}
+                                    loading="lazy"
+                                    src={MovieAPI.getMoviePoster(it.id, it.posterVersion, it.kind)}
+                                  />
+                                  {it.isCurrent && <span className="modal-franchise-here">You’re here</span>}
+                                  <span className="modal-franchise-year">{it.year || ""}</span>
+                                </button>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              className="modal-franchise-browseall person-link"
+                              onClick={() => searchFranchise(activeRail.value)}
+                            >
+                              Browse all {prettifyTag(activeRail.value)}
                             </button>
-                          ))}
-                        </div>
+                          </>
+                        ) : (
+                          // No rail (e.g. only one member on disk) — keep the clickable chips.
+                          <div className="modal-genre-chips">
+                            {n.insight.franchises.map((f, i) => (
+                              <button type="button" className="modal-genre-chip modal-chip-link" key={i} onClick={() => searchFranchise(f)}>
+                                {prettifyTag(f)}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
