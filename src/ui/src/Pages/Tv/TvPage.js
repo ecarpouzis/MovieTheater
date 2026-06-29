@@ -10,6 +10,7 @@ import { useWakeLock } from "../../useWakeLock";
 import { useMediaSession } from "../../useMediaSession";
 import { usePictureInPicture } from "../../usePictureInPicture";
 import { usePgsSubtitle } from "../../usePgsSubtitle";
+import { useAssSubtitle } from "../../useAssSubtitle";
 import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay } from "../../subtitleStyle";
 import { SubtitleStyleControls, SubtitleStylePreview, SubtitleSyncControls } from "../../SubtitleStyleEditor";
 
@@ -86,7 +87,9 @@ function TvPage({ userData }) {
   // The selected SOFT (sidecar VTT) subtitle — only these can be re-timed client-side, so the delay
   // UI gates on it (burned-in image subs are baked into the transcode and can't be moved).
   const activeTextSub =
-    subtitleTracks.find((t) => t.index === subtitleIndex && !!t.deliveryUrl && t.kind !== "image-pgs") || null;
+    subtitleTracks.find(
+      (t) => t.index === subtitleIndex && !!t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass"
+    ) || null;
   const [skip, setSkip] = useState(null); // { viewers, votes, required, youVoted }
   const [restart, setRestart] = useState(null); // { viewers, votes, required, youVoted }
   const [viewers, setViewers] = useState(null); // { count, names: [{ name, you }] } — who's tuned in
@@ -906,6 +909,10 @@ function TvPage({ userData }) {
   const activePgsSub = subtitleTracks.find((t) => t.index === subtitleIndex && t.kind === "image-pgs");
   usePgsSubtitle(videoRef, activePgsSub ? activePgsSub.deliveryUrl : null);
 
+  // Client-rendered ASS/SSA via libass — full typesetting, also keeps the video copied.
+  const activeAssSub = subtitleTracks.find((t) => t.index === subtitleIndex && t.kind === "ass");
+  useAssSubtitle(videoRef, activeAssSub ? activeAssSub.deliveryUrl : null);
+
   // Keep the fullscreen button's icon in sync with the actual state (incl. Esc to exit).
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -961,7 +968,7 @@ function TvPage({ userData }) {
       <div className="tv-screen" onClick={onScreenTap}>
         <video ref={videoRef} className="tv-video" autoPlay playsInline muted crossOrigin="anonymous">
           {subtitleTracks
-            .filter((t) => t.deliveryUrl && t.kind !== "image-pgs")
+            .filter((t) => t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass")
             .map((t) => (
               <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
             ))}

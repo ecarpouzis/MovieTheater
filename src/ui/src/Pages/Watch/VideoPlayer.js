@@ -6,6 +6,7 @@ import { useMediaSession } from "../../useMediaSession";
 import { usePictureInPicture } from "../../usePictureInPicture";
 import { usePlaybackRate, PLAYBACK_RATES } from "../../usePlaybackRate";
 import { usePgsSubtitle } from "../../usePgsSubtitle";
+import { useAssSubtitle } from "../../useAssSubtitle";
 import { detectStreamCapabilities } from "../../streamCapabilities";
 import { isAutoQuality } from "../../streamAbr";
 import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay, SUBTITLE_NUDGE_MS } from "../../subtitleStyle";
@@ -385,7 +386,9 @@ function VideoPlayer({
   // The currently-selected SOFT subtitle (sidecar VTT). null when off, a burned-in image sub, or a
   // client-rendered PGS sub — only soft text cues can be re-timed client-side, so the delay UI gates here.
   const activeTextSub =
-    subtitleTracks.find((t) => t.index === selectedSubtitleIndex && !!t.deliveryUrl && t.kind !== "image-pgs") || null;
+    subtitleTracks.find(
+      (t) => t.index === selectedSubtitleIndex && !!t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass"
+    ) || null;
 
   // Vertical lift for the showing track's cues. Size/color/font/edge/box ride on the injected
   // ::cue rule from useSubtitleStyle; position can't be set via ::cue, so it's applied per-cue here.
@@ -395,6 +398,10 @@ function VideoPlayer({
   // video instead of burning the bitmap in. Active only while the selected track is a PGS image sub.
   const activePgsSub = subtitleTracks.find((t) => t.index === selectedSubtitleIndex && t.kind === "image-pgs");
   usePgsSubtitle(videoRef, activePgsSub ? activePgsSub.deliveryUrl : null);
+
+  // Client-rendered ASS/SSA via libass — full typesetting, also keeps the video copied (no flatten to VTT).
+  const activeAssSub = subtitleTracks.find((t) => t.index === selectedSubtitleIndex && t.kind === "ass");
+  useAssSubtitle(videoRef, activeAssSub ? activeAssSub.deliveryUrl : null);
 
   // Keep the screen awake during a film — shared with the TV player.
   useWakeLock();
@@ -641,7 +648,7 @@ function VideoPlayer({
     >
       <video ref={videoRef} className="vp-video" poster={poster} crossOrigin="anonymous" playsInline onClick={onSurfaceClick}>
         {subtitleTracks
-          .filter((t) => t.deliveryUrl && t.kind !== "image-pgs")
+          .filter((t) => t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass")
           .map((t) => (
             <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
           ))}

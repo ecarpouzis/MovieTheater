@@ -307,10 +307,14 @@ namespace MovieTheater.Services.Jellyfin
                 CodecProfiles = codecProfiles.ToArray(),
                 SubtitleProfiles = new object[]
                 {
-                    // Text subs ride as sidecar WebVTT (the browser's <track> parses WebVTT exclusively, so
-                    // srt/subrip/ass/ssa must NOT be advertised External — Jellyfin would hand back the raw
-                    // file the <track> can't render; instead it transcodes any text sub to WebVTT).
+                    // Plain text subs (SRT etc.) ride as sidecar WebVTT — the browser's <track> parses only
+                    // WebVTT, so srt/subrip must NOT be External (Jellyfin would hand back a raw .srt the
+                    // <track> can't render); it transcodes them to WebVTT instead.
                     new { Format = "vtt", Method = "External" },
+                    // ASS/SSA are delivered RAW (External) and rendered client-side by libass (SubtitlesOctopus)
+                    // with full typesetting — vs flattening to WebVTT, which drops all signs/positioning/karaoke.
+                    new { Format = "ass", Method = "External" },
+                    new { Format = "ssa", Method = "External" },
                     // PGS rides as an external .sup rendered CLIENT-SIDE by libpgs (a canvas overlay), so the
                     // video is still copied instead of re-encoded to burn the bitmap in. The remaining image
                     // formats have no client renderer, so they're still burned in (a video re-encode).

@@ -65,6 +65,12 @@ namespace MovieTheater.Controllers
         private static bool IsPgsSubtitle(JellyfinPlaybackStream s) =>
             s.Codec != null && s.Codec.Equals("pgssub", StringComparison.OrdinalIgnoreCase);
 
+        // ASS/SSA (Advanced SubStation Alpha): a text subtitle, but delivered RAW (not flattened to WebVTT)
+        // and rendered client-side by libass so its typesetting survives. Jellyfin reports codec "ass"/"ssa".
+        private static bool IsAssSubtitle(JellyfinPlaybackStream s) =>
+            s.Codec != null && (s.Codec.Equals("ass", StringComparison.OrdinalIgnoreCase)
+                || s.Codec.Equals("ssa", StringComparison.OrdinalIgnoreCase));
+
         public class StartRequest
         {
             public int? MovieId { get; set; }                 // legacy: a movie to play (its Primary file)
@@ -237,16 +243,17 @@ namespace MovieTheater.Controllers
                 .Select(s =>
                 {
                     bool isPgs = IsPgsSubtitle(s);
+                    bool isAss = IsAssSubtitle(s);
                     return new
                     {
                         index = s.Index,
                         label = s.DisplayTitle ?? s.Language ?? $"Subtitle {s.Index}",
                         language = s.Language,
-                        // How the client renders it: "text" = sidecar WebVTT via <track>; "image-pgs" =
-                        // external .sup drawn client-side by libpgs (video still copied); "image-burn" =
-                        // VobSub/DVB with no client renderer, burned in server-side (deliveryUrl null → the
-                        // player restarts with subtitleStreamIndex).
-                        kind = s.IsTextSubtitleStream ? "text" : (isPgs ? "image-pgs" : "image-burn"),
+                        // How the client renders it: "text" = sidecar WebVTT via <track>; "ass" = raw ASS
+                        // drawn client-side by libass; "image-pgs" = external .sup drawn by libpgs (all three
+                        // keep the video copied); "image-burn" = VobSub/DVB with no client renderer, burned
+                        // in server-side (deliveryUrl null → the player restarts with subtitleStreamIndex).
+                        kind = s.IsTextSubtitleStream ? (isAss ? "ass" : "text") : (isPgs ? "image-pgs" : "image-burn"),
                         deliveryUrl = s.DeliveryUrl != null && (s.IsTextSubtitleStream || isPgs)
                             ? ToGatewayUrl(s.DeliveryUrl)
                             : null,
