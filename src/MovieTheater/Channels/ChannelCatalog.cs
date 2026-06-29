@@ -178,7 +178,7 @@ namespace MovieTheater.Channels
                 // ── Cult, Weird & Arthouse ──
                 D("criterion","The Criterion Closet","Cinema as art","Cult, Weird & Arthouse").Path("Criterion"),
                 D("arthouse","The Arthouse","The artistic canon","Cult, Weird & Arthouse").Sub("art house"),
-                D("cult-vault","The Cult Vault","Beloved oddities","Cult, Weird & Arthouse").Cult(75),
+                D("cult-vault","The Cult Vault","Beloved oddities","Cult, Weird & Arthouse").Cult(70).Imdb(null,8.3),
                 D("schlock","Schlock Theater","Gloriously bad B-movies","Cult, Weird & Arthouse").Sub("b movie"),
                 D("so-bad-good","So Bad It's Good","The disasterpieces","Cult, Weird & Arthouse").Imdb(null,5.0).Cult(45),
                 D("bw","In Glorious Black & White","Monochrome cinema","Cult, Weird & Arthouse").Visual("black and white"),
@@ -212,7 +212,7 @@ namespace MovieTheater.Channels
                 D("tearjerkers","Bring Tissues","Tearjerkers","Signature Picks").Content("tearjerker"),
                 D("spoofs","Spoofs & Mockumentaries","Brooks, Proft & the parody crew","Signature Picks").Sub("spoof","mockumentary"),
                 D("mst3k","Mystery Science Theater","Riff over the worst movies ever made","Signature Picks").In(T).Path("MST3K","Mystery Science").Strat(err),
-                D("silent-comedy","Silent Comedy","Keaton, Chaplin & the pioneers","Signature Picks").Star("Buster Keaton","Charles Chaplin"),
+                D("silent-comedy","Silent Comedy","Keaton, Chaplin & the pioneers","Signature Picks").Star("Buster Keaton","Charles Chaplin").Year(null,1936),
 
                 // ── Decades ──
                 D("silent-era","Silent & Pre-Code","Before 1930","Decades").Year(null,1929).Strat(ScheduleStrategies.SeededShuffle),
@@ -233,7 +233,7 @@ namespace MovieTheater.Channels
                 D("adrenaline","Pure Adrenaline","Nonstop motion","Moods & Vibes").Energy(80),
 
                 // ── Animation Hall of Fame ──
-                D("cartoon-shorts","Cartoon Shorts Theater","Looney Tunes, Tom & Jerry & the golden-age greats","Animation Hall of Fame").In(T).Path("Looney Tunes","Merrie Melodies","Tom and Jerry","Walt Disney Treasures","Tex Avery").Strat(err),
+                D("cartoon-shorts","Cartoon Shorts Theater","Looney Tunes, Tom & Jerry & the golden-age greats","Animation Hall of Fame").In(T).Path("Looney Tunes","Merrie Melodies","Tom and Jerry","Walt Disney Treasures","Walt Disney Fables","Tex Avery").Strat(err),
                 D("disney-classics","Disney Animated Classics","The Disney film canon","Animation Hall of Fame").Path("Disney Films","Walt Disney"),
                 D("hanna-barbera","Hanna-Barbera Classics","Yabba dabba doo","Animation Hall of Fame").In(T).Path("Flintstones","Jetsons","Scooby Doo","Wacky Races","Atom Ant","Rocky and Bullwinkle").Strat(err),
                 D("disney-afternoon","The Disney Afternoon","Classic Disney TV animation","Animation Hall of Fame").In(T).Path("DuckTales","TaleSpin","Darkwing Duck","Chip 'n' Dale","Gargoyles").Strat(err),
@@ -256,9 +256,9 @@ namespace MovieTheater.Channels
                 D("ghibli","Studio Ghibli","The Ghibli canon","Anime").Path("Studio Ghibli","Ghibli").Strat(mar),
                 D("pokemon","Pokemon","Gotta catch 'em all","Anime").In(MT).Path("Pokémon","Pokemon").Strat(err),
                 D("dragon-ball","Dragon Ball","Saiyan saga","Anime").In(MT).Path("Dragon Ball").Strat(mar),
-                D("anime-arthouse","Anime Arthouse","The bold, strange & sublime","Anime").In(MT).Path("Odd Taxi","Redline","Paprika","Perfect Blue","Paranoia Agent","Tatami","Lain","Cat Soup","Belladonna","Angel's Egg","Mind Game","Tekkon","Millennium Actress","Tokyo Godfathers","Ping Pong","Mononoke","Kaiba","Dead Leaves","Texhnolyze","Space Dandy").Strat(err),
-                D("modern-anime","Modern Anime","Today's hits","Anime").In(MT).Path("Demon Slayer","Jujutsu Kaisen","Attack on Titan","One Punch Man","Re - Zero","Steins","Chainsaw").Strat(err),
-                D("classic-anime","Classic Anime","The canon","Anime").In(MT).Path("Ranma","Cowboy Bebop","Trigun","Evangelion","Samurai Champloo","Ghost in the Shell","Fullmetal Alchemist","Monster (2004","Death Note").Strat(err),
+                D("anime-arthouse","Anime Arthouse","The bold, strange & sublime","Anime").In(MT).Path("Odd Taxi","Redline","Paprika","Perfect Blue","Paranoia Agent","Tatami","Experiments Lain","Cat Soup","Belladonna","Angel's Egg","Mind Game","Tekkon","Millennium Actress","Tokyo Godfathers","Ping Pong","Mononoke","Kaiba","Dead Leaves","Texhnolyze","Space Dandy").Strat(err),
+                D("modern-anime","Modern Anime","Today's hits","Anime").In(MT).Path("Demon Slayer","Jujutsu Kaisen","Attack on Titan","One Punch Man","Re - Zero","Steins","Chainsaw Man").Strat(err),
+                D("classic-anime","Classic Anime","The canon","Anime").In(MT).Path("Ranma","Cowboy Bebop","Trigun","Evangelion","Samurai Champloo","Ghost in the Shell","Fullmetal Alchemist",@"\Monster (2004","Death Note","Haruhi","Planetes").Strat(err),
                 D("anime-films","Anime Films","Feature-length anime","Anime").Lang("ja").Genre("Animation"),
 
                 // ── The TV Vault ──
@@ -279,7 +279,7 @@ namespace MovieTheater.Channels
                 D("spanish-cinema","Spanish-Language","Films in Spanish","International").Lang("es"),
 
                 // ── Seasonal (date-windowed) ──
-                D("spooky-season","Spooky Season","Halloween horror","Seasonal").Genre("Horror").Season(10,1,11,1),
+                D("spooky-season","Spooky Season","The Halloween mood — spooky, not just gory","Seasonal").Occasion("halloween").Season(10,1,11,1),
                 D("holiday-cheer","Holiday Cheer","Christmas & winter holidays","Seasonal").Occasion("christmas","holiday").Season(12,1,1,2),
                 D("summer-blockbusters","Summer Blockbusters","Big summer fun","Seasonal").Genre("Action","Adventure").Energy(70).Season(5,25,9,5),
                 D("sweethearts","Sweetheart Cinema","Valentine's romance","Seasonal").Genre("Romance").Season(2,1,2,15),
