@@ -59,6 +59,12 @@ namespace MovieTheater.Controllers
             return title != null && title.StartsWith("English", StringComparison.OrdinalIgnoreCase);
         }
 
+        // PGS (HDMV Presentation Graphic Stream — Blu-ray bitmap subtitles): rendered client-side by
+        // libpgs as a canvas overlay, so it's delivered as an external .sup and never burned in (the
+        // video stays copied). Jellyfin reports the codec as "pgssub".
+        private static bool IsPgsSubtitle(JellyfinPlaybackStream s) =>
+            s.Codec != null && s.Codec.Equals("pgssub", StringComparison.OrdinalIgnoreCase);
+
         public class StartRequest
         {
             public int? MovieId { get; set; }                 // legacy: a movie to play (its Primary file)
@@ -228,14 +234,23 @@ namespace MovieTheater.Controllers
 
             var subtitleTracks = source.MediaStreams
                 .Where(s => s.Type == "Subtitle")
-                .Select(s => new
+                .Select(s =>
                 {
-                    index = s.Index,
-                    label = s.DisplayTitle ?? s.Language ?? $"Subtitle {s.Index}",
-                    language = s.Language,
-                    // Sidecar text subs toggle client-side; image subs return null here and
-                    // the player restarts with subtitleStreamIndex for a burn-in.
-                    deliveryUrl = s.DeliveryUrl != null && s.IsTextSubtitleStream ? ToGatewayUrl(s.DeliveryUrl) : null,
+                    bool isPgs = IsPgsSubtitle(s);
+                    return new
+                    {
+                        index = s.Index,
+                        label = s.DisplayTitle ?? s.Language ?? $"Subtitle {s.Index}",
+                        language = s.Language,
+                        // How the client renders it: "text" = sidecar WebVTT via <track>; "image-pgs" =
+                        // external .sup drawn client-side by libpgs (video still copied); "image-burn" =
+                        // VobSub/DVB with no client renderer, burned in server-side (deliveryUrl null → the
+                        // player restarts with subtitleStreamIndex).
+                        kind = s.IsTextSubtitleStream ? "text" : (isPgs ? "image-pgs" : "image-burn"),
+                        deliveryUrl = s.DeliveryUrl != null && (s.IsTextSubtitleStream || isPgs)
+                            ? ToGatewayUrl(s.DeliveryUrl)
+                            : null,
+                    };
                 })
                 .ToList();
 
@@ -276,7 +291,9 @@ namespace MovieTheater.Controllers
                 if (request.SubtitleStreamIndex is int subIndex)
                 {
                     var burnStream = source.MediaStreams.FirstOrDefault(s => s.Type == "Subtitle" && s.Index == subIndex);
-                    if (burnStream != null && !burnStream.IsTextSubtitleStream)
+                    // Burn only image subs we can't render client-side: text rides as WebVTT and PGS is drawn
+                    // by libpgs (both keep the video copied), so neither is ever burned.
+                    if (burnStream != null && !burnStream.IsTextSubtitleStream && !IsPgsSubtitle(burnStream))
                         burnInImageIndex = subIndex;
                 }
                 var burningInSubtitle = burnInImageIndex != null;

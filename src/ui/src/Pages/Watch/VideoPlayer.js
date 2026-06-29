@@ -5,6 +5,7 @@ import { useWakeLock } from "../../useWakeLock";
 import { useMediaSession } from "../../useMediaSession";
 import { usePictureInPicture } from "../../usePictureInPicture";
 import { usePlaybackRate, PLAYBACK_RATES } from "../../usePlaybackRate";
+import { usePgsSubtitle } from "../../usePgsSubtitle";
 import { detectStreamCapabilities } from "../../streamCapabilities";
 import { isAutoQuality } from "../../streamAbr";
 import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay, SUBTITLE_NUDGE_MS } from "../../subtitleStyle";
@@ -381,13 +382,19 @@ function VideoPlayer({
     }
   }, [selectedSubtitleIndex, src]);
 
-  // The currently-selected SOFT subtitle (sidecar VTT). null when off or when a burned-in image
-  // sub is selected — only soft tracks can be re-timed client-side, so the delay UI gates on this.
-  const activeTextSub = subtitleTracks.find((t) => t.index === selectedSubtitleIndex && !!t.deliveryUrl) || null;
+  // The currently-selected SOFT subtitle (sidecar VTT). null when off, a burned-in image sub, or a
+  // client-rendered PGS sub — only soft text cues can be re-timed client-side, so the delay UI gates here.
+  const activeTextSub =
+    subtitleTracks.find((t) => t.index === selectedSubtitleIndex && !!t.deliveryUrl && t.kind !== "image-pgs") || null;
 
   // Vertical lift for the showing track's cues. Size/color/font/edge/box ride on the injected
   // ::cue rule from useSubtitleStyle; position can't be set via ::cue, so it's applied per-cue here.
   useCueLift(videoRef, selectedSubtitleIndex, src, subStyle.liftPct);
+
+  // Client-rendered PGS (Blu-ray bitmap) subs — drawn over the video by libpgs so the server copies the
+  // video instead of burning the bitmap in. Active only while the selected track is a PGS image sub.
+  const activePgsSub = subtitleTracks.find((t) => t.index === selectedSubtitleIndex && t.kind === "image-pgs");
+  usePgsSubtitle(videoRef, activePgsSub ? activePgsSub.deliveryUrl : null);
 
   // Keep the screen awake during a film — shared with the TV player.
   useWakeLock();
@@ -634,7 +641,7 @@ function VideoPlayer({
     >
       <video ref={videoRef} className="vp-video" poster={poster} crossOrigin="anonymous" playsInline onClick={onSurfaceClick}>
         {subtitleTracks
-          .filter((t) => t.deliveryUrl)
+          .filter((t) => t.deliveryUrl && t.kind !== "image-pgs")
           .map((t) => (
             <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
           ))}
