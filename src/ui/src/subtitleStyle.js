@@ -137,49 +137,53 @@ export function formatDelay(ms) {
   return `${sign}${Math.abs(ms)} ms`;
 }
 
-// Common subtitle authoring frame rates. When a sub drifts *linearly* (no constant delay fixes it),
-// it was almost always authored for one of these against a video running at a different rate — most
-// often a 25 fps (PAL) sub on a 23.976 fps film. The fix is to rescale the cue times, not shift them.
-export const SUB_FPS_OPTIONS = [23.976, 24, 25, 29.97];
-
-// Short fps label: 25 → "25", 23.976 → "23.98", 29.97 → "29.97".
-export function formatFps(fps) {
-  if (!fps) return "";
-  const r = Math.round(fps * 100) / 100;
-  return Number.isInteger(r) ? String(r) : r.toFixed(2);
-}
+// A/B sync guardrails: the two calibration points must be far enough apart to measure a rate, and the
+// solved rate must be sane (real fps mismatches sit within a few % of 1.0; anything wild is a mis-mark).
+const AB_MIN_SECONDS_APART = 30;
+const AB_MIN_SCALE = 0.6;
+const AB_MAX_SCALE = 1.5;
 
 /**
  * Live subtitle timing correction for the showing SOFT (sidecar VTT) track. Two knobs, both applied
- * from each cue's ORIGINAL times so they never compound:
- *   • a constant delay (±ms) for subs uniformly early/late, and
- *   • a frame-rate rescale for subs that *drift* (a constant delay can't fix linear drift). When the
- *     sub was authored for `subFps` but the video runs at `videoFrameRate`, multiplying every cue time
- *     by subFps/videoFrameRate realigns it. new = orig × scale + offset.
- * Purely client-side, so it works in BOTH the Watch player and the (synchronized) TV/channel player
- * without disturbing anyone else. Burned-in image subs can't be moved — gate the UI on a soft track.
+ * from each cue's ORIGINAL times so they never compound: new = orig × rateScale + offset.
+ *   • a constant Delay (±ms) for subs uniformly early/late, and
+ *   • a rate correction for subs that *drift* (a constant delay can't fix linear drift), solved from a
+ *     two-point "A/B" calibration — the viewer syncs an early line, then a later line, both already
+ *     watched (no spoilers). From the two (videoTime, delay) marks we solve scale + offset exactly.
+ * Purely client-side, so it works in BOTH the Watch and (synchronized) TV/channel players without
+ * disturbing anyone else. Burned-in image subs can't be moved — gate the UI on a soft track.
  *
  * Cues load async and a source change reloads the VTT with fresh cue objects, so we re-apply on the
  * <track> 'load' too; `reloadKey` should change when the track set is replaced. Picking a different
- * subtitle resets both knobs. `videoFrameRate` (from Stream/Start) enables the fps presets.
+ * subtitle resets everything.
  *
- * Returns { offsetMs, nudge, reset, toast, subFps, setSubFps, fpsOptions, videoFrameRate }.
+ * A/B math: while calibrating, rateScale is held at 1, so a synced cue satisfies origStart + delay =
+ * videoTime ⇒ its original time O = t − d. With two marks (tA, dA) and (tB, dB): OA = tA−dA, OB = tB−dB,
+ * and we want the final mapping to land each at its real time (tA, tB): scale = (tA−tB)/(OA−OB),
+ * offset = tA − scale·OA.
+ *
+ * Returns { offsetMs, nudge, reset, toast, rateScale, abStep, abError, beginSync, capturePoint, cancelSync }.
  */
-export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey, videoFrameRate = null) {
+export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey) {
   const [offsetMs, setOffsetMs] = useState(0);
-  const [subFps, setSubFps] = useState(null); // assumed source fps of the sub; null = matched (scale 1)
+  const [rateScale, setRateScale] = useState(1);
   const [toast, setToast] = useState(false);
+  const [abStep, setAbStep] = useState("idle"); // 'idle' | 'a' | 'b'
+  const [abError, setAbError] = useState(null);
   const toastTimer = useRef(null);
   const cueOriginalsRef = useRef(new WeakMap());
+  const pointARef = useRef(null); // first calibration mark: { t, d }
+  const priorRef = useRef(null); // correction snapshot to restore if the sync is cancelled
 
-  // Picking a different subtitle starts its timing fresh (each file has its own sync + rate).
+  // Picking a different subtitle starts its timing fresh (each file has its own sync).
   useEffect(() => {
     setOffsetMs(0);
-    setSubFps(null);
+    setRateScale(1);
+    setAbStep("idle");
+    setAbError(null);
+    pointARef.current = null;
+    priorRef.current = null;
   }, [selectedSubtitleIndex]);
-
-  // subs authored for subFps played on a videoFrameRate video need every timestamp × subFps/videoFps.
-  const scale = subFps && videoFrameRate ? subFps / videoFrameRate : 1;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -196,8 +200,8 @@ export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey, vi
             orig = { start: cue.startTime, end: cue.endTime };
             cueOriginalsRef.current.set(cue, orig);
           }
-          const ns = Math.max(0, orig.start * scale + offsetSec);
-          const ne = Math.max(ns + 0.001, orig.end * scale + offsetSec);
+          const ns = Math.max(0, orig.start * rateScale + offsetSec);
+          const ne = Math.max(ns + 0.001, orig.end * rateScale + offsetSec);
           // Assign in whichever order keeps start <= end at every step (a transient start > end can throw).
           try {
             if (ne >= cue.startTime) {
@@ -217,12 +221,12 @@ export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey, vi
     const tracks = Array.from(video.querySelectorAll("track"));
     tracks.forEach((t) => t.addEventListener("load", apply));
     return () => tracks.forEach((t) => t.removeEventListener("load", apply));
-  }, [videoRef, offsetMs, scale, selectedSubtitleIndex, reloadKey]);
+  }, [videoRef, offsetMs, rateScale, selectedSubtitleIndex, reloadKey]);
 
   const flashToast = useCallback(() => {
     setToast(true);
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(false), 1400);
+    toastTimer.current = setTimeout(() => setToast(false), 1600);
   }, []);
 
   const nudge = useCallback((deltaMs) => {
@@ -230,22 +234,75 @@ export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey, vi
     flashToast();
   }, [flashToast]);
 
-  const chooseFps = useCallback((fps) => {
-    setSubFps(fps);
-    flashToast();
-  }, [flashToast]);
-
   const reset = useCallback(() => {
     setOffsetMs(0);
-    setSubFps(null);
+    setRateScale(1);
+    setAbStep("idle");
+    setAbError(null);
+    pointARef.current = null;
+    priorRef.current = null;
   }, []);
+
+  // ── A/B two-point sync ──
+  // Calibrate with pure delay (rate held at 1); snapshot the prior correction so Cancel restores it.
+  const beginSync = useCallback(() => {
+    priorRef.current = { offsetMs, rateScale };
+    pointARef.current = null;
+    setAbError(null);
+    setRateScale(1);
+    setOffsetMs(0);
+    setAbStep("a");
+  }, [offsetMs, rateScale]);
+
+  const cancelSync = useCallback(() => {
+    const prior = priorRef.current;
+    if (prior) {
+      setOffsetMs(prior.offsetMs);
+      setRateScale(prior.rateScale);
+    }
+    pointARef.current = null;
+    priorRef.current = null;
+    setAbError(null);
+    setAbStep("idle");
+  }, []);
+
+  // Mark the current (videoTime, delay) as A, then B; on B, solve scale + offset and apply.
+  const capturePoint = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const mark = { t: video.currentTime, d: offsetMs / 1000 };
+    if (abStep === "a") {
+      pointARef.current = mark;
+      setAbError(null);
+      setAbStep("b");
+      return;
+    }
+    if (abStep === "b") {
+      const A = pointARef.current;
+      const B = mark;
+      const oa = A.t - A.d;
+      const ob = B.t - B.d;
+      if (Math.abs(B.t - A.t) < AB_MIN_SECONDS_APART || Math.abs(oa - ob) < 1) {
+        setAbError("Pick a second point further along — at least a minute from the first.");
+        return; // stay on step B for another try
+      }
+      const scale = (A.t - B.t) / (oa - ob);
+      const off = A.t - scale * oa;
+      if (!isFinite(scale) || scale < AB_MIN_SCALE || scale > AB_MAX_SCALE) {
+        setAbError("That didn't line up — re-mark each point right as the line is spoken.");
+        return;
+      }
+      setRateScale(scale);
+      setOffsetMs(Math.round(off * 1000));
+      pointARef.current = null;
+      priorRef.current = null;
+      setAbError(null);
+      setAbStep("idle");
+      flashToast();
+    }
+  }, [videoRef, offsetMs, abStep, flashToast]);
 
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
-  // Offer every common authoring rate except the one matching the video (only when we know the video fps).
-  const fpsOptions = videoFrameRate
-    ? SUB_FPS_OPTIONS.filter((f) => Math.abs(f - videoFrameRate) > 0.05)
-    : [];
-
-  return { offsetMs, nudge, reset, toast, subFps, setSubFps: chooseFps, fpsOptions, videoFrameRate };
+  return { offsetMs, nudge, reset, toast, rateScale, abStep, abError, beginSync, capturePoint, cancelSync };
 }

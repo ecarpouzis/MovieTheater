@@ -99,7 +99,6 @@ function VideoPlayer({
   isHls = true,
   isDirectStream = false,
   videoCodec = null,
-  videoFrameRate = null,
   qualityKey = "original",
   qualityDetail = null,
   audioTracks = [],
@@ -154,10 +153,13 @@ function VideoPlayer({
     nudge: nudgeSubtitle,
     reset: resetSubtitleOffset,
     toast: offsetToast,
-    subFps,
-    setSubFps,
-    fpsOptions,
-  } = useSubtitleOffset(videoRef, selectedSubtitleIndex, src, videoFrameRate);
+    rateScale: subtitleRateScale,
+    abStep: subtitleAbStep,
+    abError: subtitleAbError,
+    beginSync: beginSubtitleSync,
+    capturePoint: captureSubtitleSyncPoint,
+    cancelSync: cancelSubtitleSync,
+  } = useSubtitleOffset(videoRef, selectedSubtitleIndex, src);
 
   // Caption appearance (size/color/font/edge/box/lift), shared with the TV player via a hook that
   // owns persistence and the injected ::cue rule. `styleOpen` reveals the editor + on-video preview.
@@ -847,10 +849,12 @@ function VideoPlayer({
                         offsetMs={subtitleOffsetMs}
                         nudge={nudgeSubtitle}
                         reset={resetSubtitleOffset}
-                        subFps={subFps}
-                        setSubFps={setSubFps}
-                        fpsOptions={fpsOptions}
-                        videoFrameRate={videoFrameRate}
+                        rateScale={subtitleRateScale}
+                        abStep={subtitleAbStep}
+                        abError={subtitleAbError}
+                        beginSync={beginSubtitleSync}
+                        capturePoint={captureSubtitleSyncPoint}
+                        cancelSync={cancelSubtitleSync}
                       />
                     )}
 

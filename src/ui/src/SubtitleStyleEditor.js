@@ -10,7 +10,6 @@ import {
   SUB_STYLE_DEFAULTS,
   subBg,
   formatDelay,
-  formatFps,
   SUBTITLE_NUDGE_MS,
 } from "./subtitleStyle";
 import "./SubtitleStyleEditor.css";
@@ -145,14 +144,29 @@ export function SubtitleStyleControls({ subStyle, setStyle, setSubStyle }) {
 }
 
 /**
- * Subtitle timing-sync controls for the showing soft track: a constant Delay (±) and — when the video's
- * frame rate is known — a "Fix sync" frame-rate rescale for subs that drift (a constant delay can't fix
- * linear drift). Driven entirely by the useSubtitleOffset hook; render only when a soft track is active.
+ * Subtitle timing-sync controls for the showing soft track:
+ *   • a constant Delay (±) for subs that are uniformly early/late, and
+ *   • an A/B two-point sync for subs that *drift* (a constant delay can't fix linear drift).
+ * The A/B steps only render while a sync is in progress, so at rest this is just the Delay row plus a
+ * one-line "Fix drift" link. Driven entirely by the useSubtitleOffset hook.
  */
-export function SubtitleSyncControls({ offsetMs, nudge, reset, subFps, setSubFps, fpsOptions, videoFrameRate }) {
-  const dirty = offsetMs !== 0 || subFps != null;
+export function SubtitleSyncControls({
+  offsetMs,
+  nudge,
+  reset,
+  rateScale,
+  abStep,
+  abError,
+  beginSync,
+  capturePoint,
+  cancelSync,
+}) {
+  const syncing = abStep !== "idle";
+  const corrected = offsetMs !== 0 || Math.abs(rateScale - 1) > 1e-6;
+
   return (
     <div className="substyle">
+      {/* Delay: always available — and the tool you use to line up each A/B point. */}
       <div className="substyle-row">
         <span className="substyle-label">Delay</span>
         <div className="subsync-delay">
@@ -166,41 +180,46 @@ export function SubtitleSyncControls({ offsetMs, nudge, reset, subFps, setSubFps
         </div>
       </div>
 
-      {fpsOptions.length > 0 && (
-        <>
-          <div className="substyle-row">
-            <span className="substyle-label">Fix sync</span>
-            <div className="substyle-seg">
-              <button
-                type="button"
-                className={`substyle-segbtn${subFps == null ? " substyle-segbtn--on" : ""}`}
-                onClick={() => setSubFps(null)}
-                aria-pressed={subFps == null}
-              >
-                Off
-              </button>
-              {fpsOptions.map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  className={`substyle-segbtn${subFps === f ? " substyle-segbtn--on" : ""}`}
-                  onClick={() => setSubFps(f)}
-                  aria-pressed={subFps === f}
-                >
-                  {formatFps(f)}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="subsync-hint">
-            Drifts and no delay works? Video is {formatFps(videoFrameRate)} fps — pick the subtitle&rsquo;s original rate.
-          </div>
-        </>
+      {/* At rest: a single compact entry point. The guided steps only appear once a sync is started. */}
+      {!syncing && (
+        <div className="substyle-row">
+          <span className="substyle-label">Drift?</span>
+          <button type="button" className="subsync-link" onClick={beginSync}>
+            Fix with A/B sync →
+          </button>
+        </div>
       )}
 
-      <button type="button" className="substyle-reset" onClick={reset} disabled={!dirty}>
-        Reset sync
-      </button>
+      {syncing && (
+        <div className="subsync-ab">
+          <div className="subsync-ab-head">Sync · point {abStep === "a" ? "A" : "B"} of 2</div>
+          <ol className="subsync-ab-steps">
+            <li className={abStep === "a" ? "subsync-ab-on" : "subsync-ab-done"}>
+              At an <b>early</b> line, tap −/+ above until the subtitle matches the spoken words, then <b>Set A</b>.
+            </li>
+            <li className={abStep === "b" ? "subsync-ab-on" : ""}>
+              Jump to a <b>later</b> scene you&rsquo;ve already watched, match it the same way, then <b>Set B</b>.
+              <span className="subsync-ab-tip"> Further apart = more accurate.</span>
+            </li>
+          </ol>
+          {abError && <div className="subsync-ab-error">{abError}</div>}
+          <div className="subsync-ab-actions">
+            <button type="button" className="subsync-set" onClick={capturePoint}>
+              {abStep === "a" ? "Set A" : "Set B"}
+            </button>
+            <button type="button" className="subsync-cancel" onClick={cancelSync}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {corrected && !syncing && (
+        <button type="button" className="substyle-reset" onClick={reset}>
+          Reset sync
+          {Math.abs(rateScale - 1) > 1e-6 ? ` · rate ×${rateScale.toFixed(3)}` : ""}
+        </button>
+      )}
     </div>
   );
 }

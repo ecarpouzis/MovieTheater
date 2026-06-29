@@ -61,7 +61,6 @@ function TvPage({ userData }) {
   const [playingAudioIndex, setPlayingAudioIndex] = useState(null); // what's actually playing, for the menu highlight
   const [playingVideoCodec, setPlayingVideoCodec] = useState(null); // delivered video codec, for the "Playing" readout
   const [playingDirect, setPlayingDirect] = useState(false); // true = original copied (no re-encode), for the readout
-  const [playingFrameRate, setPlayingFrameRate] = useState(null); // source video fps, for the subtitle frame-rate fix
   const [subtitleIndex, setSubtitleIndex] = useState(null); // burned-in subtitle stream; null = off
   const [audioOpen, setAudioOpen] = useState(false);
   const [subsOpen, setSubsOpen] = useState(false);
@@ -74,10 +73,13 @@ function TvPage({ userData }) {
     nudge: nudgeSubtitle,
     reset: resetSubtitleOffset,
     toast: offsetToast,
-    subFps,
-    setSubFps,
-    fpsOptions,
-  } = useSubtitleOffset(videoRef, subtitleIndex, subtitleTracks, playingFrameRate);
+    rateScale: subtitleRateScale,
+    abStep: subtitleAbStep,
+    abError: subtitleAbError,
+    beginSync: beginSubtitleSync,
+    capturePoint: captureSubtitleSyncPoint,
+    cancelSync: cancelSubtitleSync,
+  } = useSubtitleOffset(videoRef, subtitleIndex, subtitleTracks);
   // The selected SOFT (sidecar VTT) subtitle — only these can be re-timed client-side, so the delay
   // UI gates on it (burned-in image subs are baked into the transcode and can't be moved).
   const activeTextSub = subtitleTracks.find((t) => t.index === subtitleIndex && !!t.deliveryUrl) || null;
@@ -363,7 +365,6 @@ function TvPage({ userData }) {
         setPlayingAudioIndex(session.selectedAudioIndex ?? null);
         setPlayingVideoCodec(session.videoCodec ?? null);
         setPlayingDirect(!!session.isDirectStream);
-        setPlayingFrameRate(session.videoFrameRate ?? null);
 
         const video = videoRef.current;
         if (!video) return;
@@ -1054,10 +1055,12 @@ function TvPage({ userData }) {
                         offsetMs={subtitleOffsetMs}
                         nudge={nudgeSubtitle}
                         reset={resetSubtitleOffset}
-                        subFps={subFps}
-                        setSubFps={setSubFps}
-                        fpsOptions={fpsOptions}
-                        videoFrameRate={playingFrameRate}
+                        rateScale={subtitleRateScale}
+                        abStep={subtitleAbStep}
+                        abError={subtitleAbError}
+                        beginSync={beginSubtitleSync}
+                        capturePoint={captureSubtitleSyncPoint}
+                        cancelSync={cancelSubtitleSync}
                       />
                     )}
                     {/* caption appearance editor (shared with the Watch player) + live on-video preview */}

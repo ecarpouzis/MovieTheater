@@ -147,11 +147,106 @@
   color: var(--ss-cream);
 }
 
-.subsync-hint {
-  font-size: 11px;
-  line-height: 1.35;
+/* compact entry point shown at rest */
+.subsync-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--ss-gold);
+  cursor: pointer;
+  text-align: left;
+}
+
+.subsync-link:hover {
+  text-decoration: underline;
+}
+
+/* guided A/B panel — only rendered while a sync is in progress */
+.subsync-ab {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.subsync-ab-head {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ss-gold);
+}
+
+.subsync-ab-steps {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11.5px;
+  line-height: 1.4;
   color: var(--ss-cream-dim);
-  padding: 0 0 2px;
+}
+
+.subsync-ab-steps b {
+  color: var(--ss-cream);
+}
+
+/* the active step pops; a completed step dims */
+.subsync-ab-on {
+  color: var(--ss-cream);
+}
+
+.subsync-ab-done {
+  opacity: 0.5;
+}
+
+.subsync-ab-tip {
+  color: var(--ss-gold-dim);
+}
+
+.subsync-ab-error {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: #f5a3a3;
+}
+
+.subsync-ab-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.subsync-set {
+  flex: 1;
+  padding: 7px 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ss-black);
+  background: var(--ss-gold);
+  border: 1px solid var(--ss-gold);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.subsync-set:hover {
+  filter: brightness(1.08);
+}
+
+.subsync-cancel {
+  padding: 7px 12px;
+  font-size: 12.5px;
+  color: var(--ss-cream);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.subsync-cancel:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* live on-video sample caption shown while the editor is open. z-index above both players' chrome
