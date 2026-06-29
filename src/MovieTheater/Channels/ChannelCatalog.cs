@@ -163,11 +163,6 @@ namespace MovieTheater.Channels
                 D("fellini","Fellini","Carnival of the soul","The Auteurs").Dir("Federico Fellini"),
                 D("ozu","Ozu","Stillness & family","The Auteurs").Dir("Yasujirō Ozu"),
 
-                // ── Director & Muse ──
-                D("scorsese-deniro","Scorsese & De Niro","Director and muse","Director & Muse").Dir("Martin Scorsese").Star("Robert De Niro"),
-                D("herzog-kinski","Herzog & Kinski","Genius and madness","Director & Muse").Dir("Werner Herzog").Star("Klaus Kinski"),
-                D("kurosawa-mifune","Kurosawa & Mifune","The greatest collaboration","Director & Muse").Dir("Akira Kurosawa").Star("Toshiro Mifune","Toshirô Mifune"),
-
                 // ── Star Power ──
                 D("cage","The Nicolas Cage Channel","Every Cage, all the time","Star Power").Star("Nicolas Cage"),
                 D("slj","Samuel L. Jackson","SLJ headlines","Star Power").Star("Samuel L. Jackson"),
@@ -318,7 +313,7 @@ namespace MovieTheater.Channels
                 D("spooky-season","Spooky Season","The Halloween mood — spooky, not just gory","Seasonal").Occasion("halloween").Season(10,1,11,1),
                 D("holiday-cheer","Holiday Cheer","Christmas & winter holidays","Seasonal").Occasion("christmas","holiday").Season(12,1,1,2),
                 D("summer-blockbusters","Summer Blockbusters","Big summer fun","Seasonal").Genre("Action","Adventure").Energy(70).Season(5,25,9,5),
-                D("sweethearts","Sweetheart Cinema","Valentine's romance","Seasonal").Genre("Romance").Season(2,1,2,15),
+                D("sweethearts","Sweetheart Cinema","Valentine's rom-coms","Seasonal").GenreAll("Romance","Comedy").Season(2,1,2,15),
             };
             return list;
         }

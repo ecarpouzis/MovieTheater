@@ -123,6 +123,20 @@ namespace MovieTheater.Channels
             if (filter.Kinds.HasFlag(ContentKinds.Misc))
                 cands.AddRange(await MiscCandidates(filter).ToListAsync(cancel));
 
+            // Specials / OVAs / shorts / music videos tied to a series surface wherever that series airs,
+            // grouped with it — so a Series-inclusive channel automatically carries the DBZ TV specials on
+            // Dragon Ball, the Pokémon specials on Pokemon, the Peanuts holiday specials wherever Peanuts
+            // airs, with no per-channel wiring. Bonus-feature "Extra" misc (deleted scenes, behind-the-
+            // scenes) never air.
+            if (filter.Kinds.HasFlag(ContentKinds.Series))
+            {
+                var seriesIds = cands.Where(c => c.GroupId != 0).Select(c => c.GroupId).Distinct().ToList();
+                if (seriesIds.Count > 0)
+                    cands.AddRange(await RelatedMiscCandidates(seriesIds).ToListAsync(cancel));
+            }
+            // A misc can arrive via both the explicit Misc kind and the related-series path — keep one.
+            cands = cands.GroupBy(c => c.PlayableId).Select(g => g.First()).ToList();
+
             // Resolve each candidate's current-insight rewatchability with one map per kind, rather than a
             // correlated best-insight subquery per candidate (identical value — CurrentInsights is unique
             // per subject). Movies/misc key on the title id (OrderRank; a misc id misses the movie map →
@@ -411,6 +425,28 @@ namespace MovieTheater.Channels
                 null, null, mv.MpaaRatingInferred,
                 null, null,
                 (long)mv.Id, 0, mv.SimpleTitle));
+        }
+
+        // Non-"Extra" misc videos (OVAs, specials, shorts, music videos, the odd mis-filed episode) that
+        // belong to one of the given series — surfaced wherever that series airs and grouped with it. Bonus
+        // features (Category "Extra") are excluded so deleted scenes and making-of clips never air. Grouped
+        // by RelatedSeriesId; sorted after the series' regular episodes (OrderRank ...+900000).
+        private IQueryable<Cand> RelatedMiscCandidates(List<int> seriesIds)
+        {
+            return movieDb.MiscVideos
+                .Where(mv => mv.ReviewBatch == null
+                    && mv.RelatedSeriesId != null && seriesIds.Contains(mv.RelatedSeriesId.Value)
+                    && (mv.Category == null || mv.Category != "Extra")
+                    && mv.Playable.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null))
+                .Select(mv => new Cand(
+                    mv.PlayableId,
+                    mv.Playable.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
+                    null,
+                    null, null, mv.MpaaRatingInferred,
+                    null, null,
+                    (long)mv.RelatedSeriesId!.Value * 1_000_000L + 900_000,
+                    mv.RelatedSeriesId!.Value,
+                    mv.SimpleTitle));
         }
 
         /// <summary>
