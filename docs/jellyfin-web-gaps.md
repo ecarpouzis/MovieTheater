@@ -63,13 +63,22 @@ Three new shared hooks, wired into both players (Watch `VideoPlayer.js` + TV `Tv
 - **`usePlaybackRate.js`** — persisted speed (0.5–2×), **Watch only** (a per-viewer rate would desync the
   TV schedule clock). Menu "Speed" section + `<` / `>` keys; re-applies after our per-source element teardown.
 
-## Tier 3 — subtitles & bandwidth — NOT done (need deps / browser test / a design call)
-- **Subtitle rendering overhaul** (highest value): client-side PGS via `libpgs` (JF `plugin.js:1349-1361`)
-  is the only change that removes a re-encode; ASS fidelity via `@jellyfin/libass-wasm` (`plugin.js:1270-1344`)
-  vs our ASS→VTT strip; optional `<div>` renderer (`plugin.js:1366-1403`) to beat `::cue` on iOS/macOS.
-  BLOCKERS: adds WASM deps + Vite worker bundling, server `SubtitleProfile` (advertise pgssub/ass External)
-  MUST land with the client renderer, and it's unverifiable without a browser (a bundling slip regresses
-  working subs). Do as a dedicated, browser-tested pass — not a blind land.
+## Tier 3 — subtitles & bandwidth
+- **PGS client rendering via `libpgs`** — **DONE** (commit 6e00f7f, needs browser test). Removes the
+  re-encode when a Blu-ray PGS sub is on: server advertises `pgssub` External + tags each track `kind`
+  (text/image-pgs/image-burn) + never burns PGS; both players draw it via `usePgsSubtitle.js` (libpgs
+  canvas overlay; self-contained wasm-free worker bundled via Vite `?url`). libpgs is wasm-free so it
+  bundled cleanly. Verify: PGS rendering, canvas overlay alignment, timing.
+- **ASS/SSA fidelity via `@jellyfin/libass-wasm`** — NOT done; needs a SHIPPING DECISION. Unlike libpgs it
+  carries a **2.3 MB wasm** the worker fetches as a sibling (no `wasmUrl` option), so it can't be `?url`-
+  bundled — must either commit the wasm+worker+legacy+font into `public/libass/` OR add a build-time copy
+  (e.g. vite-plugin-static-copy). Also needs: font plumbing (server MediaAttachments → `fonts`/`availableFonts`
+  for correct sign rendering; fallback font only otherwise), gating our `::cue` style editor + cue-offset UI
+  off for ASS tracks (route delay to libass `timeOffset`), and it switches ASS from always-working VTT to
+  raw-ASS-that-needs-libass (regression risk on a working path). Do as a focused, browser-tested pass once
+  the wasm-shipping approach is chosen.
+- **Custom `<div>` subtitle renderer** (`plugin.js:1366-1403`) — beats `::cue` on iOS/macOS (system caption
+  override) and unlocks secondary subtitles; an enhancement (current `::cue` works), needs browser test.
 - **Bandwidth probe for the opener** — TENSION with the deliberate "Auto opens at Original, drops on stall"
-  choice (seeding lower is the opposite). Only sane as "open Original UNLESS the link is provably weak,"
-  and the full version needs a new gateway bitrate-test endpoint. Deferred pending a design call.
+  choice. Only sane as "open Original UNLESS the link is provably weak," and the full version needs a new
+  gateway bitrate-test endpoint. Deferred pending a design call.
