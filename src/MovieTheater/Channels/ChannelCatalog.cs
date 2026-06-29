@@ -147,6 +147,21 @@ namespace MovieTheater.Channels
                 D("kubrick","Kubrick","Cold, perfect, unsettling","The Auteurs").Dir("Stanley Kubrick"),
                 D("carpenter","John Carpenter","The Master of Horror","The Auteurs").Dir("John Carpenter"),
                 D("tarantino","Tarantino","Talk, then violence","The Auteurs").Dir("Quentin Tarantino"),
+                D("woody-allen","Woody Allen","Neurotics, jazz & New York","The Auteurs").Dir("Woody Allen"),
+                D("ford","John Ford","Monument Valley & myth","The Auteurs").Dir("John Ford"),
+                D("wilder","Billy Wilder","Acid wit, noir & farce","The Auteurs").Dir("Billy Wilder"),
+                D("hawks","Howard Hawks","Pros who do the job","The Auteurs").Dir("Howard Hawks"),
+                D("huston","John Huston","Lost causes & treasure","The Auteurs").Dir("John Huston"),
+                D("welles","Orson Welles","Deep focus, deeper shadows","The Auteurs").Dir("Orson Welles"),
+                D("lumet","Sidney Lumet","The city's conscience","The Auteurs").Dir("Sidney Lumet"),
+                D("coppola","Coppola","Family, power & opera","The Auteurs").Dir("Francis Ford Coppola"),
+                D("eastwood","Clint Eastwood","Behind the squint","The Auteurs").Dir("Clint Eastwood"),
+                D("ridley-scott","Ridley Scott","Worlds built to scale","The Auteurs").Dir("Ridley Scott"),
+                D("nolan","Christopher Nolan","Time, mind & spectacle","The Auteurs").Dir("Christopher Nolan"),
+                D("bunuel","Buñuel","Surreal & subversive","The Auteurs").Dir("Luis Buñuel"),
+                D("godard","Godard","Breaking every rule","The Auteurs").Dir("Jean-Luc Godard"),
+                D("fellini","Fellini","Carnival of the soul","The Auteurs").Dir("Federico Fellini"),
+                D("ozu","Ozu","Stillness & family","The Auteurs").Dir("Yasujirō Ozu"),
 
                 // ── Director & Muse ──
                 D("scorsese-deniro","Scorsese & De Niro","Director and muse","Director & Muse").Dir("Martin Scorsese").Star("Robert De Niro"),
@@ -160,6 +175,16 @@ namespace MovieTheater.Channels
                 D("deniro","De Niro","Robert De Niro","Star Power").Star("Robert De Niro"),
                 D("hanks","The Tom Hanks Channel","America's dad","Star Power").Star("Tom Hanks"),
                 D("murray","Bill Murray","Deadpan legend","Star Power").Star("Bill Murray"),
+                D("depp","Johnny Depp","Eccentrics & pirates","Star Power").Star("Johnny Depp"),
+                D("dafoe","Willem Dafoe","Intensity incarnate","Star Power").Star("Willem Dafoe"),
+                D("willis","Bruce Willis","Yippee-ki-yay","Star Power").Star("Bruce Willis"),
+                D("buscemi","Steve Buscemi","Character-actor royalty","Star Power").Star("Steve Buscemi"),
+                D("robin-williams","Robin Williams","Manic genius","Star Power").Star("Robin Williams"),
+                D("cruise","Tom Cruise","Does his own stunts","Star Power").Star("Tom Cruise"),
+                D("nicholson","Jack Nicholson","Here's Johnny","Star Power").Star("Jack Nicholson"),
+                D("connery","Sean Connery","The original Bond","Star Power").Star("Sean Connery"),
+                D("caine","Michael Caine","Not many people know that","Star Power").Star("Michael Caine"),
+                D("keanu","Keanu Reeves","Whoa","Star Power").Star("Keanu Reeves"),
 
                 // ── Japanese Cinema & Samurai ──
                 D("japanese-cinema","Japanese Cinema","From Ozu to Miike — Japanese films","Japanese Cinema & Samurai").Lang("ja"),
@@ -186,6 +211,7 @@ namespace MovieTheater.Channels
                 D("neon-noir","Neon Noir","Synthwave sci-fi & neon nights","Cult, Weird & Arthouse").Genre("Sci-Fi","Action","Thriller").Visual("neon-soaked"),
                 D("wordless","Wordless Wonders","Show, don't tell","Cult, Weird & Arthouse").Content("no dialogue"),
                 D("off-beaten","Off the Beaten Path","Deep cuts and obscurities","Cult, Weird & Arthouse").Novelty(70),
+                D("short-films","Short Film Theater","Pixar to Lynch — animation, experiment & early cinema","Cult, Weird & Arthouse").Runtime(null,40),
 
                 // ── Genres ──
                 D("comedy","Comedy","Laughs around the clock","Genres").Genre("Comedy"),
@@ -213,6 +239,7 @@ namespace MovieTheater.Channels
                 D("spoofs","Spoofs & Mockumentaries","Brooks, Proft & the parody crew","Signature Picks").Sub("spoof","mockumentary"),
                 D("mst3k","Mystery Science Theater","Riff over the worst movies ever made","Signature Picks").In(T).Path("MST3K","Mystery Science").Strat(err),
                 D("silent-comedy","Silent Comedy","Keaton, Chaplin & the pioneers","Signature Picks").Star("Buster Keaton","Charles Chaplin").Year(null,1936),
+                D("coming-of-age","Coming of Age","Growing up on screen","Signature Picks").Tag(TagCategory.Theme,"coming of age"),
 
                 // ── Decades ──
                 D("silent-era","Silent & Pre-Code","Before 1930","Decades").Year(null,1929).Strat(ScheduleStrategies.SeededShuffle),
@@ -231,6 +258,7 @@ namespace MovieTheater.Channels
                 D("whimsical","Whimsical & Quirky","Offbeat charm","Moods & Vibes").Mood("whimsical"),
                 D("tense","Tense & Dreadful","White-knuckle dread","Moods & Vibes").Mood("tense","dread","unsettling"),
                 D("adrenaline","Pure Adrenaline","Nonstop motion","Moods & Vibes").Energy(80),
+                D("epics","Epics","Sweeping, big-canvas cinema","Moods & Vibes").Mood("epic"),
 
                 // ── Animation Hall of Fame ──
                 D("cartoon-shorts","Cartoon Shorts Theater","Looney Tunes, Tom & Jerry & the golden-age greats","Animation Hall of Fame").In(T).Path("Looney Tunes","Merrie Melodies","Tom and Jerry","Walt Disney Treasures","Walt Disney Fables","Tex Avery").Strat(err),
@@ -262,14 +290,18 @@ namespace MovieTheater.Channels
                 D("anime-films","Anime Films","Feature-length anime","Anime").Lang("ja").Genre("Animation"),
 
                 // ── The TV Vault ──
-                D("cult-tv","Cult TV","Riff-worthy and strange","The TV Vault").In(T).Path("Twilight Zone","Doctor Who","Lexx","Are You Afraid of the Dark","Tales from").Strat(err),
+                D("cult-tv","Cult TV","Riff-worthy and strange","The TV Vault").In(T).Path("Twilight Zone","Doctor Who","Lexx","Are You Afraid of the Dark","Tales from","Prisoner","Eerie","Hitchhiker","Neverwhere").Strat(err),
                 D("classic-scifi-tv","Classic Sci-Fi TV","Final frontiers","The TV Vault").In(T).Path("Star Trek","Battlestar Galactica","Farscape","Buck Rogers","Quantum Leap").Strat(err),
-                D("prestige-drama","Prestige Drama","Appointment television","The TV Vault").In(T).Path("Game of Thrones","Breaking Bad","Lost (2004","Twin Peaks","The Boys").Strat(err),
-                D("classic-sitcoms","Classic Sitcoms","Comfort comedy","The TV Vault").In(T).Path("Seinfeld","All in the Family","Community","Arrested Development","Archer").Strat(err),
-                D("science-tv","Science & How-To","How the world works","The TV Vault").In(T).Path("How It's Made","MythBusters","Penn & Teller").Strat(err),
+                D("prestige-drama","Prestige Drama","Appointment television","The TV Vault").In(T).Path("Game of Thrones","Breaking Bad","Lost (2004","Twin Peaks","The Boys","Firefly","Westworld","Stranger Things","Band of Brothers","Sandman","Good Omens","Fringe","Roots","Pluribus","Alien - Earth","I'm a Virgo","Twisted Metal","Blue Eye Samurai").Strat(err),
+                D("classic-sitcoms","Classic Sitcoms","Comfort comedy","The TV Vault").In(T).Path("Seinfeld","All in the Family","Community","Arrested Development","Archer","Spaced","Flight of the Conchords","Police Squad","Look Around You").Strat(err),
+                D("science-tv","Science & Nature","How the world works","The TV Vault").In(T).Path("How It's Made","MythBusters","Penn & Teller","Cosmos","Planet Earth","deGrasse","M Theory","Fun to Imagine","Bill Nye","Book of Cool").Strat(err),
                 D("muppets","The Muppets & Jim Henson","Felt and felt deeply","The TV Vault").In(MT).Path("Jim Henson","Muppet").Strat(err),
                 D("primetime-toons","Primetime Animation","The Simpsons, Futurama & adult-cartoon primetime","The TV Vault").In(T).Path("Simpsons","Futurama","Daria","Beavis and Butt-Head","Duckman","Critic","Clone High").Strat(err),
-                D("sketch-comedy","Sketch Comedy","Monty Python to the Whitest Kids","The TV Vault").In(T).Path("Monty Python","Whitest Kids","Liquid Television","Banzai","Mr. Show","Kids in the Hall").Strat(err),
+                D("sketch-comedy","Sketch Comedy","Monty Python to the Whitest Kids","The TV Vault").In(T).Path("Monty Python","Whitest Kids","Liquid Television","Banzai","Mr. Show","Kids in the Hall","Hey, Vern").Strat(err),
+                D("web-series","Web Series","Internet originals & machinima","The TV Vault").In(T).Path("Red Versus Blue","Marble Hornets","Auralnaut").Strat(err),
+                D("adult-animation","Adult Animation","Surreal, transgressive toons","The TV Vault").In(T).Path("Aeon Flux","Æon Flux","Maxx","Superjail","Spicy City","Midnight Gospel","Death Parade","Dicktown","Frisky Dingo","Wonder Showzen","Love, Death").Strat(err),
+                D("stunts-pranks","Stunts & Pranks","Dares, mayhem & mind games","The TV Vault").In(T).Path("Jackass","Banzai","Trick of the Mind").Strat(err),
+                D("arthouse-tv","Arthouse TV","Long-form cinema — Decalogue to Berlin Alexanderplatz","The TV Vault").In(T).Path("Berlin Alexanderplatz","Heimat","Decalogue","Phantom India","Histoire","Tanner").Strat(err),
 
                 // ── International ──
                 D("world-cinema","World Cinema","Beyond Hollywood","International").NotLang("en"),
@@ -277,6 +309,10 @@ namespace MovieTheater.Channels
                 D("german-cinema","German Cinema","Expressionism to New German","International").Lang("de"),
                 D("italian-cinema","Italian Cinema","Neorealism to giallo","International").Lang("it"),
                 D("spanish-cinema","Spanish-Language","Films in Spanish","International").Lang("es"),
+                D("chinese-cinema","Chinese-Language Cinema","Mainland, Hong Kong & Taiwan","International").Lang("zh","cn"),
+                D("korean-cinema","Korean Cinema","Melodrama to mayhem","International").Lang("ko"),
+                D("russian-cinema","Russian & Soviet Cinema","Tarkovsky to the Thaw","International").Lang("ru"),
+                D("scandi-cinema","Scandinavian Cinema","The bleak, beautiful North","International").Lang("sv","da","no"),
 
                 // ── Seasonal (date-windowed) ──
                 D("spooky-season","Spooky Season","The Halloween mood — spooky, not just gory","Seasonal").Occasion("halloween").Season(10,1,11,1),
