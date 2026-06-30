@@ -250,6 +250,9 @@
   width: 20px;
   height: 20px;
   flex-shrink: 0;
+  /* Kill the global `img { margin: 0 auto }` (index.css) — as a flex item its auto side-margins
+     absorb the row's free space and shove the label away from the icon. */
+  margin: 0;
 }
 
 /* The current-section glyph in the home button. */
@@ -258,6 +261,7 @@
   height: 22px;
   display: block;
   flex-shrink: 0;
+  margin: 0; /* same global-img auto-margin reset as .navbar-section-icon */
 }
 
 .navbar-section-item:last-child {
