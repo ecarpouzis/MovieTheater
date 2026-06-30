@@ -76,7 +76,12 @@ export function buildNavODataUrl(filter) {
 export function useMovieSearch() {
   // titleTypes rides along on every search so the Type selector always reflects the active scope,
   // regardless of which other filter is in play.
-  const [search, setSearch] = useState({ url: RANDOM_MOVIES_URL, titleTypes: loadTitleTypes() });
+  // Start with a non-fetchable sentinel: Browse stays in its skeleton (no fetch) until NavBar's URL
+  // effect dispatches the real search for the current URL. That dispatch happens on mount — BEFORE
+  // /API/Me resolves — so with the auth gate removed in Browse, the movie grid loads in parallel with
+  // auth instead of waiting on it, and there's no wasted placeholder fetch. `pending` distinguishes
+  // this initial state from a legitimately empty search.
+  const [search, setSearch] = useState({ url: null, titleTypes: loadTitleTypes(), pending: true });
 
   // An empty scope ("all types") with no other filter is the random discovery grid.
   const resetSearch = useCallback(() => {

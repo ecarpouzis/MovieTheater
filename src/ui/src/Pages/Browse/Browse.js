@@ -75,7 +75,10 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
 
   // ── Non-infinite path: one fetch returns the full result set (or the legacy envelope). ──
   useEffect(() => {
-    if (!isAuthReady || isInfinite) return;
+    // No isAuthReady gate: URL searches are age-gated server-side via the auth cookie, and id-based
+    // (Seen/Want) searches are only dispatched post-auth upstream — so the grid fetches in parallel
+    // with /API/Me. `search.pending` is the initial sentinel (skeleton stays until NavBar dispatches).
+    if (isInfinite || search.pending) return;
     if (!search.url && !search.movieIds) {
       setMovieDataArray([]);
       setPagination(null);
@@ -109,11 +112,12 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
         if (err.name !== "AbortError") throw err;
       });
     return () => controller.abort();
-  }, [search.url, search.movieIds, isAuthReady, isInfinite]);
+  }, [search.url, search.movieIds, search.pending, isInfinite]);
 
   // ── Infinite path: load the first page, then append on scroll. ──
   useEffect(() => {
-    if (!isAuthReady || !isInfinite) return;
+    // No isAuthReady gate (see the non-infinite effect above): the first page loads in parallel with auth.
+    if (!isInfinite || search.pending) return;
     setLoading(true);
     pageRef.current = 1;
     loadingMoreRef.current = false;
@@ -133,7 +137,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
         if (err.name !== "AbortError") throw err;
       });
     return () => controller.abort();
-  }, [search.url, search.movieIds, isAuthReady, isInfinite]);
+  }, [search.url, search.movieIds, search.pending, isInfinite]);
 
   const hasMore = isInfinite && pagination != null && movieDataArray.length < pagination.totalCount;
 
