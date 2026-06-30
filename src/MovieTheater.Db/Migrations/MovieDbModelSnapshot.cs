@@ -592,7 +592,7 @@ namespace MovieTheater.Db.Migrations
                     b.Property<int>("NormalizedTitleType")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("int")
-                        .HasComputedColumnSql("CASE WHEN [TitleType] IN (2, 3) THEN 2 ELSE 0 END", true);
+                        .HasComputedColumnSql("CASE WHEN [TitleType] IN (2, 3) THEN 2 WHEN [TitleType] = 8 AND [RuntimeMinutes] IS NOT NULL AND [RuntimeMinutes] < 45 THEN 2 ELSE 0 END", true);
 
                     b.Property<DateTime?>("OddityAcknowledgedUtc")
                         .HasColumnType("datetime2");

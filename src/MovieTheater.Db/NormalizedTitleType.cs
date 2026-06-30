@@ -24,9 +24,11 @@ namespace MovieTheater.Db
     public static class TitleTypeExtensions
     {
         /// <summary>
-        /// Canonical mapping from IMDb's granular <see cref="TitleType"/> to the coarse
-        /// <see cref="NormalizedTitleType"/> bucket. Keep this in sync with the persisted computed-column
-        /// SQL on <c>Movie.NormalizedTitleType</c> (Short/TvShort = 2 ⇒ Short, everything else ⇒ Movies).
+        /// Coarse mapping from IMDb's granular <see cref="TitleType"/> to the <see cref="NormalizedTitleType"/>
+        /// bucket. The authoritative version is the persisted computed-column SQL on
+        /// <c>Movie.NormalizedTitleType</c>, which ALSO maps a short-runtime <see cref="TitleType.Video"/>
+        /// (&lt; 45 min — many IMDb shorts are tagged "video") to Short; this runtime-aware rule can't be
+        /// expressed on <see cref="TitleType"/> alone, so this helper is a coarse approximation.
         /// </summary>
         public static NormalizedTitleType Normalize(this TitleType t) => t switch
         {
