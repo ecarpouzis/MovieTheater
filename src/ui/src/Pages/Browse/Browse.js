@@ -221,7 +221,14 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       return;
     }
 
-    if (!location.search && movieDataArray.length > 0) {
+    // Snapshot the on-screen ids so back-navigation restores this exact grid — but ONLY for
+    // movie/series grids. MiscVideo has its OWN id space that overlaps movie/series ids, and the
+    // restore path resolves ids through /API/GetMoviesByIds (Movie/Series tables only). Snapshotting
+    // a misc grid would therefore restore the unrelated movie that happens to share each misc id
+    // (e.g. misc 13 → Movie 13). For any grid containing misc we skip the snapshot and let back-nav
+    // re-run the scope query (a stable, materialized list) instead.
+    const gridHasMisc = movieDataArray.some((m) => m.kind === "misc");
+    if (!location.search && !gridHasMisc && movieDataArray.length > 0) {
       const browseMovieIds = movieDataArray.map((movie) => movie.id).filter((id) => Number.isInteger(id) && id > 0);
       if (browseMovieIds.length > 0) {
         history.replace({
