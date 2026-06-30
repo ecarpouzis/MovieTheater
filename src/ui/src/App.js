@@ -13,6 +13,7 @@ import WatchPage from "./Pages/Watch/WatchPage";
 import TvPage from "./Pages/Tv/TvPage";
 import ChannelGuidePage from "./Pages/Tv/ChannelGuidePage";
 import IngestReviewPage from "./Pages/IngestReview/IngestReviewPage";
+import RatePage from "./Pages/Rate/RatePage";
 import { useMovieSearch } from "./hooks/useMovieSearch";
 
 const storedUsername = window.localStorage.getItem("Username");
@@ -117,6 +118,9 @@ function App() {
             </Route>
             <Route path="/review-ingest" exact>
               <IngestReviewPage userData={userData} />
+            </Route>
+            <Route path="/rate" exact>
+              <RatePage userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/boardgames/batchinsert" exact>
               <BoardgameBatchInsertPage />

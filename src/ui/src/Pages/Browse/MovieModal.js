@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { useHistory } from "react-router-dom";
-import { Modal, Spin, Input, Button, Checkbox, message } from "antd";
+import { Modal, Spin, Input, Button, Checkbox, Slider, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import UserMovieOptions from "./UserMovieOptions";
 import WatchButton from "../Watch/WatchButton";
@@ -52,6 +52,56 @@ const TYPE_LABEL = {
   TvSpecial: "TV Special", TvShort: "TV Short", Video: "Video",
 };
 const ROLE_LABEL = { Primary: "Feature", Part: "Part", Variant: "Variant", Extra: "Extra" };
+
+// The viewer's own 0–100 score — a bar with a draggable handle. 0 is a real score (the floor): once set,
+// the rating exists; "Clear" removes it (unrated = no row). Optimistically updates userData.ratings (so the
+// Rate page and any badges reflect it at once) and persists on release. Keyed by "{kind}:{id}" because
+// MiscVideo shares an id range with movies.
+function YourRating({ id, kind, userData, setUserData }) {
+  const key = `${kind}:${id}`;
+  const isRated = !!(userData && userData.ratings && key in userData.ratings);
+  const stored = isRated ? userData.ratings[key] : 0;
+  const [value, setValue] = useState(stored);
+
+  // Re-seed when the modal switches titles or the stored score changes elsewhere.
+  useEffect(() => {
+    setValue(stored);
+  }, [key, stored]);
+
+  // v is a real 0–100 score, or null to clear (unrate).
+  const persist = (v) => {
+    const next = { ...(userData.ratings || {}) };
+    if (v == null) delete next[key];
+    else next[key] = v;
+    setUserData({ ...userData, ratings: next });
+    MovieAPI.setRating(id, v, kind)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d || !d.success) throw new Error("save failed");
+      })
+      .catch(() => {
+        message.error("Couldn't save your rating.");
+        const revert = { ...(userData.ratings || {}) };
+        if (isRated) revert[key] = stored;
+        else delete revert[key];
+        setUserData({ ...userData, ratings: revert });
+        setValue(stored);
+      });
+  };
+
+  return (
+    <div className="modal-your-rating">
+      <span className="modal-label">Your Rating</span>
+      <Slider className="your-rating-slider" min={0} max={100} value={value} onChange={setValue} onAfterChange={(v) => persist(v)} />
+      <span className="your-rating-score">{isRated ? value : "—"}</span>
+      {isRated && (
+        <button type="button" className="your-rating-clear" title="Remove your rating" onClick={() => persist(null)}>
+          Clear
+        </button>
+      )}
+    </div>
+  );
+}
 
 function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle, userData, setUserData, onToggleViewing, onMovieUpdated, kind = "movie" }) {
   const history = useHistory();
@@ -676,6 +726,8 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
                     </a>
                   )}
                 </div>
+
+                {userData && kind !== "misc" && <YourRating id={movie.id} kind={kind} userData={userData} setUserData={setUserData} />}
 
                 <div className="modal-actions-row">
                   {!isSeries && (

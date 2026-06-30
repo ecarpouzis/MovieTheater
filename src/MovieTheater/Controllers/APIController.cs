@@ -860,6 +860,36 @@ namespace MovieTheater.Controllers
             }).ToList();
         }
 
+        // Misc-video cards for an explicit id set (the Rate page's misc bars). MiscVideo has its own id
+        // space, so this is separate from GetMoviesByIds; same projection + age gate as GetMiscCards.
+        [HttpPost("/API/GetMiscByIds")]
+        public async Task<IActionResult> GetMiscByIds([FromBody] List<int> ids)
+        {
+            if (ids == null || ids.Count == 0)
+                return Ok(new List<MovieCardDto>());
+
+            int ageRestriction = await GetAgeRestrictionAsync();
+            var raw = await movieDb.MiscVideos
+                .Where(v => ids.Contains(v.Id) && v.ReviewBatch == null)
+                .Where(Web.RatingGate.MiscVisibleAtAge(movieDb, ageRestriction))
+                .Select(v => new { v.Id, v.Title, v.SimpleTitle, v.Year, v.Description, v.Category, v.PlayableId, v.MpaaRatingInferred })
+                .ToListAsync();
+            var cards = raw.Select(v => new MovieCardDto
+            {
+                id = v.Id,
+                Kind = "misc",
+                Title = v.Title,
+                SimpleTitle = v.SimpleTitle,
+                ReleaseDate = v.Year.HasValue ? new DateTime(v.Year.Value, 1, 1) : (DateTime?)null,
+                Rating = v.MpaaRatingInferred,
+                RatingEstimated = v.MpaaRatingInferred != null,
+                Plot = v.Description,
+                Category = v.Category,
+                PlayableId = v.PlayableId,
+            }).OrderBy(c => c.SimpleTitle ?? c.Title, StringComparer.OrdinalIgnoreCase).ToList();
+            return Ok(cards);
+        }
+
         // ── Unified search over movies + series (the frontend uses these instead of /odata/Movies) ──
 
         [HttpGet("/API/BrowseTitle")]
@@ -1703,6 +1733,46 @@ namespace MovieTheater.Controllers
             var moviesToWatch = (await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "WantToWatch")
                 .Select(d => d.MovieID ?? d.SeriesId).ToListAsync()).Where(x => x != null).Select(x => x!.Value).ToList();
 
+            // Watched MiscVideo ids (their own id space, so kept separate from moviesSeen). The Rate page
+            // fetches their cards via GetMiscByIds.
+            var miscSeen = await movieDb.Viewings
+                .Where(d => d.UserID == user.UserID && d.ViewingType == "Seen" && d.MiscVideoId != null)
+                .Select(d => d.MiscVideoId!.Value).ToListAsync();
+
+            // User's own 0–100 ratings. Legacy + new ratings both live on Viewing as ViewingType=="Rated"
+            // with the score in ViewingData. Keyed by a composite "{kind}:{id}" because MiscVideo has its own
+            // id space that can collide with a movie id. Placeholder 0s / non-numeric values are treated as
+            // unrated and skipped, so only real scores surface.
+            var ratingRows = await movieDb.Viewings
+                .Where(v => v.UserID == user.UserID && v.ViewingType == "Rated" && v.ViewingData != null)
+                .Select(v => new { v.MovieID, v.SeriesId, v.MiscVideoId, v.ViewingData })
+                .ToListAsync();
+            var ratings = new Dictionary<string, int>();
+            foreach (var r in ratingRows)
+            {
+                if (!int.TryParse(r.ViewingData, out var score) || score < 0 || score > 100) continue;
+                string? key = r.MovieID != null ? $"movie:{r.MovieID.Value}"
+                            : r.SeriesId != null ? $"series:{r.SeriesId.Value}"
+                            : r.MiscVideoId != null ? $"misc:{r.MiscVideoId.Value}"
+                            : null;
+                if (key != null) ratings[key] = score;
+            }
+
+            // Rate-page anchors — per-user JSON in UserSettings; parsed defensively (passed through as-is) like
+            // favoriteChannels. Stored as a bare JSON array [{ "id": "a1", "value": 30 }, …].
+            var anchorsSetting = await movieDb.UserSettings
+                .FirstOrDefaultAsync(u => u.SettingKey == "RatingAnchors" && u.UserID == user.UserID);
+            System.Text.Json.JsonElement ratingAnchors;
+            try
+            {
+                ratingAnchors = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
+                    string.IsNullOrWhiteSpace(anchorsSetting?.SettingValue) ? "[]" : anchorsSetting!.SettingValue);
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                ratingAnchors = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>("[]");
+            }
+
             //age restriction
             int? ageRestriction = null;
             var ageSetting = await movieDb.UserSettings
@@ -1764,7 +1834,7 @@ namespace MovieTheater.Controllers
             // false here, which is correct — they must set their password before they can administer.
             var isAdmin = IsAdminUsername(user.Username) && hasPassword;
 
-            return new { user.Username, moviesSeen, moviesToWatch, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess, favoriteChannels, hasPassword, isAdmin };
+            return new { user.Username, moviesSeen, moviesToWatch, miscSeen, ratings, ratingAnchors, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess, favoriteChannels, hasPassword, isAdmin };
         }
 
         [HttpPost("/API/Logout")]
@@ -2029,6 +2099,109 @@ namespace MovieTheater.Controllers
 
             await movieDb.SaveChangesAsync();
             return Ok(new { Success = true });
+        }
+
+        public class RatingItem
+        {
+            public int Id { get; set; }
+            /// <summary>"movie" (default), "series", or "misc" — selects which typed FK on Viewing to write.</summary>
+            public string Kind { get; set; } = "movie";
+            /// <summary>0–100 score, or null to clear the rating (remove the row — "unranked").</summary>
+            public int? Value { get; set; }
+        }
+
+        public class SetRatingsRequest
+        {
+            public List<RatingItem> Items { get; set; } = new();
+        }
+
+        // Upsert a user's own 0–100 ratings. Stored on Viewing as ViewingType=="Rated" with the score in
+        // ViewingData (the same rows the legacy rating feature used). Mirrors SetViewingState's cookie-identity
+        // and kind→FK dispatch. Bounded + idempotent: one capped chunk per call, writes only changed rows, and
+        // re-sending the same value is a no-op — the Rate page's autosave drives the chunk loop to completion.
+        [HttpPost("/API/SetRatings")]
+        public async Task<IActionResult> SetRatings([FromBody] SetRatingsRequest request)
+        {
+            var items = request?.Items;
+            if (items == null || items.Count == 0)
+                return Ok(new { Success = true, updated = 0, skipped = 0, deleted = 0 });
+
+            // Bounded write (project rule): the caller sends capped chunks and drives the loop to completion.
+            if (items.Count > 200)
+                return BadRequest(new { Success = false, Message = "Too many items; send at most 200 per call." });
+
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+                return Unauthorized(new { Success = false, Message = "Not logged in." });
+            int uid = currentUserId.Value;
+
+            static string NormKind(string? k) =>
+                string.Equals(k, "series", StringComparison.OrdinalIgnoreCase) ? "series"
+                : string.Equals(k, "misc", StringComparison.OrdinalIgnoreCase) ? "misc"
+                : "movie";
+
+            var movieIds = items.Where(i => NormKind(i.Kind) == "movie").Select(i => i.Id).Distinct().ToList();
+            var seriesIds = items.Where(i => NormKind(i.Kind) == "series").Select(i => i.Id).Distinct().ToList();
+            var miscIds = items.Where(i => NormKind(i.Kind) == "misc").Select(i => i.Id).Distinct().ToList();
+
+            // Validate targets exist (one set-load per kind).
+            var validMovies = movieIds.Count == 0 ? new HashSet<int>()
+                : (await movieDb.Movies.Where(m => movieIds.Contains(m.id)).Select(m => m.id).ToListAsync()).ToHashSet();
+            var validSeries = seriesIds.Count == 0 ? new HashSet<int>()
+                : (await movieDb.Series.Where(s => seriesIds.Contains(s.Id)).Select(s => s.Id).ToListAsync()).ToHashSet();
+            var validMisc = miscIds.Count == 0 ? new HashSet<int>()
+                : (await movieDb.MiscVideos.Where(mv => miscIds.Contains(mv.Id)).Select(mv => mv.Id).ToListAsync()).ToHashSet();
+
+            // Load the user's existing "Rated" rows for just these targets (one query).
+            var existingRows = await movieDb.Viewings
+                .Where(v => v.UserID == uid && v.ViewingType == "Rated" &&
+                    ((v.MovieID != null && movieIds.Contains(v.MovieID.Value)) ||
+                     (v.SeriesId != null && seriesIds.Contains(v.SeriesId.Value)) ||
+                     (v.MiscVideoId != null && miscIds.Contains(v.MiscVideoId.Value))))
+                .ToListAsync();
+            Viewing? Find(string kind, int id) => existingRows.FirstOrDefault(v =>
+                kind == "series" ? v.SeriesId == id : kind == "misc" ? v.MiscVideoId == id : v.MovieID == id);
+
+            int updated = 0, skipped = 0, deleted = 0;
+            foreach (var item in items)
+            {
+                var kind = NormKind(item.Kind);
+                bool exists = kind == "series" ? validSeries.Contains(item.Id)
+                            : kind == "misc" ? validMisc.Contains(item.Id)
+                            : validMovies.Contains(item.Id);
+                if (!exists) { skipped++; continue; }
+
+                var existing = Find(kind, item.Id);
+
+                if (item.Value == null)
+                {
+                    if (existing != null) { movieDb.Viewings.Remove(existing); existingRows.Remove(existing); deleted++; }
+                    else skipped++;
+                    continue;
+                }
+
+                var data = Math.Clamp(item.Value.Value, 0, 100).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (existing == null)
+                {
+                    var row = new Viewing
+                    {
+                        MovieID = kind == "movie" ? item.Id : (int?)null,
+                        SeriesId = kind == "series" ? item.Id : (int?)null,
+                        MiscVideoId = kind == "misc" ? item.Id : (int?)null,
+                        UserID = uid,
+                        ViewingType = "Rated",
+                        ViewingData = data,
+                    };
+                    await movieDb.Viewings.AddAsync(row);
+                    existingRows.Add(row);
+                    updated++;
+                }
+                else if (existing.ViewingData != data) { existing.ViewingData = data; updated++; }
+                else skipped++;
+            }
+
+            await movieDb.SaveChangesAsync();
+            return Ok(new { Success = true, updated, skipped, deleted });
         }
 
         [HttpGet("/API/API_UserList")]

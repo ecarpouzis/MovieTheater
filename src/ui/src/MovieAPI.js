@@ -385,6 +385,42 @@ function setUserSetting(key, value) {
   });
 }
 
+// Upsert the current user's own 0–100 ratings. items: [{ id, kind, value }] where value is 0..100, or
+// null to clear (remove the row). Bounded per call — the server caps at 200, so the Rate page sends
+// capped chunks and drives the loop. Returns the raw fetch promise ({ success, updated, skipped, deleted }).
+function setRatings(items) {
+  return fetch("/API/SetRatings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+}
+
+// Convenience for the modal slider: set one title's score (value 0..100, or null to clear).
+function setRating(id, value, kind = "movie") {
+  return setRatings([{ id, kind, value }]);
+}
+
+// Full (un-paginated) cards for an explicit movie/series id set — the Rate page loads every watched
+// title at once. Mirrors Browse's bare-array GetMoviesByIds call (pageSize defaults to 0 server-side).
+function getTitlesByIds(ids) {
+  return fetch("/API/GetMoviesByIds", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(ids),
+  });
+}
+
+// Cards for an explicit MiscVideo id set (the Rate page's misc bars). MiscVideo has its own id space,
+// so it needs a dedicated fetch separate from getTitlesByIds.
+function getMiscByIds(ids) {
+  return fetch("/API/GetMiscByIds", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(ids),
+  });
+}
+
 function boardgameLookupFromInputs(inputs) {
   return fetch("/API/GetBoardgamesFromInputs", {
     method: "POST",
@@ -742,6 +778,10 @@ const MovieAPI = {
   beaconStopStream,
   setWatchedState,
   setWantToWatchState,
+  setRatings,
+  setRating,
+  getTitlesByIds,
+  getMiscByIds,
   movieLookupFromNames,
   getMPARatings,
   getGenres,

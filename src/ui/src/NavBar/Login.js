@@ -180,6 +180,11 @@ function Login({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen, se
           <span className="stat-label">Want to Watch</span>
           <span className="stat-count">{userData.moviesToWatch.length}</span>
         </div>
+        <div className="stat-row" onClick={() => history.push("/rate")}>
+          <span className="stat-icon stat-icon--rate">⭐</span>
+          <span className="stat-label">Rate Movies</span>
+          <span className="stat-count">{Object.keys(userData.ratings || {}).length}</span>
+        </div>
         <button className="logout-button" onClick={logoutUser}>
           Log Out
         </button>
