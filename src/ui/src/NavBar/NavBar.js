@@ -11,6 +11,12 @@ import UserSettingsModal from "./UserSettingsModal";
 import AdminModal from "./AdminModal";
 import useIsMobile from "../hooks/useIsMobile";
 import { loadTitleTypes, saveTitleTypes, loadSort, saveSort } from "../hooks/useMovieSearch";
+// Section nav icons (light variants — the navbar sits on a dark ground). Dark variants for
+// light-background contexts live alongside in ../assets/icons/dark/.
+import movieTheaterIcon from "../assets/icons/movie-theater.svg";
+import tvIcon from "../assets/icons/tv.svg";
+import boardGamesIcon from "../assets/icons/board-games.svg";
+import comicsIcon from "../assets/icons/comics.svg";
 
 function NavBar({
   search,
@@ -186,9 +192,34 @@ function NavBar({
   ]);
 
   const isBoardGames = location.pathname.startsWith("/boardgames");
-  const sectionEmoji = isBoardGames ? "🎲" : "🎬";
+  const sectionIcon = isBoardGames ? boardGamesIcon : movieTheaterIcon;
   const sectionTitle = isBoardGames ? "Board Games" : "Movie Theater";
   const navThemeClass = isBoardGames ? " navbar-boardgames-theme" : "";
+
+  // The section switcher's items — shared by the mobile and desktop dropdowns so they can't drift.
+  // Order: Movie Theater, TV, Board Games, Comics. "TV" is the former Channels page (its guide is the
+  // primary way into the TV feature); the old standalone /tv button was removed. Library Review moved
+  // out of here to the user panel (between the settings and admin icons).
+  const sectionMenuItems = (
+    <>
+      <button className="navbar-section-item" onClick={() => history.push("/")}>
+        <img className="navbar-section-icon" src={movieTheaterIcon} alt="" /> Movie Theater
+      </button>
+      {userData?.hasPassword && (
+        <button className="navbar-section-item" onClick={() => history.push("/channels")}>
+          <img className="navbar-section-icon" src={tvIcon} alt="" /> TV
+        </button>
+      )}
+      <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
+        <img className="navbar-section-icon" src={boardGamesIcon} alt="" /> Board Games
+      </button>
+      {userData?.comicSiteAccess && (
+        <button className="navbar-section-item" onClick={() => window.open(userData.comicSiteAccess, "_blank", "noopener,noreferrer")}>
+          <img className="navbar-section-icon" src={comicsIcon} alt="" /> Comics
+        </button>
+      )}
+    </>
+  );
 
   // JSX can be stored in a variable just like any other value and rendered later.
   // The empty tags <> </> are a fragment — a grouping wrapper that emits no DOM element.
@@ -225,38 +256,11 @@ function NavBar({
           </button>
           <div className="navbar-dropdown-wrapper">
             <button className="navbar-home-btn" onClick={() => setDropdownOpen((o) => !o)}>
-              <span className="navbar-home-emoji">{sectionEmoji}</span>
+              <img className="navbar-home-icon" src={sectionIcon} alt="" />
               <span className="navbar-title">{sectionTitle} ▼</span>
             </button>
             {dropdownOpen && (
-              <div className="navbar-section-dropdown">
-                <button className="navbar-section-item" onClick={() => history.push("/")}>
-                  🎬 Movie Theater
-                </button>
-                <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
-                  🎲 Board Games
-                </button>
-                {userData?.hasPassword && (
-                  <button className="navbar-section-item" onClick={() => history.push("/tv")}>
-                    📺 TV
-                  </button>
-                )}
-                {userData?.hasPassword && (
-                  <button className="navbar-section-item" onClick={() => history.push("/channels")}>
-                    🗂️ Channels
-                  </button>
-                )}
-                {userData?.canEditMovies && (
-                  <button className="navbar-section-item" onClick={() => history.push("/review-ingest")}>
-                    🗂️ Library Review
-                  </button>
-                )}
-                {userData?.comicSiteAccess && (
-                  <button className="navbar-section-item" onClick={() => window.open(userData.comicSiteAccess, "_blank", "noopener,noreferrer")}>
-                    📚 Comics
-                  </button>
-                )}
-              </div>
+              <div className="navbar-section-dropdown">{sectionMenuItems}</div>
             )}
           </div>
           {userData && <span className="navbar-username-badge">{userData.username}</span>}
@@ -284,38 +288,11 @@ function NavBar({
         <div className={`navbar-sider-header${navThemeClass}`}>
           <div className="navbar-dropdown-wrapper">
             <button className="navbar-home-btn" onClick={() => setDropdownOpen((o) => !o)}>
-              <span className="navbar-home-emoji">{sectionEmoji}</span>
+              <img className="navbar-home-icon" src={sectionIcon} alt="" />
               <span className="navbar-sider-title">{sectionTitle} ▼</span>
             </button>
             {dropdownOpen && (
-              <div className="navbar-section-dropdown navbar-section-dropdown-desktop">
-                <button className="navbar-section-item" onClick={() => history.push("/")}>
-                  🎬 Movie Theater
-                </button>
-                <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
-                  🎲 Board Games
-                </button>
-                {userData?.hasPassword && (
-                  <button className="navbar-section-item" onClick={() => history.push("/tv")}>
-                    📺 TV
-                  </button>
-                )}
-                {userData?.hasPassword && (
-                  <button className="navbar-section-item" onClick={() => history.push("/channels")}>
-                    🗂️ Channels
-                  </button>
-                )}
-                {userData?.canEditMovies && (
-                  <button className="navbar-section-item" onClick={() => history.push("/review-ingest")}>
-                    🗂️ Library Review
-                  </button>
-                )}
-                {userData?.comicSiteAccess && (
-                  <button className="navbar-section-item" onClick={() => window.open(userData.comicSiteAccess, "_blank", "noopener,noreferrer")}>
-                    📚 Comics
-                  </button>
-                )}
-              </div>
+              <div className="navbar-section-dropdown navbar-section-dropdown-desktop">{sectionMenuItems}</div>
             )}
           </div>
         </div>

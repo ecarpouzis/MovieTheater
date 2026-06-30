@@ -44,6 +44,7 @@ const searchLetterStyle = {
 const searchLetters = ["#","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
 
 function BoardGameUserPanel({ userData, setUserData, setSettingsModalOpen, setAdminModalOpen }) {
+  const history = useHistory();
   function logout() {
     fetch("/API/Logout", { method: "POST" }).finally(() => {
       setUserData();
@@ -59,6 +60,11 @@ function BoardGameUserPanel({ userData, setUserData, setSettingsModalOpen, setAd
         <button className="settings-icon-btn" onClick={() => setSettingsModalOpen(true)} title="User Settings">
           ⚙️
         </button>
+        {userData.canEditMovies && (
+          <button className="settings-icon-btn" onClick={() => history.push("/review-ingest")} title="Library Review">
+            🗂️
+          </button>
+        )}
         {userData.isAdmin && (
           <button className="settings-icon-btn" onClick={() => setAdminModalOpen(true)} title="User Administration">
             🛡️

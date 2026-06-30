@@ -159,6 +159,11 @@ function Login({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen, se
           <button className="settings-icon-btn" onClick={() => setSettingsModalOpen(true)} title="User Settings">
             ⚙️
           </button>
+          {userData.canEditMovies && (
+            <button className="settings-icon-btn" onClick={() => history.push("/review-ingest")} title="Library Review">
+              🗂️
+            </button>
+          )}
           {userData.isAdmin && (
             <button className="settings-icon-btn" onClick={() => setAdminModalOpen(true)} title="User Administration">
               🛡️
