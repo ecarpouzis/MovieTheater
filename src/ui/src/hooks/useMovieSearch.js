@@ -1,6 +1,10 @@
 import { useState, useCallback } from "react";
 
 const RANDOM_MOVIES_URL = "/API/GetRandomMovies";
+// One random seed per page load → a STABLE random order for the landing grid across its infinite-scroll
+// pages and effect re-runs (a hard reload reshuffles). The GetMoviesByType seed path orders by a
+// deterministic permutation of (id+seed), so the same seed reproduces the same shuffle on every page.
+const LANDING_SEED = Math.floor(Math.random() * 2000000000);
 const TITLE_TYPES_KEY = "BrowseTitleTypes";
 const SORT_KEY = "BrowseSort";
 
@@ -140,6 +144,25 @@ export function useMovieSearch() {
     setSearch({ url: `/API/GetMoviesByType?type=${encodeURIComponent(list.join(","))}${sortSuffix(sort)}`, titleTypes: list, sort, infinite: true });
   }, []);
 
+  // The clean landing / home grid: the active Type scope in RANDOM order (the discovery grid). Unlike
+  // titleTypeSearch it sends NO sort — the persisted Alphabetical/IMDb/RT sort is a *browse* setting,
+  // not the landing. The seed gives a stable shuffle (see LANDING_SEED). An empty scope ("all types")
+  // falls back to the dedicated all-types random endpoint.
+  const landingSearch = useCallback((types) => {
+    const list = (Array.isArray(types) ? types : String(types).split(","))
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (list.length === 0) {
+      setSearch({ url: RANDOM_MOVIES_URL, titleTypes: [] });
+      return;
+    }
+    setSearch({
+      url: `/API/GetMoviesByType?type=${encodeURIComponent(list.join(","))}&seed=${LANDING_SEED}`,
+      titleTypes: list,
+      infinite: true,
+    });
+  }, []);
+
   const ratingSearch = useCallback((maxRatingId, types, sort) => {
     setSearch({
       url: `/API/GetMoviesByRating?maxRatingId=${maxRatingId}${scopeSuffix(types)}${sortSuffix(sort)}`,
@@ -183,6 +206,7 @@ export function useMovieSearch() {
     franchiseSearch,
     firstLetterSearch,
     titleTypeSearch,
+    landingSearch,
     ratingSearch,
     movieIDListSearch,
     restoreMovieIdsSearch,

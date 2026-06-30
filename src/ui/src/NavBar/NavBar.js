@@ -30,6 +30,7 @@ function NavBar({
   franchiseSearch,
   firstLetterSearch,
   titleTypeSearch,
+  landingSearch,
   ratingSearch,
   restoreMovieIdsSearch,
   moviesSeenSearch,
@@ -95,6 +96,12 @@ function NavBar({
     // With no other filter active, the default browse is the Type scope itself (random when it's empty).
     const browseDefault = () => (types.length ? titleTypeSearch(types, sort) : resetSearch());
 
+    // The CLEAN landing — no explicit type/sort param in the URL — shows a RANDOM assortment of the
+    // scope. The persisted Sort (alpha/IMDb/RT) is a *browse* setting: it only applies once the user
+    // actually browses, which always puts a type or sort param in the URL. Any params → sorted browse.
+    const isCleanLanding = typesParam === null && sortParam === null;
+    const landingGrid = () => (isCleanLanding ? landingSearch(types) : browseDefault());
+
     if (!mode) {
       // No search mode in the URL. Determine whether this is a hard browser reload
       // (F5 / Ctrl+R) vs. normal in-app navigation, using the browser Navigation API.
@@ -117,8 +124,9 @@ function NavBar({
           });
         }
 
-        // A reload lands on the default browse for the current Type scope.
-        browseDefault();
+        // A reload re-renders the clean landing's random grid (or the sorted browse if a filter/sort
+        // param is in the URL).
+        landingGrid();
         return;
       }
 
@@ -132,10 +140,11 @@ function NavBar({
         return;
       }
 
-      // A clean URL is the default browse view: the Type scope (Movies by default; random when the
-      // user has cleared all types). Deterministic so re-runs of this effect — e.g. when auth resolves
-      // and userData changes — don't flip the grid.
-      browseDefault();
+      // A clean URL is the landing: a RANDOM assortment of the Type scope (the persisted Sort is a
+      // browse setting, applied only when a type/sort param is present). LANDING_SEED keeps it stable
+      // across re-runs of this effect — e.g. when auth resolves and userData changes — so it doesn't
+      // reshuffle out from under the user.
+      landingGrid();
       return;
     }
 
@@ -185,6 +194,7 @@ function NavBar({
     franchiseSearch,
     firstLetterSearch,
     titleTypeSearch,
+    landingSearch,
     ratingSearch,
     restoreMovieIdsSearch,
     moviesSeenSearch,
