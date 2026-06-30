@@ -1,20 +1,25 @@
-import { Layout } from "antd";
+import { Layout, Spin } from "antd";
 import { MovieAPI } from "./MovieAPI";
-import { useState, useRef } from "react";
+import { useState, useRef, lazy, Suspense } from "react";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import NavBar from "./NavBar/NavBar";
 import Browse from "./Pages/Browse/Browse";
-import BoardGames from "./Pages/BoardGames/BoardGames";
-import MoviePage from "./Pages/MoviePage";
-import InsertPage from "./Pages/InsertPage";
-import BatchInsertPage from "./Pages/BatchInsertPage";
-import BoardgameBatchInsertPage from "./Pages/BoardGames/BoardgameBatchInsertPage";
-import WatchPage from "./Pages/Watch/WatchPage";
-import TvPage from "./Pages/Tv/TvPage";
-import ChannelGuidePage from "./Pages/Tv/ChannelGuidePage";
-import IngestReviewPage from "./Pages/IngestReview/IngestReviewPage";
-import RatePage from "./Pages/Rate/RatePage";
 import { useMovieSearch } from "./hooks/useMovieSearch";
+
+// Route-level code-splitting. The landing (Browse) and the nav shell stay in the main bundle; every
+// other page loads on demand, keeping its heavy deps out of the initial download — most notably
+// hls.js + the video player (Watch/TV), @dnd-kit (Rate), the boardgames pages, and the ingest/admin
+// tooling. Each lazy() below becomes its own chunk, fetched only when its route is first visited.
+const BoardGames = lazy(() => import("./Pages/BoardGames/BoardGames"));
+const MoviePage = lazy(() => import("./Pages/MoviePage"));
+const InsertPage = lazy(() => import("./Pages/InsertPage"));
+const BatchInsertPage = lazy(() => import("./Pages/BatchInsertPage"));
+const BoardgameBatchInsertPage = lazy(() => import("./Pages/BoardGames/BoardgameBatchInsertPage"));
+const WatchPage = lazy(() => import("./Pages/Watch/WatchPage"));
+const TvPage = lazy(() => import("./Pages/Tv/TvPage"));
+const ChannelGuidePage = lazy(() => import("./Pages/Tv/ChannelGuidePage"));
+const IngestReviewPage = lazy(() => import("./Pages/IngestReview/IngestReviewPage"));
+const RatePage = lazy(() => import("./Pages/Rate/RatePage"));
 
 const storedUsername = window.localStorage.getItem("Username");
 const storedCardStyle = window.localStorage.getItem("CardStyle");
@@ -97,6 +102,7 @@ function App() {
           isAuthReady={isAuthReady}
         />
         <Layout.Content className="app-content">
+          <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}><Spin size="large" /></div>}>
           <Switch>
             <Route path="/movie/:id" exact>
               <MoviePage userData={userData} />
@@ -132,6 +138,7 @@ function App() {
               <Browse search={search} userData={userData} setUserData={setUserData} isAuthReady={isAuthReady} simpleStyle={simpleStyle} />
             </Route>
           </Switch>
+          </Suspense>
         </Layout.Content>
       </Layout>
     </BrowserRouter>
