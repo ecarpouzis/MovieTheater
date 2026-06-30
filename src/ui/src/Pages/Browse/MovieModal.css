@@ -520,6 +520,58 @@
   font-style: italic;
 }
 
+/* Hover/focus-to-reveal spoiler — "Why it's interesting" can give away plot, so it stays
+   concealed (blurred, with a hint badge over it) until the pointer hovers or it gains focus. */
+.modal-spoiler {
+  position: relative;
+  display: block;
+  margin-top: 2px;
+  cursor: help;
+  border-radius: 6px;
+  outline: none;
+}
+
+.modal-spoiler-content {
+  display: block;
+  filter: blur(6px);
+  opacity: 0.5;
+  user-select: none;
+  transition: filter 0.18s ease, opacity 0.18s ease;
+}
+
+/* Hint badge floats over the blurred text while concealed; fades out on reveal. */
+.modal-spoiler-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(var(--poster-rgb), 1);
+  background: rgba(var(--poster-rgb), 0.1);
+  border: 1px dashed rgba(var(--poster-rgb), 0.4);
+  border-radius: 6px;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.modal-spoiler:hover .modal-spoiler-content,
+.modal-spoiler:focus .modal-spoiler-content,
+.modal-spoiler:focus-visible .modal-spoiler-content {
+  filter: none;
+  opacity: 1;
+  user-select: text;
+}
+
+.modal-spoiler:hover .modal-spoiler-hint,
+.modal-spoiler:focus .modal-spoiler-hint,
+.modal-spoiler:focus-visible .modal-spoiler-hint {
+  opacity: 0;
+}
+
 /* ── Action area: WATCH ticket above the SEEN / WANT toggles ──────────── */
 .modal-actions-row {
   display: flex;

@@ -449,18 +449,10 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
                   </div>
                 )}
 
-                {n.insight && (n.insight.whyInteresting ||
-                  n.insight.watchIfYouLiked ||
+                {n.insight && (n.insight.watchIfYouLiked ||
                   (n.insight.compTitles || []).length > 0 ||
                   (n.insight.franchises || []).length > 0) ? (
                   <div className="modal-insight">
-                    {n.insight.whyInteresting && (
-                      <div className="modal-insight-block">
-                        <span className="modal-label">Why it's interesting</span>
-                        <p className="modal-insight-text">{n.insight.whyInteresting}</p>
-                      </div>
-                    )}
-
                     {(n.insight.watchIfYouLiked || (n.insight.compTitles || []).length > 0) && (
                       <div className="modal-insight-block">
                         <span className="modal-label">Watch if you liked</span>
@@ -589,6 +581,23 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
                           ))}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* "Why it's interesting" can give away plot, so it lives below the full synopsis and
+                    is hidden behind a hover/focus-to-reveal spoiler. */}
+                {n.insight && n.insight.whyInteresting && (
+                  <div className="modal-insight-block">
+                    <span className="modal-label">Why it's interesting</span>
+                    <span
+                      className="modal-spoiler"
+                      tabIndex={0}
+                      role="button"
+                      aria-label="Reveal spoiler: why it's interesting"
+                    >
+                      <span className="modal-spoiler-content modal-insight-text">{n.insight.whyInteresting}</span>
+                      <span className="modal-spoiler-hint" aria-hidden="true">Spoiler — hover to reveal</span>
+                    </span>
                   </div>
                 )}
 
