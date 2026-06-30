@@ -431,12 +431,14 @@ namespace MovieTheater.Channels
         // belong to one of the given series — surfaced wherever that series airs and grouped with it. Bonus
         // features (Category "Extra") are excluded so deleted scenes and making-of clips never air.
         //
-        // A special has an air date but no episode number, so we slot it CHRONOLOGICALLY: its OrderRank is
-        // that of the last regular episode that aired in or before the special's year. So a 1993 DBZ TV
-        // special sorts in among the 1993-era episodes (mid-run) rather than being lumped at the very start
-        // or end of the rotation — it airs at roughly the point in the series' history when it actually came
-        // out. A special whose year predates every episode (or has no year) falls back to the start/end
-        // respectively. Grouped by RelatedSeriesId.
+        // Ordering within the series rotation: a special has an air date but no episode number, so when we
+        // know its year (backfilled into MiscVideo.Year from filename / mapped episode / TMDB) we slot it
+        // CHRONOLOGICALLY — its OrderRank is that of the last regular episode that aired in or before that
+        // year, so a 2014 Attack on Titan OVA sorts in among the 2014-era episodes. If the year predates every
+        // episode (or the series' episodes carry no air dates) it falls back to (year-1900), ordering specials
+        // among themselves by year near the start. When the year is unknown, we SPREAD the special across the
+        // series' rotation (PlayableId % maxEpisodeRank) so it still surfaces periodically instead of clumping
+        // at one end. Grouped by RelatedSeriesId.
         private IQueryable<Cand> RelatedMiscCandidates(List<int> seriesIds)
         {
             return movieDb.MiscVideos
@@ -450,10 +452,13 @@ namespace MovieTheater.Channels
                     null,
                     null, null, mv.MpaaRatingInferred,
                     null, null,
-                    (long)mv.RelatedSeriesId!.Value * 1_000_000L + (movieDb.Episodes
-                        .Where(e => e.SeriesId == mv.RelatedSeriesId && e.AirDate != null
-                            && e.AirDate!.Value.Year <= (mv.Year ?? 9999))
-                        .Select(e => (long?)(e.SeasonNumber * 1000L + e.EpisodeNumber)).Max() ?? 0L),
+                    (long)mv.RelatedSeriesId!.Value * 1_000_000L + (mv.Year != null
+                        ? (movieDb.Episodes
+                            .Where(e => e.SeriesId == mv.RelatedSeriesId && e.AirDate != null && e.AirDate!.Value.Year <= mv.Year)
+                            .Select(e => (long?)(e.SeasonNumber * 1000L + e.EpisodeNumber)).Max() ?? (long)(mv.Year.Value - 1900))
+                        : (mv.PlayableId % (movieDb.Episodes
+                            .Where(e => e.SeriesId == mv.RelatedSeriesId)
+                            .Select(e => (long?)(e.SeasonNumber * 1000L + e.EpisodeNumber)).Max() ?? 1L))),
                     mv.RelatedSeriesId!.Value,
                     mv.SimpleTitle));
         }
