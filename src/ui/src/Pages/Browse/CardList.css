@@ -27,6 +27,23 @@
   .card-list { grid-template-columns: repeat(4, 1fr); }
 }
 
+/* Browse first-paint skeleton — a shimmering block sized to the card cell so the grid has structure
+   immediately and there's minimal jump when the real cards arrive. */
+.skeleton-card {
+  min-height: 210px;
+  border-radius: 10px;
+  background: linear-gradient(100deg, #e7e7ee 30%, #f3f3f8 50%, #e7e7ee 70%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.3s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-card { animation: none; }
+}
+
 /* Replace the antd border with a box-shadow ring so there's no border to frame the flush poster */
 .movie-card.ant-card {
   border: none;

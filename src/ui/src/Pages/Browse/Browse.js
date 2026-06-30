@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { Spin } from "antd";
 import CardList from "./CardList";
 import MovieModal from "./MovieModal";
 import SimpleCardList from "./SimpleCardList";
@@ -43,6 +42,20 @@ function getScrollParent(node) {
     el = el.parentElement;
   }
   return null; // null root = viewport (mobile / window scroll)
+}
+
+// Placeholder grid shown while the first page loads — same .card-list layout as the real cards, so the
+// page shows structure immediately (not a lone spinner) and the rail above can keep loading in parallel.
+function BrowseSkeleton({ count = 12 }) {
+  return (
+    <div className="card-list" aria-hidden="true">
+      {Array.from({ length: count }).map((_, i) => (
+        <div className="card-cell" key={i}>
+          <div className="movie-card skeleton-card" />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
@@ -293,18 +306,14 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     );
   };
 
-  if (loading) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", padding: "64px" }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
-
   return (
     <>
+      {/* Rail mounts regardless of the grid's loading state so its lineup + posters fetch in parallel
+          with the movie grid (it self-gates on a streaming-enabled session), rather than only after. */}
       {!location.search && <NowOnTvRail userData={userData} setUserData={setUserData} />}
-      {useSimpleStyle ? (
+      {loading ? (
+        <BrowseSkeleton count={isMobile ? 6 : 12} />
+      ) : useSimpleStyle ? (
         <SimpleCardList
           movieDataArray={displayMovies}
           userData={userData}
@@ -324,7 +333,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
           isMobile={isMobile}
         />
       )}
-      {isInfinite && (
+      {isInfinite && !loading && (
         <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />
       )}
       {hasMore && (

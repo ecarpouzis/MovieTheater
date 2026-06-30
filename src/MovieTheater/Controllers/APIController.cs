@@ -1725,30 +1725,31 @@ namespace MovieTheater.Controllers
 
         private async Task<object> BuildUserPayload(User user)
         {
-            // Seen / Want lists carry both movie and series ids (a viewing targets one or the other;
-            // the shared id space + the card's Kind disambiguate). MovieID ?? SeriesId yields the id either way.
-            var moviesSeen = (await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "Seen")
-                .Select(d => d.MovieID ?? d.SeriesId).ToListAsync()).Where(x => x != null).Select(x => x!.Value).ToList();
+            // One round-trip for all of this user's viewings; the kinds are split in memory below
+            // (previously four separate Viewings queries — Seen / Want / misc-Seen / Rated).
+            var viewings = await movieDb.Viewings
+                .Where(v => v.UserID == user.UserID)
+                .Select(v => new { v.ViewingType, v.MovieID, v.SeriesId, v.MiscVideoId, v.ViewingData })
+                .ToListAsync();
 
-            var moviesToWatch = (await movieDb.Viewings.Where(d => d.UserID == user.UserID && d.ViewingType == "WantToWatch")
-                .Select(d => d.MovieID ?? d.SeriesId).ToListAsync()).Where(x => x != null).Select(x => x!.Value).ToList();
+            // Seen / Want lists carry both movie and series ids (a viewing targets one or the other; the
+            // shared id space + the card's Kind disambiguate). MovieID ?? SeriesId yields the id either way.
+            var moviesSeen = viewings.Where(d => d.ViewingType == "Seen")
+                .Select(d => d.MovieID ?? d.SeriesId).Where(x => x != null).Select(x => x!.Value).ToList();
+            var moviesToWatch = viewings.Where(d => d.ViewingType == "WantToWatch")
+                .Select(d => d.MovieID ?? d.SeriesId).Where(x => x != null).Select(x => x!.Value).ToList();
 
             // Watched MiscVideo ids (their own id space, so kept separate from moviesSeen). The Rate page
             // fetches their cards via GetMiscByIds.
-            var miscSeen = await movieDb.Viewings
-                .Where(d => d.UserID == user.UserID && d.ViewingType == "Seen" && d.MiscVideoId != null)
-                .Select(d => d.MiscVideoId!.Value).ToListAsync();
+            var miscSeen = viewings.Where(d => d.ViewingType == "Seen" && d.MiscVideoId != null)
+                .Select(d => d.MiscVideoId!.Value).ToList();
 
             // User's own 0–100 ratings. Legacy + new ratings both live on Viewing as ViewingType=="Rated"
             // with the score in ViewingData. Keyed by a composite "{kind}:{id}" because MiscVideo has its own
-            // id space that can collide with a movie id. Placeholder 0s / non-numeric values are treated as
+            // id space that can collide with a movie id. Non-numeric / out-of-range values are treated as
             // unrated and skipped, so only real scores surface.
-            var ratingRows = await movieDb.Viewings
-                .Where(v => v.UserID == user.UserID && v.ViewingType == "Rated" && v.ViewingData != null)
-                .Select(v => new { v.MovieID, v.SeriesId, v.MiscVideoId, v.ViewingData })
-                .ToListAsync();
             var ratings = new Dictionary<string, int>();
-            foreach (var r in ratingRows)
+            foreach (var r in viewings.Where(v => v.ViewingType == "Rated" && v.ViewingData != null))
             {
                 if (!int.TryParse(r.ViewingData, out var score) || score < 0 || score > 100) continue;
                 string? key = r.MovieID != null ? $"movie:{r.MovieID.Value}"
@@ -1758,72 +1759,42 @@ namespace MovieTheater.Controllers
                 if (key != null) ratings[key] = score;
             }
 
-            // Rate-page anchors — per-user JSON in UserSettings; parsed defensively (passed through as-is) like
-            // favoriteChannels. Stored as a bare JSON array [{ "id": "a1", "value": 30 }, …].
-            var anchorsSetting = await movieDb.UserSettings
-                .FirstOrDefaultAsync(u => u.SettingKey == "RatingAnchors" && u.UserID == user.UserID);
+            // One round-trip for all of this user's settings; each is picked by key in memory below
+            // (previously ~8 separate UserSettings queries).
+            var settings = await movieDb.UserSettings
+                .Where(u => u.UserID == user.UserID)
+                .Select(s => new { s.SettingKey, s.SettingValue })
+                .ToListAsync();
+            string? Setting(string key) => settings.FirstOrDefault(s => s.SettingKey == key)?.SettingValue;
+
+            // Rate-page anchors — per-user JSON; parsed defensively. Bare JSON array [{ "id":"a1","value":30 }].
             System.Text.Json.JsonElement ratingAnchors;
             try
             {
+                var anchorsRaw = Setting("RatingAnchors");
                 ratingAnchors = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
-                    string.IsNullOrWhiteSpace(anchorsSetting?.SettingValue) ? "[]" : anchorsSetting!.SettingValue);
+                    string.IsNullOrWhiteSpace(anchorsRaw) ? "[]" : anchorsRaw);
             }
             catch (System.Text.Json.JsonException)
             {
                 ratingAnchors = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>("[]");
             }
 
-            //age restriction
-            int? ageRestriction = null;
-            var ageSetting = await movieDb.UserSettings
-                .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == user.UserID);
-            if (ageSetting != null && int.TryParse(ageSetting.SettingValue, out int parsedAgeRestriction))
-            {
-                ageRestriction = parsedAgeRestriction;
-            }
-
-            //card style
-            var cardStyleSetting = await movieDb.UserSettings
-                .FirstOrDefaultAsync(u => u.SettingKey == "CardStyle" && u.UserID == user.UserID);
-            var cardStyle = cardStyleSetting?.SettingValue ?? "standard";
-
-            //can edit movies
-            var canEditSetting = await movieDb.UserSettings
-                .FirstOrDefaultAsync(u => u.SettingKey == "CanEditMovies" && u.UserID == user.UserID);
-            var canEditMovies = canEditSetting?.SettingValue == "true";
-
-            // enable pagination
-            var enablePaginationSetting = await movieDb.UserSettings
-                .FirstOrDefaultAsync(u => u.SettingKey == "EnablePagination" && u.UserID == user.UserID);
-            bool enablePagination = false;
-            if (enablePaginationSetting != null && bool.TryParse(enablePaginationSetting.SettingValue, out var parsedEnablePagination))
-            {
-                enablePagination = parsedEnablePagination;
-            }
-
-            // show boardgame expansions
-            var showExpansionsSetting = await movieDb.UserSettings
-                .FirstOrDefaultAsync(u => u.SettingKey == "ShowBoardgameExpansions" && u.UserID == user.UserID);
-            bool showBoardgameExpansions = false;
-            if (showExpansionsSetting != null && bool.TryParse(showExpansionsSetting.SettingValue, out var parsedShowExpansions))
-            {
-                showBoardgameExpansions = parsedShowExpansions;
-            }
-
-            // comic site access — SettingValue is the URL; null means no access
-            var comicSiteAccessSetting = await movieDb.UserSettings
-                .FirstOrDefaultAsync(u => u.SettingKey == "ComicSiteAccess" && u.UserID == user.UserID);
-            var comicSiteAccess = comicSiteAccessSetting?.SettingValue;
+            int? ageRestriction = int.TryParse(Setting("AgeRestriction"), out int parsedAgeRestriction) ? parsedAgeRestriction : (int?)null;
+            var cardStyle = Setting("CardStyle") ?? "standard";
+            var canEditMovies = Setting("CanEditMovies") == "true";
+            bool enablePagination = bool.TryParse(Setting("EnablePagination"), out var parsedEnablePagination) && parsedEnablePagination;
+            bool showBoardgameExpansions = bool.TryParse(Setting("ShowBoardgameExpansions"), out var parsedShowExpansions) && parsedShowExpansions;
+            var comicSiteAccess = Setting("ComicSiteAccess");
 
             // favorite channels — SettingValue is a JSON int array; parse defensively (empty on malformed)
-            var favSetting = await movieDb.UserSettings
-                .FirstOrDefaultAsync(u => u.SettingKey == "FavoriteChannels" && u.UserID == user.UserID);
             int[] favoriteChannels;
             try
             {
-                favoriteChannels = string.IsNullOrWhiteSpace(favSetting?.SettingValue)
+                var favRaw = Setting("FavoriteChannels");
+                favoriteChannels = string.IsNullOrWhiteSpace(favRaw)
                     ? Array.Empty<int>()
-                    : (System.Text.Json.JsonSerializer.Deserialize<int[]>(favSetting!.SettingValue) ?? Array.Empty<int>());
+                    : (System.Text.Json.JsonSerializer.Deserialize<int[]>(favRaw) ?? Array.Empty<int>());
             }
             catch (System.Text.Json.JsonException) { favoriteChannels = Array.Empty<int>(); }
 
