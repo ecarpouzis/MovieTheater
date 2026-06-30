@@ -95,7 +95,7 @@ namespace MovieTheater.RottenTomatoes
             // searches RT's /tv/ pages instead of /m/.
             if (!string.IsNullOrWhiteSpace(SingleTitle))
             {
-                var single = await ScrapeWithRetryAsync(page, CleanSearchQuery(SingleTitle.Trim()), SingleYear, wantSeries, cancel);
+                var single = await ScrapeWithRetryAsync(page, CleanTitleQuery(SingleTitle.Trim()), SingleYear, wantSeries, cancel);
                 PrintResult(console, single);
                 return;
             }
@@ -163,8 +163,13 @@ namespace MovieTheater.RottenTomatoes
                     break;
                 }
 
-                var rawTitle = !string.IsNullOrWhiteSpace(row.SimpleTitle) ? row.SimpleTitle : row.Title;
-                var searchTitle = CleanSearchQuery(rawTitle);
+                // Search RT by the real display Title — the canonical name RT also uses. SimpleTitle is
+                // our hidden franchise watch-order sort key ("Batman 3", "Bad Boys 2", "Man with No
+                // Name 1"), which RT can't match — searching it stranded hundreds of titles in
+                // needs-review. Fall back to SimpleTitle (with its franchise-index cleanup) only when a
+                // row genuinely has no Title.
+                var useTitle = !string.IsNullOrWhiteSpace(row.Title);
+                var searchTitle = useTitle ? CleanTitleQuery(row.Title) : CleanSearchQuery(row.SimpleTitle);
                 try
                 {
                     var result = await ScrapeWithRetryAsync(page, searchTitle, row.Year, row.IsSeries, cancel);
@@ -332,14 +337,36 @@ namespace MovieTheater.RottenTomatoes
             catch (OperationCanceledException) { }
         }
 
-        // The library uses collection/series naming that doesn't match RT's real titles.
-        // Rewrite the search query so RT search has a chance:
+        // De-invert a stored ", The"/", A"/", An" article so RT search sees natural word order.
+        // Handles both a trailing article ("Chronicles of Riddick, The" -> "The Chronicles of
+        // Riddick") and one sitting before a subtitle colon ("Twilight Saga, The: Eclipse" ->
+        // "The Twilight Saga: Eclipse").
+        private static string DeinvertArticle(string t)
+        {
+            var mid = Regex.Match(t, @"^(.+?),\s*(the|a|an):\s*(.+)$", RegexOptions.IgnoreCase);
+            if (mid.Success) return $"{mid.Groups[2].Value} {mid.Groups[1].Value}: {mid.Groups[3].Value}".Trim();
+            var tail = Regex.Match(t, @"^(.+),\s*(the|a|an)$", RegexOptions.IgnoreCase);
+            if (tail.Success) return $"{tail.Groups[2].Value} {tail.Groups[1].Value}".Trim();
+            return t;
+        }
+
+        // Clean a real display Title for RT search: ONLY article de-inversion. Titles carry no
+        // franchise numbering (unlike SimpleTitle), so the franchise-index strips in CleanSearchQuery
+        // must NOT run here — they'd corrupt legitimate titles like "Kill Bill: Vol. 1".
+        private static string CleanTitleQuery(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title)) return title;
+            var t = DeinvertArticle(title.Trim());
+            return string.IsNullOrWhiteSpace(t) ? title : t;
+        }
+
+        // Clean a SimpleTitle (our franchise watch-order sort key) for RT search — used only when a row
+        // has no display Title. Strips the library's franchise indexing so RT search has a chance:
         //   "Airplane 1: Airplane!"  -> "Airplane!"   (real title after a "<name> NN:" index)
-        //   "Anchorman 1"            -> "Anchorman"   (only a trailing "1"/"01": the franchise's
-        //                                              first film, whose base name maps to it;
-        //                                              higher numbers like "Pink Panther 02" are
-        //                                              left alone — the number disambiguates a
-        //                                              distinct film, so stripping it mis-scores)
+        //   "Anchorman 1"            -> "Anchorman"   (only a trailing "1"/"01": the franchise's first
+        //                                              film, whose base name maps to it; higher numbers
+        //                                              like "Pink Panther 02" name a distinct film and
+        //                                              are left alone — stripping would mis-score)
         //   "'60s, The"              -> "The '60s"     (de-invert a trailing article)
         // Matching still normalizes both sides, so this only needs to get RT search close.
         private static string CleanSearchQuery(string title)
@@ -352,8 +379,7 @@ namespace MovieTheater.RottenTomatoes
 
             t = Regex.Replace(t, @"\s+0?1$", "").Trim();
 
-            var article = Regex.Match(t, @"^(.+),\s*(the|a|an)$", RegexOptions.IgnoreCase);
-            if (article.Success) t = $"{article.Groups[2].Value} {article.Groups[1].Value}".Trim();
+            t = DeinvertArticle(t);
 
             return string.IsNullOrWhiteSpace(t) ? title : t;
         }
