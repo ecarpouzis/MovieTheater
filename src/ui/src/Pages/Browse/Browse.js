@@ -22,7 +22,8 @@ function withPage(url, page, pageSize) {
 // set to GetMoviesByIds with paging params; the rest are GET endpoints that take page/pageSize.
 function fetchInfinitePage(search, page, signal) {
   if (search.movieIds) {
-    return fetch(`/API/GetMoviesByIds?page=${page}&pageSize=${INFINITE_PAGE_SIZE}`, {
+    const sortQs = search.sort ? `&sort=${encodeURIComponent(search.sort)}` : "";
+    return fetch(`/API/GetMoviesByIds?page=${page}&pageSize=${INFINITE_PAGE_SIZE}${sortQs}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(search.movieIds),

@@ -2,6 +2,15 @@ import { Input, List, Button, Select, message } from "antd";
 import { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
+import { loadSort } from "../hooks/useMovieSearch";
+
+// Sort-by options for the Browse grid. Labels are user-facing; values match the API `sort` param.
+const SORT_OPTIONS = [
+  { label: "Alphabetical (A–Z)", value: "alpha" },
+  { label: "IMDb rating", value: "imdb" },
+  { label: "Rotten Tomatoes", value: "rt" },
+  { label: "Popcornmeter", value: "popcorn" },
+];
 
 const { Search } = Input;
 
@@ -98,7 +107,7 @@ function SearchTools({ search, userData }) {
   // caller leaves it untouched except the Type selector, which passes typesOverride to change it
   // ("" = all types). So clearing a genre/letter/title search returns to browsing the current scope,
   // never a hardcoded default.
-  function navigateToBrowseSearch(mode, value = "", typesOverride) {
+  function navigateToBrowseSearch(mode, value = "", typesOverride, sortOverride) {
     const current = new URLSearchParams(location.search);
     const params = new URLSearchParams();
 
@@ -113,6 +122,15 @@ function SearchTools({ search, userData }) {
     const types = typesOverride !== undefined ? typesOverride : current.get("types");
     if (types !== null && types !== undefined) {
       params.set("types", types);
+    }
+
+    // Sort-by persists across mode changes like the Type scope: callers leave it untouched
+    // (sortOverride undefined) except the Sort-by dropdown, which passes a new value. An explicitly
+    // chosen sort is always written to the URL — including "alpha" — so it can override a previously
+    // persisted non-default sort (an absent param means "use the persisted value", per NavBar).
+    const sort = sortOverride !== undefined ? sortOverride : current.get("sort");
+    if (sort) {
+      params.set("sort", sort);
     }
 
     history.push({
@@ -220,6 +238,21 @@ function SearchTools({ search, userData }) {
           { label: "Misc", value: "Misc" },
         ]}
         filterOption={(input, option) => option.label.toLowerCase().includes(input.toLowerCase())}
+      />
+      <span style={inputLabelStyle}>Sort By</span>
+      <Select
+        style={{ width: "100%" }}
+        getPopupContainer={(trigger) => trigger.parentNode}
+        // Reflect the active sort: the URL param when present, otherwise the persisted value (NavBar
+        // applies that same fallback when the param is absent), so the control matches the grid order.
+        value={new URLSearchParams(location.search).get("sort") || loadSort()}
+        // Sort, like Type, is an overarching setting: keep the active search (mode/value) and just change
+        // the `sort` param. Ratings sort highest-first; alphabetical is by Simple Title.
+        onChange={(val) => {
+          const current = new URLSearchParams(location.search);
+          navigateToBrowseSearch(current.get("mode"), current.get("value") || "", undefined, val);
+        }}
+        options={SORT_OPTIONS}
       />
       <span style={inputLabelStyle}>First Letter</span>
       <List

@@ -415,7 +415,7 @@ namespace MovieTheater.Controllers
         // pageSize <= 0 (default) returns the full merged list as a bare array, which the restore
         // path needs so it can reorder client-side by its remembered on-screen order.
         [HttpPost("/API/GetMoviesByIds")]
-        public async Task<IActionResult> GetMoviesByIds([FromBody] List<int> ids, int page = 1, int pageSize = 0)
+        public async Task<IActionResult> GetMoviesByIds([FromBody] List<int> ids, int page = 1, int pageSize = 0, string? sort = null)
         {
             if (ids == null || ids.Count == 0)
                 return Ok(pageSize > 0 ? (object)EmptyPage(pageSize) : new List<MovieCardDto>());
@@ -424,8 +424,10 @@ namespace MovieTheater.Controllers
             var mq = (await GetBaseMovieQuery()).Where(m => ids.Contains(m.id));
             var sq = (await GetBaseSeriesQuery()).Where(s => ids.Contains(s.Id));
 
+            // The infinite (Seen/Want) path honors the browse sort; the bare-array restore path keeps its
+            // SimpleTitle order (the client reorders it by the remembered on-screen sequence anyway).
             if (pageSize > 0)
-                return Ok(await PageMergedAsync(mq, sq, page, pageSize));
+                return Ok(await PageMergedAsync(mq, sq, page, pageSize, NormalizeSort(sort)));
 
             var movies = await mq.Select(ToCardDto).ToListAsync();
             var series = await sq.Select(ToSeriesCardDto).ToListAsync();
@@ -451,6 +453,10 @@ namespace MovieTheater.Controllers
             public bool RatingEstimated { get; set; }
             public string? Runtime { get; set; }
             public decimal? imdbRating { get; set; }
+            /// <summary>Rotten Tomatoes Tomatometer (critics), 0–100; null when unscored. Used for sort.</summary>
+            public int? RtTomatometer { get; set; }
+            /// <summary>Rotten Tomatoes Popcornmeter (audience), 0–100; null when unscored. Used for sort.</summary>
+            public int? RtPopcornmeter { get; set; }
             public string? PlotFull { get; set; }
             public string? Plot { get; set; }
             public string? TopCast { get; set; }
@@ -480,6 +486,8 @@ namespace MovieTheater.Controllers
             RatingEstimated = m.MpaaRating == null && m.Rating == null && m.MpaaRatingInferred != null,
             Runtime = m.Runtime,
             imdbRating = m.ImdbRatingScraped ?? m.imdbRating,
+            RtTomatometer = m.RtTomatometer,
+            RtPopcornmeter = m.RtPopcornmeter,
             PlotFull = m.PlotFull,
             Plot = m.Plot,
             TopCast = m.TopCast,
@@ -499,6 +507,8 @@ namespace MovieTheater.Controllers
             RatingEstimated = s.MpaaRating == null && s.Rating == null && s.MpaaRatingInferred != null,
             Runtime = s.Runtime,
             imdbRating = s.ImdbRatingScraped ?? s.imdbRating,
+            RtTomatometer = s.RtTomatometer,
+            RtPopcornmeter = s.RtPopcornmeter,
             PlotFull = s.PlotFull,
             Plot = s.Plot,
             TopCast = s.TopCast,
@@ -551,6 +561,47 @@ namespace MovieTheater.Controllers
         private static List<MovieCardDto> MergeCards(IEnumerable<MovieCardDto> a, IEnumerable<MovieCardDto> b) =>
             a.Concat(b).OrderBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ToList();
 
+        // ── Browse sort key ─────────────────────────────────────────────────────────────────────
+        // The Browse grid can be ordered by SimpleTitle (the default, A→Z) or by one of three rating
+        // metrics (highest first, unscored titles last). The accepted values are the ones the client
+        // sends; everything else falls back to "alpha". Rating sorts always tiebreak by SimpleTitle so
+        // the order is fully deterministic (stable across infinite-scroll page fetches).
+        private static string NormalizeSort(string? sort) => (sort ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "imdb" => "imdb",
+            "rt" or "tomatometer" or "critics" => "rt",
+            "popcorn" or "popcornmeter" or "audience" => "popcorn",
+            _ => "alpha",
+        };
+
+        // Order a single-table movie query by the chosen sort. Rating sorts coalesce null → -1 so
+        // unscored titles sort last under OrderByDescending.
+        private static IQueryable<Movie> SortMovies(IQueryable<Movie> q, string sort) => sort switch
+        {
+            "imdb" => q.OrderByDescending(m => (m.ImdbRatingScraped ?? m.imdbRating) ?? -1m).ThenBy(m => m.SimpleTitle).ThenBy(m => m.id),
+            "rt" => q.OrderByDescending(m => ((decimal?)m.RtTomatometer) ?? -1m).ThenBy(m => m.SimpleTitle).ThenBy(m => m.id),
+            "popcorn" => q.OrderByDescending(m => ((decimal?)m.RtPopcornmeter) ?? -1m).ThenBy(m => m.SimpleTitle).ThenBy(m => m.id),
+            _ => q.OrderBy(m => m.SimpleTitle).ThenBy(m => m.id),
+        };
+
+        private static IQueryable<Series> SortSeries(IQueryable<Series> q, string sort) => sort switch
+        {
+            "imdb" => q.OrderByDescending(s => (s.ImdbRatingScraped ?? s.imdbRating) ?? -1m).ThenBy(s => s.SimpleTitle).ThenBy(s => s.Id),
+            "rt" => q.OrderByDescending(s => ((decimal?)s.RtTomatometer) ?? -1m).ThenBy(s => s.SimpleTitle).ThenBy(s => s.Id),
+            "popcorn" => q.OrderByDescending(s => ((decimal?)s.RtPopcornmeter) ?? -1m).ThenBy(s => s.SimpleTitle).ThenBy(s => s.Id),
+            _ => q.OrderBy(s => s.SimpleTitle).ThenBy(s => s.Id),
+        };
+
+        // In-memory peer of SortMovies/SortSeries for already-materialized card lists (Misc-inclusive
+        // browse, where the sources can't UNION at the DB).
+        private static List<MovieCardDto> SortCards(IEnumerable<MovieCardDto> cards, string sort) => sort switch
+        {
+            "imdb" => cards.OrderByDescending(c => c.imdbRating ?? -1m).ThenBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ThenBy(c => c.Kind).ThenBy(c => c.id).ToList(),
+            "rt" => cards.OrderByDescending(c => c.RtTomatometer ?? -1).ThenBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ThenBy(c => c.Kind).ThenBy(c => c.id).ToList(),
+            "popcorn" => cards.OrderByDescending(c => c.RtPopcornmeter ?? -1).ThenBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ThenBy(c => c.Kind).ThenBy(c => c.id).ToList(),
+            _ => cards.OrderBy(c => c.SimpleTitle ?? c.Title ?? string.Empty, StringComparer.OrdinalIgnoreCase).ThenBy(c => c.Kind).ThenBy(c => c.id).ToList(),
+        };
+
         [HttpGet("/API/GetRandomMovies")]
         public async Task<IActionResult> GetRandomMovies(int take = 50)
         {
@@ -575,11 +626,17 @@ namespace MovieTheater.Controllers
         // behavior) for any caller that still wants the full list. Combos without Misc stay fully
         // DB-paged; only Misc-inclusive combos pay an in-memory merge (Misc is a materialized list).
         [HttpGet("/API/GetMoviesByType")]
-        public async Task<IActionResult> GetMoviesByType(string type, int page = 1, int pageSize = 60, int? seed = null)
+        public async Task<IActionResult> GetMoviesByType(string type, int page = 1, int pageSize = 60, int? seed = null, string? sort = null)
         {
             var types = ParseTypeScope(type);
             if (types.Count == 0)
                 return BadRequest(new { Message = $"Unknown title type '{type}'" });
+
+            // A `sort` param drives the order (Alphabetical/IMDB/RT/Popcornmeter) and takes precedence
+            // over `seed`. With neither, the legacy behavior stands: a seed shuffles deterministically,
+            // and no seed is A→Z by title.
+            bool hasSort = sort != null;
+            string s = NormalizeSort(sort);
 
             bool wantSeries = types.Contains(NormalizedTitleType.Series);
             bool wantMisc = types.Contains(NormalizedTitleType.Misc);
@@ -591,44 +648,46 @@ namespace MovieTheater.Controllers
                 : null;
             IQueryable<Series>? sq = wantSeries ? await GetBaseSeriesQuery() : null;
 
-            // Misc alone keeps its curated collection ordering (the original behavior).
+            // Misc alone: an explicit sort orders it; otherwise it keeps its curated collection ordering.
             if (wantMisc && mq == null && sq == null)
-                return Ok(PageCards(await GetMiscCards(), page, pageSize));
+            {
+                var misc = await GetMiscCards();
+                return Ok(PageCards(hasSort ? SortCards(misc, s) : misc, page, pageSize));
+            }
 
             if (!wantMisc)
             {
                 // Pure-DB paths — no Misc, so everything pages at the database.
                 if (mq != null && sq != null)
-                    return Ok(await PageMergedAsync(mq, sq, page, pageSize));
+                    return Ok(await PageMergedAsync(mq, sq, page, pageSize, hasSort ? s : "alpha"));
                 if (mq != null)
                 {
-                    // A seed (the landing/discovery grid) shuffles deterministically: (id+seed)*C mod a
-                    // prime (C a large constant coprime to it) is a permutation, so the order is stable
-                    // across pages (infinite scroll stays consistent) yet different per seed. No seed →
-                    // A→Z by title (the letter nav relies on it).
-                    var mo = seed is int sm
-                        ? mq.OrderBy(m => ((long)m.id + sm) * 2654435761L % 2147483647L)
-                        : mq.OrderBy(m => m.SimpleTitle).ThenBy(m => m.id);
+                    // A sort wins. Otherwise a seed (the landing/discovery grid) shuffles deterministically:
+                    // (id+seed)*C mod a prime (C a large constant coprime to it) is a permutation, so the
+                    // order is stable across pages (infinite scroll stays consistent) yet different per
+                    // seed. No seed and no sort → A→Z by title (the letter nav relies on it).
+                    IQueryable<Movie> mo = hasSort
+                        ? SortMovies(mq, s)
+                        : seed is int sm
+                            ? mq.OrderBy(m => ((long)m.id + sm) * 2654435761L % 2147483647L)
+                            : mq.OrderBy(m => m.SimpleTitle).ThenBy(m => m.id);
                     return Ok(await PageCardsAsync(mo.Select(ToCardDto), page, pageSize));
                 }
-                var so = seed is int ss
-                    ? sq!.OrderBy(s => ((long)s.Id + ss) * 2654435761L % 2147483647L)
-                    : sq!.OrderBy(s => s.SimpleTitle).ThenBy(s => s.Id);
+                IQueryable<Series> so = hasSort
+                    ? SortSeries(sq!, s)
+                    : seed is int ss
+                        ? sq!.OrderBy(s2 => ((long)s2.Id + ss) * 2654435761L % 2147483647L)
+                        : sq!.OrderBy(s2 => s2.SimpleTitle).ThenBy(s2 => s2.Id);
                 return Ok(await PageCardsAsync(so.Select(ToSeriesCardDto), page, pageSize));
             }
 
             // Misc mixed with movies/series → merge all selected sources in memory, ordered uniformly by
-            // the sort key (Misc's own table can't UNION with the Movie/Series queries).
+            // the chosen sort (Misc's own table can't UNION with the Movie/Series queries).
             var cards = new List<MovieCardDto>();
             if (mq != null) cards.AddRange(await mq.Select(ToCardDto).ToListAsync());
             if (sq != null) cards.AddRange(await sq.Select(ToSeriesCardDto).ToListAsync());
             cards.AddRange(await GetMiscCards());
-            var ordered = cards
-                .OrderBy(c => c.SimpleTitle ?? c.Title ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(c => c.Kind)
-                .ThenBy(c => c.id)
-                .ToList();
-            return Ok(PageCards(ordered, page, pageSize));
+            return Ok(PageCards(SortCards(cards, hasSort ? s : "alpha"), page, pageSize));
         }
 
         // Parse the comma-separated Title-Type scope — the persistent Browse "Type" filter, applied as an
@@ -692,7 +751,31 @@ namespace MovieTheater.Controllers
             public string Kind { get; set; } = "movie";
             public int Id { get; set; }
             public string? SimpleTitle { get; set; }
+            /// <summary>The active rating metric for a rating sort (null for alpha sort or an unscored
+            /// title). Kept as decimal so the int RT scores and the decimal IMDB rating share one column.</summary>
+            public decimal? SortValue { get; set; }
         }
+
+        // The ordering-key UNION for the merged movie+series browse, projecting the active sort metric
+        // into CardKey.SortValue. Branching per sort (rather than a parameterized CASE) keeps the
+        // generated SQL clean — and the alpha case projects no rating column at all.
+        private static IQueryable<CardKey> BuildCardKeys(IQueryable<Movie> mq, IQueryable<Series> sq, string sort) => sort switch
+        {
+            "imdb" => mq.Select(m => new CardKey { Kind = "movie", Id = m.id, SimpleTitle = m.SimpleTitle, SortValue = m.ImdbRatingScraped ?? m.imdbRating })
+                .Concat(sq.Select(s => new CardKey { Kind = "series", Id = s.Id, SimpleTitle = s.SimpleTitle, SortValue = s.ImdbRatingScraped ?? s.imdbRating })),
+            "rt" => mq.Select(m => new CardKey { Kind = "movie", Id = m.id, SimpleTitle = m.SimpleTitle, SortValue = (decimal?)m.RtTomatometer })
+                .Concat(sq.Select(s => new CardKey { Kind = "series", Id = s.Id, SimpleTitle = s.SimpleTitle, SortValue = (decimal?)s.RtTomatometer })),
+            "popcorn" => mq.Select(m => new CardKey { Kind = "movie", Id = m.id, SimpleTitle = m.SimpleTitle, SortValue = (decimal?)m.RtPopcornmeter })
+                .Concat(sq.Select(s => new CardKey { Kind = "series", Id = s.Id, SimpleTitle = s.SimpleTitle, SortValue = (decimal?)s.RtPopcornmeter })),
+            _ => mq.Select(m => new CardKey { Kind = "movie", Id = m.id, SimpleTitle = m.SimpleTitle })
+                .Concat(sq.Select(s => new CardKey { Kind = "series", Id = s.Id, SimpleTitle = s.SimpleTitle })),
+        };
+
+        // Order merged keys by the chosen sort: rating sorts desc with unscored (null → -1) last, then
+        // SimpleTitle/Kind/Id as a stable tiebreak; alpha is SimpleTitle/Kind/Id.
+        private static IOrderedQueryable<CardKey> OrderCardKeys(IQueryable<CardKey> keys, string sort) => sort == "alpha"
+            ? keys.OrderBy(k => k.SimpleTitle).ThenBy(k => k.Kind).ThenBy(k => k.Id)
+            : keys.OrderByDescending(k => k.SortValue ?? -1m).ThenBy(k => k.SimpleTitle).ThenBy(k => k.Kind).ThenBy(k => k.Id);
 
         // Page a merged movie+series browse result at the DB without pulling the whole filtered set
         // (two-phase, mirroring the MyBooks views-perf "band items" approach):
@@ -701,16 +784,15 @@ namespace MovieTheater.Controllers
         //      page boundaries don't drift between fetches, so infinite scroll never dupes/skips.
         //   2. Materialize the full card DTOs for just the page's ids and restore the merged order.
         // pageSize <= 0 returns the whole merged set (back-compat).
-        private static async Task<object> PageMergedAsync(IQueryable<Movie> mq, IQueryable<Series> sq, int page, int pageSize)
+        private static async Task<object> PageMergedAsync(IQueryable<Movie> mq, IQueryable<Series> sq, int page, int pageSize, string sort = "alpha")
         {
-            var keys = mq.Select(m => new CardKey { Kind = "movie", Id = m.id, SimpleTitle = m.SimpleTitle })
-                .Concat(sq.Select(s => new CardKey { Kind = "series", Id = s.Id, SimpleTitle = s.SimpleTitle }));
+            var keys = BuildCardKeys(mq, sq, sort);
 
             if (pageSize <= 0)
             {
                 var allMovies = await mq.Select(ToCardDto).ToListAsync();
                 var allSeries = await sq.Select(ToSeriesCardDto).ToListAsync();
-                var allMerged = MergeCards(allMovies, allSeries);
+                var allMerged = SortCards(allMovies.Concat(allSeries), sort);
                 return new { movies = allMerged, totalCount = allMerged.Count, page = 1, pageSize = allMerged.Count };
             }
             if (page < 1) page = 1;
@@ -719,8 +801,7 @@ namespace MovieTheater.Controllers
             // page > 1 saves the most expensive query of the request (-1 = "not computed").
             var totalCount = page == 1 ? await keys.CountAsync() : -1;
 
-            var pageKeys = await keys
-                .OrderBy(k => k.SimpleTitle).ThenBy(k => k.Kind).ThenBy(k => k.Id)
+            var pageKeys = await OrderCardKeys(keys, sort)
                 .Skip((page - 1) * pageSize).Take(pageSize)
                 .ToListAsync();
 
@@ -782,18 +863,18 @@ namespace MovieTheater.Controllers
         // ── Unified search over movies + series (the frontend uses these instead of /odata/Movies) ──
 
         [HttpGet("/API/BrowseTitle")]
-        public async Task<IActionResult> BrowseTitle(string q, int page = 1, int pageSize = 60, string? types = null)
+        public async Task<IActionResult> BrowseTitle(string q, int page = 1, int pageSize = 60, string? types = null, string? sort = null)
         {
             q = (q ?? "").Trim();
             if (q.Length == 0) return Ok(EmptyPage(pageSize));
             var mq = (await GetBaseMovieQuery()).Where(m => (m.SimpleTitle != null && m.SimpleTitle.Contains(q)) || (m.Title != null && m.Title.Contains(q)));
             var sq = (await GetBaseSeriesQuery()).Where(s => (s.SimpleTitle != null && s.SimpleTitle.Contains(q)) || (s.Title != null && s.Title.Contains(q)));
             (mq, sq) = ApplyTypeScope(ParseTypeScope(types), mq, sq);
-            return Ok(await PageMergedAsync(mq, sq, page, pageSize));
+            return Ok(await PageMergedAsync(mq, sq, page, pageSize, NormalizeSort(sort)));
         }
 
         [HttpGet("/API/BrowseLetter")]
-        public async Task<IActionResult> BrowseLetter(string letter, int page = 1, int pageSize = 60, string? types = null)
+        public async Task<IActionResult> BrowseLetter(string letter, int page = 1, int pageSize = 60, string? types = null, string? sort = null)
         {
             letter = (letter ?? "").Trim();
             if (letter.Length == 0) return Ok(EmptyPage(pageSize));
@@ -810,11 +891,11 @@ namespace MovieTheater.Controllers
                 sq = sq.Where(s => s.SimpleTitle != null && s.SimpleTitle.StartsWith(letter));
             }
             (mq, sq) = ApplyTypeScope(ParseTypeScope(types), mq, sq);
-            return Ok(await PageMergedAsync(mq, sq, page, pageSize));
+            return Ok(await PageMergedAsync(mq, sq, page, pageSize, NormalizeSort(sort)));
         }
 
         [HttpGet("/API/BrowseGenre")]
-        public async Task<IActionResult> BrowseGenre(string genres, int page = 1, int pageSize = 60, string? types = null)
+        public async Task<IActionResult> BrowseGenre(string genres, int page = 1, int pageSize = 60, string? types = null, string? sort = null)
         {
             var list = (genres ?? "").Split(',').Select(g => g.Trim()).Where(g => g.Length > 0).ToList();
             if (list.Count == 0) return Ok(EmptyPage(pageSize));
@@ -827,14 +908,14 @@ namespace MovieTheater.Controllers
                 sq = sq.Where(s => s.SeriesGenres.Any(x => x.Genre.Name == gg) || (s.Genre != null && s.Genre.Contains(gg)));
             }
             (mq, sq) = ApplyTypeScope(ParseTypeScope(types), mq, sq);
-            return Ok(await PageMergedAsync(mq, sq, page, pageSize));
+            return Ok(await PageMergedAsync(mq, sq, page, pageSize, NormalizeSort(sort)));
         }
 
         // All titles the model tagged as part of a franchise / shared universe (TagCategory.Franchise),
         // e.g. "mcu", "studio-ghibli". The franchise value is the model's normalized tag (lowercase);
         // the detail modal's franchise chips pass it through verbatim.
         [HttpGet("/API/BrowseFranchise")]
-        public async Task<IActionResult> BrowseFranchise(string franchise, int page = 1, int pageSize = 60, string? types = null)
+        public async Task<IActionResult> BrowseFranchise(string franchise, int page = 1, int pageSize = 60, string? types = null, string? sort = null)
         {
             var fx = (franchise ?? "").Trim();
             if (fx.Length == 0) return Ok(EmptyPage(pageSize));
@@ -847,11 +928,11 @@ namespace MovieTheater.Controllers
                 && movieDb.TitleInsights.Any(ti => ti.Id == t.TitleInsightId
                     && ti.SubjectKind == InsightSubjectKind.Series && ti.SubjectId == s.Id)));
             (mq, sq) = ApplyTypeScope(ParseTypeScope(types), mq, sq);
-            return Ok(await PageMergedAsync(mq, sq, page, pageSize));
+            return Ok(await PageMergedAsync(mq, sq, page, pageSize, NormalizeSort(sort)));
         }
 
         [HttpGet("/API/BrowsePerson")]
-        public async Task<IActionResult> BrowsePerson(string q, int page = 1, int pageSize = 60, string? types = null)
+        public async Task<IActionResult> BrowsePerson(string q, int page = 1, int pageSize = 60, string? types = null, string? sort = null)
         {
             q = (q ?? "").Trim();
             if (q.Length == 0) return Ok(EmptyPage(pageSize));
@@ -860,7 +941,7 @@ namespace MovieTheater.Controllers
             var sq = (await GetBaseSeriesQuery()).Where(s => s.Credits.Any(c => c.Person.DisplayName.Contains(q))
                 || (s.Actors != null && s.Actors.Contains(q)) || (s.Director != null && s.Director.Contains(q)) || (s.Writer != null && s.Writer.Contains(q)));
             (mq, sq) = ApplyTypeScope(ParseTypeScope(types), mq, sq);
-            return Ok(await PageMergedAsync(mq, sq, page, pageSize));
+            return Ok(await PageMergedAsync(mq, sq, page, pageSize, NormalizeSort(sort)));
         }
 
         // Series detail (mirror of GetMovie): the series + its normalized graph + seasons/episodes.
@@ -2046,7 +2127,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpGet("/API/GetMoviesByRating")]
-        public async Task<IActionResult> GetMoviesByRating(int maxRatingId, int page = 1, int pageSize = 60, string? types = null)
+        public async Task<IActionResult> GetMoviesByRating(int maxRatingId, int page = 1, int pageSize = 60, string? types = null, string? sort = null)
         {
             int ageRestriction = 100;
             var currentUserId = GetCurrentUserId();
@@ -2078,9 +2159,8 @@ namespace MovieTheater.Controllers
                     : baseQuery.Where(m => false);
             }
 
-            var query = baseQuery
-                .Select(ToCardDto)
-                .OrderBy(c => c.SimpleTitle == null).ThenBy(c => c.SimpleTitle).ThenBy(c => c.id);
+            // Order at the DB by the chosen sort, then page there.
+            var query = SortMovies(baseQuery, NormalizeSort(sort)).Select(ToCardDto);
 
             return Ok(await PageCardsAsync(query, page, pageSize));
         }

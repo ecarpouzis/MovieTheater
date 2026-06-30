@@ -10,7 +10,7 @@ import BoardGameNavContent from "./BoardGameNavContent";
 import UserSettingsModal from "./UserSettingsModal";
 import AdminModal from "./AdminModal";
 import useIsMobile from "../hooks/useIsMobile";
-import { loadTitleTypes, saveTitleTypes } from "../hooks/useMovieSearch";
+import { loadTitleTypes, saveTitleTypes, loadSort, saveSort } from "../hooks/useMovieSearch";
 
 function NavBar({
   search,
@@ -80,8 +80,14 @@ function NavBar({
         : typesParam.split(",").map((t) => t.trim()).filter(Boolean);
     saveTitleTypes(types);
 
+    // Sort-by is a persistent overarching setting like the Type scope: absent in the URL → the persisted
+    // value (default "alpha"); present → use and persist it. Threaded into every browse mode below.
+    const sortParam = params.get("sort");
+    const sort = sortParam || loadSort();
+    saveSort(sort);
+
     // With no other filter active, the default browse is the Type scope itself (random when it's empty).
-    const browseDefault = () => (types.length ? titleTypeSearch(types) : resetSearch());
+    const browseDefault = () => (types.length ? titleTypeSearch(types, sort) : resetSearch());
 
     if (!mode) {
       // No search mode in the URL. Determine whether this is a hard browser reload
@@ -132,19 +138,19 @@ function NavBar({
     // Every search mode runs within the current Type scope; an empty value falls back to browsing the
     // scope itself. (Type is no longer its own mode — it's the orthogonal `types` param above.)
     const modeHandlers = {
-      title: (v) => (v.trim() ? titleSearch(v, types) : browseDefault()),
-      actor: (v) => (v.trim() ? actorSearch(v, types) : browseDefault()),
-      genre: (v) => (v.trim() ? genreSearch(v, types) : browseDefault()),
-      franchise: (v) => (v.trim() ? franchiseSearch(v, types) : browseDefault()),
-      letter: (v) => (v.trim() ? firstLetterSearch(v, types) : browseDefault()),
-      rating: (v) => (v.trim() ? ratingSearch(v, types) : browseDefault()),
+      title: (v) => (v.trim() ? titleSearch(v, types, sort) : browseDefault()),
+      actor: (v) => (v.trim() ? actorSearch(v, types, sort) : browseDefault()),
+      genre: (v) => (v.trim() ? genreSearch(v, types, sort) : browseDefault()),
+      franchise: (v) => (v.trim() ? franchiseSearch(v, types, sort) : browseDefault()),
+      letter: (v) => (v.trim() ? firstLetterSearch(v, types, sort) : browseDefault()),
+      rating: (v) => (v.trim() ? ratingSearch(v, types, sort) : browseDefault()),
       seen: () => {
         if (!isAuthReady) return;
-        userData ? moviesSeenSearch(userData, types) : browseDefault();
+        userData ? moviesSeenSearch(userData, types, sort) : browseDefault();
       },
       want: () => {
         if (!isAuthReady) return;
-        userData ? moviesWantToWatchSearch(userData, types) : browseDefault();
+        userData ? moviesWantToWatchSearch(userData, types, sort) : browseDefault();
       },
     };
 

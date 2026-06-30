@@ -2,6 +2,35 @@ import { useState, useCallback } from "react";
 
 const RANDOM_MOVIES_URL = "/API/GetRandomMovies";
 const TITLE_TYPES_KEY = "BrowseTitleTypes";
+const SORT_KEY = "BrowseSort";
+
+// The Browse "Sort by" control, like the Type scope, is a persistent overarching setting applied
+// across every browse mode. Values: "alpha" (A→Z by SimpleTitle — the default), "imdb", "rt"
+// (Tomatometer), "popcorn" (Popcornmeter). Persisted so it survives reloads/sessions.
+export const BROWSE_SORTS = ["alpha", "imdb", "rt", "popcorn"];
+
+export function loadSort() {
+  try {
+    const raw = window.localStorage.getItem(SORT_KEY);
+    return BROWSE_SORTS.includes(raw) ? raw : "alpha";
+  } catch {
+    return "alpha";
+  }
+}
+
+export function saveSort(sort) {
+  try {
+    window.localStorage.setItem(SORT_KEY, BROWSE_SORTS.includes(sort) ? sort : "alpha");
+  } catch {
+    /* ignore — a stale persisted sort just means the default next time */
+  }
+}
+
+// Append the active sort to a browse endpoint URL. "alpha" is the server default, but we send it
+// explicitly anyway so a type-scope browse is alphabetical (not the legacy random seed).
+function sortSuffix(sort) {
+  return `&sort=${encodeURIComponent(BROWSE_SORTS.includes(sort) ? sort : "alpha")}`;
+}
 
 // The Browse "Type" filter is a persistent, overarching scope applied across every browse mode (it
 // keeps its value until the user changes it). Stored in localStorage so it survives reloads/sessions.
@@ -56,88 +85,88 @@ export function useMovieSearch() {
 
   // These now hit unified API endpoints that return BOTH movies and series (kind-tagged), each
   // narrowed to the current Type scope.
-  const titleSearch = useCallback((title, types) => {
-    setSearch({ url: `/API/BrowseTitle?q=${encodeURIComponent(title)}${scopeSuffix(types)}`, titleTypes: types, infinite: true });
+  const titleSearch = useCallback((title, types, sort) => {
+    setSearch({ url: `/API/BrowseTitle?q=${encodeURIComponent(title)}${scopeSuffix(types)}${sortSuffix(sort)}`, titleTypes: types, sort, infinite: true });
   }, []);
 
-  const actorSearch = useCallback((person, types) => {
-    setSearch({ url: `/API/BrowsePerson?q=${encodeURIComponent(person)}${scopeSuffix(types)}`, actor: person, titleTypes: types, infinite: true });
+  const actorSearch = useCallback((person, types, sort) => {
+    setSearch({ url: `/API/BrowsePerson?q=${encodeURIComponent(person)}${scopeSuffix(types)}${sortSuffix(sort)}`, actor: person, titleTypes: types, sort, infinite: true });
   }, []);
 
   // Genre filter (AND across genres), within the Type scope.
-  const genreSearch = useCallback((genres, types) => {
+  const genreSearch = useCallback((genres, types, sort) => {
     const list = (Array.isArray(genres) ? genres : String(genres).split(","))
       .map((g) => g.trim())
       .filter(Boolean);
     if (list.length === 0) {
-      setSearch({ url: RANDOM_MOVIES_URL, titleTypes: types });
+      setSearch({ url: RANDOM_MOVIES_URL, titleTypes: types, sort });
       return;
     }
-    setSearch({ url: `/API/BrowseGenre?genres=${encodeURIComponent(list.join(","))}${scopeSuffix(types)}`, genre: list, titleTypes: types, infinite: true });
+    setSearch({ url: `/API/BrowseGenre?genres=${encodeURIComponent(list.join(","))}${scopeSuffix(types)}${sortSuffix(sort)}`, genre: list, titleTypes: types, sort, infinite: true });
   }, []);
 
   // All titles in a model-tagged franchise / shared universe, within the Type scope.
-  const franchiseSearch = useCallback((franchise, types) => {
+  const franchiseSearch = useCallback((franchise, types, sort) => {
     const fx = (franchise ?? "").trim();
     if (!fx) {
-      setSearch({ url: RANDOM_MOVIES_URL, titleTypes: types });
+      setSearch({ url: RANDOM_MOVIES_URL, titleTypes: types, sort });
       return;
     }
-    setSearch({ url: `/API/BrowseFranchise?franchise=${encodeURIComponent(fx)}${scopeSuffix(types)}`, franchise: fx, titleTypes: types, infinite: true });
+    setSearch({ url: `/API/BrowseFranchise?franchise=${encodeURIComponent(fx)}${scopeSuffix(types)}${sortSuffix(sort)}`, franchise: fx, titleTypes: types, sort, infinite: true });
   }, []);
 
-  const firstLetterSearch = useCallback((firstLetter, types) => {
-    setSearch({ url: `/API/BrowseLetter?letter=${encodeURIComponent(firstLetter)}${scopeSuffix(types)}`, startsWith: firstLetter, titleTypes: types, infinite: true });
+  const firstLetterSearch = useCallback((firstLetter, types, sort) => {
+    setSearch({ url: `/API/BrowseLetter?letter=${encodeURIComponent(firstLetter)}${scopeSuffix(types)}${sortSuffix(sort)}`, startsWith: firstLetter, titleTypes: types, sort, infinite: true });
   }, []);
 
   // The Type scope on its own — the default browse when no other filter is active. `types` is the
   // scope (multi-select, OR semantics); an empty scope falls back to the random discovery grid.
-  const titleTypeSearch = useCallback((types) => {
+  const titleTypeSearch = useCallback((types, sort) => {
     const list = (Array.isArray(types) ? types : String(types).split(","))
       .map((t) => t.trim())
       .filter(Boolean);
     if (list.length === 0) {
-      setSearch({ url: RANDOM_MOVIES_URL, titleTypes: [] });
+      setSearch({ url: RANDOM_MOVIES_URL, titleTypes: [], sort });
       return;
     }
-    // infinite: this endpoint is paginated server-side; Browse streams it page-by-page. A fresh seed
-    // per call gives a random assortment that's stable across pages (infinite scroll won't dupe/skip)
-    // yet different on each visit/refresh.
-    const seed = Math.floor(Math.random() * 1_000_000_000);
-    setSearch({ url: `/API/GetMoviesByType?type=${encodeURIComponent(list.join(","))}&seed=${seed}`, titleTypes: list, infinite: true });
+    // infinite: this endpoint is paginated server-side; Browse streams it page-by-page. The Sort-by
+    // control drives the order (Alphabetical by default), so the result is a stable, deterministic
+    // ordering across pages rather than the former random assortment.
+    setSearch({ url: `/API/GetMoviesByType?type=${encodeURIComponent(list.join(","))}${sortSuffix(sort)}`, titleTypes: list, sort, infinite: true });
   }, []);
 
-  const ratingSearch = useCallback((maxRatingId, types) => {
+  const ratingSearch = useCallback((maxRatingId, types, sort) => {
     setSearch({
-      url: `/API/GetMoviesByRating?maxRatingId=${maxRatingId}${scopeSuffix(types)}`,
+      url: `/API/GetMoviesByRating?maxRatingId=${maxRatingId}${scopeSuffix(types)}${sortSuffix(sort)}`,
       maxRatingId: String(maxRatingId),
       titleTypes: types,
+      sort,
       infinite: true,
     });
   }, []);
 
   // Personal lists (Seen / Want) are id-based; `types` rides along only so the Type selector keeps
   // its displayed value here — the lists themselves are not type-filtered.
-  const movieIDListSearch = useCallback((movieIds, restoreOrder = null, types = null) => {
+  const movieIDListSearch = useCallback((movieIds, restoreOrder = null, types = null, sort = null) => {
     if (!movieIds || movieIds.length === 0) {
-      setSearch({ url: null, restoreOrder, titleTypes: types });
+      setSearch({ url: null, restoreOrder, titleTypes: types, sort });
       return;
     }
     // Seen/Want (no restore order) stream as infinite scroll; the back-nav restore path
     // (restoreOrder set) stays a single fetch so it can re-apply the remembered order.
-    setSearch({ movieIds, restoreOrder, titleTypes: types, infinite: !restoreOrder });
+    setSearch({ movieIds, restoreOrder, titleTypes: types, sort, infinite: !restoreOrder });
   }, []);
 
   const restoreMovieIdsSearch = useCallback((movieIds, types = null) => {
     movieIDListSearch(movieIds, movieIds, types);
   }, [movieIDListSearch]);
 
-  const moviesSeenSearch = useCallback((userData, types = null) => {
-    if (userData) movieIDListSearch(userData.moviesSeen, null, types);
+  const moviesSeenSearch = useCallback((userData, types = null, sort = null) => {
+    if (userData) movieIDListSearch(userData.moviesSeen, null, types, sort);
   }, [movieIDListSearch]);
 
-  const moviesWantToWatchSearch = useCallback((userData, types = null) => {
-    if (userData) movieIDListSearch(userData.moviesToWatch, null, types);
+  const moviesWantToWatchSearch = useCallback((userData, types = null, sort = null) => {
+    if (userData) movieIDListSearch(userData.moviesToWatch, null, types, sort);
   }, [movieIDListSearch]);
 
   return {
