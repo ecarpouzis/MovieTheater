@@ -1,13 +1,13 @@
 /* Shared subtitle-appearance editor — used in both the Watch player and the TV/channel player.
    Self-contained palette (own vars) so it renders consistently regardless of which player hosts it. */
 .substyle {
-  /* Accent is themeable per host: the Watch player defaults to gold; the TV player sets --ss-accent
-     to its blue on an ancestor so the editor matches whichever menu hosts it. */
-  --ss-gold: var(--ss-accent, #e3b341);
-  --ss-gold-dim: var(--ss-accent-dim, #9a7f3f);
-  --ss-cream: #f2ecdd;
-  --ss-cream-dim: rgba(242, 236, 221, 0.62);
-  --ss-black: #0b0a08;
+  /* Accent is themeable per host: both players are blue, so the default is blue; the TV player still
+     sets --ss-accent on an ancestor so the editor matches whichever menu hosts it. */
+  --ss-gold: var(--ss-accent, #40a9ff);
+  --ss-gold-dim: var(--ss-accent-dim, #3f72a9);
+  --ss-cream: #e8eef6;
+  --ss-cream-dim: rgba(232, 238, 246, 0.62);
+  --ss-black: #050505;
   padding: 4px 12px 10px;
   display: flex;
   flex-direction: column;
@@ -49,7 +49,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 1px solid rgba(242, 236, 221, 0.35);
+  border: 1px solid rgba(232, 238, 246, 0.35);
   cursor: pointer;
   padding: 0;
   transition: transform 0.12s, box-shadow 0.12s;
@@ -75,15 +75,15 @@
   padding: 5px 4px;
   font-size: 11.5px;
   color: var(--ss-cream);
-  background: rgba(242, 236, 221, 0.06);
-  border: 1px solid rgba(227, 179, 65, 0.22);
+  background: rgba(232, 238, 246, 0.06);
+  border: 1px solid rgba(64, 169, 255, 0.22);
   border-radius: 5px;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 
 .substyle-segbtn:hover {
-  background: rgba(227, 179, 65, 0.12);
+  background: rgba(64, 169, 255, 0.12);
 }
 
 .substyle-segbtn--on {

@@ -1,18 +1,21 @@
 /* ════════════════════════════════════════════════════════════════════════════
    The screening room. The catalog site is bright and utilitarian; this is its
-   opposite on purpose — house lights down, warm black, marquee gold. One
-   typeface carries the cinema voice (Marcellus, an engraved Trajan cousin);
-   everything else is quiet.
+   opposite on purpose — house lights down, true black, cool blue accent (matched
+   to the TV player). One typeface carries the cinema voice (Marcellus, an
+   engraved Trajan cousin); everything else is quiet.
+
+   The --vp-gold* token names are historical — they now hold the blue accent so
+   every existing reference recolors at once without renaming class hooks.
    ════════════════════════════════════════════════════════════════════════════ */
 @import url("https://fonts.googleapis.com/css2?family=Marcellus&display=swap");
 
 :root {
-  --vp-black: #0b0a08;
-  --vp-gold: #e3b341;
-  --vp-gold-bright: #f5cf72;
-  --vp-gold-dim: #9a7f3f;
-  --vp-cream: #f2ecdd;
-  --vp-cream-dim: rgba(242, 236, 221, 0.62);
+  --vp-black: #000000;
+  --vp-gold: #40a9ff;
+  --vp-gold-bright: #6cc0ff;
+  --vp-gold-dim: #3f72a9;
+  --vp-cream: #e8eef6;
+  --vp-cream-dim: rgba(232, 238, 246, 0.62);
   --vp-display: "Marcellus", "Palatino Linotype", Georgia, serif;
 }
 
@@ -24,6 +27,9 @@
   overflow: hidden;
   outline: none;
   user-select: none;
+  /* The shared subtitle-style editor reads these to match this player's blue menu. */
+  --ss-accent: var(--vp-gold);
+  --ss-accent-dim: var(--vp-gold-dim);
 }
 
 .vp-stage--idle {
@@ -40,7 +46,7 @@
 }
 
 .vp-video::cue {
-  background: rgba(8, 7, 5, 0.78);
+  background: rgba(5, 5, 5, 0.82);
   color: var(--vp-cream);
   font-family: inherit;
   /* Size in viewport units, not em: `em` on ::cue resolves against each browser's
@@ -74,12 +80,12 @@
   align-items: flex-start;
   gap: 18px;
   padding: 22px 26px 56px;
-  background: linear-gradient(to bottom, rgba(11, 10, 8, 0.88) 0%, rgba(11, 10, 8, 0.45) 55%, transparent 100%);
+  background: linear-gradient(to bottom, rgba(5, 5, 5, 0.88) 0%, rgba(5, 5, 5, 0.45) 55%, transparent 100%);
 }
 
 .vp-back {
   background: none;
-  border: 1px solid rgba(227, 179, 65, 0.35);
+  border: 1px solid rgba(64, 169, 255, 0.35);
   color: var(--vp-gold);
   width: 40px;
   height: 40px;
@@ -93,7 +99,7 @@
 
 .vp-back:hover {
   border-color: var(--vp-gold);
-  background: rgba(227, 179, 65, 0.1);
+  background: rgba(64, 169, 255, 0.1);
   transform: translateX(-2px);
 }
 
@@ -118,7 +124,7 @@
 .vp-controls {
   bottom: 0;
   padding: 42px 22px 14px;
-  background: linear-gradient(to top, rgba(11, 10, 8, 0.92) 0%, rgba(11, 10, 8, 0.5) 60%, transparent 100%);
+  background: linear-gradient(to top, rgba(5, 5, 5, 0.92) 0%, rgba(5, 5, 5, 0.5) 60%, transparent 100%);
 }
 
 /* Scrubber: a thin gold filament that thickens under the pointer. */
@@ -132,7 +138,7 @@
 .vp-rail-track {
   position: relative;
   height: 3px;
-  background: rgba(242, 236, 221, 0.16);
+  background: rgba(232, 238, 246, 0.16);
   border-radius: 2px;
   transition: height 0.15s ease;
 }
@@ -144,7 +150,7 @@
 .vp-rail-buffered {
   position: absolute;
   inset: 0 auto 0 0;
-  background: rgba(242, 236, 221, 0.22);
+  background: rgba(232, 238, 246, 0.22);
   border-radius: inherit;
 }
 
@@ -163,7 +169,7 @@
   margin: -6.5px 0 0 -6.5px;
   border-radius: 50%;
   background: var(--vp-gold-bright);
-  box-shadow: 0 0 10px 2px rgba(227, 179, 65, 0.55);
+  box-shadow: 0 0 10px 2px rgba(64, 169, 255, 0.55);
   opacity: 0;
   transform: scale(0.6);
   transition: opacity 0.15s, transform 0.15s;
@@ -178,8 +184,8 @@
   position: absolute;
   bottom: 22px;
   transform: translateX(-50%);
-  background: rgba(18, 16, 12, 0.95);
-  border: 1px solid rgba(227, 179, 65, 0.4);
+  background: rgba(10, 12, 17, 0.95);
+  border: 1px solid rgba(64, 169, 255, 0.4);
   color: var(--vp-cream);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
@@ -218,7 +224,7 @@
 
 .vp-btn:hover {
   color: var(--vp-gold-bright);
-  background: rgba(227, 179, 65, 0.08);
+  background: rgba(64, 169, 255, 0.08);
 }
 
 /* CSS glyphs — crisper than icon fonts at this scale, zero dependencies. */
@@ -353,8 +359,8 @@
   height: 10px;
   margin-left: -1px;
   transform: translateY(-50%);
-  background: rgba(11, 10, 8, 0.7);
-  box-shadow: 0 0 0 1px rgba(227, 179, 65, 0.4);
+  background: rgba(5, 5, 5, 0.7);
+  box-shadow: 0 0 0 1px rgba(64, 169, 255, 0.4);
   pointer-events: none;
   z-index: 2;
 }
@@ -364,7 +370,7 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--vp-gold);
-  border: 1px solid rgba(227, 179, 65, 0.45);
+  border: 1px solid rgba(64, 169, 255, 0.45);
   border-radius: 3px;
   padding: 3px 7px;
   margin-right: 6px;
@@ -415,8 +421,8 @@
   min-width: 230px;
   max-height: 60vh;
   overflow-y: auto;
-  background: rgba(16, 14, 11, 0.97);
-  border: 1px solid rgba(227, 179, 65, 0.28);
+  background: rgba(11, 14, 20, 0.97);
+  border: 1px solid rgba(64, 169, 255, 0.28);
   border-radius: 8px;
   padding: 6px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
@@ -459,7 +465,7 @@
 }
 
 .vp-menu-item:hover {
-  background: rgba(227, 179, 65, 0.1);
+  background: rgba(64, 169, 255, 0.1);
 }
 
 .vp-menu-dot {
@@ -473,7 +479,7 @@
 .vp-menu-item--on .vp-menu-dot {
   background: var(--vp-gold);
   border-color: var(--vp-gold);
-  box-shadow: 0 0 6px rgba(227, 179, 65, 0.7);
+  box-shadow: 0 0 6px rgba(64, 169, 255, 0.7);
 }
 
 .vp-menu-hint {
@@ -508,8 +514,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(227, 179, 65, 0.12);
-  border: 1px solid rgba(227, 179, 65, 0.28);
+  background: rgba(64, 169, 255, 0.12);
+  border: 1px solid rgba(64, 169, 255, 0.28);
   border-radius: 5px;
   color: var(--vp-cream);
   font-size: 16px;
@@ -518,7 +524,7 @@
 }
 
 .vp-menu-delay-btn:hover {
-  background: rgba(227, 179, 65, 0.22);
+  background: rgba(64, 169, 255, 0.22);
 }
 
 .vp-menu-delay-val {
@@ -554,8 +560,8 @@
   left: 50%;
   bottom: 18%;
   transform: translateX(-50%);
-  background: rgba(16, 14, 11, 0.92);
-  border: 1px solid rgba(227, 179, 65, 0.28);
+  background: rgba(11, 14, 20, 0.92);
+  border: 1px solid rgba(64, 169, 255, 0.28);
   border-radius: 6px;
   padding: 8px 16px;
   color: var(--vp-cream);
@@ -583,8 +589,8 @@
   width: 76px;
   height: 76px;
   border-radius: 50%;
-  background: rgba(11, 10, 8, 0.7);
-  border: 1px solid rgba(227, 179, 65, 0.5);
+  background: rgba(5, 5, 5, 0.7);
+  border: 1px solid rgba(64, 169, 255, 0.5);
   animation: vp-bloom 0.5s ease forwards;
   position: relative;
 }
@@ -659,7 +665,7 @@
   }
   45% {
     background: var(--vp-gold-bright);
-    box-shadow: 0 0 14px 3px rgba(227, 179, 65, 0.55);
+    box-shadow: 0 0 14px 3px rgba(64, 169, 255, 0.55);
     transform: scale(1.18);
   }
 }
@@ -673,17 +679,17 @@
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  background: rgba(11, 10, 8, 0.72);
+  background: rgba(5, 5, 5, 0.72);
   border: 1.5px solid var(--vp-gold);
   cursor: pointer;
   z-index: 3;
-  box-shadow: 0 0 36px rgba(227, 179, 65, 0.25);
+  box-shadow: 0 0 36px rgba(64, 169, 255, 0.25);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .vp-bigplay:hover {
   transform: translate(-50%, -50%) scale(1.06);
-  box-shadow: 0 0 48px rgba(227, 179, 65, 0.4);
+  box-shadow: 0 0 48px rgba(64, 169, 255, 0.4);
 }
 
 .vp-bigplay-tri {
