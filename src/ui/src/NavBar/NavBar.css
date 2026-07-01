@@ -224,8 +224,13 @@
 
 .navbar-section-dropdown-desktop {
   background: #002140;
-  left: 16px;
-  min-width: 200px;
+  /* Span the full sidebar width: the wrapper is inset by the header's 16px side padding, so pull the
+     panel back out to both sider edges. Flush, edge-to-edge — the hover highlight then fills each row
+     wall-to-wall instead of sitting in a narrow floating box. */
+  left: -16px;
+  right: -16px;
+  min-width: 0;
+  border-radius: 0;
 }
 
 .navbar-section-item {
