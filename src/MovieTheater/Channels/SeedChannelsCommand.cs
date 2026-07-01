@@ -66,10 +66,32 @@ namespace MovieTheater.Channels
             {
                 var user = await db.Users.FirstOrDefaultAsync(u => u.Username == UnseenUser);
                 if (user == null)
+                {
                     console.Error.WriteLine($"User '{UnseenUser}' not found — skipping the unseen channel.");
+                }
                 else
-                    defs.Add(($"Unseen by {user.Username}", "Things you haven't watched yet", 8,
-                        new ChannelFilter { UnwatchedByUserId = user.UserID }));
+                {
+                    // A per-user "Unseen by X" channel is personal, so it lives on the "For You" shelf and
+                    // is scoped to that user via OwnerUserId (without it the channel would leak to everyone).
+                    var unseenName = $"Unseen by {user.Username}";
+                    if (!await db.Channels.AnyAsync(c => c.Name == unseenName))
+                    {
+                        db.Channels.Add(new Channel
+                        {
+                            Name = unseenName,
+                            Description = "Things you haven't watched yet",
+                            SortOrder = 8,
+                            Enabled = true,
+                            FilterJson = new ChannelFilter { UnwatchedByUserId = user.UserID }.ToJson(),
+                            Seed = seedRng.Next(1, int.MaxValue),
+                            ShuffleMode = "SeededShuffle",
+                            AnchorUtc = anchor,
+                            Category = "For You",
+                            OwnerUserId = user.UserID,
+                        });
+                        console.Output.WriteLine($"+ {unseenName}");
+                    }
+                }
             }
 
             var existing = await db.Channels.Select(c => c.Name).ToListAsync();
