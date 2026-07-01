@@ -83,6 +83,12 @@ namespace MovieTheater.Db
         /// eligible-set scan. NULL = not yet computed (a brand-new channel, until the maintainer warms it).</summary>
         public int? CachedCeiling { get; set; }
 
+        /// <summary>When set, a PER-USER channel visible only to that user (their "For You" recommendation
+        /// channels). NULL = a normal channel everyone sees. Only the guide/list visibility gates on this;
+        /// the schedule engine is otherwise oblivious. This also stops the older per-user "Unseen by
+        /// &lt;user&gt;" channels from leaking to every viewer.</summary>
+        public int? OwnerUserId { get; set; }
+
         public ICollection<ChannelScheduleItem> ScheduleItems { get; set; } = [];
     }
 }

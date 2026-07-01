@@ -63,7 +63,8 @@ namespace MovieTheater.Channels
             double? Quality,
             long OrderRank,
             int GroupId,
-            string SortKey);
+            string SortKey,
+            double? Weight = null);
 
         // The eligible-set build runs the heavy AI-insight/tag joins, so the result (set + ceiling) is
         // cached briefly; the 15-min ceiling cache below is a thin derivation of it. Keyed by channel id
@@ -150,6 +151,21 @@ namespace MovieTheater.Channels
                 : await CurrentInsights(InsightSubjectKind.Series).Where(ti => seriesSubjectIds.Contains(ti.SubjectId))
                     .Select(ti => new { ti.SubjectId, ti.Rewatchability }).ToDictionaryAsync(x => x.SubjectId, x => x.Rewatchability, cancel);
 
+            // Personalized ("For You") channels: the per-user recommendation score becomes each item's
+            // schedule Weight, so the weighted shuffle airs better-fit titles more often (see Copies).
+            // A user has at most ~100 recs per kind, so load them whole (no big IN over the candidate ids).
+            var recoMovieScore = new Dictionary<int, double>();
+            var recoSeriesScore = new Dictionary<int, double>();
+            if (filter.RecommendedForUserId is int ruid)
+            {
+                recoMovieScore = await movieDb.TitleRecommendations
+                    .Where(r => r.UserId == ruid && r.SubjectKind == InsightSubjectKind.Movie)
+                    .ToDictionaryAsync(r => r.SubjectId, r => r.Score, cancel);
+                recoSeriesScore = await movieDb.TitleRecommendations
+                    .Where(r => r.UserId == ruid && r.SubjectKind == InsightSubjectKind.Series)
+                    .ToDictionaryAsync(r => r.SubjectId, r => r.Score, cancel);
+            }
+
             // Real-bucket (1..6) rating map, resolved in memory like the rest of the age gate (RatingGate).
             var ratingRows = await movieDb.RatingMaps
                 .Where(rm => rm.MovieRating != null && rm.MPARatingID >= 1 && rm.MPARatingID <= 6)
@@ -193,8 +209,14 @@ namespace MovieTheater.Channels
                 int? rewatch = c.GroupId != 0
                     ? seriesRewatch.GetValueOrDefault(c.GroupId)
                     : movieRewatch.GetValueOrDefault((int)c.OrderRank);
+                double? recoWeight = null;
+                if (filter.RecommendedForUserId != null)
+                {
+                    if (c.GroupId != 0) { if (recoSeriesScore.TryGetValue(c.GroupId, out var sv)) recoWeight = sv; }
+                    else if (recoMovieScore.TryGetValue((int)c.OrderRank, out var mv)) recoWeight = mv;
+                }
                 items.Add(new EligibleItem(c.PlayableId, durationTicks, ratingId,
-                    rewatch, quality, c.OrderRank, c.GroupId, c.SortKey ?? ""));
+                    rewatch, quality, c.OrderRank, c.GroupId, c.SortKey ?? "", recoWeight));
             }
 
             int ceiling = filter.MaxMpaRatingId ?? (maxRating == 0 ? RatingGate.UnknownRatingId : maxRating);
@@ -280,6 +302,7 @@ namespace MovieTheater.Channels
 
             if (filter.UnwatchedByUserId is int uid) q = q.Where(m => !movieDb.Viewings.Any(v => v.UserID == uid && v.MovieID == m.id && v.ViewingType == "Seen"));
             if (filter.WantedByUserId is int wid) q = q.Where(m => movieDb.Viewings.Any(v => v.UserID == wid && v.MovieID == m.id && v.ViewingType == "WantToWatch"));
+            if (filter.RecommendedForUserId is int rmid) q = q.Where(m => movieDb.TitleRecommendations.Any(r => r.UserId == rmid && r.SubjectKind == InsightSubjectKind.Movie && r.SubjectId == m.id));
             if (filter.MinViewers is int minv) q = q.Where(m => movieDb.Viewings.Where(v => v.MovieID == m.id && v.ViewingType == "Seen").Select(v => v.UserID).Distinct().Count() >= minv);
             if (filter.AddedWithinDays is int days) { var since = DateTime.UtcNow.AddDays(-days); q = q.Where(m => m.UploadedDate != null && m.UploadedDate >= since); }
 
@@ -359,6 +382,7 @@ namespace MovieTheater.Channels
 
             if (filter.UnwatchedByUserId is int uid) q = q.Where(s => !movieDb.Viewings.Any(v => v.UserID == uid && v.SeriesId == s.Id && v.ViewingType == "Seen"));
             if (filter.WantedByUserId is int wid) q = q.Where(s => movieDb.Viewings.Any(v => v.UserID == wid && v.SeriesId == s.Id && v.ViewingType == "WantToWatch"));
+            if (filter.RecommendedForUserId is int rsid) q = q.Where(s => movieDb.TitleRecommendations.Any(r => r.UserId == rsid && r.SubjectKind == InsightSubjectKind.Series && r.SubjectId == s.Id));
             if (filter.MinViewers is int minv) q = q.Where(s => movieDb.Viewings.Where(v => v.SeriesId == s.Id && v.ViewingType == "Seen").Select(v => v.UserID).Distinct().Count() >= minv);
             if (filter.AddedWithinDays is int days) { var since = DateTime.UtcNow.AddDays(-days); q = q.Where(s => s.UploadedDate != null && s.UploadedDate >= since); }
 
@@ -823,6 +847,10 @@ namespace MovieTheater.Channels
         // well-rated, so they recur a little more often. Deterministic (no clock/random), 1..3.
         private static int Copies(EligibleItem e)
         {
+            // Personalized channels weight by the recommendation score (0..100 → 1..4 copies), so the
+            // best-fit picks recur more; every other channel weights by rewatchability × quality.
+            if (e.Weight is double score)
+                return Math.Clamp((int)Math.Round(1 + Math.Clamp(score, 0, 100) / 100.0 * 3), 1, 4);
             double rewatch = 0.5 + (e.Rewatchability ?? 50) / 100.0;   // 0.5 .. 1.5
             double quality = 0.5 + (e.Quality ?? 0.5);                 // 0.5 .. 1.5
             return Math.Clamp((int)Math.Round(rewatch * quality * 1.5), 1, 3);
@@ -855,6 +883,7 @@ namespace MovieTheater.Channels
                 case "EpisodeRoundRobin":
                     return new Queue<EligibleItem>(RoundRobin(source));
                 case "WeightedShuffle":
+                case "RecommendationWeighted": // same weighted shuffle; Copies() reads the per-user score
                 {
                     var bag = source.SelectMany(e => Enumerable.Repeat(e, Copies(e))).ToList();
                     FisherYates(bag, unchecked(seed * 31 + round));

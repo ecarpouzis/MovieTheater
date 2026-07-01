@@ -1246,6 +1246,7 @@ function TvPage({ userData }) {
                     <span className="tv-bar-title">{now.current.title}</span>
                     <span className="tv-bar-time">ends {new Date(now.current.endsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                   </span>
+                  {now.current.reason ? <span className="tv-bar-reason">✨ {now.current.reason}</span> : null}
                   {now.current.plot ? <span className="tv-bar-plot">{now.current.plot}</span> : null}
                 </span>
               </div>

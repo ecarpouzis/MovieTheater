@@ -9,9 +9,10 @@ const TITLE_TYPES_KEY = "BrowseTitleTypes";
 const SORT_KEY = "BrowseSort";
 
 // The Browse "Sort by" control, like the Type scope, is a persistent overarching setting applied
-// across every browse mode. Values: "alpha" (A→Z by SimpleTitle — the default), "imdb", "rt"
-// (Tomatometer), "popcorn" (Popcornmeter). Persisted so it survives reloads/sessions.
-export const BROWSE_SORTS = ["alpha", "imdb", "rt", "popcorn"];
+// across every browse mode. Values: "alpha" (A→Z by SimpleTitle — the default), "added" (Recently
+// Added, by UploadedDate desc), "imdb", "rt" (Tomatometer), "popcorn" (Popcornmeter). Persisted so
+// it survives reloads/sessions.
+export const BROWSE_SORTS = ["alpha", "added", "imdb", "rt", "popcorn"];
 
 export function loadSort() {
   try {

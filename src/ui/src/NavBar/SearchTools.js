@@ -7,6 +7,7 @@ import { loadSort } from "../hooks/useMovieSearch";
 // Sort-by options for the Browse grid. Labels are user-facing; values match the API `sort` param.
 const SORT_OPTIONS = [
   { label: "Alphabetical (A–Z)", value: "alpha" },
+  { label: "Recently Added", value: "added" },
   { label: "IMDb rating", value: "imdb" },
   { label: "Rotten Tomatoes", value: "rt" },
   { label: "Popcornmeter", value: "popcorn" },

@@ -126,6 +126,12 @@ namespace MovieTheater.Channels
         /// <summary>When set, restrict to titles this user has on their Want-to-Watch list.</summary>
         public int? WantedByUserId { get; set; }
 
+        /// <summary>When set, restrict to titles the recommendation engine picked for this user
+        /// (rows in <c>TitleRecommendation</c>) — the pool of a personalized "For You" channel. The
+        /// per-title <c>Score</c> also drives how often each recurs (see the RecommendationWeighted
+        /// schedule strategy).</summary>
+        public int? RecommendedForUserId { get; set; }
+
         /// <summary>Require the title to have been marked Seen by at least this many distinct users
         /// (community popularity). Null = no requirement.</summary>
         public int? MinViewers { get; set; }

@@ -68,7 +68,7 @@ namespace MovieTheater.Controllers
             try { shelfOrder = await movieDb.ChannelShelves.ToDictionaryAsync(s => s.Category, s => s.SortOrder); }
             catch { shelfOrder = new(); }
             int ShelfRank(string? cat) => cat != null && shelfOrder.TryGetValue(cat, out var so) ? so : int.MaxValue;
-            var channels = (await movieDb.Channels.Where(c => c.Enabled).ToListAsync())
+            var channels = (await movieDb.Channels.Where(c => c.Enabled && (c.OwnerUserId == null || c.OwnerUserId == userId.Value)).ToListAsync())
                 .OrderBy(c => ShelfRank(c.Category))
                 .ThenBy(c => c.SortOrder)
                 .ThenBy(c => c.Id)
@@ -166,6 +166,20 @@ namespace MovieTheater.Controllers
                 .ToList();
 
             var cur = titles.GetValueOrDefault(current.PlayableId);
+
+            // On a personalized ("For You") channel, attach the stored "why you'll like this" line for the
+            // current title so the player can show it. Only for the channel's owner; movies/series only.
+            string? reason = null;
+            if (channel.OwnerUserId == userId.Value && cur.Kind is "movie" or "series")
+            {
+                var subjectKind = cur.Kind == "series" ? InsightSubjectKind.Series : InsightSubjectKind.Movie;
+                int subjectId = cur.LinkId;
+                reason = await movieDb.TitleRecommendations
+                    .Where(r => r.UserId == userId.Value && r.SubjectKind == subjectKind && r.SubjectId == subjectId)
+                    .Select(r => r.ReasonText)
+                    .FirstOrDefaultAsync();
+            }
+
             return Json(new
             {
                 current = new
@@ -178,6 +192,7 @@ namespace MovieTheater.Controllers
                     posterVersion = cur.PosterVersion,
                     title = cur.Title ?? "",
                     plot = cur.Plot,
+                    reason,
                     offsetSeconds = Math.Max(0, (clock - current.StartUtc).TotalSeconds),
                     durationSeconds = (current.EndUtc - current.StartUtc).TotalSeconds,
                     endsAtUtc = current.EndUtc,
@@ -415,7 +430,7 @@ namespace MovieTheater.Controllers
             var until = now.AddHours(hours);
 
             var channels = (await movieDb.Channels
-                .Where(c => c.Enabled)
+                .Where(c => c.Enabled && (c.OwnerUserId == null || c.OwnerUserId == userId.Value))
                 .OrderBy(c => c.SortOrder)
                 .ThenBy(c => c.Id)
                 .ToListAsync())

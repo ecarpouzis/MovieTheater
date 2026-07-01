@@ -292,6 +292,8 @@ namespace MovieTheater.Db
         public DbSet<ChannelShelf> ChannelShelves { get; set; }
         public DbSet<TitleInsight> TitleInsights { get; set; }
         public DbSet<TitleTag> TitleTags { get; set; }
+        public DbSet<TitleRecommendation> TitleRecommendations { get; set; }
+        public DbSet<UserTasteProfile> UserTasteProfiles { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)

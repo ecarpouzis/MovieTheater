@@ -457,6 +457,8 @@ namespace MovieTheater.Controllers
             public int? RtTomatometer { get; set; }
             /// <summary>Rotten Tomatoes Popcornmeter (audience), 0–100; null when unscored. Used for sort.</summary>
             public int? RtPopcornmeter { get; set; }
+            /// <summary>When the row was added to the library; drives the "Recently Added" sort. Null on misc/legacy rows.</summary>
+            public DateTime? UploadedDate { get; set; }
             public string? PlotFull { get; set; }
             public string? Plot { get; set; }
             public string? TopCast { get; set; }
@@ -493,6 +495,7 @@ namespace MovieTheater.Controllers
             TopCast = m.TopCast,
             Actors = m.Actors,
             PosterVersion = m.PosterDetails != null ? m.PosterDetails.PosterVersion : 0,
+            UploadedDate = m.UploadedDate,
         };
 
         // Same slim card shape, projected from a Series — so browse/search can interleave series with movies.
@@ -514,6 +517,7 @@ namespace MovieTheater.Controllers
             TopCast = s.TopCast,
             Actors = s.Actors,
             PosterVersion = s.PosterDetails != null ? s.PosterDetails.PosterVersion : 0,
+            UploadedDate = s.UploadedDate,
         };
 
         private async Task<int> GetAgeRestrictionAsync()
@@ -568,6 +572,7 @@ namespace MovieTheater.Controllers
         // the order is fully deterministic (stable across infinite-scroll page fetches).
         private static string NormalizeSort(string? sort) => (sort ?? string.Empty).Trim().ToLowerInvariant() switch
         {
+            "added" or "recent" or "recently-added" => "added",
             "imdb" => "imdb",
             "rt" or "tomatometer" or "critics" => "rt",
             "popcorn" or "popcornmeter" or "audience" => "popcorn",
@@ -578,6 +583,7 @@ namespace MovieTheater.Controllers
         // unscored titles sort last under OrderByDescending.
         private static IQueryable<Movie> SortMovies(IQueryable<Movie> q, string sort) => sort switch
         {
+            "added" => q.OrderByDescending(m => m.UploadedDate ?? DateTime.MinValue).ThenBy(m => m.SimpleTitle).ThenBy(m => m.id),
             "imdb" => q.OrderByDescending(m => (m.ImdbRatingScraped ?? m.imdbRating) ?? -1m).ThenBy(m => m.SimpleTitle).ThenBy(m => m.id),
             "rt" => q.OrderByDescending(m => ((decimal?)m.RtTomatometer) ?? -1m).ThenBy(m => m.SimpleTitle).ThenBy(m => m.id),
             "popcorn" => q.OrderByDescending(m => ((decimal?)m.RtPopcornmeter) ?? -1m).ThenBy(m => m.SimpleTitle).ThenBy(m => m.id),
@@ -586,6 +592,7 @@ namespace MovieTheater.Controllers
 
         private static IQueryable<Series> SortSeries(IQueryable<Series> q, string sort) => sort switch
         {
+            "added" => q.OrderByDescending(s => s.UploadedDate ?? DateTime.MinValue).ThenBy(s => s.SimpleTitle).ThenBy(s => s.Id),
             "imdb" => q.OrderByDescending(s => (s.ImdbRatingScraped ?? s.imdbRating) ?? -1m).ThenBy(s => s.SimpleTitle).ThenBy(s => s.Id),
             "rt" => q.OrderByDescending(s => ((decimal?)s.RtTomatometer) ?? -1m).ThenBy(s => s.SimpleTitle).ThenBy(s => s.Id),
             "popcorn" => q.OrderByDescending(s => ((decimal?)s.RtPopcornmeter) ?? -1m).ThenBy(s => s.SimpleTitle).ThenBy(s => s.Id),
@@ -596,6 +603,7 @@ namespace MovieTheater.Controllers
         // browse, where the sources can't UNION at the DB).
         private static List<MovieCardDto> SortCards(IEnumerable<MovieCardDto> cards, string sort) => sort switch
         {
+            "added" => cards.OrderByDescending(c => c.UploadedDate ?? DateTime.MinValue).ThenBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ThenBy(c => c.Kind).ThenBy(c => c.id).ToList(),
             "imdb" => cards.OrderByDescending(c => c.imdbRating ?? -1m).ThenBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ThenBy(c => c.Kind).ThenBy(c => c.id).ToList(),
             "rt" => cards.OrderByDescending(c => c.RtTomatometer ?? -1).ThenBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ThenBy(c => c.Kind).ThenBy(c => c.id).ToList(),
             "popcorn" => cards.OrderByDescending(c => c.RtPopcornmeter ?? -1).ThenBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ThenBy(c => c.Kind).ThenBy(c => c.id).ToList(),
@@ -754,6 +762,9 @@ namespace MovieTheater.Controllers
             /// <summary>The active rating metric for a rating sort (null for alpha sort or an unscored
             /// title). Kept as decimal so the int RT scores and the decimal IMDB rating share one column.</summary>
             public decimal? SortValue { get; set; }
+
+            /// <summary>The library add-date for the "Recently Added" sort (null for other sorts / undated rows).</summary>
+            public DateTime? SortDate { get; set; }
         }
 
         // The ordering-key UNION for the merged movie+series browse, projecting the active sort metric
@@ -767,15 +778,20 @@ namespace MovieTheater.Controllers
                 .Concat(sq.Select(s => new CardKey { Kind = "series", Id = s.Id, SimpleTitle = s.SimpleTitle, SortValue = (decimal?)s.RtTomatometer })),
             "popcorn" => mq.Select(m => new CardKey { Kind = "movie", Id = m.id, SimpleTitle = m.SimpleTitle, SortValue = (decimal?)m.RtPopcornmeter })
                 .Concat(sq.Select(s => new CardKey { Kind = "series", Id = s.Id, SimpleTitle = s.SimpleTitle, SortValue = (decimal?)s.RtPopcornmeter })),
+            "added" => mq.Select(m => new CardKey { Kind = "movie", Id = m.id, SimpleTitle = m.SimpleTitle, SortDate = m.UploadedDate })
+                .Concat(sq.Select(s => new CardKey { Kind = "series", Id = s.Id, SimpleTitle = s.SimpleTitle, SortDate = s.UploadedDate })),
             _ => mq.Select(m => new CardKey { Kind = "movie", Id = m.id, SimpleTitle = m.SimpleTitle })
                 .Concat(sq.Select(s => new CardKey { Kind = "series", Id = s.Id, SimpleTitle = s.SimpleTitle })),
         };
 
         // Order merged keys by the chosen sort: rating sorts desc with unscored (null → -1) last, then
         // SimpleTitle/Kind/Id as a stable tiebreak; alpha is SimpleTitle/Kind/Id.
-        private static IOrderedQueryable<CardKey> OrderCardKeys(IQueryable<CardKey> keys, string sort) => sort == "alpha"
-            ? keys.OrderBy(k => k.SimpleTitle).ThenBy(k => k.Kind).ThenBy(k => k.Id)
-            : keys.OrderByDescending(k => k.SortValue ?? -1m).ThenBy(k => k.SimpleTitle).ThenBy(k => k.Kind).ThenBy(k => k.Id);
+        private static IOrderedQueryable<CardKey> OrderCardKeys(IQueryable<CardKey> keys, string sort) => sort switch
+        {
+            "alpha" => keys.OrderBy(k => k.SimpleTitle).ThenBy(k => k.Kind).ThenBy(k => k.Id),
+            "added" => keys.OrderByDescending(k => k.SortDate ?? DateTime.MinValue).ThenBy(k => k.SimpleTitle).ThenBy(k => k.Kind).ThenBy(k => k.Id),
+            _ => keys.OrderByDescending(k => k.SortValue ?? -1m).ThenBy(k => k.SimpleTitle).ThenBy(k => k.Kind).ThenBy(k => k.Id),
+        };
 
         // Page a merged movie+series browse result at the DB without pulling the whole filtered set
         // (two-phase, mirroring the MyBooks views-perf "band items" approach):

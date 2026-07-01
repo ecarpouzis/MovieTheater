@@ -142,6 +142,11 @@ namespace MovieTheater
             // so the viewer read paths (List / Now / grid guide) stay cheap as channel count grows.
             services.AddHostedService<Channels.ChannelScheduleMaintenanceService>();
 
+            // Keeps each user's personalized "For You" recommendations fresh in bounded background batches.
+            // Staleness is detected from the user's rating stamp, so a new rating refreshes within a couple
+            // of minutes with no explicit wiring from the rate endpoint.
+            services.AddHostedService<Recommendations.RecommendationMaintenanceService>();
+
             services.AddHostedService<BoardgameSimilarityStartupService>();
 
             services.AddMvc()
