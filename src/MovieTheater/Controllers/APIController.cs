@@ -1672,6 +1672,11 @@ namespace MovieTheater.Controllers
             user.LastLogin = DateTime.UtcNow;
             await movieDb.SaveChangesAsync();
 
+            // Never cache the session payload. A stale cached GET here once served a user an empty
+            // ratings list while the server actually had 200+ — the Rate page then looked wiped.
+            Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+
             return Json(await BuildUserPayload(user));
         }
 

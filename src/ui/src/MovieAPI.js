@@ -136,9 +136,10 @@ function loginUser(username, password) {
   });
 }
 
-// Restores the session from the auth cookie without re-running login.
+// Restores the session from the auth cookie without re-running login. cache:"no-store" so a browser
+// never serves a stale session payload (which once showed an empty ratings list on a returning device).
 function getCurrentUser() {
-  return fetch("/API/Me");
+  return fetch("/API/Me", { cache: "no-store" });
 }
 
 // Pass a null/empty newPassword to remove the password from the account.

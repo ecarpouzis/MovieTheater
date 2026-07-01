@@ -46,6 +46,7 @@ function RatePage({ userData, setUserData }) {
   const [status, setStatus] = useState("idle"); // idle | saving | saved | error
 
   const loadedRef = useRef(false);
+  const loadOkRef = useRef(false); // set only once the initial load succeeds — autosave is gated on it
   const itemsRef = useRef(items);
   itemsRef.current = items;
   const baselineRef = useRef(new Map()); // last-saved score map (movieKey → score)
@@ -72,6 +73,7 @@ function RatePage({ userData, setUserData }) {
       setTray(unranked);
       baselineRef.current = computeScores(built);
       baselineRef.anchors = anchorsToSave(built);
+      loadOkRef.current = true;
       setLoading(false);
     };
 
@@ -99,6 +101,9 @@ function RatePage({ userData, setUserData }) {
 
   // ── Autosave: debounce → diff vs baseline → write changed scores in bounded chunks → persist anchors ──
   const runSave = async () => {
+    // Never write back off a load that errored or never finished — the baseline would be wrong, so a
+    // diff against it could look like the user cleared ratings they simply never saw.
+    if (!loadOkRef.current) return;
     if (savingRef.current) {
       scheduleSave();
       return;
