@@ -323,14 +323,15 @@
   text-transform: uppercase;
 }
 
-/* now / next info — one poster + a stacked text column (Now title · context · Next).
-   Grows to fill the middle so the block isn't stranded against the left edge. */
+/* "Now" info on the left — one poster + a stacked text column (title · context).
+   Capped so a long plot ellipsizes rather than sprawling across the whole bar. */
 .tv-bar-info {
   display: flex;
   align-items: center;
   gap: 12px;
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  max-width: 46%;
 }
 .tv-bar-poster {
   flex: 0 0 auto;
@@ -339,6 +340,10 @@
   object-fit: cover;
   border-radius: 4px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+.tv-bar-poster--sm {
+  width: 30px;
+  height: 44px;
 }
 .tv-bar-textcol {
   display: flex;
@@ -373,13 +378,19 @@
   white-space: nowrap;
 }
 
-/* Next — a single dim line under the now/context, no second thumbnail. */
-.tv-bar-next {
+/* "Up Next" — the right-side mirror of the Now block (small poster + two tight lines). */
+.tv-bar-upnext {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 9px;
   min-width: 0;
-  opacity: 0.6;
+  max-width: 260px;
+  flex-shrink: 0;
+  align-self: center;
+  opacity: 0.72;
+}
+.tv-bar-spacer {
+  flex: 1 1 auto;
 }
 
 .tv-bar-tag {
@@ -426,7 +437,6 @@
   gap: 10px;
   flex-shrink: 0;
   align-self: center;
-  margin-left: auto;
 }
 
 /* viewer count — hover/focus reveals who's connected */
@@ -904,7 +914,7 @@
     padding: 8px 12px;
   }
 
-  .tv-bar-next {
+  .tv-bar-upnext {
     display: none;
   }
 
@@ -944,7 +954,7 @@
     gap: 12px;
     padding: 7px 14px;
   }
-  .tv-bar-next {
+  .tv-bar-upnext {
     display: none;
   }
   .tv-bar-poster {

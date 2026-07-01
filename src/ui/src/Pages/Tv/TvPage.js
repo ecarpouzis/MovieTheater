@@ -1264,13 +1264,30 @@ function TvPage({ userData }) {
                 </span>
                 {now.current.reason ? <span className="tv-bar-reason">✨ {now.current.reason}</span> : null}
                 {now.current.plot ? <span className="tv-bar-plot">{now.current.plot}</span> : null}
-                {now.next?.[0] && (
-                  <span className="tv-bar-next">
-                    <span className="tv-bar-tag">Next</span>
-                    <span className="tv-bar-next-title">{now.next[0].title}</span>
-                    <span className="tv-bar-time">{new Date(now.next[0].startsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
-                  </span>
-                )}
+              </span>
+            </div>
+          )}
+
+          <div className="tv-bar-spacer" />
+
+          {/* "Up Next" lives on the right, mirroring the Now block on the left so the bar reads
+              balanced instead of piling everything into the left corner. */}
+          {now?.next?.[0] && (
+            <div className="tv-bar-upnext">
+              {now.next[0].posterId ? (
+                <img
+                  className="tv-bar-poster tv-bar-poster--sm"
+                  src={MovieAPI.getPosterThumbnail(now.next[0].posterId, now.next[0].posterVersion, now.next[0].kind)}
+                  alt=""
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
+              ) : null}
+              <span className="tv-bar-textcol">
+                <span className="tv-bar-titleline">
+                  <span className="tv-bar-tag">Up Next</span>
+                  <span className="tv-bar-time">{new Date(now.next[0].startsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                </span>
+                <span className="tv-bar-next-title">{now.next[0].title}</span>
               </span>
             </div>
           )}
