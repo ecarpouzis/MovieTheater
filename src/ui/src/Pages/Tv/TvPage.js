@@ -97,6 +97,7 @@ function TvPage({ userData }) {
   const [paused, setPaused] = useState(false); // shared channel pause — frozen for everyone watching
   const [chromeVisible, setChromeVisible] = useState(true); // control bar fades out while idle, like the Watch player
   const [scrubHover, setScrubHover] = useState(null); // { pct, seconds } while pointing at the progress bar (lone viewer only)
+  const [fillSnap, setFillSnap] = useState(false); // suppress the fill's 1s ease for one paint after leaving/seeking, so it jumps straight back to the live position
 
   const canEdit = userData?.canEditMovies ?? false;
 
@@ -851,14 +852,30 @@ function TvPage({ userData }) {
       scrubbingRef.current = false;
       const p = offsetFromPointer(e.clientX);
       setScrubHover(null);
+      setFillSnap(true);
       if (p) seekTo(p.seconds);
     },
     [offsetFromPointer, seekTo]
   );
 
   const onScrubLeave = useCallback(() => {
-    if (!scrubbingRef.current) setScrubHover(null);
+    if (!scrubbingRef.current) {
+      setScrubHover(null);
+      setFillSnap(true);
+    }
   }, []);
+
+  // The fill normally eases over 1s so it advances smoothly with the clock. After the pointer
+  // leaves (or a seek lands) we want it at the live position immediately, not crawling back from
+  // the hover spot — hold "no transition" for a couple of frames, then restore the smooth ease.
+  useEffect(() => {
+    if (!fillSnap) return undefined;
+    let inner;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setFillSnap(false));
+    });
+    return () => { cancelAnimationFrame(outer); if (inner) cancelAnimationFrame(inner); };
+  }, [fillSnap]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -1209,7 +1226,7 @@ function TvPage({ userData }) {
           aria-valuemax={canSeek ? Math.round(now?.current?.durationSeconds || 0) : undefined}
           aria-valuenow={canSeek ? Math.round(((scrubHover ? scrubHover.pct * 100 : progressPct) / 100) * (now?.current?.durationSeconds || 0)) : undefined}
         >
-          <div className="tv-bar-progress-fill" style={{ width: `${scrubHover ? scrubHover.pct * 100 : progressPct}%`, transition: scrubHover ? "none" : undefined }} />
+          <div className="tv-bar-progress-fill" style={{ width: `${scrubHover ? scrubHover.pct * 100 : progressPct}%`, transition: scrubHover || fillSnap ? "none" : undefined }} />
           {canSeek && <div className="tv-bar-progress-thumb" style={{ left: `${scrubHover ? scrubHover.pct * 100 : progressPct}%` }} />}
           {scrubHover && (
             <div className="tv-bar-progress-tip" style={{ left: `${scrubHover.pct * 100}%` }}>
@@ -1231,49 +1248,34 @@ function TvPage({ userData }) {
 
           {now?.current && (
             <div className="tv-bar-info">
-              <div className="tv-bar-now">
-                {now.current.posterId ? (
-                  <img
-                    className="tv-bar-poster"
-                    src={MovieAPI.getPosterThumbnail(now.current.posterId, now.current.posterVersion, now.current.kind)}
-                    alt=""
-                    onError={(e) => { e.currentTarget.style.display = "none"; }}
-                  />
-                ) : null}
-                <span className="tv-bar-textcol">
-                  <span className="tv-bar-titleline">
-                    <span className="tv-bar-tag">Now</span>
-                    <span className="tv-bar-title">{now.current.title}</span>
-                    <span className="tv-bar-time">ends {new Date(now.current.endsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
-                  </span>
-                  {now.current.reason ? <span className="tv-bar-reason">✨ {now.current.reason}</span> : null}
-                  {now.current.plot ? <span className="tv-bar-plot">{now.current.plot}</span> : null}
+              {now.current.posterId ? (
+                <img
+                  className="tv-bar-poster"
+                  src={MovieAPI.getPosterThumbnail(now.current.posterId, now.current.posterVersion, now.current.kind)}
+                  alt=""
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
+              ) : null}
+              <span className="tv-bar-textcol">
+                <span className="tv-bar-titleline">
+                  <span className="tv-bar-tag">Now</span>
+                  <span className="tv-bar-title">{now.current.title}</span>
+                  <span className="tv-bar-time">ends {new Date(now.current.endsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                 </span>
-              </div>
-              {now.next?.[0] && (
-                <div className="tv-bar-next">
-                  {now.next[0].posterId ? (
-                    <img
-                      className="tv-bar-poster tv-bar-poster--sm"
-                      src={MovieAPI.getPosterThumbnail(now.next[0].posterId, now.next[0].posterVersion, now.next[0].kind)}
-                      alt=""
-                      onError={(e) => { e.currentTarget.style.display = "none"; }}
-                    />
-                  ) : null}
-                  <span className="tv-bar-textcol">
-                    <span className="tv-bar-titleline">
-                      <span className="tv-bar-tag">Next</span>
-                      <span className="tv-bar-title">{now.next[0].title}</span>
-                      <span className="tv-bar-time">{new Date(now.next[0].startsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
-                    </span>
+                {now.current.reason ? <span className="tv-bar-reason">✨ {now.current.reason}</span> : null}
+                {now.current.plot ? <span className="tv-bar-plot">{now.current.plot}</span> : null}
+                {now.next?.[0] && (
+                  <span className="tv-bar-next">
+                    <span className="tv-bar-tag">Next</span>
+                    <span className="tv-bar-next-title">{now.next[0].title}</span>
+                    <span className="tv-bar-time">{new Date(now.next[0].startsAtUtc).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                   </span>
-                </div>
-              )}
+                )}
+              </span>
             </div>
           )}
 
-          <div className="tv-bar-spacer" />
-
+          <div className="tv-bar-controls">
           {viewers?.count > 1 && (
             <div
               className="tv-bar-viewers"
@@ -1376,6 +1378,7 @@ function TvPage({ userData }) {
           >
             ⚙
           </button>
+          </div>
         </div>
       </div>
 
