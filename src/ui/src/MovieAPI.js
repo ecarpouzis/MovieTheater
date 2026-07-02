@@ -164,14 +164,14 @@ function setPassword(currentPassword, newPassword) {
 // any title's playableId (episode / misc / movie), and optionally a specific
 // mediaFileId (a Part / Variant / Extra). The server resolves movieId → playableId
 // when playableId is absent.
-function startStream({ movieId = null, playableId = null, mediaFileId = null, maxBitrateBps = null, audioStreamIndex = null, subtitleStreamIndex = null, startSeconds = null }) {
+function startStream({ movieId = null, playableId = null, mediaFileId = null, maxBitrateBps = null, audioStreamIndex = null, subtitleStreamIndex = null, startSeconds = null, forceTranscode = false }) {
   // Negotiate the codec profile from this browser's real capabilities (§14.1) so
   // HEVC/AV1-capable clients avoid a needless H.264 re-encode.
   const caps = detectStreamCapabilities();
   return fetch("/API/Stream/Start", {
     method: "post",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ movieId, playableId, mediaFileId, maxBitrateBps, audioStreamIndex, subtitleStreamIndex, startSeconds, ...caps }),
+    body: JSON.stringify({ movieId, playableId, mediaFileId, maxBitrateBps, audioStreamIndex, subtitleStreamIndex, startSeconds, forceTranscode, ...caps }),
   });
 }
 

@@ -84,6 +84,12 @@ namespace MovieTheater.Controllers
             public int? SubtitleStreamIndex { get; set; }
             public double? StartSeconds { get; set; }
 
+            // Force a video re-encode instead of a stream-copy/remux. The channel player sets this only
+            // as an escalation: when a mid-program join keeps failing to seek (a copy stream whose source
+            // keyframe index doesn't map to the join point), a real re-encode inserts its own keyframes
+            // so the seek lands. Costs a transcode, so it's off by default.
+            public bool ForceTranscode { get; set; }
+
             // Client-detected decode capabilities (§14.1). Absent/false = the safe
             // H.264/TS baseline, so an old or non-reporting client still plays.
             public bool SupportsHevc { get; set; }
@@ -158,8 +164,11 @@ namespace MovieTheater.Controllers
 
             var startTicks = (long)((request.StartSeconds ?? 0) * TicksPerSecond);
             // Direct play serves the whole original file, so it can't honor a burned-in subtitle
-            // or a non-default audio selection — fall back to a transcode in those cases.
-            var allowDirectPlay = request.SubtitleStreamIndex == null && request.AudioStreamIndex == null;
+            // or a non-default audio selection — fall back to a transcode in those cases. ForceTranscode
+            // (the channel mid-join escalation for a title whose keyframe index breaks the copy seek)
+            // also rules out direct play: only a real re-encode lays down seekable keyframes.
+            var allowDirectPlay = request.SubtitleStreamIndex == null && request.AudioStreamIndex == null
+                && !request.ForceTranscode;
             JellyfinPlaybackInfoResult info;
             try
             {
@@ -307,7 +316,8 @@ namespace MovieTheater.Controllers
                 }
                 var burningInSubtitle = burnInImageIndex != null;
 
-                videoIsCopied = !burningInSubtitle
+                // ForceTranscode always re-encodes the video (see below), so it's never a copy.
+                videoIsCopied = !request.ForceTranscode && !burningInSubtitle
                     && (source.TranscodeReasons == null
                         || !source.TranscodeReasons.Any(r => r.Contains("Video", StringComparison.OrdinalIgnoreCase)));
                 // The codec the player actually receives: when the video is copied it's the source
@@ -318,6 +328,12 @@ namespace MovieTheater.Controllers
                     ? sourceVideoCodec ?? VideoCodecFromTranscodingUrl(source.TranscodingUrl)
                     : VideoCodecFromTranscodingUrl(source.TranscodingUrl);
                 var transcodingUrl = source.TranscodingUrl;
+                // Forced re-encode: tell Jellyfin not to stream-copy the video (CanStreamCopyVideo
+                // short-circuits on this), so ffmpeg emits its own keyframes and a mid-program seek
+                // lands — copy-mode seeking depends on the source's own keyframe index, which some
+                // rips lack. The client only sets this after the cheap copy path has looped.
+                if (request.ForceTranscode)
+                    transcodingUrl += "&AllowVideoStreamCopy=false";
                 // Jellyfin's PlaybackInfo drops the subtitle params from the TranscodingUrl even when an
                 // image subtitle is selected to be burned in (its SubtitleDeliveryMethod is "Encode").
                 // Without them the transcode still runs (for container/audio reasons) but ffmpeg never

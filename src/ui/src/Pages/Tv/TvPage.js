@@ -157,6 +157,18 @@ function TvPage({ userData }) {
   // (the film replays from the top), so a later end on the same item is how other viewers notice.
   const currentEndsAtRef = useRef(null);
 
+  // Circuit breaker: if the same item re-tunes over and over in a short window (e.g. the source
+  // file fails to seek/remux and 'ended' fires moments after every join), retrying forever just
+  // spins "Tuning in…" — surface an error instead of hammering the transcoder.
+  const retuneLoopRef = useRef({ itemId: null, count: 0, firstAt: 0, escalated: false });
+  const RETUNE_LOOP_WINDOW_MS = 20_000;
+  const RETUNE_LOOP_LIMIT = 3;
+
+  // A broadcast item escalated to a forced re-encode after the copy path couldn't mid-join it
+  // (bad/absent keyframe index → seek loop). Keyed by itemId, so it applies only to that item and
+  // clears automatically when the channel advances (a new itemId no longer matches).
+  const forceTranscodeItemRef = useRef(null);
+
   // A transcode started ahead of time for the *next* item, so an advance is instant
   // instead of paying the ~8s cold start. { movieId, session } once warmed.
   const prewarmRef = useRef(null);
@@ -301,6 +313,33 @@ function TvPage({ userData }) {
         }
         currentItemIdRef.current = nowData.current.itemId ?? null;
         currentEndsAtRef.current = nowData.current.endsAtUtc ?? null;
+
+        const loopTs = Date.now();
+        const loop = retuneLoopRef.current;
+        if (loop.itemId === nowData.current.itemId && loopTs - loop.firstAt < RETUNE_LOOP_WINDOW_MS) {
+          loop.count += 1;
+        } else {
+          retuneLoopRef.current = { itemId: nowData.current.itemId, count: 1, firstAt: loopTs, escalated: false };
+        }
+        if (retuneLoopRef.current.count > RETUNE_LOOP_LIMIT) {
+          if (!retuneLoopRef.current.escalated) {
+            // The copy/remux path can't mid-join this title — its keyframe index doesn't map to the
+            // requested seek, so playback 'ended' immediately on every retry. Escalate ONCE to a forced
+            // re-encode: ffmpeg lays down its own keyframes, so the join lands. Costs a transcode, but
+            // only for this offending item and only after the cheap copy path has demonstrably failed.
+            // Reset the loop window so the breaker can still catch a re-encode that also fails.
+            forceTranscodeItemRef.current = nowData.current.itemId;
+            retuneLoopRef.current = { itemId: nowData.current.itemId, count: 1, firstAt: loopTs, escalated: true };
+          } else {
+            // Even a full re-encode couldn't keep it playing — stop hammering the transcoder.
+            clearTimeout(advanceTimerRef.current);
+            clearTimeout(prewarmTimerRef.current);
+            setError(new Error("This title won't stay playing — try switching channels."));
+            setTuning(false);
+            return;
+          }
+        }
+
         setSkip(nowData.skip || null);
         setRestart(nowData.restart || null);
         setViewers(nowData.viewers || null);
@@ -334,7 +373,9 @@ function TvPage({ userData }) {
             pw.playableId === nowData.current.playableId &&
             pw.audioStreamIndex === audioIndexRef.current &&
             pw.subtitleStreamIndex === burnSubIndexRef.current &&
-            nowData.current.offsetSeconds < 8
+            nowData.current.offsetSeconds < 8 &&
+            // A prewarm is a copy stream; don't reuse it for an item we've escalated to re-encode.
+            forceTranscodeItemRef.current !== nowData.current.itemId
           ) {
             session = pw.session;
           } else {
@@ -352,6 +393,8 @@ function TvPage({ userData }) {
             startSeconds: Math.floor(nowData.current.offsetSeconds),
             audioStreamIndex: audioIndexRef.current,
             subtitleStreamIndex: burnSubIndexRef.current,
+            // Escalated to a forced re-encode (see the retune-loop breaker above) — only this item.
+            forceTranscode: forceTranscodeItemRef.current === nowData.current.itemId,
           });
           if (superseded()) return;
           if (!startResponse.ok) {
@@ -740,6 +783,10 @@ function TvPage({ userData }) {
             currentEndsAtRef.current &&
             new Date(data.current.endsAtUtc).getTime() - new Date(currentEndsAtRef.current).getTime() > 2000;
           if (advanced || restarted) tune(channel);
+        } else if (data.current && currentItemIdRef.current == null) {
+          // We were off-air (e.g. tuned in before the schedule existed) and the channel has
+          // since come alive — recover without waiting for a manual reload or channel switch.
+          tune(channel);
         }
       } catch {
         /* transient — the next poll retries */

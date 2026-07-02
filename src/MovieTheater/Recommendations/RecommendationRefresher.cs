@@ -131,8 +131,37 @@ namespace MovieTheater.Recommendations
             var nameOf = await PersonResolverAsync(db, r.MovieRecs.Concat(r.SeriesRecs), cancel);
             var now = DateTime.UtcNow;
 
+            // Subjects currently airing on this user's own "For You" channels. Their schedule item was
+            // baked from the PREVIOUS rec set and keeps airing (DropScheduleTailAsync only drops the
+            // future); if the fresh set no longer contains that title, its stored "why you'll like this"
+            // reason would vanish mid-broadcast, because the Now lookup keys the reason off
+            // TitleRecommendation (ChannelController.Now). So keep the airing title's row alive here until
+            // it finishes — the next regeneration (when it's no longer airing) prunes it. Reco channels
+            // only air movies and series episodes.
+            var airingSubjects = new HashSet<(InsightSubjectKind Kind, int Id)>();
+            var myChannelIds = await db.Channels.Where(c => c.OwnerUserId == userId).Select(c => c.Id).ToListAsync(cancel);
+            if (myChannelIds.Count > 0)
+            {
+                var airingPids = await db.ChannelScheduleItems
+                    .Where(i => myChannelIds.Contains(i.ChannelId) && i.StartUtc <= now && now < i.EndUtc)
+                    .Select(i => i.PlayableId).Distinct().ToListAsync(cancel);
+                if (airingPids.Count > 0)
+                {
+                    foreach (var mid in await db.Movies.Where(m => m.PlayableId != null && airingPids.Contains(m.PlayableId.Value)).Select(m => m.id).ToListAsync(cancel))
+                        airingSubjects.Add((InsightSubjectKind.Movie, mid));
+                    foreach (var sid in await db.Episodes.Where(e => e.PlayableId != null && e.SeriesId != null && airingPids.Contains(e.PlayableId.Value)).Select(e => e.SeriesId!.Value).Distinct().ToListAsync(cancel))
+                        airingSubjects.Add((InsightSubjectKind.Series, sid));
+                }
+            }
+
+            var newSubjects = new HashSet<(InsightSubjectKind Kind, int Id)>(
+                r.MovieRecs.Concat(r.SeriesRecs).Select(rec => (rec.Kind, rec.SubjectId)));
+
             var old = await db.TitleRecommendations.Where(x => x.UserId == userId).ToListAsync(cancel);
-            if (old.Count > 0) db.TitleRecommendations.RemoveRange(old);
+            // Replace the whole set EXCEPT rows for a currently-airing subject the fresh set dropped.
+            var toRemove = old.Where(o => !(airingSubjects.Contains((o.SubjectKind, o.SubjectId))
+                                            && !newSubjects.Contains((o.SubjectKind, o.SubjectId)))).ToList();
+            if (toRemove.Count > 0) db.TitleRecommendations.RemoveRange(toRemove);
 
             foreach (var rec in r.MovieRecs.Concat(r.SeriesRecs))
                 db.TitleRecommendations.Add(new TitleRecommendation
