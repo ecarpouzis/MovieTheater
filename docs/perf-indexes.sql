@@ -1,9 +1,9 @@
 -- Optional performance indexes surfaced by the 2026-07-01 audit (backend perf, item #10).
 --
--- STATUS: NOT applied automatically. The dev connection string points at the SHARED LIVE DB, and both
--- target columns are nvarchar(max), which SQL Server cannot index without first narrowing the column
--- type. Review and run this by hand during a maintenance window. Impact is LOW at current scale (a
--- handful of users; the imdbID dup-check only runs during admin ingest), so this is a nice-to-have.
+-- STATUS: APPLIED to the live DB 2026-07-02 (pre-checked: max Username len 16, max imdbID len 10,
+-- so the narrows were truncation-safe; both columns confirmed nullable; table is dbo.Movie —
+-- singular — not dbo.Movies as an earlier draft had it). Kept for reference; every step is
+-- guarded, so re-running is safe.
 --
 -- Idempotent: every step is guarded, so re-running is safe.
 --
@@ -39,16 +39,16 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Users_Username' AND o
 IF EXISTS (
     SELECT 1 FROM sys.columns c
     JOIN sys.types t ON c.user_type_id = t.user_type_id
-    WHERE c.object_id = OBJECT_ID(N'dbo.Movies') AND c.name = N'imdbID'
+    WHERE c.object_id = OBJECT_ID(N'dbo.Movie') AND c.name = N'imdbID'
       AND t.name = N'nvarchar' AND c.max_length = -1
 )
 BEGIN
-    IF EXISTS (SELECT 1 FROM dbo.Movies WHERE LEN(imdbID) > 32)
+    IF EXISTS (SELECT 1 FROM dbo.Movie WHERE LEN(imdbID) > 32)
         THROW 50000, 'An imdbID exceeds 32 chars; widen the target length before narrowing.', 1;
 
-    ALTER TABLE dbo.Movies ALTER COLUMN imdbID nvarchar(32) NULL;
+    ALTER TABLE dbo.Movie ALTER COLUMN imdbID nvarchar(32) NULL;
 END;
 
 -- Filtered index (skips the many NULL/imdb-less rows) — needs QUOTED_IDENTIFIER ON to create.
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Movies_imdbID' AND object_id = OBJECT_ID(N'dbo.Movies'))
-    CREATE INDEX IX_Movies_imdbID ON dbo.Movies (imdbID) WHERE imdbID IS NOT NULL;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Movies_imdbID' AND object_id = OBJECT_ID(N'dbo.Movie'))
+    CREATE INDEX IX_Movies_imdbID ON dbo.Movie (imdbID) WHERE imdbID IS NOT NULL;
