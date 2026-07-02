@@ -222,6 +222,12 @@ function NavBar({
           <img className="navbar-section-icon" src={tvIcon} alt="" /> TV
         </button>
       )}
+      {userData?.hasPassword && (
+        <button className="navbar-section-item" onClick={() => history.push("/arcade")}>
+          {/* TODO(Phase 4 polish): replace the emoji with a proper arcade icon asset. */}
+          <span className="navbar-section-icon" role="img" aria-label="">🕹️</span> Arcade
+        </button>
+      )}
       <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
         <img className="navbar-section-icon" src={boardGamesIcon} alt="" /> Board Games
       </button>

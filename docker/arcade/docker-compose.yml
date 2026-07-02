@@ -1,0 +1,92 @@
+# CloudRetro stack for the MovieTheater arcade on Ziggy (docs/arcade-plan.md Appendix B3 / §4).
+#
+# Bring-up:  cp .env.example .env  &&  edit .env  &&  docker compose up -d
+# Cores auto-download on first boot (repo.sync: true) — no manual core files. Drop ROMs into the
+# per-system subfolders under ROMS_DIR and run `arcade-ingest` to catalog them.
+#
+# ONE image runs both roles with different commands (built from a pinned CloudRetro commit — see
+# README.md; the project cuts no releases, so we own the image). N worker services = the room cap:
+# ArcadeMaxConcurrentRooms in the site config MUST equal the number of workers here (§2 box).
+#
+# Ports: we publish ONLY the per-worker WebRTC UDP ports (media) and the coordinator on loopback (for
+# the ArcadeGateway). The stock web UI at / is thereby never exposed. Router: forward UDP 8443-8445 → Ziggy.
+#
+# ⚠ [verify in Phase 0] Whether each worker needs its OWN singlePort (as configured here: 8443/8444/8445)
+# or all workers can share 8443 through the coordinator. The singlePort muxer is per-worker-process, so
+# per-worker ports are the likely answer; if a single shared port works, collapse these to one.
+
+x-worker-base: &worker-base
+  image: ${ARCADE_IMAGE:?set ARCADE_IMAGE in .env}
+  restart: unless-stopped
+  depends_on: [coordinator, xvfb]
+  environment: &worker-env
+    DISPLAY: ":99"
+    MESA_GL_VERSION_OVERRIDE: "4.5"
+    CLOUD_GAME_WORKER_NETWORK_COORDINATORADDRESS: "coordinator:8000"
+    CLOUD_GAME_WEBRTC_ICEIPMAP: "${ZIGGY_PUBLIC_IP:?set ZIGGY_PUBLIC_IP in .env}"
+  volumes:
+    - x11:/tmp/.X11-unix
+    - ${ROMS_DIR:?set ROMS_DIR}:/roms:ro
+    - ${SAVES_DIR:?set SAVES_DIR}:/saves
+    - ./config.yaml:/cloud-game/config.yaml:ro
+    # Cores land at <WORKDIR>/assets/cores (emulator.libretro.cores.paths.libs is relative to the
+    # binary's cwd, /usr/local/share/cloud-game) — mount the cache there or repo.sync re-downloads
+    # every restart.
+    - cores:/usr/local/share/cloud-game/assets/cores
+  # Flag names confirmed from pkg/config/worker.go: the worker's config-path flag is --w-conf
+  # (the coordinator's is --c-conf); there is NO --conf and NO --v — Go's flag parser exits on
+  # unknown flags, so anything else here crash-loops the container.
+  command: ["./worker", "--w-conf", "/cloud-game/config.yaml"]
+
+services:
+  xvfb:
+    # The CloudRetro image does NOT contain Xvfb (confirmed from its Dockerfile) — upstream runs a
+    # dedicated image, and so do we. The rm clears a stale X99 lock left by an unclean shutdown,
+    # exactly as upstream's compose does; without it a Ziggy reboot can wedge the display.
+    image: kcollins/xvfb:latest
+    restart: unless-stopped
+    entrypoint: ["sh", "-c"]
+    command: ["rm -f /tmp/.X99-lock /tmp/.X11-unix/X99 && exec Xvfb :99 -screen 0 320x240x16"]
+    volumes:
+      - x11:/tmp/.X11-unix
+
+  coordinator:
+    image: ${ARCADE_IMAGE:?set ARCADE_IMAGE in .env}
+    restart: unless-stopped
+    environment:
+      CLOUD_GAME_COORDINATOR_ORIGIN_USERWS: "${SITE_ORIGIN:-https://theater.carpouzis.com}"
+    volumes:
+      - ./config.yaml:/cloud-game/config.yaml:ro
+    # Loopback only — the ArcadeGateway (behind Caddy) is the sole way in; the raw coordinator + its
+    # web UI are never reachable from the network.
+    ports:
+      - "127.0.0.1:8000:8000"
+    command: ["./coordinator", "--c-conf", "/cloud-game/config.yaml"]
+
+  worker-1:
+    <<: *worker-base
+    environment:
+      <<: *worker-env
+      CLOUD_GAME_WEBRTC_SINGLEPORT: "8443"
+    ports:
+      - "8443:8443/udp"
+
+  worker-2:
+    <<: *worker-base
+    environment:
+      <<: *worker-env
+      CLOUD_GAME_WEBRTC_SINGLEPORT: "8444"
+    ports:
+      - "8444:8444/udp"
+
+  worker-3:
+    <<: *worker-base
+    environment:
+      <<: *worker-env
+      CLOUD_GAME_WEBRTC_SINGLEPORT: "8445"
+    ports:
+      - "8445:8445/udp"
+
+volumes:
+  x11:
+  cores:   # persist downloaded cores so repo.sync doesn't re-fetch on every restart

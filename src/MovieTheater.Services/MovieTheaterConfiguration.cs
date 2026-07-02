@@ -41,6 +41,26 @@ namespace MovieTheater.Services
         /// <summary>0 = unlimited; otherwise Stream/Start returns a friendly "theater full" 503 when reached.</summary>
         public int StreamingMaxConcurrentTranscodes { get; set; }
 
+        // ── Arcade (arcade-plan.md §5). There is deliberately NO ArcadeCoordinatorBaseUrl/
+        // ArcadeTunnelKey here: the pod never calls Ziggy for arcade — the creator's browser drives
+        // room lifecycle (§3 asymmetry). Arcade endpoints hide/503 when this is unconfigured. ──
+
+        /// <summary>Public base of the ArcadeGateway (Appendix C) — what join descriptors point browsers at.</summary>
+        public string? ArcadeGatewayBaseUrl { get; set; }
+
+        /// <summary>HMAC secret shared with the ArcadeGateway; signs the WS join capability tokens (Appendix D1).</summary>
+        public string? ArcadeTokenSecret { get; set; }
+
+        /// <summary>Best-effort room cap; MUST equal the deployed CloudRetro worker count (§2 box) — CloudRetro's
+        /// t=112 "no free slots" is the authoritative backstop.</summary>
+        public int ArcadeMaxConcurrentRooms { get; set; }
+
+        /// <summary>TTL of a minted join token; covers the WS *connect*, not the session length.</summary>
+        public int ArcadeJoinTokenTtlSeconds { get; set; }
+
+        /// <summary>STUN servers echoed to the client shim's iceConfig (no TURN in v1).</summary>
+        public List<string> ArcadeStunServers { get; set; } = new();
+
         public string? ImdbApiKey { get; set; }
 
         public string? TmdbApiKey { get; set; }

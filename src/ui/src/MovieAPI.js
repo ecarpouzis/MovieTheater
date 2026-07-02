@@ -549,6 +549,60 @@ function setFavoriteChannels(ids) {
   return setUserSetting("FavoriteChannels", JSON.stringify(ids));
 }
 
+// ── Arcade (docs/arcade-plan.md §6) — retro multiplayer control plane ─────────
+// All same-origin, cookie-authed like the rest. The heavy lifting (WebRTC media +
+// input) is NOT here — it rides the CloudRetro client shim straight to the gateway.
+
+function getArcadeGames() {
+  return fetch("/API/Arcade/Games");
+}
+
+function getArcadeRooms() {
+  return fetch("/API/Arcade/Rooms");
+}
+
+// Create a room for a game → returns the creator's join descriptor (empty room_id, isCreator).
+function createArcadeRoom(gameId) {
+  return fetch("/API/Arcade/Room", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ gameId }),
+  });
+}
+
+// Report the CloudRetro room id the creator's browser got back from GAME_START (§8 step 3).
+function bindArcadeRoom(code, cloudRetroRoomId) {
+  return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Bind`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cloudRetroRoomId }),
+  });
+}
+
+// Join an existing room → returns a join descriptor with the bound room_id and an assigned seat.
+function joinArcadeRoom(code) {
+  return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Join`, { method: "post" });
+}
+
+// Presence heartbeat + room status ({ bound, maxPlayers, yourSlot, players[] }); the room page polls it.
+function arcadeHeartbeat(code) {
+  return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Heartbeat`, { method: "post" }).catch(() => {});
+}
+
+function leaveArcadeRoom(code) {
+  return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Leave`, { method: "post", keepalive: true }).catch(() => {});
+}
+
+// Fire-and-forget leave for tab close — sendBeacon survives page teardown (mirrors beaconStopStream).
+function beaconLeaveArcadeRoom(code) {
+  const url = `/API/Arcade/Room/${encodeURIComponent(code)}/Leave`;
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon(url, new Blob([""], { type: "application/json" }));
+  } else {
+    leaveArcadeRoom(code);
+  }
+}
+
 // ── User administration (admin-only; gated by AdminUsernames config + a
 // password-verified session) ────────────────────────────────────────────────
 
@@ -809,6 +863,14 @@ const MovieAPI = {
   getChannelList,
   getGuideGrid,
   setFavoriteChannels,
+  getArcadeGames,
+  getArcadeRooms,
+  createArcadeRoom,
+  bindArcadeRoom,
+  joinArcadeRoom,
+  arcadeHeartbeat,
+  leaveArcadeRoom,
+  beaconLeaveArcadeRoom,
   adminGetUsers,
   adminSetUserPassword,
   adminSetUserSetting,

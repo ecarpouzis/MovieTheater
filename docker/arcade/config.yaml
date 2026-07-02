@@ -1,0 +1,57 @@
+# CloudRetro core configuration for the MovieTheater arcade (docs/arcade-plan.md Appendix B2).
+#
+# The flat "knobs" (public IP, WS origin, per-worker WebRTC port) are set via CLOUD_GAME_* env vars
+# in docker-compose.yml — they are awkward to express as deep-nested YAML. THIS file carries the one
+# thing env vars can't cleanly express: the libretro core list. Loader search order (Appendix B1):
+# explicit path → cwd → configs/ → ~/.cr; the compose mounts this into the loader's path.
+
+coordinator:
+  server:
+    address: ":8000"
+  origin:
+    # The WS Origin check — this is the PAGE origin that opens the socket (the site), NOT arcade.*.
+    userWs: "https://theater.carpouzis.com"
+  selector: ""        # "" = any free worker; "ping" only matters for multi-zone deployments
+  debug: false        # true adds room ids to GetWorkerList — handy in Phase 0, off in prod
+
+library:
+  basePath: /roms     # mount point of the read-only ROM volume (per-system subfolders live here)
+
+emulator:
+  autosaveSec: 60     # crashes lose ≤1 min
+  storage: /saves     # save-state dir — mounted rw and included in Ziggy's backups
+  libretro:
+    cores:
+      repo:
+        sync: true    # auto-download listed cores from buildbot.libretro.com/nightly — no manual core files
+      list:
+        # The stock defaults already ship: nestopia, snes9x (multitap → 5 players), mgba,
+        # mupen64plus_next (N64, isGlAllowed), fbneo (arcade), dosbox_pure. We ADD PS1 + Genesis below.
+        #
+        # Merge semantics CONFIRMED from pkg/config/loader.go: the loader stacks this file onto the
+        # embedded default config in one koanf instance, which deep-merges maps per-key — so these
+        # entries ADD to the default core list (a same-named key like `pcsx` overrides just that
+        # entry); nestopia/snes9x/mupen64plus_next etc. survive. Cheap sanity check at first boot:
+        # the game list in the INIT (t=4) message should span every system you dropped ROMs for.
+        pcsx:
+          lib: pcsx_rearmed_libretro
+          roms: ["cue", "chd"]
+          folder: psx
+          options:
+            pcsx_rearmed_drc: enabled     # dynarec on
+        gen:
+          # ⚠ [unverified] confirm the exact lib name against the libretro buildbot core list.
+          lib: genesis_plus_gx_libretro
+          roms: ["md", "gen", "smd", "bin"]
+          folder: genesis
+
+encoder:
+  video:
+    codec: vp8              # software VP8 (GStreamer vpxenc) — the stock image has no x264
+    threads: 0
+    keyframeInterval: 300
+  audio:
+    codec: opus
+
+storage:
+  provider: ""              # s3 is only for multi-box save sharing — not us

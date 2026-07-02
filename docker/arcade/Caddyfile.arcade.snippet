@@ -1,0 +1,11 @@
+# Arcade signaling ingress (docs/arcade-plan.md Appendix C3). Add this block to Ziggy's Caddyfile
+# alongside the stream.carpouzis.com block. Caddy terminates TLS and proxies the WebSocket upgrade
+# natively (no extra config); the ArcadeGateway binds plain HTTP on localhost:2303 and validates the
+# signed join token before forwarding to the CloudRetro coordinator.
+#
+# DNS: CNAME arcade.carpouzis.com → books.carpouzis.com.
+# The coordinator itself is NEVER exposed here — only the gateway is, and it 403s everything but /w/{token}.
+
+arcade.carpouzis.com {
+	reverse_proxy localhost:2303
+}

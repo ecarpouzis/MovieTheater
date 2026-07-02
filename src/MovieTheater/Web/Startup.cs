@@ -150,6 +150,10 @@ namespace MovieTheater
 
             services.AddScoped<Channels.ChannelScheduleService>();
             services.AddSingleton<Channels.ChannelSkipService>();
+            // Live arcade room state (seats, bind, presence) is in-memory + shared across requests, like the
+            // channel skip service; the reaper closes out rooms that have gone empty (ArcadeSession.EndedUtc).
+            services.AddSingleton<Arcade.ArcadeRoomService>();
+            services.AddHostedService<Arcade.ArcadeRoomReaperService>();
             // Tracks active play sessions for the streaming concurrency guard (Jellyfin's /Sessions can't
             // tell our viewers apart — they share one DeviceId). Singleton so it spans all requests.
             services.AddSingleton<Streaming.TranscodeSessionRegistry>();

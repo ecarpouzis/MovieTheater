@@ -260,6 +260,18 @@ namespace MovieTheater.Db
             // (SubjectKind, SubjectId) annotation index for these lookups.
             modelBuilder.Entity<TitleInsight>()
                 .HasIndex(ti => new { ti.SubjectKind, ti.SubjectId, ti.SpecVersion, ti.GeneratedUtc, ti.Id });
+
+            // ── Arcade (arcade-plan.md §5; additive, own tables — games are not Movies) ──
+            // One ROM per (system, path): the ingest upsert keys on this so a re-run is idempotent
+            // and never double-inserts a title.
+            modelBuilder.Entity<ArcadeGame>()
+                .HasIndex(g => new { g.System, g.RomPath })
+                .IsUnique();
+
+            modelBuilder.Entity<ArcadeSession>()
+                .HasOne(s => s.ArcadeGame)
+                .WithMany()
+                .HasForeignKey(s => s.ArcadeGameId);
         }
 
         public DbSet<Movie> Movies { get; set; }
@@ -294,6 +306,8 @@ namespace MovieTheater.Db
         public DbSet<TitleTag> TitleTags { get; set; }
         public DbSet<TitleRecommendation> TitleRecommendations { get; set; }
         public DbSet<UserTasteProfile> UserTasteProfiles { get; set; }
+        public DbSet<ArcadeGame> ArcadeGames { get; set; }
+        public DbSet<ArcadeSession> ArcadeSessions { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)

@@ -18,6 +18,8 @@ const BoardgameBatchInsertPage = lazy(() => import("./Pages/BoardGames/Boardgame
 const WatchPage = lazy(() => import("./Pages/Watch/WatchPage"));
 const TvPage = lazy(() => import("./Pages/Tv/TvPage"));
 const ChannelGuidePage = lazy(() => import("./Pages/Tv/ChannelGuidePage"));
+const ArcadePage = lazy(() => import("./Pages/Arcade/ArcadePage"));
+const ArcadeRoomPage = lazy(() => import("./Pages/Arcade/ArcadeRoomPage"));
 const IngestReviewPage = lazy(() => import("./Pages/IngestReview/IngestReviewPage"));
 const RatePage = lazy(() => import("./Pages/Rate/RatePage"));
 
@@ -116,6 +118,12 @@ function App() {
             </Route>
             <Route path="/channels" exact>
               <ChannelGuidePage />
+            </Route>
+            <Route path="/arcade" exact>
+              <ArcadePage />
+            </Route>
+            <Route path="/arcade/room/:code" exact>
+              <ArcadeRoomPage />
             </Route>
             <Route path="/insert" exact>
               <InsertPage />
