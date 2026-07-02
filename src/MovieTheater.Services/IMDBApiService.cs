@@ -6,17 +6,21 @@ namespace MovieTheater.Services
 {
     public class IMDBApiService
     {
+        private readonly HttpClient httpClient;
+
+        // Injected as a typed client (IHttpClientFactory) so it reuses pooled connections instead of
+        // spinning up — and leaking — a new HttpClient per lookup (the classic socket-exhaustion trap).
+        public IMDBApiService(HttpClient httpClient)
+        {
+            this.httpClient = httpClient;
+        }
+
         public async Task<string> FindImdbIdFromMovieName(string movieName)
         {
             ServicesUtil.CleanTitle(movieName);
 
             try
             {
-                using HttpClient httpClient = new HttpClient();
-                // Use a common browser user-agent to improve chance of acceptance by endpoints
-                string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36";
-                httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
-
                 string encodedQuery = HttpUtility.UrlEncode(movieName);
                 string requestUri = "https://api.imdbapi.dev/search/titles?query=" + encodedQuery;
 

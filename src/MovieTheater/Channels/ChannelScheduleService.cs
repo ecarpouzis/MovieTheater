@@ -555,6 +555,40 @@ namespace MovieTheater.Channels
             return rows.GroupBy(i => i.ChannelId).ToDictionary(g => g.Key, g => g.ToList());
         }
 
+        /// <summary>
+        /// Read-only fast path for the hot poll endpoints (Now / single-channel Guide). Returns just the
+        /// items overlapping [fromUtc, toUtc) as untracked rows — no prune scan, no generation gate, no
+        /// full-schedule materialization. Only when the lineup doesn't already reach <paramref name="toUtc"/>
+        /// (the background maintainer is behind, or the channel is brand new) does it fall back to a full
+        /// <see cref="EnsureScheduleAsync"/> to extend + prune, then window the result.
+        ///
+        /// This matters because every viewer polls Now every ~10s: the old path re-loaded the channel's
+        /// entire multi-day lineup as tracked entities (hundreds–thousands of rows on episode/shorts
+        /// channels) and ran a stale-row prune on each of those beats.
+        /// </summary>
+        public async Task<List<ChannelScheduleItem>> GetReadWindowAsync(
+            Channel channel, DateTime fromUtc, DateTime toUtc, CancellationToken cancel = default)
+        {
+            // Cheap scalar (indexed by (ChannelId, StartUtc)) telling us how far the lineup reaches.
+            var maxEnd = await movieDb.ChannelScheduleItems
+                .Where(i => i.ChannelId == channel.Id)
+                .MaxAsync(i => (DateTime?)i.EndUtc, cancel);
+
+            if (maxEnd == null || maxEnd < toUtc)
+            {
+                // Behind (or empty): extend to the standard horizon (also prunes), then window in memory.
+                var all = await EnsureScheduleAsync(channel, DateTime.UtcNow.Add(ScheduleHorizon), cancel);
+                return all.Where(i => i.EndUtc > fromUtc && i.StartUtc < toUtc)
+                    .OrderBy(i => i.StartUtc).ToList();
+            }
+
+            return await movieDb.ChannelScheduleItems
+                .AsNoTracking()
+                .Where(i => i.ChannelId == channel.Id && i.EndUtc > fromUtc && i.StartUtc < toUtc)
+                .OrderBy(i => i.StartUtc)
+                .ToListAsync(cancel);
+        }
+
         /// <summary>Enabled channel ids in display order — for the background maintainer's round-robin.</summary>
         public Task<List<int>> EnabledChannelIdsAsync(CancellationToken cancel = default) =>
             movieDb.Channels.Where(c => c.Enabled).OrderBy(c => c.SortOrder).ThenBy(c => c.Id)

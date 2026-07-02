@@ -6,10 +6,14 @@ namespace MovieTheater.Services.ImdbApi
     public class ImdbApiClient
     {
         private readonly string imdbApiKey;
+        // One ApiLib per client instead of newing one per lookup (each new instance stands up its own
+        // HttpClient). The key is fixed for the client's lifetime, so a single instance is reused.
+        private readonly Lazy<IMDbApiLib.ApiLib> apiLib;
 
         public ImdbApiClient(IOptions<ImdbApiOptions> options)
         {
             imdbApiKey = options.Value.ApiKey;
+            apiLib = new Lazy<IMDbApiLib.ApiLib>(() => new IMDbApiLib.ApiLib(imdbApiKey));
         }
 
         public async Task<Movie> ImdbApiLookupImdbID(string imdbID)
@@ -17,8 +21,7 @@ namespace MovieTheater.Services.ImdbApi
             if (String.IsNullOrEmpty(imdbID))
                 return null;
 
-            var apiLib = new IMDbApiLib.ApiLib(imdbApiKey);
-            var movieData = await apiLib.TitleAsync(imdbID);
+            var movieData = await apiLib.Value.TitleAsync(imdbID);
 
             if (movieData.Id == null)
                 return null;
@@ -54,8 +57,7 @@ namespace MovieTheater.Services.ImdbApi
 
         public async Task<Movie> ImdbApiLookupName(string name)
         {
-            var apiLib = new IMDbApiLib.ApiLib(imdbApiKey);
-            var searchData = await apiLib.SearchTitleAsync(name);
+            var searchData = await apiLib.Value.SearchTitleAsync(name);
             return await ImdbApiLookupImdbID(searchData.Results[0].Id);
         }
     }

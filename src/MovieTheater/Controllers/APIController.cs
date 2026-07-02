@@ -141,7 +141,7 @@ namespace MovieTheater.Controllers
                 }
             }
 
-            var movie = await movieDb.Movies.Include(m => m.PosterDetails).SingleOrDefaultAsync(m => m.id == id);
+            var movie = await movieDb.Movies.AsNoTracking().Include(m => m.PosterDetails).SingleOrDefaultAsync(m => m.id == id);
             if (movie == null)
                 return BadRequest(new { Success = false, Message = "Movie ID not found" });
             var rating = Web.RatingGate.EffectiveMpaRatingId(movieDb, movie.MpaaRating, movie.Rating, movie.MpaaRatingInferred);
@@ -186,15 +186,20 @@ namespace MovieTheater.Controllers
 
             // Media files for this title's Playable — drives the multi-file UI (Primary + any
             // Part / Variant / Extra). Ordered Primary-first, then split parts in order.
+            // Editors get the full on-disk path (the file-mapping tools need it); everyone else gets
+            // only the filename so the internal NAS directory layout isn't exposed to ordinary users.
+            var isEditor = await IsCurrentUserEditor();
             var files = movie.PlayableId == null
                 ? new List<object>()
-                : await movieDb.MediaFiles.Where(f => f.PlayableId == movie.PlayableId)
+                : (await movieDb.MediaFiles.Where(f => f.PlayableId == movie.PlayableId)
                     .OrderBy(f => f.Role).ThenBy(f => f.PartNumber).ThenBy(f => f.Id)
+                    .Select(f => new { f.Id, f.Path, f.Role, f.Label, f.PartNumber, f.DurationTicks, Streamable = f.JellyfinItemId != null && f.MissingSinceUtc == null })
+                    .ToListAsync())
                     // mediaFileId + isPlayable let the modal offer a play button per file (the Primary
                     // plays via the movie id; a specific Part/Variant/Extra plays by its mediaFileId).
                     // durationTicks lets the watch page stitch a multi-part movie into one virtual timeline.
-                    .Select(f => (object)new { mediaFileId = f.Id, path = f.Path, role = f.Role.ToString(), label = f.Label, partNumber = f.PartNumber, durationTicks = f.DurationTicks, isPlayable = f.JellyfinItemId != null && f.MissingSinceUtc == null })
-                    .ToListAsync();
+                    .Select(f => (object)new { mediaFileId = f.Id, path = isEditor ? f.Path : FileBaseName(f.Path), role = f.Role.ToString(), label = f.Label, partNumber = f.PartNumber, durationTicks = f.DurationTicks, isPlayable = f.Streamable })
+                    .ToList();
 
             // Series are their own table now (see GetSeries); a Movie is never a series here.
             return new
@@ -394,7 +399,8 @@ namespace MovieTheater.Controllers
         {
             try
             {
-                var count = await movieDb.Movies.CountAsync(m => m.ReviewBatch == null);
+                var count = await GetOrCacheLookupAsync("lookup:totalMovieCount",
+                    () => movieDb.Movies.CountAsync(m => m.ReviewBatch == null));
                 return Ok(new { totalCount = count, success = true });
             }
             catch (Exception ex)
@@ -403,11 +409,16 @@ namespace MovieTheater.Controllers
             }
         }
 
-        [EnableQuery]
+        // Rich queryable movie feed. Not used by the SPA (browse goes through the paged /API/Browse*
+        // endpoints), so it's gated to logged-in users and hard-bounded: without a page ceiling a single
+        // anonymous GET would materialize the whole Movie table (every heavy text column + FilePath) as
+        // one tracked JSON dump.
+        [Authorize]
+        [EnableQuery(PageSize = 100, MaxTop = 200, MaxExpansionDepth = 2)]
         [HttpGet("/odata/Movies")]
         public async Task<IQueryable<Movie>> GetMovies()
         {
-            return await GetBaseMovieQuery();
+            return (await GetBaseMovieQuery()).AsNoTracking();
         }
 
         // Cards for an explicit id set (the Seen / Want lists, and the back-nav restore list).
@@ -522,15 +533,26 @@ namespace MovieTheater.Controllers
 
         private async Task<int> GetAgeRestrictionAsync()
         {
+            // Memoize per request: a single browse request builds the movie, series and misc queries,
+            // each of which needs the age restriction — without this that's the same UserSettings
+            // round-trip 2-3× per request.
+            const string cacheKey = "__ageRestriction";
+            if (HttpContext != null && HttpContext.Items.TryGetValue(cacheKey, out var cached) && cached is int cachedAge)
+                return cachedAge;
+
+            int result = 100;
             var currentUserId = GetCurrentUserId();
             if (currentUserId.HasValue)
             {
                 var setRestriction = await movieDb.UserSettings
                     .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value);
                 if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction))
-                    return parsedRestriction;
+                    result = parsedRestriction;
             }
-            return 100;
+
+            if (HttpContext != null)
+                HttpContext.Items[cacheKey] = result;
+            return result;
         }
 
         private async Task<IQueryable<Movie>> GetBaseMovieQuery()
@@ -995,7 +1017,7 @@ namespace MovieTheater.Controllers
         public async Task<IActionResult> GetSeries(int id)
         {
             int ageRestriction = await GetAgeRestrictionAsync();
-            var series = await movieDb.Series.Include(s => s.PosterDetails).SingleOrDefaultAsync(s => s.Id == id);
+            var series = await movieDb.Series.AsNoTracking().Include(s => s.PosterDetails).SingleOrDefaultAsync(s => s.Id == id);
             if (series == null) return BadRequest(new { Success = false, Message = "Series ID not found" });
             if (Web.RatingGate.EffectiveMpaRatingId(movieDb, series.MpaaRating, series.Rating, series.MpaaRatingInferred) > ageRestriction)
                 return BadRequest(new { Success = false, Message = "Series ID not found" });
@@ -2221,7 +2243,7 @@ namespace MovieTheater.Controllers
         [HttpPost("/API/API_Movies")]
         public async Task<IActionResult> API_Movies([FromBody] search search = null)
         {
-            IQueryable<Movie> movies = movieDb.Movies.Where(m => m.ReviewBatch == null);
+            IQueryable<Movie> movies = movieDb.Movies.AsNoTracking().Where(m => m.ReviewBatch == null);
             if (search == null)
                 return BadRequest(new { message = "No Search Data Provided" });
 
@@ -2260,7 +2282,9 @@ namespace MovieTheater.Controllers
             if (search.Count.HasValue)
                 movies = movies.OrderBy(elem => Guid.NewGuid()).Take(search.Count.Value);
 
-            var movieList = await movies.OrderBy(m => m.SimpleTitle).ToListAsync();
+            // Hard ceiling so a broad search can't dump the whole library as one JSON body.
+            const int MaxResults = 500;
+            var movieList = await movies.OrderBy(m => m.SimpleTitle).Take(MaxResults).ToListAsync();
             return Json(movieList);
         }
 
@@ -2330,34 +2354,50 @@ namespace MovieTheater.Controllers
             return Ok(await PageCardsAsync(query, page, pageSize));
         }
 
+        // Small, rarely-changing lookup tables (genres, MPA ratings, total count) fetched by every client
+        // on load — cache briefly so they aren't re-queried per visit. Size 1 satisfies the cache's SizeLimit.
+        private static readonly TimeSpan LookupCacheTtl = TimeSpan.FromMinutes(5);
+
+        private async Task<T> GetOrCacheLookupAsync<T>(string key, Func<Task<T>> load)
+        {
+            if (memoryCache.TryGetValue(key, out T cached))
+                return cached;
+            var value = await load();
+            memoryCache.Set(key, value, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = LookupCacheTtl, Size = 1 });
+            return value;
+        }
+
         // Distinct genre names from the normalized Genre table, for the browse genre filter.
         [HttpGet("/API/GetGenres")]
         public async Task<IActionResult> GetGenres()
         {
-            var genres = await movieDb.Genres
+            var genres = await GetOrCacheLookupAsync("lookup:genres", () => movieDb.Genres
                 .OrderBy(g => g.Name)
                 .Select(g => g.Name)
-                .ToListAsync();
+                .ToListAsync());
             return Ok(genres);
         }
 
         [HttpGet("/API/GetMPARatings")]
         public async Task<IActionResult> GetMPARatings()
         {
-            var ratingIds = await movieDb.RatingMaps
-                .Select(rm => rm.MPARatingID)
-                .Distinct()
-                .OrderBy(id => id)
-                .ToListAsync();
-
-            var mpaNames = await movieDb.RatingMpas
-                .ToDictionaryAsync(mpa => mpa.RatingID, mpa => mpa.MPAName);
-
-            var result = ratingIds.Select(id => new
+            var result = await GetOrCacheLookupAsync("lookup:mparatings", async () =>
             {
-                id,
-                name = mpaNames.TryGetValue(id, out var n) && !string.IsNullOrEmpty(n) ? n : id.ToString()
-            }).ToList();
+                var ratingIds = await movieDb.RatingMaps
+                    .Select(rm => rm.MPARatingID)
+                    .Distinct()
+                    .OrderBy(id => id)
+                    .ToListAsync();
+
+                var mpaNames = await movieDb.RatingMpas
+                    .ToDictionaryAsync(mpa => mpa.RatingID, mpa => mpa.MPAName);
+
+                return ratingIds.Select(id => new
+                {
+                    id,
+                    name = mpaNames.TryGetValue(id, out var n) && !string.IsNullOrEmpty(n) ? n : id.ToString()
+                }).ToList();
+            });
 
             return Ok(result);
         }
@@ -2368,6 +2408,21 @@ namespace MovieTheater.Controllers
             public string SettingValue { get; set; }
         }
 
+        // Keys a user is allowed to set on their own account through the self-service endpoint.
+        // Default-deny: anything not listed here (notably the privileged access grants
+        // "CanEditMovies" and "ComicSiteAccess") can only be set via /API/Admin/SetUserSetting,
+        // which requires a password-verified config admin. Without this allow-list any logged-in
+        // user could grant themselves editor rights by POSTing CanEditMovies=true.
+        private static readonly HashSet<string> SelfServiceSettingKeys = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "AgeRestriction",
+            "CardStyle",
+            "EnablePagination",
+            "ShowBoardgameExpansions",
+            "RatingAnchors",
+            "FavoriteChannels",
+        };
+
         [HttpPost("/API/SetUserSetting")]
         public async Task<IActionResult> SetUserSetting([FromBody] UserSettingRequest request)
         {
@@ -2377,6 +2432,9 @@ namespace MovieTheater.Controllers
 
             if (string.IsNullOrEmpty(request?.SettingKey))
                 return BadRequest(new { Success = false, Message = "SettingKey is required." });
+
+            if (!SelfServiceSettingKeys.Contains(request.SettingKey))
+                return Forbid();
 
             var existing = await movieDb.UserSettings
                 .FirstOrDefaultAsync(u => u.UserID == currentUserId.Value && u.SettingKey == request.SettingKey);
@@ -2430,7 +2488,22 @@ namespace MovieTheater.Controllers
             string actor = null, string text = null, string startsWith = null,
             int posterWidth = 75, int posterHeight = 100)
         {
-            IQueryable<Movie> moviesQuery = movieDb.Movies.OrderBy(m => m.SimpleTitle);
+            // Renders a full-library composite in memory — an editor/creative tool, not on any user path.
+            if (!await IsCurrentUserEditor()) return Forbid();
+
+            // Clamp caller-controlled tile size so a request can't demand a gigapixel canvas.
+            posterWidth = Math.Clamp(posterWidth, 8, 300);
+            posterHeight = Math.Clamp(posterHeight, 8, 400);
+
+            var cacheKey = $"collage:a={actor}:t={text}:sw={startsWith}:pw={postersWide}:ph={postersHigh}:mpw={maxPixelsWide}:w={posterWidth}:h={posterHeight}";
+            if (memoryCache.TryGetValue(cacheKey, out byte[] cachedPng))
+            {
+                HttpContext.Response.ContentType = "image/png";
+                await HttpContext.Response.Body.WriteAsync(cachedPng);
+                return new EmptyResult();
+            }
+
+            IQueryable<Movie> moviesQuery = movieDb.Movies.AsNoTracking().OrderBy(m => m.SimpleTitle);
 
             if (!string.IsNullOrEmpty(actor))
                 moviesQuery = moviesQuery.Where(m =>
@@ -2452,12 +2525,22 @@ namespace MovieTheater.Controllers
                 }
             }
 
-            var allMovies = await moviesQuery.ToListAsync();
+            // Only the id is needed to load each poster — never materialize whole Movie entities here.
+            const int MaxPosters = 5000;
+            var movieIds = await moviesQuery.Select(m => m.id).Take(MaxPosters).ToListAsync();
 
-            // Fire all image loads in parallel. Task.WhenAll preserves result order
-            // regardless of which file finishes first, so draw order is guaranteed.
-            var imageTasks = allMovies.Select(m => imageRepo.GetImage(m.id, PosterImageVariant.Thumbnail));
-            var allImageResults = await Task.WhenAll(imageTasks);
+            // Load posters with bounded concurrency (Task.WhenAll preserves array order, so draw order
+            // is still deterministic) rather than firing thousands of simultaneous file reads.
+            byte[][] allImageResults;
+            using (var gate = new SemaphoreSlim(16))
+            {
+                allImageResults = await Task.WhenAll(movieIds.Select(async id =>
+                {
+                    await gate.WaitAsync();
+                    try { return await imageRepo.GetImage(id, PosterImageVariant.Thumbnail); }
+                    finally { gate.Release(); }
+                }));
+            }
 
             var posterImages = allImageResults.Where(b => b != null).ToList();
 
@@ -2502,9 +2585,16 @@ namespace MovieTheater.Controllers
 
             using var outputMs = new MemoryStream();
             await combinedImage.SaveAsPngAsync(outputMs);
-            outputMs.Position = 0;
+            var pngBytes = outputMs.ToArray();
+
+            memoryCache.Set(cacheKey, pngBytes, new MemoryCacheEntryOptions
+            {
+                SlidingExpiration = TimeSpan.FromHours(4),
+                Size = pngBytes.Length,
+            });
+
             HttpContext.Response.ContentType = "image/png";
-            await outputMs.CopyToAsync(HttpContext.Response.Body);
+            await HttpContext.Response.Body.WriteAsync(pngBytes);
             return new EmptyResult();
         }
 
@@ -2570,8 +2660,14 @@ namespace MovieTheater.Controllers
             int quality = 85,
             int pngCompression = 6)
         {
+            if (!await IsCurrentUserEditor()) return Forbid();
+
             if (string.IsNullOrWhiteSpace(imageUrl))
                 return BadRequest(new { Message = "imageUrl is required", Success = false });
+
+            var (urlOk, urlError) = await MovieTheater.Web.ServerSideUrlGuard.ValidateAsync(imageUrl);
+            if (!urlOk)
+                return BadRequest(new { Message = urlError, Success = false });
 
             var options = BuildMosaicOptions(tileScale, outputScale, maxOutputDimension,
                 topK, excludeRadius, colorDecayFactor, adjacencyPenaltyBase, format, quality, pngCompression);
@@ -2651,10 +2747,10 @@ namespace MovieTheater.Controllers
             };
         }
 
-        [HttpGet("/API/SyncBoardgameFromBgg")]
         [HttpPost("/API/SyncBoardgameFromBgg")]
         public async Task<IActionResult> SyncBoardgameFromBgg(int bggThingId)
         {
+            if (!await IsCurrentUserEditor()) return Forbid();
             if (bggThingId <= 0)
                 return BadRequest(new { Success = false, Message = "bggThingId must be a positive integer" });
 
@@ -2672,10 +2768,10 @@ namespace MovieTheater.Controllers
             }
         }
 
-        [HttpGet("/API/SyncBoardgameFromBggByTitle")]
         [HttpPost("/API/SyncBoardgameFromBggByTitle")]
         public async Task<IActionResult> SyncBoardgameFromBggByTitle(string title)
         {
+            if (!await IsCurrentUserEditor()) return Forbid();
             if (string.IsNullOrWhiteSpace(title))
                 return BadRequest(new { Success = false, Message = "title is required" });
 
@@ -2750,6 +2846,7 @@ namespace MovieTheater.Controllers
         [HttpPost("/API/UpdateBoardgame")]
         public async Task<IActionResult> UpdateBoardgame([FromBody] UpdateBoardgameRequest req)
         {
+            if (!await IsCurrentUserEditor()) return Forbid();
             if (req == null)
                 return BadRequest(new { Success = false, Message = "No data provided." });
 
@@ -2802,6 +2899,7 @@ namespace MovieTheater.Controllers
         [HttpPost("/API/RematchBoardgame")]
         public async Task<IActionResult> RematchBoardgame([FromBody] RematchBoardgameRequest req)
         {
+            if (!await IsCurrentUserEditor()) return Forbid();
             if (req == null || req.Id <= 0 || req.NewBggThingId <= 0)
                 return BadRequest(new { Success = false, Message = "id and newBggThingId must be positive integers." });
 
@@ -2884,6 +2982,7 @@ namespace MovieTheater.Controllers
         [HttpPost("/API/BatchInsertBoardgames")]
         public async Task<IActionResult> BatchImportBoardgames([FromBody] List<string> gameNames, int delayMs = 2000)
         {
+            if (!await IsCurrentUserEditor()) return Forbid();
             if (gameNames == null || gameNames.Count == 0)
             {
                 return BadRequest(new { Success = false, Message = "gameNames array is required" });
@@ -3013,6 +3112,13 @@ namespace MovieTheater.Controllers
             bool hasMain = await boardgameImageRepo.HasImage(boardgame.id, BoardgameImageVariant.Main);
             bool hasThumb = await boardgameImageRepo.HasImage(boardgame.id, BoardgameImageVariant.Thumbnail);
             bool savedAny = false;
+
+            // Defense-in-depth SSRF guard: these URLs are editor/BGG-supplied, but validate before
+            // fetching so a stored internal URL can't turn this into a server-side proxy.
+            if (!string.IsNullOrWhiteSpace(imageUrl) && !(await MovieTheater.Web.ServerSideUrlGuard.ValidateAsync(imageUrl)).ok)
+                imageUrl = null;
+            if (!string.IsNullOrWhiteSpace(thumbnailUrl) && !(await MovieTheater.Web.ServerSideUrlGuard.ValidateAsync(thumbnailUrl)).ok)
+                thumbnailUrl = null;
 
             // Fire both HTTP requests before awaiting either so they download in parallel
             var mainFetchTask = (force || !hasMain) && !string.IsNullOrWhiteSpace(imageUrl)
@@ -3183,10 +3289,10 @@ namespace MovieTheater.Controllers
             _ => "image/png"
         };
 
-        [HttpGet("/API/InsertBoardgameFromBgg")]
         [HttpPost("/API/InsertBoardgameFromBgg")]
         public async Task<IActionResult> InsertBoardgameFromBgg(int bggThingId)
         {
+            if (!await IsCurrentUserEditor()) return Forbid();
             if (bggThingId <= 0)
                 return BadRequest(new { Success = false, Message = "bggThingId must be a positive integer" });
 
@@ -3222,6 +3328,7 @@ namespace MovieTheater.Controllers
         [HttpPost("/API/GetBoardgamesFromInputs")]
         public async Task<IActionResult> GetBoardgamesFromInputs([FromBody] string[] inputs)
         {
+            if (!await IsCurrentUserEditor()) return Forbid();
             if (inputs == null || inputs.Length == 0)
                 return Ok(new List<object>());
 

@@ -33,13 +33,16 @@ namespace MovieTheater.Controllers
         private readonly JellyfinApi jellyfin;
         private readonly MovieTheaterConfiguration config;
         private readonly ILogger<StreamController> logger;
+        private readonly Streaming.TranscodeSessionRegistry transcodeSessions;
 
-        public StreamController(MovieDb movieDb, JellyfinApi jellyfin, MovieTheaterConfiguration config, ILogger<StreamController> logger)
+        public StreamController(MovieDb movieDb, JellyfinApi jellyfin, MovieTheaterConfiguration config, ILogger<StreamController> logger,
+            Streaming.TranscodeSessionRegistry transcodeSessions)
         {
             this.movieDb = movieDb;
             this.jellyfin = jellyfin;
             this.config = config;
             this.logger = logger;
+            this.transcodeSessions = transcodeSessions;
         }
 
         private int? GetCurrentUserId()
@@ -95,11 +98,13 @@ namespace MovieTheater.Controllers
             public bool SupportsAv110Bit { get; set; }    // MSE decodes 10-bit AV1 → may copy HDR/10-bit AV1
             public bool SupportsHeAac { get; set; }       // MSE decodes HE-AAC (SBR); else HE-AAC must transcode
             public bool SupportsDolbyVision { get; set; } // decodes Dolby Vision → DOVI ranges may pass through
+            public bool SupportsMkv { get; set; }         // <video> can play a Matroska container (Chromium yes, Firefox excluded) → direct-play MKV
 
             public ClientCapabilities ToCapabilities() =>
                 new(SupportsHevc, SupportsAv1, SupportsHdr, SupportsFmp4, SupportsMp3,
                     SupportsAc3, SupportsEac3, MaxAudioChannels ?? 2,
-                    SupportsHevcMain10, SupportsAv110Bit, SupportsHeAac, SupportsDolbyVision);
+                    SupportsHevcMain10, SupportsAv110Bit, SupportsHeAac, SupportsDolbyVision,
+                    SupportsMkv);
         }
 
         [HttpPost("/API/Stream/Start")]
@@ -142,16 +147,13 @@ namespace MovieTheater.Controllers
             if (file?.JellyfinItemId == null)
                 return NotFound(new { message = "This title has no playable file." });
 
-            // Optional concurrency guard — a friendly "theater full" beats a melted GPU. A failure to
-            // count (Jellyfin hiccup, unexpected /Sessions payload) must never 500 the stream — log and
-            // allow rather than block.
-            if (config.StreamingMaxConcurrentTranscodes > 0)
+            // Optional concurrency guard — a friendly "theater full" beats a melted GPU. Counted from our
+            // own in-app session registry (Jellyfin's /Sessions can't tell our viewers apart — they share
+            // one DeviceId, so it always reports ≤1 transcode). Direct-play sessions don't count.
+            if (config.StreamingMaxConcurrentTranscodes > 0
+                && transcodeSessions.ActiveTranscodeCount() >= config.StreamingMaxConcurrentTranscodes)
             {
-                int active;
-                try { active = await jellyfin.GetActiveTranscodeCountAsync(); }
-                catch (Exception ex) { logger.LogWarning(ex, "Transcode-count check failed; allowing the stream"); active = 0; }
-                if (active >= config.StreamingMaxConcurrentTranscodes)
-                    return StatusCode(503, new { message = "The theater is full — too many streams are running. Try again in a few minutes." });
+                return StatusCode(503, new { message = "The theater is full — too many streams are running. Try again in a few minutes." });
             }
 
             var startTicks = (long)((request.StartSeconds ?? 0) * TicksPerSecond);
@@ -328,6 +330,10 @@ namespace MovieTheater.Controllers
                 isHls = true;
             }
 
+            // Track this session for the concurrency guard. Direct play spawns no ffmpeg, so it's
+            // registered as a non-transcode (present for lifecycle symmetry, never counted).
+            transcodeSessions.Register(info.PlaySessionId, isTranscode: !directPlay);
+
             return Ok(new
             {
                 playSessionId = info.PlaySessionId,
@@ -374,6 +380,9 @@ namespace MovieTheater.Controllers
             var userId = GetCurrentUserId();
             if (userId == null || string.IsNullOrEmpty(request?.PlaySessionId))
                 return BadRequest();
+
+            // Keep-alive for the concurrency guard (fires paused or playing).
+            transcodeSessions.Touch(request.PlaySessionId);
 
             var playableId = request.PlayableId
                 ?? await movieDb.Movies.Where(m => m.id == request.MovieId).Select(m => m.PlayableId).FirstOrDefaultAsync();
@@ -437,6 +446,8 @@ namespace MovieTheater.Controllers
         {
             if (string.IsNullOrEmpty(request?.PlaySessionId))
                 return BadRequest();
+
+            transcodeSessions.Remove(request.PlaySessionId);
 
             var playableId = request.PlayableId
                 ?? await movieDb.Movies.Where(m => m.id == request.MovieId).Select(m => m.PlayableId).FirstOrDefaultAsync();

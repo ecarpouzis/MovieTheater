@@ -29,6 +29,14 @@ namespace MovieTheater
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
+        // Dev runs plain HTTP on localhost; every other environment is served over HTTPS via the
+        // TLS-terminating ingress. Used to decide whether the auth cookie must carry Secure.
+        private static bool IsDevelopment =>
+            string.Equals(
+                Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
+                "Development",
+                StringComparison.OrdinalIgnoreCase);
+
         public void ConfigureServices(IServiceCollection services)
         {
             // Persist the Data Protection key ring (which encrypts the auth cookie) to durable storage.
@@ -49,8 +57,12 @@ namespace MovieTheater
                     options.SlidingExpiration = true;
                     options.Cookie.HttpOnly = true;
                     options.Cookie.SameSite = SameSiteMode.Lax;
-                    // SameAsRequest so local HTTP dev still works; production is HTTPS-only so the cookie is Secure there.
-                    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                    // Always Secure outside dev. TLS terminates at the ingress and HTTP is forwarded to
+                    // Kestrel, so Request.IsHttps is false inside the app and SameAsRequest would emit the
+                    // 30-day auth cookie WITHOUT Secure in prod. Force it on everywhere but local HTTP dev.
+                    options.Cookie.SecurePolicy = IsDevelopment
+                        ? CookieSecurePolicy.SameAsRequest
+                        : CookieSecurePolicy.Always;
 
                     // The SPA expects real status codes from API endpoints, not redirects to an HTML login page.
                     options.Events.OnRedirectToLogin = context =>
@@ -138,6 +150,9 @@ namespace MovieTheater
 
             services.AddScoped<Channels.ChannelScheduleService>();
             services.AddSingleton<Channels.ChannelSkipService>();
+            // Tracks active play sessions for the streaming concurrency guard (Jellyfin's /Sessions can't
+            // tell our viewers apart — they share one DeviceId). Singleton so it spans all requests.
+            services.AddSingleton<Streaming.TranscodeSessionRegistry>();
             // Materializes channel schedules + warms rating-ceiling caches in bounded background batches,
             // so the viewer read paths (List / Now / grid guide) stay cheap as channel count grows.
             services.AddHostedService<Channels.ChannelScheduleMaintenanceService>();
@@ -181,6 +196,30 @@ namespace MovieTheater
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app)
         {
+            // Honor X-Forwarded-Proto/-For from the ingress so Request.IsHttps and the client IP reflect
+            // the original TLS request rather than the plaintext hop to Kestrel. The pod is only reachable
+            // through the ingress, so we trust the header (clear the default loopback-only restriction).
+            var forwardedOptions = new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
+            {
+                ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+                    | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor,
+            };
+            forwardedOptions.KnownNetworks.Clear();
+            forwardedOptions.KnownProxies.Clear();
+            app.UseForwardedHeaders(forwardedOptions);
+
+            // Baseline security headers on every response.
+            app.Use(async (context, next) =>
+            {
+                var headers = context.Response.Headers;
+                headers["X-Content-Type-Options"] = "nosniff";
+                headers["X-Frame-Options"] = "SAMEORIGIN";
+                headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+                if (!IsDevelopment)
+                    headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+                await next();
+            });
+
             // CRITICAL: Don't intercept .well-known paths - let them 404 so cert-manager's ingress can handle ACME challenges
             // We catch all /.well-known/* paths to ensure ACME challenges work, even though we only care about /.well-known/acme-challenge/*
             app.Use(async (context, next) =>

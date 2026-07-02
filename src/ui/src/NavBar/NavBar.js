@@ -1,14 +1,16 @@
 import { MenuOutlined } from "@ant-design/icons";
 import { Layout } from "antd";
-import { useState, useEffect, useRef } from "react";
+import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import "./NavBar.css";
 
 import SearchTools from "./SearchTools";
 import Login from "./Login";
 import BoardGameNavContent from "./BoardGameNavContent";
-import UserSettingsModal from "./UserSettingsModal";
-import AdminModal from "./AdminModal";
+// Settings/admin modals only open on demand (and admin only for privileged users), so keep them out
+// of the entry bundle and load their chunks when first rendered.
+const UserSettingsModal = lazy(() => import("./UserSettingsModal"));
+const AdminModal = lazy(() => import("./AdminModal"));
 import useIsMobile from "../hooks/useIsMobile";
 import { loadTitleTypes, saveTitleTypes, loadSort, saveSort } from "../hooks/useMovieSearch";
 // Section nav icons (light variants — the navbar sits on a dark ground). Dark variants for
@@ -281,13 +283,15 @@ function NavBar({
 
         <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}${navThemeClass}`}>{navContent}</div>
 
-        <UserSettingsModal
-          open={settingsModalOpen}
-          onClose={() => setSettingsModalOpen(false)}
-          userData={userData}
-          setUserData={setUserData}
-        />
-        <AdminModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
+        <Suspense fallback={null}>
+          <UserSettingsModal
+            open={settingsModalOpen}
+            onClose={() => setSettingsModalOpen(false)}
+            userData={userData}
+            setUserData={setUserData}
+          />
+          <AdminModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
+        </Suspense>
       </>
     );
   }
@@ -308,13 +312,15 @@ function NavBar({
         </div>
         {navContent}
       </Layout.Sider>
-      <UserSettingsModal
-        open={settingsModalOpen}
-        onClose={() => setSettingsModalOpen(false)}
-        userData={userData}
-        setUserData={setUserData}
-      />
-      <AdminModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
+      <Suspense fallback={null}>
+        <UserSettingsModal
+          open={settingsModalOpen}
+          onClose={() => setSettingsModalOpen(false)}
+          userData={userData}
+          setUserData={setUserData}
+        />
+        <AdminModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
+      </Suspense>
     </>
   );
 }

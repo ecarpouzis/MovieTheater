@@ -340,15 +340,21 @@ function VideoPlayer({
     };
   }, [onProgress, onEnded]);
 
-  // ── steady progress beat (~10s) while playing ───────────────────────────────
+  // ── steady progress beat (~10s), paused or not ───────────────────────────────
+  // Jellyfin's HLS job has a 60s ping timeout kept alive ONLY by these progress reports —
+  // segment fetches do NOT reset it. So a pause longer than ~1min would make the server kill
+  // ffmpeg and delete its segments; the resume then stalls and pays a cold re-transcode. The
+  // beat therefore runs unconditionally, reporting the REAL paused flag (server forwards it as
+  // IsPaused), matching jellyfin-web's unconditional 10s report. It's cleaned up on unmount and
+  // when playback truly ends — VideoPlayer is only mounted while the page is in its "playing"
+  // phase, so leaving/ending unmounts it and clears this interval.
   useEffect(() => {
-    if (!playing) return undefined;
     const beat = setInterval(() => {
       const video = videoRef.current;
-      if (video && !video.paused) onProgress?.(video.currentTime, false);
+      if (video) onProgress?.(video.currentTime, video.paused);
     }, 10_000);
     return () => clearInterval(beat);
-  }, [playing, onProgress]);
+  }, [onProgress]);
 
   // ── bandwidth telemetry for adaptive bitrate (§14.4) ────────────────────────
   // hls.js refines bandwidthEstimate as segments load; sample it while playing so

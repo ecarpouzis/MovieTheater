@@ -81,6 +81,11 @@ function WatchPage({ userData }) {
   // An adapt restarts the stream at the live position. Late-bound through a ref because
   // restartAtPosition is defined below (it depends on the autoBpsRef this hook owns).
   const restartAtPositionRef = useRef(null);
+  // Monotonic id for the in-flight restart. An ABR adapt and a user quality/audio/subtitle change
+  // can both fire restartAtPosition at once; this lets a superseded restart stop the session it
+  // started and bail instead of leaking a transcode (that otherwise self-heals only via Jellyfin's
+  // 60s reaper) or stomping the newer session. Mirrors TvPage's tuneSeqRef.
+  const restartSeqRef = useRef(0);
   // The active quality picks the ABR strategy: "Auto" opens at the lossless tier and only drops on
   // stalls; "Mobile Auto" opens low and climbs fast to a 1080p/8 Mbps cap (see ABR_PROFILES). Fixed
   // rungs ignore the profile entirely.
@@ -223,13 +228,21 @@ function WatchPage({ userData }) {
 
   const restartAtPosition = useCallback(
     async (overrides) => {
+      const seq = ++restartSeqRef.current;
       const position = positionRef.current;
       stopCurrentSession();
       try {
         const next = await startSession({ startSeconds: position, ...overrides });
+        // A newer restart superseded us while startSession was in flight — stop the stream we just
+        // minted (don't leave it for the 60s reaper) and bail without stomping the newer session.
+        if (seq !== restartSeqRef.current) {
+          MovieAPI.stopStream({ playSessionId: next.playSessionId, ...streamTargetRef.current });
+          return;
+        }
         setStartAt(position);
         setSession(next);
       } catch (err) {
+        if (seq !== restartSeqRef.current) return;
         setError(err);
         setPhase("error");
       }

@@ -62,14 +62,18 @@ namespace MovieTheater.Recommendations
         public async Task<List<(int UserId, string Stamp)>> StaleUsersAsync(MovieDb db, CancellationToken cancel = default)
         {
             int maxLibId = await MaxLibIdAsync(db, cancel);
-            var raters = await db.Viewings.Where(v => v.ViewingType == "Rated")
-                .Select(v => v.UserID).Distinct().ToListAsync(cancel);
+            // One grouped query for every rater's stamp inputs, instead of a per-user StampAsync round-trip.
+            var perUser = await db.Viewings.Where(v => v.ViewingType == "Rated")
+                .GroupBy(v => v.UserID)
+                .Select(g => new { UserId = g.Key, Max = g.Max(v => v.ViewingID), Count = g.Count() })
+                .ToListAsync(cancel);
             var stamps = await db.UserTasteProfiles.ToDictionaryAsync(p => p.UserId, p => p.RatingsStamp, cancel);
             var stale = new List<(int, string)>();
-            foreach (var uid in raters.OrderBy(x => x))
+            foreach (var u in perUser.OrderBy(x => x.UserId))
             {
-                var stamp = await StampAsync(db, uid, maxLibId, cancel);
-                if (!stamps.TryGetValue(uid, out var have) || have != stamp) stale.Add((uid, stamp));
+                // Must match StampAsync's format exactly.
+                var stamp = $"{u.Max}:{u.Count}:{maxLibId}:{AlgoVersion}";
+                if (!stamps.TryGetValue(u.UserId, out var have) || have != stamp) stale.Add((u.UserId, stamp));
             }
             return stale;
         }
@@ -227,40 +231,50 @@ namespace MovieTheater.Recommendations
 
         public async Task<FeatureIndex> BuildIndexAsync(MovieDb db, CancellationToken cancel = default)
         {
-            var movieRaw = await db.Movies
+            // Eligible = playable, non-quarantined titles. Kept as IQueryables so the id sets can be reused
+            // to filter the feature tables (genres/credits/insights) server-side via an EXISTS subquery,
+            // instead of loading those whole tables and filtering in memory.
+            var eligibleMovies = db.Movies
                 .Where(m => m.ReviewBatch == null && m.PlayableId != null
-                    && m.Playable!.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null))
+                    && m.Playable!.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null));
+            var eligibleSeries = db.Series
+                .Where(s => s.ReviewBatch == null
+                    && s.Episodes.Any(e => e.PlayableId != null && e.Playable!.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null)));
+            var eligibleMovieIds = eligibleMovies.Select(m => m.id);
+            var eligibleSeriesIds = eligibleSeries.Select(s => s.Id);
+
+            var movieRaw = await eligibleMovies
                 .Select(m => new { m.id, m.Title, D1 = m.ImdbReleaseDate, D2 = m.ReleaseDate, m.OriginalLanguage, m.ImdbRatingScraped, m.RtTomatometer, m.RtPopcornmeter, m.TmdbPopularity })
                 .ToListAsync(cancel);
-            var seriesRaw = await db.Series
-                .Where(s => s.ReviewBatch == null
-                    && s.Episodes.Any(e => e.PlayableId != null && e.Playable!.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null)))
+            var seriesRaw = await eligibleSeries
                 .Select(s => new { s.Id, s.Title, D1 = s.ImdbReleaseDate, D2 = s.ReleaseDate, s.OriginalLanguage, s.ImdbRatingScraped, s.RtTomatometer, s.RtPopcornmeter, s.TmdbPopularity })
                 .ToListAsync(cancel);
             var movieRows = movieRaw.Select(m => new TitleCore { Id = m.id, Title = m.Title, Year = (m.D1 ?? m.D2)?.Year, Lang = m.OriginalLanguage, Imdb = (double?)m.ImdbRatingScraped, Tomato = m.RtTomatometer, Popcorn = m.RtPopcornmeter, Popularity = (double?)m.TmdbPopularity }).ToList();
             var seriesRows = seriesRaw.Select(s => new TitleCore { Id = s.Id, Title = s.Title, Year = (s.D1 ?? s.D2)?.Year, Lang = s.OriginalLanguage, Imdb = (double?)s.ImdbRatingScraped, Tomato = s.RtTomatometer, Popcorn = s.RtPopcornmeter, Popularity = (double?)s.TmdbPopularity }).ToList();
-            var movieIds = movieRows.Select(r => r.Id).ToHashSet();
-            var seriesIds = seriesRows.Select(r => r.Id).ToHashSet();
 
             var genreNames = await db.Genres.ToDictionaryAsync(g => g.Id, g => g.Name, cancel);
-            var movieGenres = await db.MovieGenres.Select(g => new { g.MovieID, g.GenreId, g.Ordering }).ToListAsync(cancel);
-            var seriesGenres = await db.SeriesGenres.Select(g => new { g.SeriesId, g.GenreId, g.Ordering }).ToListAsync(cancel);
-            var mGenre = GroupFeatures(movieGenres.Where(g => movieIds.Contains(g.MovieID)), g => g.MovieID,
+            var movieGenres = await db.MovieGenres.Where(g => eligibleMovieIds.Contains(g.MovieID))
+                .Select(g => new { g.MovieID, g.GenreId, g.Ordering }).ToListAsync(cancel);
+            var seriesGenres = await db.SeriesGenres.Where(g => eligibleSeriesIds.Contains(g.SeriesId))
+                .Select(g => new { g.SeriesId, g.GenreId, g.Ordering }).ToListAsync(cancel);
+            var mGenre = GroupFeatures(movieGenres, g => g.MovieID,
                 g => ($"genre:{genreNames.GetValueOrDefault(g.GenreId, g.GenreId.ToString())}", g.Ordering == 0 ? 1.0 : 0.6));
-            var sGenre = GroupFeatures(seriesGenres.Where(g => seriesIds.Contains(g.SeriesId)), g => g.SeriesId,
+            var sGenre = GroupFeatures(seriesGenres, g => g.SeriesId,
                 g => ($"genre:{genreNames.GetValueOrDefault(g.GenreId, g.GenreId.ToString())}", g.Ordering == 0 ? 1.0 : 0.6));
 
             var movieCredits = await db.MovieCredits
-                .Where(c => c.Role == CreditRole.Director || c.Role == CreditRole.Writer || c.Ordering < TopActors)
+                .Where(c => (c.Role == CreditRole.Director || c.Role == CreditRole.Writer || c.Ordering < TopActors)
+                    && eligibleMovieIds.Contains(c.MovieID))
                 .Select(c => new { c.MovieID, c.PersonId, c.Role, c.Ordering }).ToListAsync(cancel);
             var seriesCredits = await db.SeriesCredits
-                .Where(c => c.Role == CreditRole.Director || c.Role == CreditRole.Writer || c.Ordering < TopActors)
+                .Where(c => (c.Role == CreditRole.Director || c.Role == CreditRole.Writer || c.Ordering < TopActors)
+                    && eligibleSeriesIds.Contains(c.SeriesId))
                 .Select(c => new { c.SeriesId, c.PersonId, c.Role, c.Ordering }).ToListAsync(cancel);
-            var mCredit = GroupFeatures(movieCredits.Where(c => movieIds.Contains(c.MovieID)), c => c.MovieID, c => CreditFeature(c.Role, c.PersonId, c.Ordering));
-            var sCredit = GroupFeatures(seriesCredits.Where(c => seriesIds.Contains(c.SeriesId)), c => c.SeriesId, c => CreditFeature(c.Role, c.PersonId, c.Ordering));
+            var mCredit = GroupFeatures(movieCredits, c => c.MovieID, c => CreditFeature(c.Role, c.PersonId, c.Ordering));
+            var sCredit = GroupFeatures(seriesCredits, c => c.SeriesId, c => CreditFeature(c.Role, c.PersonId, c.Ordering));
 
-            var mInsight = await CurrentInsightsAsync(db, InsightSubjectKind.Movie, movieIds, cancel);
-            var sInsight = await CurrentInsightsAsync(db, InsightSubjectKind.Series, seriesIds, cancel);
+            var mInsight = await CurrentInsightsAsync(db, InsightSubjectKind.Movie, eligibleMovieIds, cancel);
+            var sInsight = await CurrentInsightsAsync(db, InsightSubjectKind.Series, eligibleSeriesIds, cancel);
 
             var mViewers = await db.Viewings.Where(v => v.ViewingType == "Seen" && v.MovieID != null)
                 .GroupBy(v => v.MovieID!.Value).Select(g => new { Id = g.Key, C = g.Select(v => v.UserID).Distinct().Count() })
@@ -314,10 +328,12 @@ namespace MovieTheater.Recommendations
             };
         }
 
-        private static async Task<Dictionary<int, TitleInsight>> CurrentInsightsAsync(MovieDb db, InsightSubjectKind kind, HashSet<int> ids, CancellationToken cancel)
+        private static async Task<Dictionary<int, TitleInsight>> CurrentInsightsAsync(MovieDb db, InsightSubjectKind kind, IQueryable<int> eligibleIds, CancellationToken cancel)
         {
-            var all = await db.TitleInsights.AsNoTracking().Where(ti => ti.SubjectKind == kind).Include(ti => ti.Tags).ToListAsync(cancel);
-            return all.Where(ti => ids.Contains(ti.SubjectId))
+            var all = await db.TitleInsights.AsNoTracking()
+                .Where(ti => ti.SubjectKind == kind && eligibleIds.Contains(ti.SubjectId))
+                .Include(ti => ti.Tags).ToListAsync(cancel);
+            return all
                 .GroupBy(ti => ti.SubjectId)
                 .ToDictionary(g => g.Key,
                     g => g.OrderByDescending(ti => ti.SpecVersion).ThenByDescending(ti => ti.GeneratedUtc).ThenByDescending(ti => ti.Id).First());

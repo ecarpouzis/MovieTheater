@@ -23,7 +23,7 @@ namespace MovieTheater.Services.Python
                 start.ArgumentList.Add(param);
             }
 
-            start.UseShellExecute = true;// Do not use OS shell
+            start.UseShellExecute = false; // Launch the exe directly, not via the OS shell association
             start.CreateNoWindow = true; // We don't need new window
 
             var process = Process.Start(start);

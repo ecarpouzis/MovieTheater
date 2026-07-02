@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import CardList from "./CardList";
-import MovieModal from "./MovieModal";
 import SimpleCardList from "./SimpleCardList";
 import NowOnTvRail from "./NowOnTvRail";
 import useIsMobile from "../../hooks/useIsMobile";
+
+// The detail modal (917 lines + FileMappingEditor, SubtitlePicker, …) only renders after a card
+// click + network fetch, so its chunk load hides behind that — keeping it out of the entry bundle.
+const MovieModal = lazy(() => import("./MovieModal"));
 
 // Page size for infinite-scroll modes. Matches the server default in GetMoviesByType.
 const INFINITE_PAGE_SIZE = 60;
@@ -204,13 +207,16 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   const [selectedKind, setSelectedKind] = useState("movie");
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  let displayMovies = movieDataArray;
-  if (Array.isArray(search.restoreOrder) && search.restoreOrder.length > 0) {
+  // Restore-order reshuffle (back-nav) — memoized so it doesn't rebuild the Map/Set/concat over the
+  // full array (and hand a fresh array identity to the memoized grid) on every unrelated render
+  // (modal open/close, Seen/Want toggle, scroll append).
+  const displayMovies = useMemo(() => {
+    if (!Array.isArray(search.restoreOrder) || search.restoreOrder.length === 0) return movieDataArray;
     const movieById = new Map(movieDataArray.map((movie) => [movie.id, movie]));
     const orderedMovies = search.restoreOrder.map((id) => movieById.get(id)).filter(Boolean);
     const orderedIdSet = new Set(orderedMovies.map((movie) => movie.id));
-    displayMovies = [...orderedMovies, ...movieDataArray.filter((movie) => !orderedIdSet.has(movie.id))];
-  }
+    return [...orderedMovies, ...movieDataArray.filter((movie) => !orderedIdSet.has(movie.id))];
+  }, [movieDataArray, search.restoreOrder]);
 
   const handleOpenMovie = (movieId, kind = "movie") => {
     setSelectedMovieId(movieId);
@@ -345,35 +351,37 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
           Loading more…
         </div>
       )}
-      {useSimpleStyle ? (
-        <MovieModal
-          movieId={selectedMovieId}
-          kind={selectedKind}
-          open={isModalVisible}
-          onClose={handleCloseModal}
-          actorSearch={handleActorSearch}
-          onBrowse={handleBrowseSearch}
-          onOpenTitle={handleOpenMovie}
-          userData={userData}
-          setUserData={setUserData}
-          onToggleViewing={handleToggleViewing}
-        />
-      ) : (
-        <MovieModal
-          movieId={selectedMovieId}
-          kind={selectedKind}
-          open={isModalVisible}
-          onClose={handleCloseModal}
-          actorSearch={handleActorSearch}
-          onBrowse={handleBrowseSearch}
-          onOpenTitle={handleOpenMovie}
-          movieDataArray={displayMovies}
-          userData={userData}
-          setUserData={setUserData}
-          onToggleViewing={handleToggleViewing}
-          onMovieUpdated={handleMovieUpdated}
-        />
-      )}
+      <Suspense fallback={null}>
+        {useSimpleStyle ? (
+          <MovieModal
+            movieId={selectedMovieId}
+            kind={selectedKind}
+            open={isModalVisible}
+            onClose={handleCloseModal}
+            actorSearch={handleActorSearch}
+            onBrowse={handleBrowseSearch}
+            onOpenTitle={handleOpenMovie}
+            userData={userData}
+            setUserData={setUserData}
+            onToggleViewing={handleToggleViewing}
+          />
+        ) : (
+          <MovieModal
+            movieId={selectedMovieId}
+            kind={selectedKind}
+            open={isModalVisible}
+            onClose={handleCloseModal}
+            actorSearch={handleActorSearch}
+            onBrowse={handleBrowseSearch}
+            onOpenTitle={handleOpenMovie}
+            movieDataArray={displayMovies}
+            userData={userData}
+            setUserData={setUserData}
+            onToggleViewing={handleToggleViewing}
+            onMovieUpdated={handleMovieUpdated}
+          />
+        )}
+      </Suspense>
     </>
   );
 }

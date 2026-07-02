@@ -41,6 +41,29 @@ function detectMaxAudioChannels() {
   }
 }
 
+// Can the <video> element play a Matroska (.mkv) container directly? MKV is the dominant library
+// container, so direct-playing it (raw file, no ffmpeg remux) is a big transcode saver. Chromium
+// returns "maybe" (not "probably") for matroska, so canPlay()'s strict check misses it — probe
+// canPlayType directly and accept any non-"no" answer (mirrors jellyfin-web's testCanPlayMkv).
+// Firefox is excluded: it reports support but preloads the entire file (jellyfin-web #15521).
+function detectMkv() {
+  try {
+    if (/firefox/i.test(navigator.userAgent || "")) return false;
+    const v = document.createElement("video");
+    const ok = (mime) => {
+      const r = v.canPlayType(mime);
+      return r === "probably" || r === "maybe";
+    };
+    return (
+      ok("video/x-matroska") ||
+      ok("video/mkv") ||
+      ok('video/x-matroska; codecs="avc1.42E01E"')
+    );
+  } catch {
+    return false;
+  }
+}
+
 // Display capability, not decode: only pass HDR through to a display that can show
 // it, so an SDR screen gets a tonemapped transcode instead of washed-out HDR.
 function detectHdr() {
@@ -96,10 +119,11 @@ export function detectStreamCapabilities() {
   const supportsEac3 = canPlay('audio/mp4; codecs="ec-3"');
   const maxAudioChannels = detectMaxAudioChannels();
   const supportsHdr = detectHdr();
+  const supportsMkv = detectMkv();
 
   cached = {
     supportsHevc, supportsHevcMain10, supportsAv1, supportsAv110bit, supportsHdr, supportsDolbyVision,
-    supportsFmp4, supportsMp3, supportsAc3, supportsEac3, supportsHeAac, maxAudioChannels,
+    supportsFmp4, supportsMp3, supportsAc3, supportsEac3, supportsHeAac, maxAudioChannels, supportsMkv,
   };
   return cached;
 }

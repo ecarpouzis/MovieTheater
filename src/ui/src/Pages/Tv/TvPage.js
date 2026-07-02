@@ -38,6 +38,8 @@ function TvPage({ userData }) {
   const idleTimerRef = useRef(null);
   const progressRef = useRef(null);
   const scrubbingRef = useRef(false);
+  // Grace timer before tearing down the stream on a hidden tab (see the visibility effect).
+  const hiddenGraceRef = useRef(null);
 
   const [channels, setChannels] = useState(null); // null = loading
   const [channel, setChannel] = useState(null);
@@ -494,16 +496,20 @@ function TvPage({ userData }) {
   }, [channel?.id]);
 
   // ── passive progress beat + ended fallback ─────────────────────────────────
+  // Report every 10s paused or not: Jellyfin's HLS job has a 60s ping timeout kept alive ONLY by
+  // these reports (segment fetches don't reset it), so skipping the beat during a shared pause
+  // would let the server kill ffmpeg and force a cold restart on resume. Report the real paused
+  // flag so throttling stays honest; passive=true keeps background play from claiming a watch.
   useEffect(() => {
     const beat = setInterval(() => {
       const video = videoRef.current;
       const s = sessionRef.current;
-      if (video && s && !video.paused) {
+      if (video && s) {
         MovieAPI.reportStreamProgress({
           playSessionId: s.playSessionId,
           playableId: s.playableId,
           positionTicks: Math.round(video.currentTime * TICKS_PER_SECOND),
-          paused: false,
+          paused: video.paused,
           passive: true,
         });
       }
@@ -573,6 +579,42 @@ function TvPage({ userData }) {
 
   // Keep the screen awake while a channel is up — shared with the Watch player.
   useWakeLock();
+
+  // ── hidden-tab teardown ─────────────────────────────────────────────────────
+  // A muted, inaudible, hidden tab gets its timers throttled to ~once/min by the browser, so the
+  // 10s passive beat can slip below Jellyfin's 60s ping timeout — the server then kills/cold-restarts
+  // the transcode while segments keep needlessly downloading, all for a channel nobody's watching.
+  // A channel is a passive broadcast with nothing to preserve, so after a short grace we deliberately
+  // stop the stream (a clean stop, not a server kill) and re-tune at the live offset on return.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        clearTimeout(hiddenGraceRef.current);
+        hiddenGraceRef.current = setTimeout(() => {
+          clearTimeout(advanceTimerRef.current);
+          clearTimeout(prewarmTimerRef.current);
+          stopSession();
+          destroyHls();
+          if (prewarmRef.current) {
+            MovieAPI.stopStream({
+              playSessionId: prewarmRef.current.session.playSessionId,
+              playableId: prewarmRef.current.playableId,
+            });
+            prewarmRef.current = null;
+          }
+        }, 30_000);
+      } else {
+        clearTimeout(hiddenGraceRef.current);
+        // Re-tune only if the grace timer actually tore the stream down while we were away.
+        if (!sessionRef.current && channelRef.current) tuneRef.current?.(channelRef.current);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearTimeout(hiddenGraceRef.current);
+    };
+  }, [stopSession, destroyHls]);
 
   // Arm the idle fade once playing starts. Re-arm when the channel, pause, or popout state
   // changes so a resume or a just-closed menu restarts the countdown rather than fading instantly.

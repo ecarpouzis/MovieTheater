@@ -37,7 +37,12 @@ namespace MovieTheater.Services
             services.AddTransient<BoardgameRulesService>();
             services.AddTransient<Poster.PosterFetchService>();
             services.AddTransient<TitleEnrichService>();
-            services.AddTransient<IMDBApiService>();
+            services.AddHttpClient<IMDBApiService>(httpClient =>
+            {
+                // Common browser UA to improve acceptance by the IMDb search endpoint.
+                httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36");
+            });
             services.AddSingleton<PosterMosaicService>();
             services.AddSingleton<BoardgameSimilarityService>();
             return services;

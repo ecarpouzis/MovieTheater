@@ -119,13 +119,16 @@ namespace MovieTheater.Controllers
                 return StatusCode(403, new { message = "This channel isn't available on your account." });
 
             var now = DateTime.UtcNow;
-            var items = await scheduleService.EnsureScheduleAsync(channel, now.Add(TimeSpan.FromHours(48)));
 
             // While the channel is paused the timeline is frozen, so read "what's on" against the
             // pause instant rather than the moving wall clock — the offset (and everything derived
             // from it) holds steady until someone resumes.
             var pausedAt = skipService.PausedSince(id);
             var clock = pausedAt ?? now;
+
+            // Read-only window: enough history to catch a long current item (a movie can run several
+            // hours) and enough runway ahead for the "next 5". No full-schedule load on this poll.
+            var items = await scheduleService.GetReadWindowAsync(channel, clock.AddHours(-8), now.AddHours(12));
 
             var currentIndex = items.FindIndex(i => i.StartUtc <= clock && clock < i.EndUtc);
             if (currentIndex < 0)
@@ -379,10 +382,8 @@ namespace MovieTheater.Controllers
             hours = Math.Clamp(hours, 1, 48);
             var now = DateTime.UtcNow;
             var until = now.AddHours(hours);
-            var items = await scheduleService.EnsureScheduleAsync(channel, until);
-
-            // From the currently-airing item forward through the window.
-            var windowed = items.Where(i => i.EndUtc > now && i.StartUtc < until).ToList();
+            // Read-only window (current item forward). No full-schedule load on this poll.
+            var windowed = await scheduleService.GetReadWindowAsync(channel, now, until);
             var titles = await TitlesForAsync(windowed.Select(i => i.PlayableId));
 
             var guide = windowed.Select(i =>

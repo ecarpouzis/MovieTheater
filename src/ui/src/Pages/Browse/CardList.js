@@ -1,8 +1,8 @@
 import { MovieAPI } from "../../MovieAPI";
 import { Card } from "antd";
-import UserMovieOptions from "./UserMovieOptions";
+import UserMovieOptions, { useViewingToggles } from "./UserMovieOptions";
 import "./CardList.css";
-import { useState, useEffect } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { preloadImages } from "../../preloadImages";
 
 // Poster thumbnail with a graceful fallback: when the image 404s (common for Misc videos, which
@@ -40,8 +40,113 @@ function PlotText({ text, className, hiddenClass }) {
   return <p className={classes}>{text}</p>;
 }
 
+// One grid card. Memoized on PRIMITIVES (isWatched/isWanted booleans, activeName string, stable
+// handlers) rather than the whole userData object, so a Seen/Want toggle, an infinite-scroll
+// append, or a modal open/close only re-renders the card that actually changed — not every mounted
+// card in the grid. All callbacks it receives are stabilized (useCallback / useViewingToggles) in
+// the parent so the memo isn't defeated by fresh closures each render.
+const MovieCard = memo(function MovieCard({
+  item,
+  isAboveFold,
+  isMobile,
+  activeName,
+  showOptions,
+  isWatched,
+  isWanted,
+  onMovieClick,
+  onActorSearch,
+  onToggleSeen,
+  onToggleWant,
+}) {
+  // Prefer the IMDB summary; fall back to the legacy plot only when there isn't one.
+  const summaryText = item.plotFull || item.plot;
+  // Pills come from the FK-derived top cast; fall back to legacy actors if absent.
+  const castNames = (item.topCast || item.actors || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const isMisc = item.kind === "misc";
+  // Misc videos have no IMDb id, no ratings, and don't fit the movie detail modal or the
+  // Seen/Want (Viewing) model — so they render as informational cards: poster (or placeholder),
+  // a Misc/category badge, and their description.
+  const year = item.releaseDate ? new Date(item.releaseDate).getFullYear() : null;
+
+  return (
+    <div className="card-cell">
+      <Card hoverable className="movie-card">
+        <div className={`card-content-wrapper${isMobile ? " card-content-wrapper--mobile" : ""}`}>
+          <div className="card-poster-container">
+            <CardPoster item={item} isMobile={isMobile} isAboveFold={isAboveFold} />
+          </div>
+          <div className={`card-right-col${isMobile ? " card-right-col--mobile" : ""}`}>
+            <div
+              onClick={isMisc ? undefined : () => onMovieClick(item.id, item.kind)}
+              className={`card-title${isMisc ? " card-title--static" : ""}`}
+            >
+              {item.title}{year ? ` (${year})` : ""}
+            </div>
+            <div className="card-meta-row">
+              {item.kind === "series" && <span className="badge-rating">📺 Series</span>}
+              {isMisc && <span className="badge-misc">🎞 {item.category || "Misc"}</span>}
+              {item.rating && (
+                <span
+                  className="badge-rating"
+                  title={item.ratingEstimated ? "Estimated rating — no official certificate" : undefined}
+                >
+                  {item.rating}{item.ratingEstimated ? " ~" : ""}
+                </span>
+              )}
+              {item.runtime && <span className="badge-runtime">{item.runtime}</span>}
+              {item.imdbRating && <span className="badge-imdb">&#9733; {item.imdbRating}</span>}
+            </div>
+            <div className="card-actor-row">
+              {castNames.map((name, i) => {
+                const isActive = activeName && name.toLowerCase() === activeName;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`actor-link${isActive ? " actor-link--active" : ""}`}
+                    onClick={() => onActorSearch(name)}
+                  >
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+            <PlotText text={summaryText} className="card-plot" hiddenClass={isMobile ? "card-plot--hidden" : ""} />
+          </div>
+        </div>
+        <PlotText text={summaryText} className="card-plot-below" hiddenClass={isMobile ? "card-plot-below--visible" : ""} />
+        {!isMisc && showOptions && (
+          <UserMovieOptions
+            id={item.id}
+            kind={item.kind}
+            isWatched={isWatched}
+            isWanted={isWanted}
+            onToggleSeen={onToggleSeen}
+            onToggleWant={onToggleWant}
+          />
+        )}
+      </Card>
+    </div>
+  );
+});
+
 function CardList({ movieDataArray, userData, setUserData, actorSearch, activePerson, onMovieClick, onToggleViewing, isMobile }) {
   const activeName = (activePerson || "").trim().toLowerCase();
+
+  // O(1) membership checks per card (replaces an O(n) `.includes()` per card) — and only rebuilt
+  // when the underlying id lists actually change, not on every unrelated render.
+  const seenSet = useMemo(() => new Set(userData?.moviesSeen), [userData?.moviesSeen]);
+  const wantSet = useMemo(() => new Set(userData?.moviesToWatch), [userData?.moviesToWatch]);
+
+  // Stable seen/want toggles + a stable movie-click handler, so passing them to a memoized card
+  // doesn't defeat the memo (a fresh closure each render would). actorSearch/onMovieClick from the
+  // parent are already stable references.
+  const { toggleSeen, toggleWant } = useViewingToggles(userData, setUserData, onToggleViewing);
+  const handleMovieClick = useCallback((id, kind) => onMovieClick(id, kind), [onMovieClick]);
+  const handleActorSearch = useCallback((name) => actorSearch(name), [actorSearch]);
 
   // Preload loaded cards' poster thumbnails (deduped) so below-the-fold lazy <img>s render from cache
   // instead of snapping in on scroll. Bounded by what infinite-scroll has loaded.
@@ -51,78 +156,24 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
 
   return (
     <div className="card-list">
-      {movieDataArray.map((item, index) => {
-        // Eagerly fetch the first couple of rows (up to a 4-wide grid) so the posters
-        // above the fold paint immediately instead of waiting on lazy-load intersection;
-        // everything below stays lazy.
-        const isAboveFold = index < 8;
-        // Prefer the IMDB summary; fall back to the legacy plot only when there isn't one.
-        const summaryText = item.plotFull || item.plot;
-        // Pills come from the FK-derived top cast; fall back to legacy actors if absent.
-        const castNames = (item.topCast || item.actors || "")
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
-        const isMisc = item.kind === "misc";
-        // Misc videos have no IMDb id, no ratings, and don't fit the movie detail modal or the
-        // Seen/Want (Viewing) model — so they render as informational cards: poster (or placeholder),
-        // a Misc/category badge, and their description.
-        const year = item.releaseDate ? new Date(item.releaseDate).getFullYear() : null;
-
-        return (
-          <div key={`${item.kind || "movie"}-${item.id}`} className="card-cell">
-            <Card hoverable className="movie-card">
-              <div className={`card-content-wrapper${isMobile ? " card-content-wrapper--mobile" : ""}`}>
-                <div className="card-poster-container">
-                  <CardPoster item={item} isMobile={isMobile} isAboveFold={isAboveFold} />
-                </div>
-                <div className={`card-right-col${isMobile ? " card-right-col--mobile" : ""}`}>
-                  <div
-                    onClick={isMisc ? undefined : () => onMovieClick(item.id, item.kind)}
-                    className={`card-title${isMisc ? " card-title--static" : ""}`}
-                  >
-                    {item.title}{year ? ` (${year})` : ""}
-                  </div>
-                  <div className="card-meta-row">
-                    {item.kind === "series" && <span className="badge-rating">📺 Series</span>}
-                    {isMisc && <span className="badge-misc">🎞 {item.category || "Misc"}</span>}
-                    {item.rating && (
-                      <span
-                        className="badge-rating"
-                        title={item.ratingEstimated ? "Estimated rating — no official certificate" : undefined}
-                      >
-                        {item.rating}{item.ratingEstimated ? " ~" : ""}
-                      </span>
-                    )}
-                    {item.runtime && <span className="badge-runtime">{item.runtime}</span>}
-                    {item.imdbRating && <span className="badge-imdb">&#9733; {item.imdbRating}</span>}
-                  </div>
-                  <div className="card-actor-row">
-                    {castNames.map((name, i) => {
-                      const isActive = activeName && name.toLowerCase() === activeName;
-                      return (
-                        <button
-                          key={i}
-                          type="button"
-                          className={`actor-link${isActive ? " actor-link--active" : ""}`}
-                          onClick={() => actorSearch(name)}
-                        >
-                          {name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <PlotText text={summaryText} className="card-plot" hiddenClass={isMobile ? "card-plot--hidden" : ""} />
-                </div>
-              </div>
-              <PlotText text={summaryText} className="card-plot-below" hiddenClass={isMobile ? "card-plot-below--visible" : ""} />
-              {!isMisc && (
-                <UserMovieOptions userData={userData} id={item.id} kind={item.kind} setUserData={setUserData} onToggleViewing={onToggleViewing} />
-              )}
-            </Card>
-          </div>
-        );
-      })}
+      {movieDataArray.map((item, index) => (
+        // Eagerly fetch the first couple of rows (up to a 4-wide grid) so the posters above the fold
+        // paint immediately instead of waiting on lazy-load intersection; everything below stays lazy.
+        <MovieCard
+          key={`${item.kind || "movie"}-${item.id}`}
+          item={item}
+          isAboveFold={index < 8}
+          isMobile={isMobile}
+          activeName={activeName}
+          showOptions={!!userData}
+          isWatched={userData ? seenSet.has(item.id) : false}
+          isWanted={userData ? wantSet.has(item.id) : false}
+          onMovieClick={handleMovieClick}
+          onActorSearch={handleActorSearch}
+          onToggleSeen={toggleSeen}
+          onToggleWant={toggleWant}
+        />
+      ))}
     </div>
   );
 }

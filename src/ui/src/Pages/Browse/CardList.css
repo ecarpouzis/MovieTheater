@@ -80,16 +80,20 @@
   overflow: hidden;
 }
 
-/* Poster image � thumbnails are pre-resized to 200px tall, render at natural size */
+/* Poster image — thumbnails are pre-resized to 200px tall. Reserve the standard 2:3 poster width
+   (133px, matching the failure placeholder below) so the card's text column doesn't shift as posters
+   decode/arrive (CLS). object-fit keeps odd aspect ratios letterboxed instead of stretched. */
 .card-poster-image {
   height: 200px;
-  width: auto;
+  width: 133px;
+  object-fit: contain;
   display: block;
   margin: 0;
 }
 
 .card-poster-image--mobile {
   height: 160px;
+  width: 107px;
 }
 
 /* Shown when a poster is missing / fails to load (most Misc videos have no poster). Keeps the

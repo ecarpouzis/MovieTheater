@@ -101,36 +101,47 @@ namespace MovieTheater.Services.Jellyfin
             return result;
         }
 
+        /// <summary>The client HttpClient allows up to 2 minutes (right for the library sync sweeps), but the
+        /// playback lifecycle calls fire on a ~10s heartbeat — a hung Jellyfin must not stall each beat for
+        /// two minutes and stack up requests. Bound those to a few seconds instead.</summary>
+        private static readonly TimeSpan LifecycleTimeout = TimeSpan.FromSeconds(5);
+
         /// <summary>Progress report — keeps Jellyfin's transcode throttling honest.</summary>
-        public Task ReportPlaybackProgressAsync(string itemId, string playSessionId, long positionTicks, bool isPaused, CancellationToken cancel = default)
+        public async Task ReportPlaybackProgressAsync(string itemId, string playSessionId, long positionTicks, bool isPaused, CancellationToken cancel = default)
         {
             EnsureConfigured();
-            return httpClient.PostAsJsonAsync("/Sessions/Playing/Progress", new
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+            cts.CancelAfter(LifecycleTimeout);
+            using var resp = await httpClient.PostAsJsonAsync("/Sessions/Playing/Progress", new
             {
                 ItemId = itemId,
                 PlaySessionId = playSessionId,
                 PositionTicks = positionTicks,
                 IsPaused = isPaused,
-            }, JsonOptions, cancel);
+            }, JsonOptions, cts.Token);
         }
 
-        public Task ReportPlaybackStoppedAsync(string itemId, string playSessionId, long positionTicks, CancellationToken cancel = default)
+        public async Task ReportPlaybackStoppedAsync(string itemId, string playSessionId, long positionTicks, CancellationToken cancel = default)
         {
             EnsureConfigured();
-            return httpClient.PostAsJsonAsync("/Sessions/Playing/Stopped", new
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+            cts.CancelAfter(LifecycleTimeout);
+            using var resp = await httpClient.PostAsJsonAsync("/Sessions/Playing/Stopped", new
             {
                 ItemId = itemId,
                 PlaySessionId = playSessionId,
                 PositionTicks = positionTicks,
-            }, JsonOptions, cancel);
+            }, JsonOptions, cts.Token);
         }
 
         /// <summary>Kills the ffmpeg process and cleans segments immediately instead of waiting for the idle timeout.</summary>
-        public Task StopActiveEncodingsAsync(string playSessionId, CancellationToken cancel = default)
+        public async Task StopActiveEncodingsAsync(string playSessionId, CancellationToken cancel = default)
         {
             EnsureConfigured();
-            return httpClient.DeleteAsync(
-                $"/Videos/ActiveEncodings?deviceId={Uri.EscapeDataString(DeviceId)}&playSessionId={Uri.EscapeDataString(playSessionId)}", cancel);
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+            cts.CancelAfter(LifecycleTimeout);
+            using var resp = await httpClient.DeleteAsync(
+                $"/Videos/ActiveEncodings?deviceId={Uri.EscapeDataString(DeviceId)}&playSessionId={Uri.EscapeDataString(playSessionId)}", cts.Token);
         }
 
         /// <summary>A transcode whose session hasn't checked in within this window is treated as
@@ -183,6 +194,32 @@ namespace MovieTheater.Services.Jellyfin
             // channel count is kept. A non-reporting client stays at the stereo baseline (MaxChannels 2).
             int maxAudioChannels = Math.Clamp(caps.MaxAudioChannels, 2, 8);
             string directPlayAudio = "aac,mp3" + (caps.Ac3 ? ",ac3" : "") + (caps.Eac3 ? ",eac3" : "");
+
+            // MKV is the dominant library container. Chromium's <video> can play a Matroska file whose
+            // codecs it supports (canPlayType('video/x-matroska')); Firefox reports it but preloads the
+            // whole file (jellyfin-web #15521), so the client probe excludes it. When advertised, an
+            // H.264/HEVC + browser-decodable-audio MKV direct-plays (raw file, no ffmpeg) instead of
+            // being remuxed to HLS on every start.
+            var directPlayProfiles = new List<object>
+            {
+                new
+                {
+                    Container = "mp4,m4v,mov",
+                    Type = "Video",
+                    VideoCodec = caps.Hevc ? "h264,hevc" : "h264",
+                    AudioCodec = directPlayAudio,
+                },
+            };
+            if (caps.Mkv)
+            {
+                directPlayProfiles.Add(new
+                {
+                    Container = "mkv",
+                    Type = "Video",
+                    VideoCodec = caps.Hevc ? "h264,hevc" : "h264",
+                    AudioCodec = directPlayAudio,
+                });
+            }
 
             // HDR passthrough only to HDR-capable clients (§14.5 stretch, done here for the
             // copy path): an SDR client that *copies* an HDR HEVC source renders washed-out,
@@ -293,17 +330,9 @@ namespace MovieTheater.Services.Jellyfin
                 },
                 // Browser-native containers/codecs: a source matching one of these is flagged
                 // SupportsDirectPlay, letting the controller serve the original file with zero
-                // transcode. HEVC only when the client decodes it; mkv etc. won't match → transcode.
-                DirectPlayProfiles = new object[]
-                {
-                    new
-                    {
-                        Container = "mp4,m4v,mov",
-                        Type = "Video",
-                        VideoCodec = caps.Hevc ? "h264,hevc" : "h264",
-                        AudioCodec = directPlayAudio,
-                    },
-                },
+                // transcode. HEVC only when the client decodes it; MKV only when the client probed it
+                // (see directPlayProfiles above).
+                DirectPlayProfiles = directPlayProfiles.ToArray(),
                 CodecProfiles = codecProfiles.ToArray(),
                 SubtitleProfiles = new object[]
                 {
@@ -589,7 +618,8 @@ namespace MovieTheater.Services.Jellyfin
     public record ClientCapabilities(
         bool Hevc = false, bool Av1 = false, bool Hdr = false, bool Fmp4 = false, bool Mp3 = false,
         bool Ac3 = false, bool Eac3 = false, int MaxAudioChannels = 2,
-        bool HevcMain10 = false, bool Av110Bit = false, bool HeAac = false, bool DolbyVision = false)
+        bool HevcMain10 = false, bool Av110Bit = false, bool HeAac = false, bool DolbyVision = false,
+        bool Mkv = false)
     {
         /// <summary>The pre-§14 universal baseline: H.264 in MPEG-TS, stereo, nothing fancy.</summary>
         public static readonly ClientCapabilities H264Baseline = new();

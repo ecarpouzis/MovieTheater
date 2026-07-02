@@ -83,6 +83,38 @@ const listStyle = {
   paddingBottom: "20px",
 };
 
+// MPA ratings and genres are static lookups, but this component remounts whenever the mobile/desktop
+// layout flips — which re-fetched both every time. Cache the in-flight/resolved promise at module
+// scope so they're fetched once per session; a failure clears the cache so a later mount can retry.
+let mpaRatingsPromise = null;
+let genresPromise = null;
+
+function loadMpaRatings() {
+  if (!mpaRatingsPromise) {
+    mpaRatingsPromise = MovieAPI.getMPARatings()
+      .then((r) => r.json())
+      .then((data) => (Array.isArray(data) ? data : []))
+      .catch(() => {
+        mpaRatingsPromise = null;
+        return [];
+      });
+  }
+  return mpaRatingsPromise;
+}
+
+function loadGenres() {
+  if (!genresPromise) {
+    genresPromise = MovieAPI.getGenres()
+      .then((r) => r.json())
+      .then((data) => (Array.isArray(data) ? data : []))
+      .catch(() => {
+        genresPromise = null;
+        return [];
+      });
+  }
+  return genresPromise;
+}
+
 function SearchTools({ search, userData }) {
   const history = useHistory();
   const location = useLocation();
@@ -90,18 +122,16 @@ function SearchTools({ search, userData }) {
   const [genres, setGenres] = useState([]);
 
   useEffect(() => {
-    MovieAPI.getMPARatings()
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setMpaRatings(data);
-      })
-      .catch(() => {});
-    MovieAPI.getGenres()
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setGenres(data);
-      })
-      .catch(() => {});
+    let active = true;
+    loadMpaRatings().then((data) => {
+      if (active) setMpaRatings(data);
+    });
+    loadGenres().then((data) => {
+      if (active) setGenres(data);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Navigate the Browse grid. The Type scope (`types` param) persists across mode changes: every
