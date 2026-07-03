@@ -69,13 +69,28 @@ services:
       - ./config.yaml:/usr/local/share/cloud-game/config.yaml:ro
     command: ["./coordinator", "--c-conf", "/usr/local/share/cloud-game"]
 
+  # THREE workers, and not only for concurrency: the worker segfaults (exit 139, pre-existing,
+  # WSLg/D3D12 teardown) ~35s AFTER a room's last player leaves. With one worker that kills whatever
+  # you started NEXT ("Bomberman crashes out" = the previous room's teardown shooting the new one).
+  # With 3, the coordinator hands a new room a different worker while the dying one respawns.
+  # ArcadeMaxConcurrentRooms in the site config MUST match the worker count (3).
   worker-1:
     <<: *gpu-worker
     environment:
       <<: *gpu-worker-env
       CLOUD_GAME_WEBRTC_SINGLEPORT: "8443"
 
-  # Add worker-2/3 (ports 8444/8445) when concurrency needs it — the single 4070 Ti serves many rooms.
+  worker-2:
+    <<: *gpu-worker
+    environment:
+      <<: *gpu-worker-env
+      CLOUD_GAME_WEBRTC_SINGLEPORT: "8444"
+
+  worker-3:
+    <<: *gpu-worker
+    environment:
+      <<: *gpu-worker-env
+      CLOUD_GAME_WEBRTC_SINGLEPORT: "8445"
 
 volumes:
   cores:

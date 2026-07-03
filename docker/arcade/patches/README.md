@@ -38,14 +38,24 @@ Note this alone did NOT fix same-host play — the other half is `.wslconfig`
 
 ## 0003-h264-nvenc.patch
 
-Two edits enabling GPU (NVENC) video encoding — Part B of `docs/arcade-next-steps.md`:
-- `Dockerfile` — the minimal from-source GStreamer build adds `-Dbad=enabled` +
-  `-Dgst-plugins-bad:nvcodec=enabled` (plus the same docs/meson.build sed fix plugins-good already
-  needed). nvcodec dlopens `libcuda`/`libnvidia-encode` at runtime — no CUDA SDK at build time.
-- `pkg/worker/media/gstreamer.go` — implements the (previously commented-out) `h264` case in the
-  video pipeline builder; the element + tuning come entirely from `encoder.list` in config.yaml
-  (we set `nvh264enc`; keyframe cadence via `gop-size` since the vpx force-keyframe path doesn't
-  apply to h264).
+`Dockerfile` — the minimal from-source GStreamer build adds the **nvcodec** plugin
+(`-Dbad=enabled` + `-Dgst-plugins-bad:nvcodec=enabled`, plus the same docs/meson.build sed fix
+plugins-good already needed). nvcodec dlopens `libcuda`/`libnvidia-encode` at runtime — no CUDA
+SDK at build time. Enables GPU (NVENC) encoding — Part B of `docs/arcade-next-steps.md`.
 
-Selecting `encoder.video.codec: h264` in config.yaml turns it on; setting it back to `vp8` is the
-instant software fallback. pion already speaks `video/h264` — no WebRTC-side change.
+## 0004-video-pipeline.patch
+
+`pkg/worker/media/gstreamer.go` — the video-side media changes (one file, two features):
+- Implements the (previously commented-out) `h264` case in the pipeline builder; element + tuning
+  come entirely from `encoder.list` in config.yaml (we set `nvh264enc`; keyframe cadence via
+  `gop-size`; a `videoconvert` bridges the shared I420 caps to NVENC's NV12-only sink).
+- **Decouples push from pull** in the video worker: frames are now COPIED into GStreamer (freeing
+  the emulator's reused frame buffer immediately) and encoded output is delivered via appsink
+  callbacks on GStreamer's own thread — the same shape the audio path always had. Before, the
+  worker pushed a frame and synchronously waited for its encoded output, so throughput was capped
+  at 1/encode-round-trip and overflow frames were dropped SILENTLY (a `default:` case with a
+  comment). The drop path now logs a warning ("video pipeline overloaded") — that silence cost a
+  full night of diagnosis. The frame duration rides on the GstBuffer for RTP timestamps.
+
+Selecting `encoder.video.codec: h264` in config.yaml turns NVENC on; setting it back to `vp8` is
+the instant software fallback. pion already speaks `video/h264` — no WebRTC-side change.

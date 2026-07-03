@@ -101,6 +101,28 @@ Notes for posterity:
 - The worker's session-teardown segfault (exit 139, silent) predates all of this — it happens on the
   pre-NVENC image too. Docker's restart policy masks it completely (fresh worker in ~4s).
 
+## ★★★★★ Quality/pacing pass (2026-07-03, after user reported fuzz + chop on the real display)
+
+What each complaint actually was, verified with an rVFC pacing histogram + per-frame content hashing
++ getVideoPlaybackQuality, run in BOTH headless and headed Chrome:
+- **"SNES fuzzy" / "DKR drops frames" / "Bomberman intro choppy"** → primarily **NVENC preset p1 at
+  4Mbps** (fast/ugly) — dark full-screen motion smears and blocks in a way that reads as dropped
+  frames. Now `preset=p4 rc-mode=cbr bitrate=8000`; SNES is pixel-sharp (verified by screenshot).
+- **"Bomberman crashes out"** → the teardown segfault fires ~35s AFTER leaving a room — with ONE
+  worker it killed whatever you started next. Fixed twice over: 3 workers (compose), and patch 0004's
+  teardown-safe pipeline (zero exit-139 across many sessions since; was every session).
+- **Patch 0004** also removed a real throughput cap: the video worker was strictly serialized
+  (push → wait for encoded frame → next), capping input at 1/encode-round-trip and dropping the
+  excess SILENTLY. Frames are now copied in and pulled via appsink callbacks (audio's shape).
+- **Measurement lesson:** headless Chrome shows ~6% compositor drops + fake 50ms judder that does
+  NOT exist on a real display (headed run: ~0 drops, clean pacing). Never diagnose smoothness
+  headless. The ~55fps getStats reading also appears to be sampling/present quantization, not loss —
+  emulator ticks 60.098, no pipeline drops logged.
+- **Bomberman 64 intro cinematic** partially renders as flat color planes (title/menus/gameplay
+  render correctly, incl. the animated 3D logo) — an HLE/gliden64 cinematic quirk, unresolved, low
+  priority. FB copies (`EnableCopyColorToRDRAM=Async`, `EnableCopyDepthToRDRAM=Software`) and
+  `EnableLegacyBlending=False` are now on anyway for framebuffer-effect correctness (DKR et al.).
+
 ## TL;DR (initial finding — superseded by the ★ update above for the rendering verdict)
 - **GPU compute, NVENC (encode) and NVDEC (decode) fully reach containers today** — the 4070 Ti shows up
   in `nvidia-smi` inside a `--gpus all` container, with `libnvidia-encode`, `libnvcuvid`, `libcuda` all

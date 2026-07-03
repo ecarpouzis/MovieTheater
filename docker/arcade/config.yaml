@@ -49,13 +49,25 @@ emulator:
           roms: ["n64", "v64", "z64"]
           isGlAllowed: true
           usesLibCo: true
-          vfr: true
+          # vfr OFF: variable frame timing produced juddery presentation in the browser — a steady
+          # ~16% of frame intervals landed at ~50ms (measured via rVFC pacing histogram) and the
+          # compositor dropped ~6%. Fixed 60Hz cadence paces the encoder/RTP timestamps evenly.
+          vfr: false
           coreAspectRatio: true
           options:
             # 2x internal render resolution — only viable on the GPU worker (gliden64 on the 4070 Ti
             # via D3D12); llvmpipe couldn't afford it. The core outputs 640x480, so the encoded
             # stream is 640x480 too (VP8 encode cost ~4x, fine at friends-scale).
             mupen64plus-43screensize: "640x480"
+            # Framebuffer readback — the core defaults ship these Off, which renders framebuffer
+            # effects BLACK (Bomberman 64's whole intro movie) or wrong (DKR uses FB/depth tricks).
+            # Async color copy + software depth copy are the standard gliden64 compat settings;
+            # cost is trivial on a real GPU.
+            mupen64plus-EnableCopyColorToRDRAM: "Async"
+            mupen64plus-EnableCopyDepthToRDRAM: "Software"
+            # Legacy (fast, inaccurate) blending ships ON in the core defaults — with it, Bomberman
+            # 64's intro cinematic renders as flat color planes with no geometry on the D3D12 path.
+            mupen64plus-EnableLegacyBlending: "False"
 
         pcsx:
           lib: pcsx_rearmed_libretro
@@ -85,8 +97,9 @@ encoder:
       # gop-size=120 → an IDR every 2s @60fps: late joiners (invitees mid-game) get a picture fast
       # (CloudRetro ignores RTCP PLI, so periodic keyframes are the ONLY join-sync mechanism).
       # repeat-sequence-header puts SPS/PPS on every IDR so those joiners can actually decode it.
-      # bitrate is kbit/s (4000 ≈ the VP8 config's 3.2Mbps with headroom; NVENC quality is better).
-      params: "preset=p1 tune=ultra-low-latency rc-mode=cbr bitrate=4000 gop-size=120 repeat-sequence-header=true zerolatency=true"
+      # p4 + 8Mbps: p1 (fastest preset) at 4Mbps read visibly fuzzy on pixel-art (SNES); NVENC has
+      # huge headroom at this resolution, and LAN/loopback doesn't care about 8Mbps. bitrate=kbit/s.
+      params: "preset=p4 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=120 repeat-sequence-header=true zerolatency=true"
       caps: video/x-h264,stream-format=byte-stream,alignment=au
   audio:
     codec: opus

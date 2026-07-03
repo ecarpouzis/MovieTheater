@@ -1,0 +1,153 @@
+diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
+index 4a6171f..445ba86 100644
+--- a/pkg/worker/media/gstreamer.go
++++ b/pkg/worker/media/gstreamer.go
+@@ -32,12 +32,17 @@ static inline void doubleToFraction(const gdouble src, gint *num, gint *den) {
+ 	gst_util_double_to_fraction(src, num, den);
+ }
+ 
+-// pushVideoBuf wraps frame memory directly.
++// pushVideoBuf COPIES the frame into a new buffer (MovieTheater patch 0004; was zero-copy wrap).
++// The copy frees the emulator's frame memory immediately, so the pusher never has to wait for the
++// encoder before accepting the next frame — throughput is no longer capped at 1/encode-round-trip
++// (which quantized to ~55fps on WSL2 and silently dropped the rest). ~74MB/s at 640x480x60 — noise.
++// The frame duration rides on the GstBuffer so the pull side can restore it for RTP timestamps.
+ static inline void pushVideoBuf(GstAppSrc *src, void *data, gsize len,
+-                                GstVideoFormat fmt, guint w, guint h, gint stride) {
+-	GstBuffer *buf = gst_buffer_new_wrapped_full(
+-		GST_MEMORY_FLAG_READONLY, data, len, 0, len, NULL, NULL);
++                                GstVideoFormat fmt, guint w, guint h, gint stride, guint64 durNs) {
++	GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
+ 	if (!buf) return;
++	gst_buffer_fill(buf, 0, data, len);
++	GST_BUFFER_DURATION(buf) = durNs;
+ 	if (stride != 0) {
+ 		gsize offset[GST_VIDEO_MAX_PLANES] = {0};
+ 		gint strides[GST_VIDEO_MAX_PLANES] = {stride};
+@@ -46,6 +51,8 @@ static inline void pushVideoBuf(GstAppSrc *src, void *data, gsize len,
+ 	gst_app_src_push_buffer(src, buf);
+ }
+ 
++static inline guint64 bufDuration(GstBuffer *buf) { return GST_BUFFER_DURATION(buf); }
++
+ // pushAudioBuf copies audio data into a new buffer.
+ static inline void pushAudioBuf(GstAppSrc *src, void *data, gsize len) {
+ 	GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
+@@ -125,6 +132,9 @@ type GstMediaPipe struct {
+ 	a, v *pipe
+ 
+ 	onAudio func([]byte, time.Duration)
++	onVideo func([]byte, time.Duration)
++
++	vDrops atomic.Int64 // frames dropped because the video channel was full (patch 0004)
+ 
+ 	conf config.Encoder
+ 
+@@ -161,7 +171,6 @@ type videoJob struct {
+ 	data         []byte
+ 	w, h, stride int
+ 	dur          time.Duration
+-	cb           func([]byte, time.Duration)
+ }
+ 
+ type Video struct {
+@@ -261,7 +270,12 @@ func (g *GstMediaPipe) initVideo() (err error) {
+ 
+ 	p := g.v
+ 	fmt := g.vidFmt
+-	g.videoCh = make(chan videoJob, 3)
++	// Patch 0004: the sink delivers encoded frames via GStreamer's own streaming thread (like the
++	// audio path always did) instead of a synchronous pull after each push — encode latency no
++	// longer gates input throughput. Channel deepened 3→8: frames are now COPIED at push, so a
++	// queued job can't be overwritten by the emulator reusing its frame buffer.
++	p.sink.SetCallbacks(&app.SinkCallbacks{NewSampleFunc: func(*app.Sink) gst.FlowReturn { return g.pullVideo(p) }})
++	g.videoCh = make(chan videoJob, 8)
+ 	g.videoDone = make(chan struct{})
+ 	go g.videoWorker(p, fmt, g.videoCh, g.videoDone)
+ 
+@@ -320,7 +334,8 @@ func (g *GstMediaPipe) pullAudio(_ *app.Sink) gst.FlowReturn {
+ 	return gst.FlowOK
+ }
+ 
+-// videoWorker is the single goroutine that does push+pull for video.
++// videoWorker is the single goroutine pushing frames into the pipeline (patch 0004: pull moved to
++// the appsink callback — see pullVideo — so a slow encode round trip can't cap input throughput).
+ func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, done chan<- struct{}) {
+ 	defer close(done)
+ 	for job := range ch {
+@@ -329,17 +344,26 @@ func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, d
+ 		}
+ 		C.pushVideoBuf(v.src(),
+ 			unsafe.Pointer(&job.data[0]), C.gsize(len(job.data)),
+-			C.GstVideoFormat(vidFmt), C.guint(job.w), C.guint(job.h), C.gint(job.stride))
++			C.GstVideoFormat(vidFmt), C.guint(job.w), C.guint(job.h), C.gint(job.stride),
++			C.guint64(job.dur))
++	}
++}
+ 
+-		var mi C.GstMapInfo
+-		buf := C.pullMappedBuffer(v.sinkPtr(), &mi)
+-		if buf == nil {
+-			continue
+-		}
++// pullVideo delivers encoded frames from the appsink's own streaming thread (patch 0004).
++// The frame duration was stamped on the buffer at push time — restore it for RTP timestamps.
++// The pipe is captured at registration so a late callback can't touch a successor pipeline.
++func (g *GstMediaPipe) pullVideo(p *pipe) gst.FlowReturn {
++	var mi C.GstMapInfo
++	buf := C.pullMappedBuffer(p.sinkPtr(), &mi)
++	if buf == nil {
++		return gst.FlowEOS
++	}
++	defer C.unmapAndUnref(buf, &mi)
++	if g.onVideo != nil && !p.stale.Load() {
+ 		data := unsafe.Slice((*byte)(unsafe.Pointer(mi.data)), int(mi.size))
+-		job.cb(data, job.dur)
+-		C.unmapAndUnref(buf, &mi)
++		g.onVideo(data, time.Duration(C.bufDuration(buf)))
+ 	}
++	return gst.FlowOK
+ }
+ 
+ func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
+@@ -365,11 +389,16 @@ func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
+ 		stride = 0
+ 	}
+ 
++	g.onVideo = cb
++
+ 	select {
+-	case g.videoCh <- videoJob{data: data, w: w, h: h, stride: stride, dur: v.Duration, cb: cb}:
++	case g.videoCh <- videoJob{data: data, w: w, h: h, stride: stride, dur: v.Duration}:
+ 	default:
+-		// if busy the frame is dropped
+-		// or maybe handle it with gst?
++		// Patch 0004: never drop silently — this is a real signal (the pipeline fell a full
++		// channel behind), and the invisible version of it cost a night of diagnosis.
++		if n := g.vDrops.Add(1); n%60 == 1 {
++			g.log.Warn().Msgf("video pipeline overloaded: %d frames dropped so far", n)
++		}
+ 	}
+ }
+ 
+@@ -434,13 +463,13 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+ 	build.write("\" ")
+ 	build.write("! ")
+ 	switch codec {
+-	// h264 - requires gstreamer1.0-plugins-ugly + x264 (GPL)
+-	// case "h264":
+-	// 	return fmt.Sprintf("%s threads=%d key-int-max=%d",
+-	// 		cmp.Or(gst.Encoder, "x264enc"),
+-	// 		cmp.Or(conf.Video.Threads, 0),
+-	// 		kfi,
+-	// 	)
++	// h264 (MovieTheater patch): the encoder element + all tuning come from encoder.list
++	// (e.g. nvh264enc for NVENC — keyframe cadence via gop-size in params, since the vpx
++	// keyframe-mode=disabled force-keyframe path below doesn't apply to h264). The videoconvert
++	// bridges the shared I420 capsfilter to whatever the encoder actually takes (NVENC on WSL
++	// probes NV12-only — the I420 caps won't link directly); it's passthrough when formats match.
++	case "h264":
++		build.writef("videoconvert n-threads=2 ! %s name=video_enc ", cmp.Or(opts.Encoder, "x264enc"))
+ 	case "vp8", "vp9":
+ 		encoder := cmp.Or(opts.Encoder, fmt.Sprintf("vp%cenc", codec[len(codec)-1]))
+ 		threads := cmp.Or(conf.Video.Threads, cpuCores)

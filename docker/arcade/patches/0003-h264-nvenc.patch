@@ -32,26 +32,3 @@ index 0e822a7..4f20d1c 100644
      meson compile -C builddir && \
      meson install -C builddir && \
      find /usr/local/lib -name "*.so*" -exec strip {} \;
-diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..1163714 100644
---- a/pkg/worker/media/gstreamer.go
-+++ b/pkg/worker/media/gstreamer.go
-@@ -434,13 +434,11 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
- 	build.write("\" ")
- 	build.write("! ")
- 	switch codec {
--	// h264 - requires gstreamer1.0-plugins-ugly + x264 (GPL)
--	// case "h264":
--	// 	return fmt.Sprintf("%s threads=%d key-int-max=%d",
--	// 		cmp.Or(gst.Encoder, "x264enc"),
--	// 		cmp.Or(conf.Video.Threads, 0),
--	// 		kfi,
--	// 	)
-+	// h264 (MovieTheater patch): the encoder element + all tuning come from encoder.list
-+	// (e.g. nvh264enc for NVENC — keyframe cadence via gop-size in params, since the vpx
-+	// keyframe-mode=disabled force-keyframe path below doesn't apply to h264).
-+	case "h264":
-+		build.writef("%s name=video_enc ", cmp.Or(opts.Encoder, "x264enc"))
- 	case "vp8", "vp9":
- 		encoder := cmp.Or(opts.Encoder, fmt.Sprintf("vp%cenc", codec[len(codec)-1]))
- 		threads := cmp.Or(conf.Video.Threads, cpuCores)
