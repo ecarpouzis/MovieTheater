@@ -1,0 +1,19 @@
+diff --git a/pkg/games/launcher.go b/pkg/games/launcher.go
+index 8850ea7..20a3d9a 100644
+--- a/pkg/games/launcher.go
++++ b/pkg/games/launcher.go
+@@ -30,6 +30,14 @@ func NewGameLauncher(lib GameLibrary) GameLauncher { return GameLauncher{lib: li
+ 
+ func (gl GameLauncher) FindAppByName(name string) (AppMeta, error) {
+ 	game := gl.lib.FindGameByName(name)
++	if game.Path == "" {
++		// JIT ROM materialization (MovieTheater patch): a game can be extracted into the ROM dir on
++		// demand, AFTER the worker's boot-time scan. fsnotify WatchMode does not reliably fire across a
++		// Windows-host → WSL2 bind mount, so on a miss force one (throttled) rescan and retry before
++		// giving up. Scan() re-walks the tree, so it needs no inotify event.
++		gl.lib.Scan()
++		game = gl.lib.FindGameByName(name)
++	}
+ 	if game.Path == "" {
+ 		return AppMeta{}, fmt.Errorf("couldn't find game info for the game %v", name)
+ 	}

@@ -1,0 +1,22 @@
+# GPU worker variant — hardware N64/3D rendering on the RTX 4070 Ti (fixes the llvmpipe triangles).
+#
+# The base image ships an llvmpipe (software) libGL; this swaps in full Mesa (with the d3d12 gallium
+# driver) so CloudRetro's gliden64 GLX context renders on the GPU via the WSL D3D12 layer. Proven on
+# Ziggy: GLX → "D3D12 (NVIDIA GeForce RTX 4070 Ti)", OpenGL 4.6 (docs/arcade-gpu-research.md).
+#
+# RUN ONLY in a REAL WSL2 distro's docker (Ubuntu-24.04), NOT Docker Desktop (whose minimal distro lacks
+# the D3D12 graphics env). Required at run time:
+#   --privileged  --device /dev/dxg
+#   -v /usr/lib/wsl:/usr/lib/wsl:ro  -v /tmp/.X11-unix:/tmp/.X11-unix  -v /mnt/wslg:/mnt/wslg
+#   -e DISPLAY=:0                       # WSLg's GPU-backed X server (NOT Xvfb :99)
+#   -e GALLIUM_DRIVER=d3d12  -e MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA   # force the NVIDIA GPU, not the iGPU
+#   -e LD_LIBRARY_PATH=/usr/lib/wsl/lib
+# The worker does NOT need Xvfb in this mode (WSLg provides the display).
+FROM movietheater/cloud-game:pinned
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      libgl1-mesa-dri libglx-mesa0 libegl-mesa0 libgbm1 libglvnd0 libglx0 libgl1 \
+    && rm -rf /var/lib/apt/lists/* \
+    # Drop the base image's software libGL so the loader resolves Mesa's GPU-capable libGL (d3d12 at run).
+    && rm -f /usr/lib/x86_64-linux-gnu/libGL.so.1.5.0 \
+    && ldconfig

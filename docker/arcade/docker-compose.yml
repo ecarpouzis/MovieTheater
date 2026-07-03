@@ -28,7 +28,7 @@ x-worker-base: &worker-base
     - x11:/tmp/.X11-unix
     - ${ROMS_DIR:?set ROMS_DIR}:/roms:ro
     - ${SAVES_DIR:?set SAVES_DIR}:/saves
-    - ./config.yaml:/cloud-game/config.yaml:ro
+    - ./config.yaml:/usr/local/share/cloud-game/config.yaml:ro
     # Cores land at <WORKDIR>/assets/cores (emulator.libretro.cores.paths.libs is relative to the
     # binary's cwd, /usr/local/share/cloud-game) — mount the cache there or repo.sync re-downloads
     # every restart.
@@ -36,7 +36,9 @@ x-worker-base: &worker-base
   # Flag names confirmed from pkg/config/worker.go: the worker's config-path flag is --w-conf
   # (the coordinator's is --c-conf); there is NO --conf and NO --v — Go's flag parser exits on
   # unknown flags, so anything else here crash-loops the container.
-  command: ["./worker", "--w-conf", "/cloud-game/config.yaml"]
+  # LoadConfig treats --w-conf as a DIRECTORY and looks for <dir>/config.yaml (it also searches cwd
+  # ".", which is this same dir) — so point it at the workdir where we mount config.yaml, NOT the file.
+  command: ["./worker", "--w-conf", "/usr/local/share/cloud-game"]
 
 services:
   xvfb:
@@ -56,12 +58,12 @@ services:
     environment:
       CLOUD_GAME_COORDINATOR_ORIGIN_USERWS: "${SITE_ORIGIN:-https://theater.carpouzis.com}"
     volumes:
-      - ./config.yaml:/cloud-game/config.yaml:ro
+      - ./config.yaml:/usr/local/share/cloud-game/config.yaml:ro
     # Loopback only — the ArcadeGateway (behind Caddy) is the sole way in; the raw coordinator + its
     # web UI are never reachable from the network.
     ports:
       - "127.0.0.1:8000:8000"
-    command: ["./coordinator", "--c-conf", "/cloud-game/config.yaml"]
+    command: ["./coordinator", "--c-conf", "/usr/local/share/cloud-game"]
 
   worker-1:
     <<: *worker-base

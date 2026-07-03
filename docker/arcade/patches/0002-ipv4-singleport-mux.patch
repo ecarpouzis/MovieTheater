@@ -1,0 +1,18 @@
+diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
+index 99e02b8..87490dc 100644
+--- a/pkg/network/webrtc/factory.go
++++ b/pkg/network/webrtc/factory.go
+@@ -56,7 +56,12 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 	}
+ 	if conf.HasSinglePort() {
+ 		var l any
+-		l, err = socket.NewSocketPortRoll("udp", conf.SinglePort)
++		// "udp4" (not "udp") forces an IPv4 0.0.0.0 bind instead of a dualstack [::] socket. Required
++		// under WSL2 mirrored networking: the mirrored relay forwards a Windows-side UDP packet to
++		// 127.0.0.1 only into an AF_INET socket, never the AF_INET6 dualstack one — so a [::]:port bind
++		// silently drops the browser's loopback ICE checks (works for TCP, not UDP). All WebRTC clients
++		// are IPv4, so IPv4-only single-port is harmless in production too.
++		l, err = socket.NewSocketPortRoll("udp4", conf.SinglePort)
+ 		if err != nil {
+ 			return
+ 		}

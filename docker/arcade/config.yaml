@@ -16,6 +16,13 @@ coordinator:
 
 library:
   basePath: /roms     # mount point of the read-only ROM volume (per-system subfolders live here)
+  # watchMode re-scans the library when files appear/vanish under basePath (fsnotify). It's the fast
+  # path for JIT-materialized ROMs (docs/arcade-jit-cache.md). BUT fsnotify does not reliably fire
+  # across a Windows-host → WSL2 bind mount, so the worker image also carries the scan-on-miss patch
+  # (docker/arcade/patches/0001-jit-scan-on-miss.patch) as the reliable fallback. Both are harmless
+  # together — watchMode picks up new games instantly when it works; the patch guarantees a launch
+  # never fails just because the boot-time scan predated the extraction.
+  watchMode: true
 
 emulator:
   autosaveSec: 60     # crashes lose ≤1 min
@@ -33,6 +40,23 @@ emulator:
         # entries ADD to the default core list (a same-named key like `pcsx` overrides just that
         # entry); nestopia/snes9x/mupen64plus_next etc. survive. Cheap sanity check at first boot:
         # the game list in the INIT (t=4) message should span every system you dropped ROMs for.
+        # N64 renders GL (bottom-left origin) → the frame is flipped. CloudRetro only tells the client to
+        # flip it if coreAspectRatio is on: WITHOUT it, the game-start response sends av:null and the
+        # client never learns to flip → upside down. Turning it on populates `av` (incl. Flip:true), which
+        # our shim applies as scaleY(-1). (Core-behavior fields restated so the merge keeps them.)
+        n64:
+          lib: mupen64plus_next_libretro
+          roms: ["n64", "v64", "z64"]
+          isGlAllowed: true
+          usesLibCo: true
+          vfr: true
+          coreAspectRatio: true
+          options:
+            # 2x internal render resolution — only viable on the GPU worker (gliden64 on the 4070 Ti
+            # via D3D12); llvmpipe couldn't afford it. The core outputs 640x480, so the encoded
+            # stream is 640x480 too (VP8 encode cost ~4x, fine at friends-scale).
+            mupen64plus-43screensize: "640x480"
+
         pcsx:
           lib: pcsx_rearmed_libretro
           roms: ["cue", "chd"]
@@ -47,9 +71,23 @@ emulator:
 
 encoder:
   video:
-    codec: vp8              # software VP8 (GStreamer vpxenc) — the stock image has no x264
+    # h264 = NVENC on the 4070 Ti (nvh264enc via list.h264 below) — encoding off the CPU entirely,
+    # the concurrency lever (Part B). Needs the pinned image built with patch 0003 (nvcodec plugin +
+    # the h264 pipeline case) and the GPU worker env (/usr/lib/wsl/lib on LD_LIBRARY_PATH provides
+    # libnvidia-encode/libcuda). INSTANT FALLBACK: set codec back to vp8 (software, always works).
+    codec: h264
     threads: 0
-    keyframeInterval: 300
+    keyframeInterval: 300   # vpx-only; the h264 keyframe cadence is gop-size in list.h264 params
+  list:
+    # Merges INTO the embedded default list (opus/vp8/vp9 survive — same koanf deep-merge as cores).
+    h264:
+      encoder: nvh264enc
+      # gop-size=120 → an IDR every 2s @60fps: late joiners (invitees mid-game) get a picture fast
+      # (CloudRetro ignores RTCP PLI, so periodic keyframes are the ONLY join-sync mechanism).
+      # repeat-sequence-header puts SPS/PPS on every IDR so those joiners can actually decode it.
+      # bitrate is kbit/s (4000 ≈ the VP8 config's 3.2Mbps with headroom; NVENC quality is better).
+      params: "preset=p1 tune=ultra-low-latency rc-mode=cbr bitrate=4000 gop-size=120 repeat-sequence-header=true zerolatency=true"
+      caps: video/x-h264,stream-format=byte-stream,alignment=au
   audio:
     codec: opus
 

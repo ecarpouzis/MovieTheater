@@ -47,7 +47,7 @@ namespace MovieTheater.Services.Arcade
                 .Select(s => new ArcadeIceServer(s))
                 .ToList();
 
-            return new ArcadeJoinDescriptor(roomCode, wsUrl, playerSlot, game.CloudRetroGameKey, ice, isCreator);
+            return new ArcadeJoinDescriptor(roomCode, wsUrl, playerSlot, game.CloudRetroGameKey, ice, isCreator, game.System);
         }
 
         private static string ToWebSocketScheme(string url)

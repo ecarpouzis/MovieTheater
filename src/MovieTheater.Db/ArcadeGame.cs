@@ -49,6 +49,14 @@ namespace MovieTheater.Db
         [MaxLength(400)]
         public string? BoxArtPath { get; set; }
 
+        /// <summary>For a just-in-time (JIT) game, the source archive on the library drive (e.g. a PSX
+        /// <c>.7z</c> in the L: master collection). Null for a directly-staged ROM whose file already
+        /// lives under the ROM mount. When set, the ArcadeGateway extracts this into the ROM mount on
+        /// demand at play time and LRU-evicts it later (docs/arcade-jit-cache.md); the row is browsable
+        /// even while <see cref="RomPath"/> is not yet materialized on disk.</summary>
+        [MaxLength(500)]
+        public string? SourceArchivePath { get; set; }
+
         public int? Year { get; set; }
 
         public bool IsEnabled { get; set; } = true;

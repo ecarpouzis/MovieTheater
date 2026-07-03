@@ -29,6 +29,21 @@ string secret = config["ArcadeTokenSecret"]
 string coordinatorBase = (config["CoordinatorBaseUrl"] ?? "http://localhost:8000").TrimEnd('/');
 string siteOrigin = config["SiteOrigin"] ?? "https://your-movie-site.example";
 
+// Optional just-in-time ROM cache (docs/arcade-jit-cache.md). When configured (a manifest + the ROM
+// mount path), a game whose ROM isn't pre-staged is extracted from its source archive on demand before
+// the connection is forwarded, and LRU-evicted later. Off when unconfigured — the gateway then behaves
+// exactly as before (pure signaling proxy).
+var romCacheOptions = new MovieTheater.ArcadeGateway.RomCacheOptions();
+config.GetSection("RomCache").Bind(romCacheOptions);
+MovieTheater.ArcadeGateway.RomCache? romCache = null;
+if (romCacheOptions.Enabled)
+{
+    romCache = new MovieTheater.ArcadeGateway.RomCache(
+        romCacheOptions, app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("RomCache"));
+    app.Logger.LogInformation("Arcade JIT ROM cache enabled: {Count} game(s), cap {Cap} bytes.",
+        romCache.CatalogCount, romCacheOptions.MaxBytes);
+}
+
 // One pooled client for all forwarding. No cookies, no proxy, no redirects — the
 // same posture as StreamGateway; the WS upgrade is carried end-to-end by YARP.
 var httpClient = new HttpMessageInvoker(new SocketsHttpHandler
@@ -77,6 +92,28 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
     if (!string.Equals(requestedRoomId, payload.CloudRetroRoomId ?? string.Empty, StringComparison.Ordinal))
     {
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return;
+    }
+
+    // JIT: materialize the ROM before forwarding so the worker can launch it (the scan-on-miss patch
+    // then makes CloudRetro see the just-extracted file). A managed game is pinned for the life of the
+    // connection so eviction can't pull it mid-session. Non-managed games skip all of this.
+    if (romCache != null && romCache.IsManaged(payload.GameId))
+    {
+        try
+        {
+            await romCache.EnsureMaterializedAsync(payload.GameId, context.RequestAborted);
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogError(ex, "RomCache failed to materialize game {GameId}", payload.GameId);
+            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+            return;
+        }
+
+        romCache.Pin(payload.GameId);
+        try { await forwarder.SendAsync(context, coordinatorBase, httpClient, requestOptions, transformer); }
+        finally { romCache.Unpin(payload.GameId); }
         return;
     }
 

@@ -19,7 +19,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MovieTheater.Services\MovieTheater.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test the gateway's RomCache from source (it only needs BCL + ILogger), so the suite stays
+         buildable without a ProjectReference to the Web-SDK gateway app. -->
+    <Compile Include="..\MovieTheater.ArcadeGateway\RomCache.cs" Link="Arcade\RomCache.cs" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,57 @@
+diff --git a/Dockerfile b/Dockerfile
+index 0e822a7..4f20d1c 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -24,7 +24,9 @@ RUN git clone --single-branch --depth 1 --branch ${GSTREAMER_VERSION} \
+ 
+ # fix meson build error
+ RUN sed -i '1i if get_option('"'"'doc'"'"').disabled()\n  subdir_done()\nendif' \
+-    subprojects/gst-plugins-good/docs/meson.build
++    subprojects/gst-plugins-good/docs/meson.build && \
++    sed -i '1i if get_option('"'"'doc'"'"').disabled()\n  subdir_done()\nendif' \
++    subprojects/gst-plugins-bad/docs/meson.build
+ 
+ RUN meson setup builddir \
+     --prefix=/usr/local \
+@@ -38,7 +40,7 @@ RUN meson setup builddir \
+     -Dgstreamer:tools=disabled \
+     -Dbase=enabled \
+     -Dgood=enabled \
+-    -Dbad=disabled \
++    -Dbad=enabled \
+     -Dugly=disabled \
+     -Dlibav=disabled \
+     -Dges=disabled \
+@@ -59,7 +61,8 @@ RUN meson setup builddir \
+     -Dgst-plugins-base:videoconvertscale=enabled \
+     -Dgst-plugins-base:audioresample=enabled \
+     -Dgst-plugins-base:opus=enabled \
+-    -Dgst-plugins-good:vpx=enabled && \
++    -Dgst-plugins-good:vpx=enabled \
++    -Dgst-plugins-bad:nvcodec=enabled && \
+     meson compile -C builddir && \
+     meson install -C builddir && \
+     find /usr/local/lib -name "*.so*" -exec strip {} \;
+diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
+index 4a6171f..1163714 100644
+--- a/pkg/worker/media/gstreamer.go
++++ b/pkg/worker/media/gstreamer.go
+@@ -434,13 +434,11 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+ 	build.write("\" ")
+ 	build.write("! ")
+ 	switch codec {
+-	// h264 - requires gstreamer1.0-plugins-ugly + x264 (GPL)
+-	// case "h264":
+-	// 	return fmt.Sprintf("%s threads=%d key-int-max=%d",
+-	// 		cmp.Or(gst.Encoder, "x264enc"),
+-	// 		cmp.Or(conf.Video.Threads, 0),
+-	// 		kfi,
+-	// 	)
++	// h264 (MovieTheater patch): the encoder element + all tuning come from encoder.list
++	// (e.g. nvh264enc for NVENC — keyframe cadence via gop-size in params, since the vpx
++	// keyframe-mode=disabled force-keyframe path below doesn't apply to h264).
++	case "h264":
++		build.writef("%s name=video_enc ", cmp.Or(opts.Encoder, "x264enc"))
+ 	case "vp8", "vp9":
+ 		encoder := cmp.Or(opts.Encoder, fmt.Sprintf("vp%cenc", codec[len(codec)-1]))
+ 		threads := cmp.Or(conf.Video.Threads, cpuCores)

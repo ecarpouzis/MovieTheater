@@ -164,7 +164,7 @@ namespace MovieTheater.Controllers
             rooms.CreateRoom(roomCode, game.Id, game.MaxPlayers, userId.Value);
 
             var descriptor = host.BuildJoinDescriptor(
-                userId.Value, new ArcadeGameDescriptor(game.Id, game.CloudRetroGameKey),
+                userId.Value, new ArcadeGameDescriptor(game.Id, game.CloudRetroGameKey, game.System),
                 roomCode, cloudRetroRoomId: string.Empty, playerSlot: 0, isCreator: true);
 
             return Json(ToJson(descriptor));
@@ -241,7 +241,7 @@ namespace MovieTheater.Controllers
 
             var boundRoomId = rooms.BoundRoomId(code) ?? string.Empty;
             var descriptor = host.BuildJoinDescriptor(
-                userId.Value, new ArcadeGameDescriptor(game.Id, game.CloudRetroGameKey),
+                userId.Value, new ArcadeGameDescriptor(game.Id, game.CloudRetroGameKey, game.System),
                 code, boundRoomId, join.PlayerSlot, isCreator: false);
 
             return Json(ToJson(descriptor));
@@ -294,6 +294,7 @@ namespace MovieTheater.Controllers
             gameKey = d.GameKey,
             iceConfig = d.IceConfig.Select(i => new { urls = i.Urls }).ToList(),
             isCreator = d.IsCreator,
+            system = d.System,
         };
 
         // A short, URL-safe invite code, regenerated on the rare collision with a live room.

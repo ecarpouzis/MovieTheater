@@ -1,0 +1,81 @@
+# GPU-accelerated arcade stack — hardware N64/3D rendering on the RTX 4070 Ti.
+#
+# ⚠ RUN THIS WITH THE DOCKER ENGINE *INSIDE* THE Ubuntu-24.04 WSL2 DISTRO, **not** Docker Desktop.
+# Docker Desktop's minimal distro can't do D3D12 graphics; a real WSL2 distro (Ubuntu+WSLg) can, and its
+# containers inherit the working `/dev/dxg` + `/usr/lib/wsl/lib` + WSLg display. Proven: the worker image
+# renders `D3D12 (NVIDIA GeForce RTX 4070 Ti)`, OpenGL 4.6 (docs/arcade-gpu-research.md).
+#
+#   Setup once:  wsl -d Ubuntu-24.04 -u root -- bash -lc 'apt-get install -y docker.io && dockerd &'
+#   Bring up:    wsl -d Ubuntu-24.04 -u root -- docker compose -f docker-compose.gpu.yml up -d
+#   Image:       built as movietheater/cloud-game:pinned-gpu (docker/arcade/Dockerfile.gpu)
+#
+# Networking (hard-won — read before touching): TWO .wslconfig settings are required, then `wsl --shutdown`:
+#   [wsl2]         networkingMode=mirrored     # WSL shares the Windows IPs; genuine LAN/internet inbound works
+#   [experimental] hostAddressLoopback=true    # Windows<->WSL traffic over the host's OWN IP (192.168.68.69)
+# Why both: a SAME-HOST browser can only do WebRTC to the worker via the LAN IP. Advertising 127.0.0.1 can
+# NEVER work — Chrome binds its ICE sockets to the LAN interface and Windows refuses LAN-bound->loopback
+# sends — and without hostAddressLoopback the Windows->own-IP->WSL hairpin is silently dropped (that was
+# the endless "ice: failed" while signaling stayed green; TCP loopback IS relayed, UDP hairpin is not).
+# With both settings, ICEIPMAP=192.168.68.69 (gpu.env) serves the same-host browser AND LAN peers.
+# Keepalive: WSL kills an idle distro (and this stack with it) — scripts/register-arcade-wsl-task.ps1
+# registers the logon task that holds it open. Verified end-to-end 2026-07-03 (Mario Kart 64, 2 browsers).
+
+x-gpu-worker: &gpu-worker
+  image: movietheater/cloud-game:pinned-gpu
+  restart: unless-stopped
+  depends_on: [coordinator]
+  # Host networking: WebRTC media (UDP 8443) must NOT traverse docker's userland UDP proxy — the proxy
+  # rewrites return-packet source addresses, so ICE consistency checks fail ("ice: failed") even though
+  # signaling succeeds. In host mode the worker binds 8443 straight on the distro interface (= the Windows
+  # host's 192.168.68.69 under mirrored networking), matching the ICEIPMAP candidate it advertises.
+  network_mode: host
+  privileged: true                 # needed for the container to ioctl /dev/dxg (D3D12) — narrow later
+  devices:
+    - /dev/dxg:/dev/dxg
+  environment: &gpu-worker-env
+    # WSLg's GPU-backed X server — NOT Xvfb. CloudRetro's RGFW uses GLX; this makes it hit the 4070 Ti.
+    DISPLAY: ":0"
+    GALLIUM_DRIVER: "d3d12"
+    MESA_D3D12_DEFAULT_ADAPTER_NAME: "NVIDIA"   # else Mesa-d3d12 grabs the Intel iGPU
+    # wsl/lib = D3D12 + libcuda/libnvidia-encode (NVENC); the /usr/local path restates the image's
+    # own gst lib dir, which this override would otherwise clobber (nvcodec dlopen deps live there).
+    LD_LIBRARY_PATH: "/usr/lib/wsl/lib:/usr/local/lib/x86_64-linux-gnu"
+    # Host networking (below) puts every container in the distro's netns, which under WSL2 mirrored
+    # networking IS the Windows host's network — so the coordinator is plain localhost:8000 here.
+    CLOUD_GAME_WORKER_NETWORK_COORDINATORADDRESS: "localhost:8000"
+    CLOUD_GAME_WEBRTC_ICEIPMAP: "${ZIGGY_PUBLIC_IP:?set ZIGGY_PUBLIC_IP in .env}"
+  volumes:
+    - /usr/lib/wsl:/usr/lib/wsl:ro          # the D3D12 graphics runtime (libd3d12core/dxcore)
+    - /tmp/.X11-unix:/tmp/.X11-unix         # WSLg X socket
+    - /mnt/wslg:/mnt/wslg                   # WSLg runtime
+    - ${ROMS_DIR:?set ROMS_DIR}:/roms:ro
+    - ${SAVES_DIR:?set SAVES_DIR}:/saves
+    - ./config.yaml:/usr/local/share/cloud-game/config.yaml:ro
+    - cores:/usr/local/share/cloud-game/assets/cores
+  # No Xvfb needed — WSLg provides the display. Flags per pkg/config/worker.go (--w-conf = a DIRECTORY).
+  command: ["./worker", "--w-conf", "/usr/local/share/cloud-game"]
+
+services:
+  coordinator:
+    image: movietheater/cloud-game:pinned-gpu
+    restart: unless-stopped
+    # Host networking so it binds :8000 directly on the distro (= the Windows host under mirrored
+    # networking); the gateway reaches it at 127.0.0.1:8000 and host-net workers at localhost:8000.
+    # `ports:` is intentionally omitted — it's ignored in host mode; the config's address ":8000" governs.
+    network_mode: host
+    environment:
+      CLOUD_GAME_COORDINATOR_ORIGIN_USERWS: "${SITE_ORIGIN:-*}"
+    volumes:
+      - ./config.yaml:/usr/local/share/cloud-game/config.yaml:ro
+    command: ["./coordinator", "--c-conf", "/usr/local/share/cloud-game"]
+
+  worker-1:
+    <<: *gpu-worker
+    environment:
+      <<: *gpu-worker-env
+      CLOUD_GAME_WEBRTC_SINGLEPORT: "8443"
+
+  # Add worker-2/3 (ports 8444/8445) when concurrency needs it — the single 4070 Ti serves many rooms.
+
+volumes:
+  cores:

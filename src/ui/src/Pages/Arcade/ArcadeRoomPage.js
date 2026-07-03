@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint } from "./cloudRetroClient";
 import { useWakeLock } from "../../useWakeLock";
 
 const { Title, Text } = Typography;
@@ -28,10 +28,12 @@ export default function ArcadeRoomPage() {
   useWakeLock();
 
   const videoRef = useRef(null);
+  const playerRef = useRef(null);
   const sessionRef = useRef(null);
 
   const [status, setStatus] = useState("connecting");
   const [yourSlot, setYourSlot] = useState(location.state?.descriptor?.playerSlot ?? null);
+  const [system, setSystem] = useState(location.state?.descriptor?.system ?? null);
   const [players, setPlayers] = useState([]);
   const [fatal, setFatal] = useState(null);
   const [needsTap, setNeedsTap] = useState(false);
@@ -70,6 +72,7 @@ export default function ArcadeRoomPage() {
       }
       if (cancelled) return;
       setYourSlot(descriptor.playerSlot);
+      setSystem(descriptor.system ?? null);
 
       sessionRef.current = createCloudRetroSession(descriptor, {
         videoEl: videoRef.current,
@@ -127,6 +130,12 @@ export default function ArcadeRoomPage() {
     v.play().then(() => setNeedsTap(false)).catch(() => setNeedsTap(true));
   }
 
+  function goFullscreen() {
+    const el = playerRef.current || videoRef.current;
+    const req = el && (el.requestFullscreen || el.webkitRequestFullscreen || el.webkitEnterFullscreen);
+    req?.call(el);
+  }
+
   function copyInvite() {
     const url = `${window.location.origin}/arcade/room/${code}`;
     navigator.clipboard?.writeText(url).then(
@@ -161,7 +170,7 @@ export default function ArcadeRoomPage() {
         </Space>
       </div>
 
-      <div style={{ position: "relative", background: "#000", borderRadius: 8, overflow: "hidden", aspectRatio: "4 / 3" }}>
+      <div ref={playerRef} style={{ position: "relative", background: "#000", borderRadius: 8, overflow: "hidden", aspectRatio: "4 / 3" }}>
         <video
           ref={videoRef}
           autoPlay
@@ -192,12 +201,15 @@ export default function ArcadeRoomPage() {
           <Tooltip title="Load last save state">
             <Button onClick={() => sessionRef.current?.load?.()}>Load</Button>
           </Tooltip>
+          <Tooltip title="Fullscreen">
+            <Button onClick={goFullscreen}>⛶ Fullscreen</Button>
+          </Tooltip>
           <Button danger onClick={() => history.push("/arcade")}>End</Button>
         </Space>
       </div>
 
       <Text type="secondary" style={{ display: "block", marginTop: 16, fontSize: 12 }}>
-        Use a gamepad, or the keyboard: arrows to move, Z/X and A/S for buttons, Enter = Start, Shift = Select.
+        {arcadeInputHint(system)}
       </Text>
     </div>
   );

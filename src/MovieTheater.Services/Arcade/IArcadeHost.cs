@@ -30,8 +30,10 @@ namespace MovieTheater.Services.Arcade
             int userId, ArcadeGameDescriptor game, string roomCode, string cloudRetroRoomId, int playerSlot, bool isCreator);
     }
 
-    /// <summary>The catalog facts the host needs to build a launch descriptor, decoupled from the EF entity.</summary>
-    public sealed record ArcadeGameDescriptor(int Id, string CloudRetroGameKey);
+    /// <summary>The catalog facts the host needs to build a launch descriptor, decoupled from the EF entity.
+    /// <paramref name="System"/> is the short system code (n64, snes, ps1, …) the browser uses to pick a
+    /// per-system input profile.</summary>
+    public sealed record ArcadeGameDescriptor(int Id, string CloudRetroGameKey, string System);
 
     /// <summary>
     /// What the room page needs to connect. Mirrors the shape in §6: a tokened gateway WS URL, the
@@ -44,7 +46,8 @@ namespace MovieTheater.Services.Arcade
         int PlayerSlot,
         string GameKey,
         IReadOnlyList<ArcadeIceServer> IceConfig,
-        bool IsCreator);
+        bool IsCreator,
+        string System);
 
     public sealed record ArcadeIceServer(string Urls);
 }

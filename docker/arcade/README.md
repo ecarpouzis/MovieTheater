@@ -24,13 +24,20 @@ page) is separate; this is what runs the actual games on Ziggy and streams them 
 CloudRetro cuts no releases, so we pin a commit and own the image:
 
 ```bash
-git clone https://github.com/giongto35/cloud-game
-cd cloud-game && git checkout <PINNED_SHA>
+# clone with autocrlf off — Windows CRLF on the shell scripts breaks the build (env: sh\r: not found)
+git clone -c core.autocrlf=false https://github.com/giongto35/cloud-game
+cd cloud-game && git checkout 13852a7            # the pinned SHA
+git apply /path/to/docker/arcade/patches/*.patch  # JIT scan-on-miss (see patches/README.md)
 docker build -t movietheater/cloud-game:pinned .    # uses the repo's own Dockerfile
 ```
 
 Put `movietheater/cloud-game:pinned` in `.env` as `ARCADE_IMAGE`. (Record the SHA you pinned in the
 plan so upgrades are deliberate.)
+
+The `patches/` are small, reproducible source edits we own on top of the pinned SHA — apply ALL of
+them before building (see `patches/README.md` for what each one does): 0001 JIT scan-on-miss,
+0002 IPv4 single-port mux (required under WSL2 mirrored networking), 0003 h264/NVENC encoding.
+Re-generate after bumping the SHA if one fails to apply.
 
 ## ROM layout
 
