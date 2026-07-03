@@ -103,7 +103,7 @@ function YourRating({ id, kind, userData, setUserData }) {
   );
 }
 
-function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle, userData, setUserData, onToggleViewing, onMovieUpdated, kind = "movie" }) {
+function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle, userData, setUserData, onToggleViewing, onMovieUpdated, onAddToPlaylist, kind = "movie" }) {
   const history = useHistory();
   const { toggleSeen, toggleWant } = useViewingToggles(userData, setUserData, onToggleViewing);
   const [openSeasons, setOpenSeasons] = useState({});
@@ -382,6 +382,35 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
   const goWatch = (qs) => {
     onClose();
     history.push(`/watch/${movie.id}${qs}`);
+  };
+
+  // ── Playlists & watch parties ──
+  // A movie contributes its own playable; a series contributes each streamable episode (with a labelled
+  // title), so "add this season" / "add the whole show" pull in many at once. Items are {playableId, title}.
+  const seasonItems = (s) => (s.episodes || [])
+    .filter((e) => e.isPlayable && e.playableId != null)
+    .map((e) => ({ playableId: e.playableId, title: `${movie.title} — S${s.season}E${e.episode}${e.title ? " " + e.title : ""}` }));
+  const allSeriesItems = () => seasons.flatMap(seasonItems);
+  const movieItem = () => (movie?.playableId != null ? [{ playableId: movie.playableId, title: movie.title }] : []);
+
+  const addToPlaylist = (items, name) => {
+    if (!items.length || !onAddToPlaylist) return;
+    onClose();
+    onAddToPlaylist(items, name || movie.title);
+  };
+
+  // Create a watch party from a set of titles and jump straight to its shareable lobby.
+  const startWatchTogether = async (items, name) => {
+    if (!items.length) return;
+    try {
+      const r = await MovieAPI.createPlaylist(name || movie.title, items.map((i) => i.playableId), true);
+      if (!r.ok) throw new Error();
+      const res = await r.json();
+      onClose();
+      if (res.watchpartyToken) history.push(`/watch-together/${res.watchpartyToken}`);
+    } catch {
+      message.error("Couldn't start the watch party.");
+    }
   };
 
   const searchPerson = (name) => {
@@ -748,6 +777,21 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
                   )}
                 </div>
 
+                {/* Playlist / watch-party actions. For a movie: its own playable. For a series: all
+                    streamable episodes (per-season adds live in the episode list below). */}
+                {canStream && !isSeries && movie.playableId != null && (
+                  <div className="modal-playlist-row">
+                    <button className="modal-plbtn" onClick={() => addToPlaylist(movieItem(), movie.title)}>＋ Add to playlist</button>
+                    <button className="modal-plbtn modal-plbtn--party" onClick={() => startWatchTogether(movieItem(), movie.title)}>👥 Watch together</button>
+                  </div>
+                )}
+                {canStream && isSeries && allSeriesItems().length > 0 && (
+                  <div className="modal-playlist-row">
+                    <button className="modal-plbtn" onClick={() => addToPlaylist(allSeriesItems(), movie.title)}>＋ Add all episodes to playlist</button>
+                    <button className="modal-plbtn modal-plbtn--party" onClick={() => startWatchTogether(allSeriesItems(), movie.title)}>👥 Watch together</button>
+                  </div>
+                )}
+
                 {seasons.length > 0 && (
                   <div className="modal-episodes">
                     <span className="modal-label">
@@ -762,6 +806,16 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
                           <span className="modal-season-count">
                             {s.episodes.filter((e) => e.hasFile).length}/{s.episodes.length}
                           </span>
+                          {canStream && seasonItems(s).length > 0 && (
+                            <span
+                              className="modal-season-add"
+                              role="button"
+                              tabIndex={0}
+                              title="Add this season to a playlist"
+                              onClick={(ev) => { ev.stopPropagation(); addToPlaylist(seasonItems(s), `${movie.title} — ${s.season === 0 ? "Specials" : "Season " + s.season}`); }}
+                              onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.stopPropagation(); ev.preventDefault(); addToPlaylist(seasonItems(s), `${movie.title} — Season ${s.season}`); } }}
+                            >＋ playlist</span>
+                          )}
                         </button>
                         {openSeasons[s.season] && (
                           <div className="modal-season-eps">

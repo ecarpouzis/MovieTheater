@@ -150,6 +150,10 @@ namespace MovieTheater
 
             services.AddScoped<Channels.ChannelScheduleService>();
             services.AddSingleton<Channels.ChannelSkipService>();
+            // Watch-party lobby state (presence + ready) is in-memory like the skip service; the reaper deletes
+            // finished parties (docs/playlists-watchparty-plan.md).
+            services.AddSingleton<Channels.WatchpartyService>();
+            services.AddHostedService<Channels.WatchpartyReaperService>();
             // Live arcade room state (seats, bind, presence) is in-memory + shared across requests, like the
             // channel skip service; the reaper closes out rooms that have gone empty (ArcadeSession.EndedUtc).
             services.AddSingleton<Arcade.ArcadeRoomService>();

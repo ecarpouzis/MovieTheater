@@ -244,6 +244,29 @@ namespace MovieTheater.Db
                 .IsUnique()
                 .HasFilter("[CatalogKey] IS NOT NULL");
 
+            // ── User playlists & watch parties (docs/playlists-watchparty-plan.md; additive) ──
+            modelBuilder.Entity<Channel>()
+                .Property(c => c.WatchpartyStartedUtc).HasConversion(UtcConverter);
+            // A watch party is reached by its token; unique, filtered so the many NULL tokens of normal
+            // channels don't collide (same shape as CatalogKey).
+            modelBuilder.Entity<Channel>()
+                .HasIndex(c => c.WatchpartyToken)
+                .IsUnique()
+                .HasFilter("[WatchpartyToken] IS NOT NULL");
+
+            modelBuilder.Entity<PlaylistItem>()
+                .HasIndex(p => new { p.ChannelId, p.Position });
+            modelBuilder.Entity<PlaylistItem>()
+                .HasOne(p => p.Channel)
+                .WithMany(c => c.PlaylistItems)
+                .HasForeignKey(p => p.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PlaylistItem>()
+                .HasOne(p => p.Playable)
+                .WithMany()
+                .HasForeignKey(p => p.PlayableId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // ── AI-inferred insights (model-sourced discovery metadata; additive side tables) ──
             // No DB-level FK to the subject: a TitleInsight points at a Movie OR a Series through the
             // shared id space (SubjectKind + SubjectId), exactly like Viewing/MiscVideo relations are
@@ -302,6 +325,7 @@ namespace MovieTheater.Db
         public DbSet<Channel> Channels { get; set; }
         public DbSet<ChannelScheduleItem> ChannelScheduleItems { get; set; }
         public DbSet<ChannelShelf> ChannelShelves { get; set; }
+        public DbSet<PlaylistItem> PlaylistItems { get; set; }
         public DbSet<TitleInsight> TitleInsights { get; set; }
         public DbSet<TitleTag> TitleTags { get; set; }
         public DbSet<TitleRecommendation> TitleRecommendations { get; set; }

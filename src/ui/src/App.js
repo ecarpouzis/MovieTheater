@@ -20,6 +20,7 @@ const TvPage = lazy(() => import("./Pages/Tv/TvPage"));
 const ChannelGuidePage = lazy(() => import("./Pages/Tv/ChannelGuidePage"));
 const ArcadePage = lazy(() => import("./Pages/Arcade/ArcadePage"));
 const ArcadeRoomPage = lazy(() => import("./Pages/Arcade/ArcadeRoomPage"));
+const WatchPartyPage = lazy(() => import("./Pages/Tv/WatchPartyPage"));
 const IngestReviewPage = lazy(() => import("./Pages/IngestReview/IngestReviewPage"));
 const RatePage = lazy(() => import("./Pages/Rate/RatePage"));
 
@@ -115,6 +116,9 @@ function App() {
             </Route>
             <Route path="/tv/:channelId?" exact>
               <TvPage userData={userData} setUserData={setUserData} />
+            </Route>
+            <Route path="/watch-together/:token" exact>
+              <WatchPartyPage userData={userData} />
             </Route>
             <Route path="/channels" exact>
               <ChannelGuidePage />

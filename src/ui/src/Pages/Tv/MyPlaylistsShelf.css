@@ -1,0 +1,143 @@
+.mypl {
+  margin: 8px 0 18px;
+}
+
+.mypl-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 8px;
+}
+
+.mypl-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #cfe0f0;
+}
+
+.mypl-rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px;
+  scrollbar-width: thin;
+}
+
+.mypl-card {
+  position: relative;
+  flex: 0 0 auto;
+  width: 140px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+  text-align: left;
+}
+
+.mypl-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.mypl-collage {
+  position: relative;
+  width: 140px;
+  height: 100px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  background: #0e1621;
+}
+
+.mypl-collage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A single poster fills the whole tile; two split top/bottom; three/four grid. */
+.mypl-collage--n1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.mypl-collage--n2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+.mypl-collage--n3 img:first-child { grid-row: span 2; }
+
+.mypl-collage--empty,
+.mypl-collage--new {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6f8296;
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.mypl-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: #d1483b;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.mypl-meta {
+  padding: 7px 9px 9px;
+}
+
+.mypl-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e6eef7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mypl-sub {
+  font-size: 11px;
+  color: #8fa8c0;
+  margin-top: 2px;
+}
+
+.mypl-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.mypl-card:hover .mypl-actions {
+  opacity: 1;
+}
+
+.mypl-act {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #dfe8f1;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mypl-act:hover { background: rgba(0, 0, 0, 0.85); }
+.mypl-act--del:hover { background: #d1483b; color: #fff; }
+
+.mypl-new {
+  cursor: pointer;
+  border-style: dashed;
+  background: none;
+}

@@ -88,6 +88,17 @@ namespace MovieTheater.Channels
             return built;
         }
 
+        /// <summary>
+        /// Drop the cached eligible set + ceiling for a channel so the next schedule extension rebuilds from
+        /// live data. Called after a playlist's items change — otherwise the 2-min eligible cache would briefly
+        /// hide a just-added (or keep a just-removed) title. Cheap: two cache removes.
+        /// </summary>
+        public void InvalidateEligible(Channel channel)
+        {
+            cache.Remove(EligibleKey(channel));
+            cache.Remove(CeilingKey(channel));
+        }
+
         // The "current" insight for a subject: the row with the highest SpecVersion, then the latest
         // GeneratedUtc, then the highest Id — expressed as "no strictly-better row exists" so it stays a
         // single EF-translatable EXISTS (not a client-evaluated GroupBy). The composite index on
@@ -114,6 +125,12 @@ namespace MovieTheater.Channels
         /// </summary>
         private async Task<(List<EligibleItem> Items, int Ceiling)> BuildEligibleCoreAsync(Channel channel, CancellationToken cancel)
         {
+            // A user playlist (and a watch party, which is the same thing with a Begin-gate) has an explicit
+            // hand-ordered lineup in PlaylistItem rather than a filter over the library, so it takes a wholly
+            // separate build path — see docs/playlists-watchparty-plan.md.
+            if (channel.IsUserPlaylist)
+                return await BuildPlaylistEligibleCoreAsync(channel, cancel);
+
             var filter = ChannelFilter.Parse(channel.FilterJson);
 
             var cands = new List<Cand>();
@@ -166,26 +183,9 @@ namespace MovieTheater.Channels
                     .ToDictionaryAsync(r => r.SubjectId, r => r.Score, cancel);
             }
 
-            // Real-bucket (1..6) rating map, resolved in memory like the rest of the age gate (RatingGate).
-            var ratingRows = await movieDb.RatingMaps
-                .Where(rm => rm.MovieRating != null && rm.MPARatingID >= 1 && rm.MPARatingID <= 6)
-                .Select(rm => new { rm.MovieRating, rm.MPARatingID })
-                .ToListAsync(cancel);
-            var ratingMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            foreach (var r in ratingRows)
-                if (r.MovieRating != null) ratingMap[r.MovieRating.Trim()] = r.MPARatingID;
-
-            // Adult buckets (NC-17 / X): MinAge >= 18. Dropped when filter.ExcludeAdult (default true).
-            var adultIds = new HashSet<int>(await movieDb.RatingMpas
-                .Where(rm => rm.MinAge >= 18).Select(rm => rm.RatingID).ToListAsync(cancel));
-
-            int Effective(string? a, string? b, string? c)
-            {
-                foreach (var t in new[] { a, b, c })
-                    if (!string.IsNullOrWhiteSpace(t) && ratingMap.TryGetValue(t!.Trim(), out var id))
-                        return id;
-                return RatingGate.UnknownRatingId; // 7 = conservative (adults only)
-            }
+            // Real-bucket (1..6) rating map + adult set, resolved in memory like the rest of the age gate.
+            var (ratingMap, adultIds) = await LoadRatingMapsAsync(cancel);
+            int Effective(string? a, string? b, string? c) => EffectiveRating(ratingMap, a, b, c);
 
             var items = new List<EligibleItem>(cands.Count);
             int maxRating = 0;
@@ -220,6 +220,119 @@ namespace MovieTheater.Channels
             }
 
             int ceiling = filter.MaxMpaRatingId ?? (maxRating == 0 ? RatingGate.UnknownRatingId : maxRating);
+            return (items, ceiling);
+        }
+
+        // Real-bucket (1..6) rating map + the adult (NC-17/X) id set, both resolved in memory like the age
+        // gate (RatingGate). Shared by the filter and playlist eligible-set builders.
+        private async Task<(Dictionary<string, int> RatingMap, HashSet<int> AdultIds)> LoadRatingMapsAsync(CancellationToken cancel)
+        {
+            var ratingRows = await movieDb.RatingMaps
+                .Where(rm => rm.MovieRating != null && rm.MPARatingID >= 1 && rm.MPARatingID <= 6)
+                .Select(rm => new { rm.MovieRating, rm.MPARatingID })
+                .ToListAsync(cancel);
+            var ratingMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var r in ratingRows)
+                if (r.MovieRating != null) ratingMap[r.MovieRating.Trim()] = r.MPARatingID;
+
+            var adultIds = new HashSet<int>(await movieDb.RatingMpas
+                .Where(rm => rm.MinAge >= 18).Select(rm => rm.RatingID).ToListAsync(cancel));
+            return (ratingMap, adultIds);
+        }
+
+        private static int EffectiveRating(Dictionary<string, int> ratingMap, string? a, string? b, string? c)
+        {
+            foreach (var t in new[] { a, b, c })
+                if (!string.IsNullOrWhiteSpace(t) && ratingMap.TryGetValue(t!.Trim(), out var id))
+                    return id;
+            return RatingGate.UnknownRatingId; // 7 = conservative (adults only)
+        }
+
+        /// <summary>
+        /// Eligible set for a user playlist / watch party: its explicit, hand-ordered <see cref="PlaylistItem"/>
+        /// rows, in <see cref="PlaylistItem.Position"/> order. Each item is resolved to duration + effective
+        /// rating across whichever kind it is (movie / episode / misc), requiring a synced, present file with a
+        /// known duration — an item whose file has gone missing simply drops out of the lineup. Unlike a filter
+        /// channel there is no MPAA cap or adult exclusion (these are the user's own explicit choices), but the
+        /// ceiling still tracks the highest rating so the per-viewer age gate in the controller applies. Order is
+        /// carried in <see cref="EligibleItem.OrderRank"/> = Position, which the "Playlist" strategy sorts by.
+        /// </summary>
+        private async Task<(List<EligibleItem> Items, int Ceiling)> BuildPlaylistEligibleCoreAsync(Channel channel, CancellationToken cancel)
+        {
+            var rows = await movieDb.PlaylistItems
+                .Where(p => p.ChannelId == channel.Id)
+                .OrderBy(p => p.Position).ThenBy(p => p.Id)
+                .Select(p => new { p.PlayableId, p.Position })
+                .ToListAsync(cancel);
+            if (rows.Count == 0)
+                return (new List<EligibleItem>(), RatingGate.UnknownRatingId);
+
+            var ids = rows.Select(p => p.PlayableId).Distinct().ToList();
+
+            // Resolve each playable id → duration + effective-rating inputs across the three kinds. Same
+            // present-file requirement and Cand shape as the filter path, just keyed by an explicit id set.
+            var cands = new Dictionary<int, Cand>();
+            foreach (var m in await movieDb.Movies
+                .Where(m => m.PlayableId != null && ids.Contains(m.PlayableId.Value)
+                    && m.Playable!.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null))
+                .Select(m => new Cand(
+                    m.PlayableId!.Value,
+                    m.Playable!.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
+                    m.RuntimeMinutes,
+                    m.MpaaRating, m.Rating, m.MpaaRatingInferred,
+                    m.ImdbRatingScraped, m.RtTomatometer,
+                    (long)m.id, 0, m.SimpleTitle))
+                .ToListAsync(cancel))
+                cands[m.PlayableId] = m;
+
+            foreach (var e in await movieDb.Episodes
+                .Where(e => e.PlayableId != null && ids.Contains(e.PlayableId.Value)
+                    && e.Playable!.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null))
+                .Select(e => new Cand(
+                    e.PlayableId!.Value,
+                    e.Playable!.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
+                    e.RuntimeMinutes,
+                    e.Series!.MpaaRating, e.Series.Rating, e.Series.MpaaRatingInferred,
+                    e.Series.ImdbRatingScraped, e.Series.RtTomatometer,
+                    0L, e.SeriesId ?? 0, e.Series.SimpleTitle))
+                .ToListAsync(cancel))
+                cands[e.PlayableId] = e;
+
+            foreach (var mv in await movieDb.MiscVideos
+                .Where(mv => ids.Contains(mv.PlayableId)
+                    && mv.Playable.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null))
+                .Select(mv => new Cand(
+                    mv.PlayableId,
+                    mv.Playable.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
+                    null,
+                    null, null, mv.MpaaRatingInferred,
+                    null, null,
+                    0L, 0, mv.SimpleTitle))
+                .ToListAsync(cancel))
+                cands[mv.PlayableId] = mv;
+
+            var (ratingMap, _) = await LoadRatingMapsAsync(cancel);
+
+            // Emit one EligibleItem per playlist row (so a title added twice airs twice), ordered by Position.
+            var items = new List<EligibleItem>(rows.Count);
+            int maxRating = 0;
+            foreach (var pi in rows)
+            {
+                if (!cands.TryGetValue(pi.PlayableId, out var c))
+                    continue; // no present file / unknown playable — skip, keep the rest of the lineup
+
+                long durationTicks = c.DurationTicks
+                    ?? (c.RuntimeMinutes is int min && min > 0 ? (long)min * 60 * TicksPerSecond : 0);
+                if (durationTicks <= 0)
+                    continue;
+
+                int ratingId = EffectiveRating(ratingMap, c.RatingA, c.RatingB, c.RatingC);
+                if (ratingId > maxRating) maxRating = ratingId;
+                items.Add(new EligibleItem(pi.PlayableId, durationTicks, ratingId,
+                    null, null, pi.Position, 0, "", null));
+            }
+
+            int ceiling = maxRating == 0 ? RatingGate.UnknownRatingId : maxRating;
             return (items, ceiling);
         }
 
@@ -589,9 +702,11 @@ namespace MovieTheater.Channels
                 .ToListAsync(cancel);
         }
 
-        /// <summary>Enabled channel ids in display order — for the background maintainer's round-robin.</summary>
+        /// <summary>Enabled channel ids in display order — for the background maintainer's round-robin.
+        /// Watch-party channels are excluded: their timeline must stay frozen in the lobby until the party
+        /// presses Begin, so the maintainer must never materialize their lineup ahead.</summary>
         public Task<List<int>> EnabledChannelIdsAsync(CancellationToken cancel = default) =>
-            movieDb.Channels.Where(c => c.Enabled).OrderBy(c => c.SortOrder).ThenBy(c => c.Id)
+            movieDb.Channels.Where(c => c.Enabled && c.WatchpartyToken == null).OrderBy(c => c.SortOrder).ThenBy(c => c.Id)
                 .Select(c => c.Id).ToListAsync(cancel);
 
         /// <summary>
@@ -665,7 +780,7 @@ namespace MovieTheater.Channels
                     var strategy = EffectiveStrategy(channel);
                     // Ordered strategies (marathon / round-robin / release / newest) are intentionally
                     // sequenced, so no anti-repeat cooldown; shuffles get one bounded by the pool size.
-                    bool ordered = strategy is "Marathon" or "EpisodeRoundRobin" or "ReleaseDate" or "NewestFirst";
+                    bool ordered = strategy is "Marathon" or "EpisodeRoundRobin" or "ReleaseDate" or "NewestFirst" or "Playlist";
                     int cooldownK = ordered ? 0 : Math.Min(100, Math.Max(1, eligible.Count - 1));
 
                     // Resume from the already-materialized tail so each *incremental* extension continues the
@@ -908,6 +1023,10 @@ namespace MovieTheater.Channels
         {
             switch (strategy)
             {
+                case "Playlist":
+                    // A user playlist airs in the exact order the user arranged (OrderRank = Position),
+                    // looping. No shuffle, no weighting — their list, their order.
+                    return new Queue<EligibleItem>(source.OrderBy(e => e.OrderRank));
                 case "Marathon":
                     return new Queue<EligibleItem>(source.OrderBy(e => e.SortKey, StringComparer.OrdinalIgnoreCase).ThenBy(e => e.OrderRank));
                 case "ReleaseDate":

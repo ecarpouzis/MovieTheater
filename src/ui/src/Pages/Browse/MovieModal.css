@@ -884,3 +884,33 @@
 .modal-extras { margin: 14px 0 6px; border-top: 1px solid #eee; padding-top: 10px; }
 .modal-extras .modal-label { display: block; margin-bottom: 6px; }
 .modal-extras .modal-file-name { color: #555; }
+
+/* Playlist / watch-party actions (docs/playlists-watchparty-plan.md). */
+.modal-playlist-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+.modal-plbtn {
+  border: 1px solid rgba(120, 150, 180, 0.5);
+  background: rgba(120, 150, 180, 0.08);
+  color: #2b3a4a;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.modal-plbtn:hover { background: rgba(120, 150, 180, 0.18); border-color: rgba(120, 150, 180, 0.8); }
+.modal-plbtn--party { border-color: rgba(209, 72, 59, 0.55); background: rgba(209, 72, 59, 0.08); color: #a5342a; }
+.modal-plbtn--party:hover { background: rgba(209, 72, 59, 0.16); border-color: rgba(209, 72, 59, 0.85); }
+
+/* "＋ playlist" affordance on a season header (doesn't toggle the season). */
+.modal-season-add {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6f8296;
+  border: 1px solid rgba(120, 150, 180, 0.4);
+  border-radius: 6px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+.modal-season-add:hover { color: #2b3a4a; background: rgba(120, 150, 180, 0.14); }

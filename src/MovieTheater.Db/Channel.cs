@@ -89,6 +89,28 @@ namespace MovieTheater.Db
         /// &lt;user&gt;" channels from leaking to every viewer.</summary>
         public int? OwnerUserId { get; set; }
 
+        // ── User playlists & watch parties (docs/playlists-watchparty-plan.md; additive, nullable) ──
+
+        /// <summary>True for a user-created playlist channel: its lineup is the explicit, hand-ordered
+        /// <see cref="PlaylistItems"/> (played by the "Playlist" strategy) rather than a filter over the
+        /// library. Distinguishes it from the reco "For You" channels, which also set <see cref="OwnerUserId"/>.</summary>
+        public bool IsUserPlaylist { get; set; }
+
+        /// <summary>Non-null ⇒ a private WATCH PARTY: the same explicit-lineup channel, but hidden from every
+        /// shelf/guide and reached only by this URL-safe token, whose timeline waits until the lobby presses
+        /// Begin. NULL = a normal channel (or a plain, always-on playlist).</summary>
+        [MaxLength(32)]
+        public string? WatchpartyToken { get; set; }
+
+        /// <summary>For a watch party: the instant the lobby pressed Begin (also re-anchors the schedule to
+        /// start "now"). NULL until it begins — so the party stays in its waiting room, and a server restart
+        /// mid-party doesn't lose whether it had started.</summary>
+        public DateTime? WatchpartyStartedUtc { get; set; }
+
         public ICollection<ChannelScheduleItem> ScheduleItems { get; set; } = [];
+
+        /// <summary>The hand-picked, ordered lineup for a playlist / watch-party channel (empty for filter
+        /// channels).</summary>
+        public ICollection<PlaylistItem> PlaylistItems { get; set; } = [];
     }
 }

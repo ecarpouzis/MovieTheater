@@ -3,6 +3,8 @@ import { useHistory, useLocation } from "react-router-dom";
 import CardList from "./CardList";
 import SimpleCardList from "./SimpleCardList";
 import NowOnTvRail from "./NowOnTvRail";
+import MyPlaylistsShelf from "../Tv/MyPlaylistsShelf";
+import PlaylistPickerModal from "../Tv/PlaylistPickerModal";
 import useIsMobile from "../../hooks/useIsMobile";
 
 // The detail modal (917 lines + FileMappingEditor, SubtitlePicker, …) only renders after a card
@@ -207,6 +209,14 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   const [selectedKind, setSelectedKind] = useState("movie");
   const [isModalVisible, setIsModalVisible] = useState(false);
 
+  // "Add to playlist" surface: pickerRequest = { items:[{playableId,title}], name } (null = closed).
+  // playlistsVersion bumps to nudge the My-Playlists shelf to reload after a create/change.
+  const [pickerRequest, setPickerRequest] = useState(null);
+  const [playlistsVersion, setPlaylistsVersion] = useState(0);
+  const openPlaylistPicker = useCallback((items, name = "") => {
+    setPickerRequest({ items: items || [], name });
+  }, []);
+
   // Restore-order reshuffle (back-nav) — memoized so it doesn't rebuild the Map/Set/concat over the
   // full array (and hand a fresh array identity to the memoized grid) on every unrelated render
   // (modal open/close, Seen/Want toggle, scroll append).
@@ -321,6 +331,13 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       {/* Rail mounts regardless of the grid's loading state so its lineup + posters fetch in parallel
           with the movie grid (it self-gates on a streaming-enabled session), rather than only after. */}
       {!location.search && <NowOnTvRail userData={userData} setUserData={setUserData} />}
+      {!location.search && (
+        <MyPlaylistsShelf
+          userData={userData}
+          refreshKey={playlistsVersion}
+          onNew={() => openPlaylistPicker([], "My playlist")}
+        />
+      )}
       {loading ? (
         <BrowseSkeleton count={isMobile ? 6 : 12} />
       ) : useSimpleStyle ? (
@@ -364,6 +381,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
             userData={userData}
             setUserData={setUserData}
             onToggleViewing={handleToggleViewing}
+            onAddToPlaylist={openPlaylistPicker}
           />
         ) : (
           <MovieModal
@@ -379,9 +397,17 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
             setUserData={setUserData}
             onToggleViewing={handleToggleViewing}
             onMovieUpdated={handleMovieUpdated}
+            onAddToPlaylist={openPlaylistPicker}
           />
         )}
       </Suspense>
+      <PlaylistPickerModal
+        open={!!pickerRequest}
+        items={pickerRequest?.items || []}
+        defaultName={pickerRequest?.name || ""}
+        onClose={() => setPickerRequest(null)}
+        onDone={() => setPlaylistsVersion((v) => v + 1)}
+      />
     </>
   );
 }

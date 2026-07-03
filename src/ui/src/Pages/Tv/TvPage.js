@@ -510,12 +510,20 @@ function TvPage({ userData }) {
         })
         .then((list) => {
           setChannels(list);
+          const wanted = channelId ? list.find((c) => String(c.id) === String(channelId)) : null;
+          // A channel reached by id but not in the guide list (e.g. a watch-party channel, which is hidden
+          // from List) — fetch its metadata directly and tune it, rather than snapping to the first channel.
+          if (channelId && !wanted && !keepSelection) {
+            return fetch(`/API/Channel/${channelId}/Meta`)
+              .then((r) => (r.ok ? r.json() : null))
+              .then((meta) => setChannel((prev) => meta || prev || list[0] || null))
+              .catch(() => setChannel((prev) => prev || list[0] || null));
+          }
           setChannel((prev) => {
             if (keepSelection && prev) {
               const stillThere = list.find((c) => c.id === prev.id);
               if (stillThere) return stillThere;
             }
-            const wanted = channelId ? list.find((c) => String(c.id) === String(channelId)) : list[0];
             return wanted || list[0] || null;
           });
         })

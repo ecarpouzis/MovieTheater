@@ -549,6 +549,103 @@ function setFavoriteChannels(ids) {
   return setUserSetting("FavoriteChannels", JSON.stringify(ids));
 }
 
+// Single-channel metadata (name/category), age-gated but not filtered by shelf visibility — lets the
+// player tune a channel it reached by id (e.g. a watch-party channel, hidden from the guide list).
+function getChannelMeta(id) {
+  return fetch(`/API/Channel/${id}/Meta`);
+}
+
+// ── User playlists & watch parties (docs/playlists-watchparty-plan.md) ────────
+// A playlist is a private, user-owned channel whose lineup is an explicit ordered list of playables.
+// A watch party is the same thing with `watchparty:true`, which returns a shareable token.
+
+// Create a playlist (or watch party). items = playable ids in order. Returns { id, name, watchpartyToken, count }.
+function createPlaylist(name, items, watchparty = false) {
+  return fetch("/API/Channel/Playlist/Create", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, items, watchparty }),
+  });
+}
+
+// The caller's playlists: [{ id, name, count, watchpartyToken, posters[] }].
+function getMyPlaylists() {
+  return fetch("/API/Channel/Playlist/Mine");
+}
+
+// A playlist's full ordered lineup with titles/posters — for the manage view.
+function getPlaylistItems(id) {
+  return fetch(`/API/Channel/Playlist/${id}/Items`);
+}
+
+// Append playable ids to the end of a playlist.
+function addPlaylistItems(id, items) {
+  return fetch(`/API/Channel/Playlist/${id}/AddItems`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+}
+
+// Replace a playlist's whole ordered lineup (covers reorder + remove).
+function setPlaylistItems(id, items) {
+  return fetch(`/API/Channel/Playlist/${id}/SetItems`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+}
+
+function renamePlaylist(id, name) {
+  return fetch(`/API/Channel/Playlist/${id}/Rename`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+}
+
+function deletePlaylist(id) {
+  return fetch(`/API/Channel/Playlist/${id}/Delete`, { method: "post" });
+}
+
+// Resolve a watch-party invite token → lobby state { channelId, name, started, amHost, itemCount, roster[] }.
+function getWatchparty(token) {
+  return fetch(`/API/Watchparty/${encodeURIComponent(token)}`);
+}
+
+// Lobby presence heartbeat (also returns the latest lobby state); the lobby polls it.
+function watchpartyHeartbeat(token) {
+  return fetch(`/API/Watchparty/${encodeURIComponent(token)}/Heartbeat`, { method: "post" });
+}
+
+// Toggle this member's ready flag; when everyone present is ready the party auto-begins.
+function watchpartyReady(token, ready) {
+  return fetch(`/API/Watchparty/${encodeURIComponent(token)}/Ready`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ready }),
+  });
+}
+
+// Host force-start (or start once everyone is ready).
+function watchpartyBegin(token) {
+  return fetch(`/API/Watchparty/${encodeURIComponent(token)}/Begin`, { method: "post" });
+}
+
+function leaveWatchparty(token) {
+  return fetch(`/API/Watchparty/${encodeURIComponent(token)}/Leave`, { method: "post", keepalive: true }).catch(() => {});
+}
+
+// Fire-and-forget leave for tab close — sendBeacon survives page teardown (mirrors the arcade).
+function beaconLeaveWatchparty(token) {
+  const url = `/API/Watchparty/${encodeURIComponent(token)}/Leave`;
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon(url, new Blob([""], { type: "application/json" }));
+  } else {
+    leaveWatchparty(token);
+  }
+}
+
 // ── Arcade (docs/arcade-plan.md §6) — retro multiplayer control plane ─────────
 // All same-origin, cookie-authed like the rest. The heavy lifting (WebRTC media +
 // input) is NOT here — it rides the CloudRetro client shim straight to the gateway.
@@ -862,7 +959,21 @@ const MovieAPI = {
   deleteChannel,
   getChannelList,
   getGuideGrid,
+  getChannelMeta,
   setFavoriteChannels,
+  createPlaylist,
+  getMyPlaylists,
+  getPlaylistItems,
+  addPlaylistItems,
+  setPlaylistItems,
+  renamePlaylist,
+  deletePlaylist,
+  getWatchparty,
+  watchpartyHeartbeat,
+  watchpartyReady,
+  watchpartyBegin,
+  leaveWatchparty,
+  beaconLeaveWatchparty,
   getArcadeGames,
   getArcadeRooms,
   createArcadeRoom,

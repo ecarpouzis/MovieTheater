@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -68,7 +70,9 @@ namespace MovieTheater.Controllers
             try { shelfOrder = await movieDb.ChannelShelves.ToDictionaryAsync(s => s.Category, s => s.SortOrder); }
             catch { shelfOrder = new(); }
             int ShelfRank(string? cat) => cat != null && shelfOrder.TryGetValue(cat, out var so) ? so : int.MaxValue;
-            var channels = (await movieDb.Channels.Where(c => c.Enabled && (c.OwnerUserId == null || c.OwnerUserId == userId.Value)).ToListAsync())
+            // Watch-party channels (WatchpartyToken != null) are private, reached only by their invite link,
+            // so they never appear in the guide/shelves — even for their creator.
+            var channels = (await movieDb.Channels.Where(c => c.Enabled && c.WatchpartyToken == null && (c.OwnerUserId == null || c.OwnerUserId == userId.Value)).ToListAsync())
                 .OrderBy(c => ShelfRank(c.Category))
                 .ThenBy(c => c.SortOrder)
                 .ThenBy(c => c.Id)
@@ -102,6 +106,26 @@ namespace MovieTheater.Controllers
             if (sw.ElapsedMilliseconds > 1000)
                 logger.LogWarning("Channel List slow: {Ms}ms ({Visible} of {Total} channels visible)", sw.ElapsedMilliseconds, visible.Count, channels.Count);
             return Json(visible);
+        }
+
+        // Lightweight single-channel metadata (name/category), age-gated but NOT filtered by the shelf
+        // visibility rules — so the player can tune a channel it reaches by id rather than from the guide
+        // list, e.g. a watch-party channel (which is hidden from List/GuideGrid). The channel still has to
+        // clear the viewer's age ceiling.
+        [HttpGet("/API/Channel/{id}/Meta")]
+        public async Task<IActionResult> Meta(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+
+            var channel = await movieDb.Channels.FirstOrDefaultAsync(c => c.Id == id && c.Enabled);
+            if (channel == null)
+                return NotFound(new { message = "Channel not found." });
+            if (await scheduleService.GetCeilingAsync(channel) > await GetAgeRestrictionAsync(userId.Value))
+                return StatusCode(403, new { message = "This channel isn't available on your account." });
+
+            return Json(new { id = channel.Id, name = channel.Name, description = channel.Description, category = channel.Category, logoPath = channel.LogoPath });
         }
 
         [HttpGet("/API/Channel/{id}/Now")]
@@ -431,7 +455,7 @@ namespace MovieTheater.Controllers
             var until = now.AddHours(hours);
 
             var channels = (await movieDb.Channels
-                .Where(c => c.Enabled && (c.OwnerUserId == null || c.OwnerUserId == userId.Value))
+                .Where(c => c.Enabled && c.WatchpartyToken == null && (c.OwnerUserId == null || c.OwnerUserId == userId.Value))
                 .OrderBy(c => c.SortOrder)
                 .ThenBy(c => c.Id)
                 .ToListAsync())
@@ -499,6 +523,274 @@ namespace MovieTheater.Controllers
                     sw.ElapsedMilliseconds, visibleIds.Count, channels.Count, MaxColdCeilingsPerRequest - coldBudget);
             // serverNowUtc lets the client align the "now" line to the server clock, not the browser's.
             return Json(new { serverNowUtc = now, hours, items = result });
+        }
+
+        // ───────────────────────── User playlists & watch parties ─────────────────────────
+        // docs/playlists-watchparty-plan.md. A playlist is a user-owned channel whose lineup is the
+        // explicit, hand-ordered PlaylistItem rows (the "Playlist" schedule strategy) — private to its
+        // owner, shown in their "My Playlists" shelf, deletable. A watch party is the SAME channel with a
+        // shareable WatchpartyToken; it's hidden from every shelf and its timeline waits until the lobby
+        // presses Begin (WatchpartyController owns that lobby). All endpoints here are user-scoped
+        // (StreamingUser) and owner-guarded — they are NOT the admin channel surface.
+
+        // Load a playlist channel owned by the caller, or null (not found / not a playlist / not theirs).
+        private async Task<Channel?> LoadOwnedPlaylistAsync(int id, int userId) =>
+            await movieDb.Channels.FirstOrDefaultAsync(c => c.Id == id && c.IsUserPlaylist && c.OwnerUserId == userId);
+
+        // Drop a playlist's not-yet-aired schedule so an edit takes effect promptly (mirrors the Save /
+        // catalog / reco drop-tail); the currently-airing item is kept so playback isn't interrupted.
+        private async Task DropPlaylistTailAsync(int channelId)
+        {
+            var now = DateTime.UtcNow;
+            var tail = await movieDb.ChannelScheduleItems
+                .Where(i => i.ChannelId == channelId && i.StartUtc > now)
+                .ToListAsync();
+            if (tail.Count == 0) return;
+            movieDb.ChannelScheduleItems.RemoveRange(tail);
+            await movieDb.SaveChangesAsync();
+        }
+
+        // 120 bits of URL-safe base32 — collision-free at friends scale (the DB unique index is the backstop).
+        private static string NewWatchpartyToken()
+        {
+            const string alphabet = "abcdefghijklmnopqrstuvwxyz234567";
+            var bytes = RandomNumberGenerator.GetBytes(15);
+            var sb = new StringBuilder(bytes.Length);
+            foreach (var b in bytes) sb.Append(alphabet[b % alphabet.Length]);
+            return sb.ToString();
+        }
+
+        // Keep only real playable ids the caller gave, preserving their order AND duplicates (a playlist may
+        // legitimately contain the same title twice). Missing-file items are tolerated — they just won't air.
+        private async Task<List<int>> ValidateOrderedPlayablesAsync(IEnumerable<int>? requested)
+        {
+            var list = (requested ?? Enumerable.Empty<int>()).ToList();
+            if (list.Count == 0) return new List<int>();
+            var exist = new HashSet<int>(await movieDb.Playables
+                .Where(p => list.Contains(p.Id)).Select(p => p.Id).ToListAsync());
+            return list.Where(exist.Contains).ToList();
+        }
+
+        public class CreatePlaylistRequest
+        {
+            public string? Name { get; set; }
+            public List<int>? Items { get; set; } // playable ids, in order
+            public bool Watchparty { get; set; }
+        }
+
+        [HttpPost("/API/Channel/Playlist/Create")]
+        public async Task<IActionResult> CreatePlaylist([FromBody] CreatePlaylistRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            if (request == null)
+                return BadRequest(new { message = "Invalid request." });
+
+            var name = (request.Name ?? "").Trim();
+            if (name.Length == 0) name = request.Watchparty ? "Watch party" : "My playlist";
+            if (name.Length > 64) name = name.Substring(0, 64);
+
+            var items = await ValidateOrderedPlayablesAsync(request.Items);
+
+            var now = DateTime.UtcNow;
+            var channel = new Channel
+            {
+                Name = name,
+                OwnerUserId = userId.Value,
+                IsUserPlaylist = true,
+                Category = "My Playlists",
+                Enabled = true,
+                CatalogKey = null,
+                ScheduleStrategy = "Playlist",
+                ShuffleMode = "SeededShuffle",
+                Seed = RandomNumberGenerator.GetInt32(1, int.MaxValue),
+                // A watch party stays frozen in its lobby (anchor far in the future ⇒ no lineup generates)
+                // until Begin re-anchors it to "now"; a plain playlist starts airing immediately.
+                AnchorUtc = request.Watchparty ? now.AddYears(100) : now,
+                WatchpartyToken = request.Watchparty ? NewWatchpartyToken() : null,
+            };
+            movieDb.Channels.Add(channel);
+            await movieDb.SaveChangesAsync();
+
+            for (int pos = 0; pos < items.Count; pos++)
+                movieDb.PlaylistItems.Add(new PlaylistItem { ChannelId = channel.Id, PlayableId = items[pos], Position = pos });
+            if (items.Count > 0)
+                await movieDb.SaveChangesAsync();
+
+            return Json(new { id = channel.Id, name = channel.Name, watchpartyToken = channel.WatchpartyToken, count = items.Count });
+        }
+
+        [HttpGet("/API/Channel/Playlist/Mine")]
+        public async Task<IActionResult> MyPlaylists()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+
+            var channels = await movieDb.Channels
+                .Where(c => c.OwnerUserId == userId.Value && c.IsUserPlaylist)
+                .OrderByDescending(c => c.Id)
+                .Select(c => new { c.Id, c.Name, c.WatchpartyToken })
+                .ToListAsync();
+            if (channels.Count == 0)
+                return Json(Array.Empty<object>());
+
+            var channelIds = channels.Select(c => c.Id).ToList();
+            // All items for these (friends-scale, small) playlists; grouped in memory for the count + a lead
+            // few posters for the shelf tile collage.
+            var rows = await movieDb.PlaylistItems
+                .Where(p => channelIds.Contains(p.ChannelId))
+                .OrderBy(p => p.Position).ThenBy(p => p.Id)
+                .Select(p => new { p.ChannelId, p.PlayableId })
+                .ToListAsync();
+            var byChannel = rows.GroupBy(r => r.ChannelId).ToDictionary(g => g.Key, g => g.Select(r => r.PlayableId).ToList());
+            var titles = await TitlesForAsync(rows.Select(r => r.PlayableId));
+
+            var result = channels.Select(c =>
+            {
+                var pids = byChannel.GetValueOrDefault(c.Id) ?? new List<int>();
+                var posters = pids.Take(4).Select(pid =>
+                {
+                    var t = titles.GetValueOrDefault(pid);
+                    return new { posterId = t.PosterId, kind = t.Kind ?? "movie", posterVersion = t.PosterVersion };
+                }).ToList();
+                return new
+                {
+                    id = c.Id,
+                    name = c.Name,
+                    count = pids.Count,
+                    watchpartyToken = c.WatchpartyToken,
+                    posters,
+                };
+            });
+            return Json(result);
+        }
+
+        // A playlist's full ordered lineup with titles/posters — for the manage view.
+        [HttpGet("/API/Channel/Playlist/{id}/Items")]
+        public async Task<IActionResult> GetPlaylistItems(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            var channel = await LoadOwnedPlaylistAsync(id, userId.Value);
+            if (channel == null)
+                return NotFound(new { message = "Playlist not found." });
+
+            var rows = await movieDb.PlaylistItems
+                .Where(p => p.ChannelId == id)
+                .OrderBy(p => p.Position).ThenBy(p => p.Id)
+                .Select(p => p.PlayableId)
+                .ToListAsync();
+            var titles = await TitlesForAsync(rows);
+            var items = rows.Select(pid =>
+            {
+                var t = titles.GetValueOrDefault(pid);
+                return new
+                {
+                    playableId = pid,
+                    title = t.Title ?? "",
+                    posterId = t.PosterId,
+                    kind = t.Kind ?? "movie",
+                    posterVersion = t.PosterVersion,
+                };
+            });
+            return Json(new { id = channel.Id, name = channel.Name, watchpartyToken = channel.WatchpartyToken, items });
+        }
+
+        public class PlaylistItemsRequest
+        {
+            public List<int>? Items { get; set; } // playable ids, in order
+        }
+
+        // Append items to the end of a playlist (the "add to playlist" flow).
+        [HttpPost("/API/Channel/Playlist/{id}/AddItems")]
+        public async Task<IActionResult> AddPlaylistItems(int id, [FromBody] PlaylistItemsRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            var channel = await LoadOwnedPlaylistAsync(id, userId.Value);
+            if (channel == null)
+                return NotFound(new { message = "Playlist not found." });
+
+            var items = await ValidateOrderedPlayablesAsync(request?.Items);
+            if (items.Count == 0)
+                return Json(new { count = await movieDb.PlaylistItems.CountAsync(p => p.ChannelId == id) });
+
+            int nextPos = 1 + (await movieDb.PlaylistItems.Where(p => p.ChannelId == id).MaxAsync(p => (int?)p.Position) ?? -1);
+            foreach (var pid in items)
+                movieDb.PlaylistItems.Add(new PlaylistItem { ChannelId = id, PlayableId = pid, Position = nextPos++ });
+            await movieDb.SaveChangesAsync();
+
+            scheduleService.InvalidateEligible(channel);
+            await DropPlaylistTailAsync(id);
+            return Json(new { count = await movieDb.PlaylistItems.CountAsync(p => p.ChannelId == id) });
+        }
+
+        // Replace the whole ordered lineup — covers reorder and remove in one call.
+        [HttpPost("/API/Channel/Playlist/{id}/SetItems")]
+        public async Task<IActionResult> SetPlaylistItems(int id, [FromBody] PlaylistItemsRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            var channel = await LoadOwnedPlaylistAsync(id, userId.Value);
+            if (channel == null)
+                return NotFound(new { message = "Playlist not found." });
+
+            var items = await ValidateOrderedPlayablesAsync(request?.Items);
+
+            var existing = await movieDb.PlaylistItems.Where(p => p.ChannelId == id).ToListAsync();
+            movieDb.PlaylistItems.RemoveRange(existing);
+            for (int pos = 0; pos < items.Count; pos++)
+                movieDb.PlaylistItems.Add(new PlaylistItem { ChannelId = id, PlayableId = items[pos], Position = pos });
+            await movieDb.SaveChangesAsync();
+
+            scheduleService.InvalidateEligible(channel);
+            await DropPlaylistTailAsync(id);
+            return Json(new { count = items.Count });
+        }
+
+        public class RenamePlaylistRequest
+        {
+            public string? Name { get; set; }
+        }
+
+        [HttpPost("/API/Channel/Playlist/{id}/Rename")]
+        public async Task<IActionResult> RenamePlaylist(int id, [FromBody] RenamePlaylistRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            var channel = await LoadOwnedPlaylistAsync(id, userId.Value);
+            if (channel == null)
+                return NotFound(new { message = "Playlist not found." });
+
+            var name = (request?.Name ?? "").Trim();
+            if (name.Length == 0)
+                return BadRequest(new { message = "A name is required." });
+            if (name.Length > 64) name = name.Substring(0, 64);
+            channel.Name = name;
+            await movieDb.SaveChangesAsync();
+            return Json(new { id = channel.Id, name = channel.Name });
+        }
+
+        [HttpPost("/API/Channel/Playlist/{id}/Delete")]
+        public async Task<IActionResult> DeletePlaylist(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            var channel = await LoadOwnedPlaylistAsync(id, userId.Value);
+            if (channel == null)
+                return NotFound(new { message = "Playlist not found." });
+
+            // Cascade removes the PlaylistItems and the materialized ChannelScheduleItems (FK cascade).
+            movieDb.Channels.Remove(channel);
+            await movieDb.SaveChangesAsync();
+            return Json(new { deleted = true });
         }
 
         // Poster + link info for one schedule item. PosterId + Kind ("movie"|"series"|"misc") pick the
