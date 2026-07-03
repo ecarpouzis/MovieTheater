@@ -61,20 +61,22 @@ const PROFILES = {
     keymap: DEFAULT_KEYMAP,
     hint: "Gamepad recommended. Keyboard: arrows = move, Z X A S = buttons, Q W = L/R, Enter = Start, Shift = Select.",
   },
-  // N64: mupen64plus-next maps N64 A ← RetroPad A, so under the default map "accelerate" lands on the
-  // EAST face button (feels wrong on an Xbox-style pad). Swap south↔east so N64 A sits on the bottom
-  // button. C-buttons ride the RIGHT ANALOG STICK (the core's default) — the pad's right stick, or
+  // N64: mupen64plus-next maps N64 A ← RetroPad **B** and N64 B ← RetroPad A (verified live in
+  // Bomberman 64's menus: PAD.B confirms, PAD.A backs out — the earlier assumption here was
+  // inverted, which put "back" on the bottom button and made every N64 menu feel broken). So the
+  // bottom physical button sends PAD.B (→ N64 A, accelerate/confirm) and east sends PAD.A (→ N64 B).
+  // C-buttons ride the RIGHT ANALOG STICK (the core's default) — the pad's right stick, or
   // I/J/K/L on the keyboard. Z is a trigger (LT/E), L/R the bumpers.
   n64: {
     gamepad: {
       ...DEFAULT_GAMEPAD,
-      0: PAD.A, // south → N64 A (accelerate / primary)
-      1: PAD.B, // east  → N64 B
+      0: PAD.B, // south → N64 A (accelerate / primary / menu-confirm)
+      1: PAD.A, // east  → N64 B
     },
     keymap: {
       ...DEFAULT_KEYMAP,
-      KeyX: PAD.A, KeyZ: PAD.B, // A (accelerate) on X, B on Z
-      Space: PAD.A,             // big primary key too
+      KeyX: PAD.B, KeyZ: PAD.A, // N64 A (accelerate/confirm) on X, N64 B on Z
+      Space: PAD.B,             // big primary key too
       KeyE: PAD.L2,             // Z trigger on E for keyboards without easy triggers
     },
     // Keyboard drive for the right analog stick = N64 C-buttons (camera).

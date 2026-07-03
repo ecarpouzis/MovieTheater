@@ -50,6 +50,9 @@ x-gpu-worker: &gpu-worker
     - /mnt/wslg:/mnt/wslg                   # WSLg runtime
     - ${ROMS_DIR:?set ROMS_DIR}:/roms:ro
     - ${SAVES_DIR:?set SAVES_DIR}:/saves
+    # libretro "system" dir (BIOS files). PS1 needs scph1001/scph5501; path per nanoarch.go:
+    # SYSTEM_DIRECTORY = <LocalPath>/system, LocalPath = ./libretro under the workdir.
+    - ${BIOS_DIR:?set BIOS_DIR}:/usr/local/share/cloud-game/libretro/system:ro
     - ./config.yaml:/usr/local/share/cloud-game/config.yaml:ro
     - cores:/usr/local/share/cloud-game/assets/cores
   # No Xvfb needed — WSLg provides the display. Flags per pkg/config/worker.go (--w-conf = a DIRECTORY).

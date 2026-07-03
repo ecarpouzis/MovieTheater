@@ -52,6 +52,12 @@ roms/
 Extensions per system: nes `.nes`; snes `.sfc/.smc`; genesis `.md/.gen/.smd/.bin`; gb `.gb`;
 gbc `.gbc`; gba `.gba`; n64 `.n64/.z64/.v64`; psx `.cue/.chd/.pbp`; arcade `.zip`.
 
+2D collections on `R:\Roms\Games` are zipped — extract the bare ROM out of each chosen zip (we
+don't rely on in-worker zip loading). PS1 uses bare `.chd` (the curated set at
+`F:\Emulation\roms\psx`). **PS1 BIOS**: put `scph1001.bin`/`scph5501.bin` in `BIOS_DIR`
+(D:\Arcade\bios) — the GPU compose mounts it at the core system dir
+(`/usr/local/share/cloud-game/libretro/system`).
+
 ## Bring-up
 
 ```bash

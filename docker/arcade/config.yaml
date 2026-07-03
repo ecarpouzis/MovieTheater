@@ -68,7 +68,12 @@ emulator:
             # Legacy (fast, inaccurate) blending ships ON in the core defaults — with it, Bomberman
             # 64's intro cinematic renders as flat color planes with no geometry on the D3D12 path.
             mupen64plus-EnableLegacyBlending: "False"
-            # Cutscenes/cinematics often composite via auxiliary color buffers.
+            # Cutscenes/cinematics often composite via auxiliary color buffers. With this on,
+            # Bomberman 64's attract/intro scenes render (mine-cart, snow demo — were flat planes).
+            # KNOWN LIMIT: its STORY cinematics (Adventure opening movie) still render as flat
+            # clear-color planes — every gliden64 FB option was tried (CopyColor To/From, CopyDepth,
+            # CopyAux, LegacyBlending); a real fix needs LLE RSP/RDP or a renderer fix on D3D12.
+            # In-engine gameplay/menus/training all render correctly; Battle mode has no cinematics.
             mupen64plus-EnableCopyAuxToRDRAM: "True"
 
         # 2D cores: stream at 3x with nearest-neighbour (the pipeline's default scaler) instead of
@@ -79,6 +84,8 @@ emulator:
           scale: 3
         nes:
           scale: 3
+        gba:
+          scale: 3
 
         pcsx:
           lib: pcsx_rearmed_libretro
@@ -87,10 +94,11 @@ emulator:
           options:
             pcsx_rearmed_drc: enabled     # dynarec on
         gen:
-          # ⚠ [unverified] confirm the exact lib name against the libretro buildbot core list.
+          # lib name verified live 2026-07-03 (Sonic 2 streams).
           lib: genesis_plus_gx_libretro
           roms: ["md", "gen", "smd", "bin"]
           folder: genesis
+          scale: 2   # 320x224 native -> 640x448 nearest, same crispness rationale as snes/nes
 
 encoder:
   video:
