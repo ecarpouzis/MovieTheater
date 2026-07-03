@@ -68,6 +68,17 @@ emulator:
             # Legacy (fast, inaccurate) blending ships ON in the core defaults — with it, Bomberman
             # 64's intro cinematic renders as flat color planes with no geometry on the D3D12 path.
             mupen64plus-EnableLegacyBlending: "False"
+            # Cutscenes/cinematics often composite via auxiliary color buffers.
+            mupen64plus-EnableCopyAuxToRDRAM: "True"
+
+        # 2D cores: stream at 3x with nearest-neighbour (the pipeline's default scaler) instead of
+        # native 256x224 — the browser's bilinear stretch of a tiny stream is what read as "fuzzy
+        # SNES", and no encoder preset can fix that. 768x672 crisp pixels cost NVENC nothing.
+        # (These merge INTO the default core entries per-key — lib/roms/etc. survive.)
+        snes:
+          scale: 3
+        nes:
+          scale: 3
 
         pcsx:
           lib: pcsx_rearmed_libretro

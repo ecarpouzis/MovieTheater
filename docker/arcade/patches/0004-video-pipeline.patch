@@ -1,5 +1,5 @@
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..445ba86 100644
+index 4a6171f..3ed0fe2 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
 @@ -32,12 +32,17 @@ static inline void doubleToFraction(const gdouble src, gint *num, gint *den) {
@@ -151,3 +151,16 @@ index 4a6171f..445ba86 100644
  	case "vp8", "vp9":
  		encoder := cmp.Or(opts.Encoder, fmt.Sprintf("vp%cenc", codec[len(codec)-1]))
  		threads := cmp.Or(conf.Video.Threads, cpuCores)
+@@ -453,8 +482,11 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+ 	if opts.Caps != "" {
+ 		build.write(" ! " + opts.Caps)
+ 	}
++	// max-buffers raised 1→4 (patch 0004): with 1, any WriteSample stall >1 frame period silently
++	// killed a frame at the sink (~5fps of steady loss measured). 4 absorbs the stalls; drop=true
++	// still bounds worst-case latency to 4 frames under sustained overload.
+ 	build.write(" ! queue name=video_q2 max-size-buffers=1 ")
+-	build.write("! appsink name=video_sink sync=false max-buffers=1 drop=true")
++	build.write("! appsink name=video_sink sync=false max-buffers=4 drop=true")
+ 
+ 	pipeDef := build.String()
+ 
