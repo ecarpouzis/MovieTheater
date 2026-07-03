@@ -234,6 +234,13 @@ export function createCloudRetroSession(descriptor, opts) {
     // stream — audio arrives last, so you'd get sound but a black frame (the video track orphaned).
     // Collect EVERY inbound track into one MediaStream so the element plays both.
     pc.ontrack = (e) => {
+      // Cloud gaming wants minimal receive buffering. Chrome's ADAPTIVE jitter buffer is tiny for
+      // video (~8ms measured) but the AUDIO buffer grows unbounded (24→77ms in 30s, from encoder
+      // clock drift) — and the browser lip-syncs video playout to audio, so the whole stream drifts
+      // later the longer you play. Pin both receivers to the minimum. (jitterBufferTarget is the
+      // standard; playoutDelayHint is the legacy Chrome name — set both, harmless where unknown.)
+      try { e.receiver.jitterBufferTarget = 0; } catch { /* older browsers */ }
+      try { e.receiver.playoutDelayHint = 0; } catch { /* non-Chrome */ }
       inboundStream.addTrack(e.track);
       if (videoEl && videoEl.srcObject !== inboundStream) {
         videoEl.srcObject = inboundStream;
