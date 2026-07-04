@@ -136,6 +136,42 @@ namespace MovieTheater.Tests
             Assert.True(File.Exists(arc), "source .zip never deleted");
         }
 
+        [Fact]
+        public async Task Materializes_a_bare_rom_by_copying_not_extracting()
+        {
+            // N64-shaped: the source IS the ROM (a .z64), so the cache copies it in rather than extracting.
+            // (No 7-Zip needed for the copy path.)
+            const string key = "Super Mario 64 (USA)";
+            var srcRom = Path.Combine(archivesDir, key + ".z64");
+            var bytes = new byte[256 * 1024]; new Random(3).NextBytes(bytes);
+            File.WriteAllBytes(srcRom, bytes);
+
+            var manifest = Path.Combine(root, "manifest-n64.json");
+            File.WriteAllText(manifest, JsonSerializer.Serialize(new
+            {
+                version = 1,
+                games = new object[]
+                {
+                    new { gameId = 20, gameKey = key, system = "n64", folder = "n64", archive = srcRom, exts = new[] { ".n64", ".z64", ".v64" } },
+                },
+            }));
+            var cache = new RomCache(new RomCacheOptions
+            {
+                ManifestPath = manifest, RomsDir = romsDir, SevenZipPath = SevenZip, MaxBytes = 1024L * 1024 * 1024,
+            }, NullLogger.Instance);
+
+            await cache.EnsureMaterializedAsync(20);
+            var dest = Path.Combine(romsDir, "n64", key + ".z64");
+            Assert.True(File.Exists(dest), "bare .z64 copied into the mount");
+            Assert.Equal(bytes, File.ReadAllBytes(dest));
+            Assert.True(File.Exists(srcRom), "source ROM untouched");
+
+            var mt = File.GetLastWriteTimeUtc(dest);
+            await Task.Delay(20);
+            await cache.EnsureMaterializedAsync(20); // idempotent — no re-copy
+            Assert.Equal(mt, File.GetLastWriteTimeUtc(dest));
+        }
+
         // A PSX-shaped archive: <key>.cue + <key> (Track 1).bin of binMb, zipped to <key>.7z.
         private void MakeArchive(string key, int binMb)
         {

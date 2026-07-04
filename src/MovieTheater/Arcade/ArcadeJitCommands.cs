@@ -74,7 +74,10 @@ namespace MovieTheater.Arcade
 
             await using var db = await dbFactory.CreateDbContextAsync();
 
-            var romExt = sys.Extensions[0]; // the nominal extracted extension for RomPath (.cue, .sfc, .nes, …)
+            // When the source file IS the ROM the core loads (a bare .z64, a MAME .zip), keep that real
+            // extension so the RomPath matches on disk and any pre-staged copy (no duplicate rows); when the
+            // source is an archive that unpacks to a different ROM, use the system's nominal extension.
+            var romExt = sys.Extensions.Any(e => e.Equals(ext, StringComparison.OrdinalIgnoreCase)) ? ext : sys.Extensions[0];
             var all = Directory.EnumerateFiles(dir, "*" + ext, SearchOption.TopDirectoryOnly)
                 .Select(p => BuildEntry(p, sys.Code, folder, romExt, sys.MaxPlayers))
                 .OrderBy(e => e.ArchiveName, StringComparer.Ordinal)

@@ -191,13 +191,35 @@ public sealed class RomCache
     // extensions (a PS1 .cue, a SNES .sfc, a Genesis .md/.bin, …).
     private bool IsPresent(ManifestGame g) => ExtsOf(g).Any(e => File.Exists(RomDest(g, e)));
 
+    // The source IS the launch ROM (an uncompressed N64 .z64, or a MAME .zip fbneo loads whole) when its
+    // extension is one of the system's ROM extensions — then we COPY it into the mount rather than extract.
+    // Otherwise it's an archive (.7z/.zip) that contains the ROM, and we extract. Either way it's still a
+    // bounded, on-demand, LRU-evicted cache — never a mass pre-copy.
+    private bool SourceIsRom(ManifestGame g) =>
+        ExtsOf(g).Contains(Path.GetExtension(g.Archive), StringComparer.OrdinalIgnoreCase);
+
+    private string CopyDest(ManifestGame g) =>
+        Path.GetFullPath(Path.Combine(FolderDest(g), Path.GetFileName(g.Archive)));
+
     private async Task ExtractAsync(ManifestGame g, CancellationToken ct)
     {
         if (!File.Exists(g.Archive))
-            throw new FileNotFoundException($"source archive missing: {g.Archive}");
+            throw new FileNotFoundException($"source ROM/archive missing: {g.Archive}");
 
         var dest = FolderDest(g);
         Directory.CreateDirectory(dest);
+
+        if (SourceIsRom(g))
+        {
+            var to = CopyDest(g);
+            using var src = new FileStream(g.Archive, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var dst = new FileStream(to, FileMode.Create, FileAccess.Write, FileShare.None);
+            await src.CopyToAsync(dst, ct);
+            if (!IsPresent(g))
+                throw new InvalidOperationException($"copy of {g.GameKey} produced no {string.Join('/', ExtsOf(g))} in {dest}.");
+            return;
+        }
+
         // 7z x: extract preserving internal names, overwrite, into the system folder. 7z returns exit 1
         // on a *warning* (non-fatal) and 2+ on a real error — so success is gated on the expected launch
         // ROM actually appearing, not on the exit code.
@@ -225,6 +247,13 @@ public sealed class RomCache
     // and actually exist are kept (the eviction whitelist).
     private List<string> ExtractedFilesOnDisk(ManifestGame g)
     {
+        // A copied-in ROM owns exactly one file on disk (the copy); an extracted archive owns whatever it
+        // unpacked, derived from its listing.
+        if (SourceIsRom(g))
+        {
+            var to = CopyDest(g);
+            return (IsUnderRoot(to) && File.Exists(to)) ? new List<string> { to } : new List<string>();
+        }
         var result = new List<string>();
         var dest = FolderDest(g);
         foreach (var internalPath in ListArchiveEntries(g.Archive))
