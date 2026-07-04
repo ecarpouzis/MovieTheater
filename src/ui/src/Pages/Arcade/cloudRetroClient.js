@@ -83,6 +83,25 @@ const PROFILES = {
     rstick: { up: "KeyI", down: "KeyK", left: "KeyJ", right: "KeyL" },
     hint: "Gamepad recommended (right stick = C-buttons). Keyboard: arrows = steer/move, X = A (accelerate), Z = B, I J K L = C-buttons, E = Z, Q W = L/R, Enter = Start.",
   },
+  // PSP: ppsspp maps PSP Cross ← RetroPad B, Circle ← A, Square ← Y, Triangle ← X — so the DEFAULT
+  // positional map is already correct (south → Cross/confirm). Analog nub = left stick; L/R are the
+  // shoulder buttons. Just a tailored hint + Q/W on the shoulders.
+  psp: {
+    gamepad: DEFAULT_GAMEPAD,
+    keymap: { ...DEFAULT_KEYMAP },
+    hint: "Gamepad recommended (left stick = analog nub). Keyboard: arrows = D-pad, Z = Cross, X = Circle, A = Square, S = Triangle, Q W = L/R, Enter = Start, Shift = Select.",
+  },
+  // Dreamcast: flycast maps DC A ← RetroPad B, B ← A, X ← Y, Y ← X (south → A/confirm, so the default
+  // positional map fits). The DC triggers are ANALOG L/R → RetroPad L2/R2, not the bumpers, so put the
+  // keyboard triggers on L2/R2. Analog stick = left stick.
+  dc: {
+    gamepad: DEFAULT_GAMEPAD,
+    keymap: {
+      ...DEFAULT_KEYMAP,
+      KeyQ: PAD.L2, KeyW: PAD.R2, // DC analog triggers
+    },
+    hint: "Gamepad recommended (left stick = analog; triggers = L/R). Keyboard: arrows = move, Z = A, X = B, A = X, S = Y, Q W = triggers, Enter = Start.",
+  },
 };
 
 function profileFor(system) {

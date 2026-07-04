@@ -30,6 +30,23 @@ namespace MovieTheater.Arcade
             ["gba"] = "Nintendo - Game Boy Advance",
             ["n64"] = "Nintendo - Nintendo 64",
             ["ps1"] = "Sony - PlayStation",
+            // Added 2026-07. naomi/atomiswave/neogeo are arcade-named (like fbneo) → omitted, they keep
+            // the placeholder. A repo-name miss is a cosmetic non-error (placeholder card), never fatal.
+            ["psp"] = "Sony - PlayStation Portable",
+            ["dc"] = "Sega - Dreamcast",
+            ["sms"] = "Sega - Master System - Mark III",
+            ["gg"] = "Sega - Game Gear",
+            ["sg1000"] = "Sega - SG-1000",
+            ["segacd"] = "Sega - Mega-CD - Sega CD",
+            ["sega32x"] = "Sega - 32X",
+            ["pce"] = "NEC - PC Engine - TurboGrafx 16",
+            ["ngpc"] = "SNK - Neo Geo Pocket Color",
+            ["wsc"] = "Bandai - WonderSwan Color",
+            ["a2600"] = "Atari - 2600",
+            ["a7800"] = "Atari - 7800",
+            ["lynx"] = "Atari - Lynx",
+            ["vb"] = "Nintendo - Virtual Boy",
+            ["fds"] = "Nintendo - Family Computer Disk System",
         };
 
         public static bool HasRepo(string system) => ThumbRepo.ContainsKey(system);

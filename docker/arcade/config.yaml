@@ -117,6 +117,126 @@ emulator:
           folder: genesis
           scale: 2   # 320x224 native -> 640x448 nearest, same crispness rationale as snes/nes
 
+        # ─── GPU / GL 3D cores (same D3D12 + NVENC path proven by n64/psx) ────────────────────
+        # GL cores MUST set isGlAllowed (HW render) AND coreAspectRatio: without the latter the
+        # GAME_START `av` payload is null and the client never learns to flip the bottom-left-origin
+        # GL frame → upside down (exact n64 lesson). Cores auto-download via repo.sync (no rebuild).
+        #
+        # PSP: no BIOS required. Ad-hoc multiplayer is unsupported in libretro → 1-player rooms
+        # (set MaxPlayers 1 at ingest, like our n64 solo rooms).
+        psp:
+          lib: ppsspp_libretro
+          folder: psp
+          roms: ["iso", "cso", "pbp", "chd"]
+          isGlAllowed: true
+          coreAspectRatio: true
+          options:
+            # 2x native (480x272 → 960x544) internal render; downsampled encode reads crisp.
+            ppsspp_internal_resolution: "960x544"
+        # Dreamcast: needs dc_boot.bin + dc_flash.bin in the BIOS mount. Genuinely 2-player
+        # (fighters/sports/Power Stone) — the best fit yet for the shared-room model.
+        dc:
+          lib: flycast_libretro
+          folder: dc
+          roms: ["chd", "gdi", "cdi", "cue"]
+          isGlAllowed: true
+          coreAspectRatio: true
+        # Naomi + Atomiswave arcade ride the same flycast core (need naomi.zip / awbios.zip in the
+        # BIOS mount). Cores wired now (cheap); stage + verify AFTER Dreamcast proves flycast on D3D12.
+        naomi:
+          lib: flycast_libretro
+          folder: naomi
+          roms: ["zip", "chd", "lst", "dat", "bin"]
+          isGlAllowed: true
+          coreAspectRatio: true
+        atomiswave:
+          lib: flycast_libretro
+          folder: atomiswave
+          roms: ["zip", "chd"]
+          isGlAllowed: true
+          coreAspectRatio: true
+
+        # ─── Sega family on the genesis_plus_gx core we already load (the gb/gbc pattern: one lib,
+        # distinct folders). Master System / Game Gear / SG-1000 are BIOS-free; Sega CD needs a
+        # region BIOS (bios_CD_U.bin etc.) in the BIOS mount. ──────────────────────────────────
+        sms:
+          lib: genesis_plus_gx_libretro
+          folder: sms
+          roms: ["sms"]
+          scale: 3
+        gg:
+          lib: genesis_plus_gx_libretro
+          folder: gg
+          roms: ["gg"]
+          scale: 4   # 160x144 native — needs more upscale than the console cores
+        sg1000:
+          lib: genesis_plus_gx_libretro
+          folder: sg1000
+          roms: ["sg"]
+          scale: 3
+        segacd:
+          lib: genesis_plus_gx_libretro
+          folder: segacd
+          roms: ["cue", "chd", "iso"]
+          scale: 2
+
+        # ─── Other 2D cores (each pins its folder so extension collisions can't cross-load) ──────
+        sega32x:
+          lib: picodrive_libretro
+          folder: sega32x
+          roms: ["32x", "bin"]
+          scale: 2
+        pce:
+          # mednafen_pce (full) covers TurboGrafx-16 / PC Engine + SuperGrafx + PCE-CD (syscard3.pce).
+          lib: mednafen_pce_libretro
+          folder: pce
+          roms: ["pce", "sgx", "cue", "chd"]
+          scale: 3
+        ngpc:
+          lib: mednafen_ngp_libretro
+          folder: ngpc
+          roms: ["ngp", "ngc"]
+          scale: 4
+        wsc:
+          lib: mednafen_wswan_libretro
+          folder: wsc
+          roms: ["ws", "wsc", "pc2"]
+          scale: 4
+        a2600:
+          lib: stella_libretro
+          folder: a2600
+          roms: ["a26", "bin"]
+          scale: 3
+        a7800:
+          lib: prosystem_libretro
+          folder: a7800
+          roms: ["a78"]
+          scale: 3
+        lynx:
+          # mednafen_lynx needs lynxboot.img in the BIOS mount.
+          lib: mednafen_lynx_libretro
+          folder: lynx
+          roms: ["lnx"]
+          scale: 4
+        vb:
+          lib: mednafen_vb_libretro
+          folder: vb
+          roms: ["vb", "vboy"]
+          scale: 3
+        fds:
+          # Famicom Disk System via nestopia; needs disksys.rom in the BIOS mount.
+          lib: nestopia_libretro
+          folder: fds
+          roms: ["fds"]
+          scale: 3
+        neogeo:
+          # Neo Geo AES/MVS romsets via fbneo (the arcade core); needs neogeo.zip in the BIOS mount.
+          # Finicky (parent romset grind) — stage last.
+          lib: fbneo_libretro
+          folder: neogeo
+          roms: ["zip"]
+          scale: 2
+
 encoder:
   video:
     # h264 = NVENC on the 4070 Ti (nvh264enc via list.h264 below) — encoding off the CPU entirely,

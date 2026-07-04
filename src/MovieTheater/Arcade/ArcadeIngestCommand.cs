@@ -237,6 +237,28 @@ namespace MovieTheater.Arcade
             // FBNeo loads the MAME/Neo-Geo/CPS .zip romset WHOLE (never extracted) from the core's "mame"
             // folder — so arcade materializes as a JIT-COPY into roms/mame (source ext .zip ∈ these exts).
             new("arcade",  new[] { "mame" },             new[] { ".zip" },                       4),
+
+            // ─── Systems added 2026-07 (GPU/GL 3D + 2D breadth). Codes match the config.yaml core
+            // `folder` keys and the roms/ subfolders. MaxPlayers is the system capability; a title with
+            // fewer real players just leaves the extra seats unfilled (same convention as snes=5). ───
+            new("psp",        new[] { "psp" },        new[] { ".iso", ".cso", ".pbp", ".chd" },  1),  // GL; no BIOS; ad-hoc MP unsupported
+            new("dc",         new[] { "dc" },         new[] { ".chd", ".gdi", ".cdi", ".cue" },  2),  // GL; dc_boot.bin + dc_flash.bin
+            new("naomi",      new[] { "naomi" },      new[] { ".zip", ".chd", ".lst", ".dat" },  2),  // flycast arcade; naomi.zip BIOS
+            new("atomiswave", new[] { "atomiswave" }, new[] { ".zip", ".chd" },                  2),  // flycast arcade; awbios.zip BIOS
+            new("sms",        new[] { "sms" },        new[] { ".sms" },                          2),
+            new("gg",         new[] { "gg" },         new[] { ".gg" },                           1),
+            new("sg1000",     new[] { "sg1000" },     new[] { ".sg" },                           2),
+            new("segacd",     new[] { "segacd" },     new[] { ".cue", ".chd", ".iso" },          2),  // bios_CD_U.bin
+            new("sega32x",    new[] { "sega32x" },    new[] { ".32x", ".bin" },                  2),
+            new("pce",        new[] { "pce" },        new[] { ".pce", ".sgx", ".cue", ".chd" },  2),  // PCE-CD needs syscard3.pce
+            new("ngpc",       new[] { "ngpc" },       new[] { ".ngp", ".ngc" },                  1),
+            new("wsc",        new[] { "wsc" },        new[] { ".ws", ".wsc", ".pc2" },           1),
+            new("a2600",      new[] { "a2600" },      new[] { ".a26", ".bin" },                  2),
+            new("a7800",      new[] { "a7800" },      new[] { ".a78" },                          2),
+            new("lynx",       new[] { "lynx" },       new[] { ".lnx" },                          1),  // lynxboot.img
+            new("vb",         new[] { "vb" },         new[] { ".vb", ".vboy" },                  1),
+            new("fds",        new[] { "fds" },        new[] { ".fds" },                          2),  // disksys.rom
+            new("neogeo",     new[] { "neogeo" },     new[] { ".zip" },                          2),  // fbneo; neogeo.zip BIOS
         };
     }
 }
