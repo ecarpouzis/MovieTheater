@@ -96,6 +96,46 @@ namespace MovieTheater.Tests
             cache.Unpin(1);
         }
 
+        [Fact]
+        public async Task Extracts_zipped_2D_rom_by_system_extension()
+        {
+            if (!File.Exists(SevenZip)) return; // 7-Zip absent → skip (present in dev/CI)
+            // A SNES-shaped .zip: <key>.sfc inside <key>.zip (the R: 2D layout, verified live).
+            const string key = "Super Mario World (USA)";
+            var stage = Path.Combine(root, "stage2d");
+            Directory.CreateDirectory(stage);
+            var rom = new byte[512 * 1024]; new Random(2).NextBytes(rom);
+            File.WriteAllBytes(Path.Combine(stage, key + ".sfc"), rom);
+            var arc = Path.Combine(archivesDir, key + ".zip");
+            RunSevenZip("a", "-tzip", arc, Path.Combine(stage, "*"));
+            Directory.Delete(stage, true);
+
+            var manifest = Path.Combine(root, "manifest2d.json");
+            File.WriteAllText(manifest, JsonSerializer.Serialize(new
+            {
+                version = 1,
+                games = new object[]
+                {
+                    new { gameId = 10, gameKey = key, system = "snes", folder = "snes", archive = arc, exts = new[] { ".sfc", ".smc" } },
+                },
+            }));
+            var cache = new RomCache(new RomCacheOptions
+            {
+                ManifestPath = manifest, RomsDir = romsDir, SevenZipPath = SevenZip, MaxBytes = 1024L * 1024 * 1024,
+            }, NullLogger.Instance);
+
+            Assert.True(cache.IsManaged(10));
+            await cache.EnsureMaterializedAsync(10);
+            var sfc = Path.Combine(romsDir, "snes", key + ".sfc");
+            Assert.True(File.Exists(sfc), "SNES rom extracted, found by its .sfc extension");
+
+            var mtime = File.GetLastWriteTimeUtc(sfc);
+            await Task.Delay(20);
+            await cache.EnsureMaterializedAsync(10); // idempotent — no re-extract
+            Assert.Equal(mtime, File.GetLastWriteTimeUtc(sfc));
+            Assert.True(File.Exists(arc), "source .zip never deleted");
+        }
+
         // A PSX-shaped archive: <key>.cue + <key> (Track 1).bin of binMb, zipped to <key>.7z.
         private void MakeArchive(string key, int binMb)
         {
@@ -136,8 +176,8 @@ namespace MovieTheater.Tests
                 version = 1,
                 games = new object[]
                 {
-                    new { gameId = 1, gameKey = "Foo (USA)", system = "ps1", folder = "psx", archive = Path.Combine(archivesDir, "Foo (USA).7z") },
-                    new { gameId = 2, gameKey = "Bar (USA)", system = "ps1", folder = "psx", archive = Path.Combine(archivesDir, "Bar (USA).7z") },
+                    new { gameId = 1, gameKey = "Foo (USA)", system = "ps1", folder = "psx", archive = Path.Combine(archivesDir, "Foo (USA).7z"), exts = new[] { ".cue", ".chd" } },
+                    new { gameId = 2, gameKey = "Bar (USA)", system = "ps1", folder = "psx", archive = Path.Combine(archivesDir, "Bar (USA).7z"), exts = new[] { ".cue", ".chd" } },
                 },
             });
             File.WriteAllText(path, json);

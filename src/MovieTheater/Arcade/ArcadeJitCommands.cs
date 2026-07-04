@@ -74,8 +74,9 @@ namespace MovieTheater.Arcade
 
             await using var db = await dbFactory.CreateDbContextAsync();
 
+            var romExt = sys.Extensions[0]; // the nominal extracted extension for RomPath (.cue, .sfc, .nes, …)
             var all = Directory.EnumerateFiles(dir, "*" + ext, SearchOption.TopDirectoryOnly)
-                .Select(p => BuildEntry(p, sys.Code, folder, sys.MaxPlayers))
+                .Select(p => BuildEntry(p, sys.Code, folder, romExt, sys.MaxPlayers))
                 .OrderBy(e => e.ArchiveName, StringComparer.Ordinal)
                 .ToList();
             if (all.Count == 0)
@@ -138,16 +139,16 @@ namespace MovieTheater.Arcade
             }
         }
 
-        private static JitEntry BuildEntry(string archivePath, string system, string folder, byte maxPlayers)
+        private static JitEntry BuildEntry(string archivePath, string system, string folder, string romExt, byte maxPlayers)
         {
-            var name = Path.GetFileNameWithoutExtension(archivePath);   // "Air Combat (USA)"
+            var name = Path.GetFileNameWithoutExtension(archivePath);   // "Air Combat (USA)" / "Super Mario World (USA)"
             return new JitEntry(
                 Archive: Path.GetFullPath(archivePath),
                 ArchiveName: Path.GetFileName(archivePath),
                 System: system,
                 Folder: folder,
-                GameKey: name,                                          // == the .cue base name inside a Redump .7z
-                RomPath: $"{folder}/{name}.cue",                        // expected extracted, CloudRetro-visible path
+                GameKey: name,                                          // == the launch-ROM base name inside the archive
+                RomPath: $"{folder}/{name}{romExt}",                    // nominal extracted, CloudRetro-visible path
                 Title: ArcadeNaming.CleanTitle(name),
                 SortTitle: ArcadeNaming.ArticleInvert(ArcadeNaming.CleanTitle(name)),
                 MaxPlayers: maxPlayers);
@@ -194,7 +195,8 @@ namespace MovieTheater.Arcade
                 GameKey: g.CloudRetroGameKey,
                 System: g.System,
                 Folder: FolderOf(g.RomPath),
-                Archive: g.SourceArchivePath!)).ToList();
+                Archive: g.SourceArchivePath!,
+                Exts: ExtsFor(g.System))).ToList();
 
             var manifest = new Manifest(Version: 1, Games: games);
             var json = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true });
@@ -213,8 +215,13 @@ namespace MovieTheater.Arcade
             return slash > 0 ? romPath[..slash] : "";
         }
 
+        // The system's candidate ROM extensions, so the gateway can find the extracted launch ROM
+        // regardless of which one an archive holds (SNES .sfc vs .smc, Genesis .md/.gen/.smd/.bin).
+        private static string[] ExtsFor(string system) =>
+            ArcadeSystems.All.FirstOrDefault(s => s.Code == system)?.Extensions ?? new[] { ".cue" };
+
         private sealed record Manifest(int Version, List<ManifestGame> Games);
-        private sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive);
+        private sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[] Exts);
     }
 
     /// <summary>Shared title tidying for the arcade catalog (drop No-Intro/GoodTools tags; article-invert

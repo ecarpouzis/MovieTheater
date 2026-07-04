@@ -56,7 +56,11 @@ public sealed class RomCacheOptions
 
 public sealed class RomCache
 {
-    public sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive);
+    // Exts = the system's candidate ROM extensions (e.g. [".cue",".chd"] for PS1, [".sfc",".smc"] for
+    // SNES, [".md",".gen",".smd",".bin"] for Genesis). A JIT archive holds one launch ROM whose base
+    // name equals the archive's; after extraction "present" = <GameKey><one of Exts> exists. Nullable for
+    // back-compat with a pre-generalization manifest (then we assume the PS1 default, ".cue").
+    public sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[]? Exts = null);
     private sealed record Manifest(int Version, List<ManifestGame> Games);
 
     private sealed class GameState
@@ -173,14 +177,19 @@ public sealed class RomCache
         }
     }
 
-    private string CueDest(ManifestGame g) =>
-        Path.GetFullPath(Path.Combine(romsRoot, g.Folder, g.GameKey + ".cue"));
+    private static readonly string[] DefaultExts = { ".cue" };
+
+    private string[] ExtsOf(ManifestGame g) => (g.Exts is { Length: > 0 }) ? g.Exts : DefaultExts;
+
+    private string RomDest(ManifestGame g, string ext) =>
+        Path.GetFullPath(Path.Combine(romsRoot, g.Folder, g.GameKey + ext));
 
     private string FolderDest(ManifestGame g) =>
         Path.GetFullPath(Path.Combine(romsRoot, g.Folder));
 
-    // "Present" = the launch file the catalog promised (its .cue) actually exists on disk.
-    private bool IsPresent(ManifestGame g) => File.Exists(CueDest(g));
+    // "Present" = the launch ROM the catalog promised exists on disk under one of the system's candidate
+    // extensions (a PS1 .cue, a SNES .sfc, a Genesis .md/.bin, …).
+    private bool IsPresent(ManifestGame g) => ExtsOf(g).Any(e => File.Exists(RomDest(g, e)));
 
     private async Task ExtractAsync(ManifestGame g, CancellationToken ct)
     {
@@ -190,12 +199,12 @@ public sealed class RomCache
         var dest = FolderDest(g);
         Directory.CreateDirectory(dest);
         // 7z x: extract preserving internal names, overwrite, into the system folder. 7z returns exit 1
-        // on a *warning* (non-fatal) and 2+ on a real error — so success is gated on the expected cue
-        // actually appearing, not on the exit code.
+        // on a *warning* (non-fatal) and 2+ on a real error — so success is gated on the expected launch
+        // ROM actually appearing, not on the exit code.
         var (code, err) = await RunSevenZipAsync(new[] { "x", "-y", "-bd", g.Archive, "-o" + dest }, ct);
         if (!IsPresent(g))
             throw new InvalidOperationException(
-                $"7z exit {code} extracting {g.GameKey}; expected cue not found: {CueDest(g)}. {Trunc(err)}");
+                $"7z exit {code} extracting {g.GameKey}; no {string.Join('/', ExtsOf(g))} found in {dest}. {Trunc(err)}");
     }
 
     private void RecordMaterialized(int gameId, ManifestGame g)
