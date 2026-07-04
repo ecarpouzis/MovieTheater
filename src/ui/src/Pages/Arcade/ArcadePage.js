@@ -12,6 +12,10 @@ const SYSTEM_LABEL = {
 };
 const systemLabel = (s) => SYSTEM_LABEL[s] || (s ? s.toUpperCase() : "");
 
+// Systems the box-art route can source (libretro-thumbnails) — so a card requests /ArcadeImage even before
+// its art is cached (the route lazily fetches on first view). Arcade is skipped (no repo → don't 404 36k cards).
+const ART_SYSTEMS = new Set(["nes", "snes", "genesis", "gb", "gbc", "gba", "n64", "ps1"]);
+
 /**
  * The /arcade lobby (docs/arcade-plan.md §7). Over ~12,500 games, this is SERVER-SIDE filtered + paged:
  * the filter controls live in the navbar (ArcadeNavContent) as URL params, and this page fetches the
@@ -177,7 +181,7 @@ export default function ArcadePage() {
 
 // Box art via /ArcadeImage/{id}; until it's populated, a labeled placeholder (no CRT/gradient effects).
 function GameCover({ game }) {
-  const [broken, setBroken] = useState(!game.hasBoxArt);
+  const [broken, setBroken] = useState(!(game.hasBoxArt || ART_SYSTEMS.has(game.system)));
   const height = 150;
   if (broken) {
     return (

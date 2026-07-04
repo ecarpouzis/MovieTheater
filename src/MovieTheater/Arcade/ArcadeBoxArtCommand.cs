@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -11,25 +10,21 @@ using Microsoft.EntityFrameworkCore;
 using MovieTheater.Console;
 using MovieTheater.Db;
 using MovieTheater.Services;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.Processing;
 
 namespace MovieTheater.Arcade
 {
     /// <summary>
-    /// Best-effort box art for the arcade catalog from the community libretro-thumbnails repos
-    /// (arcade-plan.md §5). For each enabled game with no <c>BoxArtPath</c>, it tries
-    /// <c>Named_Boxarts/&lt;name&gt;.png</c> in that system's thumbnail repo (matched on the raw filename,
-    /// which follows No-Intro naming), saves a hit under the posters mount, and records the path. Misses
-    /// are listed for hand-fixing — box art is cosmetic, so a miss is not an error.
+    /// Bulk box art for the arcade catalog, from the community libretro-thumbnails repos, downscaled to
+    /// thumbnails (via <see cref="ArcadeBoxArt"/> — the same fetch the on-demand <c>/ArcadeImage</c> route
+    /// uses). For each enabled game with no <c>BoxArtPath</c>, tries its system's <c>Named_Boxarts/&lt;name&gt;.png</c>,
+    /// caches a hit under the posters mount, records the path. Arcade (fbneo) is skipped (MAME names don't
+    /// match). Misses are cosmetic non-errors.
     ///
-    /// <para>Bulk-job rules: bounded by <c>--limit</c>, resumable via an <c>--after-id</c> cursor, reports
-    /// <c>{fetched, missed, remaining, nextAfterId}</c>, idempotent (skips games that already have art
-    /// unless <c>--overwrite</c>), and writes nothing without <c>--apply</c>. Runs where the posters mount
-    /// is present (prod / the box), and needs outbound network to raw.githubusercontent.com.</para>
+    /// <para>Bulk-job rules: bounded by <c>--limit</c>, resumable via <c>--after-id</c>, reports
+    /// <c>{fetched, missed, remaining, nextAfterId}</c>, idempotent (skips games that already have art unless
+    /// <c>--overwrite</c>), writes nothing without <c>--apply</c>. Run where the posters mount is present.</para>
     /// </summary>
-    [Command("arcade-boxart", Description = "Fetch arcade box art from libretro-thumbnails (dry-run unless --apply).")]
+    [Command("arcade-boxart", Description = "Fetch arcade box art thumbnails from libretro-thumbnails (dry-run unless --apply).")]
     public class ArcadeBoxArtCommand : BasicDICommand, ICommand
     {
         [CommandOption("apply", Description = "Write files + rows. Omit for a dry run (default).")]
@@ -44,22 +39,8 @@ namespace MovieTheater.Arcade
         [CommandOption("overwrite", Description = "Re-fetch games that already have box art.")]
         public bool Overwrite { get; set; }
 
-        [CommandOption("thumb-px", Description = "Max thumbnail dimension in px (default 220). Full art is downscaled to this so the store stays small.")]
+        [CommandOption("thumb-px", Description = "Max thumbnail dimension in px (default 220).")]
         public int ThumbPx { get; set; } = 220;
-
-        // System code → libretro-thumbnails repo name. Arcade (fbneo) box art rarely name-matches, so it's
-        // deliberately omitted (its cards keep the placeholder).
-        private static readonly Dictionary<string, string> ThumbRepo = new()
-        {
-            ["nes"] = "Nintendo - Nintendo Entertainment System",
-            ["snes"] = "Nintendo - Super Nintendo Entertainment System",
-            ["genesis"] = "Sega - Mega Drive - Genesis",
-            ["gb"] = "Nintendo - Game Boy",
-            ["gbc"] = "Nintendo - Game Boy Color",
-            ["gba"] = "Nintendo - Game Boy Advance",
-            ["n64"] = "Nintendo - Nintendo 64",
-            ["ps1"] = "Sony - PlayStation",
-        };
 
         private readonly IDbContextFactory<MovieDb> dbFactory;
         private readonly MovieTheaterConfiguration config;
@@ -79,7 +60,7 @@ namespace MovieTheater.Arcade
 
             await using var db = await dbFactory.CreateDbContextAsync();
 
-            var query = db.ArcadeGames.Where(g => g.IsEnabled && g.Id > AfterId);
+            var query = db.ArcadeGames.Where(g => g.IsEnabled && g.Id > AfterId && ArcadeBoxArt.ThumbRepo.Keys.Contains(g.System));
             if (!Overwrite) query = query.Where(g => g.BoxArtPath == null);
             var batch = await query.OrderBy(g => g.Id).Take(Math.Max(1, Limit)).ToListAsync();
             var remaining = await query.CountAsync() - batch.Count;
@@ -87,26 +68,19 @@ namespace MovieTheater.Arcade
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
             http.DefaultRequestHeaders.UserAgent.ParseAdd("MovieTheater-arcade-boxart/1.0");
 
-            int fetched = 0, missed = 0;
-            int lastId = AfterId;
+            int fetched = 0, missed = 0, lastId = AfterId;
             foreach (var game in batch)
             {
                 lastId = game.Id;
-                if (!ThumbRepo.TryGetValue(game.System, out var repo))
-                { missed++; w.WriteLine($"  ? [{game.System}] {game.Title} (no thumbnail repo for system)"); continue; }
+                var thumb = await ArcadeBoxArt.TryFetchThumbnailAsync(http, game.System, game.CloudRetroGameKey, ThumbPx);
+                if (thumb == null) { missed++; w.WriteLine($"  ? [{game.System}] {game.Title} (no match)"); continue; }
 
-                // libretro-thumbnails GitHub repos use underscores for spaces (Nintendo_-_Nintendo_64); the
-                // image FILENAME keeps spaces (URL-encoded). Escaping the repo with %20 → 404 on every game.
-                var url = $"https://raw.githubusercontent.com/libretro-thumbnails/{repo.Replace(' ', '_')}/master/Named_Boxarts/{Uri.EscapeDataString(LibretroName(game.CloudRetroGameKey))}.png";
-                byte[]? bytes = await TryDownloadPng(http, url);
-                if (bytes == null) { missed++; w.WriteLine($"  ? [{game.System}] {game.Title} (no match)"); continue; }
-
-                var rel = $"arcade/{game.System}/{SafeFileName(game.CloudRetroGameKey)}.png";
+                var rel = $"arcade/{game.System}/{game.Id}.png";
                 if (Apply)
                 {
                     var dest = Path.Combine(postersRoot, rel.Replace('/', Path.DirectorySeparatorChar));
                     Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-                    await File.WriteAllBytesAsync(dest, Thumbnail(bytes, ThumbPx));
+                    await File.WriteAllBytesAsync(dest, thumb);
                     game.BoxArtPath = rel;
                 }
                 fetched++;
@@ -120,53 +94,6 @@ namespace MovieTheater.Arcade
             w.WriteLine($"{{ fetched: {fetched}, missed: {missed}, remaining: {remaining}, nextAfterId: {lastId} }}");
             if (!Apply) w.WriteLine("DRY RUN — no files or rows written. Re-run with --apply.");
             else if (remaining > 0) w.WriteLine($"More to do: re-run with --after-id {lastId}.");
-        }
-
-        // libretro-thumbnails replaces these characters in the ROM name with '_': & * / : ` < > ? \ | "
-        private static string LibretroName(string name)
-        {
-            var chars = name.ToCharArray();
-            for (int i = 0; i < chars.Length; i++)
-                if ("&*/:`<>?\\|\"".IndexOf(chars[i]) >= 0) chars[i] = '_';
-            return new string(chars);
-        }
-
-        private static string SafeFileName(string name)
-        {
-            foreach (var c in Path.GetInvalidFileNameChars())
-                name = name.Replace(c, '_');
-            return name;
-        }
-
-        // Downscale to a card-sized thumbnail so ~49k games don't cost gigabytes: full box art is ~300-500 KB,
-        // a 220px thumbnail is ~10-20 KB. Preserves aspect; re-encodes PNG at best compression.
-        private static byte[] Thumbnail(byte[] source, int maxDim)
-        {
-            using var img = Image.Load(source);
-            int max = Math.Max(img.Width, img.Height);
-            if (max > maxDim)
-            {
-                double s = (double)maxDim / max;
-                img.Mutate(x => x.Resize(Math.Max(1, (int)Math.Round(img.Width * s)), Math.Max(1, (int)Math.Round(img.Height * s))));
-            }
-            using var ms = new MemoryStream();
-            img.Save(ms, new PngEncoder { CompressionLevel = PngCompressionLevel.BestCompression });
-            return ms.ToArray();
-        }
-
-        // A hit is a real PNG (200 + PNG magic), so a repo's 404 HTML page is never saved as "box art".
-        private static async Task<byte[]?> TryDownloadPng(HttpClient http, string url)
-        {
-            try
-            {
-                using var resp = await http.GetAsync(url);
-                if (!resp.IsSuccessStatusCode) return null;
-                var bytes = await resp.Content.ReadAsByteArrayAsync();
-                if (bytes.Length < 8 || bytes[0] != 0x89 || bytes[1] != 0x50 || bytes[2] != 0x4E || bytes[3] != 0x47)
-                    return null; // not a PNG
-                return bytes;
-            }
-            catch { return null; }
         }
     }
 }

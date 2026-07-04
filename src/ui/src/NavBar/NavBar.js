@@ -20,7 +20,7 @@ import movieTheaterIcon from "../assets/icons/movie-theater.svg";
 import tvIcon from "../assets/icons/tv.svg";
 import boardGamesIcon from "../assets/icons/board-games.svg";
 import comicsIcon from "../assets/icons/comics.svg";
-import arcadeIcon from "../assets/icons/arcade.svg";
+import arcadeIcon from "../assets/icons/joystick.svg";
 
 function NavBar({
   search,
@@ -227,8 +227,7 @@ function NavBar({
       )}
       {userData?.hasPassword && (
         <button className="navbar-section-item" onClick={() => history.push("/arcade")}>
-          {/* TODO(Phase 4 polish): replace the emoji with a proper arcade icon asset. */}
-          <span className="navbar-section-icon" role="img" aria-label="">🕹️</span> Arcade
+          <img className="navbar-section-icon" src={arcadeIcon} alt="" /> Arcade
         </button>
       )}
       <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
