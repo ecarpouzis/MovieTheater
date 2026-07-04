@@ -170,12 +170,15 @@ export default function ArcadeRoomPage() {
         </Space>
       </div>
 
-      <div ref={playerRef} style={{ position: "relative", background: "#000", borderRadius: 8, overflow: "hidden", aspectRatio: "4 / 3" }}>
+      {/* Per-system DISPLAY aspect (what the console showed on a TV) — the emulated framebuffer is often
+          non-square-pixel (e.g. PSX 512x240) so we stretch it to the correct aspect with object-fit:fill,
+          rather than letterboxing the raw pixels (which reads as "squished"). GB/GBA aren't 4:3. */}
+      <div ref={playerRef} style={{ position: "relative", background: "#000", borderRadius: 8, overflow: "hidden", aspectRatio: ({ gb: "10 / 9", gbc: "10 / 9", gba: "3 / 2" })[system] || "4 / 3" }}>
         <video
           ref={videoRef}
           autoPlay
           playsInline
-          style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+          style={{ width: "100%", height: "100%", objectFit: "fill", display: "block" }}
         />
         {needsTap && (
           <button
