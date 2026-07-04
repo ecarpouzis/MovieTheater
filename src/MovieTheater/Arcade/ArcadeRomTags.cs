@@ -88,10 +88,18 @@ namespace MovieTheater.Arcade
             foreach (var (mk, variant) in VariantMarkers)
                 if (tags.Any(t => t.StartsWith(mk, StringComparison.OrdinalIgnoreCase)))
                     return variant;
-            // GoodTools single-letter bracket codes: [b]=bad dump, [h]=hack, [p]=pirate, [o]=overdump.
+            // GoodTools / TOSEC single-letter bracket codes. A trained/translated/fixed/cracked/hacked dump
+            // is a modification, so it buckets to Hack — that's what distinguishes it from the clean release
+            // of the same game on the card (and what the "official releases only" filter hides). [b]/[o] are
+            // bad dumps; [p] pirate. Order matters: [tr]/[t+-] (translation) before [t#] (trainer).
             if (key != null)
             {
                 if (Regex.IsMatch(key, @"\[h[0-9!]*\]", RegexOptions.IgnoreCase)) return "Hack";
+                if (Regex.IsMatch(key, @"\[tr[\s\]_]", RegexOptions.IgnoreCase)) return "Hack";  // [tr en]/[tr de] translation
+                if (Regex.IsMatch(key, @"\[T[+\-]")) return "Hack";                              // [T+Eng]/[T-Eng] GoodTools translation
+                if (Regex.IsMatch(key, @"\[t[0-9]*\]", RegexOptions.IgnoreCase)) return "Hack";  // [t]/[t2] trainer
+                if (Regex.IsMatch(key, @"\[f[0-9]*\]", RegexOptions.IgnoreCase)) return "Hack";  // [f]/[f1] fixed
+                if (Regex.IsMatch(key, @"\[cr[\s\]]", RegexOptions.IgnoreCase)) return "Hack";   // [cr] cracked
                 if (Regex.IsMatch(key, @"\[p[0-9]*\]", RegexOptions.IgnoreCase)) return "Pirate";
                 if (Regex.IsMatch(key, @"\[[bo][0-9]*\]", RegexOptions.IgnoreCase)) return "BadDump";
             }

@@ -180,15 +180,23 @@ export default function ArcadePage() {
 }
 
 // Box art via /ArcadeImage/{id}; until it's populated, a labeled placeholder (no CRT/gradient effects).
+// Box art is portrait and its aspect varies by system, so `contain` (never `cover`) shows the WHOLE
+// box — cover was cropping the title off the top. The dark letterbox matches the placeholder.
 function GameCover({ game }) {
   const [broken, setBroken] = useState(!(game.hasBoxArt || ART_SYSTEMS.has(game.system)));
-  const height = 150;
+  const height = 190;
+  const box = { height, display: "flex", alignItems: "center", justifyContent: "center", background: "#1f1730" };
   if (broken) {
     return (
-      <div style={{ height, display: "flex", alignItems: "center", justifyContent: "center", background: "#1f1730", color: "#9a86bd", padding: 8, textAlign: "center" }}>
+      <div style={{ ...box, color: "#9a86bd", padding: 8, textAlign: "center" }}>
         <span style={{ fontSize: 13 }}>{game.title}</span>
       </div>
     );
   }
-  return <img src={`/ArcadeImage/${game.id}`} alt={game.title} loading="lazy" decoding="async" style={{ height, width: "100%", objectFit: "cover" }} onError={() => setBroken(true)} />;
+  return (
+    <div style={box}>
+      <img src={`/ArcadeImage/${game.id}`} alt={game.title} loading="lazy" decoding="async"
+        style={{ maxHeight: height, maxWidth: "100%", objectFit: "contain" }} onError={() => setBroken(true)} />
+    </div>
+  );
 }
