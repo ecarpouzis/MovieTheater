@@ -26,7 +26,9 @@ namespace MovieTheater.Arcade
         );
 
         /// <summary>The dropdown label: region + the tags that distinguish this ROM from its siblings.</summary>
-        public static string Label(ArcadeGame g)
+        public static string Label(ArcadeGame g) => LabelCore(g, includeDisc: true);
+
+        private static string LabelCore(ArcadeGame g, bool includeDisc)
         {
             var parts = new List<string>();
             if (!string.IsNullOrEmpty(g.Region) && !g.Region.Equals("Unknown", StringComparison.OrdinalIgnoreCase))
@@ -38,8 +40,11 @@ namespace MovieTheater.Arcade
             var edition = Edition(g.CloudRetroGameKey);
             if (edition != null) parts.Add(edition);
 
-            var disc = DiscNumber(g.CloudRetroGameKey);
-            if (disc > 0) parts.Add($"Disc {disc}");
+            if (includeDisc)
+            {
+                var disc = DiscNumber(g.CloudRetroGameKey);
+                if (disc > 0) parts.Add($"Disc {disc}");
+            }
 
             if (!string.IsNullOrEmpty(g.Variant) && !g.Variant.Equals("Release", StringComparison.OrdinalIgnoreCase))
             {
@@ -48,6 +53,62 @@ namespace MovieTheater.Arcade
             }
 
             return parts.Count > 0 ? string.Join(" · ", parts) : "Standard";
+        }
+
+        /// <summary>A launchable version of a game. DiscCount &gt; 1 = a multi-disc set that plays via an
+        /// .m3u with in-game disc swapping (patch 0005); the Id is the disc-1 anchor row.</summary>
+        public record VersionEntry(int Id, string Label, string? Region, string? Variant, int? Year, byte MaxPlayers, int DiscCount);
+
+        /// <summary>Turn a game's rows into launchable versions, collapsing a multi-disc set (same region/rev,
+        /// different disc numbers) into ONE entry (DiscCount = number of discs). preferRegion floats to the
+        /// top so an explicit region filter opens the card on that region.</summary>
+        public static List<VersionEntry> Build(IEnumerable<ArcadeGame> rows, string? preferRegion)
+        {
+            var built = new List<(ArcadeGame anchor, VersionEntry e)>();
+            foreach (var grp in rows.GroupBy(VersionKey))
+            {
+                var ordered = grp.OrderBy(g => DiscNumber(g.CloudRetroGameKey)).ThenBy(g => g.Id).ToList();
+                var anchor = ordered[0];
+                int discs = ordered.Count(g => DiscNumber(g.CloudRetroGameKey) > 0);
+                int discCount = discs > 1 ? discs : (DiscNumber(anchor.CloudRetroGameKey) > 0 ? 1 : 0);
+                var label = LabelCore(anchor, includeDisc: discs <= 1); // multi-disc → drop the "Disc N"
+                built.Add((anchor, new VersionEntry(anchor.Id, label, anchor.Region, anchor.Variant, anchor.Year,
+                    ordered.Max(g => g.MaxPlayers), discCount)));
+            }
+            return built
+                .OrderBy(x => preferRegion != null && !string.Equals(x.anchor.Region, preferRegion, StringComparison.OrdinalIgnoreCase) ? 1 : 0)
+                .ThenBy(x => Rank(x.anchor))
+                .Select(x => x.e).ToList();
+        }
+
+        // Version identity EXCLUDING disc number, so all discs of one release collapse together.
+        private static string VersionKey(ArcadeGame g) =>
+            $"{(g.Region ?? "").ToLowerInvariant()}|{(g.Variant ?? "").ToLowerInvariant()}|{RevValue(g.CloudRetroGameKey)}|{(Edition(g.CloudRetroGameKey) ?? "").ToLowerInvariant()}";
+
+        /// <summary>The CloudRetro launch key of the .m3u playlist for a multi-disc game — the ROM name with
+        /// the "(Disc N)" tag stripped (so the core loads "&lt;name&gt;.m3u" instead of a single disc).</summary>
+        public static string M3uKey(string cloudRetroGameKey) =>
+            Regex.Replace(cloudRetroGameKey, @"\s*\(Dis[ck]\s*\d+\)", "", RegexOptions.IgnoreCase).Trim();
+
+        /// <summary>For a chosen version anchor, how many discs its version has and the .m3u launch key
+        /// (null when it's single-disc). Multi-disc = &gt;1 disc row sharing the anchor's version identity.</summary>
+        public static (int DiscCount, string? M3uKey) MultiDisc(ArcadeGame anchor, IEnumerable<ArcadeGame> gameRows)
+        {
+            var k = VersionKey(anchor);
+            int discs = gameRows.Count(g => VersionKey(g) == k && DiscNumber(g.CloudRetroGameKey) > 0);
+            return discs > 1 ? (discs, M3uKey(anchor.CloudRetroGameKey)) : (discs, null);
+        }
+
+        /// <summary>Enumerate a game's multi-disc versions — each as (disc-1 anchor, ordered disc rows).
+        /// Single-disc versions are skipped. The romcache export uses this to emit .m3u manifest entries.</summary>
+        public static IEnumerable<(ArcadeGame Anchor, List<ArcadeGame> Discs)> MultiDiscGroups(IEnumerable<ArcadeGame> gameRows)
+        {
+            foreach (var grp in gameRows.GroupBy(VersionKey))
+            {
+                var discs = grp.Where(g => DiscNumber(g.CloudRetroGameKey) > 0)
+                    .OrderBy(g => DiscNumber(g.CloudRetroGameKey)).ThenBy(g => g.Id).ToList();
+                if (discs.Count > 1) yield return (discs[0], discs);
+            }
         }
 
         private static int RegionRank(string? region) => (region ?? "").ToLowerInvariant() switch

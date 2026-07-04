@@ -118,26 +118,25 @@ namespace MovieTheater.Controllers
             {
                 byGame.TryGetValue((k.System, k.Title), out var vs);
                 vs ??= new List<ArcadeGame>();
-                // Best version first = the card's default selection + box-art source. When a specific region
-                // is filtered, prefer that region so the card opens on what the user asked for.
-                var versions = vs
-                    .OrderBy(v => specificRegion != null && !string.Equals(v.Region, specificRegion, StringComparison.OrdinalIgnoreCase) ? 1 : 0)
-                    .ThenBy(ArcadeVersions.Rank).ToList();
+                // Build launchable versions — multi-disc sets collapse to one entry (DiscCount > 1). The
+                // first is the card's default selection + box-art source; a region filter floats that region up.
+                var versions = ArcadeVersions.Build(vs, specificRegion);
                 var rep = versions.FirstOrDefault();
+                var repRow = rep != null ? vs.First(g => g.Id == rep.Id) : vs.FirstOrDefault();
                 return new
                 {
                     key = k.System + "|" + k.Title,
                     title = k.Title,
                     system = k.System,
                     artId = rep?.Id ?? 0,
-                    hasBoxArt = rep?.BoxArtPath != null,
+                    hasBoxArt = repRow?.BoxArtPath != null,
                     year = rep?.Year,
                     maxPlayers = versions.Count > 0 ? versions.Max(v => v.MaxPlayers) : (byte)1,
                     versionCount = versions.Count,
                     versions = versions.Select(v => new
                     {
-                        id = v.Id, label = ArcadeVersions.Label(v), region = v.Region,
-                        variant = v.Variant, year = v.Year, maxPlayers = v.MaxPlayers,
+                        id = v.Id, label = v.Label, region = v.Region,
+                        variant = v.Variant, year = v.Year, maxPlayers = v.MaxPlayers, discCount = v.DiscCount,
                     }).ToList(),
                 };
             }).ToList();
@@ -268,11 +267,12 @@ namespace MovieTheater.Controllers
             // creator's browser does that (empty room_id) and then calls Bind (§8 steps 2–3).
             rooms.CreateRoom(roomCode, game.Id, game.MaxPlayers, userId.Value);
 
+            var (launchKey, discCount) = await ResolveLaunchAsync(game);
             var descriptor = host.BuildJoinDescriptor(
-                userId.Value, new ArcadeGameDescriptor(game.Id, game.CloudRetroGameKey, game.System),
+                userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, game.System),
                 roomCode, cloudRetroRoomId: string.Empty, playerSlot: 0, isCreator: true);
 
-            return Json(ToJson(descriptor));
+            return Json(ToJson(descriptor, discCount));
         }
 
         public class BindRequest
@@ -345,11 +345,12 @@ namespace MovieTheater.Controllers
             }
 
             var boundRoomId = rooms.BoundRoomId(code) ?? string.Empty;
+            var (launchKey, discCount) = await ResolveLaunchAsync(game);
             var descriptor = host.BuildJoinDescriptor(
-                userId.Value, new ArcadeGameDescriptor(game.Id, game.CloudRetroGameKey, game.System),
+                userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, game.System),
                 code, boundRoomId, join.PlayerSlot, isCreator: false);
 
-            return Json(ToJson(descriptor));
+            return Json(ToJson(descriptor, discCount));
         }
 
         [HttpPost("/API/Arcade/Room/{code}/Heartbeat")]
@@ -391,7 +392,18 @@ namespace MovieTheater.Controllers
             return Json(new { ok = true });
         }
 
-        private static object ToJson(ArcadeJoinDescriptor d) => new
+        // Multi-disc: a game with sibling disc rows launches its .m3u playlist (patch 0005 disc-swap) rather
+        // than one disc. Returns the CloudRetro launch key (.m3u basename for multi-disc, else the row's key)
+        // and the disc count (0/1 = single). The gateway JIT-materializes the .m3u from the disc archives.
+        private async Task<(string launchKey, int discCount)> ResolveLaunchAsync(ArcadeGame game)
+        {
+            var rows = await movieDb.ArcadeGames
+                .Where(g => g.IsEnabled && g.System == game.System && g.Title == game.Title).ToListAsync();
+            var (discCount, m3uKey) = ArcadeVersions.MultiDisc(game, rows);
+            return (m3uKey ?? game.CloudRetroGameKey, discCount);
+        }
+
+        private static object ToJson(ArcadeJoinDescriptor d, int discCount = 0) => new
         {
             roomCode = d.RoomCode,
             wsUrl = d.WsUrl,
@@ -400,6 +412,7 @@ namespace MovieTheater.Controllers
             iceConfig = d.IceConfig.Select(i => new { urls = i.Urls }).ToList(),
             isCreator = d.IsCreator,
             system = d.System,
+            discCount,
         };
 
         // A short, URL-safe invite code, regenerated on the rare collision with a live room.

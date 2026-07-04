@@ -60,7 +60,11 @@ public sealed class RomCache
     // SNES, [".md",".gen",".smd",".bin"] for Genesis). A JIT archive holds one launch ROM whose base
     // name equals the archive's; after extraction "present" = <GameKey><one of Exts> exists. Nullable for
     // back-compat with a pre-generalization manifest (then we assume the PS1 default, ".cue").
-    public sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[]? Exts = null);
+    public sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[]? Exts = null, DiscRef[]? Discs = null);
+
+    // A member disc of a multi-disc .m3u game: the source archive to extract + the .cue/.chd filename it
+    // produces (which goes, in order, into the generated playlist). See docs/arcade-dedupe-multidisc-plan.md.
+    public sealed record DiscRef(string Archive, string File);
     private sealed record Manifest(int Version, List<ManifestGame> Games);
 
     private sealed class GameState
@@ -203,11 +207,29 @@ public sealed class RomCache
 
     private async Task ExtractAsync(ManifestGame g, CancellationToken ct)
     {
-        if (!File.Exists(g.Archive))
-            throw new FileNotFoundException($"source ROM/archive missing: {g.Archive}");
-
         var dest = FolderDest(g);
         Directory.CreateDirectory(dest);
+
+        // Multi-disc: extract every member disc, then write the .m3u playlist the core loads and swaps
+        // discs within (patch 0005). GameKey is the playlist basename; Exts is [".m3u"].
+        if (g.Discs is { Length: > 0 })
+        {
+            foreach (var d in g.Discs)
+            {
+                if (!File.Exists(d.Archive))
+                    throw new FileNotFoundException($"source disc archive missing: {d.Archive}");
+                await RunSevenZipAsync(new[] { "x", "-y", "-bd", d.Archive, "-o" + dest }, ct);
+                if (!File.Exists(Path.Combine(dest, d.File)))
+                    throw new InvalidOperationException($"disc extract produced no {d.File} in {dest}.");
+            }
+            await File.WriteAllLinesAsync(RomDest(g, ".m3u"), g.Discs.Select(d => d.File), ct);
+            if (!IsPresent(g))
+                throw new InvalidOperationException($"failed to write playlist {g.GameKey}.m3u in {dest}.");
+            return;
+        }
+
+        if (!File.Exists(g.Archive))
+            throw new FileNotFoundException($"source ROM/archive missing: {g.Archive}");
 
         if (SourceIsRom(g))
         {

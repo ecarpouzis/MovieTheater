@@ -37,6 +37,8 @@ export default function ArcadeRoomPage() {
   const [players, setPlayers] = useState([]);
   const [fatal, setFatal] = useState(null);
   const [needsTap, setNeedsTap] = useState(false);
+  const [discCount, setDiscCount] = useState(location.state?.descriptor?.discCount ?? 0);
+  const [disc, setDisc] = useState(0);
 
   // Resolve the join descriptor: creator has it in router state; an invitee Joins for one. If the room
   // is still starting (creator hasn't Bound yet), retry a few times before giving up.
@@ -73,6 +75,7 @@ export default function ArcadeRoomPage() {
       if (cancelled) return;
       setYourSlot(descriptor.playerSlot);
       setSystem(descriptor.system ?? null);
+      setDiscCount(descriptor.discCount || 0);
 
       sessionRef.current = createCloudRetroSession(descriptor, {
         videoEl: videoRef.current,
@@ -156,6 +159,16 @@ export default function ArcadeRoomPage() {
     );
   }
 
+  // Multi-disc: ask the emulator (via the "disc" data channel → patch 0005) to swap discs live. The memory
+  // card persists across the swap, so the game continues when it prompts for the next disc.
+  function swapDisc(next) {
+    const target = Math.max(0, Math.min(discCount - 1, next));
+    if (target === disc) return;
+    setDisc(target);
+    sessionRef.current?.swapDisc?.(target);
+    message.info(`Switching to disc ${target + 1}…`);
+  }
+
   return (
     <div className="arcade-room-page" style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 24px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
@@ -163,6 +176,13 @@ export default function ArcadeRoomPage() {
           <Button onClick={() => history.push("/arcade")}>← Arcade</Button>
           <Tag color={status === "playing" ? "green" : "blue"}>{STATUS_TEXT[status] || status}</Tag>
           {yourSlot != null && <Tag color="purple">You are P{yourSlot + 1}</Tag>}
+          {discCount > 1 && (
+            <Space size={4}>
+              <Button size="small" disabled={disc <= 0} onClick={() => swapDisc(disc - 1)}>◀</Button>
+              <Tag color="gold">Disc {disc + 1}/{discCount}</Tag>
+              <Button size="small" disabled={disc >= discCount - 1} onClick={() => swapDisc(disc + 1)}>▶</Button>
+            </Space>
+          )}
         </Space>
         <Space>
           <Text type="secondary">Room {code}</Text>

@@ -148,6 +148,7 @@ export function createCloudRetroSession(descriptor, opts) {
   let ws = null;
   let pc = null;
   let dc = null;
+  let discDc = null; // patch 0005: worker-created "disc" channel; the browser sends a target disc index
   let inputTimer = null;
   let closed = false;
   const inboundStream = new MediaStream(); // audio + video tracks accumulate here (see ontrack)
@@ -249,6 +250,15 @@ export function createCloudRetroSession(descriptor, opts) {
     dc = pc.createDataChannel("data", { negotiated: true, id: 0, ordered: false, maxRetransmits: 0 });
     dc.binaryType = "arraybuffer";
     dc.onopen = () => { status("connected"); startInput(); };
+
+    // The worker opens side channels non-negotiated (keyboard/mouse/disc); we receive them here. The
+    // "disc" channel carries a 1-byte target image index for multi-disc games (patch 0005).
+    pc.ondatachannel = (ev) => {
+      if (ev.channel && ev.channel.label === "disc") {
+        discDc = ev.channel;
+        discDc.binaryType = "arraybuffer";
+      }
+    };
 
     // CloudRetro (Pion) sends audio and video as SEPARATE m-lines/streams. Assigning
     // videoEl.srcObject = e.streams[0] per track left the <video> holding only the LAST track's
@@ -407,6 +417,7 @@ export function createCloudRetroSession(descriptor, opts) {
     stopInput();
     try { send(T.GAME_QUIT, { room_id: roomIdFromWsUrl(descriptor.wsUrl) }); } catch { /* */ }
     try { dc && dc.close(); } catch { /* */ }
+    try { discDc && discDc.close(); } catch { /* */ }
     try { pc && pc.close(); } catch { /* */ }
     try { ws && ws.close(); } catch { /* */ }
     if (videoEl) videoEl.srcObject = null;
@@ -419,6 +430,13 @@ export function createCloudRetroSession(descriptor, opts) {
     save: () => send(T.GAME_SAVE, {}),
     load: () => send(T.GAME_LOAD, {}),
     reset: () => send(T.GAME_RESET, {}),
+    // Multi-disc: ask the emulator to swap to disc image `index` (patch 0005). No-op until the "disc"
+    // channel is open / for single-disc games.
+    swapDisc: (index) => {
+      try {
+        if (discDc && discDc.readyState === "open") discDc.send(new Uint8Array([index & 0xff]));
+      } catch { /* channel closing */ }
+    },
   };
 }
 

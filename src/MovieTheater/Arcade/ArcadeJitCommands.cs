@@ -205,16 +205,34 @@ namespace MovieTheater.Arcade
             var rows = await db.ArcadeGames
                 .Where(g => g.IsEnabled && g.SourceArchivePath != null)
                 .OrderBy(g => g.Id)
-                .Select(g => new { g.Id, g.System, g.RomPath, g.CloudRetroGameKey, g.SourceArchivePath })
                 .ToListAsync();
 
-            var games = rows.Select(g => new ManifestGame(
-                GameId: g.Id,
-                GameKey: g.CloudRetroGameKey,
-                System: g.System,
-                Folder: FolderOf(g.RomPath),
-                Archive: g.SourceArchivePath!,
-                Exts: ExtsFor(g.System))).ToList();
+            var games = new List<ManifestGame>();
+            var folded = new HashSet<int>();
+
+            // Multi-disc: one .m3u entry per multi-disc version — the gateway extracts every disc + writes
+            // the playlist. Keyed by the disc-1 anchor id (what the room launches). (docs/arcade-dedupe-multidisc-plan.md)
+            foreach (var titleGroup in rows.GroupBy(g => new { g.System, g.Title }))
+                foreach (var (anchor, discs) in ArcadeVersions.MultiDiscGroups(titleGroup))
+                {
+                    games.Add(new ManifestGame(
+                        GameId: anchor.Id,
+                        GameKey: ArcadeVersions.M3uKey(anchor.CloudRetroGameKey),
+                        System: anchor.System,
+                        Folder: FolderOf(anchor.RomPath),
+                        Archive: "",
+                        Exts: new[] { ".m3u" },
+                        Discs: discs.Select(d => new DiscRef(d.SourceArchivePath!, Path.GetFileName(d.RomPath))).ToArray()));
+                    foreach (var d in discs) folded.Add(d.Id);
+                }
+
+            // Everything not folded into an .m3u above = ordinary single-disc / non-disc JIT rows.
+            foreach (var g in rows.Where(g => !folded.Contains(g.Id)))
+                games.Add(new ManifestGame(
+                    GameId: g.Id, GameKey: g.CloudRetroGameKey, System: g.System,
+                    Folder: FolderOf(g.RomPath), Archive: g.SourceArchivePath!, Exts: ExtsFor(g.System)));
+
+            games = games.OrderBy(g => g.GameId).ToList();
 
             var manifest = new Manifest(Version: 1, Games: games);
             var json = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true });
@@ -239,7 +257,8 @@ namespace MovieTheater.Arcade
             ArcadeSystems.All.FirstOrDefault(s => s.Code == system)?.Extensions ?? new[] { ".cue" };
 
         private sealed record Manifest(int Version, List<ManifestGame> Games);
-        private sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[] Exts);
+        private sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[] Exts, DiscRef[]? Discs = null);
+        private sealed record DiscRef(string Archive, string File);
     }
 
     /// <summary>
