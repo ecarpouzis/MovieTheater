@@ -28,6 +28,10 @@ emulator:
   autosaveSec: 60     # crashes lose ≤1 min
   storage: /saves     # save-state dir — mounted rw and included in Ziggy's backups
   libretro:
+    # Raw .dat/.srm, NOT zip-wrapped (CloudRetro default is true). Required so SRAM is portable to
+    # EmuDeck/RetroArch and the gateway save store can seed/harvest raw files (docs/arcade-saves-plan.md).
+    # (pcsx `uniqueSaveDir: true` for per-session PS1 memory cards is added later, with S1.)
+    saveCompression: false
     cores:
       repo:
         sync: true    # auto-download listed cores from buildbot.libretro.com/nightly — no manual core files
