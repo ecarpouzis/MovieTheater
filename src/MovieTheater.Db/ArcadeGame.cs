@@ -59,6 +59,16 @@ namespace MovieTheater.Db
 
         public int? Year { get; set; }
 
+        /// <summary>Normalized release region parsed from the ROM filename tags — USA/Europe/Japan/World/
+        /// Asia/Other/Unknown. An arcade-lobby filter; populated by <c>MovieTheater.Arcade.ArcadeRomTags</c>.</summary>
+        [MaxLength(20)]
+        public string? Region { get; set; }
+
+        /// <summary>Release vs unofficial/modified dump parsed from the ROM filename — Release/Hack/Beta/
+        /// Proto/Demo/Unlicensed/Pirate/BadDump. The lobby's "mods" filter (modded = Variant != Release).</summary>
+        [MaxLength(20)]
+        public string? Variant { get; set; }
+
         public bool IsEnabled { get; set; } = true;
 
         public string? Notes { get; set; }

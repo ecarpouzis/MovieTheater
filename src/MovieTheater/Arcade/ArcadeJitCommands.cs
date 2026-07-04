@@ -120,6 +120,7 @@ namespace MovieTheater.Arcade
                 {
                     if (Apply)
                     {
+                        var (region, variant) = ArcadeRomTags.Parse(e.GameKey);
                         db.ArcadeGames.Add(new ArcadeGame
                         {
                             Title = e.Title,
@@ -130,6 +131,8 @@ namespace MovieTheater.Arcade
                             SourceArchivePath = e.Archive,
                             MaxPlayers = e.MaxPlayers,
                             RatingCeiling = 0,   // unrestricted default; hand-raise mature titles as needed
+                            Region = region,
+                            Variant = variant,
                             IsEnabled = true,
                         });
                     }
@@ -237,6 +240,66 @@ namespace MovieTheater.Arcade
 
         private sealed record Manifest(int Version, List<ManifestGame> Games);
         private sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[] Exts);
+    }
+
+    /// <summary>
+    /// Backfills <c>ArcadeGame.Region</c> + <c>ArcadeGame.Variant</c> for the existing catalog by parsing
+    /// each game's ROM filename (<c>CloudRetroGameKey</c>) with <see cref="ArcadeRomTags"/> — the data the
+    /// arcade-lobby Region + mods filters run on. Bulk-job rules: dry-run unless <c>--apply</c>; bounded by
+    /// <c>--limit</c>, resumable via <c>--after &lt;id&gt;</c>; fills only empty fields unless <c>--retag</c>.
+    /// </summary>
+    [Command("arcade-tag-backfill", Description = "Parse Region + Variant from each game's ROM filename (dry-run unless --apply).")]
+    public class ArcadeTagBackfillCommand : BasicDICommand, ICommand
+    {
+        [CommandOption("apply", Description = "Write changes. Omit for a dry run (default).")]
+        public bool Apply { get; set; }
+
+        [CommandOption("limit", Description = "Max games to process this run (default 20000).")]
+        public int Limit { get; set; } = 20000;
+
+        [CommandOption("after", Description = "Resume cursor: skip games whose Id ≤ this (from a prior nextCursor).")]
+        public int After { get; set; }
+
+        [CommandOption("retag", Description = "Overwrite existing Region/Variant (default: fill only empty ones).")]
+        public bool Retag { get; set; }
+
+        private readonly IDbContextFactory<MovieDb> dbFactory;
+
+        public ArcadeTagBackfillCommand(MovieTheaterConfiguration config) : base(config)
+        {
+            dbFactory = GetRequiredService<IDbContextFactory<MovieDb>>();
+        }
+
+        public async ValueTask ExecuteAsync(IConsole console)
+        {
+            var w = console.Output;
+            await using var db = await dbFactory.CreateDbContextAsync();
+
+            var batch = await db.ArcadeGames.Where(g => g.Id > After)
+                .OrderBy(g => g.Id).Take(Math.Max(1, Limit)).ToListAsync();
+
+            int changed = 0;
+            var regions = new Dictionary<string, int>();
+            var variants = new Dictionary<string, int>();
+            foreach (var g in batch)
+            {
+                var (region, variant) = ArcadeRomTags.Parse(g.CloudRetroGameKey);
+                if ((Retag || string.IsNullOrEmpty(g.Region)) && g.Region != region) { if (Apply) g.Region = region; changed++; }
+                if ((Retag || string.IsNullOrEmpty(g.Variant)) && g.Variant != variant) { if (Apply) g.Variant = variant; }
+                regions[region] = regions.GetValueOrDefault(region) + 1;
+                variants[variant] = variants.GetValueOrDefault(variant) + 1;
+            }
+            if (Apply) await db.SaveChangesAsync();
+
+            var nextCursor = batch.Count > 0 ? batch[^1].Id : After;
+            var remaining = await db.ArcadeGames.CountAsync(g => g.Id > nextCursor);
+
+            w.WriteLine("regions: " + string.Join(", ", regions.OrderByDescending(k => k.Value).Select(k => $"{k.Key}:{k.Value}")));
+            w.WriteLine("variants: " + string.Join(", ", variants.OrderByDescending(k => k.Value).Select(k => $"{k.Key}:{k.Value}")));
+            w.WriteLine($"{{ processed: {batch.Count}, changed: {changed}, remaining: {remaining}, nextCursor: {nextCursor} }}");
+            if (!Apply) w.WriteLine("DRY RUN — nothing written. Re-run with --apply.");
+            else if (remaining > 0) w.WriteLine($"More to do: re-run with --after {nextCursor}.");
+        }
     }
 
     /// <summary>Shared title tidying for the arcade catalog (drop No-Intro/GoodTools tags; article-invert
