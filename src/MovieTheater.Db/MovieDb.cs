@@ -295,6 +295,16 @@ namespace MovieTheater.Db
                 .HasOne(s => s.ArcadeGame)
                 .WithMany()
                 .HasForeignKey(s => s.ArcadeGameId);
+
+            // Durable per-user saves (docs/arcade-saves-plan.md). One row per (user, game, kind, slot) —
+            // the save store's upsert key so a re-harvest updates in place instead of duplicating.
+            modelBuilder.Entity<ArcadeSave>()
+                .HasIndex(s => new { s.UserId, s.ArcadeGameId, s.Kind, s.SlotId })
+                .IsUnique();
+            modelBuilder.Entity<ArcadeSave>()
+                .HasOne(s => s.ArcadeGame)
+                .WithMany()
+                .HasForeignKey(s => s.ArcadeGameId);
         }
 
         public DbSet<Movie> Movies { get; set; }
@@ -332,6 +342,7 @@ namespace MovieTheater.Db
         public DbSet<UserTasteProfile> UserTasteProfiles { get; set; }
         public DbSet<ArcadeGame> ArcadeGames { get; set; }
         public DbSet<ArcadeSession> ArcadeSessions { get; set; }
+        public DbSet<ArcadeSave> ArcadeSaves { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)
