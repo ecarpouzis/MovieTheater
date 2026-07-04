@@ -7,6 +7,7 @@ import "./NavBar.css";
 import SearchTools from "./SearchTools";
 import Login from "./Login";
 import BoardGameNavContent from "./BoardGameNavContent";
+import ArcadeNavContent from "./ArcadeNavContent";
 // Settings/admin modals only open on demand (and admin only for privileged users), so keep them out
 // of the entry bundle and load their chunks when first rendered.
 const UserSettingsModal = lazy(() => import("./UserSettingsModal"));
@@ -19,6 +20,7 @@ import movieTheaterIcon from "../assets/icons/movie-theater.svg";
 import tvIcon from "../assets/icons/tv.svg";
 import boardGamesIcon from "../assets/icons/board-games.svg";
 import comicsIcon from "../assets/icons/comics.svg";
+import arcadeIcon from "../assets/icons/arcade.svg";
 
 function NavBar({
   search,
@@ -204,9 +206,10 @@ function NavBar({
   ]);
 
   const isBoardGames = location.pathname.startsWith("/boardgames");
-  const sectionIcon = isBoardGames ? boardGamesIcon : movieTheaterIcon;
-  const sectionTitle = isBoardGames ? "Board Games" : "Movie Theater";
-  const navThemeClass = isBoardGames ? " navbar-boardgames-theme" : "";
+  const isArcade = location.pathname.startsWith("/arcade");
+  const sectionIcon = isArcade ? arcadeIcon : isBoardGames ? boardGamesIcon : movieTheaterIcon;
+  const sectionTitle = isArcade ? "Arcade" : isBoardGames ? "Board Games" : "Movie Theater";
+  const navThemeClass = isArcade ? " navbar-arcade-theme" : isBoardGames ? " navbar-boardgames-theme" : "";
 
   // The section switcher's items — shared by the mobile and desktop dropdowns so they can't drift.
   // Order: Movie Theater, TV, Board Games, Comics. "TV" is the former Channels page (its guide is the
@@ -241,7 +244,15 @@ function NavBar({
 
   // JSX can be stored in a variable just like any other value and rendered later.
   // The empty tags <> </> are a fragment — a grouping wrapper that emits no DOM element.
-  const navContent = isBoardGames ? (
+  const navContent = isArcade ? (
+    <ArcadeNavContent
+      userData={userData}
+      setUserData={setUserData}
+      onUserLoggedIn={onUserLoggedIn}
+      setSettingsModalOpen={setSettingsModalOpen}
+      setAdminModalOpen={setAdminModalOpen}
+    />
+  ) : isBoardGames ? (
     <BoardGameNavContent
       userData={userData}
       setUserData={setUserData}

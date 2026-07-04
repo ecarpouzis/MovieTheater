@@ -54,8 +54,14 @@ namespace MovieTheater.Controllers
             return setting != null && int.TryParse(setting.SettingValue, out var parsed) ? parsed : 100;
         }
 
+        // The catalog is ~12.5k games, so this is server-side FILTERED + PAGED (the Movies-browse idiom),
+        // never the whole set at once. Filters: system, region, minimum max-players, and variant —
+        // "release" = official dumps only, "modded" = anything unofficial (Hack/Beta/Proto/Unl/…), or a
+        // specific variant name. The mandatory age gate (RatingCeiling ≤ the viewer's setting) always applies.
         [HttpGet("/API/Arcade/Games")]
-        public async Task<IActionResult> Games()
+        public async Task<IActionResult> Games(
+            string system = null, string region = null, int? maxPlayers = null,
+            string variant = null, string search = null, int page = 1, int pageSize = 60)
         {
             var userId = GetCurrentUserId();
             if (userId == null)
@@ -63,13 +69,67 @@ namespace MovieTheater.Controllers
             if (!host.IsConfigured)
                 return StatusCode(501, new { message = "The arcade is not configured on this server." });
 
-            var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
-            var games = await movieDb.ArcadeGames
-                .Where(g => g.IsEnabled && g.RatingCeiling <= ageRestriction)
-                .OrderBy(g => g.SortTitle)
-                .Select(g => new { id = g.Id, title = g.Title, system = g.System, maxPlayers = g.MaxPlayers, year = g.Year, hasBoxArt = g.BoxArtPath != null })
+            var q = await AgeVisibleGamesAsync(userId.Value);
+
+            if (!string.IsNullOrWhiteSpace(system)) q = q.Where(g => g.System == system);
+            if (!string.IsNullOrWhiteSpace(region)) q = q.Where(g => g.Region == region);
+            if (maxPlayers is int mp && mp > 1) q = q.Where(g => g.MaxPlayers >= mp);
+            if (string.Equals(variant, "release", StringComparison.OrdinalIgnoreCase))
+                q = q.Where(g => g.Variant == "Release" || g.Variant == null);
+            else if (string.Equals(variant, "modded", StringComparison.OrdinalIgnoreCase))
+                q = q.Where(g => g.Variant != "Release" && g.Variant != null);
+            else if (!string.IsNullOrWhiteSpace(variant))
+                q = q.Where(g => g.Variant == variant);
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim();
+                q = q.Where(g => g.Title.Contains(s));
+            }
+
+            page = Math.Max(1, page);
+            pageSize = Math.Clamp(pageSize, 1, 120);
+            var totalCount = await q.CountAsync();
+            var games = await q.OrderBy(g => g.SortTitle)
+                .Skip((page - 1) * pageSize).Take(pageSize)
+                .Select(g => new
+                {
+                    id = g.Id, title = g.Title, system = g.System, region = g.Region,
+                    variant = g.Variant, maxPlayers = g.MaxPlayers, year = g.Year, hasBoxArt = g.BoxArtPath != null
+                })
                 .ToListAsync();
-            return Json(games);
+            return Json(new { games, totalCount, page, pageSize });
+        }
+
+        // Facets for the lobby filter controls: the systems / regions / variants actually present in the
+        // viewer's age-visible catalog, each with a count, plus how many are multiplayer.
+        [HttpGet("/API/Arcade/Filters")]
+        public async Task<IActionResult> Filters()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            if (!host.IsConfigured)
+                return StatusCode(501, new { message = "The arcade is not configured on this server." });
+
+            var q = await AgeVisibleGamesAsync(userId.Value);
+            var systems = await q.GroupBy(g => g.System)
+                .Select(x => new { value = x.Key, count = x.Count() }).OrderByDescending(x => x.count).ToListAsync();
+            var regions = await q.GroupBy(g => g.Region)
+                .Select(x => new { value = x.Key ?? "Unknown", count = x.Count() }).OrderByDescending(x => x.count).ToListAsync();
+            var variants = await q.GroupBy(g => g.Variant)
+                .Select(x => new { value = x.Key ?? "Release", count = x.Count() }).OrderByDescending(x => x.count).ToListAsync();
+            return Json(new
+            {
+                total = await q.CountAsync(),
+                multiplayer = await q.CountAsync(g => g.MaxPlayers >= 2),
+                systems, regions, variants,
+            });
+        }
+
+        private async Task<IQueryable<ArcadeGame>> AgeVisibleGamesAsync(int userId)
+        {
+            var ageRestriction = await GetAgeRestrictionAsync(userId);
+            return movieDb.ArcadeGames.Where(g => g.IsEnabled && g.RatingCeiling <= ageRestriction);
         }
 
         [HttpGet("/API/Arcade/Rooms")]

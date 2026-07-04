@@ -650,8 +650,20 @@ function beaconLeaveWatchparty(token) {
 // All same-origin, cookie-authed like the rest. The heavy lifting (WebRTC media +
 // input) is NOT here — it rides the CloudRetro client shim straight to the gateway.
 
-function getArcadeGames() {
-  return fetch("/API/Arcade/Games");
+// Server-side filtered + paged (the catalog is ~12.5k games). params: { system, region, maxPlayers,
+// variant, search, page, pageSize }. Response: { games, totalCount, page, pageSize }.
+function getArcadeGames(params = {}) {
+  const q = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v != null && v !== "" && v !== "all") q.set(k, v);
+  });
+  const qs = q.toString();
+  return fetch("/API/Arcade/Games" + (qs ? `?${qs}` : ""));
+}
+
+// Facets for the lobby filter controls: { total, multiplayer, systems[], regions[], variants[] } (each { value, count }).
+function getArcadeFilters() {
+  return fetch("/API/Arcade/Filters");
 }
 
 function getArcadeRooms() {
@@ -975,6 +987,7 @@ const MovieAPI = {
   leaveWatchparty,
   beaconLeaveWatchparty,
   getArcadeGames,
+  getArcadeFilters,
   getArcadeRooms,
   createArcadeRoom,
   bindArcadeRoom,

@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useHistory } from "react-router-dom";
-import { Card, Button, Tag, Space, Spin, Empty, Select, Typography, message } from "antd";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useHistory, useLocation } from "react-router-dom";
+import { Card, Button, Tag, Space, Spin, Empty, Typography, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 
 const { Title, Text } = Typography;
+const PAGE_SIZE = 60;
 
-// Friendly labels for the system codes the catalog stores.
 const SYSTEM_LABEL = {
   nes: "NES", snes: "SNES", genesis: "Genesis", gb: "Game Boy", gbc: "Game Boy Color",
   gba: "Game Boy Advance", n64: "Nintendo 64", ps1: "PlayStation", arcade: "Arcade",
@@ -13,52 +13,77 @@ const SYSTEM_LABEL = {
 const systemLabel = (s) => SYSTEM_LABEL[s] || (s ? s.toUpperCase() : "");
 
 /**
- * The /arcade lobby (docs/arcade-plan.md §7): a grid of playable games plus a "live rooms" rail of
- * what friends are playing right now. Creating a game opens a room and jumps to the player as its
- * creator; joining a live room jumps in as a player. Password-gated + age-gated server-side.
+ * The /arcade lobby (docs/arcade-plan.md §7). Over ~12,500 games, this is SERVER-SIDE filtered + paged:
+ * the filter controls live in the navbar (ArcadeNavContent) as URL params, and this page fetches the
+ * matching page and appends more on scroll. A "live rooms" rail shows what friends are playing now.
  */
 export default function ArcadePage() {
   const history = useHistory();
-  const [games, setGames] = useState(null); // null = loading
+  const location = useLocation();
+
+  const [games, setGames] = useState(null); // null = first load
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [rooms, setRooms] = useState([]);
-  const [system, setSystem] = useState("all");
-  const [creating, setCreating] = useState(0); // gameId in flight
+  const [creating, setCreating] = useState(0);
   const unconfiguredRef = useRef(false);
 
-  useEffect(() => {
-    let alive = true;
-    MovieAPI.getArcadeGames()
-      .then((r) => {
-        if (r.status === 501) { unconfiguredRef.current = true; return []; }
-        return r.ok ? r.json() : [];
-      })
-      .then((g) => { if (alive) setGames(g); })
-      .catch(() => { if (alive) setGames([]); });
-    return () => { alive = false; };
-  }, []);
+  // The active filters, from the URL (set by the navbar panel).
+  const filters = useMemo(() => {
+    const p = new URLSearchParams(location.search);
+    return {
+      system: p.get("system") || "",
+      region: p.get("region") || "",
+      maxPlayers: p.get("players") || "",
+      variant: p.get("variant") || "",
+      search: p.get("q") || "",
+    };
+  }, [location.search]);
+  const filterKey = JSON.stringify(filters);
 
-  // Poll the live-rooms rail every 12 s, like the channel rail.
+  const fetchPage = useCallback((pageNum, replace) => {
+    setLoading(true);
+    MovieAPI.getArcadeGames({ ...filters, page: pageNum, pageSize: PAGE_SIZE })
+      .then((r) => {
+        if (r.status === 501) { unconfiguredRef.current = true; return null; }
+        return r.ok ? r.json() : null;
+      })
+      .then((data) => {
+        if (!data) { setGames((g) => g || []); return; }
+        setTotal(data.totalCount);
+        setPage(data.page);
+        setGames((prev) => (replace || !prev ? data.games : [...prev, ...data.games]));
+      })
+      .catch(() => setGames((g) => g || []))
+      .finally(() => setLoading(false));
+  }, [filters]);
+
+  // Reset + fetch page 1 whenever the filters change.
+  useEffect(() => { setGames(null); setPage(1); fetchPage(1, true); /* eslint-disable-next-line */ }, [filterKey]);
+
+  // Live-rooms rail, polled every 12 s.
   useEffect(() => {
     let alive = true;
-    const load = () =>
-      MovieAPI.getArcadeRooms()
-        .then((r) => (r.ok ? r.json() : []))
-        .then((rs) => { if (alive) setRooms(rs); })
-        .catch(() => {});
+    const load = () => MovieAPI.getArcadeRooms().then((r) => (r.ok ? r.json() : [])).then((rs) => { if (alive) setRooms(rs); }).catch(() => {});
     load();
     const id = setInterval(load, 12000);
     return () => { alive = false; clearInterval(id); };
   }, []);
 
-  const systems = useMemo(() => {
-    const set = new Set((games || []).map((g) => g.system));
-    return ["all", ...Array.from(set)];
-  }, [games]);
-
-  const visible = useMemo(
-    () => (games || []).filter((g) => system === "all" || g.system === system),
-    [games, system]
-  );
+  // Infinite scroll: near the bottom, pull the next page (direct scroll-position check — the pattern
+  // that survives in this app, per the browse-infinite-scroll notes).
+  const hasMore = games != null && games.length < total;
+  useEffect(() => {
+    if (!hasMore) return undefined;
+    const onScroll = () => {
+      if (loading) return;
+      const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 600;
+      if (nearBottom) fetchPage(page + 1, false);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [hasMore, loading, page, fetchPage]);
 
   function createRoom(game) {
     if (creating) return;
@@ -76,18 +101,19 @@ export default function ArcadePage() {
       .finally(() => setCreating(0));
   }
 
+  if (unconfiguredRef.current) {
+    return <div style={{ padding: 48 }}><Empty description="The arcade isn't set up on this server yet." /></div>;
+  }
   if (games === null) {
     return <div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}><Spin size="large" /></div>;
   }
 
-  if (unconfiguredRef.current) {
-    return <div style={{ padding: 48 }}><Empty description="The arcade isn't set up on this server yet." /></div>;
-  }
+  const anyFilter = filters.system || filters.region || filters.maxPlayers || filters.variant || filters.search;
 
   return (
-    <div className="arcade-page" style={{ padding: "24px 32px", maxWidth: 1280, margin: "0 auto" }}>
+    <div className="arcade-page" style={{ padding: "24px 32px", maxWidth: 1320, margin: "0 auto" }}>
       <Title level={2} style={{ marginBottom: 4 }}>Arcade</Title>
-      <Text type="secondary">Pick a game to open a room, then send friends the link to play together.</Text>
+      <Text type="secondary">Pick a game to open a room, then send friends the link to play together. Filter by system, region, players, or hide mods in the sidebar.</Text>
 
       {rooms.length > 0 && (
         <div style={{ margin: "24px 0" }}>
@@ -97,7 +123,7 @@ export default function ArcadePage() {
               <Card key={room.roomCode} size="small" hoverable style={{ width: 240 }} onClick={() => history.push(`/arcade/room/${room.roomCode}`)}>
                 <Space direction="vertical" size={2} style={{ width: "100%" }}>
                   <Text strong>{room.game.title}</Text>
-                  <Tag color="blue">{systemLabel(room.game.system)}</Tag>
+                  <Tag color="purple">{systemLabel(room.game.system)}</Tag>
                   <Text type="secondary" style={{ fontSize: 12 }}>
                     {room.players.length} playing{room.starting ? " · starting…" : ` · ${room.seatsFree} seat${room.seatsFree === 1 ? "" : "s"} free`}
                   </Text>
@@ -109,66 +135,56 @@ export default function ArcadePage() {
         </div>
       )}
 
-      <div style={{ margin: "24px 0 12px", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ margin: "24px 0 12px", display: "flex", alignItems: "baseline", gap: 12 }}>
         <Title level={4} style={{ margin: 0 }}>Games</Title>
-        <Select
-          value={system}
-          onChange={setSystem}
-          style={{ width: 200 }}
-          options={systems.map((s) => ({ value: s, label: s === "all" ? "All systems" : systemLabel(s) }))}
-        />
+        <Text type="secondary">{total.toLocaleString()} {anyFilter ? "match" : "game" + (total === 1 ? "" : "s")}{anyFilter ? (total === 1 ? "" : "es") : ""}</Text>
       </div>
 
-      {visible.length === 0 ? (
-        <Empty description="No games here yet." />
+      {games.length === 0 ? (
+        <Empty description={anyFilter ? "No games match those filters." : "No games here yet."} />
       ) : (
-        <Space wrap size={[16, 16]}>
-          {visible.map((game) => (
-            <Card
-              key={game.id}
-              hoverable
-              style={{ width: 200 }}
-              cover={<GameCover game={game} />}
-              onClick={() => createRoom(game)}
-            >
-              <Card.Meta
-                title={game.title}
-                description={
-                  <Space size={4} wrap>
-                    <Tag color="blue">{systemLabel(game.system)}</Tag>
-                    {game.maxPlayers > 1 && <Tag>{game.maxPlayers}P</Tag>}
-                    {game.year && <Text type="secondary" style={{ fontSize: 12 }}>{game.year}</Text>}
-                  </Space>
-                }
-              />
-              <Button type="primary" block style={{ marginTop: 12 }} loading={creating === game.id}>
-                Start room
-              </Button>
-            </Card>
-          ))}
-        </Space>
+        <>
+          <Space wrap size={[16, 16]} align="start">
+            {games.map((game) => (
+              <Card key={game.id} hoverable style={{ width: 200 }} cover={<GameCover game={game} />} onClick={() => createRoom(game)}>
+                <Card.Meta
+                  title={game.title}
+                  description={
+                    <Space size={4} wrap>
+                      <Tag color="purple">{systemLabel(game.system)}</Tag>
+                      {game.maxPlayers > 1 && <Tag>{game.maxPlayers}P</Tag>}
+                      {game.region && game.region !== "Unknown" && <Tag>{game.region}</Tag>}
+                      {game.variant && game.variant !== "Release" && <Tag color="magenta">{game.variant}</Tag>}
+                    </Space>
+                  }
+                />
+                <Button type="primary" block style={{ marginTop: 12 }} loading={creating === game.id}>Start room</Button>
+              </Card>
+            ))}
+          </Space>
+          <div style={{ textAlign: "center", padding: "28px 0 8px" }}>
+            {loading ? <Spin /> : hasMore ? (
+              <Button onClick={() => fetchPage(page + 1, false)}>Load more</Button>
+            ) : (
+              <Text type="secondary">— that's all {total.toLocaleString()} —</Text>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
 }
 
-// Box art via /ArcadeImage/{id} (Phase 4 fills it); until then, a labeled placeholder.
+// Box art via /ArcadeImage/{id}; until it's populated, a labeled placeholder (no CRT/gradient effects).
 function GameCover({ game }) {
   const [broken, setBroken] = useState(!game.hasBoxArt);
   const height = 150;
   if (broken) {
     return (
-      <div style={{ height, display: "flex", alignItems: "center", justifyContent: "center", background: "#1f1f1f", color: "#888", padding: 8, textAlign: "center" }}>
+      <div style={{ height, display: "flex", alignItems: "center", justifyContent: "center", background: "#1f1730", color: "#9a86bd", padding: 8, textAlign: "center" }}>
         <span style={{ fontSize: 13 }}>{game.title}</span>
       </div>
     );
   }
-  return (
-    <img
-      src={`/ArcadeImage/${game.id}`}
-      alt={game.title}
-      style={{ height, width: "100%", objectFit: "cover" }}
-      onError={() => setBroken(true)}
-    />
-  );
+  return <img src={`/ArcadeImage/${game.id}`} alt={game.title} style={{ height, width: "100%", objectFit: "cover" }} onError={() => setBroken(true)} />;
 }
