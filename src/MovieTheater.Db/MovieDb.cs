@@ -291,6 +291,11 @@ namespace MovieTheater.Db
                 .HasIndex(g => new { g.System, g.RomPath })
                 .IsUnique();
 
+            // Lobby paging over ~49k games: an index on the sort key (default view) and on system+sort
+            // (the hot filter) so a page request seeks instead of sorting the whole catalog each time.
+            modelBuilder.Entity<ArcadeGame>().HasIndex(g => g.SortTitle);
+            modelBuilder.Entity<ArcadeGame>().HasIndex(g => new { g.System, g.SortTitle });
+
             modelBuilder.Entity<ArcadeSession>()
                 .HasOne(s => s.ArcadeGame)
                 .WithMany()

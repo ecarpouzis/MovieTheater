@@ -234,7 +234,9 @@ namespace MovieTheater.Arcade
             new("gba",     new[] { "gba" },          new[] { ".gba" },                          1),
             new("n64",     new[] { "n64" },          new[] { ".n64", ".z64", ".v64" },          4),
             new("ps1",     new[] { "psx", "ps1" },   new[] { ".cue", ".chd", ".pbp" },          2),
-            new("arcade",  new[] { "arcade", "fbneo" }, new[] { ".zip" },                       2),
+            // FBNeo loads the MAME/Neo-Geo/CPS .zip romset WHOLE (never extracted) from the core's "mame"
+            // folder — so arcade materializes as a JIT-COPY into roms/mame (source ext .zip ∈ these exts).
+            new("arcade",  new[] { "mame" },             new[] { ".zip" },                       4),
         };
     }
 }

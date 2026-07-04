@@ -186,5 +186,5 @@ function GameCover({ game }) {
       </div>
     );
   }
-  return <img src={`/ArcadeImage/${game.id}`} alt={game.title} style={{ height, width: "100%", objectFit: "cover" }} onError={() => setBroken(true)} />;
+  return <img src={`/ArcadeImage/${game.id}`} alt={game.title} loading="lazy" decoding="async" style={{ height, width: "100%", objectFit: "cover" }} onError={() => setBroken(true)} />;
 }
