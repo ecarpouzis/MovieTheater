@@ -27,9 +27,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Test the gateway's RomCache from source (it only needs BCL + ILogger), so the suite stays
-         buildable without a ProjectReference to the Web-SDK gateway app. -->
+    <!-- Test the gateway's RomCache + SaveStore from source (they only need BCL + ILogger), so the suite
+         stays buildable without a ProjectReference to the Web-SDK gateway app. -->
     <Compile Include="..\MovieTheater.ArcadeGateway\RomCache.cs" Link="Arcade\RomCache.cs" />
+    <Compile Include="..\MovieTheater.ArcadeGateway\SaveStore.cs" Link="Arcade\SaveStore.cs" />
   </ItemGroup>
 
 </Project>
