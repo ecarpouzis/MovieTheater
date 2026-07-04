@@ -586,3 +586,23 @@
 .arcade-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) .ant-select-item-option-content {
   color: #fff !important;
 }
+/* The list scrolls (e.g. 23 systems), but the default scrollbar is invisible on this dark purple, so
+   it reads as a non-scrolling list. Give it a bright, always-visible thumb + a faint track channel.
+   AntD Select scrolls via rc-virtual-list's own scrollbar element; the ::-webkit rules cover the
+   native-overflow (non-virtualized) case. */
+.arcade-login-dropdown .rc-virtual-list-scrollbar {
+  width: 10px !important;
+  background: rgba(216, 167, 255, 0.12) !important;
+  border-radius: 5px !important;
+}
+.arcade-login-dropdown .rc-virtual-list-scrollbar-thumb {
+  background: #d8a7ff !important;
+  border-radius: 5px !important;
+}
+.arcade-login-dropdown .rc-virtual-list-holder::-webkit-scrollbar { width: 10px; }
+.arcade-login-dropdown .rc-virtual-list-holder::-webkit-scrollbar-track {
+  background: rgba(216, 167, 255, 0.12); border-radius: 5px;
+}
+.arcade-login-dropdown .rc-virtual-list-holder::-webkit-scrollbar-thumb {
+  background: #d8a7ff; border-radius: 5px;
+}
