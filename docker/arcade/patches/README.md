@@ -59,3 +59,34 @@ SDK at build time. Enables GPU (NVENC) encoding — Part B of `docs/arcade-next-
 
 Selecting `encoder.video.codec: h264` in config.yaml turns NVENC on; setting it back to `vp8` is
 the instant software fallback. pion already speaks `video/h264` — no WebRTC-side change.
+
+## 0005-disk-control.patch
+
+Multi-disc disc-swap for the one-card-per-game lobby (docs/arcade-dedupe-multidisc-plan.md, Phase 2).
+Touches 6 files:
+- `nanoarch/nanoarch.c` + `.h` — capture the core's `retro_disk_control_callback` and add
+  `nano_disk_set_index(index)` = eject → `set_image_index` → insert (guarded: no-op without disk
+  control or out of range).
+- `nanoarch/nanoarch.go` — handle `RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE` (13, previously
+  unhandled → cores got no disk control); a `pendingDisk atomic.Int32` on `Nanoarch`; `Run()` drains
+  it and applies the swap **on the emulator thread** before the core steps; `RequestDisk(i)` queues it.
+- `frontend.go` / `caged.go` — plumb `RequestDisk` out to the app.
+- `coordinatorhandlers.go` — a `"disc"` WebRTC data channel (same mechanism as `keyboard`/`mouse`);
+  the browser sends a 1-byte target image index → `RequestDisk`. No-op for non-disc cores.
+
+**Why:** CloudRetro never registered a disk-control interface, so pcsx_rearmed loading an `.m3u` could
+not switch discs. This captures the interface and swaps on the emulator thread (disc cores —
+pcsx/Sega CD/Saturn — are non-LibCo, so `Run()` is the correct thread; a LibCo disc core would need
+the swap dispatched via `same_thread`).
+
+**Also required (not in this patch):**
+- `docker/arcade/config.yaml` — add `m3u` to the `roms` list of each disc core (`pcsx`, and
+  segacd/saturn when added): `roms: ["m3u", "cue", "chd"]`, so the library scan sees `.m3u` playlists.
+- Browser (`src/ui/src/Pages/Arcade/cloudRetroClient.js`) — open a negotiated `"disc"` data channel
+  and send `[targetIndex]`; `ArcadeRoomPage` shows `Disc x/N` + Swap controls (disc count comes from
+  the room descriptor, which the site fills from the game's `.m3u` disc rows).
+- JIT (`ArcadeGateway/RomCache.cs`) — materialize the `.m3u` (extract ALL discs + write the playlist)
+  on first play; one `ArcadeGame` row per multi-disc game keyed to `<game>.m3u`.
+
+**Compile status:** written against `13852a7` and applies clean, but NOT yet compiled (the dev box has
+no Go/cgo toolchain) — verify on the image build. Re-generate: `git diff > 0005-disk-control.patch`.

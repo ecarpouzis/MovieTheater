@@ -1,0 +1,154 @@
+diff --git a/pkg/worker/caged/libretro/caged.go b/pkg/worker/caged/libretro/caged.go
+index f3553b1..d68ae7d 100644
+--- a/pkg/worker/caged/libretro/caged.go
++++ b/pkg/worker/caged/libretro/caged.go
+@@ -94,6 +94,7 @@ func (c *Caged) AudioSampleRate() int             { return c.Emulator.AudioSampl
+ func (c *Caged) ViewportSize() (int, int)         { return c.base.ViewportSize() }
+ func (c *Caged) Scale() (float64, string)         { return c.Emulator.Scale() }
+ func (c *Caged) Input(p int, d byte, data []byte) { c.base.Input(p, d, data) }
++func (c *Caged) RequestDisk(i int)                 { c.base.RequestDisk(i) }
+ func (c *Caged) KbMouseSupport() bool             { return c.base.KbMouseSupport() }
+ func (c *Caged) Start()                           { go c.Emulator.Start() }
+ func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
+diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
+index 6974d59..63ce314 100644
+--- a/pkg/worker/caged/libretro/frontend.go
++++ b/pkg/worker/caged/libretro/frontend.go
+@@ -434,6 +434,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
+ 	}
+ }
+ 
++// RequestDisk queues a multi-disc swap to image index i (patch 0005 — the "disc" data channel).
++func (f *Frontend) RequestDisk(i int) { f.nano.RequestDisk(i) }
++
+ func (f *Frontend) ViewportCalc() (nw int, nh int) {
+ 	w, h := f.FrameSize()
+ 	nw, nh = w, h
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.c b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
+index 669862d..9582179 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.c
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
+@@ -407,3 +407,36 @@ void *same_thread_with_args2(void *f, int type, void *arg1, void *arg2) {
+ void same_thread(void *f) {
+     same_thread_with_args(f, CALL_VOID);
+ }
++
++// --- Disk control (MovieTheater patch 0005) ---------------------------------------------------------
++// Captures the core's retro_disk_control_callback (registered via RETRO_ENVIRONMENT_SET_DISK_CONTROL_
++// INTERFACE) so the frontend can swap discs of a multi-disc .m3u game. Applied on the emulator thread
++// from Run(); see docs/arcade-dedupe-multidisc-plan.md.
++static struct retro_disk_control_callback nano_disk;
++static bool nano_disk_set = false;
++
++void nano_disk_set_interface(const void *cb) {
++    if (cb) {
++        nano_disk = *(const struct retro_disk_control_callback *)cb;
++        nano_disk_set = true;
++    } else {
++        nano_disk_set = false;
++    }
++}
++
++static bool nano_disk_ok(void) {
++    return nano_disk_set && nano_disk.set_eject_state && nano_disk.set_image_index && nano_disk.get_num_images;
++}
++
++// nano_disk_set_index ejects, selects image `index`, and re-inserts. Returns false if there is no disk
++// control, the index is out of range, or the core rejects the swap.
++bool nano_disk_set_index(unsigned index) {
++    if (!nano_disk_ok()) return false;
++    unsigned n = nano_disk.get_num_images();
++    if (n == 0 || index >= n) return false;
++    if (nano_disk.get_image_index && nano_disk.get_image_index() == index) return true;
++    if (!nano_disk.set_eject_state(true)) return false;
++    bool ok = nano_disk.set_image_index(index);
++    nano_disk.set_eject_state(false);
++    return ok;
++}
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+index 17f10fc..0266ec4 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+@@ -39,6 +39,8 @@ type Nanoarch struct {
+ 	mouse    MouseState
+ 	retropad InputState
+ 
++	pendingDisk atomic.Int32 // patch 0005: queued disc index+1 (0 = none), applied on the emulator thread in Run
++
+ 	keyboardCb    *C.struct_retro_keyboard_callback
+ 	LastFrameTime time.Time
+ 	LibCo         bool
+@@ -409,6 +411,13 @@ func (n *Nanoarch) syncInputToCache() {
+ }
+ 
+ func (n *Nanoarch) Run() {
++	// patch 0005: apply a queued multi-disc swap on the emulator thread, before the core steps. (Disc-based
++	// cores — pcsx/Sega CD/Saturn — are non-LibCo, so this runs on the same thread as the retro_run below.)
++	if d := n.pendingDisk.Swap(0); d > 0 {
++		if !bool(C.nano_disk_set_index(C.uint(d - 1))) {
++			n.log.Warn().Msgf("disk swap to index %d failed (no disk control or bad index)", d-1)
++		}
++	}
+ 	n.syncInputToCache()
+ 
+ 	if n.LibCo {
+@@ -431,6 +440,13 @@ func (n *Nanoarch) IsSupported() error                  { return graphics.RGFWTr
+ func (n *Nanoarch) IsGL() bool                          { return n.Video.gl.enabled }
+ func (n *Nanoarch) IsStopped() bool                     { return n.Stopped.Load() }
+ func (n *Nanoarch) InputRetropad(port int, data []byte) { n.retropad.SetInput(port, data) }
++
++// RequestDisk queues a multi-disc swap to image index i; applied on the emulator thread in Run (patch 0005).
++func (n *Nanoarch) RequestDisk(i int) {
++	if i >= 0 {
++		n.pendingDisk.Store(int32(i) + 1)
++	}
++}
+ func (n *Nanoarch) InputKeyboard(_ int, data []byte) {
+ 	if n.keyboardCb == nil {
+ 		return
+@@ -788,6 +804,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+ 	case C.RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
+ 		*(**C.char)(data) = Nan0.cSaveDirectory
+ 		return true
++	case C.RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
++		// MovieTheater patch 0005: capture the core's disk-control callbacks so a multi-disc .m3u game
++		// can swap discs live (docs/arcade-dedupe-multidisc-plan.md). Applied on the emulator thread in Run.
++		C.nano_disk_set_interface(data)
++		Nan0.log.Debug().Msgf("disk control interface registered")
++		return true
+ 	case C.RETRO_ENVIRONMENT_SET_MESSAGE:
+ 		// only with the Libretro debug mode
+ 		if Nan0.log.GetLevel() < logger.InfoLevel {
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.h b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
+index 2479d0c..b5951b2 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.h
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
+@@ -41,4 +41,8 @@ static inline void call_audio_buffer_status(
+ 	if (cb && cb->callback) cb->callback(active, occupancy, underrun);
+ }
+ 
++// Disk control (MovieTheater patch 0005).
++void nano_disk_set_interface(const void *cb);
++bool nano_disk_set_index(unsigned index);
++
+ #endif
+diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
+index 6972cc7..6b3cfd6 100644
+--- a/pkg/worker/coordinatorhandlers.go
++++ b/pkg/worker/coordinatorhandlers.go
+@@ -203,6 +203,15 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 		_, _ = s.Channel("keyboard", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Keyboard), data) })
+ 		_, _ = s.Channel("mouse", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Mouse), data) })
+ 	}
++	// patch 0005: multi-disc swap. The browser opens a "disc" channel and sends a 1-byte target image
++	// index; the frontend applies it on the emulator thread. No-op for cores without disk control.
++	if disc, ok := r.App().(interface{ RequestDisk(int) }); ok {
++		_, _ = s.Channel("disc", nil, func(data []byte) {
++			if len(data) >= 1 {
++				disc.RequestDisk(int(data[0]))
++			}
++		})
++	}
+ 
+ 	c.RegisterRoom(r.Id())
+ 
