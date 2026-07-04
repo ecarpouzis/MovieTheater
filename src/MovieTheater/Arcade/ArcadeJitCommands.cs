@@ -86,12 +86,20 @@ namespace MovieTheater.Arcade
             var batch = pending.Take(Math.Max(1, Limit)).ToList();
 
             var existing = await db.ArcadeGames.ToListAsync();
-            var byKey = existing.ToDictionary(g => (g.System, g.RomPath), g => g);
+            // Key case-insensitively to match SQL Server's default collation on the (System, RomPath)
+            // unique index — otherwise a curated ROM and its No-Intro twin that differ only in case
+            // (e.g. "…the Hedgehog…" vs "…The Hedgehog…") slip past an ordinal dictionary and collide at
+            // INSERT. Tolerate any pre-existing case-variant rows too.
+            static (string, string) Key(string sys, string rom) => (sys.ToLowerInvariant(), rom.ToLowerInvariant());
+            var byKey = new Dictionary<(string, string), ArcadeGame>();
+            foreach (var g in existing) byKey[Key(g.System, g.RomPath)] = g;
 
             int inserted = 0, updated = 0, skipped = 0;
+            var addedThisRun = new HashSet<(string, string)>();
             foreach (var e in batch)
             {
-                if (byKey.TryGetValue((e.System, e.RomPath), out var row))
+                var key = Key(e.System, e.RomPath);
+                if (byKey.TryGetValue(key, out var row))
                 {
                     // Preserve hand-edits; only heal machine fields: re-enable, fill launch key, and keep
                     // the source-archive pointer in sync if the collection moved.
@@ -100,6 +108,10 @@ namespace MovieTheater.Arcade
                     if (string.IsNullOrEmpty(row.CloudRetroGameKey)) { if (Apply) row.CloudRetroGameKey = e.GameKey; changed = true; }
                     if (row.SourceArchivePath != e.Archive) { if (Apply) row.SourceArchivePath = e.Archive; changed = true; }
                     if (changed) updated++; else skipped++;
+                }
+                else if (!addedThisRun.Add(key))
+                {
+                    skipped++; // a case-variant of something already queued this run — don't double-insert
                 }
                 else
                 {

@@ -74,13 +74,19 @@ namespace MovieTheater.Arcade
             var batch = pending.Take(Math.Max(1, Limit)).ToList();
 
             // Existing catalog, keyed by the unique (System, RomPath) — one load, no per-file query.
+            // Case-insensitive to match SQL Server's collation (an ordinal dictionary would let a
+            // case-variant slip through and collide at INSERT), plus an intra-run guard.
             var existing = await db.ArcadeGames.ToListAsync();
-            var byKey = existing.ToDictionary(g => (g.System, g.RomPath), g => g);
+            static (string, string) Key(string sys, string rom) => (sys.ToLowerInvariant(), rom.ToLowerInvariant());
+            var byKey = new Dictionary<(string, string), ArcadeGame>();
+            foreach (var g in existing) byKey[Key(g.System, g.RomPath)] = g;
 
             int inserted = 0, updated = 0, skipped = 0;
+            var addedThisRun = new HashSet<(string, string)>();
             foreach (var f in batch)
             {
-                if (byKey.TryGetValue((f.System, f.RomPath), out var row))
+                var key = Key(f.System, f.RomPath);
+                if (byKey.TryGetValue(key, out var row))
                 {
                     // Preserve hand-edits (Title, SortTitle, RatingCeiling, BoxArt). Only heal the machine
                     // fields: re-enable a row whose file is back, and fill an empty launch key.
@@ -88,6 +94,10 @@ namespace MovieTheater.Arcade
                     if (!row.IsEnabled) { if (Apply) row.IsEnabled = true; changed = true; }
                     if (string.IsNullOrEmpty(row.CloudRetroGameKey)) { if (Apply) row.CloudRetroGameKey = f.GameKey; changed = true; }
                     if (changed) updated++; else skipped++;
+                }
+                else if (!addedThisRun.Add(key))
+                {
+                    skipped++; // a case-variant of something already queued this run
                 }
                 else
                 {

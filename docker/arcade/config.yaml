@@ -90,6 +90,19 @@ emulator:
           scale: 3
         gba:
           scale: 3
+        # Game Boy / Game Boy Color via mgba (same lib as GBA). The stock config only exposes gba+gbc
+        # roms under the `gba` folder; the JIT catalog files per system (gb/, gbc/), so give each its own
+        # core+folder. mgba plays all three. scale:3 for the same crispness rationale as the other 2D cores.
+        gb:
+          lib: mgba_libretro
+          folder: gb
+          roms: ["gb"]
+          scale: 3
+        gbc:
+          lib: mgba_libretro
+          folder: gbc
+          roms: ["gbc"]
+          scale: 3
 
         pcsx:
           lib: pcsx_rearmed_libretro
