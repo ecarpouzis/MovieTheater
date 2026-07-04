@@ -11,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 using MovieTheater.Console;
 using MovieTheater.Db;
 using MovieTheater.Services;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Processing;
 
 namespace MovieTheater.Arcade
 {
@@ -40,6 +43,9 @@ namespace MovieTheater.Arcade
 
         [CommandOption("overwrite", Description = "Re-fetch games that already have box art.")]
         public bool Overwrite { get; set; }
+
+        [CommandOption("thumb-px", Description = "Max thumbnail dimension in px (default 220). Full art is downscaled to this so the store stays small.")]
+        public int ThumbPx { get; set; } = 220;
 
         // System code → libretro-thumbnails repo name. Arcade (fbneo) box art rarely name-matches, so it's
         // deliberately omitted (its cards keep the placeholder).
@@ -89,7 +95,9 @@ namespace MovieTheater.Arcade
                 if (!ThumbRepo.TryGetValue(game.System, out var repo))
                 { missed++; w.WriteLine($"  ? [{game.System}] {game.Title} (no thumbnail repo for system)"); continue; }
 
-                var url = $"https://raw.githubusercontent.com/libretro-thumbnails/{Uri.EscapeDataString(repo)}/master/Named_Boxarts/{Uri.EscapeDataString(LibretroName(game.CloudRetroGameKey))}.png";
+                // libretro-thumbnails GitHub repos use underscores for spaces (Nintendo_-_Nintendo_64); the
+                // image FILENAME keeps spaces (URL-encoded). Escaping the repo with %20 → 404 on every game.
+                var url = $"https://raw.githubusercontent.com/libretro-thumbnails/{repo.Replace(' ', '_')}/master/Named_Boxarts/{Uri.EscapeDataString(LibretroName(game.CloudRetroGameKey))}.png";
                 byte[]? bytes = await TryDownloadPng(http, url);
                 if (bytes == null) { missed++; w.WriteLine($"  ? [{game.System}] {game.Title} (no match)"); continue; }
 
@@ -98,7 +106,7 @@ namespace MovieTheater.Arcade
                 {
                     var dest = Path.Combine(postersRoot, rel.Replace('/', Path.DirectorySeparatorChar));
                     Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-                    await File.WriteAllBytesAsync(dest, bytes);
+                    await File.WriteAllBytesAsync(dest, Thumbnail(bytes, ThumbPx));
                     game.BoxArtPath = rel;
                 }
                 fetched++;
@@ -128,6 +136,22 @@ namespace MovieTheater.Arcade
             foreach (var c in Path.GetInvalidFileNameChars())
                 name = name.Replace(c, '_');
             return name;
+        }
+
+        // Downscale to a card-sized thumbnail so ~49k games don't cost gigabytes: full box art is ~300-500 KB,
+        // a 220px thumbnail is ~10-20 KB. Preserves aspect; re-encodes PNG at best compression.
+        private static byte[] Thumbnail(byte[] source, int maxDim)
+        {
+            using var img = Image.Load(source);
+            int max = Math.Max(img.Width, img.Height);
+            if (max > maxDim)
+            {
+                double s = (double)maxDim / max;
+                img.Mutate(x => x.Resize(Math.Max(1, (int)Math.Round(img.Width * s)), Math.Max(1, (int)Math.Round(img.Height * s))));
+            }
+            using var ms = new MemoryStream();
+            img.Save(ms, new PngEncoder { CompressionLevel = PngCompressionLevel.BestCompression });
+            return ms.ToArray();
         }
 
         // A hit is a real PNG (200 + PNG magic), so a repo's 404 HTML page is never saved as "box art".
