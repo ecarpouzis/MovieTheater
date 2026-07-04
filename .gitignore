@@ -362,6 +362,7 @@ CLAUDE.md
 /src/ui/_*.js
 
 # ASP.NET Data Protection keys (decrypt auth cookies — a local secret). In prod these persist to
-# the posters mount; locally they land here. Must never be committed.
-/src/MovieTheater/dataprotection-keys/
+# the posters mount; locally they land here. Must never be committed. Unanchored so it matches the
+# key dir wherever a run drops it (content root, repo root, a scratch CWD).
+dataprotection-keys/
 /src/MovieTheater.ArcadeGateway/appsettings.Production.json
