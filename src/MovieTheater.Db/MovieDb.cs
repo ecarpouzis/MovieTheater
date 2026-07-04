@@ -295,6 +295,10 @@ namespace MovieTheater.Db
             // (the hot filter) so a page request seeks instead of sorting the whole catalog each time.
             modelBuilder.Entity<ArcadeGame>().HasIndex(g => g.SortTitle);
             modelBuilder.Entity<ArcadeGame>().HasIndex(g => new { g.System, g.SortTitle });
+            // Default lens = deduped English releases (IsPrimary + Region/Variant), one card per game.
+            modelBuilder.Entity<ArcadeGame>().HasIndex(g => new { g.IsPrimary, g.Variant, g.Region, g.SortTitle });
+            // The dedupe CLI groups by (System, Title) to pick each game's primary.
+            modelBuilder.Entity<ArcadeGame>().HasIndex(g => new { g.System, g.Title });
 
             modelBuilder.Entity<ArcadeSession>()
                 .HasOne(s => s.ArcadeGame)

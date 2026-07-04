@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { Card, Button, Tag, Space, Spin, Empty, Typography, message } from "antd";
+import { Card, Button, Tag, Space, Spin, Empty, Typography, message, Select } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 
 const { Title, Text } = Typography;
@@ -9,12 +9,22 @@ const PAGE_SIZE = 60;
 const SYSTEM_LABEL = {
   nes: "NES", snes: "SNES", genesis: "Genesis", gb: "Game Boy", gbc: "Game Boy Color",
   gba: "Game Boy Advance", n64: "Nintendo 64", ps1: "PlayStation", arcade: "Arcade",
+  psp: "PSP", dc: "Dreamcast", naomi: "Naomi", atomiswave: "Atomiswave",
+  sms: "Master System", gg: "Game Gear", sg1000: "SG-1000", segacd: "Sega CD",
+  sega32x: "32X", pce: "TurboGrafx-16", ngpc: "Neo Geo Pocket", wsc: "WonderSwan Color",
+  a2600: "Atari 2600", a7800: "Atari 7800", lynx: "Atari Lynx", vb: "Virtual Boy",
+  fds: "Famicom Disk System", neogeo: "Neo Geo",
 };
 const systemLabel = (s) => SYSTEM_LABEL[s] || (s ? s.toUpperCase() : "");
 
 // Systems the box-art route can source (libretro-thumbnails) — so a card requests /ArcadeImage even before
-// its art is cached (the route lazily fetches on first view). Arcade is skipped (no repo → don't 404 36k cards).
-const ART_SYSTEMS = new Set(["nes", "snes", "genesis", "gb", "gbc", "gba", "n64", "ps1"]);
+// its art is cached (the route lazily fetches on first view). Arcade/naomi/atomiswave/neogeo are skipped
+// (arcade-named art won't match → don't 404 those cards). Mirror of ArcadeBoxArt.ThumbRepo keys.
+const ART_SYSTEMS = new Set([
+  "nes", "snes", "genesis", "gb", "gbc", "gba", "n64", "ps1",
+  "psp", "dc", "sms", "gg", "sg1000", "segacd", "sega32x", "pce", "ngpc", "wsc",
+  "a2600", "a7800", "lynx", "vb", "fds",
+]);
 
 /**
  * The /arcade lobby (docs/arcade-plan.md §7). Over ~12,500 games, this is SERVER-SIDE filtered + paged:
@@ -89,10 +99,10 @@ export default function ArcadePage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [hasMore, loading, page, fetchPage]);
 
-  function createRoom(game) {
-    if (creating) return;
-    setCreating(game.id);
-    MovieAPI.createArcadeRoom(game.id)
+  function createRoom(versionId) {
+    if (creating || !versionId) return;
+    setCreating(versionId);
+    MovieAPI.createArcadeRoom(versionId)
       .then(async (r) => {
         if (r.status === 503) { message.warning("The arcade is full — every machine is in use. Try again shortly."); return null; }
         if (!r.ok) { message.error("Couldn't start that game."); return null; }
@@ -150,20 +160,7 @@ export default function ArcadePage() {
         <>
           <Space wrap size={[16, 16]} align="start">
             {games.map((game) => (
-              <Card key={game.id} hoverable style={{ width: 200 }} cover={<GameCover game={game} />} onClick={() => createRoom(game)}>
-                <Card.Meta
-                  title={game.title}
-                  description={
-                    <Space size={4} wrap>
-                      <Tag color="purple">{systemLabel(game.system)}</Tag>
-                      {game.maxPlayers > 1 && <Tag>{game.maxPlayers}P</Tag>}
-                      {game.region && game.region !== "Unknown" && <Tag>{game.region}</Tag>}
-                      {game.variant && game.variant !== "Release" && <Tag color="magenta">{game.variant}</Tag>}
-                    </Space>
-                  }
-                />
-                <Button type="primary" block style={{ marginTop: 12 }} loading={creating === game.id}>Start room</Button>
-              </Card>
+              <GameCard key={game.key} game={game} onStart={createRoom} creating={creating} />
             ))}
           </Space>
           <div style={{ textAlign: "center", padding: "28px 0 8px" }}>
@@ -179,7 +176,45 @@ export default function ArcadePage() {
   );
 }
 
-// Box art via /ArcadeImage/{id}; until it's populated, a labeled placeholder (no CRT/gradient effects).
+// One card per game (docs/arcade-dedupe-multidisc-plan.md). A version dropdown picks which ROM launches
+// (region / revision / edition / disc / hack); the tags track the selection. Multiple versions collapse
+// here so the grid shows each game once. Box art is shared per game via the representative `artId`.
+function GameCard({ game, onStart, creating }) {
+  const [sel, setSel] = useState(game.versions?.[0]?.id);
+  // When the filters change the default version (e.g. you filtered a region), reset the selection.
+  useEffect(() => { setSel(game.versions?.[0]?.id); }, [game.versions?.[0]?.id]);
+  const version = game.versions?.find((v) => v.id === sel) || game.versions?.[0];
+  return (
+    <Card hoverable style={{ width: 200 }} cover={<GameCover game={game} />} onClick={() => onStart(sel)}>
+      <Card.Meta
+        title={game.title}
+        description={
+          <Space size={4} wrap>
+            <Tag color="purple">{systemLabel(game.system)}</Tag>
+            {game.maxPlayers > 1 && <Tag>{game.maxPlayers}P</Tag>}
+            {version?.region && version.region !== "Unknown" && <Tag>{version.region}</Tag>}
+            {version?.variant && version.variant !== "Release" && <Tag color="magenta">{version.variant}</Tag>}
+          </Space>
+        }
+      />
+      {game.versionCount > 1 && (
+        <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 10 }}>
+          <Select
+            size="small" value={sel} onChange={setSel} style={{ width: "100%" }}
+            getPopupContainer={(t) => t.parentElement}
+            options={game.versions.map((v) => ({ value: v.id, label: v.label }))}
+          />
+        </div>
+      )}
+      <Button type="primary" block style={{ marginTop: 12 }} loading={creating === sel}
+        onClick={(e) => { e.stopPropagation(); onStart(sel); }}>
+        Start room
+      </Button>
+    </Card>
+  );
+}
+
+// Box art via /ArcadeImage/{artId}; until it's populated, a labeled placeholder (no CRT/gradient effects).
 // Box art is portrait and its aspect varies by system, so `contain` (never `cover`) shows the WHOLE
 // box — cover was cropping the title off the top. The dark letterbox matches the placeholder.
 function GameCover({ game }) {
@@ -195,7 +230,7 @@ function GameCover({ game }) {
   }
   return (
     <div style={box}>
-      <img src={`/ArcadeImage/${game.id}`} alt={game.title} loading="lazy" decoding="async"
+      <img src={`/ArcadeImage/${game.artId}`} alt={game.title} loading="lazy" decoding="async"
         style={{ maxHeight: height, maxWidth: "100%", objectFit: "contain" }} onError={() => setBroken(true)} />
     </div>
   );

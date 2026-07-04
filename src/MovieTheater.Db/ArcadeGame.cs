@@ -71,6 +71,13 @@ namespace MovieTheater.Db
 
         public bool IsEnabled { get; set; } = true;
 
+        /// <summary>The single canonical row of its (System, Title) group for the lobby's default lens —
+        /// exactly one primary per game, chosen by the <c>arcade-dedupe</c> CLI (prefer official English
+        /// release, highest revision, disc-1 / .m3u). Secondary rows (other regions, revisions, discs,
+        /// hacks) stay enabled and reachable via filters but are hidden from the deduped default so a game
+        /// shows once. Defaults true so a freshly-ingested row is visible until dedupe runs.</summary>
+        public bool IsPrimary { get; set; } = true;
+
         public string? Notes { get; set; }
     }
 }

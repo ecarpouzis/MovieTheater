@@ -10,6 +10,11 @@ const { Search } = Input;
 const SYSTEM_LABEL = {
   nes: "NES", snes: "SNES", genesis: "Genesis", gb: "Game Boy", gbc: "Game Boy Color",
   gba: "Game Boy Advance", n64: "Nintendo 64", ps1: "PlayStation", arcade: "Arcade",
+  psp: "PSP", dc: "Dreamcast", naomi: "Naomi", atomiswave: "Atomiswave",
+  sms: "Master System", gg: "Game Gear", sg1000: "SG-1000", segacd: "Sega CD",
+  sega32x: "32X", pce: "TurboGrafx-16", ngpc: "Neo Geo Pocket", wsc: "WonderSwan Color",
+  a2600: "Atari 2600", a7800: "Atari 7800", lynx: "Atari Lynx", vb: "Virtual Boy",
+  fds: "Famicom Disk System", neogeo: "Neo Geo",
 };
 const systemLabel = (s) => SYSTEM_LABEL[s] || (s ? s.toUpperCase() : "");
 
@@ -32,8 +37,8 @@ const playerOptions = [
 ];
 
 const modOptions = [
-  { value: "", label: "All games" },
-  { value: "release", label: "Official releases only" },
+  { value: "release", label: "Official releases" },
+  { value: "all", label: "All (include mods)" },
   { value: "modded", label: "Mods & hacks only" },
 ];
 
@@ -139,16 +144,17 @@ function ArcadeNavContent({ userData, setUserData, onUserLoggedIn, setSettingsMo
 
   const p = new URLSearchParams(location.search);
   const activeSystem = p.get("system") || "";
-  const activeRegion = p.get("region") || "";
+  const activeRegion = p.get("region") || "english";
   const activePlayers = p.get("players") || "";
-  const activeVariant = p.get("variant") || "";
+  const activeVariant = p.get("variant") || "release";
 
   const systemOptions = [
     { value: "", label: facets ? `All systems (${facets.total})` : "All systems" },
     ...((facets?.systems || []).map((s) => ({ value: s.value, label: `${systemLabel(s.value)} (${s.count})` }))),
   ];
   const regionOptions = [
-    { value: "", label: "Any region" },
+    { value: "english", label: "English (default)" },
+    { value: "all", label: "All regions" },
     ...((facets?.regions || []).map((r) => ({ value: r.value, label: `${r.value} (${r.count})` }))),
   ];
 
@@ -188,7 +194,7 @@ function ArcadeNavContent({ userData, setUserData, onUserLoggedIn, setSettingsMo
         <Select style={{ width: "100%" }} value={activeVariant} onChange={(v) => updateParam("variant", v)}
           options={modOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
 
-        {(activeSystem || activeRegion || activePlayers || activeVariant || p.get("q")) && (
+        {(activeSystem || activeRegion !== "english" || activePlayers || activeVariant !== "release" || p.get("q")) && (
           <Button
             block
             style={{ marginTop: 18, background: "rgba(199,64,224,0.12)", borderColor: "rgba(199,64,224,0.4)", color: "#e0b6ff" }}

@@ -54,10 +54,11 @@ namespace MovieTheater.Controllers
             return setting != null && int.TryParse(setting.SettingValue, out var parsed) ? parsed : 100;
         }
 
-        // The catalog is ~12.5k games, so this is server-side FILTERED + PAGED (the Movies-browse idiom),
-        // never the whole set at once. Filters: system, region, minimum max-players, and variant —
-        // "release" = official dumps only, "modded" = anything unofficial (Hack/Beta/Proto/Unl/…), or a
-        // specific variant name. The mandatory age gate (RatingCeiling ≤ the viewer's setting) always applies.
+        // ONE CARD PER GAME (docs/arcade-dedupe-multidisc-plan.md): rows are grouped by (System, Title) into
+        // games, each carrying a version dropdown (region/rev/edition/disc/hack), so the same game's many
+        // ROMs collapse to a single card. Filters gate CARDS by version existence — a game shows iff it has
+        // ≥1 version matching. Defaults are English + non-modded; region/variant "all" broadens, a specific
+        // value narrows. Grouping is query-time so ingests fold in automatically. Age gate always applies.
         [HttpGet("/API/Arcade/Games")]
         public async Task<IActionResult> Games(
             string system = null, string region = null, int? maxPlayers = null,
@@ -69,34 +70,78 @@ namespace MovieTheater.Controllers
             if (!host.IsConfigured)
                 return StatusCode(501, new { message = "The arcade is not configured on this server." });
 
-            var q = await AgeVisibleGamesAsync(userId.Value);
+            bool searching = !string.IsNullOrWhiteSpace(search);
+            // No explicit choice → default English + non-modded (but a name search spans everything).
+            var reg = string.IsNullOrWhiteSpace(region) ? (searching ? "all" : "english") : region.Trim().ToLowerInvariant();
+            var var_ = string.IsNullOrWhiteSpace(variant) ? (searching ? "all" : "release") : variant.Trim().ToLowerInvariant();
 
-            if (!string.IsNullOrWhiteSpace(system)) q = q.Where(g => g.System == system);
-            if (!string.IsNullOrWhiteSpace(region)) q = q.Where(g => g.Region == region);
-            if (maxPlayers is int mp && mp > 1) q = q.Where(g => g.MaxPlayers >= mp);
-            if (string.Equals(variant, "release", StringComparison.OrdinalIgnoreCase))
-                q = q.Where(g => g.Variant == "Release" || g.Variant == null);
-            else if (string.Equals(variant, "modded", StringComparison.OrdinalIgnoreCase))
-                q = q.Where(g => g.Variant != "Release" && g.Variant != null);
-            else if (!string.IsNullOrWhiteSpace(variant))
-                q = q.Where(g => g.Variant == variant);
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var s = search.Trim();
-                q = q.Where(g => g.Title.Contains(s));
-            }
+            var baseQ = await AgeVisibleGamesAsync(userId.Value);
+
+            // The match set: rows that make a game QUALIFY for a card.
+            var matchQ = baseQ;
+            if (!string.IsNullOrWhiteSpace(system)) matchQ = matchQ.Where(g => g.System == system);
+            if (maxPlayers is int mp && mp > 1) matchQ = matchQ.Where(g => g.MaxPlayers >= mp);
+            if (searching) { var s = search.Trim(); matchQ = matchQ.Where(g => g.Title.Contains(s)); }
+
+            if (reg == "english")
+                matchQ = matchQ.Where(g => g.Region == null || (g.Region != "Japan" && g.Region != "Asia" && g.Region != "Other"));
+            else if (reg != "all")
+                matchQ = matchQ.Where(g => g.Region == reg || (g.Region ?? "").ToLower() == reg);
+
+            if (var_ == "release")
+                matchQ = matchQ.Where(g => g.Variant == "Release" || g.Variant == null);
+            else if (var_ == "modded")
+                matchQ = matchQ.Where(g => g.Variant != "Release" && g.Variant != null);
+            else if (var_ != "all")
+                matchQ = matchQ.Where(g => g.Variant == var_ || (g.Variant ?? "").ToLower() == var_);
 
             page = Math.Max(1, page);
             pageSize = Math.Clamp(pageSize, 1, 120);
-            var totalCount = await q.CountAsync();
-            var games = await q.OrderBy(g => g.SortTitle)
-                .Skip((page - 1) * pageSize).Take(pageSize)
-                .Select(g => new
+            var groupedQ = matchQ.GroupBy(g => new { g.System, g.Title })
+                .Select(grp => new { grp.Key.System, grp.Key.Title, Sort = grp.Min(x => x.SortTitle) });
+            var totalCount = await groupedQ.CountAsync();
+            var pageKeys = await groupedQ.OrderBy(x => x.Sort).ThenBy(x => x.Title)
+                .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            // All age-visible versions of the paged games (superset by System/Title IN, trimmed to exact
+            // page keys in memory) — the dropdown lists every version, not just the ones that matched.
+            var pageSystems = pageKeys.Select(k => k.System).Distinct().ToList();
+            var pageTitles = pageKeys.Select(k => k.Title).Distinct().ToList();
+            var versionRows = await baseQ.Where(g => pageSystems.Contains(g.System) && pageTitles.Contains(g.Title)).ToListAsync();
+            var keySet = pageKeys.Select(k => (k.System, k.Title)).ToHashSet();
+            var byGame = versionRows.Where(g => keySet.Contains((g.System, g.Title)))
+                .GroupBy(g => (g.System, g.Title))
+                .ToDictionary(x => x.Key, x => x.ToList());
+
+            string specificRegion = reg is "english" or "all" ? null : reg;
+            var games = pageKeys.Select(k =>
+            {
+                byGame.TryGetValue((k.System, k.Title), out var vs);
+                vs ??= new List<ArcadeGame>();
+                // Best version first = the card's default selection + box-art source. When a specific region
+                // is filtered, prefer that region so the card opens on what the user asked for.
+                var versions = vs
+                    .OrderBy(v => specificRegion != null && !string.Equals(v.Region, specificRegion, StringComparison.OrdinalIgnoreCase) ? 1 : 0)
+                    .ThenBy(ArcadeVersions.Rank).ToList();
+                var rep = versions.FirstOrDefault();
+                return new
                 {
-                    id = g.Id, title = g.Title, system = g.System, region = g.Region,
-                    variant = g.Variant, maxPlayers = g.MaxPlayers, year = g.Year, hasBoxArt = g.BoxArtPath != null
-                })
-                .ToListAsync();
+                    key = k.System + "|" + k.Title,
+                    title = k.Title,
+                    system = k.System,
+                    artId = rep?.Id ?? 0,
+                    hasBoxArt = rep?.BoxArtPath != null,
+                    year = rep?.Year,
+                    maxPlayers = versions.Count > 0 ? versions.Max(v => v.MaxPlayers) : (byte)1,
+                    versionCount = versions.Count,
+                    versions = versions.Select(v => new
+                    {
+                        id = v.Id, label = ArcadeVersions.Label(v), region = v.Region,
+                        variant = v.Variant, year = v.Year, maxPlayers = v.MaxPlayers,
+                    }).ToList(),
+                };
+            }).ToList();
+
             return Json(new { games, totalCount, page, pageSize });
         }
 
