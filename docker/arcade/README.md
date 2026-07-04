@@ -52,24 +52,27 @@ roms/
 Extensions per system: nes `.nes`; snes `.sfc/.smc`; genesis `.md/.gen/.smd/.bin`; gb `.gb`;
 gbc `.gbc`; gba `.gba`; n64 `.n64/.z64/.v64`; psx `.cue/.chd/.pbp`; arcade `.zip`.
 
-2D collections on `R:\Roms\Games` are zipped — extract the bare ROM out of each chosen zip (we
-don't rely on in-worker zip loading). PS1 uses bare `.chd` (the curated set at
-`F:\Emulation\roms\psx`). **PS1 BIOS**: put `scph1001.bin`/`scph5501.bin` in `BIOS_DIR`
-(D:\Arcade\bios) — the GPU compose mounts it at the core system dir
-(`/usr/local/share/cloud-game/libretro/system`).
+2D collections on `R:\Roms\Games` are zipped. PS1 plays from the `.7z` master on L: via the JIT ROM
+cache (docs/arcade-jit-cache.md) — extracted on demand into `roms/psx`. **PS1 BIOS**: put
+`scph1001.bin`/`scph5501.bin` in `BIOS_DIR` (`D:\ArcadeStorage\bios`) — the GPU compose mounts it at
+the core system dir (`/usr/local/share/cloud-game/libretro/system`).
+
+All arcade data lives under one root on Ziggy's fast NVMe: `D:\ArcadeStorage\{roms,saves,bios,savestore}`
+(the 990 PRO — NOT the repo drive F:, a spinning HDD, and NOT the L: NAS). It's outside the repo, so
+ROMs/BIOS can never be committed. `savestore/` is the durable per-user save store (docs/arcade-saves-plan.md).
 
 ## Bring-up
 
 ```bash
-cp .env.example .env      # then edit: ARCADE_IMAGE, ZIGGY_PUBLIC_IP, ROMS_DIR, SAVES_DIR
+cp .env.example .env      # then edit: ARCADE_IMAGE, ZIGGY_PUBLIC_IP, ROMS_DIR, SAVES_DIR, BIOS_DIR
 docker compose up -d
 ```
 
 Then catalog the ROMs (from the site's CLI project — dry-run first, then apply, looping the cursor):
 
 ```bash
-dotnet run --project src/MovieTheater -- arcade-ingest --roms D:\Arcade\roms            # dry run
-dotnet run --project src/MovieTheater -- arcade-ingest --roms D:\Arcade\roms --apply    # write
+dotnet run --project src/MovieTheater -- arcade-ingest --roms D:\ArcadeStorage\roms            # dry run
+dotnet run --project src/MovieTheater -- arcade-ingest --roms D:\ArcadeStorage\roms --apply    # write
 # large libraries: repeat with --after "<nextCursor>" until remaining: 0
 ```
 
