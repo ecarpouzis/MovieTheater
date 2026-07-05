@@ -19,6 +19,12 @@
 # With both settings, ICEIPMAP=192.168.68.69 (gpu.env) serves the same-host browser AND LAN peers.
 # Keepalive: WSL kills an idle distro (and this stack with it) — scripts/register-arcade-wsl-task.ps1
 # registers the logon task that holds it open. Verified end-to-end 2026-07-03 (Mario Kart 64, 2 browsers).
+#
+# UDP socket buffers (roadmap WS-A.1 — same-host N64 packet-loss fix): install 99-arcade-udp-buffers.conf
+# into the distro's /etc/sysctl.d/ (raises net.core.rmem_max/wmem_max to 24 MiB). CloudRetro already
+# asks for a 16 MiB mux buffer but the kernel clamps it to the ~208 KiB rmem_max default — that clamp
+# is the loss root cause. Host-networked workers share the distro netns, so the DISTRO sysctl governs.
+# See that file's header for the one-time install + Hyper-V firewall check.
 
 x-gpu-worker: &gpu-worker
   image: movietheater/cloud-game:pinned-gpu

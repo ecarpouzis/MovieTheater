@@ -257,6 +257,22 @@ encoder:
       # huge headroom at this resolution, and LAN/loopback doesn't care about 8Mbps. bitrate=kbit/s.
       params: "preset=p4 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=120 repeat-sequence-header=true zerolatency=true"
       caps: video/x-h264,stream-format=byte-stream,alignment=au
+    # Opus with in-band FEC ON — the audio-skip fix for lossy same-host N64 rooms (roadmap WS-A.2).
+    # CloudRetro's EMBEDDED default (pkg/config/config.yaml) is
+    #   audio-type=restricted-lowdelay complexity=8 bitrate=96000 frame-size=5
+    # and we inherited it because we set no `opus` entry here. That default makes FEC a SILENT NO-OP:
+    # restricted-lowdelay forces Opus into CELT-only mode and 5 ms frames are sub-10 ms — LBRR (the
+    # redundant previous-frame copy that IS Opus in-band FEC) exists ONLY in SILK/hybrid at >=10 ms
+    # frames. So even though Pion's SDP already offers useinbandfec=1, the encoder emitted no LBRR.
+    # This override is the whole fix (config-only — buildAudioPipeline already threads Params, and
+    # reads frame-size back to time the RTP frames): application AUDIO (generic, not lowdelay) re-enables
+    # SILK/hybrid, inband-fec=true + packet-loss-percentage~15 makes Opus embed LBRR sized for ~15% loss,
+    # frame-size=10 clears the >=10 ms LBRR floor with the least added audio latency (was 5, sub-floor).
+    # Video already survives loss via retransmit (0 freezes); this closes the audio gap. Verify with the
+    # test-roms skill: audio concealment/skip events on a 10-min N64 room, off-network vs same-host.
+    opus:
+      encoder: opusenc
+      params: "audio-type=generic inband-fec=true packet-loss-percentage=15 frame-size=10 complexity=8 bitrate=96000"
   audio:
     codec: opus
 

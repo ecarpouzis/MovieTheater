@@ -39,6 +39,7 @@ export default function ArcadeRoomPage() {
   const [needsTap, setNeedsTap] = useState(false);
   const [discCount, setDiscCount] = useState(location.state?.descriptor?.discCount ?? 0);
   const [disc, setDisc] = useState(0);
+  const [isFs, setIsFs] = useState(false);
 
   // Resolve the join descriptor: creator has it in router state; an invitee Joins for one. If the room
   // is still starting (creator hasn't Bound yet), retry a few times before giving up.
@@ -127,6 +128,19 @@ export default function ArcadeRoomPage() {
     return () => window.removeEventListener("pagehide", onHide);
   }, [code]);
 
+  // Track fullscreen so we can re-letterbox to the DISPLAY aspect: in fullscreen the UA drops the
+  // wrapper's CSS aspectRatio and stretches it to the monitor (16:9), so a 4:3 game would smear wide.
+  // The fix is a black full-screen container centering an inner aspect-box (see the player JSX below).
+  useEffect(() => {
+    const onFsChange = () => setIsFs(!!(document.fullscreenElement || document.webkitFullscreenElement));
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+    };
+  }, []);
+
   function tryPlayVideo() {
     const v = videoRef.current;
     if (!v) return;
@@ -192,23 +206,40 @@ export default function ArcadeRoomPage() {
 
       {/* Per-system DISPLAY aspect (what the console showed on a TV) — the emulated framebuffer is often
           non-square-pixel (e.g. PSX 512x240) so we stretch it to the correct aspect with object-fit:fill,
-          rather than letterboxing the raw pixels (which reads as "squished"). GB/GBA aren't 4:3. */}
-      <div ref={playerRef} style={{ position: "relative", background: "#000", borderRadius: 8, overflow: "hidden", aspectRatio: ({ gb: "10 / 9", gbc: "10 / 9", gba: "3 / 2" })[system] || "4 / 3" }}>
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          style={{ width: "100%", height: "100%", objectFit: "fill", display: "block" }}
-        />
-        {needsTap && (
-          <button
-            onClick={tryPlayVideo}
-            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", fontSize: 20, cursor: "pointer" }}
-          >
-            ▶ Tap to start
-          </button>
-        )}
-      </div>
+          rather than letterboxing the raw pixels (which reads as "squished"). GB/GBA aren't 4:3.
+          Two-box layout so fullscreen letterboxes instead of stretching (roadmap WS-A.3): the OUTER box is
+          the frame (windowed) / the black full-screen surface (fullscreen); the INNER box always holds the
+          display aspect, and object-fit:fill lives INSIDE it. In fullscreen the inner box is sized to the
+          largest aspect-correct rectangle that fits the screen via min(100% width, height-driven width). */}
+      {(() => {
+        const ar = ({ gb: 10 / 9, gbc: 10 / 9, gba: 3 / 2 })[system] || 4 / 3;
+        const outerStyle = isFs
+          ? { position: "relative", background: "#000", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }
+          : { position: "relative", background: "#000", borderRadius: 8, overflow: "hidden" };
+        const innerStyle = isFs
+          ? { position: "relative", aspectRatio: ar, width: `min(100%, calc(100vh * ${ar}))`, maxHeight: "100%" }
+          : { position: "relative", aspectRatio: ar, width: "100%" };
+        return (
+          <div ref={playerRef} style={outerStyle}>
+            <div style={innerStyle}>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                style={{ width: "100%", height: "100%", objectFit: "fill", display: "block" }}
+              />
+              {needsTap && (
+                <button
+                  onClick={tryPlayVideo}
+                  style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", fontSize: 20, cursor: "pointer" }}
+                >
+                  ▶ Tap to start
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, flexWrap: "wrap", gap: 8 }}>
         <Space wrap>

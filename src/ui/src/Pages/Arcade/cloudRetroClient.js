@@ -270,6 +270,10 @@ export function createCloudRetroSession(descriptor, opts) {
       // clock drift) — and the browser lip-syncs video playout to audio, so the whole stream drifts
       // later the longer you play. Pin both receivers to the minimum. (jitterBufferTarget is the
       // standard; playoutDelayHint is the legacy Chrome name — set both, harmless where unknown.)
+      // Roadmap WS-A.4 (DECIDED, kept at 0): after Opus in-band FEC landed (config.yaml opusenc
+      // audio-type=generic + inband-fec), a live N64 verify showed flat 42ms playout, no drift, 0
+      // loss — so 0 stays. Only reopen (small AUDIO-only target, never video) if real cross-network
+      // multiplayer shows concealmentEvents/removedSamplesForAcceleration climbing under sustained loss.
       try { e.receiver.jitterBufferTarget = 0; } catch { /* older browsers */ }
       try { e.receiver.playoutDelayHint = 0; } catch { /* non-Chrome */ }
       inboundStream.addTrack(e.track);

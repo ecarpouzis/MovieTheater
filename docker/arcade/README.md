@@ -68,6 +68,16 @@ cp .env.example .env      # then edit: ARCADE_IMAGE, ZIGGY_PUBLIC_IP, ROMS_DIR, 
 docker compose up -d
 ```
 
+One-time UDP-buffer sysctl (roadmap WS-A.1 — same-host N64 packet-loss fix). CloudRetro asks the
+kernel for a 16 MiB WebRTC mux buffer but it's clamped to the ~208 KiB `net.core.rmem_max` default;
+raise it once (the distro's systemd re-applies it every boot):
+
+```bash
+# from inside the Ubuntu-24.04 distro as root:
+cp docker/arcade/99-arcade-udp-buffers.conf /etc/sysctl.d/ && sysctl --system
+sysctl net.core.rmem_max net.core.wmem_max     # verify → 25165824 (not 212992)
+```
+
 Then catalog the ROMs (from the site's CLI project — dry-run first, then apply, looping the cursor):
 
 ```bash
