@@ -1,0 +1,53 @@
+{
+  "_readme": "Curated per-game emulation fixes imported into ArcadeGameProfile via `arcade-gameconfig-import`. Reviewed + source-cited; NOT auto-pulled (no clean machine-readable per-game DB exists — RetroArch overrides are user-authored, libretro-database is metadata, flycast's gamedb is compiled-in). SAFETY: forcedFps is only correct for games that DOUBLE-SPEED in our stack (advance one engine step per retro_run, like Sonic Adventure); a self-limiting 30fps game would be HALVED. So 'confidence' gates apply: only 'verified' (observed to double-speed here) applies by default; 'high' (confirmed 30fps native online, but not yet stack-verified) needs --min-confidence high AND a play-test. Core-option fixes (coreOptions) don't carry this risk. See docs/arcade-per-game-config.md.",
+  "fixes": [
+    {
+      "system": "dc",
+      "title": "Sonic Adventure",
+      "forcedFps": 30,
+      "confidence": "verified",
+      "notes": "30fps-locked engine, physics tied to the frame limit; flycast advertises the 59.94Hz DC display refresh so it ran at 2x. Verified in our stack (PACE instrumentation + logged [game-override]).",
+      "source": "https://www.dreamcast-talk.com/forum/viewtopic.php?t=15872"
+    },
+    {
+      "system": "dc",
+      "title": "Sonic Adventure - Limited Edition",
+      "forcedFps": 30,
+      "confidence": "verified",
+      "notes": "Same engine as Sonic Adventure (30fps-locked).",
+      "source": "https://www.dreamcast-talk.com/forum/viewtopic.php?t=15872"
+    },
+    {
+      "system": "dc",
+      "title": "Sonic Adventure 2",
+      "forcedFps": 30,
+      "confidence": "verified",
+      "notes": "Same engine family as Sonic Adventure (30fps-locked, physics tied to frame rate).",
+      "source": "https://www.dreamcast-talk.com/forum/viewtopic.php?t=15872"
+    },
+    {
+      "system": "dc",
+      "title": "Skies of Arcadia",
+      "forcedFps": 30,
+      "confidence": "high",
+      "notes": "Native 30fps; community reports it 'runs at double speed' in emulation and ships a 60Hz desync-fix patch — strong double-speed candidate, but not yet play-tested in our stack.",
+      "source": "https://www.dreamcast-talk.com/forum/viewtopic.php?t=18173"
+    },
+    {
+      "system": "dc",
+      "title": "Shenmue",
+      "forcedFps": 30,
+      "confidence": "high",
+      "notes": "Confirmed native 30fps on Dreamcast (does not run at 60fps). Candidate for the same double-speed class; verify with a play-test before relying.",
+      "source": "https://docs.libretro.com/library/flycast/"
+    },
+    {
+      "system": "dc",
+      "title": "Grandia II",
+      "forcedFps": 30,
+      "confidence": "high",
+      "notes": "Confirmed 30fps throughout on Dreamcast (the later PC port added a 60fps combat patch). Verify double-speed before relying.",
+      "source": "https://www.neogaf.com/threads/grandia%C2%AE-ii-anniversary-edition-pc-gets-60fps-patch-for-combat.1106516/"
+    }
+  ]
+}

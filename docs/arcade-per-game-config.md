@@ -97,7 +97,7 @@ overrides are user-authored, the libretro-database is game *metadata* (names/has
 flycast's game database is compiled into the core. So documented fixes are curated by hand into a
 reviewed, source-cited dataset and applied with a guarded importer.
 
-- **Dataset**: `data/arcade/game-fixes.json` — `{ "fixes": [ { system, title, forcedFps?, coreOptions?, notes, source, confidence } ] }`.
+- **Dataset**: `docs/arcade/game-fixes.json` — `{ "fixes": [ { system, title, forcedFps?, coreOptions?, notes, source, confidence } ] }`.
 - **Importer**: `arcade-gameconfig-import [--file …] [--system dc] [--min-confidence …] [--apply] [--overwrite]`
   — matches each fix to the catalog by normalized identity, dry-run default, skips titles with no catalog
   match, preserves existing profiles unless `--overwrite`.

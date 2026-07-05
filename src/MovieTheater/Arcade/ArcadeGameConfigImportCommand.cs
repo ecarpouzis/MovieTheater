@@ -30,8 +30,8 @@ namespace MovieTheater.Arcade
     [Command("arcade-gameconfig-import", Description = "Import a curated per-game fixes JSON into ArcadeGameProfile (dry-run unless --apply).")]
     public class ArcadeGameConfigImportCommand : BasicDICommand, ICommand
     {
-        [CommandOption("file", 'f', Description = "Path to the fixes dataset JSON (default data/arcade/game-fixes.json).")]
-        public string File { get; set; } = "data/arcade/game-fixes.json";
+        [CommandOption("file", 'f', Description = "Path to the fixes dataset JSON (default docs/arcade/game-fixes.json).")]
+        public string File { get; set; } = "docs/arcade/game-fixes.json";
 
         [CommandOption("apply", Description = "Write changes. Omit for a dry run (default).")]
         public bool Apply { get; set; }
