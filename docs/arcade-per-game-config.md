@@ -90,6 +90,51 @@ There are curated per-ROM datasets for seeding these (RetroArch per-game core-op
 flycast/RetroArch DC threads listing the 30fps-locked and widescreen-problem games), so a known-problem
 preset table can be imported rather than discovered game by game.
 
+## Importing curated fixes from online sources
+
+There is **no clean machine-readable per-game settings database** to pull: RetroArch's per-game
+overrides are user-authored, the libretro-database is game *metadata* (names/hashes) not settings, and
+flycast's game database is compiled into the core. So documented fixes are curated by hand into a
+reviewed, source-cited dataset and applied with a guarded importer.
+
+- **Dataset**: `data/arcade/game-fixes.json` — `{ "fixes": [ { system, title, forcedFps?, coreOptions?, notes, source, confidence } ] }`.
+- **Importer**: `arcade-gameconfig-import [--file …] [--system dc] [--min-confidence …] [--apply] [--overwrite]`
+  — matches each fix to the catalog by normalized identity, dry-run default, skips titles with no catalog
+  match, preserves existing profiles unless `--overwrite`.
+
+**Confidence gate (important for `forcedFps`).** Forcing fps is only correct for games that *double-speed
+in our stack* — ones that advance one engine step per `retro_run`, like Sonic Adventure. A **self-limiting**
+30fps game would be **halved** by the same setting. So "confirmed 30fps online" is necessary but not
+sufficient. Entries carry a `confidence`:
+- `verified` — observed to double-speed here (Sonic Adventure 1/2). Applies by default.
+- `high` — confirmed native 30fps online and in the same frame-locked class, but not yet play-tested here
+  (Skies of Arcadia, Shenmue, Grandia II). Requires `--min-confidence high` **and a play-test**.
+
+`coreOptions` fixes (widescreen, region, rendering) carry no such speed risk.
+
+## Core-options reference (what to put in `coreOptions` / the dataset)
+
+The universal escape hatch is `CoreOptionsJson` — any libretro core option. The fix-relevant ones:
+
+**flycast (dc/naomi/atomiswave)** — `flycast_widescreen_hack` / `flycast_widescreen_cheats` (16:9),
+`flycast_internal_resolution`, `flycast_region` (Default|Japan|USA|Europe), `flycast_brodcast`
+(Default|PAL-M|PAL-N|NTSC|PAL) — **NTSC avoids the auto→50Hz wrong-speed class for US ROMs**,
+`flycast_cable_type`, `flycast_alpha_sorting` (Per-Pixel fixes transparency glitches),
+`flycast_delay_frame_swapping` (fixes flashing), `flycast_force_windows_ce_mode` (Full MMU for Windows-CE
+titles, e.g. Resident Evil 2, Sega Rally 2), `flycast_enable_dsp` (audio DSP).
+
+**ppsspp (psp)** — `ppsspp_internal_resolution`, `ppsspp_cpu_core` (jit|IR jit|interpreter),
+`ppsspp_locked_cpu_speed` (222/266/333MHz — stability for slowdown-prone games), `ppsspp_frameskip` /
+`ppsspp_auto_frameskip`, `ppsspp_texture_scaling_type`/`_level`, `ppsspp_texture_deposterize`
+(fixes upscale glitches). (`ppsspp_fast_memory` stays **disabled** — see the AV-crash note in config.)
+
+Candidate global default (not yet applied — needs a no-regression check on a known-good 60fps DC game):
+`flycast_brodcast: NTSC` on the dc/naomi/atomiswave cores, since the whole catalog is US/NTSC.
+
+Sources: [flycast core options](https://docs.libretro.com/library/flycast/),
+[ppsspp core options](https://docs.libretro.com/library/ppsspp/),
+[Skies of Arcadia 60Hz/desync patch](https://www.dreamcast-talk.com/forum/viewtopic.php?t=18173).
+
 ## Not yet built (follow-ups)
 
 - **Admin "Configure" panel** — editor-gated per-game UI over `ArcadeGameProfile` (the same gate as the
