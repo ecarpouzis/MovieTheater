@@ -25,7 +25,7 @@ site's prod secret. A mismatch = every join 403s.
 CGNAT-for-UDP is the one thing that kills this project dead. Prove UDP arrives from the outside
 BEFORE any other work.
 
-1. **Router:** forward **UDP 8443, 8444, 8445 → Ziggy's LAN IP (192.168.68.69)**.
+1. **Router:** forward **UDP 8443, 8444, 8445 → Ziggy's LAN IP (192.168.x.x)**.
 2. **Windows Defender:** inbound allow rule for UDP 8443–8445 on Ziggy.
 3. **Test from OUTSIDE your network** (phone on cell data, NOT wifi):
    - On Ziggy, listen: `ncat -u -l 8443` (or PowerShell UDP listener).
@@ -119,7 +119,7 @@ Follow the **movietheater-secret** skill rules exactly (one malformed char crash
 ## Phase 4 — Point ICE at the public IP + restart workers
 
 The workers advertise `ZIGGY_PUBLIC_IP` as their WebRTC candidate. For internet play it must be your
-**public IP / DDNS**, not the LAN `192.168.68.69`.
+**public IP / DDNS**, not the LAN `192.168.x.x`.
 
 1. Edit `docker/arcade/.env` (on Ziggy): `ZIGGY_PUBLIC_IP=<public-ip-or-ddns>` and
    `SITE_ORIGIN=https://theater.carpouzis.com`.

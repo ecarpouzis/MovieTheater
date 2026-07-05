@@ -11,12 +11,12 @@
 #
 # Networking (hard-won — read before touching): TWO .wslconfig settings are required, then `wsl --shutdown`:
 #   [wsl2]         networkingMode=mirrored     # WSL shares the Windows IPs; genuine LAN/internet inbound works
-#   [experimental] hostAddressLoopback=true    # Windows<->WSL traffic over the host's OWN IP (192.168.68.69)
+#   [experimental] hostAddressLoopback=true    # Windows<->WSL traffic over the host's OWN IP (192.168.x.x)
 # Why both: a SAME-HOST browser can only do WebRTC to the worker via the LAN IP. Advertising 127.0.0.1 can
 # NEVER work — Chrome binds its ICE sockets to the LAN interface and Windows refuses LAN-bound->loopback
 # sends — and without hostAddressLoopback the Windows->own-IP->WSL hairpin is silently dropped (that was
 # the endless "ice: failed" while signaling stayed green; TCP loopback IS relayed, UDP hairpin is not).
-# With both settings, ICEIPMAP=192.168.68.69 (gpu.env) serves the same-host browser AND LAN peers.
+# With both settings, ICEIPMAP=192.168.x.x (gpu.env) serves the same-host browser AND LAN peers.
 # Keepalive: WSL kills an idle distro (and this stack with it) — scripts/register-arcade-wsl-task.ps1
 # registers the logon task that holds it open. Verified end-to-end 2026-07-03 (Mario Kart 64, 2 browsers).
 #
@@ -33,7 +33,7 @@ x-gpu-worker: &gpu-worker
   # Host networking: WebRTC media (UDP 8443) must NOT traverse docker's userland UDP proxy — the proxy
   # rewrites return-packet source addresses, so ICE consistency checks fail ("ice: failed") even though
   # signaling succeeds. In host mode the worker binds 8443 straight on the distro interface (= the Windows
-  # host's 192.168.68.69 under mirrored networking), matching the ICEIPMAP candidate it advertises.
+  # host's 192.168.x.x under mirrored networking), matching the ICEIPMAP candidate it advertises.
   network_mode: host
   privileged: true                 # needed for the container to ioctl /dev/dxg (D3D12) — narrow later
   devices:

@@ -18,7 +18,7 @@ for the hard-won gotchas — several details below are counter-intuitive.
   gliden64. angrylion PANICS CloudRetro — do not use it.
 
 ## HARD RULES (from memory — violating these has burned this project)
-- **Live DB is shared prod+dev** (`appsettings.Development.json` → home.neilb.dev/MovieSite). Migrations
+- **Live DB is shared prod+dev** (`appsettings.Development.json` → db-host.example/MovieSite). Migrations
   manual via `dotnet ef`; generate → READ the SQL → apply deliberately.
 - **Never `git add -A`.** Stage explicit paths; `git status` first. A blanket add once swept WIP/dev config
   into prod.

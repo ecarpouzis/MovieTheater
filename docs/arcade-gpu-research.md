@@ -74,12 +74,12 @@ Playwright run. `glxinfo` inside the running worker env: `D3D12 (NVIDIA GeForce 
    into AF_INET sockets (TCP relays into both — hence green signaling, dead media). Fixed by patch
    `0002-ipv4-singleport-mux.patch` (`"udp"` → `"udp4"`).
 2. **The 127.0.0.1 dead end:** advertising `ICEIPMAP=127.0.0.1` passed a naive same-host UDP echo test but
-   can never carry WebRTC — Chrome binds each ICE socket to the LAN interface (192.168.68.69), and Windows
+   can never carry WebRTC — Chrome binds each ICE socket to the LAN interface (192.168.x.x), and Windows
    refuses a LAN-bound socket sending to 127.0.0.1 outright ("requested address is not valid in its
    context"). The echo test only worked because its client socket was unbound. **Lesson: validate the
    path with a socket bound the way Chrome binds it.**
 3. **The real fix:** `.wslconfig` `[experimental] hostAddressLoopback=true` — enables Windows↔WSL traffic
-   over the host's own assigned IP, both directions. With it, `ICEIPMAP=192.168.68.69` works for the
+   over the host's own assigned IP, both directions. With it, `ICEIPMAP=192.168.x.x` works for the
    same-host browser AND LAN peers (and go-live just swaps in the public IP + router forward). Verified
    with bound-source echo tests in both directions, then a real room.
 

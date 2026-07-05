@@ -82,7 +82,7 @@ reads ArcadeSave rows for the dropdown  this is where EmuDeck sync attaches late
 **Where the metadata write happens.** Harvest runs on the gateway (only it can read `/saves` on
 Ziggy), but the `ArcadeSave` row lives in the shared app DB. Two ways to bridge, to finalize in S1:
 (a) **gateway writes the row directly** via a narrow `DbContext` — the shared DB
-(home.neilb.dev/MovieSite) is network-reachable from Ziggy, and the gateway already holds a secret;
+(db-host.example/MovieSite) is network-reachable from Ziggy, and the gateway already holds a secret;
 simplest. (b) gateway **POSTs an authenticated callback** to a new internal site endpoint that
 upserts the row — keeps the gateway app-DB-free. Recommendation: (a), unless we want to preserve the
 gateway's DB-free purity. Blobs stay on Ziggy either way and are downloaded through the gateway
