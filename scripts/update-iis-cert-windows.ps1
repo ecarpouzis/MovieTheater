@@ -28,12 +28,15 @@ param(
     [string]$SecretName  = "movietheater-tls",
     [string]$SiteName    = "MovieTheater",
     [string]$HostHeader  = "theater.carpouzis.com",
-    [string]$PfxPassword = "MovieTheaterCert2024",
+    [string]$PfxPassword = "",   # transient PFX password; a fresh random one is generated below if unset (never hardcode)
     [string]$TempDir     = "$env:TEMP\movietheater-cert",
     [string]$LogFile     = ""
 )
 
 $ErrorActionPreference = "Stop"
+# The PFX is an ephemeral export→import within this one run, so a random per-run password beats a
+# committed constant (which would be a public credential leak). Override -PfxPassword only if needed.
+if (-not $PfxPassword) { $PfxPassword = [System.Guid]::NewGuid().ToString('N') + [System.Guid]::NewGuid().ToString('N') }
 New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
 
 function Write-Log {

@@ -21,10 +21,21 @@ param(
     [string]$WorkerExe  = "D:\Arcade\build\cloud-game-gl\bin\worker.exe",
     [string]$ConfDir    = "D:\ArcadeStorage\worker-gl",
     [string]$Ucrt64Bin  = "D:\msys64\ucrt64\bin",
-    [string]$IceIpMap   = "98.15.249.217",
+    [string]$IceIpMap   = "",   # resolved from docker/arcade/.env ZIGGY_PUBLIC_IP below; never hardcode the IP here
     [int]   $SinglePort = 8446,
     [string]$LogFile    = "D:\ArcadeStorage\logs\glworker.log"
 )
+
+# Resolve the ICE IP from docker/arcade/.env (ZIGGY_PUBLIC_IP) — the SAME source the WSL workers use,
+# and it keeps the real public IP out of this committed script (it's gitignored in .env).
+if (-not $IceIpMap) {
+    $envFile = Join-Path $PSScriptRoot "..\docker\arcade\.env"
+    if (Test-Path $envFile) {
+        $m = Select-String -Path $envFile -Pattern '^\s*ZIGGY_PUBLIC_IP\s*=\s*(\S+)' | Select-Object -First 1
+        if ($m) { $IceIpMap = $m.Matches[0].Groups[1].Value.Trim() }
+    }
+}
+if (-not $IceIpMap) { Write-Warning "IceIpMap unset and ZIGGY_PUBLIC_IP not found in .env - ICE candidates will be wrong." }
 
 # GStreamer DLLs (nvcodec, opus, etc.) resolve from the UCRT64 bin dir — must lead PATH.
 $env:Path = "$Ucrt64Bin;$env:Path"
