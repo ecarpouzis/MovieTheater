@@ -300,6 +300,11 @@ namespace MovieTheater.Db
             // The dedupe CLI groups by (System, Title) to pick each game's primary.
             modelBuilder.Entity<ArcadeGame>().HasIndex(g => new { g.System, g.Title });
 
+            // One per-game profile per normalized identity; the export CLI upserts on this key.
+            modelBuilder.Entity<ArcadeGameProfile>()
+                .HasIndex(p => new { p.System, p.TitleKey })
+                .IsUnique();
+
             modelBuilder.Entity<ArcadeSession>()
                 .HasOne(s => s.ArcadeGame)
                 .WithMany()
@@ -352,6 +357,7 @@ namespace MovieTheater.Db
         public DbSet<ArcadeGame> ArcadeGames { get; set; }
         public DbSet<ArcadeSession> ArcadeSessions { get; set; }
         public DbSet<ArcadeSave> ArcadeSaves { get; set; }
+        public DbSet<ArcadeGameProfile> ArcadeGameProfiles { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)
