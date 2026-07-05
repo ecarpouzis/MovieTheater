@@ -132,6 +132,35 @@ The coordinator hands rooms to any free worker; a PSP room on a 2D-only WSL work
   `D:\ArcadeStorage\bios` (needs the `dc\` subfolder copies), PPSSPP assets ready to copy from
   `F:\Emulation\bios\PPSSPP`.
 
+## VERIFIED 2026-07-04 — the worker BUILDS, RUNS, and renders real NVIDIA GL (spike premise proven)
+
+The B2 hypothesis is confirmed end-to-end on Ziggy, and **no elevation was needed** — Go 1.26.4 and
+MSYS2 install fine as portable extracts (Go zip → `D:\Arcade\build\go`, MSYS2 base tarball →
+`D:\msys64`), sidestepping the winget UAC wall.
+
+- ✅ **Builds.** `go build ./cmd/worker` under UCRT64 (gcc 16.1.0, native Windows Go 1.26.4, CGO on,
+  `GOPATH/GOCACHE` set explicitly) → `bin/worker.exe` (34.8 MB). All four Go patches (0001/0002/0004/
+  0005) apply clean to `13852a7`; the only Windows cgo deps are `-lopengl32 -lgdi32` (WGL, bundled)
+  + `gstreamer-video-1.0`/`gstreamer-app-1.0` (pkgconf resolves them, 1.28.4).
+- ✅ **NVENC present.** `gst-inspect-1.0 nvcodec` shows `nvh264enc` — the Windows worker gets hardware
+  H.264, no VP8 fallback needed. (⚠VERIFY resolved.)
+- ✅ **Runs + loads our config.** Booted against a dead coordinator (isolated, zero prod impact): config
+  merges (`loaded: [default config.yaml]`), zone env applies (`gl.localhost:...`), and the **GL cores
+  download as Windows DLLs** — `flycast_libretro` (×3) + `ppsspp_libretro`, 200 OK from the
+  `windows/x86_64` buildbot. (Two ⚠VERIFY resolved.) One gotcha: pass the ConfDir as a native Windows
+  path (or set cwd there) — an MSYS2 `D:/…` arg got path-mangled and silently fell back to default; the
+  PowerShell run-script passes it natively so it's fine.
+- ✅ **Real NVIDIA GL rendering.** `make verify-cores` (`go test -run TestAll … -renderFrames`) rendered
+  the **N64 GL fixture** (mupen64plus, `plugin_start_gfx` → WGL context) to a real textured-3D frame
+  (`_rendered/windows-n64-*.png`) on Ziggy's GPU — **no GLX BadMatch, no crash**, the exact WSLg
+  failure. Ziggy has no software mesa installed, so that context is the NVIDIA ICD (GL 4.6 compat).
+  flycast (GL 3.1) and ppsspp (GL 3.3) share the identical `rgfw.go` WGL layer → they inherit it.
+
+**Still to do to reach "DC multiplayer in browser":** (a) full-pipeline proof of a *flycast/ppsspp*
+room (GL core + NVENC + WebRTC) — either an isolated standalone-coordinator rehearsal (safe) or the
+cutover below; (b) the coordinated zoning cutover (prod-touching — pod restart + `up -d`); (c) router
+UDP-forward 8446 + Defender rule; (d) DC 4-player two-browser flagship.
+
 ## Progress 2026-07-04 — code/config/BIOS landed; build+cutover is the remaining (elevated) work
 
 **Done (in-repo, no live effect yet — the zoning is behind a default-OFF flag):**
