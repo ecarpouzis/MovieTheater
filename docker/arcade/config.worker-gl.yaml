@@ -22,7 +22,16 @@ library:
   watchMode: true
 
 emulator:
-  autosaveSec: 60
+  # autosave DISABLED on the GL worker (stock CloudRetro default is 0). CAPTURED-CRASH FIX
+  # (glworker-2.log 2026-07-05, Exception 0xc0000005 at autosave(0x3c)=60s): the 60s autosave calls
+  # SaveState → retro_serialize_size (nanoarch.go:532) DIRECTLY on the autosave goroutine — off the
+  # emulator libco thread and BEFORE the skip_same_thread_save guard (line 536, which only reroutes
+  # the serialize call, not serialize_size). PPSSPP's serialize_size touches live emu state → hard
+  # access violation off-thread → worker died every ~60s ("Loco Roco 2 crashed >1 min in"). flycast
+  # (dc) also HITCHES on autosave (serialize stops+restarts the emu thread). PSP memory-card progress
+  # is written to the virtual memstick (SaveRAM/core filesystem), NOT save-state, so this loses no
+  # game saves. Proper GL save-state (serialize on the emu thread) is future work with the saves vault.
+  autosaveSec: 0
   storage: "D:/ArcadeStorage/saves"    # overridable via CLOUD_GAME_EMULATOR_STORAGE
   libretro:
     saveCompression: false
@@ -50,6 +59,20 @@ emulator:
           # at init on one thread but retro_run with per-frame LockOSThread/BindContext on another — GL
           # objects made in context_reset are then used cross-thread → 0xc0000005 crash at "Starting graphics".
           usesLibCo: true
+          # CAPTURED-CRASH FIX (glworker.log 2026-07-05, Exception 0xc0000028 STATUS_BAD_STACK
+          # "during external code execution"): at teardown nanoarch's deinitVideo() calls the core's
+          # hw_render.context_destroy on the SMALL fixed-size libco coroutine stack; PPSSPP's destroy
+          # recurses into the NVIDIA GL driver (nvoglv64.dll) deep enough to blow that stack → the
+          # worker crashed (exit 2) and every player on it "disconnected". skip_hw_context_destroy is
+          # the core-author-documented remedy ("May help with crashes, for example, with PPSSPP" —
+          # config.yaml hacks doc): we skip the core's per-object GL free and let glCtx.Deinit() drop
+          # the whole context immediately after (driver frees everything) — safe at teardown.
+          # skip_same_thread_save is the core-author's documented PPSSPP companion hack (routes the
+          # serialize call off the libco thread). NOTE: it does NOT fix the ">1 min in" autosave crash
+          # — that was retro_serialize_size AV'ing off-thread and is fixed by emulator.autosaveSec:0
+          # above (SaveState is no longer called on a timer). Kept as the documented default for any
+          # future on-demand save path.
+          hacks: [skip_hw_context_destroy, skip_same_thread_save]
           options:
             ppsspp_internal_resolution: "960x544"   # 2x native (480x272), downsample-encode reads crisp
             # IR JIT, NOT the default fastmem JIT: PPSSPP's fastmem relies on a SIGSEGV/AV handler
@@ -71,6 +94,10 @@ emulator:
           coreAspectRatio: true
           usesLibCo: true   # GL thread-affinity — see the psp note above (flycast GPF'd without it)
           vfr: false        # correct game speed — see the psp vfr note (Sonic Adventure ran double-speed)
+          # Same libco-teardown stack-fault class as psp above (context_destroy on the small coroutine
+          # stack → 0xc0000028). flycast's GL destroy is deep too; skip it and let glCtx.Deinit() drop
+          # the context. Also de-risks the known DC teardown segfault + Power Stone mid-session death.
+          hacks: [skip_hw_context_destroy]
         naomi:
           lib: flycast_libretro
           folder: naomi
@@ -79,6 +106,7 @@ emulator:
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
+          hacks: [skip_hw_context_destroy]   # flycast libco-teardown fault — see dc note
         atomiswave:
           lib: flycast_libretro
           folder: atomiswave
@@ -87,6 +115,7 @@ emulator:
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
+          hacks: [skip_hw_context_destroy]   # flycast libco-teardown fault — see dc note
 
 encoder:
   # Same NVENC H.264 + Opus-FEC path as the WSL stack (docker/arcade/config.yaml). nvcodec here comes

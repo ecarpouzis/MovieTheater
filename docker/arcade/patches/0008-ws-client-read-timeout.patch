@@ -1,0 +1,45 @@
+diff --git a/pkg/network/websocket/websocket.go b/pkg/network/websocket/websocket.go
+index 5b3d3fe..794e500 100644
+--- a/pkg/network/websocket/websocket.go
++++ b/pkg/network/websocket/websocket.go
+@@ -16,6 +16,18 @@ const (
+ 	pingTime       = pongTime * 9 / 10
+ 	pongTime       = 7 * time.Second
+ 	writeWait      = 5 * time.Second
++	// clientReadWait is the read deadline for the CLIENT side of a connection (pingPong=false —
++	// e.g. the worker's link to the coordinator). It is deliberately DECOUPLED from pingTime.
++	// The Windows-native GL worker reaches the WSL coordinator over the mirrored-networking
++	// localhost relay (a userspace hop the in-WSL 2D workers don't have). The stock 7s pongTime
++	// left the worker's read deadline so tight that a single coordinator ping delayed by the relay
++	// tripped it → "read tcp ...:8000: i/o timeout" → full reconnect → the worker rebound a NEW
++	// singleport (8446→8450→8454…), which breaks router-forwarded remote play and drops live rooms
++	// (this reconnect was also the trigger that led to the context_destroy teardown crash). Widening
++	// ONLY the client read deadline keeps the server ping cadence (pingTime) and the server's own
++	// pongTime unchanged, so the coordinator + 2D workers are untouched — the worker just tolerates
++	// up to ~9 dropped/late pings before declaring the link dead.
++	clientReadWait = 60 * time.Second
+ )
+ 
+ type Client struct {
+@@ -134,12 +146,18 @@ func (c *Connection) reader() {
+ 	}
+ 	c.conn.SetReadLimit(s)
+ 
+-	_ = c.conn.SetReadDeadline(time.Now().Add(pongTime))
++	// Server (pingPong=true) keeps the tight pongTime; client (worker→coordinator) uses the relay-
++	// tolerant clientReadWait — see the const comment.
++	readWait := pongTime
++	if !c.pingPong {
++		readWait = clientReadWait
++	}
++	_ = c.conn.SetReadDeadline(time.Now().Add(readWait))
+ 	if c.pingPong {
+-		c.conn.SetPongHandler(func(string) error { _ = c.conn.SetReadDeadline(time.Now().Add(pongTime)); return nil })
++		c.conn.SetPongHandler(func(string) error { _ = c.conn.SetReadDeadline(time.Now().Add(readWait)); return nil })
+ 	} else {
+ 		c.conn.SetPingHandler(func(string) error {
+-			_ = c.conn.SetReadDeadline(time.Now().Add(pongTime))
++			_ = c.conn.SetReadDeadline(time.Now().Add(readWait))
+ 			err := c.conn.writeControl(websocket.PongMessage, nil, time.Now().Add(writeWait))
+ 			if err == websocket.ErrCloseSent {
+ 				return nil
