@@ -330,8 +330,11 @@ export function createCloudRetroSession(descriptor, opts) {
   }
 
   function startGame() {
-    // Creator: empty room_id ⇒ create on a free worker. Joiner: the bound id ⇒ join that worker.
-    const roomId = descriptor.isCreator ? "" : roomIdFromWsUrl(descriptor.wsUrl);
+    // Both creator and joiner send the room_id from the wsUrl. The creator's is now a DETERMINISTIC
+    // save id (sv-…___game, docs/arcade-saves-plan.md) rather than empty: CloudRetro creates a fresh
+    // room with exactly that id (it accepts a non-live <prefix>___<gameKey> id), which lets the gateway
+    // seed/harvest this user's save by a predictable filename. A joiner's is the creator's bound id.
+    const roomId = roomIdFromWsUrl(descriptor.wsUrl);
     send(T.GAME_START, { game_name: descriptor.gameKey, room_id: roomId, player_index: descriptor.playerSlot | 0 });
   }
 

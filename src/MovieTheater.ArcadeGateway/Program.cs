@@ -44,6 +44,35 @@ if (romCacheOptions.Enabled)
         romCache.CatalogCount, romCacheOptions.MaxBytes);
 }
 
+// Optional durable, user-scoped save store (docs/arcade-saves-plan.md). When configured (a store dir +
+// the /saves mount path), the gateway seeds a chosen save before a game boots and a background sweep
+// harvests changed saves back into a per-(user,game) store. Off when unconfigured — CloudRetro's
+// room-scoped saves behave exactly as before. Keyed by the deterministic ArcadeSaveId the site mints.
+var saveOptions = new MovieTheater.ArcadeGateway.SaveStoreOptions();
+config.GetSection("SaveStore").Bind(saveOptions);
+MovieTheater.ArcadeGateway.SaveStore? saveStore = null;
+if (saveOptions.Enabled)
+{
+    saveStore = new MovieTheater.ArcadeGateway.SaveStore(
+        saveOptions, app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("SaveStore"));
+    app.Logger.LogInformation("Arcade save store enabled: store={Store} mount={Mount}",
+        saveOptions.StoreDir, saveOptions.SavesMountDir);
+
+    // Background harvest sweep — copies changed <saveId>.dat/.srm out of the mount continuously, so a
+    // save survives even an unclean disconnect (the WS forward ends before CloudRetro's room reap).
+    _ = Task.Run(async () =>
+    {
+        var stopping = app.Lifetime.ApplicationStopping;
+        var interval = TimeSpan.FromMilliseconds(Math.Max(1000, saveOptions.HarvestDebounceMs * 3));
+        while (!stopping.IsCancellationRequested)
+        {
+            try { await saveStore.HarvestMountChangesAsync(stopping); }
+            catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade save harvest sweep error"); }
+            try { await Task.Delay(interval, stopping); } catch { /* shutting down */ }
+        }
+    });
+}
+
 // One pooled client for all forwarding. No cookies, no proxy, no redirects — the
 // same posture as StreamGateway; the WS upgrade is carried end-to-end by YARP.
 var httpClient = new HttpMessageInvoker(new SocketsHttpHandler
@@ -93,6 +122,24 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
     {
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
         return;
+    }
+
+    // Save seed (docs/arcade-saves-plan.md): if this is the OWNER's deterministic save id and the room
+    // hasn't booted yet, restore the chosen slot into the mount so CloudRetro auto-loads it at GAME_START.
+    // Only the owner seeds — the id encodes the creator's (user, game); a joiner's token userId won't match,
+    // so guests never re-seed the live room. Harvest is handled continuously by the background sweep.
+    if (saveStore != null
+        && ArcadeSaveId.TryParse(requestedRoomId, out var svUser, out var svGame, out var svSlot, out _, out _)
+        && svUser == payload.UserId && svGame == payload.GameId
+        && !saveStore.MountHasSave(requestedRoomId))
+    {
+        try
+        {
+            bool seeded = saveStore.SeedSession(svUser, svGame, requestedRoomId, svSlot);
+            app.Logger.LogInformation("Arcade save {Action} for user {User} game {Game} slot {Slot}",
+                seeded ? "seeded" : "none (fresh)", svUser, svGame, svSlot);
+        }
+        catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade save seed failed for {Id}", requestedRoomId); }
     }
 
     // JIT: materialize the ROM before forwarding so the worker can launch it (the scan-on-miss patch

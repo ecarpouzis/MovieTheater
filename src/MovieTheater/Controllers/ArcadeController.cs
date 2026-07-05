@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MovieTheater.Arcade;
+using MovieTheater.Core;
 using MovieTheater.Db;
 using MovieTheater.Services.Arcade;
 
@@ -122,14 +123,17 @@ namespace MovieTheater.Controllers
                 // first is the card's default selection + box-art source; a region filter floats that region up.
                 var versions = ArcadeVersions.Build(vs, specificRegion);
                 var rep = versions.FirstOrDefault();
-                var repRow = rep != null ? vs.First(g => g.Id == rep.Id) : vs.FirstOrDefault();
+                // Box art is shared across the card's versions. Point at a sibling that already HAS art (so a
+                // "(Rev A)" default doesn't hide the base "(USA)" box), else the lowest-id row — the canonical
+                // card file the image route writes a fresh fetch to. Filter-independent, so it stays one file.
+                var artRow = vs.FirstOrDefault(g => g.BoxArtPath != null) ?? vs.OrderBy(g => g.Id).FirstOrDefault();
                 return new
                 {
                     key = k.System + "|" + k.Title,
                     title = k.Title,
                     system = k.System,
-                    artId = rep?.Id ?? 0,
-                    hasBoxArt = repRow?.BoxArtPath != null,
+                    artId = artRow?.Id ?? rep?.Id ?? 0,
+                    hasBoxArt = vs.Any(g => g.BoxArtPath != null),
                     year = rep?.Year,
                     maxPlayers = versions.Count > 0 ? versions.Max(v => v.MaxPlayers) : (byte)1,
                     versionCount = versions.Count,
@@ -268,9 +272,16 @@ namespace MovieTheater.Controllers
             rooms.CreateRoom(roomCode, game.Id, game.MaxPlayers, userId.Value);
 
             var (launchKey, discCount) = await ResolveLaunchAsync(game);
+
+            // Durable, user-scoped saves (docs/arcade-saves-plan.md): instead of an empty room id ("create
+            // a random room"), the creator carries a DETERMINISTIC id encoding (user, game, slot 0, system)
+            // with the launch key as the CloudRetro-resolvable suffix. This makes the session's save files
+            // predictable, so the gateway seeds this user's save before boot and harvests it after — the
+            // save belongs to the user+game, not the room. Slot 0 = the "Continue" slot (multi-slot is S3).
+            var saveId = ArcadeSaveId.Mint(userId.Value, game.Id, 0, game.System, launchKey);
             var descriptor = host.BuildJoinDescriptor(
                 userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, game.System),
-                roomCode, cloudRetroRoomId: string.Empty, playerSlot: 0, isCreator: true);
+                roomCode, cloudRetroRoomId: saveId, playerSlot: 0, isCreator: true);
 
             return Json(ToJson(descriptor, discCount));
         }

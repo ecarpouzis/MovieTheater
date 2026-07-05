@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using MovieTheater.Core;
 
 namespace MovieTheater.ArcadeGateway;
 
@@ -104,6 +105,56 @@ public sealed class SaveStore
         if (results.Count > 0) PruneStates(userId, gameId);
         return results;
     }
+
+    // Per-session-file mtime last harvested, so a sweep only copies changed files.
+    private readonly Dictionary<string, long> lastSwept = new();
+
+    /// <summary>True if CloudRetro has already written a save file for this session in the mount (so the
+    /// room is live / was booted) — the gateway uses this to avoid re-seeding over a running session.</summary>
+    public bool MountHasSave(string sessionId) =>
+        !string.IsNullOrEmpty(sessionId) &&
+        (File.Exists(MountFile(sessionId, ".dat")) || File.Exists(MountFile(sessionId, ".srm")));
+
+    /// <summary>
+    /// One harvest sweep: scan the <c>/saves</c> mount for OUR deterministic-id save files and copy any
+    /// that changed since the last sweep into the owning user's store. Run on a timer by the gateway —
+    /// this captures periodic autosaves, the save-on-close flush, and an unclean disconnect alike,
+    /// independent of the signaling connection's lifetime (which ends before CloudRetro's room reap).
+    /// The (user, game, system) come from the id itself (minted by the site), so no DB lookup is needed.
+    /// </summary>
+    public async Task<int> HarvestMountChangesAsync(CancellationToken ct = default)
+    {
+        if (!Directory.Exists(savesMount)) return 0;
+        int harvested = 0;
+
+        // Group the mount's .dat/.srm by session id, keep only our ids.
+        var sessions = new Dictionary<string, long>(StringComparer.Ordinal);
+        foreach (var f in Directory.EnumerateFiles(savesMount))
+        {
+            var ext = Path.GetExtension(f);
+            if (ext != ".dat" && ext != ".srm") continue;
+            var sessionId = Path.GetFileNameWithoutExtension(f);
+            if (!ArcadeSaveId.Is(sessionId)) continue;
+            long m = FileMtime(f);
+            sessions[sessionId] = sessions.TryGetValue(sessionId, out var cur) ? Math.Max(cur, m) : m;
+        }
+
+        foreach (var (sessionId, mtime) in sessions)
+        {
+            if (lastSwept.TryGetValue(sessionId, out var seen) && seen >= mtime) continue;
+            if (!ArcadeSaveId.TryParse(sessionId, out var userId, out var gameId, out _, out var system, out _)) continue;
+            try
+            {
+                var written = await HarvestSessionAsync(userId, gameId, system, sessionId, isAutosave: true, ct);
+                lastSwept[sessionId] = mtime;
+                if (written.Count > 0) harvested += written.Count;
+            }
+            catch (Exception ex) { log.LogWarning(ex, "SaveStore harvest sweep failed for {Session}", sessionId); }
+        }
+        return harvested;
+    }
+
+    private static long FileMtime(string f) { try { return new FileInfo(f).LastWriteTimeUtc.Ticks; } catch { return 0; } }
 
     // ── Seed / clear (used by the resume flow, S2) ────────────────────────────────────────────────
 
