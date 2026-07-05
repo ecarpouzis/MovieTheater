@@ -52,6 +52,12 @@ emulator:
             # without it a benign fastmem fault becomes a hard 0xc0000005 crash in retro_run. IR JIT does
             # software address translation (no fastmem AVs); stable and fast enough on the 13700K.
             ppsspp_cpu_core: "IR JIT"
+            # REQUIRED, root cause of the boot 0xc0000005: every libretro Windows PPSSPP build has the
+            # fastmem AV-rescue handler COMPILED OUT (MachineContext.h empty __LIBRETRO__ branch), and
+            # IR JIT does NOT bypass fastmem (its address-validation pass is disabled while
+            # bFastMemory=true). Default is "enabled" ("Unstable." per the core's own option text) —
+            # the first stray guest access is then a raw host access violation that kills the worker.
+            ppsspp_fast_memory: "disabled"
         dc:
           lib: flycast_libretro
           folder: dc

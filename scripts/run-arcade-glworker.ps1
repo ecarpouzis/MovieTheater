@@ -18,7 +18,7 @@
 .PARAMETER IceIpMap     What ICE advertises — MUST match docker/arcade/.env ZIGGY_PUBLIC_IP.
 #>
 param(
-    [string]$WorkerExe  = "D:\Arcade\build\cloud-game\bin\worker.exe",
+    [string]$WorkerExe  = "D:\Arcade\build\cloud-game-gl\bin\worker.exe",
     [string]$ConfDir    = "D:\ArcadeStorage\worker-gl",
     [string]$Ucrt64Bin  = "D:\msys64\ucrt64\bin",
     [string]$IceIpMap   = "98.15.249.217",
@@ -53,6 +53,6 @@ while ($true) {
     } catch {
         "$(Get-Date -Format o)  glworker threw: $($_.Exception.Message)" | Add-Content $LogFile
     }
-    "$(Get-Date -Format o)  glworker exited — restarting in 4s" | Add-Content $LogFile
+    "$(Get-Date -Format o)  glworker exited - restarting in 4s" | Add-Content $LogFile
     Start-Sleep -Seconds 4
 }

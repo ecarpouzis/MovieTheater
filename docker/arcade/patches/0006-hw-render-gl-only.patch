@@ -1,0 +1,47 @@
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+index 0266ec4..27239f2 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+@@ -838,9 +838,25 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+ 			return true
+ 		}
+ 		return false
++	case C.RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
++		// MovieTheater patch 0006: we can only host OpenGL contexts (RGFW/WGL). Without this answer
++		// flycast falls back to probing drivers and commits to D3D11 on Windows builds, which then
++		// null-calls through unresolved glsm GL pointers on the first retro_run (PC=0 GPF).
++		if Nan0.Video.gl.enabled {
++			*(*C.unsigned)(data) = C.RETRO_HW_CONTEXT_OPENGL
++			return true
++		}
++		return false
+ 	case C.RETRO_ENVIRONMENT_SET_HW_RENDER:
+ 		if Nan0.Video.gl.enabled {
+-			Nan0.Video.hw = (*C.struct_retro_hw_render_callback)(data)
++			hw := (*C.struct_retro_hw_render_callback)(data)
++			// patch 0006: accept only context types the RGFW graphics layer can actually create;
++			// accepting D3D/Vulkan here strands the core with a renderer it can never initialize.
++			if hw.context_type != C.RETRO_HW_CONTEXT_OPENGL && hw.context_type != C.RETRO_HW_CONTEXT_OPENGL_CORE {
++				Nan0.log.Warn().Msgf("rejected non-GL hw render context type: %v", uint(hw.context_type))
++				return false
++			}
++			Nan0.Video.hw = hw
+ 			Nan0.Video.hw.get_current_framebuffer = (C.retro_hw_get_current_framebuffer_t)(C.core_get_current_framebuffer_cgo)
+ 			Nan0.Video.hw.get_proc_address = (C.retro_hw_get_proc_address_t)(C.core_get_proc_address_cgo)
+ 			return true
+diff --git a/pkg/worker/caged/libretro/graphics/rgfw.go b/pkg/worker/caged/libretro/graphics/rgfw.go
+index ce2471b..8de6eee 100644
+--- a/pkg/worker/caged/libretro/graphics/rgfw.go
++++ b/pkg/worker/caged/libretro/graphics/rgfw.go
+@@ -201,7 +201,10 @@ static RGFW_proc RGFW_getProcAddress_OpenGL(const char* name) {
+     static HMODULE glModule;
+     if (!glModule) glModule = LoadLibraryA("opengl32.dll");
+     if (glModule) { RGFW_proc p = (RGFW_proc)GetProcAddress(glModule, name); if (p) return p; }
+-    return (RGFW_proc)wglGetProcAddress(name);
++    // patch 0006: wglGetProcAddress can return sentinel values instead of NULL on failure
++    RGFW_proc p = (RGFW_proc)wglGetProcAddress(name);
++    if (p == (RGFW_proc)1 || p == (RGFW_proc)2 || p == (RGFW_proc)3 || p == (RGFW_proc)-1) p = NULL;
++    return p;
+ }
+ 
+ static RGFW_bool RGFW_window_createContextPtr_OpenGL(RGFW_window* win, RGFW_glContext* ctx, RGFW_glHints* hints) {

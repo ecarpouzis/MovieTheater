@@ -90,3 +90,22 @@ the swap dispatched via `same_thread`).
 
 **Compile status:** written against `13852a7` and applies clean, but NOT yet compiled (the dev box has
 no Go/cgo toolchain) — verify on the image build. Re-generate: `git diff > 0005-disk-control.patch`.
+
+## 0006-hw-render-gl-only.patch
+
+GL-only hw-render negotiation (fixes the flycast PC=0 boot GPF on the Windows GL worker;
+docs/arcade-windows-worker.md). Apply AFTER 0005 (touches adjacent nanoarch.go context). Two files:
+- `nanoarch/nanoarch.go` — answer `RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER` with
+  `RETRO_HW_CONTEXT_OPENGL` when the core is GL-allowed, and REJECT `SET_HW_RENDER` for any
+  context type other than OPENGL/OPENGL_CORE (logged at warn).
+- `graphics/rgfw.go` — treat `wglGetProcAddress` sentinel returns (1/2/3/-1) as NULL (Windows-only
+  code path; inert on Linux).
+
+**Why:** flycast probes hw-render APIs in order D3D11 → Vulkan → GL when the frontend doesn't state a
+preference. nanoarch blind-accepted ANY context type, so Windows flycast committed to D3D11, its
+`dx11_context_reset` silently bailed (no `GET_HW_RENDER_INTERFACE`), while `config::RendererType`
+stayed OpenGL — first `retro_run` then called through never-resolved glsm GL pointers → call to
+address 0. The Linux build accepted Vulkan instead (which does set RendererType), masking the same
+latent bug. With this patch flycast goes straight to its GL path, matching the only context RGFW can
+create (WGL on Windows, GLX in the image). Safe for mupen (asks for GL anyway) and 2D cores (gl
+disabled → unchanged).
