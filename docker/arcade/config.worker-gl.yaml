@@ -40,6 +40,11 @@ emulator:
           roms: ["iso", "cso", "pbp", "chd"]
           isGlAllowed: true
           coreAspectRatio: true
+          # vfr OFF (matches the working N64 mupen entry): the default vfr:true timestamps each encoded
+          # frame by its VARIABLE wall-clock delta, which on this path plays back too fast (Sonic Adventure
+          # ran double-speed, Patapon/LocoRoco unplayable). Fixed cadence paces the RTP timestamps to the
+          # core's real fps → correct game speed.
+          vfr: false
           # REQUIRED for GL cores (matches the working N64 mupen entry): libco runs context_reset AND
           # retro_run on ONE cooperative thread. Without it, nanoarch's non-LibCo path runs context_reset
           # at init on one thread but retro_run with per-frame LockOSThread/BindContext on another — GL
@@ -65,6 +70,7 @@ emulator:
           isGlAllowed: true
           coreAspectRatio: true
           usesLibCo: true   # GL thread-affinity — see the psp note above (flycast GPF'd without it)
+          vfr: false        # correct game speed — see the psp vfr note (Sonic Adventure ran double-speed)
         naomi:
           lib: flycast_libretro
           folder: naomi
@@ -72,6 +78,7 @@ emulator:
           isGlAllowed: true
           coreAspectRatio: true
           usesLibCo: true
+          vfr: false
         atomiswave:
           lib: flycast_libretro
           folder: atomiswave
@@ -79,6 +86,7 @@ emulator:
           isGlAllowed: true
           coreAspectRatio: true
           usesLibCo: true
+          vfr: false
 
 encoder:
   # Same NVENC H.264 + Opus-FEC path as the WSL stack (docker/arcade/config.yaml). nvcodec here comes
