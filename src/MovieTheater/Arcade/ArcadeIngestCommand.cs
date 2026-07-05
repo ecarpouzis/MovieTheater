@@ -196,7 +196,10 @@ namespace MovieTheater.Arcade
             var t = name;
             int cut = t.IndexOfAny(new[] { '(', '[' });
             if (cut > 0) t = t[..cut];
-            return t.Replace('_', ' ').Trim();
+            t = t.Replace('_', ' ').Trim();
+            // Peel a trailing TOSEC bare version ("Sonic Adventure v1.005" → "Sonic Adventure") so
+            // revisions collapse to one card. Shared helper == the ArcadeNaming copy (no drift).
+            return ArcadeVersions.StripTrailingBareVersion(t);
         }
 
         // Article inversion for the sort key, same spirit as SimpleTitle ("The Legend…" → "Legend…, The").

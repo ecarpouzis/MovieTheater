@@ -123,6 +123,25 @@ namespace MovieTheater.Arcade
             return m.Success ? int.Parse(m.Groups[1].Value) : 0;
         }
 
+        // The TOSEC "bare" version token that sits after the title and BEFORE the first (/[ — e.g.
+        // "Sonic Adventure v1.005 (1999)(Sega)(US)..." → "v1.005". (No-Intro/GoodTools put revisions
+        // inside parens, "(Rev 1)"/"(v1.5)"; TOSEC leaves this one bare, which is why CleanTitle used to
+        // leak it into the Title and split "Sonic Adventure" into one card per revision.)
+        public static string? BareVersion(string? key)
+        {
+            if (string.IsNullOrEmpty(key)) return null;
+            int cut = key.IndexOfAny(new[] { '(', '[' });
+            var head = cut > 0 ? key[..cut] : key;
+            var m = Regex.Match(head, @"\bv\d+(?:\.\d+)+", RegexOptions.IgnoreCase);
+            return m.Success ? m.Value.ToLowerInvariant() : null;
+        }
+
+        /// <summary>Remove a trailing bare version token from an already-tag-stripped title
+        /// ("Sonic Adventure v1.005" → "Sonic Adventure"). The single source of truth both CleanTitle
+        /// copies call, so ingest and JIT naming can't drift.</summary>
+        public static string StripTrailingBareVersion(string title) =>
+            Regex.Replace(title, @"\s+v\d+(?:\.\d+)+$", "", RegexOptions.IgnoreCase).Trim();
+
         private static string? Revision(string? key)
         {
             if (key == null) return null;
@@ -132,6 +151,8 @@ namespace MovieTheater.Arcade
             if (ver.Success) return ver.Groups[1].Value.Replace(" ", "");
             var prg = Regex.Match(key, @"\(PRG\s*(\d+)\)", RegexOptions.IgnoreCase);
             if (prg.Success) return "PRG" + prg.Groups[1].Value;
+            var bare = BareVersion(key);   // TOSEC bare token, so collapsed revisions stay distinguishable
+            if (bare != null) return bare;
             return null;
         }
 
@@ -149,6 +170,12 @@ namespace MovieTheater.Arcade
             if (ver.Success) return int.Parse(ver.Groups[1].Value) * 100 + int.Parse(ver.Groups[2].Value);
             var prg = Regex.Match(key, @"\(PRG\s*(\d+)\)", RegexOptions.IgnoreCase);
             if (prg.Success) return int.Parse(prg.Groups[1].Value);
+            var bare = BareVersion(key);   // e.g. "v1.005" → 1*1000+5; higher revision sorts first (Rank negates)
+            if (bare != null)
+            {
+                var bm = Regex.Match(bare, @"v(\d+)\.(\d+)", RegexOptions.IgnoreCase);
+                if (bm.Success) return int.Parse(bm.Groups[1].Value) * 1000 + int.Parse(bm.Groups[2].Value);
+            }
             return 0;
         }
 

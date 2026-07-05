@@ -330,7 +330,11 @@ namespace MovieTheater.Arcade
             var t = name;
             int cut = t.IndexOfAny(new[] { '(', '[' });
             if (cut > 0) t = t[..cut];
-            return t.Replace('_', ' ').Trim();
+            t = t.Replace('_', ' ').Trim();
+            // Strip a trailing TOSEC bare version token ("Sonic Adventure v1.005" → "Sonic Adventure") so
+            // revisions of one game share a Title and collapse to one card (the version shows in the
+            // dropdown via ArcadeVersions.Revision).
+            return ArcadeVersions.StripTrailingBareVersion(t);
         }
 
         public static string ArticleInvert(string title)
