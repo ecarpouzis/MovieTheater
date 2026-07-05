@@ -109,3 +109,22 @@ address 0. The Linux build accepted Vulkan instead (which does set RendererType)
 latent bug. With this patch flycast goes straight to its GL path, matching the only context RGFW can
 create (WGL on Windows, GLX in the image). Safe for mupen (asks for GL anyway) and 2D cores (gl
 disabled → unchanged).
+
+## 0007-timing-and-audio-fixes.patch
+
+Three small runtime fixes found by playing real games on the Windows GL worker (applies after 0006):
+
+- **`pkg/worker/media/gstreamer.go` — PSP gameplay-start crash (the big one).** PPSSPP emits a
+  **zero-length audio batch** the instant real gameplay begins; `ProcessAudio` did `&audio[0]` on it
+  → `panic: index out of range [0] with length 0` → the worker crashed and every PSP game
+  "disconnected as soon as the game started". Now guards `len(audio) == 0`. Verified: Loco Roco 2
+  runs into gameplay (60fps, no panic).
+- **`pkg/worker/caged/libretro/nanoarch.go` — `SET_SYSTEM_AV_INFO` applied timing, not just geometry.**
+  The handler ignored `av.timing`, so a core that changes fps/sample-rate mid-run (e.g. flycast on a
+  cutscene) left the frontend pacing/timestamping at the old rate. Now updates `sys.av.timing` +
+  `tickTime`, and logs `[AV-CHANGE]`.
+- **`pkg/worker/caged/libretro/frontend.go` — the main loop recomputes `targetFrameTimeNs` when
+  `VideoFramerate()` changes**, so pacing follows a mid-run fps change instead of running the new
+  segment at the old rate. (Candidate fix for the reported DC-cutscene double-speed — the emulator
+  itself was measured at a correct 1x, so the issue is presentation/pacing; not yet reproduced in
+  automation, needs a live cutscene to confirm.)

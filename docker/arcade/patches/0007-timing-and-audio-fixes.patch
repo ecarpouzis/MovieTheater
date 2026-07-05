@@ -1,0 +1,61 @@
+diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
+index 63ce314..8570aa1 100644
+--- a/pkg/worker/caged/libretro/frontend.go
++++ b/pkg/worker/caged/libretro/frontend.go
+@@ -339,6 +339,15 @@ func (f *Frontend) Start() {
+ 		default:
+ 			f.Tick()
+ 
++			// Track mid-run fps changes (cutscenes/mode switches call SET_SYSTEM_AV_INFO): recompute the
++			// frame budget so pacing follows the core, instead of running the new segment at the old rate.
++			if fps := f.nano.VideoFramerate(); fps > 0 {
++				if nt := int64(float64(time.Second) / fps); nt != targetFrameTimeNs {
++					targetFrameTimeNs = nt
++					lastFrameStart = os.Nanotime()
++				}
++			}
++
+ 			now := os.Nanotime()
+ 			elapsed := now - lastFrameStart
+ 			sleepTimeNs := targetFrameTimeNs - elapsed
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+index 27239f2..ed944f8 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+@@ -767,6 +767,20 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+ 	case C.RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
+ 		Nan0.log.Debug().Msgf("retro_set_system_av_info")
+ 		av := *(*C.struct_retro_system_av_info)(data)
++		// Apply TIMING changes, not just geometry: cores (e.g. flycast on a DC cutscene) call this to
++		// switch fps mid-run. Ignoring it left the frontend pacing retro_run at the old rate → the
++		// cutscene ran double-speed (audio clipped). The frontend loop re-reads VideoFramerate() and
++		// recomputes its frame budget, so updating the stored timing here fixes the pacing.
++		if av.timing.fps != Nan0.sys.av.timing.fps || av.timing.sample_rate != Nan0.sys.av.timing.sample_rate {
++			Nan0.log.Info().Msgf("[AV-CHANGE] fps %v->%v sample_rate %v->%v",
++				Nan0.sys.av.timing.fps, av.timing.fps, Nan0.sys.av.timing.sample_rate, av.timing.sample_rate)
++			Nan0.sys.av.timing = av.timing
++			// tickTime feeds the per-frame RTP duration (vfr:false path) — recompute it too, else the
++			// frame timestamps stay at the old rate after an fps change even though pacing follows.
++			if av.timing.fps > 0 {
++				Nan0.tickTime = time.Duration(float64(time.Second) / float64(av.timing.fps))
++			}
++		}
+ 		if isGeometryDifferent(av.geometry) {
+ 			geometryChange(av.geometry)
+ 		}
+diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
+index 3ed0fe2..ba2ae84 100644
+--- a/pkg/worker/media/gstreamer.go
++++ b/pkg/worker/media/gstreamer.go
+@@ -313,6 +313,11 @@ func (g *GstMediaPipe) Destroy() {
+ 
+ func (g *GstMediaPipe) ProcessAudio(audio []byte, cb func([]byte, time.Duration)) {
+ 	g.onAudio = cb
++	// PPSSPP emits a zero-length audio batch at gameplay start; &audio[0] below panics on an empty
++	// slice (index out of range [0] with length 0) → the worker crashed the instant PSP gameplay began.
++	if len(audio) == 0 {
++		return
++	}
+ 	if !g.aSegSent {
+ 		g.aSegSent = true
+ 		g.a.srcPad.PushEvent(gst.NewSegmentEvent(cachedSegment))

@@ -190,6 +190,29 @@ DC 4-player two-browser flagship.
 **Superseded to-do (kept for history):** ~~(a) full-pipeline proof; (b) the cutover; (c) router+firewall;
 (d) flagship~~ — (a)+(b) done; (c)+(d) gated on the two per-core fixes above.
 
+### Gameplay fixes 2026-07-05 (patch 0007) — from real play, not just boot
+
+Booting/rendering worked but *actual gameplay* surfaced two more bugs; both now in patch 0007:
+
+- ✅ **PSP disconnect-on-gameplay-start — FIXED + verified.** Every PSP game rendered the intro but
+  disconnected the instant real gameplay began. Root cause: PPSSPP emits a **zero-length audio batch**
+  at gameplay start and `ProcessAudio` did `&audio[0]` on it → `panic: index out of range [0] with
+  length 0` → worker crash. Guarded. Loco Roco 2 now runs into gameplay (60fps, no panic).
+- ⚠️ **DC cutscene double-speed — characterized, candidate fix, NOT yet confirmed.** Sonic Adventure is
+  correct speed until the intro cutscene, then everything runs ~2x with the audio clipping (not
+  pitch-shifted → a timestamp/pacing issue, not sample-rate). Instrumented the frame loop: the
+  **emulator runs a rock-steady 1x (measured 59.9fps)**, and there are no encoder frame-drops — so it's
+  presentation, not emulation. Suspected a mid-run `SET_SYSTEM_AV_INFO` fps change that the frontend
+  didn't track (it only applied geometry); patch 0007 fixes that path (updates timing + recomputes the
+  frame budget). BUT `[AV-CHANGE]` never fired across extensive Sonic menu/attract testing, so this may
+  not be Sonic's cause — I could not drive automation into the exact cutscene to reproduce it. Needs a
+  live cutscene test, or the exact steps to reach it. Emulator-is-1x is the key ruling-out.
+
+**Stability note:** the teardown segfault (Windows analog of CloudRetro's known one) still fires
+intermittently on consecutive rooms; mitigated by running **2 gl workers** (8446 + 8447) + the restart
+loop, same pattern as the WSL pool. `scripts/run-arcade-glworker.ps1` reads `ZIGGY_PUBLIC_IP` from
+`docker/arcade/.env` now (no committed IP).
+
 ## Progress 2026-07-04 — code/config/BIOS landed; build+cutover is the remaining (elevated) work
 
 **Done (in-repo, no live effect yet — the zoning is behind a default-OFF flag):**
