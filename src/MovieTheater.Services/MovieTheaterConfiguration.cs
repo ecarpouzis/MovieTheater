@@ -61,6 +61,17 @@ namespace MovieTheater.Services
         /// <summary>STUN servers echoed to the client shim's iceConfig (no TURN in v1).</summary>
         public List<string> ArcadeStunServers { get; set; } = new();
 
+        /// <summary>
+        /// Multi-zone worker routing (roadmap WS-B). OFF by default = the v1 single-pool behavior
+        /// (join descriptors carry an empty <c>zone=</c>, which the coordinator's <c>Worker.In</c>
+        /// treats as a wildcard matching every worker). When ON, the descriptor carries a per-system
+        /// zone (GL 3D systems → <c>gl</c>, everything else → <c>main</c>) so the Windows-native GL
+        /// worker pool is isolated from the WSL 2D pool. DO NOT enable until BOTH pools are explicitly
+        /// zoned (WSL workers <c>CLOUD_GAME_WORKER_NETWORK_ZONE=main</c>, gl worker <c>zone=gl</c>) —
+        /// an empty-zoned worker fails <c>In("main")</c>, so flipping this first would break every 2D room.
+        /// </summary>
+        public bool ArcadeZoningEnabled { get; set; }
+
         public string? ImdbApiKey { get; set; }
 
         public string? TmdbApiKey { get; set; }

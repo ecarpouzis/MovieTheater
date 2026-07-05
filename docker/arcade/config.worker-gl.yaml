@@ -1,0 +1,87 @@
+# CloudRetro config for the Windows-native GL worker (roadmap WS-B, docs/arcade-windows-worker.md).
+#
+# This worker runs natively on Windows (MSYS2/UCRT64 build of ./cmd/worker) to get REAL NVIDIA
+# OpenGL (WGL on a hidden window → GL 4.6 compat) for the GL 3D cores that WSLg's GLX/EGL can't
+# host (flycast: dc/naomi/atomiswave, ppsspp: psp). It joins the SAME WSL coordinator
+# (localhost:8000) but in a separate zone ("gl") so 2D/N64 rooms never land on it and vice-versa.
+#
+# The flat knobs (zone, singlePort, iceIpMap, coordinator, and the Windows paths) are set via
+# CLOUD_GAME_* env in scripts/register-arcade-glworker-task.ps1 — this file carries the core list +
+# encoder, exactly like docker/arcade/config.yaml does for the WSL stack. Run:
+#   worker.exe --w-conf <dir containing this file renamed config.yaml>
+# ⚠VERIFY at first boot (docs/arcade-windows-worker.md acceptance): NVIDIA GL 4.x context in the log,
+# nvcodec present (else set encoder.video.codec: vp8), cores download from the windows/x86_64 buildbot.
+
+coordinator:
+  origin:
+    userWs: "https://theater.carpouzis.com"
+
+library:
+  # Native Windows path — NO /mnt/d translation on this worker. Overridable via CLOUD_GAME_LIBRARY_BASEPATH.
+  basePath: "D:/ArcadeStorage/roms"
+  watchMode: true
+
+emulator:
+  autosaveSec: 60
+  storage: "D:/ArcadeStorage/saves"    # overridable via CLOUD_GAME_EMULATOR_STORAGE
+  libretro:
+    saveCompression: false
+    cores:
+      repo:
+        sync: true    # per-OS: pulls windows/x86_64 .dll cores from buildbot.libretro.com/nightly
+      list:
+        # GL 3D cores only — this pool exists for these. isGlAllowed + coreAspectRatio are the Flip
+        # contract (without coreAspectRatio the GAME_START av payload is null and the client renders
+        # the bottom-left-origin GL frame upside down — the exact n64 lesson). Mirror of the WSL
+        # config's GPU-core block; keep in lockstep with CloudRetroHost.ZoneForSystem's "gl" list.
+        psp:
+          lib: ppsspp_libretro
+          folder: psp
+          roms: ["iso", "cso", "pbp", "chd"]
+          isGlAllowed: true
+          coreAspectRatio: true
+          options:
+            ppsspp_internal_resolution: "960x544"   # 2x native (480x272), downsample-encode reads crisp
+        dc:
+          lib: flycast_libretro
+          folder: dc
+          roms: ["chd", "gdi", "cdi", "cue"]
+          isGlAllowed: true
+          coreAspectRatio: true
+        naomi:
+          lib: flycast_libretro
+          folder: naomi
+          roms: ["zip", "chd", "lst", "dat", "bin"]
+          isGlAllowed: true
+          coreAspectRatio: true
+        atomiswave:
+          lib: flycast_libretro
+          folder: atomiswave
+          roms: ["zip", "chd"]
+          isGlAllowed: true
+          coreAspectRatio: true
+
+encoder:
+  # Same NVENC H.264 + Opus-FEC path as the WSL stack (docker/arcade/config.yaml). nvcodec here comes
+  # from MSYS2 gst-plugins-bad (dlopens nvEncodeAPI64.dll). INSTANT FALLBACK if nvcodec is absent on
+  # this worker: set codec to vp8 (vpx ships in gst-plugins-good; the 13700K handles one 640x480 stream).
+  video:
+    codec: h264
+    threads: 0
+    keyframeInterval: 300
+  list:
+    h264:
+      encoder: nvh264enc
+      params: "preset=p4 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=120 repeat-sequence-header=true zerolatency=true"
+      caps: video/x-h264,stream-format=byte-stream,alignment=au
+    # In-band FEC ON (roadmap WS-A.2) — same override as the WSL stack; generic (not restricted-lowdelay)
+    # + >=10ms frames are what make LBRR real. The gl-zone room binds a native Windows socket with no
+    # mirrored-relay hop, so it's also the clean A/B control for the WS-A audio-loss hunt.
+    opus:
+      encoder: opusenc
+      params: "audio-type=generic inband-fec=true packet-loss-percentage=15 frame-size=10 complexity=8 bitrate=96000"
+  audio:
+    codec: opus
+
+storage:
+  provider: ""    # never S3 — it would overwrite seeded saves at boot (arcade-saves-plan)

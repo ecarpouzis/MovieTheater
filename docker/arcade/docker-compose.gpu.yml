@@ -50,6 +50,11 @@ x-gpu-worker: &gpu-worker
     # networking IS the Windows host's network — so the coordinator is plain localhost:8000 here.
     CLOUD_GAME_WORKER_NETWORK_COORDINATORADDRESS: "localhost:8000"
     CLOUD_GAME_WEBRTC_ICEIPMAP: "${ZIGGY_PUBLIC_IP:?set ZIGGY_PUBLIC_IP in .env}"
+    # Worker-pool zone (roadmap WS-B). "main" = the 2D/N64 pool; the Windows-native GL worker runs
+    # zone "gl". Harmless until the site's ArcadeZoningEnabled flips on: while the site sends an empty
+    # zone, the coordinator's Worker.In("") wildcard still matches these main-zoned workers. Applied on
+    # the next `up -d` (env is set at container creation, not on plain restart).
+    CLOUD_GAME_WORKER_NETWORK_ZONE: "main"
   volumes:
     - /usr/lib/wsl:/usr/lib/wsl:ro          # the D3D12 graphics runtime (libd3d12core/dxcore)
     - /tmp/.X11-unix:/tmp/.X11-unix         # WSLg X socket

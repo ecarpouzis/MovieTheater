@@ -38,9 +38,12 @@ namespace MovieTheater.Services.Arcade
             // Gateway base is https/http; the browser opens a WebSocket, so advertise wss/ws.
             var wsBase = ToWebSocketScheme(config.ArcadeGatewayBaseUrl!.TrimEnd('/'));
             // The room id embeds '___' and spaces — URL-encode it. Empty for a creator (⇒ "create").
-            // zone is empty in single-box v1 (no multi-zone worker selection).
+            // zone selects the worker pool (roadmap WS-B). Empty (v1 default, ArcadeZoningEnabled=false)
+            // is a wildcard that matches any worker; when zoning is on, GL 3D systems go to the "gl"
+            // pool (the Windows-native worker) and everything else to "main" (the WSL 2D workers).
             var roomIdParam = Uri.EscapeDataString(cloudRetroRoomId ?? string.Empty);
-            var wsUrl = $"{wsBase}/w/{token}?room_id={roomIdParam}&zone=";
+            var zone = config.ArcadeZoningEnabled ? Uri.EscapeDataString(ZoneForSystem(game.System)) : string.Empty;
+            var wsUrl = $"{wsBase}/w/{token}?room_id={roomIdParam}&zone={zone}";
 
             var ice = (config.ArcadeStunServers ?? new List<string>())
                 .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -49,6 +52,19 @@ namespace MovieTheater.Services.Arcade
 
             return new ArcadeJoinDescriptor(roomCode, wsUrl, playerSlot, game.CloudRetroGameKey, ice, isCreator, game.System);
         }
+
+        /// <summary>
+        /// Worker-pool zone for a system (roadmap WS-B). The GL 3D cores (flycast: dc/naomi/atomiswave,
+        /// ppsspp: psp) need real desktop OpenGL, which only the Windows-native worker provides — they
+        /// route to "gl". Everything 2D + N64 (mupen runs fine on the WSL D3D12 path) stays on "main".
+        /// Keep this list in lockstep with the gl worker's config.yaml core entries and the WSL workers'
+        /// CLOUD_GAME_WORKER_NETWORK_ZONE=main.
+        /// </summary>
+        internal static string ZoneForSystem(string? system) => system?.ToLowerInvariant() switch
+        {
+            "psp" or "dc" or "naomi" or "atomiswave" => "gl",
+            _ => "main",
+        };
 
         private static string ToWebSocketScheme(string url)
         {
