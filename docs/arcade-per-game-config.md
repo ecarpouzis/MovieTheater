@@ -76,19 +76,26 @@ dotnet run --project src/MovieTheater/MovieTheater.csproj -- \
 # takes effect on the next room load (mtime hot-reload) — no worker restart needed.
 ```
 
-## Case study — the DC double-speed (why fps override, not a global cap)
+## Case study — the DC double-speed (and why forcedFps is only a partial fix)
 
-Sonic Adventure's engine is hardcoded to 30fps with physics tied to that limit; flycast advertises the
-59.94Hz Dreamcast **display** refresh, so pacing `retro_run` at 59.94 runs the game at **2×**. Measured
-with pacing instrumentation: `retro_run=59.9/s` (our loop was correct), the core was simply advancing
-the game at the display rate. A global 30fps cap would wrongly cripple the *majority* of DC games that
-are genuinely 60fps (Crazy Taxi, Power Stone, …). So the fix is per-game: profile `(dc,"sonic
-adventure") → 30`, which forces just those titles. Verified live: `[game-override] forcing 30.000 fps …
-(core advertised 59.940)`.
+Sonic Adventure's gameplay runs at 30fps with physics tied to the frame rate; flycast advertises the
+59.94Hz Dreamcast **display** refresh, so pacing `retro_run` at 59.94 runs gameplay at **2×**. Measured
+with pacing instrumentation: `retro_run=59.9/s` (our loop was correct) — the game simply advances at the
+display rate here. `forcedFps 30` brings gameplay to correct speed and stops the cutscene-audio clipping.
 
-There are curated per-ROM datasets for seeding these (RetroArch per-game core-option overrides, the
-flycast/RetroArch DC threads listing the 30fps-locked and widescreen-problem games), so a known-problem
-preset table can be imported rather than discovered game by game.
+**But forcedFps is a blunt, whole-game pace — and it broke Sonic's 60fps parts.** Sonic Adventure runs
+at 30fps *everywhere except the menus/logo and Twinkle Circuit*, which are genuine 60fps. Forcing 30
+**halves** those and desyncs audio (observed 2026-07-05). So a static per-game fps is the wrong shape for
+mixed-rate games. Two better paths (open):
+- **Frame-increment + physics-multiplier patch** (e.g. PkR's "Better 60 FPS" for Sonic Adventure),
+  applied via emulator cheat codes — makes the game run correctly at 60fps *everywhere*. Needs a
+  per-game cheat/patch dimension (not yet built).
+- **Root-cause the stack difference**: "the game plays perfect on flycast on PC," so our frontend-paced
+  libretro path is defeating the game's own 30fps self-limiting; fixing that would need no per-game data.
+
+forcedFps stays valid **only** for games that run at a single rate everywhere and double-speed here — it
+must NOT be trusted for a title with any 60fps section. A global 30fps cap is likewise wrong (most DC
+games are genuinely 60fps: Crazy Taxi, the fighters, …).
 
 ## Importing curated fixes from online sources
 
