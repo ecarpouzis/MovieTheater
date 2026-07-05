@@ -76,26 +76,37 @@ dotnet run --project src/MovieTheater/MovieTheater.csproj -- \
 # takes effect on the next room load (mtime hot-reload) — no worker restart needed.
 ```
 
-## Case study — the DC double-speed (and why forcedFps is only a partial fix)
+## The DC double-speed — SOLVED at the stack level by audio-driven pacing (patch 0010)
 
-Sonic Adventure's gameplay runs at 30fps with physics tied to the frame rate; flycast advertises the
-59.94Hz Dreamcast **display** refresh, so pacing `retro_run` at 59.94 runs gameplay at **2×**. Measured
-with pacing instrumentation: `retro_run=59.9/s` (our loop was correct) — the game simply advances at the
-display rate here. `forcedFps 30` brings gameplay to correct speed and stops the cutscene-audio clipping.
+This whole class is **fixed in the worker, with no per-game data** — `forcedFps` is obsolete for it.
 
-**But forcedFps is a blunt, whole-game pace — and it broke Sonic's 60fps parts.** Sonic Adventure runs
-at 30fps *everywhere except the menus/logo and Twinkle Circuit*, which are genuine 60fps. Forcing 30
-**halves** those and desyncs audio (observed 2026-07-05). So a static per-game fps is the wrong shape for
-mixed-rate games. Two better paths (open):
-- **Frame-increment + physics-multiplier patch** (e.g. PkR's "Better 60 FPS" for Sonic Adventure),
-  applied via emulator cheat codes — makes the game run correctly at 60fps *everywhere*. Needs a
-  per-game cheat/patch dimension (not yet built).
-- **Root-cause the stack difference**: "the game plays perfect on flycast on PC," so our frontend-paced
-  libretro path is defeating the game's own 30fps self-limiting; fixing that would need no per-game data.
+Root cause (measured): flycast runs a Dreamcast game's **30fps sections at 2 vblanks per `retro_run`**
+(emitting 2× the audio) but its **60fps sections at 1 vblank per `retro_run`**. Our old loop paced
+`retro_run` at a fixed 59.94Hz, so 30fps gameplay ran at **2×** (Sonic Adventure, Jet Set Radio) while
+60fps menus were correct — and the 2× flooded the pipeline with 88.2kHz-worth of audio (the "clipping"
+/ "looping"). Instrumenting `audioFrames/retro_run` showed the signal cleanly: **735 (one vblank) in
+60fps content vs 1470 (two) in 30fps content.**
 
-forcedFps stays valid **only** for games that run at a single rate everywhere and double-speed here — it
-must NOT be trusted for a title with any 60fps section. A global 30fps cap is likewise wrong (most DC
-games are genuinely 60fps: Crazy Taxi, the fighters, …).
+Fix (`frontend.go` Start, patch 0010): pace `retro_run` against the **emulated audio clock** — the game
+must produce exactly `sampleRate` (44100) audio frames per real second — with the video frame time kept
+as a **max-rate floor** (never faster than the core fps; also the whole pace during silence / for
+no-audio cores). Each section then plays at its true rate automatically. This is what stock emulators do
+("sync to audio").
+
+Verified 2026-07-05 (audio/s should be ~44100 everywhere):
+
+| Game | old (fixed pace) | new (audio pace) |
+|---|---|---|
+| Sonic gameplay | 60 run/s, 88200 audio (2×) | **30 run/s, 44100** ✓ |
+| Sonic menus | 60 run/s, 44100 | **60 run/s, 44100** ✓ |
+| Jet Grind Radio | 60 run/s, 88200 (2×) | **30 run/s, 44100** ✓ |
+| Crazy Taxi (60fps DC) | 60 run/s, 44100 | **60 run/s, 44100** (unchanged) ✓ |
+| Loco Roco 2 (PSP) | 60 run/s, 44100 | **60 run/s, 44100** (unchanged) ✓ |
+
+Constant-rate cores (PSP, 60fps DC, all 2D) produce audio at a steady `sampleRate/fps` per frame, so the
+floor dominates and their behavior is unchanged. `forcedFps` remains in the model as a static fallback
+for any core that emits no audio, but the Sonic/JGR-class profiles were **removed** — audio pacing is
+strictly better (correct in menus too, audio in sync, no per-game data).
 
 ## Importing curated fixes from online sources
 

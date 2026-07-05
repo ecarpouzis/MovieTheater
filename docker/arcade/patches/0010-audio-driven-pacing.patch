@@ -1,0 +1,148 @@
+--- a/pkg/worker/caged/libretro/frontend.go
++++ b/pkg/worker/caged/libretro/frontend.go
+@@ -331,7 +331,25 @@
+ 
+ 	batch := max(f.SpinBatch, 1)
+ 
+-	lastFrameStart := os.Nanotime()
++	// AUDIO-DRIVEN PACING. We pace retro_run against the emulated AUDIO clock (the game should produce
++	// exactly sampleRate audio frames per real second) rather than a fixed video fps, with the video
++	// frame time kept as a MAX-RATE FLOOR (never faster than the core's fps; also the whole pace when a
++	// game is silent or a core emits no audio).
++	//
++	// Why: some cores emit a variable amount of emulated time per retro_run. flycast runs a Dreamcast
++	// game's 30fps sections at 2 vblanks per retro_run (2x the audio) but its 60fps menus at 1 vblank —
++	// so a fixed 59.94 pace runs gameplay at DOUBLE SPEED (Sonic Adventure, Jet Set Radio) while menus
++	// are correct. Pacing to audio makes each section play at its true rate automatically, with no
++	// per-game data (this is what stock emulators do — "sync to audio"). Constant-rate cores (PSP, 60fps
++	// DC, all 2D) produce audio at a steady sampleRate/fps per frame, so the floor dominates and behavior
++	// is unchanged.
++	sr := float64(f.nano.AudioSampleRate())
++	if sr <= 0 {
++		sr = 44100
++	}
++	audioEpoch := os.Nanotime() // real-time anchor of the audio clock
++	var audioFrames int64       // cumulative audio frames produced (the audio clock)
++	floorNext := os.Nanotime()  // earliest allowed time for the next tick (max-rate floor)
+ 
+ 	for {
+ 		select {
+@@ -339,64 +357,55 @@
+ 			return
+ 		default:
+ 			f.Tick()
++			audioFrames += f.nano.TakeAudioFrames()
+ 
+-			// Track mid-run fps changes (cutscenes/mode switches call SET_SYSTEM_AV_INFO): recompute the
+-			// frame budget so pacing follows the core, instead of running the new segment at the old rate.
++			// Track mid-run fps changes (SET_SYSTEM_AV_INFO) so the floor follows the core's fps.
+ 			if fps := f.nano.VideoFramerate(); fps > 0 {
+ 				if nt := int64(float64(time.Second) / fps); nt != targetFrameTimeNs {
+ 					targetFrameTimeNs = nt
+-					lastFrameStart = os.Nanotime()
+ 				}
+ 			}
+ 
++			// Audio deadline: when real-time SHOULD be, given the audio produced so far.
++			audioDeadline := audioEpoch + int64(float64(audioFrames)/sr*1e9)
++			// Floor: never run faster than the core fps (covers silence + no-audio cores).
++			deadline := floorNext
++			if audioDeadline > deadline {
++				deadline = audioDeadline
++			}
++
+ 			now := os.Nanotime()
+-			elapsed := now - lastFrameStart
+-			sleepTimeNs := targetFrameTimeNs - elapsed
+-			deadline := lastFrameStart + targetFrameTimeNs
+-
+-			if sleepTimeNs > 0 {
+-				// SLEEP
+-				// if we have plenty of time, sleep to save CPU and
+-				// wake up slightly before the target time
+-				if sleepTimeNs > spinThresholdNs {
+-					time.Sleep(time.Duration(sleepTimeNs - spinThresholdNs))
+-				}
++			// Resync if we've fallen far behind the audio clock (emulation stall / big catch-up batch):
++			// rebase the audio epoch so we don't sprint to catch up.
++			if now-deadline > targetFrameTimeNs*lateFramesThreshold {
++				audioEpoch += now - deadline
++				deadline = now
++			}
++			// Clamp a large forward jump (audio burst after a silent stretch) so one tick can't stall the
++			// loop for many frames; pull the epoch back so the clock stays consistent afterward.
++			if maxAhead := targetFrameTimeNs * lateFramesThreshold; deadline-now > maxAhead {
++				audioEpoch -= (deadline - now) - maxAhead
++				deadline = now + maxAhead
++			}
+ 
+-				// SPIN
+-				// if we are close to the target,
+-				// burn CPU and check the clock with ns resolution.
+-				// SpinBatch batches the time check to reduce
+-				// overhead while keeping sub-us precision.
+-				for {
++			if sleepNs := deadline - now; sleepNs > 0 {
++				if sleepNs > spinThresholdNs {
++					time.Sleep(time.Duration(sleepNs - spinThresholdNs))
++				}
++				for os.Nanotime() < deadline {
+ 					for range batch - 1 {
+ 					}
+-					if os.Nanotime() >= deadline {
+-						break
+-					}
+ 				}
+ 				f.skipVideo = false
+ 			} else {
+-				// lagging behind the target framerate so we don't sleep
+ 				if f.conf.LogDroppedFrames {
+-					// !to make some stats counter instead
+-					f.log.Debug().Msgf("[] Frame drop: %v", time.Duration(elapsed))
++					f.log.Debug().Msgf("[] Frame drop: %v", time.Duration(-sleepNs))
+ 				}
+ 				f.skipVideo = true
+ 			}
+ 
+-			// timer reset
+-			//
+-			// adding targetFrameTime to the previous start
+-			// prevents drift, if one frame was late,
+-			// we try to catch up in the next frame
+-			lastFrameStart = lastFrameStart + targetFrameTimeNs
+-
+-			// if execution was paused or heavily delayed,
+-			// reset lastFrameStart so we don't try to run
+-			// a bunch of frames instantly to catch up
+-			if os.Nanotime()-lastFrameStart > targetFrameTimeNs*lateFramesThreshold {
+-				lastFrameStart = os.Nanotime()
+-			}
++			// Anchor the next floor to this frame's intended deadline (drift-free 60fps cap).
++			floorNext = deadline + targetFrameTimeNs
+ 		}
+ 	}
+ }
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+@@ -730,11 +730,21 @@
+ 	Nan0.Handlers.OnVideo(data_, dt, FrameInfo{W: width, H: height, Stride: packed})
+ }
+ 
++// audioClockFrames accumulates audio frames (per channel) produced since the last read. The frontend
++// pacing loop drains it each tick to pace retro_run against the emulated audio clock (real-time 44.1kHz)
++// — so a game whose content rate varies (e.g. flycast running Sonic's 30fps gameplay at 2x, emitting 2x
++// audio) is throttled to true speed instead of the fixed video fps. See frontend.go Start.
++var audioClockFrames atomic.Int64
++
++// TakeAudioFrames returns and resets the audio frames produced since the last call.
++func (n *Nanoarch) TakeAudioFrames() int64 { return audioClockFrames.Swap(0) }
++
+ //export coreAudioSampleBatch
+ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+ 	if Nan0.Stopped.Load() {
+ 		return frames
+ 	}
++	audioClockFrames.Add(int64(frames))
+ 	Nan0.Handlers.OnAudio(data, int(frames)<<1)
+ 
+ 	// Audio buffer status for the core (e.g. mGBA frameskip).
