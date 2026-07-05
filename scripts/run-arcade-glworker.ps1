@@ -56,14 +56,26 @@ New-Item -ItemType Directory -Force (Split-Path $LogFile) | Out-Null
 # from "." (LoadConfig searches cwd), so --w-conf is belt-and-braces.
 Set-Location $ConfDir
 
+# UTF-8 loop markers so they share the worker's encoding (piped via cmd below) — one grep-friendly file.
+function Write-LogLine([string]$msg) {
+    [System.IO.File]::AppendAllText($LogFile, ("{0}  [runner] {1}`r`n" -f (Get-Date -Format o), $msg), [System.Text.Encoding]::UTF8)
+}
+
 # Restart loop (the WSL worker's `restart: unless-stopped` analogue). worker.exe --w-conf = a DIRECTORY.
+#
+# CRITICAL — capture the worker's native STDERR. PowerShell 5.1's `*>>`/`2>&1` on a NATIVE exe mangles
+# and frequently DROPS stderr (it wraps each line as an ErrorRecord), and a Go panic / C access-violation
+# dump goes to stderr — so crashes were landing NOWHERE and were undiagnosable. `cmd /c "... >> file 2>&1"`
+# does a real OS-level stream merge, so panics AND C faults are written verbatim to the log. The exit code
+# then disambiguates: 2 = Go panic, 0xC0000005/-1073741819 = access violation, 0 = clean exit.
 while ($true) {
-    "$(Get-Date -Format o)  starting glworker (zone=gl port=$SinglePort ice=$IceIpMap)" | Add-Content $LogFile
-    try {
-        & $WorkerExe --w-conf $ConfDir *>> $LogFile
-    } catch {
-        "$(Get-Date -Format o)  glworker threw: $($_.Exception.Message)" | Add-Content $LogFile
+    # Rotate so a fresh crash isn't buried under hours of prior output.
+    if ((Test-Path $LogFile) -and ((Get-Item $LogFile).Length -gt 25MB)) {
+        Move-Item $LogFile "$LogFile.1" -Force -ErrorAction SilentlyContinue
     }
-    "$(Get-Date -Format o)  glworker exited - restarting in 4s" | Add-Content $LogFile
+    Write-LogLine "starting glworker (zone=gl port=$SinglePort ice=$IceIpMap exe=$WorkerExe)"
+    & cmd.exe /c "`"$WorkerExe`" --w-conf `"$ConfDir`" >> `"$LogFile`" 2>&1"
+    $code = $LASTEXITCODE
+    Write-LogLine ("glworker EXITED exitcode={0} (0x{1:X8}) - restarting in 4s" -f $code, ($code -band 0xFFFFFFFF))
     Start-Sleep -Seconds 4
 }
