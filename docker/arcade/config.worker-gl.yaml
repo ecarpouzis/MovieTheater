@@ -40,26 +40,39 @@ emulator:
           roms: ["iso", "cso", "pbp", "chd"]
           isGlAllowed: true
           coreAspectRatio: true
+          # REQUIRED for GL cores (matches the working N64 mupen entry): libco runs context_reset AND
+          # retro_run on ONE cooperative thread. Without it, nanoarch's non-LibCo path runs context_reset
+          # at init on one thread but retro_run with per-frame LockOSThread/BindContext on another — GL
+          # objects made in context_reset are then used cross-thread → 0xc0000005 crash at "Starting graphics".
+          usesLibCo: true
           options:
             ppsspp_internal_resolution: "960x544"   # 2x native (480x272), downsample-encode reads crisp
+            # IR JIT, NOT the default fastmem JIT: PPSSPP's fastmem relies on a SIGSEGV/AV handler
+            # ("Exception handler not implemented on this platform, can't install" in the embedded worker) —
+            # without it a benign fastmem fault becomes a hard 0xc0000005 crash in retro_run. IR JIT does
+            # software address translation (no fastmem AVs); stable and fast enough on the 13700K.
+            ppsspp_cpu_core: "IR JIT"
         dc:
           lib: flycast_libretro
           folder: dc
           roms: ["chd", "gdi", "cdi", "cue"]
           isGlAllowed: true
           coreAspectRatio: true
+          usesLibCo: true   # GL thread-affinity — see the psp note above (flycast GPF'd without it)
         naomi:
           lib: flycast_libretro
           folder: naomi
           roms: ["zip", "chd", "lst", "dat", "bin"]
           isGlAllowed: true
           coreAspectRatio: true
+          usesLibCo: true
         atomiswave:
           lib: flycast_libretro
           folder: atomiswave
           roms: ["zip", "chd"]
           isGlAllowed: true
           coreAspectRatio: true
+          usesLibCo: true
 
 encoder:
   # Same NVENC H.264 + Opus-FEC path as the WSL stack (docker/arcade/config.yaml). nvcodec here comes

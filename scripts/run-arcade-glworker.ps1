@@ -20,7 +20,7 @@
 param(
     [string]$WorkerExe  = "D:\Arcade\build\cloud-game\bin\worker.exe",
     [string]$ConfDir    = "D:\ArcadeStorage\worker-gl",
-    [string]$Ucrt64Bin  = "C:\msys64\ucrt64\bin",
+    [string]$Ucrt64Bin  = "D:\msys64\ucrt64\bin",
     [string]$IceIpMap   = "98.15.249.217",
     [int]   $SinglePort = 8446,
     [string]$LogFile    = "D:\ArcadeStorage\logs\glworker.log"
@@ -39,6 +39,11 @@ $env:CLOUD_GAME_LIBRARY_BASEPATH                  = "D:\ArcadeStorage\roms"
 $env:CLOUD_GAME_EMULATOR_STORAGE                  = "D:\ArcadeStorage\saves"
 
 New-Item -ItemType Directory -Force (Split-Path $LogFile) | Out-Null
+
+# Run FROM the ConfDir: the worker resolves emulator.localPath ("./libretro" → the system/BIOS junction
+# to D:\ArcadeStorage\bios) and its core cache ("./assets/cores") relative to cwd. Config also loads
+# from "." (LoadConfig searches cwd), so --w-conf is belt-and-braces.
+Set-Location $ConfDir
 
 # Restart loop (the WSL worker's `restart: unless-stopped` analogue). worker.exe --w-conf = a DIRECTORY.
 while ($true) {

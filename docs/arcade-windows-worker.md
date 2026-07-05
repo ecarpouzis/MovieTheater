@@ -156,10 +156,39 @@ MSYS2 install fine as portable extracts (Go zip → `D:\Arcade\build\go`, MSYS2 
   failure. Ziggy has no software mesa installed, so that context is the NVIDIA ICD (GL 4.6 compat).
   flycast (GL 3.1) and ppsspp (GL 3.3) share the identical `rgfw.go` WGL layer → they inherit it.
 
-**Still to do to reach "DC multiplayer in browser":** (a) full-pipeline proof of a *flycast/ppsspp*
-room (GL core + NVENC + WebRTC) — either an isolated standalone-coordinator rehearsal (safe) or the
-cutover below; (b) the coordinated zoning cutover (prod-touching — pod restart + `up -d`); (c) router
-UDP-forward 8446 + Defender rule; (d) DC 4-player two-browser flagship.
+### Cutover DONE + live-room results (2026-07-04, evening)
+
+The zoning cutover is **LIVE in prod**: `ArcadeZoningEnabled=true` (committed `appsettings.json`),
+WSL workers recreated `zone=main`, gl worker joined `zone=gl`. Verified via join descriptors — 2D →
+`zone=main` (WSL), psp/dc → `zone=gl`. **2D/N64 unaffected**; the routing was confirmed end-to-end by
+test-roms creating live rooms that reached the gl worker.
+
+**GL unlock re-confirmed at the core level (huge):** a live **PPSSPP** (Daxter) room on the gl worker
+logged `GPU Vendor: NVIDIA GeForce RTX 4070 Ti ... 4.6.0 NVIDIA 596.21` — real NVIDIA GL 4.6, the exact
+context WSLg could never create. So the platform question is settled: **yes, native Windows WGL gives
+these cores real NVIDIA GL.**
+
+**But both GL cores crash mid-boot — two DISTINCT per-core integration bugs (open):**
+- **PPSSPP (psp):** `0xc0000005` in `retro_run` at "Starting graphics" — *after* the GL context/vendor
+  query. Tried `ppsspp_cpu_core: IR JIT` (rules out fastmem) and `usesLibCo: true` (matches the working
+  mupen thread model) — neither fixed it. Likely PPSSPP's own GL render thread vs the hw_render
+  single-thread contract; needs deeper nanoarch/hw_render work.
+- **flycast (dc/naomi/aw):** GPF `PC=0` (null call) *before* any GL vendor query — right after
+  `retro_get_system_av_info`. BIOS is present (junctioned `system/` has both flat + `dc/` copies), so
+  it's not BIOS; looks like flycast's renderer-backend/hw-render negotiation returning a null on this
+  build. `usesLibCo` didn't change it.
+- **N64 mupen renders fine** (verify-cores), so the shared WGL layer + `usesLibCo` path is sound — these
+  are core-specific.
+
+Config carries the attempted fixes (`usesLibCo` on all GL cores, `IR JIT` on psp) as correct-direction
+settings. **Live disposition:** gl worker left OFF; psp/dc route to `gl` → "no free worker" (graceful,
+same as pre-cutover — no regression). 2D/N64 fully healthy. Re-enable + keep debugging the two cores when
+resumed. **Remaining to "DC multiplayer in browser":** solve the flycast null-call + PPSSPP GL-thread
+crashes (per-core, likely a nanoarch hw_render patch), then router UDP 8446 + Defender rule, then the
+DC 4-player two-browser flagship.
+
+**Superseded to-do (kept for history):** ~~(a) full-pipeline proof; (b) the cutover; (c) router+firewall;
+(d) flagship~~ — (a)+(b) done; (c)+(d) gated on the two per-core fixes above.
 
 ## Progress 2026-07-04 — code/config/BIOS landed; build+cutover is the remaining (elevated) work
 
