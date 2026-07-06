@@ -232,6 +232,10 @@ namespace MovieTheater.Controllers
         public class CreateRoomRequest
         {
             public int GameId { get; set; }
+
+            /// <summary>True = "New game": boot fresh instead of resuming the user's saved slot 0 (the
+            /// gateway clears the mount). Default false = resume/Continue.</summary>
+            public bool NewGame { get; set; }
         }
 
         [HttpPost("/API/Arcade/Room")]
@@ -285,6 +289,11 @@ namespace MovieTheater.Controllers
             var descriptor = host.BuildJoinDescriptor(
                 userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, game.System),
                 roomCode, cloudRetroRoomId: saveId, playerSlot: 0, isCreator: true);
+
+            // "New game": tell the gateway (via ?fresh=1 on the WS URL) to clear the mount so the game
+            // boots clean instead of resuming the saved slot. Safe unsigned — it only clears the owner's own save.
+            if (request.NewGame)
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fresh=1" };
 
             return Json(ToJson(descriptor, discCount));
         }

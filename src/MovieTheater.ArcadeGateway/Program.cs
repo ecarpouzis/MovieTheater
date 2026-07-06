@@ -156,19 +156,31 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
     // Save seed (docs/arcade-saves-plan.md): if this is the OWNER's deterministic save id and the room
     // hasn't booted yet, restore the chosen slot into the mount so CloudRetro auto-loads it at GAME_START.
     // Only the owner seeds — the id encodes the creator's (user, game); a joiner's token userId won't match,
-    // so guests never re-seed the live room. Harvest is handled continuously by the background sweep.
+    // so guests never re-seed the live room. A "New game" carries ?fresh=1 → we CLEAR the mount instead so
+    // the game boots clean (unsigned is safe: it only ever clears the owner's own save). Harvest is handled
+    // continuously by the background sweep.
     if (saveStore != null
         && ArcadeSaveId.TryParse(requestedRoomId, out var svUser, out var svGame, out var svSlot, out _, out _)
         && svUser == payload.UserId && svGame == payload.GameId
         && !saveStore.MountHasSave(requestedRoomId))
     {
+        var fresh = context.Request.Query["fresh"].ToString();
+        bool newGame = fresh == "1" || string.Equals(fresh, "true", StringComparison.OrdinalIgnoreCase);
         try
         {
-            bool seeded = saveStore.SeedSession(svUser, svGame, requestedRoomId, svSlot);
-            app.Logger.LogInformation("Arcade save {Action} for user {User} game {Game} slot {Slot}",
-                seeded ? "seeded" : "none (fresh)", svUser, svGame, svSlot);
+            if (newGame)
+            {
+                saveStore.ClearSession(requestedRoomId);
+                app.Logger.LogInformation("Arcade save cleared (New game) for user {User} game {Game}", svUser, svGame);
+            }
+            else
+            {
+                bool seeded = saveStore.SeedSession(svUser, svGame, requestedRoomId, svSlot);
+                app.Logger.LogInformation("Arcade save {Action} for user {User} game {Game} slot {Slot}",
+                    seeded ? "seeded" : "none (fresh)", svUser, svGame, svSlot);
+            }
         }
-        catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade save seed failed for {Id}", requestedRoomId); }
+        catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade save seed/clear failed for {Id}", requestedRoomId); }
     }
 
     // JIT: materialize the ROM before forwarding so the worker can launch it (the scan-on-miss patch

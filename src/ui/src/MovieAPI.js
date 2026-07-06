@@ -671,12 +671,17 @@ function getArcadeRooms() {
 }
 
 // Create a room for a game → returns the creator's join descriptor (empty room_id, isCreator).
-function createArcadeRoom(gameId) {
+function createArcadeRoom(gameId, newGame = false) {
   return fetch("/API/Arcade/Room", {
     method: "post",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gameId }),
+    body: JSON.stringify({ gameId, newGame }),
   });
+}
+
+// The signed-in user's durable saves for a game (arcade-saves-plan) — drives the resume picker.
+function listArcadeSaves(gameId) {
+  return fetch(`/API/Arcade/Games/${gameId}/Saves`).then((r) => (r.ok ? r.json() : [])).catch(() => []);
 }
 
 // Report the CloudRetro room id the creator's browser got back from GAME_START (§8 step 3).
@@ -990,6 +995,7 @@ const MovieAPI = {
   getArcadeFilters,
   getArcadeRooms,
   createArcadeRoom,
+  listArcadeSaves,
   bindArcadeRoom,
   joinArcadeRoom,
   arcadeHeartbeat,

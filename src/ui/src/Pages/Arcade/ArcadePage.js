@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { Card, Button, Tag, Space, Spin, Empty, Typography, message, Select } from "antd";
+import { Card, Button, Tag, Space, Spin, Empty, Typography, message, Select, Modal } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import "./ArcadePage.css";
 
@@ -103,7 +103,25 @@ export default function ArcadePage() {
   function createRoom(versionId) {
     if (creating || !versionId) return;
     setCreating(versionId);
-    MovieAPI.createArcadeRoom(versionId)
+    // Durable saves (arcade-saves-plan): if this user has a save for the game, offer Continue vs New game.
+    MovieAPI.listArcadeSaves(versionId)
+      .then((saves) => {
+        const hasSave = Array.isArray(saves) && saves.length > 0;
+        if (!hasSave) return doCreateRoom(versionId, false);
+        Modal.confirm({
+          title: "Resume your saved game?",
+          content: "You have saved progress for this game. Continue where you left off, or start a new game.",
+          okText: "Continue",
+          cancelText: "New game",
+          onOk: () => doCreateRoom(versionId, false),
+          onCancel: () => doCreateRoom(versionId, true),
+        });
+      })
+      .catch(() => doCreateRoom(versionId, false));
+  }
+
+  function doCreateRoom(versionId, newGame) {
+    return MovieAPI.createArcadeRoom(versionId, newGame)
       .then(async (r) => {
         if (r.status === 503) { message.warning("The arcade is full — every machine is in use. Try again shortly."); return null; }
         if (!r.ok) { message.error("Couldn't start that game."); return null; }
