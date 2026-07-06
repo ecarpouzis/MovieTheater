@@ -59,14 +59,43 @@ if (saveOptions.Enabled)
         saveOptions.StoreDir, saveOptions.SavesMountDir);
 
     // Background harvest sweep — copies changed <saveId>.dat/.srm out of the mount continuously, so a
-    // save survives even an unclean disconnect (the WS forward ends before CloudRetro's room reap).
+    // save survives even an unclean disconnect (the WS forward ends before CloudRetro's room reap). Each
+    // harvested file is mirrored into the shared app DB via an internal site callback (the k8s pod can't
+    // read Ziggy's disk but needs the rows for the resume UI); the callback is gated by the arcade secret.
+    var siteClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+    var saveCallbackUrl = siteOrigin.TrimEnd('/') + "/API/Arcade/Internal/SaveHarvested";
     _ = Task.Run(async () =>
     {
         var stopping = app.Lifetime.ApplicationStopping;
         var interval = TimeSpan.FromMilliseconds(Math.Max(1000, saveOptions.HarvestDebounceMs * 3));
         while (!stopping.IsCancellationRequested)
         {
-            try { await saveStore.HarvestMountChangesAsync(stopping); }
+            try
+            {
+                var metas = await saveStore.HarvestMountChangesAsync(stopping);
+                foreach (var m in metas)
+                {
+                    try
+                    {
+                        using var reqMsg = new HttpRequestMessage(HttpMethod.Post, saveCallbackUrl)
+                        {
+                            Content = JsonContent.Create(new
+                            {
+                                userId = m.UserId, arcadeGameId = m.GameId, system = m.System, kind = m.Kind,
+                                slotId = m.SlotId, label = m.Label, coreName = m.CoreName, coreVersion = m.CoreVersion,
+                                storageRelPath = m.StorageRelPath, sizeBytes = m.SizeBytes, sha256 = m.Sha256,
+                                source = m.Source, isAutosave = m.IsAutosave,
+                            }),
+                        };
+                        reqMsg.Headers.Add("X-Arcade-Internal-Secret", secret);
+                        var resp = await siteClient.SendAsync(reqMsg, stopping);
+                        if (!resp.IsSuccessStatusCode)
+                            app.Logger.LogWarning("Save DB mirror callback returned {Status} for user {User} game {Game}",
+                                (int)resp.StatusCode, m.UserId, m.GameId);
+                    }
+                    catch (Exception ex) { app.Logger.LogWarning(ex, "Save DB mirror callback failed"); }
+                }
+            }
             catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade save harvest sweep error"); }
             try { await Task.Delay(interval, stopping); } catch { /* shutting down */ }
         }

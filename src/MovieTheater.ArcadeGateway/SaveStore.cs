@@ -122,10 +122,10 @@ public sealed class SaveStore
     /// independent of the signaling connection's lifetime (which ends before CloudRetro's room reap).
     /// The (user, game, system) come from the id itself (minted by the site), so no DB lookup is needed.
     /// </summary>
-    public async Task<int> HarvestMountChangesAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<SaveMeta>> HarvestMountChangesAsync(CancellationToken ct = default)
     {
-        if (!Directory.Exists(savesMount)) return 0;
-        int harvested = 0;
+        var harvested = new List<SaveMeta>();
+        if (!Directory.Exists(savesMount)) return harvested;
 
         // Group the mount's .dat/.srm by session id, keep only our ids.
         var sessions = new Dictionary<string, long>(StringComparer.Ordinal);
@@ -147,7 +147,7 @@ public sealed class SaveStore
             {
                 var written = await HarvestSessionAsync(userId, gameId, system, sessionId, isAutosave: true, ct);
                 lastSwept[sessionId] = mtime;
-                if (written.Count > 0) harvested += written.Count;
+                harvested.AddRange(written);
             }
             catch (Exception ex) { log.LogWarning(ex, "SaveStore harvest sweep failed for {Session}", sessionId); }
         }

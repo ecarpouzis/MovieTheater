@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using MovieTheater.Arcade;
 using MovieTheater.Core;
 using MovieTheater.Db;
+using MovieTheater.Services;
 using MovieTheater.Services.Arcade;
 
 namespace MovieTheater.Controllers
@@ -33,13 +34,15 @@ namespace MovieTheater.Controllers
         private readonly IArcadeHost host;
         private readonly ArcadeRoomService rooms;
         private readonly ILogger<ArcadeController> logger;
+        private readonly MovieTheaterConfiguration config;
 
-        public ArcadeController(MovieDb movieDb, IArcadeHost host, ArcadeRoomService rooms, ILogger<ArcadeController> logger)
+        public ArcadeController(MovieDb movieDb, IArcadeHost host, ArcadeRoomService rooms, ILogger<ArcadeController> logger, MovieTheaterConfiguration config)
         {
             this.movieDb = movieDb;
             this.host = host;
             this.rooms = rooms;
             this.logger = logger;
+            this.config = config;
         }
 
         private int? GetCurrentUserId()
@@ -284,6 +287,84 @@ namespace MovieTheater.Controllers
                 roomCode, cloudRetroRoomId: saveId, playerSlot: 0, isCreator: true);
 
             return Json(ToJson(descriptor, discCount));
+        }
+
+        // ── Durable saves (docs/arcade-saves-plan.md) ────────────────────────────────────────────────
+
+        /// <summary>Internal callback the gateway POSTs after harvesting a save file, so the shared app DB
+        /// mirrors the on-disk store (the k8s pod can't read Ziggy's disk; it needs these rows for the
+        /// resume UI). Gated by the shared arcade secret, NOT a user session — it's server-to-server.
+        /// Upserts on the (user, game, kind, slot) unique key so a re-harvest updates in place.</summary>
+        [AllowAnonymous]
+        [HttpPost("/API/Arcade/Internal/SaveHarvested")]
+        public async Task<IActionResult> SaveHarvested([FromBody] SaveHarvestedRequest req)
+        {
+            var secret = config.ArcadeTokenSecret;
+            if (string.IsNullOrEmpty(secret) ||
+                !string.Equals(Request.Headers["X-Arcade-Internal-Secret"].ToString(), secret, StringComparison.Ordinal))
+                return Unauthorized();
+            if (req == null || string.IsNullOrEmpty(req.Kind) || string.IsNullOrEmpty(req.StorageRelPath))
+                return BadRequest();
+
+            var nowUtc = DateTime.UtcNow;
+            var row = await movieDb.ArcadeSaves.FirstOrDefaultAsync(s =>
+                s.UserId == req.UserId && s.ArcadeGameId == req.ArcadeGameId && s.Kind == req.Kind && s.SlotId == req.SlotId);
+            if (row == null)
+            {
+                movieDb.ArcadeSaves.Add(new ArcadeSave
+                {
+                    UserId = req.UserId, ArcadeGameId = req.ArcadeGameId, System = req.System ?? "", Kind = req.Kind,
+                    SlotId = req.SlotId, Label = req.Label, CoreName = req.CoreName, CoreVersion = req.CoreVersion,
+                    StorageRelPath = req.StorageRelPath, SizeBytes = req.SizeBytes, Sha256 = req.Sha256,
+                    Source = string.IsNullOrEmpty(req.Source) ? "online" : req.Source, IsAutosave = req.IsAutosave,
+                    CreatedUtc = nowUtc, UpdatedUtc = nowUtc,
+                });
+            }
+            else
+            {
+                row.System = req.System ?? row.System;
+                row.StorageRelPath = req.StorageRelPath;
+                row.SizeBytes = req.SizeBytes;
+                row.Sha256 = req.Sha256;
+                row.CoreName = req.CoreName;
+                row.CoreVersion = req.CoreVersion;
+                row.IsAutosave = req.IsAutosave;
+                if (req.Label != null) row.Label = req.Label;
+                row.UpdatedUtc = nowUtc;
+            }
+            await movieDb.SaveChangesAsync();
+            return Ok();
+        }
+
+        /// <summary>The signed-in user's saves for a game — the source for the resume picker / "My Saves".</summary>
+        [HttpGet("/API/Arcade/Games/{gameId:int}/Saves")]
+        public async Task<IActionResult> ListSaves(int gameId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var rows = await movieDb.ArcadeSaves
+                .Where(s => s.UserId == userId.Value && s.ArcadeGameId == gameId)
+                .OrderBy(s => s.SlotId)
+                .Select(s => new { s.Id, s.Kind, s.SlotId, s.Label, s.SizeBytes, s.IsAutosave, s.CoreName, s.UpdatedUtc })
+                .ToListAsync();
+            return Json(rows);
+        }
+
+        public class SaveHarvestedRequest
+        {
+            public int UserId { get; set; }
+            public int ArcadeGameId { get; set; }
+            public string? System { get; set; }
+            public string Kind { get; set; } = default!;
+            public int SlotId { get; set; }
+            public string? Label { get; set; }
+            public string? CoreName { get; set; }
+            public string? CoreVersion { get; set; }
+            public string StorageRelPath { get; set; } = default!;
+            public long SizeBytes { get; set; }
+            public string? Sha256 { get; set; }
+            public string? Source { get; set; }
+            public bool IsAutosave { get; set; }
         }
 
         public class BindRequest
