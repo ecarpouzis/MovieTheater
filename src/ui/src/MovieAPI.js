@@ -671,11 +671,11 @@ function getArcadeRooms() {
 }
 
 // Create a room for a game → returns the creator's join descriptor (empty room_id, isCreator).
-function createArcadeRoom(gameId, newGame = false) {
+function createArcadeRoom(gameId, { newGame = false, seedSlot = 0 } = {}) {
   return fetch("/API/Arcade/Room", {
     method: "post",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gameId, newGame }),
+    body: JSON.stringify({ gameId, newGame, seedSlot }),
   });
 }
 

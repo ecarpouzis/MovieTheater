@@ -103,25 +103,51 @@ export default function ArcadePage() {
   function createRoom(versionId) {
     if (creating || !versionId) return;
     setCreating(versionId);
-    // Durable saves (arcade-saves-plan): if this user has a save for the game, offer Continue vs New game.
+    // Durable saves (arcade-saves-plan): if this user has a save/snapshots for the game, offer Continue,
+    // any named snapshot, or New game.
     MovieAPI.listArcadeSaves(versionId)
       .then((saves) => {
-        const hasSave = Array.isArray(saves) && saves.length > 0;
-        if (!hasSave) return doCreateRoom(versionId, false);
-        Modal.confirm({
+        const rows = Array.isArray(saves) ? saves : [];
+        if (rows.length === 0) return doCreateRoom(versionId, {});
+        const snaps = rows.filter((s) => s.slotId >= 1 && s.kind === "state")
+          .sort((a, b) => a.slotId - b.slotId);
+        const modal = Modal.confirm({
           title: "Resume your saved game?",
-          content: "You have saved progress for this game. Continue where you left off, or start a new game.",
-          okText: "Continue",
+          okText: "Continue (latest)",
           cancelText: "New game",
-          onOk: () => doCreateRoom(versionId, false),
-          onCancel: () => doCreateRoom(versionId, true),
+          onOk: () => doCreateRoom(versionId, {}),
+          onCancel: () => doCreateRoom(versionId, { newGame: true }),
+          content: (
+            <div>
+              <div style={{ marginBottom: snaps.length ? 8 : 0 }}>
+                Continue where you left off, or start a new game.
+              </div>
+              {snaps.length > 0 && (
+                <div>
+                  <Text type="secondary" style={{ fontSize: 12 }}>Or resume a snapshot:</Text>
+                  <div style={{ marginTop: 4, maxHeight: 180, overflowY: "auto" }}>
+                    {snaps.map((s) => (
+                      <div key={s.slotId} style={{ padding: "2px 0" }}>
+                        <a onClick={() => { modal.destroy(); doCreateRoom(versionId, { seedSlot: s.slotId }); }}>
+                          ▶ {s.label || `Snapshot ${s.slotId}`}
+                        </a>
+                        <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>
+                          {s.updatedUtc ? new Date(s.updatedUtc).toLocaleDateString() : ""}
+                        </Text>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ),
         });
       })
-      .catch(() => doCreateRoom(versionId, false));
+      .catch(() => doCreateRoom(versionId, {}));
   }
 
-  function doCreateRoom(versionId, newGame) {
-    return MovieAPI.createArcadeRoom(versionId, newGame)
+  function doCreateRoom(versionId, opts) {
+    return MovieAPI.createArcadeRoom(versionId, opts)
       .then(async (r) => {
         if (r.status === 503) { message.warning("The arcade is full — every machine is in use. Try again shortly."); return null; }
         if (!r.ok) { message.error("Couldn't start that game."); return null; }

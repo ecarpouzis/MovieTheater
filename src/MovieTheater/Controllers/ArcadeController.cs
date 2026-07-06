@@ -236,6 +236,9 @@ namespace MovieTheater.Controllers
             /// <summary>True = "New game": boot fresh instead of resuming the user's saved slot 0 (the
             /// gateway clears the mount). Default false = resume/Continue.</summary>
             public bool NewGame { get; set; }
+
+            /// <summary>Resume from a specific snapshot slot (≥1) instead of the Continue slot 0. 0 = Continue.</summary>
+            public int SeedSlot { get; set; }
         }
 
         [HttpPost("/API/Arcade/Room")]
@@ -294,6 +297,9 @@ namespace MovieTheater.Controllers
             // boots clean instead of resuming the saved slot. Safe unsigned — it only clears the owner's own save.
             if (request.NewGame)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fresh=1" };
+            // Resume-from-snapshot: seed a chosen snapshot slot's bytes into the room (arcade-saves-plan S3).
+            else if (request.SeedSlot > 0)
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&seedslot=" + request.SeedSlot };
 
             return Json(ToJson(descriptor, discCount));
         }

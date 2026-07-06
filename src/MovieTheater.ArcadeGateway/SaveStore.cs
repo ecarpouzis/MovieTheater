@@ -186,6 +186,37 @@ public sealed class SaveStore
         return seeded;
     }
 
+    // ── Snapshots (S3): named save-state slots the user creates from the live game ────────────────────
+
+    /// <summary>Copy the session's CURRENT live state (<c>&lt;sessionId&gt;.dat</c> in the mount) into a
+    /// NEW numbered snapshot slot (≥1) with the user's label. The caller should have the client flush a
+    /// SAVE (t=106) first so the .dat is current. Returns the new slot's metadata (to mirror into the DB),
+    /// or null if there's no live state yet.</summary>
+    public async Task<SaveMeta?> SnapshotCurrentAsync(
+        int userId, int gameId, string system, string sessionId, string? label, CancellationToken ct = default)
+    {
+        var dat = MountFile(sessionId, ".dat");
+        if (!File.Exists(dat)) return null;
+        int slot = NextSnapshotSlot(userId, gameId);
+        return await CopyIntoStoreAsync(userId, gameId, system, KindState, slot, label,
+            coreName: null, coreVersion: null, src: dat, destName: SlotFile(slot), isAutosave: false, ct);
+    }
+
+    /// <summary>The next free snapshot slot for a (user, game): max existing state slot + 1, never below 1
+    /// (slot 0 is the auto "Continue" slot).</summary>
+    private int NextSnapshotSlot(int userId, int gameId)
+    {
+        var dir = GameDir(userId, gameId);
+        int max = ContinueSlot;
+        if (Directory.Exists(dir))
+            foreach (var f in Directory.EnumerateFiles(dir, "slot-*.dat"))
+            {
+                var name = Path.GetFileNameWithoutExtension(f); // "slot-NNN"
+                if (name.Length > 5 && int.TryParse(name.Substring(5), out var n)) max = Math.Max(max, n);
+            }
+        return max + 1;
+    }
+
     /// <summary>Remove any stale mount files for a session so a "New game" boots clean (HasSave=false).</summary>
     public void ClearSession(string sessionId)
     {

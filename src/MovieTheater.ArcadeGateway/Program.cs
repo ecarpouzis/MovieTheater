@@ -51,6 +51,11 @@ if (romCacheOptions.Enabled)
 var saveOptions = new MovieTheater.ArcadeGateway.SaveStoreOptions();
 config.GetSection("SaveStore").Bind(saveOptions);
 MovieTheater.ArcadeGateway.SaveStore? saveStore = null;
+// Mirror one save's metadata into the shared app DB (the k8s pod can't read Ziggy's disk but needs the
+// rows for the resume/My-Saves UI); gated by the arcade secret. Shared by the harvest sweep AND the
+// snapshot endpoint. Success is a 204 SPECIFICALLY — an unmatched /API route mid-deploy returns the
+// SPA's 200, which must NOT count as a confirmed write (the sweep would then drop the mirror).
+Func<MovieTheater.ArcadeGateway.SaveMeta, Task<bool>> mirrorSave = _ => Task.FromResult(false);
 if (saveOptions.Enabled)
 {
     saveStore = new MovieTheater.ArcadeGateway.SaveStore(
@@ -58,48 +63,44 @@ if (saveOptions.Enabled)
     app.Logger.LogInformation("Arcade save store enabled: store={Store} mount={Mount}",
         saveOptions.StoreDir, saveOptions.SavesMountDir);
 
-    // Background harvest sweep — copies changed <saveId>.dat/.srm out of the mount continuously, so a
-    // save survives even an unclean disconnect (the WS forward ends before CloudRetro's room reap). Each
-    // harvested file is mirrored into the shared app DB via an internal site callback (the k8s pod can't
-    // read Ziggy's disk but needs the rows for the resume UI); the callback is gated by the arcade secret.
     var siteClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
     var saveCallbackUrl = siteOrigin.TrimEnd('/') + "/API/Arcade/Internal/SaveHarvested";
+    var appStopping = app.Lifetime.ApplicationStopping;
+
+    mirrorSave = async (m) =>
+    {
+        try
+        {
+            using var reqMsg = new HttpRequestMessage(HttpMethod.Post, saveCallbackUrl)
+            {
+                Content = JsonContent.Create(new
+                {
+                    userId = m.UserId, arcadeGameId = m.GameId, system = m.System, kind = m.Kind,
+                    slotId = m.SlotId, label = m.Label, coreName = m.CoreName, coreVersion = m.CoreVersion,
+                    storageRelPath = m.StorageRelPath, sizeBytes = m.SizeBytes, sha256 = m.Sha256,
+                    source = m.Source, isAutosave = m.IsAutosave,
+                }),
+            };
+            reqMsg.Headers.Add("X-Arcade-Internal-Secret", secret);
+            var resp = await siteClient.SendAsync(reqMsg, appStopping);
+            if (resp.StatusCode == System.Net.HttpStatusCode.NoContent) return true;
+            app.Logger.LogWarning("Save DB mirror got {Status} (not 204) for user {User} game {Game} — will retry",
+                (int)resp.StatusCode, m.UserId, m.GameId);
+            return false;
+        }
+        catch (Exception ex) { app.Logger.LogWarning(ex, "Save DB mirror callback failed — will retry"); return false; }
+    };
+
+    // Background harvest sweep — copies changed <saveId>.dat/.srm out of the mount continuously, so a
+    // save survives even an unclean disconnect (the WS forward ends before CloudRetro's room reap).
     _ = Task.Run(async () =>
     {
-        var stopping = app.Lifetime.ApplicationStopping;
         var interval = TimeSpan.FromMilliseconds(Math.Max(1000, saveOptions.HarvestDebounceMs * 3));
-        // Mirror one harvested save into the app DB. Success is a 204 specifically — an unmatched /API
-        // route mid-deploy returns the SPA's 200, which must NOT count as a confirmed write (the sweep
-        // would then drop the mirror). Returning false leaves the session unswept so it retries.
-        async Task<bool> Mirror(MovieTheater.ArcadeGateway.SaveMeta m)
+        while (!appStopping.IsCancellationRequested)
         {
-            try
-            {
-                using var reqMsg = new HttpRequestMessage(HttpMethod.Post, saveCallbackUrl)
-                {
-                    Content = JsonContent.Create(new
-                    {
-                        userId = m.UserId, arcadeGameId = m.GameId, system = m.System, kind = m.Kind,
-                        slotId = m.SlotId, label = m.Label, coreName = m.CoreName, coreVersion = m.CoreVersion,
-                        storageRelPath = m.StorageRelPath, sizeBytes = m.SizeBytes, sha256 = m.Sha256,
-                        source = m.Source, isAutosave = m.IsAutosave,
-                    }),
-                };
-                reqMsg.Headers.Add("X-Arcade-Internal-Secret", secret);
-                var resp = await siteClient.SendAsync(reqMsg, stopping);
-                if (resp.StatusCode == System.Net.HttpStatusCode.NoContent) return true;
-                app.Logger.LogWarning("Save DB mirror got {Status} (not 204) for user {User} game {Game} — will retry",
-                    (int)resp.StatusCode, m.UserId, m.GameId);
-                return false;
-            }
-            catch (Exception ex) { app.Logger.LogWarning(ex, "Save DB mirror callback failed — will retry"); return false; }
-        }
-
-        while (!stopping.IsCancellationRequested)
-        {
-            try { await saveStore.HarvestMountChangesAsync(Mirror, stopping); }
+            try { await saveStore.HarvestMountChangesAsync(mirrorSave, appStopping); }
             catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade save harvest sweep error"); }
-            try { await Task.Delay(interval, stopping); } catch { /* shutting down */ }
+            try { await Task.Delay(interval, appStopping); } catch { /* shutting down */ }
         }
     });
 }
@@ -168,6 +169,9 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
     {
         var fresh = context.Request.Query["fresh"].ToString();
         bool newGame = fresh == "1" || string.Equals(fresh, "true", StringComparison.OrdinalIgnoreCase);
+        // Resume-from-snapshot: ?seedslot=N seeds a chosen snapshot slot's bytes into the (slot-0) room,
+        // so the player continues FROM snapshot N. Defaults to the id's slot (0 = the auto Continue slot).
+        int seedSlot = int.TryParse(context.Request.Query["seedslot"].ToString(), out var ss) ? ss : svSlot;
         try
         {
             if (newGame)
@@ -177,9 +181,9 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
             }
             else
             {
-                bool seeded = saveStore.SeedSession(svUser, svGame, requestedRoomId, svSlot);
+                bool seeded = saveStore.SeedSession(svUser, svGame, requestedRoomId, seedSlot);
                 app.Logger.LogInformation("Arcade save {Action} for user {User} game {Game} slot {Slot}",
-                    seeded ? "seeded" : "none (fresh)", svUser, svGame, svSlot);
+                    seeded ? "seeded" : "none (fresh)", svUser, svGame, seedSlot);
             }
         }
         catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade save seed/clear failed for {Id}", requestedRoomId); }
@@ -208,6 +212,34 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
     }
 
     await forwarder.SendAsync(context, coordinatorBase, httpClient, requestOptions, transformer);
+});
+
+// In-room "Save snapshot" (arcade-saves-plan S3): copy the live save into a NEW numbered slot with a
+// label. The client flushes a SAVE (t=106) first, then POSTs here with its capability token. Only the
+// OWNER may snapshot — a guest's token userId won't match the creator's id (the save belongs to the
+// creator's world). Best-effort DB mirror so the slot shows in the resume/My-Saves lists.
+app.MapPost("/w-snap/{token}", async (HttpContext ctx, string token) =>
+{
+    if (saveStore == null) return Results.NotFound();
+    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null) return Results.Forbid();
+    var id = p.CloudRetroRoomId ?? "";
+    if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out var sys, out _) || u != p.UserId || g != p.GameId)
+        return Results.BadRequest();
+
+    string? label = null;
+    try
+    {
+        var body = await ctx.Request.ReadFromJsonAsync<Dictionary<string, string?>>(ctx.RequestAborted);
+        body?.TryGetValue("label", out label);
+    }
+    catch { /* no/invalid body → unnamed snapshot */ }
+
+    var meta = await saveStore.SnapshotCurrentAsync(u, g, sys, id,
+        string.IsNullOrWhiteSpace(label) ? null : label!.Trim(), ctx.RequestAborted);
+    if (meta == null) return Results.Json(new { ok = false, reason = "no live save yet — play a moment, then snapshot" });
+    await mirrorSave(meta);
+    app.Logger.LogInformation("Arcade snapshot slot {Slot} for user {User} game {Game}", meta.SlotId, u, g);
+    return Results.Json(new { ok = true, slot = meta.SlotId, label = meta.Label });
 });
 
 app.Run();

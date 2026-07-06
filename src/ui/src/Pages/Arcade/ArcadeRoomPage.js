@@ -30,6 +30,8 @@ export default function ArcadeRoomPage() {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
   const sessionRef = useRef(null);
+  const descriptorRef = useRef(location.state?.descriptor ?? null);
+  const [snapping, setSnapping] = useState(false);
 
   const [status, setStatus] = useState("connecting");
   const [yourSlot, setYourSlot] = useState(location.state?.descriptor?.playerSlot ?? null);
@@ -78,6 +80,7 @@ export default function ArcadeRoomPage() {
       setSystem(descriptor.system ?? null);
       setDiscCount(descriptor.discCount || 0);
 
+      descriptorRef.current = descriptor;
       sessionRef.current = createCloudRetroSession(descriptor, {
         videoEl: videoRef.current,
         onStatus: (s) => {
@@ -159,6 +162,30 @@ export default function ArcadeRoomPage() {
       () => message.success("Invite link copied"),
       () => message.info(url)
     );
+  }
+
+  // Save a NAMED snapshot (arcade-saves-plan S3): flush the live state, then ask the gateway to copy it
+  // into a new numbered slot you can resume later. Owner-only (the gateway rejects a guest's token).
+  async function saveSnapshot() {
+    const d = descriptorRef.current;
+    if (!d || !d.wsUrl || snapping) return;
+    const label = window.prompt("Name this snapshot (e.g. \"Level 3 boss\"):", "");
+    if (label === null) return; // cancelled
+    const token = (d.wsUrl.match(/\/w\/([^/?]+)/) || [])[1];
+    if (!token) { message.error("Can't snapshot this session."); return; }
+    const base = d.wsUrl.replace(/^ws/, "http").replace(/\/w\/.*$/, "");
+    setSnapping(true);
+    try {
+      sessionRef.current?.save?.();                     // flush current state to /saves/<id>.dat
+      await new Promise((r) => setTimeout(r, 1300));     // let the save write before the gateway copies it
+      const res = await fetch(`${base}/w-snap/${token}`, {
+        method: "post", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label: label.trim() }),
+      });
+      const j = await res.json().catch(() => null);
+      if (j && j.ok) message.success(`Snapshot saved${j.label ? `: ${j.label}` : ` (slot ${j.slot})`}`);
+      else message.warning((j && j.reason) || "Couldn't save the snapshot — play a moment, then try again.");
+    } catch { message.error("Couldn't save the snapshot."); }
+    finally { setSnapping(false); }
   }
 
   if (fatal) {
@@ -255,6 +282,11 @@ export default function ArcadeRoomPage() {
           <Tooltip title="Load last save state">
             <Button onClick={() => sessionRef.current?.load?.()}>Load</Button>
           </Tooltip>
+          {yourSlot === 0 && (
+            <Tooltip title="Save a named snapshot you can resume later">
+              <Button loading={snapping} onClick={saveSnapshot}>📸 Snapshot</Button>
+            </Tooltip>
+          )}
           <Tooltip title="Fullscreen">
             <Button onClick={goFullscreen}>⛶ Fullscreen</Button>
           </Tooltip>
