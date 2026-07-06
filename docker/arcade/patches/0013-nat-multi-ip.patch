@@ -1,0 +1,30 @@
+diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
+index 87490dc..946fe17 100644
+--- a/pkg/network/webrtc/factory.go
++++ b/pkg/network/webrtc/factory.go
+@@ -3,6 +3,7 @@ package webrtc
+ import (
+ 	"fmt"
+ 	"net"
++	"strings"
+ 
+ 	"github.com/giongto35/cloud-game/v3/pkg/config"
+ 	"github.com/giongto35/cloud-game/v3/pkg/logger"
+@@ -74,8 +75,15 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 		log.Info().Msgf("The single port mode is active for %s", udp.LocalAddr())
+ 	}
+ 	if conf.HasIceIpMap() {
+-		s.SetNAT1To1IPs([]string{conf.IceIpMap}, webrtc.ICECandidateTypeHost)
+-		log.Info().Msgf("The NAT mapping is active for %v", conf.IceIpMap)
++		// IceIpMap may be a comma-separated list (e.g. LAN,public): advertise a host candidate for EACH,
++		// so a LAN browser takes the direct 192.168 path (no router hairpin — that hairpin caused bursty
++		// late audio) while a remote browser still uses the public IP. Both ride the same forwarded port.
++		ips := strings.Split(conf.IceIpMap, ",")
++		for i := range ips {
++			ips[i] = strings.TrimSpace(ips[i])
++		}
++		s.SetNAT1To1IPs(ips, webrtc.ICECandidateTypeHost)
++		log.Info().Msgf("The NAT mapping is active for %v", ips)
+ 	}
+ 
+ 	s.SetICEMulticastDNSMode(ice.MulticastDNSModeDisabled)
