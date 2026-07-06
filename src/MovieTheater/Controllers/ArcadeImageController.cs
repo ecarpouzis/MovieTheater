@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -52,29 +53,44 @@ namespace MovieTheater.Controllers
             var game = await movieDb.ArcadeGames.FirstOrDefaultAsync(g => g.Id == id);
             if (game == null) return NotFound();
 
-            // 1. Already cached → serve it.
-            if (!string.IsNullOrWhiteSpace(game.BoxArtPath))
+            // A card = one game across its several ROM versions (same System+Title). Box art is shared by the
+            // whole card: any sibling's cached file serves, and a fresh fetch is stored ONCE per card (keyed
+            // by the card's lowest version id) so we don't keep a near-duplicate PNG per region/revision.
+            var siblings = await movieDb.ArcadeGames
+                .Where(g => g.System == game.System && g.Title == game.Title)
+                .Select(g => new { g.Id, g.BoxArtPath, g.Region, g.CloudRetroGameKey })
+                .ToListAsync();
+            var cardId = siblings.Count > 0 ? siblings.Min(s => s.Id) : id;
+
+            // 1. Any existing art for this card (the requested row, then any sibling, then the canonical
+            //    card file) → serve it. Reuses art already downloaded under the old per-row scheme.
+            foreach (var rel in siblings.Where(s => !string.IsNullOrWhiteSpace(s.BoxArtPath)).Select(s => s.BoxArtPath))
             {
-                var cached = ResolveUnderRoot(root, game.BoxArtPath);
+                var cached = ResolveUnderRoot(root, rel!);
                 if (cached != null && System.IO.File.Exists(cached)) return ServeFile(cached);
             }
+            var cardRel = $"arcade/{game.System}/{cardId}.png";
+            var cardPath = ResolveUnderRoot(root, cardRel);
+            if (cardPath != null && System.IO.File.Exists(cardPath)) return ServeFile(cardPath);
 
             // 2. Known to have no art, or a system we don't source (arcade) → placeholder (fast 404).
-            if (NoArt.ContainsKey(id) || !ArcadeBoxArt.HasRepo(game.System)) return NotFound();
+            if (NoArt.ContainsKey(cardId) || !ArcadeBoxArt.HasRepo(game.System)) return NotFound();
 
-            // 3. First view → fetch + downscale + cache, then serve.
-            var thumb = await ArcadeBoxArt.TryFetchThumbnailAsync(Http, game.System, game.CloudRetroGameKey, ThumbPx);
-            if (thumb == null) { NoArt.TryAdd(id, 0); return NotFound(); }
+            // 3. First view → match by title across the card's versions (index if cached, else guesses),
+            //    downscale, store once under the card file, then serve.
+            var index = await ArcadeBoxArtIndex.EnsureBuiltAsync(Http, root, game.System);
+            var thumb = await ArcadeBoxArt.TryFetchThumbnailForCardAsync(
+                Http, game.System, game.Title,
+                siblings.Select(s => s.Region), siblings.Select(s => s.CloudRetroGameKey), ThumbPx, index);
+            if (thumb == null) { NoArt.TryAdd(cardId, 0); return NotFound(); }
 
-            var rel = $"arcade/{game.System}/{id}.png";
-            var dest = ResolveUnderRoot(root, rel);
-            if (dest != null)
+            if (cardPath != null)
             {
                 try
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-                    await System.IO.File.WriteAllBytesAsync(dest, thumb);
-                    game.BoxArtPath = rel;
+                    Directory.CreateDirectory(Path.GetDirectoryName(cardPath)!);
+                    await System.IO.File.WriteAllBytesAsync(cardPath, thumb);
+                    game.BoxArtPath = cardRel;
                     await movieDb.SaveChangesAsync();
                 }
                 catch { /* couldn't cache (mount read-only?) — still serve the bytes we fetched */ }

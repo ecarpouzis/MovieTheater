@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { Card, Button, Tag, Space, Spin, Empty, Typography, message, Select } from "antd";
 import { MovieAPI } from "../../MovieAPI";
+import "./ArcadePage.css";
 
 const { Title, Text } = Typography;
 const PAGE_SIZE = 60;
@@ -214,24 +215,24 @@ function GameCard({ game, onStart, creating }) {
   );
 }
 
-// Box art via /ArcadeImage/{artId}; until it's populated, a labeled placeholder (no CRT/gradient effects).
-// Box art is portrait and its aspect varies by system, so `contain` (never `cover`) shows the WHOLE
-// box — cover was cropping the title off the top. The dark letterbox matches the placeholder.
+// Box art via /ArcadeImage/{artId}; until it's populated, a labeled placeholder. The art keeps its
+// own aspect (`contain`, never `cover` — cover cropped the title off) and a blurred copy of the same
+// image fills the frame behind it, so varied box aspect ratios don't sit in black bars. See ArcadePage.css.
 function GameCover({ game }) {
   const [broken, setBroken] = useState(!(game.hasBoxArt || ART_SYSTEMS.has(game.system)));
-  const height = 190;
-  const box = { height, display: "flex", alignItems: "center", justifyContent: "center", background: "#1f1730" };
   if (broken) {
     return (
-      <div style={{ ...box, color: "#9a86bd", padding: 8, textAlign: "center" }}>
-        <span style={{ fontSize: 13 }}>{game.title}</span>
+      <div className="arcade-cover">
+        <div className="arcade-cover__placeholder">{game.title}</div>
       </div>
     );
   }
+  const src = `/ArcadeImage/${game.artId}`;
   return (
-    <div style={box}>
-      <img src={`/ArcadeImage/${game.artId}`} alt={game.title} loading="lazy" decoding="async"
-        style={{ maxHeight: height, maxWidth: "100%", objectFit: "contain" }} onError={() => setBroken(true)} />
+    <div className="arcade-cover">
+      <img className="arcade-cover__bg" src={src} alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img className="arcade-cover__img" src={src} alt={game.title} loading="lazy" decoding="async"
+        onError={() => setBroken(true)} />
     </div>
   );
 }

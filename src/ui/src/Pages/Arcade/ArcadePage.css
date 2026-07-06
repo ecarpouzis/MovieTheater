@@ -1,0 +1,60 @@
+/* Arcade lobby card tweaks. Plain (non-antd) CSS — a co-located import is fine; only antd
+   component style chunks need the index.js registration dance. */
+
+/* Titles were single-line-ellipsis (antd default) so long ROM names were unreadable. Let them
+   wrap to two lines, and reserve the height so the Start button still lines up across a row. */
+.arcade-page .ant-card-meta-title {
+  white-space: normal;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 14px;
+  line-height: 1.3;
+  min-height: 2.6em;
+  margin-bottom: 4px !important;
+}
+
+/* Box-art cover: the image keeps its OWN aspect (object-fit: contain) so nothing is cropped,
+   and a blurred, dimmed copy of the same art fills the frame behind it — so a portrait N64 box
+   or a wide Genesis box no longer sits in stark black bars. Uniform card height, no letterbox. */
+.arcade-cover {
+  position: relative;
+  width: 100%;
+  height: 210px;
+  overflow: hidden;
+  background: #1f1730;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+.arcade-cover__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(18px) brightness(0.55) saturate(1.1);
+  transform: scale(1.15); /* hide the blur's feathered edges */
+}
+.arcade-cover__img {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  max-width: 92%;
+  max-height: 92%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.5));
+}
+.arcade-cover__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  text-align: center;
+  color: #9a86bd;
+  font-size: 13px;
+}
