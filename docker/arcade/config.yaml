@@ -151,6 +151,13 @@ emulator:
           roms: ["iso", "cso", "pbp", "chd"]
           isGlAllowed: true
           coreAspectRatio: true
+          # SAVE-DIR CORE. ppsspp saves to a virtual Memory Stick (PSP/SAVEDATA/…) — a FILE TREE in the
+          # core's save dir, NOT RETRO_MEMORY_SAVE_RAM — so it never makes a .srm the flat harvest can see.
+          # uniqueSaveDir scopes that tree to coresaves/<sessionId>/ on the shared saves mount, and the
+          # gateway tars it into the user's vault + seeds it back on resume (SaveStore.HarvestCoreSaveDir).
+          # Requires the compose bind mount of <saves>/coresaves onto .../libretro/legacy_save. Same story
+          # for dc/naomi/atomiswave (flycast VMU) below.
+          uniqueSaveDir: true
           options:
             # 2x native (480x272 → 960x544) internal render; downsampled encode reads crisp.
             ppsspp_internal_resolution: "960x544"
@@ -162,6 +169,7 @@ emulator:
           roms: ["chd", "gdi", "cdi", "cue"]
           isGlAllowed: true
           coreAspectRatio: true
+          uniqueSaveDir: true   # flycast VMU is a file tree → coresaves/<sessionId>/ → gateway harvest (see psp)
         # Naomi + Atomiswave arcade ride the same flycast core (need naomi.zip / awbios.zip in the
         # BIOS mount). Cores wired now (cheap); stage + verify AFTER Dreamcast proves flycast on D3D12.
         naomi:
@@ -170,12 +178,14 @@ emulator:
           roms: ["zip", "chd", "lst", "dat", "bin"]
           isGlAllowed: true
           coreAspectRatio: true
+          uniqueSaveDir: true   # flycast NVRAM/VMU → coresaves/<sessionId>/ → gateway harvest (see psp)
         atomiswave:
           lib: flycast_libretro
           folder: atomiswave
           roms: ["zip", "chd"]
           isGlAllowed: true
           coreAspectRatio: true
+          uniqueSaveDir: true   # flycast NVRAM/VMU → coresaves/<sessionId>/ → gateway harvest (see psp)
 
         # ─── Sega family on the genesis_plus_gx core we already load (the gb/gbc pattern: one lib,
         # distinct folders). Master System / Game Gear / SG-1000 are BIOS-free; Sega CD needs a

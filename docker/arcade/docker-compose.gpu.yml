@@ -64,6 +64,11 @@ x-gpu-worker: &gpu-worker
     # libretro "system" dir (BIOS files). PS1 needs scph1001/scph5501; path per nanoarch.go:
     # SYSTEM_DIRECTORY = <LocalPath>/system, LocalPath = ./libretro under the workdir.
     - ${BIOS_DIR:?set BIOS_DIR}:/usr/local/share/cloud-game/libretro/system:ro
+    # Core save-DIRECTORY trees (PSP memory stick, DC/Naomi VMU, DOS) that don't ride RETRO_MEMORY_SAVE_RAM.
+    # nanoarch hardcodes the save base to <LocalPath>/legacy_save; bind a host dir there so those files land
+    # on D: (host-visible) instead of the container overlay (ephemeral). With uniqueSaveDir (config.yaml) each
+    # room writes coresaves/<sessionId>/…, which the gateway save vault tars + harvests + re-seeds per-user.
+    - ${SAVES_DIR:?set SAVES_DIR}/coresaves:/usr/local/share/cloud-game/libretro/legacy_save
     - ./config.yaml:/usr/local/share/cloud-game/config.yaml:ro
     - cores:/usr/local/share/cloud-game/assets/cores
   # No Xvfb needed — WSLg provides the display. Flags per pkg/config/worker.go (--w-conf = a DIRECTORY).

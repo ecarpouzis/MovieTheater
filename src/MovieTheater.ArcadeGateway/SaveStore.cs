@@ -1,4 +1,6 @@
+using System.Formats.Tar;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MovieTheater.Core;
@@ -71,6 +73,13 @@ public sealed class SaveStore
 {
     public const string KindSram = "sram";
     public const string KindState = "state";
+    // A "coresave" is a whole SAVE-DIRECTORY tree the core writes itself (PSP memory stick, Dreamcast/
+    // Naomi VMU, DOS) instead of exposing it via RETRO_MEMORY_SAVE_RAM — so it never becomes a .srm and
+    // the flat harvest can't see it. With uniqueSaveDir the worker scopes that tree to
+    // <savesMount>/coresaves/<sessionId>/; we tar the subtree into one blob per (user, game) and extract
+    // it back on seed. Persistence rides the deterministic session id, no DB row required.
+    public const string KindCoreSave = "coresave";
+    public const string CoreSaveBlob = "coresave.tar";
     public const int ContinueSlot = 0;
 
     private readonly SaveStoreOptions opt;
@@ -177,10 +186,39 @@ public sealed class SaveStore
             }
             catch (Exception ex) { log.LogWarning(ex, "SaveStore harvest sweep failed for {Session}", sessionId); }
         }
+
+        // Also harvest core save-DIRECTORY trees (PSP/DC/Naomi/DOS) under coresaves/<sessionId>/. These are
+        // NOT mirrored to the app DB (there's no slot to list); resume rides the deterministic id off disk.
+        if (Directory.Exists(CoreSavesRoot))
+        {
+            foreach (var sdir in Directory.EnumerateDirectories(CoreSavesRoot))
+            {
+                var sessionId = Path.GetFileName(sdir);
+                if (!ArcadeSaveId.Is(sessionId)) continue;
+                long mtime = NewestMtime(sdir);
+                var key = "core:" + sessionId;
+                if (lastSwept.TryGetValue(key, out var seen) && seen >= mtime) continue;
+                if (!ArcadeSaveId.TryParse(sessionId, out var userId, out var gameId, out _, out var system, out _)) continue;
+                try
+                {
+                    var m = await HarvestCoreSaveDirAsync(userId, gameId, system, sessionId, ct);
+                    lastSwept[key] = mtime; // disk write is the source of truth for resume; mark done on success
+                    if (m != null) harvested++;
+                }
+                catch (Exception ex) { log.LogWarning(ex, "SaveStore core-save harvest failed for {Session}", sessionId); }
+            }
+        }
         return harvested;
     }
 
     private static long FileMtime(string f) { try { return new FileInfo(f).LastWriteTimeUtc.Ticks; } catch { return 0; } }
+
+    private static long NewestMtime(string dir)
+    {
+        long m = 0;
+        foreach (var f in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories)) m = Math.Max(m, FileMtime(f));
+        return m;
+    }
 
     // ── Seed / clear (used by the resume flow, S2) ────────────────────────────────────────────────
 
@@ -227,6 +265,110 @@ public sealed class SaveStore
         if (!File.Exists(blob)) return false;
         CopyGuarded(blob, MountFile(sessionId, ".dat"));
         return true;
+    }
+
+    // ── Core save-directory trees (PSP memstick / DC-Naomi VMU / DOS) ─────────────────────────────────
+
+    /// <summary>The shared mount subdir the workers point uniqueSaveDir at: coresaves/&lt;sessionId&gt;/.</summary>
+    private string CoreSavesRoot => Path.GetFullPath(Path.Combine(savesMount, "coresaves"));
+    private string CoreSaveSessionDir(string sessionId) =>
+        Path.GetFullPath(Path.Combine(CoreSavesRoot, sessionId));
+
+    /// <summary>True if a session's core-save dir exists and holds at least one file (so the room booted a
+    /// save-dir core and something was written) — used to skip empty/never-saved sessions in the sweep.</summary>
+    private static bool DirHasFiles(string dir) =>
+        Directory.Exists(dir) && Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories).Any();
+
+    /// <summary>
+    /// Harvest a session's core save-DIRECTORY tree (coresaves/&lt;sessionId&gt;/**) into the user's store as
+    /// a single tar blob (coresave.tar) + sidecar. Idempotent: a content digest over the tree (sorted
+    /// relative paths + file bytes, mtimes excluded) is stored in the sidecar's sha, so an unchanged tree
+    /// re-harvests to nothing. Returns the metadata to mirror, or null when there's nothing new.
+    /// </summary>
+    public async Task<SaveMeta?> HarvestCoreSaveDirAsync(
+        int userId, int gameId, string system, string sessionId, CancellationToken ct = default)
+    {
+        var src = CoreSaveSessionDir(sessionId);
+        if (!DirHasFiles(src)) return null;
+
+        var (digest, totalBytes) = TreeContentDigest(src);
+        var dir = GameDir(userId, gameId);
+        var dest = Path.GetFullPath(Path.Combine(dir, CoreSaveBlob));
+        if (!IsUnder(storeRoot, dest)) throw new InvalidOperationException($"refusing to write outside store: {dest}");
+
+        var existing = ReadSidecar(SidecarPath(dest));
+        if (existing != null && existing.Sha256 == digest && File.Exists(dest)) return null; // unchanged tree
+
+        Directory.CreateDirectory(dir);
+        // Tar the subtree to a temp file first, then atomically move into place (a sweep never reads a
+        // half-written blob; a crash leaves the previous good blob intact).
+        var tmp = dest + ".tmp";
+        try
+        {
+            if (File.Exists(tmp)) File.Delete(tmp);
+            await using (var fs = File.Create(tmp))
+                await TarFile.CreateFromDirectoryAsync(src, fs, includeBaseDirectory: false, ct);
+            File.Move(tmp, dest, overwrite: true);
+        }
+        finally { if (File.Exists(tmp)) { try { File.Delete(tmp); } catch { /* */ } } }
+
+        var created = existing?.CreatedUtc ?? now();
+        var meta = new SaveMeta(userId, gameId, system, KindCoreSave, ContinueSlot, existing?.Label,
+            null, null, RelPath(dest), totalBytes, digest, "online", true, created, now());
+        WriteSidecar(dest, meta);
+        EnforceCap();
+        return meta;
+    }
+
+    /// <summary>Extract the user's stored core-save tree back into coresaves/&lt;sessionId&gt;/ before the room
+    /// boots, so the core (PSP/DC/…) restores the player's memory stick / VMU. False if nothing stored.</summary>
+    public bool SeedCoreSaveDir(int userId, int gameId, string sessionId)
+    {
+        if (string.IsNullOrEmpty(sessionId)) return false;
+        var blob = StoreFile(userId, gameId, CoreSaveBlob);
+        if (!File.Exists(blob)) return false;
+
+        var dest = CoreSaveSessionDir(sessionId);
+        if (!IsUnder(CoreSavesRoot, dest)) throw new InvalidOperationException($"refusing to seed outside mount: {dest}");
+        Directory.CreateDirectory(dest);
+        // TarFile.ExtractToDirectory rejects entries that escape the destination (path traversal), and we
+        // overwrite so a re-seed refreshes; dest is re-verified under the coresaves mount above.
+        TarFile.ExtractToDirectory(blob, dest, overwriteFiles: true);
+        return true;
+    }
+
+    /// <summary>Remove a session's core-save mount dir (a "New game" boots clean; also cleans up on close).</summary>
+    public void ClearCoreSaveDir(string sessionId)
+    {
+        if (string.IsNullOrEmpty(sessionId)) return;
+        var dir = CoreSaveSessionDir(sessionId);
+        try
+        {
+            if (IsUnder(CoreSavesRoot, dir) && Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+        }
+        catch (Exception ex) { log.LogWarning(ex, "SaveStore could not clear core-save dir {Dir}", dir); }
+    }
+
+    /// <summary>Content digest of a directory tree: SHA-256 over each file's relative path + bytes in
+    /// sorted order (mtimes and tar framing excluded), so identical content across sweeps hashes the same.</summary>
+    private static (string sha, long bytes) TreeContentDigest(string dir)
+    {
+        var rels = Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories)
+            .Select(f => Path.GetRelativePath(dir, f).Replace('\\', '/'))
+            .OrderBy(x => x, StringComparer.Ordinal)
+            .ToList();
+        using var sha = SHA256.Create();
+        long total = 0;
+        foreach (var rel in rels)
+        {
+            var relBytes = Encoding.UTF8.GetBytes(rel + "\0");
+            sha.TransformBlock(relBytes, 0, relBytes.Length, null, 0);
+            var content = File.ReadAllBytes(Path.Combine(dir, rel));
+            total += content.LongLength;
+            sha.TransformBlock(content, 0, content.Length, null, 0);
+        }
+        sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+        return (Convert.ToHexString(sha.Hash!).ToLowerInvariant(), total);
     }
 
     // ── My Saves management (S3): delete / relabel / read / import ────────────────────────────────────

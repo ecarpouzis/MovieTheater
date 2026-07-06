@@ -177,13 +177,16 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
             if (newGame)
             {
                 saveStore.ClearSession(requestedRoomId);
+                saveStore.ClearCoreSaveDir(requestedRoomId); // PSP/DC/… save-dir tree, if any
                 app.Logger.LogInformation("Arcade save cleared (New game) for user {User} game {Game}", svUser, svGame);
             }
             else
             {
                 bool seeded = saveStore.SeedSession(svUser, svGame, requestedRoomId, seedSlot);
-                app.Logger.LogInformation("Arcade save {Action} for user {User} game {Game} slot {Slot}",
-                    seeded ? "seeded" : "none (fresh)", svUser, svGame, seedSlot);
+                // Save-dir cores (PSP memstick / DC-Naomi VMU / DOS) don't ride SAVE_RAM — restore their tree too.
+                bool seededCore = saveStore.SeedCoreSaveDir(svUser, svGame, requestedRoomId);
+                app.Logger.LogInformation("Arcade save {Action}{Core} for user {User} game {Game} slot {Slot}",
+                    seeded ? "seeded" : "none (fresh)", seededCore ? "+coredir" : "", svUser, svGame, seedSlot);
             }
         }
         catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade save seed/clear failed for {Id}", requestedRoomId); }
