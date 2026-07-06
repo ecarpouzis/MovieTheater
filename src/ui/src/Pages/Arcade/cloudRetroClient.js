@@ -91,6 +91,18 @@ const PROFILES = {
     keymap: { ...DEFAULT_KEYMAP },
     hint: "Gamepad recommended (left stick = analog nub). Keyboard: arrows = D-pad, Z = Cross, X = Circle, A = Square, S = Triangle, Q W = L/R, Enter = Start, Shift = Select.",
   },
+  // PS1: pcsx_rearmed maps PS Cross ← RetroPad B, Circle ← A, Square ← Y, Triangle ← X — so the DEFAULT
+  // positional map is already correct (south → Cross/confirm). With the DualShock pad type (config.yaml),
+  // both analog sticks ride the frame (encodeInput lx/ly/rx/ry) — the left stick drives games like Ape
+  // Escape that demand an analog controller; L1/L2/R1/R2 are the shoulders/triggers. Just a tailored hint.
+  ps1: {
+    gamepad: DEFAULT_GAMEPAD,
+    keymap: {
+      ...DEFAULT_KEYMAP,
+      KeyQ: PAD.L, KeyW: PAD.R, KeyA: PAD.L2, KeyS: PAD.R2, // L1/R1 shoulders, L2/R2 triggers
+    },
+    hint: "Gamepad recommended (both sticks work — DualShock). Keyboard: arrows = D-pad/left stick, Z = Cross, X = Circle, Q W = L1/R1, A S = L2/R2, Enter = Start, Shift = Select.",
+  },
   // Dreamcast: flycast maps DC A ← RetroPad B, B ← A, X ← Y, Y ← X (south → A/confirm, so the default
   // positional map fits). The DC triggers are ANALOG L/R → RetroPad L2/R2, not the bumpers, so put the
   // keyboard triggers on L2/R2. Analog stick = left stick.

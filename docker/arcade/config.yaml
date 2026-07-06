@@ -108,13 +108,29 @@ emulator:
           lib: pcsx_rearmed_libretro
           roms: ["m3u", "cue", "chd"]   # m3u = multi-disc playlist (disc-swap, patch 0005); cue/chd = single disc
           folder: psx
-          # Per-session save dir (arcade-saves-plan §7): without this, pcsx_rearmed writes its memory-card
-          # files to a SHARED global dir ("Emulator save path is …/libretro"), so cards would collide
-          # across users/sessions and never harvest. uniqueSaveDir points the core's save dir at a
-          # per-session path so the card is scoped to this room's id and captured by the save vault.
-          uniqueSaveDir: true
           options:
             pcsx_rearmed_drc: enabled     # dynarec on
+            # Present a DualShock (dual-analog) pad on BOTH ports. pcsx_rearmed defaults pad type to the
+            # digital "standard" pad, so games that REQUIRE an analog controller refuse to start —
+            # Ape Escape literally blocks on "connect an analog controller (DUAL SHOCK)". The browser shim
+            # already forwards both analog sticks (cloudRetroClient.js encodeInput's lx/ly/rx/ry), so a
+            # DualShock is the right default: digital games still read the d-pad, analog games get sticks.
+            pcsx_rearmed_pad1type: dualshock
+            pcsx_rearmed_pad2type: dualshock
+            # PS1 MEMORY CARD. pcsx_rearmed picks each slot's card type from these options (load_memcards
+            # in frontend/libretro.c). If the frontend doesn't SUPPLY the option, the core's GET_VARIABLE
+            # call fails, it logs "non memcardN config?" and boots with NO card — which is exactly what we
+            # hit: games reported "Memory Card not found" and no .srm was ever written (so nothing to
+            # harvest). CloudRetro passes only the options we declare here and does not apply the core's own
+            # "libretro" default, so we must set it explicitly. "libretro" exposes card 1 through
+            # RETRO_MEMORY_SAVE_RAM, so CloudRetro persists it as <roomId>.srm and the gateway save vault
+            # harvests it per-user — the SAME path already proven for N64 battery saves. This is why the old
+            # `uniqueSaveDir: true` was removed: the card now rides SAVE_RAM, not the on-disk save dir (which
+            # was container-ephemeral anyway), so there is nothing per-session left to scope. Card 2 cannot
+            # be "libretro" (only card 1 maps to SAVE_RAM) and any file-based card would land in that
+            # ephemeral dir, so it is "none" — effectively every PS1 game here uses card 1 only.
+            pcsx_rearmed_memcard1: libretro
+            pcsx_rearmed_memcard2: none
         gen:
           # lib name verified live 2026-07-03 (Sonic 2 streams).
           lib: genesis_plus_gx_libretro

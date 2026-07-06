@@ -325,11 +325,11 @@ export default function ArcadeRoomPage() {
             : players.map((p, i) => <Tag key={i} color={p.you ? "purple" : "default"}>{p.name}{p.you ? " (you)" : ""}</Tag>)}
         </Space>
         <Space>
-          <Tooltip title="Save state in-game">
-            <Button onClick={() => sessionRef.current?.save?.()}>Save</Button>
+          <Tooltip title="Save your place (a state you can reload with Load)">
+            <Button onClick={() => { sessionRef.current?.save?.(); message.success("State saved"); }}>Save</Button>
           </Tooltip>
-          <Tooltip title="Load last save state">
-            <Button onClick={() => sessionRef.current?.load?.()}>Load</Button>
+          <Tooltip title="Reload your last saved state">
+            <Button onClick={() => { sessionRef.current?.load?.(); message.info("Loading last state…"); }}>Load</Button>
           </Tooltip>
           {yourSlot === 0 && (
             <Tooltip title="Save a named snapshot you can resume later">
