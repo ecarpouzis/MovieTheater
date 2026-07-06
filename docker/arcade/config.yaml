@@ -286,7 +286,7 @@ encoder:
       # repeat-sequence-header puts SPS/PPS on every IDR so those joiners can actually decode it.
       # p4 + 8Mbps: p1 (fastest preset) at 4Mbps read visibly fuzzy on pixel-art (SNES); NVENC has
       # huge headroom at this resolution, and LAN/loopback doesn't care about 8Mbps. bitrate=kbit/s.
-      params: "preset=p4 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=120 repeat-sequence-header=true zerolatency=true"
+      params: "preset=p4 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=100000 repeat-sequence-header=true zerolatency=true"
       caps: video/x-h264,stream-format=byte-stream,alignment=au
     # Opus with in-band FEC ON — the audio-skip fix for lossy same-host N64 rooms (roadmap WS-A.2).
     # CloudRetro's EMBEDDED default (pkg/config/config.yaml) is

@@ -1,0 +1,88 @@
+diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
+index ba2ae84..b3f2502 100644
+--- a/pkg/worker/media/gstreamer.go
++++ b/pkg/worker/media/gstreamer.go
+@@ -94,6 +94,12 @@ const (
+ 	defaultAudioFrameMs = 20 * time.Millisecond
+ 
+ 	maxForcedKeyframes = 3
++	// On a NEW viewer joining we can't know the exact moment their WebRTC track is ready to decode,
++	// so we force a keyframe every kfJoinSpacing frames for kfJoinWindow frames after the join — a
++	// spaced burst that covers ICE/DTLS setup. This lets us run an effectively infinite GOP (no
++	// periodic IDR = no ~2s audio hitch) while late joiners still sync within ~half a second.
++	kfJoinWindow  = 360 // ~6s at 60fps
++	kfJoinSpacing = 30  // ~0.5s at 60fps
+ )
+ 
+ var forceKeyframeEvent *gst.Event
+@@ -156,6 +162,7 @@ type GstMediaPipe struct {
+ 	frameI   int  // for forced keyframes
+ 	keyI     int  // periodic keyframe counter
+ 	kfi      int  // 0=GStreamer auto, >0=force keyframe every N frames
++	forceKf  atomic.Int32 // countdown of frames in the post-join force-keyframe window — RequestKeyframe
+ 	aSegSent bool // for Opusenc bug
+ 
+ 	// used for reinit
+@@ -371,19 +378,28 @@ func (g *GstMediaPipe) pullVideo(p *pipe) gst.FlowReturn {
+ 	return gst.FlowOK
+ }
+ 
++// RequestKeyframe opens a spaced keyframe window (kfJoinWindow frames) so a NEW viewer syncs even
++// though we run an effectively infinite GOP — periodic IDRs were the ~2s audio hitch (the browser
++// stalled decoding each big IDR). Called from room.Router.AddUser.
++func (g *GstMediaPipe) RequestKeyframe() { g.forceKf.Store(kfJoinWindow) }
++
+ func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
+ 	if g.reinit.Load() {
+ 		return
+ 	}
+ 
+-	// when someone starts watching, force the first few keyframes to avoid stalling
+-	// and if scene-change detection is disabled (kfi > 0)
+-	if g.frameI < maxForcedKeyframes || (g.kfi > 0 && g.keyI%g.kfi == 0) {
++	// Force a keyframe: at startup (frameI), during a post-join window every kfJoinSpacing frames (so
++	// a still-connecting joiner gets one once ready), or on the kfi periodic path.
++	kf := g.forceKf.Load()
++	if g.frameI < maxForcedKeyframes || (kf > 0 && kf%kfJoinSpacing == 0) || (g.kfi > 0 && g.keyI%g.kfi == 0) {
+ 		g.v.srcPad.PushEvent(forceKeyframeEvent)
+ 		if g.frameI < maxForcedKeyframes {
+ 			g.frameI++
+ 		}
+ 	}
++	if kf > 0 {
++		g.forceKf.Add(-1)
++	}
+ 	g.keyI++
+ 
+ 	w, h := v.Frame.W, v.Frame.H
+diff --git a/pkg/worker/room/room.go b/pkg/worker/room/room.go
+index 9ff9576..88d0e5c 100644
+--- a/pkg/worker/room/room.go
++++ b/pkg/worker/room/room.go
+@@ -20,6 +20,8 @@ type MediaPipe interface {
+ 	ProcessAudio([]byte, func([]byte, time.Duration))
+ 	// ProcessVideo pushes a video frame into the encoder.
+ 	ProcessVideo(media.Video, func([]byte, time.Duration))
++	// RequestKeyframe asks the encoder to emit a keyframe soon (a new viewer joined).
++	RequestKeyframe()
+ }
+ 
+ type SessionManager[T Session] interface {
+@@ -134,7 +136,16 @@ func (r *Router[T]) Remove(user T) {
+ 	}
+ }
+ 
+-func (r *Router[T]) AddUser(user T)           { r.users.Add(user) }
++func (r *Router[T]) AddUser(user T) {
++	r.users.Add(user)
++	// A freshly joined viewer needs a keyframe to start decoding; we run a long GOP to kill the
++	// periodic-IDR audio hitch, so request one on join instead of waiting for the next periodic one.
++	r.mu.Lock()
++	if r.room != nil && r.room.media != nil {
++		r.room.media.RequestKeyframe()
++	}
++	r.mu.Unlock()
++}
+ func (r *Router[T]) Close()                   { r.mu.Lock(); r.room.Close(); r.room = nil; r.mu.Unlock() }
+ func (r *Router[T]) FindUser(uid string) T    { return r.users.Find(uid) }
+ func (r *Router[T]) Room() *Room[T]           { r.mu.Lock(); defer r.mu.Unlock(); return r.room }
