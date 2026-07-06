@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
-import { Button, Space, Tag, Typography, message, Tooltip } from "antd";
+import { Button, Space, Tag, Typography, message, Tooltip, Modal } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import { createCloudRetroSession, arcadeInputHint } from "./cloudRetroClient";
 import { useWakeLock } from "../../useWakeLock";
@@ -188,6 +188,55 @@ export default function ArcadeRoomPage() {
     finally { setSnapping(false); }
   }
 
+  // Load a saved snapshot LIVE (no room restart): the gateway copies the chosen slot's .dat/.srm over the
+  // running session's files, then we tell the core to reload state (shim t=107). Owner-only. gameId is
+  // parsed out of the deterministic room id (sv-<user>-<gameId>-<slot>-<system>___<key>).
+  async function loadSnapshot() {
+    const d = descriptorRef.current;
+    if (!d || !d.wsUrl) return;
+    const token = (d.wsUrl.match(/\/w\/([^/?]+)/) || [])[1];
+    let gameId = null;
+    try {
+      const qs = new URLSearchParams(d.wsUrl.slice(d.wsUrl.indexOf("?") + 1));
+      const m = decodeURIComponent(qs.get("room_id") || "").match(/^sv-\d+-(\d+)-/);
+      if (m) gameId = parseInt(m[1], 10);
+    } catch { /* ignore */ }
+    if (!token || !gameId) { message.error("Can't load snapshots for this session."); return; }
+    let saves;
+    try { saves = await MovieAPI.listArcadeSaves(gameId); }
+    catch { message.error("Couldn't load your saves."); return; }
+    const snaps = (saves || []).filter((s) => s.kind === "state" && s.slotId >= 1).sort((a, b) => a.slotId - b.slotId);
+    if (snaps.length === 0) { message.info("No snapshots yet — use 📸 Snapshot to make one."); return; }
+    const base = d.wsUrl.replace(/^ws/, "http").replace(/\/w\/.*$/, "");
+    Modal.info({
+      title: "Load a snapshot",
+      okText: "Cancel",
+      content: (
+        <div>
+          {snaps.map((s) => (
+            <div key={s.slotId} style={{ padding: "6px 0" }}>
+              <a onClick={async () => {
+                Modal.destroyAll();
+                try {
+                  const r = await fetch(`${base}/w-load/${token}`, {
+                    method: "post", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: s.slotId }),
+                  });
+                  const j = await r.json().catch(() => null);
+                  if (j && j.ok) {
+                    await new Promise((res) => setTimeout(res, 250)); // let the file land before the core re-reads it
+                    sessionRef.current?.load?.();
+                    message.success(`Loaded: ${s.label || `Snapshot ${s.slotId}`}`);
+                  } else message.warning((j && j.reason) || "Couldn't load that snapshot.");
+                } catch { message.error("Couldn't load that snapshot."); }
+              }}>▶ {s.label || `Snapshot ${s.slotId}`}</a>
+              {s.createdUtc && <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>{new Date(s.createdUtc).toLocaleString()}</Text>}
+            </div>
+          ))}
+        </div>
+      ),
+    });
+  }
+
   if (fatal) {
     return (
       <div style={{ padding: 48, textAlign: "center" }}>
@@ -285,6 +334,11 @@ export default function ArcadeRoomPage() {
           {yourSlot === 0 && (
             <Tooltip title="Save a named snapshot you can resume later">
               <Button loading={snapping} onClick={saveSnapshot}>📸 Snapshot</Button>
+            </Tooltip>
+          )}
+          {yourSlot === 0 && (
+            <Tooltip title="Load a saved snapshot without leaving the room">
+              <Button onClick={loadSnapshot}>📂 Load snapshot</Button>
             </Tooltip>
           )}
           <Tooltip title="Fullscreen">

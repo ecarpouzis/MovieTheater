@@ -42,6 +42,7 @@ export default function ArcadePage() {
   const [loading, setLoading] = useState(false);
   const [rooms, setRooms] = useState([]);
   const [creating, setCreating] = useState(0);
+  const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
   const unconfiguredRef = useRef(false);
 
   // The active filters, from the URL (set by the navbar panel).
@@ -100,7 +101,7 @@ export default function ArcadePage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [hasMore, loading, page, fetchPage]);
 
-  function createRoom(versionId) {
+  function createRoom(versionId, title) {
     if (creating || !versionId) return;
     setCreating(versionId);
     // Durable saves (arcade-saves-plan): if this user has a save/snapshots for the game, offer Continue,
@@ -139,6 +140,11 @@ export default function ArcadePage() {
                   </div>
                 </div>
               )}
+              <div style={{ marginTop: 10 }}>
+                <a onClick={() => { modal.destroy(); setCreating(0); setManageSaves({ gameId: versionId, title }); }}>
+                  ⚙ Manage my saves…
+                </a>
+              </div>
             </div>
           ),
         });
@@ -205,7 +211,8 @@ export default function ArcadePage() {
         <>
           <Space wrap size={[16, 16]} align="start">
             {games.map((game) => (
-              <GameCard key={game.key} game={game} onStart={createRoom} creating={creating} />
+              <GameCard key={game.key} game={game} onStart={createRoom} creating={creating}
+                onManageSaves={(id) => setManageSaves({ gameId: id, title: game.title })} />
             ))}
           </Space>
           <div style={{ textAlign: "center", padding: "28px 0 8px" }}>
@@ -217,20 +224,115 @@ export default function ArcadePage() {
           </div>
         </>
       )}
+
+      {manageSaves && (
+        <SavesManager game={manageSaves} onClose={() => setManageSaves(null)} onResume={doCreateRoom} />
+      )}
     </div>
+  );
+}
+
+// My Saves manager (arcade-saves-plan S3): list a game's saves for the signed-in user with rename,
+// delete, download (export), and upload (import). Stateful — refetches after each mutation.
+function SavesManager({ game, onClose, onResume }) {
+  const [rows, setRows] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef(null);
+
+  const refresh = useCallback(() => {
+    MovieAPI.listArcadeSaves(game.gameId).then((s) => setRows(Array.isArray(s) ? s : []));
+  }, [game.gameId]);
+  useEffect(() => { refresh(); }, [refresh]);
+
+  function fmt(r) {
+    if (r.slotId === 0) return r.kind === "sram" ? "Cartridge / card" : "Continue (latest)";
+    return r.label || `Snapshot ${r.slotId}`;
+  }
+
+  async function rename(r) {
+    const label = window.prompt("Rename save:", r.label || "");
+    if (label === null) return;
+    setBusy(true);
+    try {
+      const res = await MovieAPI.renameArcadeSave(r.id, label.trim());
+      if (res.ok) refresh(); else message.error("Couldn't rename that save.");
+    } finally { setBusy(false); }
+  }
+
+  function remove(r) {
+    Modal.confirm({
+      title: `Delete "${fmt(r)}"?`,
+      okText: "Delete", okButtonProps: { danger: true },
+      onOk: async () => {
+        const res = await MovieAPI.deleteArcadeSave(r.id);
+        if (res.ok) refresh(); else message.error("Couldn't delete that save.");
+      },
+    });
+  }
+
+  async function onImport(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    // .dat = save state, .srm = SRAM/card. Default to state; .srm → sram.
+    const kind = /\.srm$/i.test(file.name) ? "sram" : "state";
+    setBusy(true);
+    try {
+      const res = await MovieAPI.importArcadeSave(game.gameId, file, { kind, label: file.name });
+      if (res.ok) { message.success("Save imported."); refresh(); }
+      else message.error("Couldn't import that file.");
+    } catch { message.error("Couldn't import that file."); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <Modal open title={`My saves — ${game.title}`} onCancel={onClose} footer={null} width={520}>
+      {rows === null ? (
+        <div style={{ textAlign: "center", padding: 24 }}><Spin /></div>
+      ) : rows.length === 0 ? (
+        <Empty description="No saves for this game yet." />
+      ) : (
+        <div style={{ maxHeight: 360, overflowY: "auto" }}>
+          {rows.slice().sort((a, b) => a.slotId - b.slotId).map((r) => (
+            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f0f0f0" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Text strong ellipsis>{fmt(r)}</Text>
+                <div><Text type="secondary" style={{ fontSize: 11 }}>
+                  {r.kind === "sram" ? "SRAM" : "state"} · {(r.sizeBytes / 1024).toFixed(0)} KB
+                  {r.updatedUtc ? ` · ${new Date(r.updatedUtc).toLocaleString()}` : ""}
+                </Text></div>
+              </div>
+              <Space size={4}>
+                {onResume && (
+                  <Button size="small" type="link" onClick={() => { onClose(); onResume(game.gameId, r.slotId >= 1 ? { seedSlot: r.slotId } : {}); }}>Resume</Button>
+                )}
+                <a href={MovieAPI.arcadeSaveDownloadUrl(r.id)}><Button size="small" type="link">Export</Button></a>
+                <Button size="small" type="link" onClick={() => rename(r)}>Rename</Button>
+                <Button size="small" type="link" danger onClick={() => remove(r)}>Delete</Button>
+              </Space>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>Import a .srm (card) or .dat (state) file.</Text>
+        <input ref={fileRef} type="file" accept=".srm,.dat,.state" style={{ display: "none" }} onChange={onImport} />
+        <Button loading={busy} onClick={() => fileRef.current?.click()}>⬆ Import save</Button>
+      </div>
+    </Modal>
   );
 }
 
 // One card per game (docs/arcade-dedupe-multidisc-plan.md). A version dropdown picks which ROM launches
 // (region / revision / edition / disc / hack); the tags track the selection. Multiple versions collapse
 // here so the grid shows each game once. Box art is shared per game via the representative `artId`.
-function GameCard({ game, onStart, creating }) {
+function GameCard({ game, onStart, onManageSaves, creating }) {
   const [sel, setSel] = useState(game.versions?.[0]?.id);
   // When the filters change the default version (e.g. you filtered a region), reset the selection.
   useEffect(() => { setSel(game.versions?.[0]?.id); }, [game.versions?.[0]?.id]);
   const version = game.versions?.find((v) => v.id === sel) || game.versions?.[0];
   return (
-    <Card hoverable style={{ width: 200 }} cover={<GameCover game={game} />} onClick={() => onStart(sel)}>
+    <Card hoverable style={{ width: 200 }} cover={<GameCover game={game} />} onClick={() => onStart(sel, game.title)}>
       <Card.Meta
         title={game.title}
         description={
@@ -252,9 +354,12 @@ function GameCard({ game, onStart, creating }) {
         </div>
       )}
       <Button type="primary" block style={{ marginTop: 12 }} loading={creating === sel}
-        onClick={(e) => { e.stopPropagation(); onStart(sel); }}>
+        onClick={(e) => { e.stopPropagation(); onStart(sel, game.title); }}>
         Start room
       </Button>
+      <div style={{ textAlign: "center", marginTop: 6 }}>
+        <a style={{ fontSize: 12 }} onClick={(e) => { e.stopPropagation(); onManageSaves?.(sel); }}>My saves</a>
+      </div>
     </Card>
   );
 }

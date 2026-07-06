@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -366,6 +370,95 @@ namespace MovieTheater.Controllers
                 .ToListAsync();
             return Json(rows);
         }
+
+        private static readonly HttpClient gatewayClient = new() { Timeout = TimeSpan.FromSeconds(30) };
+
+        // Call a secret-gated gateway blob op (the blobs live on Ziggy; the k8s pod can't read them).
+        private async Task<HttpResponseMessage?> CallGatewayAsync(string path, object body)
+        {
+            var baseUrl = config.ArcadeGatewayBaseUrl;
+            if (string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(config.ArcadeTokenSecret)) return null;
+            using var req = new HttpRequestMessage(HttpMethod.Post, baseUrl.TrimEnd('/') + "/" + path)
+            { Content = JsonContent.Create(body) };
+            req.Headers.Add("X-Arcade-Internal-Secret", config.ArcadeTokenSecret);
+            try { return await gatewayClient.SendAsync(req); } catch { return null; }
+        }
+
+        /// <summary>Delete one of the user's saves (My Saves): the app-DB row + the on-disk blob on Ziggy.</summary>
+        [HttpDelete("/API/Arcade/Saves/{id:int}")]
+        public async Task<IActionResult> DeleteSave(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var row = await movieDb.ArcadeSaves.FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId.Value);
+            if (row == null) return NotFound();
+            await CallGatewayAsync("internal/save-delete",
+                new { userId = row.UserId, gameId = row.ArcadeGameId, kind = row.Kind, slot = row.SlotId });
+            movieDb.ArcadeSaves.Remove(row);
+            await movieDb.SaveChangesAsync();
+            return NoContent();
+        }
+
+        /// <summary>Rename a save's label (My Saves).</summary>
+        [HttpPut("/API/Arcade/Saves/{id:int}")]
+        public async Task<IActionResult> RenameSave(int id, [FromBody] RenameSaveRequest req)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var row = await movieDb.ArcadeSaves.FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId.Value);
+            if (row == null) return NotFound();
+            row.Label = string.IsNullOrWhiteSpace(req?.Label) ? null : req.Label.Trim();
+            row.UpdatedUtc = DateTime.UtcNow;
+            await movieDb.SaveChangesAsync();
+            await CallGatewayAsync("internal/save-relabel",
+                new { userId = row.UserId, gameId = row.ArcadeGameId, kind = row.Kind, slot = row.SlotId, label = row.Label });
+            return NoContent();
+        }
+
+        /// <summary>Download a save file (export — the manual MVP of cross-device sync).</summary>
+        [HttpGet("/API/Arcade/Saves/{id:int}/download")]
+        public async Task<IActionResult> DownloadSave(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var row = await movieDb.ArcadeSaves.FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId.Value);
+            if (row == null) return NotFound();
+            var resp = await CallGatewayAsync("internal/save-read",
+                new { userId = row.UserId, gameId = row.ArcadeGameId, kind = row.Kind, slot = row.SlotId });
+            if (resp == null || !resp.IsSuccessStatusCode) return NotFound();
+            var bytes = await resp.Content.ReadAsByteArrayAsync();
+            var ext = row.Kind == "sram" ? "srm" : "dat";
+            var safeLabel = (row.Label ?? $"slot{row.SlotId}");
+            foreach (var c in Path.GetInvalidFileNameChars()) safeLabel = safeLabel.Replace(c, '_');
+            return File(bytes, "application/octet-stream", $"arcade-{row.System}-{row.ArcadeGameId}-{safeLabel}.{ext}");
+        }
+
+        /// <summary>Import (upload) a save file (source=imported) — the manual MVP of sync. SRAM goes to the
+        /// canonical slot; a state becomes a new snapshot slot. The gateway mirrors the DB row.</summary>
+        [HttpPost("/API/Arcade/Games/{gameId:int}/Saves/import")]
+        public async Task<IActionResult> ImportSave(int gameId, IFormFile file, [FromForm] string? kind, [FromForm] string? label)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var game = await movieDb.ArcadeGames.FirstOrDefaultAsync(g => g.Id == gameId);
+            if (game == null) return NotFound();
+            if (file == null || file.Length == 0 || file.Length > 32L * 1024 * 1024)
+                return BadRequest(new { message = "Pick a save file (up to 32 MB)." });
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+            var k = kind == "sram" ? "sram" : "state";
+            var resp = await CallGatewayAsync("internal/save-import", new
+            {
+                userId = userId.Value, gameId, system = game.System, kind = k, slot = 0,
+                label = string.IsNullOrWhiteSpace(label) ? Path.GetFileNameWithoutExtension(file.FileName) : label.Trim(),
+                dataBase64 = Convert.ToBase64String(ms.ToArray()),
+            });
+            if (resp == null || !resp.IsSuccessStatusCode)
+                return StatusCode(502, new { message = "Couldn't store the uploaded save." });
+            return Ok();
+        }
+
+        public class RenameSaveRequest { public string? Label { get; set; } }
 
         public class SaveHarvestedRequest
         {

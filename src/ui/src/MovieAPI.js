@@ -684,6 +684,28 @@ function listArcadeSaves(gameId) {
   return fetch(`/API/Arcade/Games/${gameId}/Saves`).then((r) => (r.ok ? r.json() : [])).catch(() => []);
 }
 
+// My Saves management (arcade-saves-plan S3).
+function deleteArcadeSave(id) {
+  return fetch(`/API/Arcade/Saves/${id}`, { method: "delete" });
+}
+function renameArcadeSave(id, label) {
+  return fetch(`/API/Arcade/Saves/${id}`, {
+    method: "put",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ label }),
+  });
+}
+function arcadeSaveDownloadUrl(id) {
+  return `/API/Arcade/Saves/${id}/download`;
+}
+function importArcadeSave(gameId, file, { kind = "state", label = "" } = {}) {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("kind", kind);
+  if (label) fd.append("label", label);
+  return fetch(`/API/Arcade/Games/${gameId}/Saves/import`, { method: "post", body: fd });
+}
+
 // Report the CloudRetro room id the creator's browser got back from GAME_START (§8 step 3).
 function bindArcadeRoom(code, cloudRetroRoomId) {
   return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Bind`, {
@@ -996,6 +1018,10 @@ const MovieAPI = {
   getArcadeRooms,
   createArcadeRoom,
   listArcadeSaves,
+  deleteArcadeSave,
+  renameArcadeSave,
+  arcadeSaveDownloadUrl,
+  importArcadeSave,
   bindArcadeRoom,
   joinArcadeRoom,
   arcadeHeartbeat,

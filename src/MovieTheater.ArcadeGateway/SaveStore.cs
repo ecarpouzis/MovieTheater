@@ -50,6 +50,23 @@ public sealed record SaveMeta(
     string? CoreName, string? CoreVersion, string StorageRelPath, long SizeBytes, string Sha256,
     string Source, bool IsAutosave, DateTime CreatedUtc, DateTime UpdatedUtc);
 
+/// <summary>Body for the site→gateway blob ops (delete/relabel/read). Web JSON binds camelCase.</summary>
+public class SaveOpReq
+{
+    public int UserId { get; set; }
+    public int GameId { get; set; }
+    public string? Kind { get; set; }
+    public int Slot { get; set; }
+    public string? Label { get; set; }
+}
+
+/// <summary>Body for the site→gateway import op (base64 blob → a stored save).</summary>
+public sealed class SaveImportReq : SaveOpReq
+{
+    public string? System { get; set; }
+    public string? DataBase64 { get; set; }
+}
+
 public sealed class SaveStore
 {
     public const string KindSram = "sram";
@@ -202,9 +219,72 @@ public sealed class SaveStore
             coreName: null, coreVersion: null, src: dat, destName: SlotFile(slot), isAutosave: false, ct);
     }
 
+    /// <summary>Swap a stored slot's bytes into the live mount <c>&lt;sessionId&gt;.dat</c> so an in-room
+    /// LOAD (t=107) restores it without restarting the room. Returns false if the slot has no blob.</summary>
+    public bool LoadSlotToMount(int userId, int gameId, string sessionId, int slot)
+    {
+        var blob = StoreFile(userId, gameId, SlotFile(slot));
+        if (!File.Exists(blob)) return false;
+        CopyGuarded(blob, MountFile(sessionId, ".dat"));
+        return true;
+    }
+
+    // ── My Saves management (S3): delete / relabel / read / import ────────────────────────────────────
+
+    /// <summary>Delete a stored save (blob + sidecar) for a (user, game, kind, slot). Guarded to the store
+    /// root; never touches the mount. Slot 0 SRAM/Continue is deletable too (it's the user's data).</summary>
+    public bool DeleteSave(int userId, int gameId, string kind, int slot)
+    {
+        var name = kind == KindSram ? "sram.srm" : SlotFile(slot);
+        var blob = StoreFile(userId, gameId, name);
+        bool existed = File.Exists(blob);
+        TryDeleteUnder(storeRoot, blob);
+        TryDeleteUnder(storeRoot, SidecarPath(blob));
+        return existed;
+    }
+
+    /// <summary>Rename a stored save's label (updates the sidecar so a future re-list stays consistent).</summary>
+    public bool RelabelSave(int userId, int gameId, string kind, int slot, string? label)
+    {
+        var name = kind == KindSram ? "sram.srm" : SlotFile(slot);
+        var blob = StoreFile(userId, gameId, name);
+        var meta = ReadSidecar(SidecarPath(blob));
+        if (meta == null) return false;
+        WriteSidecar(blob, meta with { Label = label, UpdatedUtc = now() });
+        return true;
+    }
+
+    /// <summary>Read a stored save's raw bytes (for a tokened download / export). Null if missing.</summary>
+    public async Task<byte[]?> ReadSaveAsync(int userId, int gameId, string kind, int slot, CancellationToken ct = default)
+    {
+        var name = kind == KindSram ? "sram.srm" : SlotFile(slot);
+        var blob = StoreFile(userId, gameId, name);
+        if (!IsUnder(storeRoot, blob) || !File.Exists(blob)) return null;
+        return await File.ReadAllBytesAsync(blob, ct);
+    }
+
+    /// <summary>Import raw bytes as a save (upload / EmuDeck). Writes the blob + sidecar into a slot and
+    /// returns its metadata to mirror into the DB. For SRAM the destName is the canonical sram.srm.</summary>
+    public async Task<SaveMeta> ImportSaveAsync(
+        int userId, int gameId, string system, string kind, int slot, string? label, byte[] bytes, CancellationToken ct = default)
+    {
+        var dir = GameDir(userId, gameId);
+        Directory.CreateDirectory(dir);
+        var destName = kind == KindSram ? "sram.srm" : SlotFile(slot);
+        var dest = Path.GetFullPath(Path.Combine(dir, destName));
+        if (!IsUnder(storeRoot, dest)) throw new InvalidOperationException($"refusing to write outside store: {dest}");
+        await File.WriteAllBytesAsync(dest, bytes, ct);
+        string sha = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+        var meta = new SaveMeta(userId, gameId, system, kind, slot, label, null, null, RelPath(dest),
+            bytes.LongLength, sha, "imported", false, now(), now());
+        WriteSidecar(dest, meta);
+        EnforceCap();
+        return meta;
+    }
+
     /// <summary>The next free snapshot slot for a (user, game): max existing state slot + 1, never below 1
     /// (slot 0 is the auto "Continue" slot).</summary>
-    private int NextSnapshotSlot(int userId, int gameId)
+    public int NextSnapshotSlot(int userId, int gameId)
     {
         var dir = GameDir(userId, gameId);
         int max = ContinueSlot;

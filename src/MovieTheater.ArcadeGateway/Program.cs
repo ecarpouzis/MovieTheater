@@ -242,6 +242,69 @@ app.MapPost("/w-snap/{token}", async (HttpContext ctx, string token) =>
     return Results.Json(new { ok = true, slot = meta.SlotId, label = meta.Label });
 });
 
+// In-room LOAD a snapshot WITHOUT restarting (arcade-saves-plan S3): swap the chosen slot's bytes into
+// the live mount, then the client sends t=107 to make the core restore it. Owner-only.
+app.MapPost("/w-load/{token}", async (HttpContext ctx, string token) =>
+{
+    if (saveStore == null) return Results.NotFound();
+    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null) return Results.Forbid();
+    var id = p.CloudRetroRoomId ?? "";
+    if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out _, out _) || u != p.UserId || g != p.GameId)
+        return Results.BadRequest();
+    int slot = 0;
+    try { var b = await ctx.Request.ReadFromJsonAsync<Dictionary<string, int>>(ctx.RequestAborted); b?.TryGetValue("slot", out slot); } catch { }
+    return Results.Json(new { ok = saveStore.LoadSlotToMount(u, g, id, slot) });
+});
+
+// Internal, secret-gated blob ops the SITE calls for My-Saves management + import/export (the k8s pod
+// can't touch Ziggy's disk). Blobs stay on Ziggy; the site owns auth + the DB row.
+bool InternalAuth(HttpContext c) => !string.IsNullOrEmpty(secret) &&
+    string.Equals(c.Request.Headers["X-Arcade-Internal-Secret"].ToString(), secret, StringComparison.Ordinal);
+
+app.MapPost("/internal/save-delete", async (HttpContext ctx) =>
+{
+    if (saveStore == null) return Results.NotFound();
+    if (!InternalAuth(ctx)) return Results.Unauthorized();
+    var r = await ctx.Request.ReadFromJsonAsync<MovieTheater.ArcadeGateway.SaveOpReq>(ctx.RequestAborted);
+    if (r == null) return Results.BadRequest();
+    saveStore.DeleteSave(r.UserId, r.GameId, r.Kind ?? "state", r.Slot);
+    return Results.NoContent();
+});
+
+app.MapPost("/internal/save-relabel", async (HttpContext ctx) =>
+{
+    if (saveStore == null) return Results.NotFound();
+    if (!InternalAuth(ctx)) return Results.Unauthorized();
+    var r = await ctx.Request.ReadFromJsonAsync<MovieTheater.ArcadeGateway.SaveOpReq>(ctx.RequestAborted);
+    if (r == null) return Results.BadRequest();
+    saveStore.RelabelSave(r.UserId, r.GameId, r.Kind ?? "state", r.Slot, r.Label);
+    return Results.NoContent();
+});
+
+app.MapPost("/internal/save-read", async (HttpContext ctx) =>
+{
+    if (saveStore == null) return Results.NotFound();
+    if (!InternalAuth(ctx)) return Results.Unauthorized();
+    var r = await ctx.Request.ReadFromJsonAsync<MovieTheater.ArcadeGateway.SaveOpReq>(ctx.RequestAborted);
+    if (r == null) return Results.BadRequest();
+    var bytes = await saveStore.ReadSaveAsync(r.UserId, r.GameId, r.Kind ?? "state", r.Slot, ctx.RequestAborted);
+    return bytes == null ? Results.NotFound() : Results.Bytes(bytes, "application/octet-stream");
+});
+
+app.MapPost("/internal/save-import", async (HttpContext ctx) =>
+{
+    if (saveStore == null) return Results.NotFound();
+    if (!InternalAuth(ctx)) return Results.Unauthorized();
+    var r = await ctx.Request.ReadFromJsonAsync<MovieTheater.ArcadeGateway.SaveImportReq>(ctx.RequestAborted);
+    if (r == null || string.IsNullOrEmpty(r.DataBase64)) return Results.BadRequest();
+    byte[] bytes;
+    try { bytes = Convert.FromBase64String(r.DataBase64); } catch { return Results.BadRequest(); }
+    int slot = (r.Kind ?? "state") == "sram" ? 0 : (r.Slot > 0 ? r.Slot : saveStore.NextSnapshotSlot(r.UserId, r.GameId));
+    var meta = await saveStore.ImportSaveAsync(r.UserId, r.GameId, r.System ?? "", r.Kind ?? "state", slot, r.Label, bytes, ctx.RequestAborted);
+    await mirrorSave(meta);
+    return Results.Json(new { ok = true, slot = meta.SlotId, kind = meta.Kind, sizeBytes = meta.SizeBytes });
+});
+
 app.Run();
 
 /// <summary>
