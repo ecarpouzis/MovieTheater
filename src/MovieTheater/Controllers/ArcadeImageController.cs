@@ -22,7 +22,7 @@ namespace MovieTheater.Controllers
     /// </summary>
     public class ArcadeImageController : ControllerBase
     {
-        private const int ThumbPx = 220;
+        private const int ThumbPx = 300;   // fills the ~200px card width crisply (portrait boxes were soft at 220)
 
         // One long-lived client for the on-demand fetches; a per-game negative cache so a miss is tried once.
         private static readonly HttpClient Http = CreateHttp();

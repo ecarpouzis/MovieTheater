@@ -122,9 +122,14 @@ public sealed class SaveStore
     /// independent of the signaling connection's lifetime (which ends before CloudRetro's room reap).
     /// The (user, game, system) come from the id itself (minted by the site), so no DB lookup is needed.
     /// </summary>
-    public async Task<IReadOnlyList<SaveMeta>> HarvestMountChangesAsync(CancellationToken ct = default)
+    /// <param name="mirror">Called with each harvested file's metadata to mirror it into the app DB;
+    /// returns true on a confirmed write. A session's mtime is only marked swept when ALL its files
+    /// mirror successfully, so a failed mirror (e.g. the site mid-deploy) is retried on the next sweep
+    /// instead of being silently dropped. The file itself is always copied into the store (resume works
+    /// regardless of the DB).</param>
+    public async Task<int> HarvestMountChangesAsync(Func<SaveMeta, Task<bool>> mirror, CancellationToken ct = default)
     {
-        var harvested = new List<SaveMeta>();
+        int harvested = 0;
         if (!Directory.Exists(savesMount)) return harvested;
 
         // Group the mount's .dat/.srm by session id, keep only our ids.
@@ -146,8 +151,12 @@ public sealed class SaveStore
             try
             {
                 var written = await HarvestSessionAsync(userId, gameId, system, sessionId, isAutosave: true, ct);
-                lastSwept[sessionId] = mtime;
-                harvested.AddRange(written);
+                bool allMirrored = true;
+                foreach (var m in written)
+                    if (!await mirror(m)) allMirrored = false;
+                // Only remember this mtime as done once the DB is in sync — else retry next sweep.
+                if (allMirrored) lastSwept[sessionId] = mtime;
+                harvested += written.Count;
             }
             catch (Exception ex) { log.LogWarning(ex, "SaveStore harvest sweep failed for {Session}", sessionId); }
         }

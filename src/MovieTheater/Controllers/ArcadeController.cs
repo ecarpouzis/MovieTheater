@@ -342,7 +342,9 @@ namespace MovieTheater.Controllers
                 row.UpdatedUtc = nowUtc;
             }
             await movieDb.SaveChangesAsync();
-            return Ok();
+            // 204 (not 200) so the gateway can tell a real success from the SPA fallback's 200 that an
+            // unmatched /API route returns during a deploy window — see the gateway's mirror callback.
+            return NoContent();
         }
 
         /// <summary>The signed-in user's saves for a game — the source for the resume picker / "My Saves".</summary>

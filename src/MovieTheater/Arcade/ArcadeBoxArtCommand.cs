@@ -54,8 +54,8 @@ namespace MovieTheater.Arcade
         [CommandOption("report-misses", Description = "Write a TSV of cards the index can't match, with fuzzy proposals, then stop (offline; needs indexes built).")]
         public string ReportMisses { get; set; } = "";
 
-        [CommandOption("thumb-px", Description = "Max thumbnail dimension in px (default 220).")]
-        public int ThumbPx { get; set; } = 220;
+        [CommandOption("thumb-px", Description = "Max thumbnail dimension in px (default 300).")]
+        public int ThumbPx { get; set; } = 300;
 
         private readonly IDbContextFactory<MovieDb> dbFactory;
         private readonly MovieTheaterConfiguration config;

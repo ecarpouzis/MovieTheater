@@ -15,46 +15,31 @@
   margin-bottom: 4px !important;
 }
 
-/* Box-art cover: the image keeps its OWN aspect (object-fit: contain) so nothing is cropped,
-   and a blurred, dimmed copy of the same art fills the frame behind it — so a portrait N64 box
-   or a wide Genesis box no longer sits in stark black bars. Uniform card height, no letterbox. */
+/* Box-art cover: show the WHOLE box at its own aspect ratio — never cropped, never stretched, no
+   letterbox. The card width is fixed, so the image fills the width and the card's height simply
+   follows the art (portrait N64 cases end up taller than a wide Genesis box). No background frame. */
 .arcade-cover {
-  position: relative;
   width: 100%;
-  height: 210px;
   overflow: hidden;
-  background: #1f1730;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
-}
-.arcade-cover__bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: blur(18px) brightness(0.55) saturate(1.1);
-  transform: scale(1.15); /* hide the blur's feathered edges */
+  line-height: 0;
 }
 .arcade-cover__img {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  max-width: 92%;
-  max-height: 92%;
-  width: auto;
+  display: block;
+  width: 100%;
   height: auto;
-  object-fit: contain;
-  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.5));
 }
+/* Only the no-art fallback needs a filled box so the card isn't collapsed. */
 .arcade-cover__placeholder {
-  position: absolute;
-  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 260px;
   padding: 10px;
   text-align: center;
+  background: #1f1730;
   color: #9a86bd;
   font-size: 13px;
+  line-height: 1.3;
 }

@@ -233,9 +233,9 @@ function GameCard({ game, onStart, creating }) {
   );
 }
 
-// Box art via /ArcadeImage/{artId}; until it's populated, a labeled placeholder. The art keeps its
-// own aspect (`contain`, never `cover` — cover cropped the title off) and a blurred copy of the same
-// image fills the frame behind it, so varied box aspect ratios don't sit in black bars. See ArcadePage.css.
+// Box art via /ArcadeImage/{artId}; until it's populated, a labeled placeholder. The full box shows at
+// its own aspect ratio (fills the card width, height follows the art) — never cropped, stretched, or
+// letterboxed. Card heights vary by box shape, which is the honest way to show every box whole.
 function GameCover({ game }) {
   const [broken, setBroken] = useState(!(game.hasBoxArt || ART_SYSTEMS.has(game.system)));
   if (broken) {
@@ -245,12 +245,10 @@ function GameCover({ game }) {
       </div>
     );
   }
-  const src = `/ArcadeImage/${game.artId}`;
   return (
     <div className="arcade-cover">
-      <img className="arcade-cover__bg" src={src} alt="" aria-hidden="true" loading="lazy" decoding="async" />
-      <img className="arcade-cover__img" src={src} alt={game.title} loading="lazy" decoding="async"
-        onError={() => setBroken(true)} />
+      <img className="arcade-cover__img" src={`/ArcadeImage/${game.artId}`} alt={game.title}
+        loading="lazy" decoding="async" onError={() => setBroken(true)} />
     </div>
   );
 }

@@ -68,34 +68,36 @@ if (saveOptions.Enabled)
     {
         var stopping = app.Lifetime.ApplicationStopping;
         var interval = TimeSpan.FromMilliseconds(Math.Max(1000, saveOptions.HarvestDebounceMs * 3));
-        while (!stopping.IsCancellationRequested)
+        // Mirror one harvested save into the app DB. Success is a 204 specifically — an unmatched /API
+        // route mid-deploy returns the SPA's 200, which must NOT count as a confirmed write (the sweep
+        // would then drop the mirror). Returning false leaves the session unswept so it retries.
+        async Task<bool> Mirror(MovieTheater.ArcadeGateway.SaveMeta m)
         {
             try
             {
-                var metas = await saveStore.HarvestMountChangesAsync(stopping);
-                foreach (var m in metas)
+                using var reqMsg = new HttpRequestMessage(HttpMethod.Post, saveCallbackUrl)
                 {
-                    try
+                    Content = JsonContent.Create(new
                     {
-                        using var reqMsg = new HttpRequestMessage(HttpMethod.Post, saveCallbackUrl)
-                        {
-                            Content = JsonContent.Create(new
-                            {
-                                userId = m.UserId, arcadeGameId = m.GameId, system = m.System, kind = m.Kind,
-                                slotId = m.SlotId, label = m.Label, coreName = m.CoreName, coreVersion = m.CoreVersion,
-                                storageRelPath = m.StorageRelPath, sizeBytes = m.SizeBytes, sha256 = m.Sha256,
-                                source = m.Source, isAutosave = m.IsAutosave,
-                            }),
-                        };
-                        reqMsg.Headers.Add("X-Arcade-Internal-Secret", secret);
-                        var resp = await siteClient.SendAsync(reqMsg, stopping);
-                        if (!resp.IsSuccessStatusCode)
-                            app.Logger.LogWarning("Save DB mirror callback returned {Status} for user {User} game {Game}",
-                                (int)resp.StatusCode, m.UserId, m.GameId);
-                    }
-                    catch (Exception ex) { app.Logger.LogWarning(ex, "Save DB mirror callback failed"); }
-                }
+                        userId = m.UserId, arcadeGameId = m.GameId, system = m.System, kind = m.Kind,
+                        slotId = m.SlotId, label = m.Label, coreName = m.CoreName, coreVersion = m.CoreVersion,
+                        storageRelPath = m.StorageRelPath, sizeBytes = m.SizeBytes, sha256 = m.Sha256,
+                        source = m.Source, isAutosave = m.IsAutosave,
+                    }),
+                };
+                reqMsg.Headers.Add("X-Arcade-Internal-Secret", secret);
+                var resp = await siteClient.SendAsync(reqMsg, stopping);
+                if (resp.StatusCode == System.Net.HttpStatusCode.NoContent) return true;
+                app.Logger.LogWarning("Save DB mirror got {Status} (not 204) for user {User} game {Game} — will retry",
+                    (int)resp.StatusCode, m.UserId, m.GameId);
+                return false;
             }
+            catch (Exception ex) { app.Logger.LogWarning(ex, "Save DB mirror callback failed — will retry"); return false; }
+        }
+
+        while (!stopping.IsCancellationRequested)
+        {
+            try { await saveStore.HarvestMountChangesAsync(Mirror, stopping); }
             catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade save harvest sweep error"); }
             try { await Task.Delay(interval, stopping); } catch { /* shutting down */ }
         }
