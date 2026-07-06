@@ -108,6 +108,11 @@ emulator:
           lib: pcsx_rearmed_libretro
           roms: ["m3u", "cue", "chd"]   # m3u = multi-disc playlist (disc-swap, patch 0005); cue/chd = single disc
           folder: psx
+          # Per-session save dir (arcade-saves-plan §7): without this, pcsx_rearmed writes its memory-card
+          # files to a SHARED global dir ("Emulator save path is …/libretro"), so cards would collide
+          # across users/sessions and never harvest. uniqueSaveDir points the core's save dir at a
+          # per-session path so the card is scoped to this room's id and captured by the save vault.
+          uniqueSaveDir: true
           options:
             pcsx_rearmed_drc: enabled     # dynarec on
         gen:
