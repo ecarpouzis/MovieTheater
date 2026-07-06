@@ -244,6 +244,7 @@ namespace MovieTheater.Arcade
             // ─── Systems added 2026-07 (GPU/GL 3D + 2D breadth). Codes match the config.yaml core
             // `folder` keys and the roms/ subfolders. MaxPlayers is the system capability; a title with
             // fewer real players just leaves the extra seats unfilled (same convention as snes=5). ───
+            new("ps2",        new[] { "ps2" },        new[] { ".iso", ".cso", ".chd", ".bin", ".mdf", ".zso" }, 2),  // GL; pcsx2; scph39001.bin BIOS
             new("psp",        new[] { "psp" },        new[] { ".iso", ".cso", ".pbp", ".chd" },  1),  // GL; no BIOS; ad-hoc MP unsupported
             new("dc",         new[] { "dc" },         new[] { ".chd", ".gdi", ".cdi", ".cue" },  2),  // GL; dc_boot.bin + dc_flash.bin
             new("naomi",      new[] { "naomi" },      new[] { ".zip", ".chd", ".lst", ".dat" },  2),  // flycast arcade; naomi.zip BIOS
