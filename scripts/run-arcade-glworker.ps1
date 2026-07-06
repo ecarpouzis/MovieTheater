@@ -41,7 +41,10 @@ if (-not $IceIpMap) { Write-Warning "IceIpMap unset and ZIGGY_PUBLIC_IP not foun
 $env:Path = "$Ucrt64Bin;$env:Path"
 
 # Flat knobs via CLOUD_GAME_* (pkg/config/loader.go prefix). The core list + encoder live in the config.
-$env:CLOUD_GAME_WORKER_NETWORK_ZONE               = "gl"
+# zone "main": the Windows-native workers are now the ONLY pool (docker/WSL retired), so they must take
+# every room, not just GL 3D cores. (Was "gl" back when the WSL pool served 2D/N64 and this pool only
+# handled flycast/ppsspp; the merged worker-gl/config.yaml now carries the full tuned core list.)
+$env:CLOUD_GAME_WORKER_NETWORK_ZONE               = "main"
 $env:CLOUD_GAME_WORKER_NETWORK_COORDINATORADDRESS = "localhost:8000"   # WSL coordinator via mirrored net
 $env:CLOUD_GAME_WORKER_NETWORK_SECURE             = "false"
 $env:CLOUD_GAME_WEBRTC_SINGLEPORT                 = "$SinglePort"        # router must UDP-forward this → Ziggy
