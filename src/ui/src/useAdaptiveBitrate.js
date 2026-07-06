@@ -28,9 +28,14 @@ const ABR_STALLS_TO_DOWNSHIFT = 2;
  * @param profile       device ABR profile (ABR_PROFILES.desktop / .phone): openBps, ceilingBps,
  *                      climbMode, stableForUpMs. openBps is read once at mount as the opening cap.
  * @param onAdapt       (nextBps) => void — apply the new cap (restart/re-tune at the live position).
+ * @param suspendedRef  optional ref; while `.current` is truthy, adaptation is frozen (no drop, no
+ *                      climb, no cap change). Used to disable ABR when the video is being COPIED — a
+ *                      lossless copy has no rung above it, and a drop would only swap it for a re-encode
+ *                      while restarting the stream (which rebases the HLS clock under absolute-timed
+ *                      sidecar subtitles and drifts them). Omitted → never suspended (e.g. TV).
  * @returns { autoBps, autoBpsRef, handleStall, handleBandwidth, adaptTo, reseed }
  */
-export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt }) {
+export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt, suspendedRef }) {
   const [autoBps, setAutoBps] = useState(profile.openBps);
   const autoBpsRef = useRef(autoBps);
   autoBpsRef.current = autoBps;
@@ -64,6 +69,7 @@ export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt }) {
 
   // Stall (debounced): only drop a rung once a repeated pattern confirms the rung is too high.
   const handleStall = useCallback(() => {
+    if (suspendedRef?.current) return; // video is being copied — no rung to drop to but a re-encode
     if (!isAutoQuality(qualityKeyRef.current) || isBottomRung(autoBpsRef.current)) return;
     const now = Date.now();
     if (now - lastStallSeenRef.current < ABR_STALL_EPISODE_GAP_MS) {
@@ -78,12 +84,13 @@ export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt }) {
     if (now - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
     stallEpisodesRef.current = []; // consumed — start the count fresh after a downshift
     adaptTo(rungDown(autoBpsRef.current));
-  }, [qualityKeyRef, adaptTo]);
+  }, [qualityKeyRef, adaptTo, suspendedRef]);
 
   // Throughput telemetry: climb only after a sustained streak with clear headroom; any sample short of
   // a climb-worthy estimate resets the streak. The target (one rung up, or a jump straight to the best
   // supported rung) and the streak length both come from the device profile.
   const handleBandwidth = useCallback((estimateBps) => {
+    if (suspendedRef?.current) return; // video is being copied — already lossless, nothing to climb to
     if (!isAutoQuality(qualityKeyRef.current)) return;
     const target = climbTarget(autoBpsRef.current, estimateBps, profileRef.current);
     if (target === autoBpsRef.current) {
@@ -92,7 +99,7 @@ export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt }) {
     }
     if (Date.now() - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
     if (Date.now() - stableSinceRef.current >= profileRef.current.stableForUpMs) adaptTo(target);
-  }, [qualityKeyRef, adaptTo]);
+  }, [qualityKeyRef, adaptTo, suspendedRef]);
 
   // Re-seed when re-entering Auto: reset the cap and arm a fresh cooldown + streak (so a manual
   // re-select doesn't immediately flip). The caller still triggers its own restart/re-tune afterward.

@@ -90,9 +90,17 @@ function WatchPage({ userData }) {
   // stalls; "Mobile Auto" opens low and climbs fast to a 1080p/8 Mbps cap (see ABR_PROFILES). Fixed
   // rungs ignore the profile entirely.
   const abrProfile = abrProfileFor(qualityKey);
+  // Suspend ABR while the video is being COPIED (Original / direct-stream — `isDirectStream` is the
+  // server's videoIsCopied flag, true even on an HLS session that only transcodes the audio). A copy
+  // has no rung above it, so a climb is a no-op; a drop would swap the lossless copy for a needless
+  // re-encode AND restart the stream, rebasing the HLS clock under the absolute-timed sidecar subtitles
+  // and drifting them. The viewer can still hand-pick a lower quality as a one-shot.
+  const abrSuspendedRef = useRef(false);
+  abrSuspendedRef.current = !!session?.isDirectStream;
   const { autoBps, autoBpsRef, handleStall, handleBandwidth, reseed } = useAdaptiveBitrate({
     qualityKeyRef,
     profile: abrProfile,
+    suspendedRef: abrSuspendedRef,
     onAdapt: (nextBps) =>
       restartAtPositionRef.current?.({ quality: qualityKeyRef.current, bpsOverride: nextBps }),
   });

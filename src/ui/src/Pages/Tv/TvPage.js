@@ -67,6 +67,7 @@ function TvPage({ userData }) {
   const [playingAudioIndex, setPlayingAudioIndex] = useState(null); // what's actually playing, for the menu highlight
   const [playingVideoCodec, setPlayingVideoCodec] = useState(null); // delivered video codec, for the "Playing" readout
   const [playingDirect, setPlayingDirect] = useState(false); // true = original copied (no re-encode), for the readout
+  const [playingHls, setPlayingHls] = useState(true); // true = HLS session (not raw direct play), for the readout
   const [subtitleIndex, setSubtitleIndex] = useState(null); // burned-in subtitle stream; null = off
   const [audioOpen, setAudioOpen] = useState(false);
   const [subsOpen, setSubsOpen] = useState(false);
@@ -418,6 +419,7 @@ function TvPage({ userData }) {
         setPlayingAudioIndex(session.selectedAudioIndex ?? null);
         setPlayingVideoCodec(session.videoCodec ?? null);
         setPlayingDirect(!!session.isDirectStream);
+        setPlayingHls(session.isHls !== false);
 
         const video = videoRef.current;
         if (!video) return;
@@ -1256,6 +1258,7 @@ function TvPage({ userData }) {
                     qualityKey: quality,
                     autoLabel: autoBpsLabel(autoBps),
                     videoCodec: playingVideoCodec,
+                    isHls: playingHls,
                     isDirectStream: playingDirect,
                     audio: deliveredLayout((audioTracks.find((t) => t.index === (audioIndex ?? playingAudioIndex)) || audioTracks[0])?.channels),
                   })}

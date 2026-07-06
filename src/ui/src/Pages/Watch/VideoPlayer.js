@@ -46,12 +46,17 @@ export function codecLabel(codec) {
 // quality identically and truthfully: the active quality, the output codec, and — the part the viewer
 // actually cares about — whether the video is the original copied bit-for-bit ("no re-encode") or a
 // transcode. `autoLabel` is the live adaptive-cap label (e.g. "Auto · Original" / "Auto · 8 Mbps").
-export function formatPlaying({ qualityKey, autoLabel, videoCodec, isDirectStream, audio }) {
+export function formatPlaying({ qualityKey, autoLabel, videoCodec, isHls, isDirectStream, audio }) {
   const rung = QUALITY_LADDER.find((q) => q.key === qualityKey);
-  // Lead with the unambiguous live verdict — the question is always "original, or a transcode?" — then
-  // the supporting detail. The option's "…when possible" marketing hint stays in the Quality menu, not
-  // here, so this line never hedges about what's actually being delivered right now.
-  const parts = [isDirectStream ? "Original · no re-encode" : "Transcoded"];
+  // Lead with the unambiguous live verdict. "Video copied" (isDirectStream) is NOT the whole story: a
+  // copied video can still ride an HLS session that re-encodes the audio/container (e.g. an E-AC-3 track
+  // the browser can't decode) — which is NOT raw direct play and can behave differently (seek/segmenting).
+  // Only a NON-HLS session is a true bit-for-bit direct play; an HLS session that merely copies the video
+  // says exactly that instead of falsely claiming "Original". The option's "…when possible" marketing hint
+  // stays in the Quality menu, not here, so this never hedges about what's actually being delivered.
+  const parts = [
+    !isDirectStream ? "Transcoded" : isHls ? "Video copied · HLS transcode" : "Original · no re-encode",
+  ];
   if (!isDirectStream) {
     parts.push(
       isAutoQuality(qualityKey)
@@ -920,6 +925,7 @@ function VideoPlayer({
                     qualityKey,
                     autoLabel: qualityDetail,
                     videoCodec,
+                    isHls,
                     isDirectStream,
                     audio: deliveredLayout((audioTracks.find((t) => t.index === selectedAudioIndex) || audioTracks[0])?.channels),
                   })}
