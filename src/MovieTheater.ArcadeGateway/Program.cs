@@ -325,6 +325,12 @@ sealed class WsTransformer : HttpTransformer
         await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix, cancellationToken);
 
         var query = httpContext.Request.QueryString.Value ?? string.Empty;
+        // One-pool arcade: the site still tags GL-core rooms (dc/naomi/atomiswave/psp) with zone=gl for the
+        // old two-pool routing, but there is a single Windows worker pool now (registered zone "main"). Strip
+        // the zone so those rooms match it instead of the coordinator returning "no free workers" (PSP/DC were
+        // disconnecting after the Windows-only migration flipped the workers from zone "gl" to "main").
+        query = System.Text.RegularExpressions.Regex.Replace(query, @"[?&]zone=[^&]*", "");
+        if (query.StartsWith("&")) query = "?" + query.Substring(1);
         proxyRequest.RequestUri = new Uri(destinationPrefix + "/ws" + query);
         proxyRequest.Headers.Host = null;
     }
