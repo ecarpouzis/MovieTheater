@@ -268,7 +268,6 @@ function TvPage({ userData }) {
         });
         if (!r.ok) return;
         const session = await r.json();
-        session.hlsUrl = await MovieAPI.accelerateHlsUrl(session.hlsUrl);
         // For a transcode, pull the playlist to actually spawn ffmpeg; direct play has
         // nothing to warm (it's a static file).
         if (session.isHls !== false) fetch(session.hlsUrl).catch(() => {});
@@ -404,7 +403,6 @@ function TvPage({ userData }) {
             throw Object.assign(new Error(body.message || ""), { status: startResponse.status });
           }
           session = await startResponse.json();
-          session.hlsUrl = await MovieAPI.accelerateHlsUrl(session.hlsUrl);
         }
         if (superseded()) {
           // A newer tune started while we were mid-request — drop this stream so we

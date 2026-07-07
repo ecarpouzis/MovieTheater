@@ -146,9 +146,7 @@ function WatchPage({ userData }) {
         const err = { status: response.status, message: body.message };
         throw err;
       }
-      const session = await response.json();
-      session.hlsUrl = await MovieAPI.accelerateHlsUrl(session.hlsUrl);
-      return session;
+      return await response.json();
     },
     [qualityKey, audioIndex, autoBpsRef]
   );

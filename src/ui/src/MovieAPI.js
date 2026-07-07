@@ -175,31 +175,6 @@ function startStream({ movieId = null, playableId = null, mediaFileId = null, ma
   });
 }
 
-// LAN accelerator (memory: lan-accelerator-hairpin). When the viewer is on the media box's LAN, stream
-// straight from it (lan.carpouzis.com has a public DNS A record pointing at the box's PRIVATE IP, with a
-// valid cert) instead of hitting the public host and hairpinning out to the WAN edge and back. Probe once
-// per page load: LAN clients reach the private IP in ~10ms; external clients can't route to it and fall
-// back to the normal host after a short timeout. Purely a host swap — the signed token + relative segment
-// URLs are unaffected, and the same StreamGateway answers on both hostnames.
-const LAN_STREAM_HOST = "lan.carpouzis.com";
-const PUBLIC_STREAM_HOST = "stream.carpouzis.com";
-let _lanProbe = null;
-function lanReachable() {
-  if (_lanProbe) return _lanProbe;
-  _lanProbe = new Promise((resolve) => {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => { ctrl.abort(); resolve(false); }, 1200);
-    fetch(`https://${LAN_STREAM_HOST}/`, { mode: "no-cors", cache: "no-store", signal: ctrl.signal })
-      .then(() => { clearTimeout(timer); resolve(true); })
-      .catch(() => { clearTimeout(timer); resolve(false); });
-  });
-  return _lanProbe;
-}
-async function accelerateHlsUrl(url) {
-  if (!url || url.indexOf(PUBLIC_STREAM_HOST) === -1) return url;
-  return (await lanReachable()) ? url.split(PUBLIC_STREAM_HOST).join(LAN_STREAM_HOST) : url;
-}
-
 // passive=true (TV channels) keeps Jellyfin throttling honest without writing
 // resume progress or auto-Seen — background play shouldn't claim you watched it.
 function reportStreamProgress({ playSessionId, movieId = null, playableId = null, mediaFileId = null, positionTicks, paused, passive = false }) {
@@ -989,7 +964,6 @@ const MovieAPI = {
   getCurrentUser,
   setPassword,
   startStream,
-  accelerateHlsUrl,
   reportStreamProgress,
   stopStream,
   beaconStopStream,
