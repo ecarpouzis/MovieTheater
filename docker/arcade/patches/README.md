@@ -128,3 +128,16 @@ Three small runtime fixes found by playing real games on the Windows GL worker (
   segment at the old rate. (Candidate fix for the reported DC-cutscene double-speed — the emulator
   itself was measured at a correct 1x, so the issue is presentation/pacing; not yet reproduced in
   automation, needs a live cutscene to confirm.)
+
+## 0014-joypad-bitmask-input.patch
+
+**`pkg/worker/caged/libretro/nanoarch/nanoarch.c` — support the RetroPad bitmask input query.**
+`core_input_state_cgo` only handled per-id joypad queries (`buttons >> id & 1`). Modern cores that
+read the whole pad in one call via `RETRO_DEVICE_ID_JOYPAD_MASK` (== 256) hit `buttons >> 256`, which
+is undefined behaviour — on x86 the shift count masks to 0, so the core got garbage and **no input
+registered at all**. Discovered on **PS2 (LRPS2)**: the game sat in attract/demo mode because not one
+button reached it, while the client was verified (via temporary `[INDBG]` logs) to be sending every
+bit correctly. Older cores (snes9x, mupen64plus) were unaffected because they honour the frontend's
+`GET_INPUT_BITMASKS → false` and fall back to per-id queries. The fix returns `buttons & 0xFFFF` for
+the mask query; the per-id path is unchanged, so no working core regresses. Any future bitmask-reading
+core (Beetle PSX HW, newer cores) benefits too. Verified live: PS2 input fully functional after the fix.

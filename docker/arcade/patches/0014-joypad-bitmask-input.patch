@@ -1,0 +1,16 @@
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.c b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
+index 669862d..a8180aa 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.c
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
+@@ -206,6 +206,11 @@ int16_t core_input_state_cgo(unsigned port, unsigned device, unsigned index, uns
+ 
+     switch (device) {
+         case RETRO_DEVICE_JOYPAD:
++            // Bulk bitmask query (RETRO_DEVICE_ID_JOYPAD_MASK == 256): modern cores such as LRPS2 (PS2)
++            // read the whole pad in one call. Without this, `buttons >> 256` is undefined behaviour (x86
++            // masks the shift count to 0 → garbage), so every button reads as noise and no input registers.
++            if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
++                return (int16_t)(input_cache.buttons[port] & 0xFFFF);
+             return (int16_t)((input_cache.buttons[port] >> id) & 1);
+ 
+         case RETRO_DEVICE_ANALOG:
