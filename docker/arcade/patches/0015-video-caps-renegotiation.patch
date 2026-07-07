@@ -1,0 +1,31 @@
+--- a/pkg/worker/media/gstreamer.go
++++ b/pkg/worker/media/gstreamer.go
+@@ -39,6 +39,28 @@
+ // The frame duration rides on the GstBuffer so the pull side can restore it for RTP timestamps.
+ static inline void pushVideoBuf(GstAppSrc *src, void *data, gsize len,
+                                 GstVideoFormat fmt, guint w, guint h, gint stride, guint64 durNs) {
++	// Renegotiate the source caps when the core's frame size changes at runtime. Many PS2 games
++	// (God of War, Kingdom Hearts, FFX, Shadow of the Colossus, Monster Hunter) switch field/frame
++	// height mid-run (interlace / progressive-scan modes). The appsrc caps are fixed at pipeline
++	// build time, so once the frame size diverges the buffer no longer matches and videoconvertscale
++	// rejects EVERY frame ("invalid video buffer received") -> solid green screen. We update only
++	// width/height (format + framerate preserved); the downstream capsfilter keeps the scaled output
++	// constant, so the encoder and WebRTC stream are unaffected — videoconvertscale just rescales.
++	GstCaps *cur = gst_app_src_get_caps(src);
++	if (cur) {
++		GstStructure *st = gst_caps_get_structure(cur, 0);
++		gint cw = 0, ch = 0;
++		gst_structure_get_int(st, "width", &cw);
++		gst_structure_get_int(st, "height", &ch);
++		if ((guint)cw != w || (guint)ch != h) {
++			g_printerr("[video] source caps %dx%d -> %ux%u (core frame size changed)\n", cw, ch, w, h);
++			GstCaps *nc = gst_caps_copy(cur);
++			gst_caps_set_simple(nc, "width", G_TYPE_INT, (gint)w, "height", G_TYPE_INT, (gint)h, NULL);
++			gst_app_src_set_caps(src, nc);
++			gst_caps_unref(nc);
++		}
++		gst_caps_unref(cur);
++	}
+ 	GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
+ 	if (!buf) return;
+ 	gst_buffer_fill(buf, 0, data, len);

@@ -141,3 +141,17 @@ bit correctly. Older cores (snes9x, mupen64plus) were unaffected because they ho
 `GET_INPUT_BITMASKS → false` and fall back to per-id queries. The fix returns `buttons & 0xFFFF` for
 the mask query; the per-id path is unchanged, so no working core regresses. Any future bitmask-reading
 core (Beetle PSX HW, newer cores) benefits too. Verified live: PS2 input fully functional after the fix.
+
+## 0015-video-caps-renegotiation.patch
+
+**`pkg/worker/media/gstreamer.go` — renegotiate the appsrc caps when the core's frame size changes.**
+The video appsrc caps (`width`/`height`) are fixed at pipeline build time, but a core can change its
+output dimensions at runtime. Many **PS2 (LRPS2)** games — God of War, Kingdom Hearts, FFX, Shadow of
+the Colossus, Monster Hunter — render the main scene at **512×448** while the initial AV info reported
+640×448, so once the size diverged the pushed buffer no longer matched the caps and `videoconvertscale`
+rejected **every** frame (`invalid video buffer received`, flooding the log) → a solid **green screen**
+(GT4 and 2D games keep a constant size and were fine). `pushVideoBuf` now checks the appsrc's current
+caps and, when the frame's width/height differ, updates them (format + framerate preserved) before
+pushing. The downstream capsfilter keeps the scaled output constant, so the encoder/WebRTC stream are
+unaffected — videoconvertscale simply rescales the new input. Fixed the entire green-screen class at
+once; logs `[video] source caps WxH -> WxH` on each change. Verified live: all affected games render.
