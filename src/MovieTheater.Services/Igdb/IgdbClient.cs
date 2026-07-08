@@ -91,6 +91,7 @@ namespace MovieTheater.Services.Igdb
         /// the highest rating-count. The normalized-name gate blocks a fuzzy search from attaching wrong art.</summary>
         public async Task<IgdbGame?> ResolveGameAsync(string title, int? platformId, CancellationToken ct = default)
         {
+            title = DeInvertArticle(title);   // No-Intro "Legend of Zelda, The" → "The Legend of Zelda" for IGDB
             var esc = title.Replace("\"", " ").Trim();
             if (esc.Length == 0) return null;
             // Single-pass: fetch the whole curated field set for the top candidates in ONE request.
@@ -182,6 +183,18 @@ namespace MovieTheater.Services.Igdb
                 { 6 => "RP", 7 => "EC", 8 => "E", 9 => "E10+", 10 => "T", 11 => "M", 12 => "AO", _ => null };
             }
             return null;
+        }
+
+        // Undo No-Intro/Redump article inversion so the name gate and search see natural word order.
+        private static string DeInvertArticle(string t)
+        {
+            foreach (var art in new[] { "The", "A", "An" })
+            {
+                var suffix = ", " + art;
+                if (t.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                    return art + " " + t[..^suffix.Length].TrimEnd();
+            }
+            return t;
         }
 
         private static string? Cap(string? s, int max) =>
