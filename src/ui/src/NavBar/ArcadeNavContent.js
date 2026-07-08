@@ -38,6 +38,14 @@ const modOptions = [
   { value: "modded", label: "Mods & hacks only" },
 ];
 
+const sortOptions = [
+  { value: "", label: "A–Z (title)" },
+  { value: "rating", label: "Rating (high → low)" },
+  { value: "year", label: "Release date (new → old)" },
+  { value: "system", label: "System" },
+  { value: "players", label: "Player count (most first)" },
+];
+
 function ArcadeUserPanel({ userData, setSettingsModalOpen, setAdminModalOpen, setUserData }) {
   function logout() {
     fetch("/API/Logout", { method: "POST" }).finally(() => {
@@ -83,6 +91,7 @@ function ArcadeNavContent({ userData, setUserData, onUserLoggedIn, setSettingsMo
   const activePlayers = p.get("players") || "";
   const activeVariant = p.get("variant") || "release";
   const activeGenre = p.get("genre") || "";
+  const activeSort = p.get("sort") || "";
 
   const systemOptions = [
     { value: "", label: facets ? `All systems (${facets.total})` : "All systems" },
@@ -116,6 +125,10 @@ function ArcadeNavContent({ userData, setUserData, onUserLoggedIn, setSettingsMo
           enterButton
         />
 
+        <span style={inputLabelStyle}>Sort by</span>
+        <Select style={{ width: "100%" }} value={activeSort} onChange={(v) => updateParam("sort", v)}
+          options={sortOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
+
         <span style={inputLabelStyle}>System</span>
         <Select style={{ width: "100%" }} value={activeSystem} onChange={(v) => updateParam("system", v)}
           options={systemOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
@@ -137,7 +150,7 @@ function ArcadeNavContent({ userData, setUserData, onUserLoggedIn, setSettingsMo
         <Select style={{ width: "100%" }} value={activeVariant} onChange={(v) => updateParam("variant", v)}
           options={modOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
 
-        {(activeSystem || activeRegion !== "english" || activePlayers || activeVariant !== "release" || activeGenre || p.get("q")) && (
+        {(activeSystem || activeRegion !== "english" || activePlayers || activeVariant !== "release" || activeGenre || activeSort || p.get("q")) && (
           <Button
             block
             style={{ marginTop: 18, background: "rgba(199,64,224,0.12)", borderColor: "rgba(199,64,224,0.4)", color: "#e0b6ff" }}

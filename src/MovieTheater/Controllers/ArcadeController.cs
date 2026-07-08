@@ -70,7 +70,7 @@ namespace MovieTheater.Controllers
         [HttpGet("/API/Arcade/Games")]
         public async Task<IActionResult> Games(
             string system = null, string region = null, int? maxPlayers = null,
-            string variant = null, string genre = null, string search = null, int page = 1, int pageSize = 60)
+            string variant = null, string genre = null, string sort = null, string search = null, int page = 1, int pageSize = 60)
         {
             var userId = GetCurrentUserId();
             if (userId == null)
@@ -114,10 +114,28 @@ namespace MovieTheater.Controllers
 
             page = Math.Max(1, page);
             pageSize = Math.Clamp(pageSize, 1, 120);
+            // Card-level aggregates for sorting: rating/year live on the anchor, players is the card max.
             var groupedQ = matchQ.GroupBy(g => new { g.System, g.Title })
-                .Select(grp => new { grp.Key.System, grp.Key.Title, Sort = grp.Min(x => x.SortTitle) });
+                .Select(grp => new
+                {
+                    grp.Key.System,
+                    grp.Key.Title,
+                    Sort = grp.Min(x => x.SortTitle),
+                    Rating = grp.Max(x => x.RatingScore),
+                    Year = grp.Max(x => x.Year),
+                    Players = grp.Max(x => (int)x.MaxPlayers),
+                });
             var totalCount = await groupedQ.CountAsync();
-            var pageKeys = await groupedQ.OrderBy(x => x.Sort).ThenBy(x => x.Title)
+            // Sort (all fall back to alphabetical within ties; unrated/undated float to the end).
+            groupedQ = (sort ?? "").Trim().ToLowerInvariant() switch
+            {
+                "rating" => groupedQ.OrderByDescending(x => x.Rating ?? -1).ThenBy(x => x.Sort),
+                "year" => groupedQ.OrderByDescending(x => x.Year ?? 0).ThenBy(x => x.Sort),
+                "system" => groupedQ.OrderBy(x => x.System).ThenBy(x => x.Sort),
+                "players" => groupedQ.OrderByDescending(x => x.Players).ThenBy(x => x.Sort),
+                _ => groupedQ.OrderBy(x => x.Sort).ThenBy(x => x.Title),
+            };
+            var pageKeys = await groupedQ
                 .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
             // All age-visible versions of the paged games (superset by System/Title IN, trimmed to exact

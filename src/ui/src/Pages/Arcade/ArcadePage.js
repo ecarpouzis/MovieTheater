@@ -83,6 +83,7 @@ export default function ArcadePage() {
       maxPlayers: p.get("players") || "",
       variant: p.get("variant") || "",
       genre: p.get("genre") || "",
+      sort: p.get("sort") || "",
       search: p.get("q") || "",
     };
   }, [location.search]);
