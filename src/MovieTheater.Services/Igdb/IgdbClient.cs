@@ -47,6 +47,16 @@ namespace MovieTheater.Services.Igdb
         public static string CoverUrl(string imageId, bool big2x = true) =>
             $"https://images.igdb.com/igdb/image/upload/t_cover_big{(big2x ? "_2x" : "")}/{imageId}.jpg";
 
+        /// <summary>The cover image id for an already-resolved IGDB game id (the enrichment stored the id).
+        /// Lets the on-demand box-art route fetch a cover without re-searching by title.</summary>
+        public async Task<string?> CoverImageIdAsync(long igdbId, CancellationToken ct = default)
+        {
+            var arr = await QueryAsync("games", $"fields cover.image_id; where id = {igdbId};", ct);
+            foreach (var g in arr.EnumerateArray())
+                if (g.TryGetProperty("cover", out var c) && c.TryGetProperty("image_id", out var ci)) return ci.GetString();
+            return null;
+        }
+
         private async Task<string> GetTokenAsync(CancellationToken ct)
         {
             if (token != null && DateTime.UtcNow < tokenExpiresUtc) return token;

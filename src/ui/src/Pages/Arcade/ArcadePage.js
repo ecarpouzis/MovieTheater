@@ -7,6 +7,30 @@ import "./ArcadePage.css";
 const { Title, Text } = Typography;
 const PAGE_SIZE = 60;
 
+// Per-room stream quality the creator picks (arcade per-room bitrate/FEC). Persisted so a friend group
+// keeps its setting across sessions; applied to every room YOU start (one encoder per room = creator's
+// choice). Lower bitrate = smaller video bursts = smoother audio + less upstream for remote players.
+const QUALITY_KEY = "arcade.streamQuality";
+const BITRATE_PRESETS = [
+  { label: "Sharp · 8 Mbps", value: 8000 },
+  { label: "Balanced · 5 Mbps", value: 5000 },
+  { label: "Smooth · 3 Mbps", value: 3000 },
+  { label: "Data saver · 1.5 Mbps", value: 1500 },
+];
+const FEC_OPTIONS = [
+  { label: "Error correction: On · best with remote friends", value: 1 },
+  { label: "Error correction: Off · LAN only, lighter audio", value: 2 },
+];
+function loadQuality() {
+  try {
+    const q = JSON.parse(localStorage.getItem(QUALITY_KEY));
+    if (q && typeof q.videoBitrateKbps === "number")
+      return { videoBitrateKbps: q.videoBitrateKbps, audioFec: q.audioFec === 2 ? 2 : 1 };
+  } catch { /* ignore */ }
+  return { videoBitrateKbps: 5000, audioFec: 1 }; // Balanced + FEC on (mixed local+remote default)
+}
+function saveQuality(q) { try { localStorage.setItem(QUALITY_KEY, JSON.stringify(q)); } catch { /* ignore */ } }
+
 const SYSTEM_LABEL = {
   nes: "NES", snes: "SNES", genesis: "Genesis", gb: "Game Boy", gbc: "Game Boy Color",
   gba: "Game Boy Advance", n64: "Nintendo 64", gc: "GameCube", ps1: "PlayStation", arcade: "Arcade",
@@ -22,9 +46,11 @@ const systemLabel = (s) => SYSTEM_LABEL[s] || (s ? s.toUpperCase() : "");
 // its art is cached (the route lazily fetches on first view). Arcade/naomi/atomiswave/neogeo are skipped
 // (arcade-named art won't match → don't 404 those cards). Mirror of ArcadeBoxArt.ThumbRepo keys.
 const ART_SYSTEMS = new Set([
-  "nes", "snes", "genesis", "gb", "gbc", "gba", "n64", "gc", "ps1",
+  "nes", "snes", "genesis", "gb", "gbc", "gba", "n64", "gc", "ps1", "ps2",
   "psp", "dc", "sms", "gg", "sg1000", "segacd", "sega32x", "pce", "ngpc", "wsc",
   "a2600", "a7800", "lynx", "vb", "fds",
+  // arcade/neogeo now resolve real titles → art via libretro (neogeo) or IGDB cover (arcade).
+  "arcade", "neogeo",
 ]);
 
 /**
@@ -43,7 +69,10 @@ export default function ArcadePage() {
   const [rooms, setRooms] = useState([]);
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
+  const [quality, setQuality] = useState(loadQuality); // creator's per-room stream quality (persisted)
   const unconfiguredRef = useRef(false);
+
+  const setQ = (patch) => setQuality((prev) => { const next = { ...prev, ...patch }; saveQuality(next); return next; });
 
   // The active filters, from the URL (set by the navbar panel).
   const filters = useMemo(() => {
@@ -53,6 +82,7 @@ export default function ArcadePage() {
       region: p.get("region") || "",
       maxPlayers: p.get("players") || "",
       variant: p.get("variant") || "",
+      genre: p.get("genre") || "",
       search: p.get("q") || "",
     };
   }, [location.search]);
@@ -153,7 +183,8 @@ export default function ArcadePage() {
   }
 
   function doCreateRoom(versionId, opts) {
-    return MovieAPI.createArcadeRoom(versionId, opts)
+    // Merge the creator's current stream quality (read fresh from storage so a mid-modal change wins).
+    return MovieAPI.createArcadeRoom(versionId, { ...opts, ...loadQuality() })
       .then(async (r) => {
         if (r.status === 503) { message.warning("The arcade is full — every machine is in use. Try again shortly."); return null; }
         if (!r.ok) { message.error("Couldn't start that game."); return null; }
@@ -179,6 +210,20 @@ export default function ArcadePage() {
     <div className="arcade-page" style={{ padding: "24px 32px", maxWidth: 1320, margin: "0 auto" }}>
       <Title level={2} style={{ marginBottom: 4 }}>Arcade</Title>
       <Text type="secondary">Pick a game to open a room, then send friends the link to play together. Filter by system, region, players, or hide mods in the sidebar.</Text>
+
+      {/* Stream quality for rooms YOU start (arcade per-room bitrate/FEC). One encoder per room, so the
+          creator's choice is what everyone in the room gets. Lower bitrate = smoother audio + less upstream. */}
+      <div style={{ margin: "14px 0 4px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <Select
+          size="small" value={quality.videoBitrateKbps} style={{ width: 180 }}
+          onChange={(v) => setQ({ videoBitrateKbps: v })} options={BITRATE_PRESETS}
+        />
+        <Select
+          size="small" value={quality.audioFec} style={{ width: 300 }}
+          onChange={(v) => setQ({ audioFec: v })} options={FEC_OPTIONS}
+        />
+        <Text type="secondary" style={{ fontSize: 12 }}>Applies to rooms you start.</Text>
+      </div>
 
       {rooms.length > 0 && (
         <div style={{ margin: "24px 0" }}>

@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using MovieTheater.Arcade;
 using MovieTheater.Db;
 using MovieTheater.Services;
+using MovieTheater.Services.Igdb;
 
 namespace MovieTheater.Controllers
 {
@@ -27,6 +28,11 @@ namespace MovieTheater.Controllers
         // One long-lived client for the on-demand fetches; a per-game negative cache so a miss is tried once.
         private static readonly HttpClient Http = CreateHttp();
         private static readonly ConcurrentDictionary<int, byte> NoArt = new();
+
+        // Lazy shared IGDB client (token cached across requests) for the cover fallback. Null if unconfigured.
+        private static IgdbClient _igdb;
+        private static IgdbClient Igdb(MovieTheaterConfiguration config) =>
+            _igdb ??= (IgdbClient.IsConfigured(config) ? new IgdbClient(Http, config.IgdbClientId, config.IgdbClientSecret) : null);
 
         private static HttpClient CreateHttp()
         {
@@ -58,9 +64,10 @@ namespace MovieTheater.Controllers
             // by the card's lowest version id) so we don't keep a near-duplicate PNG per region/revision.
             var siblings = await movieDb.ArcadeGames
                 .Where(g => g.System == game.System && g.Title == game.Title)
-                .Select(g => new { g.Id, g.BoxArtPath, g.Region, g.CloudRetroGameKey })
+                .Select(g => new { g.Id, g.BoxArtPath, g.Region, g.CloudRetroGameKey, g.IgdbId, g.Notes })
                 .ToListAsync();
             var cardId = siblings.Count > 0 ? siblings.Min(s => s.Id) : id;
+            var anchor = siblings.OrderBy(s => s.Id).FirstOrDefault();  // metadata (IgdbId/Notes) lives here
 
             // 1. Any existing art for this card (the requested row, then any sibling, then the canonical
             //    card file) → serve it. Reuses art already downloaded under the old per-row scheme.
@@ -73,15 +80,35 @@ namespace MovieTheater.Controllers
             var cardPath = ResolveUnderRoot(root, cardRel);
             if (cardPath != null && System.IO.File.Exists(cardPath)) return ServeFile(cardPath);
 
-            // 2. Known to have no art, or a system we don't source (arcade) → placeholder (fast 404).
-            if (NoArt.ContainsKey(cardId) || !ArcadeBoxArt.HasRepo(game.System)) return NotFound();
+            // 2. Already tried everything for this card → placeholder (fast 404).
+            if (NoArt.ContainsKey(cardId)) return NotFound();
 
-            // 3. First view → match by title across the card's versions (index if cached, else guesses),
-            //    downscale, store once under the card file, then serve.
-            var index = await ArcadeBoxArtIndex.EnsureBuiltAsync(Http, root, game.System);
-            var thumb = await ArcadeBoxArt.TryFetchThumbnailForCardAsync(
-                Http, game.System, game.Title,
-                siblings.Select(s => s.Region), siblings.Select(s => s.CloudRetroGameKey), ThumbPx, index);
+            // 3. First view → libretro-thumbnails match by title across the card's versions (skipped for
+            //    repo-less systems like arcade, which fall straight to IGDB below).
+            byte[] thumb = null;
+            if (ArcadeBoxArt.HasRepo(game.System))
+            {
+                var index = await ArcadeBoxArtIndex.EnsureBuiltAsync(Http, root, game.System);
+                thumb = await ArcadeBoxArt.TryFetchThumbnailForCardAsync(
+                    Http, game.System, game.Title,
+                    siblings.Select(s => s.Region), siblings.Select(s => s.CloudRetroGameKey), ThumbPx, index);
+            }
+
+            // 3b. IGDB cover fallback — for cards libretro can't source (arcade, the PSP/homebrew tail) OR
+            //     whose libretro box the audit flagged as a mis-shaped outlier (Notes = boxart-prefer-igdb).
+            //     Uses the IgdbId the enrichment already resolved, so no title re-search.
+            bool preferIgdb = string.Equals(anchor?.Notes, "boxart-prefer-igdb", StringComparison.Ordinal);
+            if ((thumb == null || preferIgdb) && anchor?.IgdbId is long igdbId && Igdb(config) is IgdbClient igdb)
+            {
+                try
+                {
+                    var imageId = await igdb.CoverImageIdAsync(igdbId);
+                    if (imageId != null)
+                        thumb = ArcadeBoxArt.Thumbnail(await Http.GetByteArrayAsync(IgdbClient.CoverUrl(imageId)), ThumbPx);
+                }
+                catch { /* IGDB hiccup — fall through to placeholder */ }
+            }
+
             if (thumb == null) { NoArt.TryAdd(cardId, 0); return NotFound(); }
 
             if (cardPath != null)

@@ -82,6 +82,7 @@ function ArcadeNavContent({ userData, setUserData, onUserLoggedIn, setSettingsMo
   const activeRegion = p.get("region") || "english";
   const activePlayers = p.get("players") || "";
   const activeVariant = p.get("variant") || "release";
+  const activeGenre = p.get("genre") || "";
 
   const systemOptions = [
     { value: "", label: facets ? `All systems (${facets.total})` : "All systems" },
@@ -91,6 +92,10 @@ function ArcadeNavContent({ userData, setUserData, onUserLoggedIn, setSettingsMo
     { value: "english", label: "English (default)" },
     { value: "all", label: "All regions" },
     ...((facets?.regions || []).map((r) => ({ value: r.value, label: `${r.value} (${r.count})` }))),
+  ];
+  const genreOptions = [
+    { value: "", label: "All genres" },
+    ...((facets?.genres || []).map((g) => ({ value: g.value, label: `${g.value} (${g.count})` }))),
   ];
 
   return (
@@ -123,11 +128,16 @@ function ArcadeNavContent({ userData, setUserData, onUserLoggedIn, setSettingsMo
         <Select style={{ width: "100%" }} value={activePlayers} onChange={(v) => updateParam("players", v)}
           options={playerOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
 
+        <span style={inputLabelStyle}>Genre</span>
+        <Select style={{ width: "100%" }} value={activeGenre} onChange={(v) => updateParam("genre", v)}
+          options={genreOptions} showSearch optionFilterProp="label"
+          popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
+
         <span style={inputLabelStyle}>Mods &amp; Hacks</span>
         <Select style={{ width: "100%" }} value={activeVariant} onChange={(v) => updateParam("variant", v)}
           options={modOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
 
-        {(activeSystem || activeRegion !== "english" || activePlayers || activeVariant !== "release" || p.get("q")) && (
+        {(activeSystem || activeRegion !== "english" || activePlayers || activeVariant !== "release" || activeGenre || p.get("q")) && (
           <Button
             block
             style={{ marginTop: 18, background: "rgba(199,64,224,0.12)", borderColor: "rgba(199,64,224,0.4)", color: "#e0b6ff" }}

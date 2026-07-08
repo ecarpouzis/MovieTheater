@@ -70,7 +70,7 @@ namespace MovieTheater.Controllers
         [HttpGet("/API/Arcade/Games")]
         public async Task<IActionResult> Games(
             string system = null, string region = null, int? maxPlayers = null,
-            string variant = null, string search = null, int page = 1, int pageSize = 60)
+            string variant = null, string genre = null, string search = null, int page = 1, int pageSize = 60)
         {
             var userId = GetCurrentUserId();
             if (userId == null)
@@ -102,6 +102,15 @@ namespace MovieTheater.Controllers
                 matchQ = matchQ.Where(g => g.Variant != "Release" && g.Variant != null);
             else if (var_ != "all")
                 matchQ = matchQ.Where(g => g.Variant == var_ || (g.Variant ?? "").ToLower() == var_);
+
+            // Genre filter (IGDB-sourced, stored on the card anchor): a card qualifies if ANY of its rows
+            // carries the genre — a correlated EXISTS so it composes with the version-level region/variant gates.
+            if (!string.IsNullOrWhiteSpace(genre))
+            {
+                var gr = genre.Trim();
+                matchQ = matchQ.Where(g => baseQ.Any(a => a.System == g.System && a.Title == g.Title
+                    && a.Genres != null && a.Genres.Contains(gr)));
+            }
 
             page = Math.Max(1, page);
             pageSize = Math.Clamp(pageSize, 1, 120);
@@ -185,11 +194,18 @@ namespace MovieTheater.Controllers
                 .Select(x => new { value = x.Key ?? "Unknown", count = x.Count() }).OrderByDescending(x => x.count).ToListAsync();
             var variants = await q.GroupBy(g => g.Variant)
                 .Select(x => new { value = x.Key ?? "Release", count = x.Count() }).OrderByDescending(x => x.count).ToListAsync();
+            // Genre facet: genres are comma-joined on the card anchor, so split + count in memory.
+            var genreStrings = await q.Where(g => g.Genres != null).Select(g => g.Genres).ToListAsync();
+            var genres = genreStrings
+                .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                .GroupBy(x => x)
+                .Select(x => new { value = x.Key, count = x.Count() })
+                .OrderByDescending(x => x.count).Take(40).ToList();
             return Json(new
             {
                 total = await q.CountAsync(),
                 multiplayer = await q.CountAsync(g => g.MaxPlayers >= 2),
-                systems, regions, variants,
+                systems, regions, variants, genres,
             });
         }
 
@@ -255,6 +271,14 @@ namespace MovieTheater.Controllers
 
             /// <summary>Resume from a specific snapshot slot (≥1) instead of the Continue slot 0. 0 = Continue.</summary>
             public int SeedSlot { get; set; }
+
+            /// <summary>Per-room video encoder bitrate in kbps (arcade per-room quality). 0 = use the worker's
+            /// config default. Clamped server-side; only the creator's choice takes effect (one encoder/room).</summary>
+            public int VideoBitrateKbps { get; set; }
+
+            /// <summary>Per-room opus FEC: 0 = config default, 1 = force on (remote-friendly), 2 = force off
+            /// (LAN-only, saves audio-packet bytes). Rides the WS URL to the worker like the other room flags.</summary>
+            public int AudioFec { get; set; }
         }
 
         [HttpPost("/API/Arcade/Room")]
@@ -316,6 +340,15 @@ namespace MovieTheater.Controllers
             // Resume-from-snapshot: seed a chosen snapshot slot's bytes into the room (arcade-saves-plan S3).
             else if (request.SeedSlot > 0)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&seedslot=" + request.SeedSlot };
+
+            // Per-room encoder quality (arcade per-room bitrate/FEC): the creator picks a stream quality +
+            // network-resilience (FEC) in the lobby. Ride the same WS-URL flags the rest of room-create uses;
+            // the shim reads ?vbr/?fec and puts them in t=104, and the worker applies them to THIS room's
+            // encoder copy. Clamp defensively (the worker clamps again). Only the creator carries these.
+            if (request.VideoBitrateKbps > 0)
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + Math.Clamp(request.VideoBitrateKbps, 500, 20000) };
+            if (request.AudioFec is 1 or 2)
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fec=" + request.AudioFec };
 
             return Json(ToJson(descriptor, discCount));
         }
