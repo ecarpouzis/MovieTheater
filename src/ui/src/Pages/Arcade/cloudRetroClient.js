@@ -192,6 +192,23 @@ export function createCloudRetroSession(descriptor, opts) {
   let lastAv = null; // last known video geometry (flip/rotation), re-applied whenever the track attaches
   let iceServers = (descriptor.iceConfig || []).map((s) => ({ urls: s.urls }));
 
+  // ── Audio de-contention knobs (docs/arcade-audio-nextsteps.md) ──────────────────────────────────
+  // The residual audio hitch: on the bundled transport a burst of video RTP head-of-line-blocks the
+  // tiny opus packets, so audio arrives late/bursty and Chrome's NetEq over-buffers toward ~260ms and
+  // TIME-STRETCHES (~8%) — the warble the user hears. Two levers, both tunable via localStorage so a
+  // real browser (the only place smoothness can be judged) can A/B them live:
+  //  • arcade.audioJitterMs (default 80): give NetEq a small STABLE audio target so it stops adaptively
+  //    inflating + stretching. Video stays at 0 (Pion uses separate stream ids, so audio delay never
+  //    drags video). ~80ms audio latency is imperceptible for game SFX. Set 0 to restore old behavior.
+  //  • arcade.noBundle (default off): strip the a=group:BUNDLE from our SDP answer so audio negotiates
+  //    its OWN transport (the worker offers BundlePolicyMaxCompat) → video bursts can't block it at all.
+  //    Deeper fix; opt-in until verified on a real 4-player session.
+  const AUDIO_JITTER_MS = (() => {
+    try { const v = parseInt(localStorage.getItem("arcade.audioJitterMs"), 10); return Number.isFinite(v) && v >= 0 ? v : 80; }
+    catch { return 80; }
+  })();
+  const NO_BUNDLE = (() => { try { return localStorage.getItem("arcade.noBundle") === "1"; } catch { return false; } })();
+
   // Input profile for this game's system (button layout + keyboard map + optional right-stick keys).
   const profile = profileFor(descriptor.system);
   const keymap = profile.keymap;
@@ -322,12 +339,13 @@ export function createCloudRetroSession(descriptor, opts) {
       // clock drift) — and the browser lip-syncs video playout to audio, so the whole stream drifts
       // later the longer you play. Pin both receivers to the minimum. (jitterBufferTarget is the
       // standard; playoutDelayHint is the legacy Chrome name — set both, harmless where unknown.)
-      // Roadmap WS-A.4 (DECIDED, kept at 0): after Opus in-band FEC landed (config.yaml opusenc
-      // audio-type=generic + inband-fec), a live N64 verify showed flat 42ms playout, no drift, 0
-      // loss — so 0 stays. Only reopen (small AUDIO-only target, never video) if real cross-network
-      // multiplayer shows concealmentEvents/removedSamplesForAcceleration climbing under sustained loss.
-      try { e.receiver.jitterBufferTarget = 0; } catch { /* older browsers */ }
-      try { e.receiver.playoutDelayHint = 0; } catch { /* non-Chrome */ }
+      // Roadmap WS-A.4: N64 was fine at 0, but cross-network multiplayer (4-player, mixed LAN+remote)
+      // hits the exact "reopen" condition noted here — the send-path bursts make NetEq inflate + stretch.
+      // Give AUDIO a small stable target (arcade.audioJitterMs, default 80ms) to absorb the bursts; keep
+      // VIDEO at 0 so it stays responsive (separate stream ids → video never lip-sync-waits on audio).
+      const jbMs = e.track && e.track.kind === "audio" ? AUDIO_JITTER_MS : 0;
+      try { e.receiver.jitterBufferTarget = jbMs; } catch { /* older browsers */ }
+      try { e.receiver.playoutDelayHint = jbMs / 1000; } catch { /* non-Chrome */ }
       inboundStream.addTrack(e.track);
       if (videoEl && videoEl.srcObject !== inboundStream) {
         videoEl.srcObject = inboundStream;
@@ -370,6 +388,13 @@ export function createCloudRetroSession(descriptor, opts) {
       try { await pc.addIceCandidate(pendingCandidates.shift()); } catch (err) { onError && onError(err); }
     }
     const answer = await pc.createAnswer();
+    // Opt-in un-bundle: drop the BUNDLE group from our answer so audio + video negotiate SEPARATE
+    // transports (the worker offers per-m-line transports via BundlePolicyMaxCompat). Removes the
+    // video-burst → audio head-of-line blocking entirely. Off by default (SDP munging is delicate;
+    // verify on a real session before relying on it).
+    if (NO_BUNDLE && answer.sdp) {
+      answer.sdp = answer.sdp.replace(/^a=group:BUNDLE[^\r\n]*\r?\n/im, "");
+    }
     await pc.setLocalDescription(answer);
     send(T.SIGNAL, { sdp: JSON.stringify(pc.localDescription) });
   }
@@ -387,7 +412,15 @@ export function createCloudRetroSession(descriptor, opts) {
     // room with exactly that id (it accepts a non-live <prefix>___<gameKey> id), which lets the gateway
     // seed/harvest this user's save by a predictable filename. A joiner's is the creator's bound id.
     const roomId = roomIdFromWsUrl(descriptor.wsUrl);
-    send(T.GAME_START, { game_name: descriptor.gameKey, room_id: roomId, player_index: descriptor.playerSlot | 0 });
+    // Per-room encoder quality (arcade per-room bitrate/FEC): the creator's wsUrl carries ?vbr=<kbps>
+    // and ?fec=<0|1|2> (appended by the backend). Only the creator's t=104 builds the room's encoder,
+    // so only these values matter; a joiner's wsUrl won't have them. Omit when unset (worker uses config).
+    const p = { game_name: descriptor.gameKey, room_id: roomId, player_index: descriptor.playerSlot | 0 };
+    const vbr = numFromWsUrl(descriptor.wsUrl, "vbr");
+    const fec = numFromWsUrl(descriptor.wsUrl, "fec");
+    if (vbr > 0) p.video_bitrate = vbr;
+    if (fec > 0) p.audio_fec = fec;
+    send(T.GAME_START, p);
   }
 
   // GL cores (e.g. N64/gliden64) render bottom-left-origin, so CloudRetro flags the frame flipped
@@ -507,4 +540,14 @@ function roomIdFromWsUrl(wsUrl) {
     const params = new URLSearchParams(wsUrl.slice(q + 1));
     return params.get("room_id") || "";
   } catch { return ""; }
+}
+
+// A non-negative integer query param off the gateway WS URL (arcade per-room bitrate/FEC: vbr, fec).
+function numFromWsUrl(wsUrl, key) {
+  try {
+    const q = wsUrl.indexOf("?");
+    if (q < 0) return 0;
+    const v = parseInt(new URLSearchParams(wsUrl.slice(q + 1)).get(key) || "0", 10);
+    return Number.isFinite(v) && v > 0 ? v : 0;
+  } catch { return 0; }
 }
