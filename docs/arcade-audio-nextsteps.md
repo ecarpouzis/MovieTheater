@@ -17,21 +17,22 @@ time-stretches) is now countered by a layered, mostly-safe set of levers. In eff
 3. **Audio-only `jitterBufferTarget` (default 80ms, client)** — the PRIMARY, default-on fix. Gives NetEq a
    small STABLE target so it stops adaptively inflating + time-stretching. Video stays at 0 (separate
    stream ids → video isn't lip-sync-delayed). Tunable/disable via `localStorage arcade.audioJitterMs`.
-4. **True un-bundle (OPT-IN, `localStorage arcade.noBundle="1"`)** — patch **0019** sets the Pion offerer
-   to `BundlePolicyMaxCompat` (per-m-line transports; safe, default path unchanged); the shim gives audio
-   its own transport via TWO required halves: (a) construct the browser peer with `bundlePolicy:
-   "max-compat"` so Chrome allocates a transport per m-line, AND (b) strip `a=group:BUNDLE` from the
-   answer. Both ride the one single-port UDP mux (rtcp-mux → no extra port). **LESSON (2026-07-08):** it
-   was briefly default-ON with only (b) — stripping the group WITHOUT the max-compat construction left the
-   audio m-line with no transport → every room hung at "Negotiating" (user hit it live; `noBundle="0"` +
-   reload fixed it instantly, which is what proved the diagnosis). Now default-OFF with both halves in
-   place; **verify on a real browser before making it default** (headless can't judge audio anyway). The
-   safe bundled path + jitter buffer (#3) + lower bitrate already deliver clean audio.
+4. **Split audio PeerConnection (OPT-IN, `localStorage arcade.audioPC="1"`)** — patch **0020**,
+   replacing the DEAD un-bundle experiment (patch 0019, deleted). **Un-bundle was refuted at source
+   level (2026-07-08):** pion/webrtc stores `BundlePolicy` but never reads it — one ICE/DTLS transport
+   per PeerConnection is hardcoded — so a max-compat browser's extra transports had no peer, 2 of 3
+   DTLS handshakes could never complete, and the pre-negotiated DataChannel rode a dead one → every
+   room hung at "Negotiating". Multiport was tested and ALSO refuted (worker bound 3 distinct ports →
+   still hung); the failure was never port/5-tuple demuxing. The working shape is a SECOND
+   PeerConnection carrying only opus: own browser-side port → own 5-tuple → own DTLS → video bursts
+   share nothing with audio. Client asks via init `sdp:"audio-pc"`; aux signaling tunnels through the
+   existing opaque sdp/ice strings (`"aux-sdp:"/"aux-ice:"/"aux:"` prefixes) which the coordinator
+   relays verbatim. Backward compatible both directions; aux failure costs only audio.
 
-Deployed: site changes committed (`a208e2d`) + pushed; GL worker rebuilt from patches 0018/0019 and both
-workers restarted (clean boot, both ICE IPs). **Still to do:** judge audio smoothness on a REAL browser
-(the only valid place), then decide whether the un-bundle (#4) beats the jitter-buffer (#3) enough to make
-it default. The four levers below (hypotheses) informed which knobs were exposed.
+Deployed: bundled default restored + split-audio client half (`6e02c99`), patch 0020 record
+(`5c0682d`); GL worker rebuilt with 0020 (0019 reverted) and restarted. **Still to do:** judge audio
+smoothness on a REAL browser (the only valid place), A/B `arcade.audioPC="1"` vs the jitter-buffer
+default, then decide whether split-audio becomes the default.
 
 ## What was fixed this session (don't re-investigate these)
 
