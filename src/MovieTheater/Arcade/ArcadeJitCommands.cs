@@ -190,6 +190,9 @@ namespace MovieTheater.Arcade
         [CommandOption("out", 'o', Description = "Manifest output path (e.g. docker/arcade/arcade-romcache.json).", IsRequired = true)]
         public string OutPath { get; set; } = default!;
 
+        [CommandOption("dat", Description = "FBNeo Arcade DAT for the arcade/neogeo romof dependency closure. Default data/arcade/fbneo-arcade.dat.")]
+        public string DatPath { get; set; } = "data/arcade/fbneo-arcade.dat";
+
         private readonly IDbContextFactory<MovieDb> dbFactory;
 
         public ArcadeRomCacheExportCommand(MovieTheaterConfiguration config) : base(config)
@@ -200,6 +203,14 @@ namespace MovieTheater.Arcade
         public async ValueTask ExecuteAsync(IConsole console)
         {
             var w = console.Output;
+
+            // The FBNeo DAT drives the arcade/neogeo dependency closure (romof parent+BIOS zips). Optional:
+            // without it, non-arcade systems still export fine, but arcade games get no closure and can hit
+            // "missing romset" at launch — so warn loudly.
+            FbneoDat? dat = null;
+            try { dat = FbneoDat.Load(DatPath); w.WriteLine($"FBNeo DAT v{dat.Version} ({dat.Count} games) loaded for romof closure."); }
+            catch (Exception ex) { w.WriteLine($"WARNING: no FBNeo DAT ({ex.Message}) — arcade games will get NO dependency closure (may fail with 'missing romset')."); }
+
             await using var db = await dbFactory.CreateDbContextAsync();
 
             var rows = await db.ArcadeGames
@@ -230,7 +241,8 @@ namespace MovieTheater.Arcade
             foreach (var g in rows.Where(g => !folded.Contains(g.Id)))
                 games.Add(new ManifestGame(
                     GameId: g.Id, GameKey: g.CloudRetroGameKey, System: g.System,
-                    Folder: FolderOf(g.RomPath), Archive: g.SourceArchivePath!, Exts: ExtsFor(g.System)));
+                    Folder: FolderOf(g.RomPath), Archive: g.SourceArchivePath!, Exts: ExtsFor(g.System),
+                    Deps: DepsFor(g, dat)));
 
             games = games.OrderBy(g => g.GameId).ToList();
 
@@ -241,7 +253,10 @@ namespace MovieTheater.Arcade
             Directory.CreateDirectory(Path.GetDirectoryName(outFull)!);
             await File.WriteAllTextAsync(outFull, json);
 
+            int withDeps = games.Count(x => x.Deps is { Length: > 0 });
+            int depRefs = games.Sum(x => x.Deps?.Length ?? 0);
             w.WriteLine($"Wrote {games.Count} JIT game(s) → {outFull}");
+            w.WriteLine($"  {withDeps} game(s) carry a romof dependency closure ({depRefs} dep archive reference(s)).");
         }
 
         // The extract folder = the first path segment of the expected RomPath ("psx/Foo.cue" → "psx").
@@ -256,8 +271,23 @@ namespace MovieTheater.Arcade
         private static string[] ExtsFor(string system) =>
             ArcadeSystems.All.FirstOrDefault(s => s.Code == system)?.Extensions ?? new[] { ".cue" };
 
+        // The FBNeo romof dependency closure for an arcade/neogeo game, as source-archive paths the gateway
+        // must stage alongside the launch ROM (the split parent + BIOS zips, e.g. neogeo.zip). Each dep is
+        // the sibling of the game's own source archive in the same folder, named "&lt;shortname&gt;&lt;ext&gt;".
+        // Null for non-fbneo systems or games unknown to the DAT. Paths are constructed, not existence-checked
+        // (RomCache tolerates an absent dep — that's an incomplete romset, surfaced by fbneo at launch).
+        private static string[]? DepsFor(ArcadeGame g, FbneoDat? dat)
+        {
+            if (dat == null || g.SourceArchivePath == null || !dat.Contains(g.CloudRetroGameKey)) return null;
+            var closure = dat.Closure(g.CloudRetroGameKey);   // [self, dep1, dep2, ...]
+            if (closure.Count <= 1) return null;
+            var dir = Path.GetDirectoryName(g.SourceArchivePath)!;
+            var ext = Path.GetExtension(g.SourceArchivePath);  // ".zip"
+            return closure.Skip(1).Select(name => Path.Combine(dir, name + ext)).ToArray();
+        }
+
         private sealed record Manifest(int Version, List<ManifestGame> Games);
-        private sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[] Exts, DiscRef[]? Discs = null);
+        private sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[] Exts, DiscRef[]? Discs = null, string[]? Deps = null);
         private sealed record DiscRef(string Archive, string File);
     }
 

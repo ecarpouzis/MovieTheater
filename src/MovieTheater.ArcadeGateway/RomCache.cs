@@ -60,7 +60,12 @@ public sealed class RomCache
     // SNES, [".md",".gen",".smd",".bin"] for Genesis). A JIT archive holds one launch ROM whose base
     // name equals the archive's; after extraction "present" = <GameKey><one of Exts> exists. Nullable for
     // back-compat with a pre-generalization manifest (then we assume the PS1 default, ".cue").
-    public sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[]? Exts = null, DiscRef[]? Discs = null);
+    // Deps = extra source archives that must be staged into the same folder alongside the launch ROM so
+    // the core can assemble the set — the FBNeo romof closure (a game's split parent + BIOS zips such as
+    // neogeo.zip). Without them fbneo reports "missing romset". Staged verbatim by filename, idempotently,
+    // and deliberately NOT tracked for eviction: a BIOS zip is shared by hundreds of games, so it stays
+    // resident once copied (the closure is small and bounded, far under the cap).
+    public sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[]? Exts = null, DiscRef[]? Discs = null, string[]? Deps = null);
 
     // A member disc of a multi-disc .m3u game: the source archive to extract + the .cue/.chd filename it
     // produces (which goes, in order, into the generated playlist). See docs/arcade-dedupe-multidisc-plan.md.
@@ -127,6 +132,9 @@ public sealed class RomCache
         {
             if (IsPresent(g))
             {
+                // Game ROM already resident, but its dependency closure may not be (e.g. it was staged
+                // before deps were added to the manifest). Ensure it — idempotent and cheap when present.
+                await StageDepsAsync(g, FolderDest(g), ct);
                 Touch(gameId, g);
                 return;
             }
@@ -210,10 +218,35 @@ public sealed class RomCache
     private string CopyDest(ManifestGame g) =>
         Path.GetFullPath(Path.Combine(FolderDest(g), Path.GetFileName(g.Archive)));
 
+    // Copy each dependency archive (fbneo romof parent/BIOS zips) into the game's folder under its own
+    // filename. Idempotent (skip when already staged — shared BIOS zips serve many games) and tolerant (a
+    // truly absent dep means an incomplete romset, which fbneo will surface at launch — not our failure).
+    // Deliberately NOT recorded in the eviction whitelist, so once resident a BIOS/parent zip stays put.
+    private async Task StageDepsAsync(ManifestGame g, string dest, CancellationToken ct)
+    {
+        if (g.Deps is not { Length: > 0 }) return;
+        foreach (var dep in g.Deps)
+        {
+            try
+            {
+                if (!File.Exists(dep)) { log.LogWarning("RomCache dep archive missing for game {GameId}: {Dep}", g.GameId, dep); continue; }
+                var to = Path.Combine(dest, Path.GetFileName(dep));
+                if (File.Exists(to)) continue; // already staged (shared parent/BIOS)
+                using var src = new FileStream(dep, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var dst = new FileStream(to, FileMode.Create, FileAccess.Write, FileShare.None);
+                await src.CopyToAsync(dst, ct);
+            }
+            catch (Exception ex) { log.LogWarning(ex, "RomCache could not stage dep {Dep} for game {GameId}", dep, g.GameId); }
+        }
+    }
+
     private async Task ExtractAsync(ManifestGame g, CancellationToken ct)
     {
         var dest = FolderDest(g);
         Directory.CreateDirectory(dest);
+
+        // Stage the dependency closure (fbneo romof parent+BIOS zips) into the same folder before the game.
+        await StageDepsAsync(g, dest, ct);
 
         // Multi-disc: materialize every member disc, then write the .m3u playlist the core loads and swaps
         // discs within (patch 0005). GameKey is the playlist basename; Exts is [".m3u"]. A disc's source is
