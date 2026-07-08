@@ -564,7 +564,29 @@ namespace MovieTheater.Controllers
 
             var status = rooms.Heartbeat(code, userId.Value);
             if (status == null)
-                return NotFound(new { message = "Room not found." });
+            {
+                // Unknown room but someone's page is heartbeating it → the pod restarted (deploy) and
+                // wiped the in-memory registry while the session kept running. Rehydrate from the durable
+                // ArcadeSession row (live + bound = the emulator-side room genuinely exists), re-seat the
+                // heartbeater, and carry on — invitees' rail/join then work again within one beat (≤12 s).
+                // A heartbeat is the proof-of-life gate: the Join/rail paths never resurrect on their own,
+                // so stale LIVE rows (crashed sessions that missed their EndedUtc stamp) stay dead.
+                var session = await movieDb.ArcadeSessions
+                    .Where(s => s.RoomCode == code && s.EndedUtc == null && s.CloudRetroRoomId != null)
+                    .OrderByDescending(s => s.CreatedUtc)
+                    .FirstOrDefaultAsync();
+                var game = session == null ? null
+                    : await movieDb.ArcadeGames.FirstOrDefaultAsync(g => g.Id == session.ArcadeGameId);
+                if (session == null || game == null)
+                    return NotFound(new { message = "Room not found." });
+
+                rooms.Rehydrate(code, game.Id, game.MaxPlayers, session.CreatedByUserId, session.CloudRetroRoomId!);
+                rooms.TryJoin(code, userId.Value); // re-seat the heartbeater (their live session already has a slot)
+                logger.LogInformation("Arcade room {Code} rehydrated from DB after registry loss (user {User})", code, userId.Value);
+                status = rooms.Heartbeat(code, userId.Value);
+                if (status == null)
+                    return NotFound(new { message = "Room not found." });
+            }
 
             var names = await movieDb.Users
                 .Where(u => status.PlayerUserIds.Contains(u.UserID))

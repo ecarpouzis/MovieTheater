@@ -71,6 +71,30 @@ namespace MovieTheater.Arcade
             }
         }
 
+        /// <summary>
+        /// Rebuild a room the pod lost (a deploy restarts the site while a session is live: the emulator
+        /// and the players' WebRTC never notice, but this in-memory registry is wiped — the room vanishes
+        /// from the lobby rail and invite links 404 "room has ended"). Called from the Heartbeat path only:
+        /// a heartbeat is proof a player's page is actually in the room, so we never resurrect a corpse
+        /// from a stale DB row. Recreates the state already BOUND (the id survived in ArcadeSession); the
+        /// heartbeater re-seats via TryJoin right after. No-op if the room exists (raced rehydration).
+        /// </summary>
+        public void Rehydrate(string roomCode, int gameId, int maxPlayers, int creatorUserId, string cloudRetroRoomId)
+        {
+            lock (gate)
+            {
+                if (rooms.ContainsKey(roomCode)) return;
+                rooms[roomCode] = new RoomState
+                {
+                    GameId = gameId,
+                    MaxPlayers = Math.Max(1, maxPlayers),
+                    CreatorUserId = creatorUserId,
+                    CloudRetroRoomId = cloudRetroRoomId,
+                    CreatedUtc = DateTime.UtcNow,
+                };
+            }
+        }
+
         /// <summary>Record the CloudRetro room id the creator's browser got back (§8 step 3). Creator-only,
         /// once-only, room must be unbound — the guards that keep a room from being hijacked or double-bound.</summary>
         public BindResult TryBind(string roomCode, int userId, string cloudRetroRoomId)

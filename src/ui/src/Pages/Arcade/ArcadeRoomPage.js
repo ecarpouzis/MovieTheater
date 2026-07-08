@@ -34,6 +34,12 @@ export default function ArcadeRoomPage() {
   const [snapping, setSnapping] = useState(false);
 
   const [status, setStatus] = useState("connecting");
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  // States where our session is over — no presence to assert. Beating from these would resurrect
+  // the room server-side (heartbeats are the rehydration proof-of-life) and hold a dead room in
+  // the lobby rail / concurrency cap.
+  const TERMINAL_STATUS = ["disconnected", "closed", "arcade-full", "seat-rejected"];
   const [yourSlot, setYourSlot] = useState(location.state?.descriptor?.playerSlot ?? null);
   const [system, setSystem] = useState(location.state?.descriptor?.system ?? null);
   const [players, setPlayers] = useState([]);
@@ -114,11 +120,13 @@ export default function ArcadeRoomPage() {
   // Presence heartbeat + player roster (12 s, like the channel Now poll).
   useEffect(() => {
     let alive = true;
-    const beat = () =>
-      MovieAPI.arcadeHeartbeat(code).then((r) => {
+    const beat = () => {
+      if (TERMINAL_STATUS.includes(statusRef.current)) return; // dead session asserts no presence
+      return MovieAPI.arcadeHeartbeat(code).then((r) => {
         if (!alive || !r || !r.ok) return;
         return r.json().then((s) => { if (alive) { setPlayers(s.players || []); if (s.yourSlot != null) setYourSlot(s.yourSlot); } });
       }).catch(() => {});
+    };
     beat();
     const id = setInterval(beat, 12000);
     // Chrome throttles interval timers in backgrounded tabs (and Memory Saver can freeze the tab
@@ -135,8 +143,6 @@ export default function ArcadeRoomPage() {
   // returns to a dead "Disconnected" room through no action of their own. On refocus, if the session
   // died, reload once — the cold-boot path rejoins the room's seat if the room is still live (and shows
   // "That room has ended" if not). One shot per hidden episode; never for full/rejected/left states.
-  const statusRef = useRef(status);
-  statusRef.current = status;
   useEffect(() => {
     let armed = true; // re-armed each mount; disarmed after one auto-reload so we can't loop
     const onVis = () => {
