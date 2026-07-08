@@ -114,6 +114,31 @@ const PROFILES = {
     },
     hint: "Gamepad recommended (left stick = analog; triggers = L/R). Keyboard: arrows = move, Z = A, X = B, A = X, S = Y, Q W = triggers, Enter = Start.",
   },
+  // GameCube: dolphin_libretro maps GC buttons to the matching RetroPad letters (GC A ← RetroPad A,
+  // B ← B, X ← X, Y ← Y). GC A is the big primary/confirm button, so — as with the n64 A/B fix — put it
+  // on the physical SOUTH button (south → PAD.A → GC A, east → PAD.B → GC B) instead of the naive
+  // positional map, which would strand "confirm" on the east button. The GC C-STICK rides the RIGHT
+  // ANALOG STICK (camera in most games) — the pad's right stick, or I/J/K/L on the keyboard. Z is a
+  // trigger (E on the keyboard). GC L/R are analog triggers → RetroPad L2/R2, so the keyboard triggers
+  // sit there. NOTE: face + Z mapping is unverified live yet (mirrors the n64 reasoning) — confirm with
+  // the test-roms skill on a menu-heavy title (e.g. Melee) and adjust the swap if it feels inverted.
+  gc: {
+    gamepad: {
+      ...DEFAULT_GAMEPAD,
+      0: PAD.A, // south → GC A (primary / confirm)
+      1: PAD.B, // east  → GC B
+    },
+    keymap: {
+      ...DEFAULT_KEYMAP,
+      KeyX: PAD.A, KeyZ: PAD.B, // GC A (confirm) on X, GC B on Z
+      Space: PAD.A,             // big primary key too
+      KeyQ: PAD.L2, KeyW: PAD.R2, // GC analog L/R triggers
+      KeyE: PAD.R,              // GC Z trigger
+    },
+    // Keyboard drive for the right analog stick = GC C-stick (camera).
+    rstick: { up: "KeyI", down: "KeyK", left: "KeyJ", right: "KeyL" },
+    hint: "Gamepad recommended (right stick = C-stick; triggers = L/R). Keyboard: arrows = move, X = A (confirm), Z = B, I J K L = C-stick, Q W = L/R triggers, E = Z, Enter = Start.",
+  },
 };
 
 function profileFor(system) {

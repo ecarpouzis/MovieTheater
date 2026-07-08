@@ -56,6 +56,15 @@ flycast_libretro dlopens `libgomp.so.1` (GNU OpenMP), absent from the base image
 shared object file`. **Done in `docker/arcade/Dockerfile.gpu`** (added `libgomp1` to the apt line);
 inert until the next image rebuild. Verified at runtime by installing it into the live workers.
 
+### D. Windows-native worker — sidestep WSLg entirely (scoped 2026-07-04)
+
+The worker is an upstream-supported **native Windows build** (MSYS2/UCRT64, WGL on a hidden
+window → real NVIDIA GL 4.6, CI-tested on windows-latest at our pinned SHA). One Windows worker
+zoned `gl` beside the WSL stack unblocks all four cores with **no CloudRetro graphics patch at
+all**. Full scope, build recipe, zone-routing requirements, and run model:
+**`docs/arcade-windows-worker.md`**. This is now the preferred alternative if option A's EGL
+probe disappoints.
+
 ### C. PPSSPP software renderer — a PSP-only sidestep (no GL context)
 
 PPSSPP libretro has a **software renderer**. With `ppsspp_software_rendering` (or the

@@ -245,6 +245,13 @@ namespace MovieTheater.Arcade
             // `folder` keys and the roms/ subfolders. MaxPlayers is the system capability; a title with
             // fewer real players just leaves the extra seats unfilled (same convention as snes=5). ───
             new("ps2",        new[] { "ps2" },        new[] { ".iso", ".cso", ".chd", ".bin", ".mdf", ".zso" }, 2),  // GL; pcsx2; scph39001.bin BIOS
+            // GameCube via dolphin_libretro (GL 3D, native Windows GL worker). 4 controller ports — a
+            // strong fit for the shared-room model (Mario Kart Double Dash, Smash Melee, Mario Party).
+            // R:\Roms\Games\Nintendo GameCube is all .gcz (Dolphin's compressed format), read directly by
+            // the core → RomCache COPIES it (plain-file branch, like ps2 .cso), never a 7z extract. Other
+            // Dolphin disc formats listed so a pre-staged .iso/.rvz still maps. (Wii is NOT ingested: no Wii
+            // ROMs on R:, and Wiimote/motion input doesn't map to the RetroPad; Wii U is Cemu, not Dolphin.)
+            new("gc",         new[] { "gc" },         new[] { ".gcz", ".iso", ".rvz", ".ciso", ".gcm" },        4),
             new("psp",        new[] { "psp" },        new[] { ".iso", ".cso", ".pbp", ".chd" },  1),  // GL; no BIOS; ad-hoc MP unsupported
             new("dc",         new[] { "dc" },         new[] { ".chd", ".gdi", ".cdi", ".cue" },  2),  // GL; dc_boot.bin + dc_flash.bin
             new("naomi",      new[] { "naomi" },      new[] { ".zip", ".chd", ".lst", ".dat" },  2),  // flycast arcade; naomi.zip BIOS

@@ -187,6 +187,47 @@ emulator:
           coreAspectRatio: true
           uniqueSaveDir: true   # flycast NVRAM/VMU → coresaves/<sessionId>/ → gateway harvest (see psp)
 
+        # GameCube via dolphin_libretro — LIVE 2026-07-07 (F-Zero GX verified: 60fps, input, memory card).
+        # GL 3D core — renders ONLY on the native Windows GL worker (D:\ArcadeStorage\worker-gl\config.yaml
+        # carries the authoritative copy of this block); WSLg's GLX/EGL can't host it, same as psp/dc/ps2.
+        # Same recipe as ps2: isGlAllowed + coreAspectRatio (the Flip contract), usesLibCo, vfr:false,
+        # skip_hw_context_destroy. PLUS two dolphin-specific requirements (both patch 0016):
+        #   - skip_serialize_size_probe: dolphin defers video/emu init to context_reset + first retro_run,
+        #     so the load-time retro_serialize_size probe walks save-state into a NULL g_vertex_manager
+        #     → 0xc0000005 at boot. The probe only feeds a log line; saves re-query at save time.
+        #   - the worker must grant RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT (env 44).
+        # 4 controller ports → MaxPlayers 4 at ingest. Source ROMs are .gcz (RomCache copies, not extracts).
+        gc:
+          lib: dolphin_libretro
+          folder: gc
+          roms: ["gcz", "iso", "rvz", "ciso", "gcm", "m3u"]
+          isGlAllowed: true
+          coreAspectRatio: true
+          usesLibCo: true
+          vfr: false
+          hacks: [skip_hw_context_destroy, skip_serialize_size_probe]
+          options:
+            # OpenGL backend so Dolphin draws into CloudRetro's GL (WGL) hw-render context — a Vulkan/D3D
+            # backend would render to a private device the GL capture never sees → black frame (the exact
+            # ps2 pcsx2_renderer:OpenGL lesson).
+            dolphin_renderer: "Hardware"
+            dolphin_cpu_core: "JIT64"
+            # ⚠ OPTION VALUES are the core-options-v2 VALUE strings, NOT display labels (verified against
+            # DolphinLibretro/Common/Options.cpp @287ab2dba6). An unmatched value leaves the port's typed
+            # option cache at T{}=0 — for efb_scale that means retro_get_system_av_info returns 0x0
+            # geometry → null video objects → boot crash. shader_compilation_mode: "0"=Synchronous (avoids
+            # the async shader worker threads, whose shared-GL-context init doesn't work under nanoarch yet).
+            # efb_scale "2" = 1280x1056 internal render/stream — verified 60fps 0-drop on F-Zero GX
+            # (decode 0.6ms); "1" (native 640x528) is the fallback if a heavy title ever struggles.
+            dolphin_efb_scale: "2"
+            dolphin_shader_compilation_mode: "0"
+            dolphin_wait_for_shaders: "enabled"
+            # Single-core: everything on the one emulator thread — the simplest topology under libretro.
+            # Dual core ("enabled") was tried 2026-07-07 and did NOT engage ("CPU Thread separate = No" —
+            # the port defers it to a core restart), and single-core already holds a locked 60fps at 2x on
+            # F-Zero GX, so it stays off: no deficit to fix, only thread-teardown risk to add.
+            dolphin_main_cpu_thread: "disabled"
+
         # ─── Sega family on the genesis_plus_gx core we already load (the gb/gbc pattern: one lib,
         # distinct folders). Master System / Game Gear / SG-1000 are BIOS-free; Sega CD needs a
         # region BIOS (bios_CD_U.bin etc.) in the BIOS mount. ──────────────────────────────────

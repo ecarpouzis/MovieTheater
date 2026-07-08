@@ -31,6 +31,7 @@ namespace MovieTheater.Arcade
             ["gbc"] = "Nintendo - Game Boy Color",
             ["gba"] = "Nintendo - Game Boy Advance",
             ["n64"] = "Nintendo - Nintendo 64",
+            ["gc"] = "Nintendo - GameCube",
             ["ps1"] = "Sony - PlayStation",
             // Added 2026-07. naomi/atomiswave/neogeo are arcade-named (like fbneo) → omitted, they keep
             // the placeholder. A repo-name miss is a cosmetic non-error (placeholder card), never fatal.

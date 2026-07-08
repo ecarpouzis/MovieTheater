@@ -9,7 +9,7 @@ const PAGE_SIZE = 60;
 
 const SYSTEM_LABEL = {
   nes: "NES", snes: "SNES", genesis: "Genesis", gb: "Game Boy", gbc: "Game Boy Color",
-  gba: "Game Boy Advance", n64: "Nintendo 64", ps1: "PlayStation", arcade: "Arcade",
+  gba: "Game Boy Advance", n64: "Nintendo 64", gc: "GameCube", ps1: "PlayStation", arcade: "Arcade",
   psp: "PSP", dc: "Dreamcast", naomi: "Naomi", atomiswave: "Atomiswave",
   sms: "Master System", gg: "Game Gear", sg1000: "SG-1000", segacd: "Sega CD",
   sega32x: "32X", pce: "TurboGrafx-16", ngpc: "Neo Geo Pocket", wsc: "WonderSwan Color",
@@ -22,7 +22,7 @@ const systemLabel = (s) => SYSTEM_LABEL[s] || (s ? s.toUpperCase() : "");
 // its art is cached (the route lazily fetches on first view). Arcade/naomi/atomiswave/neogeo are skipped
 // (arcade-named art won't match → don't 404 those cards). Mirror of ArcadeBoxArt.ThumbRepo keys.
 const ART_SYSTEMS = new Set([
-  "nes", "snes", "genesis", "gb", "gbc", "gba", "n64", "ps1",
+  "nes", "snes", "genesis", "gb", "gbc", "gba", "n64", "gc", "ps1",
   "psp", "dc", "sms", "gg", "sg1000", "segacd", "sega32x", "pce", "ngpc", "wsc",
   "a2600", "a7800", "lynx", "vb", "fds",
 ]);

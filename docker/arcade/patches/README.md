@@ -155,3 +155,27 @@ caps and, when the frame's width/height differ, updates them (format + framerate
 pushing. The downstream capsfilter keeps the scaled output constant, so the encoder/WebRTC stream are
 unaffected — videoconvertscale simply rescales the new input. Fixed the entire green-screen class at
 once; logs `[video] source caps WxH -> WxH` on each change. Verified live: all affected games render.
+
+## 0016-dolphin-shared-context-and-serialize-probe.patch
+
+**`pkg/worker/caged/libretro/nanoarch/nanoarch.go` — the two frontend behaviours GameCube (dolphin)
+needs.** Both were found bringing up `dolphin_libretro` (GameCube) on the Windows GL worker:
+
+1. **Grant `RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT` (env 44) on the GL path.** Dolphin's OGL backend
+   renders/compiles shaders on threads other than the retro_run graphics thread and asks the frontend
+   to allow additional GL contexts sharing the main one's object namespace. Unhandled (= refused),
+   dolphin logged `SetHWRender - unable to set shared context` and fell into a degraded path. Dolphin
+   creates its own shared WGL contexts (`wglGetCurrentContext/DC` at context_reset → `wglShareLists`
+   on its worker threads); the frontend only needs to say yes. Non-GL cores still get `false`.
+2. **`skip_serialize_size_probe` core hack.** Right after `retro_load_game`, nanoarch probed
+   `retro_serialize_size` for a "Save file size" log line. The dolphin libretro port defers its whole
+   video/emu init to `context_reset` + the first `retro_run` (its EmuThread spawns there), so the
+   load-time probe walks the save-state chain into a NULL `g_vertex_manager` → `0xc0000005` (read of
+   `this+0x180` at dolphin+0x390fc5) and the worker died on **every** GameCube boot. The probe only
+   feeds that log line — the real save path re-queries the size at save time — so cores that list the
+   hack skip it. Opt-in per-core (`hacks: [skip_serialize_size_probe]` on `gc`); no other core changes.
+
+Bring-up note (not in this patch): dolphin option values must be the core-options-v2 VALUE strings,
+not display labels — `dolphin_efb_scale: "1"`, NOT `"1x Native (640x528)"`. An unmatched value leaves
+the port's typed option cache 0 → 0×0 geometry → the same null-video crash signature from a different
+door. Verified live 2026-07-07: F-Zero GX 60fps, input + memory card working.

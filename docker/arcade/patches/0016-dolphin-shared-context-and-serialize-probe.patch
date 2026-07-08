@@ -1,0 +1,70 @@
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+index 086bc13..6686d80 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+@@ -74,6 +74,11 @@ type Nanoarch struct {
+ 	glCtx                    *graphics.RGFW
+ 	hackSkipHwContextDestroy bool
+ 	hackSkipSameThreadSave   bool
++	// MovieTheater patch 0016: skip the informational retro_serialize_size probe right after load.
++	// Dolphin defers its whole video/emu init to context_reset + first retro_run (its EmuThread spawns
++	// there), so serialize_size at load walks the save-state chain into a NULL g_vertex_manager →
++	// 0xc0000005 at boot. The probe only feeds a log line; the real save path re-queries at save time.
++	hackSkipSerializeSizeProbe bool
+ 	limiter                  func(func())
+ 	log                      *logger.Logger
+ 
+@@ -202,6 +207,7 @@ func (n *Nanoarch) CoreLoad(meta Metadata) {
+ 	// hacks
+ 	Nan0.hackSkipHwContextDestroy = meta.HasHack("skip_hw_context_destroy")
+ 	Nan0.hackSkipSameThreadSave = meta.HasHack("skip_same_thread_save")
++	Nan0.hackSkipSerializeSizeProbe = meta.HasHack("skip_serialize_size_probe")
+ 
+ 	// reset controllers
+ 	n.retropad = InputState{}
+@@ -344,8 +350,13 @@ func (n *Nanoarch) LoadGame(path string) error {
+ 		n.sys.av.timing.fps = C.double(forcedFps)
+ 	}
+ 
+-	n.serializeSize = C.bridge_retro_serialize_size(retroSerializeSize)
+-	n.log.Info().Msgf("Save file size: %v", byteCountBinary(int64(n.serializeSize)))
++	if !n.hackSkipSerializeSizeProbe {
++		n.serializeSize = C.bridge_retro_serialize_size(retroSerializeSize)
++		n.log.Info().Msgf("Save file size: %v", byteCountBinary(int64(n.serializeSize)))
++	} else {
++		n.serializeSize = 0 // informational only; SaveGameState re-queries fresh (see hack note above)
++		n.log.Info().Msgf("Save file size: probe skipped (skip_serialize_size_probe)")
++	}
+ 
+ 	Nan0.tickTime = time.Duration(float64(time.Second) / float64(n.sys.av.timing.fps))
+ 	if n.vfr {
+@@ -917,6 +928,21 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+ 			return true
+ 		}
+ 		return false
++	case C.RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
++		// MovieTheater patch 0016: acknowledge SHARED hardware context (env 44). Dolphin's OGL backend
++		// renders / compiles shaders on threads OTHER than the retro_run graphics thread and asks the
++		// frontend to permit additional GL contexts that share the main one's object namespace. When we
++		// refused (default false), Dolphin logged "unable to set shared context for OpenGL 3.0", fell back
++		// to a single-context path, and then dereferenced a null context on its video thread → 0xc0000005
++		// at GameCube-mode boot. Our WGL/GLX context creation already shares self-consistently: Dolphin
++		// caches the main HGLRC/HDC (wglGetCurrentContext/DC) during context_reset on the graphics thread,
++		// then wglCreateContext + wglShareLists on its worker thread. So granting the capability is what it
++		// needs. Only claim it on the GL path (a non-GL core must never get a spurious yes).
++		if Nan0.Video.gl.enabled {
++			Nan0.log.Info().Msg("shared hardware context granted (env 44)")
++			return true
++		}
++		return false
+ 	case C.RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
+ 		if Nan0.log.GetLevel() > logger.DebugLevel {
+ 			return false
+@@ -1025,6 +1051,7 @@ func deinitVideo() {
+ 	Nan0.Video.gl.autoCtx = false
+ 	Nan0.hackSkipHwContextDestroy = false
+ 	Nan0.hackSkipSameThreadSave = false
++	Nan0.hackSkipSerializeSizeProbe = false
+ 	thread.SwitchGraphics(false)
+ }
+ 

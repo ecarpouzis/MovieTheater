@@ -9,7 +9,7 @@ const { Search } = Input;
 // Friendly system labels (mirror ArcadePage). The facet endpoint returns the raw codes.
 const SYSTEM_LABEL = {
   nes: "NES", snes: "SNES", genesis: "Genesis", gb: "Game Boy", gbc: "Game Boy Color",
-  gba: "Game Boy Advance", n64: "Nintendo 64", ps1: "PlayStation", arcade: "Arcade",
+  gba: "Game Boy Advance", n64: "Nintendo 64", gc: "GameCube", ps1: "PlayStation", arcade: "Arcade",
   psp: "PSP", dc: "Dreamcast", naomi: "Naomi", atomiswave: "Atomiswave",
   sms: "Master System", gg: "Game Gear", sg1000: "SG-1000", segacd: "Sega CD",
   sega32x: "32X", pce: "TurboGrafx-16", ngpc: "Neo Geo Pocket", wsc: "WonderSwan Color",

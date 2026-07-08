@@ -202,6 +202,11 @@ public sealed class RomCache
     private bool SourceIsRom(ManifestGame g) =>
         ExtsOf(g).Contains(Path.GetExtension(g.Archive), StringComparer.OrdinalIgnoreCase);
 
+    // A multi-disc member whose source file IS the launch ROM (its extension matches the playlist filename
+    // we place — a GameCube .gcz, a .chd) is COPIED; one whose source differs (a PS1 .7z → .cue) is extracted.
+    private static bool DiscSourceIsRom(DiscRef d) =>
+        Path.GetExtension(d.Archive).Equals(Path.GetExtension(d.File), StringComparison.OrdinalIgnoreCase);
+
     private string CopyDest(ManifestGame g) =>
         Path.GetFullPath(Path.Combine(FolderDest(g), Path.GetFileName(g.Archive)));
 
@@ -210,17 +215,29 @@ public sealed class RomCache
         var dest = FolderDest(g);
         Directory.CreateDirectory(dest);
 
-        // Multi-disc: extract every member disc, then write the .m3u playlist the core loads and swaps
-        // discs within (patch 0005). GameKey is the playlist basename; Exts is [".m3u"].
+        // Multi-disc: materialize every member disc, then write the .m3u playlist the core loads and swaps
+        // discs within (patch 0005). GameKey is the playlist basename; Exts is [".m3u"]. A disc's source is
+        // either an archive to EXTRACT (a PS1 .7z → .cue+tracks) or the ROM ITSELF to COPY (a GameCube .gcz,
+        // a .chd) — same distinction as the single-disc path, decided per disc.
         if (g.Discs is { Length: > 0 })
         {
             foreach (var d in g.Discs)
             {
                 if (!File.Exists(d.Archive))
                     throw new FileNotFoundException($"source disc archive missing: {d.Archive}");
-                await RunSevenZipAsync(new[] { "x", "-y", "-bd", d.Archive, "-o" + dest }, ct);
+                if (DiscSourceIsRom(d))
+                {
+                    var to = Path.Combine(dest, d.File);
+                    using var src = new FileStream(d.Archive, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    using var dst = new FileStream(to, FileMode.Create, FileAccess.Write, FileShare.None);
+                    await src.CopyToAsync(dst, ct);
+                }
+                else
+                {
+                    await RunSevenZipAsync(new[] { "x", "-y", "-bd", d.Archive, "-o" + dest }, ct);
+                }
                 if (!File.Exists(Path.Combine(dest, d.File)))
-                    throw new InvalidOperationException($"disc extract produced no {d.File} in {dest}.");
+                    throw new InvalidOperationException($"disc materialize produced no {d.File} in {dest}.");
             }
             await File.WriteAllLinesAsync(RomDest(g, ".m3u"), g.Discs.Select(d => d.File), ct);
             if (!IsPresent(g))
@@ -269,6 +286,28 @@ public sealed class RomCache
     // and actually exist are kept (the eviction whitelist).
     private List<string> ExtractedFilesOnDisk(ManifestGame g)
     {
+        var dest = FolderDest(g);
+
+        // Multi-disc: the .m3u playlist plus, per disc, the copied ROM (one file) or the archive's unpacked
+        // entries. Without this the eviction whitelist would be empty and multi-disc discs would leak disk.
+        if (g.Discs is { Length: > 0 })
+        {
+            var discFiles = new List<string>();
+            void Keep(string name)
+            {
+                var full = Path.GetFullPath(Path.Combine(dest, name));
+                if (IsUnderRoot(full) && File.Exists(full) && !discFiles.Contains(full)) discFiles.Add(full);
+            }
+            Keep(g.GameKey + ".m3u");
+            foreach (var d in g.Discs)
+            {
+                if (DiscSourceIsRom(d)) Keep(d.File);                              // the copied ROM
+                else foreach (var internalPath in ListArchiveEntries(d.Archive))  // the extracted entries
+                    Keep(internalPath);
+            }
+            return discFiles;
+        }
+
         // A copied-in ROM owns exactly one file on disk (the copy); an extracted archive owns whatever it
         // unpacked, derived from its listing.
         if (SourceIsRom(g))
@@ -277,7 +316,6 @@ public sealed class RomCache
             return (IsUnderRoot(to) && File.Exists(to)) ? new List<string> { to } : new List<string>();
         }
         var result = new List<string>();
-        var dest = FolderDest(g);
         foreach (var internalPath in ListArchiveEntries(g.Archive))
         {
             var full = Path.GetFullPath(Path.Combine(dest, internalPath));
