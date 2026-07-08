@@ -200,7 +200,7 @@ export function createCloudRetroSession(descriptor, opts) {
   //  • arcade.audioJitterMs (default 80): give NetEq a small STABLE audio target so it stops adaptively
   //    inflating + stretching. Video stays at 0 (Pion uses separate stream ids, so audio delay never
   //    drags video). ~80ms audio latency is imperceptible for game SFX. Set 0 to restore old behavior.
-  //  • arcade.audioPC (opt-in, "1"): give audio its OWN PeerConnection so video bursts can't
+  //  • arcade.audioPC (default ON; opt out with "0"): give audio its OWN PeerConnection so video bursts can't
   //    head-of-line-block it. NOT SDP un-bundling — that is unimplementable against this worker:
   //    pion/webrtc hardcodes ONE ICE/DTLS transport per PeerConnection (its BundlePolicy config is
   //    stored but never read), so a max-compat browser's extra transports have no peer and DTLS never
@@ -210,12 +210,14 @@ export function createCloudRetroSession(descriptor, opts) {
   //    init sdp:"audio-pc"; the worker then offers video+data on the main PC and opus on an aux PC,
   //    tunneling the aux offer/ICE through the ice signal field as "aux-sdp:"/"aux-ice:" envelopes
   //    (coordinator relays those strings verbatim). Old worker ignores the ask → audio arrives on the
-  //    main PC as always, so the flag is safe to set against any worker build.
+  //    main PC as always, so the flag is safe against any worker build. Verified on prod 2026-07-08:
+  //    2 PCs both connected, video-only on main / opus-only on aux, Playing in 4s. Escape hatch if a
+  //    room ever has video but NO audio: localStorage.setItem("arcade.audioPC","0") + reload.
   const AUDIO_JITTER_MS = (() => {
     try { const v = parseInt(localStorage.getItem("arcade.audioJitterMs"), 10); return Number.isFinite(v) && v >= 0 ? v : 80; }
     catch { return 80; }
   })();
-  const AUDIO_PC = (() => { try { return localStorage.getItem("arcade.audioPC") === "1"; } catch { return false; } })();
+  const AUDIO_PC = (() => { try { return localStorage.getItem("arcade.audioPC") !== "0"; } catch { return true; } })();
 
   // Input profile for this game's system (button layout + keyboard map + optional right-stick keys).
   const profile = profileFor(descriptor.system);
