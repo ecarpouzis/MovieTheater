@@ -200,15 +200,18 @@ export function createCloudRetroSession(descriptor, opts) {
   //  • arcade.audioJitterMs (default 80): give NetEq a small STABLE audio target so it stops adaptively
   //    inflating + stretching. Video stays at 0 (Pion uses separate stream ids, so audio delay never
   //    drags video). ~80ms audio latency is imperceptible for game SFX. Set 0 to restore old behavior.
-  //  • arcade.noBundle (default ON): strip the a=group:BUNDLE from our SDP answer so audio negotiates
-  //    its OWN transport (the worker offers BundlePolicyMaxCompat) → video bursts can't block it at all.
-  //    This is the deep fix and is now the DEFAULT. ESCAPE HATCH: if a room ever fails to CONNECT (not
-  //    just sounds off), set localStorage arcade.noBundle="0" + reload to fall back to the bundled path.
+  //  • arcade.noBundle (default OFF — OPT-IN): give audio its OWN transport so video bursts can't
+  //    head-of-line-block it. Two REQUIRED halves, learned the hard way: (a) construct THIS peer with
+  //    bundlePolicy "max-compat" so Chrome actually allocates a separate transport per m-line, AND
+  //    (b) strip a=group:BUNDLE from our answer so the two aren't collapsed. Stripping WITHOUT (a) leaves
+  //    the audio m-line with no transport of its own → the connection hangs at "Negotiating" forever
+  //    (that's exactly what default-on caused). Off by default: the jitter buffer (below) + lower bitrate
+  //    already smooth the audio on the safe bundled path. Enable to test the deep fix: arcade.noBundle="1".
   const AUDIO_JITTER_MS = (() => {
     try { const v = parseInt(localStorage.getItem("arcade.audioJitterMs"), 10); return Number.isFinite(v) && v >= 0 ? v : 80; }
     catch { return 80; }
   })();
-  const NO_BUNDLE = (() => { try { return localStorage.getItem("arcade.noBundle") !== "0"; } catch { return true; } })();
+  const NO_BUNDLE = (() => { try { return localStorage.getItem("arcade.noBundle") === "1"; } catch { return false; } })();
 
   // Input profile for this game's system (button layout + keyboard map + optional right-stick keys).
   const profile = profileFor(descriptor.system);
@@ -313,7 +316,9 @@ export function createCloudRetroSession(descriptor, opts) {
   }
 
   function setupPeer() {
-    pc = new RTCPeerConnection({ iceServers });
+    // max-compat only when un-bundling (opt-in): it makes Chrome allocate a transport per m-line, which
+    // the answer's BUNDLE-strip then keeps separate. Required — see the NO_BUNDLE note above.
+    pc = new RTCPeerConnection(NO_BUNDLE ? { iceServers, bundlePolicy: "max-compat" } : { iceServers });
 
     // The joypad channel is pre-negotiated — label/id/flags must match the server EXACTLY (Appendix A4)
     // or it silently never opens.

@@ -17,12 +17,16 @@ time-stretches) is now countered by a layered, mostly-safe set of levers. In eff
 3. **Audio-only `jitterBufferTarget` (default 80ms, client)** — the PRIMARY, default-on fix. Gives NetEq a
    small STABLE target so it stops adaptively inflating + time-stretching. Video stays at 0 (separate
    stream ids → video isn't lip-sync-delayed). Tunable/disable via `localStorage arcade.audioJitterMs`.
-4. **True un-bundle (now DEFAULT-ON, per user 2026-07-08)** — patch **0019** sets the Pion offerer to
-   `BundlePolicyMaxCompat` (per-m-line transports; safe, default path unchanged); the shim then strips
-   `a=group:BUNDLE` from its answer so audio negotiates its OWN transport (video bursts can't block it at
-   all). Both transports still ride the one single-port UDP mux (rtcp-mux → no extra port). **Escape
-   hatch** if a room ever fails to CONNECT (not merely sounds off): `localStorage arcade.noBundle="0"` +
-   reload → bundled fallback. Still **judge audio on a real browser** (headless can't).
+4. **True un-bundle (OPT-IN, `localStorage arcade.noBundle="1"`)** — patch **0019** sets the Pion offerer
+   to `BundlePolicyMaxCompat` (per-m-line transports; safe, default path unchanged); the shim gives audio
+   its own transport via TWO required halves: (a) construct the browser peer with `bundlePolicy:
+   "max-compat"` so Chrome allocates a transport per m-line, AND (b) strip `a=group:BUNDLE` from the
+   answer. Both ride the one single-port UDP mux (rtcp-mux → no extra port). **LESSON (2026-07-08):** it
+   was briefly default-ON with only (b) — stripping the group WITHOUT the max-compat construction left the
+   audio m-line with no transport → every room hung at "Negotiating" (user hit it live; `noBundle="0"` +
+   reload fixed it instantly, which is what proved the diagnosis). Now default-OFF with both halves in
+   place; **verify on a real browser before making it default** (headless can't judge audio anyway). The
+   safe bundled path + jitter buffer (#3) + lower bitrate already deliver clean audio.
 
 Deployed: site changes committed (`a208e2d`) + pushed; GL worker rebuilt from patches 0018/0019 and both
 workers restarted (clean boot, both ICE IPs). **Still to do:** judge audio smoothness on a REAL browser
