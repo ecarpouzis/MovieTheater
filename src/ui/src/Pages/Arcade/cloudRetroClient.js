@@ -200,18 +200,22 @@ export function createCloudRetroSession(descriptor, opts) {
   //  • arcade.audioJitterMs (default 80): give NetEq a small STABLE audio target so it stops adaptively
   //    inflating + stretching. Video stays at 0 (Pion uses separate stream ids, so audio delay never
   //    drags video). ~80ms audio latency is imperceptible for game SFX. Set 0 to restore old behavior.
-  //  • arcade.noBundle (default ON): give audio its OWN transport so video bursts can't head-of-line-block
-  //    it. TWO REQUIRED halves, learned the hard way: (a) construct THIS peer with bundlePolicy
-  //    "max-compat" so Chrome actually allocates a separate transport per m-line, AND (b) strip
-  //    a=group:BUNDLE from our answer so the two aren't collapsed. Stripping WITHOUT (a) leaves the audio
-  //    m-line with no transport of its own → the connection hangs at "Negotiating" forever (that WAS the
-  //    default-on bug on 2026-07-08 — half (a) was missing). Both halves are present now. ESCAPE HATCH if
-  //    a room ever fails to CONNECT (not just sounds off): localStorage arcade.noBundle="0" + reload.
+  //  • arcade.audioPC (opt-in, "1"): give audio its OWN PeerConnection so video bursts can't
+  //    head-of-line-block it. NOT SDP un-bundling — that is unimplementable against this worker:
+  //    pion/webrtc hardcodes ONE ICE/DTLS transport per PeerConnection (its BundlePolicy config is
+  //    stored but never read), so a max-compat browser's extra transports have no peer and DTLS never
+  //    completes → the 2026-07-08 "Negotiating" hang, unfixable by any port layout (multiport tested +
+  //    refuted). A SECOND PC is the shape Pion does support (it's just another peer on the mux, and the
+  //    browser gives it its own local port → distinct 5-tuple). Worker half: patch 0020 — we ask via
+  //    init sdp:"audio-pc"; the worker then offers video+data on the main PC and opus on an aux PC,
+  //    tunneling the aux offer/ICE through the ice signal field as "aux-sdp:"/"aux-ice:" envelopes
+  //    (coordinator relays those strings verbatim). Old worker ignores the ask → audio arrives on the
+  //    main PC as always, so the flag is safe to set against any worker build.
   const AUDIO_JITTER_MS = (() => {
     try { const v = parseInt(localStorage.getItem("arcade.audioJitterMs"), 10); return Number.isFinite(v) && v >= 0 ? v : 80; }
     catch { return 80; }
   })();
-  const NO_BUNDLE = (() => { try { return localStorage.getItem("arcade.noBundle") !== "0"; } catch { return true; } })();
+  const AUDIO_PC = (() => { try { return localStorage.getItem("arcade.audioPC") === "1"; } catch { return false; } })();
 
   // Input profile for this game's system (button layout + keyboard map + optional right-stick keys).
   const profile = profileFor(descriptor.system);
@@ -316,9 +320,7 @@ export function createCloudRetroSession(descriptor, opts) {
   }
 
   function setupPeer() {
-    // max-compat only when un-bundling (opt-in): it makes Chrome allocate a transport per m-line, which
-    // the answer's BUNDLE-strip then keeps separate. Required — see the NO_BUNDLE note above.
-    pc = new RTCPeerConnection(NO_BUNDLE ? { iceServers, bundlePolicy: "max-compat" } : { iceServers });
+    pc = new RTCPeerConnection({ iceServers });
 
     // The joypad channel is pre-negotiated — label/id/flags must match the server EXACTLY (Appendix A4)
     // or it silently never opens.
@@ -335,32 +337,7 @@ export function createCloudRetroSession(descriptor, opts) {
       }
     };
 
-    // CloudRetro (Pion) sends audio and video as SEPARATE m-lines/streams. Assigning
-    // videoEl.srcObject = e.streams[0] per track left the <video> holding only the LAST track's
-    // stream — audio arrives last, so you'd get sound but a black frame (the video track orphaned).
-    // Collect EVERY inbound track into one MediaStream so the element plays both.
-    pc.ontrack = (e) => {
-      // Cloud gaming wants minimal receive buffering. Chrome's ADAPTIVE jitter buffer is tiny for
-      // video (~8ms measured) but the AUDIO buffer grows unbounded (24→77ms in 30s, from encoder
-      // clock drift) — and the browser lip-syncs video playout to audio, so the whole stream drifts
-      // later the longer you play. Pin both receivers to the minimum. (jitterBufferTarget is the
-      // standard; playoutDelayHint is the legacy Chrome name — set both, harmless where unknown.)
-      // Roadmap WS-A.4: N64 was fine at 0, but cross-network multiplayer (4-player, mixed LAN+remote)
-      // hits the exact "reopen" condition noted here — the send-path bursts make NetEq inflate + stretch.
-      // Give AUDIO a small stable target (arcade.audioJitterMs, default 80ms) to absorb the bursts; keep
-      // VIDEO at 0 so it stays responsive (separate stream ids → video never lip-sync-waits on audio).
-      const jbMs = e.track && e.track.kind === "audio" ? AUDIO_JITTER_MS : 0;
-      try { e.receiver.jitterBufferTarget = jbMs; } catch { /* older browsers */ }
-      try { e.receiver.playoutDelayHint = jbMs / 1000; } catch { /* non-Chrome */ }
-      inboundStream.addTrack(e.track);
-      if (videoEl && videoEl.srcObject !== inboundStream) {
-        videoEl.srcObject = inboundStream;
-        videoEl.play?.().catch(() => {});
-      }
-      // The geometry (flip/rotation) message can land before OR after the track — re-assert it now
-      // that the element is live so a GL core's frame isn't left upside down.
-      applyVideoTransform(null);
-    };
+    pc.ontrack = onInboundTrack;
     pc.onicecandidate = (e) => {
       if (e.candidate) send(T.SIGNAL, { ice: JSON.stringify(e.candidate) });
     };
@@ -369,8 +346,36 @@ export function createCloudRetroSession(descriptor, opts) {
         status(pc.connectionState);
     };
 
-    // Kick off: we are not the offerer — the server sends the SDP offer.
-    send(T.INIT_WEBRTC, { initiator: false });
+    // Kick off: we are not the offerer — the server sends the SDP offer. sdp:"audio-pc" asks a
+    // patch-0020 worker to put opus on a dedicated aux PeerConnection (ignored by older workers —
+    // the worker only reads init sdp when initiator is true, so audio then just rides this PC).
+    send(T.INIT_WEBRTC, AUDIO_PC ? { initiator: false, sdp: "audio-pc" } : { initiator: false });
+  }
+
+  // Shared by BOTH PeerConnections. Cloud gaming wants minimal receive buffering. Chrome's ADAPTIVE
+  // jitter buffer is tiny for video (~8ms measured) but the AUDIO buffer grows unbounded (24→77ms in
+  // 30s, from encoder clock drift) — and the browser lip-syncs video playout to audio, so the whole
+  // stream drifts later the longer you play. Pin both receivers to the minimum. (jitterBufferTarget is
+  // the standard; playoutDelayHint is the legacy Chrome name — set both, harmless where unknown.)
+  // Roadmap WS-A.4: N64 was fine at 0, but cross-network multiplayer (4-player, mixed LAN+remote)
+  // hits the exact "reopen" condition noted here — the send-path bursts make NetEq inflate + stretch.
+  // Give AUDIO a small stable target (arcade.audioJitterMs, default 80ms) to absorb the bursts; keep
+  // VIDEO at 0 so it stays responsive (separate stream ids → video never lip-sync-waits on audio).
+  // CloudRetro (Pion) sends audio and video as SEPARATE m-lines/streams (and with arcade.audioPC,
+  // separate PeerConnections) — collect EVERY inbound track into ONE MediaStream so the element
+  // plays both; per-track srcObject assignment left the last track orphaning the first.
+  function onInboundTrack(e) {
+    const jbMs = e.track && e.track.kind === "audio" ? AUDIO_JITTER_MS : 0;
+    try { e.receiver.jitterBufferTarget = jbMs; } catch { /* older browsers */ }
+    try { e.receiver.playoutDelayHint = jbMs / 1000; } catch { /* non-Chrome */ }
+    inboundStream.addTrack(e.track);
+    if (videoEl && videoEl.srcObject !== inboundStream) {
+      videoEl.srcObject = inboundStream;
+      videoEl.play?.().catch(() => {});
+    }
+    // The geometry (flip/rotation) message can land before OR after the track — re-assert it now
+    // that the element is live so a GL core's frame isn't left upside down.
+    applyVideoTransform(null);
   }
 
   // CloudRetro trickles ICE candidates that can arrive BEFORE its SDP offer. addIceCandidate() throws
@@ -394,21 +399,51 @@ export function createCloudRetroSession(descriptor, opts) {
       try { await pc.addIceCandidate(pendingCandidates.shift()); } catch (err) { onError && onError(err); }
     }
     const answer = await pc.createAnswer();
-    // Opt-in un-bundle: drop the BUNDLE group from our answer so audio + video negotiate SEPARATE
-    // transports (the worker offers per-m-line transports via BundlePolicyMaxCompat). Removes the
-    // video-burst → audio head-of-line blocking entirely. Off by default (SDP munging is delicate;
-    // verify on a real session before relying on it).
-    if (NO_BUNDLE && answer.sdp) {
-      answer.sdp = answer.sdp.replace(/^a=group:BUNDLE[^\r\n]*\r?\n/im, "");
-    }
     await pc.setLocalDescription(answer);
     send(T.SIGNAL, { sdp: JSON.stringify(pc.localDescription) });
+  }
+
+  // ── aux audio PeerConnection (arcade.audioPC, worker patch 0020) ───────────────────────────────
+  // The worker tunnels the aux PC's offer + ICE through the ice signal field with string prefixes
+  // (the coordinator relays sdp/ice verbatim, so no protocol change): "aux-sdp:<json>" carries the
+  // offer, "aux-ice:<json>" a candidate. We answer on the SIGNAL channel with the same "aux:" prefix
+  // so the worker can route them to its aux PC. Audio tracks land in the SAME inboundStream.
+  let apc = null;
+  let auxRemoteReady = false;
+  const auxPendingCandidates = [];
+
+  async function onAuxOffer(sdpString) {
+    if (!apc) {
+      apc = new RTCPeerConnection({ iceServers });
+      apc.ontrack = onInboundTrack;
+      apc.onicecandidate = (e) => {
+        if (e.candidate) send(T.SIGNAL, { ice: "aux:" + JSON.stringify(e.candidate) });
+      };
+    }
+    await apc.setRemoteDescription(JSON.parse(sdpString));
+    auxRemoteReady = true;
+    while (auxPendingCandidates.length) {
+      try { await apc.addIceCandidate(auxPendingCandidates.shift()); } catch (err) { onError && onError(err); }
+    }
+    const answer = await apc.createAnswer();
+    await apc.setLocalDescription(answer);
+    send(T.SIGNAL, { sdp: "aux:" + JSON.stringify(apc.localDescription) });
+  }
+
+  async function addAuxCandidate(iceString) {
+    const candidate = JSON.parse(iceString);
+    if (!auxRemoteReady) { auxPendingCandidates.push(candidate); return; }
+    try { await apc.addIceCandidate(candidate); } catch (err) { onError && onError(err); }
   }
 
   async function onSignal(p) {
     try {
       if (p.sdp) await onSdp(p.sdp);
-      if (p.ice) await addCandidate(p.ice);
+      if (p.ice) {
+        if (p.ice.startsWith("aux-sdp:")) await onAuxOffer(p.ice.slice(8));
+        else if (p.ice.startsWith("aux-ice:")) await addAuxCandidate(p.ice.slice(8));
+        else await addCandidate(p.ice);
+      }
     } catch (err) { onError && onError(err); }
   }
 
@@ -517,6 +552,7 @@ export function createCloudRetroSession(descriptor, opts) {
     try { dc && dc.close(); } catch { /* */ }
     try { discDc && discDc.close(); } catch { /* */ }
     try { pc && pc.close(); } catch { /* */ }
+    try { apc && apc.close(); } catch { /* */ }
     try { ws && ws.close(); } catch { /* */ }
     if (videoEl) videoEl.srcObject = null;
   }
