@@ -102,6 +102,12 @@ namespace MovieTheater.Services
         /// obscure/digital titles). Used as the last step of the box-art cascade.</summary>
         public string? SteamGridDbApiKey { get; set; }
 
+        /// <summary>A SECOND, web-wide Google Custom Search Engine id (distinct from the imdb-locked
+        /// <see cref="GoogleSearchEngineId"/>) used only for box-art image search — the final cascade step
+        /// that finds a cover for anything even SteamGridDB lacks. Reuses <see cref="GoogleSearchApiKey"/>.
+        /// Create one at programmablesearchengine.google.com set to "Search the entire web" + Image search on.</summary>
+        public string? BoxArtImageSearchEngineId { get; set; }
+
         /// <summary>
         /// Usernames granted administrator rights (case-insensitive). This is the root of trust for
         /// the admin tools — it can only be changed in server config, never through the app, so admin

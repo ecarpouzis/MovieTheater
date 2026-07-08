@@ -39,6 +39,25 @@ namespace MovieTheater.Controllers
         private static SteamGridDbClient Sgdb(MovieTheaterConfiguration config) =>
             _sgdb ??= (SteamGridDbClient.IsConfigured(config) ? new SteamGridDbClient(Http, config.SteamGridDbApiKey) : null);
 
+        // Absolute-last cascade step: web image search for covers no game DB has.
+        private static GoogleImageCoverClient _gimg;
+        private static GoogleImageCoverClient Gimg(MovieTheaterConfiguration config) =>
+            _gimg ??= (GoogleImageCoverClient.IsConfigured(config)
+                ? new GoogleImageCoverClient(Http, config.GoogleSearchApiKey, config.BoxArtImageSearchEngineId) : null);
+
+        // System code → a search hint for the web image query ("Doom" alone is ambiguous; "Doom PlayStation" isn't).
+        private static string SystemHint(string system) => system switch
+        {
+            "nes" => "NES", "snes" => "SNES", "n64" => "Nintendo 64", "gc" => "GameCube", "gb" => "Game Boy",
+            "gbc" => "Game Boy Color", "gba" => "Game Boy Advance", "fds" => "Famicom", "vb" => "Virtual Boy",
+            "genesis" => "Sega Genesis", "sms" => "Sega Master System", "gg" => "Game Gear", "segacd" => "Sega CD",
+            "sega32x" => "Sega 32X", "sg1000" => "SG-1000", "dc" => "Dreamcast", "naomi" => "arcade", "atomiswave" => "arcade",
+            "ps1" => "PlayStation", "ps2" => "PlayStation 2", "psp" => "PSP",
+            "pce" => "TurboGrafx-16", "ngpc" => "Neo Geo Pocket", "wsc" => "WonderSwan", "neogeo" => "Neo Geo",
+            "a2600" => "Atari 2600", "a7800" => "Atari 7800", "lynx" => "Atari Lynx", "arcade" => "arcade",
+            _ => system,
+        };
+
         private static HttpClient CreateHttp()
         {
             var h = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
@@ -124,6 +143,17 @@ namespace MovieTheater.Controllers
                     if (url != null) thumb = ArcadeBoxArt.Thumbnail(await Http.GetByteArrayAsync(url), ThumbPx);
                 }
                 catch { /* SteamGridDB hiccup — fall through to placeholder */ }
+            }
+
+            // 3d. Web image search — the absolute last resort for a cover no game DB has. Best-effort top hit.
+            if (thumb == null && Gimg(config) is GoogleImageCoverClient gimg)
+            {
+                try
+                {
+                    var url = await gimg.FindBoxArtUrlAsync(game.Title, SystemHint(game.System));
+                    if (url != null) thumb = ArcadeBoxArt.Thumbnail(await Http.GetByteArrayAsync(url), ThumbPx);
+                }
+                catch { /* couldn't fetch/decode — placeholder */ }
             }
 
             if (thumb == null) { NoArt.TryAdd(cardId, 0); return NotFound(); }
