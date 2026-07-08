@@ -117,10 +117,23 @@ const MovieCard = memo(function MovieCard({
               })}
             </div>
             <PlotText text={summaryText} className="card-plot" hiddenClass={isMobile ? "card-plot--hidden" : ""} />
+            {/* Desktop: Seen/Want live INSIDE the right column (centered at its base) so the card's
+                height is set by the poster, not an extra full-width row below it. */}
+            {!isMobile && !isMisc && showOptions && (
+              <UserMovieOptions
+                id={item.id}
+                kind={item.kind}
+                isWatched={isWatched}
+                isWanted={isWanted}
+                onToggleSeen={onToggleSeen}
+                onToggleWant={onToggleWant}
+              />
+            )}
           </div>
         </div>
         <PlotText text={summaryText} className="card-plot-below" hiddenClass={isMobile ? "card-plot-below--visible" : ""} />
-        {!isMisc && showOptions && (
+        {/* Mobile: poster+text stack, so the actions sit at the card's base. */}
+        {isMobile && !isMisc && showOptions && (
           <UserMovieOptions
             id={item.id}
             kind={item.kind}

@@ -441,9 +441,11 @@
   color: #fff !important;
   border-radius: 7px;
 }
+/* All control text (values, placeholders) shares ONE feature-tinted color so nothing reads as
+   a stray white item next to the tinted placeholders/labels. */
 .navbar-sider .ant-select-selection-item,
 .navbar-dropdown .ant-select-selection-item {
-  color: #fff;
+  color: var(--sidebar-text-muted);
 }
 .navbar-sider .ant-select .ant-select-selection-placeholder,
 .navbar-dropdown .ant-select .ant-select-selection-placeholder {
@@ -454,6 +456,17 @@
 .navbar-dropdown .ant-select .ant-select-arrow {
   color: var(--sidebar-text-muted) !important;
 }
+/* allowClear "×" — antd gives it a white background pad to mask the arrow, which showed as a
+   white square on the dark well. Match the well and tint the glyph. */
+.navbar-sider .ant-select-clear,
+.navbar-dropdown .ant-select-clear {
+  background: var(--sidebar-input-bg) !important;
+  color: var(--sidebar-text-muted) !important;
+}
+.navbar-sider .ant-select-clear:hover,
+.navbar-dropdown .ant-select-clear:hover {
+  color: #fff !important;
+}
 .navbar-sider .ant-select:not(.ant-select-disabled):hover .ant-select-selector,
 .navbar-dropdown .ant-select:not(.ant-select-disabled):hover .ant-select-selector,
 .navbar-sider .ant-select-focused .ant-select-selector,
@@ -463,11 +476,10 @@
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 2px var(--accent-soft) !important;
 }
-/* The single-select value text (e.g. Sort By) — antd renders it in a nested item that kept a
-   pale background/dark text, so it read as a different color than the other controls. */
+/* The single-select value text (e.g. Sort By, System) — tinted to match the placeholders. */
 .navbar-sider .ant-select-single .ant-select-selection-item,
 .navbar-dropdown .ant-select-single .ant-select-selection-item {
-  color: #fff;
+  color: var(--sidebar-text-muted);
   background: transparent;
 }
 /* Multi-select chips (Genre / Type) — accent chips on the dark well, not antd's white tags. */
@@ -475,7 +487,7 @@
 .navbar-dropdown .ant-select-multiple .ant-select-selection-item {
   background: var(--accent-soft) !important;
   border-color: var(--accent) !important;
-  color: #fff !important;
+  color: var(--sidebar-text-muted) !important;
   border-radius: 5px;
 }
 .navbar-sider .ant-select-multiple .ant-select-selection-item-remove,

@@ -1,11 +1,12 @@
+/* Seen/Want actions — compact bordered pills, centered at the base of the card's right column. */
 .viewing-options {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 12px 12px;
+  gap: 8px;
+  padding: 6px 0 2px;
   margin-top: auto;
+  flex-shrink: 0;
 }
 
 .viewing-options--compact {
@@ -15,14 +16,13 @@
   margin-top: 0;
 }
 
-/* Outlined-neutral idle pill; filled when active. */
+/* Outlined-neutral idle pill; filled when active. Auto width so the pair centers rather than
+   stretching across the column. */
 .viewing-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 1 1 0;
-  max-width: 160px;
-  padding: 5px 12px;
+  padding: 3px 14px;
   cursor: pointer;
   border: 1px solid var(--card-border);
   border-radius: 6px;
