@@ -323,10 +323,25 @@ function SavesManager({ game, onClose, onResume }) {
   );
 }
 
+// IGDB score → tag colour band. Null score renders no badge (unenriched or unrated on IGDB).
+const ratingColor = (r) => (r >= 78 ? "green" : r >= 62 ? "gold" : r >= 45 ? "orange" : "default");
+
+// Compact multiplayer descriptor from IGDB game_modes: co-op vs competitive, split vs shared screen.
+function multiplayerTag(gameModes) {
+  const m = (gameModes || "").toLowerCase();
+  const coop = m.includes("co-operative") || m.includes("co-op");
+  if (!coop && !m.includes("multiplayer")) return null;
+  const split = m.includes("split screen");
+  return { label: (coop ? "Co-op" : "Versus") + (split ? " · Split" : ""), color: coop ? "cyan" : "volcano" };
+}
+
 // One card per game (docs/arcade-dedupe-multidisc-plan.md). A version dropdown picks which ROM launches
 // (region / revision / edition / disc / hack); the tags track the selection. Multiple versions collapse
 // here so the grid shows each game once. Box art is shared per game via the representative `artId`.
 function GameCard({ game, onStart, onManageSaves, creating }) {
+  const genre = game.genres ? game.genres.split(",")[0].trim() : null;
+  const isParty = (game.themes || "").toLowerCase().includes("party");
+  const mp = multiplayerTag(game.gameModes);
   const [sel, setSel] = useState(game.versions?.[0]?.id);
   // When the filters change the default version (e.g. you filtered a region), reset the selection.
   useEffect(() => { setSel(game.versions?.[0]?.id); }, [game.versions?.[0]?.id]);
@@ -337,7 +352,11 @@ function GameCard({ game, onStart, onManageSaves, creating }) {
         title={game.title}
         description={
           <Space size={4} wrap>
+            {game.rating != null && <Tag color={ratingColor(game.rating)}>★ {game.rating}</Tag>}
             <Tag color="purple">{systemLabel(game.system)}</Tag>
+            {genre && <Tag color="blue">{genre}</Tag>}
+            {mp && <Tag color={mp.color}>{mp.label}</Tag>}
+            {isParty && <Tag color="magenta">Party</Tag>}
             {game.maxPlayers > 1 && <Tag>{game.maxPlayers}P</Tag>}
             {version?.region && version.region !== "Unknown" && <Tag>{version.region}</Tag>}
             {version?.variant && version.variant !== "Release" && <Tag color="magenta">{version.variant}</Tag>}

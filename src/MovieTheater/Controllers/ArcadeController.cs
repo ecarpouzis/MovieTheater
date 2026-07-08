@@ -134,6 +134,8 @@ namespace MovieTheater.Controllers
                 // "(Rev A)" default doesn't hide the base "(USA)" box), else the lowest-id row — the canonical
                 // card file the image route writes a fresh fetch to. Filter-independent, so it stays one file.
                 var artRow = vs.FirstOrDefault(g => g.BoxArtPath != null) ?? vs.OrderBy(g => g.Id).FirstOrDefault();
+                // IGDB enrichment is stored on the card's anchor (lowest-id) row, same convention as box art.
+                var meta = vs.OrderBy(g => g.Id).FirstOrDefault();
                 return new
                 {
                     key = k.System + "|" + k.Title,
@@ -141,9 +143,19 @@ namespace MovieTheater.Controllers
                     system = k.System,
                     artId = artRow?.Id ?? rep?.Id ?? 0,
                     hasBoxArt = vs.Any(g => g.BoxArtPath != null),
-                    year = rep?.Year,
+                    year = rep?.Year ?? meta?.Year,
                     maxPlayers = versions.Count > 0 ? versions.Max(v => v.MaxPlayers) : (byte)1,
                     versionCount = versions.Count,
+                    // IGDB metadata (null until enriched): score + discovery fields for the card.
+                    rating = meta?.RatingScore is double rs ? (int?)Math.Round(rs) : null,
+                    ratingCount = meta?.RatingCount,
+                    genres = meta?.Genres,
+                    themes = meta?.Themes,
+                    summary = meta?.Summary,
+                    developer = meta?.Developer,
+                    publisher = meta?.Publisher,
+                    gameModes = meta?.GameModes,
+                    esrb = meta?.EsrbRating,
                     versions = versions.Select(v => new
                     {
                         id = v.Id, label = v.Label, region = v.Region,

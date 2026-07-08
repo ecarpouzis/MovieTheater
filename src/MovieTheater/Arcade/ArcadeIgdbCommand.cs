@@ -83,7 +83,7 @@ namespace MovieTheater.Arcade
             var batch = cards.Take(Math.Max(1, Limit)).ToList();
             var remaining = cards.Count - batch.Count;
 
-            int matched = 0, missed = 0, skipped = 0, artFetched = 0, seatFlags = 0, lastId = AfterId;
+            int matched = 0, missed = 0, skipped = 0, artFetched = 0, seatFlags = 0, lastId = AfterId, sinceSave = 0;
             foreach (var versions in batch)
             {
                 var anchor = versions[0];
@@ -119,8 +119,11 @@ namespace MovieTheater.Arcade
                 var score = game.TotalRating is double tr ? $"{tr:0}★({game.TotalRatingCount})" : "no-rating";
                 w.WriteLine($"  + [{anchor.System}] {anchor.Title} → \"{game.Name}\" {score} [{game.Genres}]");
 
-                // Art fallback: only when the card still has no box art and IGDB has a cover.
-                if (Art && game.CoverImageId != null && postersRoot != null && !CardHasArt(versions, anchor, postersRoot))
+                // Art fallback: when the card still has no box art and IGDB has a cover — OR when the box-art
+                // audit flagged its libretro box as a mis-shaped outlier (arcade-boxart-audit --flag), in which
+                // case we replace it with the IGDB cover even though art exists.
+                bool preferIgdb = string.Equals(anchor.Notes, "boxart-prefer-igdb", StringComparison.Ordinal);
+                if (Art && game.CoverImageId != null && postersRoot != null && (preferIgdb || !CardHasArt(versions, anchor, postersRoot)))
                 {
                     try
                     {
@@ -138,6 +141,12 @@ namespace MovieTheater.Arcade
                     }
                     catch (Exception ex) { w.WriteLine($"    (cover fetch failed: {ex.Message})"); }
                 }
+
+                // Persist periodically so a multi-hour run is crash-resumable (idempotent skip keys off the
+                // saved IgdbId) rather than losing everything on a late failure.
+                if (Apply && ++sinceSave >= 50) { await db.SaveChangesAsync(); sinceSave = 0; }
+                if ((matched + missed) % 500 == 0)
+                    w.WriteLine($"  … {matched + missed}/{batch.Count} processed ({matched} enriched, {missed} no-match)");
 
                 await Task.Delay(260); // stay under IGDB's 4 req/s
             }
