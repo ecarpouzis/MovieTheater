@@ -97,6 +97,11 @@ namespace MovieTheater.Services
         public string? IgdbClientId { get; set; }
         public string? IgdbClientSecret { get; set; }
 
+        /// <summary>SteamGridDB API key (steamgriddb.com → profile → preferences → API) — the community
+        /// cover source that fills the box-art tail libretro-thumbnails and IGDB miss (homebrew, multicarts,
+        /// obscure/digital titles). Used as the last step of the box-art cascade.</summary>
+        public string? SteamGridDbApiKey { get; set; }
+
         /// <summary>
         /// Usernames granted administrator rights (case-insensitive). This is the root of trust for
         /// the admin tools — it can only be changed in server config, never through the app, so admin

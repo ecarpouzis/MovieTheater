@@ -34,6 +34,11 @@ namespace MovieTheater.Controllers
         private static IgdbClient Igdb(MovieTheaterConfiguration config) =>
             _igdb ??= (IgdbClient.IsConfigured(config) ? new IgdbClient(Http, config.IgdbClientId, config.IgdbClientSecret) : null);
 
+        // Last cascade step: SteamGridDB community covers (searched by title) for the homebrew/obscure tail.
+        private static SteamGridDbClient _sgdb;
+        private static SteamGridDbClient Sgdb(MovieTheaterConfiguration config) =>
+            _sgdb ??= (SteamGridDbClient.IsConfigured(config) ? new SteamGridDbClient(Http, config.SteamGridDbApiKey) : null);
+
         private static HttpClient CreateHttp()
         {
             var h = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
@@ -107,6 +112,18 @@ namespace MovieTheater.Controllers
                         thumb = ArcadeBoxArt.Thumbnail(await Http.GetByteArrayAsync(IgdbClient.CoverUrl(imageId)), ThumbPx);
                 }
                 catch { /* IGDB hiccup — fall through to placeholder */ }
+            }
+
+            // 3c. SteamGridDB fallback — community covers for anything libretro + IGDB missed (homebrew,
+            //     multicarts, obscure/digital). Searched by title, so it works even with no IGDB match.
+            if (thumb == null && Sgdb(config) is SteamGridDbClient sgdb)
+            {
+                try
+                {
+                    var url = await sgdb.FindCoverUrlAsync(game.Title);
+                    if (url != null) thumb = ArcadeBoxArt.Thumbnail(await Http.GetByteArrayAsync(url), ThumbPx);
+                }
+                catch { /* SteamGridDB hiccup — fall through to placeholder */ }
             }
 
             if (thumb == null) { NoArt.TryAdd(cardId, 0); return NotFound(); }
