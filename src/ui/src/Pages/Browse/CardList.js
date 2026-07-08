@@ -7,19 +7,19 @@ import { preloadImages } from "../../preloadImages";
 
 // Poster thumbnail with a graceful fallback: when the image 404s (common for Misc videos, which
 // usually have no poster), swap in a placeholder instead of the browser's broken-image glyph.
-function CardPoster({ item, isMobile, isAboveFold }) {
+function CardPoster({ item, isAboveFold }) {
   const [failed, setFailed] = useState(false);
   const thumbUrl = MovieAPI.getPosterThumbnail(item.id, item.posterVersion, item.kind);
   if (failed) {
     return (
-      <div className={`card-poster-placeholder${isMobile ? " card-poster-placeholder--mobile" : ""}`} aria-hidden="true">
+      <div className="card-poster-placeholder" aria-hidden="true">
         <span className="card-poster-placeholder-icon">🎞</span>
       </div>
     );
   }
   return (
     <img
-      className={`card-poster-image${isMobile ? " card-poster-image--mobile" : ""}`}
+      className="card-poster-image"
       alt=""
       src={thumbUrl}
       loading={isAboveFold ? "eager" : "lazy"}
@@ -48,7 +48,6 @@ function PlotText({ text, className, hiddenClass }) {
 const MovieCard = memo(function MovieCard({
   item,
   isAboveFold,
-  isMobile,
   activeName,
   showOptions,
   isWatched,
@@ -74,11 +73,11 @@ const MovieCard = memo(function MovieCard({
   return (
     <div className="card-cell">
       <Card hoverable className="movie-card">
-        <div className={`card-content-wrapper${isMobile ? " card-content-wrapper--mobile" : ""}`}>
+        <div className="card-content-wrapper">
           <div className="card-poster-container">
-            <CardPoster item={item} isMobile={isMobile} isAboveFold={isAboveFold} />
+            <CardPoster item={item} isAboveFold={isAboveFold} />
           </div>
-          <div className={`card-right-col${isMobile ? " card-right-col--mobile" : ""}`}>
+          <div className="card-right-col">
             <div
               onClick={isMisc ? undefined : () => onMovieClick(item.id, item.kind)}
               className={`card-title${isMisc ? " card-title--static" : ""}`}
@@ -116,10 +115,10 @@ const MovieCard = memo(function MovieCard({
                 );
               })}
             </div>
-            <PlotText text={summaryText} className="card-plot" hiddenClass={isMobile ? "card-plot--hidden" : ""} />
-            {/* Desktop: Seen/Want live INSIDE the right column (centered at its base) so the card's
-                height is set by the poster, not an extra full-width row below it. */}
-            {!isMobile && !isMisc && showOptions && (
+            <PlotText text={summaryText} className="card-plot" />
+            {/* Seen/Want live INSIDE the right column (centered at its base) so the card's height is
+                set by the poster — one horizontal layout on both desktop and mobile. */}
+            {!isMisc && showOptions && (
               <UserMovieOptions
                 id={item.id}
                 kind={item.kind}
@@ -131,24 +130,12 @@ const MovieCard = memo(function MovieCard({
             )}
           </div>
         </div>
-        <PlotText text={summaryText} className="card-plot-below" hiddenClass={isMobile ? "card-plot-below--visible" : ""} />
-        {/* Mobile: poster+text stack, so the actions sit at the card's base. */}
-        {isMobile && !isMisc && showOptions && (
-          <UserMovieOptions
-            id={item.id}
-            kind={item.kind}
-            isWatched={isWatched}
-            isWanted={isWanted}
-            onToggleSeen={onToggleSeen}
-            onToggleWant={onToggleWant}
-          />
-        )}
       </Card>
     </div>
   );
 });
 
-function CardList({ movieDataArray, userData, setUserData, actorSearch, activePerson, onMovieClick, onToggleViewing, isMobile }) {
+function CardList({ movieDataArray, userData, setUserData, actorSearch, activePerson, onMovieClick, onToggleViewing }) {
   const activeName = (activePerson || "").trim().toLowerCase();
 
   // O(1) membership checks per card (replaces an O(n) `.includes()` per card) — and only rebuilt
@@ -178,7 +165,6 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
           key={`${item.kind || "movie"}-${item.id}`}
           item={item}
           isAboveFold={index < 8}
-          isMobile={isMobile}
           activeName={activeName}
           showOptions={!!userData}
           isWatched={userData ? seenSet.has(item.id) : false}

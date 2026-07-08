@@ -62,14 +62,14 @@ function UserMovieOptions({ id, kind = "movie", isWatched, isWanted, onToggleSee
     <div className={`viewing-options${inline ? " viewing-options--compact" : ""}`}>
       <div
         onClick={() => onToggleSeen(id, kind)}
-        className={`viewing-btn zoom-on-hover${inline ? " viewing-btn--compact" : ""}${isWatched ? " viewing-btn-seen--watched" : ""}`}
+        className={`viewing-btn${inline ? " viewing-btn--compact" : ""}${isWatched ? " viewing-btn-seen--watched" : ""}`}
       >
         {isWatched ? <EyeFilled className="viewing-btn-icon" /> : <EyeOutlined className="viewing-btn-icon" />}
         <span className={`viewing-btn-label${inline ? " viewing-btn-label--compact" : ""}`}>Seen</span>
       </div>
       <div
         onClick={() => onToggleWant(id, kind)}
-        className={`viewing-btn zoom-on-hover${inline ? " viewing-btn--compact" : ""}${isWanted ? " viewing-btn-want--wanted" : ""}`}
+        className={`viewing-btn${inline ? " viewing-btn--compact" : ""}${isWanted ? " viewing-btn-want--wanted" : ""}`}
       >
         {isWanted ? <HeartFilled className="viewing-btn-icon" /> : <HeartOutlined className="viewing-btn-icon" />}
         <span className={`viewing-btn-label${inline ? " viewing-btn-label--compact" : ""}`}>Want</span>

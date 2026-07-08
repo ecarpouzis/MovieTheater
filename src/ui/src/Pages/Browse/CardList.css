@@ -1,7 +1,10 @@
 /* Card grid */
 .card-list {
   display: grid;
-  grid-template-columns: 1fr;
+  /* minmax(0, 1fr), not 1fr: a bare 1fr track has an implicit min-content minimum, so a card
+     whose content is wider than the viewport (e.g. a long cast line) stretches the track past
+     the screen. The 0 minimum lets each column shrink to the container and clip instead. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   padding: 10px 10px 2px;
 }
@@ -11,20 +14,21 @@
    long, fully-mounted list. `auto` in contain-intrinsic-size remembers each card's real
    rendered height so the scrollbar stays stable as cards leave/enter the render zone. */
 .card-cell {
+  min-width: 0;
   content-visibility: auto;
   contain-intrinsic-size: auto 240px;
 }
 
 @media (min-width: 768px) {
-  .card-list { grid-template-columns: repeat(2, 1fr); }
+  .card-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (min-width: 1200px) {
-  .card-list { grid-template-columns: repeat(3, 1fr); }
+  .card-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (min-width: 1600px) {
-  .card-list { grid-template-columns: repeat(4, 1fr); }
+  .card-list { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /* Browse first-paint skeleton — a shimmering block sized to the card cell so the grid has structure
@@ -66,15 +70,14 @@
   background: var(--card-surface);
 }
 
-/* Card content wrapper */
+/* Card content wrapper — ONE horizontal layout at every width: poster left (sets the card
+   height), everything else in the right column. min-width:0 lets the row shrink so nothing
+   forces the card wider than the viewport. */
 .card-content-wrapper {
   display: flex;
   height: 200px;
   flex-shrink: 0;
-}
-
-.card-content-wrapper--mobile {
-  height: auto;
+  min-width: 0;
 }
 
 /* Poster container */
@@ -94,11 +97,6 @@
   margin: 0;
 }
 
-.card-poster-image--mobile {
-  height: 160px;
-  width: 107px;
-}
-
 /* Shown when a poster is missing / fails to load (most Misc videos have no poster). Keeps the
    2:3 poster footprint so the card layout doesn't collapse. */
 .card-poster-placeholder {
@@ -108,11 +106,6 @@
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #2b3a4a, #1a2530);
-}
-
-.card-poster-placeholder--mobile {
-  height: 160px;
-  width: 107px;
 }
 
 .card-poster-placeholder-icon {
@@ -141,8 +134,21 @@
   overflow: hidden;
 }
 
-.card-right-col--mobile {
-  overflow: visible;
+/* Narrow screens: smaller poster (card height follows it) + tighter right-column padding.
+   Everything stays in the horizontal layout — no stacking, no overflow. */
+@media (max-width: 600px) {
+  .card-content-wrapper {
+    height: 172px;
+  }
+  .card-poster-image,
+  .card-poster-placeholder {
+    height: 172px;
+    width: 115px;
+  }
+  .card-right-col {
+    padding: 8px 10px;
+    gap: 4px;
+  }
 }
 
 /* Card title */
