@@ -1,5 +1,4 @@
 import {
-  UserOutlined,
   EyeOutlined,
   EyeFilled,
   HeartOutlined,
@@ -9,6 +8,7 @@ import {
 } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 import LoginForm from "./LoginForm";
+import UserPanelHeader from "./UserPanelHeader";
 import "./Login.css";
 
 // Function component Login (Movie Theater section only — Board Games / Arcade have their own nav).
@@ -42,28 +42,12 @@ function Login({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen, se
   function getLoggedInDisplay(userData) {
     return (
       <div className="user-panel">
-        <div className="user-panel-header">
-          <div className="user-avatar"><UserOutlined /></div>
-          <span className="user-username">{userData.username}</span>
-          {userData.hasPassword && (
-            <button className="playlists-pill" onClick={() => onOpenPlaylists && onOpenPlaylists()} title="My Playlists">
-              ≡ Playlists
-            </button>
-          )}
-          <button className="settings-icon-btn" onClick={() => setSettingsModalOpen(true)} title="User Settings">
-            ⚙️
-          </button>
-          {userData.canEditMovies && (
-            <button className="settings-icon-btn" onClick={() => history.push("/review-ingest")} title="Library Review">
-              🗂️
-            </button>
-          )}
-          {userData.isAdmin && (
-            <button className="settings-icon-btn" onClick={() => setAdminModalOpen(true)} title="User Administration">
-              🛡️
-            </button>
-          )}
-        </div>
+        <UserPanelHeader
+          userData={userData}
+          setSettingsModalOpen={setSettingsModalOpen}
+          setAdminModalOpen={setAdminModalOpen}
+          onOpenPlaylists={onOpenPlaylists}
+        />
         <div className={`stat-row${seenActive ? " stat-row--active" : ""}`} onClick={() => navigateToBrowseSearch("seen")}>
           {seenActive ? <EyeFilled className="stat-icon stat-icon--seen" /> : <EyeOutlined className="stat-icon stat-icon--seen" />}
           <span className="stat-label">Seen</span>

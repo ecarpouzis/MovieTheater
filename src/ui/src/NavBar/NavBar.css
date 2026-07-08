@@ -227,19 +227,23 @@
   outline: none;
 }
 
-.navbar-topbar .navbar-theme-toggle {
-  margin-left: 8px;
+/* The sider's children stack in a flex column so the theme row can pin to the very bottom. */
+.navbar-sider-inner {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
-/* Desktop theme row — its own thin bar under the switcher (the 200px header can't fit
-   both the section title and the toggle). */
+/* Theme toggle row — pinned to the bottom of the rail (all features). */
 .navbar-theme-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px 10px;
-  border-bottom: 1px solid var(--sidebar-border);
-  margin-bottom: 2px;
+  padding: 12px 16px 14px;
+}
+.navbar-theme-row--bottom {
+  margin-top: auto;
+  border-top: 1px solid var(--sidebar-border);
 }
 
 .navbar-theme-label {
@@ -458,6 +462,29 @@
 .navbar-dropdown .ant-select-open .ant-select-selector {
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 2px var(--accent-soft) !important;
+}
+/* The single-select value text (e.g. Sort By) — antd renders it in a nested item that kept a
+   pale background/dark text, so it read as a different color than the other controls. */
+.navbar-sider .ant-select-single .ant-select-selection-item,
+.navbar-dropdown .ant-select-single .ant-select-selection-item {
+  color: #fff;
+  background: transparent;
+}
+/* Multi-select chips (Genre / Type) — accent chips on the dark well, not antd's white tags. */
+.navbar-sider .ant-select-multiple .ant-select-selection-item,
+.navbar-dropdown .ant-select-multiple .ant-select-selection-item {
+  background: var(--accent-soft) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+  border-radius: 5px;
+}
+.navbar-sider .ant-select-multiple .ant-select-selection-item-remove,
+.navbar-dropdown .ant-select-multiple .ant-select-selection-item-remove {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+.navbar-sider .ant-select-multiple .ant-select-selection-item-remove:hover,
+.navbar-dropdown .ant-select-multiple .ant-select-selection-item-remove:hover {
+  color: #fff !important;
 }
 
 /* Search / autocomplete input wells — dark, rounded, light text. */

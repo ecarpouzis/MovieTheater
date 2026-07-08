@@ -103,14 +103,16 @@ const MovieCard = memo(function MovieCard({
               {castNames.map((name, i) => {
                 const isActive = activeName && name.toLowerCase() === activeName;
                 return (
-                  <button
-                    key={i}
-                    type="button"
-                    className={`actor-link${isActive ? " actor-link--active" : ""}`}
-                    onClick={() => onActorSearch(name)}
-                  >
-                    {name}
-                  </button>
+                  <span key={i} className="actor-link-wrap">
+                    {i > 0 && <span className="actor-sep">, </span>}
+                    <button
+                      type="button"
+                      className={`actor-link${isActive ? " actor-link--active" : ""}`}
+                      onClick={() => onActorSearch(name)}
+                    >
+                      {name}
+                    </button>
+                  </span>
                 );
               })}
             </div>

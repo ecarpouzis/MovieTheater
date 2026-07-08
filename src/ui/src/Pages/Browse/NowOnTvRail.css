@@ -76,15 +76,25 @@
   overflow-y: hidden;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
-  padding-bottom: 6px;
+  /* Reserve room below the tiles so the horizontal scrollbar sits under the "now-playing"
+     line instead of overlapping/clipping it. */
+  padding-bottom: 14px;
   scrollbar-width: thin;
+  scrollbar-color: rgba(120, 170, 235, 0.45) transparent;
 }
 .nowtv-rail::-webkit-scrollbar {
-  height: 6px;
+  height: 8px;
+}
+.nowtv-rail::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
 }
 .nowtv-rail::-webkit-scrollbar-thumb {
-  background: rgba(64, 169, 255, 0.25);
-  border-radius: 4px;
+  background: rgba(120, 170, 235, 0.45);
+  border-radius: 6px;
+}
+.nowtv-rail::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 170, 235, 0.7);
 }
 
 /* Compact tiles: poster, channel name, "▸ now-playing". Wide enough for the name to read — it wraps to

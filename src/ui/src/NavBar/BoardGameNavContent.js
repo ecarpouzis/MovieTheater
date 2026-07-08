@@ -1,7 +1,7 @@
 import { Input, List, Button, Select } from "antd";
-import { UserOutlined } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 import LoginForm from "./LoginForm";
+import UserPanelHeader from "./UserPanelHeader";
 import poweredByBggImage from "../../powered_by_BGG_SM.png";
 
 const { Search } = Input;
@@ -31,7 +31,6 @@ const searchLetterStyle = {
 const searchLetters = ["#","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
 
 function BoardGameUserPanel({ userData, setUserData, setSettingsModalOpen, setAdminModalOpen }) {
-  const history = useHistory();
   function logout() {
     fetch("/API/Logout", { method: "POST" }).finally(() => {
       setUserData();
@@ -41,23 +40,7 @@ function BoardGameUserPanel({ userData, setUserData, setSettingsModalOpen, setAd
 
   return (
     <div className="user-panel">
-      <div className="user-panel-header">
-        <div className="user-avatar"><UserOutlined /></div>
-        <span className="user-username">{userData.username}</span>
-        <button className="settings-icon-btn" onClick={() => setSettingsModalOpen(true)} title="User Settings">
-          ⚙️
-        </button>
-        {userData.canEditMovies && (
-          <button className="settings-icon-btn" onClick={() => history.push("/review-ingest")} title="Library Review">
-            🗂️
-          </button>
-        )}
-        {userData.isAdmin && (
-          <button className="settings-icon-btn" onClick={() => setAdminModalOpen(true)} title="User Administration">
-            🛡️
-          </button>
-        )}
-      </div>
+      <UserPanelHeader userData={userData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
       <button className="logout-button" onClick={logout}>
         Log Out
       </button>

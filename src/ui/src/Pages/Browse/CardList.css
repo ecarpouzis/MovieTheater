@@ -173,41 +173,48 @@
   gap: 4px;
 }
 
-/* Actor chips row */
+/* Cast row — a single line of comma-separated accent text links, ellipsized (spec §4). */
 .card-actor-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
-/* Actor link button */
+.actor-link-wrap {
+  white-space: nowrap;
+}
+
+.actor-sep {
+  color: var(--text-muted);
+  font-size: 0.78em;
+}
+
+/* Actor text link */
 .actor-link {
-  padding: 1px 8px;
-  background: transparent;
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  font-size: 0.7em;
+  display: inline;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 0.78em;
   cursor: pointer;
   color: var(--accent);
-  font-style: italic;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color 0.15s;
 }
 
 .actor-link:hover {
-  color: var(--accent-contrast);
-  background: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent);
+  text-decoration: underline;
 }
 
 /* The person currently being searched — stays highlighted across the result cards. */
 .actor-link--active,
 .actor-link--active:hover {
-  color: var(--accent-contrast);
-  background: var(--accent);
-  border-color: var(--accent);
-  font-style: normal;
-  font-weight: 600;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
 }
 
 /* Plot */

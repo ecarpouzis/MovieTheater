@@ -88,6 +88,54 @@
   font-weight: 600;
   font-size: 14px;
   color: rgba(255, 255, 255, 0.9);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Gear + its Settings / Library Review / Admin dropdown. */
+.user-menu-wrapper {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+}
+.user-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+}
+.user-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  min-width: 176px;
+  background: var(--sidebar-bg-elev);
+  border: 1px solid var(--sidebar-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  z-index: 1300;
+}
+.user-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--sidebar-text);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.user-menu-item:hover {
+  background: var(--accent-soft);
+  color: #fff;
 }
 
 .stat-row {
@@ -137,7 +185,7 @@
 
 /* "≡ Playlists" pill in the user-panel header (movies only). */
 .playlists-pill {
-  margin-left: auto;
+  flex-shrink: 0;
   background: var(--accent-soft);
   border: 1px solid var(--accent);
   color: #fff;
@@ -200,7 +248,6 @@
 }
 
 .settings-icon-btn {
-  margin-left: auto;
   background: none;
   border: none;
   cursor: pointer;
@@ -210,6 +257,7 @@
   opacity: 0.7;
   transition: opacity 0.15s;
   line-height: 1;
+  color: inherit;
 }
 
 .settings-icon-btn:hover {

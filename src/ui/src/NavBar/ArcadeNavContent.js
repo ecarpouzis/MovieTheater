@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Input, Button, Select } from "antd";
-import { UserOutlined } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
 import LoginForm from "./LoginForm";
+import UserPanelHeader from "./UserPanelHeader";
 
 const { Search } = Input;
 
@@ -39,7 +39,6 @@ const modOptions = [
 ];
 
 function ArcadeUserPanel({ userData, setSettingsModalOpen, setAdminModalOpen, setUserData }) {
-  const history = useHistory();
   function logout() {
     fetch("/API/Logout", { method: "POST" }).finally(() => {
       setUserData();
@@ -48,17 +47,7 @@ function ArcadeUserPanel({ userData, setSettingsModalOpen, setAdminModalOpen, se
   }
   return (
     <div className="user-panel">
-      <div className="user-panel-header">
-        <div className="user-avatar"><UserOutlined /></div>
-        <span className="user-username">{userData.username}</span>
-        <button className="settings-icon-btn" onClick={() => setSettingsModalOpen(true)} title="User Settings">⚙️</button>
-        {userData.canEditMovies && (
-          <button className="settings-icon-btn" onClick={() => history.push("/review-ingest")} title="Library Review">🗂️</button>
-        )}
-        {userData.isAdmin && (
-          <button className="settings-icon-btn" onClick={() => setAdminModalOpen(true)} title="User Administration">🛡️</button>
-        )}
-      </div>
+      <UserPanelHeader userData={userData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
       <button className="logout-button" onClick={logout}>Log Out</button>
     </div>
   );

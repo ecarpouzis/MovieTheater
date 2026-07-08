@@ -322,13 +322,18 @@ function NavBar({
             )}
           </div>
           {userData && <span className="navbar-username-badge">{userData.username}</span>}
-          {themeToggleButton}
         </div>
 
         {drawerOpen && <div className="navbar-overlay" onClick={() => setDrawerOpen(false)} />}
         {dropdownOpen && <div className="navbar-overlay" onClick={() => setDropdownOpen(false)} style={{ zIndex: 1150 }} />}
 
-        <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}${navThemeClass}`}>{navContent}</div>
+        <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}${navThemeClass}`}>
+          {navContent}
+          <div className="navbar-theme-row navbar-theme-row--bottom">
+            <span className="navbar-theme-label">{theme === "dark" ? "Dark" : "Light"} mode</span>
+            {themeToggleButton}
+          </div>
+        </div>
 
         <Suspense fallback={null}>
           <UserSettingsModal
@@ -349,22 +354,24 @@ function NavBar({
   return (
     <>
       <Layout.Sider className={`navbar-sider${navThemeClass}`} trigger={null} collapsible collapsed={collapsed} onCollapse={onCollapse}>
-        <div className={`navbar-sider-header${navThemeClass}`}>
-          <div className="navbar-dropdown-wrapper">
-            <button className="navbar-home-btn" onClick={() => setDropdownOpen((o) => !o)}>
-              <img className="navbar-home-icon" src={sectionIcon} alt="" />
-              <span className="navbar-sider-title">{sectionTitle} ▼</span>
-            </button>
-            {dropdownOpen && (
-              <div className="navbar-section-dropdown navbar-section-dropdown-desktop">{sectionMenuItems}</div>
-            )}
+        <div className="navbar-sider-inner">
+          <div className={`navbar-sider-header${navThemeClass}`}>
+            <div className="navbar-dropdown-wrapper">
+              <button className="navbar-home-btn" onClick={() => setDropdownOpen((o) => !o)}>
+                <img className="navbar-home-icon" src={sectionIcon} alt="" />
+                <span className="navbar-sider-title">{sectionTitle} ▼</span>
+              </button>
+              {dropdownOpen && (
+                <div className="navbar-section-dropdown navbar-section-dropdown-desktop">{sectionMenuItems}</div>
+              )}
+            </div>
+          </div>
+          {navContent}
+          <div className="navbar-theme-row navbar-theme-row--bottom">
+            <span className="navbar-theme-label">{theme === "dark" ? "Dark" : "Light"} mode</span>
+            {themeToggleButton}
           </div>
         </div>
-        <div className="navbar-theme-row">
-          <span className="navbar-theme-label">{theme === "dark" ? "Dark" : "Light"} mode</span>
-          {themeToggleButton}
-        </div>
-        {navContent}
       </Layout.Sider>
       <Suspense fallback={null}>
         <UserSettingsModal
