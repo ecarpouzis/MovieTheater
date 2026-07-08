@@ -19,11 +19,6 @@ const SYSTEM_LABEL = {
 };
 const systemLabel = (s) => SYSTEM_LABEL[s] || (s ? s.toUpperCase() : "");
 
-const sectionHeaderStyle = {
-  display: "block", fontSize: "10px", fontWeight: 700, color: "var(--sidebar-heading)",
-  textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "12px",
-  paddingBottom: "8px", borderBottom: "1px solid var(--sidebar-border)",
-};
 const inputLabelStyle = {
   display: "block", fontSize: "10px", fontWeight: 600, color: "var(--sidebar-text-muted)",
   textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "5px", marginTop: "14px",
@@ -117,9 +112,7 @@ function ArcadeNavContent({ userData, setUserData, onUserLoggedIn, setSettingsMo
         <LoginForm onUserLoggedIn={onUserLoggedIn} popupClassName="arcade-login-dropdown" />
       )}
 
-      <div style={{ padding: "16px 16px 24px", color: "white", borderTop: "1px solid #4a2d6b" }}>
-        <span style={sectionHeaderStyle}>Filter Games</span>
-
+      <div id="SearchToolContainer" style={{ padding: "8px 16px 24px", color: "white" }}>
         <span style={{ ...inputLabelStyle, marginTop: 0 }}>Title</span>
         <Search
           placeholder="Search title"

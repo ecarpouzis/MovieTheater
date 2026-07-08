@@ -115,20 +115,24 @@
   color: #fff;
 }
 
-/* Pixel action glyphs (white on the dark rail — read in both themes). */
-.stat-icon-img {
-  width: 16px;
-  height: 16px;
-  margin: 0;
+/* Seen / Want / Rate glyphs — crisp antd icons with their own identity colors. */
+.stat-icon {
+  font-size: 16px;
+  width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  image-rendering: pixelated;
-  opacity: 0.8;
-  transition: opacity 0.15s ease;
 }
 
-.stat-row:hover .stat-icon-img,
-.stat-row--active .stat-icon-img {
-  opacity: 1;
+.stat-icon--seen {
+  color: #6ea8ff;
+}
+.stat-icon--want {
+  color: #ff6b93;
+}
+.stat-icon--rate {
+  color: #f2c14e;
 }
 
 /* "≡ Playlists" pill in the user-panel header (movies only). */

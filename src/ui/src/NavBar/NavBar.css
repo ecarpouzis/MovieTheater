@@ -344,7 +344,7 @@
 
 .navbar-sider .user-avatar,
 .navbar-dropdown .user-avatar {
-  background: var(--accent-soft);
+  background: var(--accent);
   color: #fff;
 }
 
@@ -409,19 +409,25 @@
 }
 
 /* ── antd controls inside the dark sidebar (shared, token-based) ─────────── */
+/* Every primary button + the Search "enter" button → the feature accent (antd's default
+   is a bright generic blue that clashed with the redesign). */
 .navbar-sider .ant-btn-primary,
-.navbar-dropdown .ant-btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+.navbar-sider .ant-input-search-button,
+.navbar-dropdown .ant-btn-primary,
+.navbar-dropdown .ant-input-search-button {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
 }
 .navbar-sider .ant-btn-primary:hover,
 .navbar-sider .ant-btn-primary:focus,
+.navbar-sider .ant-input-search-button:hover,
+.navbar-sider .ant-input-search-button:focus,
 .navbar-dropdown .ant-btn-primary:hover,
-.navbar-dropdown .ant-btn-primary:focus {
+.navbar-dropdown .ant-btn-primary:focus,
+.navbar-dropdown .ant-input-search-button:hover,
+.navbar-dropdown .ant-input-search-button:focus {
   filter: brightness(1.12);
-  background: var(--accent);
-  border-color: var(--accent);
 }
 
 .navbar-sider .ant-select .ant-select-selector,
@@ -429,6 +435,7 @@
   background: var(--sidebar-input-bg) !important;
   border-color: var(--sidebar-input-border) !important;
   color: #fff !important;
+  border-radius: 7px;
 }
 .navbar-sider .ant-select-selection-item,
 .navbar-dropdown .ant-select-selection-item {
@@ -453,18 +460,57 @@
   box-shadow: 0 0 0 2px var(--accent-soft) !important;
 }
 
-/* Search / autocomplete input wells */
+/* Search / autocomplete input wells — dark, rounded, light text. */
 .navbar-sider .ant-input,
 .navbar-sider .ant-input-affix-wrapper,
 .navbar-dropdown .ant-input,
 .navbar-dropdown .ant-input-affix-wrapper {
-  background: var(--sidebar-input-bg);
-  border-color: var(--sidebar-input-border);
-  color: #fff;
+  background: var(--sidebar-input-bg) !important;
+  border-color: var(--sidebar-input-border) !important;
+  color: #fff !important;
+  border-radius: 7px;
+}
+/* The inner input of an affix wrapper (login username field) must stay transparent so the
+   wrapper's dark well shows through, not antd's white. */
+.navbar-sider .ant-input-affix-wrapper > input.ant-input,
+.navbar-dropdown .ant-input-affix-wrapper > input.ant-input {
+  background: transparent !important;
 }
 .navbar-sider .ant-input::placeholder,
 .navbar-dropdown .ant-input::placeholder {
   color: var(--sidebar-text-muted);
+}
+.navbar-sider .ant-input-affix-wrapper:hover,
+.navbar-sider .ant-input:hover,
+.navbar-sider .ant-input-affix-wrapper-focused,
+.navbar-sider .ant-input:focus,
+.navbar-dropdown .ant-input-affix-wrapper:hover,
+.navbar-dropdown .ant-input:hover,
+.navbar-dropdown .ant-input-affix-wrapper-focused,
+.navbar-dropdown .ant-input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent-soft) !important;
+}
+/* Affix icons (user / lock / tooltip) legible on the dark well. */
+.navbar-sider .ant-input-affix-wrapper .anticon,
+.navbar-dropdown .ant-input-affix-wrapper .anticon {
+  color: var(--sidebar-text-muted);
+}
+/* Round the grouped Search (input + enter-button) on its outer corners only — the inner
+   edge stays flat where the input meets the button. */
+.navbar-sider .ant-input-group .ant-input,
+.navbar-dropdown .ant-input-group .ant-input {
+  border-radius: 7px 0 0 7px !important;
+}
+.navbar-sider .ant-input-group-addon .ant-input-search-button,
+.navbar-dropdown .ant-input-group-addon .ant-input-search-button {
+  border-top-right-radius: 7px !important;
+  border-bottom-right-radius: 7px !important;
+}
+.navbar-sider .ant-input-group-addon,
+.navbar-dropdown .ant-input-group-addon {
+  background: transparent;
+  border: none;
 }
 
 /* Popups (login autocomplete + filter selects) portal to the sider parent, so

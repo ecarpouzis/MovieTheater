@@ -152,3 +152,19 @@ body {
   background: var(--content-bg);
   color: var(--text-primary);
 }
+
+/* Arcade room page uses antd Typography (hardcoded dark ink) on a full-page dark surface.
+   Scope the lift to tokens here (theme.css always loads; the room page imports no CSS of its
+   own). Modals stay light, so this is deliberately NOT a global .ant-typography override. */
+.arcade-room-page .ant-typography,
+.arcade-room-page h1.ant-typography,
+.arcade-room-page h2.ant-typography,
+.arcade-room-page h3.ant-typography,
+.arcade-room-page h4.ant-typography,
+.arcade-room-page h5.ant-typography {
+  color: var(--text-primary);
+}
+.arcade-room-page .ant-typography-secondary,
+.arcade-room-page span.ant-typography-secondary {
+  color: var(--text-secondary);
+}

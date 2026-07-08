@@ -1,17 +1,15 @@
-import { UserOutlined } from "@ant-design/icons";
+import {
+  UserOutlined,
+  EyeOutlined,
+  EyeFilled,
+  HeartOutlined,
+  HeartFilled,
+  StarOutlined,
+  StarFilled,
+} from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 import LoginForm from "./LoginForm";
 import "./Login.css";
-
-// New pixel action icons (white-on-transparent). The sidebar is always a dark rail, so the white
-// glyphs read in both themes with no recolor. filled = the browse mode currently active, outline =
-// inactive (DESIGN_SPEC §5).
-import seenFilled from "../assets/icons/seen-filled.png";
-import seenOutline from "../assets/icons/seen-outline.png";
-import wantFilled from "../assets/icons/want-filled.png";
-import wantOutline from "../assets/icons/want-outline.png";
-import rateFilled from "../assets/icons/rate-filled.png";
-import rateOutline from "../assets/icons/rate-outline.png";
 
 // Function component Login (Movie Theater section only — Board Games / Arcade have their own nav).
 // Props:
@@ -67,17 +65,17 @@ function Login({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen, se
           )}
         </div>
         <div className={`stat-row${seenActive ? " stat-row--active" : ""}`} onClick={() => navigateToBrowseSearch("seen")}>
-          <img className="stat-icon-img" src={seenActive ? seenFilled : seenOutline} alt="" />
+          {seenActive ? <EyeFilled className="stat-icon stat-icon--seen" /> : <EyeOutlined className="stat-icon stat-icon--seen" />}
           <span className="stat-label">Seen</span>
           <span className="stat-count">{userData.moviesSeen.length}</span>
         </div>
         <div className={`stat-row${wantActive ? " stat-row--active" : ""}`} onClick={() => navigateToBrowseSearch("want")}>
-          <img className="stat-icon-img" src={wantActive ? wantFilled : wantOutline} alt="" />
+          {wantActive ? <HeartFilled className="stat-icon stat-icon--want" /> : <HeartOutlined className="stat-icon stat-icon--want" />}
           <span className="stat-label">Want to Watch</span>
           <span className="stat-count">{userData.moviesToWatch.length}</span>
         </div>
         <div className={`stat-row${rateActive ? " stat-row--active" : ""}`} onClick={() => history.push("/rate")}>
-          <img className="stat-icon-img" src={rateActive ? rateFilled : rateOutline} alt="" />
+          {rateActive ? <StarFilled className="stat-icon stat-icon--rate" /> : <StarOutlined className="stat-icon stat-icon--rate" />}
           <span className="stat-label">Rate Movies</span>
           <span className="stat-count">{Object.keys(userData.ratings || {}).length}</span>
         </div>
