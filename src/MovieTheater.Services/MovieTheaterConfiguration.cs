@@ -91,6 +91,12 @@ namespace MovieTheater.Services
 
         public string? PyPath { get; set; }
 
+        /// <summary>IGDB (Internet Game Database) via Twitch OAuth client-credentials — the source for arcade/
+        /// game-card review scores AND fallback box art (covers) for titles libretro-thumbnails lacks or
+        /// mis-formats. Register an app at dev.twitch.tv/console; caching IGDB data locally is permitted.</summary>
+        public string? IgdbClientId { get; set; }
+        public string? IgdbClientSecret { get; set; }
+
         /// <summary>
         /// Usernames granted administrator rights (case-insensitive). This is the root of trust for
         /// the admin tools — it can only be changed in server config, never through the app, so admin

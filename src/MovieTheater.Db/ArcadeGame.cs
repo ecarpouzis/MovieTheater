@@ -69,6 +69,48 @@ namespace MovieTheater.Db
         [MaxLength(20)]
         public string? Variant { get; set; }
 
+        // ─── IGDB-sourced metadata (single-pass enrich via arcade-igdb; nullable = not yet resolved). One
+        // lookup fills art (cover → BoxArtPath), the review score, and these discovery fields. Deliberately a
+        // curated subset — not the full IGDB record (no screenshots/storyline/etc). ────────────────────────
+        /// <summary>The matched IGDB game id — the refresh/dedupe key so re-enrich needn't re-search.</summary>
+        public long? IgdbId { get; set; }
+
+        /// <summary>IGDB <c>total_rating</c> (0–100, blends critic + user) and its sample count for a
+        /// confidence gate. Null = no rating on IGDB (common for obscure arcade titles).</summary>
+        public double? RatingScore { get; set; }
+        public int? RatingCount { get; set; }
+
+        /// <summary>Comma-separated IGDB genre names ("Shooter, Fighting") — a card badge + a lobby filter.</summary>
+        [MaxLength(200)]
+        public string? Genres { get; set; }
+
+        /// <summary>Comma-separated IGDB theme names ("Action, Party") — mood/discovery; "Party" flags party games.</summary>
+        [MaxLength(200)]
+        public string? Themes { get; set; }
+
+        /// <summary>One-paragraph IGDB summary for the card detail/hover (capped to avoid bloat).</summary>
+        [MaxLength(1000)]
+        public string? Summary { get; set; }
+
+        [MaxLength(200)]
+        public string? Developer { get; set; }
+        [MaxLength(200)]
+        public string? Publisher { get; set; }
+
+        /// <summary>Comma-separated IGDB game modes ("Multiplayer, Co-operative, Split screen"). Co-op = has
+        /// "Co-operative"; competitive = Multiplayer without it; split-screen = has "Split screen", else a
+        /// multiplayer game is shared-screen (the arcade default).</summary>
+        [MaxLength(200)]
+        public string? GameModes { get; set; }
+
+        /// <summary>IGDB multiplayer_modes offline max players — cross-checks the arcade <see cref="MaxPlayers"/>
+        /// seat count (a mismatch flags a wrong seat config).</summary>
+        public int? OfflineMaxPlayers { get; set; }
+
+        /// <summary>ESRB rating category (e.g. "E", "T", "M") — can feed the <see cref="RatingCeiling"/> age gate.</summary>
+        [MaxLength(20)]
+        public string? EsrbRating { get; set; }
+
         public bool IsEnabled { get; set; } = true;
 
         /// <summary>The single canonical row of its (System, Title) group for the lobby's default lens —
