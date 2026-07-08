@@ -223,19 +223,31 @@ shim's t=104; only the creator's request builds the encoder, so only the creator
 
 Re-generate: per-file `git diff` of the five files above.
 
-## 0019-audio-transport-bundle.patch
+## 0020-split-audio-peerconnection.patch
 
-**`pkg/network/webrtc/factory.go` — set `BundlePolicy: BundlePolicyMaxCompat` on the offerer's
-`webrtc.Configuration`.** Pion defaults to `balanced` (audio + video BUNDLED onto one transport with
-rtcp-mux).
+**Opus on a dedicated aux `PeerConnection` (replaces the DELETED 0019 un-bundle enabler).** Touches
+`pkg/network/webrtc/webrtc.go` (aux PC on `Peer`), `pkg/worker/coordinatorhandlers.go` (opt-in +
+aux offer send), and a warning comment in `pkg/network/webrtc/factory.go`.
 
-**Why:** the residual audio hitch (`docs/arcade-audio-nextsteps.md`) is that on the bundled transport a
-burst of video RTP head-of-line-blocks the tiny opus packets, so audio arrives late/bursty and Chrome's
-NetEq over-buffers toward ~260 ms and **time-stretches** (~8%). MaxCompat makes the offerer allocate a
-**separate ICE transport per m-line**, which lets the client opt into un-bundling audio onto its own
-transport (the browser strips `a=group:BUNDLE` from its answer — `cloudRetroClient.js`, localStorage
-`arcade.noBundle`). By itself this changes nothing: a default browser keeps the BUNDLE group and both
-transports ride the single-port UDP mux keyed by ufrag (RTCP stays muxed → still one port), so the
-normal path is unchanged. It is the ENABLER for the un-bundle experiment. The primary, default-on audio
-fix is client-side (a small audio-only `jitterBufferTarget`, `arcade.audioJitterMs`, default 80 ms) —
-no worker change. Re-generate: `git diff pkg/network/webrtc/factory.go`.
+**Why 0019 was deleted:** its premise was false. pion/webrtc STORES `BundlePolicy` but never reads
+it — one ICE/DTLS transport per PeerConnection is hardcoded — so `BundlePolicyMaxCompat` allocated
+nothing, and a browser that stripped `a=group:BUNDLE` (max-compat) created transports with NO peer:
+2 of its 3 DTLS handshakes could never complete and the pre-negotiated DataChannel rode a dead one →
+every room hung at "Negotiating" (2026-07-08). Multiport was tested and REFUTED (3 distinct worker
+ports bound → still hung): the failure was never port/5-tuple demuxing.
+
+**What 0020 does instead — the shape Pion supports:** when the browser's `InitWebrtcStream` carries
+`sdp:"audio-pc"` with `initiator:false` (that field is otherwise unused in that state), the worker
+builds the room's media as video+data on the main PC and **opus on a second, audio-only PC**. The
+browser gives that PC its own local port → its own 5-tuple → its own DTLS session, so a burst of
+video RTP shares no socket, queue, or transport with audio (the real goal un-bundle chased). Aux
+signaling is tunneled through the EXISTING opaque signal strings — worker→browser `"aux-sdp:<json>"`
+(the offer) and `"aux-ice:<json>"` (candidates) inside the ice field, browser→worker `"aux:<json>"`
+on sdp/ice — which the coordinator relays verbatim: NO protocol/coordinator change. Old client ↔ new
+worker: flag never sent → stock path. New client ↔ old worker: ask ignored, audio arrives on the main
+PC as always. An aux failure costs only audio; the room (video+input) still runs. Client half:
+`cloudRetroClient.js`, localStorage `arcade.audioPC`.
+
+Re-generate: `git diff pkg/network/webrtc/webrtc.go` verbatim + the 0020 hunks of
+`pkg/worker/coordinatorhandlers.go` / `pkg/network/webrtc/factory.go` (both files also carry
+earlier patches' hunks — trim to this feature's).

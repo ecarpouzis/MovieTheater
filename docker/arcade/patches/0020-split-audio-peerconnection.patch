@@ -1,0 +1,214 @@
+diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
+index b342b6b..a1a11e2 100644
+--- a/pkg/network/webrtc/webrtc.go
++++ b/pkg/network/webrtc/webrtc.go
+@@ -16,6 +16,15 @@ import (
+ type Peer struct {
+ 	api *ApiFactory
+ 	c   *webrtc.PeerConnection
++	// ac is the OPTIONAL aux audio-only PeerConnection (patch 0020). Pion hardcodes one ICE/DTLS
++	// transport per PeerConnection (BundlePolicy is stored but never read), so SDP un-bundling can
++	// never complete against it — a second PC is the supported way to give audio its own transport
++	// (own browser-side port → own 5-tuple → own DTLS, video bursts can't head-of-line-block opus).
++	// Created only when the browser asks (init sdp == "audio-pc"); nil otherwise, and everything
++	// then behaves exactly as before. Its signaling rides the existing opaque ice/sdp strings with
++	// "aux-sdp:"/"aux-ice:" (worker→browser) and "aux:" (browser→worker) prefixes — the coordinator
++	// relays those strings verbatim, so no protocol change.
++	ac  *webrtc.PeerConnection
+ 	log *logger.Logger
+ 
+ 	a *webrtc.TrackLocalStaticSample
+@@ -48,7 +57,7 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
+ 	return &Peer{api: api, log: custom}
+ }
+ 
+-func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err error) {
++func (p *Peer) NewConnection(vCodec string, splitAudio bool, signaller func(ice *string)) (err error) {
+ 	defer func() {
+ 		if err != nil {
+ 			err = fmt.Errorf("couldn't create webrtc seesion: %w", err)
+@@ -96,6 +105,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+ 
+ 	p.c.OnDataChannel(func(ch *webrtc.DataChannel) { p.log.Debug().Msgf("rtc [chan] [%s] remote", ch.Label()) })
+ 
++	if splitAudio {
++		if p.ac, err = p.api.NewPeer(); err != nil {
++			return
++		}
++		p.ac.OnICECandidate(func(ice *webrtc.ICECandidate) {
++			// No end-of-candidates sentinel for aux (the main PC's suffices; an enveloped empty
++			// string would only be JSON-parse noise on the browser side).
++			if ice == nil {
++				p.log.Debug().Msg("rtc [aux] [ice] gathering (complete)")
++				return
++			}
++			candidate := ice.ToJSON()
++			p.log.Debug().Str("local", candidate.Candidate).Msg("rtc [aux] [ice] candidate")
++			encoded, err := toJson(candidate)
++			if err != nil {
++				p.log.Error().Err(err).Msg("rtc [aux] [ice] candidate marshal")
++				return
++			}
++			wrapped := "aux-ice:" + encoded
++			signaller(&wrapped)
++		})
++		p.ac.OnConnectionStateChange(func(pcs webrtc.PeerConnectionState) {
++			p.log.Debug().Str("state", pcs.String()).Msg("rtc [aux] [connection] state change")
++			if pcs == webrtc.PeerConnectionStateConnected {
++				p.log.Info().Str(logger.DirectionField, "rtc").Str(logger.ClientField, "").Msg("(aux audio connected)")
++			}
++		})
++	}
++
+ 	aCodec := "opus"
+ 	if err = p.InitMedia(vCodec, aCodec); err != nil {
+ 		return
+@@ -143,8 +181,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+ 	return encoded, nil
+ }
+ 
++// OfferAux creates the aux audio PC's offer (split-audio mode; patch 0020).
++// Returns "" without error when the peer isn't in split mode.
++func (p *Peer) OfferAux() (string, error) {
++	if p.ac == nil {
++		return "", nil
++	}
++	sdp, err := p.ac.CreateOffer(&DefaultOfferOptions)
++	if err != nil {
++		return "", err
++	}
++	if err = p.ac.SetLocalDescription(sdp); err != nil {
++		return "", err
++	}
++	encoded, err := toJson(sdp)
++	if err != nil {
++		return "", err
++	}
++	p.log.Debug().Str("type", sdp.Type.String()).Msg("rtc [aux] [sdp] (local)")
++	return encoded, nil
++}
++
+ func (p *Peer) HandleSignal(ice, sdp *string) error {
+ 	if ice != nil {
++		// "aux:"-prefixed signals belong to the aux audio PC (patch 0020).
++		if rest, aux := strings.CutPrefix(*ice, "aux:"); aux {
++			if p.ac == nil {
++				return nil
++			}
++			candidate, err := fromJson[webrtc.ICECandidateInit](rest)
++			if err != nil {
++				return err
++			}
++			p.log.Debug().Str("remote", candidate.Candidate).Msg("rtc [aux] [ice] candidate")
++			return p.ac.AddICECandidate(candidate)
++		}
+ 		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
+ 		if err != nil {
+ 			return err
+@@ -153,6 +224,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+ 		return p.c.AddICECandidate(candidate)
+ 	}
+ 	if sdp != nil {
++		if rest, aux := strings.CutPrefix(*sdp, "aux:"); aux {
++			if p.ac == nil {
++				return nil
++			}
++			answer, err := fromJson[webrtc.SessionDescription](rest)
++			if err != nil {
++				return err
++			}
++			p.log.Debug().Str("type", answer.Type.String()).Msg("rtc [aux] [sdp] (remote)")
++			return p.ac.SetRemoteDescription(answer)
++		}
+ 		answer, err := fromJson[webrtc.SessionDescription](*sdp)
+ 		if err != nil {
+ 			return err
+@@ -250,6 +332,9 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+ }
+ 
+ func (p *Peer) Disconnect() {
++	if p.ac != nil && p.ac.ConnectionState() < webrtc.PeerConnectionStateDisconnected {
++		_ = p.ac.Close()
++	}
+ 	if p.c == nil {
+ 		return
+ 	}
+@@ -274,14 +359,25 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+ 	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
+ 		return err
+ 	}
+-	if _, err = p.c.AddTransceiverFromTrack(p.a, sendOnly); err != nil {
++	// Split-audio mode (patch 0020): opus rides the aux PC so the main PC's video bursts share
++	// nothing with it — no audio m-line on the main PC at all. SendAudio is unchanged (p.a is
++	// simply attached to whichever PC owns it).
++	audioPC := p.c
++	if p.ac != nil {
++		audioPC = p.ac
++	}
++	if _, err = audioPC.AddTransceiverFromTrack(p.a, sendOnly); err != nil {
+ 		return err
+ 	}
+ 
+ 	// Read incoming RTCP packets
+ 	// Before these packets are returned they are processed by interceptors. For things
+ 	// like NACK this needs to be called.
+-	for _, rtpSender := range p.c.GetSenders() {
++	senders := p.c.GetSenders()
++	if p.ac != nil {
++		senders = append(senders, p.ac.GetSenders()...)
++	}
++	for _, rtpSender := range senders {
+ 		go func() {
+ 			rtcpBuf := make([]byte, 1500)
+ 			for {
+diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
+index 6972cc7..ffeac53 100644
+--- a/pkg/worker/coordinatorhandlers.go
++++ b/pkg/worker/coordinatorhandlers.go
+@@ -38,7 +38,12 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
+ 	peer := webrtc.New(c.log, factory)
+ 	codec := w.conf.Encoder.Video.Codec
+ 
+-	if err = peer.NewConnection(codec, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
++	// Patch 0020: a non-initiator browser can set the (otherwise unused) init sdp field to
++	// "audio-pc" to ask for opus on a dedicated aux PeerConnection (see webrtc.go Peer.ac).
++	// Old clients never send it → identical to stock.
++	splitAudio := !rq.Initiator && rq.Sdp == "audio-pc"
++
++	if err = peer.NewConnection(codec, splitAudio, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
+ 		return api.EmptyPacket
+ 	}
+ 
+@@ -54,6 +59,17 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
+ 		return api.EmptyPacket
+ 	}
+ 
++	// The aux audio offer travels in the ice signal field ("aux-sdp:" envelope) — the coordinator
++	// relays that string verbatim, and the browser buffers aux ICE until this lands. A failure here
++	// costs only split audio (the room still runs video+input), so it doesn't abort the init.
++	if splitAudio {
++		if auxSdp, auxErr := peer.OfferAux(); auxErr != nil {
++			c.log.Error().Err(auxErr).Str("peer", rq.Id).Msg("aux audio offer failed")
++		} else if auxSdp != "" {
++			c.IceCandidate("aux-sdp:"+auxSdp, rq.Id)
++		}
++	}
++
+ 	user := room.NewGameSession(rq.Id, peer) // use user uid from the coordinator
+ 	c.log.Info().Msgf("Peer connection: %s", user.Id())
+ 	w.router.AddUser(user)
+diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
+index 99e02b8..bf87de3 100644
+--- a/pkg/network/webrtc/factory.go
++++ b/pkg/network/webrtc/factory.go
+@@ -90,6 +103,10 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 		mod(m, i, &s)
+ 	}
+ 
++	// NOTE: do NOT set BundlePolicy here expecting per-m-line transports — Pion stores the field but
++	// never reads it (one ICE/DTLS transport per PeerConnection is hardcoded), which is why the
++	// browser-side un-bundle experiment could never complete DTLS (patch 0019, reverted). Audio
++	// isolation is done with a second audio-only PeerConnection instead (patch 0020, webrtc.go).
+ 	c := webrtc.Configuration{ICEServers: []webrtc.ICEServer{}}
+ 	for _, server := range conf.IceServers {
+ 		c.ICEServers = append(c.ICEServers, webrtc.ICEServer{
