@@ -1,0 +1,41 @@
+import { useCallback, useEffect, useState } from "react";
+
+// Light/dark theme state, persisted in localStorage. Light is the default for a first-time
+// visitor (DESIGN_SPEC §1 — "light won for card scannability"); the toggle remembers the choice.
+// The value lives as data-theme on <html>, which theme.css keys its token overrides off of.
+const THEME_KEY = "Theme";
+
+function readStoredTheme() {
+  try {
+    const raw = window.localStorage.getItem(THEME_KEY);
+    return raw === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
+
+// Apply synchronously at module load — BEFORE React first paints — so there's no light/dark flash
+// (mirrors App.js's module-scope storedCardStyle read).
+const initialTheme = readStoredTheme();
+if (typeof document !== "undefined") {
+  document.documentElement.dataset.theme = initialTheme;
+}
+
+export function useTheme() {
+  const [theme, setTheme] = useState(initialTheme);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      window.localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      /* ignore — a non-persistable choice just resets to default next session */
+    }
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((t) => (t === "dark" ? "light" : "dark"));
+  }, []);
+
+  return { theme, toggleTheme };
+}

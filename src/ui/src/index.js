@@ -1,5 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import "./theme.css";
 import "./index.css";
 // On-demand antd styles: import only the components the app actually uses instead of the full
 // antd/dist/antd.css (~576 KB). Each component's style/css.js pulls antd's shared base PLUS that

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Input, Button, AutoComplete, Tooltip, Select } from "antd";
-import { InfoCircleOutlined, UserOutlined } from "@ant-design/icons";
+import { Input, Button, Select } from "antd";
+import { UserOutlined } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
+import LoginForm from "./LoginForm";
 
 const { Search } = Input;
 
@@ -19,12 +20,12 @@ const SYSTEM_LABEL = {
 const systemLabel = (s) => SYSTEM_LABEL[s] || (s ? s.toUpperCase() : "");
 
 const sectionHeaderStyle = {
-  display: "block", fontSize: "10px", fontWeight: 700, color: "#d8a7ff",
+  display: "block", fontSize: "10px", fontWeight: 700, color: "var(--sidebar-heading)",
   textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "12px",
-  paddingBottom: "8px", borderBottom: "1px solid #4a2d6b",
+  paddingBottom: "8px", borderBottom: "1px solid var(--sidebar-border)",
 };
 const inputLabelStyle = {
-  display: "block", fontSize: "10px", fontWeight: 600, color: "#c3a3e6",
+  display: "block", fontSize: "10px", fontWeight: 600, color: "var(--sidebar-text-muted)",
   textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "5px", marginTop: "14px",
 };
 
@@ -64,56 +65,6 @@ function ArcadeUserPanel({ userData, setSettingsModalOpen, setAdminModalOpen, se
         )}
       </div>
       <button className="logout-button" onClick={logout}>Log Out</button>
-    </div>
-  );
-}
-
-function ArcadeLoginForm({ onUserLoggedIn }) {
-  const [userlist, setUserlist] = useState([]);
-  const [filtered, setFiltered] = useState([]);
-  const [inputValue, setInputValue] = useState(null);
-
-  useEffect(() => {
-    MovieAPI.getUsers().then((r) => r.json()).then((data) => {
-      const mapped = data.map((x) => ({ value: x }));
-      setUserlist(mapped);
-      setFiltered(mapped);
-    });
-  }, []);
-
-  function handleLogin() {
-    const match = userlist.find((x) => x.value === inputValue);
-    if (match) onUserLoggedIn(match.value);
-  }
-
-  return (
-    <div id="LoginContainer" className="login-container">
-      <span className="login-title">LOG IN</span>
-      <br /><br />
-      <AutoComplete
-        options={filtered}
-        className="login-autocomplete"
-        popupClassName="login-user-dropdown arcade-login-dropdown"
-        onSelect={onUserLoggedIn}
-        onSearch={(v) => setFiltered(userlist.filter((e) => e.value.toLowerCase().includes(v.toLowerCase())))}
-        getPopupContainer={(t) => t.parentElement}
-      >
-        <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
-          <Input
-            placeholder="Username"
-            prefix={<UserOutlined />}
-            className="login-input"
-            onChange={(e) => setInputValue(e.target.value)}
-            value={inputValue}
-            suffix={
-              <Tooltip title="This website purposely requires no password to log in.">
-                <InfoCircleOutlined className="login-tooltip-icon" />
-              </Tooltip>
-            }
-          />
-          <Button type="primary" className="login-button" onClick={handleLogin}>{">"}</Button>
-        </div>
-      </AutoComplete>
     </div>
   );
 }
@@ -163,7 +114,7 @@ function ArcadeNavContent({ userData, setUserData, onUserLoggedIn, setSettingsMo
       {userData ? (
         <ArcadeUserPanel userData={userData} setUserData={setUserData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
       ) : (
-        <ArcadeLoginForm onUserLoggedIn={onUserLoggedIn} />
+        <LoginForm onUserLoggedIn={onUserLoggedIn} popupClassName="arcade-login-dropdown" />
       )}
 
       <div style={{ padding: "16px 16px 24px", color: "white", borderTop: "1px solid #4a2d6b" }}>

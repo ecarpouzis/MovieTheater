@@ -5,6 +5,7 @@ import { BrowserRouter, Switch, Route } from "react-router-dom";
 import NavBar from "./NavBar/NavBar";
 import Browse from "./Pages/Browse/Browse";
 import { useMovieSearch } from "./hooks/useMovieSearch";
+import { useTheme } from "./hooks/useTheme";
 
 // Route-level code-splitting. The landing (Browse) and the nav shell stay in the main bundle; every
 // other page loads on demand, keeping its heavy deps out of the initial download — most notably
@@ -32,6 +33,7 @@ function App() {
   const hasCheckedFirstLoginRef = useRef(false);
   const [isAuthReady, setIsAuthReady] = useState(!storedUsername);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const { search, resetSearch, titleSearch, actorSearch, genreSearch, franchiseSearch, firstLetterSearch, titleTypeSearch, landingSearch, ratingSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch } =
     useMovieSearch();
@@ -104,6 +106,8 @@ function App() {
           collapsed={sidebarCollapsed}
           onCollapse={setSidebarCollapsed}
           isAuthReady={isAuthReady}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
         <Layout.Content className="app-content">
           <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}><Spin size="large" /></div>}>

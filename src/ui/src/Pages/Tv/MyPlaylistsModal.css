@@ -1,35 +1,15 @@
-.mypl {
-  margin: 8px 0 18px;
-}
-
-.mypl-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 4px 8px;
-}
-
-.mypl-title {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: #cfe0f0;
-}
-
-.mypl-rail {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding: 4px;
-  scrollbar-width: thin;
+/* My Playlists modal — a wrapping grid of playlist tiles on the modal (card) surface. */
+.mypl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  padding: 4px 2px 2px;
 }
 
 .mypl-card {
   position: relative;
-  flex: 0 0 auto;
-  width: 140px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
   border-radius: 10px;
   overflow: hidden;
   text-align: left;
@@ -46,12 +26,12 @@
 
 .mypl-collage {
   position: relative;
-  width: 140px;
-  height: 100px;
+  width: 100%;
+  aspect-ratio: 7 / 5;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
-  background: #0e1621;
+  background: var(--chip-neutral-bg);
 }
 
 .mypl-collage img {
@@ -70,7 +50,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6f8296;
+  color: var(--text-muted);
   font-size: 34px;
   font-weight: 700;
 }
@@ -89,13 +69,13 @@
 }
 
 .mypl-meta {
-  padding: 7px 9px 9px;
+  padding: 8px 10px 10px;
 }
 
 .mypl-name {
   font-size: 13px;
   font-weight: 600;
-  color: #e6eef7;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -103,7 +83,7 @@
 
 .mypl-sub {
   font-size: 11px;
-  color: #8fa8c0;
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
@@ -127,7 +107,7 @@
   border: 0;
   border-radius: 6px;
   background: rgba(0, 0, 0, 0.6);
-  color: #dfe8f1;
+  color: #fff;
   font-size: 13px;
   line-height: 1;
   cursor: pointer;

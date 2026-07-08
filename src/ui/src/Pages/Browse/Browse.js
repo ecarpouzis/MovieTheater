@@ -3,7 +3,6 @@ import { useHistory, useLocation } from "react-router-dom";
 import CardList from "./CardList";
 import SimpleCardList from "./SimpleCardList";
 import NowOnTvRail from "./NowOnTvRail";
-import MyPlaylistsShelf from "../Tv/MyPlaylistsShelf";
 import PlaylistPickerModal from "../Tv/PlaylistPickerModal";
 import useIsMobile from "../../hooks/useIsMobile";
 
@@ -331,13 +330,6 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       {/* Rail mounts regardless of the grid's loading state so its lineup + posters fetch in parallel
           with the movie grid (it self-gates on a streaming-enabled session), rather than only after. */}
       {!location.search && <NowOnTvRail userData={userData} setUserData={setUserData} />}
-      {!location.search && (
-        <MyPlaylistsShelf
-          userData={userData}
-          refreshKey={playlistsVersion}
-          onNew={() => openPlaylistPicker([], "My playlist")}
-        />
-      )}
       {loading ? (
         <BrowseSkeleton count={isMobile ? 6 : 12} />
       ) : useSimpleStyle ? (

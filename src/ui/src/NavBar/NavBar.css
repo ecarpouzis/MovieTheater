@@ -1,22 +1,25 @@
-/* Fixed top bar */
+/* ============================================================================
+   Navigation sidebar / top bar.
+   Surfaces are token-driven (theme.css): the sidebar is a dark, feature-tinted
+   rail in BOTH light and dark themes; --sidebar-bg / --accent re-tint per
+   feature via the data-feature attribute on <html>. The .navbar-*-theme classes
+   remain on the DOM (set by NavBar.js) but surface colors now come from tokens.
+   ============================================================================ */
+
+/* Fixed top bar (mobile) */
 .navbar-topbar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1300;
-  background: #001529;
+  background: var(--sidebar-bg);
   display: flex;
   align-items: center;
   padding: 0 16px;
   height: 48px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-  border-bottom: 1px solid #1e3a57;
-}
-
-.navbar-topbar.navbar-boardgames-theme {
-  background: #1f3a2a;
-  border-bottom: 1px solid #2a6040;
+  border-bottom: 1px solid var(--sidebar-border);
 }
 
 .navbar-topbar .navbar-home-btn {
@@ -65,15 +68,15 @@
 
 .navbar-home-btn:focus-visible {
   opacity: 1;
-  outline: 2px solid #1890ff;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
-  background-color: rgba(24, 144, 255, 0.12);
+  background-color: var(--accent-soft);
 }
 
 .navbar-home-btn:active {
   opacity: 1;
   transform: scale(0.97);
-  background-color: rgba(24, 144, 255, 0.18);
+  background-color: var(--accent-soft);
 }
 
 .navbar-home-btn:active .navbar-title,
@@ -89,7 +92,7 @@
 @media (hover: hover) {
   .navbar-home-btn:hover {
     opacity: 1;
-    background-color: rgba(24, 144, 255, 0.12);
+    background-color: var(--accent-soft);
   }
 
   .navbar-home-btn:hover .navbar-title,
@@ -107,17 +110,12 @@
 }
 
 .navbar-username-badge {
-  color: #a6adb4;
+  color: var(--sidebar-text);
   margin-left: auto;
   font-size: 12px;
-  background: #1e3a57;
+  background: var(--sidebar-pill-bg);
   padding: 2px 10px;
   border-radius: 10px;
-}
-
-.navbar-topbar.navbar-boardgames-theme .navbar-username-badge {
-  background: #1e5535;
-  color: #d8f0df;
 }
 
 /* Overlay */
@@ -128,22 +126,18 @@
   background: rgba(0, 0, 0, 0.45);
 }
 
-/* Drop-down panel */
+/* Drop-down panel (mobile) */
 .navbar-dropdown {
   position: fixed;
   top: 48px;
   left: 0;
   right: 0;
   z-index: 1250;
-  background: #001529;
+  background: var(--sidebar-bg);
   overflow-y: auto;
   overflow-x: hidden;
   max-height: 0;
   transition: max-height 0.3s ease, box-shadow 0.3s ease;
-}
-
-.navbar-dropdown.navbar-boardgames-theme {
-  background: #1f3a2a;
 }
 
 .navbar-dropdown--open {
@@ -154,6 +148,7 @@
 
 /* Desktop sider */
 .navbar-sider {
+  background: var(--sidebar-bg) !important;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
@@ -173,21 +168,22 @@
   border-radius: 2px;
 }
 
-.navbar-sider.navbar-boardgames-theme {
-  background: #1f3a2a !important;
-}
-
 .navbar-sider-header {
   padding: 14px 16px 12px;
-  border-bottom: 1px solid #1e3a57;
+  border-bottom: 1px solid var(--sidebar-border);
   margin-bottom: 2px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
-.navbar-sider-header.navbar-boardgames-theme {
-  border-bottom: 1px solid #2a6040;
+/* The switcher wrapper must span the full sider content width so the desktop
+   dropdown (anchored left:-16/right:-16 to it) reaches both sider edges
+   regardless of how short the section title is. Previously it sized to the
+   button's text — "Arcade" collapsed the panel and wrapped its items. */
+.navbar-sider-header .navbar-dropdown-wrapper {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .navbar-sider-header .navbar-home-btn {
@@ -204,6 +200,56 @@
   letter-spacing: 0.3px;
 }
 
+/* Light/dark theme toggle */
+.navbar-theme-toggle {
+  flex-shrink: 0;
+  background: var(--sidebar-pill-bg);
+  border: 1px solid var(--sidebar-border);
+  color: var(--sidebar-text);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.navbar-theme-toggle:hover,
+.navbar-theme-toggle:focus-visible {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: #fff;
+  outline: none;
+}
+
+.navbar-topbar .navbar-theme-toggle {
+  margin-left: 8px;
+}
+
+/* Desktop theme row — its own thin bar under the switcher (the 200px header can't fit
+   both the section title and the toggle). */
+.navbar-theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 10px;
+  border-bottom: 1px solid var(--sidebar-border);
+  margin-bottom: 2px;
+}
+
+.navbar-theme-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sidebar-text-muted);
+}
+
 /* Section switcher dropdown */
 .navbar-dropdown-wrapper {
   position: relative;
@@ -213,8 +259,8 @@
   position: absolute;
   top: 100%;
   left: 0;
-  background: #1e3a57;
-  border-radius: 4px;
+  background: var(--sidebar-bg-elev);
+  border-radius: 8px;
   margin-top: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   z-index: 1300;
@@ -223,12 +269,14 @@
 }
 
 .navbar-section-dropdown-desktop {
-  background: #002140;
-  /* Span the full sidebar width: the wrapper is inset by the header's 16px side padding, so pull the
-     panel back out to both sider edges. Flush, edge-to-edge — the hover highlight then fills each row
-     wall-to-wall instead of sitting in a narrow floating box. */
+  /* Span the full sidebar width regardless of the header's other contents (the theme
+     toggle now shares the header, so the wrapper is narrower than the sider). The
+     wrapper's left edge sits at the header's 16px left padding, so left:-16px lands on
+     the sider's left edge and a fixed 200px width (the antd Sider default) reaches the
+     right edge — independent of the wrapper's own width. */
   left: -16px;
-  right: -16px;
+  right: auto;
+  width: 200px;
   min-width: 0;
   border-radius: 0;
 }
@@ -240,14 +288,25 @@
   width: 100%;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--sidebar-text);
   padding: 12px 16px;
   text-align: left;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  white-space: nowrap;
   transition: background 0.2s, color 0.2s;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Feature hue dot in each switcher row */
+.navbar-hue-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: auto;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
 }
 
 /* Section-switcher glyphs (light SVGs on the dark menu). */
@@ -255,8 +314,7 @@
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  /* Kill the global `img { margin: 0 auto }` (index.css) — as a flex item its auto side-margins
-     absorb the row's free space and shove the label away from the icon. */
+  /* Kill the global `img { margin: 0 auto }` (index.css). */
   margin: 0;
 }
 
@@ -266,7 +324,7 @@
   height: 22px;
   display: block;
   flex-shrink: 0;
-  margin: 0; /* same global-img auto-margin reset as .navbar-section-icon */
+  margin: 0;
 }
 
 .navbar-section-item:last-child {
@@ -278,331 +336,174 @@
   color: white;
 }
 
-.navbar-topbar.navbar-boardgames-theme .navbar-home-btn:focus-visible,
-.navbar-topbar.navbar-boardgames-theme .navbar-home-btn:active,
-.navbar-topbar.navbar-boardgames-theme .navbar-home-btn:hover,
-.navbar-sider.navbar-boardgames-theme .navbar-home-btn:focus-visible,
-.navbar-sider.navbar-boardgames-theme .navbar-home-btn:active,
-.navbar-sider.navbar-boardgames-theme .navbar-home-btn:hover {
-  background-color: rgba(45, 181, 109, 0.18);
-}
-
-.navbar-topbar.navbar-boardgames-theme .navbar-home-btn:focus-visible,
-.navbar-sider.navbar-boardgames-theme .navbar-home-btn:focus-visible {
-  outline-color: #4dd68a;
-}
-
-.navbar-sider.navbar-boardgames-theme .navbar-section-dropdown,
-.navbar-dropdown.navbar-boardgames-theme .navbar-section-dropdown,
-.navbar-topbar.navbar-boardgames-theme .navbar-section-dropdown,
-.navbar-sider.navbar-boardgames-theme .navbar-section-dropdown-desktop,
-.navbar-dropdown.navbar-boardgames-theme .navbar-section-dropdown-desktop {
-  background: #163020;
-}
-
-.navbar-sider.navbar-boardgames-theme .user-panel,
-.navbar-dropdown.navbar-boardgames-theme .user-panel {
+/* ── Sidebar content surfaces (user panel / search) — shared, token-based ─── */
+.navbar-sider .user-panel,
+.navbar-dropdown .user-panel {
   background: transparent;
 }
 
-.navbar-sider.navbar-boardgames-theme #SearchToolContainer,
-.navbar-dropdown.navbar-boardgames-theme #SearchToolContainer {
-  border-top: 1px solid #2a6040 !important;
+.navbar-sider .user-avatar,
+.navbar-dropdown .user-avatar {
+  background: var(--accent-soft);
+  color: #fff;
 }
 
-.navbar-sider.navbar-boardgames-theme .logout-button,
-.navbar-dropdown.navbar-boardgames-theme .logout-button {
-  background: transparent;
-  border-color: #2a6040;
-  color: #7abf96;
+.navbar-sider .user-username,
+.navbar-dropdown .user-username {
+  color: #fff;
 }
 
-.navbar-sider.navbar-boardgames-theme .logout-button:hover,
-.navbar-sider.navbar-boardgames-theme .logout-button:focus,
-.navbar-dropdown.navbar-boardgames-theme .logout-button:hover,
-.navbar-dropdown.navbar-boardgames-theme .logout-button:focus {
-  background: transparent;
-  border-color: #dc3545;
-  color: #dc3545;
+.navbar-sider .user-panel-header,
+.navbar-dropdown .user-panel-header {
+  border-bottom-color: var(--sidebar-border);
 }
 
-.navbar-sider.navbar-boardgames-theme .user-avatar,
-.navbar-dropdown.navbar-boardgames-theme .user-avatar {
-  background: #1e5535;
-  color: #4dd68a;
-}
-
-.navbar-sider.navbar-boardgames-theme .user-username,
-.navbar-dropdown.navbar-boardgames-theme .user-username {
-  color: #d8f0df;
-}
-
-.navbar-sider.navbar-boardgames-theme .settings-icon-btn,
-.navbar-dropdown.navbar-boardgames-theme .settings-icon-btn {
-  color: #7abf96;
+.navbar-sider .settings-icon-btn,
+.navbar-dropdown .settings-icon-btn {
+  color: var(--sidebar-text-muted);
   opacity: 0.9;
 }
 
-.navbar-sider.navbar-boardgames-theme .settings-icon-btn:hover,
-.navbar-dropdown.navbar-boardgames-theme .settings-icon-btn:hover {
-  color: #d8f0df;
+.navbar-sider .settings-icon-btn:hover,
+.navbar-dropdown .settings-icon-btn:hover {
+  color: #fff;
   opacity: 1;
 }
 
-.navbar-sider.navbar-boardgames-theme .stat-label,
-.navbar-dropdown.navbar-boardgames-theme .stat-label {
-  color: #9fcfad;
-}
-
-.navbar-sider.navbar-boardgames-theme .stat-count,
-.navbar-dropdown.navbar-boardgames-theme .stat-count {
-  background: #1e5535;
-  color: #d8f0df;
-}
-
-.navbar-sider.navbar-boardgames-theme .login-title,
-.navbar-dropdown.navbar-boardgames-theme .login-title {
-  color: #d8f0df;
-}
-
-.navbar-sider.navbar-boardgames-theme .stat-row:hover,
-.navbar-dropdown.navbar-boardgames-theme .stat-row:hover {
-  background-color: rgba(45, 181, 109, 0.18);
-}
-
-.navbar-sider.navbar-boardgames-theme .stat-row:hover .stat-icon,
-.navbar-sider.navbar-boardgames-theme .stat-row:hover .stat-label,
-.navbar-sider.navbar-boardgames-theme .stat-row:hover .stat-count,
-.navbar-dropdown.navbar-boardgames-theme .stat-row:hover .stat-icon,
-.navbar-dropdown.navbar-boardgames-theme .stat-row:hover .stat-label,
-.navbar-dropdown.navbar-boardgames-theme .stat-row:hover .stat-count {
-  color: #4dd68a;
-}
-
-/* User-panel header divider */
-.navbar-sider.navbar-boardgames-theme .user-panel-header,
-.navbar-dropdown.navbar-boardgames-theme .user-panel-header {
-  border-bottom-color: #2a6040;
-}
-
-/* "Seen" stat icon — amber instead of blue */
-.navbar-sider.navbar-boardgames-theme .stat-icon--seen,
-.navbar-dropdown.navbar-boardgames-theme .stat-icon--seen {
-  color: #2db56d;
-}
-
-/* Ant Design primary buttons (Search enter, Login ">") */
-.navbar-sider.navbar-boardgames-theme .ant-btn-primary,
-.navbar-dropdown.navbar-boardgames-theme .ant-btn-primary {
-  background: #1e8c52;
-  border-color: #1e8c52;
+.navbar-sider .login-title,
+.navbar-dropdown .login-title {
   color: #fff;
 }
 
-.navbar-sider.navbar-boardgames-theme .ant-btn-primary:hover,
-.navbar-sider.navbar-boardgames-theme .ant-btn-primary:focus,
-.navbar-dropdown.navbar-boardgames-theme .ant-btn-primary:hover,
-.navbar-dropdown.navbar-boardgames-theme .ant-btn-primary:focus {
-  background: #2db56d;
-  border-color: #2db56d;
-}
-
-/* Boardgame login autocomplete dropdown selection */
-.boardgame-login-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled),
-.boardgame-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
-  background: #1e8c52 !important;
-}
-
-.boardgame-login-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) .ant-select-item-option-content,
-.boardgame-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) .ant-select-item-option-content {
-  color: #fff !important;
-}
-
-/* Keep boardgame navbar Select controls green (avoid default Ant blue focus/open styles on mobile) */
-.navbar-sider.navbar-boardgames-theme .ant-select:not(.ant-select-disabled):hover .ant-select-selector,
-.navbar-dropdown.navbar-boardgames-theme .ant-select:not(.ant-select-disabled):hover .ant-select-selector,
-.navbar-sider.navbar-boardgames-theme .ant-select-focused .ant-select-selector,
-.navbar-dropdown.navbar-boardgames-theme .ant-select-focused .ant-select-selector,
-.navbar-sider.navbar-boardgames-theme .ant-select-open .ant-select-selector,
-.navbar-dropdown.navbar-boardgames-theme .ant-select-open .ant-select-selector {
-  border-color: #2db56d !important;
-  box-shadow: 0 0 0 2px rgba(45, 181, 109, 0.2) !important;
-}
-
-.navbar-sider.navbar-boardgames-theme .ant-select-selection-item,
-.navbar-dropdown.navbar-boardgames-theme .ant-select-selection-item {
-  color: #d8f0df;
-}
-
-/* Boardgame Select controls should look active, not faded/disabled */
-.navbar-sider.navbar-boardgames-theme .ant-select .ant-select-selector,
-.navbar-dropdown.navbar-boardgames-theme .ant-select .ant-select-selector {
-  background: #163020 !important;
-  border-color: #2a6040 !important;
-  color: #d8f0df !important;
-}
-
-.navbar-sider.navbar-boardgames-theme .ant-select .ant-select-selection-placeholder,
-.navbar-dropdown.navbar-boardgames-theme .ant-select .ant-select-selection-placeholder {
-  color: #9fcfad !important;
-  opacity: 1 !important;
-}
-
-.navbar-sider.navbar-boardgames-theme .ant-select .ant-select-arrow,
-.navbar-dropdown.navbar-boardgames-theme .ant-select .ant-select-arrow {
-  color: #7abf96 !important;
-}
-
-/* Popup menu styling for boardgame dropdowns */
-.boardgame-login-dropdown.ant-select-dropdown {
-  background: #163020 !important;
-  border: 1px solid #2a6040 !important;
-}
-
-.boardgame-login-dropdown .ant-select-item-option {
-  color: #d8f0df !important;
-}
-
-.boardgame-login-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
-  background: rgba(45, 181, 109, 0.2) !important;
-}
-
-/* ── Arcade section theme (purple/magenta — colors only, no effects on game content) ───────────── */
-.navbar-topbar.navbar-arcade-theme {
-  background: #241639;
-  border-bottom: 1px solid #4a2d6b;
-}
-.navbar-dropdown.navbar-arcade-theme,
-.navbar-sider.navbar-arcade-theme,
-.navbar-sider-header.navbar-arcade-theme {
-  background: #1b0f2e;
-}
-.navbar-sider-header.navbar-arcade-theme {
-  border-bottom: 1px solid #4a2d6b;
-}
-
-.navbar-topbar.navbar-arcade-theme .navbar-home-btn:focus-visible,
-.navbar-topbar.navbar-arcade-theme .navbar-home-btn:active,
-.navbar-topbar.navbar-arcade-theme .navbar-home-btn:hover,
-.navbar-sider.navbar-arcade-theme .navbar-home-btn:focus-visible,
-.navbar-sider.navbar-arcade-theme .navbar-home-btn:active,
-.navbar-sider.navbar-arcade-theme .navbar-home-btn:hover {
-  background-color: rgba(199, 64, 224, 0.18);
-}
-.navbar-topbar.navbar-arcade-theme .navbar-home-btn:focus-visible,
-.navbar-sider.navbar-arcade-theme .navbar-home-btn:focus-visible {
-  outline-color: #d05ff0;
-}
-
-.navbar-sider.navbar-arcade-theme .navbar-section-dropdown,
-.navbar-dropdown.navbar-arcade-theme .navbar-section-dropdown,
-.navbar-topbar.navbar-arcade-theme .navbar-section-dropdown,
-.navbar-sider.navbar-arcade-theme .navbar-section-dropdown-desktop,
-.navbar-dropdown.navbar-arcade-theme .navbar-section-dropdown-desktop {
-  background: #241639;
-}
-
-.navbar-sider.navbar-arcade-theme .user-panel,
-.navbar-dropdown.navbar-arcade-theme .user-panel { background: transparent; }
-
-.navbar-sider.navbar-arcade-theme .logout-button,
-.navbar-dropdown.navbar-arcade-theme .logout-button {
+.navbar-sider .logout-button,
+.navbar-dropdown .logout-button {
   background: transparent;
-  border-color: #4a2d6b;
-  color: #c3a3e6;
+  border-color: var(--sidebar-border);
+  color: var(--sidebar-text-muted);
 }
-.navbar-sider.navbar-arcade-theme .logout-button:hover,
-.navbar-sider.navbar-arcade-theme .logout-button:focus,
-.navbar-dropdown.navbar-arcade-theme .logout-button:hover,
-.navbar-dropdown.navbar-arcade-theme .logout-button:focus {
+
+.navbar-sider .logout-button:hover,
+.navbar-sider .logout-button:focus,
+.navbar-dropdown .logout-button:hover,
+.navbar-dropdown .logout-button:focus {
   background: transparent;
   border-color: #dc3545;
   color: #dc3545;
 }
 
-.navbar-sider.navbar-arcade-theme .user-avatar,
-.navbar-dropdown.navbar-arcade-theme .user-avatar {
-  background: #3d2160;
-  color: #d8a7ff;
+/* Stat rows (Seen / Want / Rate) */
+.navbar-sider .stat-row:hover,
+.navbar-dropdown .stat-row:hover {
+  background-color: var(--accent-soft);
 }
-.navbar-sider.navbar-arcade-theme .user-username,
-.navbar-dropdown.navbar-arcade-theme .user-username { color: #ecdcff; }
-.navbar-sider.navbar-arcade-theme .user-panel-header,
-.navbar-dropdown.navbar-arcade-theme .user-panel-header { border-bottom-color: #4a2d6b; }
-.navbar-sider.navbar-arcade-theme .settings-icon-btn,
-.navbar-dropdown.navbar-arcade-theme .settings-icon-btn { color: #c3a3e6; opacity: 0.9; }
-.navbar-sider.navbar-arcade-theme .settings-icon-btn:hover,
-.navbar-dropdown.navbar-arcade-theme .settings-icon-btn:hover { color: #ecdcff; opacity: 1; }
-.navbar-sider.navbar-arcade-theme .login-title,
-.navbar-dropdown.navbar-arcade-theme .login-title { color: #ecdcff; }
 
-.navbar-sider.navbar-arcade-theme .ant-btn-primary,
-.navbar-dropdown.navbar-arcade-theme .ant-btn-primary {
-  background: #a533c9;
-  border-color: #a533c9;
+.navbar-sider .stat-count,
+.navbar-dropdown .stat-count {
+  background: var(--sidebar-pill-bg);
+  color: var(--sidebar-text);
+}
+
+.navbar-sider .stat-label,
+.navbar-dropdown .stat-label {
+  color: var(--sidebar-text);
+}
+
+/* ── antd controls inside the dark sidebar (shared, token-based) ─────────── */
+.navbar-sider .ant-btn-primary,
+.navbar-dropdown .ant-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
 }
-.navbar-sider.navbar-arcade-theme .ant-btn-primary:hover,
-.navbar-sider.navbar-arcade-theme .ant-btn-primary:focus,
-.navbar-dropdown.navbar-arcade-theme .ant-btn-primary:hover,
-.navbar-dropdown.navbar-arcade-theme .ant-btn-primary:focus {
-  background: #c740e0;
-  border-color: #c740e0;
+.navbar-sider .ant-btn-primary:hover,
+.navbar-sider .ant-btn-primary:focus,
+.navbar-dropdown .ant-btn-primary:hover,
+.navbar-dropdown .ant-btn-primary:focus {
+  filter: brightness(1.12);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
-.navbar-sider.navbar-arcade-theme .ant-select .ant-select-selector,
-.navbar-dropdown.navbar-arcade-theme .ant-select .ant-select-selector {
-  background: #241639 !important;
-  border-color: #4a2d6b !important;
-  color: #ecdcff !important;
+.navbar-sider .ant-select .ant-select-selector,
+.navbar-dropdown .ant-select .ant-select-selector {
+  background: var(--sidebar-input-bg) !important;
+  border-color: var(--sidebar-input-border) !important;
+  color: #fff !important;
 }
-.navbar-sider.navbar-arcade-theme .ant-select-selection-item,
-.navbar-dropdown.navbar-arcade-theme .ant-select-selection-item { color: #ecdcff; }
-.navbar-sider.navbar-arcade-theme .ant-select .ant-select-selection-placeholder,
-.navbar-dropdown.navbar-arcade-theme .ant-select .ant-select-selection-placeholder { color: #c3a3e6 !important; opacity: 1 !important; }
-.navbar-sider.navbar-arcade-theme .ant-select .ant-select-arrow,
-.navbar-dropdown.navbar-arcade-theme .ant-select .ant-select-arrow { color: #c3a3e6 !important; }
-.navbar-sider.navbar-arcade-theme .ant-select:not(.ant-select-disabled):hover .ant-select-selector,
-.navbar-dropdown.navbar-arcade-theme .ant-select:not(.ant-select-disabled):hover .ant-select-selector,
-.navbar-sider.navbar-arcade-theme .ant-select-focused .ant-select-selector,
-.navbar-dropdown.navbar-arcade-theme .ant-select-focused .ant-select-selector,
-.navbar-sider.navbar-arcade-theme .ant-select-open .ant-select-selector,
-.navbar-dropdown.navbar-arcade-theme .ant-select-open .ant-select-selector {
-  border-color: #c740e0 !important;
-  box-shadow: 0 0 0 2px rgba(199, 64, 224, 0.2) !important;
+.navbar-sider .ant-select-selection-item,
+.navbar-dropdown .ant-select-selection-item {
+  color: #fff;
+}
+.navbar-sider .ant-select .ant-select-selection-placeholder,
+.navbar-dropdown .ant-select .ant-select-selection-placeholder {
+  color: var(--sidebar-text-muted) !important;
+  opacity: 1 !important;
+}
+.navbar-sider .ant-select .ant-select-arrow,
+.navbar-dropdown .ant-select .ant-select-arrow {
+  color: var(--sidebar-text-muted) !important;
+}
+.navbar-sider .ant-select:not(.ant-select-disabled):hover .ant-select-selector,
+.navbar-dropdown .ant-select:not(.ant-select-disabled):hover .ant-select-selector,
+.navbar-sider .ant-select-focused .ant-select-selector,
+.navbar-dropdown .ant-select-focused .ant-select-selector,
+.navbar-sider .ant-select-open .ant-select-selector,
+.navbar-dropdown .ant-select-open .ant-select-selector {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent-soft) !important;
 }
 
+/* Search / autocomplete input wells */
+.navbar-sider .ant-input,
+.navbar-sider .ant-input-affix-wrapper,
+.navbar-dropdown .ant-input,
+.navbar-dropdown .ant-input-affix-wrapper {
+  background: var(--sidebar-input-bg);
+  border-color: var(--sidebar-input-border);
+  color: #fff;
+}
+.navbar-sider .ant-input::placeholder,
+.navbar-dropdown .ant-input::placeholder {
+  color: var(--sidebar-text-muted);
+}
+
+/* Popups (login autocomplete + filter selects) portal to the sider parent, so
+   the data-feature tokens on <html> apply. One shared, token-based skin. */
+.login-user-dropdown.ant-select-dropdown,
+.boardgame-login-dropdown.ant-select-dropdown,
 .arcade-login-dropdown.ant-select-dropdown {
-  background: #241639 !important;
-  border: 1px solid #4a2d6b !important;
+  background: var(--sidebar-bg-elev) !important;
+  border: 1px solid var(--sidebar-border) !important;
 }
-.arcade-login-dropdown .ant-select-item-option { color: #ecdcff !important; }
+.login-user-dropdown .ant-select-item-option,
+.boardgame-login-dropdown .ant-select-item-option,
+.arcade-login-dropdown .ant-select-item-option {
+  color: #fff !important;
+}
+.login-user-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled),
+.boardgame-login-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled),
 .arcade-login-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
-  background: rgba(199, 64, 224, 0.2) !important;
+  background: var(--accent-soft) !important;
 }
+.login-user-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
+.boardgame-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
 .arcade-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
-  background: #a533c9 !important;
+  background: var(--accent) !important;
 }
+.login-user-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) .ant-select-item-option-content,
+.boardgame-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) .ant-select-item-option-content,
 .arcade-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) .ant-select-item-option-content {
   color: #fff !important;
 }
-/* The list scrolls (e.g. 23 systems), but the default scrollbar is invisible on this dark purple, so
-   it reads as a non-scrolling list. Give it a bright, always-visible thumb + a faint track channel.
-   AntD Select scrolls via rc-virtual-list's own scrollbar element; the ::-webkit rules cover the
-   native-overflow (non-virtualized) case. */
-.arcade-login-dropdown .rc-virtual-list-scrollbar {
+/* The system list scrolls; give it an always-visible thumb on the dark ground. */
+.arcade-login-dropdown .rc-virtual-list-scrollbar,
+.boardgame-login-dropdown .rc-virtual-list-scrollbar {
   width: 10px !important;
-  background: rgba(216, 167, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
   border-radius: 5px !important;
 }
-.arcade-login-dropdown .rc-virtual-list-scrollbar-thumb {
-  background: #d8a7ff !important;
+.arcade-login-dropdown .rc-virtual-list-scrollbar-thumb,
+.boardgame-login-dropdown .rc-virtual-list-scrollbar-thumb {
+  background: var(--sidebar-text-muted) !important;
   border-radius: 5px !important;
-}
-.arcade-login-dropdown .rc-virtual-list-holder::-webkit-scrollbar { width: 10px; }
-.arcade-login-dropdown .rc-virtual-list-holder::-webkit-scrollbar-track {
-  background: rgba(216, 167, 255, 0.12); border-radius: 5px;
-}
-.arcade-login-dropdown .rc-virtual-list-holder::-webkit-scrollbar-thumb {
-  background: #d8a7ff; border-radius: 5px;
 }

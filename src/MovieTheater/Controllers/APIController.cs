@@ -2330,12 +2330,15 @@ namespace MovieTheater.Controllers
 
             var effectiveMax = Math.Min(maxRatingId, ageRestriction);
 
+            // "MPA Rating Cap": a CEILING, not an exact bucket — show every title whose effective
+            // rating is at or below the cap (G…cap). A cap below Unknown(7) naturally excludes
+            // unrated titles, and any cap ≥ NC-17(5) includes X(6) too (they're combined in the UI).
             // Order at the DB (nulls last, then collation — digit-titles sort before letters) and
             // page there, so the infinite-scroll client's repeated page fetches don't each
             // re-materialize + re-sort the whole rating set.
             var baseQuery = movieDb.Movies
                 .Where(m => m.ReviewBatch == null)
-                .Where(Web.RatingGate.MovieEffectiveBucketIs(movieDb, effectiveMax));
+                .Where(Web.RatingGate.MovieVisibleAtAge(movieDb, effectiveMax));
 
             // Rating browse is movie-only, so apply just the Movie-bucket part of the Type scope.
             // (A scope without any movie bucket — e.g. Series-only — yields no rating results.)

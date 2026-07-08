@@ -1,29 +1,16 @@
-import { useState, useEffect } from "react";
-import { Input, List, Button, AutoComplete, Tooltip, Select } from "antd";
-import { InfoCircleOutlined, UserOutlined } from "@ant-design/icons";
+import { Input, List, Button, Select } from "antd";
+import { UserOutlined } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
-import { MovieAPI } from "../MovieAPI";
+import LoginForm from "./LoginForm";
 import poweredByBggImage from "../../powered_by_BGG_SM.png";
 
 const { Search } = Input;
-
-const sectionHeaderStyle = {
-  display: "block",
-  fontSize: "10px",
-  fontWeight: "700",
-  color: "#7abf96",
-  textTransform: "uppercase",
-  letterSpacing: "1.5px",
-  marginBottom: "12px",
-  paddingBottom: "8px",
-  borderBottom: "1px solid #2a6040",
-};
 
 const inputLabelStyle = {
   display: "block",
   fontSize: "10px",
   fontWeight: "600",
-  color: "#9fcfad",
+  color: "var(--sidebar-text-muted)",
   textTransform: "uppercase",
   letterSpacing: "0.8px",
   marginBottom: "5px",
@@ -74,61 +61,6 @@ function BoardGameUserPanel({ userData, setUserData, setSettingsModalOpen, setAd
       <button className="logout-button" onClick={logout}>
         Log Out
       </button>
-    </div>
-  );
-}
-
-function BoardGameLoginForm({ onUserLoggedIn }) {
-  const [userlist, setUserlist] = useState([]);
-  const [filtered, setFiltered] = useState([]);
-  const [inputValue, setInputValue] = useState(null);
-
-  useEffect(() => {
-    MovieAPI.getUsers()
-      .then((r) => r.json())
-      .then((data) => {
-        const mapped = data.map((x) => ({ value: x }));
-        setUserlist(mapped);
-        setFiltered(mapped);
-      });
-  }, []);
-
-  function handleLogin() {
-    const match = userlist.find((x) => x.value === inputValue);
-    if (match) onUserLoggedIn(match.value);
-  }
-
-  return (
-    <div id="LoginContainer" className="login-container">
-      <span className="login-title">LOG IN</span>
-      <br />
-      <br />
-      <AutoComplete
-        options={filtered}
-        className="login-autocomplete"
-        popupClassName="login-user-dropdown boardgame-login-dropdown"
-        onSelect={onUserLoggedIn}
-        onSearch={(v) => setFiltered(userlist.filter((e) => e.value.toLowerCase().includes(v.toLowerCase())))}
-        getPopupContainer={(t) => t.parentElement}
-      >
-        <div style={{ display: "flex", gap: "0", alignItems: "stretch" }}>
-          <Input
-            placeholder="Username"
-            prefix={<UserOutlined />}
-            className="login-input"
-            onChange={(e) => setInputValue(e.target.value)}
-            value={inputValue}
-            suffix={
-              <Tooltip title="This website purposely requires no password to log in.">
-                <InfoCircleOutlined className="login-tooltip-icon" />
-              </Tooltip>
-            }
-          />
-          <Button type="primary" className="login-button" onClick={handleLogin}>
-            {">"}
-          </Button>
-        </div>
-      </AutoComplete>
     </div>
   );
 }
@@ -201,12 +133,10 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
       {userData ? (
         <BoardGameUserPanel userData={userData} setUserData={setUserData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
       ) : (
-        <BoardGameLoginForm onUserLoggedIn={onUserLoggedIn} />
+        <LoginForm onUserLoggedIn={onUserLoggedIn} popupClassName="boardgame-login-dropdown" />
       )}
 
-      <div id="SearchToolContainer" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid #2a6040" }}>
-        <span style={sectionHeaderStyle}>Search</span>
-
+      <div id="SearchToolContainer" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid var(--sidebar-border)" }}>
         <span style={{ ...inputLabelStyle, marginTop: 0 }}>Game Title</span>
         <Search
           placeholder="Title"
@@ -266,9 +196,9 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
                 onClick={() => toggleLetter(item)}
                 style={{
                   width: "36px",
-                  backgroundColor: item === search.startsWith ? "#2db56d" : "rgba(100,220,160,0.08)",
-                  color: item === search.startsWith ? "#fff" : "rgba(180,240,200,0.75)",
-                  borderColor: item === search.startsWith ? "#2db56d" : "rgba(100,220,160,0.2)",
+                  backgroundColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-pill-bg)",
+                  color: item === search.startsWith ? "#fff" : "var(--sidebar-text-muted)",
+                  borderColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-input-border)",
                 }}
               >
                 <span style={searchLetterStyle}>{item}</span>
@@ -278,7 +208,7 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
         />
       </div>
 
-      <div style={{ marginTop: "auto", padding: "12px", borderTop: "1px solid #2a6040" }}>
+      <div style={{ marginTop: "auto", padding: "12px", borderTop: "1px solid var(--sidebar-border)" }}>
         <img
           src={poweredByBggImage}
           alt="Powered by BoardGameGeek"

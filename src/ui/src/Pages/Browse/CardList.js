@@ -83,7 +83,7 @@ const MovieCard = memo(function MovieCard({
               onClick={isMisc ? undefined : () => onMovieClick(item.id, item.kind)}
               className={`card-title${isMisc ? " card-title--static" : ""}`}
             >
-              {item.title}{year ? ` (${year})` : ""}
+              {item.title}{year ? <span className="card-title-year"> ({year})</span> : ""}
             </div>
             <div className="card-meta-row">
               {item.kind === "series" && <span className="badge-rating">📺 Series</span>}

@@ -12,6 +12,8 @@ import ArcadeNavContent from "./ArcadeNavContent";
 // of the entry bundle and load their chunks when first rendered.
 const UserSettingsModal = lazy(() => import("./UserSettingsModal"));
 const AdminModal = lazy(() => import("./AdminModal"));
+// The playlists modal (Movies only) loads on demand when first opened from the sidebar pill.
+const MyPlaylistsModal = lazy(() => import("../Pages/Tv/MyPlaylistsModal"));
 import useIsMobile from "../hooks/useIsMobile";
 import { loadTitleTypes, saveTitleTypes, loadSort, saveSort } from "../hooks/useMovieSearch";
 // Section nav icons (light variants — the navbar sits on a dark ground). Dark variants for
@@ -42,6 +44,8 @@ function NavBar({
   collapsed,
   onCollapse,
   isAuthReady,
+  theme,
+  toggleTheme,
 }) {
   // Router objects — think of these as injected services provided by the router.
   // history is used to programmatically navigate; location is the current URL.
@@ -57,6 +61,7 @@ function NavBar({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [playlistsModalOpen, setPlaylistsModalOpen] = useState(false);
 
   // useEffect with a dependency array runs the callback whenever any listed value changes
   // — similar to subscribing to a PropertyChanged event for those specific properties.
@@ -207,9 +212,28 @@ function NavBar({
 
   const isBoardGames = location.pathname.startsWith("/boardgames");
   const isArcade = location.pathname.startsWith("/arcade");
+  const isMovies = !isArcade && !isBoardGames;
   const sectionIcon = isArcade ? arcadeIcon : isBoardGames ? boardGamesIcon : movieTheaterIcon;
   const sectionTitle = isArcade ? "Arcade" : isBoardGames ? "Board Games" : "Movie Theater";
   const navThemeClass = isArcade ? " navbar-arcade-theme" : isBoardGames ? " navbar-boardgames-theme" : "";
+
+  // Publish the active feature to <html> so theme.css re-tints its tokens (accent, sidebar,
+  // content bg) per section. Runs on every route change.
+  useEffect(() => {
+    document.documentElement.dataset.feature = isArcade ? "arcade" : isBoardGames ? "boardgames" : "movies";
+  }, [isArcade, isBoardGames]);
+
+  // Sun/moon light-dark toggle — present on every feature's header/top bar.
+  const themeToggleButton = (
+    <button
+      className="navbar-theme-toggle"
+      onClick={toggleTheme}
+      title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+      aria-label="Toggle light/dark theme"
+    >
+      {theme === "dark" ? "☀" : "☾"}
+    </button>
+  );
 
   // The section switcher's items — shared by the mobile and desktop dropdowns so they can't drift.
   // Order: Movie Theater, TV, Board Games, Comics. "TV" is the former Channels page (its guide is the
@@ -219,23 +243,28 @@ function NavBar({
     <>
       <button className="navbar-section-item" onClick={() => history.push("/")}>
         <img className="navbar-section-icon" src={movieTheaterIcon} alt="" /> Movie Theater
+        <span className="navbar-hue-dot" style={{ background: "#4A90E2" }} />
       </button>
       {userData?.hasPassword && (
         <button className="navbar-section-item" onClick={() => history.push("/channels")}>
           <img className="navbar-section-icon" src={tvIcon} alt="" /> TV
+          <span className="navbar-hue-dot" style={{ background: "#38B6C9" }} />
         </button>
       )}
       {userData?.hasPassword && (
         <button className="navbar-section-item" onClick={() => history.push("/arcade")}>
           <img className="navbar-section-icon" src={arcadeIcon} alt="" /> Arcade
+          <span className="navbar-hue-dot" style={{ background: "#9A7BD4" }} />
         </button>
       )}
       <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
         <img className="navbar-section-icon" src={boardGamesIcon} alt="" /> Board Games
+        <span className="navbar-hue-dot" style={{ background: "#2E9E63" }} />
       </button>
       {userData?.comicSiteAccess && (
         <button className="navbar-section-item" onClick={() => window.open(userData.comicSiteAccess, "_blank", "noopener,noreferrer")}>
           <img className="navbar-section-icon" src={comicsIcon} alt="" /> Comics
+          <span className="navbar-hue-dot" style={{ background: "#D98936" }} />
         </button>
       )}
     </>
@@ -268,6 +297,7 @@ function NavBar({
         onUserLoggedIn={onUserLoggedIn}
         setSettingsModalOpen={setSettingsModalOpen}
         setAdminModalOpen={setAdminModalOpen}
+        onOpenPlaylists={() => setPlaylistsModalOpen(true)}
       />
       <SearchTools search={search} userData={userData} />
     </>
@@ -292,6 +322,7 @@ function NavBar({
             )}
           </div>
           {userData && <span className="navbar-username-badge">{userData.username}</span>}
+          {themeToggleButton}
         </div>
 
         {drawerOpen && <div className="navbar-overlay" onClick={() => setDrawerOpen(false)} />}
@@ -307,6 +338,9 @@ function NavBar({
             setUserData={setUserData}
           />
           <AdminModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
+          {isMovies && (
+            <MyPlaylistsModal open={playlistsModalOpen} onClose={() => setPlaylistsModalOpen(false)} userData={userData} />
+          )}
         </Suspense>
       </>
     );
@@ -326,6 +360,10 @@ function NavBar({
             )}
           </div>
         </div>
+        <div className="navbar-theme-row">
+          <span className="navbar-theme-label">{theme === "dark" ? "Dark" : "Light"} mode</span>
+          {themeToggleButton}
+        </div>
         {navContent}
       </Layout.Sider>
       <Suspense fallback={null}>
@@ -336,6 +374,9 @@ function NavBar({
           setUserData={setUserData}
         />
         <AdminModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
+        {isMovies && (
+          <MyPlaylistsModal open={playlistsModalOpen} onClose={() => setPlaylistsModalOpen(false)} userData={userData} />
+        )}
       </Suspense>
     </>
   );

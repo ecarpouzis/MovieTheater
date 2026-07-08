@@ -101,31 +101,55 @@
 }
 
 .stat-row:hover {
-  background-color: rgba(24, 144, 255, 0.12);
+  background-color: var(--accent-soft);
 }
 
-.stat-row:hover .stat-icon,
+.stat-row--active {
+  background-color: var(--accent-soft);
+}
+
 .stat-row:hover .stat-label,
-.stat-row:hover .stat-count {
-  color: #1890ff;
+.stat-row:hover .stat-count,
+.stat-row--active .stat-label,
+.stat-row--active .stat-count {
+  color: #fff;
 }
 
-.stat-row:hover .stat-icon--want {
-  color: #dc143c;
+/* Pixel action glyphs (white on the dark rail — read in both themes). */
+.stat-icon-img {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  opacity: 0.8;
+  transition: opacity 0.15s ease;
 }
 
-.stat-icon {
-  font-size: 15px;
-  width: 18px;
-  text-align: center;
+.stat-row:hover .stat-icon-img,
+.stat-row--active .stat-icon-img {
+  opacity: 1;
 }
 
-.stat-icon--seen {
-  color: #4169e3;
+/* "≡ Playlists" pill in the user-panel header (movies only). */
+.playlists-pill {
+  margin-left: auto;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, filter 0.15s ease;
 }
 
-.stat-icon--want {
-  color: #dc143c;
+.playlists-pill:hover,
+.playlists-pill:focus-visible {
+  background: var(--accent);
+  outline: none;
 }
 
 .stat-label {

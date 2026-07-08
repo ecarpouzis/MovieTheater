@@ -1,0 +1,154 @@
+/* ==========================================================================
+   Theme system — design tokens + self-hosted type.
+   Loaded first (src/index.js) so every component can read var(--token).
+
+   Two orthogonal attributes live on <html> (documentElement):
+     data-theme   = "light" | "dark"          (useTheme hook; persisted)
+     data-feature = "movies" | "boardgames" | "arcade"   (NavBar, per route)
+
+   Light won for card scannability (DESIGN_SPEC §1): the content area is light,
+   the sidebar is a dark, feature-tinted rail in BOTH themes. Dark theme only
+   swaps the content-area surfaces (§3b).
+   ========================================================================== */
+
+/* ── Instrument Sans (self-hosted variable font, weights 400–700) ────────── */
+@font-face {
+  font-family: "Instrument Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("./assets/fonts/instrument-sans-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("./assets/fonts/instrument-sans-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ── Base tokens: LIGHT theme, MOVIES feature (the defaults) ─────────────── */
+:root {
+  --font-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Helvetica,
+    Arial, sans-serif;
+
+  /* Content-area surfaces (feature-independent in light) */
+  --card-surface: #ffffff;
+  --card-border: #e3e4e8;
+  --card-shadow: 0 1px 2px rgba(20, 30, 50, 0.05);
+  --card-shadow-hover: 0 4px 16px rgba(20, 30, 50, 0.12);
+
+  --text-primary: #1a1c22;
+  --text-secondary: #5c5f68;
+  --text-muted: #9b9ea6;
+
+  /* Chips */
+  --chip-neutral-bg: #f0f1f3;
+  --chip-neutral-text: #5c5f68;
+  --chip-neutral-border: #e0e2e6;
+  --rating-gold-bg: #faf3dd;
+  --rating-gold-text: #8a6510;
+  --chip-imdb-bg: #faf3dd;
+  --chip-imdb-text: #8a6510;
+  --chip-imdb-border: #eaddb0;
+
+  /* Accent (movies) — Seen button, cast links, active states */
+  --accent: #2f6fc4;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(47, 111, 196, 0.12);
+  --want-accent: #d0426b;
+  --want-soft: rgba(208, 66, 107, 0.1);
+
+  /* Content background (feature-tinted, same lightness) */
+  --content-bg: #f2f3f5;
+
+  /* Sidebar — dark feature rail, in BOTH themes */
+  --sidebar-bg: #131c2e;
+  --sidebar-bg-elev: #1b2740;
+  --sidebar-text: rgba(255, 255, 255, 0.9);
+  --sidebar-text-muted: #8fa8c0;
+  --sidebar-heading: #6b8aad;
+  --sidebar-border: rgba(255, 255, 255, 0.12);
+  --sidebar-input-bg: #0d1420;
+  --sidebar-input-border: rgba(255, 255, 255, 0.14);
+  --sidebar-pill-bg: rgba(255, 255, 255, 0.08);
+  --nav-active-bg: rgba(47, 111, 196, 0.22);
+
+  /* Feature hue dot (switcher) — overridden per-feature only for the CURRENT
+     feature's dot; the five dots use their own fixed colors inline. */
+}
+
+/* ── Feature tints (LIGHT) ──────────────────────────────────────────────── */
+:root[data-feature="boardgames"] {
+  --accent: #2e9e63;
+  --accent-soft: rgba(46, 158, 99, 0.12);
+  --content-bg: #f4f5f2;
+  --card-border: #e2e5df;
+  --sidebar-bg: #12261c;
+  --sidebar-bg-elev: #163020;
+  --sidebar-heading: #7abf96;
+  --sidebar-text-muted: #9fcfad;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-input-bg: #0c1a12;
+  --nav-active-bg: rgba(46, 158, 99, 0.22);
+}
+
+:root[data-feature="arcade"] {
+  --accent: #a44ee0;
+  --accent-soft: rgba(164, 78, 224, 0.14);
+  --content-bg: #f5f3f8;
+  --card-border: #e5e1ec;
+  --sidebar-bg: #231539;
+  --sidebar-bg-elev: #2c1a47;
+  --sidebar-heading: #d8a7ff;
+  --sidebar-text-muted: #c3a3e6;
+  --sidebar-border: rgba(255, 255, 255, 0.12);
+  --sidebar-input-bg: #170d26;
+  --nav-active-bg: rgba(164, 78, 224, 0.24);
+}
+
+/* ── DARK theme: swap content-area surfaces only (§3b) ──────────────────── */
+:root[data-theme="dark"] {
+  --card-surface: #1e2739;
+  --card-border: rgba(255, 255, 255, 0.09);
+  --card-shadow: none;
+  --card-shadow-hover: 0 4px 18px rgba(0, 0, 0, 0.5);
+
+  --text-primary: #ffffff;
+  --text-secondary: #aab4c6;
+  --text-muted: #8b95a8;
+
+  --chip-neutral-bg: rgba(255, 255, 255, 0.08);
+  --chip-neutral-text: #aab4c6;
+  --chip-neutral-border: rgba(255, 255, 255, 0.12);
+  --rating-gold-bg: rgba(212, 175, 55, 0.16);
+  --rating-gold-text: #e8c869;
+  --chip-imdb-bg: rgba(212, 175, 55, 0.16);
+  --chip-imdb-text: #e8c869;
+  --chip-imdb-border: rgba(212, 175, 55, 0.28);
+
+  --content-bg: #141a26;
+}
+:root[data-theme="dark"][data-feature="boardgames"] {
+  --content-bg: #141c17;
+  --card-surface: #1d2b22;
+}
+:root[data-theme="dark"][data-feature="arcade"] {
+  --content-bg: #161020;
+  --card-surface: #211736;
+}
+
+/* ── Global application ─────────────────────────────────────────────────── */
+body {
+  font-family: var(--font-sans);
+  background: var(--content-bg);
+  color: var(--text-primary);
+}

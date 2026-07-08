@@ -32,7 +32,7 @@
 .skeleton-card {
   min-height: 210px;
   border-radius: 10px;
-  background: linear-gradient(100deg, #e7e7ee 30%, #f3f3f8 50%, #e7e7ee 70%);
+  background: linear-gradient(100deg, var(--chip-neutral-bg) 30%, var(--card-surface) 50%, var(--chip-neutral-bg) 70%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.3s ease-in-out infinite;
 }
@@ -47,12 +47,14 @@
 /* Replace the antd border with a box-shadow ring so there's no border to frame the flush poster */
 .movie-card.ant-card {
   border: none;
-  box-shadow: 0 0 0 1px #f0f0f0;
+  background: var(--card-surface);
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--card-border), var(--card-shadow);
   overflow: hidden;
 }
 
 .movie-card.ant-card-hoverable:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 0 0 1px var(--card-border), var(--card-shadow-hover);
 }
 
 /* Desktop card body (via antd) */
@@ -61,6 +63,7 @@
   display: flex;
   flex-direction: column;
   user-select: none;
+  background: var(--card-surface);
 }
 
 /* Card content wrapper */
@@ -123,7 +126,7 @@
 }
 
 .card-title--static:hover {
-  color: #5e5e5e;
+  color: var(--text-primary);
 }
 
 /* Right column */
@@ -144,17 +147,23 @@
 
 /* Card title */
 .card-title {
-  font-weight: bold;
-  font-family: "Arial Black", Arial, sans-serif;
-  font-size: 0.9em;
-  color: #5e5e5e;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  font-size: 1em;
+  color: var(--text-primary);
   cursor: pointer;
   line-height: 1.3;
   transition: color 0.15s;
 }
 
 .card-title:hover {
-  color: #1890ff;
+  color: var(--accent);
+}
+
+/* Muted release year beside the title */
+.card-title-year {
+  font-weight: 400;
+  color: var(--text-muted);
 }
 
 /* Meta badges row */
@@ -175,27 +184,28 @@
 .actor-link {
   padding: 1px 8px;
   background: transparent;
-  border: 1px solid #ddd;
+  border: 1px solid var(--card-border);
   border-radius: 10px;
   font-size: 0.7em;
   cursor: pointer;
-  color: #666;
+  color: var(--accent);
   font-style: italic;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .actor-link:hover {
-  color: #1890ff;
-  border-color: #91caff;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 /* The person currently being searched — stays highlighted across the result cards. */
 .actor-link--active,
 .actor-link--active:hover {
-  color: #fff;
-  background: #1890ff;
-  border-color: #1890ff;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border-color: var(--accent);
   font-style: normal;
   font-weight: 600;
 }
@@ -203,7 +213,7 @@
 /* Plot */
 .card-plot {
   font-size: 0.82em;
-  color: #666;
+  color: var(--text-secondary);
   line-height: 1.4;
   margin: 0;
   flex: 1;
@@ -219,7 +229,7 @@
   left: 0;
   right: 0;
   height: 2em;
-  background: linear-gradient(to bottom, transparent, white);
+  background: linear-gradient(to bottom, transparent, var(--card-surface));
   pointer-events: none;
 }
 
@@ -231,7 +241,7 @@
 .card-plot-below {
   display: none;
   font-size: 0.82em;
-  color: #666;
+  color: var(--text-secondary);
   line-height: 1.4;
   margin: 0;
   padding: 8px 12px 4px;
@@ -247,7 +257,7 @@
   left: 0;
   right: 0;
   height: 2em;
-  background: linear-gradient(to bottom, transparent, white);
+  background: linear-gradient(to bottom, transparent, var(--card-surface));
   pointer-events: none;
 }
 
@@ -267,22 +277,25 @@
   white-space: nowrap;
 }
 
+/* MPA — outlined chip */
 .badge-rating {
-  background-color: #f0f0f0;
-  color: #555;
-  border: 1px solid #d9d9d9;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--card-border);
 }
 
+/* Runtime — neutral gray chip */
 .badge-runtime {
-  background-color: #e6f4ff;
-  color: #1677ff;
-  border: 1px solid #91caff;
+  background-color: var(--chip-neutral-bg);
+  color: var(--chip-neutral-text);
+  border: 1px solid var(--chip-neutral-border);
 }
 
+/* IMDb ★ — gold chip */
 .badge-imdb {
-  background-color: #faf0d0;
-  color: #a07000;
-  border: 1px solid #f0d060;
+  background-color: var(--chip-imdb-bg);
+  color: var(--chip-imdb-text);
+  border: 1px solid var(--chip-imdb-border);
 }
 
 .badge-misc {
@@ -292,7 +305,7 @@
   padding: 1px 4px;
   border-radius: 3px;
   white-space: nowrap;
-  background-color: #f6edff;
-  color: #722ed1;
-  border: 1px solid #d3adf7;
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-soft);
 }

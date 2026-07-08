@@ -43,3 +43,45 @@
   font-size: 13px;
   line-height: 1.3;
 }
+
+/* ── Theme surfaces (antd Card/Tag/Button are light by default) ──────────── */
+.arcade-page .ant-card {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+}
+.arcade-page .ant-card-meta-title {
+  color: var(--text-primary);
+}
+.arcade-page .ant-card-meta-description {
+  color: var(--text-secondary);
+}
+
+/* Plain (uncolored) meta tags → neutral chip; the purple/magenta preset tags keep their hue. */
+.arcade-page .ant-tag:not(.ant-tag-purple):not(.ant-tag-magenta) {
+  background: var(--chip-neutral-bg);
+  border-color: var(--chip-neutral-border);
+  color: var(--chip-neutral-text);
+}
+
+/* "▶ Start room" — neon purple accent (with a glow in dark, DESIGN_SPEC §3b). */
+.arcade-page .ant-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.arcade-page .ant-btn-primary:hover,
+.arcade-page .ant-btn-primary:focus {
+  background: var(--accent);
+  border-color: var(--accent);
+  filter: brightness(1.12);
+}
+:root[data-theme="dark"] .arcade-page .ant-btn-primary {
+  box-shadow: 0 0 12px rgba(164, 78, 224, 0.45);
+}
+
+/* "My saves" text link + region select follow the theme text color. */
+.arcade-page .ant-card-body {
+  color: var(--text-secondary);
+}

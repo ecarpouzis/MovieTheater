@@ -1,4 +1,4 @@
-import { Input, List, Button, Select, message } from "antd";
+import { Input, List, Button, Select, Slider } from "antd";
 import { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
@@ -13,25 +13,27 @@ const SORT_OPTIONS = [
   { label: "Popcornmeter", value: "popcorn" },
 ];
 
-const { Search } = Input;
+// MPA Rating Cap stops. `cap` = the ceiling id sent to /API/GetMoviesByRating (a title shows when its
+// effective rating is ≤ cap). `restrict` = the rating id compared against the viewer's age restriction
+// to clamp the slider. X and NC-17 are combined into one "NC-17" stop (cap 6 includes both NC-17=5 and
+// X=6); "Unknown"(7) is not selectable, so unrated titles never appear under a cap. Index 0 = "Any"
+// (no cap → browse the current scope).
+const RATING_STOPS = [
+  { label: "Any", cap: null, restrict: 0 },
+  { label: "G", cap: 1, restrict: 1 },
+  { label: "PG", cap: 2, restrict: 2 },
+  { label: "PG-13", cap: 3, restrict: 3 },
+  { label: "R", cap: 4, restrict: 4 },
+  { label: "NC-17", cap: 6, restrict: 5 },
+];
 
-const sectionHeaderStyle = {
-  display: "block",
-  fontSize: "10px",
-  fontWeight: "700",
-  color: "#6b8aad",
-  textTransform: "uppercase",
-  letterSpacing: "1.5px",
-  marginBottom: "12px",
-  paddingBottom: "8px",
-  borderBottom: "1px solid #1e3a57",
-};
+const { Search } = Input;
 
 const inputLabelStyle = {
   display: "block",
   fontSize: "10px",
   fontWeight: "600",
-  color: "#8fa8c0",
+  color: "var(--sidebar-text-muted)",
   textTransform: "uppercase",
   letterSpacing: "0.8px",
   marginBottom: "5px",
@@ -50,57 +52,18 @@ const searchLetterStyle = {
 };
 
 const searchLetters = [
-  "#",
-  "A",
-  "B",
-  "C",
-  "D",
-  "E",
-  "F",
-  "G",
-  "H",
-  "I",
-  "J",
-  "K",
-  "L",
-  "M",
-  "N",
-  "O",
-  "P",
-  "Q",
-  "R",
-  "S",
-  "T",
-  "U",
-  "V",
-  "W",
-  "X",
-  "Y",
-  "Z",
+  "#", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+  "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
 ];
 
 const listStyle = {
   paddingBottom: "20px",
 };
 
-// MPA ratings and genres are static lookups, but this component remounts whenever the mobile/desktop
-// layout flips — which re-fetched both every time. Cache the in-flight/resolved promise at module
-// scope so they're fetched once per session; a failure clears the cache so a later mount can retry.
-let mpaRatingsPromise = null;
+// Genres are a static lookup, but this component remounts whenever the mobile/desktop layout flips —
+// which re-fetched every time. Cache the in-flight/resolved promise at module scope so it's fetched
+// once per session; a failure clears the cache so a later mount can retry.
 let genresPromise = null;
-
-function loadMpaRatings() {
-  if (!mpaRatingsPromise) {
-    mpaRatingsPromise = MovieAPI.getMPARatings()
-      .then((r) => r.json())
-      .then((data) => (Array.isArray(data) ? data : []))
-      .catch(() => {
-        mpaRatingsPromise = null;
-        return [];
-      });
-  }
-  return mpaRatingsPromise;
-}
 
 function loadGenres() {
   if (!genresPromise) {
@@ -118,14 +81,10 @@ function loadGenres() {
 function SearchTools({ search, userData }) {
   const history = useHistory();
   const location = useLocation();
-  const [mpaRatings, setMpaRatings] = useState([]);
   const [genres, setGenres] = useState([]);
 
   useEffect(() => {
     let active = true;
-    loadMpaRatings().then((data) => {
-      if (active) setMpaRatings(data);
-    });
     loadGenres().then((data) => {
       if (active) setGenres(data);
     });
@@ -156,9 +115,7 @@ function SearchTools({ search, userData }) {
     }
 
     // Sort-by persists across mode changes like the Type scope: callers leave it untouched
-    // (sortOverride undefined) except the Sort-by dropdown, which passes a new value. An explicitly
-    // chosen sort is always written to the URL — including "alpha" — so it can override a previously
-    // persisted non-default sort (an absent param means "use the persisted value", per NavBar).
+    // (sortOverride undefined) except the Sort-by dropdown, which passes a new value.
     const sort = sortOverride !== undefined ? sortOverride : current.get("sort");
     if (sort) {
       params.set("sort", sort);
@@ -171,9 +128,7 @@ function SearchTools({ search, userData }) {
   }
 
   function ToggleLetterSearch(firstLetter) {
-    // Check if already viewing this letter by comparing the startsWith property
     const isAlreadySelected = search.startsWith === firstLetter;
-
     if (isAlreadySelected) {
       navigateToBrowseSearch();
     } else {
@@ -181,26 +136,35 @@ function SearchTools({ search, userData }) {
     }
   }
 
-  function ToggleRatingSearch(ratingId) {
-    const isAlreadySelected = search.maxRatingId === String(ratingId);
+  // ── MPA Rating Cap slider ──────────────────────────────────────────────
+  // Clamp the highest selectable stop to the viewer's age restriction (an MPA id, or null = none).
+  const maxRatingIndex =
+    userData?.ageRestriction != null
+      ? Math.max(0, RATING_STOPS.filter((s) => s.restrict <= userData.ageRestriction).length - 1)
+      : RATING_STOPS.length - 1;
 
-    if (isAlreadySelected) {
-      navigateToBrowseSearch();
-      return;
+  // Reflect the active cap: find the stop whose `cap` matches the URL's maxRatingId (rating mode).
+  const activeCapIndex =
+    search.maxRatingId != null
+      ? Math.max(0, RATING_STOPS.findIndex((s) => String(s.cap) === String(search.maxRatingId)))
+      : 0;
+
+  const ratingMarks = RATING_STOPS.slice(0, maxRatingIndex + 1).reduce((acc, s, i) => {
+    acc[i] = s.label;
+    return acc;
+  }, {});
+
+  function onRatingCapChange(index) {
+    const stop = RATING_STOPS[index];
+    if (!stop || stop.cap == null) {
+      navigateToBrowseSearch(); // "Any" → clear the cap, browse the current scope
+    } else {
+      navigateToBrowseSearch("rating", String(stop.cap));
     }
-
-    if (userData?.ageRestriction != null && ratingId > userData.ageRestriction) {
-      const restrictionName = mpaRatings.find((r) => r.id === userData.ageRestriction)?.name || "your current setting";
-      message.warning(`Your age restriction is set to ${restrictionName}. You cannot browse movies above that rating.`);
-      return;
-    }
-
-    navigateToBrowseSearch("rating", String(ratingId));
   }
 
   return (
-    <div id="SearchToolContainer" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid #1e3a57" }}>
-      <span style={sectionHeaderStyle}>Search</span>
+    <div id="SearchToolContainer" style={{ padding: "8px 16px", color: "white" }}>
       <span style={{ ...inputLabelStyle, marginTop: 0 }}>Movie Title</span>
       <Search
         placeholder="Title"
@@ -237,6 +201,7 @@ function SearchTools({ search, userData }) {
             placeholder="Genre (matches all selected)"
             style={{ width: "100%" }}
             getPopupContainer={(trigger) => trigger.parentNode}
+            popupClassName="login-user-dropdown"
             value={Array.isArray(search.genre) ? search.genre : search.genre ? [search.genre] : []}
             onChange={(vals) => navigateToBrowseSearch(vals.length ? "genre" : undefined, vals.join(","))}
             options={genres.map((g) => ({ label: g, value: g }))}
@@ -251,13 +216,9 @@ function SearchTools({ search, userData }) {
         allowClear
         placeholder="Title type (any selected)"
         style={{ width: "100%" }}
-        // Render the popup inside the nav drawer's stacking context. Default AntD portals it to
-        // <body> at z-index 1050, which sits BEHIND the mobile nav drawer (z-index 1250) — so the
-        // options were invisible/untappable on mobile. Anchoring to the trigger's parent fixes it.
         getPopupContainer={(trigger) => trigger.parentNode}
+        popupClassName="login-user-dropdown"
         value={Array.isArray(search.titleTypes) ? search.titleTypes : []}
-        // Type is an overarching scope, not a one-shot mode: changing it keeps the active search
-        // (mode/value) and just updates the persistent `types` param. "" = all types.
         onChange={(vals) => {
           const current = new URLSearchParams(location.search);
           navigateToBrowseSearch(current.get("mode"), current.get("value") || "", vals.join(","));
@@ -274,17 +235,26 @@ function SearchTools({ search, userData }) {
       <Select
         style={{ width: "100%" }}
         getPopupContainer={(trigger) => trigger.parentNode}
-        // Reflect the active sort: the URL param when present, otherwise the persisted value (NavBar
-        // applies that same fallback when the param is absent), so the control matches the grid order.
+        popupClassName="login-user-dropdown"
         value={new URLSearchParams(location.search).get("sort") || loadSort()}
-        // Sort, like Type, is an overarching setting: keep the active search (mode/value) and just change
-        // the `sort` param. Ratings sort highest-first; alphabetical is by Simple Title.
         onChange={(val) => {
           const current = new URLSearchParams(location.search);
           navigateToBrowseSearch(current.get("mode"), current.get("value") || "", undefined, val);
         }}
         options={SORT_OPTIONS}
       />
+      <span style={inputLabelStyle}>MPA Rating Cap</span>
+      <div className="rating-cap-slider" style={{ padding: "0 6px 8px" }}>
+        <Slider
+          min={0}
+          max={maxRatingIndex}
+          step={1}
+          marks={ratingMarks}
+          tooltip={{ open: false }}
+          value={Math.min(activeCapIndex, maxRatingIndex)}
+          onChange={onRatingCapChange}
+        />
+      </div>
       <span style={inputLabelStyle}>First Letter</span>
       <List
         style={listStyle}
@@ -308,9 +278,9 @@ function SearchTools({ search, userData }) {
                 }}
                 style={{
                   width: "36px",
-                  backgroundColor: item === search.startsWith ? "#1890ff" : "rgba(255,255,255,0.08)",
-                  color: item === search.startsWith ? "white" : "rgba(255,255,255,0.75)",
-                  borderColor: item === search.startsWith ? "#1890ff" : "rgba(255,255,255,0.15)",
+                  backgroundColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-pill-bg)",
+                  color: item === search.startsWith ? "#fff" : "var(--sidebar-text-muted)",
+                  borderColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-input-border)",
                 }}
               >
                 <span style={searchLetterStyle}>{item}</span>
@@ -319,42 +289,6 @@ function SearchTools({ search, userData }) {
           );
         }}
       />
-      {mpaRatings.length > 0 && (
-        <>
-          <span style={inputLabelStyle}>MPA Rating Search</span>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", paddingBottom: "20px" }}>
-            {mpaRatings.map((r) => {
-              const isActive = search.maxRatingId === String(r.id);
-              const isRestricted = userData?.ageRestriction != null && r.id > userData.ageRestriction;
-              return (
-                <button
-                  key={r.id}
-                  className={`search-rating-btn${isActive ? " search-rating-btn--active" : ""}${isRestricted ? " search-rating-btn--restricted" : ""}`}
-                  onClick={() => ToggleRatingSearch(r.id)}
-                  style={{
-                    whiteSpace: "nowrap",
-                    overflow: "visible",
-                    display: "inline-block",
-                    padding: "4px 14px",
-                    fontSize: "14px",
-                    lineHeight: "22px",
-                    borderRadius: "6px",
-                    border: "1px solid",
-                    cursor: "pointer",
-                    transition: "background 0.15s, color 0.15s",
-                    backgroundColor: isActive ? "#1890ff" : "rgba(255,255,255,0.08)",
-                    color: isActive ? "white" : isRestricted ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.75)",
-                    borderColor: isActive ? "#1890ff" : isRestricted ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.15)",
-                    opacity: isRestricted ? 0.6 : 1,
-                  }}
-                >
-                  {r.name}
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
     </div>
   );
 }

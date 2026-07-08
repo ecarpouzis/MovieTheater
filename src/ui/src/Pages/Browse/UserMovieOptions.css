@@ -2,49 +2,62 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 18px;
+  gap: 10px;
   width: 100%;
+  padding: 8px 12px 12px;
+  margin-top: auto;
 }
 
 .viewing-options--compact {
   gap: 2px;
   width: auto;
+  padding: 0;
+  margin-top: 0;
 }
 
+/* Outlined-neutral idle pill; filled when active. */
 .viewing-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 160px;
-  padding: 4px 12px;
+  flex: 1 1 0;
+  max-width: 160px;
+  padding: 5px 12px;
   cursor: pointer;
-  color: #a9a9a9;
-  transition: color 0.15s;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+@media (hover: hover) {
+  .viewing-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 }
 
 .viewing-btn--compact {
-  width: 100px;
-  padding: 0;
+  max-width: 100px;
+  padding: 2px 6px;
+  border: none;
 }
 
-.viewing-btn-seen--watched {
-  color: #4169e3;
+/* Seen active — filled accent */
+.viewing-btn-seen--watched,
+.viewing-btn-seen--watched:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
-@media (hover: hover) {
-  .viewing-btn-seen--watched:hover {
-    color: #4169e3;
-  }
-}
-
-.viewing-btn-want--wanted {
-  color: #dc143c;
-}
-
-@media (hover: hover) {
-  .viewing-btn-want--wanted:hover {
-    color: #dc143c;
-  }
+/* Want active — filled want-accent */
+.viewing-btn-want--wanted,
+.viewing-btn-want--wanted:hover {
+  background: var(--want-accent);
+  border-color: var(--want-accent);
+  color: #fff;
 }
 
 .film-icon {
@@ -58,7 +71,7 @@
 }
 
 .viewing-btn-label {
-  font-weight: bold;
+  font-weight: 700;
   vertical-align: middle;
   font-size: 13px;
 }
