@@ -145,10 +145,38 @@ namespace MovieTheater.Arcade
             foreach (var ch in StripTags(s).Replace("&", " and "))
             {
                 if (char.IsLetterOrDigit(ch)) sb.Append(char.ToLowerInvariant(ch));
-                else if (sb.Length > 0) { tokens.Add(sb.ToString()); sb.Clear(); }
+                else if (sb.Length > 0) { tokens.Add(FoldRoman(sb.ToString())); sb.Clear(); }
             }
-            if (sb.Length > 0) tokens.Add(sb.ToString());
+            if (sb.Length > 0) tokens.Add(FoldRoman(sb.ToString()));
             return tokens;
+        }
+
+        // Fold multi-character roman numerals to arabic so "Streets of Rage II" ⇄ "Streets of Rage 2"
+        // match. Single-char i/v/x are deliberately left alone (too many false positives: "X-Men", "V").
+        private static readonly Dictionary<string, string> Roman = new(StringComparer.Ordinal)
+        {
+            ["ii"] = "2", ["iii"] = "3", ["iv"] = "4", ["vi"] = "6", ["vii"] = "7", ["viii"] = "8", ["ix"] = "9",
+            ["xi"] = "11", ["xii"] = "12", ["xiii"] = "13", ["xiv"] = "14", ["xv"] = "15", ["xvi"] = "16",
+            ["xvii"] = "17", ["xviii"] = "18", ["xix"] = "19", ["xx"] = "20",
+        };
+        private static string FoldRoman(string t) => Roman.TryGetValue(t, out var v) ? v : t;
+
+        /// <summary>The reverse of <see cref="ContiguousProposal"/>: the libretro filename whose FULL token
+        /// sequence appears as a contiguous run inside the card's title — for when OUR title is the longer one
+        /// (an edition suffix or an alias list): "Ultimate Spider-Man - Limited Edition" → "Ultimate
+        /// Spider-Man", "Bare Knuckle II ~ Streets of Rage 2" → "Streets of Rage 2". Prefers the LONGEST (most
+        /// specific) matching entry; requires ≥2 tokens so a common word can't false-match.</summary>
+        public string? ReverseContiguous(string title, IEnumerable<string?>? regionHints)
+        {
+            var q = LooseTokens(title);
+            if (q.Count < 2) return null;
+            var hints = (regionHints ?? Enumerable.Empty<string?>())
+                .Where(r => !string.IsNullOrWhiteSpace(r)).Select(r => r!.ToLowerInvariant()).ToList();
+
+            return entries
+                .Where(e => e.Ordered.Count >= 2 && ContainsRun(q, e.Ordered))
+                .OrderByDescending(e => e.Ordered.Count).ThenBy(e => RegionScore(e.File, hints)).ThenBy(e => e.File.Length)
+                .Select(e => e.File).FirstOrDefault();
         }
 
         /// <summary>Best-guess libretro filenames for a title that DIDN'T match exactly — ranked by how much
@@ -218,6 +246,21 @@ namespace MovieTheater.Arcade
 
         private static string PickByRegion(List<string> files, List<string> hints)
             => files.OrderBy(f => RegionScore(f, hints)).ThenBy(f => f.Length).First();
+
+        /// <summary>Higher-confidence inference for a title that <see cref="Match"/> missed, to "finish the
+        /// set" without guessing wildly: (1) our FULL title appears as a contiguous token run inside a longer
+        /// filename (a game with an added subtitle/region — "Bad Dudes" ⊂ "Bad Dudes vs. Dragonninja"), or
+        /// (2) the filename contains EVERY token of our title (coverage 1.0), fewest extra words. Both are
+        /// far stricter than a plain fuzzy guess, so a wrong box is unlikely. Null when neither is safe.</summary>
+        public string? InferBest(string title, IEnumerable<string?>? regionHints)
+        {
+            var contig = ContiguousProposal(title, regionHints);   // repo longer (added subtitle/region)
+            if (contig != null) return contig;
+            var rev = ReverseContiguous(title, regionHints);        // our title longer (edition/alias list)
+            if (rev != null) return rev;
+            var f = Fuzzy(title, regionHints, 1);
+            return f.Count > 0 && f[0].Coverage >= 0.999 ? f[0].File : null;
+        }
 
         // Lower is better. A file whose region tag matches one of the card's own regions wins; otherwise
         // fall back to the usual English-first order.

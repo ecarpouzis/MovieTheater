@@ -20,10 +20,13 @@ namespace MovieTheater.Arcade
     public static class ArcadeBoxArt
     {
         // System code → libretro-thumbnails repo (display name; the GitHub repo swaps spaces for '_').
-        // Arcade (fbneo) box art is named by MAME full title, not the shortname, so it's omitted here — those
-        // cards keep the placeholder until a DAT-based mapping is added.
+        // arcade/neogeo now resolve real titles from the FBNeo DAT (arcade-fbneo-resolve), so their box art
+        // is matchable against the FBNeo - Arcade Games thumbnails by TITLE via the index (Normalize bridges
+        // the casing/region-suffix drift, e.g. our "1944 - the loop master" ⇄ "1944 - The Loop Master (Japan)").
         public static readonly Dictionary<string, string> ThumbRepo = new()
         {
+            ["arcade"] = "FBNeo - Arcade Games",
+            ["neogeo"] = "FBNeo - Arcade Games",
             ["nes"] = "Nintendo - Nintendo Entertainment System",
             ["snes"] = "Nintendo - Super Nintendo Entertainment System",
             ["genesis"] = "Sega - Mega Drive - Genesis",
@@ -33,6 +36,7 @@ namespace MovieTheater.Arcade
             ["n64"] = "Nintendo - Nintendo 64",
             ["gc"] = "Nintendo - GameCube",
             ["ps1"] = "Sony - PlayStation",
+            ["ps2"] = "Sony - PlayStation 2",
             // Added 2026-07. naomi/atomiswave/neogeo are arcade-named (like fbneo) → omitted, they keep
             // the placeholder. A repo-name miss is a cosmetic non-error (placeholder card), never fatal.
             ["psp"] = "Sony - PlayStation Portable",
@@ -101,6 +105,12 @@ namespace MovieTheater.Arcade
             //    TOSEC names, "007 - GoldenEye" ⇄ "GoldenEye 007").
             var hit = index?.Match(title, regionList);
             if (hit != null) ordered.Add(hit);
+
+            // 2b. Gated inference to finish the set — a contiguous-run or full-token-coverage guess for titles
+            //     the exact/token match missed (added subtitle/region in the libretro name). Strict enough that
+            //     a wrong box is unlikely; still ranked below the exact matches above.
+            var inferred = index?.InferBest(title, regionList);
+            if (inferred != null) ordered.Add(inferred);
 
             // 3. Title + region-tag guesses — a network fallback when no index is present. Try the card's own
             //    regions first, then the usual English-first tags, then a "NNN - X" → "X NNN" swap and bare.

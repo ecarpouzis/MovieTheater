@@ -122,8 +122,8 @@ namespace MovieTheater.Arcade
             if (!string.IsNullOrWhiteSpace(ReportMisses))
             {
                 var lines = new List<string> { "system\ttitle\tregions\tproposal1\tcov1\tproposal2\tproposal3\talias" };
-                int rMatched = 0, rMissed = 0, rNoIndex = 0;
-                var perSystem = new SortedDictionary<string, (int matched, int missed)>();
+                int rMatched = 0, rInferred = 0, rMissed = 0, rNoIndex = 0;
+                var perSystem = new SortedDictionary<string, (int matched, int inferred, int missed)>();
                 foreach (var card in rows.GroupBy(g => new { g.System, g.Title })
                              .Select(grp => new Card(grp.Key.System, grp.Key.Title, grp.OrderBy(x => x.Id).ToList()))
                              .OrderBy(c => c.System).ThenBy(c => c.Title, StringComparer.OrdinalIgnoreCase))
@@ -132,8 +132,9 @@ namespace MovieTheater.Arcade
                     if (idx == null) { rNoIndex++; continue; }
                     var regions = card.Rows.Select(r => r.Region).ToList();
                     perSystem.TryGetValue(card.System, out var pc);
-                    if (idx.Match(card.Title, regions) != null) { rMatched++; perSystem[card.System] = (pc.matched + 1, pc.missed); continue; }
-                    rMissed++; perSystem[card.System] = (pc.matched, pc.missed + 1);
+                    if (idx.Match(card.Title, regions) != null) { rMatched++; perSystem[card.System] = (pc.matched + 1, pc.inferred, pc.missed); continue; }
+                    if (idx.InferBest(card.Title, regions) != null) { rInferred++; perSystem[card.System] = (pc.matched, pc.inferred + 1, pc.missed); continue; }
+                    rMissed++; perSystem[card.System] = (pc.matched, pc.inferred, pc.missed + 1);
                     var f = idx.Fuzzy(card.Title, regions, 3);
                     string p1 = f.ElementAtOrDefault(0).File ?? "", p2 = f.ElementAtOrDefault(1).File ?? "", p3 = f.ElementAtOrDefault(2).File ?? "";
                     string cov1 = f.Count > 0 ? f[0].Coverage.ToString("0.00") : "";
@@ -142,9 +143,13 @@ namespace MovieTheater.Arcade
                     lines.Add($"{card.System}\t{card.Title}\t{reg}\t{p1}\t{cov1}\t{p2}\t{p3}\t{alias}");
                 }
                 await File.WriteAllLinesAsync(ReportMisses, lines);
-                w.WriteLine($"Wrote {ReportMisses}: {rMissed} misses, {rMatched} matched, {rNoIndex} cards with no index.");
+                int rCovered = rMatched + rInferred, rTotal = rCovered + rMissed;
+                w.WriteLine($"Wrote {ReportMisses}: {rMatched} matched + {rInferred} inferred = {rCovered}/{rTotal} covered ({rMissed} still missing); {rNoIndex} cards with no index.");
                 foreach (var kv in perSystem)
-                    w.WriteLine($"  {kv.Key}: {kv.Value.missed} missed / {kv.Value.matched + kv.Value.missed} cards");
+                {
+                    var v = kv.Value; int tot = v.matched + v.inferred + v.missed;
+                    w.WriteLine($"  {kv.Key,-8}: {v.matched + v.inferred,5}/{tot,-5} covered ({v.inferred} inferred, {v.missed} missing)");
+                }
                 return;
             }
 
