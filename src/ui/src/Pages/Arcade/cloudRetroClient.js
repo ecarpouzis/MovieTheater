@@ -200,14 +200,15 @@ export function createCloudRetroSession(descriptor, opts) {
   //  • arcade.audioJitterMs (default 80): give NetEq a small STABLE audio target so it stops adaptively
   //    inflating + stretching. Video stays at 0 (Pion uses separate stream ids, so audio delay never
   //    drags video). ~80ms audio latency is imperceptible for game SFX. Set 0 to restore old behavior.
-  //  • arcade.noBundle (default off): strip the a=group:BUNDLE from our SDP answer so audio negotiates
+  //  • arcade.noBundle (default ON): strip the a=group:BUNDLE from our SDP answer so audio negotiates
   //    its OWN transport (the worker offers BundlePolicyMaxCompat) → video bursts can't block it at all.
-  //    Deeper fix; opt-in until verified on a real 4-player session.
+  //    This is the deep fix and is now the DEFAULT. ESCAPE HATCH: if a room ever fails to CONNECT (not
+  //    just sounds off), set localStorage arcade.noBundle="0" + reload to fall back to the bundled path.
   const AUDIO_JITTER_MS = (() => {
     try { const v = parseInt(localStorage.getItem("arcade.audioJitterMs"), 10); return Number.isFinite(v) && v >= 0 ? v : 80; }
     catch { return 80; }
   })();
-  const NO_BUNDLE = (() => { try { return localStorage.getItem("arcade.noBundle") === "1"; } catch { return false; } })();
+  const NO_BUNDLE = (() => { try { return localStorage.getItem("arcade.noBundle") !== "0"; } catch { return true; } })();
 
   // Input profile for this game's system (button layout + keyboard map + optional right-stick keys).
   const profile = profileFor(descriptor.system);

@@ -1,0 +1,153 @@
+diff --git a/pkg/config/worker.go b/pkg/config/worker.go
+--- a/pkg/config/worker.go
++++ b/pkg/config/worker.go
+@@ -6,6 +6,7 @@
+ 	"net"
+ 	"net/url"
+ 	"path/filepath"
++	"strconv"
+ 	"strings"
+ 
+ 	"github.com/giongto35/cloud-game/v3/pkg/os"
+@@ -86,6 +87,80 @@
+ 	Caps    string
+ }
+ 
++// setEncoderParam replaces "key=<value>" in a space-separated GStreamer element
++// params string. When the key is absent it is appended only if addIfMissing is
++// true. Video bitrate uses addIfMissing=false on purpose: a non-nvenc/x264 video
++// encoder (e.g. vp8enc) names its rate differently (target-bitrate in bit/s), so
++// a bogus "bitrate=" property must never be injected there.
++func setEncoderParam(params, key, val string, addIfMissing bool) string {
++	fields := strings.Fields(params)
++	found := false
++	for i, f := range fields {
++		if strings.HasPrefix(f, key+"=") {
++			fields[i] = key + "=" + val
++			found = true
++			break
++		}
++	}
++	if !found {
++		if !addIfMissing {
++			return params
++		}
++		fields = append(fields, key+"="+val)
++	}
++	return strings.Join(fields, " ")
++}
++
++// WithOverrides returns a COPY of the encoder config carrying the per-room quality
++// a room creator chose (arcade per-room bitrate/FEC, threaded in via the t=104
++// GAME_START packet). It never mutates the shared config: List is a reference-type
++// map, so it is deep-copied before any CodecSettings.Params is rewritten — otherwise
++// one room's choice would leak into every concurrent room.
++//
++//	bitrateKbps > 0 → rewrite the ACTIVE video codec's `bitrate=` (kbps; nvh264enc/
++//	                  x264enc). Replace-only (clamped 500..20000 kbps) so vp8's
++//	                  `target-bitrate` is left alone.
++//	fec == 1        → force opus in-band FEC ON  (inband-fec=true,  packet-loss-percentage=15)
++//	fec == 2        → force opus in-band FEC OFF (inband-fec=false, packet-loss-percentage=0)
++//	fec == 0        → leave the opus params exactly as configured.
++func (e Encoder) WithOverrides(bitrateKbps int, fec int) Encoder {
++	if bitrateKbps <= 0 && fec == 0 {
++		return e
++	}
++	nl := make(map[string]CodecSettings, len(e.List))
++	for k, v := range e.List {
++		nl[k] = v
++	}
++	e.List = nl
++
++	if bitrateKbps > 0 {
++		if bitrateKbps < 500 {
++			bitrateKbps = 500
++		} else if bitrateKbps > 20000 {
++			bitrateKbps = 20000
++		}
++		vc := strings.ToLower(e.Video.Codec)
++		if cs, ok := e.List[vc]; ok {
++			cs.Params = setEncoderParam(cs.Params, "bitrate", strconv.Itoa(bitrateKbps), false)
++			e.List[vc] = cs
++		}
++	}
++	if fec != 0 {
++		on := fec == 1
++		fecVal, plp := "false", "0"
++		if on {
++			fecVal, plp = "true", "15"
++		}
++		ac := strings.ToLower(e.Audio.Codec)
++		if cs, ok := e.List[ac]; ok {
++			cs.Params = setEncoderParam(cs.Params, "inband-fec", fecVal, true)
++			cs.Params = setEncoderParam(cs.Params, "packet-loss-percentage", plp, true)
++			e.List[ac] = cs
++		}
++	}
++	return e
++}
++
+ // allows custom config path
+ var workerConfigPath string
+ 
+diff --git a/pkg/api/user.go b/pkg/api/user.go
+--- a/pkg/api/user.go
++++ b/pkg/api/user.go
+@@ -10,6 +10,10 @@
+ 		Record      bool   `json:"record,omitempty"`
+ 		RecordUser  string `json:"record_user,omitempty"`
+ 		PlayerIndex int    `json:"player_index"`
++		// Per-room encoder quality (arcade per-room bitrate/FEC). Only the room CREATOR's
++		// request builds the encoder, so only its values take effect. 0 = leave config default.
++		VideoBitrate int `json:"video_bitrate,omitempty"` // kbps; 0 = config default
++		AudioFec     int `json:"audio_fec,omitempty"`     // 0 = default, 1 = FEC on, 2 = FEC off
+ 	}
+ 	GameStartUserResponse struct {
+ 		RoomId  string        `json:"roomId"`
+diff --git a/pkg/api/worker.go b/pkg/api/worker.go
+--- a/pkg/api/worker.go
++++ b/pkg/api/worker.go
+@@ -19,6 +19,10 @@
+ 		RecordUser  string
+ 		Game        string `json:"game"`
+ 		PlayerIndex int    `json:"player_index"`
++		// Per-room encoder quality forwarded from the creator's GameStartUserRequest
++		// (arcade per-room bitrate/FEC). 0 = leave the worker's config default.
++		VideoBitrate int `json:"video_bitrate,omitempty"` // kbps
++		AudioFec     int `json:"audio_fec,omitempty"`     // 0 default, 1 on, 2 off
+ 	}
+ 	GameInfo struct {
+ 		Alias  string `json:"alias"`
+diff --git a/pkg/coordinator/workerapi.go b/pkg/coordinator/workerapi.go
+--- a/pkg/coordinator/workerapi.go
++++ b/pkg/coordinator/workerapi.go
+@@ -21,6 +21,9 @@
+ 			PlayerIndex:  req.PlayerIndex,
+ 			Record:       req.Record,
+ 			RecordUser:   req.RecordUser,
++			// Forward the creator's per-room encoder quality choice to the worker.
++			VideoBitrate: req.VideoBitrate,
++			AudioFec:     req.AudioFec,
+ 		}))
+ }
+ 
+diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
+--- a/pkg/worker/coordinatorhandlers.go
++++ b/pkg/worker/coordinatorhandlers.go
+@@ -134,7 +134,15 @@
+ 
+ 		r.SetApp(app)
+ 
+-		m := media.NewGstreamer(w.conf.Encoder, w.log)
++		// Per-room encoder quality (arcade per-room bitrate/FEC): the creator's t=104 carries an
++		// optional video bitrate (kbps) + opus FEC choice. WithOverrides applies them to a per-room
++		// COPY of the encoder config (it deep-copies the codec map, never mutating the shared config),
++		// so concurrent rooms don't affect each other. No-op when both are unset (0).
++		encConf := w.conf.Encoder.WithOverrides(rq.VideoBitrate, rq.AudioFec)
++		if rq.VideoBitrate > 0 || rq.AudioFec != 0 {
++			w.log.Info().Msgf("Per-room encoder overrides: bitrate=%d kbps fec=%d", rq.VideoBitrate, rq.AudioFec)
++		}
++		m := media.NewGstreamer(encConf, w.log)
+ 
+ 		// recreate the video encoder
+ 		app.VideoChangeCb(func() {

@@ -1,0 +1,20 @@
+diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
+--- a/pkg/network/webrtc/factory.go
++++ b/pkg/network/webrtc/factory.go
+@@ -103,7 +103,15 @@
+ 		mod(m, i, &s)
+ 	}
+ 
+-	c := webrtc.Configuration{ICEServers: []webrtc.ICEServer{}}
++	// BundlePolicyMaxCompat: the offerer allocates a SEPARATE ICE transport per m-line (audio vs
++	// video) instead of Pion's default `balanced` (which bundles them onto one). By itself this
++	// still bundles — a default-policy browser keeps the a=group:BUNDLE — so the normal path is
++	// unchanged (both transports ride the single-port UDP mux, keyed by ufrag; RTCP stays muxed).
++	// It's the ENABLER for the client to opt into un-bundling: when the browser strips the BUNDLE
++	// group from its answer (cloudRetroClient.js, localStorage arcade.noBundle), audio then lands
++	// on its own transport so a burst of video RTP can't head-of-line-block the tiny opus packets
++	// (the residual "audio arrives late/bursty → NetEq over-buffers + time-stretches" hitch).
++	c := webrtc.Configuration{ICEServers: []webrtc.ICEServer{}, BundlePolicy: webrtc.BundlePolicyMaxCompat}
+ 	for _, server := range conf.IceServers {
+ 		c.ICEServers = append(c.ICEServers, webrtc.ICEServer{
+ 			URLs:       []string{server.Urls},

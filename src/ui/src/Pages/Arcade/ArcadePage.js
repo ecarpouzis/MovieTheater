@@ -12,6 +12,10 @@ const PAGE_SIZE = 60;
 // choice). Lower bitrate = smaller video bursts = smoother audio + less upstream for remote players.
 const QUALITY_KEY = "arcade.streamQuality";
 const BITRATE_PRESETS = [
+  // 10 Mbps = "max", best for hi-res 3D cores (GameCube 1280×1056, PS2 upscaled) on a fat pipe. At
+  // 4 remote players that's ~40 Mbps upstream, so it's really a post-FiOS / mostly-LAN setting; on
+  // cable uplinks prefer 5 or lower. Overkill (but harmless) for retro/2D. Worker clamps 500–20000.
+  { label: "Max · 10 Mbps", value: 10000 },
   { label: "Sharp · 8 Mbps", value: 8000 },
   { label: "Balanced · 5 Mbps", value: 5000 },
   { label: "Smooth · 3 Mbps", value: 3000 },

@@ -3,6 +3,32 @@
 Status as of 2026-07-06. The arcade `/arcade` audio had a loud, obvious hitch and a subtle residual.
 This session **fixed the two big causes**; this doc is the handoff for the **remaining residual**.
 
+## ADDRESSED 2026-07-08 — the residual is now attacked from four angles (patches 0018/0019 + client)
+
+The residual below (audio arrives bursty on the bundled transport → NetEq over-buffers to ~260ms and
+time-stretches) is now countered by a layered, mostly-safe set of levers. In effectiveness × safety order:
+
+1. **Global default bitrate 8000→5000 kbps** (GL worker `config.yaml`). Smaller per-frame RTP bursts =
+   less audio head-of-line blocking. Live on both workers.
+2. **Per-room bitrate + FEC, creator-picked in the lobby UI** (patch **0018**, `Encoder.WithOverrides`).
+   The room creator's choice rides the WS URL (`?vbr=<kbps>&fec=<0|1|2>`) → shim t=104
+   `video_bitrate`/`audio_fec` → a per-room COPY of the encoder config (deep-copied, never mutates the
+   shared config). Lower bitrate = smoother audio; FEC OFF on pure-LAN drops the LBRR packet-size bloat.
+3. **Audio-only `jitterBufferTarget` (default 80ms, client)** — the PRIMARY, default-on fix. Gives NetEq a
+   small STABLE target so it stops adaptively inflating + time-stretching. Video stays at 0 (separate
+   stream ids → video isn't lip-sync-delayed). Tunable/disable via `localStorage arcade.audioJitterMs`.
+4. **True un-bundle (now DEFAULT-ON, per user 2026-07-08)** — patch **0019** sets the Pion offerer to
+   `BundlePolicyMaxCompat` (per-m-line transports; safe, default path unchanged); the shim then strips
+   `a=group:BUNDLE` from its answer so audio negotiates its OWN transport (video bursts can't block it at
+   all). Both transports still ride the one single-port UDP mux (rtcp-mux → no extra port). **Escape
+   hatch** if a room ever fails to CONNECT (not merely sounds off): `localStorage arcade.noBundle="0"` +
+   reload → bundled fallback. Still **judge audio on a real browser** (headless can't).
+
+Deployed: site changes committed (`a208e2d`) + pushed; GL worker rebuilt from patches 0018/0019 and both
+workers restarted (clean boot, both ICE IPs). **Still to do:** judge audio smoothness on a REAL browser
+(the only valid place), then decide whether the un-bundle (#4) beats the jitter-buffer (#3) enough to make
+it default. The four levers below (hypotheses) informed which knobs were exposed.
+
 ## What was fixed this session (don't re-investigate these)
 
 1. **Periodic-keyframe hitch (the "every ~2 seconds" tick).** The H.264 encoder emitted an IDR every

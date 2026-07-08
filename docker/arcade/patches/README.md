@@ -200,3 +200,42 @@ and cannot block. One room per worker → nothing else lives in the process; the
 clean worker in ~4 s. Verified live: wedge fired → hard exit 63 ms after the log → respawn +
 coordinator re-register in 4 s → next room played. Total blast radius ≈ 15 s of one worker,
 self-healing (the external watchdog task remains as backstop).
+
+## 0018-per-room-encoder-settings.patch
+
+**Per-room video bitrate + opus FEC, chosen by the room creator.** Touches five files:
+`pkg/api/user.go` + `pkg/api/worker.go` (two new fields on `GameStartUserRequest` /
+`StartGameRequest`: `video_bitrate` kbps + `audio_fec` 0/1/2), `pkg/coordinator/workerapi.go`
+(copies them across the coordinator→worker seam), `pkg/config/worker.go` (new
+`Encoder.WithOverrides(bitrateKbps, fec)` + `setEncoderParam` helper), and
+`pkg/worker/coordinatorhandlers.go` (applies the override at `HandleGameStart`).
+
+**Why:** the encoder is built **per room** (`media.NewGstreamer(w.conf.Encoder, …)` on the creator's
+t=104), so a room's stream quality can be the creator's choice instead of one global config value.
+`WithOverrides` returns a COPY — it deep-copies the `List` map (a reference type) before rewriting
+`CodecSettings.Params`, so concurrent rooms never affect each other. Video bitrate is a **replace-only**
+rewrite of the active codec's `bitrate=` (clamped 500–20000 kbps) so a vp8 fallback's different rate
+key (`target-bitrate`) is never corrupted; FEC rewrites opus `inband-fec` + `packet-loss-percentage`.
+Both default to no-op (0) → identical to stock when the creator sends nothing (backward compatible with
+an un-upgraded client). Lower bitrate = smaller per-frame RTP bursts = less audio contention (see 0019)
++ less upstream for remote players. The site threads the choice through the WS URL (`?vbr=&fec=`) → the
+shim's t=104; only the creator's request builds the encoder, so only the creator's values take effect.
+
+Re-generate: per-file `git diff` of the five files above.
+
+## 0019-audio-transport-bundle.patch
+
+**`pkg/network/webrtc/factory.go` — set `BundlePolicy: BundlePolicyMaxCompat` on the offerer's
+`webrtc.Configuration`.** Pion defaults to `balanced` (audio + video BUNDLED onto one transport with
+rtcp-mux).
+
+**Why:** the residual audio hitch (`docs/arcade-audio-nextsteps.md`) is that on the bundled transport a
+burst of video RTP head-of-line-blocks the tiny opus packets, so audio arrives late/bursty and Chrome's
+NetEq over-buffers toward ~260 ms and **time-stretches** (~8%). MaxCompat makes the offerer allocate a
+**separate ICE transport per m-line**, which lets the client opt into un-bundling audio onto its own
+transport (the browser strips `a=group:BUNDLE` from its answer — `cloudRetroClient.js`, localStorage
+`arcade.noBundle`). By itself this changes nothing: a default browser keeps the BUNDLE group and both
+transports ride the single-port UDP mux keyed by ufrag (RTCP stays muxed → still one port), so the
+normal path is unchanged. It is the ENABLER for the un-bundle experiment. The primary, default-on audio
+fix is client-side (a small audio-only `jitterBufferTarget`, `arcade.audioJitterMs`, default 80 ms) —
+no worker change. Re-generate: `git diff pkg/network/webrtc/factory.go`.
