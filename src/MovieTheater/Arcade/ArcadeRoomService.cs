@@ -18,8 +18,13 @@ namespace MovieTheater.Arcade
     public class ArcadeRoomService
     {
         // Must exceed the room page's heartbeat interval (12 s) with margin so an active player is never
-        // pruned between polls — the same rule as ChannelSkipService's viewer TTL.
-        private static readonly TimeSpan ViewerTtl = TimeSpan.FromSeconds(30);
+        // pruned between polls — the same rule as ChannelSkipService's viewer TTL. 90 s (was 30) because
+        // Chrome throttles/freezes BACKGROUNDED tabs: an alt-tabbed player's heartbeats can stretch to
+        // ~1/minute (or pause entirely under Memory Saver), and 30 s pruned their seat — then reaped a
+        // solo player's room — for merely unfocusing the window (observed live 2026-07-07: focus loss →
+        // seat/room gone → session teardown → the dolphin teardown crash). 90 s rides out throttling and
+        // gives a frozen-then-resumed tab a window to rejoin its own seat.
+        private static readonly TimeSpan ViewerTtl = TimeSpan.FromSeconds(90);
 
         private readonly object gate = new();
         private readonly Dictionary<string, RoomState> rooms = new(StringComparer.Ordinal);

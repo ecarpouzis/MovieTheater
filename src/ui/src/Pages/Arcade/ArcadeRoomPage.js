@@ -121,7 +121,33 @@ export default function ArcadeRoomPage() {
       }).catch(() => {});
     beat();
     const id = setInterval(beat, 12000);
-    return () => { alive = false; clearInterval(id); };
+    // Chrome throttles interval timers in backgrounded tabs (and Memory Saver can freeze the tab
+    // outright), so beats can stretch far past the server's presence TTL while the player is merely
+    // alt-tabbed. Fire an immediate beat at every visibility flip: on HIDE it restarts the TTL clock
+    // as late as possible; on SHOW it re-registers the seat the instant the player is back.
+    const onVis = () => beat();
+    document.addEventListener("visibilitychange", onVis);
+    return () => { alive = false; clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
+  }, [code]);
+
+  // Auto-recover a session Chrome killed while the tab was hidden. A frozen/discarded background tab
+  // drops the signaling WS + WebRTC (observed live: alt-tab → session teardown ~2 min in); the player
+  // returns to a dead "Disconnected" room through no action of their own. On refocus, if the session
+  // died, reload once — the cold-boot path rejoins the room's seat if the room is still live (and shows
+  // "That room has ended" if not). One shot per hidden episode; never for full/rejected/left states.
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  useEffect(() => {
+    let armed = true; // re-armed each mount; disarmed after one auto-reload so we can't loop
+    const onVis = () => {
+      if (document.visibilityState !== "visible" || !armed) return;
+      if (statusRef.current === "disconnected") {
+        armed = false;
+        window.location.reload();
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
   }, [code]);
 
   // Leave promptly on tab close (sendBeacon survives teardown; the effect cleanup covers SPA nav).
