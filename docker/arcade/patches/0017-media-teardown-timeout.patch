@@ -1,0 +1,44 @@
+diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
+index 1a4a5c6..37c378f 100644
+--- a/pkg/worker/media/gstreamer.go
++++ b/pkg/worker/media/gstreamer.go
+@@ -7,6 +7,7 @@ import (
+ 	"strings"
+ 	"sync"
+ 	"sync/atomic"
++	"syscall"
+ 	"time"
+ 	"unsafe"
+ 
+@@ -322,7 +323,31 @@ func (g *GstMediaPipe) SetPixFmt(f uint32) {
+ }
+ func (g *GstMediaPipe) SetRot(r uint) { g.oldRot = r }
+ 
++// Destroy tears the pipelines down, guarded by a hard timeout (MovieTheater patch 0017).
++// gst_element_set_state(NULL) can HANG FOREVER inside libgstnvcodec (observed live: a goroutine
++// parked in the plugin's cond wait, captured in a full dump) — and Destroy runs SYNCHRONOUSLY on
++// the coordinator's message-pump goroutine (TerminateSession → Room.Close → here), so one stuck
++// encoder silently killed the whole worker: pings stopped, the coordinator dropped it
++// ("no free workers" → every create t=112 "arcade is full"), yet the process never exited, so the
++// runner's restart loop never fired. On timeout we log and EXIT: one room per worker means nothing
++// else lives here, and the runner respawns a clean worker in ~4 s (vs a 60-90 s watchdog window).
+ func (g *GstMediaPipe) Destroy() {
++	done := make(chan struct{})
++	go func() { defer close(done); g.destroySync() }()
++	select {
++	case <-done:
++	case <-time.After(10 * time.Second):
++		g.log.Error().Msg("media pipeline teardown wedged (nvcodec set_state hang) — hard-exiting for a clean respawn")
++		// os.Exit (and log.Fatal) run ExitProcess, whose DLL_PROCESS_DETACH notifications can block
++		// behind the very thread that's wedged inside nvcodec (verified live: the Fatal logged but the
++		// process lived on until the watchdog shot it 41 s later). TerminateProcess skips DLL detach
++		// entirely — it cannot block. The runner loop respawns a clean worker in ~4 s.
++		h, _ := syscall.GetCurrentProcess()
++		_ = syscall.TerminateProcess(h, 1)
++	}
++}
++
++func (g *GstMediaPipe) destroySync() {
+ 	g.mu.Lock()
+ 	defer g.mu.Unlock()
+ 

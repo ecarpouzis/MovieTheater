@@ -179,3 +179,24 @@ Bring-up note (not in this patch): dolphin option values must be the core-option
 not display labels — `dolphin_efb_scale: "1"`, NOT `"1x Native (640x528)"`. An unmatched value leaves
 the port's typed option cache 0 → 0×0 geometry → the same null-video crash signature from a different
 door. Verified live 2026-07-07: F-Zero GX 60fps, input + memory card working.
+
+## 0017-media-teardown-timeout.patch
+
+**`pkg/worker/media/gstreamer.go` — hard timeout on media pipeline teardown.** The worst outage
+class of GameCube launch night: `gst_element_set_state(NULL)` can hang FOREVER inside
+**libgstnvcodec** (the NVENC element never finishes its state change — captured in a full process
+dump: the goroutine parked in the plugin's cond wait). `Destroy()` runs SYNCHRONOUSLY on the
+coordinator's message-pump goroutine (`TerminateSession → Room.Close → GstMediaPipe.Destroy`), so
+one stuck encoder killed the worker's brain: pings stopped, the coordinator dropped it ("no free
+workers" → every room create returned t=112 "the arcade is full"), yet the process never exited, so
+the restart loop never fired. It struck on MOST session teardowns that night (7+ wedges), on every
+core (the dolphin correlation was traffic, not cause).
+
+Fix: run the real teardown on a goroutine; if it doesn't finish in 10 s, log and **hard-exit via
+`TerminateProcess`** — `os.Exit`/`log.Fatal` run `ExitProcess`, whose DLL_PROCESS_DETACH
+notifications block behind the very thread wedged in nvcodec (verified live: the Fatal logged and
+the process survived 41 more seconds until the watchdog shot it). TerminateProcess skips DLL detach
+and cannot block. One room per worker → nothing else lives in the process; the runner respawns a
+clean worker in ~4 s. Verified live: wedge fired → hard exit 63 ms after the log → respawn +
+coordinator re-register in 4 s → next room played. Total blast radius ≈ 15 s of one worker,
+self-healing (the external watchdog task remains as backstop).
