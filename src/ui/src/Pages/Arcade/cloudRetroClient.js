@@ -219,24 +219,39 @@ export function createCloudRetroSession(descriptor, opts) {
   const keyDown = onKey(true);
   const keyUp = onKey(false);
 
+  // Pick which local pad drives our seat. Blind "first non-null" broke for Bluetooth pads
+  // (DualSense): when the pad idle-sleeps and reconnects, Chrome can leave a PHANTOM entry at
+  // index 0 (or re-register the pad at a new index) — the shim then polls the corpse and "the
+  // controller stopped working". Instead: stick with the pad the player last used; adopt any pad
+  // showing real activity (pressed button / deflected stick); only then fall back to first
+  // non-null. A phantom is never active, so a woken pad wins with its first button press.
+  let activePadIndex = -1;
+  const padActive = (gp) =>
+    gp.buttons.some((b) => b.pressed) || gp.axes.some((a) => Math.abs(a) > 0.2);
+
   function readGamepad() {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    let gp = activePadIndex >= 0 ? pads[activePadIndex] : null;
+    if (!gp || (!padActive(gp) && Array.prototype.some.call(pads, (p) => p && p !== gp && padActive(p)))) {
+      gp = Array.prototype.find.call(pads, (p) => p && padActive(p)) || gp
+        || Array.prototype.find.call(pads, (p) => p) || null;
+    }
+    const mask0 = { mask: 0, axes: [0, 0, 0, 0] };
+    if (!gp) return mask0;
+    activePadIndex = gp.index;
+
     let mask = 0;
     const axes = [0, 0, 0, 0];
-    for (const gp of pads) {
-      if (!gp) continue;
-      gp.buttons.forEach((b, i) => {
-        if (b.pressed && gamepad[i] !== undefined) mask |= (1 << gamepad[i]);
-      });
-      // Real analog axes ride the frame (N64 steering wants them); a left-stick→dpad fold is kept
-      // so analog-only pads still drive pure-dpad 2D cores. (Dpad+stick doubling is harmless: cores
-      // map them to different inputs.)
-      for (let i = 0; i < 4 && i < gp.axes.length; i++) axes[i] = axisToInt16(gp.axes[i]);
-      const [ax, ay] = gp.axes;
-      if (ax < -0.5) mask |= (1 << PAD.LEFT); else if (ax > 0.5) mask |= (1 << PAD.RIGHT);
-      if (ay < -0.5) mask |= (1 << PAD.UP); else if (ay > 0.5) mask |= (1 << PAD.DOWN);
-      break; // one local pad drives our seat
-    }
+    gp.buttons.forEach((b, i) => {
+      if (b.pressed && gamepad[i] !== undefined) mask |= (1 << gamepad[i]);
+    });
+    // Real analog axes ride the frame (N64 steering wants them); a left-stick→dpad fold is kept
+    // so analog-only pads still drive pure-dpad 2D cores. (Dpad+stick doubling is harmless: cores
+    // map them to different inputs.)
+    for (let i = 0; i < 4 && i < gp.axes.length; i++) axes[i] = axisToInt16(gp.axes[i]);
+    const [ax, ay] = gp.axes;
+    if (ax < -0.5) mask |= (1 << PAD.LEFT); else if (ax > 0.5) mask |= (1 << PAD.RIGHT);
+    if (ay < -0.5) mask |= (1 << PAD.UP); else if (ay > 0.5) mask |= (1 << PAD.DOWN);
     return { mask, axes };
   }
 
