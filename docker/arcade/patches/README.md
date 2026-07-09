@@ -483,3 +483,16 @@ docker/arcade/gst-nvcodec-intrarefresh.patch): with no periodic IDRs and feedbac
 unrepaired loss freezes a viewer until the next join — the 2026-07-09 bug, reintroduced. The RTCP
 drain loop already existed and discarded everything; this parses it. Room wiring is a process-global
 callback set in NewRoom (one worker = one room, the SetPacing pattern).
+
+## 0030-serialize-on-core-thread
+
+Save-state was broken two ways for LibCo cores (whose entire lifecycle — retro_run,
+context_reset — lives on the same_thread pthread): retro_serialize_size ran on the CALLER's
+goroutine (the documented autosave AV for PPSSPP; PCSX2 died the same way — 0xC0000409 on the
+Save button, live 2026-07-09), and same_thread_with_args read the Go pointer-to-size as the
+size itself, handing every LibCo serialize/unserialize a garbage byte count (mupen's "flaky"
+load states match exactly). serialize_size now runs via a new CALL_SERIALIZE_SIZE on the core's
+thread, and the size travels by value. Also fails soft with an error when a core reports
+serialize_size 0 instead of crashing on an empty buffer.
+
+NOTE the header change: same_thread_with_args2's last parameter is now size_t (was void*).

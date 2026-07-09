@@ -1,0 +1,131 @@
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.c
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
+@@ -10,11 +10,12 @@
+ int initialized = 0;
+ 
+ typedef struct {
+-    int   type;
+-    void* fn;
+-    void* arg1;
+-    void* arg2;
+-    void* result;
++    int    type;
++    void*  fn;
++    void*  arg1;
++    size_t size;   /* serialize/unserialize buffer size, BY VALUE (patch 0030) */
++    void*  arg2;
++    void*  result;
+ } call_def_t;
+ 
+ call_def_t call;
+@@ -23,6 +24,7 @@
+     CALL_VOID = -1,
+     CALL_SERIALIZE = 1,
+     CALL_UNSERIALIZE = 2,
++    CALL_SERIALIZE_SIZE = 3,
+ };
+ 
+ void *same_thread_with_args(void *f, int type, ...);
+@@ -354,7 +356,10 @@
+         switch (call.type) {
+             case CALL_SERIALIZE:
+             case CALL_UNSERIALIZE:
+-              *(bool*)call.result = ((bool (*)(void*, size_t))call.fn)(call.arg1, *(size_t*)call.arg2);
++              *(bool*)call.result = ((bool (*)(void*, size_t))call.fn)(call.arg1, call.size);
++              break;
++            case CALL_SERIALIZE_SIZE:
++              *(size_t*)call.result = ((size_t (*)(void))call.fn)();
+               break;
+             default:
+                 ((void (*)(void)) call.fn)();
+@@ -390,21 +395,17 @@
+     call.type = type;
+     call.fn = f;
+ 
+-    if (type != CALL_VOID) {
++    if (type == CALL_SERIALIZE || type == CALL_UNSERIALIZE) {
+         va_list args;
+         va_start(args, type);
+-        switch (type) {
+-            case CALL_SERIALIZE:
+-            case CALL_UNSERIALIZE:
+-                call.arg1 = va_arg(args, void*);
+-                size_t size;
+-                size = va_arg(args, size_t);
+-                call.arg2 = &size;
+-                bool result;
+-                call.result = &result;
+-              break;
+-        }
++        call.arg1 = va_arg(args, void*);
++        call.size = va_arg(args, size_t);
+         va_end(args);
++        static bool result;
++        call.result = &result;
++    } else if (type == CALL_SERIALIZE_SIZE) {
++        static size_t size_result;
++        call.result = &size_result;
+     }
+     mutex_signal(&run_mutex);
+     mutex_unlock(&run_mutex);
+@@ -413,8 +414,14 @@
+     return call.result;
+ }
+ 
+-void *same_thread_with_args2(void *f, int type, void *arg1, void *arg2) {
+-    return same_thread_with_args(f, type, arg1, arg2);
++void *same_thread_with_args2(void *f, int type, void *arg1, size_t size) {
++    return same_thread_with_args(f, type, arg1, size);
++}
++
++/* Runs retro_serialize_size on the LibCo/emulator thread (patch 0030): calling it from a random
++ * Go goroutine was the documented autosave access violation (PPSSPP) and crashes PCSX2 too. */
++size_t same_thread_serialize_size(void *f) {
++    return *(size_t*)same_thread_with_args(f, CALL_SERIALIZE_SIZE);
+ }
+ 
+ void same_thread(void *f) {
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+@@ -616,13 +616,30 @@
+ )
+ 
+ // SaveState returns emulator internal state.
++//
++// Patch 0030 — two long-standing faults fixed here:
++//  1. retro_serialize_size ran on the CALLER's goroutine even for LibCo cores, whose entire
++//     lifecycle (retro_run, context_reset) lives on the same_thread pthread — the documented
++//     autosave access violation (PPSSPP), and PCSX2 hard-crashed the same way (0xC0000409,
++//     live 2026-07-09). It now runs where the core runs.
++//  2. same_thread_with_args read the Go POINTER-to-size as the size itself, so every LibCo
++//     serialize/unserialize got a garbage byte count — a size-validating core fastfails, and
++//     load-state "flakiness" (mupen) matches corrupt sizes exactly. Size now travels by value.
+ func SaveState() (State, error) {
+-	size := C.bridge_retro_serialize_size(retroSerializeSize)
++	var size C.size_t
++	if Nan0.LibCo && !Nan0.hackSkipSameThreadSave {
++		size = C.size_t(C.same_thread_serialize_size(retroSerializeSize))
++	} else {
++		size = C.bridge_retro_serialize_size(retroSerializeSize)
++	}
++	if size == 0 {
++		return nil, errors.New("retro_serialize_size returned 0 (core cannot save-state this game)")
++	}
+ 	data := make([]byte, uint(size))
+ 	rez := false
+ 
+ 	if Nan0.LibCo && !Nan0.hackSkipSameThreadSave {
+-		rez = *(*bool)(C.same_thread_with_args2(retroSerialize, C.int(CallSerialize), unsafe.Pointer(&data[0]), unsafe.Pointer(&size)))
++		rez = *(*bool)(C.same_thread_with_args2(retroSerialize, C.int(CallSerialize), unsafe.Pointer(&data[0]), size))
+ 	} else {
+ 		rez = bool(C.bridge_retro_serialize(retroSerialize, unsafe.Pointer(&data[0]), size))
+ 	}
+@@ -644,7 +661,7 @@
+ 	rez := false
+ 
+ 	if Nan0.LibCo {
+-		rez = *(*bool)(C.same_thread_with_args2(retroUnserialize, C.int(CallUnserialize), unsafe.Pointer(&st[0]), unsafe.Pointer(&size)))
++		rez = *(*bool)(C.same_thread_with_args2(retroUnserialize, C.int(CallUnserialize), unsafe.Pointer(&st[0]), size))
+ 	} else {
+ 		rez = bool(C.bridge_retro_unserialize(retroUnserialize, unsafe.Pointer(&st[0]), size))
+ 	}

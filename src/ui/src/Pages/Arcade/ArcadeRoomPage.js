@@ -473,10 +473,10 @@ export default function ArcadeRoomPage() {
         <Space>
           {/* Save / Load / Snapshot act on the room's one shared emulator, so they belong to the players.
               The shim refuses them for a spectator anyway; hiding them keeps the UI honest.
-              PS2 is excluded: LRPS2's retro_serialize hard-crashes the worker (0xC0000409 stack
-              fast-fail, observed live 2026-07-09 — the same class that forced autosaveSec:0). The
-              PS2 save path is the game's own memory card, which works and persists via the vault. */}
-          {!spectator && system !== "ps2" && (
+              (PS2 was briefly excluded when Save hard-crashed the worker; worker patch 0030 fixed the
+              real faults — serialize_size off the core's thread + a garbage size argument on every
+              LibCo serialize — and the buttons returned with it.) */}
+          {!spectator && (
             <>
               <Tooltip title="Save your place (a state you can reload with Load)">
                 <Button onClick={() => { sessionRef.current?.save?.(); message.success("State saved"); }}>Save</Button>
@@ -486,14 +486,12 @@ export default function ArcadeRoomPage() {
               </Tooltip>
             </>
           )}
-          {/* Snapshots ride the same retro_serialize/unserialize as Save/Load, so the PS2 gate
-              covers them too — see the comment on the Save/Load block. */}
-          {yourSlot === 0 && system !== "ps2" && (
+          {yourSlot === 0 && (
             <Tooltip title="Save a named snapshot you can resume later">
               <Button loading={snapping} onClick={saveSnapshot}>📸 Snapshot</Button>
             </Tooltip>
           )}
-          {yourSlot === 0 && system !== "ps2" && (
+          {yourSlot === 0 && (
             <Tooltip title="Load a saved snapshot without leaving the room">
               <Button onClick={loadSnapshot}>📂 Load snapshot</Button>
             </Tooltip>
