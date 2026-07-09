@@ -22,7 +22,7 @@ namespace MovieTheater.Tests
         [InlineData("ps2", 12000)]  // 1280x896 after the 2x upscale; 6000 left it at ~95ms jitter buffer
         [InlineData("n64", 9000)]   //  960x720
         [InlineData("psp", 7000)]   //  960x544
-        [InlineData("dc", 6000)]
+        [InlineData("dc", 11000)]  // 1280x960 since flycast's frames stopped being decimated
         [InlineData("ps1", 6000)]
         [InlineData("arcade", 5000)]
         [InlineData("snes", 5000)]

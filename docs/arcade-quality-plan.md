@@ -253,8 +253,8 @@ restart (workers self-heal via the runner loop).
 | **0** | ✅ **SHIPPED 2026-07-08** — repo `config.worker-gl.yaml` reconciled with the live worker (+ mojibake repaired, deploy direction documented); `reicast_` prefix corrected in `docs/arcade-per-game-config.md` and patch 0009's example | no | — |
 | **1** | ✅ **SHIPPED 2026-07-08** — see §9 | config only | **7,907 games (~35%)** |
 | **2** | ✅ **SHIPPED + VERIFIED ON PROD 2026-07-08/09** — see §11, §13 | UI build | 6 systems + all widescreen 3D + vertical arcade cabs |
-| **3** | ✅ **n64 + ps2 SHIPPED** (§10, §14); dc blocked by the base-geometry rule; psp/gc AA unverifiable | config only | 2,790 games |
-| **4** | Encoder: `p6` + spatial-AQ + two-pass-quarter + `profile=high`, A/B at fixed bitrate | config only | all |
+| **3** | ✅ **n64 + ps2 + dc + gc-AA SHIPPED** (§10, §14, §15). §10's "dc blocked" verdict was WRONG — see §15 | config only | 3,087 games |
+| **4** | ✅ **SHIPPED 2026-07-09** — `profile=high` (+1.02 dB) + `p6`; two-pass-quarter and spatial-AQ REJECTED by measurement. §15 | config only | all |
 | **5** | ✅ **SHIPPED + VERIFIED ON PROD 2026-07-08/09** — `CloudRetroHost.DefaultVideoBitrateKbps`; lobby gains "Auto". See §12, §13 | API build | all |
 | **6** | ✅ **SHIPPED + VERIFIED 2026-07-09** — patch 0021. See §14 | worker rebuild | all |
 | **7** | Seed `ArcadeGameProfile`: PS2 hw-hacks for upscale-sensitive titles, widescreen opt-ins, heavy-title downgrades | data | per-title |
@@ -576,3 +576,74 @@ it. So the cap now sits **above** the lobby's manual presets.
 `gc` 14000 · `ps2` 12000 · `n64` 9000 · `psp` 7000 · `dc` 6000 · `ps1` 6000 · everything 2D 5000.
 Floor stays 5000 (never worse than the old flat default). A new manual **LAN · 16 Mbps** preset exists
 for a fat pipe; ABR still protects remote players from it.
+
+---
+
+## 15. Raw frames change the answers (2026-07-09)
+
+§10 said AA was unverifiable and Dreamcast was blocked. Both were wrong, and both were wrong for the
+same reason: **we were only ever looking at the decoded stream.** Worker patch 0022 dumps the raw frame
+at `video_cb` — before scaling, before 4:2:0, before NVENC — and every open question fell out.
+
+### Dreamcast was throwing away 3 of every 4 samples
+
+flycast's `video_cb` hands us **1280×960** when `reicast_internal_resolution` says so. CloudRetro sized
+the capsfilter *output* from the core's base geometry (640×480), so `videoconvertscale` downscaled 2:1
+with the **default nearest filter** — point-sampling. Nearest downscale doesn't anti-alias, it *aliases*:
+strictly worse than rendering at native.
+
+**No worker patch was needed.** `scale` multiplies the base, and patch 0015 renegotiates the *source*
+caps to the core's real frame size, so `base(640×480) × scale(2) == source(1280×960)` makes the scaler a
+passthrough. DC now delivers **1280×960**, 60 fps, 0 dropped. Its Auto ceiling rose 6000 → 11000.
+
+### The AA verdicts, on raw frames
+
+Absolute edge counts are useless (the same config twice: hardEdge 0.157% vs 0.576%). What AA does is
+convert **hard** edges into **mid** ones, so the scene-robust metric is the *share* of edges that are
+hard.
+
+| Core | MSAA option | Verdict |
+|---|---|---|
+| **gc** (dolphin) | `dolphin_anti_aliasing: "2"` (4× MSAA) | **works** — hardShare 6.29% → 4.08%, no overlap over 3 runs each. **Shipped.** |
+| n64 (gliden64) | `mupen64plus-MultiSampling` | **inert** — BIT-IDENTICAL raw frames at 0/4/8 |
+| psp (ppsspp) | `ppsspp_mulitsample_level` | **inert** — BIT-IDENTICAL |
+
+libretro's `hw_render` FBO isn't multisampled; only Dolphin's OGL backend owns its framebuffers. §10's
+"n64 MSAA does nothing" was *right*, but for the wrong reason — now it's proven at the source.
+
+### Audit: does any other core hand us more than we deliver?
+
+| System | raw | delivered | |
+|---|---|---|---|
+| n64 / gc / psp | 960×720 / 1280×1056 / 960×540 | same | clean |
+| **dc** | 1280×960 | 640×480 | **fixed** |
+| **ps2** | 1024×896 | 1280×896 | non-integer 1.25× **nearest** stretch → `scaleMethod: bilinear2` |
+| snes | 256×224 | 768×672 | intended integer nearest upscale |
+
+### Phase 4: encoder tuning, measured properly
+
+QP cannot rank encoder settings — a better preset makes smarter mode decisions and reaches the same
+quality at a *coarser* QP (measured: p6 raised mean QP while spending more bits). The right test is
+reference-based. So: dump 120 deterministic Mario Kart 64 frames, encode/decode them offline through
+`gst-launch` + `nvh264dec`, PSNR against the source.
+
+| Setting @ 960×720 | 8 Mbps | 4 Mbps |
+|---|---|---|
+| `p4 tune=ultra-low-latency` (baseline) | 38.14 dB | 33.85 dB |
+| **+ `profile=high`** | **39.16** | **34.49** |
+| `p6` + `profile=high` | 39.18 | 34.62 |
+| `p7` + `profile=high` | 39.18 | 34.78 |
+| `p6` + `two-pass-quarter` | **37.51** ✗ | — |
+| `p6` + `2pq` + `spatial-aq` | **36.98** ✗ | — |
+
+**`profile=high` (CABAC + 8×8 transform) is worth ~+1.0 dB and is free.** The preset barely matters next
+to it. `multi-pass=two-pass-quarter` measured *worse*; `spatial-aq` lowers PSNR by construction (it moves
+bits to where the eye looks) — it may be perceptually better, but nothing available can prove that, so it
+stays off. Shipped: `preset=p6` + `profile=high`.
+
+Chrome decodes High profile even though Pion advertises a baseline `profile-level-id` (verified live on
+gc/snes/ps1). **Not yet verified on Firefox** — rollback is deleting `,profile=high` from the caps.
+
+> **The general lesson.** Anything the encoder can erase (AA, filtering, presets) must be measured
+> before the encoder. Anything the encoder cannot erase (resolution, geometry, bitrate) can be measured
+> in the browser. Two of this plan's "unverifiable" verdicts were just the wrong instrument.

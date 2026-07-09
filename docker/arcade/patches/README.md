@@ -298,3 +298,44 @@ ceiling), 60 fps / 0 freezes throughout. A genuine back-off was observed unpromp
 Re-generate: apply 0001–0020 to a clean `13852a7`, commit, apply this feature, `git diff --cached`.
 (`git add -N` for the new `abr.go` diffs it against an empty blob instead of emitting `new file mode`,
 and the patch then fails to apply.)
+
+---
+
+## 0022-raw-frame-dump.patch — debug: raw frames at `video_cb`
+
+Env-gated (`CLOUD_GAME_FRAME_DUMP_DIR`, off otherwise: one nil check on the emulator thread). Writes
+`frame-NNN.bin` (raw core pixels) + `.json` (w/h/stride/bpp/pixfmt/flip), bounded by
+`CLOUD_GAME_FRAME_DUMP_COUNT` (default 3) after `CLOUD_GAME_FRAME_DUMP_SKIP` frames (default 300).
+
+It exists because two questions **cannot** be answered from the browser:
+
+**1. Anti-aliasing.** H.264 quantization erases exactly the sub-pixel edge gradients MSAA/SSAA create,
+so an A/B on the decoded stream measures the encoder, not AA. On raw frames the answer is unambiguous.
+Metric: the *share* of edges that are hard, `hard/(hard+mid)` — AA converts hard edges into mid ones.
+(Absolute edge counts are useless: the same config twice gave hardEdge 0.157% and 0.576%.)
+
+| Core | MSAA option | Verdict |
+|---|---|---|
+| `gc` (dolphin) | `dolphin_anti_aliasing: "2"` | **works** — hardShare 6.29% → 4.08%, no overlap over 3 runs each |
+| `n64` (gliden64) | `mupen64plus-MultiSampling` | **inert** — BIT-IDENTICAL raw frames at 0/4/8 |
+| `psp` (ppsspp) | `ppsspp_mulitsample_level` | **inert** — BIT-IDENTICAL |
+
+libretro's `hw_render` FBO isn't multisampled; only Dolphin's OGL backend manages its own framebuffers.
+
+**2. What size a core really hands us.** CloudRetro sizes the encode from the core's *base* geometry, so
+a core that renders bigger internally looks identical downstream. The dump prints the truth:
+
+| System | raw (`video_cb`) | delivered | |
+|---|---|---|---|
+| n64 / gc / psp | 960×720 / 1280×1056 / 960×540 | same | clean |
+| **dc** | **1280×960** | 640×480 | **3 of 4 samples discarded** (nearest downscale) |
+| **ps2** | **1024×896** | 1280×896 | non-integer 1.25× *nearest* stretch → `scaleMethod: bilinear2` |
+| snes | 256×224 | 768×672 | intended integer nearest upscale |
+
+**3. Reference-grade encoder tuning.** Dump 120 deterministic frames, encode/decode them offline with
+`gst-launch` + `nvh264dec`, and PSNR against the source. That is how `profile=high` was found to be worth
+**+1.02 dB at 8 Mbps** (and `multi-pass=two-pass-quarter` to be *worse*, and `spatial-aq` to be
+unjudgeable by PSNR). Preset barely matters: p6 adds +0.01 dB over p4 once High profile is on.
+
+Bit-identical raw frames across runs also proved that **mupen64plus is deterministic at a fixed frame
+index**, which is what makes its attract demo a usable A/B fixture.

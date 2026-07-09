@@ -104,7 +104,8 @@ namespace MovieTheater.Services.Arcade
                             // it is 13 ms and a locked 60. Upscale and bitrate ship together or not at all.
             "n64" => 9000,  //  960x720  = 0.69 Mpx
             "psp" => 7000,  //  960x544  = 0.52 Mpx (much of it 30fps content)
-            "dc" => 6000,   //  640x480  = 0.31 Mpx native 3D (flycast cannot upscale here — see the plan)
+            "dc" => 11000,  // 1280x960 = 1.23 Mpx. flycast ALWAYS rendered this; CloudRetro was nearest-
+                            // downscaling it to 640x480 and discarding 3 of 4 samples until 2026-07-09.
             // PS1 swings 512x480 <-> 1280x960 mid-game, but the frame is a nearest 2x upscale (cheap bits).
             "ps1" => 6000,
             // Everything 2D: nearest-upscaled flat blocks. 5 Mbps is already generous.

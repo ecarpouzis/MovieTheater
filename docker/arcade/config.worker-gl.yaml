@@ -134,6 +134,23 @@ emulator:
           coreAspectRatio: true
           usesLibCo: true   # GL thread-affinity — see the psp note above (flycast GPF'd without it)
           vfr: false        # correct game speed — see the psp vfr note (Sonic Adventure ran double-speed)
+          # QUALITY — flycast renders 1280x960 and we were THROWING 3 OF EVERY 4 SAMPLES AWAY.
+          #
+          # A raw frame dump at video_cb (patch 0022) proved it: with internal_resolution 1280x960 the
+          # core hands us a 1280x960 buffer, but CloudRetro sizes the capsfilter OUTPUT from the core's
+          # BASE geometry (640x480 — flycast never scales its base, its internal res goes to max_width).
+          # videoconvertscale then downscaled 2:1 with the default NEAREST filter, i.e. point-sampled it.
+          # Nearest downscale doesn't anti-alias, it ALIASES — strictly worse than rendering at native.
+          #
+          # The fix needs no worker patch. `scale` multiplies the base, and patch 0015 renegotiates the
+          # SOURCE caps to the core's real frame size — so base(640x480) x scale(2) == source(1280x960)
+          # makes videoconvertscale a passthrough and the full frame reaches NVENC. Verified: the client
+          # receives 1280x960, 60fps, 0 dropped.
+          scale: 2
+          options:
+            # ⚠ THE PREFIX IS `reicast_`, NOT `flycast_` — the DLL has 140 reicast_* keys and zero real
+            # flycast_* keys, and libretro SILENTLY IGNORES unknown option keys.
+            reicast_internal_resolution: "1280x960"
           # ⚠ DC RESOLUTION IS NOT RAISEABLE FROM HERE. Measured 2026-07-08 (docs/arcade-quality-plan.md §10):
           # CloudRetro pins the encode size to the core's BASE geometry — Frontend.FrameSize() returns
           # nano.BaseWidth()/BaseHeight() (frontend.go:424) and ignores the per-frame size video_cb reports.
@@ -197,6 +214,12 @@ emulator:
           usesLibCo: true
           vfr: false
           hacks: [skip_hw_context_destroy]
+          # PS2 games often render a narrower framebuffer than the base geometry (God of War: raw 1024x896
+          # vs delivered 1280x896 — measured with the patch-0022 frame dump). CloudRetro stretches that to
+          # the output width, and the DEFAULT resampler is nearest-neighbour, so a 1.25x stretch duplicates
+          # columns unevenly — visible shimmer on a 3D image. bilinear2 resamples it smoothly. (2D cores
+          # keep nearest: there the ratio is an exact integer and nearest is what preserves the pixel art.)
+          scaleMethod: bilinear2
           options:
             # OpenGL renderer so PCSX2 draws into CloudRetro's libretro GL (WGL) hw-render context.
             # Auto/Vulkan/D3D would render to a private device the GL capture never sees -> black frame.
@@ -261,6 +284,15 @@ emulator:
             # the GL Worker Watchdog task auto-recycles a wedged worker within ~60s. Real fix = debug the
             # teardown deadlock (dump: scratchpad worker-hung-27168.dmp).
             dolphin_efb_scale: "2"
+            # 4x MSAA. The ONLY core where MSAA measurably does anything: A/B'd on RAW pre-encode frames
+            # (patch 0022) over 3 runs each, the share of edges that are HARD fell 6.29% -> 4.08%, with no
+            # overlap between the groups. n64 (gliden64) and psp (ppsspp) produce BIT-IDENTICAL frames with
+            # their MSAA options on or off — libretro's hw_render FBO isn't multisampled, and only Dolphin's
+            # OGL backend manages its own framebuffers. Values: 0 None, 1/2/3 = 2x/4x/8x MSAA, 4/5/6 = SSAA.
+            #
+            # This is invisible from the browser: H.264 quantization erases the sub-pixel edge gradients AA
+            # creates. Never A/B anti-aliasing on the decoded stream.
+            dolphin_anti_aliasing: "2"
             # SINGLE-THREADED + synchronous shaders. Dolphin's async shader compile / separate GPU thread
             # each need a REAL shared GL context on a worker thread; nanoarch patch 0016 acknowledges env 44
             # but doesn't hand out an actual wglShareLists context, so those threads deref a null GL object
@@ -470,8 +502,20 @@ encoder:
   list:
     h264:
       encoder: nvh264enc
-      params: "preset=p4 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=100000 repeat-sequence-header=true zerolatency=true"
-      caps: video/x-h264,stream-format=byte-stream,alignment=au
+      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=100000 repeat-sequence-header=true zerolatency=true"
+      # profile=high is the single biggest encoder win, and it is FREE: CABAC + the 8x8 transform.
+      # Measured offline against RAW worker frames (patch 0022) — encode 120 deterministic Mario Kart 64
+      # frames, decode, PSNR vs the source. At 8 Mbps: p4 38.14 dB -> p4+high 39.16 dB (+1.02). At 4 Mbps:
+      # 33.85 -> 34.49. The PRESET barely matters next to it (p6 +0.01, p7 +0.02 further).
+      #
+      # REJECTED, and worth recording: `multi-pass=two-pass-quarter` measured WORSE (37.51 dB), and
+      # `spatial-aq` lowers PSNR by construction (it moves bits to where the eye looks) — it may well be
+      # perceptually better, but nothing here can prove that, so it stays off.
+      #
+      # Chrome decodes High profile fine even though Pion advertises a baseline profile-level-id
+      # (verified live on gc/snes/ps1: 60fps, 0 freezes, decode 0.5-0.8ms). If a browser ever refuses,
+      # the rollback is to delete `,profile=high` from this line. NOT yet verified on Firefox.
+      caps: video/x-h264,stream-format=byte-stream,alignment=au,profile=high
     # In-band FEC ON (roadmap WS-A.2) — same override as the WSL stack; generic (not restricted-lowdelay)
     # + >=10ms frames are what make LBRR real. The gl-zone room binds a native Windows socket with no
     # mirrored-relay hop, so it's also the clean A/B control for the WS-A audio-loss hunt.

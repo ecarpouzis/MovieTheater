@@ -1,0 +1,105 @@
+diff --git a/pkg/worker/caged/libretro/nanoarch/framedump.go b/pkg/worker/caged/libretro/nanoarch/framedump.go
+new file mode 100644
+index 0000000..b8fd32e
+--- /dev/null
++++ b/pkg/worker/caged/libretro/nanoarch/framedump.go
+@@ -0,0 +1,84 @@
++package nanoarch
++
++import (
++	"encoding/json"
++	"fmt"
++	"os"
++	"path/filepath"
++	"sync/atomic"
++)
++
++// Debug-only RAW frame dump (arcade patch 0022), taken at `video_cb` — i.e. BEFORE the GStreamer
++// pipeline, the 4:2:0 conversion and NVENC. It exists because two questions cannot be answered from the
++// browser:
++//
++//  1. **Anti-aliasing.** The decoded stream is quantized; at any realistic bitrate H.264 erases exactly
++//     the sub-pixel edge gradients that MSAA/SSAA create. A/B'ing AA post-decode is measurement of the
++//     encoder, not of AA. (n64 MSAA 4x measured identical to 0x this way, which proved nothing.)
++//  2. **What size a core really hands us.** CloudRetro sizes the encode from the core's *base* geometry
++//     (`Frontend.FrameSize`), so a core that renders bigger internally but reports a small base looks
++//     identical downstream. The dump records the width/height `video_cb` actually passed.
++//
++// Off unless CLOUD_GAME_FRAME_DUMP_DIR is set. When on it writes `frame-NNN.bin` (raw pixels, exactly as
++// the core produced them) plus `frame-NNN.json` describing how to read them. Bounded by
++// CLOUD_GAME_FRAME_DUMP_COUNT (default 3) so it can never fill a disk, and it skips the first
++// CLOUD_GAME_FRAME_DUMP_SKIP frames (default 300) so boot/black screens don't get captured.
++//
++// GL cores read back bottom-up: `flip` in the sidecar says so. Don't "fix" it in the reader without
++// checking — an upside-down comparison would silently change the edge statistics.
++type frameDumper struct {
++	dir     string
++	left    atomic.Int32
++	skip    atomic.Int32
++	written atomic.Int32
++}
++
++var dumper = func() *frameDumper {
++	dir := os.Getenv("CLOUD_GAME_FRAME_DUMP_DIR")
++	if dir == "" {
++		return nil
++	}
++	d := &frameDumper{dir: dir}
++	d.left.Store(int32(envInt("CLOUD_GAME_FRAME_DUMP_COUNT", 3)))
++	d.skip.Store(int32(envInt("CLOUD_GAME_FRAME_DUMP_SKIP", 300)))
++	_ = os.MkdirAll(dir, 0o755)
++	return d
++}()
++
++func envInt(k string, def int) int {
++	var n int
++	if _, err := fmt.Sscanf(os.Getenv(k), "%d", &n); err == nil && n > 0 {
++		return n
++	}
++	return def
++}
++
++// dumpFrame is a no-op unless CLOUD_GAME_FRAME_DUMP_DIR is set. Called on the emulator thread, so it
++// must stay cheap when disabled (one nil check) and bounded when enabled.
++func dumpFrame(data []byte, w, h, stride uint, bpp uint, pixFmtCode int, isGL bool) {
++	d := dumper
++	if d == nil || d.left.Load() <= 0 {
++		return
++	}
++	if d.skip.Add(-1) >= 0 {
++		return
++	}
++	if d.left.Add(-1) < 0 {
++		return
++	}
++	n := d.written.Add(1)
++
++	base := filepath.Join(d.dir, fmt.Sprintf("frame-%03d", n))
++	if err := os.WriteFile(base+".bin", data, 0o644); err != nil {
++		return
++	}
++	meta := map[string]any{
++		"width": w, "height": h, "stride": stride, "bpp": bpp,
++		"pixFmtCode": pixFmtCode,
++		// GL cores render bottom-left origin, so the readback is upside down.
++		"flip": isGL,
++		"note": "raw core output, pre-scale/pre-encode",
++	}
++	b, _ := json.MarshalIndent(meta, "", "  ")
++	_ = os.WriteFile(base+".json", b, 0o644)
++}
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+index 6686d80..7589d74 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+@@ -738,6 +738,10 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+ 	// also we have an option of xN output frame magnification
+ 	// so, it may be rescaled
+ 
++	// Debug-only, env-gated (patch 0022): capture the RAW frame here, before scaling/4:2:0/NVENC.
++	// This is the ONLY place AA is still visible and the only place a core's true frame size is known.
++	dumpFrame(data_, width, height, packed, bpp, int(Nan0.Video.PixFmt.C), data == C.RETRO_HW_FRAME_BUFFER_VALID)
++
+ 	Nan0.Handlers.OnVideo(data_, dt, FrameInfo{W: width, H: height, Stride: packed})
+ }
+ 
