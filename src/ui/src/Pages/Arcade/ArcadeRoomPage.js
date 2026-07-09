@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize } from "./cloudRetroClient";
 import { useWakeLock } from "../../useWakeLock";
 
 const { Title, Text } = Typography;
@@ -51,6 +51,9 @@ export default function ArcadeRoomPage() {
   // The core's OWN display aspect, reported via the GAME_START `av` payload (and any later t=150).
   // null until it arrives / when the core doesn't specify one — then the per-system table below wins.
   const [coreAspect, setCoreAspect] = useState(null);
+  // Quarter-turn rotation the core asks for (vertical arcade cabs report rot=90). The <video> must have
+  // its width/height SWAPPED before it is rotated, or the rotated frame overflows its aspect box.
+  const [coreRot, setCoreRot] = useState(0);
 
   // Resolve the join descriptor: creator has it in router state; an invitee Joins for one. If the room
   // is still starting (creator hasn't Bound yet), retry a few times before giving up.
@@ -98,7 +101,11 @@ export default function ArcadeRoomPage() {
           if (s === "playing") tryPlayVideo();
         },
         onSeat: (idx) => { if (!cancelled) setYourSlot(idx); },
-        onAspect: (a) => { if (!cancelled) setCoreAspect(a); },
+        onAspect: ({ aspect, rot }) => {
+          if (cancelled) return;
+          if (aspect != null) setCoreAspect(aspect);
+          setCoreRot(rot || 0);
+        },
         onRoomId: (roomId) => {
           // Creator: persist the CloudRetro room id so invitees can join the same worker (§8 step 3).
           if (descriptor.isCreator) MovieAPI.bindArcadeRoom(code, roomId).catch(() => {});
@@ -343,6 +350,14 @@ export default function ArcadeRoomPage() {
           vb: 384 / 224,
         };
         const ar = coreAspect || FALLBACK_AR[system] || 4 / 3;
+        // A quarter-turn swaps the element's axes. The box is `ar` wide-over-tall; for the rotated video
+        // to fill it, the element must be as wide as the box is TALL and as tall as the box is WIDE:
+        //   width  = boxH = boxW / ar  →  calc(100% / ar)   (100% of width  = boxW)
+        //   height = boxW = boxH * ar  →  calc(100% * ar)   (100% of height = boxH)
+        // cloudRetroClient prepends translate(-50%,-50%) so it rotates about the box centre.
+        // Without this, 1942 (rot=90) rendered upright but overflowed the 3:4 box and left dead space.
+        const videoStyle = { position: "absolute", top: "50%", left: "50%", objectFit: "fill",
+                             display: "block", ...rotatedVideoSize(ar, coreRot) };
         const outerStyle = isFs
           ? { position: "relative", background: "#000", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }
           : { position: "relative", background: "#000", borderRadius: 8, overflow: "hidden" };
@@ -356,7 +371,7 @@ export default function ArcadeRoomPage() {
                 ref={videoRef}
                 autoPlay
                 playsInline
-                style={{ width: "100%", height: "100%", objectFit: "fill", display: "block" }}
+                style={videoStyle}
               />
               {needsTap && (
                 <button

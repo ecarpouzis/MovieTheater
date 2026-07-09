@@ -191,6 +191,23 @@ export function displayAspect(av) {
   return a;
 }
 
+/**
+ * CSS width/height for the <video> inside an aspect box of ratio `ar`, given the core's rotation.
+ *
+ * A quarter-turn swaps the element's axes, so a rotated video must be as wide as the box is TALL and as
+ * tall as the box is WIDE, or it overflows (observed on 1942, rot=90: upright but spilling out of its 3:4
+ * box with dead space below). Pairs with the `translate(-50%,-50%) rotate(...)` transform applied above,
+ * which rotates about the box centre.
+ *
+ *   width  = boxH = boxW / ar   -> calc(100% / ar)   (100% width  resolves against boxW)
+ *   height = boxW = boxH * ar   -> calc(100% * ar)   (100% height resolves against boxH)
+ */
+export function rotatedVideoSize(ar, rot) {
+  const turned = ((Number(rot) || 0) % 180) !== 0;
+  if (!turned || !(ar > 0)) return { width: "100%", height: "100%" };
+  return { width: `calc(100% / ${ar})`, height: `calc(100% * ${ar})` };
+}
+
 export function createCloudRetroSession(descriptor, opts) {
   const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect } = opts || {};
   const status = (s) => onStatus && onStatus(s);
@@ -497,8 +514,7 @@ export function createCloudRetroSession(descriptor, opts) {
   // which assigns style.aspectRatio = a and applies rotate(-rot) independently.
   function reportAspect() {
     if (!onAspect || !lastAv) return;
-    const a = displayAspect(lastAv);
-    if (a != null) onAspect(a);
+    onAspect({ aspect: displayAspect(lastAv), rot: (Number(lastAv.rot) || 0) % 360 });
   }
 
   function applyVideoTransform(av) {
@@ -508,7 +524,10 @@ export function createCloudRetroSession(descriptor, opts) {
     if (!videoEl) return;
     const rot = lastAv.rot ? `rotate(${-lastAv.rot}deg)` : "";
     const flip = lastAv.flip ? "scaleY(-1)" : "";
-    videoEl.style.transform = [rot, flip].filter(Boolean).join(" ");
+    // The <video> is absolutely centred in its aspect box (ArcadeRoomPage), so every transform starts by
+    // pulling it back by half its own size. Rotation happens about that centre — and the page has already
+    // swapped the element's width/height for quarter-turns, so the rotated result fills the box exactly.
+    videoEl.style.transform = ["translate(-50%, -50%)", rot, flip].filter(Boolean).join(" ");
   }
 
   function onGameStarted(p) {

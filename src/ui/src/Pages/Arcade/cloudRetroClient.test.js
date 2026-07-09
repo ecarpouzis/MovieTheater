@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { displayAspect } from "./cloudRetroClient";
+import { displayAspect, rotatedVideoSize } from "./cloudRetroClient";
 
 // The numbers below are MEASURED from real rooms (worker log `Libretro System A/V >>> … AR [x]`,
 // 2026-07-08), not invented. They are the regression fence for the aspect-ratio fix: before it, the
@@ -37,5 +37,24 @@ describe("displayAspect", () => {
     expect(displayAspect({ a: Infinity })).toBeNull();
     expect(displayAspect({ a: 99 })).toBeNull();
     expect(displayAspect({ a: 0.01 })).toBeNull();
+  });
+});
+
+// Rotated boards: the element's axes swap before it is rotated, or the frame overflows its box.
+// Measured on 1942 (fbneo vertical cab): stream 672x768, av = { a: 0.75, rot: 90 }.
+describe("rotatedVideoSize", () => {
+  it("fills the box normally when the core asks for no rotation", () => {
+    expect(rotatedVideoSize(4 / 3, 0)).toEqual({ width: "100%", height: "100%" });
+    expect(rotatedVideoSize(16 / 9, 180)).toEqual({ width: "100%", height: "100%" }); // half-turn keeps axes
+  });
+
+  it("swaps width/height on a quarter turn so the rotated frame fills a 3:4 box", () => {
+    expect(rotatedVideoSize(0.75, 90)).toEqual({ width: "calc(100% / 0.75)", height: "calc(100% * 0.75)" });
+    expect(rotatedVideoSize(0.75, 270)).toEqual({ width: "calc(100% / 0.75)", height: "calc(100% * 0.75)" });
+  });
+
+  it("degrades to a plain fill rather than emitting calc(100% / 0)", () => {
+    expect(rotatedVideoSize(0, 90)).toEqual({ width: "100%", height: "100%" });
+    expect(rotatedVideoSize(NaN, 90)).toEqual({ width: "100%", height: "100%" });
   });
 });

@@ -347,6 +347,13 @@ emulator:
           roms: ["zip"]
           scale: 3              # 304x224 -> 912x672
           scaleMethod: nearest-neighbour
+          # VERTICAL BOARDS RENDERED SIDEWAYS without this. The worker only sends the GAME_START `av`
+          # payload when AspectEnabled() (coordinatorhandlers.go), i.e. when coreAspectRatio is set — so
+          # fbneo never told the client its aspect (0.75 on a vertical cab) OR its rotation (90), and the
+          # client drew a rotated, 4:3-squashed picture. fbneo is not a GL core, so Flipped() stays false
+          # and this cannot introduce the upside-down GL bug. Horizontal boards are unaffected (a=1.333,
+          # rot=0). Verified on 1942 (vertical) and Metal Slug (horizontal), 2026-07-08.
+          coreAspectRatio: true
 
         # ─── GPU / GL 3D cores (same D3D12 + NVENC path proven by n64/psx) ────────────────────
         # GL cores MUST set isGlAllowed (HW render) AND coreAspectRatio: without the latter the

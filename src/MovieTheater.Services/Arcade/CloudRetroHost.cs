@@ -60,6 +60,14 @@ namespace MovieTheater.Services.Arcade
         /// Keep this list in lockstep with the gl worker's config.yaml core entries and the WSL workers'
         /// CLOUD_GAME_WORKER_NETWORK_ZONE=main.
         /// </summary>
+        /// ⚠ STALE + LATENT TRAP (noted 2026-07-08, deliberately not changed here). Since the docker/WSL
+        /// pool was retired, BOTH Windows worker tasks register <c>CLOUD_GAME_WORKER_NETWORK_ZONE=main</c>
+        /// (scripts/run-arcade-glworker.ps1) — so **no worker serves the "gl" zone**. Turning on
+        /// <c>ArcadeZoningEnabled</c> today would route psp/dc/naomi/atomiswave rooms at a pool that does
+        /// not exist. The list is also incomplete: ps2 and gc are GL cores too and were never added.
+        /// It is harmless only because zoning is off by default (the descriptor then sends zone=""), which
+        /// is a wildcard. Fix by deleting zoning, or by making every system return "main", before anyone
+        /// flips that flag.
         internal static string ZoneForSystem(string? system) => system?.ToLowerInvariant() switch
         {
             "psp" or "dc" or "naomi" or "atomiswave" => "gl",
