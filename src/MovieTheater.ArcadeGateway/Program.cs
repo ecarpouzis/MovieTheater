@@ -163,7 +163,24 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
     // the game boots clean (unsigned is safe: it only ever clears the owner's own save). Harvest is handled
     // continuously by the background sweep.
     if (saveStore != null
-        && ArcadeSaveId.TryParse(requestedRoomId, out var svUser, out var svGame, out var svSlot, out _, out _)
+        && ArcadeSaveId.TryParse(requestedRoomId, out var svUser, out var svGame, out var svSlot, out var svSystem, out _)
+        && svUser == payload.UserId && svGame == payload.GameId)
+    {
+        // Harvest-on-reconnect (the close-save race fix): the background sweep can lose a foot-race
+        // with a quick End→relaunch — the worker's close-time save lands on the mount AFTER the
+        // sweep's last pass, so the vault (and the site's My-Saves rows) stay stale. The owner
+        // reconnecting is the one moment freshness matters; harvest this session's mount files NOW,
+        // before deciding whether the mount needs seeding.
+        try
+        {
+            foreach (var meta in await saveStore.HarvestSessionAsync(svUser, svGame, svSystem, requestedRoomId, false, context.RequestAborted))
+                await mirrorSave(meta);
+        }
+        catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade harvest-on-reconnect failed for {Id}", requestedRoomId); }
+    }
+
+    if (saveStore != null
+        && ArcadeSaveId.TryParse(requestedRoomId, out svUser, out svGame, out svSlot, out _, out _)
         && svUser == payload.UserId && svGame == payload.GameId
         && !saveStore.MountHasSave(requestedRoomId))
     {
