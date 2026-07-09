@@ -460,3 +460,17 @@ them through the coordinator, and applies them in nanoarch around `retro_load_ga
 implement it as an empty stub (pcsx2, dolphin, ppsspp read their own cheat formats from disk instead).
 Nothing observable distinguishes the two at runtime, so the SITE decides which systems may offer codes
 — `ArcadeCheatCatalog.SupportsCheatCodes`. See docs/arcade-cheats.md.
+
+## 0028-inframe-packet-pacing
+
+Opt-in smoothing of each encoded frame's RTP burst. The stack deliberately runs GCC with a
+NoOpPacer (a leaky-bucket pacer queues RTP — latency), and on a LAN wire-speed bursts are
+harmless — but on cellular/shallow-buffer paths a ~14–40 KB burst every 16 ms overflows the
+queue and panics the bandwidth estimator (measured on real 5G 2026-07-09: estimate collapse
+to 525 kbps, the whole session pinned at 1500–2500 of a 5000 ceiling). When a room's t=104
+carries `pace` (ms; the lobby Network profile sends 5 for Remote, 8 for 5G), an outbound
+interceptor breaks the frame's packets into groups of 8 with a 1 ms pause between groups,
+capped at `pace` pauses per frame — Windows timer granularity makes grouping, not per-packet
+spacing, the portable unit. Pacing off (0, the LAN default) is byte-identical to pre-patch.
+The coordinator relays the new StartGameRequest field — as with 0018/0027, REBUILD THE
+COORDINATOR TOO or the field is silently dropped.

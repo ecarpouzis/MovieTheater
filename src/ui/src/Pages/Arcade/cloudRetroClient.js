@@ -556,8 +556,12 @@ export function createCloudRetroSession(descriptor, opts) {
     };
     const vbr = numFromWsUrl(descriptor.wsUrl, "vbr");
     const fec = numFromWsUrl(descriptor.wsUrl, "fec");
+    const pace = numFromWsUrl(descriptor.wsUrl, "pace");
     if (vbr > 0) p.video_bitrate = vbr;
     if (fec > 0) p.audio_fec = fec;
+    // In-frame packet pacing window ms (worker patch 0028) — the lobby Network profile's opt-in
+    // smoother for Remote/5G rooms. Absent/0 = LAN default, wire-speed bursts.
+    if (pace > 0) p.pace = pace;
     // Per-room cheats the creator picked in the lobby. Unlike vbr/fec these ride the descriptor body, not
     // the wsUrl query: a cheat code list runs to kilobytes. The worker merges core_options before the ROM
     // loads and feeds cheats to retro_cheat_set after (patch 0027). Only the creator's t=104 builds the

@@ -1,0 +1,148 @@
+--- a/pkg/api/user.go
++++ b/pkg/api/user.go
+@@ -14,6 +14,11 @@
+ 		// request builds the encoder, so only its values take effect. 0 = leave config default.
+ 		VideoBitrate int `json:"video_bitrate,omitempty"` // kbps; 0 = config default
+ 		AudioFec     int `json:"audio_fec,omitempty"`     // 0 = default, 1 = FEC on, 2 = FEC off
++		// In-frame packet pacing window (ms; 0 = off): break each encoded frame's RTP burst into
++		// spaced groups instead of firing it at wire speed. Opt-in via the lobby's Network profile
++		// (Remote/5G) — wire-speed bursts are the minimum-latency LAN default, but they slam
++		// cellular/shallow-buffer queues and panic the bandwidth estimator (measured 2026-07-09).
++		Pace int `json:"pace,omitempty"`
+ 		// Per-room cheats the creator enabled in the lobby (arcade cheats feature).
+ 		// CoreOptions are libretro core-option overrides applied just before retro_load_game
+ 		// (e.g. pcsx2_widescreen_hint); Cheats are raw codes handed to retro_cheat_set after it.
+--- a/pkg/api/worker.go
++++ b/pkg/api/worker.go
+@@ -23,6 +23,7 @@
+ 		// (arcade per-room bitrate/FEC). 0 = leave the worker's config default.
+ 		VideoBitrate int `json:"video_bitrate,omitempty"` // kbps
+ 		AudioFec     int `json:"audio_fec,omitempty"`     // 0 default, 1 on, 2 off
++		Pace         int `json:"pace,omitempty"`          // in-frame pacing window ms; 0 off
+ 		// Per-room cheats, forwarded from the creator's GameStartUserRequest. A field missing HERE
+ 		// is silently dropped by the coordinator's JSON relay even though the browser sent it —
+ 		// which is exactly how per-room bitrate went nowhere for days. Keep in sync with user.go.
+--- a/pkg/coordinator/workerapi.go
++++ b/pkg/coordinator/workerapi.go
+@@ -24,6 +24,7 @@
+ 			// Forward the creator's per-room encoder quality choice to the worker.
+ 			VideoBitrate: req.VideoBitrate,
+ 			AudioFec:     req.AudioFec,
++			Pace:         req.Pace,
+ 			// ...and the cheats they picked. The coordinator only relays: any field it doesn't know
+ 			// about is dropped here without an error, so this line is what makes the feature exist.
+ 			CoreOptions: req.CoreOptions,
+--- a/pkg/worker/coordinatorhandlers.go
++++ b/pkg/worker/coordinatorhandlers.go
+@@ -167,6 +167,13 @@
+ 		if rq.VideoBitrate > 0 || rq.AudioFec != 0 {
+ 			w.log.Info().Msgf("Per-room encoder overrides: bitrate=%d kbps fec=%d", rq.VideoBitrate, rq.AudioFec)
+ 		}
++		// Per-room in-frame packet pacing (patch 0028): set unconditionally from every room start so
++		// a no-pacing room can never inherit the previous room's window (the nanoarch cheat-staging
++		// lesson). One worker hosts one room, so the process-global is correct.
++		webrtc.SetPacing(rq.Pace)
++		if rq.Pace > 0 {
++			w.log.Info().Msgf("Per-room pacing: %d ms in-frame smoothing", rq.Pace)
++		}
+ 		m := media.NewGstreamer(encConf, w.log)
+ 
+ 		// recreate the video encoder
+--- a/pkg/network/webrtc/factory.go
++++ b/pkg/network/webrtc/factory.go
+@@ -81,7 +81,10 @@
+ 		default: // never block PeerConnection creation on a full channel
+ 		}
+ 	})
+ 	i.Add(ccFactory)
++	// In-frame packet pacing (patch 0028): always registered, no-op until a room arms it via
++	// SetPacing (lobby Network profile Remote/5G). See pacer.go for why grouping, not a pacer.
++	i.Add(pacerFactory{})
+ 	m.RegisterFeedback(webrtc.RTCPFeedback{Type: webrtc.TypeRTCPFBTransportCC}, webrtc.RTPCodecTypeVideo)
+ 	if err = webrtc.ConfigureTWCCHeaderExtensionSender(m, i); err != nil {
+ 		return
+--- /dev/null
++++ b/pkg/network/webrtc/pacer.go
+@@ -0,0 +1,82 @@
++// In-frame packet pacing (patch 0028). The stack deliberately runs GCC with a NoOpPacer — a
++// leaky-bucket pacer queues and re-times RTP, which is exactly the latency this project exists to
++// avoid, and on an idle LAN wire-speed bursts are harmless. But off-LAN they are not: each encoded
++// frame's packets leave back-to-back at wire speed (~14-40 KB in one burst every 16 ms), which
++// overflows shallow cellular/home-router queues and trips GCC's delay detector — measured live on
++// real 5G (2026-07-09): estimate collapses to ~525 kbps and a crawl/crash sawtooth pinned the
++// stream at 1500-2500 kbps of a 5000 ceiling.
++//
++// This is the middle ground: when a room opts in (lobby Network profile Remote/5G → t=104 `pace`),
++// each frame's burst is broken into groups of pacePktGroup packets with a 1 ms pause between
++// groups, capped at `pace` pauses per frame. Windows timer granularity makes sub-millisecond
++// sleeps unreliable, so grouping — not per-packet spacing — is the portable unit. Typical frames
++// (≤8 packets) are untouched; a 35-packet IDR spreads over ~4 ms. Pacing OFF (0, the default and
++// the LAN profile) is byte-identical to the pre-patch behavior.
++package webrtc
++
++import (
++	"strings"
++	"sync/atomic"
++	"time"
++
++	"github.com/pion/interceptor"
++	"github.com/pion/rtp"
++)
++
++// paceSleeps is the per-frame cap on 1 ms smoothing pauses (== the pacing window in ms). Process-
++// global because one worker hosts exactly one room; set from EVERY room start (0 clears) so a
++// no-pacing room can never inherit the previous room's window.
++var paceSleeps atomic.Int32
++
++// SetPacing arms (or, with 0, disarms) the in-frame packet smoother for the current room.
++func SetPacing(ms int) {
++	if ms < 0 {
++		ms = 0
++	}
++	if ms > 20 {
++		ms = 20
++	}
++	paceSleeps.Store(int32(ms))
++}
++
++// pacePktGroup is how many packets go out back-to-back before a pause — ~9.6 KB at the usual
++// ~1200-byte payloads, i.e. the largest remaining burst a paced stream presents to a queue.
++const pacePktGroup = 8
++
++type pacerFactory struct{}
++
++func (pacerFactory) NewInterceptor(_ string) (interceptor.Interceptor, error) {
++	return &pacer{}, nil
++}
++
++type pacer struct{ interceptor.NoOp }
++
++func (p *pacer) BindLocalStream(info *interceptor.StreamInfo, writer interceptor.RTPWriter) interceptor.RTPWriter {
++	// Video only: audio is 1 small packet per 10 ms frame and rides its own PeerConnection.
++	if !strings.HasPrefix(info.MimeType, "video/") {
++		return writer
++	}
++	return &pacedWriter{next: writer}
++}
++
++// pacedWriter spaces one bound stream's packets. Per-peer state is correct: each viewer's stream
++// is bound (and therefore paced) independently.
++type pacedWriter struct {
++	next interceptor.RTPWriter
++	pkts int // packets sent in the current frame's burst
++	naps int // pauses taken in the current frame's burst
++}
++
++func (w *pacedWriter) Write(header *rtp.Header, payload []byte, attributes interceptor.Attributes) (int, error) {
++	if cap := int(paceSleeps.Load()); cap > 0 {
++		if w.pkts > 0 && w.pkts%pacePktGroup == 0 && w.naps < cap {
++			time.Sleep(time.Millisecond)
++			w.naps++
++		}
++		w.pkts++
++		if header.Marker { // last packet of this frame — the next Write starts a new burst
++			w.pkts, w.naps = 0, 0
++		}
++	}
++	return w.next.Write(header, payload, attributes)
++}

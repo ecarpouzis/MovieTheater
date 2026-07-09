@@ -341,6 +341,12 @@ namespace MovieTheater.Controllers
             /// (LAN-only, saves audio-packet bytes). Rides the WS URL to the worker like the other room flags.</summary>
             public int AudioFec { get; set; }
 
+            /// <summary>In-frame packet pacing window in ms (worker patch 0028), 0 = off. The lobby's
+            /// Network profile sets it (Remote 5, 5G 8); the worker spreads each encoded frame's RTP
+            /// burst over this window so it doesn't slam cellular/shallow-buffer queues. LAN keeps 0 —
+            /// wire-speed bursts are the minimum-latency default.</summary>
+            public int PaceMs { get; set; }
+
             /// <summary>Cheat ids the creator ticked in the lobby, as returned by <c>GET .../Cheats</c>:
             /// <c>"c{ArcadeCheat.Id}"</c> for a stored cheat, <c>"s:{optionKey}"</c> for a system-wide option
             /// cheat. Unknown ids are ignored, not rejected — a stale card in an open tab shouldn't fail the
@@ -481,6 +487,8 @@ namespace MovieTheater.Controllers
             descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + vbr };
             if (request.AudioFec is 1 or 2)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fec=" + request.AudioFec };
+            if (request.PaceMs > 0)
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&pace=" + Math.Clamp(request.PaceMs, 1, 20) };
 
             // Per-room cheats (arcade cheats feature). Resolve the ids the creator ticked against what this
             // exact ROM actually offers — never trust the client's idea of what a cheat is, because a code is

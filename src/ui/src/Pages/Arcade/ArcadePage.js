@@ -32,22 +32,39 @@ const BITRATE_PRESETS = [
   { label: "Smooth · 3 Mbps", value: 3000 },
   { label: "Data saver · 1.5 Mbps", value: 1500 },
 ];
-// `short` is what the collapsed pill shows (the design's "Error correction: On"); the full label,
-// with its when-to-use guidance, stays in the open dropdown.
-const FEC_OPTIONS = [
-  { short: "Error correction: On", label: "Error correction: On · best with remote friends", value: 1 },
-  { short: "Error correction: Off", label: "Error correction: Off · LAN only, lighter audio", value: 2 },
+// Network profile (replaces the old Error-correction dropdown): one choice bundling audio FEC and
+// in-frame packet pacing. LAN is byte-identical to the old default (FEC on, no pacing — packets
+// leave at wire speed for minimum latency). Remote/5G add the patch-0028 smoother: each encoded
+// frame's burst is spread over a few ms, which is invisible on a good line but stops the bursts
+// from slamming cellular/shallow-buffer queues and panicking the bandwidth estimator (measured on
+// real 5G 2026-07-09: estimate collapse to 525 kbps, session pinned at 1500-2500 of a 5000 ceiling).
+// `short` is what the collapsed pill shows; the full label, with guidance, stays in the dropdown.
+const NETWORK_OPTIONS = [
+  { short: "Network: LAN", label: "Network: LAN · lowest latency, home wifi/wired", value: "lan" },
+  { short: "Network: Remote", label: "Network: Remote · smoother for friends joining over the internet", value: "remote" },
+  { short: "Network: 5G / Cellular", label: "Network: 5G / Cellular · steadiest picture on mobile data", value: "5g" },
 ];
+// What each profile actually sends (the worker never sees "profiles", only these params).
+// audioFec: 1 = on, 2 = off. paceMs: patch-0028 in-frame smoothing window (0 = off; 5G gets a
+// wider window because big keyframes at low cellular bitrates benefit from more spread).
+const NETWORK_PROFILES = {
+  lan: { audioFec: 1, paceMs: 0 },
+  remote: { audioFec: 1, paceMs: 5 },
+  "5g": { audioFec: 1, paceMs: 8 },
+};
 function loadQuality() {
   try {
     const q = JSON.parse(localStorage.getItem(QUALITY_KEY));
-    if (q && typeof q.videoBitrateKbps === "number")
-      return { videoBitrateKbps: q.videoBitrateKbps, audioFec: q.audioFec === 2 ? 2 : 1 };
+    if (q && typeof q.videoBitrateKbps === "number") {
+      // Legacy audioFec-shaped values (pre network-profile) map to LAN — the old default behavior.
+      const network = NETWORK_PROFILES[q.network] ? q.network : "lan";
+      return { videoBitrateKbps: q.videoBitrateKbps, network };
+    }
   } catch { /* ignore */ }
-  // Auto + FEC on. NOTE: a stored value is NOT migrated — someone who deliberately picked "Balanced ·
+  // Auto + LAN. NOTE: a stored value is NOT migrated — someone who deliberately picked "Balanced ·
   // 5 Mbps" on a thin uplink should not be silently moved to Auto (whose ceiling reaches 14 Mbps on
   // GameCube; ABR would walk it back, but the choice is theirs). They opt in by choosing Auto once.
-  return { videoBitrateKbps: 0, audioFec: 1 };
+  return { videoBitrateKbps: 0, network: "lan" };
 }
 function saveQuality(q) { try { localStorage.setItem(QUALITY_KEY, JSON.stringify(q)); } catch { /* ignore */ } }
 
@@ -187,7 +204,11 @@ export default function ArcadePage() {
 
   function doCreateRoom(versionId, opts) {
     // Merge the creator's current stream quality (read fresh from storage so a mid-modal change wins).
-    return MovieAPI.createArcadeRoom(versionId, { ...opts, ...loadQuality() })
+    // The network profile is unbundled HERE into the wire params (audioFec + paceMs) — the server and
+    // worker stay profile-agnostic.
+    const q = loadQuality();
+    const net = NETWORK_PROFILES[q.network] || NETWORK_PROFILES.lan;
+    return MovieAPI.createArcadeRoom(versionId, { ...opts, videoBitrateKbps: q.videoBitrateKbps, ...net })
       .then(async (r) => {
         if (r.status === 503) { message.warning("The arcade is full — every machine is in use. Try again shortly."); return null; }
         if (!r.ok) { message.error("Couldn't start that game."); return null; }
@@ -232,12 +253,12 @@ export default function ArcadePage() {
               </div>
               <div className="arcade-pill">
                 <Select
-                  bordered={false} value={quality.audioFec} optionLabelProp="label"
-                  onChange={(v) => setQ({ audioFec: v })}
+                  bordered={false} value={quality.network} optionLabelProp="label"
+                  onChange={(v) => setQ({ network: v })}
                   popupClassName="arcade-pill-dropdown" dropdownMatchSelectWidth={false}
-                  aria-label="Audio error correction"
+                  aria-label="Network profile"
                 >
-                  {FEC_OPTIONS.map((o) => (
+                  {NETWORK_OPTIONS.map((o) => (
                     <Select.Option key={o.value} value={o.value} label={o.short}>{o.label}</Select.Option>
                   ))}
                 </Select>
