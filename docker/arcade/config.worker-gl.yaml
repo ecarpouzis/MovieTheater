@@ -11,6 +11,20 @@
 #   worker.exe --w-conf <dir containing this file renamed config.yaml>
 # ⚠VERIFY at first boot (docs/arcade-windows-worker.md acceptance): NVIDIA GL 4.x context in the log,
 # nvcodec present (else set encoder.video.codec: vp8), cores download from the windows/x86_64 buildbot.
+#
+# ─────────────────────────────────────────────────────────────────────────────────────────────────
+# THIS FILE IS AUTHORITATIVE. It is the config BOTH GL worker tasks run (they share one ConfDir).
+# It had drifted badly once: the repo copy lost the ps2/gc/2D core blocks that existed only on the
+# worker box, so a redeploy would have silently reverted live tuning. Reconciled 2026-07-08.
+#
+#   Deploy:  cp docker/arcade/config.worker-gl.yaml D:/ArcadeStorage/worker-gl/config.yaml
+#            then recycle the workers (Stop-Process worker — the runner loop respawns in ~4s).
+#            Workers read config ONLY at startup.
+#
+# Edit HERE, then deploy. Never hand-edit the copy on D: — that is how the drift started.
+# ⚠ Keep this plain UTF-8, no BOM. The D: copy had accumulated 27 mojibake sequences from a
+#   PowerShell write with the wrong encoding; repaired during the reconcile.
+# ─────────────────────────────────────────────────────────────────────────────────────────────────
 
 coordinator:
   origin:
@@ -39,6 +53,32 @@ emulator:
       repo:
         sync: true    # per-OS: pulls windows/x86_64 .dll cores from buildbot.libretro.com/nightly
       list:
+        # PS1 leaks onto this pool when zoning is off (ArcadeZoningEnabled=false): the coordinator hands a
+        # PSX room to any free worker. Without a pcsx entry the core falls back to the binary's EMBEDDED
+        # default, which supplies NO memory-card option → pcsx logs "non memcard config?" and boots with no
+        # card. Mirror the WSL pool's PS1 fix (docker/arcade/config.yaml) so a leaked PSX room works here too:
+        # memcard1=libretro exposes card 1 via RETRO_MEMORY_SAVE_RAM (.srm), dualshock pads for analog games.
+        pcsx:
+          lib: pcsx_rearmed_libretro
+          roms: ["m3u", "cue", "chd"]
+          folder: psx
+          # QUALITY (docs/arcade-quality-plan.md Phase 1). PS1 encoded at its native 256x240, which puts
+          # H.264's 4:2:0 chroma plane BELOW the native pixel grid: colour bleeds across every hard edge
+          # and no bitrate can recover it. A nearest 2x upscale before encode restores chroma to >= native.
+          # It costs almost no bitrate -- an integer nearest upscale adds no high-frequency detail, so the
+          # encoder sees flat 2x2 blocks. scaleMethod is pinned explicitly: a multi-tap method here would
+          # blur the exact pixels we are preserving. (Hi-res PS1 modes 640x480 -> 1280x960; same reasoning.)
+          scale: 2
+          scaleMethod: nearest-neighbour
+          options:
+            pcsx_rearmed_drc: enabled
+            # CloudRetro's EMBEDDED default (pkg/config/config.yaml) sets frameskip_type: auto, so PS1 was
+            # allowed to DROP frames on a 13700K that never needs to. "disabled" is pcsx_rearmed's own default.
+            pcsx_rearmed_frameskip_type: disabled
+            pcsx_rearmed_pad1type: dualshock
+            pcsx_rearmed_pad2type: dualshock
+            pcsx_rearmed_memcard1: libretro
+            pcsx_rearmed_memcard2: none
         # GL 3D cores only — this pool exists for these. isGlAllowed + coreAspectRatio are the Flip
         # contract (without coreAspectRatio the GAME_START av payload is null and the client renders
         # the bottom-left-origin GL frame upside down — the exact n64 lesson). Mirror of the WSL
@@ -94,6 +134,26 @@ emulator:
           coreAspectRatio: true
           usesLibCo: true   # GL thread-affinity — see the psp note above (flycast GPF'd without it)
           vfr: false        # correct game speed — see the psp vfr note (Sonic Adventure ran double-speed)
+          # ⚠ DC RESOLUTION IS NOT RAISEABLE FROM HERE. Measured 2026-07-08 (docs/arcade-quality-plan.md §10):
+          # CloudRetro pins the encode size to the core's BASE geometry — Frontend.FrameSize() returns
+          # nano.BaseWidth()/BaseHeight() (frontend.go:424) and ignores the per-frame size video_cb reports.
+          # flycast ALWAYS advertises base 640x480 (its internal resolution lands in max_width — hence the
+          # `System A/V >>> 640x480 (1706x1706)` log line). So `reicast_internal_resolution: 1280x960` was
+          # ACCEPTED by the core (it logged `retro_get_system_av_info: Res=960`) and still delivered 640x480.
+          # dolphin / ppsspp / mupen scale their BASE geometry, which is why gc (1280x1056), psp (960x544)
+          # and n64 (960x720) really do stream at a higher resolution.
+          #
+          # A higher internal res could still SUPERSAMPLE (render 2x, downsample to 640x480) — plausibly
+          # real AA — but we could not verify it: the probe reads the H.264-DECODED stream, and 5 Mbps
+          # quantization erases exactly the sub-pixel gradients AA creates (hardEdgeFrac 1.986% @2x vs
+          # 1.910% @1x on Crazy Taxi's static title screen — no smoothing, and the wrong direction). Left
+          # at core defaults rather than burn GPU for an unverifiable gain. To settle it, compare RAW frames
+          # at the worker, pre-encode — not the browser's decoded video.
+          #
+          # ⚠ If you DO add options here: THE PREFIX IS `reicast_`, NOT `flycast_`. The DLL exposes 140
+          # reicast_* keys and zero real flycast_* keys, and libretro SILENTLY IGNORES unknown option keys —
+          # a `flycast_*` line looks applied and does nothing. (docs/arcade-per-game-config.md named them
+          # all wrong until 2026-07-08.)
           # Same libco-teardown stack-fault class as psp above (context_destroy on the small coroutine
           # stack → 0xc0000028). flycast's GL destroy is deep too; skip it and let glCtx.Deinit() drop
           # the context. Also de-risks the known DC teardown segfault + Power Stone mid-session death.
@@ -122,6 +182,258 @@ emulator:
           vfr: false
           hacks: [skip_hw_context_destroy]   # flycast libco-teardown fault — see dc note
 
+        # PS2 via pcsx2_libretro (LRPS2). GL 3D core like psp/dc: same isGlAllowed + coreAspectRatio
+        # Flip contract, usesLibCo thread-affinity, and skip_hw_context_destroy teardown hack. Requires
+        # the PS2 BIOS (scph39001.bin) staged in the system dir (both system/ and system/pcsx2/bios/).
+        # Heaviest core we run: native internal res (upscale 1x, the core default) for the first boot to
+        # prove the path on the 4070 Ti, bump pcsx2_upscale_multiplier once it renders. .cso = the
+        # compressed-ISO master format (R:\Roms\Games\Sony Playstation 2), read directly by the core.
+        ps2:
+          lib: pcsx2_libretro
+          folder: ps2
+          roms: ["iso", "cso", "chd", "bin", "mdf", "zso"]
+          isGlAllowed: true
+          coreAspectRatio: true
+          usesLibCo: true
+          vfr: false
+          hacks: [skip_hw_context_destroy]
+          options:
+            # OpenGL renderer so PCSX2 draws into CloudRetro's libretro GL (WGL) hw-render context.
+            # Auto/Vulkan/D3D would render to a private device the GL capture never sees -> black frame.
+            pcsx2_renderer: "OpenGL"
+            # Boot straight into the game, skipping the PS2 BIOS boot animation (faster attract testing).
+            pcsx2_fastboot: "enabled"
+            # Name the BIOS explicitly. LRPS2 read "Bios Found: USA v01.60" from its root scan but the
+            # VM-load scan of system/pcsx2/bios/ reported "no valid BIOS" until the file is named here.
+            pcsx2_bios: "scph39001.bin"
+
+        # GameCube via dolphin_libretro. GL 3D core like psp/dc/ps2: same isGlAllowed + coreAspectRatio
+        # Flip contract, usesLibCo thread-affinity, vfr:false (correct game speed), skip_hw_context_destroy
+        # teardown hack. No BIOS required — Dolphin HLE-boots the GC IPL. Source ROMs are .gcz (Dolphin's
+        # compressed format, R:\Roms\Games\Nintendo GameCube), read directly by the core → RomCache COPIES
+        # the .gcz into roms/gc/ on first play (plain-file branch, like ps2 .cso), never a 7z extract.
+        # 4 controller ports (MaxPlayers 4 at ingest) — a strong fit for the shared-room model.
+        gc:
+          lib: dolphin_libretro
+          folder: gc
+          roms: ["gcz", "iso", "rvz", "ciso", "gcm", "m3u"]
+          isGlAllowed: true
+          coreAspectRatio: true
+          usesLibCo: true
+          vfr: false
+          # skip_serialize_size_probe (patch 0016): dolphin defers video/emu init to context_reset +
+          # first retro_run, so the load-time retro_serialize_size probe walks save-state into a NULL
+          # g_vertex_manager → 0xc0000005. The probe only feeds a log line; saves re-query at save time.
+          hacks: [skip_hw_context_destroy, skip_serialize_size_probe]
+          options:
+            # OpenGL backend so Dolphin draws into CloudRetro's GL (WGL) hw-render context. A Vulkan/D3D
+            # backend renders to a private device the GL capture never sees -> black frame (the ps2
+            # pcsx2_renderer:OpenGL lesson). Native internal res for the first boot to prove the path on
+            # the 4070 Ti; raise dolphin_efb_scale once it renders.
+            dolphin_renderer: "Hardware"
+            dolphin_cpu_core: "JIT64"
+            # OPTION VALUES are the core-options-v2 VALUE strings, NOT the display labels (verified against
+            # DolphinLibretro/Common/Options.cpp @287ab2dba6): efb_scale = "1".."6" (labels "1x Native
+            # (640x528)" etc are display-only). An unmatched value leaves the port's typed cache at T{}=0
+            # → retro_get_system_av_info returns 0x0 geometry → null video objects → 0xc0000005 at boot.
+            # THAT was the gc boot crash. shader_compilation_mode: "0"=Synchronous "1"=Sync(Uber)
+            # "2"=Async(Uber) "3"=Async(Skip Rendering).
+            # efb_scale "2" = 1280x1056, verified 60fps/0-drop. NOTE: dolphin TEARDOWN can wedge the worker
+            # (partial deadlock — /echo alive, coordinator WS dead) at ANY scale (reproduced at "1" too);
+            # the GL Worker Watchdog task auto-recycles a wedged worker within ~60s. Real fix = debug the
+            # teardown deadlock (dump: scratchpad worker-hung-27168.dmp).
+            dolphin_efb_scale: "2"
+            # SINGLE-THREADED + synchronous shaders. Dolphin's async shader compile / separate GPU thread
+            # each need a REAL shared GL context on a worker thread; nanoarch patch 0016 acknowledges env 44
+            # but doesn't hand out an actual wglShareLists context, so those threads deref a null GL object
+            # (0xc0000005 read @0x180) at GameCube-mode video init. Forcing everything onto the one retro_run
+            # graphics thread removes the need for a second context. (Perf: shader stutter on first sight of
+            # each effect; acceptable until real shared-context creation lands.)
+            dolphin_main_cpu_thread: "disabled"
+            dolphin_shader_compilation_mode: "0"   # 0 = Synchronous (see values note above)
+            dolphin_wait_for_shaders: "enabled"
+
+        # --- ported from docker/arcade/config.yaml (Windows-only migration): the tuned
+        # non-GL cores so this pool renders 2D/N64 correctly (scale, N64 framebuffer opts). ---
+        n64:
+          lib: mupen64plus_next_libretro
+          roms: ["n64", "v64", "z64"]
+          isGlAllowed: true
+          usesLibCo: true
+          # vfr OFF: variable frame timing produced juddery presentation in the browser — a steady
+          # ~16% of frame intervals landed at ~50ms (measured via rVFC pacing histogram) and the
+          # compositor dropped ~6%. Fixed 60Hz cadence paces the encoder/RTP timestamps evenly.
+          vfr: false
+          coreAspectRatio: true
+          options:
+            # QUALITY (docs/arcade-quality-plan.md Phase 3). 960x720 = 3x native (was 640x480 = 2x).
+            # Legal values are a fixed list (verified in mupen64plus_next_libretro.dll):
+            # 320x240, 640x480, 960x720, 1280x960, 1440x1080, ... — not an arbitrary WxH.
+            mupen64plus-43screensize: "960x720"
+            # MSAA left OFF (core default). "4" was tried and A/B-measured on Mario Kart 64 at 960x720:
+            # hardEdgeFrac 1.033% (MSAA=4) vs 1.028% (MSAA=0) — NO measurable anti-aliasing. Two candidate
+            # reasons, both unresolved: the probe reads the H.264-decoded stream (quantization at 5 Mbps
+            # erases sub-pixel edge gradients), and CloudRetro's hw_render context may request no
+            # multisample buffers. Not shipping a GPU cost with no demonstrated benefit. Values: 0,2,4,8,16.
+            # (It did NOT break framebuffer effects: Bomberman 64's flat-blue story cinematic renders
+            # identically with MSAA 0 and 4 — that is the pre-existing gliden64 limit, not a regression.)
+            mupen64plus-MultiSampling: "0"
+            # REQUIRED once you upscale: gliden64 draws N64 2D "texrects" (HUDs, sprites, text) at the
+            # upscaled resolution by default, which seams and blurs them. Optimized renders them at native
+            # res. Values: Disabled|Unoptimized|Optimized.
+            mupen64plus-EnableNativeResTexrects: "Optimized"
+            # 3-point is the N64's real texture filter; "standard" bilinear is a PC approximation that
+            # looks subtly wrong on N64 textures. Values: 3point|standard.
+            mupen64plus-BilinearMode: "3point"
+            # Framebuffer readback — the core defaults ship these Off, which renders framebuffer
+            # effects BLACK (Bomberman 64's whole intro movie) or wrong (DKR uses FB/depth tricks).
+            # Async color copy + software depth copy are the standard gliden64 compat settings;
+            # cost is trivial on a real GPU.
+            mupen64plus-EnableCopyColorToRDRAM: "Async"
+            mupen64plus-EnableCopyDepthToRDRAM: "Software"
+            # Legacy (fast, inaccurate) blending ships ON in the core defaults — with it, Bomberman
+            # 64's intro cinematic renders as flat color planes with no geometry on the D3D12 path.
+            mupen64plus-EnableLegacyBlending: "False"
+            # Cutscenes/cinematics often composite via auxiliary color buffers. With this on,
+            # Bomberman 64's attract/intro scenes render (mine-cart, snow demo — were flat planes).
+            # KNOWN LIMIT: its STORY cinematics (Adventure opening movie) still render as flat
+            # clear-color planes — every gliden64 FB option was tried (CopyColor To/From, CopyDepth,
+            # CopyAux, LegacyBlending); a real fix needs LLE RSP/RDP or a renderer fix on D3D12.
+            # In-engine gameplay/menus/training all render correctly; Battle mode has no cinematics.
+            mupen64plus-EnableCopyAuxToRDRAM: "True"
+
+        # 2D cores: stream at 3x with nearest-neighbour (the pipeline's default scaler) instead of
+        # native 256x224 — the browser's bilinear stretch of a tiny stream is what read as "fuzzy
+        # SNES", and no encoder preset can fix that. 768x672 crisp pixels cost NVENC nothing.
+        # (These merge INTO the default core entries per-key — lib/roms/etc. survive.)
+        snes:
+          scale: 3
+        nes:
+          scale: 3
+        gba:
+          scale: 3
+        # Game Boy / Game Boy Color via mgba (same lib as GBA). The stock config only exposes gba+gbc
+        # roms under the `gba` folder; the JIT catalog files per system (gb/, gbc/), so give each its own
+        # core+folder. mgba plays all three. scale:3 for the same crispness rationale as the other 2D cores.
+        gb:
+          lib: mgba_libretro
+          folder: gb
+          roms: ["gb"]
+          scale: 3
+        gbc:
+          lib: mgba_libretro
+          folder: gbc
+          roms: ["gbc"]
+          scale: 3
+
+        gen:
+          # lib name verified live 2026-07-03 (Sonic 2 streams).
+          lib: genesis_plus_gx_libretro
+          roms: ["md", "gen", "smd", "bin"]
+          folder: genesis
+          scale: 3   # 320x224 native -> 960x672 nearest (was 2; 3x matches snes/nes, costs NVENC nothing)
+
+        # ARCADE (fbneo). The site's `arcade` system ingests into roms/mame and launches through the
+        # core key `mame` (ArcadeIngestCommand.cs:242) -- the STOCK CloudRetro entry, which we had never
+        # overridden. Two consequences, both fixed here (docs/arcade-quality-plan.md Phase 1):
+        #   1. No `scale` -> 6,214 games encoded at raw 304x224, chroma below native (see pcsx note).
+        #   2. Stock pins `scaleMethod: bilinear2` (pkg/config/config.yaml:295). Adding `scale` WITHOUT
+        #      overriding that would upscale with a blurry multi-tap filter -- worse than before, and it
+        #      would look like the change worked. nearest-neighbour is mandatory here, not cosmetic.
+        # lib/folder/roms restated so the koanf deep-merge can't surprise us.
+        mame:
+          lib: fbneo_libretro
+          folder: mame
+          roms: ["zip"]
+          scale: 3              # 304x224 -> 912x672
+          scaleMethod: nearest-neighbour
+
+        # ─── GPU / GL 3D cores (same D3D12 + NVENC path proven by n64/psx) ────────────────────
+        # GL cores MUST set isGlAllowed (HW render) AND coreAspectRatio: without the latter the
+        # GAME_START `av` payload is null and the client never learns to flip the bottom-left-origin
+        # GL frame → upside down (exact n64 lesson). Cores auto-download via repo.sync (no rebuild).
+        #
+        # PSP: no BIOS required. Ad-hoc multiplayer is unsupported in libretro → 1-player rooms
+        # (set MaxPlayers 1 at ingest, like our n64 solo rooms).
+        sms:
+          lib: genesis_plus_gx_libretro
+          folder: sms
+          roms: ["sms"]
+          scale: 3
+        gg:
+          lib: genesis_plus_gx_libretro
+          folder: gg
+          roms: ["gg"]
+          scale: 4   # 160x144 native — needs more upscale than the console cores
+        sg1000:
+          lib: genesis_plus_gx_libretro
+          folder: sg1000
+          roms: ["sg"]
+          scale: 3
+        segacd:
+          lib: genesis_plus_gx_libretro
+          folder: segacd
+          roms: ["cue", "chd", "iso"]
+          scale: 3   # was 2 -- 320x224 native, matches gen
+
+        # ─── Other 2D cores (each pins its folder so extension collisions can't cross-load) ──────
+        sega32x:
+          lib: picodrive_libretro
+          folder: sega32x
+          roms: ["32x", "bin"]
+          scale: 3   # was 2 -- 320x224 native, matches gen
+        pce:
+          # mednafen_pce (full) covers TurboGrafx-16 / PC Engine + SuperGrafx + PCE-CD (syscard3.pce).
+          lib: mednafen_pce_libretro
+          folder: pce
+          roms: ["pce", "sgx", "cue", "chd"]
+          scale: 3
+        ngpc:
+          lib: mednafen_ngp_libretro
+          folder: ngpc
+          roms: ["ngp", "ngc"]
+          scale: 4
+        wsc:
+          lib: mednafen_wswan_libretro
+          folder: wsc
+          roms: ["ws", "wsc", "pc2"]
+          scale: 4
+        a2600:
+          lib: stella_libretro
+          folder: a2600
+          roms: ["a26", "bin"]
+          scale: 3
+        a7800:
+          lib: prosystem_libretro
+          folder: a7800
+          roms: ["a78"]
+          scale: 3
+        lynx:
+          # mednafen_lynx needs lynxboot.img in the BIOS mount.
+          lib: mednafen_lynx_libretro
+          folder: lynx
+          roms: ["lnx"]
+          scale: 4
+        vb:
+          lib: mednafen_vb_libretro
+          folder: vb
+          roms: ["vb", "vboy"]
+          scale: 3
+        fds:
+          # Famicom Disk System via nestopia; needs disksys.rom in the BIOS mount.
+          lib: nestopia_libretro
+          folder: fds
+          roms: ["fds"]
+          scale: 3
+        neogeo:
+          # Neo Geo AES/MVS romsets via fbneo (the arcade core); needs neogeo.zip in the BIOS mount.
+          # Finicky (parent romset grind) — stage last.
+          lib: fbneo_libretro
+          folder: neogeo
+          roms: ["zip"]
+          scale: 3   # was 2 -- 304x224 native, matches the mame entry above
+
+
 encoder:
   # Same NVENC H.264 + Opus-FEC path as the WSL stack (docker/arcade/config.yaml). nvcodec here comes
   # from MSYS2 gst-plugins-bad (dlopens nvEncodeAPI64.dll). INSTANT FALLBACK if nvcodec is absent on
@@ -133,7 +445,7 @@ encoder:
   list:
     h264:
       encoder: nvh264enc
-      params: "preset=p4 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=120 repeat-sequence-header=true zerolatency=true"
+      params: "preset=p4 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=100000 repeat-sequence-header=true zerolatency=true"
       caps: video/x-h264,stream-format=byte-stream,alignment=au
     # In-band FEC ON (roadmap WS-A.2) — same override as the WSL stack; generic (not restricted-lowdelay)
     # + >=10ms frames are what make LBRR real. The gl-zone room binds a native Windows socket with no

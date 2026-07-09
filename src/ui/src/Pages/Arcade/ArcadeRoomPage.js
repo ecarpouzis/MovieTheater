@@ -48,6 +48,9 @@ export default function ArcadeRoomPage() {
   const [discCount, setDiscCount] = useState(location.state?.descriptor?.discCount ?? 0);
   const [disc, setDisc] = useState(0);
   const [isFs, setIsFs] = useState(false);
+  // The core's OWN display aspect, reported via the GAME_START `av` payload (and any later t=150).
+  // null until it arrives / when the core doesn't specify one — then the per-system table below wins.
+  const [coreAspect, setCoreAspect] = useState(null);
 
   // Resolve the join descriptor: creator has it in router state; an invitee Joins for one. If the room
   // is still starting (creator hasn't Bound yet), retry a few times before giving up.
@@ -95,6 +98,7 @@ export default function ArcadeRoomPage() {
           if (s === "playing") tryPlayVideo();
         },
         onSeat: (idx) => { if (!cancelled) setYourSlot(idx); },
+        onAspect: (a) => { if (!cancelled) setCoreAspect(a); },
         onRoomId: (roomId) => {
           // Creator: persist the CloudRetro room id so invitees can join the same worker (§8 step 3).
           if (descriptor.isCreator) MovieAPI.bindArcadeRoom(code, roomId).catch(() => {});
@@ -320,7 +324,25 @@ export default function ArcadeRoomPage() {
           display aspect, and object-fit:fill lives INSIDE it. In fullscreen the inner box is sized to the
           largest aspect-correct rectangle that fits the screen via min(100% width, height-driven width). */}
       {(() => {
-        const ar = ({ gb: 10 / 9, gbc: 10 / 9, gba: 3 / 2 })[system] || 4 / 3;
+        // The core's own aspect WINS when it reports one (av.a). Every libretro core fills
+        // retro_get_system_av_info's geometry.aspect_ratio; <= 0 means "unspecified", and only then
+        // does this table apply. Getting this from the core is what makes per-GAME aspect correct:
+        // ps2/gc/dc titles ship both 4:3 and 16:9, and no per-system constant can be right for both.
+        //
+        // The old code hardcoded 4/3 for everything except gb/gbc/gba, and since the <video> uses
+        // objectFit:"fill" that DISTORTS rather than letterboxes — PSP's 16:9 was squeezed into 4:3.
+        // The fallbacks below are the true native panel ratios, for cores that report nothing.
+        const FALLBACK_AR = {
+          gb: 10 / 9, gbc: 10 / 9,   // 160x144
+          gba: 3 / 2,                // 240x160
+          gg: 10 / 9,                // 160x144
+          psp: 16 / 9,               // 480x272
+          wsc: 224 / 144,            // ~14:9
+          ngpc: 160 / 152,           // ~1.05 — was rendered at 1.33
+          lynx: 160 / 102,
+          vb: 384 / 224,
+        };
+        const ar = coreAspect || FALLBACK_AR[system] || 4 / 3;
         const outerStyle = isFs
           ? { position: "relative", background: "#000", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }
           : { position: "relative", background: "#000", borderRadius: 8, overflow: "hidden" };

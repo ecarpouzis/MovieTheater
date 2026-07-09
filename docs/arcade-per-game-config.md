@@ -67,7 +67,7 @@ the next room with no restart, and a malformed regen keeps the last-good map.
 INSERT INTO ArcadeGameProfile (System, TitleKey, ForcedFps, Notes)
 VALUES ('dc', 'sonic adventure', 30, '30fps-locked engine; physics tied to frame limit');
 -- core options instead of / alongside fps:
---   CoreOptionsJson = '{"flycast_widescreen_hacks":"disabled"}'
+--   CoreOptionsJson = '{"reicast_widescreen_hack":"disabled"}'   -- NB: reicast_, not flycast_ (see below)
 ```
 ```bash
 # 2. Regenerate the worker manifest (re-run after ANY profile change; like arcade-romcache-export).
@@ -134,12 +134,25 @@ sufficient. Entries carry a `confidence`:
 
 The universal escape hatch is `CoreOptionsJson` — any libretro core option. The fix-relevant ones:
 
-**flycast (dc/naomi/atomiswave)** — `flycast_widescreen_hack` / `flycast_widescreen_cheats` (16:9),
-`flycast_internal_resolution`, `flycast_region` (Default|Japan|USA|Europe), `flycast_brodcast`
+**flycast (dc/naomi/atomiswave)** — ⚠ **the prefix is `reicast_`, NOT `flycast_`.** The core exposes
+140 `reicast_*` keys and **zero** real `flycast_*` keys (verified 2026-07-08 by parsing the option
+structs out of `flycast_libretro.dll`). libretro **silently ignores unknown option keys**, so a
+`flycast_…` override is a no-op with no error — it looks applied and does nothing. This document
+previously named them all wrong; corrected below.
+
+`reicast_widescreen_hack` / `reicast_widescreen_cheats` (16:9), `reicast_internal_resolution`
+(`640x480`…`1280x960`…, default `640x480`), `reicast_anisotropic_filtering` (`off|2|4|8|16`,
+default `4`), `reicast_region` (Default|Japan|USA|Europe), `reicast_broadcast`
 (Default|PAL-M|PAL-N|NTSC|PAL) — **NTSC avoids the auto→50Hz wrong-speed class for US ROMs**,
-`flycast_cable_type`, `flycast_alpha_sorting` (Per-Pixel fixes transparency glitches),
-`flycast_delay_frame_swapping` (fixes flashing), `flycast_force_windows_ce_mode` (Full MMU for Windows-CE
-titles, e.g. Resident Evil 2, Sega Rally 2), `flycast_enable_dsp` (audio DSP).
+`reicast_cable_type`, `reicast_alpha_sorting` (`per-pixel (accurate)` fixes transparency glitches),
+`reicast_delay_frame_swapping` (fixes flashing), `reicast_force_wince` (Full MMU for Windows-CE
+titles, e.g. Resident Evil 2, Sega Rally 2), `reicast_enable_dsp` (audio DSP).
+
+Values are the **value tokens**, not the display labels — same class of bug as `dolphin_efb_scale`
+(which takes `"1"`…`"6"`, not `"2x Native (1280x1056)"`). PPSSPP's MSAA key is genuinely misspelled
+in the core: `ppsspp_mulitsample_level`. `pcsx2_upscale_multiplier` takes the whole string
+`"2x Native (~720p)"`. When in doubt, extract from the DLL rather than trusting any doc, including
+this one.
 
 **ppsspp (psp)** — `ppsspp_internal_resolution`, `ppsspp_cpu_core` (jit|IR jit|interpreter),
 `ppsspp_locked_cpu_speed` (222/266/333MHz — stability for slowdown-prone games), `ppsspp_frameskip` /
@@ -147,7 +160,7 @@ titles, e.g. Resident Evil 2, Sega Rally 2), `flycast_enable_dsp` (audio DSP).
 (fixes upscale glitches). (`ppsspp_fast_memory` stays **disabled** — see the AV-crash note in config.)
 
 Candidate global default (not yet applied — needs a no-regression check on a known-good 60fps DC game):
-`flycast_brodcast: NTSC` on the dc/naomi/atomiswave cores, since the whole catalog is US/NTSC.
+`reicast_broadcast: NTSC` on the dc/naomi/atomiswave cores, since the whole catalog is US/NTSC.
 
 Sources: [flycast core options](https://docs.libretro.com/library/flycast/),
 [ppsspp core options](https://docs.libretro.com/library/ppsspp/),

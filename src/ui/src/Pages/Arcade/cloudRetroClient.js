@@ -175,11 +175,24 @@ function packet(t, p, id) {
 /**
  * Open a CloudRetro session for a room.
  * @param descriptor { wsUrl, gameKey, playerSlot, iceConfig, isCreator, roomCode, system }
- * @param opts { videoEl, onRoomId(cloudRetroRoomId), onStatus(str), onError(err), onSeat(index) }
+ * @param opts { videoEl, onRoomId(cloudRetroRoomId), onStatus(str), onError(err), onSeat(index),
+ *               onAspect(ratio) — the core's own display aspect (see reportAspect) }
  * @returns { close, save, load, reset }
  */
+/**
+ * The display aspect ratio a room should render at, from CloudRetro's `av` payload, or null when the
+ * core doesn't specify one (libretro: geometry.aspect_ratio <= 0 means "derive from base w/h").
+ * Exported for unit tests; see the reportAspect() comment for why `a` is used verbatim.
+ */
+export function displayAspect(av) {
+  if (!av) return null;
+  const a = Number(av.a);
+  if (!isFinite(a) || a <= 0.2 || a > 4) return null;
+  return a;
+}
+
 export function createCloudRetroSession(descriptor, opts) {
-  const { videoEl, onRoomId, onStatus, onError, onSeat } = opts || {};
+  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect } = opts || {};
   const status = (s) => onStatus && onStatus(s);
 
   let ws = null;
@@ -469,9 +482,30 @@ export function createCloudRetroSession(descriptor, opts) {
   // GL cores (e.g. N64/gliden64) render bottom-left-origin, so CloudRetro flags the frame flipped
   // (and may report a rotation). It sends the geometry in the GAME_START response's `av` and in any
   // later t=150 AppVideoChange. Mirror the stock client: flip → scaleY(-1), rot → rotate(-Ndeg).
+  //
+  // `av.a` is the core's OWN display aspect ratio (retro_get_system_av_info geometry.aspect_ratio,
+  // surfaced by Nanoarch.AspectRatio() for every core, not just the coreAspectRatio ones). We used to
+  // throw it away and hardcode 4:3 in ArcadeRoomPage, which squeezed PSP's 16:9 into 4:3 and distorted
+  // every handheld (gg/wsc/lynx/ngpc/vb) plus widescreen PS2/GC/DC titles. Per the libretro spec a
+  // value <= 0 means "unspecified — derive it from base_width/base_height", so we only report a
+  // plausible positive ratio upward and let the caller fall back to its per-system table.
+  // `a` is used VERBATIM — it is already the intended DISPLAY aspect, not the framebuffer's.
+  // Do NOT invert it for rotated boards: fbneo's vertical cabs report base 256x224 with a = 0.75
+  // (measured on 1942, 2026-07-08), i.e. the post-rotation ratio, and CloudRetro has already
+  // transposed the encoded frame (it arrives 672x768). Inverting would flip vertical shooters back
+  // to landscape. The stock client does the same thing — see cloud-game web/js/stream.js `resize()`,
+  // which assigns style.aspectRatio = a and applies rotate(-rot) independently.
+  function reportAspect() {
+    if (!onAspect || !lastAv) return;
+    const a = displayAspect(lastAv);
+    if (a != null) onAspect(a);
+  }
+
   function applyVideoTransform(av) {
     if (av) lastAv = av;
-    if (!videoEl || !lastAv) return;
+    if (!lastAv) return;
+    reportAspect();              // before the videoEl guard: `av` can land before the track attaches
+    if (!videoEl) return;
     const rot = lastAv.rot ? `rotate(${-lastAv.rot}deg)` : "";
     const flip = lastAv.flip ? "scaleY(-1)" : "";
     videoEl.style.transform = [rot, flip].filter(Boolean).join(" ");

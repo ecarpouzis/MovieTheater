@@ -1,23 +1,11 @@
 import { useState, useEffect } from "react";
-import { Input, Button, Select } from "antd";
+import { Input, Select } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
+import { systemLabel } from "../Pages/Arcade/arcadeSystems";
 import LoginForm from "./LoginForm";
 import UserPanelHeader from "./UserPanelHeader";
-
-const { Search } = Input;
-
-// Friendly system labels (mirror ArcadePage). The facet endpoint returns the raw codes.
-const SYSTEM_LABEL = {
-  nes: "NES", snes: "SNES", genesis: "Genesis", gb: "Game Boy", gbc: "Game Boy Color",
-  gba: "Game Boy Advance", n64: "Nintendo 64", gc: "GameCube", ps1: "PlayStation", arcade: "Arcade",
-  psp: "PSP", dc: "Dreamcast", naomi: "Naomi", atomiswave: "Atomiswave",
-  sms: "Master System", gg: "Game Gear", sg1000: "SG-1000", segacd: "Sega CD",
-  sega32x: "32X", pce: "TurboGrafx-16", ngpc: "Neo Geo Pocket", wsc: "WonderSwan Color",
-  a2600: "Atari 2600", a7800: "Atari 7800", lynx: "Atari Lynx", vb: "Virtual Boy",
-  fds: "Famicom Disk System", neogeo: "Neo Geo",
-};
-const systemLabel = (s) => SYSTEM_LABEL[s] || (s ? s.toUpperCase() : "");
 
 const inputLabelStyle = {
   display: "block", fontSize: "10px", fontWeight: 600, color: "var(--sidebar-text-muted)",
@@ -110,13 +98,18 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
       )}
 
       <div id="SearchToolContainer" style={{ padding: "8px 16px 24px", color: "white" }}>
-        <span style={{ ...inputLabelStyle, marginTop: 0 }}>Title</span>
-        <Search
-          placeholder="Search title"
+        <span className="arcade-filter-heading">FILTER LIBRARY</span>
+        {/* A magnifier INSIDE the field, per the design — antd's <Input.Search> always renders a
+            separate addon button, which this rail doesn't want. Enter searches; the clear "×"
+            (or emptying the box and pressing Enter) drops the filter. */}
+        <Input
+          placeholder="Search title…"
+          prefix={<SearchOutlined />}
+          allowClear
           defaultValue={p.get("q") || ""}
           style={{ width: "100%" }}
-          onSearch={(v) => updateParam("q", v && v.trim() ? v.trim() : "")}
-          enterButton
+          onPressEnter={(e) => updateParam("q", e.target.value.trim())}
+          onChange={(e) => { if (!e.target.value) updateParam("q", ""); }}
         />
 
         <span style={inputLabelStyle}>Sort by</span>
@@ -145,13 +138,12 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
           options={modOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
 
         {(activeSystem || activeRegion !== "english" || activePlayers || activeVariant !== "release" || activeGenre || activeSort || p.get("q")) && (
-          <Button
-            block
-            style={{ marginTop: 18, background: "rgba(199,64,224,0.12)", borderColor: "rgba(199,64,224,0.4)", color: "#e0b6ff" }}
-            onClick={() => history.push({ pathname: "/arcade" })}
-          >
+          <button type="button" className="arcade-clear-filters" onClick={() => history.push({ pathname: "/arcade" })}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
             Clear filters
-          </Button>
+          </button>
         )}
       </div>
     </>

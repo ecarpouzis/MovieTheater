@@ -213,7 +213,9 @@ function NavBar({
   const isBoardGames = location.pathname.startsWith("/boardgames");
   const isArcade = location.pathname.startsWith("/arcade");
   const isMovies = !isArcade && !isBoardGames;
-  const sectionIcon = isArcade ? arcadeIcon : isBoardGames ? boardGamesIcon : movieTheaterIcon;
+  // Arcade's rail carries a bare word-mark: its joystick glyph was dropped in the browse redesign.
+  // The switcher menu still shows the icon, so the section stays recognisable there.
+  const sectionIcon = isArcade ? null : isBoardGames ? boardGamesIcon : movieTheaterIcon;
   const sectionTitle = isArcade ? "Arcade" : isBoardGames ? "Board Games" : "Movie Theater";
   const navThemeClass = isArcade ? " navbar-arcade-theme" : isBoardGames ? " navbar-boardgames-theme" : "";
 
@@ -336,7 +338,7 @@ function NavBar({
           </button>
           <div className="navbar-dropdown-wrapper">
             <button className="navbar-home-btn" onClick={() => setDropdownOpen((o) => !o)}>
-              <img className="navbar-home-icon" src={sectionIcon} alt="" />
+              {sectionIcon && <img className="navbar-home-icon" src={sectionIcon} alt="" />}
               <span className="navbar-title">{sectionTitle} ▼</span>
             </button>
             {dropdownOpen && (
@@ -372,13 +374,15 @@ function NavBar({
 
   return (
     <>
-      <Layout.Sider className={`navbar-sider${navThemeClass}`} trigger={null} collapsible collapsed={collapsed} onCollapse={onCollapse}>
+      {/* Arcade's rail is 248px wide (design handoff); every other feature keeps antd's 200px default.
+          NavBar.css mirrors this in --sider-width so the switcher dropdown spans the right width. */}
+      <Layout.Sider className={`navbar-sider${navThemeClass}`} width={isArcade ? 248 : 200} trigger={null} collapsible collapsed={collapsed} onCollapse={onCollapse}>
         <div className="navbar-sider-inner">
           <div className={`navbar-sider-header${navThemeClass}`}>
             <div className="navbar-dropdown-wrapper">
               <button className="navbar-home-btn" onClick={() => setDropdownOpen((o) => !o)}>
-                <img className="navbar-home-icon" src={sectionIcon} alt="" />
-                <span className="navbar-sider-title">{sectionTitle} ▼</span>
+                {sectionIcon && <img className="navbar-home-icon" src={sectionIcon} alt="" />}
+                <span className="navbar-sider-title">{sectionTitle} <span className="navbar-caret">▼</span></span>
               </button>
               {dropdownOpen && (
                 <div className="navbar-section-dropdown navbar-section-dropdown-desktop">{sectionMenuItems}</div>

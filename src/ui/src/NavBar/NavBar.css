@@ -311,11 +311,11 @@
   /* Span the full sidebar width regardless of the header's other contents (the theme
      toggle now shares the header, so the wrapper is narrower than the sider). The
      wrapper's left edge sits at the header's 16px left padding, so left:-16px lands on
-     the sider's left edge and a fixed 200px width (the antd Sider default) reaches the
+     the sider's left edge and --sider-width (200px, or 248px on Arcade) reaches the
      right edge — independent of the wrapper's own width. */
   left: -16px;
   right: auto;
-  width: 200px;
+  width: var(--sider-width);
   min-width: 0;
   border-radius: 0;
 }
@@ -603,6 +603,191 @@
 .arcade-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) .ant-select-item-option-content {
   color: #fff !important;
 }
+/* ============================================================================
+   Arcade rail (design_handoff_arcade_browse/README.md → "Sidebar").
+   248px, dark purple gradient in BOTH themes, 20px/18px padding, 16px gap:
+   word-mark · account chip · hairline · FILTER LIBRARY · (pinned) theme + log out.
+   Colours come from the arcade tokens in theme.css.
+   ============================================================================ */
+
+/* Word-mark: no glyph (NavBar.js drops it), Space Grotesk, ▾ pushed to the right. */
+.navbar-arcade-theme .navbar-sider-title,
+.navbar-arcade-theme .navbar-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+.navbar-sider-header.navbar-arcade-theme {
+  /* The mock's only hairline sits under the account chip, not under the brand. */
+  border-bottom: none;
+  padding: 20px 18px 0;
+  margin-bottom: 0;
+}
+.navbar-sider-header.navbar-arcade-theme .navbar-home-btn {
+  padding: 0;
+  opacity: 1;
+}
+.navbar-sider-header.navbar-arcade-theme .navbar-sider-title {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  text-align: left;
+}
+.navbar-arcade-theme .navbar-caret {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.45;
+}
+
+/* Account chip: avatar + name + gear, on a translucent well. */
+.navbar-arcade-theme .user-panel {
+  padding: 16px 18px 0;
+}
+.navbar-arcade-theme .user-panel-header {
+  gap: 9px;
+  margin-bottom: 16px;
+  padding: 9px 10px;
+  background: var(--sidebar-pill-bg);
+  border: 1px solid var(--sidebar-border);
+  border-radius: 10px;
+}
+.navbar-arcade-theme .user-avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 11px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+}
+.navbar-arcade-theme .user-avatar .anticon {
+  font-size: 13px;
+}
+.navbar-arcade-theme .user-username {
+  font-size: 13px;
+}
+
+/* Filter panel: section label, field captions, wells, and the Clear-filters action. */
+.navbar-arcade-theme .arcade-filter-heading {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--sidebar-heading);
+  padding: 0 0 11px;
+  border-top: 1px solid var(--sidebar-border);
+  margin-top: 0;
+  padding-top: 16px;
+}
+.navbar-arcade-theme #SearchToolContainer {
+  padding: 0 18px 24px;
+}
+.navbar-arcade-theme .ant-select .ant-select-selector,
+.navbar-arcade-theme .ant-input,
+.navbar-arcade-theme .ant-input-affix-wrapper {
+  border-radius: 8px !important;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.navbar-arcade-theme .ant-select-single .ant-select-selection-item,
+.navbar-arcade-theme .ant-select-selection-item {
+  color: var(--sidebar-text-strong);
+  font-size: 12.5px;
+}
+.navbar-arcade-theme .ant-input {
+  font-size: 12.5px;
+}
+.navbar-arcade-theme .ant-input-group .ant-input {
+  border-radius: 8px 0 0 8px !important;
+}
+.navbar-arcade-theme .ant-input-group-addon .ant-input-search-button {
+  border-top-right-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+}
+
+/* "× Clear filters" — a text action, not a filled button. */
+.navbar-arcade-theme .arcade-clear-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--sidebar-link);
+  cursor: pointer;
+}
+.navbar-arcade-theme .arcade-clear-filters:hover {
+  filter: brightness(1.15);
+}
+
+/* Footer: pill switch + ghost Log out. */
+.navbar-arcade-theme .navbar-footer {
+  border-top: none;
+  padding: 0 18px;
+}
+.navbar-arcade-theme .navbar-theme-row {
+  background: var(--sidebar-pill-bg);
+  border: 1px solid var(--sidebar-border);
+  border-radius: 9px;
+  padding: 8px 11px;
+  margin-bottom: 12px;
+}
+.navbar-arcade-theme .navbar-theme-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #b5a3d6;
+}
+/* The shared ☀/☾ button becomes a track+knob switch here: glyph hidden, knob is ::after. */
+.navbar-arcade-theme .navbar-theme-toggle {
+  position: relative;
+  width: 34px;
+  height: 19px;
+  border-radius: 99px;
+  border: none;
+  font-size: 0;
+  background: rgba(255, 255, 255, 0.16);
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+.navbar-arcade-theme .navbar-theme-toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.18s ease;
+}
+:root[data-theme="dark"] .navbar-arcade-theme .navbar-theme-toggle {
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(164, 78, 224, 0.5);
+}
+:root[data-theme="dark"] .navbar-arcade-theme .navbar-theme-toggle::after {
+  transform: translateX(15px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .navbar-arcade-theme .navbar-theme-toggle,
+  .navbar-arcade-theme .navbar-theme-toggle::after {
+    transition: none;
+  }
+}
+
+.navbar-arcade-theme .logout-button {
+  border: 1px solid rgba(164, 78, 224, 0.3);
+  border-radius: 8px;
+  color: var(--sidebar-link);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 8px 0;
+}
+
 /* The system list scrolls; give it an always-visible thumb on the dark ground. */
 .arcade-login-dropdown .rc-virtual-list-scrollbar,
 .boardgame-login-dropdown .rc-virtual-list-scrollbar {

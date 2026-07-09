@@ -1,106 +1,665 @@
-/* Arcade lobby card tweaks. Plain (non-antd) CSS — a co-located import is fine; only antd
-   component style chunks need the index.js registration dance. */
+/* ============================================================================
+   Arcade browse / library page.
+   Recreates design_handoff_arcade_browse (turn 4: #4a dark, #4b light) on this
+   app's primitives. Every colour, radius and shadow reads a token from
+   theme.css — :root[data-feature="arcade"] for light, plus the
+   [data-theme="dark"][data-feature="arcade"] block for dark. Nothing here
+   hard-codes a hex except the two purely-decorative overlays (glow + scanline),
+   which exist only in dark.
 
-/* Titles were single-line-ellipsis (antd default) so long ROM names were unreadable. Let them
-   wrap to two lines, and reserve the height so the Start button still lines up across a row. */
-.arcade-page .ant-card-meta-title {
-  white-space: normal;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  font-size: 14px;
-  line-height: 1.3;
-  min-height: 2.6em;
-  margin-bottom: 4px !important;
-}
+   The 248px rail on the left of the mock is the app's own navbar sider — see
+   NavBar.css. This file owns the fluid main column.
+   ============================================================================ */
 
-/* Box-art cover: show the WHOLE box at its own aspect ratio — never cropped, never stretched, no
-   letterbox. The card width is fixed, so the image fills the width and the card's height simply
-   follows the art (portrait N64 cases end up taller than a wide Genesis box). No background frame. */
-.arcade-cover {
-  width: 100%;
-  overflow: hidden;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  line-height: 0;
-}
-.arcade-cover__img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-/* Only the no-art fallback needs a filled box so the card isn't collapsed. */
-.arcade-cover__placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 260px;
-  padding: 10px;
-  text-align: center;
-  background: #1f1730;
-  color: #9a86bd;
-  font-size: 13px;
-  line-height: 1.3;
-}
-
-/* ── Theme text (antd Typography/Empty hardcode dark ink) ────────────────── */
-.arcade-page .ant-typography,
-.arcade-page h1.ant-typography,
-.arcade-page h2.ant-typography,
-.arcade-page h3.ant-typography,
-.arcade-page h4.ant-typography,
-.arcade-page h5.ant-typography {
+.arcade-page {
+  position: relative;
+  min-height: 100%;
+  font-family: var(--font-sans);
   color: var(--text-primary);
 }
-.arcade-page .ant-typography.ant-typography-secondary,
-.arcade-page span.ant-typography-secondary,
-.arcade-page .ant-typography-secondary {
+
+/* Radial purple glow, top-right (dark only). */
+:root[data-theme="dark"] .arcade-page {
+  background: radial-gradient(ellipse 900px 500px at 78% -8%, rgba(164, 78, 224, 0.16), transparent 70%);
+}
+
+/* CRT scanline wash (dark only). Decorative — never intercepts a click. */
+:root[data-theme="dark"] .arcade-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.014) 3px 4px);
+}
+
+.arcade-page__inner {
+  position: relative;
+  padding: 34px 40px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px; /* vertical rhythm between main sections */
+}
+
+/* ── Header row ──────────────────────────────────────────────────────────── */
+.arcade-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.arcade-header__lede {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.arcade-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--text-title);
+}
+
+.arcade-subtitle {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  max-width: 560px;
   color: var(--text-secondary);
 }
-.arcade-page .ant-empty-description,
-.arcade-page .ant-empty-normal {
+
+/* ── Connection pills (bitrate + error correction) ───────────────────────── */
+.arcade-conn {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: flex-end;
+}
+
+.arcade-conn__pills {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.arcade-conn__caption {
+  font-size: 11px;
   color: var(--text-muted);
 }
 
-/* ── Theme surfaces (antd Card/Tag/Button are light by default) ──────────── */
-.arcade-page .ant-card {
-  background: var(--card-surface);
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  box-shadow: var(--card-shadow);
-}
-.arcade-page .ant-card-meta-title {
-  color: var(--text-primary);
-}
-.arcade-page .ant-card-meta-description {
-  color: var(--text-secondary);
+.arcade-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--pill-bg);
+  border: 1px solid var(--pill-border);
+  border-radius: 9px;
+  padding: 8px 12px;
+  box-shadow: var(--pill-shadow);
+  font-size: 12px;
+  color: var(--pill-text);
 }
 
-/* Plain (uncolored) meta tags → neutral chip; the purple/magenta preset tags keep their hue. */
-.arcade-page .ant-tag:not(.ant-tag-purple):not(.ant-tag-magenta) {
+/* Strip antd's Select chrome so the control *is* the pill's text + caret. */
+.arcade-pill .ant-select {
+  width: auto;
+  min-width: 0;
+  color: inherit;
+  font-size: 12px;
+}
+.arcade-pill .ant-select-selector {
+  height: auto !important;
+  padding: 0 18px 0 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+.arcade-pill .ant-select-selection-item {
+  position: relative;
+  line-height: 1.4 !important;
+  padding: 0 !important;
+  color: var(--pill-text);
+  font-size: 12px;
+}
+/* Give the borderless single-select an intrinsic width: antd measures the search input, not the
+   label, so without this the pill collapses to the caret. */
+.arcade-pill .ant-select-single .ant-select-selector .ant-select-selection-search {
+  inset-inline-start: 0;
+  inset-inline-end: 18px;
+}
+.arcade-pill .ant-select-arrow {
+  right: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.arcade-pill .ant-select-focused .ant-select-selector,
+.arcade-pill .ant-select-open .ant-select-selector {
+  box-shadow: none !important;
+}
+
+.arcade-dot-ok,
+.arcade-dot-live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+.arcade-dot-ok {
+  background: var(--status-ok);
+}
+.arcade-dot-live {
+  width: 8px;
+  height: 8px;
+  background: var(--status-live);
+  animation: arcade-pulse 2s ease-in-out infinite;
+}
+:root[data-theme="dark"] .arcade-dot-ok {
+  box-shadow: 0 0 8px var(--status-ok);
+}
+:root[data-theme="dark"] .arcade-dot-live {
+  box-shadow: 0 0 10px var(--status-live);
+}
+
+@keyframes arcade-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arcade-dot-live { animation: none; }
+}
+
+/* ── Section scaffolding (Live rooms, Games) ─────────────────────────────── */
+.arcade-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.arcade-section__head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.arcade-section__head--games {
+  align-items: baseline;
+  margin-top: 4px;
+}
+
+.arcade-section__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-title);
+}
+
+.arcade-section__count {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.arcade-loading {
+  display: flex;
+  justify-content: center;
+  padding: 80px 0;
+}
+
+.arcade-more {
+  text-align: center;
+  padding: 28px 0 8px;
+}
+
+/* ── Box art: natural aspect, one shared height, never cropped ───────────── */
+.arcade-cover {
+  flex: none;
+  position: relative;
+  border-radius: 7px;
+  overflow: hidden;
+  border: 1px solid var(--art-border);
+  box-shadow: var(--art-shadow);
+  background: var(--tile-base);
+  line-height: 0;
+}
+
+/* Sized by the box (height + aspect-ratio), so `contain` never crops: once the cover's real ratio is
+   known the box matches it exactly, and before then it letterboxes rather than cutting the art.
+   `max-width:none` + `margin:0` undo the global `img` rule in index.css. */
+.arcade-cover__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  margin: 0;
+  object-fit: contain;
+}
+
+.arcade-cover--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+.arcade-cover__label {
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--text-muted);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+/* ── Game grid + card ────────────────────────────────────────────────────── */
+.arcade-grid {
+  display: grid;
+  /* min() keeps a single column from overflowing viewports narrower than 355px. */
+  grid-template-columns: repeat(auto-fill, minmax(min(355px, 100%), 1fr));
+  gap: 16px;
+}
+
+.arcade-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+@media (hover: hover) {
+  .arcade-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-hover);
+    border-color: var(--accent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arcade-card { transition: none; }
+  .arcade-card:hover { transform: none; }
+}
+
+/* Wraps the cover so the rating badge can pin to the art's own top-right corner (the wrapper is
+   exactly as wide as the cover, whatever shape that cover turned out to be). */
+.arcade-card__art {
+  flex: none;
+  position: relative;
+  display: flex;
+}
+
+.arcade-card__rating {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  background: var(--rating-chip-bg);
+  border: 1px solid var(--rating-chip-border);
+  color: var(--rating-chip-text);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.arcade-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.arcade-card__title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Two FIXED tag lines — every card has the identical structure regardless of chip lengths, so the
+   summary and the action row line up across a grid row. min-height reserves an empty line. */
+.arcade-tags {
+  display: flex;
+  gap: 5px;
+  min-height: 18px;
+  overflow: hidden;
+}
+
+.arcade-chip {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-size: 10px;
+  line-height: 1.6;
+  white-space: nowrap;
   background: var(--chip-neutral-bg);
-  border-color: var(--chip-neutral-border);
+  border: 1px solid var(--chip-neutral-border);
   color: var(--chip-neutral-text);
 }
 
-/* "▶ Start room" — neon purple accent (with a glow in dark, DESIGN_SPEC §3b). */
-.arcade-page .ant-btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-.arcade-page .ant-btn-primary:hover,
-.arcade-page .ant-btn-primary:focus {
-  background: var(--accent);
-  border-color: var(--accent);
-  filter: brightness(1.12);
-}
-:root[data-theme="dark"] .arcade-page .ant-btn-primary {
-  box-shadow: 0 0 12px rgba(164, 78, 224, 0.45);
+/* Genre is the chip that gives way: a "Role-playing (RPG)" must not squeeze the version picker. */
+.arcade-chip--genre {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: inline-block;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* "My saves" text link + region select follow the theme text color. */
-.arcade-page .ant-card-body {
+.arcade-chip--system {
+  background: transparent;
+  border-color: var(--chip-system-border);
+  color: var(--chip-system-text);
+  font-weight: 600;
+}
+
+/* The version picker wears the region chip's clothes (see GameCard). antd sizes a borderless Select
+   from its hidden search input, not its label, so it must be told to fill the chip — and the chip
+   claims the row's free space rather than collapsing to "U…". */
+.arcade-chip--select {
+  flex: 1 1 auto;
+  padding: 0 4px 0 7px;
+  min-width: 74px;
+  max-width: 150px;
+  cursor: pointer;
+}
+.arcade-chip--select .ant-select {
+  width: 100%;
+  min-width: 0;
+  color: inherit;
+}
+.arcade-chip--select .ant-select-selector {
+  height: 18px !important;
+  padding: 0 14px 0 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+.arcade-chip--select .ant-select-selection-item {
+  font-size: 10px;
+  line-height: 18px !important;
+  padding: 0 !important;
+  color: var(--chip-neutral-text);
+}
+.arcade-chip--select .ant-select-arrow {
+  right: 0;
+  color: var(--chip-neutral-text);
+}
+.arcade-chip--select .ant-select-arrow .anticon {
+  font-size: 8px;
+}
+
+.arcade-card__summary {
+  font-size: 11.5px;
+  line-height: 1.4;
   color: var(--text-secondary);
+  /* Two-line clamp, with the height reserved so a summary-less game doesn't shrink its card. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.8em;
+}
+
+/* Start room + My saves are ALWAYS side-by-side on one line. The 118px art height is tuned so the
+   widest (4:3) covers still leave room for this row at the 3-up column width. */
+.arcade-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+.arcade-card__actions > * {
+  flex: none;
+}
+
+/* ── Buttons + links ─────────────────────────────────────────────────────── */
+.arcade-btn,
+.arcade-page .ant-btn.arcade-btn-start {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  height: auto;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: #fff;
+  background: var(--accent-solid);
+  box-shadow: var(--accent-glow);
+  cursor: pointer;
+  transition: filter 0.14s ease;
+}
+.arcade-btn:hover,
+.arcade-btn:focus-visible,
+.arcade-page .ant-btn.arcade-btn-start:hover,
+.arcade-page .ant-btn.arcade-btn-start:focus {
+  background: var(--accent-solid);
+  color: #fff;
+  filter: brightness(1.12);
+}
+
+.arcade-btn--join {
+  border-radius: 9px;
+  padding: 10px 20px;
+  font-size: 13px;
+}
+:root[data-theme="dark"] .arcade-btn--join {
+  box-shadow: 0 0 18px rgba(164, 78, 224, 0.45);
+}
+
+.arcade-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--accent-link);
+  cursor: pointer;
+}
+.arcade-link:hover {
+  filter: brightness(1.12);
+  text-decoration: underline;
+}
+
+/* ── Live rooms ──────────────────────────────────────────────────────────── */
+.arcade-rooms {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.arcade-room {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--accent);
+  box-shadow: var(--card-shadow);
+}
+:root[data-theme="dark"] .arcade-room {
+  background: linear-gradient(90deg, rgba(164, 78, 224, 0.14), rgba(164, 78, 224, 0.02) 60%, transparent);
+  border-color: rgba(164, 78, 224, 0.28);
+  border-left-color: var(--accent);
+}
+
+.arcade-room__art {
+  border-radius: 6px;
+}
+
+.arcade-room__info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.arcade-room__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.arcade-room__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.arcade-room__meta .arcade-chip--system {
+  font-size: 11px;
+  border-radius: 5px;
+  padding: 1px 8px;
+}
+.arcade-room__status {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.arcade-room__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.arcade-seats {
+  display: flex;
+  gap: 6px;
+}
+.arcade-seat {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--seat-empty);
+}
+.arcade-seat--taken {
+  background: var(--accent);
+  border: none;
+}
+:root[data-theme="dark"] .arcade-seat--taken {
+  box-shadow: 0 0 8px rgba(164, 78, 224, 0.6);
+}
+
+.arcade-room__host {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.arcade-room__hostname {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.arcade-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex: none;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+}
+
+/* ── Dropdown popups (pills + version picker) ────────────────────────────── */
+/* These portal to body, so they can't inherit .arcade-page — but data-feature lives on <html>, so
+   the tokens still resolve. */
+.arcade-pill-dropdown.ant-select-dropdown,
+.arcade-version-dropdown.ant-select-dropdown {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+}
+.arcade-pill-dropdown .ant-select-item-option,
+.arcade-version-dropdown .ant-select-item-option {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.arcade-pill-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled),
+.arcade-version-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background: var(--accent-soft);
+}
+.arcade-pill-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
+.arcade-version-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+.arcade-pill-dropdown .ant-select-item-option-selected .ant-select-item-option-content,
+.arcade-version-dropdown .ant-select-item-option-selected .ant-select-item-option-content {
+  color: #fff;
+}
+
+/* ── antd leftovers on the page (Empty, Load more, Spin) ─────────────────── */
+.arcade-page .ant-typography,
+.arcade-page .ant-empty-description,
+.arcade-page .ant-empty-normal {
+  color: var(--text-secondary);
+}
+.arcade-page .ant-btn:not(.arcade-btn-start) {
+  background: var(--card-surface);
+  border-color: var(--card-border);
+  color: var(--text-primary);
+}
+.arcade-page .ant-btn:not(.arcade-btn-start):hover {
+  border-color: var(--accent);
+  color: var(--accent-link);
+}
+
+/* ── Narrow viewports ────────────────────────────────────────────────────── */
+/* The sider itself collapses to the top-bar drawer at 768px (useIsMobile / NavBar). */
+@media (max-width: 900px) {
+  .arcade-page__inner {
+    padding: 22px 18px 32px;
+    gap: 20px;
+  }
+  .arcade-title {
+    font-size: 30px;
+  }
+  .arcade-conn {
+    align-items: flex-start;
+  }
+  .arcade-room__right {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 620px) {
+  /* Below this the room card's right cluster would squeeze the title to nothing. */
+  .arcade-room {
+    flex-wrap: wrap;
+  }
+  .arcade-room__right {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
 }

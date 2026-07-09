@@ -66,6 +66,39 @@ namespace MovieTheater.Services.Arcade
             _ => "main",
         };
 
+        /// <summary>
+        /// Default video bitrate (kbps) for a system when the creator leaves stream quality on "Auto"
+        /// (docs/arcade-quality-plan.md Phase 5). There is one encoder per room, so this is what everyone
+        /// in the room gets; an explicit lobby choice always overrides it.
+        ///
+        /// Bitrate has to track ENCODED RESOLUTION, which differs ~4.6x across systems. Before this, every
+        /// room got a flat 5 Mbps whether it carried a 912x672 arcade board or a 1280x1056 GameCube frame —
+        /// the latter at ~0.06 bits/pixel/frame, which is starved. The resolutions below were MEASURED live
+        /// (2026-07-08); keep them in step with the cores' options in docker/arcade/config.worker-gl.yaml.
+        ///
+        /// Two deliberate bounds:
+        ///   floor 5000 — the previous flat default, so "Auto" can never be WORSE than what shipped before.
+        ///   cap  10000 — the lobby's existing "Max" preset, so "Auto" never exceeds a value a user could
+        ///                already have picked. This matters because CloudRetro does no congestion control
+        ///                (the encoder ignores REMB/TWCC), so an over-high bitrate only hurts remote
+        ///                players. Lifting this cap is exactly what Phase 6 (ABR) is for.
+        ///
+        /// 2D cores are cheap despite large frames: their `scale:` upscale is integer nearest-neighbour and
+        /// adds no high-frequency detail — the encoder sees flat NxN blocks. Native-3D frames are not.
+        /// </summary>
+        public static int DefaultVideoBitrateKbps(string? system) => system?.ToLowerInvariant() switch
+        {
+            // Real 3D detail, ordered by encoded pixels per frame.
+            "gc" => 10000,          // 1280x1056 = 1.35 Mpx — by far the most starved at a flat 5 Mbps
+            "n64" => 8000,          //  960x720  = 0.69 Mpx
+            "psp" => 7000,          //  960x544  = 0.52 Mpx (much of it 30fps content)
+            "ps2" or "dc" => 6000,  //  ~640x460 = 0.29 Mpx native 3D; raise when/if they upscale
+            // PS1 swings 512x480 <-> 1280x960 mid-game, but the frame is a nearest 2x upscale (cheap bits).
+            "ps1" => 6000,
+            // Everything 2D: nearest-upscaled flat blocks. 5 Mbps is already generous.
+            _ => 5000,
+        };
+
         private static string ToWebSocketScheme(string url)
         {
             if (url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))

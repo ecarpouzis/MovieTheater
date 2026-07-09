@@ -35,6 +35,9 @@ export default defineConfig({
       "/MiscImageThumb": "http://localhost:3001",
       "/BoardgameImage": "http://localhost:3001",
       "/BoardgameImageThumb": "http://localhost:3001",
+      // Arcade box art. Without this the /arcade grid shows placeholders in dev, since the covers
+      // fall through to vite's SPA catch-all instead of the lazily-caching image route.
+      "/ArcadeImage": "http://localhost:3001",
     },
   },
 

@@ -108,8 +108,18 @@ emulator:
           lib: pcsx_rearmed_libretro
           roms: ["m3u", "cue", "chd"]   # m3u = multi-disc playlist (disc-swap, patch 0005); cue/chd = single disc
           folder: psx
+          # QUALITY (docs/arcade-quality-plan.md Phase 1). At native 256x240 the H.264 4:2:0 chroma plane
+          # sits BELOW the native pixel grid — colour bleeds across every hard edge and no bitrate recovers
+          # it. A nearest 2x upscale before encode puts chroma back at >= native res, and costs almost no
+          # bitrate (an integer nearest upscale adds no high-frequency detail: the encoder sees flat 2x2
+          # blocks). scaleMethod is pinned because a multi-tap method would blur the pixels we're preserving.
+          scale: 2
+          scaleMethod: nearest-neighbour
           options:
             pcsx_rearmed_drc: enabled     # dynarec on
+            # CloudRetro's EMBEDDED default sets frameskip_type: auto, so PS1 was allowed to DROP frames on
+            # a 13700K that never needs to. "disabled" is pcsx_rearmed's own default.
+            pcsx_rearmed_frameskip_type: disabled
             # Present a DualShock (dual-analog) pad on BOTH ports. pcsx_rearmed defaults pad type to the
             # digital "standard" pad, so games that REQUIRE an analog controller refuse to start —
             # Ape Escape literally blocks on "connect an analog controller (DUAL SHOCK)". The browser shim
@@ -136,7 +146,20 @@ emulator:
           lib: genesis_plus_gx_libretro
           roms: ["md", "gen", "smd", "bin"]
           folder: genesis
-          scale: 2   # 320x224 native -> 640x448 nearest, same crispness rationale as snes/nes
+          scale: 3   # 320x224 native -> 960x672 nearest (was 2; matches snes/nes, costs NVENC nothing)
+
+        # ARCADE (fbneo). The site's `arcade` system ingests into roms/mame and launches via the core key
+        # `mame` (ArcadeIngestCommand.cs:242) — the STOCK CloudRetro entry, which we had never overridden:
+        #   1. No `scale` → 6,214 games encoded at raw 304x224, chroma below native (see the pcsx note).
+        #   2. Stock pins `scaleMethod: bilinear2`. Adding `scale` WITHOUT overriding that would upscale
+        #      through a blurry multi-tap filter — worse than before, while looking like it worked.
+        # lib/folder/roms restated so the koanf deep-merge can't surprise us.
+        mame:
+          lib: fbneo_libretro
+          folder: mame
+          roms: ["zip"]
+          scale: 3              # 304x224 -> 912x672
+          scaleMethod: nearest-neighbour
 
         # ─── GPU / GL 3D cores (same D3D12 + NVENC path proven by n64/psx) ────────────────────
         # GL cores MUST set isGlAllowed (HW render) AND coreAspectRatio: without the latter the
@@ -250,14 +273,14 @@ emulator:
           lib: genesis_plus_gx_libretro
           folder: segacd
           roms: ["cue", "chd", "iso"]
-          scale: 2
+          scale: 3   # was 2 — 320x224 native, matches gen
 
         # ─── Other 2D cores (each pins its folder so extension collisions can't cross-load) ──────
         sega32x:
           lib: picodrive_libretro
           folder: sega32x
           roms: ["32x", "bin"]
-          scale: 2
+          scale: 3   # was 2 — 320x224 native, matches gen
         pce:
           # mednafen_pce (full) covers TurboGrafx-16 / PC Engine + SuperGrafx + PCE-CD (syscard3.pce).
           lib: mednafen_pce_libretro
@@ -307,7 +330,7 @@ emulator:
           lib: fbneo_libretro
           folder: neogeo
           roms: ["zip"]
-          scale: 2
+          scale: 3   # was 2 — 304x224 native, matches the mame entry above
 
 encoder:
   video:

@@ -264,7 +264,10 @@ namespace MovieTheater.Controllers
                 .Select(g => new { g.Id, g.Title, g.System, g.MaxPlayers, g.RatingCeiling })
                 .ToDictionaryAsync(g => g.Id);
 
-            var playerIds = snapshot.SelectMany(r => r.PlayerUserIds).Distinct().ToList();
+            // Creators too: the lobby's room card names the host ("Eric hosting"), and a host who has
+            // left the room they opened is no longer in PlayerUserIds.
+            var playerIds = snapshot.SelectMany(r => r.PlayerUserIds).Concat(snapshot.Select(r => r.CreatorUserId))
+                .Distinct().ToList();
             var names = await movieDb.Users
                 .Where(u => playerIds.Contains(u.UserID))
                 .Select(u => new { u.UserID, u.Username })
@@ -280,6 +283,7 @@ namespace MovieTheater.Controllers
                     roomCode = r.RoomCode,
                     game = new { id = g.Id, title = g.Title, system = g.System },
                     players = r.PlayerUserIds.Select(id => names.GetValueOrDefault(id) ?? "Someone").ToList(),
+                    host = names.GetValueOrDefault(r.CreatorUserId) ?? "Someone",
                     seatsFree = Math.Max(0, r.MaxPlayers - r.PlayerUserIds.Count),
                     maxPlayers = r.MaxPlayers,
                     starting = !r.Bound,
@@ -372,8 +376,13 @@ namespace MovieTheater.Controllers
             // network-resilience (FEC) in the lobby. Ride the same WS-URL flags the rest of room-create uses;
             // the shim reads ?vbr/?fec and puts them in t=104, and the worker applies them to THIS room's
             // encoder copy. Clamp defensively (the worker clamps again). Only the creator carries these.
-            if (request.VideoBitrateKbps > 0)
-                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + Math.Clamp(request.VideoBitrateKbps, 500, 20000) };
+            // 0 / absent = "Auto": pick a default from the game's system, because encoded resolution varies
+            // ~4.6x across systems (912x672 arcade vs 1280x1056 GameCube) and a flat bitrate starves the
+            // big ones. See CloudRetroHost.DefaultVideoBitrateKbps. An explicit lobby choice always wins.
+            var vbr = request.VideoBitrateKbps > 0
+                ? Math.Clamp(request.VideoBitrateKbps, 500, 20000)
+                : CloudRetroHost.DefaultVideoBitrateKbps(game.System);
+            descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + vbr };
             if (request.AudioFec is 1 or 2)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fec=" + request.AudioFec };
 
