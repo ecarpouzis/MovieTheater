@@ -207,13 +207,31 @@ export default function ArcadeRoomPage() {
     return () => window.removeEventListener("pagehide", onHide);
   }, [code]);
 
-  // Re-kick playback when the player comes back to the tab. Firefox suspends video decode for
-  // hidden tabs and can return with a BLACK frame on a perfectly healthy stream (observed live
-  // 2026-07-09: alt-tab back = audio playing, video black, worker shows media flowing). play() on
-  // an already-playing element is a no-op, so this is free when nothing is wrong.
+  // Recover playback when the player comes back to the tab. Firefox suspends video decode for
+  // hidden tabs and the decoder can WEDGE: on return the element still "plays" (audio rides the
+  // same element, so currentTime keeps advancing) but no video frames arrive — a black or frozen
+  // picture on a perfectly healthy stream (confirmed live twice, 2026-07-09). play() alone does
+  // NOT recover this, so: re-kick play(), then ask for one video frame; if none lands within
+  // 700 ms while visible, detach and re-attach the MediaStream — that tears down the wedged
+  // decode pipeline and builds a fresh one. All of it is a no-op when playback is healthy.
   useEffect(() => {
     const rekick = () => {
-      if (document.visibilityState === "visible" && LIVE_STATUS.includes(statusRef.current)) tryPlayVideo();
+      if (document.visibilityState !== "visible" || !LIVE_STATUS.includes(statusRef.current)) return;
+      const v = videoRef.current;
+      if (!v) return;
+      tryPlayVideo();
+      if (typeof v.requestVideoFrameCallback !== "function") return; // old browsers keep play()-only
+      let gotFrame = false;
+      v.requestVideoFrameCallback(() => { gotFrame = true; });
+      setTimeout(() => {
+        const vv = videoRef.current;
+        if (!vv || gotFrame || document.visibilityState !== "visible") return;
+        const stream = vv.srcObject;
+        if (!stream) return;
+        vv.srcObject = null;
+        vv.srcObject = stream;
+        tryPlayVideo();
+      }, 700);
     };
     window.addEventListener("focus", rekick);
     document.addEventListener("visibilitychange", rekick);
