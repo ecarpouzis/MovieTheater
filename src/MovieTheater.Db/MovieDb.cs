@@ -319,6 +319,17 @@ namespace MovieTheater.Db
                 .HasOne(s => s.ArcadeGame)
                 .WithMany()
                 .HasForeignKey(s => s.ArcadeGameId);
+
+            // Imported community cheat codes, one row per (ROM, position-in-source-file). The unique key is
+            // what makes arcade-cheats-import idempotent; the cascade drops a game's cheats with the game.
+            modelBuilder.Entity<ArcadeCheat>()
+                .HasIndex(c => new { c.ArcadeGameId, c.Ordinal })
+                .IsUnique();
+            modelBuilder.Entity<ArcadeCheat>()
+                .HasOne(c => c.ArcadeGame)
+                .WithMany()
+                .HasForeignKey(c => c.ArcadeGameId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
         public DbSet<Movie> Movies { get; set; }
@@ -357,6 +368,7 @@ namespace MovieTheater.Db
         public DbSet<ArcadeGame> ArcadeGames { get; set; }
         public DbSet<ArcadeSession> ArcadeSessions { get; set; }
         public DbSet<ArcadeSave> ArcadeSaves { get; set; }
+        public DbSet<ArcadeCheat> ArcadeCheats { get; set; }
         public DbSet<ArcadeGameProfile> ArcadeGameProfiles { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)

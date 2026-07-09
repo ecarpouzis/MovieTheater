@@ -267,7 +267,9 @@
 
 .arcade-card {
   display: flex;
-  align-items: center;
+  /* stretch, not center: the body is now a column that ends in a footer pinned to the bottom, so a card
+     with a 2-line title and a card with a 1-line title still line their Start buttons up. */
+  align-items: stretch;
   gap: 14px;
   padding: 12px;
   border-radius: 12px;
@@ -295,6 +297,7 @@
   flex: none;
   position: relative;
   display: flex;
+  align-self: flex-start;
 }
 
 .arcade-card__rating {
@@ -320,18 +323,22 @@
   gap: 7px;
 }
 
+/* Up to TWO lines, with the second reserved. A single nowrap line clipped most real titles ("007 - The
+   World Is Not Enough" → "007 - The World Is N…"); reserving the line keeps the grid row aligned. */
 .arcade-card__title {
   font-size: 15px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
   color: var(--text-primary);
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  min-height: 2.4em;
 }
 
-/* Two FIXED tag lines — every card has the identical structure regardless of chip lengths, so the
-   summary and the action row line up across a grid row. min-height reserves an empty line. */
+/* ONE tag line now that the version picker moved to the footer: system, players, region, genre. Chips
+   overflow rather than wrap, so a long genre can never push the row into a second line. */
 .arcade-tags {
   display: flex;
   gap: 5px;
@@ -370,15 +377,25 @@
   font-weight: 600;
 }
 
-/* The version picker wears the region chip's clothes (see GameCard). antd sizes a borderless Select
-   from its hidden search input, not its label, so it must be told to fill the chip — and the chip
-   claims the row's free space rather than collapsing to "U…". */
+/* The version + cheat pickers wear a chip's clothes (see GameCard). antd sizes a borderless Select from
+   its hidden search input, not its label, so it must be told to fill the chip.
+
+   position:relative is LOAD-BEARING: both pass getPopupContainer={t => t.parentElement}, so the popup is
+   positioned inside this chip and needs it as the containing block. These used to live in `.arcade-tags`,
+   whose `overflow: hidden` then clipped the open dropdown to an 18px sliver of colour across the summary
+   — the "version dropdown barely renders" bug. The footer rows deliberately do not clip. */
 .arcade-chip--select {
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  position: relative;
+  z-index: 1;
   padding: 0 4px 0 7px;
   min-width: 74px;
-  max-width: 150px;
+  max-width: 160px;
   cursor: pointer;
+}
+/* A card whose dropdown is open must paint above the cards after it in the grid. */
+.arcade-chip--select:focus-within {
+  z-index: 5;
 }
 .arcade-chip--select .ant-select {
   width: 100%;
@@ -407,6 +424,55 @@
   font-size: 8px;
 }
 
+/* ── Cheat picker (multi-select) ──────────────────────────────────────────────
+   A multiple-mode Select lays its value out in `.ant-select-selection-overflow` instead of a single
+   `-selection-item`, so the chip's height rules have to be restated for it. maxTagCount={0} means the
+   only thing ever rendered in the box is the "N cheats" placeholder — no tags to size around. */
+.arcade-chip--cheats {
+  border-color: var(--chip-cheat-border, var(--accent));
+  color: var(--chip-cheat-text, var(--accent));
+}
+.arcade-chip--cheats .ant-select-multiple .ant-select-selector {
+  height: 18px !important;
+  padding: 0 14px 0 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.arcade-chip--cheats .ant-select-selection-overflow,
+.arcade-chip--cheats .ant-select-selection-placeholder,
+.arcade-chip--cheats .ant-select-selection-item {
+  font-size: 10px;
+  line-height: 18px !important;
+  color: inherit;
+}
+/* The placeholder is normally dimmed; here it IS the label ("⚡ Cheats (12)"). */
+.arcade-chip--cheats .ant-select-selection-placeholder {
+  inset-inline-start: 0;
+  opacity: 1;
+  color: inherit;
+}
+.arcade-chip--cheats .ant-select-multiple .ant-select-selection-search {
+  margin-inline-start: 0;
+}
+.arcade-chip--cheats .ant-select-arrow {
+  color: inherit;
+}
+.arcade-chip--cheats.arcade-chip--select .ant-select-disabled {
+  opacity: 0.55;
+}
+
+/* Cheat names run long ("Infinite Lives (Player 1, all stages)") — wrap rather than ellipsize them away,
+   and give the list a ceiling so a 300-cheat game doesn't produce a full-page dropdown. */
+.arcade-cheat-dropdown .ant-select-item-option-content {
+  white-space: normal;
+  line-height: 1.35;
+  font-size: 11.5px;
+}
+.arcade-cheat-dropdown .rc-virtual-list-holder {
+  max-height: 260px !important;
+}
+
 .arcade-card__summary {
   font-size: 11.5px;
   line-height: 1.4;
@@ -419,8 +485,26 @@
   min-height: 2.8em;
 }
 
-/* Start room + My saves are ALWAYS side-by-side on one line. The 118px art height is tuned so the
-   widest (4:3) covers still leave room for this row at the 3-up column width. */
+/* The card's bottom block: an optional controls row (version, cheats) directly above the actions row.
+   margin-top:auto pins it to the bottom of the body, so cards with a 1-line title and cards with a
+   2-line one still align their Start buttons across a grid row. */
+.arcade-card__footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* Version + cheats. Both are chips, both may be absent; the row is only rendered when one exists. */
+.arcade-card__controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Start room + My saves are ALWAYS side-by-side on one line, with My saves pushed to the far edge so it
+   sits in the same place on every card instead of floating wherever the button ended. */
 .arcade-card__actions {
   display: flex;
   align-items: center;
@@ -429,6 +513,9 @@
 }
 .arcade-card__actions > * {
   flex: none;
+}
+.arcade-card__actions .arcade-link {
+  margin-left: auto;
 }
 
 /* ── Buttons + links ─────────────────────────────────────────────────────── */

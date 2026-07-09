@@ -151,6 +151,25 @@ namespace MovieTheater.Controllers
                 .GroupBy(g => (g.System, g.Title))
                 .ToDictionary(x => x.Key, x => x.ToList());
 
+            // Cheat counts for the page's ROMs, one grouped query (not per card). The card needs only to know
+            // whether to render the picker at all; the list itself is lazy-loaded when it's opened.
+            var pageVersionIds = versionRows.Select(g => g.Id).ToList();
+            var cheatCounts = await movieDb.ArcadeCheats
+                .Where(c => pageVersionIds.Contains(c.ArcadeGameId))
+                .GroupBy(c => c.ArcadeGameId)
+                .Select(g => new { GameId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.GameId, x => x.Count);
+
+            // Default-on cheats must ship WITH the card, not with the lazy-loaded cheat list: PS2's widescreen
+            // patch is pre-selected, and a player who never opens the picker still expects it applied. Tiny set
+            // (only the ~150 PS2 widescreen rows are DefaultOn today).
+            var defaultCheats = await movieDb.ArcadeCheats
+                .Where(c => pageVersionIds.Contains(c.ArcadeGameId) && c.DefaultOn)
+                .Select(c => new { c.ArcadeGameId, c.Id })
+                .ToListAsync();
+            var defaultsByVersion = defaultCheats.GroupBy(c => c.ArcadeGameId)
+                .ToDictionary(g => g.Key, g => g.Select(c => "c" + c.Id).ToList());
+
             string specificRegion = reg is "english" or "all" ? null : reg;
             var games = pageKeys.Select(k =>
             {
@@ -192,6 +211,11 @@ namespace MovieTheater.Controllers
                     {
                         id = v.Id, label = v.Label, region = v.Region,
                         variant = v.Variant, year = v.Year, maxPlayers = v.MaxPlayers, discCount = v.DiscCount,
+                        // Stored rows + the system-wide option cheats. Only imported systems get code rows, so
+                        // this is already zero where the core would ignore them (see ArcadeCheatCatalog).
+                        cheatCount = (cheatCounts.TryGetValue(v.Id, out var cc) ? cc : 0)
+                                     + ArcadeCheatCatalog.SystemOptionCheats(k.System).Count,
+                        defaultCheats = defaultsByVersion.TryGetValue(v.Id, out var dc) ? dc : new List<string>(),
                     }).ToList(),
                 };
             }).ToList();
@@ -310,6 +334,72 @@ namespace MovieTheater.Controllers
             /// <summary>Per-room opus FEC: 0 = config default, 1 = force on (remote-friendly), 2 = force off
             /// (LAN-only, saves audio-packet bytes). Rides the WS URL to the worker like the other room flags.</summary>
             public int AudioFec { get; set; }
+
+            /// <summary>Cheat ids the creator ticked in the lobby, as returned by <c>GET .../Cheats</c>:
+            /// <c>"c{ArcadeCheat.Id}"</c> for a stored cheat, <c>"s:{optionKey}"</c> for a system-wide option
+            /// cheat. Unknown ids are ignored, not rejected — a stale card in an open tab shouldn't fail the
+            /// launch. Capped at <see cref="ArcadeCheatCatalog.MaxCheatsPerRoom"/>.</summary>
+            public List<string>? Cheats { get; set; }
+        }
+
+        /// <summary>Cheats available for ONE version (ROM) of a game — the card's version dropdown decides
+        /// which. Lazy-loaded when the picker opens: the popular titles carry hundreds of codes each
+        /// (Mario Kart 64 alone has 941 upstream), so this never belongs in the games list payload.</summary>
+        [HttpGet("/API/Arcade/Game/{gameId:int}/Cheats")]
+        public async Task<IActionResult> GameCheats(int gameId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            if (!host.IsConfigured)
+                return StatusCode(501, new { message = "The arcade is not configured on this server." });
+
+            var game = await movieDb.ArcadeGames.FirstOrDefaultAsync(g => g.Id == gameId && g.IsEnabled);
+            if (game == null) return NotFound(new { message = "Game not found." });
+
+            var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
+            if (game.RatingCeiling > ageRestriction)
+                return StatusCode(403, new { message = "This game isn't available on your account." });
+
+            var cheats = await BuildCheatListAsync(game);
+            return Json(new
+            {
+                gameId,
+                system = game.System,
+                cheats = cheats.Select(c => new { id = c.Id, name = c.Name, kind = c.Kind, defaultOn = c.DefaultOn, note = c.Note }),
+            });
+        }
+
+        private sealed record CheatOffer(string Id, string Name, string Kind, bool DefaultOn, string? Note,
+            string? OptionKey, string? OptionValue, string? Code);
+
+        /// <summary>The full offer for one ROM: its stored rows (curated option cheats first — they carry
+        /// negative ordinals — then the community codes in upstream order), plus any option cheats that apply
+        /// to the whole system. Code cheats are withheld on systems whose core ignores them, so the picker
+        /// can't show a toggle that provably does nothing.</summary>
+        private async Task<List<CheatOffer>> BuildCheatListAsync(ArcadeGame game)
+        {
+            var rows = await movieDb.ArcadeCheats
+                .Where(c => c.ArcadeGameId == game.Id)
+                .OrderBy(c => c.Ordinal)
+                .ToListAsync();
+
+            var offers = new List<CheatOffer>();
+            foreach (var r in rows)
+            {
+                if (r.Kind == "code" && !ArcadeCheatCatalog.SupportsCheatCodes(game.System)) continue;
+                offers.Add(new CheatOffer("c" + r.Id, r.Name, r.Kind, r.DefaultOn, r.Note, r.OptionKey, r.OptionValue, r.Code));
+            }
+
+            // System-wide option cheats (Dreamcast/GameCube widescreen) sit above the per-game rows. Skipped
+            // when a stored row already sets the same option key, so a game can override the system default.
+            var haveKeys = offers.Where(o => o.OptionKey != null).Select(o => o.OptionKey!).ToHashSet(StringComparer.Ordinal);
+            int insertAt = 0;
+            foreach (var o in ArcadeCheatCatalog.SystemOptionCheats(game.System))
+            {
+                if (haveKeys.Contains(o.Key)) continue;
+                offers.Insert(insertAt++, new CheatOffer("s:" + o.Key, o.Name, "option", o.DefaultOn, o.Note, o.Key, o.Value, null));
+            }
+            return offers;
         }
 
         [HttpPost("/API/Arcade/Room")]
@@ -385,6 +475,25 @@ namespace MovieTheater.Controllers
             descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + vbr };
             if (request.AudioFec is 1 or 2)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fec=" + request.AudioFec };
+
+            // Per-room cheats (arcade cheats feature). Resolve the ids the creator ticked against what this
+            // exact ROM actually offers — never trust the client's idea of what a cheat is, because a code is
+            // a raw memory poke and one aimed at another game's addresses corrupts state rather than failing.
+            if (request.Cheats is { Count: > 0 })
+            {
+                var offered = await BuildCheatListAsync(game);
+                var picked = offered.Where(o => request.Cheats.Contains(o.Id, StringComparer.Ordinal))
+                    .Take(ArcadeCheatCatalog.MaxCheatsPerRoom).ToList();
+
+                var coreOptions = picked.Where(o => o.Kind == "option" && o.OptionKey != null)
+                    .GroupBy(o => o.OptionKey!, StringComparer.Ordinal)   // one value per key; first wins
+                    .ToDictionary(g => g.Key, g => g.First().OptionValue ?? "enabled", StringComparer.Ordinal);
+                var codes = picked.Where(o => o.Kind == "code" && !string.IsNullOrEmpty(o.Code))
+                    .Select(o => o.Code!).ToList();
+
+                if (coreOptions.Count > 0 || codes.Count > 0)
+                    descriptor = descriptor with { CoreOptions = coreOptions, CheatCodes = codes };
+            }
 
             return Json(ToJson(descriptor, discCount));
         }
@@ -718,6 +827,10 @@ namespace MovieTheater.Controllers
             isCreator = d.IsCreator,
             system = d.System,
             discCount,
+            // The shim copies these straight into its t=104 GAME_START. Omitted when empty so a room with no
+            // cheats sends the same packet it always did.
+            coreOptions = d.CoreOptions is { Count: > 0 } ? d.CoreOptions : null,
+            cheats = d.CheatCodes is { Count: > 0 } ? d.CheatCodes : null,
         };
 
         // A short, URL-safe invite code, regenerated on the rare collision with a live room.

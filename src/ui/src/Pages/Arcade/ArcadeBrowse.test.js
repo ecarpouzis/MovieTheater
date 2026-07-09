@@ -44,21 +44,26 @@ describe("GameCard", () => {
     expect(screen.getByText("Shooter")).toBeTruthy();
   });
 
-  it("lays the tags out as two fixed lines: system+players, then region+genre", () => {
+  it("puts every tag on ONE line now that the version picker moved to the footer", () => {
     const { container } = render(<GameCard game={game()} onStart={vi.fn()} creating={0} />);
     const lines = container.querySelectorAll(".arcade-tags");
-    expect(lines).toHaveLength(2);
+    expect(lines).toHaveLength(1);
     expect(within(lines[0]).getByText("Nintendo 64")).toBeTruthy();
     expect(within(lines[0]).getByText("4P")).toBeTruthy();
-    expect(within(lines[1]).getByText("USA")).toBeTruthy();
-    expect(within(lines[1]).getByText("Shooter")).toBeTruthy();
+    expect(within(lines[0]).getByText("USA")).toBeTruthy();
+    expect(within(lines[0]).getByText("Shooter")).toBeTruthy();
   });
 
-  it("keeps both tag lines even when a game has no region or genre", () => {
+  it("keeps the tag line even when a game has no region or genre", () => {
     const bare = game({ genres: null, versions: [{ id: 7, label: "x", region: "Unknown", maxPlayers: 1 }] });
     const { container } = render(<GameCard game={bare} onStart={vi.fn()} creating={0} />);
-    expect(container.querySelectorAll(".arcade-tags")).toHaveLength(2);
+    expect(container.querySelectorAll(".arcade-tags")).toHaveLength(1);
     expect(screen.queryByText("Unknown")).toBeNull();
+  });
+
+  it("omits the controls row entirely for a single-version game with no cheats", () => {
+    const { container } = render(<GameCard game={game()} onStart={vi.fn()} creating={0} />);
+    expect(container.querySelector(".arcade-card__controls")).toBeNull();
   });
 
   it("renders Start room and My saves as siblings in one actions row", () => {
@@ -74,7 +79,7 @@ describe("GameCard", () => {
     render(<GameCard game={game()} onStart={onStart} creating={0} />);
     fireEvent.click(screen.getByText(/Start room/));
     expect(onStart).toHaveBeenCalledTimes(1);
-    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye");
+    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", []);
   });
 
   it("opens the saves manager for the selected version, not the card", () => {
@@ -84,6 +89,53 @@ describe("GameCard", () => {
     fireEvent.click(screen.getByText("My saves"));
     expect(onManageSaves).toHaveBeenCalledWith(7);
     expect(onStart).not.toHaveBeenCalled();
+  });
+
+  // ── Cheats (docs/arcade-cheats.md) ──────────────────────────────────────────────────────────────
+  const ps2 = (over = {}) => game({
+    key: "ps2|God of War", title: "God of War", system: "ps2", versionCount: 1,
+    versions: [{ id: 11, label: "USA", region: "USA", maxPlayers: 1, cheatCount: 2, defaultCheats: ["c500"] }],
+    ...over,
+  });
+
+  it("shows the cheat picker with a count, and hides it when a version has no cheats", () => {
+    const { container, rerender } = render(<GameCard game={ps2()} onStart={vi.fn()} creating={0} />);
+    expect(container.querySelector(".arcade-chip--cheats")).toBeTruthy();
+    expect(screen.getByText(/Cheats \(2\)|1 cheat/)).toBeTruthy();
+
+    rerender(<GameCard game={game()} onStart={vi.fn()} creating={0} />);
+    expect(container.querySelector(".arcade-chip--cheats")).toBeNull();
+  });
+
+  // The whole point of shipping defaultCheats with the card: a player who never opens the picker still
+  // gets the widescreen patch. If this regresses, PS2 rooms silently launch in 4:3.
+  it("launches with the version's default cheats even though the picker was never opened", () => {
+    const onStart = vi.fn();
+    render(<GameCard game={ps2()} onStart={onStart} creating={0} />);
+    fireEvent.click(screen.getByText(/Start room/));
+    expect(onStart).toHaveBeenCalledWith(11, "God of War", ["c500"]);
+  });
+
+  // Cheat ids belong to one ROM. Carrying a selection across a version switch would send a USA code to a
+  // Japanese dump — a memory poke at the wrong address, not a clean no-op.
+  it("resets the cheat selection to the new version's defaults when the version changes", () => {
+    const onStart = vi.fn();
+    const twoVersions = ps2({
+      versionCount: 2,
+      versions: [
+        { id: 11, label: "USA", region: "USA", maxPlayers: 1, cheatCount: 2, defaultCheats: ["c500"] },
+        { id: 12, label: "Japan", region: "Japan", maxPlayers: 1, cheatCount: 1, defaultCheats: [] },
+      ],
+    });
+    const { rerender } = render(<GameCard game={twoVersions} onStart={onStart} creating={0} />);
+    fireEvent.click(screen.getByText(/Start room/));
+    expect(onStart).toHaveBeenLastCalledWith(11, "God of War", ["c500"]);
+
+    // Simulate the filter changing the card's default version (the same path that re-keys `sel`).
+    const jpFirst = { ...twoVersions, versions: [twoVersions.versions[1], twoVersions.versions[0]] };
+    rerender(<GameCard game={jpFirst} onStart={onStart} creating={0} />);
+    fireEvent.click(screen.getByText(/Start room/));
+    expect(onStart).toHaveBeenLastCalledWith(12, "God of War", []);
   });
 
   it("shows the rating badge only when the game is rated", () => {

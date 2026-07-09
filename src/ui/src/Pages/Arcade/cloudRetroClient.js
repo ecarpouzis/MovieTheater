@@ -511,6 +511,12 @@ export function createCloudRetroSession(descriptor, opts) {
     const fec = numFromWsUrl(descriptor.wsUrl, "fec");
     if (vbr > 0) p.video_bitrate = vbr;
     if (fec > 0) p.audio_fec = fec;
+    // Per-room cheats the creator picked in the lobby. Unlike vbr/fec these ride the descriptor body, not
+    // the wsUrl query: a cheat code list runs to kilobytes. The worker merges core_options before the ROM
+    // loads and feeds cheats to retro_cheat_set after (patch 0027). Only the creator's t=104 builds the
+    // room, so a joiner's descriptor carries neither.
+    if (descriptor.coreOptions && Object.keys(descriptor.coreOptions).length > 0) p.core_options = descriptor.coreOptions;
+    if (Array.isArray(descriptor.cheats) && descriptor.cheats.length > 0) p.cheats = descriptor.cheats;
     send(T.GAME_START, p);
   }
 

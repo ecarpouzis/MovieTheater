@@ -1,0 +1,224 @@
+diff --git a/pkg/api/user.go b/pkg/api/user.go
+index 2618602..6141112 100644
+--- a/pkg/api/user.go
++++ b/pkg/api/user.go
+@@ -14,6 +14,11 @@ type (
+ 		// request builds the encoder, so only its values take effect. 0 = leave config default.
+ 		VideoBitrate int `json:"video_bitrate,omitempty"` // kbps; 0 = config default
+ 		AudioFec     int `json:"audio_fec,omitempty"`     // 0 = default, 1 = FEC on, 2 = FEC off
++		// Per-room cheats the creator enabled in the lobby (arcade cheats feature).
++		// CoreOptions are libretro core-option overrides applied just before retro_load_game
++		// (e.g. pcsx2_widescreen_hint); Cheats are raw codes handed to retro_cheat_set after it.
++		CoreOptions map[string]string `json:"core_options,omitempty"`
++		Cheats      []string          `json:"cheats,omitempty"`
+ 	}
+ 	GameStartUserResponse struct {
+ 		RoomId  string        `json:"roomId"`
+diff --git a/pkg/api/worker.go b/pkg/api/worker.go
+index 0e69513..e834aed 100644
+--- a/pkg/api/worker.go
++++ b/pkg/api/worker.go
+@@ -23,6 +23,11 @@ type (
+ 		// (arcade per-room bitrate/FEC). 0 = leave the worker's config default.
+ 		VideoBitrate int `json:"video_bitrate,omitempty"` // kbps
+ 		AudioFec     int `json:"audio_fec,omitempty"`     // 0 default, 1 on, 2 off
++		// Per-room cheats, forwarded from the creator's GameStartUserRequest. A field missing HERE
++		// is silently dropped by the coordinator's JSON relay even though the browser sent it —
++		// which is exactly how per-room bitrate went nowhere for days. Keep in sync with user.go.
++		CoreOptions map[string]string `json:"core_options,omitempty"`
++		Cheats      []string          `json:"cheats,omitempty"`
+ 	}
+ 	GameInfo struct {
+ 		Alias  string `json:"alias"`
+diff --git a/pkg/coordinator/workerapi.go b/pkg/coordinator/workerapi.go
+index 54dcb9d..2c578cf 100644
+--- a/pkg/coordinator/workerapi.go
++++ b/pkg/coordinator/workerapi.go
+@@ -24,6 +24,10 @@ func (w *Worker) StartGame(id string, req api.GameStartUserRequest) (*api.StartG
+ 			// Forward the creator's per-room encoder quality choice to the worker.
+ 			VideoBitrate: req.VideoBitrate,
+ 			AudioFec:     req.AudioFec,
++			// ...and the cheats they picked. The coordinator only relays: any field it doesn't know
++			// about is dropped here without an error, so this line is what makes the feature exist.
++			CoreOptions: req.CoreOptions,
++			Cheats:      req.Cheats,
+ 		}))
+ }
+ 
+diff --git a/pkg/worker/caged/libretro/caged.go b/pkg/worker/caged/libretro/caged.go
+index d68ae7d..a26a9d8 100644
+--- a/pkg/worker/caged/libretro/caged.go
++++ b/pkg/worker/caged/libretro/caged.go
+@@ -54,6 +54,11 @@ func (c *Caged) ReloadFrontend() {
+ // VideoChangeCb adds a callback when video params are changed by the app.
+ func (c *Caged) VideoChangeCb(fn func()) { c.base.SetVideoChangeCb(fn) }
+ 
++// SetRoomCheats stages this room's cheats. Call it BEFORE Load: opts are core-option overrides the
++// core reads while loading, codes go to retro_cheat_set once the game is up. Both are per-room, so
++// they live on the frontend instance rather than the shared config.
++func (c *Caged) SetRoomCheats(opts map[string]string, codes []string) { c.base.SetRoomCheats(opts, codes) }
++
+ func (c *Caged) Load(game games.GameMetadata, path string) error {
+ 	if c.Emulator == nil {
+ 		return nil
+diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
+index 18202fa..6ebb80c 100644
+--- a/pkg/worker/caged/libretro/frontend.go
++++ b/pkg/worker/caged/libretro/frontend.go
+@@ -421,6 +421,13 @@ func (f *Frontend) Start() {
+ 	}
+ }
+ 
++// SetRoomCheats stages per-room core-option overrides + cheat codes for the next LoadGame.
++func (f *Frontend) SetRoomCheats(opts map[string]string, codes []string) {
++	f.mu.Lock()
++	f.nano.SetRoomCheats(opts, codes)
++	f.mu.Unlock()
++}
++
+ func (f *Frontend) LoadGame(path string) error {
+ 	if f.UniqueSaveDir {
+ 		f.copyFsMaybe(path)
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.c b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
+index a8180aa..200616d 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.c
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
+@@ -124,6 +124,14 @@ bool bridge_retro_load_game(void *f, struct retro_game_info *gi) {
+     return ((bool (*)(struct retro_game_info *)) f)(gi);
+ }
+ 
++void bridge_retro_cheat_reset(void *f) {
++    ((void (*)(void)) f)();
++}
++
++void bridge_retro_cheat_set(void *f, unsigned index, bool enabled, const char *code) {
++    ((void (*)(unsigned, bool, const char *)) f)(index, enabled, code);
++}
++
+ size_t bridge_retro_get_memory_size(void *f, unsigned id) {
+     return ((size_t (*)(unsigned)) f)(id);
+ }
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+index 7589d74..70fdfc6 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+@@ -48,6 +48,8 @@ type Nanoarch struct {
+ 	options       map[string]string
+ 	options4rom   map[string]map[string]string
+ 	fps4rom       map[string]float64
++	roomOptions   map[string]string // per-room core-option cheats, applied just before retro_load_game
++	cheats        []string          // per-room cheat codes, applied via retro_cheat_set after it
+ 	reserved      chan struct{} // limits concurrent use
+ 	Rot           uint
+ 	serializeSize C.size_t
+@@ -171,6 +173,12 @@ func (n *Nanoarch) Close()                           { n.Stopped.Store(true); n.
+ func (n *Nanoarch) SetLogger(log *logger.Logger)     { n.log = log }
+ func (n *Nanoarch) SetVideoDebounce(t time.Duration) { n.limiter = NewLimit(t) }
+ func (n *Nanoarch) SaveDir() string                  { return C.GoString(n.cSaveDirectory) }
++// SetRoomCheats stages one room's cheats for the next LoadGame, which consumes and clears them.
++// Passing nils is meaningful: it wipes whatever the previous room on this worker staged.
++func (n *Nanoarch) SetRoomCheats(opts map[string]string, codes []string) {
++	n.roomOptions, n.cheats = opts, codes
++}
++
+ func (n *Nanoarch) SetSaveDirSuffix(sx string) {
+ 	dir := C.GoString(n.cSaveDirectory) + "/" + sx
+ 	err := os.CheckCreateDir(dir)
+@@ -239,6 +247,8 @@ func (n *Nanoarch) CoreLoad(meta Metadata) {
+ 	retroReset = coreLib.load("retro_reset")
+ 	retroRun = coreLib.load("retro_run")
+ 	retroLoadGame = coreLib.load("retro_load_game")
++	retroCheatReset = coreLib.load("retro_cheat_reset")
++	retroCheatSet = coreLib.load("retro_cheat_set")
+ 	retroUnloadGame = coreLib.load("retro_unload_game")
+ 	retroSerializeSize = coreLib.load("retro_serialize_size")
+ 	retroSerialize = coreLib.load("retro_serialize")
+@@ -317,10 +327,46 @@ func (n *Nanoarch) LoadGame(path string) error {
+ 		}
+ 	}
+ 
++	// Per-room cheats, part 1: core-option cheats (arcade cheats feature). LAST writer wins on purpose —
++	// this is one player's explicit choice for one room, so it outranks the static config and the per-game
++	// manifest. The core reads these while loading, so they must land before retro_load_game.
++	for k, v := range n.roomOptions {
++		n.options[k] = v
++		n.log.Info().Msgf("[room-cheat] option %v=%v", k, v)
++	}
++
+ 	if ok := C.bridge_retro_load_game(retroLoadGame, &game); !ok {
+ 		return fmt.Errorf("core failed to load ROM: %v", path)
+ 	}
+ 
++	// Per-room cheats, part 2: cheat codes, which are only meaningful once the game is loaded (they poke
++	// its memory).
++	//
++	// retro_cheat_reset runs UNCONDITIONALLY. Nanoarch is a process-wide singleton (Nan0) and a worker
++	// serves one room after another, so "only reset when this room has cheats" would let the previous
++	// room's codes survive into a room that asked for none. RetroArch resets on every content load too.
++	//
++	// Every core EXPORTS retro_cheat_set — a good number implement it as an empty stub, and then a code is
++	// accepted and does nothing. There is no way to detect that from here, which is why the site only
++	// offers codes on the systems ArcadeCheatCatalog.SupportsCheatCodes allowlists.
++	C.bridge_retro_cheat_reset(retroCheatReset)
++	applied := 0
++	for _, code := range n.cheats {
++		if code == "" {
++			continue
++		}
++		cs := C.CString(code)
++		C.bridge_retro_cheat_set(retroCheatSet, C.unsigned(applied), C.bool(true), cs)
++		C.free(unsafe.Pointer(cs))
++		applied++
++	}
++	if applied > 0 {
++		n.log.Info().Msgf("[room-cheat] applied %d cheat code(s)", applied)
++	}
++	// Staged per-room state is consumed here. Clearing it means a later load on this singleton — a disc
++	// swap, a core reload — can't silently re-apply a previous room's cheats.
++	n.roomOptions, n.cheats = nil, nil
++
+ 	var av C.struct_retro_system_av_info
+ 	C.bridge_retro_get_system_av_info(retroGetSystemAVInfo, &av)
+ 	n.log.Info().Msgf("System A/V >>> %vx%v (%vx%v), [%vfps], AR [%v], audio [%vHz]",
+@@ -671,6 +717,8 @@ var (
+ 	retroGetSystemInfo           unsafe.Pointer
+ 	retroInit                    unsafe.Pointer
+ 	retroLoadGame                unsafe.Pointer
++	retroCheatReset              unsafe.Pointer
++	retroCheatSet                unsafe.Pointer
+ 	retroReset                   unsafe.Pointer
+ 	retroRun                     unsafe.Pointer
+ 	retroSetAudioSample          unsafe.Pointer
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.h b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
+index b5951b2..d2aef32 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.h
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
+@@ -5,6 +5,8 @@ void bridge_call(void *f);
+ void bridge_set_callback(void *f, void *callback);
+ 
+ bool bridge_retro_load_game(void *f, struct retro_game_info *gi);
++void bridge_retro_cheat_reset(void *f);
++void bridge_retro_cheat_set(void *f, unsigned index, bool enabled, const char *code);
+ bool bridge_retro_serialize(void *f, void *data, size_t size);
+ size_t bridge_retro_serialize_size(void *f);
+ bool bridge_retro_unserialize(void *f, void *data, size_t size);
+diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
+index 29add73..7d38dbd 100644
+--- a/pkg/worker/coordinatorhandlers.go
++++ b/pkg/worker/coordinatorhandlers.go
+@@ -148,6 +148,15 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 		app.EnableCloudStorage(uid, w.storage)
+ 		app.EnableRecording(rq.Record, rq.RecordUser, gameName)
+ 
++		// Per-room cheats (arcade cheats feature). MUST be set before app.Load: core options are read by
++		// the core during retro_load_game, and the cheat codes are applied immediately after it returns.
++		// Called UNCONDITIONALLY — nanoarch is a process-wide singleton, so a room with no cheats has to
++		// clear what the previous room on this worker staged, not just skip staging its own.
++		app.SetRoomCheats(rq.CoreOptions, rq.Cheats)
++		if len(rq.CoreOptions) > 0 || len(rq.Cheats) > 0 {
++			w.log.Info().Msgf("Per-room cheats: %d core option(s), %d code(s)", len(rq.CoreOptions), len(rq.Cheats))
++		}
++
+ 		r.SetApp(app)
+ 
+ 		// Per-room encoder quality (arcade per-room bitrate/FEC): the creator's t=104 carries an

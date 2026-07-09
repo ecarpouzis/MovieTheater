@@ -671,17 +671,26 @@ function getArcadeRooms() {
 }
 
 // Create a room for a game → returns the creator's join descriptor (empty room_id, isCreator).
-function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0 } = {}) {
+function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0, cheats = [] } = {}) {
   return fetch("/API/Arcade/Room", {
     method: "post",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gameId, newGame, seedSlot, videoBitrateKbps, audioFec }),
+    body: JSON.stringify({ gameId, newGame, seedSlot, videoBitrateKbps, audioFec, cheats }),
   });
 }
 
 // The signed-in user's durable saves for a game (arcade-saves-plan) — drives the resume picker.
 function listArcadeSaves(gameId) {
   return fetch(`/API/Arcade/Games/${gameId}/Saves`).then((r) => (r.ok ? r.json() : [])).catch(() => []);
+}
+
+// Cheats offered for ONE version (ROM) of a game — lazy-loaded when the card's picker opens, because a
+// popular title carries hundreds of community codes.
+function getArcadeCheats(gameId) {
+  return fetch(`/API/Arcade/Game/${gameId}/Cheats`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => (d && Array.isArray(d.cheats) ? d.cheats : []))
+    .catch(() => []);
 }
 
 // My Saves management (arcade-saves-plan S3).
@@ -1018,6 +1027,7 @@ const MovieAPI = {
   getArcadeRooms,
   createArcadeRoom,
   listArcadeSaves,
+  getArcadeCheats,
   deleteArcadeSave,
   renameArcadeSave,
   arcadeSaveDownloadUrl,

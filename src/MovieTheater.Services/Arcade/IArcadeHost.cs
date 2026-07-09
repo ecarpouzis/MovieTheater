@@ -40,6 +40,11 @@ namespace MovieTheater.Services.Arcade
     /// 0-based controller port, the CloudRetro launch key, the ICE servers, and whether this browser
     /// is the room creator (who must send t=104 with an empty room_id, then call Bind).
     /// </summary>
+    /// <param name="CoreOptions">Per-room libretro core-option cheats the creator enabled (e.g.
+    /// <c>pcsx2_widescreen_hint</c>). Empty for a joiner: the room's emulator is already running.</param>
+    /// <param name="CheatCodes">Per-room cheat codes for <c>retro_cheat_set</c>. These ride the descriptor
+    /// rather than the WS URL (as <c>?vbr</c>/<c>?fec</c> do) because a code list is far too long for a query
+    /// string. They are not security-sensitive — the creator is choosing cheats for their own room.</param>
     public sealed record ArcadeJoinDescriptor(
         string RoomCode,
         string WsUrl,
@@ -47,7 +52,9 @@ namespace MovieTheater.Services.Arcade
         string GameKey,
         IReadOnlyList<ArcadeIceServer> IceConfig,
         bool IsCreator,
-        string System);
+        string System,
+        IReadOnlyDictionary<string, string>? CoreOptions = null,
+        IReadOnlyList<string>? CheatCodes = null);
 
     public sealed record ArcadeIceServer(string Urls);
 }

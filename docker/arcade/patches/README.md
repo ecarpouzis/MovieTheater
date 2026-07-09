@@ -433,3 +433,30 @@ real outage is not smoothed away — reaction to genuine congestion is delayed b
 leaves as a microburst, and GCC's delay-based detector occasionally reads one as congestion even on
 idle wired gigabit (measured: a single-tick 11000→7828 dip on an ethernet LAN over a direct host
 pair, recovered in 4 s). Those one-tick artifacts no longer move the encoder at all.
+
+## 0027-per-room-cheats.patch — cheats the room creator picked in the lobby
+
+Adds `core_options` (map) and `cheats` (list of raw codes) to the `GAME_START` (t=104) packet, relays
+them through the coordinator, and applies them in nanoarch around `retro_load_game`:
+
+- **Core options** merge into `n.options` *before* the load (the core reads its variables while
+  loading), after the config and the `game-overrides.json` manifest — the room creator's explicit
+  choice is the last writer. This is how PS2's `pcsx2_widescreen_hint` gets switched on per room.
+- **Cheat codes** go to `retro_cheat_set` *after* the load, because a code pokes the loaded game's
+  memory. A new C bridge exposes `retro_cheat_reset` / `retro_cheat_set`; nanoarch had neither.
+
+**Two traps this patch is shaped around:**
+
+1. `api.StartGameRequest` (worker) must carry the fields, not just `GameStartUserRequest` (browser).
+   The coordinator decodes into the former and **silently drops unknown JSON fields** — the exact way
+   per-room bitrate (0018) went nowhere for days. Rebuilding the worker alone is not enough:
+   **rebuild the coordinator too.**
+2. `nanoarch.Nan0` is a process-wide singleton and one worker serves rooms back to back, so
+   `retro_cheat_reset` is called on **every** load (not only when the room has cheats) and the staged
+   options/codes are cleared once consumed. Otherwise a room that asked for no cheats inherits the
+   previous room's.
+
+**Not a guarantee that a code does anything.** Every libretro core *exports* `retro_cheat_set`; many
+implement it as an empty stub (pcsx2, dolphin, ppsspp read their own cheat formats from disk instead).
+Nothing observable distinguishes the two at runtime, so the SITE decides which systems may offer codes
+— `ArcadeCheatCatalog.SupportsCheatCodes`. See docs/arcade-cheats.md.
