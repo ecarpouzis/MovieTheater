@@ -1,0 +1,28 @@
+diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
+index 396b787..18202fa 100644
+--- a/pkg/worker/caged/libretro/frontend.go
++++ b/pkg/worker/caged/libretro/frontend.go
+@@ -190,10 +190,21 @@ func (f *Frontend) LoadCore(emu string) {
+ 		f.nano.SetSaveDirSuffix(f.storage.MainPath())
+ 		f.log.Debug().Msgf("Using unique dir for saves: %v", f.storage.MainPath())
+ 	}
++	// Scale > 1 magnifies (2D cores: integer nearest upscale, which is what preserves pixel art and puts
++	// the 4:2:0 chroma plane back at native resolution). Scale < 1 SHRINKS, which is supersampling:
++	// render the core at N x native and average it down before the encoder sees it. That is the only
++	// anti-aliasing available to cores whose MSAA is inert under libretro's non-multisampled hw_render
++	// FBO (measured: mupen64plus and ppsspp produce BIT-IDENTICAL frames with MSAA on and off; only
++	// Dolphin, which owns its framebuffers, actually multisamples).
++	//
++	// The old gate was `> 1`, which silently ignored any fractional scale. round() in the media pipe
++	// already handles it (it rounds up to an even size), so this is the whole change. Pair a fractional
++	// scale with a SMOOTH scaleMethod (bilinear2): nearest would point-sample and defeat the purpose —
++	// downscaling with nearest doesn't anti-alias, it aliases.
+ 	scale := 1.0
+-	if conf.Scale > 1 {
++	if conf.Scale > 0 && conf.Scale != 1 {
+ 		scale = conf.Scale
+-		f.log.Debug().Msgf("Scale: x%v", scale)
++		f.log.Debug().Msgf("Scale: x%v (%s)", scale, map[bool]string{true: "supersample", false: "magnify"}[scale < 1])
+ 	}
+ 	f.storage.SetNonBlocking(conf.NonBlockingSave)
+ 	f.scale = scale

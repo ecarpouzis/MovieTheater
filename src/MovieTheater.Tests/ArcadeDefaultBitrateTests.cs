@@ -20,7 +20,7 @@ namespace MovieTheater.Tests
         [Theory]
         [InlineData("gc", 14000)]   // 1280x1056 — the most starved at a flat 5 Mbps
         [InlineData("ps2", 12000)]  // 1280x896 after the 2x upscale; 6000 left it at ~95ms jitter buffer
-        [InlineData("n64", 9000)]   //  960x720
+        [InlineData("n64", 11000)] // 1280x960, supersampled from 1920x1440
         [InlineData("psp", 7000)]   //  960x544
         [InlineData("dc", 11000)]  // 1280x960 since flycast's frames stopped being decimated
         [InlineData("ps1", 6000)]

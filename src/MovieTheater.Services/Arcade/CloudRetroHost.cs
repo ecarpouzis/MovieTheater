@@ -102,10 +102,10 @@ namespace MovieTheater.Services.Arcade
             "ps2" => 12000, // 1280x896  = 1.15 Mpx after the 2x upscale. NOT optional: at the old 6 Mbps
                             // ceiling God of War's jitter buffer sat at ~95 ms with erratic fps; at 12 Mbps
                             // it is 13 ms and a locked 60. Upscale and bitrate ship together or not at all.
-            "n64" => 9000,  //  960x720  = 0.69 Mpx
+            "n64" => 11000, // 1280x960 = 1.23 Mpx (rendered 1920x1440, supersampled down)
             "psp" => 7000,  //  960x544  = 0.52 Mpx (much of it 30fps content)
-            "dc" => 11000,  // 1280x960 = 1.23 Mpx. flycast ALWAYS rendered this; CloudRetro was nearest-
-                            // downscaling it to 640x480 and discarding 3 of 4 samples until 2026-07-09.
+            "dc" => 11000,  // 1280x960 = 1.23 Mpx (rendered 1920x1440, supersampled down). flycast always
+                            // rendered big; CloudRetro nearest-downscaled it to 640x480 until 2026-07-09.
             // PS1 swings 512x480 <-> 1280x960 mid-game, but the frame is a nearest 2x upscale (cheap bits).
             "ps1" => 6000,
             // Everything 2D: nearest-upscaled flat blocks. 5 Mbps is already generous.

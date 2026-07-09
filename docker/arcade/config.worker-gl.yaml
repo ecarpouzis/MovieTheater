@@ -113,8 +113,18 @@ emulator:
           # above (SaveState is no longer called on a timer). Kept as the documented default for any
           # future on-demand save path.
           hacks: [skip_hw_context_destroy, skip_same_thread_save]
+          # SUPERSAMPLING (patch 0023). MSAA is INERT on this core — libretro's hw_render FBO isn't
+          # multisampled, so ppsspp/mupen64plus produce BIT-IDENTICAL frames with it on or off (only
+          # Dolphin, which owns its framebuffers, really multisamples). The AA that DOES work here is to
+          # render big and average down: `scale` < 1 shrinks. Measured on raw frames from the same source
+          # image, 1920x1440 -> 960x720: hard edges 2.112% (nearest) vs 1.792% (bilinear2), a 15% drop.
+          # ⚠ A fractional scale MUST be paired with a smooth scaleMethod — downscaling with nearest
+          # point-samples and ALIASES rather than anti-aliases.
+          # Render 1920x1088 (4x native), deliver 960x544: pure AA, no extra bitrate. ~0.64 CPU core.
+          scale: 0.5
+          scaleMethod: bilinear2
           options:
-            ppsspp_internal_resolution: "960x544"   # 2x native (480x272), downsample-encode reads crisp
+            ppsspp_internal_resolution: "1920x1088"
             # IR JIT, NOT the default fastmem JIT: PPSSPP's fastmem relies on a SIGSEGV/AV handler
             # ("Exception handler not implemented on this platform, can't install" in the embedded worker) —
             # without it a benign fastmem fault becomes a hard 0xc0000005 crash in retro_run. IR JIT does
@@ -147,10 +157,18 @@ emulator:
           # makes videoconvertscale a passthrough and the full frame reaches NVENC. Verified: the client
           # receives 1280x960, 60fps, 0 dropped.
           scale: 2
+          scaleMethod: bilinear2   # ⚠ REQUIRED: the source is now bigger than the output, so this is a
+                                   # DOWNSCALE. nearest here would point-sample and alias.
           options:
             # ⚠ THE PREFIX IS `reicast_`, NOT `flycast_` — the DLL has 140 reicast_* keys and zero real
             # flycast_* keys, and libretro SILENTLY IGNORES unknown option keys.
-            reicast_internal_resolution: "1280x960"
+            # 1920x1440 rendered, 1280x960 delivered (base 640x480 x scale 2) => 1.5x supersample.
+            reicast_internal_resolution: "1920x1440"
+            # 16x anisotropic. `off` measured IDENTICAL to the core's stated default, so the default is
+            # effectively off; 16 demonstrably changes the frame (mid-frequency detail +7%).
+            reicast_anisotropic_filtering: "16"
+            # REJECTED: reicast_alpha_sorting "per-pixel (accurate)". Correct, but it cost 58fps and 3
+            # freezes vs 60fps/0 at the per-triangle default. Per-pixel OIT is not worth it here.
           # ⚠ DC RESOLUTION IS NOT RAISEABLE FROM HERE. Measured 2026-07-08 (docs/arcade-quality-plan.md §10):
           # CloudRetro pins the encode size to the core's BASE geometry — Frontend.FrameSize() returns
           # nano.BaseWidth()/BaseHeight() (frontend.go:424) and ignores the per-frame size video_cb reports.
@@ -188,7 +206,14 @@ emulator:
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
-          hacks: [skip_hw_context_destroy]   # flycast libco-teardown fault — see dc note
+          hacks: [skip_hw_context_destroy]
+          # Same flycast base-geometry trap as dc: the core always reports base 640x480, so without an
+          # explicit scale we would deliver 640x480 no matter what it renders. Kept in lockstep with dc.
+          scale: 2
+          scaleMethod: bilinear2
+          options:
+            reicast_internal_resolution: "1920x1440"
+            reicast_anisotropic_filtering: "16"   # flycast libco-teardown fault — see dc note
         atomiswave:
           lib: flycast_libretro
           folder: atomiswave
@@ -197,7 +222,14 @@ emulator:
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
-          hacks: [skip_hw_context_destroy]   # flycast libco-teardown fault — see dc note
+          hacks: [skip_hw_context_destroy]
+          # Same flycast base-geometry trap as dc: the core always reports base 640x480, so without an
+          # explicit scale we would deliver 640x480 no matter what it renders. Kept in lockstep with dc.
+          scale: 2
+          scaleMethod: bilinear2
+          options:
+            reicast_internal_resolution: "1920x1440"
+            reicast_anisotropic_filtering: "16"   # flycast libco-teardown fault — see dc note
 
         # PS2 via pcsx2_libretro (LRPS2). GL 3D core like psp/dc: same isGlAllowed + coreAspectRatio
         # Flip contract, usesLibCo thread-affinity, and skip_hw_context_destroy teardown hack. Requires
@@ -243,6 +275,9 @@ emulator:
             # Sharpens ground/road planes at oblique angles, and it HELPS the encoder: less texture
             # shimmer = less high-frequency temporal noise to spend bits on. Values: disabled|2x|4x|8x|16x.
             pcsx2_anisotropic_filtering: "8x"
+            # Blending accuracy Basic -> Medium: more correct transparency/blend effects, and it measured
+            # free (60fps, 0 freezes, 0 dropped at 1280x896).
+            pcsx2_blending_accuracy: "Medium"
             # NOTE: upscaling PS2 exposes per-game half-pixel/sprite misalignment. Those fixes are
             # per-title (pcsx2_half_pixel_offset, pcsx2_round_sprite, ...) and are all gated behind
             # pcsx2_enable_hw_hacks, which must NEVER be a global default. They belong in
@@ -266,6 +301,10 @@ emulator:
           # first retro_run, so the load-time retro_serialize_size probe walks save-state into a NULL
           # g_vertex_manager → 0xc0000005. The probe only feeds a log line; saves re-query at save time.
           hacks: [skip_hw_context_destroy, skip_serialize_size_probe]
+          # Render efb_scale 3 (1920x1584), deliver 1280x1056: supersampled on TOP of 4x MSAA (MSAA works
+          # here; see dolphin_anti_aliasing). 60fps, 0 dropped, ~1.38 CPU cores, GPU 22%.
+          scale: 0.6667
+          scaleMethod: bilinear2
           options:
             # OpenGL backend so Dolphin draws into CloudRetro's GL (WGL) hw-render context. A Vulkan/D3D
             # backend renders to a private device the GL capture never sees -> black frame (the ps2
@@ -283,7 +322,7 @@ emulator:
             # (partial deadlock — /echo alive, coordinator WS dead) at ANY scale (reproduced at "1" too);
             # the GL Worker Watchdog task auto-recycles a wedged worker within ~60s. Real fix = debug the
             # teardown deadlock (dump: scratchpad worker-hung-27168.dmp).
-            dolphin_efb_scale: "2"
+            dolphin_efb_scale: "3"
             # 4x MSAA. The ONLY core where MSAA measurably does anything: A/B'd on RAW pre-encode frames
             # (patch 0022) over 3 runs each, the share of edges that are HARD fell 6.29% -> 4.08%, with no
             # overlap between the groups. n64 (gliden64) and psp (ppsspp) produce BIT-IDENTICAL frames with
@@ -293,6 +332,10 @@ emulator:
             # This is invisible from the browser: H.264 quantization erases the sub-pixel edge gradients AA
             # creates. Never A/B anti-aliasing on the decoded stream.
             dolphin_anti_aliasing: "2"
+            # 16x anisotropic. Not an AA operation, so hardShare can't score it — what it does show is
+            # RETAINED texture detail: on dc the same measurement moved mid-frequency edges +7% with no
+            # meaningful hard-edge change. Values are numeric: 0=1x(off) 1=2x 2=4x 3=8x 4=16x.
+            dolphin_max_anisotropy: "4"
             # SINGLE-THREADED + synchronous shaders. Dolphin's async shader compile / separate GPU thread
             # each need a REAL shared GL context on a worker thread; nanoarch patch 0016 acknowledges env 44
             # but doesn't hand out an actual wglShareLists context, so those threads deref a null GL object
@@ -315,11 +358,21 @@ emulator:
           # compositor dropped ~6%. Fixed 60Hz cadence paces the encoder/RTP timestamps evenly.
           vfr: false
           coreAspectRatio: true
+          # SUPERSAMPLING (patch 0023). MSAA is INERT on this core — libretro's hw_render FBO isn't
+          # multisampled, so mupen64plus/ppsspp produce BIT-IDENTICAL frames with it on or off (only
+          # Dolphin, which owns its framebuffers, really multisamples). The AA that DOES work here is to
+          # render big and average down: `scale` < 1 shrinks. Measured on raw frames from the same source
+          # image, 1920x1440 -> 960x720: hard edges 2.112% (nearest) vs 1.792% (bilinear2), a 15% drop.
+          # ⚠ A fractional scale MUST be paired with a smooth scaleMethod — downscaling with nearest
+          # point-samples and ALIASES rather than anti-aliases.
+          # Render 1920x1440 (6x native), deliver 1280x960: supersampled AND higher resolution.
+          # Costs ~1.0 CPU core per room (0.37 without); two concurrent rooms fit easily on the 13700K.
+          scale: 0.6667
+          scaleMethod: bilinear2
           options:
-            # QUALITY (docs/arcade-quality-plan.md Phase 3). 960x720 = 3x native (was 640x480 = 2x).
             # Legal values are a fixed list (verified in mupen64plus_next_libretro.dll):
-            # 320x240, 640x480, 960x720, 1280x960, 1440x1080, ... — not an arbitrary WxH.
-            mupen64plus-43screensize: "960x720"
+            # 320x240, 640x480, 960x720, 1280x960, ..., 1920x1440 — not an arbitrary WxH.
+            mupen64plus-43screensize: "1920x1440"
             # MSAA left OFF (core default). "4" was tried and A/B-measured on Mario Kart 64 at 960x720:
             # hardEdgeFrac 1.033% (MSAA=4) vs 1.028% (MSAA=0) — NO measurable anti-aliasing. Two candidate
             # reasons, both unresolved: the probe reads the H.264-decoded stream (quantization at 5 Mbps
@@ -499,6 +552,15 @@ encoder:
     codec: h264
     threads: 0
     keyframeInterval: 300
+    # FULL-RANGE luma. The cores emit RGB with luma 0..255; the pipeline was converting to LIMITED range
+    # (16..235) and correctly signalling limited, throwing away ~14% of the code values (220 of 256) —
+    # precision lost, banding in dark scenes. CloudRetro's capsfilter says `color-range=0_255`, but that
+    # is NOT a video/x-raw caps field in GStreamer and is silently ignored; the field that matters is
+    # `colorimetry`, which is what this sets. Measured end-to-end against the RAW source frames:
+    # limited (viewer-expanded) 37.751 dB vs full range 37.872 dB (+0.121). Verified the SPS then carries
+    # video_full_range_flag=1 (it was 0), and that Chrome reports VideoFrame.colorSpace.fullRange=true.
+    # Format is range:matrix:transfer:primaries -> 1=0..255, 3=BT709, 5=BT709, 1=BT709.
+    colorimetry: "1:3:5:1"
   list:
     h264:
       encoder: nvh264enc

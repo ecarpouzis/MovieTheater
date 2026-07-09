@@ -339,3 +339,32 @@ unjudgeable by PSNR). Preset barely matters: p6 adds +0.01 dB over p4 once High 
 
 Bit-identical raw frames across runs also proved that **mupen64plus is deterministic at a fixed frame
 index**, which is what makes its attract demo a usable A/B fixture.
+
+---
+
+## 0023-fractional-scale-supersampling.patch — supersampling
+
+One gate: `if conf.Scale > 1` became `if conf.Scale > 0 && conf.Scale != 1`. `round()` in the media pipe
+already handled fractional scale, so that is the entire change.
+
+**Why.** MSAA is inert on every core except Dolphin — libretro's `hw_render` FBO isn't multisampled, so
+mupen64plus and ppsspp produce BIT-IDENTICAL frames with their MSAA options on or off (patch 0022 proved
+it on raw frames). The AA that *does* work is to render big and average down. `scale < 1` shrinks.
+
+Measured on raw frames from the **same source image** (so content cannot confound it), 1920×1440 → 960×720:
+
+| resampler | hard edges |
+|---|---|
+| nearest-neighbour | 2.112% |
+| **bilinear2** | **1.792%** (−15%) |
+| lanczos | 1.969% |
+
+> ⚠ A fractional scale MUST be paired with a smooth `scaleMethod`. Downscaling with nearest
+> point-samples: it *aliases* rather than anti-aliases. That is precisely the bug DC had for months.
+
+Cost, per room, measured (worker CPU, 13700K): n64 0.37 → 1.02 cores; psp 0.64; gc 1.38. Two concurrent
+rooms fit comfortably. GPU stays ≈20%.
+
+Live config now renders above the delivered size on n64 (1920×1440 → 1280×960), psp (1920×1088 →
+960×544), gc (1920×1584 → 1280×1056, on top of working 4× MSAA) and the flycast family (1920×1440 →
+1280×960, where `scale: 2` multiplies flycast's permanently-640×480 base).
