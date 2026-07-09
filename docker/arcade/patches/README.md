@@ -474,3 +474,12 @@ capped at `pace` pauses per frame — Windows timer granularity makes grouping, 
 spacing, the portable unit. Pacing off (0, the LAN default) is byte-identical to pre-patch.
 The coordinator relays the new StartGameRequest field — as with 0018/0027, REBUILD THE
 COORDINATOR TOO or the field is silently dropped.
+
+## 0029-pli-keyframe-responder
+
+Answers RTCP PLI/FIR with a forced keyframe (rate-limited to one per 500 ms), via the patch-0012
+RequestKeyframe window. REQUIRED once the encoder runs infinite-GOP intra-refresh (see
+docker/arcade/gst-nvcodec-intrarefresh.patch): with no periodic IDRs and feedback ignored, one
+unrepaired loss freezes a viewer until the next join — the 2026-07-09 bug, reintroduced. The RTCP
+drain loop already existed and discarded everything; this parses it. Room wiring is a process-global
+callback set in NewRoom (one worker = one room, the SetPacing pattern).

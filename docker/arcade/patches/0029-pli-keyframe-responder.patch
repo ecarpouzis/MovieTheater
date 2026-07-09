@@ -1,0 +1,104 @@
+--- a/pkg/network/webrtc/webrtc.go
++++ b/pkg/network/webrtc/webrtc.go
+@@ -1,6 +1,7 @@
+ package webrtc
+ 
+ import (
++	"github.com/pion/rtcp"
+ 	"cmp"
+ 	"encoding/json"
+ 	"fmt"
+@@ -394,9 +395,24 @@
+ 		go func() {
+ 			rtcpBuf := make([]byte, 1500)
+ 			for {
+-				if _, _, rtcpErr := rtpSender.Read(rtcpBuf); rtcpErr != nil {
++				n, _, rtcpErr := rtpSender.Read(rtcpBuf)
++				if rtcpErr != nil {
+ 					return
+ 				}
++				// PLI/FIR = the viewer saying "I lost the picture, send something decodable."
++				// With an infinite GOP + intra-refresh there are no periodic IDRs, so answering
++				// these is the ONLY loss-recovery path — ignoring them is exactly how AV1 rooms
++				// froze until the next join (patch 0029). Rate-limited in the handler.
++				pkts, perr := rtcp.Unmarshal(rtcpBuf[:n])
++				if perr != nil {
++					continue
++				}
++				for _, pkt := range pkts {
++					switch pkt.(type) {
++					case *rtcp.PictureLossIndication, *rtcp.FullIntraRequest:
++						requestKeyframeRateLimited()
++					}
++				}
+ 			}
+ 		}()
+ 	}
+--- a/pkg/worker/room/room.go
++++ b/pkg/worker/room/room.go
+@@ -1,6 +1,7 @@
+ package room
+ 
+ import (
++	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
+ 	"iter"
+ 	"sync"
+ 	"sync/atomic"
+@@ -59,6 +60,10 @@
+ }
+ 
+ func NewRoom[T Session](id string, app app.App, um SessionManager[T], media MediaPipe) *Room[T] {
++	// PLI/FIR -> keyframe (patch 0029): with an infinite GOP + intra-refresh there are no periodic
++	// IDRs, so a viewer that loses the reference chain recovers ONLY by asking. Process-global like
++	// SetPacing (one worker = one room); each room re-points it at its own media pipe.
++	webrtc.OnKeyframeRequest(media.RequestKeyframe)
+ 	return &Room[T]{id: id, app: app, users: um, media: media}
+ }
+ 
+--- /dev/null
++++ b/pkg/network/webrtc/plikeyframe.go
+@@ -0,0 +1,44 @@
++// PLI/FIR → keyframe (patch 0029), the required companion to intra-refresh. The encoder runs an
++// infinite GOP with rolling intra refresh (no periodic IDR pulses at all), so when a viewer's
++// decoder loses the reference chain — unrepaired packet loss, a browser decode hiccup — the ONLY
++// way it ever gets a decodable picture again is to ask. Browsers ask automatically: they send RTCP
++// PLI (and some send FIR). CloudRetro historically ignored both, which is exactly how AV1 rooms
++// froze until the next join event (2026-07-09).
++package webrtc
++
++import (
++	"sync/atomic"
++	"time"
++)
++
++// keyframeReq is wired by room.NewRoom to the media pipe's RequestKeyframe (patch 0012's forceKf
++// window). Process-global like SetPacing: one worker hosts exactly one room, and each new room
++// re-points it at its own pipe. A stale callback after a room closes is inert (it stores into an
++// atomic on a pipe nothing reads), so there is no unhook path.
++var keyframeReq atomic.Value // func()
++
++// lastKeyframeReq rate-limits PLI-driven keyframes (unix nanos). A lossy link PLI-storms — every
++// viewer, every frame gap — and answering each one would resurrect the periodic-IDR pulse problem
++// through the back door. One keyframe heals every viewer at once; half a second is far below the
++// old 2 s GOP worst case.
++var lastKeyframeReq atomic.Int64
++
++const keyframeReqMinInterval = 500 * time.Millisecond
++
++// OnKeyframeRequest registers the current room's keyframe trigger.
++func OnKeyframeRequest(f func()) { keyframeReq.Store(f) }
++
++func requestKeyframeRateLimited() {
++	f, _ := keyframeReq.Load().(func())
++	if f == nil {
++		return
++	}
++	now := time.Now().UnixNano()
++	last := lastKeyframeReq.Load()
++	if now-last < int64(keyframeReqMinInterval) {
++		return
++	}
++	if lastKeyframeReq.CompareAndSwap(last, now) {
++		f()
++	}
++}

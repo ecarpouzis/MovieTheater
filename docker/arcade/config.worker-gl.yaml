@@ -658,11 +658,16 @@ encoder:
       # observed live on Firefox 2026-07-09, repeatedly. gop-size=120 = keyframe every 2 s, the same
       # cadence h264 shipped with for weeks; the "periodic IDR = audio hitch" rationale for infinite
       # GOP predates the aux audio PC (patch 0020) and no longer applies.
-      # strict-gop: NVENC's own anti-pulsing knob ("minimize GOP-to-GOP rate fluctuations") — evens
-      # out the periodic-IDR cost so the 2 s keyframe cadence doesn't read as a visible quality pulse.
-      # (intra-refresh — rolling refresh, no IDRs at all — is the better long-term answer but this
-      # GStreamer build's nvcodec elements don't expose it; noted in the quality plan as future work.)
-      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=120 strict-gop=true zerolatency=true"
+      # INTRA-REFRESH (2026-07-09): infinite GOP + a rolling intra wave every 2 s (15-frame wave).
+      # Zero keyframe pulses — verified 600 frames -> exactly 1 keyframe. The properties come from
+      # OUR patched nvcodec plugin (docker/arcade/gst-nvcodec-intrarefresh.patch — upstream GStreamer
+      # left them as literal TODOs; the system libgstnvcodec.dll is the patched build, original kept
+      # as .pre-intrarefresh.bak). ⚠ REQUIRED COMPANION: worker patch 0029 answers RTCP PLI/FIR with
+      # a forced keyframe (rate-limited 500 ms) — with no periodic IDRs and PLI ignored, one
+      # unrepaired loss would freeze a viewer forever (the exact bug fixed earlier today).
+      # Join sync stays on patch 0012's join-burst. INSTANT ROLLBACK: gop-size=120, drop the
+      # intra-refresh-* keys (works on the stock plugin too).
+      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=-1 intra-refresh-period=120 intra-refresh-count=15 zerolatency=true"
       caps: video/x-av1,stream-format=obu-stream ! av1parse ! video/x-av1,stream-format=obu-stream,alignment=tu
     h264:
       encoder: nvh264enc

@@ -97,3 +97,17 @@ Set `ArcadeMaxConcurrentRooms` in the site config to **the number of worker serv
 - **Genesis core lib name** — confirm `genesis_plus_gx_libretro` against the buildbot.
 - **Docker Desktop UDP proxy** under sustained media load — the one unbenchmarked unknown (Appendix E);
   fall back to WSL2 mirrored networking / a bridged Hyper-V VM if it shows loss/jitter.
+
+## gst-nvcodec-intrarefresh.patch (the intra-refresh plugin)
+
+Upstream GStreamer's nvcodec never exposed NVENC's intra-refresh (literal TODOs in
+gstnvav1encoder.cpp). This patch adds `intra-refresh-period` / `intra-refresh-count` properties to
+nvav1enc and wires them into NV_ENC_CONFIG_AV1. Build against the EXACT installed gst version
+(1.28.4): fetch the gst-plugins-bad tarball, apply, `meson setup bld2 -Dnvcodec=enabled
+-Dbuildtype=release` (default auto features — a minimal -Dauto_features=disabled build produces a
+reduced in-tree gstd3d11 that breaks the decoder half), `ninja sys/nvcodec/libgstnvcodec.dll`, then
+replace D:\msys64\ucrt64\lib\gstreamer-1.0\libgstnvcodec.dll (original kept as
+.pre-intrarefresh.bak). Verified: 600 encoded frames -> exactly 1 keyframe with
+gop-size=-1 intra-refresh-period=120 intra-refresh-count=15. ⚠ A gst package upgrade OVERWRITES the
+plugin — rebuild this patch after any MSYS2 gst update, and always deploy with worker patch 0029
+(PLI responder) or loss recovery has no path.

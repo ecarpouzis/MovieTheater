@@ -1,0 +1,103 @@
+--- a/sys/nvcodec/gstnvav1encoder.cpp
++++ b/sys/nvcodec/gstnvav1encoder.cpp
+@@ -97,6 +97,8 @@
+ 
+   /* encoding config */
+   PROP_GOP_SIZE,
++  PROP_INTRA_REFRESH_PERIOD,
++  PROP_INTRA_REFRESH_COUNT,
+   PROP_B_FRAMES,
+ 
+   /* rate-control params */
+@@ -136,6 +138,8 @@
+ #define DEFAULT_MULTI_PASS        GST_NV_ENCODER_MULTI_PASS_DEFAULT
+ #define DEFAULT_WEIGHTED_PRED     FALSE
+ #define DEFAULT_GOP_SIZE          75
++#define DEFAULT_INTRA_REFRESH_PERIOD 0
++#define DEFAULT_INTRA_REFRESH_COUNT 0
+ #define DEFAULT_B_FRAMES          0
+ #define DEFAULT_RATE_CONTROL      GST_NV_ENCODER_RC_MODE_DEFAULT
+ #define DEFAULT_QP                -1
+@@ -174,6 +178,8 @@
+   gboolean weighted_pred;
+ 
+   gint gop_size;
++  guint intra_refresh_period;
++  guint intra_refresh_count;
+   guint bframes;
+ 
+   GstNvEncoderRCMode rc_mode;
+@@ -332,6 +338,16 @@
+       g_param_spec_int ("gop-size", "GOP size",
+           "Number of frames between intra frames (-1 = infinite)",
+           -1, G_MAXINT, DEFAULT_GOP_SIZE, param_flags));
++  g_object_class_install_property (object_class, PROP_INTRA_REFRESH_PERIOD,
++      g_param_spec_uint ("intra-refresh-period", "Intra Refresh Period",
++          "Interval in frames between successive intra-refresh waves "
++          "(0 = disabled). Use with an infinite GOP for keyframe-free streams",
++          0, G_MAXINT, DEFAULT_INTRA_REFRESH_PERIOD, param_flags));
++  g_object_class_install_property (object_class, PROP_INTRA_REFRESH_COUNT,
++      g_param_spec_uint ("intra-refresh-count", "Intra Refresh Count",
++          "Length of an intra-refresh wave in frames "
++          "(must be smaller than intra-refresh-period)",
++          0, G_MAXINT, DEFAULT_INTRA_REFRESH_COUNT, param_flags));
+   if (dev_caps->max_bframes > 0) {
+     g_object_class_install_property (object_class, PROP_B_FRAMES,
+         g_param_spec_uint ("bframes", "B Frames",
+@@ -522,6 +538,8 @@
+   self->multipass = DEFAULT_MULTI_PASS;
+   self->weighted_pred = DEFAULT_WEIGHTED_PRED;
+   self->gop_size = DEFAULT_GOP_SIZE;
++  self->intra_refresh_period = DEFAULT_INTRA_REFRESH_PERIOD;
++  self->intra_refresh_count = DEFAULT_INTRA_REFRESH_COUNT;
+   self->bframes = DEFAULT_B_FRAMES;
+   self->rc_mode = DEFAULT_RATE_CONTROL;
+   self->qp_const_i = DEFAULT_QP;
+@@ -733,6 +751,12 @@
+     case PROP_GOP_SIZE:
+       update_int (self, &self->gop_size, value, UPDATE_INIT_PARAM);
+       break;
++    case PROP_INTRA_REFRESH_PERIOD:
++      update_uint (self, &self->intra_refresh_period, value, UPDATE_INIT_PARAM);
++      break;
++    case PROP_INTRA_REFRESH_COUNT:
++      update_uint (self, &self->intra_refresh_count, value, UPDATE_INIT_PARAM);
++      break;
+     case PROP_B_FRAMES:
+       update_uint (self, &self->bframes, value, UPDATE_INIT_PARAM);
+       break;
+@@ -847,6 +871,12 @@
+     case PROP_GOP_SIZE:
+       g_value_set_int (value, self->gop_size);
+       break;
++    case PROP_INTRA_REFRESH_PERIOD:
++      g_value_set_uint (value, self->intra_refresh_period);
++      break;
++    case PROP_INTRA_REFRESH_COUNT:
++      g_value_set_uint (value, self->intra_refresh_count);
++      break;
+     case PROP_B_FRAMES:
+       g_value_set_uint (value, self->bframes);
+       break;
+@@ -1155,8 +1185,7 @@
+   av1_config->enableFrameIdNumbers = FALSE;
+   av1_config->disableSeqHdr = FALSE;
+   av1_config->repeatSeqHdr = TRUE;
+-  /* TODO: property */
+-  av1_config->enableIntraRefresh = FALSE;
++  av1_config->enableIntraRefresh = self->intra_refresh_period > 0;
+   /* TODO: main profile only for now */
+   av1_config->chromaFormatIDC = 1;
+   av1_config->enableBitstreamPadding = FALSE;
+@@ -1168,9 +1197,8 @@
+   av1_config->pixelBitDepthMinus8 = bitdepth_minus8;
+   av1_config->idrPeriod = config->gopLength;
+ 
+-  /* TODO: support intra refresh */
+-  av1_config->intraRefreshPeriod = 0;
+-  av1_config->intraRefreshCnt = 0;
++  av1_config->intraRefreshPeriod = self->intra_refresh_period;
++  av1_config->intraRefreshCnt = self->intra_refresh_count;
+ 
+   av1_config->maxNumRefFramesInDPB = 0;
+   av1_config->numFwdRefs = NV_ENC_NUM_REF_FRAMES_AUTOSELECT;
