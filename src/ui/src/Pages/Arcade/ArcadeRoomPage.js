@@ -207,6 +207,23 @@ export default function ArcadeRoomPage() {
     return () => window.removeEventListener("pagehide", onHide);
   }, [code]);
 
+  // Re-kick playback when the player comes back to the tab. Firefox suspends video decode for
+  // hidden tabs and can return with a BLACK frame on a perfectly healthy stream (observed live
+  // 2026-07-09: alt-tab back = audio playing, video black, worker shows media flowing). play() on
+  // an already-playing element is a no-op, so this is free when nothing is wrong.
+  useEffect(() => {
+    const rekick = () => {
+      if (document.visibilityState === "visible" && LIVE_STATUS.includes(statusRef.current)) tryPlayVideo();
+    };
+    window.addEventListener("focus", rekick);
+    document.addEventListener("visibilitychange", rekick);
+    return () => {
+      window.removeEventListener("focus", rekick);
+      document.removeEventListener("visibilitychange", rekick);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Track fullscreen so we can re-letterbox to the DISPLAY aspect: in fullscreen the UA drops the
   // wrapper's CSS aspectRatio and stretches it to the monitor (16:9), so a 4:3 game would smear wide.
   // The fix is a black full-screen container centering an inner aspect-box (see the player JSX below).
