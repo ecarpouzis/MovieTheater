@@ -16,6 +16,18 @@
 .PARAMETER ConfDir      Directory holding the worker config (config.worker-gl.yaml renamed config.yaml).
 .PARAMETER Ucrt64Bin    MSYS2 UCRT64 bin dir — its GStreamer DLLs must be on PATH for the cgo worker.
 .PARAMETER IceIpMap     What ICE advertises — MUST match docker/arcade/.env ZIGGY_PUBLIC_IP.
+.PARAMETER SinglePort   The worker's WebRTC UDP mux port. One port per worker (8446, 8447, …) — the
+                        split-audio aux PeerConnection (patch 0020) reuses the SAME Pion api/mux, so
+                        audio needs no extra port. Router must UDP-forward it; Defender rule
+                        "Arcade Site Traffic" already covers 8443-8448.
+.PARAMETER LogFile      Per-worker log. MUST be distinct per worker or the rotation below races.
+
+.NOTES
+    Multiple workers share one ConfDir by design (same tuned core list, same BIOS junction, same
+    core cache) — the retired WSL pool shared its `cores` volume across 3 workers the same way.
+    Saves are keyed by room id, so a shared storage dir is safe. The one caveat: when a NEW core is
+    added, two workers may race to download it into ./assets/cores on first boot; stagger their
+    starts (or pre-warm the core once) if you ever add one.
 #>
 param(
     [string]$WorkerExe  = "D:\Arcade\build\cloud-game-gl\bin\worker.exe",
@@ -76,7 +88,7 @@ while ($true) {
     if ((Test-Path $LogFile) -and ((Get-Item $LogFile).Length -gt 25MB)) {
         Move-Item $LogFile "$LogFile.1" -Force -ErrorAction SilentlyContinue
     }
-    Write-LogLine "starting glworker (zone=gl port=$SinglePort ice=$IceIpMap exe=$WorkerExe)"
+    Write-LogLine "starting glworker (zone=$($env:CLOUD_GAME_WORKER_NETWORK_ZONE) port=$SinglePort ice=$IceIpMap exe=$WorkerExe)"
     & cmd.exe /c "`"$WorkerExe`" --w-conf `"$ConfDir`" >> `"$LogFile`" 2>&1"
     $code = $LASTEXITCODE
     Write-LogLine ("glworker EXITED exitcode={0} (0x{1:X8}) - restarting in 4s" -f $code, ($code -band 0xFFFFFFFF))

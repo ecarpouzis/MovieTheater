@@ -213,6 +213,26 @@ intermittently on consecutive rooms; mitigated by running **2 gl workers** (8446
 loop, same pattern as the WSL pool. `scripts/run-arcade-glworker.ps1` reads `ZIGGY_PUBLIC_IP` from
 `docker/arcade/.env` now (no committed IP).
 
+### Worker 2 is a registered task (2026-07-08)
+
+Both workers are now logon Scheduled Tasks — worker 2 used to be hand-started, so it vanished on
+reboot and the pool silently fell back to **one worker = one concurrent room**.
+
+- `register-arcade-glworker-task.ps1 -WorkerId N` registers worker N. Port defaults to `8445 + N`
+  (8446, 8447, …); worker 1 keeps the original unsuffixed task name + `glworker.log`, workers 2+ get
+  a `" N"` task suffix and `glworker-N.log`. **Distinct log files are required** — the runner rotates
+  at 25 MB and a shared log would clobber crash dumps.
+- Workers **share one ConfDir** (`D:\ArcadeStorage\worker-gl`): same tuned core list, same BIOS
+  junction, same core cache, same saves dir (saves key off room id). The retired WSL pool shared its
+  `cores` volume across 3 workers identically. Only caveat: adding a *new* core can race two
+  first-boot downloads into `./assets/cores` — stagger starts or pre-warm the core once.
+- **One UDP port per worker, not two.** The split-audio aux PeerConnection (patch 0020) calls
+  `p.api.NewPeer()`, reusing the same Pion `api`/single-port mux, so audio adds no port.
+- Defender inbound rule "Arcade Site Traffic" already allows UDP **8443-8448**, so ports through 8448
+  need no firewall change — only a router UDP forward per port.
+- `ArcadeMaxConcurrentRooms` is advisory (t=112 is authoritative) and is already **3**, so it needs no
+  bump for a 2-worker pool. Bump it only if a worker 4 ever lands.
+
 ## Progress 2026-07-04 — code/config/BIOS landed; build+cutover is the remaining (elevated) work
 
 **Done (in-repo, no live effect yet — the zoning is behind a default-OFF flag):**
