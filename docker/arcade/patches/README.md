@@ -496,3 +496,12 @@ thread, and the size travels by value. Also fails soft with an error when a core
 serialize_size 0 instead of crashing on an empty buffer.
 
 NOTE the header change: same_thread_with_args2's last parameter is now size_t (was void*).
+
+## 0031-always-save-on-close
+
+Save-on-quit was gated on HasSave() ("only re-save if saved before"), so a session where nobody
+clicked Save harvested nothing and the vault's Continue slot stayed empty — and PS2 players
+couldn't click Save at all until 0030. The close-time save is now unconditional: one serialize at
+teardown (before Shutdown, core still live), invisible to players, and the vault always has
+something to harvest. Periodic autosave (autosaveSec) stays 0 — flycast hitches visibly on every
+serialize, and close-save covers continuity.

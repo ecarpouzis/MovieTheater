@@ -1,0 +1,17 @@
+--- a/pkg/worker/caged/libretro/frontend.go
++++ b/pkg/worker/caged/libretro/frontend.go
+@@ -304,8 +304,12 @@
+ 	f.nano.LastFrameTime = time.Now()
+ 
+ 	defer func() {
+-		// Save game on quit if it was saved before (shared or click-saved).
+-		if f.SaveOnClose && f.HasSave() {
++		// Save game on quit — UNCONDITIONALLY (patch 0031). Stock gated this on HasSave()
++		// ("only re-save if saved before"), which meant a session where nobody clicked Save
++		// harvested nothing and the vault's Continue slot stayed empty — and PS2 players
++		// couldn't click Save at all until patch 0030. One serialize at teardown costs
++		// nothing anyone can see; it runs before Shutdown so the core is still live.
++		if f.SaveOnClose {
+ 			f.log.Debug().Msg("save on quit")
+ 			if err := f.Save(); err != nil {
+ 				f.log.Error().Err(err).Msg("save on quit failed")
