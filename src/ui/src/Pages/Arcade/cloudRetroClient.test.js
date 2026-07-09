@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { displayAspect, rotatedVideoSize } from "./cloudRetroClient";
+import { displayAspect, rotatedVideoSize, videoTransform } from "./cloudRetroClient";
 
 // The numbers below are MEASURED from real rooms (worker log `Libretro System A/V >>> … AR [x]`,
 // 2026-07-08), not invented. They are the regression fence for the aspect-ratio fix: before it, the
@@ -56,5 +56,30 @@ describe("rotatedVideoSize", () => {
   it("degrades to a plain fill rather than emitting calc(100% / 0)", () => {
     expect(rotatedVideoSize(0, 90)).toEqual({ width: "100%", height: "100%" });
     expect(rotatedVideoSize(NaN, 90)).toEqual({ width: "100%", height: "100%" });
+  });
+});
+
+// The <video> is absolutely centred at top/left 50%, so the translate is load-bearing, not cosmetic.
+// REGRESSION: 21 of 29 cores (every 2D system + ps1) never send an `av` payload — CloudRetro only emits
+// one for cores with coreAspectRatio — so anything that made the transform conditional on geometry left
+// the picture in the bottom-right quadrant. Seen live on Castlevania: SotN.
+describe("videoTransform", () => {
+  it("always centres the element, even when the core reports NO geometry", () => {
+    expect(videoTransform(0, false)).toBe("translate(-50%, -50%)");
+    expect(videoTransform(undefined, undefined)).toBe("translate(-50%, -50%)");
+    expect(videoTransform(NaN, false)).toBe("translate(-50%, -50%)");
+  });
+
+  it("flips GL cores about the centre (bottom-left origin)", () => {
+    expect(videoTransform(0, true)).toBe("translate(-50%, -50%) scaleY(-1)");
+  });
+
+  it("rotates vertical cabs the opposite way the core reports", () => {
+    expect(videoTransform(90, false)).toBe("translate(-50%, -50%) rotate(-90deg)");
+    expect(videoTransform(270, false)).toBe("translate(-50%, -50%) rotate(-270deg)");
+  });
+
+  it("composes rotate and flip in the order the stock client uses", () => {
+    expect(videoTransform(90, true)).toBe("translate(-50%, -50%) rotate(-90deg) scaleY(-1)");
   });
 });

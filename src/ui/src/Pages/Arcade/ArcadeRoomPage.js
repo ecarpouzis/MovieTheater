@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform } from "./cloudRetroClient";
 import { useWakeLock } from "../../useWakeLock";
 
 const { Title, Text } = Typography;
@@ -54,6 +54,10 @@ export default function ArcadeRoomPage() {
   // Quarter-turn rotation the core asks for (vertical arcade cabs report rot=90). The <video> must have
   // its width/height SWAPPED before it is rotated, or the rotated frame overflows its aspect box.
   const [coreRot, setCoreRot] = useState(0);
+  // GL cores render bottom-left-origin and ask to be flipped. Held in React (not written onto the
+  // element by the shim) so a re-render can't drop it — and so the centring translate exists even for
+  // the 21 cores that never report geometry at all.
+  const [coreFlip, setCoreFlip] = useState(false);
 
   // Resolve the join descriptor: creator has it in router state; an invitee Joins for one. If the room
   // is still starting (creator hasn't Bound yet), retry a few times before giving up.
@@ -101,10 +105,11 @@ export default function ArcadeRoomPage() {
           if (s === "playing") tryPlayVideo();
         },
         onSeat: (idx) => { if (!cancelled) setYourSlot(idx); },
-        onAspect: ({ aspect, rot }) => {
+        onAspect: ({ aspect, rot, flip }) => {
           if (cancelled) return;
           if (aspect != null) setCoreAspect(aspect);
           setCoreRot(rot || 0);
+          setCoreFlip(!!flip);
         },
         onRoomId: (roomId) => {
           // Creator: persist the CloudRetro room id so invitees can join the same worker (§8 step 3).
@@ -357,7 +362,8 @@ export default function ArcadeRoomPage() {
         // cloudRetroClient prepends translate(-50%,-50%) so it rotates about the box centre.
         // Without this, 1942 (rot=90) rendered upright but overflowed the 3:4 box and left dead space.
         const videoStyle = { position: "absolute", top: "50%", left: "50%", objectFit: "fill",
-                             display: "block", ...rotatedVideoSize(ar, coreRot) };
+                             display: "block", transform: videoTransform(coreRot, coreFlip),
+                             ...rotatedVideoSize(ar, coreRot) };
         const outerStyle = isFs
           ? { position: "relative", background: "#000", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }
           : { position: "relative", background: "#000", borderRadius: 8, overflow: "hidden" };

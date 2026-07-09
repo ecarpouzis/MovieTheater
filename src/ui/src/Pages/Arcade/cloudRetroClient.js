@@ -208,6 +208,24 @@ export function rotatedVideoSize(ar, rot) {
   return { width: `calc(100% / ${ar})`, height: `calc(100% * ${ar})` };
 }
 
+/**
+ * CSS transform for the <video>, which is absolutely centred inside its aspect box.
+ *
+ * The leading translate is NOT optional and NOT cosmetic: the element is positioned at top/left 50%, so
+ * without pulling it back by half its own size the picture renders in the bottom-right quadrant. It must
+ * therefore be produced even when the core reports no geometry at all (rot 0, flip false) — 21 of our 29
+ * cores never send an `av` payload, because CloudRetro only emits one for cores with `coreAspectRatio`.
+ *
+ * GL cores render bottom-left-origin (flip → scaleY(-1)); vertical arcade cabs report rot=90
+ * (→ rotate(-90deg), about the centre, paired with rotatedVideoSize's swapped axes).
+ */
+export function videoTransform(rot, flip) {
+  const r = (Number(rot) || 0) % 360;
+  return ["translate(-50%, -50%)", r ? `rotate(${-r}deg)` : "", flip ? "scaleY(-1)" : ""]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export function createCloudRetroSession(descriptor, opts) {
   const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect } = opts || {};
   const status = (s) => onStatus && onStatus(s);
@@ -514,20 +532,21 @@ export function createCloudRetroSession(descriptor, opts) {
   // which assigns style.aspectRatio = a and applies rotate(-rot) independently.
   function reportAspect() {
     if (!onAspect || !lastAv) return;
-    onAspect({ aspect: displayAspect(lastAv), rot: (Number(lastAv.rot) || 0) % 360 });
+    onAspect({ aspect: displayAspect(lastAv), rot: (Number(lastAv.rot) || 0) % 360, flip: !!lastAv.flip });
   }
 
+  // NB: this NEVER touches videoEl.style. React owns the transform (ArcadeRoomPage renders it from the
+  // geometry we report). Two reasons, both bugs we shipped by doing it imperatively:
+  //   1. A core that sets no `coreAspectRatio` never gets an `av` at all (21 of 29 do not — every 2D
+  //      system plus ps1), so the transform was never written. The <video> is absolutely centred at
+  //      top/left 50%, and without the compensating translate(-50%,-50%) the picture sat in the
+  //      bottom-right quadrant. Reported on Castlevania: SotN.
+  //   2. Even where `av` did arrive, the next React re-render (the 12 s heartbeat updates player state)
+  //      would overwrite style.transform from the inline style and silently drop the flip/rotate.
   function applyVideoTransform(av) {
     if (av) lastAv = av;
     if (!lastAv) return;
-    reportAspect();              // before the videoEl guard: `av` can land before the track attaches
-    if (!videoEl) return;
-    const rot = lastAv.rot ? `rotate(${-lastAv.rot}deg)` : "";
-    const flip = lastAv.flip ? "scaleY(-1)" : "";
-    // The <video> is absolutely centred in its aspect box (ArcadeRoomPage), so every transform starts by
-    // pulling it back by half its own size. Rotation happens about that centre — and the page has already
-    // swapped the element's width/height for quarter-turns, so the rotated result fills the box exactly.
-    videoEl.style.transform = ["translate(-50%, -50%)", rot, flip].filter(Boolean).join(" ");
+    reportAspect();
   }
 
   function onGameStarted(p) {
