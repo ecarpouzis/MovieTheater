@@ -37,3 +37,84 @@ jobs:
       - uses: actions/checkout@v4
       - run: cd docker && bash build-ui.sh
       - run: docker push $REGISTRY/movietheater-ui:$IMAGE_TAG
+
+  # Roll the cluster onto the images this run just built. This step was MISSING: the workflow
+  # pushed images and stopped, so pods only picked up new code when a container happened to
+  # restart — observed live 2026-07-09 as the UI serving a new build while the API pod kept
+  # running pre-push code minutes after a "successful" deploy. The runner is an in-cluster pod
+  # with no kubectl (established June 2026), so this drives the Kubernetes API directly with the
+  # mounted service-account token. Patching to the explicit $IMAGE_TAG (not :latest + restart)
+  # makes the rollout deterministic and the running version auditable in the deployment spec.
+  deploy:
+    needs: [setup, docker-build-api, docker-build-ui]
+    runs-on: movietheater
+    env:
+      IMAGE_TAG: ${{ needs.setup.outputs.image_tag }}
+    steps:
+      - run: |
+          SA=/var/run/secrets/kubernetes.io/serviceaccount
+          if [ ! -f "$SA/token" ]; then
+            echo "::error::No service-account token mounted — cannot reach the kube API from this runner."
+            exit 1
+          fi
+          export KUBE_TOKEN=$(cat "$SA/token")
+          python3 - <<'PY'
+          import json, os, ssl, sys, time, urllib.request
+
+          API = "https://kubernetes.default.svc"
+          NS = "movietheater"
+          TAG = os.environ["IMAGE_TAG"]
+          ctx = ssl.create_default_context(cafile="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
+
+          def req(method, path, body=None, content_type="application/json"):
+              r = urllib.request.Request(API + path, method=method,
+                  data=json.dumps(body).encode() if body is not None else None)
+              r.add_header("Authorization", "Bearer " + os.environ["KUBE_TOKEN"])
+              if body is not None: r.add_header("Content-Type", content_type)
+              with urllib.request.urlopen(r, context=ctx) as resp:
+                  return json.load(resp)
+
+          deps = req("GET", f"/apis/apps/v1/namespaces/{NS}/deployments")["items"]
+          patched = []
+          for d in deps:
+              name = d["metadata"]["name"]
+              containers = d["spec"]["template"]["spec"]["containers"]
+              updates = []
+              for c in containers:
+                  repo, _, old = c["image"].rpartition(":")
+                  # only retag OUR app images; leave sidecars/third-party containers alone
+                  if repo.endswith("/movietheater-api") or repo.endswith("/movietheater-ui"):
+                      updates.append({"name": c["name"], "image": f"{repo}:{TAG}"})
+              if not updates:
+                  continue
+              patch = {"spec": {"template": {"spec": {"containers": updates}}}}
+              req("PATCH", f"/apis/apps/v1/namespaces/{NS}/deployments/{name}", patch,
+                  "application/strategic-merge-patch+json")
+              patched.append(name)
+              print(f"patched {name}: " + ", ".join(f"{u['name']} -> :{TAG}" for u in updates))
+
+          if not patched:
+              print("::error::No deployment in namespace 'movietheater' runs a movietheater-api/ui image — nothing rolled.")
+              sys.exit(1)
+
+          # Wait for every patched deployment to converge on the new template (10 min cap —
+          # generous because the node also just built two images).
+          deadline = time.time() + 600
+          pending = set(patched)
+          while pending and time.time() < deadline:
+              time.sleep(5)
+              for name in list(pending):
+                  d = req("GET", f"/apis/apps/v1/namespaces/{NS}/deployments/{name}")
+                  st, spec = d["status"], d["spec"]
+                  gen_ok = st.get("observedGeneration", 0) >= d["metadata"]["generation"]
+                  want = spec.get("replicas", 1)
+                  if gen_ok and st.get("updatedReplicas") == want and st.get("readyReplicas") == want \
+                          and not st.get("unavailableReplicas"):
+                      print(f"{name}: rolled out ({want}/{want} ready on :{TAG})")
+                      pending.discard(name)
+          if pending:
+              for name in pending:
+                  print(f"::error::{name} did not finish rolling within 10 min — old pods may still be serving. "
+                        f"Check pod state (CrashLoopBackOff on the new ReplicaSet leaves the old one live).")
+              sys.exit(1)
+          PY
