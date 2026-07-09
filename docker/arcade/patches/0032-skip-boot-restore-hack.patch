@@ -1,0 +1,50 @@
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+@@ -76,6 +76,7 @@
+ 	glCtx                    *graphics.RGFW
+ 	hackSkipHwContextDestroy bool
+ 	hackSkipSameThreadSave   bool
++	hackSkipBootRestore      bool
+ 	// MovieTheater patch 0016: skip the informational retro_serialize_size probe right after load.
+ 	// Dolphin defers its whole video/emu init to context_reset + first retro_run (its EmuThread spawns
+ 	// there), so serialize_size at load walks the save-state chain into a NULL g_vertex_manager →
+@@ -215,6 +216,7 @@
+ 	// hacks
+ 	Nan0.hackSkipHwContextDestroy = meta.HasHack("skip_hw_context_destroy")
+ 	Nan0.hackSkipSameThreadSave = meta.HasHack("skip_same_thread_save")
++	Nan0.hackSkipBootRestore = meta.HasHack("skip_boot_restore")
+ 	Nan0.hackSkipSerializeSizeProbe = meta.HasHack("skip_serialize_size_probe")
+ 
+ 	// reset controllers
+@@ -526,6 +528,7 @@
+ 
+ func (n *Nanoarch) IsSupported() error                  { return graphics.RGFWTryInit() }
+ func (n *Nanoarch) IsGL() bool                          { return n.Video.gl.enabled }
++func (n *Nanoarch) SkipBootRestore() bool               { return n.hackSkipBootRestore }
+ func (n *Nanoarch) IsStopped() bool                     { return n.Stopped.Load() }
+ func (n *Nanoarch) InputRetropad(port int, data []byte) { n.retropad.SetInput(port, data) }
+ 
+@@ -1120,6 +1123,7 @@
+ 	Nan0.Video.gl.autoCtx = false
+ 	Nan0.hackSkipHwContextDestroy = false
+ 	Nan0.hackSkipSameThreadSave = false
++	Nan0.hackSkipBootRestore = false
+ 	Nan0.hackSkipSerializeSizeProbe = false
+ 	thread.SwitchGraphics(false)
+ }
+
+--- a/pkg/worker/caged/libretro/frontend.go
++++ b/pkg/worker/caged/libretro/frontend.go
+@@ -320,7 +320,11 @@
+ 		close(f.doneEvt)
+ 	}()
+ 
+-	if f.HasSave() {
++	// skip_boot_restore (temporary stopper, 2026-07-09): PCSX2 "successfully" unserializes one
++	// tick after init into a WEDGED black GS, then close-save re-serializes the wedge — a poison
++	// loop on the deterministic save id. Until boot-restore is made safe for heavy GL cores,
++	// those cores skip it; manual in-session Save/Load (patch 0030) still works.
++	if f.HasSave() && !f.nano.SkipBootRestore() {
+ 		// advance 1 frame for Mupen, DOSBox save states
+ 		// loading will work if autostart is selected for DOSBox apps
+ 		f.Tick()

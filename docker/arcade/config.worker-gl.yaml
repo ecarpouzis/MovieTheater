@@ -270,7 +270,11 @@ emulator:
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
-          hacks: [skip_hw_context_destroy]
+          # skip_boot_restore: PCSX2 "successfully" unserializes at boot into a wedged black GS,
+          # then close-save re-serializes the wedge — a poison loop on the deterministic save id
+          # (live 2026-07-09). Boot-resume stays OFF for ps2 until made safe; manual in-session
+          # Save/Load (patch 0030) works.
+          hacks: [skip_hw_context_destroy, skip_boot_restore]
           # PS2 games often render a narrower framebuffer than the base geometry (God of War: raw 1024x896
           # vs delivered 1280x896 — measured with the patch-0022 frame dump). CloudRetro stretches that to
           # the output width, and the DEFAULT resampler is nearest-neighbour, so a 1.25x stretch duplicates
