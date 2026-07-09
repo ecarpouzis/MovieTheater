@@ -144,6 +144,10 @@ namespace MovieTheater.Arcade
         private static readonly Dictionary<string, (string Key, string Value)[]> Implied = new(StringComparer.Ordinal)
         {
             ["pcsx2_half_pixel_offset"] = new[] { ("pcsx2_enable_hw_hacks", "enabled") },
+            // Same gate: every "HW Hacks >" option in the core is read only when the master switch is
+            // on. Learned live 2026-07-09: a nativeScaling-only room shipped without the gate (the
+            // player unticked the HPO cheat that used to carry it) and the experiment ran inert.
+            ["pcsx2_native_scaling"] = new[] { ("pcsx2_enable_hw_hacks", "enabled") },
         };
 
         /// <summary>Companion options a picked option cheat needs to actually take effect. Callers merge
