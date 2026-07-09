@@ -175,79 +175,88 @@ namespace MovieTheater.Arcade
                 ? ArcadeCheatCatalog.CodeSystems.ToList()
                 : new List<string> { System.Trim().ToLowerInvariant() };
 
+            systems = systems.Where(s =>
+            {
+                if (!ArcadeCheatCatalog.SupportsCheatCodes(s))
+                { w.WriteLine($"  [{s}] skipped — its core does not apply libretro cheat codes."); return false; }
+                var folder = ArcadeCheatCatalog.ChtFolder(s);
+                if (folder == null || !Directory.Exists(Path.Combine(root, folder)))
+                { w.WriteLine($"  [{s}] no cht folder ({folder})."); return false; }
+                return true;
+            }).ToList();
+            if (systems.Count == 0) { w.WriteLine("No importable systems."); return; }
+
             await using var db = await dbFactory.CreateDbContextAsync();
 
             int totalGames = 0, matched = 0, cheatRows = 0, skippedExisting = 0, truncated = 0, noCodeSkipped = 0;
             int lastId = AfterId;
-            int budget = Limit;
 
-            foreach (var sys in systems)
+            // ONE id-ordered page across every code system. The cursor MUST be global: an earlier version
+            // looped system-by-system with a shared `lastId`, and since each system's ids occupy their own
+            // range (nes ~1-4k, ps1 ~58k), the first system to advance the cursor past a later system's range
+            // silently excluded that whole system from every subsequent call. It reported remaining=0 having
+            // processed 2,845 of 12,202 games.
+            var games = await db.ArcadeGames
+                .Where(g => systems.Contains(g.System) && g.IsEnabled && g.Id > AfterId)
+                .OrderBy(g => g.Id).Take(Limit).ToListAsync();
+
+            // Filename indexes are built once per system, on first use — a system that isn't in this page
+            // never pays for its index (snes alone is 2,773 files).
+            var indexes = new Dictionary<string, ArcadeChtIndex>(StringComparer.OrdinalIgnoreCase);
+            ArcadeChtIndex IndexFor(string sys)
             {
-                if (budget <= 0) break;
-                if (!ArcadeCheatCatalog.SupportsCheatCodes(sys))
-                {
-                    w.WriteLine($"  [{sys}] skipped — its core does not apply libretro cheat codes.");
-                    continue;
-                }
-                var folder = ArcadeCheatCatalog.ChtFolder(sys);
-                var dir = folder == null ? null : Path.Combine(root, folder);
-                if (dir == null || !Directory.Exists(dir)) { w.WriteLine($"  [{sys}] no cht folder ({folder})."); continue; }
+                if (indexes.TryGetValue(sys, out var hit)) return hit;
+                var dir = Path.Combine(root, ArcadeCheatCatalog.ChtFolder(sys)!);
+                var idx = ArcadeChtIndex.Build(Directory.EnumerateFiles(dir, "*.cht", SearchOption.TopDirectoryOnly));
+                w.WriteLine($"  [{sys}] {idx.Count} cht files indexed.");
+                return indexes[sys] = idx;
+            }
+
+            foreach (var g in games)
+            {
+                totalGames++;
+                lastId = Math.Max(lastId, g.Id);
 
                 // Exact ROM name first, then same-title + overlapping-region. Nothing looser: a code from the
                 // wrong dump pokes wrong addresses rather than failing cleanly. See ArcadeChtIndex.
-                var files = Directory.EnumerateFiles(dir, "*.cht", SearchOption.TopDirectoryOnly).ToList();
-                var index = ArcadeChtIndex.Build(files);
-                w.WriteLine($"  [{sys}] {index.Count} cht files indexed.");
+                var chtPath = IndexFor(g.System).Match(g.CloudRetroGameKey);
+                if (chtPath == null) continue;
 
-                var games = await db.ArcadeGames
-                    .Where(g => g.System == sys && g.IsEnabled && g.Id > AfterId)
-                    .OrderBy(g => g.Id).Take(budget).ToListAsync();
+                var had = await db.ArcadeCheats.AnyAsync(c => c.ArcadeGameId == g.Id && c.Source == "libretro-cht");
+                if (had && !Overwrite) { skippedExisting++; continue; }
 
-                foreach (var g in games)
+                var parsed = ArcadeChtFile.Parse(await File.ReadAllTextAsync(chtPath), out int withoutCode);
+                noCodeSkipped += withoutCode;
+                if (parsed.Count == 0) continue;
+
+                matched++;
+                if (parsed.Count > ArcadeCheatCatalog.MaxCheatsPerGame)
                 {
-                    totalGames++; budget--; lastId = Math.Max(lastId, g.Id);
-
-                    var chtPath = index.Match(g.CloudRetroGameKey);
-                    if (chtPath == null) continue;
-
-                    var had = await db.ArcadeCheats.AnyAsync(c => c.ArcadeGameId == g.Id && c.Source == "libretro-cht");
-                    if (had && !Overwrite) { skippedExisting++; continue; }
-
-                    var parsed = ArcadeChtFile.Parse(await File.ReadAllTextAsync(chtPath), out int withoutCode);
-                    noCodeSkipped += withoutCode;
-                    if (parsed.Count == 0) continue;
-
-                    matched++;
-                    if (parsed.Count > ArcadeCheatCatalog.MaxCheatsPerGame)
-                    {
-                        w.WriteLine($"  TRUNCATE [{sys}] {g.Title}: {parsed.Count} cheats → keeping first {ArcadeCheatCatalog.MaxCheatsPerGame}.");
-                        parsed = parsed.Take(ArcadeCheatCatalog.MaxCheatsPerGame).ToList();
-                        truncated++;
-                    }
-
-                    w.WriteLine($"  [{sys}] {g.Title} → {parsed.Count} cheats ({Path.GetFileName(chtPath)})");
-                    if (Apply)
-                    {
-                        if (had)
-                            db.ArcadeCheats.RemoveRange(await db.ArcadeCheats
-                                .Where(c => c.ArcadeGameId == g.Id && c.Source == "libretro-cht").ToListAsync());
-                        foreach (var e in parsed)
-                            db.ArcadeCheats.Add(new ArcadeCheat
-                            {
-                                ArcadeGameId = g.Id, Kind = "code", Ordinal = e.Ordinal,
-                                Name = Trunc(e.Name, 200), Code = e.Code, Source = "libretro-cht",
-                            });
-                    }
-                    cheatRows += parsed.Count;
-                    if (Apply && cheatRows % 2000 == 0) await db.SaveChangesAsync();
+                    w.WriteLine($"  TRUNCATE [{g.System}] {g.Title}: {parsed.Count} cheats → keeping first {ArcadeCheatCatalog.MaxCheatsPerGame}.");
+                    parsed = parsed.Take(ArcadeCheatCatalog.MaxCheatsPerGame).ToList();
+                    truncated++;
                 }
+
+                w.WriteLine($"  [{g.System}] {g.Title} → {parsed.Count} cheats ({Path.GetFileName(chtPath)})");
+                if (Apply)
+                {
+                    if (had)
+                        db.ArcadeCheats.RemoveRange(await db.ArcadeCheats
+                            .Where(c => c.ArcadeGameId == g.Id && c.Source == "libretro-cht").ToListAsync());
+                    foreach (var e in parsed)
+                        db.ArcadeCheats.Add(new ArcadeCheat
+                        {
+                            ArcadeGameId = g.Id, Kind = "code", Ordinal = e.Ordinal,
+                            Name = Trunc(e.Name, 200), Code = e.Code, Source = "libretro-cht",
+                        });
+                }
+                cheatRows += parsed.Count;
             }
 
             if (Apply) await db.SaveChangesAsync();
 
-            int remaining = 0;
-            foreach (var sys in systems.Where(ArcadeCheatCatalog.SupportsCheatCodes))
-                remaining += await db.ArcadeGames.CountAsync(g => g.System == sys && g.IsEnabled && g.Id > lastId);
+            var remaining = await db.ArcadeGames
+                .CountAsync(g => systems.Contains(g.System) && g.IsEnabled && g.Id > lastId);
 
             w.WriteLine();
             w.WriteLine($"{(Apply ? "APPLIED" : "DRY RUN")} cheat-codes: processed={totalGames} matched={matched} rows={cheatRows} " +
