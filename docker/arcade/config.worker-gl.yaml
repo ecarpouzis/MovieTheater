@@ -613,6 +613,9 @@ encoder:
     # INSTANT ROLLBACK: set codec: h264 and recycle the workers.
     codec: av1
     threads: 0
+    # ⚠ INERT for av1/h264: gstreamer.go only arms this when the encoder params carry the VPX-only
+    # "keyframe-mode=disabled" token. Periodic keyframes for the NVENC codecs come from gop-size in
+    # their params (see the av1 entry below). Kept for the vp8 fallback path, where it does work.
     keyframeInterval: 300
     # FULL-RANGE luma — shipped, reverted, then RE-SHIPPED after a real-Firefox WebRTC test
     # (2026-07-09; the full story is docs/arcade-quality-plan.md §17).
@@ -646,12 +649,22 @@ encoder:
     #
     # ⚠ `av1parse` in the caps is not optional: Pion's AV1 payloader needs TEMPORAL-UNIT aligned OBUs.
     av1:
-      encoder: nvav1enc
-      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=100000 zerolatency=true"
+      # ⚠ gop-size is the ONLY periodic-keyframe mechanism on this pipeline. The top-level
+      # keyframeInterval knob is INERT here: gstreamer.go arms its kfi path only when the params
+      # contain the VPX-only token "keyframe-mode=disabled" (verified in source 2026-07-09), so the
+      # previous gop-size=100000 meant an AV1 room emitted keyframes ONLY at startup + on joins
+      # (patch 0012's join burst). CloudRetro ignores RTCP PLI, so any unrepaired loss or a browser
+      # decoder hiccup then froze the video UNTIL THE NEXT JOIN while audio (aux PC) played on —
+      # observed live on Firefox 2026-07-09, repeatedly. gop-size=120 = keyframe every 2 s, the same
+      # cadence h264 shipped with for weeks; the "periodic IDR = audio hitch" rationale for infinite
+      # GOP predates the aux audio PC (patch 0020) and no longer applies.
+      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=120 zerolatency=true"
       caps: video/x-av1,stream-format=obu-stream ! av1parse ! video/x-av1,stream-format=obu-stream,alignment=tu
     h264:
       encoder: nvh264enc
-      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=100000 repeat-sequence-header=true zerolatency=true"
+      # gop-size=120 for the same reason as av1 above — keyframeInterval is inert on this path and
+      # an infinite GOP freezes late joiners / post-loss viewers until someone joins (PLI ignored).
+      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=120 repeat-sequence-header=true zerolatency=true"
       # ⚠ DO NOT ADD `,profile=high` HERE without also fixing SDP negotiation.
       #
       # It is tempting: measured offline against RAW worker frames (patch 0022 -> encode 120 deterministic
