@@ -856,6 +856,14 @@ Fix: swap the order — `ZIGGY_PUBLIC_IP=192.168.68.69,98.15.249.217` (LAN first
 "residual" audio hitch: the AdGuard split-DNS fix only ever moved SIGNALING off the hairpin — media
 kept hairpinning until now.
 
+Post-fix, the SAME laptop (wired ethernet, direct host pair) still showed one mild single-tick dip
+(11000→7828, recovered in 4 s). On an idle gigabit wire that cannot be the link — it is our own
+**unpaced microbursts** (the NoOpPacer is deliberate; pacing is queued latency) occasionally tripping
+GCC's delay-based detector, or receiver-side scheduling jitter (GCC cannot tell endpoints from
+networks). **Patch 0026**: the ABR loop now requires two consecutive below-threshold ticks before
+backing off — one-tick artifacts no longer move the encoder; genuine congestion reacts one second
+later, and sustained-low estimates still step down every tick.
+
 ### Also in this pass
 
 - **naomi/atomiswave Auto ceilings**: were falling through to the 2D default 5000 despite delivering

@@ -422,3 +422,14 @@ docs/arcade-quality-plan.md §17 for the full matrix, including why a FIXED cap 
 
 **Best-effort by design:** `vbv-buffer-size` is an nvh264enc property (x264enc names its equivalent
 differently), so a failed set logs at debug and must never kill the bitrate rung that just succeeded.
+
+## 0026-abr-backoff-confirmation.patch — don't trust a single low estimate
+
+The ABR loop (0021) backs off only after **two consecutive** below-threshold ticks; the counter
+resets on any non-low tick, and while the estimate *stays* low the backoff applies every tick, so a
+real outage is not smoothed away — reaction to genuine congestion is delayed by exactly one second.
+
+**Why:** we send unpaced on purpose (NoOpPacer — pacing is queued latency), so every encoded frame
+leaves as a microburst, and GCC's delay-based detector occasionally reads one as congestion even on
+idle wired gigabit (measured: a single-tick 11000→7828 dip on an ethernet LAN over a direct host
+pair, recovered in 4 s). Those one-tick artifacts no longer move the encoder at all.
