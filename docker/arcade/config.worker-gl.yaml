@@ -562,22 +562,50 @@ encoder:
     # Format is range:matrix:transfer:primaries -> 1=0..255, 3=BT709, 5=BT709, 1=BT709.
     colorimetry: "1:3:5:1"
   list:
+    # AV1 (patch 0024) — OPT-IN, inert while encoder.video.codec is h264. Switch that key to `av1` to use it.
+    # Measured offline against the RAW source frames, at MATCHED actual bitrate (nvav1enc overshoots its CBR
+    # target by ~19%, so a naive same-`bitrate=` comparison flatters it by 2.4 dB — it isn't real):
+    #   H.264 baseline  2,145,612 bytes  37.872 dB
+    #   AV1             2,111,238 bytes  38.756 dB   (+0.884 dB for 1.6% FEWER bits, ~15% bitrate saving)
+    # Verified live end-to-end: n64 1280x960, 60fps, 0 freezes, browser reports mimeType video/AV1 and
+    # colorSpace.fullRange=true. Client decode cost rises (2.8-3.6ms vs 1.3ms for H.264) but nowhere near
+    # the frame budget.
+    #
+    # NOT the default, purely a browser-support question: Chrome and Firefox both advertise video/AV1
+    # receive; SAFARI DOES NOT. An AV1-only track means no video at all on a browser that can't decode it,
+    # and CloudRetro negotiates one codec per room.
+    #
+    # ⚠ `av1parse` in the caps is not optional: Pion's AV1 payloader needs TEMPORAL-UNIT aligned OBUs.
+    av1:
+      encoder: nvav1enc
+      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=100000 zerolatency=true"
+      caps: video/x-av1,stream-format=obu-stream ! av1parse ! video/x-av1,stream-format=obu-stream,alignment=tu
     h264:
       encoder: nvh264enc
       params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=100000 repeat-sequence-header=true zerolatency=true"
-      # profile=high is the single biggest encoder win, and it is FREE: CABAC + the 8x8 transform.
-      # Measured offline against RAW worker frames (patch 0022) — encode 120 deterministic Mario Kart 64
-      # frames, decode, PSNR vs the source. At 8 Mbps: p4 38.14 dB -> p4+high 39.16 dB (+1.02). At 4 Mbps:
-      # 33.85 -> 34.49. The PRESET barely matters next to it (p6 +0.01, p7 +0.02 further).
+      # ⚠ DO NOT ADD `,profile=high` HERE without also fixing SDP negotiation.
       #
-      # REJECTED, and worth recording: `multi-pass=two-pass-quarter` measured WORSE (37.51 dB), and
-      # `spatial-aq` lowers PSNR by construction (it moves bits to where the eye looks) — it may well be
-      # perceptually better, but nothing here can prove that, so it stays off.
+      # It is tempting: measured offline against RAW worker frames (patch 0022 -> encode 120 deterministic
+      # frames -> decode -> PSNR vs source), High profile is worth +1.02 dB at 8 Mbps (38.14 -> 39.16) and
+      # +0.64 at 4 Mbps. CABAC + the 8x8 transform, free of latency.
       #
-      # Chrome decodes High profile fine even though Pion advertises a baseline profile-level-id
-      # (verified live on gc/snes/ps1: 60fps, 0 freezes, decode 0.5-0.8ms). If a browser ever refuses,
-      # the rollback is to delete `,profile=high` from this line. NOT yet verified on Firefox.
-      caps: video/x-h264,stream-format=byte-stream,alignment=au,profile=high
+      # It was shipped for ~an hour and REVERTED. Without a profile in these caps nvh264enc emits
+      # profile_idc=66 (Constrained Baseline), which is exactly what Pion advertises in SDP
+      # (profile-level-id=42001f). Forcing High emits profile_idc=100 while the SDP still promises
+      # baseline. Chrome decodes it anyway (verified live: gc/snes/ps1, 60fps, 0 freezes). Firefox's
+      # WebRTC H.264 decoder is OpenH264, which only decodes SOME subsets of High
+      # (https://bugzilla.mozilla.org/show_bug.cgi?id=1411681) — a friend on Firefox would get no video,
+      # silently. Not worth 1 dB.
+      #
+      # The correct way to claim it is to register the H.264 codec with a matching profile-level-id
+      # (e.g. 640028) in Pion's MediaEngine so browsers negotiate High honestly — at the price of Firefox
+      # dropping H.264 entirely. The better answer is AV1 (patch 0024): +0.88 dB at MATCHED bitrate, and
+      # Firefox DOES advertise video/AV1 receive. Safari does not.
+      #
+      # REJECTED by measurement: `multi-pass=two-pass-quarter` (37.51 dB, worse) and `spatial-aq` (36.98,
+      # worse by construction — it moves bits to where the eye looks; PSNR cannot judge it, so it stays
+      # off until someone A/Bs it on a real display).
+      caps: video/x-h264,stream-format=byte-stream,alignment=au
     # In-band FEC ON (roadmap WS-A.2) — same override as the WSL stack; generic (not restricted-lowdelay)
     # + >=10ms frames are what make LBRR real. The gl-zone room binds a native Windows socket with no
     # mirrored-relay hop, so it's also the clean A/B control for the WS-A audio-loss hunt.

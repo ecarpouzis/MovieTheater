@@ -1,0 +1,50 @@
+diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
+index 1551e92..6eca32a 100644
+--- a/pkg/network/webrtc/webrtc.go
++++ b/pkg/network/webrtc/webrtc.go
+@@ -264,6 +264,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+ 		mime = webrtc.MimeTypeVP8
+ 	case "video/vp9":
+ 		mime = webrtc.MimeTypeVP9
++	// AV1 (patch 0024, OPT-IN). Pion registers AV1 in RegisterDefaultCodecs and ships an AV1 RTP
++	// payloader, so this is the whole worker-side change. Measured +0.884 dB at MATCHED bitrate vs
++	// H.264 High (~15% bitrate saving). NOT the default: Chrome receives AV1 in WebRTC, Safari does
++	// not, and Firefox's support is version-dependent — an AV1-only track means NO VIDEO on a browser
++	// that can't decode it. Enable per-deployment via encoder.video.codec: av1.
++	case "video/av1":
++		mime = webrtc.MimeTypeAV1
+ 	default:
+ 		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
+ 	}
+diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
+index b024faa..6c77217 100644
+--- a/pkg/worker/media/gstreamer.go
++++ b/pkg/worker/media/gstreamer.go
+@@ -186,11 +186,11 @@ type GstMediaPipe struct {
+ 	bpp    int
+ 	vidFmt uint32 // cached GstVideoFormat enum
+ 
+-	frameI   int  // for forced keyframes
+-	keyI     int  // periodic keyframe counter
+-	kfi      int  // 0=GStreamer auto, >0=force keyframe every N frames
++	frameI   int          // for forced keyframes
++	keyI     int          // periodic keyframe counter
++	kfi      int          // 0=GStreamer auto, >0=force keyframe every N frames
+ 	forceKf  atomic.Int32 // countdown of frames in the post-join force-keyframe window — RequestKeyframe
+-	aSegSent bool // for Opusenc bug
++	aSegSent bool         // for Opusenc bug
+ 
+ 	// used for reinit
+ 	videoCh   chan videoJob
+@@ -550,6 +550,11 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+ 	// probes NV12-only — the I420 caps won't link directly); it's passthrough when formats match.
+ 	case "h264":
+ 		build.writef("videoconvert n-threads=2 ! %s name=video_enc ", cmp.Or(opts.Encoder, "x264enc"))
++	// av1 (patch 0024): nvav1enc emits an obu-stream. Pion's AV1 payloader wants TEMPORAL-UNIT aligned
++	// OBUs, so av1parse is not optional — without alignment=tu the receiver sees fragments of a TU and
++	// renders nothing. Same shape as the h264 case: element + tuning come from encoder.list.
++	case "av1":
++		build.writef("videoconvert n-threads=2 ! %s name=video_enc ", cmp.Or(opts.Encoder, "nvav1enc"))
+ 	case "vp8", "vp9":
+ 		encoder := cmp.Or(opts.Encoder, fmt.Sprintf("vp%cenc", codec[len(codec)-1]))
+ 		threads := cmp.Or(conf.Video.Threads, cpuCores)

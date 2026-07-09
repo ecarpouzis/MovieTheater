@@ -368,3 +368,40 @@ rooms fit comfortably. GPU stays ≈20%.
 Live config now renders above the delivered size on n64 (1920×1440 → 1280×960), psp (1920×1088 →
 960×544), gc (1920×1584 → 1280×1056, on top of working 4× MSAA) and the flycast family (1920×1440 →
 1280×960, where `scale: 2` multiplies flycast's permanently-640×480 base).
+
+---
+
+## 0024-av1-optin.patch — AV1 as an opt-in codec
+
+Two small cases: `video/av1 -> webrtc.MimeTypeAV1` in the codec→mime map, and an `av1` branch in
+`buildVideoPipeline`. Pion already registers AV1 in `RegisterDefaultCodecs` and ships an AV1 RTP
+payloader, so that is the whole worker-side change.
+
+**⚠ `av1parse` in the caps is not optional.** Pion's AV1 payloader needs TEMPORAL-UNIT aligned OBUs;
+without `alignment=tu` the receiver gets fragments of a TU and renders nothing.
+
+**Measured at MATCHED actual bitrate** — `nvav1enc` overshoots its CBR target by ~19%, so a naive
+same-`bitrate=` comparison flatters AV1 by 2.4 dB and is meaningless:
+
+| | bytes | Y-PSNR |
+|---|---|---|
+| H.264 baseline @8000 | 2,145,612 | 37.872 dB |
+| AV1 @7200 | 2,111,238 | **38.756 dB** |
+
+**+0.884 dB for 1.6% fewer bits** (≈15% bitrate saving). Verified live: n64 1280×960, 60fps, 0 freezes,
+browser reports `mimeType: video/AV1` and `colorSpace.fullRange: true`. Client decode cost rises
+(2.8–3.6 ms vs 1.3 ms) but is nowhere near the frame budget.
+
+**Not the default**, purely a browser question: Chrome **and Firefox** both advertise `video/AV1`
+receive; **Safari does not**. CloudRetro negotiates one codec per room, so an AV1-only track means no
+video at all on a browser that cannot decode it. Flip `encoder.video.codec: av1` to use it.
+
+### Why `profile=high` was reverted (and AV1 is the better answer)
+
+High profile measured **+1.02 dB at 8 Mbps** and was shipped for about an hour. Without a profile in the
+caps, `nvh264enc` emits `profile_idc=66` (Constrained Baseline) — exactly what Pion advertises
+(`profile-level-id=42001f`). Forcing High emits `profile_idc=100` while the SDP still promises baseline.
+Chrome decodes it anyway; Firefox's WebRTC H.264 decoder is OpenH264, which decodes only *some* subsets
+of High ([bug 1411681](https://bugzilla.mozilla.org/show_bug.cgi?id=1411681)) — a friend on Firefox would
+get **no video, silently**. Not worth 1 dB. Claiming it honestly would mean registering H.264 with a
+matching `profile-level-id` in Pion's MediaEngine, which drops Firefox from H.264 entirely.
