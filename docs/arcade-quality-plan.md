@@ -250,7 +250,7 @@ restart (workers self-heal via the runner loop).
 
 | Phase | Scope | Rebuild? | Reach |
 |---|---|---|---|
-| **0** | Reconcile config drift (repo `config.worker-gl.yaml` 9.4 KB vs live 22 KB — live has `ps2`/`gc`/2D blocks the repo lacks). Fix the `reicast_` prefix in `docs/arcade-per-game-config.md`. Capture a baseline per system. | no | — |
+| **0** | ✅ **SHIPPED 2026-07-08** — repo `config.worker-gl.yaml` reconciled with the live worker (+ mojibake repaired, deploy direction documented); `reicast_` prefix corrected in `docs/arcade-per-game-config.md` and patch 0009's example | no | — |
 | **1** | ✅ **SHIPPED 2026-07-08** — see §9 | config only | **7,907 games (~35%)** |
 | **2** | ✅ **SHIPPED + VERIFIED ON PROD 2026-07-08/09** — see §11, §13 | UI build | 6 systems + all widescreen 3D + vertical arcade cabs |
 | **3** | ✅ **n64 + ps2 SHIPPED** (§10, §14); dc blocked by the base-geometry rule; psp/gc AA unverifiable | config only | 2,790 games |
