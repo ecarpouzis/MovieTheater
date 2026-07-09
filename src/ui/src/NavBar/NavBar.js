@@ -235,6 +235,31 @@ function NavBar({
     </button>
   );
 
+  // Session teardown lives here rather than in the per-section nav panels: Log Out is part of the
+  // shared footer now, so Movies / Board Games / Arcade no longer each carry a copy of this.
+  function logoutUser() {
+    fetch("/API/Logout", { method: "POST" }).finally(() => {
+      setUserData();
+      window.localStorage.clear();
+    });
+  }
+
+  // Rail footer — theme row, then Log Out beneath it. Shared by the mobile drawer and the desktop
+  // sider so the two can't drift.
+  const navFooter = (
+    <div className="navbar-footer">
+      <div className="navbar-theme-row">
+        <span className="navbar-theme-label">{theme === "dark" ? "Dark" : "Light"} mode</span>
+        {themeToggleButton}
+      </div>
+      {userData && (
+        <button className="logout-button" onClick={logoutUser}>
+          Log Out
+        </button>
+      )}
+    </div>
+  );
+
   // The section switcher's items — shared by the mobile and desktop dropdowns so they can't drift.
   // Order: Movie Theater, TV, Board Games, Comics. "TV" is the former Channels page (its guide is the
   // primary way into the TV feature); the old standalone /tv button was removed. Library Review moved
@@ -275,7 +300,6 @@ function NavBar({
   const navContent = isArcade ? (
     <ArcadeNavContent
       userData={userData}
-      setUserData={setUserData}
       onUserLoggedIn={onUserLoggedIn}
       setSettingsModalOpen={setSettingsModalOpen}
       setAdminModalOpen={setAdminModalOpen}
@@ -283,7 +307,6 @@ function NavBar({
   ) : isBoardGames ? (
     <BoardGameNavContent
       userData={userData}
-      setUserData={setUserData}
       onUserLoggedIn={onUserLoggedIn}
       setSettingsModalOpen={setSettingsModalOpen}
       setAdminModalOpen={setAdminModalOpen}
@@ -293,7 +316,6 @@ function NavBar({
     <>
       <Login
         userData={userData}
-        setUserData={setUserData}
         onUserLoggedIn={onUserLoggedIn}
         setSettingsModalOpen={setSettingsModalOpen}
         setAdminModalOpen={setAdminModalOpen}
@@ -329,10 +351,7 @@ function NavBar({
 
         <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}${navThemeClass}`}>
           {navContent}
-          <div className="navbar-theme-row navbar-theme-row--bottom">
-            <span className="navbar-theme-label">{theme === "dark" ? "Dark" : "Light"} mode</span>
-            {themeToggleButton}
-          </div>
+          {navFooter}
         </div>
 
         <Suspense fallback={null}>
@@ -367,10 +386,7 @@ function NavBar({
             </div>
           </div>
           {navContent}
-          <div className="navbar-theme-row navbar-theme-row--bottom">
-            <span className="navbar-theme-label">{theme === "dark" ? "Dark" : "Light"} mode</span>
-            {themeToggleButton}
-          </div>
+          {navFooter}
         </div>
       </Layout.Sider>
       <Suspense fallback={null}>

@@ -12,20 +12,14 @@ import UserPanelHeader from "./UserPanelHeader";
 import "./Login.css";
 
 // Function component Login (Movie Theater section only — Board Games / Arcade have their own nav).
+// Log Out is NOT here: it lives in the shared navbar footer, below the theme toggle, on every page.
 // Props:
-//   userData / setUserData / onUserLoggedIn — session plumbing
+//   userData / onUserLoggedIn — session plumbing
 //   setSettingsModalOpen / setAdminModalOpen — modal openers
 //   onOpenPlaylists — opens the "My Playlists" modal (streaming accounts only)
-function Login({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen, onOpenPlaylists }) {
+function Login({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen, onOpenPlaylists }) {
   const history = useHistory();
   const location = useLocation();
-
-  function logoutUser() {
-    fetch("/API/Logout", { method: "POST" }).finally(() => {
-      setUserData();
-      window.localStorage.clear();
-    });
-  }
 
   function navigateToBrowseSearch(mode) {
     const params = new URLSearchParams();
@@ -63,9 +57,6 @@ function Login({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen, se
           <span className="stat-label">Rate Movies</span>
           <span className="stat-count">{Object.keys(userData.ratings || {}).length}</span>
         </div>
-        <button className="logout-button" onClick={logoutUser}>
-          Log Out
-        </button>
       </div>
     );
   }

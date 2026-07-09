@@ -234,16 +234,21 @@
   min-height: 100%;
 }
 
-/* Theme toggle row — pinned to the bottom of the rail (all features). */
+/* Rail footer — theme row, then Log Out. margin-top:auto pins it to the bottom of the flex sider
+   (in the mobile drawer it just renders last, which is the same visual result). */
+.navbar-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--sidebar-border);
+  padding: 0 16px;
+}
+
+/* Bottom spacing rides on the theme row when logged out and on the button when logged in, so the
+   footer keeps the same ~12-14px base gap either way. */
 .navbar-theme-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px 14px;
-}
-.navbar-theme-row--bottom {
-  margin-top: auto;
-  border-top: 1px solid var(--sidebar-border);
+  padding: 12px 0;
 }
 
 .navbar-theme-label {
@@ -252,6 +257,36 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--sidebar-text-muted);
+}
+
+/* Log Out sits in the footer on every page, so it tints with the ACTIVE feature's tokens. Its
+   typography now matches .navbar-theme-label (10px/600/uppercase) so the footer reads as one unit
+   rather than a stray 12px button. */
+.logout-button {
+  width: 100%;
+  margin: 0 0 14px;
+  background: transparent;
+  border: 1px solid var(--sidebar-border);
+  color: var(--sidebar-text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 7px 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.logout-button:hover,
+.logout-button:focus {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.logout-button:active {
+  border-color: #b01031;
+  color: #b01031;
 }
 
 /* Section switcher dropdown */
@@ -379,21 +414,9 @@
   color: #fff;
 }
 
-.navbar-sider .logout-button,
-.navbar-dropdown .logout-button {
-  background: transparent;
-  border-color: var(--sidebar-border);
-  color: var(--sidebar-text-muted);
-}
-
-.navbar-sider .logout-button:hover,
-.navbar-sider .logout-button:focus,
-.navbar-dropdown .logout-button:hover,
-.navbar-dropdown .logout-button:focus {
-  background: transparent;
-  border-color: #dc3545;
-  color: #dc3545;
-}
+/* (The .logout-button token overrides that used to live here are now the base rule above — the
+   button only ever renders inside the sider/drawer footer, so the descendant selectors were
+   restating it.) */
 
 /* Stat rows (Seen / Want / Rate) */
 .navbar-sider .stat-row:hover,

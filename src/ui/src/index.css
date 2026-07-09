@@ -262,19 +262,23 @@ img {
   line-height: 1.3 !important;
 }
 
-/* Desktop alphabet button styling (original) */
+/* Desktop alphabet button styling (original).
+   These MUST stay scoped to .search-letter-btn, not every .ant-btn in the container: the
+   #SearchToolContainer id is reused by three different sidebars (SearchTools, BoardGameNavContent,
+   ArcadeNavContent). A blanket .ant-btn rule squashed Arcade's "Clear filters" into a 36px square
+   with its label absolutely positioned outside the box. */
 @media (min-width: 769px) {
   #SearchToolContainer .ant-list-item {
     margin-bottom: 10px;
   }
 
-  #SearchToolContainer .ant-btn {
+  #SearchToolContainer .search-letter-btn {
     width: 36px !important;
     height: 36px !important;
     position: relative !important;
   }
 
-  #SearchToolContainer .ant-btn span {
+  #SearchToolContainer .search-letter-btn span {
     font-size: 11px !important;
     font-weight: bold !important;
     position: absolute;

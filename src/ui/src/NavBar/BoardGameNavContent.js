@@ -30,20 +30,11 @@ const searchLetterStyle = {
 
 const searchLetters = ["#","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
 
-function BoardGameUserPanel({ userData, setUserData, setSettingsModalOpen, setAdminModalOpen }) {
-  function logout() {
-    fetch("/API/Logout", { method: "POST" }).finally(() => {
-      setUserData();
-      window.localStorage.clear();
-    });
-  }
-
+// Log Out is not here — it lives in the shared navbar footer, below the theme toggle.
+function BoardGameUserPanel({ userData, setSettingsModalOpen, setAdminModalOpen }) {
   return (
     <div className="user-panel">
       <UserPanelHeader userData={userData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
-      <button className="logout-button" onClick={logout}>
-        Log Out
-      </button>
     </div>
   );
 }
@@ -79,7 +70,7 @@ const sortOptions = [
   { value: "complexity_desc", label: "Complexity: High → Low" },
 ];
 
-function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen, search }) {
+function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen, search }) {
   const history = useHistory();
   const location = useLocation();
   const getSelectPopupContainer = (trigger) => trigger.parentElement;
@@ -114,7 +105,7 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
   return (
     <>
       {userData ? (
-        <BoardGameUserPanel userData={userData} setUserData={setUserData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
+        <BoardGameUserPanel userData={userData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
       ) : (
         <LoginForm onUserLoggedIn={onUserLoggedIn} popupClassName="boardgame-login-dropdown" />
       )}
@@ -176,6 +167,9 @@ function BoardGameNavContent({ userData, setUserData, onUserLoggedIn, setSetting
           renderItem={(item) => (
             <List.Item style={{ display: "flex", justifyContent: "center", marginBottom: 0 }}>
               <Button
+                // search-letter-btn carries the 36px square + position:relative that
+                // searchLetterStyle's absolutely-positioned span needs to center itself.
+                className="search-letter-btn"
                 onClick={() => toggleLetter(item)}
                 style={{
                   width: "36px",

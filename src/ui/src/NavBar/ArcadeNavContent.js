@@ -46,17 +46,11 @@ const sortOptions = [
   { value: "players", label: "Player count (most first)" },
 ];
 
-function ArcadeUserPanel({ userData, setSettingsModalOpen, setAdminModalOpen, setUserData }) {
-  function logout() {
-    fetch("/API/Logout", { method: "POST" }).finally(() => {
-      setUserData();
-      window.localStorage.clear();
-    });
-  }
+// Log Out is not here — it lives in the shared navbar footer, below the theme toggle.
+function ArcadeUserPanel({ userData, setSettingsModalOpen, setAdminModalOpen }) {
   return (
     <div className="user-panel">
       <UserPanelHeader userData={userData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
-      <button className="logout-button" onClick={logout}>Log Out</button>
     </div>
   );
 }
@@ -64,7 +58,7 @@ function ArcadeUserPanel({ userData, setSettingsModalOpen, setAdminModalOpen, se
 // The arcade section's navbar filter panel (mirrors BoardGameNavContent): filters are URL params on
 // /arcade so ArcadePage can fetch server-side (system, region, players, variant, q). Facets come from
 // /API/Arcade/Filters so the System/Region dropdowns show exactly what's available, with counts.
-function ArcadeNavContent({ userData, setUserData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen }) {
+function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen }) {
   const history = useHistory();
   const location = useLocation();
   const [facets, setFacets] = useState(null);
@@ -110,7 +104,7 @@ function ArcadeNavContent({ userData, setUserData, onUserLoggedIn, setSettingsMo
   return (
     <>
       {userData ? (
-        <ArcadeUserPanel userData={userData} setUserData={setUserData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
+        <ArcadeUserPanel userData={userData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
       ) : (
         <LoginForm onUserLoggedIn={onUserLoggedIn} popupClassName="arcade-login-dropdown" />
       )}
