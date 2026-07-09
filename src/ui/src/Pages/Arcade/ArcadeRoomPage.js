@@ -10,9 +10,16 @@ const { Title, Text } = Typography;
 // Human-readable connection status.
 const STATUS_TEXT = {
   connecting: "Connecting…", signalling: "Negotiating…", connected: "Connected",
-  playing: "Playing", disconnected: "Disconnected", closed: "Left room",
+  playing: "Playing", spectating: "Watching", disconnected: "Disconnected", closed: "Left room",
+  // Both are session-dead states the shim can report besides "disconnected". Leaving them unmapped
+  // once cost a live bug: a backgrounded tab's main PC went to a state outside the recovery check,
+  // audio kept playing on the aux PC, and the player came back to a room they couldn't control.
+  failed: "Connection failed", "input-lost": "Controls lost — refresh to rejoin",
   "arcade-full": "The arcade is full", "seat-rejected": "Seat unavailable",
 };
+// The two statuses that mean "media is flowing" — both must kick autoplay, or a spectator stares at a
+// frozen first frame behind the "Tap to start" overlay.
+const LIVE_STATUS = ["playing", "spectating"];
 
 /**
  * The /arcade/room/:code player (docs/arcade-plan.md §7–§8). Two ways in: the creator arrives with a
@@ -38,11 +45,16 @@ export default function ArcadeRoomPage() {
   statusRef.current = status;
   // States where our session is over — no presence to assert. Beating from these would resurrect
   // the room server-side (heartbeats are the rehydration proof-of-life) and hold a dead room in
-  // the lobby rail / concurrency cap.
-  const TERMINAL_STATUS = ["disconnected", "closed", "arcade-full", "seat-rejected"];
+  // the lobby rail / concurrency cap. "failed" is WebRTC's other dead connectionState (the shim
+  // forwards it verbatim) and "input-lost" is the shim's dead-DataChannel report — a player in
+  // either is not playably present, and both must arm the refocus auto-reload below.
+  const TERMINAL_STATUS = ["disconnected", "failed", "input-lost", "closed", "arcade-full", "seat-rejected"];
   const [yourSlot, setYourSlot] = useState(location.state?.descriptor?.playerSlot ?? null);
+  // A watch-only seat: no controller port (slot -1), so no player-only controls and no "You are P0".
+  const spectator = yourSlot != null && yourSlot < 0;
   const [system, setSystem] = useState(location.state?.descriptor?.system ?? null);
   const [players, setPlayers] = useState([]);
+  const [spectators, setSpectators] = useState([]);
   const [fatal, setFatal] = useState(null);
   const [needsTap, setNeedsTap] = useState(false);
   const [discCount, setDiscCount] = useState(location.state?.descriptor?.discCount ?? 0);
@@ -102,7 +114,7 @@ export default function ArcadeRoomPage() {
         onStatus: (s) => {
           if (cancelled) return;
           setStatus(s);
-          if (s === "playing") tryPlayVideo();
+          if (LIVE_STATUS.includes(s)) tryPlayVideo();
         },
         onSeat: (idx) => { if (!cancelled) setYourSlot(idx); },
         onAspect: ({ aspect, rot, flip }) => {
@@ -140,7 +152,12 @@ export default function ArcadeRoomPage() {
       if (TERMINAL_STATUS.includes(statusRef.current)) return; // dead session asserts no presence
       return MovieAPI.arcadeHeartbeat(code).then((r) => {
         if (!alive || !r || !r.ok) return;
-        return r.json().then((s) => { if (alive) { setPlayers(s.players || []); if (s.yourSlot != null) setYourSlot(s.yourSlot); } });
+        return r.json().then((s) => {
+          if (!alive) return;
+          setPlayers(s.players || []);
+          setSpectators(s.spectators || []);
+          if (s.yourSlot != null) setYourSlot(s.yourSlot);
+        });
       }).catch(() => {});
     };
     beat();
@@ -154,22 +171,33 @@ export default function ArcadeRoomPage() {
     return () => { alive = false; clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
   }, [code]);
 
-  // Auto-recover a session Chrome killed while the tab was hidden. A frozen/discarded background tab
-  // drops the signaling WS + WebRTC (observed live: alt-tab → session teardown ~2 min in); the player
-  // returns to a dead "Disconnected" room through no action of their own. On refocus, if the session
-  // died, reload once — the cold-boot path rejoins the room's seat if the room is still live (and shows
-  // "That room has ended" if not). One shot per hidden episode; never for full/rejected/left states.
+  // Auto-recover a session that died while the tab was unfocused/hidden. A frozen/discarded background
+  // tab drops the signaling WS + WebRTC (observed live: alt-tab → session teardown ~2 min in), and an
+  // alt-tabbed player's main PC can also fail alone — audio kept playing on the aux PeerConnection
+  // (patch 0020) while video+input died, and the old "disconnected"-only check here matched neither
+  // "failed" nor a dead DataChannel, so the player came back to a room they couldn't control (observed
+  // live 2026-07-09, Vice City, KBM). On refocus, if the session is in any dead state, reload once —
+  // the cold-boot path rejoins the room's seat if the room is still live (and shows "That room has
+  // ended" if not). One shot per hidden episode; never for full/rejected/left states.
+  const DEAD_STATUS = ["disconnected", "failed", "input-lost"];
   useEffect(() => {
     let armed = true; // re-armed each mount; disarmed after one auto-reload so we can't loop
-    const onVis = () => {
-      if (document.visibilityState !== "visible" || !armed) return;
-      if (statusRef.current === "disconnected") {
+    const recover = () => {
+      if (!armed || document.visibilityState !== "visible") return;
+      if (DEAD_STATUS.includes(statusRef.current)) {
         armed = false;
         window.location.reload();
       }
     };
-    document.addEventListener("visibilitychange", onVis);
-    return () => document.removeEventListener("visibilitychange", onVis);
+    // window focus fires on alt-tab back even when the tab was never "hidden" (another app covering
+    // the browser keeps visibilityState visible) — the exact case visibilitychange alone missed.
+    document.addEventListener("visibilitychange", recover);
+    window.addEventListener("focus", recover);
+    return () => {
+      document.removeEventListener("visibilitychange", recover);
+      window.removeEventListener("focus", recover);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
   // Leave promptly on tab close (sendBeacon survives teardown; the effect cleanup covers SPA nav).
@@ -312,8 +340,10 @@ export default function ArcadeRoomPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
         <Space>
           <Button onClick={() => history.push("/arcade")}>← Arcade</Button>
-          <Tag color={status === "playing" ? "green" : "blue"}>{STATUS_TEXT[status] || status}</Tag>
-          {yourSlot != null && <Tag color="purple">You are P{yourSlot + 1}</Tag>}
+          <Tag color={LIVE_STATUS.includes(status) ? "green" : "blue"}>{STATUS_TEXT[status] || status}</Tag>
+          {spectator
+            ? <Tag color="blue">👁 Spectating</Tag>
+            : yourSlot != null && <Tag color="purple">You are P{yourSlot + 1}</Tag>}
           {discCount > 1 && (
             <Space size={4}>
               <Button size="small" disabled={disc <= 0} onClick={() => swapDisc(disc - 1)}>◀</Button>
@@ -398,14 +428,26 @@ export default function ArcadeRoomPage() {
           {players.length === 0
             ? <Text type="secondary">just you</Text>
             : players.map((p, i) => <Tag key={i} color={p.you ? "purple" : "default"}>{p.name}{p.you ? " (you)" : ""}</Tag>)}
+          {spectators.length > 0 && (
+            <>
+              <Text strong style={{ marginLeft: 8 }}>Watching:</Text>
+              {spectators.map((s, i) => <Tag key={i} color={s.you ? "blue" : "default"}>{s.name}{s.you ? " (you)" : ""}</Tag>)}
+            </>
+          )}
         </Space>
         <Space>
-          <Tooltip title="Save your place (a state you can reload with Load)">
-            <Button onClick={() => { sessionRef.current?.save?.(); message.success("State saved"); }}>Save</Button>
-          </Tooltip>
-          <Tooltip title="Reload your last saved state">
-            <Button onClick={() => { sessionRef.current?.load?.(); message.info("Loading last state…"); }}>Load</Button>
-          </Tooltip>
+          {/* Save / Load / Snapshot act on the room's one shared emulator, so they belong to the players.
+              The shim refuses them for a spectator anyway; hiding them keeps the UI honest. */}
+          {!spectator && (
+            <>
+              <Tooltip title="Save your place (a state you can reload with Load)">
+                <Button onClick={() => { sessionRef.current?.save?.(); message.success("State saved"); }}>Save</Button>
+              </Tooltip>
+              <Tooltip title="Reload your last saved state">
+                <Button onClick={() => { sessionRef.current?.load?.(); message.info("Loading last state…"); }}>Load</Button>
+              </Tooltip>
+            </>
+          )}
           {yourSlot === 0 && (
             <Tooltip title="Save a named snapshot you can resume later">
               <Button loading={snapping} onClick={saveSnapshot}>📸 Snapshot</Button>
@@ -419,12 +461,12 @@ export default function ArcadeRoomPage() {
           <Tooltip title="Fullscreen">
             <Button onClick={goFullscreen}>⛶ Fullscreen</Button>
           </Tooltip>
-          <Button danger onClick={() => history.push("/arcade")}>End</Button>
+          <Button danger onClick={() => history.push("/arcade")}>{spectator ? "Stop watching" : "End"}</Button>
         </Space>
       </div>
 
       <Text type="secondary" style={{ display: "block", marginTop: 16, fontSize: 12 }}>
-        {arcadeInputHint(system)}
+        {spectator ? "You're watching this room — the controls belong to the players." : arcadeInputHint(system)}
       </Text>
     </div>
   );

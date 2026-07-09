@@ -26,6 +26,19 @@ namespace MovieTheater.Arcade
         // gives a frozen-then-resumed tab a window to rejoin its own seat.
         private static readonly TimeSpan ViewerTtl = TimeSpan.FromSeconds(90);
 
+        /// <summary>
+        /// Seats for people who are in the room but NOT playing. A spectator holds no controller port and
+        /// sends no input (the browser shim never opens its input pump), so this is not a player seat and must
+        /// never be counted as one. It exists because <c>MaxPlayers</c> is now the game's REAL player count:
+        /// once Shadow of the Colossus is honestly 1P, its room would otherwise be sealed and a friend
+        /// couldn't drop in to watch.
+        /// </summary>
+        public const int SpectatorSeats = 1;
+
+        /// <summary>The <c>PlayerSlot</c> handed to a spectator: no controller port. Rides the capability
+        /// token like any other slot, and tells the browser shim to skip t=108 and never send input.</summary>
+        public const int SpectatorSlot = -1;
+
         private readonly object gate = new();
         private readonly Dictionary<string, RoomState> rooms = new(StringComparer.Ordinal);
 
@@ -35,18 +48,21 @@ namespace MovieTheater.Arcade
             public int MaxPlayers;
             public int CreatorUserId;
             public string? CloudRetroRoomId;                            // null until the creator Binds (§8)
-            public readonly Dictionary<int, int> Seats = new();         // slot -> userId
-            public readonly Dictionary<int, DateTime> Viewers = new();  // userId -> last seen
+            public readonly Dictionary<int, int> Seats = new();         // slot -> userId (players only)
+            public readonly HashSet<int> Spectators = new();            // userIds watching, no controller
+            public readonly Dictionary<int, DateTime> Viewers = new();  // userId -> last seen (players AND spectators)
             public DateTime CreatedUtc;
         }
 
         public enum BindResult { Ok, NotFound, NotCreator, AlreadyBound }
         public enum JoinOutcome { Ok, NotFound, NotBound, Full }
 
-        public sealed record JoinResult(JoinOutcome Outcome, int PlayerSlot);
-        public sealed record RoomStatus(bool Bound, int MaxPlayers, IReadOnlyList<int> PlayerUserIds, int? YourSlot);
+        /// <summary><see cref="PlayerSlot"/> is <see cref="SpectatorSlot"/> when <see cref="IsSpectator"/>.</summary>
+        public sealed record JoinResult(JoinOutcome Outcome, int PlayerSlot, bool IsSpectator = false);
+        public sealed record RoomStatus(bool Bound, int MaxPlayers, IReadOnlyList<int> PlayerUserIds,
+            IReadOnlyList<int> SpectatorUserIds, int? YourSlot, bool YouAreSpectator);
         public sealed record RoomSnapshot(string RoomCode, int GameId, int MaxPlayers, bool Bound,
-            IReadOnlyList<int> PlayerUserIds, int CreatorUserId);
+            IReadOnlyList<int> PlayerUserIds, IReadOnlyList<int> SpectatorUserIds, int CreatorUserId);
 
         /// <summary>
         /// Register a freshly-created room with its creator in seat 0. Seeds the creator's presence so
@@ -116,8 +132,9 @@ namespace MovieTheater.Arcade
 
         /// <summary>
         /// Assign the caller a seat. A room must be bound first (else it's "still starting"). A returning
-        /// user keeps their existing seat (idempotent reconnect); a newcomer takes the lowest free slot
-        /// below MaxPlayers, or is refused as full. Joining is also presence.
+        /// user keeps whatever they had (idempotent reconnect); a newcomer takes the lowest free PLAYER slot
+        /// below MaxPlayers, and when those are gone falls back to a spectator seat. Only when both are
+        /// exhausted is the room full. Joining is also presence.
         /// </summary>
         public JoinResult TryJoin(string roomCode, int userId)
         {
@@ -128,25 +145,44 @@ namespace MovieTheater.Arcade
 
                 var now = DateTime.UtcNow;
                 Prune(roomCode, state, now);
+                if (!rooms.ContainsKey(roomCode))
+                    return new JoinResult(JoinOutcome.NotFound, -1); // pruning emptied and removed it
 
                 if (state.CloudRetroRoomId == null)
                     return new JoinResult(JoinOutcome.NotBound, -1);
 
-                // Already seated (reconnect / duplicate Join) → same seat, no new allocation.
+                // Already seated (reconnect / duplicate Join) → same seat, no new allocation. A spectator
+                // stays a spectator even if a player seat has since freed up: silently promoting them would
+                // hand a controller to someone whose page never opened an input pump.
                 var existing = state.Seats.FirstOrDefault(kv => kv.Value == userId);
                 if (existing.Value == userId && state.Seats.ContainsKey(existing.Key))
                 {
                     state.Viewers[userId] = now;
                     return new JoinResult(JoinOutcome.Ok, existing.Key);
                 }
+                if (state.Spectators.Contains(userId))
+                {
+                    state.Viewers[userId] = now;
+                    return new JoinResult(JoinOutcome.Ok, SpectatorSlot, IsSpectator: true);
+                }
 
                 int slot = LowestFreeSlot(state);
-                if (slot < 0)
-                    return new JoinResult(JoinOutcome.Full, -1);
+                if (slot >= 0)
+                {
+                    state.Seats[slot] = userId;
+                    state.Viewers[userId] = now;
+                    return new JoinResult(JoinOutcome.Ok, slot);
+                }
 
-                state.Seats[slot] = userId;
-                state.Viewers[userId] = now;
-                return new JoinResult(JoinOutcome.Ok, slot);
+                // Players are full — offer the watch-only seat before refusing.
+                if (state.Spectators.Count < SpectatorSeats)
+                {
+                    state.Spectators.Add(userId);
+                    state.Viewers[userId] = now;
+                    return new JoinResult(JoinOutcome.Ok, SpectatorSlot, IsSpectator: true);
+                }
+
+                return new JoinResult(JoinOutcome.Full, -1);
             }
         }
 
@@ -201,7 +237,7 @@ namespace MovieTheater.Arcade
                 PruneAll(DateTime.UtcNow);
                 return rooms.Select(kv => new RoomSnapshot(
                         kv.Key, kv.Value.GameId, kv.Value.MaxPlayers, kv.Value.CloudRetroRoomId != null,
-                        kv.Value.Seats.Values.ToList(), kv.Value.CreatorUserId))
+                        kv.Value.Seats.Values.ToList(), kv.Value.Spectators.ToList(), kv.Value.CreatorUserId))
                     .ToList();
             }
         }
@@ -237,6 +273,7 @@ namespace MovieTheater.Arcade
         private static void RemoveUser(RoomState state, int userId)
         {
             state.Viewers.Remove(userId);
+            state.Spectators.Remove(userId);
             var seat = state.Seats.FirstOrDefault(kv => kv.Value == userId);
             if (seat.Value == userId && state.Seats.ContainsKey(seat.Key))
                 state.Seats.Remove(seat.Key);
@@ -269,7 +306,8 @@ namespace MovieTheater.Arcade
         private RoomStatus StatusFor(RoomState state, int userId)
         {
             int? yourSlot = state.Seats.TryGetValue2(userId, out var slot) ? slot : null;
-            return new RoomStatus(state.CloudRetroRoomId != null, state.MaxPlayers, state.Seats.Values.ToList(), yourSlot);
+            return new RoomStatus(state.CloudRetroRoomId != null, state.MaxPlayers, state.Seats.Values.ToList(),
+                state.Spectators.ToList(), yourSlot, state.Spectators.Contains(userId));
         }
     }
 

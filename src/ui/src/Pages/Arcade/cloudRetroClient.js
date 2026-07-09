@@ -174,7 +174,14 @@ function packet(t, p, id) {
 
 /**
  * Open a CloudRetro session for a room.
- * @param descriptor { wsUrl, gameKey, playerSlot, iceConfig, isCreator, roomCode, system }
+ *
+ * `descriptor.spectator` (playerSlot -1) opens a WATCH-ONLY session: video and audio arrive exactly as
+ * they do for a player, but the input pump never starts and t=108 is never sent. That is what makes a
+ * spectator harmless. On the worker, `user.Index` is only ever read inside the DataChannel's
+ * `OnMessage` handler (`r.App().Input(user.Index, …)` — coordinatorhandlers.go), so a connection that
+ * sends no input frames cannot reach the emulator at all, whatever index it holds.
+ *
+ * @param descriptor { wsUrl, gameKey, playerSlot, spectator, iceConfig, isCreator, roomCode, system }
  * @param opts { videoEl, onRoomId(cloudRetroRoomId), onStatus(str), onError(err), onSeat(index),
  *               onAspect(ratio) — the core's own display aspect (see reportAspect) }
  * @returns { close, save, load, reset }
@@ -229,6 +236,9 @@ export function videoTransform(rot, flip) {
 export function createCloudRetroSession(descriptor, opts) {
   const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect } = opts || {};
   const status = (s) => onStatus && onStatus(s);
+  // Watch-only seat. Trust the explicit flag, but fall back to the slot itself so an older descriptor
+  // (or a hand-built one in a test) can't accidentally hand a watcher a controller.
+  const spectator = descriptor.spectator === true || (descriptor.playerSlot | 0) < 0;
 
   let ws = null;
   let pc = null;
@@ -355,9 +365,30 @@ export function createCloudRetroSession(descriptor, opts) {
     try { dc.send(encodeInput(mask, a)); } catch { /* channel closing */ }
   }
 
+  // Focus-transition hygiene. A key held when focus leaves never gets its keyup (Alt-Tab delivers it
+  // to the OS switcher), so its bit would ride every future frame as a button the worker believes is
+  // held forever. On blur: zero the keyboard state and null the `last` dedupe, so the next pump SENDS
+  // the release. On focus return: null the dedupe again (the first poll then re-sends true state even
+  // if "unchanged" — self-heals any worker-side desync accrued while away) and forget the remembered
+  // gamepad index so a pad Chrome re-enumerated while unfocused is re-adopted on its first input.
+  const onWindowBlur = () => {
+    keyMask.value = 0;
+    rKeys.up = rKeys.down = rKeys.left = rKeys.right = false;
+    last = null;
+  };
+  const onWindowFocus = () => {
+    last = null;
+    activePadIndex = -1;
+  };
+
   function startInput() {
+    // A spectator holds no controller port: no key/gamepad listeners, no poll, so pumpInput's dc.send
+    // can never run. This is the single guard that keeps a watcher from touching the game.
+    if (spectator) return;
     window.addEventListener("keydown", keyDown);
     window.addEventListener("keyup", keyUp);
+    window.addEventListener("blur", onWindowBlur);
+    window.addEventListener("focus", onWindowFocus);
     // Poll at ~60 Hz; only actually send on change (pumpInput dedupes).
     inputTimer = setInterval(pumpInput, 16);
   }
@@ -365,6 +396,8 @@ export function createCloudRetroSession(descriptor, opts) {
   function stopInput() {
     window.removeEventListener("keydown", keyDown);
     window.removeEventListener("keyup", keyUp);
+    window.removeEventListener("blur", onWindowBlur);
+    window.removeEventListener("focus", onWindowFocus);
     if (inputTimer) clearInterval(inputTimer);
     inputTimer = null;
   }
@@ -377,6 +410,12 @@ export function createCloudRetroSession(descriptor, opts) {
     dc = pc.createDataChannel("data", { negotiated: true, id: 0, ordered: false, maxRetransmits: 0 });
     dc.binaryType = "arraybuffer";
     dc.onopen = () => { status("connected"); startInput(); };
+    // A negotiated channel cannot reopen, and pumpInput's readyState guard just returns — so without
+    // this the death of the input channel is INVISIBLE: media keeps flowing (audio even rides its own
+    // aux PC), the status stays "playing", and the player is stuck in a room they can't control
+    // (observed live 2026-07-09 after an alt-tab). Report it so the page can offer/perform recovery.
+    // Spectators hold no input path, so a dc close means nothing to their session.
+    dc.onclose = () => { if (!closed && !spectator) { stopInput(); status("input-lost"); } };
 
     // The worker opens side channels non-negotiated (keyboard/mouse/disc); we receive them here. The
     // "disc" channel carries a 1-byte target image index for multi-disc games (patch 0005).
@@ -506,7 +545,15 @@ export function createCloudRetroSession(descriptor, opts) {
     // Per-room encoder quality (arcade per-room bitrate/FEC): the creator's wsUrl carries ?vbr=<kbps>
     // and ?fec=<0|1|2> (appended by the backend). Only the creator's t=104 builds the room's encoder,
     // so only these values matter; a joiner's wsUrl won't have them. Omit when unset (worker uses config).
-    const p = { game_name: descriptor.gameKey, room_id: roomId, player_index: descriptor.playerSlot | 0 };
+    // player_index sets which controller port THIS connection's input frames land on. A spectator sends
+    // none, so its index is inert — but never send the -1 sentinel: the worker stores it verbatim
+    // (`user.Index = rq.PlayerIndex`) and it would index a port slice if anything ever did send. 0 is safe
+    // and shared harmlessly with the host.
+    const p = {
+      game_name: descriptor.gameKey,
+      room_id: roomId,
+      player_index: spectator ? 0 : descriptor.playerSlot | 0,
+    };
     const vbr = numFromWsUrl(descriptor.wsUrl, "vbr");
     const fec = numFromWsUrl(descriptor.wsUrl, "fec");
     if (vbr > 0) p.video_bitrate = vbr;
@@ -559,9 +606,10 @@ export function createCloudRetroSession(descriptor, opts) {
     const roomId = p && (p.roomId || p.room_id);
     if (descriptor.isCreator && roomId) onRoomId && onRoomId(roomId);
     if (p && p.av) applyVideoTransform(p.av);
-    // Confirm the seat; the worker answers the accepted index (-1 = rejected).
-    send(T.SET_PLAYER_INDEX, descriptor.playerSlot | 0);
-    status("playing");
+    // Confirm the seat; the worker answers the accepted index (-1 = rejected). A spectator claims no
+    // seat at all, so it never sends this — the room's players keep the ports they hold.
+    if (!spectator) send(T.SET_PLAYER_INDEX, descriptor.playerSlot | 0);
+    status(spectator ? "spectating" : "playing");
   }
 
   function handle(msg) {
@@ -639,18 +687,23 @@ export function createCloudRetroSession(descriptor, opts) {
 
   connect();
 
+  // Save / load / reset / disc-swap act on the ROOM's single shared emulator, so they are the players'
+  // to make, not a watcher's. Guarded here rather than only in the UI: this shim is the wire, and a
+  // spectator's page must not be able to reset someone else's game by any route.
+  const asPlayer = (fn) => (...args) => { if (!spectator) fn(...args); };
+
   return {
     close,
-    save: () => send(T.GAME_SAVE, {}),
-    load: () => send(T.GAME_LOAD, {}),
-    reset: () => send(T.GAME_RESET, {}),
+    save: asPlayer(() => send(T.GAME_SAVE, {})),
+    load: asPlayer(() => send(T.GAME_LOAD, {})),
+    reset: asPlayer(() => send(T.GAME_RESET, {})),
     // Multi-disc: ask the emulator to swap to disc image `index` (patch 0005). No-op until the "disc"
     // channel is open / for single-disc games.
-    swapDisc: (index) => {
+    swapDisc: asPlayer((index) => {
       try {
         if (discDc && discDc.readyState === "open") discDc.send(new Uint8Array([index & 0xff]));
       } catch { /* channel closing */ }
-    },
+    }),
   };
 }
 

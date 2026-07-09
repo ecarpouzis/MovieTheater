@@ -243,12 +243,12 @@ namespace MovieTheater.Tests
             Assert.False(ArcadeCheatCatalog.Ps2NoInterlacing.DefaultOn);
         }
 
-        // We can't tell per game whether flycast/Dolphin will actually do anything, so neither may be
+        // We can't tell per game whether flycast/Dolphin/LRPS2 will actually do anything, so none may be
         // pre-selected — a default-on toggle has to be one we know applies to THAT game.
         [Fact]
         public void SystemWideOptionCheatsAreNeverDefaultOnAndAlwaysExplainThemselves()
         {
-            foreach (var system in new[] { "dc", "gc" })
+            foreach (var system in new[] { "dc", "gc", "ps2" })
             {
                 var options = ArcadeCheatCatalog.SystemOptionCheats(system);
                 Assert.NotEmpty(options);
@@ -258,6 +258,25 @@ namespace MovieTheater.Tests
                     Assert.False(string.IsNullOrWhiteSpace(o.Note));
                 });
             }
+        }
+
+        // The ghosting fix is an enum option gated behind a master switch. Both halves are silent-failure
+        // traps: a wrong VALUE is ignored by libretro ("Align to Native" is the DLL's exact token, not
+        // "enabled"), and without pcsx2_enable_hw_hacks the core never reads the option at all.
+        [Fact]
+        public void Ps2GhostingFixUsesTheExactEnumTokenAndImpliesTheHwHacksMasterSwitch()
+        {
+            var fix = Assert.Single(ArcadeCheatCatalog.SystemOptionCheats("ps2"));
+            Assert.Equal("pcsx2_half_pixel_offset", fix.Key);
+            Assert.Equal("Align to Native", fix.Value);
+
+            var implied = Assert.Single(ArcadeCheatCatalog.ImpliedOptionsFor(fix.Key));
+            Assert.Equal(("pcsx2_enable_hw_hacks", "enabled"), implied);
+
+            // Options with no gate stay implication-free — widescreen must never drag hw_hacks in,
+            // because the master switch disables the GameDB auto-fixes.
+            Assert.Empty(ArcadeCheatCatalog.ImpliedOptionsFor(ArcadeCheatCatalog.Ps2Widescreen.Key));
+            Assert.Empty(ArcadeCheatCatalog.ImpliedOptionsFor("reicast_widescreen_cheats"));
         }
 
         [Fact]

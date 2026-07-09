@@ -288,12 +288,14 @@ namespace MovieTheater.Controllers
                 .Select(g => new { g.Id, g.Title, g.System, g.MaxPlayers, g.RatingCeiling })
                 .ToDictionaryAsync(g => g.Id);
 
-            // Creators too: the lobby's room card names the host ("Eric hosting"), and a host who has
-            // left the room they opened is no longer in PlayerUserIds.
-            var playerIds = snapshot.SelectMany(r => r.PlayerUserIds).Concat(snapshot.Select(r => r.CreatorUserId))
+            // Creators and spectators too: the lobby's room card names the host ("Eric hosting") — and a host
+            // who has left the room they opened is no longer in PlayerUserIds.
+            var peopleIds = snapshot.SelectMany(r => r.PlayerUserIds)
+                .Concat(snapshot.SelectMany(r => r.SpectatorUserIds))
+                .Concat(snapshot.Select(r => r.CreatorUserId))
                 .Distinct().ToList();
             var names = await movieDb.Users
-                .Where(u => playerIds.Contains(u.UserID))
+                .Where(u => peopleIds.Contains(u.UserID))
                 .Select(u => new { u.UserID, u.Username })
                 .ToDictionaryAsync(u => u.UserID, u => u.Username);
 
@@ -310,6 +312,10 @@ namespace MovieTheater.Controllers
                     host = names.GetValueOrDefault(r.CreatorUserId) ?? "Someone",
                     seatsFree = Math.Max(0, r.MaxPlayers - r.PlayerUserIds.Count),
                     maxPlayers = r.MaxPlayers,
+                    // Watchers hold no controller port, so they are never folded into players/seatsFree —
+                    // a 1-player game's room reads "1 playing · 0 seats free · 1 watching", not "2 playing".
+                    spectators = r.SpectatorUserIds.Select(id => names.GetValueOrDefault(id) ?? "Someone").ToList(),
+                    spectatorSeatsFree = Math.Max(0, ArcadeRoomService.SpectatorSeats - r.SpectatorUserIds.Count),
                     starting = !r.Bound,
                 });
             }
@@ -488,6 +494,15 @@ namespace MovieTheater.Controllers
                 var coreOptions = picked.Where(o => o.Kind == "option" && o.OptionKey != null)
                     .GroupBy(o => o.OptionKey!, StringComparer.Ordinal)   // one value per key; first wins
                     .ToDictionary(g => g.Key, g => g.First().OptionValue ?? "enabled", StringComparer.Ordinal);
+
+                // Master switches: some option cheats are read by the core only behind a gate option
+                // (pcsx2_half_pixel_offset does nothing unless pcsx2_enable_hw_hacks is on). The catalog
+                // owns the mapping; an explicit pick of the gate key wins over the implied value.
+                foreach (var key in coreOptions.Keys.ToList())
+                    foreach (var (impliedKey, impliedValue) in ArcadeCheatCatalog.ImpliedOptionsFor(key))
+                        if (!coreOptions.ContainsKey(impliedKey))
+                            coreOptions[impliedKey] = impliedValue;
+
                 var codes = picked.Where(o => o.Kind == "code" && !string.IsNullOrEmpty(o.Code))
                     .Select(o => o.Code!).ToList();
 
@@ -778,12 +793,16 @@ namespace MovieTheater.Controllers
                     return NotFound(new { message = "Room not found." });
             }
 
+            var roster = status.PlayerUserIds.Concat(status.SpectatorUserIds).Distinct().ToList();
             var names = await movieDb.Users
-                .Where(u => status.PlayerUserIds.Contains(u.UserID))
+                .Where(u => roster.Contains(u.UserID))
                 .Select(u => new { u.UserID, u.Username })
                 .ToDictionaryAsync(u => u.UserID, u => u.Username);
 
             var players = status.PlayerUserIds
+                .Select(id => new { name = names.GetValueOrDefault(id) ?? "Someone", you = id == userId.Value })
+                .ToList();
+            var spectators = status.SpectatorUserIds
                 .Select(id => new { name = names.GetValueOrDefault(id) ?? "Someone", you = id == userId.Value })
                 .ToList();
 
@@ -793,6 +812,8 @@ namespace MovieTheater.Controllers
                 maxPlayers = status.MaxPlayers,
                 yourSlot = status.YourSlot,
                 players,
+                spectators,
+                youAreSpectator = status.YouAreSpectator,
             });
         }
 
@@ -822,6 +843,9 @@ namespace MovieTheater.Controllers
             roomCode = d.RoomCode,
             wsUrl = d.WsUrl,
             playerSlot = d.PlayerSlot,
+            // Watch-only seat (playerSlot -1): the shim skips t=108 and never opens its input pump, so this
+            // browser holds no controller port. Derived, so the token stays the single source of truth.
+            spectator = d.PlayerSlot == ArcadeRoomService.SpectatorSlot,
             gameKey = d.GameKey,
             iceConfig = d.IceConfig.Select(i => new { urls = i.Urls }).ToList(),
             isCreator = d.IsCreator,

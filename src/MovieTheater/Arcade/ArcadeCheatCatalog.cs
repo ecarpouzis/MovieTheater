@@ -115,7 +115,41 @@ namespace MovieTheater.Arcade
                 new OptionCheat("dolphin_widescreen_hack", "enabled", "Widescreen hack (16:9)", false,
                     "Stretches the view to 16:9. May show graphical glitches at the screen edges."),
             },
+            // Upscaling PS2 (global 2x) exposes half-pixel misalignment as ghosting/double-image smear.
+            // LRPS2's GameDB normally auto-fixes that per game (San Andreas gets autoFlush + halfPixelOffset:4
+            // automatically — read straight out of the DLL's embedded 12.8k-entry YAML), but the database has
+            // real GAPS: Vice City and GTA III carry no gsHWFixes at all — in our core's copy AND in current
+            // upstream PCSX2 (verified 2026-07-09 against master GameIndex.yaml; VC's boot log applies zero
+            // fixes where God of War's applies three). Nobody can predict which other titles are gaps, so this
+            // is offered on every PS2 game, off by default — the same honest shape as dc/gc. Value is the
+            // core's exact enum token, read out of the DLL.
+            // Picking it implies the pcsx2_enable_hw_hacks master switch (ImpliedOptionsFor below), which
+            // also turns OFF the GameDB auto-fixes for that room — hence the warning in the note, and why a
+            // per-game DefaultOn row (Source='curated-fix') is ONLY for titles whose GameDB entry has no
+            // gsHWFixes to lose (VC + III today). Default-on for a GameDB-covered title would strictly
+            // regress it (San Andreas would trade autoFlush + HPO for HPO alone).
+            ["ps2"] = new[]
+            {
+                new OptionCheat("pcsx2_half_pixel_offset", "Align to Native", "Fix ghosting / double image", false,
+                    "For games that smear or ghost when upscaled. Replaces this game's automatic per-game fixes — untick if anything looks worse."),
+            },
         };
+
+        // ── Implied companion options (master switches) ───────────────────────────────────────────────
+        // Some option cheats are read by the core only behind a gate option: pcsx2_half_pixel_offset does
+        // nothing unless pcsx2_enable_hw_hacks is on (the core's own description of that switch: "This will
+        // disable automatic settings from the database" — i.e. the gate trades the GameDB auto-fixes for the
+        // manual ones, per room). The catalog owns the mapping so every caller applies the same rule; an
+        // explicitly picked value for the gate key always wins over an implied one.
+        private static readonly Dictionary<string, (string Key, string Value)[]> Implied = new(StringComparer.Ordinal)
+        {
+            ["pcsx2_half_pixel_offset"] = new[] { ("pcsx2_enable_hw_hacks", "enabled") },
+        };
+
+        /// <summary>Companion options a picked option cheat needs to actually take effect. Callers merge
+        /// these into the room's core options for keys not already set explicitly.</summary>
+        public static IReadOnlyList<(string Key, string Value)> ImpliedOptionsFor(string optionKey) =>
+            Implied.TryGetValue(optionKey, out var i) ? i : Array.Empty<(string, string)>();
 
         /// <summary>System-wide option cheats, offered on every game of that system.</summary>
         public static IReadOnlyList<OptionCheat> SystemOptionCheats(string? system) =>

@@ -256,6 +256,109 @@ namespace MovieTheater.Services.LaunchBox
             return index;
         }
 
+        /// <summary>A game's real simultaneous-player count, from the dump's &lt;MaxPlayers&gt;.</summary>
+        public readonly record struct Seats(int MaxPlayers, bool Cooperative, int Votes);
+
+        /// <summary>
+        /// Stream Metadata.xml into an index of (system, normalized title) → per-game player count.
+        ///
+        /// <para>Why this exists: <c>ArcadeGame.MaxPlayers</c> is set at ingest to a per-SYSTEM blanket (the
+        /// core's controller-port ceiling — PS2 2, N64 4, SNES 5), which over-states almost every game. Shadow
+        /// of the Colossus advertised "2P" purely because it is a PS2 game. LaunchBox publishes a real
+        /// per-game <c>&lt;MaxPlayers&gt;</c> for ~77% of our cards; the rest keep the blanket.</para>
+        ///
+        /// <para>Deliberately NOT gated on ratings, unlike <see cref="BuildIndex"/>: a game with no community
+        /// votes still has a trustworthy player count, and dropping unrated rows would throw away thousands of
+        /// seat facts. Same alias rules, same most-votes-wins tie-break.</para>
+        ///
+        /// <para>The one signal we do NOT use here is IGDB's <c>game_modes</c>. It has false negatives that
+        /// would be catastrophic: GoldenEye 007 on N64 — a four-player split-screen landmark — is recorded as
+        /// "Single player". LaunchBox has no MaxPlayers for GoldenEye at all, so it correctly keeps the N64
+        /// blanket of 4. Absent data must mean "leave it alone", never "it's single player".</para>
+        /// </summary>
+        public static Dictionary<(string System, string Key), Seats> BuildSeatIndex(string zipPath, Action<string>? log = null)
+        {
+            var index = new Dictionary<(string, string), Seats>();
+            var byId = new Dictionary<string, (string Sys, Seats Seats)>();
+            var aliasRows = new List<(string DbId, string Key)>();
+
+            using var zip = ZipFile.OpenRead(zipPath);
+            var meta = zip.GetEntry("Metadata.xml")
+                ?? throw new InvalidOperationException("Metadata.xml not found in the LaunchBox dump.");
+
+            using var stream = meta.Open();
+            using var reader = XmlReader.Create(stream, new XmlReaderSettings { IgnoreWhitespace = true, IgnoreComments = true });
+
+            int games = 0, withSeats = 0;
+            reader.MoveToContent();
+            // Same loop shape as BuildIndex — see the note there. Only advance when we did NOT consume a node.
+            while (!reader.EOF)
+            {
+                if (reader.NodeType != XmlNodeType.Element) { reader.Read(); continue; }
+
+                if (reader.Name == "GameAlternateName")
+                {
+                    var alt = (XElement)XNode.ReadFrom(reader);
+                    var altId = alt.Element("DatabaseID")?.Value;
+                    var ak = NormalizeTitle(alt.Element("AlternateName")?.Value);
+                    if (altId != null && ak.Length >= 4 && !ak.All(char.IsDigit))
+                        aliasRows.Add((altId, ak));
+                    continue;
+                }
+
+                if (reader.Name != "Game") { reader.Read(); continue; }
+                games++;
+
+                var el = (XElement)XNode.ReadFrom(reader);
+
+                string? platform = el.Element("Platform")?.Value;
+                string? name = el.Element("Name")?.Value;
+                if (platform == null || name == null) continue;
+                if (!PlatformToSystem.TryGetValue(platform, out var sys)) continue;
+
+                if (!int.TryParse(el.Element("MaxPlayers")?.Value, NumberStyles.Integer,
+                                  CultureInfo.InvariantCulture, out var maxPlayers) || maxPlayers <= 0)
+                    continue;   // no seat fact → this game contributes nothing; the blanket stands
+                bool coop = string.Equals(el.Element("Cooperative")?.Value, "true", StringComparison.OrdinalIgnoreCase);
+                int.TryParse(el.Element("CommunityRatingCount")?.Value, NumberStyles.Integer,
+                             CultureInfo.InvariantCulture, out var votes);
+
+                var key = NormalizeTitle(name);
+                if (key.Length == 0) continue;
+                withSeats++;
+
+                var entry = new Seats(maxPlayers, coop, votes);
+                if (!index.TryGetValue((sys, key), out var prior) || votes > prior.Votes)
+                    index[(sys, key)] = entry;
+                var dbId = el.Element("DatabaseID")?.Value;
+                if (dbId != null) byId[dbId] = (sys, entry);
+            }
+            int primaries = index.Count;
+
+            // Alias pass, same two safety rules as BuildIndex: a real name always beats someone else's alias,
+            // and an alias claimed by more than one game is ambiguous and dropped.
+            var claims = new Dictionary<(string, string), HashSet<string>>();
+            foreach (var (dbId, ak) in aliasRows)
+            {
+                if (!byId.TryGetValue(dbId, out var g)) continue;
+                var k = (g.Sys, ak);
+                if (index.ContainsKey(k)) continue;
+                if (!claims.TryGetValue(k, out var set)) claims[k] = set = new HashSet<string>();
+                set.Add(dbId);
+            }
+            int aliases = 0, ambiguous = 0;
+            foreach (var (k, dbIds) in claims)
+            {
+                if (dbIds.Count != 1) { ambiguous++; continue; }
+                index[k] = byId[dbIds.First()].Seats;
+                aliases++;
+            }
+
+            log?.Invoke($"Parsed {games:N0} games; indexed {primaries:N0} titles with a player count + {aliases:N0} safe aliases "
+                      + $"= {index.Count:N0} keys ({ambiguous:N0} ambiguous aliases dropped, from {withSeats:N0} rows).");
+            return index;
+        }
+
         private static string? Trim(string? s, int max)
         {
             if (string.IsNullOrWhiteSpace(s)) return null;

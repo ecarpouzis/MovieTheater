@@ -556,6 +556,18 @@
 :root[data-theme="dark"] .arcade-btn--join {
   box-shadow: 0 0 18px rgba(164, 78, 224, 0.45);
 }
+/* Every player seat AND the watch seat are taken. */
+.arcade-btn--join:disabled {
+  background: var(--chip-neutral-bg);
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.arcade-btn--join:disabled:hover {
+  filter: none;
+  background: var(--chip-neutral-bg);
+  color: var(--text-muted);
+}
 
 .arcade-link {
   background: none;

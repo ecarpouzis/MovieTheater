@@ -28,6 +28,10 @@ function Seats({ players, maxPlayers }) {
 function RoomCard({ room, onJoin }) {
   const seatsFree = room.seatsFree;
   const host = room.host || room.players[0];
+  const watching = room.spectators?.length || 0;
+  // Player seats gone but the watch-only seat is open → you can still drop in, just not with a controller.
+  const watchOnly = seatsFree === 0 && (room.spectatorSeatsFree ?? 0) > 0;
+  const full = seatsFree === 0 && !watchOnly;
   return (
     <div className="arcade-room">
       <GameCover game={{ ...room.game, hasBoxArt: true }} artId={room.game.id} height={64} className="arcade-room__art" />
@@ -39,6 +43,7 @@ function RoomCard({ room, onJoin }) {
           <span className="arcade-room__status">
             {room.players.length} playing
             {room.starting ? " · starting…" : ` · ${seatsFree} seat${seatsFree === 1 ? "" : "s"} free`}
+            {watching > 0 && ` · ${watching} watching`}
           </span>
         </div>
       </div>
@@ -51,8 +56,13 @@ function RoomCard({ room, onJoin }) {
             <span className="arcade-room__hostname">{host} hosting</span>
           </div>
         )}
-        <button type="button" className="arcade-btn arcade-btn--join" onClick={() => onJoin(room.roomCode)}>
-          Join room
+        <button
+          type="button"
+          className="arcade-btn arcade-btn--join"
+          disabled={full}
+          onClick={() => onJoin(room.roomCode)}
+        >
+          {full ? "Room full" : watchOnly ? "Watch" : "Join room"}
         </button>
       </div>
     </div>

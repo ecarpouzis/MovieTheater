@@ -46,6 +46,32 @@ truth pulled out of the core binary itself — `pcsx2_libretro.dll` logs `[PATCH
 This is why widescreen can be default-on without being a lie: a game only shows the toggle *because* the
 emulator has a patch for it, so a pre-ticked box means "this is applied — untick for original 4:3".
 
+PS2 also gets one **system-wide** option cheat (every game, off by default):
+
+- **Fix ghosting / double image** — `pcsx2_half_pixel_offset = Align to Native`. Upscaling PS2 (our
+  global 2x) exposes half-pixel misalignment as texture ghosting. LRPS2's GameDB normally auto-fixes it
+  per game — the DLL's embedded 12.8k-entry YAML gives San Andreas `autoFlush + halfPixelOffset: 4`,
+  LCS `halfPixelOffset: 4`, VCS `halfPixelOffset: 2`, all applied automatically at boot. But the
+  database has real **gaps**: **Vice City and GTA III carry no gsHWFixes at all — in our core's copy
+  AND in current upstream PCSX2** (verified 2026-07-09 against master GameIndex.yaml; VC's boot log
+  applies zero fixes where God of War's applies three). Nobody can predict which other titles are gaps,
+  so the toggle is the discovery mechanism: a player who sees ghosting fixes it themselves, per room,
+  no admin loop.
+
+  This option is **gated behind `pcsx2_enable_hw_hacks`** — picking it makes the room-create resolver add
+  that master switch automatically (`ArcadeCheatCatalog.ImpliedOptionsFor`; an explicit pick of the gate
+  key wins). The gate also disables the GameDB auto-fixes for that room (the core's own words: "This will
+  disable automatic settings from the database"), which is why the cheat's note warns "untick if anything
+  looks worse" and why `pcsx2_enable_hw_hacks` must never be a *config* default.
+
+  Titles **confirmed** to need it get a per-game row with `DefaultOn = 1` and `Source = 'curated-fix'` —
+  but ONLY titles whose GameDB entry has no gsHWFixes to lose (currently the 4 no-fix GTA dumps:
+  Vice City ×3 + GTA III). Default-on for a GameDB-covered title would strictly regress it: ticked,
+  San Andreas would trade its automatic `autoFlush + halfPixelOffset` for the manual HPO alone. A stored
+  row on the same option key replaces the system-wide entry in the offer, so the card shows one
+  pre-ticked toggle, not two. `curated-fix` rows survive `arcade-cheats-import` re-runs (deletes are
+  Source-scoped).
+
 **Dreamcast and GameCube** get one system-wide option cheat each (`reicast_widescreen_cheats`,
 `dolphin_widescreen_hack`), **off by default and labelled with what they do**. flycast's widescreen table is
 a binary struct array in the DLL rather than log strings, so unlike PCSX2 we can't tell per game whether it
@@ -145,10 +171,14 @@ accepts a code and discards it, and nothing observable at runtime tells the two 
 of disassembly: **a stub's first instruction is `ret`.**
 
 ```bash
-# RVA of the export, then disassemble the first few bytes at ImageBase+RVA.
-objdump -p core_libretro.dll   # Export Address Table + [Ordinal/Name Pointer] Table
-objdump -d --start-address=<ImageBase+RVA> --stop-address=<+24> core_libretro.dll
+python scripts/probe-libretro-cheat-support.py D:/ArcadeStorage/worker-gl/assets/cores/*.dll
+#   mednafen_pce     cheat_set=STUB (ret )   <- accepts every code, does nothing
+#   mupen64plus_next cheat_set=REAL (push)
 ```
+
+Do **not** use "the body contains some opcode other than `ret`": disassembling past a stub's single `ret`
+runs into inter-function alignment padding (`data16 nopl …`) that belongs to no function, and that test
+reports every stub as REAL. It's how the pce bug survived its first check.
 
 Results (2026-07-09, the cores this stack actually loads):
 

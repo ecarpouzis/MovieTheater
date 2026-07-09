@@ -13,11 +13,19 @@ using MovieTheater.Services;
 namespace MovieTheater.Arcade
 {
     /// <summary>
-    /// Corrects arcade seat counts from IGDB. <c>MaxPlayers</c> was set at ingest to a per-SYSTEM blanket
-    /// (SNES 5 = the multitap ceiling, N64 4, …), which over-states most games — most SNES titles are really
-    /// 2-player. The IGDB enrichment stored each game's true offline-max (<c>OfflineMaxPlayers</c>); this sets
-    /// every row of a card to <c>clamp(OfflineMaxPlayers, 1, currentMaxPlayers)</c> — only ever LOWERING toward
-    /// the real count, never above what the core's controllers support. Cards IGDB didn't rate keep the blanket.
+    /// Corrects arcade seat counts from IGDB — the SECONDARY seat source. <c>MaxPlayers</c> was set at ingest
+    /// to a per-SYSTEM blanket (SNES 5 = the multitap ceiling, N64 4, …), which over-states most games. This
+    /// sets every row of a card to <c>clamp(OfflineMaxPlayers, Floor, currentMaxPlayers)</c> — only ever
+    /// LOWERING toward the real count, never above what the core's controllers support.
+    ///
+    /// <para>Run <c>arcade-launchbox-seats</c> FIRST: IGDB's <c>OfflineMaxPlayers</c> is NULL for ~90% of our
+    /// cards (15,645 of 17,291), so this command alone was close to a no-op. LaunchBox carries a real player
+    /// count for ~77% of them. This exists to catch the tail LaunchBox misses but IGDB knows.</para>
+    ///
+    /// <para>Note the <c>--floor</c> history: it defaulted to 2, which — combined with a blanket of 2 on PS2 —
+    /// made it mathematically incapable of ever writing 1P, so Shadow of the Colossus stayed "2P". The floor
+    /// now defaults to 1 and only IGDB's own value decides. It stays as an option because IGDB's offline-max
+    /// of 1 is sometimes just missing co-op data.</para>
     ///
     /// <para>Bulk-job rules: dry-run unless <c>--apply</c>; bounded by <c>--limit</c>, resumable via
     /// <c>--after-id</c>; idempotent.</para>
@@ -37,8 +45,8 @@ namespace MovieTheater.Arcade
         [CommandOption("system", Description = "Restrict to one system code.")]
         public string System { get; set; } = "";
 
-        [CommandOption("floor", Description = "Never lower below this many seats (default 2) — IGDB offline-max=1 is often just missing co-op data, and dropping a real 2-player game to 1P would block a partner.")]
-        public int Floor { get; set; } = 2;
+        [CommandOption("floor", Description = "Never lower below this many seats (default 1). Raise to 2 to distrust IGDB's offline-max=1, which is sometimes just missing co-op data.")]
+        public int Floor { get; set; } = 1;
 
         private readonly IDbContextFactory<MovieDb> dbFactory;
 
