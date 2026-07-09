@@ -85,6 +85,91 @@ namespace MovieTheater.Tests
     }
 
     /// <summary>
+    /// ROM filename → .cht file. The property that matters is SAFETY: a cheat code is an address poke, so
+    /// matching the wrong dump corrupts state rather than failing cleanly. Upstream names carry a cheat-device
+    /// suffix and often a broader region tag than the individual dump, which is why exact-compare isn't enough.
+    /// </summary>
+    public class ArcadeChtIndexTests
+    {
+        private static ArcadeChtIndex Index(params string[] names) =>
+            ArcadeChtIndex.Build(names.Select(n => $"C:/cht/{n}.cht"));
+
+        [Fact]
+        public void PrefersTheExactFilename()
+        {
+            var idx = Index("Ape Escape (USA)", "Ape Escape (USA, Europe) (Game Buster)");
+            Assert.EndsWith("Ape Escape (USA).cht", idx.Match("Ape Escape (USA)"));
+        }
+
+        [Fact]
+        public void MatchesAcrossWordOrder_TheGoldenEyeCase()
+        {
+            var idx = Index("GoldenEye 007 (USA)");
+            Assert.NotNull(idx.Match("007 - GoldenEye (USA)"));
+        }
+
+        // Our dump's region is a subset of the cheat file's. This is the common shape upstream and used to be
+        // the bulk of the misses.
+        [Fact]
+        public void MatchesWhenOurRegionIsInsideTheCheatFilesRegionSet()
+        {
+            var idx = Index("Ape Escape (USA, Europe) (Game Buster)");
+            Assert.NotNull(idx.Match("Ape Escape (USA)"));
+        }
+
+        [Fact]
+        public void WorldExpandsToEveryRegion()
+        {
+            var idx = Index("Spyro the Dragon (World) (Game Buster)");
+            Assert.NotNull(idx.Match("Spyro the Dragon (USA)"));
+            Assert.NotNull(idx.Match("Spyro the Dragon (Japan)"));
+        }
+
+        // THE test. A PAL-only cheat file must never be handed to the NTSC dump.
+        [Fact]
+        public void RefusesToCrossRegions()
+        {
+            var idx = Index("Micro Machines V3 (Europe) (Xploder)");
+            Assert.Null(idx.Match("Micro Machines V3 (USA)"));
+        }
+
+        [Fact]
+        public void PicksTheRegionCompatibleCandidateOverAnIncompatibleOne()
+        {
+            var idx = Index("Micro Machines V3 (Europe) (Xploder)", "Micro Machines V3 (USA) (GameShark)");
+            Assert.Contains("(USA)", idx.Match("Micro Machines V3 (USA)"));
+        }
+
+        // "(GameShark)" names a cheat device, not a region — it carries no dump information, so it can't be
+        // read as a region mismatch. Such a file is a last-resort wildcard.
+        [Fact]
+        public void ADeviceOnlyTagIsAWildcardButLosesToARealRegionMatch()
+        {
+            Assert.NotNull(Index("Contra (GameShark)").Match("Contra (USA)"));
+
+            var idx = Index("Contra (GameShark)", "Contra (USA)");
+            Assert.EndsWith("Contra (USA).cht", idx.Match("Contra (USA)"));
+        }
+
+        // Token SET equality, not containment: an added or dropped word is a different game.
+        [Fact]
+        public void NeverMatchesADifferentTitleThatMerelyOverlaps()
+        {
+            var idx = Index("Super Star Wars - Return of the Jedi (USA)");
+            Assert.Null(idx.Match("Super Return of the Jedi (USA)"));
+            Assert.Null(idx.Match("Super Star Wars (USA)"));
+        }
+
+        [Fact]
+        public void RegionsIgnoresNonRegionParentheticals()
+        {
+            Assert.Empty(ArcadeChtIndex.Regions("Contra (GameShark)"));
+            Assert.Empty(ArcadeChtIndex.Regions("Contra"));
+            Assert.Equal(new[] { "usa" }, ArcadeChtIndex.Regions("Contra (USA) (Rev 1)"));
+        }
+    }
+
+    /// <summary>
     /// Which systems may offer which cheats. These assertions guard the one failure mode the whole design is
     /// built to avoid: a toggle in the lobby that the emulator will ignore.
     /// </summary>

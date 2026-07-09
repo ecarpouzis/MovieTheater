@@ -193,19 +193,11 @@ namespace MovieTheater.Arcade
                 var dir = folder == null ? null : Path.Combine(root, folder);
                 if (dir == null || !Directory.Exists(dir)) { w.WriteLine($"  [{sys}] no cht folder ({folder})."); continue; }
 
-                // Filename index for this system's cht files, reusing the box-art matcher's normalization so
-                // "007 - GoldenEye" ⇄ "GoldenEye 007" and region-tag drift resolve the same way they do for art.
+                // Exact ROM name first, then same-title + overlapping-region. Nothing looser: a code from the
+                // wrong dump pokes wrong addresses rather than failing cleanly. See ArcadeChtIndex.
                 var files = Directory.EnumerateFiles(dir, "*.cht", SearchOption.TopDirectoryOnly).ToList();
-                var byExact = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                var byNorm = new Dictionary<string, string>(StringComparer.Ordinal);
-                foreach (var f in files)
-                {
-                    var stem = Path.GetFileNameWithoutExtension(f);
-                    byExact[stem] = f;
-                    var n = ArcadeBoxArtIndex.Normalize(stem);
-                    if (n.Length > 0 && !byNorm.ContainsKey(n)) byNorm[n] = f;
-                }
-                w.WriteLine($"  [{sys}] {files.Count} cht files indexed.");
+                var index = ArcadeChtIndex.Build(files);
+                w.WriteLine($"  [{sys}] {index.Count} cht files indexed.");
 
                 var games = await db.ArcadeGames
                     .Where(g => g.System == sys && g.IsEnabled && g.Id > AfterId)
@@ -215,11 +207,7 @@ namespace MovieTheater.Arcade
                 {
                     totalGames++; budget--; lastId = Math.Max(lastId, g.Id);
 
-                    // Exact ROM name is the trustworthy match (both sides are No-Intro/Redump names). The
-                    // normalized fallback bridges tag drift; a title-only guess would risk cross-region codes,
-                    // which corrupt memory rather than fail cleanly — so we stop at these two.
-                    if (!byExact.TryGetValue(g.CloudRetroGameKey, out var chtPath))
-                        byNorm.TryGetValue(ArcadeBoxArtIndex.Normalize(g.CloudRetroGameKey), out chtPath);
+                    var chtPath = index.Match(g.CloudRetroGameKey);
                     if (chtPath == null) continue;
 
                     var had = await db.ArcadeCheats.AnyAsync(c => c.ArcadeGameId == g.Id && c.Source == "libretro-cht");

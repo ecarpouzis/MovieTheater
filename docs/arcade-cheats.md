@@ -102,9 +102,30 @@ dotnet run --project src/MovieTheater -- arcade-cheats-import \
     --cht D:/ArcadeStorage/cheats/libretro-database/cht --limit 500 --after-id 0 --apply
 ```
 
-Matching is by **exact ROM filename first** (both sides use No-Intro/Redump names), then a normalized
-filename match for tag drift. It deliberately stops there: a title-only guess could hand a USA code to a
-Japanese dump, and that corrupts state rather than failing cleanly.
+### Matching a ROM to a cheat file (`ArcadeChtIndex`)
+
+Upstream `.cht` names are ROM names **plus a cheat-device suffix**, and usually carry a broader region tag
+than the individual dump:
+
+```
+ours:      Ape Escape (USA).cue                 007 - GoldenEye (USA).z64
+upstream:  Ape Escape (USA, Europe) (Game Buster).cht    GoldenEye 007 (USA).cht
+```
+
+So exact-compare finds only about a quarter of them. The fallback is exactly two rules wide, because a
+mismatch here is not a harmless miss — a code is an address poke, and one from the PAL dump aimed at the
+NTSC binary corrupts state instead of failing:
+
+1. the same **title token set**, order-insensitive, nothing added or dropped ("007 - GoldenEye" ⇄ "GoldenEye
+   007"; never "Super Return of the Jedi" ⇄ "Super Star Wars - Return of the Jedi"), **and**
+2. **overlapping regions, not equal ones.** `(USA)` ⊂ `(USA, Europe)` matches; `(World)` expands to every
+   region; `Micro Machines V3 (USA)` against a lone `(Europe) (Xploder)` file does **not**. A parenthetical
+   naming no region at all — the device-only `(GameShark)` — carries no dump information and is treated as a
+   last-resort wildcard, never chosen over a file that actually agrees on the region.
+
+Measured against the materialized ROM mount: **90% matched, 0 cross-region**. The naive
+"strip all tags and compare" that this replaced matched 92% — but 44 of those were cross-region, including
+`Micro Machines V3 (USA)` → the PAL Xploder file.
 
 Entries with no `cheatN_code` are RetroArch's own memory-scanner cheats (address/value triples it pokes
 through the core's memory map). We have no scanner, so those are counted and skipped — 9 of them across the
