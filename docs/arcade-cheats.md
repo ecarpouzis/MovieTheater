@@ -64,13 +64,21 @@ PS2 also gets one **system-wide** option cheat (every game, off by default):
   disable automatic settings from the database"), which is why the cheat's note warns "untick if anything
   looks worse" and why `pcsx2_enable_hw_hacks` must never be a *config* default.
 
-  Titles **confirmed** to need it get a per-game row with `DefaultOn = 1` and `Source = 'curated-fix'` —
-  but ONLY titles whose GameDB entry has no gsHWFixes to lose (currently the 4 no-fix GTA dumps:
-  Vice City ×3 + GTA III). Default-on for a GameDB-covered title would strictly regress it: ticked,
-  San Andreas would trade its automatic `autoFlush + halfPixelOffset` for the manual HPO alone. A stored
-  row on the same option key replaces the system-wide entry in the offer, so the card shows one
-  pre-ticked toggle, not two. `curated-fix` rows survive `arcade-cheats-import` re-runs (deletes are
-  Source-scoped).
+  Titles **confirmed** to benefit can get a per-game row with `DefaultOn = 1` and `Source = 'curated-fix'`
+  — but ONLY titles whose GameDB entry has no gsHWFixes to lose (default-on for a GameDB-covered title
+  would strictly regress it: ticked, San Andreas would trade its automatic `autoFlush + halfPixelOffset`
+  for the manual HPO alone). A stored row on the same option key replaces the system-wide entry in the
+  offer, so the card shows one pre-ticked toggle, not two. `curated-fix` rows survive
+  `arcade-cheats-import` re-runs (deletes are Source-scoped).
+
+  **The GTA VC/III verdict (2026-07-09, tested live): no hack fixes their trails ghosting.** Both HPO
+  modes ("Align to Native", "Special (Texture)") were verified delivered AND gated-in; the artifact
+  didn't move — consistent with upstream never shipping a VC/III gsHWFix in twelve years. The ghosting
+  is the games' own Trails post-effect misaligned at 2x upscale; the answer is the game's OWN menu
+  option (Display Settings → Trails → OFF), which persists in the player's vaulted save. The
+  pre-ticked curated-fix rows were deleted for honesty — never offer a toggle that provably does
+  nothing. (`pcsx2_native_scaling` was staged as a last-shot experiment and withdrawn untested when
+  Trails-off was accepted as the fix; it needs the hw_hacks implication too, now in the catalog.)
 
 **Dreamcast and GameCube** get one system-wide option cheat each (`reicast_widescreen_cheats`,
 `dolphin_widescreen_hack`), **off by default and labelled with what they do**. flycast's widescreen table is

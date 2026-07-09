@@ -658,7 +658,11 @@ encoder:
       # observed live on Firefox 2026-07-09, repeatedly. gop-size=120 = keyframe every 2 s, the same
       # cadence h264 shipped with for weeks; the "periodic IDR = audio hitch" rationale for infinite
       # GOP predates the aux audio PC (patch 0020) and no longer applies.
-      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=120 zerolatency=true"
+      # strict-gop: NVENC's own anti-pulsing knob ("minimize GOP-to-GOP rate fluctuations") — evens
+      # out the periodic-IDR cost so the 2 s keyframe cadence doesn't read as a visible quality pulse.
+      # (intra-refresh — rolling refresh, no IDRs at all — is the better long-term answer but this
+      # GStreamer build's nvcodec elements don't expose it; noted in the quality plan as future work.)
+      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=120 strict-gop=true zerolatency=true"
       caps: video/x-av1,stream-format=obu-stream ! av1parse ! video/x-av1,stream-format=obu-stream,alignment=tu
     h264:
       encoder: nvh264enc
