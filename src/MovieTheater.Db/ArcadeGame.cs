@@ -76,9 +76,25 @@ namespace MovieTheater.Db
         public long? IgdbId { get; set; }
 
         /// <summary>IGDB <c>total_rating</c> (0–100, blends critic + user) and its sample count for a
-        /// confidence gate. Null = no rating on IGDB (common for obscure arcade titles).</summary>
+        /// confidence gate. Null = no rating on IGDB (common for obscure arcade titles).
+        /// <para>NOT the primary rating any more — IGDB's user score is wildly unreliable on obscure titles
+        /// (American Chopper: 99.5 from 49 user votes and no critic score; LaunchBox says 65.7). It is now a
+        /// FALLBACK, used only for the ~541 cards LaunchBox doesn't rate. See <see cref="LaunchBoxRating"/>.</para></summary>
         public double? RatingScore { get; set; }
         public int? RatingCount { get; set; }
+
+        // ─── LaunchBox-sourced rating (arcade-launchbox). The PRIMARY rating source: it covers ~83% of cards
+        // vs IGDB's 34%, and its community score tracks retro consensus far better. Stored on the card ANCHOR
+        // (lowest-id row), same convention as the IGDB fields + box art. ──────────────────────────────────────
+        /// <summary>LaunchBox <c>CommunityRating</c> rescaled from 0–5 stars to 0–100, with its vote count.</summary>
+        public double? LaunchBoxRating { get; set; }
+        public int? LaunchBoxRatingCount { get; set; }
+
+        /// <summary>Confidence-adjusted score used for <c>sort=rating</c> ONLY (never displayed): the effective
+        /// raw score (LaunchBox, else IGDB) shrunk toward its system's mean by vote count —
+        /// <c>(v/(v+m))·raw + (m/(v+m))·mean</c>, m=20. Without this a 1-vote 100 outranks a 4,000-vote 94.
+        /// Recomputed wholesale by <c>arcade-rating-weights</c> whenever ratings change.</summary>
+        public double? RatingWeighted { get; set; }
 
         /// <summary>Comma-separated IGDB genre names ("Shooter, Fighting") — a card badge + a lobby filter.</summary>
         [MaxLength(200)]

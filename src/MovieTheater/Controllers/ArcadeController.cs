@@ -121,7 +121,10 @@ namespace MovieTheater.Controllers
                     grp.Key.System,
                     grp.Key.Title,
                     Sort = grp.Min(x => x.SortTitle),
-                    Rating = grp.Max(x => x.RatingScore),
+                    // Sort on the confidence-weighted score, never the raw one: a 1-vote 100 must not outrank a
+                    // 4,000-vote 94 (that's how American Chopper became the top-rated PS2 game). See
+                    // ArcadeRatingWeightsCommand, which computes this.
+                    Rating = grp.Max(x => x.RatingWeighted),
                     Year = grp.Max(x => x.Year),
                     Players = grp.Max(x => (int)x.MaxPlayers),
                 });
@@ -173,9 +176,11 @@ namespace MovieTheater.Controllers
                     year = rep?.Year ?? meta?.Year,
                     maxPlayers = versions.Count > 0 ? versions.Max(v => v.MaxPlayers) : (byte)1,
                     versionCount = versions.Count,
-                    // IGDB metadata (null until enriched): score + discovery fields for the card.
-                    rating = meta?.RatingScore is double rs ? (int?)Math.Round(rs) : null,
-                    ratingCount = meta?.RatingCount,
+                    // Review score: LaunchBox is the primary source (83% of cards); IGDB is a fallback for the
+                    // ~541 cards LaunchBox doesn't rate. The card shows the RAW score — the weighted one above
+                    // exists only to order the grid.
+                    rating = (meta?.LaunchBoxRating ?? meta?.RatingScore) is double rs ? (int?)Math.Round(rs) : null,
+                    ratingCount = meta?.LaunchBoxRatingCount ?? meta?.RatingCount,
                     genres = meta?.Genres,
                     themes = meta?.Themes,
                     summary = meta?.Summary,
@@ -206,8 +211,12 @@ namespace MovieTheater.Controllers
                 return StatusCode(501, new { message = "The arcade is not configured on this server." });
 
             var q = await AgeVisibleGamesAsync(userId.Value);
-            var systems = await q.GroupBy(g => g.System)
-                .Select(x => new { value = x.Key, count = x.Count() }).OrderByDescending(x => x.count).ToListAsync();
+            // Count CARDS, not version rows. The grid groups by (System, Title), so counting rows made the
+            // picker advertise "All systems (24710)" for a catalog that renders 17,291 cards. One DISTINCT
+            // pull (~17k pairs) then grouped in memory.
+            var cardKeys = await q.Select(g => new { g.System, g.Title }).Distinct().ToListAsync();
+            var systems = cardKeys.GroupBy(k => k.System)
+                .Select(x => new { value = x.Key, count = x.Count() }).OrderByDescending(x => x.count).ToList();
             var regions = await q.GroupBy(g => g.Region)
                 .Select(x => new { value = x.Key ?? "Unknown", count = x.Count() }).OrderByDescending(x => x.count).ToListAsync();
             var variants = await q.GroupBy(g => g.Variant)
@@ -221,7 +230,7 @@ namespace MovieTheater.Controllers
                 .OrderByDescending(x => x.count).Take(40).ToList();
             return Json(new
             {
-                total = await q.CountAsync(),
+                total = cardKeys.Count,
                 multiplayer = await q.CountAsync(g => g.MaxPlayers >= 2),
                 systems, regions, variants, genres,
             });
