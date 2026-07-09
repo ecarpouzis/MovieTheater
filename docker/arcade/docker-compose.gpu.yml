@@ -75,18 +75,31 @@ x-gpu-worker: &gpu-worker
   command: ["./worker", "--w-conf", "/usr/local/share/cloud-game"]
 
 services:
-  coordinator:
-    image: movietheater/cloud-game:pinned-gpu
-    restart: unless-stopped
-    # Host networking so it binds :8000 directly on the distro (= the Windows host under mirrored
-    # networking); the gateway reaches it at 127.0.0.1:8000 and host-net workers at localhost:8000.
-    # `ports:` is intentionally omitted — it's ignored in host mode; the config's address ":8000" governs.
-    network_mode: host
-    environment:
-      CLOUD_GAME_COORDINATOR_ORIGIN_USERWS: "${SITE_ORIGIN:-*}"
-    volumes:
-      - ./config.yaml:/usr/local/share/cloud-game/config.yaml:ro
-    command: ["./coordinator", "--c-conf", "/usr/local/share/cloud-game"]
+  # ⚠⚠ THIS WHOLE COMPOSE FILE IS RETIRED (2026-07-09). Nothing here should be started.
+  #
+  # The workers moved to native Windows tasks long ago (register-arcade-glworker-task.ps1), and the
+  # coordinator followed on 2026-07-09 (register-arcade-coordinator-task.ps1). Running `up -d` now
+  # would start containers that FIGHT the live native ones for :8000 and the UDP mux ports.
+  #
+  # The coordinator service below is commented out rather than deleted, because it is the evidence for
+  # a bug worth remembering: this image was built 2026-07-06, so it predated patch 0018. Its
+  # StartGameRequest struct had no video_bitrate/audio_fec fields, so it SILENTLY DROPPED them while
+  # relaying GAME_START to the worker — libretro-style "unknown field, no error". Every room ran at the
+  # config bitrate, and the site's per-room/per-system quality never reached the encoder. A stale image
+  # of a process that "just relays packets" is exactly how that hides.
+  #
+  # coordinator:
+  #   image: movietheater/cloud-game:pinned-gpu
+  #   restart: unless-stopped
+  #   # Host networking so it binds :8000 directly on the distro (= the Windows host under mirrored
+  #   # networking); the gateway reaches it at 127.0.0.1:8000 and host-net workers at localhost:8000.
+  #   # `ports:` is intentionally omitted — it's ignored in host mode; the config's address ":8000" governs.
+  #   network_mode: host
+  #   environment:
+  #     CLOUD_GAME_COORDINATOR_ORIGIN_USERWS: "${SITE_ORIGIN:-*}"
+  #   volumes:
+  #     - ./config.yaml:/usr/local/share/cloud-game/config.yaml:ro
+  #   command: ["./coordinator", "--c-conf", "/usr/local/share/cloud-game"]
 
   # THREE workers, and not only for concurrency: the worker segfaults (exit 139, pre-existing,
   # WSLg/D3D12 teardown) ~35s AFTER a room's last player leaves. With one worker that kills whatever

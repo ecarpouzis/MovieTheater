@@ -1,0 +1,500 @@
+diff --git a/pkg/config/worker.go b/pkg/config/worker.go
+index b620976..dfd513c 100644
+--- a/pkg/config/worker.go
++++ b/pkg/config/worker.go
+@@ -111,6 +111,24 @@ func setEncoderParam(params, key, val string, addIfMissing bool) string {
+ 	return strings.Join(fields, " ")
+ }
+ 
++// VideoBitrateKbps reads the ACTIVE video codec's configured `bitrate=` (kbit/s), or 0 when it has
++// none. Used as the ABR ceiling for rooms whose creator didn't pick a quality. vpx names its property
++// `target-bitrate` and measures bit/s, so it deliberately reports 0 here rather than a wrong number.
++func (e Encoder) VideoBitrateKbps() int {
++	cs, ok := e.List[strings.ToLower(e.Video.Codec)]
++	if !ok {
++		return 0
++	}
++	for _, f := range strings.Fields(cs.Params) {
++		if v, found := strings.CutPrefix(f, "bitrate="); found {
++			if n, err := strconv.Atoi(v); err == nil && n > 0 {
++				return n
++			}
++		}
++	}
++	return 0
++}
++
+ // WithOverrides returns a COPY of the encoder config carrying the per-room quality
+ // a room creator chose (arcade per-room bitrate/FEC, threaded in via the t=104
+ // GAME_START packet). It never mutates the shared config: List is a reference-type
+diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
+index bf87de3..6482d8b 100644
+--- a/pkg/network/webrtc/factory.go
++++ b/pkg/network/webrtc/factory.go
+@@ -4,19 +4,39 @@ import (
+ 	"fmt"
+ 	"net"
+ 	"strings"
++	"sync"
++	"time"
+ 
+ 	"github.com/giongto35/cloud-game/v3/pkg/config"
+ 	"github.com/giongto35/cloud-game/v3/pkg/logger"
+ 	"github.com/giongto35/cloud-game/v3/pkg/network/socket"
+ 	"github.com/pion/ice/v4"
+ 	"github.com/pion/interceptor"
++	"github.com/pion/interceptor/pkg/cc"
++	"github.com/pion/interceptor/pkg/gcc"
+ 	"github.com/pion/interceptor/pkg/report"
+ 	"github.com/pion/webrtc/v4"
+ )
+ 
++// Send-side bandwidth estimation bounds (arcade ABR, patch 0021). These are the ESTIMATOR's range, not
++// the encoder's: the room clamps the estimate into its own [floor, ceiling] before touching the encoder.
++// The max is deliberately far above any per-room ceiling so GCC is never the thing capping a LAN room.
++const (
++	bweInitialBps = 6_000_000
++	bweMinBps     = 500_000
++	bweMaxBps     = 60_000_000
++)
++
+ type ApiFactory struct {
+ 	api  *webrtc.API
+ 	conf webrtc.Configuration
++
++	// The cc interceptor builds one estimator per PeerConnection, synchronously inside
++	// api.NewPeerConnection (cc.InterceptorFactory.NewInterceptor calls addPeerConnection before it
++	// returns). We therefore serialise peer creation and drain the channel first, so the estimator a
++	// caller receives provably belongs to the PeerConnection it just created.
++	bweMu   sync.Mutex
++	bweChan chan cc.BandwidthEstimator
+ }
+ 
+ type ModApiFun func(m *webrtc.MediaEngine, i *interceptor.Registry, s *webrtc.SettingEngine)
+@@ -28,6 +48,45 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 	}
+ 	i := &interceptor.Registry{}
+ 
++	// ── Send-side bandwidth estimation (arcade ABR, patch 0021) ────────────────────────────────────
++	// Pion's default video codecs advertise goog-remb/ccm-fir/nack ONLY — no transport-cc — and
++	// RegisterDefaultInterceptors adds twcc.SenderInterceptor, which *generates* TWCC reports for
++	// INBOUND streams. We send and never receive media, so neither gives us anything. Two pieces are
++	// required for the browser to report on what we send:
++	//   1. transport-cc feedback on the video codec (ConfigureTWCCSender does this via RegisterFeedback,
++	//      and RegisterDefaultInterceptors calls it — but we also do it explicitly for the
++	//      DisableDefaultInterceptors path, where nothing else would).
++	//   2. the TWCC sequence-number header extension STAMPED ON OUTGOING RTP — that is
++	//      ConfigureTWCCHeaderExtensionSender, which nothing in the default set installs.
++	// The cc interceptor then feeds each PeerConnection's GCC estimator from the TWCC RTCP that comes
++	// back. RegisterHeaderExtension dedupes by URI, so the double registration below is safe.
++	bweChan := make(chan cc.BandwidthEstimator, 4)
++	ccFactory, ccErr := cc.NewInterceptor(func() (cc.BandwidthEstimator, error) {
++		return gcc.NewSendSideBWE(
++			gcc.SendSideBWEInitialBitrate(bweInitialBps),
++			gcc.SendSideBWEMinBitrate(bweMinBps),
++			gcc.SendSideBWEMaxBitrate(bweMaxBps),
++			// NoOp pacer: GCC's leaky-bucket pacer would queue and re-time our RTP, which is exactly the
++			// added latency this stack exists to avoid. We use GCC purely as a congestion DETECTOR and
++			// let NVENC's rate control shape the stream.
++			gcc.SendSideBWEPacer(gcc.NewNoOpPacer()),
++		)
++	})
++	if ccErr != nil {
++		return nil, ccErr
++	}
++	ccFactory.OnNewPeerConnection(func(_ string, est cc.BandwidthEstimator) {
++		select {
++		case bweChan <- est:
++		default: // never block PeerConnection creation on a full channel
++		}
++	})
++	i.Add(ccFactory)
++	m.RegisterFeedback(webrtc.RTCPFeedback{Type: webrtc.TypeRTCPFBTransportCC}, webrtc.RTPCodecTypeVideo)
++	if err = webrtc.ConfigureTWCCHeaderExtensionSender(m, i); err != nil {
++		return
++	}
++
+ 	if conf.DisableDefaultInterceptors {
+ 		sender, err := report.NewSenderInterceptor()
+ 		if err != nil {
+@@ -117,13 +176,48 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 	}
+ 
+ 	return &ApiFactory{
+-		api:  webrtc.NewAPI(webrtc.WithMediaEngine(m), webrtc.WithInterceptorRegistry(i), webrtc.WithSettingEngine(s)),
+-		conf: c,
++		api:     webrtc.NewAPI(webrtc.WithMediaEngine(m), webrtc.WithInterceptorRegistry(i), webrtc.WithSettingEngine(s)),
++		conf:    c,
++		bweChan: bweChan,
+ 	}, err
+ }
+ 
+ func (a *ApiFactory) NewPeer() (*webrtc.PeerConnection, error) {
+-	return a.api.NewPeerConnection(a.conf)
++	pc, _, err := a.newPeer()
++	return pc, err
++}
++
++// NewPeerBwe creates a PeerConnection and returns the send-side bandwidth estimator bound to it.
++// The estimator is nil when congestion control produced none — callers must treat that as "ABR off".
++func (a *ApiFactory) NewPeerBwe() (*webrtc.PeerConnection, cc.BandwidthEstimator, error) {
++	return a.newPeer()
++}
++
++func (a *ApiFactory) newPeer() (*webrtc.PeerConnection, cc.BandwidthEstimator, error) {
++	a.bweMu.Lock()
++	defer a.bweMu.Unlock()
++
++	// Drop any estimator left over from an earlier peer so we cannot mis-attribute one.
++	for drained := false; !drained; {
++		select {
++		case <-a.bweChan:
++		default:
++			drained = true
++		}
++	}
++
++	pc, err := a.api.NewPeerConnection(a.conf)
++	if err != nil {
++		return nil, nil, err
++	}
++	// The callback fires synchronously during NewPeerConnection; the timeout is a belt-and-braces
++	// guard so a future Pion change can never deadlock peer creation.
++	select {
++	case est := <-a.bweChan:
++		return pc, est, nil
++	case <-time.After(250 * time.Millisecond):
++		return pc, nil, nil
++	}
+ }
+ 
+ func filterIP(i net.IP, filter []string) bool {
+diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
+index a1a11e2..1551e92 100644
+--- a/pkg/network/webrtc/webrtc.go
++++ b/pkg/network/webrtc/webrtc.go
+@@ -9,6 +9,7 @@ import (
+ 	"time"
+ 
+ 	"github.com/giongto35/cloud-game/v3/pkg/logger"
++	"github.com/pion/interceptor/pkg/cc"
+ 	"github.com/pion/webrtc/v4"
+ 	"github.com/pion/webrtc/v4/pkg/media"
+ )
+@@ -27,6 +28,11 @@ type Peer struct {
+ 	ac  *webrtc.PeerConnection
+ 	log *logger.Logger
+ 
++	// Send-side bandwidth estimator for the VIDEO PeerConnection (arcade ABR, patch 0021). nil when
++	// congestion control is unavailable, which simply means this peer contributes no ABR opinion.
++	// Audio rides its own PC (ac) and is never rate-adapted: it is ~96 kbps and must not be starved.
++	bwe cc.BandwidthEstimator
++
+ 	a *webrtc.TrackLocalStaticSample
+ 	v *webrtc.TrackLocalStaticSample
+ 	d *webrtc.DataChannel
+@@ -70,7 +76,7 @@ func (p *Peer) NewConnection(vCodec string, splitAudio bool, signaller func(ice
+ 
+ 	p.log.Debug().Msg("rtc start")
+ 
+-	if p.c, err = p.api.NewPeer(); err != nil {
++	if p.c, p.bwe, err = p.api.NewPeerBwe(); err != nil {
+ 		return
+ 	}
+ 
+@@ -409,3 +415,23 @@ func toJson[T any](data T) (string, error) {
+ 	}
+ 	return string(b), nil
+ }
++
++// TargetBitrateKbps is this peer's send-side bandwidth estimate for its VIDEO transport, or 0 when
++// there is nothing trustworthy to report (no estimator, or the connection is not up yet — GCC's
++// pre-feedback value is just the configured initial bitrate and must not be mistaken for a measurement).
++//
++// One encoder serves the whole room, so the room takes the MINIMUM across peers: the stream can only
++// be as good as the worst receiver can carry.
++func (p *Peer) TargetBitrateKbps() int {
++	if p == nil || p.bwe == nil || p.c == nil {
++		return 0
++	}
++	if p.c.ConnectionState() != webrtc.PeerConnectionStateConnected {
++		return 0
++	}
++	bps := p.bwe.GetTargetBitrate()
++	if bps <= 0 {
++		return 0
++	}
++	return bps / 1000
++}
+diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
+new file mode 100644
+index 0000000..b71d32d
+--- /dev/null
++++ b/pkg/worker/abr.go
+@@ -0,0 +1,113 @@
++package worker
++
++import (
++	"time"
++
++	"github.com/giongto35/cloud-game/v3/pkg/logger"
++	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
++	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
++)
++
++// Adaptive bitrate for a room's single video encoder (arcade ABR, patch 0021).
++//
++// Why this is cheap: nvh264enc's `bitrate` is "changeable in the PLAYING state", so a rung costs one
++// property set — no pipeline rebuild, no renegotiation, no reconnect, nothing the player sees. Only
++// bitrate is adapted; changing RESOLUTION would re-init the pipeline (a visible glitch), so we don't.
++//
++// Why the MINIMUM across peers: one encoder serves the whole room. The stream can only be as good as
++// the worst receiver can carry, so a single friend on hotel wifi throttles everyone. That is inherent
++// to shared-room emulation, not a bug.
++//
++// Why we probe upward instead of trusting the estimate: GCC is a congestion DETECTOR. Its estimate can
++// never exceed what we actually send (you cannot measure capacity you never use), so simply following
++// the estimate would pin the room forever at its starting bitrate. Instead we treat "estimate is
++// keeping up with what we send" as permission to send more, and back off hard the moment it isn't.
++const (
++	abrTick = time.Second
++
++	abrFloorKbps = 1500 // below this the picture is worse than a stall; give up adapting
++	abrStartKbps = 6000 // conservative opener; a healthy LAN reaches a 14 Mbps ceiling in ~7 ticks
++
++	abrRampPct    = 15 // healthy: raise the target by this much per tick
++	abrHealthyPct = 95 // estimate >= 95% of what we send  => the link is keeping up
++	abrBackoffPct = 85 // estimate <  85% of what we send  => congestion, drop to the estimate
++
++	abrMinStepKbps = 250 // don't bother with changes smaller than this
++)
++
++// bwePeer is the slice of *webrtc.Peer that ABR needs. Declared as an interface so this package does
++// not depend on the concrete session type (and so a peer without an estimator is simply skipped).
++type bwePeer interface{ TargetBitrateKbps() int }
++
++// startRoomAbr drives the room's encoder bitrate from the worst peer's send-side estimate.
++// ceilKbps is the room's chosen quality (the creator's t=104 bitrate, else the config default): ABR
++// never exceeds it, so "Auto" on the site still decides how good the room is allowed to look.
++func startRoomAbr(log *logger.Logger, r *room.Room[*room.GameSession], m *media.GstMediaPipe, ceilKbps int) {
++	if ceilKbps <= 0 || r == nil || m == nil {
++		return
++	}
++	floor := min(abrFloorKbps, ceilKbps)
++	cur := min(max(abrStartKbps, floor), ceilKbps)
++
++	if err := m.SetVideoBitrate(cur); err != nil {
++		log.Warn().Err(err).Msg("abr: encoder rejected the initial bitrate; ABR disabled for this room")
++		return
++	}
++	log.Info().Msgf("abr: start %d kbps (floor %d, ceiling %d)", cur, floor, ceilKbps)
++
++	go func() {
++		t := time.NewTicker(abrTick)
++		defer t.Stop()
++		for range t.C {
++			if r.Closed() {
++				log.Debug().Msg("abr: room closed")
++				return
++			}
++
++			worst, peers := 0, 0
++			for u := range r.Users().Values() {
++				p, ok := u.Session.(bwePeer)
++				if !ok {
++					continue
++				}
++				// 0 = not connected yet, or no TWCC feedback has arrived. Not an opinion.
++				if k := p.TargetBitrateKbps(); k > 0 {
++					peers++
++					if worst == 0 || k < worst {
++						worst = k
++					}
++				}
++			}
++			if peers == 0 {
++				continue // hold: nobody has told us anything yet
++			}
++
++			next := cur
++			switch {
++			case worst*100 < cur*abrBackoffPct:
++				next = worst // congestion: fall back to what the worst receiver says it can take
++			case worst*100 >= cur*abrHealthyPct && cur < ceilKbps:
++				next = cur + max(abrMinStepKbps, cur*abrRampPct/100) // healthy: probe upward
++			}
++			next = min(max(next, floor), ceilKbps)
++
++			if next == cur || abs(next-cur) < abrMinStepKbps {
++				continue
++			}
++			if err := m.SetVideoBitrate(next); err != nil {
++				log.Warn().Err(err).Msgf("abr: failed to set %d kbps", next)
++				continue
++			}
++			log.Info().Msgf("abr: %d -> %d kbps (worst peer estimate %d, ceiling %d, peers %d)",
++				cur, next, worst, ceilKbps, peers)
++			cur = next
++		}
++	}()
++}
++
++func abs(n int) int {
++	if n < 0 {
++		return -n
++	}
++	return n
++}
+diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
+index ffeac53..29add73 100644
+--- a/pkg/worker/coordinatorhandlers.go
++++ b/pkg/worker/coordinatorhandlers.go
+@@ -217,6 +217,15 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 
+ 		r.InitMedia()
+ 		r.StartApp()
++
++		// Adaptive bitrate (patch 0021). The room's chosen quality becomes the CEILING; ABR moves the
++		// encoder between a floor and that ceiling from the worst peer's send-side estimate. Costs one
++		// GObject property set per rung — no rebuild, no reneg. See pkg/worker/abr.go.
++		abrCeiling := rq.VideoBitrate
++		if abrCeiling <= 0 {
++			abrCeiling = encConf.VideoBitrateKbps()
++		}
++		startRoomAbr(w.log, r, m, abrCeiling)
+ 	}
+ 
+ 	needsKbMouse := r.App().KbMouseSupport()
+diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
+index 37c378f..b024faa 100644
+--- a/pkg/worker/media/gstreamer.go
++++ b/pkg/worker/media/gstreamer.go
+@@ -165,6 +165,10 @@ type GstMediaPipe struct {
+ 
+ 	vDrops atomic.Int64 // frames dropped because the video channel was full (patch 0004)
+ 
++	// Current ABR target (kbps, 0 = never set). Re-applied after every Reinit, because a video
++	// geometry change destroys and rebuilds the pipeline — and with it the encoder element.
++	vBitrate atomic.Int64
++
+ 	conf config.Encoder
+ 
+ 	pixFmt uint32
+@@ -219,6 +223,7 @@ type pipe struct {
+ 	source   *app.Source
+ 	sink     *app.Sink
+ 	srcPad   *gst.Pad
++	enc      *gst.Element // video encoder, kept for live bitrate changes (arcade ABR, patch 0021)
+ 	frameDur time.Duration
+ 	stale    atomic.Bool
+ }
+@@ -289,6 +294,13 @@ func (g *GstMediaPipe) initVideo() (err error) {
+ 	if err != nil {
+ 		return
+ 	}
++	// A geometry change rebuilds the pipeline (and the encoder element), so an ABR target set on the
++	// old encoder would silently revert to the config bitrate. Re-apply it to the new one.
++	if kbps := g.vBitrate.Load(); kbps > 0 {
++		if e := g.SetVideoBitrate(int(kbps)); e != nil {
++			g.log.Warn().Err(e).Msgf("abr: could not re-apply %d kbps after reinit", kbps)
++		}
++	}
+ 
+ 	// if params contain keyframe-mode=disabled, we force periodic keyframes
+ 	// ourselves instead of relying on GStreamer's auto mode
+@@ -572,12 +584,16 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+ 	if err != nil {
+ 		return nil, err
+ 	}
++	// Not fatal when absent: ABR simply stays off for that pipeline.
++	encEl, _ := pipeline.GetElementByName("video_enc")
++
+ 	go watchBus(pipeline, log)
+ 	return &pipe{
+ 		pipeline: pipeline,
+ 		source:   app.SrcFromElement(srcEl),
+ 		sink:     app.SinkFromElement(sinkEl),
+ 		srcPad:   srcEl.GetStaticPad("src"),
++		enc:      encEl,
+ 	}, nil
+ }
+ 
+@@ -677,3 +693,30 @@ func watchBus(pipeline *gst.Pipeline, log *logger.Logger) {
+ 		}
+ 	}
+ }
++
++// SetVideoBitrate live-sets the video encoder's target bitrate. This is the whole reason ABR is cheap
++// here: nvh264enc/x264enc expose `bitrate` (kbit/s) as "changeable in the PLAYING state", so NVENC
++// reconfigures its rate controller in place — no pipeline rebuild, no renegotiation, no reconnect, and
++// (unlike a RESOLUTION change, which re-inits the pipeline via Reinit) nothing the viewer can see.
++// vpx names the property differently and takes bit/s.
++//
++// Safe to call before the pipeline exists: the value is remembered and applied by initVideo.
++func (g *GstMediaPipe) SetVideoBitrate(kbps int) error {
++	if kbps <= 0 {
++		return nil
++	}
++	g.vBitrate.Store(int64(kbps))
++	v := g.v
++	if v == nil || v.enc == nil {
++		return nil
++	}
++	switch strings.ToLower(g.conf.Video.Codec) {
++	case "vp8", "vp9":
++		return v.enc.SetProperty("target-bitrate", kbps*1000)
++	default: // h264 (nvh264enc / x264enc)
++		return v.enc.SetProperty("bitrate", uint(kbps))
++	}
++}
++
++// VideoBitrate is the ABR target currently applied (kbps), or 0 if ABR never set one.
++func (g *GstMediaPipe) VideoBitrate() int { return int(g.vBitrate.Load()) }
+diff --git a/pkg/worker/room/room.go b/pkg/worker/room/room.go
+index 88d0e5c..7567cf1 100644
+--- a/pkg/worker/room/room.go
++++ b/pkg/worker/room/room.go
+@@ -3,6 +3,7 @@ package room
+ import (
+ 	"iter"
+ 	"sync"
++	"sync/atomic"
+ 	"time"
+ 
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/app"
+@@ -52,7 +53,8 @@ type Room[T Session] struct {
+ 	media MediaPipe
+ 	users SessionManager[T]
+ 
+-	closed      bool
++	// atomic: the ABR loop (patch 0021) reads this from its own goroutine while Close() writes it.
++	closed      atomic.Bool
+ 	HandleClose func()
+ }
+ 
+@@ -84,6 +86,12 @@ func (r *Room[T]) sendVideo(data []byte, dur time.Duration) {
+ 	}
+ }
+ 
++// Closed reports whether the room has been torn down. Used by the ABR loop to stop itself.
++func (r *Room[T]) Closed() bool { return r == nil || r.closed.Load() }
++
++// Users exposes the room's session manager (the ABR loop polls each peer's bandwidth estimate).
++func (r *Room[T]) Users() SessionManager[T] { return r.users }
++
+ func (r *Room[T]) App() app.App         { return r.app }
+ func (r *Room[T]) Id() string           { return r.id }
+ func (r *Room[T]) SetApp(app app.App)   { r.app = app }
+@@ -96,10 +104,10 @@ func (r *Room[T]) Send(data []byte) {
+ }
+ 
+ func (r *Room[T]) Close() {
+-	if r == nil || r.closed {
++	// Swap also makes Close idempotent under a race (two goroutines closing at once).
++	if r == nil || r.closed.Swap(true) {
+ 		return
+ 	}
+-	r.closed = true
+ 
+ 	if r.app != nil {
+ 		r.app.Close()

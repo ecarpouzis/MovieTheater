@@ -251,3 +251,50 @@ PC as always. An aux failure costs only audio; the room (video+input) still runs
 Re-generate: `git diff pkg/network/webrtc/webrtc.go` verbatim + the 0020 hunks of
 `pkg/worker/coordinatorhandlers.go` / `pkg/network/webrtc/factory.go` (both files also carry
 earlier patches' hunks — trim to this feature's).
+
+---
+
+## 0021-abr-send-side-bwe.patch — adaptive bitrate
+
+Drives a room's encoder bitrate from the **worst peer's** send-side bandwidth estimate. One encoder
+serves the whole room, so the stream can only be as good as the worst receiver can carry.
+
+**Why a rung is free.** `nvh264enc`'s `bitrate` is "changeable in the PLAYING state" — NVENC
+reconfigures its rate controller in place. No pipeline rebuild, no renegotiation, no reconnect,
+nothing the player sees. (Contrast a RESOLUTION change, which re-inits the pipeline — patch 0015 —
+and is visible. ABR therefore adapts bitrate ONLY.) This is the opposite of the Jellyfin ABR restart
+storm, where each rung meant a new transcode.
+
+**Two things Pion does not give you for free.** Its default video codecs advertise
+`goog-remb/ccm-fir/nack` and **no `transport-cc`**, and `RegisterDefaultInterceptors` installs
+`twcc.SenderInterceptor`, which *generates* TWCC reports for INBOUND streams. We send and never
+receive media, so neither helps. The patch adds:
+1. `m.RegisterFeedback(TypeRTCPFBTransportCC, video)` — so the SDP asks the browser to report; and
+2. `ConfigureTWCCHeaderExtensionSender` — which stamps the TWCC sequence number on OUTGOING RTP.
+   Nothing in the default set does this, and without it the browser has nothing to report on.
+
+Then `cc.NewInterceptor(gcc.NewSendSideBWE(...))` builds one estimator per PeerConnection,
+**synchronously inside `api.NewPeerConnection`**, so `ApiFactory.newPeer` serialises creation and
+drains a channel to claim the estimator that provably belongs to the PC it just made. The GCC pacer is
+`NewNoOpPacer` — the leaky-bucket pacer would re-time our RTP, which is the latency this stack exists
+to avoid. GCC is used purely as a congestion **detector**.
+
+**Why we probe upward.** A send-side estimate can never exceed what you actually send — you cannot
+measure capacity you never use. Following the estimate would pin the room at its opening bitrate
+forever. So `pkg/worker/abr.go` treats "estimate keeping up with what we send" (≥95%) as permission to
+raise the target 15%/tick, and drops straight to the estimate when it falls below 85%. Ceiling = the
+room's chosen quality (the creator's t=104 bitrate, else the config default); floor = 1500 kbps.
+
+`GstMediaPipe.SetVideoBitrate` remembers the target and **re-applies it after `Reinit`** — a geometry
+change rebuilds the pipeline and with it the encoder element, which would otherwise silently revert to
+the config bitrate. `Room.closed` became an `atomic.Bool` because the ABR goroutine reads it while
+`Close()` writes it.
+
+Measured on the LAN (GameCube, F-Zero GX, ceiling 14000): `6000 → 13875 kbps` over six ticks, and the
+browser's `inbound-rtp` confirms the **bits** moved (12.0–15.9 Mbps received vs 4.5–5.7 at a 5 Mbps
+ceiling), 60 fps / 0 freezes throughout. A genuine back-off was observed unprompted:
+`13875 → 11011` when the estimate fell, then recovery to `12662`.
+
+Re-generate: apply 0001–0020 to a clean `13852a7`, commit, apply this feature, `git diff --cached`.
+(`git add -N` for the new `abr.go` diffs it against an empty blob instead of emitting `new file mode`,
+and the patch then fails to apply.)

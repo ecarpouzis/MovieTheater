@@ -206,6 +206,24 @@ emulator:
             # Name the BIOS explicitly. LRPS2 read "Bios Found: USA v01.60" from its root scan but the
             # VM-load scan of system/pcsx2/bios/ reported "no valid BIOS" until the file is named here.
             pcsx2_bios: "scph39001.bin"
+            # QUALITY (docs/arcade-quality-plan.md Phase 3). PS2 shipped at 1x native (640x448) — the
+            # softest 3D system we have. LRPS2 scales its BASE geometry with the multiplier (unlike
+            # flycast), so this really does deliver more pixels: 640x448 -> 1280x896.
+            #
+            # ⚠ THE VALUE IS THE WHOLE STRING, not "2" — verified by parsing the core-option structs out
+            # of pcsx2_libretro.dll. An unmatched value silently leaves the option at its default.
+            #
+            # Gated on the bitrate path actually working: at the old stuck 5 Mbps this would have been
+            # ~0.073 bits/pixel/frame vs ~0.29 at native — i.e. it would have looked WORSE. It ships with
+            # per-system Auto bitrate (ps2 = 12 Mbps ceiling) + ABR (patch 0021) behind it.
+            pcsx2_upscale_multiplier: "2x Native (~720p)"
+            # Sharpens ground/road planes at oblique angles, and it HELPS the encoder: less texture
+            # shimmer = less high-frequency temporal noise to spend bits on. Values: disabled|2x|4x|8x|16x.
+            pcsx2_anisotropic_filtering: "8x"
+            # NOTE: upscaling PS2 exposes per-game half-pixel/sprite misalignment. Those fixes are
+            # per-title (pcsx2_half_pixel_offset, pcsx2_round_sprite, ...) and are all gated behind
+            # pcsx2_enable_hw_hacks, which must NEVER be a global default. They belong in
+            # ArcadeGameProfile.CoreOptionsJson (docs/arcade-per-game-config.md).
 
         # GameCube via dolphin_libretro. GL 3D core like psp/dc/ps2: same isGlAllowed + coreAspectRatio
         # Flip contract, usesLibCo thread-affinity, vfr:false (correct game speed), skip_hw_context_destroy

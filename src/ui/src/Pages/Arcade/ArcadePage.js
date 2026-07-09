@@ -17,13 +17,16 @@ const QUALITY_KEY = "arcade.streamQuality";
 const BITRATE_PRESETS = [
   // 0 = Auto: the SERVER picks from the game's system (CloudRetroHost.DefaultVideoBitrateKbps). Encoded
   // resolution varies ~4.6x across systems — a 912×672 arcade board and a 1280×1056 GameCube frame both
-  // got a flat 5 Mbps, which starves the big ones (~0.06 bits/pixel/frame). Auto is bounded to
-  // [5, 10] Mbps: never worse than the old flat default, never above what "Max" already allowed.
+  // got a flat 5 Mbps, which starves the big ones (~0.06 bits/pixel/frame). Auto is a CEILING between
+  // 5 and 14 Mbps; the worker's ABR (patch 0021) backs off from it within a second when a player's link
+  // can't carry it, so picking a number here is now mostly about capping your own upstream.
   { label: "Auto · match the system", value: 0 },
-  // 10 Mbps = "max", best for hi-res 3D cores (GameCube 1280×1056, PS2 upscaled) on a fat pipe. At
+  // Manual override for a mostly-LAN session on a fat pipe. ABR still walks it back for remote players.
+  { label: "LAN · 16 Mbps", value: 16000 },
+  // 10 Mbps, best for hi-res 3D cores (GameCube 1280×1056, PS2 upscaled) on a fat pipe. At
   // 4 remote players that's ~40 Mbps upstream, so it's really a post-FiOS / mostly-LAN setting; on
   // cable uplinks prefer 5 or lower. Overkill (but harmless) for retro/2D. Worker clamps 500–20000.
-  { label: "Max · 10 Mbps", value: 10000 },
+  { label: "High · 10 Mbps", value: 10000 },
   { label: "Sharp · 8 Mbps", value: 8000 },
   { label: "Balanced · 5 Mbps", value: 5000 },
   { label: "Smooth · 3 Mbps", value: 3000 },
@@ -42,8 +45,8 @@ function loadQuality() {
       return { videoBitrateKbps: q.videoBitrateKbps, audioFec: q.audioFec === 2 ? 2 : 1 };
   } catch { /* ignore */ }
   // Auto + FEC on. NOTE: a stored value is NOT migrated — someone who deliberately picked "Balanced ·
-  // 5 Mbps" on a thin uplink should not be silently moved to Auto (which can go to 10 Mbps on GameCube).
-  // They opt in by choosing Auto once.
+  // 5 Mbps" on a thin uplink should not be silently moved to Auto (whose ceiling reaches 14 Mbps on
+  // GameCube; ABR would walk it back, but the choice is theirs). They opt in by choosing Auto once.
   return { videoBitrateKbps: 0, audioFec: 1 };
 }
 function saveQuality(q) { try { localStorage.setItem(QUALITY_KEY, JSON.stringify(q)); } catch { /* ignore */ } }

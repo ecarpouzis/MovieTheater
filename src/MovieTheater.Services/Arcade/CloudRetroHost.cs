@@ -84,23 +84,27 @@ namespace MovieTheater.Services.Arcade
         /// the latter at ~0.06 bits/pixel/frame, which is starved. The resolutions below were MEASURED live
         /// (2026-07-08); keep them in step with the cores' options in docker/arcade/config.worker-gl.yaml.
         ///
-        /// Two deliberate bounds:
-        ///   floor 5000 — the previous flat default, so "Auto" can never be WORSE than what shipped before.
-        ///   cap  10000 — the lobby's existing "Max" preset, so "Auto" never exceeds a value a user could
-        ///                already have picked. This matters because CloudRetro does no congestion control
-        ///                (the encoder ignores REMB/TWCC), so an over-high bitrate only hurts remote
-        ///                players. Lifting this cap is exactly what Phase 6 (ABR) is for.
+        /// This is a CEILING, not a fixed rate. Worker patch 0021 (ABR) drives the encoder between a floor
+        /// and this value from the worst peer's send-side bandwidth estimate, so a generous ceiling costs a
+        /// remote friend on a thin uplink nothing — ABR backs off within a second. That is what allows the
+        /// cap below to sit above the lobby's "Max" preset; before ABR it could not.
+        ///
+        ///   floor 5000 — the old flat default, so "Auto" is never WORSE than what shipped before.
+        ///   cap  14000 — what the biggest frame we encode actually deserves (~0.17 bits/pixel/frame).
         ///
         /// 2D cores are cheap despite large frames: their `scale:` upscale is integer nearest-neighbour and
         /// adds no high-frequency detail — the encoder sees flat NxN blocks. Native-3D frames are not.
         /// </summary>
         public static int DefaultVideoBitrateKbps(string? system) => system?.ToLowerInvariant() switch
         {
-            // Real 3D detail, ordered by encoded pixels per frame.
-            "gc" => 10000,          // 1280x1056 = 1.35 Mpx — by far the most starved at a flat 5 Mbps
-            "n64" => 8000,          //  960x720  = 0.69 Mpx
-            "psp" => 7000,          //  960x544  = 0.52 Mpx (much of it 30fps content)
-            "ps2" or "dc" => 6000,  //  ~640x460 = 0.29 Mpx native 3D; raise when/if they upscale
+            // Real 3D detail, ordered by encoded pixels per frame. All measured live 2026-07-09.
+            "gc" => 14000,  // 1280x1056 = 1.35 Mpx; at 5 Mbps it ran ~0.06 bpp
+            "ps2" => 12000, // 1280x896  = 1.15 Mpx after the 2x upscale. NOT optional: at the old 6 Mbps
+                            // ceiling God of War's jitter buffer sat at ~95 ms with erratic fps; at 12 Mbps
+                            // it is 13 ms and a locked 60. Upscale and bitrate ship together or not at all.
+            "n64" => 9000,  //  960x720  = 0.69 Mpx
+            "psp" => 7000,  //  960x544  = 0.52 Mpx (much of it 30fps content)
+            "dc" => 6000,   //  640x480  = 0.31 Mpx native 3D (flycast cannot upscale here — see the plan)
             // PS1 swings 512x480 <-> 1280x960 mid-game, but the frame is a nearest 2x upscale (cheap bits).
             "ps1" => 6000,
             // Everything 2D: nearest-upscaled flat blocks. 5 Mbps is already generous.

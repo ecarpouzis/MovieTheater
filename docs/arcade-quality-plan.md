@@ -253,10 +253,10 @@ restart (workers self-heal via the runner loop).
 | **0** | Reconcile config drift (repo `config.worker-gl.yaml` 9.4 KB vs live 22 KB — live has `ps2`/`gc`/2D blocks the repo lacks). Fix the `reicast_` prefix in `docs/arcade-per-game-config.md`. Capture a baseline per system. | no | — |
 | **1** | ✅ **SHIPPED 2026-07-08** — see §9 | config only | **7,907 games (~35%)** |
 | **2** | ✅ **SHIPPED + VERIFIED ON PROD 2026-07-08/09** — see §11, §13 | UI build | 6 systems + all widescreen 3D + vertical arcade cabs |
-| **3** | ⚠ **PARTIALLY SHIPPED 2026-07-08** — see §10. n64 done; dc/ps2/psp/gc blocked or deferred | config only | 922 games shipped |
+| **3** | ✅ **n64 + ps2 SHIPPED** (§10, §14); dc blocked by the base-geometry rule; psp/gc AA unverifiable | config only | 2,790 games |
 | **4** | Encoder: `p6` + spatial-AQ + two-pass-quarter + `profile=high`, A/B at fixed bitrate | config only | all |
 | **5** | ✅ **SHIPPED + VERIFIED ON PROD 2026-07-08/09** — `CloudRetroHost.DefaultVideoBitrateKbps`; lobby gains "Auto". See §12, §13 | API build | all |
-| **6** | ABR: Pion send-side BWE → live `bitrate` set (new worker patch) | worker rebuild | all |
+| **6** | ✅ **SHIPPED + VERIFIED 2026-07-09** — patch 0021. See §14 | worker rebuild | all |
 | **7** | Seed `ArcadeGameProfile`: PS2 hw-hacks for upscale-sensitive titles, widescreen opt-ins, heavy-title downgrades | data | per-title |
 
 ### Deferred / researched-and-parked
@@ -500,3 +500,79 @@ no worker serves `"gl"` at all — enabling `ArcadeZoningEnabled` today would ro
 pool that does not exist. `ps2` and `gc` are GL cores and were never added to the list either. It is
 harmless only because zoning is off (the descriptor then sends `zone=""`, a wildcard). Delete zoning,
 or make every system return `"main"`, before anyone flips that flag.
+
+---
+
+## 14. Phase 6 (ABR) + PS2 — and the silent bug they uncovered (2026-07-09)
+
+### The bug: per-room bitrate never reached the encoder
+
+Patch 0018 (per-room bitrate/FEC) also patches `pkg/coordinator/workerapi.go`. The **coordinator
+container image was built 2026-07-06**; 0018 landed 07-08. Its `StartGameRequest` struct therefore had
+no `video_bitrate`/`audio_fec` fields, and Go's JSON decoder **silently dropped them** when relaying
+`GAME_START` to the worker. Nothing errored anywhere.
+
+So every room — including the per-system "Auto" bitrates shipped in §12 — ran at the worker config's
+flat 5 Mbps. Proof: the gateway forwarded `vbr=10000` (it is a dumb WS proxy and never parses
+packets), and the worker reported `abr: start … ceiling 5000` and never logged `Per-room encoder
+overrides`. The coordinator is the only hop between.
+
+> **Lesson.** §13 verified the bitrate reached the join **URL** and stopped there. A value in a URL is
+> not a value at the encoder. Verify at the last hop that can drop it — here, the worker's own log.
+
+**Fix: the coordinator now runs natively on Windows** (`scripts/run-arcade-coordinator.ps1`,
+`register-arcade-coordinator-task.ps1`). It does signaling/relay only — no GPU, no GStreamer, builds
+with `CGO_ENABLED=0`. This also retires the WSL/docker stack entirely (it was the last container), and
+with it the WSL-idle failure mode ("arcade randomly died"). `docker-compose.gpu.yml`'s coordinator
+service is commented out, not deleted, as evidence.
+
+### ABR (patch 0021)
+
+Drives the encoder from the **worst peer's** send-side estimate — one encoder per room, so a friend on
+hotel wifi throttles everyone. That is inherent to shared-room emulation.
+
+Three things that are easy to get wrong, all in `docker/arcade/patches/README.md`:
+
+- Pion's default codecs carry **no `transport-cc`**, and `RegisterDefaultInterceptors` only installs
+  the TWCC report *generator* for inbound streams. Outgoing RTP must be stamped with the TWCC sequence
+  number (`ConfigureTWCCHeaderExtensionSender`) or the browser has nothing to report on.
+- A send-side estimate **can never exceed what you send**. Following it would pin the room at its
+  opening bitrate forever, so ABR probes upward (+15%/tick while the estimate keeps up ≥95%) and drops
+  to the estimate below 85%.
+- `SetVideoBitrate` must be **re-applied after `Reinit`**: a geometry change rebuilds the pipeline and
+  the encoder element, silently reverting to the config bitrate.
+
+**Measured** (GameCube, F-Zero GX, LAN):
+
+| Ceiling | ABR trace | Browser `inbound-rtp` |
+|---|---|---|
+| 5 Mbps | pinned (start == ceiling) | 4.5 – 5.7 Mbps |
+| 14 Mbps | `6000 → 6900 → 7935 → 9125 → 10493 → 12066 → 13875` | 12.0 – 15.9 Mbps |
+
+60 fps, 0 freezes, 0 dropped in both. A real back-off occurred unprompted: `13875 → 11011` when the
+estimate fell, recovering to `12662`. **A rung costs one GObject property set** — no rebuild, no
+renegotiation, nothing visible.
+
+### PS2 2× upscale
+
+LRPS2 **does** scale its base geometry (unlike flycast), so `pcsx2_upscale_multiplier: "2x Native
+(~720p)"` really delivers **640×448 → 1280×896**. Plus `pcsx2_anisotropic_filtering: "8x"`.
+
+It could not have shipped before the bitrate path was fixed:
+
+| Ceiling | jitter buffer | fps |
+|---|---|---|
+| 6 Mbps | 92–97 ms | 57–73, erratic |
+| 12 Mbps | 13–14 ms | locked 60 |
+
+Upscale and bitrate ship together or not at all. Per-game upscaling artifacts (half-pixel offset,
+sprite rounding) stay per-title behind `pcsx2_enable_hw_hacks` — never a global default.
+
+### New "Auto" ceilings
+
+ABR makes a generous ceiling free: it walks back down within a second when a peer's link can't carry
+it. So the cap now sits **above** the lobby's manual presets.
+
+`gc` 14000 · `ps2` 12000 · `n64` 9000 · `psp` 7000 · `dc` 6000 · `ps1` 6000 · everything 2D 5000.
+Floor stays 5000 (never worse than the old flat default). A new manual **LAN · 16 Mbps** preset exists
+for a fat pipe; ABR still protects remote players from it.
