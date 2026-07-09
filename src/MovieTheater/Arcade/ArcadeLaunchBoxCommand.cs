@@ -95,8 +95,12 @@ namespace MovieTheater.Arcade
                 lastId = anchor.Id;
                 if (SkipRated && anchor.LaunchBoxRating != null) { skipped++; continue; }
 
-                var key = LaunchBoxMetadata.NormalizeTitle(anchor.Title);
-                if (!index.TryGetValue((anchor.System, key), out var e)) { missed++; continue; }
+                // Try the whole title first, then each side of a "/" or "~" dual name.
+                LaunchBoxMetadata.Entry e = default;
+                bool found = false;
+                foreach (var key in LaunchBoxMetadata.TitleKeys(anchor.Title))
+                    if (index.TryGetValue((anchor.System, key), out e)) { found = true; break; }
+                if (!found) { missed++; continue; }
 
                 if (Apply)
                 {

@@ -97,6 +97,24 @@ namespace MovieTheater.Services.LaunchBox
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Every key a card's title may be looked up under: the title itself, plus each side of a "/" or "~"
+        /// split. Our romset-derived titles carry dual names ("Red Earth / War-Zard", "Dodge 'Em ~ Dodger Cars")
+        /// where LaunchBox indexes only one of them. First hit wins, so the full title is tried first.
+        /// </summary>
+        public static IEnumerable<string> TitleKeys(string title)
+        {
+            var whole = NormalizeTitle(title);
+            if (whole.Length > 0) yield return whole;
+            if (title is null) yield break;
+
+            foreach (var part in title.Split('/', '~', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var k = NormalizeTitle(part);
+                if (k.Length > 0 && k != whole) yield return k;
+            }
+        }
+
         /// <summary>Ensure the dump exists on disk, downloading it if absent (or if <paramref name="refresh"/>).
         /// Downloads to a .part file and moves on success, so an interrupted run can't leave a truncated zip
         /// that later parses as "no games found".</summary>
@@ -129,11 +147,28 @@ namespace MovieTheater.Services.LaunchBox
         /// <summary>
         /// Stream Metadata.xml into an index keyed by (system, normalized title). Only rated entries are kept.
         /// When several LaunchBox rows collapse to the same key, the one with the MOST votes wins.
+        ///
+        /// <para>The index carries each game's PRIMARY name plus its <c>&lt;GameAlternateName&gt;</c> aliases
+        /// (68k of them). Aliases are what map our romset/No-Intro Japanese titles onto the Western releases
+        /// LaunchBox rates — "Starwing"→Star Fox, "Ryuuko no Ken"→Art of Fighting, "Baku Bomber Man 2"→
+        /// Bomberman 64. They took coverage from 84.8% to 96.7%.</para>
+        ///
+        /// <para>Two safety rules, because raw aliases are dirty:
+        /// (1) a game's own primary name ALWAYS beats someone else's alias — 250 aliases collide with a
+        /// different game's real name (<c>elitserien95</c> is both an alias of NHL 95 and the actual name of
+        /// Elitserien 95); (2) an alias claimed by more than one game is dropped, as are junk aliases shorter
+        /// than 4 chars or all-digits (LaunchBox really does store aliases like "64", "3" and "x").</para>
+        ///
         /// <para>Streamed with XmlReader (the file is ~500 MB uncompressed — never load it as a document).</para>
         /// </summary>
         public static Dictionary<(string System, string Key), Entry> BuildIndex(string zipPath, Action<string>? log = null)
         {
             var index = new Dictionary<(string, string), Entry>();
+            // dbId → the rated game. Alias rows carry only a DatabaseID (no platform), so they're collected
+            // during the single pass and resolved against this afterwards.
+            var byId = new Dictionary<string, (string Sys, Entry Entry)>();
+            var aliasRows = new List<(string DbId, string Key)>();
+
             using var zip = ZipFile.OpenRead(zipPath);
             var meta = zip.GetEntry("Metadata.xml")
                 ?? throw new InvalidOperationException("Metadata.xml not found in the LaunchBox dump.");
@@ -150,11 +185,25 @@ namespace MovieTheater.Services.LaunchBox
             // So: only advance when we did NOT consume a node.
             while (!reader.EOF)
             {
-                if (reader.NodeType != XmlNodeType.Element || reader.Name != "Game") { reader.Read(); continue; }
+                if (reader.NodeType != XmlNodeType.Element) { reader.Read(); continue; }
+
+                if (reader.Name == "GameAlternateName")
+                {
+                    var alt = (XElement)XNode.ReadFrom(reader);
+                    var altId = alt.Element("DatabaseID")?.Value;
+                    var ak = NormalizeTitle(alt.Element("AlternateName")?.Value);
+                    // Junk aliases: LaunchBox really does store "64", "3" and "x" as alternate names.
+                    if (altId != null && ak.Length >= 4 && !ak.All(char.IsDigit))
+                        aliasRows.Add((altId, ak));
+                    continue;
+                }
+
+                if (reader.Name != "Game") { reader.Read(); continue; }
                 games++;
 
                 var el = (XElement)XNode.ReadFrom(reader);   // consumes </Game>, lands on the next node
 
+                string? dbId = el.Element("DatabaseID")?.Value;
                 string? platform = el.Element("Platform")?.Value;
                 string? name = el.Element("Name")?.Value;
                 string? genres = el.Element("Genres")?.Value;
@@ -178,8 +227,32 @@ namespace MovieTheater.Services.LaunchBox
                 var entry = new Entry(stars, votes, Trim(genres, 200), Trim(overview, 1000), Trim(dev, 200), Trim(pub, 200));
                 if (!index.TryGetValue((sys, key), out var prior) || votes > prior.Votes)
                     index[(sys, key)] = entry;
+                if (dbId != null) byId[dbId] = (sys, entry);
             }
-            log?.Invoke($"Parsed {games:N0} games; indexed {index.Count:N0} rated entries on our systems (from {rated:N0} rated rows).");
+            int primaries = index.Count;
+
+            // Alias pass. Resolve each alias to its game's system, then drop the unsafe ones:
+            //  · already a primary name → the real game keeps it (250 aliases collide with another game's name)
+            //  · claimed by more than one game → ambiguous, drop
+            var claims = new Dictionary<(string, string), HashSet<string>>();
+            foreach (var (dbId, ak) in aliasRows)
+            {
+                if (!byId.TryGetValue(dbId, out var g)) continue;      // alias of an unrated / off-platform game
+                var k = (g.Sys, ak);
+                if (index.ContainsKey(k)) continue;                    // a real game owns this name
+                if (!claims.TryGetValue(k, out var set)) claims[k] = set = new HashSet<string>();
+                set.Add(dbId);
+            }
+            int aliases = 0, ambiguous = 0;
+            foreach (var (k, dbIds) in claims)
+            {
+                if (dbIds.Count != 1) { ambiguous++; continue; }
+                index[k] = byId[dbIds.First()].Entry;
+                aliases++;
+            }
+
+            log?.Invoke($"Parsed {games:N0} games; indexed {primaries:N0} rated titles + {aliases:N0} safe aliases "
+                      + $"= {index.Count:N0} keys ({ambiguous:N0} ambiguous aliases dropped, from {rated:N0} rated rows).");
             return index;
         }
 
