@@ -44,17 +44,24 @@
  	"iter"
  	"sync"
  	"sync/atomic"
-@@ -59,6 +60,10 @@
+@@ -63,6 +64,17 @@
  }
  
- func NewRoom[T Session](id string, app app.App, um SessionManager[T], media MediaPipe) *Room[T] {
+ func (r *Room[T]) InitMedia() {
 +	// PLI/FIR -> keyframe (patch 0029): with an infinite GOP + intra-refresh there are no periodic
 +	// IDRs, so a viewer that loses the reference chain recovers ONLY by asking. Process-global like
-+	// SetPacing (one worker = one room); each room re-points it at its own media pipe.
-+	webrtc.OnKeyframeRequest(media.RequestKeyframe)
- 	return &Room[T]{id: id, app: app, users: um, media: media}
- }
- 
++	// SetPacing (one worker = one room); each room re-points it at its own media pipe. Wired HERE,
++	// not in NewRoom: HandleGameStart constructs the Room before the media pipe exists there, and a
++	// method value off a nil interface panics — that crashed every room create when this shipped in
++	// NewRoom. The closure re-checks at call time for the same reason.
++	webrtc.OnKeyframeRequest(func() {
++		if m := r.media; m != nil {
++			m.RequestKeyframe()
++		}
++	})
+ 	r.app.SetAudioCb(func(a app.Audio) {
+ 		r.media.ProcessAudio(a.Data, r.sendAudio)
+ 	})
 --- /dev/null
 +++ b/pkg/network/webrtc/plikeyframe.go
 @@ -0,0 +1,44 @@
