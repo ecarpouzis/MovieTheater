@@ -818,24 +818,43 @@ encoder's actual input, plus per-AU sizes parsed from the byte-stream):
   property is live-changeable). Halves the worst burst for −0.65..−1.5 dB paid only in
   transparent-quality territory. Verified live (Metal Slug 59-60fps, 0 freezes, no property errors).
 
-### Full-range colour — REVERTED (Firefox ignores the flag)
+### Full-range colour — reverted on a bad proxy, then RE-SHIPPED on real-Firefox evidence
 
-The §16 colour-range ship was verified in Chrome only — the same gap that killed `profile=high`, and
-it bit the same way. Test: a full-range-flagged H.264 file whose decoded bytes span exactly luma
-16..234 (p05/p50/p95 = 26/124/223), rendered by both browsers to canvas:
+The §16 colour-range ship was verified in Chrome only — the same gap that killed `profile=high`. A
+controlled file test (full-range-flagged H.264 whose decoded bytes span exactly luma 16..234,
+p05/p50/p95 = 26/124/223) showed Chromium passing values through exactly while **Firefox's
+file-playback path applies the `(y−16)×255/219` limited-read stretch** — that forced a revert.
 
-| | p05 | p50 | p95 | verdict |
+But the file path was the wrong proxy. A real Firefox laptop then tested the **WebRTC** path against
+a live full-range room, sampling displayed canvas luma, with a Chromium player 2 in the same room as
+ground truth:
+
+| same live stream | pct0 | below16 | mass alive in 1..15 | verdict |
 |---|---:|---:|---:|---|
-| decoded bytes (truth) | 26 | 124 | 223 | — |
-| Chromium | 26 | 124 | 223 | values pass through — **honours full-range** |
-| Firefox | 12 | 127 | 241 | exactly `(y−16)×255/219` — **assumes limited** |
+| Chromium (player 2) | 16.87% | 17.83% | 0.96% | correct |
+| Firefox (real laptop) | 21.91% | 22.68% | **0.77%** | correct — a limited misread would leave this band EMPTY |
 
-Live game content carries 10-12% of pixel mass below luma 16 → visible black-crush on every dark
-scene for a Firefox player. Chrome's win was +0.121 dB. Reverted to the default limited-range
-conversion (correctly signalled, correct in every browser). Caveats recorded: measured on the file
-playback path — **Playwright's Firefox cannot ICE into a room at all** (its WebRTC stack; Chromium
-from the same box connects fine), so the WebRTC-path behaviour is untestable here. A human test from
-a real Firefox install would settle both that and whether Firefox friends can join rooms at all.
+Firefox's WebRTC rendering honours `video_full_range_flag`; only its file pipeline doesn't — and the
+arcade stream only ever rides WebRTC. **Re-shipped** (`colorimetry: "1:3:5:1"`). Two method lessons:
+never trust the file path as a proxy for the WebRTC path, and Playwright's Firefox build cannot ICE
+into rooms at all (real Firefox joins fine — split audio PC, TWCC feedback, and H.264 decode all
+verified live), so real-FF questions need a real FF.
+
+### ICE candidate ORDER was hairpinning every LAN player's media
+
+The same live session answered the "why does a LAN laptop's estimate crater to 524 kbps" question.
+`about:webrtc` showed the nominated pair remote as **98.15.249.217:8446** — the public IP. The worker
+advertises host candidates for BOTH IPs (patch 0013's whole purpose), but
+`ZIGGY_PUBLIC_IP=98.15.249.217,192.168.68.69` listed the public IP FIRST, candidate order drives ICE
+pair priority, and the router *accepts* hairpin traffic — so the hairpin pair always won, on every
+client, LAN included (even Ziggy-local Chromium selected it). Every packet crossed the router NAT
+twice; the keyframe bursts on that path are what cratered GCC.
+
+Fix: swap the order — `ZIGGY_PUBLIC_IP=192.168.68.69,98.15.249.217` (LAN first; remote checks to
+192.168.x fail and fall through to the public pair). Verified: clients now select
+`192.168.68.69:8446` on both PCs. This is also the best candidate yet for the long-standing
+"residual" audio hitch: the AdGuard split-DNS fix only ever moved SIGNALING off the hairpin — media
+kept hairpinning until now.
 
 ### Also in this pass
 

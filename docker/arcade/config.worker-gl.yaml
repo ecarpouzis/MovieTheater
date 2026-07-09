@@ -597,21 +597,21 @@ encoder:
     codec: h264
     threads: 0
     keyframeInterval: 300
-    # ⚠ FULL-RANGE COLORIMETRY WAS SHIPPED (2026-07-09 am) AND REVERTED (same day) — DO NOT RE-ADD
-    # `colorimetry: "1:3:5:1"` without re-testing Firefox.
+    # FULL-RANGE luma — shipped, reverted, then RE-SHIPPED after a real-Firefox WebRTC test
+    # (2026-07-09; the full story is docs/arcade-quality-plan.md §17).
     #
-    # The idea was sound: the cores emit luma 0..255, the pipeline converts to LIMITED (16..235),
-    # discarding ~14% of code values; `colorimetry: "1:3:5:1"` made the encode full-range and the SPS
-    # carried video_full_range_flag=1. Chrome honours it (VideoFrame.colorSpace.fullRange=true, canvas
-    # values pass through EXACTLY — verified against offline-decoded bytes). FIREFOX DOES NOT: fed the
-    # same full-range-flagged H.264, its displayed values are precisely the (y-16)*255/219 stretch of a
-    # limited-range read — it ignores the flag, crushing everything below luma 16 to black and clipping
-    # highs. Live game content carries 10-12%% of its pixel mass below 16, so that is visible black-crush
-    # on every dark scene for a Firefox player. Measured on the file-playback path (Playwright's Firefox
-    # cannot ICE into a room, so the WebRTC path is untestable here) — docs/arcade-quality-plan.md §17.
-    # Chrome's gain was +0.121 dB; the profile=high rule applies: never a marginal Chrome win at the
-    # price of silently-wrong output on a friend's browser. Default (no colorimetry key) = limited range,
-    # correctly signalled, correct everywhere.
+    # The cores emit luma 0..255; without this key the pipeline converts to LIMITED (16..235),
+    # discarding ~14% of code values. "1:3:5:1" (range:matrix:transfer:primaries = full:BT709:BT709:
+    # BT709) makes the encode full-range and the SPS carries video_full_range_flag=1.
+    #
+    # The browser story, because it cost a full revert cycle: Chrome honours the flag (canvas values
+    # match offline-decoded bytes EXACTLY). Firefox's FILE-PLAYBACK path does NOT (its displayed values
+    # are the (y-16)*255/219 limited-read stretch) — that proxy result forced the revert. But Firefox's
+    # WEBRTC path was then tested on a real laptop against a live room: its 1..15 dark-band mass matches
+    # Chromium's (0.77%% vs 0.96%% — a limited misread would leave that band EMPTY), so WebRTC rendering
+    # honours the flag in both browsers, and WebRTC is the only path this stream ever takes. Never trust
+    # the file path as a proxy for the WebRTC path again.
+    colorimetry: "1:3:5:1"
   list:
     # AV1 (patch 0024) — OPT-IN, inert while encoder.video.codec is h264. Switch that key to `av1` to use it.
     # Measured offline against the RAW source frames, at MATCHED actual bitrate (nvav1enc overshoots its CBR
