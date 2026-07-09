@@ -82,7 +82,7 @@ first Dreamcast fix anyone wrote from that doc would have silently done nothing.
 `reicast_internal_resolution`, `reicast_widescreen_hack`, `reicast_broadcast`, `reicast_region`,
 `reicast_alpha_sorting`, `reicast_anisotropic_filtering`, `reicast_texture_filtering`.
 
-### 3.2 The client throws away the core-reported aspect ratio
+### 3.2 The client throws away the core-reported aspect ratio — FIXED (see §11, §13)
 
 Every GL core sets `coreAspectRatio: true` **specifically so the worker populates `av.a`** with the
 true (often per-game) aspect ratio. `cloudRetroClient.js:472-478` reads only `flip` and `rot` and
@@ -252,10 +252,10 @@ restart (workers self-heal via the runner loop).
 |---|---|---|---|
 | **0** | Reconcile config drift (repo `config.worker-gl.yaml` 9.4 KB vs live 22 KB — live has `ps2`/`gc`/2D blocks the repo lacks). Fix the `reicast_` prefix in `docs/arcade-per-game-config.md`. Capture a baseline per system. | no | — |
 | **1** | ✅ **SHIPPED 2026-07-08** — see §9 | config only | **7,907 games (~35%)** |
-| **2** | ✅ **CODE COMPLETE 2026-07-08** (awaits deploy) — see §11 | UI build | 6 systems + all widescreen 3D |
+| **2** | ✅ **SHIPPED + VERIFIED ON PROD 2026-07-08/09** — see §11, §13 | UI build | 6 systems + all widescreen 3D + vertical arcade cabs |
 | **3** | ⚠ **PARTIALLY SHIPPED 2026-07-08** — see §10. n64 done; dc/ps2/psp/gc blocked or deferred | config only | 922 games shipped |
 | **4** | Encoder: `p6` + spatial-AQ + two-pass-quarter + `profile=high`, A/B at fixed bitrate | config only | all |
-| **5** | ✅ **CODE COMPLETE 2026-07-08** — `CloudRetroHost.DefaultVideoBitrateKbps`; lobby gains "Auto". See §12 | API build | all |
+| **5** | ✅ **SHIPPED + VERIFIED ON PROD 2026-07-08/09** — `CloudRetroHost.DefaultVideoBitrateKbps`; lobby gains "Auto". See §12, §13 | API build | all |
 | **6** | ABR: Pion send-side BWE → live `bitrate` set (new worker patch) | worker rebuild | all |
 | **7** | Seed `ArcadeGameProfile`: PS2 hw-hacks for upscale-sensitive titles, widescreen opt-ins, heavy-title downgrades | data | per-title |
 
@@ -444,3 +444,59 @@ Values: `gc` 10000, `n64` 8000, `psp` 7000, `ps2`/`dc`/`ps1` 6000, everything 2D
 **Existing settings are NOT migrated.** Someone who deliberately picked "Balanced · 5 Mbps" on a thin
 uplink must not be silently moved to Auto (which reaches 10 Mbps on GameCube). They opt in by choosing
 Auto once. New users get Auto by default.
+
+---
+
+## 13. Prod verification, and a bug it uncovered (2026-07-08/09)
+
+Phases 2 and 5 could only be verified after deploy. Measured against prod with a fresh browser
+profile (so the lobby's new "Auto" default applies), reading the room-create response for the
+server-chosen `?vbr=` and the rendered box geometry:
+
+| Game | System | Box aspect before → after | Stream | server `vbr` |
+|---|---|---|---|---|
+| Daxter | psp | **1.3333 → 1.7778** | 960×540 | **7000** |
+| Metal Slug | arcade | 1.3333 (unchanged, correct) | 912×672 | **5000** |
+| 1942 | arcade | **4:3 sideways → 0.75 upright** | 672×768 | 5000 |
+
+### The bug: vertical arcade cabinets rendered sideways
+
+Verifying the aspect fix on a vertical board exposed a **pre-existing** defect — 1942's "1UP",
+"HIGH SCORE" and "INSERT COIN" were all rotated 90° and squashed into a 4:3 box.
+
+The worker only emits the GAME_START `av` payload **when the core sets `coreAspectRatio`**:
+
+```go
+if r.App().AspectEnabled() {   // pkg/worker/coordinatorhandlers.go
+    response.AV = &api.AppVideoInfo{ W, H, A: AspectRatio(), Flip: Flipped(), Rot: Rotation() }
+}
+```
+
+fbneo never set it, so the client learned neither the aspect (0.75 on a vertical cab) nor the
+rotation (90). Setting `coreAspectRatio: true` on the `mame` core is safe — `Flipped()` is
+`nano.IsGL()`, false for fbneo, so it cannot introduce the upside-down-GL bug that flag exists to
+fix. Horizontal boards are unaffected (`a=1.333, rot=0`).
+
+That rotated the picture upright but made it **overflow its box**: a quarter-turn swaps the element's
+axes. `rotatedVideoSize(ar, rot)` now swaps width/height for `rot` 90/270 —
+
+```
+width  = boxH = boxW / ar  ->  calc(100% / ar)
+height = boxW = boxH * ar  ->  calc(100% * ar)
+```
+
+— and the transform centres on the box (`translate(-50%,-50%)` before `rotate`), so the rotated frame
+fills it exactly. Three tests pin the contract, including the `calc(100% / 0)` guard.
+
+> Note the trap: `av.a` is used **verbatim** (0.75 for a vertical cab — already the post-rotation
+> display aspect), while the *element* is what needs its axes swapped. Inverting `a` instead would
+> flip vertical shooters back to landscape. Stock CloudRetro does the same (`web/js/stream.js`).
+
+### Latent trap flagged (comment only, no behaviour change)
+
+`CloudRetroHost.ZoneForSystem` still routes `psp/dc/naomi/atomiswave` to a `"gl"` zone. Since the
+docker/WSL pool retired, **both** Windows workers register `CLOUD_GAME_WORKER_NETWORK_ZONE=main`, so
+no worker serves `"gl"` at all — enabling `ArcadeZoningEnabled` today would route those systems at a
+pool that does not exist. `ps2` and `gc` are GL cores and were never added to the list either. It is
+harmless only because zoning is off (the descriptor then sends `zone=""`, a wildcard). Delete zoning,
+or make every system return `"main"`, before anyone flips that flag.
