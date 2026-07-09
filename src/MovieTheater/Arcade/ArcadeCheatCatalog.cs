@@ -32,22 +32,29 @@ namespace MovieTheater.Arcade
         /// import, never silent.</summary>
         public const int MaxCheatsPerGame = 300;
 
-        // Systems whose configured core implements retro_cheat_set for real. Verified live for n64/ps1/snes
-        // (see docs/arcade-cheats.md "verification"); the rest share the same cores (mgba covers gb/gbc/gba,
-        // genesis_plus_gx covers genesis/sms/gg/segacd, nestopia covers nes/fds) or are the well-known
-        // mednafen/beetle implementations.
+        // Systems whose configured core implements retro_cheat_set for REAL, established by disassembling the
+        // exported symbol in each core DLL (2026-07-09): a stub's first instruction is `ret`. That test is the
+        // only honest one available — the API is mandatory, so every core exports the symbol, and a stub
+        // accepts a code and silently discards it. Do not add a system on reasoning alone; run the probe.
+        //
+        //   REAL: mupen64plus_next (n64), pcsx_rearmed (ps1), snes9x (snes), nestopia (nes/fds),
+        //         genesis_plus_gx (genesis/sms/gg/segacd), picodrive (sega32x), mgba (gb/gbc/gba).
+        //   STUB: pcsx2, flycast, fbneo, stella, mednafen_pce.
         //
         // Deliberately ABSENT, each for a reason worth keeping written down:
-        //   ps2 (pcsx2), gc (dolphin), psp (ppsspp) — their cores ignore retro_cheat_set and read their own
-        //     cheat formats (pnach / Gecko-AR INIs / cwcheat db) from disk. libretro-database has no cht
-        //     folder for ps2 or gc either, so there is nothing to import even if they did.
-        //   dc/naomi/atomiswave (flycast), arcade/neogeo (fbneo) — both carry INTERNAL cheat engines instead.
-        //   a2600/a7800/lynx/vb/wsc/ngpc — cht folders exist upstream, but these cores' cheat support is
-        //     unverified here. Adding one is a single line once someone confirms a code takes effect.
+        //   ps2 (pcsx2), dc/naomi/atomiswave (flycast), arcade/neogeo (fbneo) — CONFIRMED stubs. They read
+        //     their own cheat formats (pnach) or carry internal cheat engines instead.
+        //   pce (mednafen_pce) — a CONFIRMED stub, and it was wrongly allowlisted here at first on the
+        //     assumption that "the mednafen cores implement it". They don't. 621 rows across 173 games were
+        //     imported and offered as toggles that could never do anything before the probe caught it.
+        //   gc (dolphin), psp (ppsspp) — their retro_cheat_set is REAL, but gc has no upstream cht folder and
+        //     psp's is unverified end-to-end. Candidates, not entries.
+        //   a2600/a7800/lynx/vb/wsc/ngpc — cht folders exist upstream; stella is a confirmed stub and the
+        //     others are unprobed.
         private static readonly HashSet<string> CodeCapable = new(StringComparer.OrdinalIgnoreCase)
         {
             "nes", "fds", "snes", "genesis", "sms", "gg", "segacd", "sega32x",
-            "gb", "gbc", "gba", "n64", "ps1", "pce",
+            "gb", "gbc", "gba", "n64", "ps1",
         };
 
         public static bool SupportsCheatCodes(string? system) => system != null && CodeCapable.Contains(system);
@@ -70,7 +77,6 @@ namespace MovieTheater.Arcade
             ["gg"] = "Sega - Game Gear",
             ["segacd"] = "Sega - Mega-CD - Sega CD",
             ["sega32x"] = "Sega - 32X",
-            ["pce"] = "NEC - PC Engine - TurboGrafx 16",
             ["ps1"] = "Sony - PlayStation",
         };
 

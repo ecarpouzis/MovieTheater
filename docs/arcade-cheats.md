@@ -29,8 +29,8 @@ hoping. That is `ArcadeCheatCatalog`.
 ## What each system gets
 
 **Cheat codes** (`ArcadeCheatCatalog.SupportsCheatCodes`) — nes, fds, snes, genesis, sms, gg, segacd,
-sega32x, gb, gbc, gba, n64, ps1, pce. Each has both a core that really implements the cheat API and an
-upstream `cht` folder.
+sega32x, gb, gbc, gba, n64, ps1. Each has both a core whose `retro_cheat_set` is a *real implementation*
+(see "Is this core's `retro_cheat_set` real?" below) and an upstream `cht` folder.
 
 **PS2** gets no codes (LRPS2 ignores them, and upstream has no `cht` folder for it) but does get the two
 patches compiled into the core:
@@ -138,14 +138,56 @@ big files are machine-generated address dumps rather than curated lists. Truncat
 silent. A room may enable at most `MaxCheatsPerRoom = 24` — conflicting codes from the same group reliably
 wedge a game.
 
+## Is this core's `retro_cheat_set` real? (the probe)
+
+**Do not reason about this. Measure it.** The API is mandatory, so *every* core exports the symbol; a stub
+accepts a code and discards it, and nothing observable at runtime tells the two apart. The test is one line
+of disassembly: **a stub's first instruction is `ret`.**
+
+```bash
+# RVA of the export, then disassemble the first few bytes at ImageBase+RVA.
+objdump -p core_libretro.dll   # Export Address Table + [Ordinal/Name Pointer] Table
+objdump -d --start-address=<ImageBase+RVA> --stop-address=<+24> core_libretro.dll
+```
+
+Results (2026-07-09, the cores this stack actually loads):
+
+| verdict | cores |
+|---|---|
+| **REAL** | mupen64plus_next, pcsx_rearmed, snes9x, nestopia, genesis_plus_gx, picodrive, mgba, **dolphin, ppsspp** |
+| **STUB** | pcsx2, flycast, fbneo, stella, **mednafen_pce** |
+
+`mednafen_pce` is why this section exists. It was allowlisted on the reasoning that "the mednafen cores
+implement the cheat API" — they don't, and 621 rows across 173 PC Engine games shipped as toggles that could
+never do anything. Caught by the probe, not by testing, because a stub is indistinguishable from a code that
+simply didn't change anything visible.
+
+`dolphin` and `ppsspp` are real but not enabled: upstream has no `cht` folder for GameCube, and PSP is
+unverified end-to-end.
+
 ## Verification
 
-Whether a *code* does anything cannot be settled by reading the core's exports, only by watching a game.
-The worker logs `[room-cheat] applied N cheat code(s)` and `[room-cheat] option k=v` on every room start;
-that proves delivery. Effect is confirmed by playing (see `.claude/skills/test-roms`).
+Delivery is proven by the worker log — `[room-cheat] applied N cheat code(s)` / `[room-cheat] option k=v` on
+every room start. Effect is confirmed by playing (see `.claude/skills/test-roms`).
+
+Verified live 2026-07-09 on the real product path (login → lobby card → picker → WebRTC room):
+
+- **PS2 option cheat**, zero clicks — Ape Escape 2's card offered one pre-ticked cheat; the room-create
+  response carried `coreOptions: {"pcsx2_widescreen_hint": "enabled (16:9)"}`; the worker logged
+  `[room-cheat] option pcsx2_widescreen_hint=enabled (16:9)`; and PCSX2 then logged
+  `[PATCH] [Ape Escape 2 (NTSC-U)]: Force native widescreen mode patch applied.` — the very string the
+  patch table was extracted from.
+- **N64 cheat code** — Mario Kart 64's picker offered 300; ticking "Multi Bananas" sent
+  `cheats: ["80165FBD 0002"]`; the worker logged `Per-room cheats: 0 core option(s), 1 code(s)` then
+  `[room-cheat] applied 1 cheat code(s)`. Stream stayed alive at 1280×960.
+- **Correct absence** — God of War shows no picker: it isn't in the core's widescreen table (it gets GS
+  hardware fixes instead), so there is nothing honest to offer.
 
 ## Adding a system
 
-1. Confirm a code actually takes effect in a real room on that system's core.
-2. Add the system code to `CodeCapable` and its upstream folder name to `ChtFolders` in `ArcadeCheatCatalog`.
-3. Run the import for it: `arcade-cheats-import --cht <dir> --system <code> --apply`.
+1. **Run the probe.** If `retro_cheat_set` is a stub, stop — no amount of testing will distinguish it from a
+   code that had no visible effect.
+2. Confirm a code actually takes effect in a real room.
+3. Add the system to `CodeCapable` *and* its upstream folder to `ChtFolders` in `ArcadeCheatCatalog`. A
+   folder without an allowlist entry is how a stub core gets silently re-imported; a unit test guards this.
+4. Run the import for it: `arcade-cheats-import --cht <dir> --system <code> --apply`.

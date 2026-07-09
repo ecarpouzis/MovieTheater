@@ -188,15 +188,31 @@ namespace MovieTheater.Tests
             Assert.NotNull(ArcadeCheatCatalog.ChtFolder(system));
         }
 
+        // Each of these was checked by disassembling the core's exported retro_cheat_set: first instruction
+        // `ret` = a stub that accepts a code and discards it. `pce` is here because it was WRONGLY allowlisted
+        // at first — mednafen_pce is a stub, and 621 rows across 173 games shipped as toggles that could never
+        // do anything. A system belongs in CodeCapable only after the probe, never on reasoning about which
+        // core family it belongs to.
         [Theory]
-        [InlineData("ps2")]   // LRPS2 reads .pnach; retro_cheat_set is a stub
-        [InlineData("gc")]    // Dolphin reads Gecko/AR INIs
-        [InlineData("psp")]   // PPSSPP reads a cwcheat db
-        [InlineData("dc")]    // flycast has its own internal cheat engine
-        [InlineData("arcade")]// fbneo likewise
+        [InlineData("ps2")]   // pcsx2: STUB (reads .pnach)
+        [InlineData("dc")]    // flycast: STUB (internal cheat engine)
+        [InlineData("arcade")]// fbneo: STUB (internal cheat engine)
+        [InlineData("pce")]   // mednafen_pce: STUB — the one that got through
+        [InlineData("a2600")] // stella: STUB
+        [InlineData("gc")]    // dolphin's is REAL, but upstream has no cht folder for it
+        [InlineData("psp")]   // ppsspp's is REAL, but unverified end-to-end here
         public void SystemsWhoseCoreIgnoresCheatCodesNeverOfferThem(string system)
         {
             Assert.False(ArcadeCheatCatalog.SupportsCheatCodes(system));
+        }
+
+        // A code-capable system must never lose its cht folder, and a folder must never outlive its
+        // allowlist entry — a stale folder is how a stub core gets silently re-imported.
+        [Fact]
+        public void NoChtFolderExistsForASystemWeWillNotOfferCodesFor()
+        {
+            Assert.Null(ArcadeCheatCatalog.ChtFolder("pce"));
+            Assert.All(ArcadeCheatCatalog.CodeSystems, s => Assert.NotNull(ArcadeCheatCatalog.ChtFolder(s)));
         }
 
         [Fact]
