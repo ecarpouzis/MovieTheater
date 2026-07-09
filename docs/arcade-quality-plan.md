@@ -254,7 +254,7 @@ restart (workers self-heal via the runner loop).
 | **1** | ✅ **SHIPPED 2026-07-08** — see §9 | config only | **7,907 games (~35%)** |
 | **2** | ✅ **SHIPPED + VERIFIED ON PROD 2026-07-08/09** — see §11, §13 | UI build | 6 systems + all widescreen 3D + vertical arcade cabs |
 | **3** | ✅ **n64 + ps2 + dc + gc-AA SHIPPED** (§10, §14, §15). §10's "dc blocked" verdict was WRONG — see §15 | config only | 3,087 games |
-| **4** | ✅ **SHIPPED 2026-07-09** — `profile=high` (+1.02 dB) + `p6`; two-pass-quarter and spatial-AQ REJECTED by measurement. §15 | config only | all |
+| **4** | ✅ **SHIPPED 2026-07-09** — `p6` + full-range colour; `profile=high` shipped then REVERTED (breaks Firefox); two-pass-quarter/spatial-AQ rejected. §15, §16 | config only | all |
 | **5** | ✅ **SHIPPED + VERIFIED ON PROD 2026-07-08/09** — `CloudRetroHost.DefaultVideoBitrateKbps`; lobby gains "Auto". See §12, §13 | API build | all |
 | **6** | ✅ **SHIPPED + VERIFIED 2026-07-09** — patch 0021. See §14 | worker rebuild | all |
 | **7** | Seed `ArcadeGameProfile`: PS2 hw-hacks for upscale-sensitive titles, widescreen opt-ins, heavy-title downgrades | data | per-title |
@@ -647,3 +647,84 @@ gc/snes/ps1). **Not yet verified on Firefox** — rollback is deleting `,profile
 > **The general lesson.** Anything the encoder can erase (AA, filtering, presets) must be measured
 > before the encoder. Anything the encoder cannot erase (resolution, geometry, bitrate) can be measured
 > in the browser. Two of this plan's "unverifiable" verdicts were just the wrong instrument.
+
+---
+
+## 16. The overnight sweep: every remaining item, checked (2026-07-09)
+
+### Colour range — was silently costing every system
+
+The cores emit RGB with luma **0..255**. The pipeline converted to **limited** range (16..235) and
+correctly signalled limited, discarding ~14% of the code values. CloudRetro's capsfilter says
+`color-range=0_255` — **that is not a `video/x-raw` caps field in GStreamer** and was silently ignored.
+The field that matters is `colorimetry`.
+
+Fixed with `encoder.video.colorimetry: "1:3:5:1"` (full range, BT.709). Measured end-to-end against the
+raw source: limited (viewer-expanded) **37.751 dB** vs full **37.872 dB**. The SPS now carries
+`video_full_range_flag=1` (it was 0) and Chrome reports `VideoFrame.colorSpace.fullRange = true`.
+
+### Supersampling — the AA that N64/PSP could always have had (patch 0023)
+
+`if conf.Scale > 1` → `> 0 && != 1`. That is the whole patch; `round()` already handled fractions.
+On identical source frames, 1920×1440 → 960×720: hard edges **2.112% (nearest) → 1.792% (bilinear2)**.
+
+| system | renders | delivers | CPU/room |
+|---|---|---|---|
+| n64 | 1920×1440 | **1280×960** | 1.02 cores (0.37 before) |
+| psp | 1920×1088 | 960×544 | 0.64 |
+| gc | 1920×1584 | 1280×1056 (+4× MSAA) | 1.38 |
+| dc / naomi / atomiswave | 1920×1440 | 1280×960 | 1.09 |
+
+> A fractional scale **must** be paired with a smooth `scaleMethod`. Nearest downscale point-samples: it
+> aliases rather than anti-aliases. That was exactly DC's bug.
+
+`naomi`/`atomiswave` carried the identical flycast trap, dormant only because no games are enabled.
+
+### Anisotropic filtering — shipped, and it is not an AA operation
+
+`hardShare` cannot score it, and shouldn't: on a deterministic DC frame, 16× moved **mid-frequency edges
++7%** with no meaningful hard-edge change. That is *retained texture detail*, which is what aniso does.
+dc's `off` measured byte-identical to its stated default, so the default was effectively off. Shipped:
+dc 16×, gc 16×, ps2 8×.
+
+### Accuracy options
+
+- **ps2 `blending_accuracy: Medium`** — shipped, measured free (60fps, 0 freezes).
+- **dc `alpha_sorting: per-pixel`** — **rejected**: 58fps and 3 freezes vs 60/0 at the per-triangle
+  default. Per-pixel OIT is not worth it here.
+
+### RGB straight into NVENC — rejected
+
+`nvh264enc` accepts RGB, so the CPU I420 conversion looked skippable. It measures **37.274 dB vs
+37.872** *and* NVENC forces limited range when it does the conversion itself, throwing away the
+full-range win. CPU saving was negligible (0.70 s vs 0.75 s wall). Rejected on evidence.
+
+### `profile=high` — shipped, then reverted
+
++1.02 dB at 8 Mbps, and Chrome decodes it. But without a profile in the caps `nvh264enc` emits
+`profile_idc=66` (Constrained Baseline), which is exactly what Pion advertises (`42001f`). Forcing High
+emits `100` while the SDP still promises baseline. Firefox's WebRTC decoder is OpenH264, which decodes
+only *some* subsets of High — a friend on Firefox gets **no video, silently**. Reverted.
+
+### AV1 — works, quantified, opt-in (patch 0024)
+
+At **matched actual bitrate** (nvav1enc overshoots CBR by ~19%, so the naive comparison flatters it by
+2.4 dB): **+0.884 dB for 1.6% fewer bits**, ≈15% bitrate saving. Verified live end-to-end
+(`mimeType: video/AV1`, full range, 60fps). Chrome **and Firefox** advertise AV1 receive; **Safari does
+not**, and CloudRetro negotiates one codec per room — so it stays opt-in via `encoder.video.codec: av1`.
+
+### PS1 upscaling — the blocker is NOT saves
+
+Beetle PSX HW defaults memory card 0 to libretro `.srm` (the same path our harvest uses; the formats are
+"internally identical"). It boots and streams on our worker. But it **falls back to software rendering**:
+the log shows `[rhi_gl_open] requesting hardware render context: OpenGL Core 3.3+`, and nanoarch's WGL
+path hands out a *compatibility* profile. Delivered 320×240 regardless of
+`beetle_psx_hw_internal_resolution`. **The blocker is the GL context profile, not memory cards.** Fixing
+it means teaching nanoarch to honour a core-profile hw_render request.
+
+### Still open
+
+- **`spatial-aq`** — PSNR says worse *by construction* (it moves bits to where the eye looks). Needs a
+  subjective A/B on a real display; nothing here can settle it.
+- **N64/PSP MSAA** remains inert (proven bit-identical). SSAA replaced it.
+- **`profile=high` / AV1 by default** both hinge on which browsers the friend group actually uses.
