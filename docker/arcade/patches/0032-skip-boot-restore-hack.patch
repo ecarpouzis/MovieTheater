@@ -35,15 +35,30 @@
 
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -320,7 +320,11 @@
+@@ -320,7 +320,26 @@
  		close(f.doneEvt)
  	}()
  
 -	if f.HasSave() {
-+	// skip_boot_restore (temporary stopper, 2026-07-09): PCSX2 "successfully" unserializes one
-+	// tick after init into a WEDGED black GS, then close-save re-serializes the wedge — a poison
-+	// loop on the deterministic save id. Until boot-restore is made safe for heavy GL cores,
-+	// those cores skip it; manual in-session Save/Load (patch 0030) still works.
++	// skip_boot_restore => DEFERRED restore (patch 0032b): PCSX2 "successfully" unserializes one
++	// tick after init into a WEDGED black GS (then close-save re-serializes the wedge — a poison
++	// loop on the deterministic save id). But an in-session Load a few seconds in round-trips
++	// cleanly (verified live 2026-07-09). So heavy GL cores restore INTO A WARM VM: the same code
++	// path as a user pressing Load ~5s after boot, which is exactly what this schedules.
++	if f.HasSave() && f.nano.SkipBootRestore() {
++		go func() {
++			select {
++			case <-f.done:
++				return
++			case <-time.After(5 * time.Second):
++			}
++			if err := f.RestoreGameState(); err != nil {
++				f.log.Error().Err(err).Msg("deferred boot-restore failed; continuing unsaved")
++			} else {
++				f.log.Info().Msg("deferred boot-restore done (warm-VM resume)")
++			}
++		}()
++	}
 +	if f.HasSave() && !f.nano.SkipBootRestore() {
  		// advance 1 frame for Mupen, DOSBox save states
  		// loading will work if autostart is selected for DOSBox apps
