@@ -106,7 +106,12 @@ namespace MovieTheater.Services.Arcade
             "psp" => 7000,  //  960x544  = 0.52 Mpx (much of it 30fps content)
             "dc" => 11000,  // 1280x960 = 1.23 Mpx (rendered 1920x1440, supersampled down). flycast always
                             // rendered big; CloudRetro nearest-downscaled it to 640x480 until 2026-07-09.
-            // PS1 swings 512x480 <-> 1280x960 mid-game, but the frame is a nearest 2x upscale (cheap bits).
+            // naomi/atomiswave are the same flycast pipeline as dc (same render, same delivery) — kept in
+            // lockstep so enabling their catalogs doesn't ship 3D at the 2D default.
+            "naomi" or "atomiswave" => 11000,
+            // PS1 encodes swing 1024x960 <-> 2048x960 mid-game since the enhanced-resolution renderer
+            // (2026-07-09): REAL detail is the pre-doubling half of that (the encode is its nearest 2x,
+            // cheap bits), so ~0.3-0.5 Mpx of true 3D — 6000 covers it with margin.
             "ps1" => 6000,
             // Everything 2D: nearest-upscaled flat blocks. 5 Mbps is already generous.
             _ => 5000,

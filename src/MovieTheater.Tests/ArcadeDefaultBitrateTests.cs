@@ -23,6 +23,8 @@ namespace MovieTheater.Tests
         [InlineData("n64", 11000)] // 1280x960, supersampled from 1920x1440
         [InlineData("psp", 7000)]   //  960x544
         [InlineData("dc", 11000)]  // 1280x960 since flycast's frames stopped being decimated
+        [InlineData("naomi", 11000)]      // same flycast pipeline as dc — must not fall to the 2D default
+        [InlineData("atomiswave", 11000)] // when their catalogs get enabled
         [InlineData("ps1", 6000)]
         [InlineData("arcade", 5000)]
         [InlineData("snes", 5000)]

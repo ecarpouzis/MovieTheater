@@ -1,0 +1,28 @@
+diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
+index 6c77217..51d014b 100644
+--- a/pkg/worker/media/gstreamer.go
++++ b/pkg/worker/media/gstreamer.go
+@@ -719,7 +719,22 @@ func (g *GstMediaPipe) SetVideoBitrate(kbps int) error {
+ 	case "vp8", "vp9":
+ 		return v.enc.SetProperty("target-bitrate", kbps*1000)
+ 	default: // h264 (nvh264enc / x264enc)
+-		return v.enc.SetProperty("bitrate", uint(kbps))
++		if err := v.enc.SetProperty("bitrate", uint(kbps)); err != nil {
++			return err
++		}
++		// Scale the VBV/HRD buffer with the target: kbps/20 kbits ≈ 3 frame-budgets at 60fps
++		// (arcade patch 0025). An unbounded VBV lets a CBR IDR burst to 4-6x the per-frame budget
++		// (measured: 94KB IDR in a 14 Mbps stream whose frames average 22KB) — on a thin remote
++		// link that bulge delays everything behind it, audio included: the residual keyframe
++		// hitch. Capping at 3 budgets halved the worst burst for -0.65..-1.5 dB, paid only in
++		// transparent-quality territory (undershooting CBR). Offline matrix + tradeoff table:
++		// docs/arcade-quality-plan.md §17. nvh264enc property, live-changeable; x264enc names its
++		// equivalent differently, so this is best-effort by design (a failed set must never kill
++		// the bitrate rung that just succeeded).
++		if err := v.enc.SetProperty("vbv-buffer-size", uint(max(kbps/20, 100))); err != nil {
++			g.log.Debug().Err(err).Msg("vbv-buffer-size not settable on this encoder")
++		}
++		return nil
+ 	}
+ }
+ 

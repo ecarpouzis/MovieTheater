@@ -405,3 +405,20 @@ Chrome decodes it anyway; Firefox's WebRTC H.264 decoder is OpenH264, which deco
 of High ([bug 1411681](https://bugzilla.mozilla.org/show_bug.cgi?id=1411681)) — a friend on Firefox would
 get **no video, silently**. Not worth 1 dB. Claiming it honestly would mean registering H.264 with a
 matching `profile-level-id` in Pion's MediaEngine, which drops Firefox from H.264 entirely.
+
+## 0025-abr-vbv-scaling.patch — cap keyframe bursts, proportionally
+
+`SetVideoBitrate` (patch 0021) now also sets `vbv-buffer-size = kbps/20` (≈3 frame-budgets at 60fps,
+floor 100) on every rung — the property is changeable in the PLAYING state, so it rides the existing
+ABR path for free.
+
+**Why:** with NVENC's default (unbounded) HRD, a CBR IDR bursts to 4–6× the per-frame budget
+(measured: a 94 KB IDR in a 14 Mbps stream whose frames average 22 KB). That transmission bulge
+delays everything queued behind it on a thin link — audio included — and is the mechanism of the
+residual keyframe hitch. Capping at ~3 budgets **halves the worst burst** for −0.65…−1.5 dB, paid
+only in transparent-quality territory (post-supersampling content undershoots CBR; see
+docs/arcade-quality-plan.md §17 for the full matrix, including why a FIXED cap is wrong: −3.5 dB at
+14 Mbps, free at 5 Mbps).
+
+**Best-effort by design:** `vbv-buffer-size` is an nvh264enc property (x264enc names its equivalent
+differently), so a failed set logs at debug and must never kill the bitrate rung that just succeeded.

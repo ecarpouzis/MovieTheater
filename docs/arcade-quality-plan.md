@@ -652,7 +652,7 @@ gc/snes/ps1). **Not yet verified on Firefox** — rollback is deleting `,profile
 
 ## 16. The overnight sweep: every remaining item, checked (2026-07-09)
 
-### Colour range — was silently costing every system
+### Colour range — was silently costing every system — ⚠ REVERTED, see §17 (Firefox ignores the flag)
 
 The cores emit RGB with luma **0..255**. The pipeline converted to **limited** range (16..235) and
 correctly signalled limited, discarding ~14% of the code values. CloudRetro's capsfilter says
@@ -728,3 +728,124 @@ it means teaching nanoarch to honour a core-profile hw_render request.
   subjective A/B on a real display; nothing here can settle it.
 - **N64/PSP MSAA** remains inert (proven bit-identical). SSAA replaced it.
 - **`profile=high` / AV1 by default** both hinge on which browsers the friend group actually uses.
+
+---
+
+## 17. The review pass: what the sweep missed (2026-07-09)
+
+A from-scratch re-derivation of §1–§16 against the patches, the pion/GStreamer sources and the core
+DLLs confirmed everything shipped — and surfaced options the sweep never tried. Worked through here.
+
+### PS1 enhanced resolution — §16's "blocked" verdict was too pessimistic — SHIPPED
+
+§16 ended PS1 at "blocked on a core-profile GL context" (beetle). But **this x86_64 pcsx_rearmed
+build ships the enhanced-resolution renderer** (`pcsx_rearmed_neon_enhancement_enable` — software,
+no GL, 2× internal res for non-hi-res video modes; the NEON code paths compile to SSE on x86_64).
+Same core ⇒ same `.srm` memory-card harvest, zero save risk. Shipped with the core-author fixup
+`neon_enhancement_tex_adj_v2`; `neon_enhancement_no_main` (compatibility-reducing speed hack) left off.
+
+Verified live (2026-07-09):
+
+| Game | Encoded | fps | freezes | dropped | notes |
+|---|---|---:|---:|---:|---|
+| Crash Team Racing (attract, in-engine 3D) | **1280×960 / 1024×960 / 2048×960** | 59–61 | 0 | 0 | real 3D detail doubled; mode switches followed cleanly |
+| Castlevania: SotN | 1024×960 ↔ **640×480** | 59–60 | 0 | 0 | some modes come out UNenhanced (640×480 = exactly the old output) — worst case is the status quo |
+
+Base geometry doubles with the enhancement, so the existing `scale: 2` now encodes at 2× the enhanced
+frame (nearest — cheap bits, real detail is the pre-doubling half). **0.38 CPU cores/room** (vs ~1.0
+for n64 SSAA). One 0.2 s freeze at a mid-game geometry switch — the known pipeline-reinit blip, same
+class as PS2's interlace switches. Known risk: a minority of titles glitch with enhancement (why
+RetroArch defaults it off) — per-title opt-out belongs in `ArcadeGameProfile.CoreOptionsJson`.
+`ps1` Auto ceiling stays 6000 (real detail ~0.3–0.5 Mpx; the doubled encode is nearest-cheap).
+
+### PSP anisotropic + smart 2D texture filtering — SHIPPED
+
+The one 3D core without aniso. `ppsspp_texture_anisotropic_filtering: "16x"` +
+`ppsspp_smart_2d_texture_filtering: "enabled"` (both value tokens read out of the DLL's option
+string table — the aniso cluster carries the literal `16x`; smart-2D has no distinct value strings,
+i.e. a standard enabled/disabled boolean). §5 had smart-2D on the target list and it silently fell
+out of the final config; restored. Verified live: Daxter 960×540, 30 fps (its content rate),
+0 freezes, 0 dropped over 70 s, no ppsspp instability.
+
+### fbneo was feeding the encoder 16-bit color — SHIPPED
+
+Phase 1 parked `fbneo-allow-depth-32` as "can't confirm the default isn't already enabled." The
+frame-dump instrument settled it in one room: **bpp=2, pixFmtCode=2 (RGB565)** — 5-6 bit channels,
+banding baked in before the encoder ever ran, on 6,214 arcade + neogeo games. Flipped to `"enabled"`
+(boolean; the DLL's value cluster has no distinct strings) and re-dumped: **bpp=4, XRGB8888**, same
+fps. Both fbneo entries (`mame`, `neogeo`) carry it.
+
+### Dolphin force_true_color / disable_copy_filter — already ON (negative result)
+
+The review pass hypothesised the libretro port leaves these standalone-Dolphin enhancements off. It
+does not: with both options absent from our config and `GFX.ini` deleted, the regenerated ini reads
+`ForceTrueColor = True, DisableCopyFilter = True` — they are the port's defaults. Nothing to ship. A
+config note now guards against "adding" them. Method lesson: **F-Zero GX boots are not
+frame-deterministic** (raw dumps differ run-to-run — Dolphin threading/shader timing), so dolphin
+A/Bs must use GFX.ini/behavioural evidence, not raw frames.
+
+### N64 FXAA — inert, like MSAA (negative result)
+
+`mupen64plus-FXAA: "1"` produced **30/30 bit-identical raw frames** vs `"0"` on MK64's attract.
+gliden64's post-process pass doesn't run under this hw_render setup. Supersampling remains the only
+working AA on this core. Bonus: the comparison proved **MK64's attract is bit-deterministic across
+boots** — the reference test bed for future raw-frame A/Bs.
+
+### Encoder matrix round 2: VBV shipped (patch 0025), the rest rejected
+
+Offline harness re-run on 120 raw frames of MK64's attract race (encode → decode → Y-PSNR vs the
+encoder's actual input, plus per-AU sizes parsed from the byte-stream):
+
+| @8 Mbps CBR, gop 60 | Y-PSNR | max AU | IDR avg |
+|---|---:|---:|---:|
+| base (`p6 ull`) | 57.51 dB | 45,366 | 27,149 |
+| + `temporal-aq` | 57.78 (+6.7% bytes) | 45,398 | — |
+| + `weighted-pred` | 57.51 | 45,410 | — |
+| + `strict-gop` | 63.39 (**+72% bytes**) | 76,744 | — |
+| + `vbv-buffer-size=133` (1 frame budget) | 52.24 | 17,286 | 12,576 |
+| + `vbv-buffer-size=266` (2) | 56.23 | 23,886 | 18,588 |
+| + `vbv-buffer-size=400` (3) | 56.86 | **25,280** | 21,207 |
+
+- **First finding: post-supersampling content UNDERSHOOTS CBR** (5.4 of 8 Mbps spent) — N64 quality
+  is no longer bitrate-limited at all; encoder deltas are marginal by construction.
+- **temporal-aq / weighted-pred**: no real win at matched conditions (weighted-pred needs fades this
+  content lacks; temporal-aq just spends closer to target). Not shipped.
+- **strict-gop**: pads easy content up to the CBR target for nothing — wasted bandwidth. Rejected.
+- **VBV**: an unbounded HRD lets an IDR burst to 4-6× the per-frame budget (94 KB in a 14 Mbps
+  stream) — that transmission bulge is the residual keyframe hitch's mechanism. A FIXED cap is
+  wrong (−3.5 dB at 14 Mbps, free at 5 Mbps), so **patch 0025** scales it with the target:
+  `vbv-buffer-size = kbps/20` (≈3 frame budgets), set alongside every ABR bitrate rung (the
+  property is live-changeable). Halves the worst burst for −0.65..−1.5 dB paid only in
+  transparent-quality territory. Verified live (Metal Slug 59-60fps, 0 freezes, no property errors).
+
+### Full-range colour — REVERTED (Firefox ignores the flag)
+
+The §16 colour-range ship was verified in Chrome only — the same gap that killed `profile=high`, and
+it bit the same way. Test: a full-range-flagged H.264 file whose decoded bytes span exactly luma
+16..234 (p05/p50/p95 = 26/124/223), rendered by both browsers to canvas:
+
+| | p05 | p50 | p95 | verdict |
+|---|---:|---:|---:|---|
+| decoded bytes (truth) | 26 | 124 | 223 | — |
+| Chromium | 26 | 124 | 223 | values pass through — **honours full-range** |
+| Firefox | 12 | 127 | 241 | exactly `(y−16)×255/219` — **assumes limited** |
+
+Live game content carries 10-12% of pixel mass below luma 16 → visible black-crush on every dark
+scene for a Firefox player. Chrome's win was +0.121 dB. Reverted to the default limited-range
+conversion (correctly signalled, correct in every browser). Caveats recorded: measured on the file
+playback path — **Playwright's Firefox cannot ICE into a room at all** (its WebRTC stack; Chromium
+from the same box connects fine), so the WebRTC-path behaviour is untestable here. A human test from
+a real Firefox install would settle both that and whether Firefox friends can join rooms at all.
+
+### Also in this pass
+
+- **naomi/atomiswave Auto ceilings**: were falling through to the 2D default 5000 despite delivering
+  dc-class 1280×960 3D — added at 11000, tests updated. (Dormant until their catalogs are enabled.)
+- **ABR late-joiner dip (known behaviour, documented not fixed)**: GCC's `GetTargetBitrate()` returns
+  the configured initial 6 Mbps until first TWCC feedback, and `TargetBitrateKbps()` gates only on
+  connection state — so a player joining a room running above ~7 Mbps reads as a 6 Mbps peer for a
+  tick and dips the room, which re-ramps over ~6–8 s. Conservative-by-construction for an unknown
+  link; a fix would need a feedback-received signal out of pion's cc interceptor.
+- **The test-roms harness lobby selectors** predate the 2026-07 lobby redesign: drive
+  `/arcade?q=<title>&system=<key>` (filters are URL params; the search box only commits on Enter)
+  and click `.arcade-btn-start`, not `.ant-card`.
