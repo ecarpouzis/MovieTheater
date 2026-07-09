@@ -173,3 +173,13 @@ Sources: [flycast core options](https://docs.libretro.com/library/flycast/),
   editor. Until then, profiles are seeded via SQL / the CLI.
 - **Bulk import** of curated community preset lists into `ArcadeGameProfile`.
 - **Auto-regen hook** so editing a profile in the admin UI regenerates the manifest for all worker pools.
+
+---
+
+**⚠ READ FIRST (2026-07-09): most per-ROM fixes need NO rows here.** The emulators bundle their own
+per-game databases and auto-apply them at load — LRPS2's built-in GameDB (12,806 games, verified
+applying on this stack), PPSSPP's `compat.ini`, Dolphin's `Sys/GameSettings`, fbneo's drivers,
+GLideN64's compiled-in profiles. See docs/arcade-quality-plan.md §18 for what is staged where and
+the two rules that keep it working (`pcsx2_enable_hw_hacks` stays off; refresh compat.ini
+occasionally). `ArcadeGameProfile` is for the residue only: fps locks, PS1 enhanced-res opt-outs,
+per-title downgrades, widescreen opt-ins.

@@ -286,6 +286,16 @@ emulator:
             # Name the BIOS explicitly. LRPS2 read "Bios Found: USA v01.60" from its root scan but the
             # VM-load scan of system/pcsx2/bios/ reported "no valid BIOS" until the file is named here.
             pcsx2_bios: "scph39001.bin"
+            # PER-GAME FIXES AT SCALE (docs §18). LRPS2 ships a built-in GameDB — 12,806 games of
+            # gamefixes, clamp/round modes and AUTOMATIC GS hardware fixes keyed by serial+CRC — and it
+            # verifiably runs on our stack: God of War's boot logs "[GameDB] Enabled GS Hardware Fix:
+            # alignSprite/roundSprite/autoFlush" all by itself. So the per-title upscaling fixes the
+            # quality plan deferred to ArcadeGameProfile are ALREADY being applied automatically.
+            # ⚠ Two rules keep it working: (1) pcsx2_enable_hw_hacks must stay OFF — enabling manual hw
+            # hacks DISABLES the automatic GameDB fixes (the DLL says so verbatim); (2) don't bother
+            # with pcsx2_use_external_gameindex — it was tried ("enabled" + GameIndex.yaml staged at
+            # both <system>/resources and <system>/pcsx2/resources) and the code path never ran (no
+            # "External GameIndex" log either way, count stayed 12,806). Inert on this port.
             # QUALITY (docs/arcade-quality-plan.md Phase 3). PS2 shipped at 1x native (640x448) — the
             # softest 3D system we have. LRPS2 scales its BASE geometry with the multiplier (unlike
             # flycast), so this really does deliver more pixels: 640x448 -> 1280x896.

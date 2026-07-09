@@ -876,3 +876,28 @@ later, and sustained-low estimates still step down every tick.
 - **The test-roms harness lobby selectors** predate the 2026-07 lobby redesign: drive
   `/arcade?q=<title>&system=<key>` (filters are URL params; the search box only commits on Enter)
   and click `.arcade-btn-start`, not `.ant-card`.
+
+---
+
+## 18. Per-ROM fixes at scale: the emulators already ship the databases (2026-07-09)
+
+Phase 7 assumed per-title fixes meant hand-seeding `ArcadeGameProfile`. Wrong frame: **the cores
+bundle per-game fix databases and auto-apply them at load, keyed by the game's own identity** —
+no site DB rows, upstream-maintained. What each system actually has, verified on this stack:
+
+| System | Database | State on our stack |
+|---|---|---|
+| **ps2** | LRPS2 built-in GameDB — **12,806 games** (gamefixes, clamp/round modes, automatic GS HW fixes by serial+CRC) | **VERIFIED applying**: God of War's boot logs `[GameDB] Enabled GS Hardware Fix: alignSprite / roundSprite / autoFlush` unprompted — exactly the per-title upscaling fixes §14 deferred. ⚠ `pcsx2_enable_hw_hacks` must stay OFF (manual hacks disable the automatic ones). `pcsx2_use_external_gameindex` is INERT in this port (tried with GameIndex.yaml staged at both candidate paths; the code path never runs — no log either way, count stays 12,806). |
+| **psp** | PPSSPP `compat.ini` (per-game compatibility workarounds) | Was staged but **5 years stale (Oct 2020, 19 KB)** — refreshed to current upstream (50 KB, 72 sections). The core verifiably opens it on every game load (`OpenCFile(...PPSSPP/compat.ini): ok`). Backup kept as `compat.ini.bak-2020`. |
+| **gc** | Dolphin `Sys/GameSettings` — **1,870 per-game INIs** | Staged. Explicit core options outrank the user-INI layer (proven behaviorally: a user-layer `EFBScale = 2` for GFZE01 did NOT displace our `dolphin_efb_scale: "3"` — the safe precedence). Whether the Sys layer applies for keys we don't set is UNVERIFIABLE here (the port writes no dolphin.log; F-Zero's own INI carries only cheats) — low risk, most GC inis are patches/texture-cache values. |
+| **arcade/neogeo** | fbneo per-board drivers | Per-game handling is the core's architecture; nothing to stage. |
+| **n64** | GLideN64's compiled-in per-game profiles | Automatic; nothing to stage. |
+| **dc** | flycast internal per-game quirks | Automatic; nothing to stage. |
+| **ps1** | none (pcsx_rearmed) | The one system where per-title knowledge is manual — enhancement-glitch opt-outs go in `ArcadeGameProfile`. |
+
+**`ArcadeGameProfile` is the residue layer, as designed**: forced-fps locks (already data-driven via
+`game-overrides.json`), PS1 enhanced-res opt-outs, per-title quality downgrades, widescreen opt-ins.
+Small and curated — the thousands-of-titles problem is carried by the emulators' own databases.
+
+Maintenance: when `repo.sync` pulls newer cores, refresh `system/PPSSPP/compat.ini` from ppsspp
+master occasionally; the PS2/GC databases ride inside the core/`Sys` and need nothing.
