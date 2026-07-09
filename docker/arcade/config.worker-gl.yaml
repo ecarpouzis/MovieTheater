@@ -604,7 +604,14 @@ encoder:
   # from MSYS2 gst-plugins-bad (dlopens nvEncodeAPI64.dll). INSTANT FALLBACK if nvcodec is absent on
   # this worker: set codec to vp8 (vpx ships in gst-plugins-good; the 13700K handles one 640x480 stream).
   video:
-    codec: h264
+    # AV1 is the DEFAULT since 2026-07-09 (was h264; patch 0024 added the pipeline). The friend group
+    # runs Chrome/Firefox — both take AV1 (verified live: video/AV1, 60fps) — and Safari is explicitly
+    # unsupported (an AV1-only track would be NO VIDEO there; CloudRetro negotiates one codec per room).
+    # Worth +0.884 dB at MATCHED bitrate ≈ 15% bitrate saving vs the H.264 baseline; client decode cost
+    # 2.8-3.6ms vs 1.3ms (nowhere near the frame budget). ABR (0021) + VBV scaling (0025) carry over:
+    # nvav1enc exposes the same live-changeable bitrate/vbv-buffer-size properties as nvh264enc.
+    # INSTANT ROLLBACK: set codec: h264 and recycle the workers.
+    codec: av1
     threads: 0
     keyframeInterval: 300
     # FULL-RANGE luma — shipped, reverted, then RE-SHIPPED after a real-Firefox WebRTC test
@@ -623,7 +630,8 @@ encoder:
     # the file path as a proxy for the WebRTC path again.
     colorimetry: "1:3:5:1"
   list:
-    # AV1 (patch 0024) — OPT-IN, inert while encoder.video.codec is h264. Switch that key to `av1` to use it.
+    # AV1 (patch 0024) — THE DEFAULT since 2026-07-09 (see encoder.video.codec above; h264 below is the
+    # kept fallback for instant rollback / any future Safari need).
     # Measured offline against the RAW source frames, at MATCHED actual bitrate (nvav1enc overshoots its CBR
     # target by ~19%, so a naive same-`bitrate=` comparison flatters it by 2.4 dB — it isn't real):
     #   H.264 baseline  2,145,612 bytes  37.872 dB
