@@ -17,7 +17,7 @@ time-stretches) is now countered by a layered, mostly-safe set of levers. In eff
 3. **Audio-only `jitterBufferTarget` (default 80ms, client)** — the PRIMARY, default-on fix. Gives NetEq a
    small STABLE target so it stops adaptively inflating + time-stretching. Video stays at 0 (separate
    stream ids → video isn't lip-sync-delayed). Tunable/disable via `localStorage arcade.audioJitterMs`.
-4. **Split audio PeerConnection (OPT-IN, `localStorage arcade.audioPC="1"`)** — patch **0020**,
+4. **Split audio PeerConnection (DEFAULT ON; opt out `localStorage arcade.audioPC="0"`)** — patch **0020**,
    replacing the DEAD un-bundle experiment (patch 0019, deleted). **Un-bundle was refuted at source
    level (2026-07-08):** pion/webrtc stores `BundlePolicy` but never reads it — one ICE/DTLS transport
    per PeerConnection is hardcoded — so a max-compat browser's extra transports had no peer, 2 of 3
@@ -30,9 +30,11 @@ time-stretches) is now countered by a layered, mostly-safe set of levers. In eff
    relays verbatim. Backward compatible both directions; aux failure costs only audio.
 
 Deployed: bundled default restored + split-audio client half (`6e02c99`), patch 0020 record
-(`5c0682d`); GL worker rebuilt with 0020 (0019 reverted) and restarted. **Still to do:** judge audio
-smoothness on a REAL browser (the only valid place), A/B `arcade.audioPC="1"` vs the jitter-buffer
-default, then decide whether split-audio becomes the default.
+(`5c0682d`), default flipped ON (`ae8cc8a`); GL worker rebuilt with 0020 (0019 reverted) and
+restarted. **VERIFIED LIVE 2026-07-08** (Playwright, Metal Slug): default users get 2 connected PCs —
+video-only main + opus-only aux — Playing in 4s; worker logs "(aux audio connected)". **Still to
+do:** judge audio smoothness on a REAL browser/speakers (headless can't), and a 2-player room (each
+joiner negotiates their own aux PC via the same handler — untested with 2 live peers).
 
 ## What was fixed this session (don't re-investigate these)
 
