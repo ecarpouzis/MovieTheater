@@ -329,7 +329,12 @@ emulator:
         # the .gcz into roms/gc/ on first play (plain-file branch, like ps2 .cso), never a 7z extract.
         # 4 controller ports (MaxPlayers 4 at ingest) — a strong fit for the shared-room model.
         gc:
-          lib: dolphin_libretro
+          # OUR PATCHED BUILD (2026-07-09, docker/arcade/dolphin-createsharedcontext.patch): implements
+          # GLContextLR::CreateSharedContext (upstream's external-context path returns the base's nullptr,
+          # which async-shader threads dereference — the 0xc0000005). The custom lib NAME pins it against
+          # repo.sync nightly overwrites; the stock dolphin_libretro stays beside it as instant rollback
+          # (flip lib back + shader_compilation_mode to "0"). Build recipe: D:\Arcade\build\dolphin\build-core.bat.
+          lib: dolphin_custom_libretro
           folder: gc
           roms: ["gcz", "iso", "rvz", "ciso", "gcm", "m3u"]
           isGlAllowed: true
@@ -392,7 +397,12 @@ emulator:
             # per-game shader cache (legacy_save/User/Cache/Shaders — F-Zero GX grew a 1.3 GB pipeline
             # cache in one evening); wait_for_shaders precompiles the cache at boot.
             dolphin_main_cpu_thread: "disabled"
-            dolphin_shader_compilation_mode: "0"   # 0 = Synchronous (see values note above)
+            # "2" = Async (Ubershaders): new shaders compile on SHARED-CONTEXT worker threads (our
+            # patched core makes those real) while ubershaders render the frame meanwhile — no
+            # compile stall, no first-sight audio skip. Was "0" (Synchronous), forced by the stock
+            # core's nullptr CreateSharedContext. main_cpu_thread stays disabled deliberately: one
+            # variable at a time — the dual-core GPU thread is a separate risk with its own testing.
+            dolphin_shader_compilation_mode: "2"
             dolphin_wait_for_shaders: "enabled"
 
         # --- ported from docker/arcade/config.yaml (Windows-only migration): the tuned
