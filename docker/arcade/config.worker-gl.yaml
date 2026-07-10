@@ -381,12 +381,16 @@ emulator:
             # would be a no-op; leaving this note so nobody "adds" them again (docs §17). Also learned:
             # F-Zero GX boots are NOT frame-deterministic (raw dumps differ run-to-run), so dolphin
             # verdicts need GFX.ini/behavioural evidence, not raw-frame A/B.
-            # SINGLE-THREADED + synchronous shaders. Dolphin's async shader compile / separate GPU thread
-            # each need a REAL shared GL context on a worker thread; nanoarch patch 0016 acknowledges env 44
-            # but doesn't hand out an actual wglShareLists context, so those threads deref a null GL object
-            # (0xc0000005 read @0x180) at GameCube-mode video init. Forcing everything onto the one retro_run
-            # graphics thread removes the need for a second context. (Perf: shader stutter on first sight of
-            # each effect; acceptable until real shared-context creation lands.)
+            # SINGLE-THREADED + synchronous shaders — and this is a CORE limitation, not ours (settled
+            # 2026-07-09): libretro-dolphin's external-context path never overrides the base
+            # GLContext::CreateSharedContext(), which returns nullptr (Common/GL/GLContext.cpp:45) —
+            # so with async shaders / a GPU thread enabled, Dolphin's worker threads deref that null
+            # (0xc0000005 read @0x180) no matter what the frontend does. env 44 stays granted (it fixes
+            # the single-context fallback crash); async paths stay OFF until someone patches the CORE
+            # (implement CreateSharedContext for the external context — upstreamable). The sync-compile
+            # stutter (rare audio skips on first sight of each effect) SELF-HEALS via the persistent
+            # per-game shader cache (legacy_save/User/Cache/Shaders — F-Zero GX grew a 1.3 GB pipeline
+            # cache in one evening); wait_for_shaders precompiles the cache at boot.
             dolphin_main_cpu_thread: "disabled"
             dolphin_shader_compilation_mode: "0"   # 0 = Synchronous (see values note above)
             dolphin_wait_for_shaders: "enabled"
