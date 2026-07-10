@@ -250,6 +250,17 @@ order (decide at H0 with a 30-minute test):
    (coarse but zero device-plumbing).
 3. Both. (Recommended — the detector suspend also stops seat-UI noise during heavy sessions.)
 
+**DECIDED + v1 LANDED 2026-07-10.** Option 1 as written is impossible: the pad detector is browser
+JS (`cloudRetroClient.js`), and the Gamepad API never exposes the device instance path — a ViGEm
+x360 pad is byte-identical to a real Xbox pad (`Xbox 360 Controller (XInput STANDARD GAMEPAD)`).
+What makes filtering safe anyway is an invariant we already set at H0: Apollo is `gamepad = x360`
+host-wide and the host's physical pads are non-Xbox (Pro Controller / DualSense) — so on the
+stream host, **XInput ⇒ streamed**. Landed: machine-local toggle `arcade.ignoreStreamedPads`
+(Controllers panel → "Ignore streamed (XInput) controllers"), enabled only on the stream-host
+browser. It filters the two AUTOMATIC paths (fluid adoption + press-a-button detector); explicit
+panel assignment still works on any pad as a deliberate override. Option 2 (suspend detector
+while the heavy lock is held) still layers on at H3 for seat-UI noise.
+
 ### 6.4 EXPERIMENT (H5) — Apollo multi-client shared session
 Apollo documents multiple clients connected to a single instance (bandwidth stacks per client). If
 that mode lets a *second* Moonlight device join the *same* running app with its own pad, that is

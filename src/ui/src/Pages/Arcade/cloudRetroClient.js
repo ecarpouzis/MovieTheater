@@ -166,6 +166,29 @@ export function setFaceSwap(on) {
   try { localStorage.setItem("arcade.faceSwap", on ? "1" : "0"); } catch { /* storage disabled */ }
 }
 
+// ── Streamed-pad guard (heavy lane, docs/arcade-heavy-lane-plan.md §6.3) ─────────────────────────
+// When this machine hosts Moonlight/Apollo streams, every guest controller is forwarded as a ViGEm
+// virtual Xbox 360 pad — which the Gamepad API cannot tell apart from a REAL Xbox pad (both report
+// XInput with the stock VID/PID; the ROOT\ViGEmBus enumerator is invisible to browsers). Without a
+// guard, a streamed guest mashing buttons gets auto-adopted into a CloudRetro seat here. The host
+// machine's saving grace is a deliberate invariant: Apollo is configured `gamepad = x360` host-wide
+// and the host's physical pads are non-Xbox (Pro Controller / DualSense), so ON THAT MACHINE
+// XInput ⇒ streamed. This machine-wide toggle (enable it only on the stream host) makes the two
+// AUTOMATIC paths — the primary's fluid adoption and the press-a-button detector — skip XInput
+// pads. Explicit assignment in the Controllers panel still works on any pad: a deliberate override.
+let ignoreStreamedPads = (() => { try { return localStorage.getItem("arcade.ignoreStreamedPads") === "1"; } catch { return false; } })();
+export function getIgnoreStreamedPads() { return ignoreStreamedPads; }
+export function setIgnoreStreamedPads(on) {
+  ignoreStreamedPads = !!on;
+  try { localStorage.setItem("arcade.ignoreStreamedPads", on ? "1" : "0"); } catch { /* storage disabled */ }
+}
+// True when the guard is ON and this pad presents as XInput (Chrome: "Xbox 360 Controller (XInput
+// STANDARD GAMEPAD)"; Firefox: "xinput"). Accepts anything with an `id` — real Gamepad or the
+// panel's {index,id} row.
+export function isStreamedPad(gp) {
+  return ignoreStreamedPads && !!gp && /xinput/i.test(gp.id || "");
+}
+
 /**
  * One poll pass looking for "the new player pressed a button": returns the index of a connected pad
  * with any button currently pressed that is neither claimed by a local-player session nor in
@@ -175,7 +198,7 @@ export function setFaceSwap(on) {
 export function findNewPad(excludeIndexes = []) {
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   for (const gp of pads) {
-    if (!gp || claimedPadIndexes.has(gp.index) || excludeIndexes.includes(gp.index)) continue;
+    if (!gp || claimedPadIndexes.has(gp.index) || excludeIndexes.includes(gp.index) || isStreamedPad(gp)) continue;
     if (gp.buttons.some((b) => b.pressed)) return gp.index;
   }
   return -1;
@@ -382,9 +405,12 @@ export function createCloudRetroSession(descriptor, opts) {
       gp = null;
     } else {
       // Never adopt a pad a local-player session has claimed — without this the primary and the
-      // extra seat would both forward the same physical controller.
-      const free = (p) => p && !claimedPadIndexes.has(p.index);
+      // extra seat would both forward the same physical controller. Streamed (ViGEm) pads are
+      // likewise never auto-adopted when the guard is on; if the guard is flipped on mid-game while
+      // one is latched, drop it so the primary re-adopts a real pad (or goes keyboard-only).
+      const free = (p) => p && !claimedPadIndexes.has(p.index) && !isStreamedPad(p);
       gp = activePadIndex >= 0 && !claimedPadIndexes.has(activePadIndex) ? pads[activePadIndex] : null;
+      if (gp && isStreamedPad(gp)) gp = null;
       if (!adoptionHeld
           && (!gp || (!padActive(gp) && Array.prototype.some.call(pads, (p) => free(p) && p !== gp && padActive(p))))) {
         gp = Array.prototype.find.call(pads, (p) => free(p) && padActive(p)) || gp

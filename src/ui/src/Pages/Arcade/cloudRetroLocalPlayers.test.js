@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createCloudRetroSession, findNewPad } from "./cloudRetroClient";
+import { createCloudRetroSession, findNewPad, setIgnoreStreamedPads, isStreamedPad } from "./cloudRetroClient";
 
 // Local multiplayer (extra controllers on one machine): each extra pad gets its own INPUT-ONLY
 // CloudRetro session pinned to that pad, because the wire protocol routes input by CONNECTION —
@@ -69,6 +69,12 @@ const pad = (index, pressed = []) => ({
   buttons: Array.from({ length: 16 }, (_, i) => ({ pressed: pressed.includes(i) })),
   axes: [0, 0, 0, 0],
 });
+// An XInput pad as Chrome reports it — what a Moonlight guest's ViGEm virtual pad (or a real Xbox
+// controller) looks like. The streamed-pad guard keys off exactly this id.
+const xpad = (index, pressed = []) => ({
+  ...pad(index, pressed),
+  id: "Xbox 360 Controller (XInput STANDARD GAMEPAD)",
+});
 
 let padsNow;
 const setPads = (...list) => {
@@ -95,7 +101,7 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
     vi.stubGlobal("navigator", { ...navigator, getGamepads: () => padsNow });
     vi.useFakeTimers({ shouldAdvanceTime: true });
   });
-  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+  afterEach(() => { setIgnoreStreamedPads(false); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
   it("findNewPad answers the pad with a pressed button, honouring exclusions", () => {
     setPads(pad(0), pad(1, [0]), pad(2));
@@ -211,6 +217,49 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
     const masks = dc.sent.map((f) => new Int16Array(f)[0]);
     expect(masks[masks.length - 1]).toBe(0);
     expect(s.getActivePadIndex()).toBe(1);
+    s.close();
+  });
+
+  // ── Streamed-pad guard (heavy lane §6.3): on the Moonlight host, XInput ⇒ a guest's ViGEm pad ──
+
+  it("guard ON: the press-a-button detector never answers an XInput pad", () => {
+    setPads(xpad(0, [0]), pad(1));
+    expect(findNewPad()).toBe(0); // guard off (default): behaves as before
+    setIgnoreStreamedPads(true);
+    expect(findNewPad()).toBe(-1); // the streamed guest hammering buttons is invisible
+    setPads(xpad(0, [0]), pad(1, [0]));
+    expect(findNewPad()).toBe(1); // a real (non-XInput) pad still identifies itself
+    expect(isStreamedPad({ index: 0, id: "Xbox 360 Controller (XInput STANDARD GAMEPAD)" })).toBe(true);
+    expect(isStreamedPad({ index: 1, id: "DualSense Wireless Controller" })).toBe(false);
+  });
+
+  it("guard ON: the primary never adopts a streamed pad, and drops one already latched", async () => {
+    setPads(xpad(0, [9])); // a guest mashing Start
+    const s = createCloudRetroSession(descriptorFor({ playerSlot: 0 }), { videoEl: null });
+    await driveToGameStart(sockets[0]);
+    const dc = channels.find((c) => c.label === "data");
+    dc.onopen?.();
+    await vi.advanceTimersByTimeAsync(50); // guard still off: fluid adoption latches the pad
+    let masks = dc.sent.map((f) => new Int16Array(f)[0]);
+    expect(masks[masks.length - 1]).not.toBe(0); // ...and their input reaches the seat (the trap)
+
+    setIgnoreStreamedPads(true); // flipping it mid-game evicts the latched streamed pad
+    await vi.advanceTimersByTimeAsync(100);
+    masks = dc.sent.map((f) => new Int16Array(f)[0]);
+    expect(masks[masks.length - 1]).toBe(0); // seat reads neutral while the guest keeps mashing
+    s.close();
+  });
+
+  it("guard ON: explicit panel assignment of an XInput pad still works (deliberate override)", async () => {
+    setIgnoreStreamedPads(true);
+    setPads(xpad(1, [0]));
+    const s = createCloudRetroSession(descriptorFor(), { padIndex: 1 });
+    await driveToGameStart(sockets[0]);
+    const dc = channels.find((c) => c.label === "data");
+    dc.onopen?.();
+    await vi.advanceTimersByTimeAsync(100);
+    const last = new Int16Array(dc.sent[dc.sent.length - 1])[0];
+    expect(last).not.toBe(0); // the pin bypasses the guard
     s.close();
   });
 

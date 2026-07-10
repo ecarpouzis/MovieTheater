@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwap, setFaceSwap } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwap, setFaceSwap, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad } from "./cloudRetroClient";
 import { useWakeLock } from "../../useWakeLock";
 
 const { Title, Text } = Typography;
@@ -70,6 +70,7 @@ export default function ArcadeRoomPage() {
   const [padList, setPadList] = useState([]); // [{ index, id }]
   // Nintendo↔Xbox face-button swap — mirrors the shim's machine-wide localStorage flag.
   const [faceSwap, setFaceSwapState] = useState(getFaceSwap());
+  const [ignoreStreamed, setIgnoreStreamedState] = useState(getIgnoreStreamedPads());
   const [fatal, setFatal] = useState(null);
   const [needsTap, setNeedsTap] = useState(false);
   const [discCount, setDiscCount] = useState(location.state?.descriptor?.discCount ?? 0);
@@ -682,7 +683,10 @@ export default function ArcadeRoomPage() {
         </div>
         {padList.map((p) => (
           <div key={p.index} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
-            <Text style={{ flex: 1 }} ellipsis={{ tooltip: p.id }}>🎮 {p.id || `Controller ${p.index + 1}`}</Text>
+            <Text style={{ flex: 1 }} ellipsis={{ tooltip: p.id }}>
+              🎮 {p.id || `Controller ${p.index + 1}`}
+              {isStreamedPad(p) && <Text type="secondary"> (streamed — not auto-adopted)</Text>}
+            </Text>
             <Select
               style={{ width: 190 }}
               value={padAssignment(p.index)}
@@ -710,6 +714,21 @@ export default function ArcadeRoomPage() {
               onChange={(e) => { setFaceSwap(e.target.checked); setFaceSwapState(e.target.checked); }}
             >
               Swap face buttons (A↔B, X↔Y)
+            </Checkbox>
+          </Tooltip>
+        </div>
+        {/* Heavy-lane guard (docs/arcade-heavy-lane-plan.md §6.3): on the PC that hosts Moonlight
+            streams, guests' forwarded controllers surface as virtual Xbox 360 (XInput) pads that the
+            press-a-button detector would happily seat into THIS room. Enable only on the stream host
+            (its own physical pads are non-Xbox, so XInput ⇒ streamed there). Machine-wide
+            localStorage flag, read by the shim per poll. */}
+        <div style={{ marginTop: 8 }}>
+          <Tooltip title="For the PC that hosts Moonlight game streams: guests' forwarded controllers show up here as Xbox 360 (XInput) pads and could be grabbed as local players. This stops ALL XInput pads (including real Xbox ones) on this machine from being auto-adopted — assigning one by hand above still works.">
+            <Checkbox
+              checked={ignoreStreamed}
+              onChange={(e) => { setIgnoreStreamedPads(e.target.checked); setIgnoreStreamedState(e.target.checked); }}
+            >
+              Ignore streamed (XInput) controllers — stream-host PC only
             </Checkbox>
           </Tooltip>
         </div>
