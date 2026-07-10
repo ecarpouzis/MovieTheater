@@ -505,3 +505,16 @@ couldn't click Save at all until 0030. The close-time save is now unconditional:
 teardown (before Shutdown, core still live), invisible to players, and the vault always has
 something to harvest. Periodic autosave (autosaveSec) stays 0 — flycast hitches visibly on every
 serialize, and close-save covers continuity.
+
+## 0033-coordinator-status-endpoint
+
+Adds GET /status to the COORDINATOR (rebuild the coordinator, not the workers): a JSON list of
+connected workers with their occupancy ({addr, port, zone, room, free}). Consumed by
+scripts/watch-arcade-glworkers.ps1 check C to detect the room-close wedge (2026-07-10, twice:
+snes9x + pcsx2 teardown hang): a worker stays "busy" at the coordinator forever while its log
+goes silent, and every new room then hangs with a worker slot silently gone. A live room always
+writes pace-diag every 5 s, so busy-at-coordinator + silent-log = wedged -> the watchdog
+recycles the worker. NOTE the JSON "port" is the worker HTTP port from the handshake
+(9000/9001...), NOT the UDP mux port -- the watchdog maps rooms to workers via the "New room"
+log line instead. The coordinator is localhost-only behind the gateway; the endpoint leaks
+nothing beyond room ids.

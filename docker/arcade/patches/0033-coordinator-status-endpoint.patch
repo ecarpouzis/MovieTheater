@@ -1,0 +1,62 @@
+diff --git a/pkg/coordinator/coordinator.go b/pkg/coordinator/coordinator.go
+index ffc5c7d..85afeb9 100644
+--- a/pkg/coordinator/coordinator.go
++++ b/pkg/coordinator/coordinator.go
+@@ -26,6 +26,10 @@ func New(conf config.CoordinatorConfig, log *logger.Logger) (*Coordinator, error
+ 	h, err := NewHTTPServer(conf, log, func(mux *httpx.Mux) *httpx.Mux {
+ 		mux.HandleFunc("/ws", coordinator.hub.handleUserConnection())
+ 		mux.HandleFunc("/wso", coordinator.hub.handleWorkerConnection())
++		// Worker-occupancy snapshot for the GL-worker watchdog (patch 0033): a wedged worker
++		// holds RoomId forever while its log goes silent; the watchdog cross-checks this
++		// against log freshness. The coordinator is localhost-only behind the gateway.
++		mux.HandleFunc("/status", coordinator.hub.handleStatus())
+ 		return mux
+ 	})
+ 	if err != nil {
+diff --git a/pkg/coordinator/hub.go b/pkg/coordinator/hub.go
+index ac04d15..9842129 100644
+--- a/pkg/coordinator/hub.go
++++ b/pkg/coordinator/hub.go
+@@ -2,6 +2,7 @@ package coordinator
+ 
+ import (
+ 	"bytes"
++	"encoding/json"
+ 	"fmt"
+ 	"net/http"
+ 	"net/url"
+@@ -244,6 +245,34 @@ func (h *Hub) findWorkerByRoom(id string, deepId string, region string) *Worker
+ 	return w
+ }
+ 
++// handleStatus (patch 0033) reports each connected worker's occupancy as JSON for the
++// GL-worker watchdog (scripts/watch-arcade-glworkers.ps1). Detection contract: a worker
++// whose room is non-empty MUST be emitting emulator ticks (pace-diag lines every 5 s in
++// its log); "busy here + silent log" = the room-close wedge -> the watchdog recycles it.
++// NOTE Port is the worker's HTTP port from the handshake (9000/9001...), NOT the UDP
++// single-port -- the watchdog maps a busy Room to its worker via the room id in the
++// worker logs, never via this field.
++func (h *Hub) handleStatus() http.HandlerFunc {
++	return func(w http.ResponseWriter, _ *http.Request) {
++		type workerStatus struct {
++			Addr string `json:"addr"`
++			Port string `json:"port"`
++			Zone string `json:"zone"`
++			Room string `json:"room"`
++			Free bool   `json:"free"`
++		}
++		out := []workerStatus{}
++		for wk := range h.workers.Values() {
++			out = append(out, workerStatus{
++				Addr: wk.Addr, Port: wk.Port, Zone: wk.Zone,
++				Room: wk.RoomId, Free: wk.HasSlot(),
++			})
++		}
++		w.Header().Set("Content-Type", "application/json")
++		_ = json.NewEncoder(w).Encode(out)
++	}
++}
++
+ func (h *Hub) getAvailableWorkers(region string) []*Worker {
+ 	var workers []*Worker
+ 	for w := range h.workers.Values() {
