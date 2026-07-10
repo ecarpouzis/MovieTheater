@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
-import { Button, Space, Tag, Typography, message, Tooltip, Modal } from "antd";
+import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad } from "./cloudRetroClient";
 import { useWakeLock } from "../../useWakeLock";
@@ -59,10 +59,15 @@ export default function ArcadeRoomPage() {
   // Local multiplayer: extra controllers on THIS machine, each holding its own seat via an extra
   // input-only CloudRetro session (the wire protocol routes input per connection). State drives the
   // chips; the live session objects live in the ref (they're not renderable data).
-  const [localPlayers, setLocalPlayers] = useState([]); // [{ slot, padIndex }]
+  const [localPlayers, setLocalPlayers] = useState([]); // [{ slot, padIndex }] — padIndex null = unassigned
   const [addingLocal, setAddingLocal] = useState(false);
   const localSessionsRef = useRef(new Map()); // slot -> session
   const addingLocalRef = useRef(false);
+  // Controllers panel: which pad the PRIMARY seat is pinned to (null = fluid, adopt any unclaimed
+  // pad — the pre-panel behavior), whether the panel is open, and the detected pad list.
+  const [primaryPad, setPrimaryPad] = useState(null);
+  const [showControllers, setShowControllers] = useState(false);
+  const [padList, setPadList] = useState([]); // [{ index, id }]
   const [fatal, setFatal] = useState(null);
   const [needsTap, setNeedsTap] = useState(false);
   const [discCount, setDiscCount] = useState(location.state?.descriptor?.discCount ?? 0);
@@ -290,10 +295,36 @@ export default function ArcadeRoomPage() {
   }
 
   // ── Local multiplayer ────────────────────────────────────────────────────────────────────────
-  // "Add local player": wait for a button press on a controller no one here is using (the console
-  // way of asking "which pad is the new player holding?"), claim an extra seat for it, and open an
-  // input-only CloudRetro session pinned to that pad. The room's one video/audio stream already
-  // plays through the primary session — the extra connection carries nothing but that pad's input.
+  // Claim an extra seat and open an input-only CloudRetro session pinned to `padIndex`. The room's
+  // one video/audio stream already plays through the primary session — the extra connection carries
+  // nothing but that pad's input. Used by both the "press a button" quick-add and the Controllers panel.
+  async function openLocalSession(padIndex) {
+    const res = await MovieAPI.claimArcadeSeat(code);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      message.warning(body.message || "Couldn't add a local player.");
+      return null;
+    }
+    const descriptor = await res.json();
+    const slot = descriptor.playerSlot;
+    const session = createCloudRetroSession(descriptor, {
+      padIndex,
+      onStatus: (s) => {
+        // The only state a local seat can silently die in mid-game (negotiated channels can't
+        // reopen). Surface it; the fix is remove + re-add.
+        if (s === "input-lost") message.warning(`Local player P${slot + 1} lost its controls — remove and re-add it.`);
+      },
+      onError: () => {},
+    });
+    localSessionsRef.current.set(slot, session);
+    setLocalPlayers((lp) => [...lp, { slot, padIndex }]);
+    message.success(`Local player added — they're P${slot + 1}`);
+    return slot;
+  }
+
+  // "Add local player": wait for a button press on a controller no seat here is using — the console
+  // way of asking "which pad is the new player holding?". The Controllers panel is the explicit
+  // alternative when you'd rather assign pads to seats by hand.
   async function addLocalPlayer() {
     if (addingLocalRef.current) return;
     addingLocalRef.current = true;
@@ -302,8 +333,8 @@ export default function ArcadeRoomPage() {
     try {
       let padIndex = -1;
       for (let i = 0; i < 160 && addingLocalRef.current; i++) { // ~20 s at 125 ms
-        const primaryPad = sessionRef.current?.getActivePadIndex?.() ?? -1;
-        padIndex = findNewPad(primaryPad >= 0 ? [primaryPad] : []);
+        const primary = sessionRef.current?.getActivePadIndex?.() ?? -1;
+        padIndex = findNewPad(primary >= 0 ? [primary] : []);
         if (padIndex >= 0) break;
         await delay(125);
       }
@@ -311,26 +342,7 @@ export default function ArcadeRoomPage() {
         if (addingLocalRef.current) message.info("No new controller detected — plug one in and try again.");
         return;
       }
-      const res = await MovieAPI.claimArcadeSeat(code);
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        message.warning(body.message || "Couldn't add a local player.");
-        return;
-      }
-      const descriptor = await res.json();
-      const slot = descriptor.playerSlot;
-      const session = createCloudRetroSession(descriptor, {
-        padIndex,
-        onStatus: (s) => {
-          // The only state a local seat can silently die in mid-game (negotiated channels can't
-          // reopen). Surface it; the fix is remove + re-add.
-          if (s === "input-lost") message.warning(`Local player P${slot + 1} lost its controls — remove and re-add it.`);
-        },
-        onError: () => {},
-      });
-      localSessionsRef.current.set(slot, session);
-      setLocalPlayers((lp) => [...lp, { slot, padIndex }]);
-      message.success(`Local player added — they're P${slot + 1}`);
+      await openLocalSession(padIndex);
     } finally {
       addingLocalRef.current = false;
       setAddingLocal(false);
@@ -342,6 +354,59 @@ export default function ArcadeRoomPage() {
     localSessionsRef.current.delete(slot);
     setLocalPlayers((lp) => lp.filter((p) => p.slot !== slot));
     MovieAPI.releaseArcadeSeat(code, slot);
+  }
+
+  // ── Controllers panel: assign this machine's inputs to the seats this machine holds ────────────
+  // The Gamepad API is per-machine, so each browser assigns only ITS OWN controllers; remote players
+  // do the same on theirs, and the seat roster is the shared truth. (Also the future home for
+  // key/button REBINDING — today the keyboard is fixed to the primary seat.)
+  // Chrome only exposes a pad after it has seen input, so the list refreshes while the panel is open.
+  useEffect(() => {
+    if (!showControllers) return;
+    const refresh = () => {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      setPadList(Array.prototype.filter.call(pads, Boolean).map((p) => ({ index: p.index, id: p.id })));
+    };
+    refresh();
+    const t = setInterval(refresh, 1000);
+    window.addEventListener("gamepadconnected", refresh);
+    window.addEventListener("gamepaddisconnected", refresh);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("gamepadconnected", refresh);
+      window.removeEventListener("gamepaddisconnected", refresh);
+    };
+  }, [showControllers]);
+
+  // What a pad is currently assigned to, for the panel's Select value.
+  function padAssignment(padIndex) {
+    if (primaryPad === padIndex) return "primary";
+    const owner = localPlayers.find((p) => p.padIndex === padIndex);
+    return owner ? `seat:${owner.slot}` : "unused";
+  }
+
+  // Reassign a pad. Rule: a pad has ONE owner — assigning it somewhere strips it from its previous
+  // seat (which then reads neutral until it's given another pad; remove it via its chip if unwanted).
+  async function assignPad(padIndex, target) {
+    if (primaryPad === padIndex && target !== "primary") {
+      sessionRef.current?.setPad?.(null);
+      setPrimaryPad(null);
+    }
+    const owner = localPlayers.find((p) => p.padIndex === padIndex);
+    if (owner && target !== `seat:${owner.slot}`) {
+      localSessionsRef.current.get(owner.slot)?.setPad?.(null);
+      setLocalPlayers((lp) => lp.map((p) => (p.slot === owner.slot ? { ...p, padIndex: null } : p)));
+    }
+    if (target === "primary") {
+      sessionRef.current?.setPad?.(padIndex);
+      setPrimaryPad(padIndex);
+    } else if (target === "new") {
+      await openLocalSession(padIndex);
+    } else if (target.startsWith("seat:")) {
+      const slot = parseInt(target.slice(5), 10);
+      localSessionsRef.current.get(slot)?.setPad?.(padIndex);
+      setLocalPlayers((lp) => lp.map((p) => (p.slot === slot ? { ...p, padIndex } : p)));
+    }
   }
 
   // Save a NAMED snapshot (arcade-saves-plan S3): flush the live state, then ask the gateway to copy it
@@ -534,7 +599,7 @@ export default function ArcadeRoomPage() {
             : players.map((p, i) => <Tag key={i} color={p.you ? "purple" : "default"}>{p.name}{p.you ? " (you)" : ""}</Tag>)}
           {localPlayers.map((p) => (
             <Tag key={`local-${p.slot}`} color="geekblue" closable onClose={(e) => { e.preventDefault(); removeLocalPlayer(p.slot); }}>
-              🎮 P{p.slot + 1} (local)
+              🎮 P{p.slot + 1} (local{p.padIndex == null ? " — no controller" : ""})
             </Tag>
           ))}
           {!spectator && LIVE_STATUS.includes(status)
@@ -543,6 +608,11 @@ export default function ArcadeRoomPage() {
               <Button size="small" loading={addingLocal} onClick={addLocalPlayer}>
                 {addingLocal ? "Press a button on the new controller…" : "➕ Local player"}
               </Button>
+            </Tooltip>
+          )}
+          {!spectator && LIVE_STATUS.includes(status) && (
+            <Tooltip title="See this machine's controllers and choose which player each one drives.">
+              <Button size="small" onClick={() => setShowControllers(true)}>🎮 Controllers</Button>
             </Tooltip>
           )}
           {spectators.length > 0 && (
@@ -588,6 +658,44 @@ export default function ArcadeRoomPage() {
       <Text type="secondary" style={{ display: "block", marginTop: 16, fontSize: 12 }}>
         {spectator ? "You're watching this room — the controls belong to the players." : arcadeInputHint(system)}
       </Text>
+
+      {/* Controllers panel: this machine's inputs → the seats this machine holds. Remote players see
+          their own controllers in their own panel; the seat list is the shared truth. */}
+      <Modal
+        title="Controllers on this machine"
+        open={showControllers}
+        onCancel={() => setShowControllers(false)}
+        footer={<Button onClick={() => setShowControllers(false)}>Done</Button>}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
+          <Text style={{ flex: 1 }}>⌨️ Keyboard &amp; mouse</Text>
+          <Text type="secondary">P{(yourSlot ?? 0) + 1} — you (rebinding coming later)</Text>
+        </div>
+        {padList.map((p) => (
+          <div key={p.index} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
+            <Text style={{ flex: 1 }} ellipsis={{ tooltip: p.id }}>🎮 {p.id || `Controller ${p.index + 1}`}</Text>
+            <Select
+              style={{ width: 190 }}
+              value={padAssignment(p.index)}
+              onChange={(v) => assignPad(p.index, v)}
+              options={[
+                { value: "primary", label: `P${(yourSlot ?? 0) + 1} — you` },
+                ...localPlayers.map((lp) => ({ value: `seat:${lp.slot}`, label: `P${lp.slot + 1} (local)` })),
+                ...(maxPlayers === 0 || players.length < maxPlayers
+                  ? [{ value: "new", label: "➕ New local player" }] : []),
+                { value: "unused", label: "Not used" },
+              ]}
+            />
+          </div>
+        ))}
+        {padList.length === 0 && (
+          <Text type="secondary">No controllers detected — connect one and press any button on it.</Text>
+        )}
+        <Text type="secondary" style={{ display: "block", marginTop: 12, fontSize: 12 }}>
+          Controllers plugged into other players' machines are assigned on their screens.
+          A controller drives one player; assigning it elsewhere frees its old seat's controls.
+        </Text>
+      </Modal>
     </div>
   );
 }

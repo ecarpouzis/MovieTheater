@@ -149,6 +149,49 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
     s.close();
   });
 
+  it("setPad moves the pad claim between physical pads", async () => {
+    setPads(pad(1), pad(2));
+    const s = createCloudRetroSession(descriptorFor(), { padIndex: 1 });
+    setPads(pad(1, [0]), pad(2, [0]));
+    expect(findNewPad()).toBe(2); // 1 claimed, 2 free
+
+    s.setPad(2);
+    expect(findNewPad()).toBe(1); // claim moved
+    expect(s.getActivePadIndex()).toBe(2);
+    s.close();
+    expect(findNewPad()).toBe(1); // close releases the CURRENT pin, not the original
+  });
+
+  it("an unassigned local seat reads neutral even while its old pad is hammered", async () => {
+    setPads(pad(1, [0]));
+    const s = createCloudRetroSession(descriptorFor(), { padIndex: 1 });
+    await driveToGameStart(sockets[0]);
+    const dc = channels.find((c) => c.label === "data");
+    dc.onopen?.();
+    await vi.advanceTimersByTimeAsync(50);
+
+    s.setPad(null);
+    await vi.advanceTimersByTimeAsync(100);
+    const last = new Int16Array(dc.sent[dc.sent.length - 1])[0];
+    expect(last).toBe(0); // the un-pin resent state as neutral; the held button released
+    s.close();
+  });
+
+  it("a primary session pinned via setPad reads only that pad", async () => {
+    setPads(pad(0, [9]), pad(1));
+    const s = createCloudRetroSession(descriptorFor({ playerSlot: 0 }), { videoEl: null });
+    await driveToGameStart(sockets[0]);
+    const dc = channels.find((c) => c.label === "data");
+    dc.onopen?.();
+
+    s.setPad(1); // pinned to the idle pad — pad 0's Start must stop riding this seat
+    await vi.advanceTimersByTimeAsync(100);
+    const masks = dc.sent.map((f) => new Int16Array(f)[0]);
+    expect(masks[masks.length - 1]).toBe(0);
+    expect(s.getActivePadIndex()).toBe(1);
+    s.close();
+  });
+
   it("a pinned session ignores the keyboard — the primary session owns it", async () => {
     setPads(pad(1));
     const s = createCloudRetroSession(descriptorFor(), { padIndex: 1 });

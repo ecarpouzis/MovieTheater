@@ -265,9 +265,11 @@ export function createCloudRetroSession(descriptor, opts) {
   // any second player (own WS + PeerConnection + DataChannel, own seat via t=108) but renders nothing —
   // the primary session already plays the room's one shared stream. No keyboard (the primary owns it),
   // no pad adoption (exactly pads[padIndex]), no aux audio PC (nothing to hear).
-  const pinnedPad = Number.isInteger(opts && opts.padIndex) ? opts.padIndex : -1;
+  // The pin is RUNTIME-REASSIGNABLE (setPad) — the room's Controllers panel moves pads between seats.
+  // `inputOnly` is the creation-time ROLE (never keyboard/media); the pin is just the current pad.
+  let pinnedPad = Number.isInteger(opts && opts.padIndex) ? opts.padIndex : -1;
   const inputOnly = pinnedPad >= 0;
-  if (inputOnly) claimedPadIndexes.add(pinnedPad);
+  if (pinnedPad >= 0) claimedPadIndexes.add(pinnedPad);
 
   let ws = null;
   let pc = null;
@@ -352,10 +354,13 @@ export function createCloudRetroSession(descriptor, opts) {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     const mask0 = { mask: 0, axes: [0, 0, 0, 0] };
     let gp;
-    if (inputOnly) {
+    if (pinnedPad >= 0) {
       // Pinned to one physical pad — never adopt another. If Chrome re-enumerates the pad away
       // (Bluetooth sleep), send neutral until it returns at the same index.
       gp = pads[pinnedPad] || null;
+    } else if (inputOnly) {
+      // A local seat whose pad was reassigned away: neutral until the panel gives it another.
+      gp = null;
     } else {
       // Never adopt a pad a local-player session has claimed — without this the primary and the
       // extra seat would both forward the same physical controller.
@@ -730,7 +735,7 @@ export function createCloudRetroSession(descriptor, opts) {
     closed = true;
     status("closed");
     stopInput();
-    if (inputOnly) claimedPadIndexes.delete(pinnedPad);
+    if (pinnedPad >= 0) claimedPadIndexes.delete(pinnedPad);
     try { send(T.GAME_QUIT, { room_id: roomIdFromWsUrl(descriptor.wsUrl) }); } catch { /* */ }
     try { dc && dc.close(); } catch { /* */ }
     try { discDc && discDc.close(); } catch { /* */ }
@@ -749,12 +754,24 @@ export function createCloudRetroSession(descriptor, opts) {
 
   return {
     close,
-    // The pad this seat is ACTIVELY using — pinned for a local player; for the primary, the latched
+    // The pad this seat is ACTIVELY using — the pin when one is set; for a fluid primary, the latched
     // pad only while it has shown input in the last 10 s (-1 otherwise). The room page excludes it
     // when listening for a NEW controller's button press, and a keyboard-only primary must not
     // shadow the idle pad it passively latched.
     getActivePadIndex: () =>
-      (inputOnly ? pinnedPad : (Date.now() - lastPadActiveAt < 10_000 ? activePadIndex : -1)),
+      (pinnedPad >= 0 ? pinnedPad : (inputOnly || Date.now() - lastPadActiveAt >= 10_000 ? -1 : activePadIndex)),
+    // Re-pin this seat to another physical pad (Controllers panel). null/undefined = unassign: a
+    // local seat then sends neutral; the primary falls back to fluid adopt-any-unclaimed-pad.
+    setPad: (idx) => {
+      const next = Number.isInteger(idx) && idx >= 0 ? idx : -1;
+      if (next === pinnedPad) return;
+      if (pinnedPad >= 0) claimedPadIndexes.delete(pinnedPad);
+      pinnedPad = next;
+      if (pinnedPad >= 0) claimedPadIndexes.add(pinnedPad);
+      // Null the dedupe so the next pump resends true state — the old pad's held buttons release
+      // on the worker instead of riding this seat forever.
+      last = null;
+    },
     save: asPlayer(() => send(T.GAME_SAVE, {})),
     load: asPlayer(() => send(T.GAME_LOAD, {})),
     reset: asPlayer(() => send(T.GAME_RESET, {})),
