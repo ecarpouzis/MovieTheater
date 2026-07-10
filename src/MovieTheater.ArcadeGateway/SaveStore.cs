@@ -394,13 +394,15 @@ public sealed class SaveStore
     /// live only in the store. Slot 0 SRAM/Continue is deletable too (it's the user's data).</summary>
     public bool DeleteSave(int userId, int gameId, string kind, int slot)
     {
-        var name = kind == KindSram ? "sram.srm" : SlotFile(slot);
+        var name = BlobName(kind, slot);
         var blob = StoreFile(userId, gameId, name);
         bool existed = File.Exists(blob);
         TryDeleteUnder(storeRoot, blob);
         TryDeleteUnder(storeRoot, SidecarPath(blob));
 
-        if (kind == KindSram || slot == ContinueSlot)
+        // dirzip (heavy lane) never touches the CloudRetro saves mount — its live copy is the
+        // emulator's own save dir, which stays untouched on vault delete (never-clobber).
+        if (kind != "dirzip" && (kind == KindSram || slot == ContinueSlot))
         {
             var ext = kind == KindSram ? ".srm" : ".dat";
             foreach (var f in MountFilesFor(userId, gameId, ext))
@@ -424,7 +426,7 @@ public sealed class SaveStore
     /// <summary>Rename a stored save's label (updates the sidecar so a future re-list stays consistent).</summary>
     public bool RelabelSave(int userId, int gameId, string kind, int slot, string? label)
     {
-        var name = kind == KindSram ? "sram.srm" : SlotFile(slot);
+        var name = BlobName(kind, slot);
         var blob = StoreFile(userId, gameId, name);
         var meta = ReadSidecar(SidecarPath(blob));
         if (meta == null) return false;
@@ -435,7 +437,7 @@ public sealed class SaveStore
     /// <summary>Read a stored save's raw bytes (for a tokened download / export). Null if missing.</summary>
     public async Task<byte[]?> ReadSaveAsync(int userId, int gameId, string kind, int slot, CancellationToken ct = default)
     {
-        var name = kind == KindSram ? "sram.srm" : SlotFile(slot);
+        var name = BlobName(kind, slot);
         var blob = StoreFile(userId, gameId, name);
         if (!IsUnder(storeRoot, blob) || !File.Exists(blob)) return null;
         return await File.ReadAllBytesAsync(blob, ct);
@@ -448,7 +450,7 @@ public sealed class SaveStore
     {
         var dir = GameDir(userId, gameId);
         Directory.CreateDirectory(dir);
-        var destName = kind == KindSram ? "sram.srm" : SlotFile(slot);
+        var destName = BlobName(kind, slot);
         var dest = Path.GetFullPath(Path.Combine(dir, destName));
         if (!IsUnder(storeRoot, dest)) throw new InvalidOperationException($"refusing to write outside store: {dest}");
         await File.WriteAllBytesAsync(dest, bytes, ct);
@@ -505,6 +507,12 @@ public sealed class SaveStore
     // ── internals ────────────────────────────────────────────────────────────────────────────────
 
     private static string SlotFile(int slot) => $"slot-{slot:D3}.dat";
+
+    /// <summary>Blob filename for a (kind, slot). "sram" and "dirzip" (heavy-lane directory saves,
+    /// HeavyVault) are single-slot canonical files; "state" snapshots are per-slot. Shared by
+    /// read/delete/import so every path speaks the same layout — including HeavyVault's writes.</summary>
+    internal static string BlobName(string kind, int slot) =>
+        kind == KindSram ? "sram.srm" : kind == "dirzip" ? "dirzip.zip" : SlotFile(slot);
 
     private string MountFile(string sessionId, string ext) =>
         Path.GetFullPath(Path.Combine(savesMount, sessionId + ext));

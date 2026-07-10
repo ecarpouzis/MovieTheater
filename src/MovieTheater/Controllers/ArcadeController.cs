@@ -715,6 +715,27 @@ namespace MovieTheater.Controllers
             public string DeviceName { get; set; }
         }
 
+        /// <summary>Internal: the gateway resolves a Moonlight device name to the site user who
+        /// paired it (HeavyClient) at heavy-session prepare — that user's save is seeded/harvested
+        /// (plan §8). Server-to-server, gated by the shared arcade secret like SaveHarvested.</summary>
+        [AllowAnonymous]
+        [HttpPost("/API/Arcade/Internal/ResolveHeavyClient")]
+        public async Task<IActionResult> ResolveHeavyClient([FromBody] ResolveHeavyClientRequest req)
+        {
+            var secret = config.ArcadeTokenSecret;
+            if (string.IsNullOrEmpty(secret) ||
+                !string.Equals(Request.Headers["X-Arcade-Internal-Secret"].ToString(), secret, StringComparison.Ordinal))
+                return Unauthorized();
+            if (string.IsNullOrWhiteSpace(req?.ClientName)) return BadRequest();
+            var row = await movieDb.HeavyClients.FirstOrDefaultAsync(c => c.ClientName == req.ClientName);
+            return row == null ? NotFound() : Json(new { userId = row.UserId });
+        }
+
+        public class ResolveHeavyClientRequest
+        {
+            public string ClientName { get; set; }
+        }
+
         /// <summary>Delete one of the user's saves (My Saves): the app-DB row + the on-disk blob on Ziggy.</summary>
         [HttpDelete("/API/Arcade/Saves/{id:int}")]
         public async Task<IActionResult> DeleteSave(int id)
@@ -758,7 +779,9 @@ namespace MovieTheater.Controllers
                 new { userId = row.UserId, gameId = row.ArcadeGameId, kind = row.Kind, slot = row.SlotId });
             if (resp == null || !resp.IsSuccessStatusCode) return NotFound();
             var bytes = await resp.Content.ReadAsByteArrayAsync();
-            var ext = row.Kind == "sram" ? "srm" : "dat";
+            // dirzip = heavy-lane directory save (a plain zip of the emulator save dir — directly
+            // usable on a Deck/EmuDeck, plan §8's manual bridge).
+            var ext = row.Kind == "sram" ? "srm" : row.Kind == "dirzip" ? "zip" : "dat";
             var safeLabel = (row.Label ?? $"slot{row.SlotId}");
             foreach (var c in Path.GetInvalidFileNameChars()) safeLabel = safeLabel.Replace(c, '_');
             return File(bytes, "application/octet-stream", $"arcade-{row.System}-{row.ArcadeGameId}-{safeLabel}.{ext}");

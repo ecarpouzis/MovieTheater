@@ -17,6 +17,7 @@ function SavesManager({ game, onClose, onResume }) {
   useEffect(() => { refresh(); }, [refresh]);
 
   function fmt(r) {
+    if (r.kind === "dirzip") return "Continue (latest)"; // heavy lane: one dir-save per title
     if (r.slotId === 0) return r.kind === "sram" ? "Cartridge / card" : "Continue (latest)";
     return r.label || `Snapshot ${r.slotId}`;
   }
@@ -46,8 +47,9 @@ function SavesManager({ game, onClose, onResume }) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    // .dat = save state, .srm = SRAM/card. Default to state; .srm → sram.
-    const kind = /\.srm$/i.test(file.name) ? "sram" : "state";
+    // .dat = save state, .srm = SRAM/card, .zip = a heavy title's directory save (dirzip —
+    // exactly what Export produces, and what a Deck/EmuDeck save dir zips to). Default: state.
+    const kind = /\.srm$/i.test(file.name) ? "sram" : /\.zip$/i.test(file.name) ? "dirzip" : "state";
     setBusy(true);
     try {
       const res = await MovieAPI.importArcadeSave(game.gameId, file, { kind, label: file.name });
@@ -70,12 +72,14 @@ function SavesManager({ game, onClose, onResume }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <Text strong ellipsis>{fmt(r)}</Text>
                 <div><Text type="secondary" style={{ fontSize: 11 }}>
-                  {r.kind === "sram" ? "SRAM" : "state"} · {(r.sizeBytes / 1024).toFixed(0)} KB
+                  {r.kind === "sram" ? "SRAM" : r.kind === "dirzip" ? "game save (zip)" : "state"} · {(r.sizeBytes / 1024).toFixed(0)} KB
                   {r.updatedUtc ? ` · ${new Date(r.updatedUtc).toLocaleString()}` : ""}
                 </Text></div>
               </div>
               <Space size={4}>
-                {onResume && (
+                {/* dirzip = a Moonlight-streamed title's save; it seeds at stream launch, so there
+                    is no browser room to resume into. */}
+                {onResume && r.kind !== "dirzip" && (
                   <Button size="small" type="link" onClick={() => { onClose(); onResume(game.gameId, r.slotId >= 1 ? { seedSlot: r.slotId } : {}); }}>Resume</Button>
                 )}
                 <a href={MovieAPI.arcadeSaveDownloadUrl(r.id)}><Button size="small" type="link">Export</Button></a>
@@ -87,8 +91,8 @@ function SavesManager({ game, onClose, onResume }) {
         </div>
       )}
       <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>Import a .srm (card) or .dat (state) file.</Text>
-        <input ref={fileRef} type="file" accept=".srm,.dat,.state" style={{ display: "none" }} onChange={onImport} />
+        <Text type="secondary" style={{ fontSize: 12 }}>Import a .srm (card), .dat (state), or .zip (game save) file.</Text>
+        <input ref={fileRef} type="file" accept=".srm,.dat,.state,.zip" style={{ display: "none" }} onChange={onImport} />
         <Button loading={busy} onClick={() => fileRef.current?.click()}>⬆ Import save</Button>
       </div>
     </Modal>

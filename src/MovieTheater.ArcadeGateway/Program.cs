@@ -300,8 +300,38 @@ if (heavyOptions.Enabled)
         heavyStager = new MovieTheater.ArcadeGateway.HeavyStager(
             heavyOptions.CacheDir!, heavyOptions.CacheMaxBytes, heavyOptions.ChunkBytes, loggerFactory.CreateLogger("HeavyStager"));
     var apollo = new MovieTheater.ArcadeGateway.ApolloAdmin(heavyOptions, loggerFactory.CreateLogger("Apollo"));
-    app.Logger.LogInformation("Heavy lane enabled: {Count} descriptor(s), cache={Cache}",
-        heavyRegistry.All().Count, heavyOptions.CacheDir ?? "(none)");
+    // Per-user dir-zip saves (plan §8) — rides the SAME store as the CloudRetro vault, so it needs
+    // the SaveStore section configured. Absent = heavy sessions play machine-local saves (v0).
+    MovieTheater.ArcadeGateway.HeavyVault? heavyVault = saveOptions.Enabled
+        ? new MovieTheater.ArcadeGateway.HeavyVault(saveOptions.StoreDir!, loggerFactory.CreateLogger("HeavyVault"))
+        : null;
+    app.Logger.LogInformation("Heavy lane enabled: {Count} descriptor(s), cache={Cache}, vault={Vault}",
+        heavyRegistry.All().Count, heavyOptions.CacheDir ?? "(none)", heavyVault != null ? "on" : "off");
+
+    // The paired Moonlight device name → site user mapping lives in the app DB (HeavyClient, owned
+    // by the site's pairing flow); the gateway asks the site. Best-effort with a short timeout —
+    // an unmapped/unreachable answer means "no vault ops", never a blocked launch.
+    var resolveClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+    async Task<int?> ResolveHeavyUserAsync(string? clientName, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(clientName)) return null;
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post,
+                siteOrigin.TrimEnd('/') + "/API/Arcade/Internal/ResolveHeavyClient")
+            { Content = JsonContent.Create(new { clientName }) };
+            req.Headers.Add("X-Arcade-Internal-Secret", secret);
+            var resp = await resolveClient.SendAsync(req, ct);
+            if (!resp.IsSuccessStatusCode) return null;
+            var body = await resp.Content.ReadFromJsonAsync<Dictionary<string, int?>>(ct);
+            return body?.GetValueOrDefault("userId");
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogWarning(ex, "Heavy client resolve failed for {Name}", clientName);
+            return null;
+        }
+    }
 
     // Resolve an app by descriptor id OR its ArcadeGame row id (the site speaks gameId).
     MovieTheater.ArcadeGateway.HeavyApp? ResolveApp(string idOrGameId) =>
@@ -364,7 +394,7 @@ if (heavyOptions.Enabled)
     });
 
     // ── The heavy-launch.ps1 contract (plan §4): prepare → attach → finish ──────────────────────
-    app.MapPost("/heavy/prepare/{appId}", (HttpContext ctx, string appId) =>
+    app.MapPost("/heavy/prepare/{appId}", async (HttpContext ctx, string appId) =>
     {
         if (!InternalAuth(ctx)) return Results.Unauthorized();
         var a = ResolveApp(appId);
@@ -381,6 +411,22 @@ if (heavyOptions.Enabled)
             return Results.Json(new { ok = false, error = $"The heavy lane is in use: {t}.", appId = holder.AppId, sinceUtc = holder.SinceUtc },
                 statusCode: StatusCodes.Status409Conflict);
         }
+
+        // Save seed (plan §8): device → site user → restore their Continue save into the emulator's
+        // save dir, displacing (never deleting) whatever is live. Unmapped device / no vault entry
+        // = leave the machine-local save as-is. A seed failure is LOGGED but doesn't block play —
+        // the displaced content is always recoverable from the store's _displaced graveyard.
+        if (heavyVault != null)
+        {
+            var userId = await ResolveHeavyUserAsync(clientName, ctx.RequestAborted);
+            if (userId is int uid)
+            {
+                heavyLock.SetUser(a.Id, uid); // finish() harvests for this user
+                try { heavyVault.Seed(a, uid); }
+                catch (Exception ex) { app.Logger.LogError(ex, "Heavy save seed failed for {App} user {User}", a.Id, uid); }
+            }
+        }
+
         string rom = a.NeedsStaging && heavyStager != null ? heavyStager.TargetPathFor(a) : "";
         string args = (a.ArgsTemplate ?? "").Replace("{rom}", rom);
         app.Logger.LogInformation("Heavy prepare: {App} (client {Client})", a.Id, clientName);
@@ -397,12 +443,33 @@ if (heavyOptions.Enabled)
         return Results.Json(new { ok = heavyLock.Attach(a.Id, pid) });
     });
 
-    app.MapPost("/heavy/finish/{appId}", (HttpContext ctx, string appId) =>
+    app.MapPost("/heavy/finish/{appId}", async (HttpContext ctx, string appId) =>
     {
         if (!InternalAuth(ctx)) return Results.Unauthorized();
         var a = ResolveApp(appId);
-        bool released = a != null && heavyLock.Release(a.Id);
-        if (released) app.Logger.LogInformation("Heavy finish: {App}", a!.Id);
+        if (a == null) return Results.Json(new { ok = false });
+
+        // Capture the session owner BEFORE releasing: finish is called twice by design (the launch
+        // script's exit path AND Apollo's undo prep-cmd) — only the call that actually releases the
+        // lock harvests, so the save is zipped exactly once per session.
+        var held = heavyLock.Current();
+        int? ownerId = held != null && string.Equals(held.AppId, a.Id, StringComparison.OrdinalIgnoreCase) ? held.UserId : null;
+        bool released = heavyLock.Release(a.Id);
+        if (released)
+        {
+            app.Logger.LogInformation("Heavy finish: {App}", a.Id);
+            // Harvest (plan §8): the emulator flushed its save on exit; vault it if it changed and
+            // mirror the row so My Saves / the Deck bridge can see it.
+            if (heavyVault != null && ownerId is int uid)
+            {
+                try
+                {
+                    var meta = heavyVault.Harvest(a, uid);
+                    if (meta != null) await mirrorSave(meta);
+                }
+                catch (Exception ex) { app.Logger.LogError(ex, "Heavy save harvest failed for {App} user {User}", a.Id, uid); }
+            }
+        }
         return Results.Json(new { ok = released });
     });
 }
@@ -445,7 +512,8 @@ app.MapPost("/internal/save-import", async (HttpContext ctx) =>
     if (r == null || string.IsNullOrEmpty(r.DataBase64)) return Results.BadRequest();
     byte[] bytes;
     try { bytes = Convert.FromBase64String(r.DataBase64); } catch { return Results.BadRequest(); }
-    int slot = (r.Kind ?? "state") == "sram" ? 0 : (r.Slot > 0 ? r.Slot : saveStore.NextSnapshotSlot(r.UserId, r.GameId));
+    // sram + dirzip (heavy lane) are single canonical slots; only state snapshots get numbered.
+    int slot = (r.Kind is "sram" or "dirzip") ? 0 : (r.Slot > 0 ? r.Slot : saveStore.NextSnapshotSlot(r.UserId, r.GameId));
     var meta = await saveStore.ImportSaveAsync(r.UserId, r.GameId, r.System ?? "", r.Kind ?? "state", slot, r.Label, bytes, ctx.RequestAborted);
     await mirrorSave(meta);
     return Results.Json(new { ok = true, slot = meta.SlotId, kind = meta.Kind, sizeBytes = meta.SizeBytes });

@@ -99,16 +99,15 @@ function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
             >
               {heavy ? "🎮 Play via Moonlight" : "▶ Start room"}
             </Button>
-            {/* Browser-save management is a room-lane feature; heavy saves attach at H4. */}
-            {!heavy && (
-              <button
-                type="button"
-                className="arcade-link"
-                onClick={(e) => { stop(e); onManageSaves?.(sel); }}
-              >
-                My saves
-              </button>
-            )}
+            {/* Heavy titles get dirzip vault rows too (H4) — export/import/delete all apply;
+                SavesManager hides Resume for them (nothing to resume in a browser). */}
+            <button
+              type="button"
+              className="arcade-link"
+              onClick={(e) => { stop(e); onManageSaves?.(sel); }}
+            >
+              My saves
+            </button>
           </div>
         </div>
       </div>

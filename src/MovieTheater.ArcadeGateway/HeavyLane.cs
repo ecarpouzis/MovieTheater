@@ -203,7 +203,10 @@ public sealed class HeavyAppRegistry
 /// </summary>
 public sealed class HeavyLock
 {
-    public sealed record LockState(string AppId, string? ClientName, DateTime SinceUtc, int? Pid);
+    /// <summary>UserId = the SITE user who owns this session (resolved from the paired device via
+    /// HeavyClient at prepare) — whose save gets seeded and harvested. Null = unmapped device:
+    /// vault ops are skipped entirely and the machine-local save plays as-is (v0 behavior).</summary>
+    public sealed record LockState(string AppId, string? ClientName, DateTime SinceUtc, int? Pid, int? UserId = null);
 
     private readonly object gate = new();
     private readonly int staleMinutes;
@@ -244,6 +247,17 @@ public sealed class HeavyLock
         {
             if (state == null || !string.Equals(state.AppId, appId, StringComparison.OrdinalIgnoreCase)) return false;
             state = state with { Pid = pid };
+            return true;
+        }
+    }
+
+    /// <summary>Record the resolved session owner (see <see cref="LockState.UserId"/>).</summary>
+    public bool SetUser(string appId, int userId)
+    {
+        lock (gate)
+        {
+            if (state == null || !string.Equals(state.AppId, appId, StringComparison.OrdinalIgnoreCase)) return false;
+            state = state with { UserId = userId };
             return true;
         }
     }
