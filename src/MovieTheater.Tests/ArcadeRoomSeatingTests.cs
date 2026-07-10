@@ -164,5 +164,77 @@ namespace MovieTheater.Tests
 
             Assert.Equal(ArcadeRoomService.JoinOutcome.NotBound, join.Outcome);
         }
+
+        // ── Local multiplayer: one user, several controller ports ────────────────────────────────
+
+        [Fact]
+        public void A_seated_player_can_claim_extra_seats_up_to_the_player_cap()
+        {
+            var rooms = BoundRoom("AAA", maxPlayers: 3);
+
+            var p2 = rooms.TryClaimExtraSeat("AAA", Host);
+            var p3 = rooms.TryClaimExtraSeat("AAA", Host);
+            var p4 = rooms.TryClaimExtraSeat("AAA", Host);
+
+            Assert.Equal(ArcadeRoomService.JoinOutcome.Ok, p2.Outcome);
+            Assert.Equal(1, p2.PlayerSlot);
+            Assert.Equal(ArcadeRoomService.JoinOutcome.Ok, p3.Outcome);
+            Assert.Equal(2, p3.PlayerSlot);
+            Assert.Equal(ArcadeRoomService.JoinOutcome.Full, p4.Outcome);
+        }
+
+        [Fact]
+        public void Only_a_seated_player_can_claim_a_local_seat()
+        {
+            var rooms = BoundRoom("AAA", maxPlayers: 4);
+
+            Assert.Equal(ArcadeRoomService.JoinOutcome.NotSeated, rooms.TryClaimExtraSeat("AAA", Friend).Outcome);
+
+            // A spectator's page never opened an input pump — they can't hold controller ports either.
+            var oneP = BoundRoom("BBB", maxPlayers: 1);
+            oneP.TryJoin("BBB", Friend); // watch seat
+            Assert.Equal(ArcadeRoomService.JoinOutcome.NotSeated, oneP.TryClaimExtraSeat("BBB", Friend).Outcome);
+        }
+
+        [Fact]
+        public void A_multi_seat_host_still_answers_with_their_primary_seat()
+        {
+            var rooms = BoundRoom("AAA", maxPlayers: 4);
+            rooms.TryClaimExtraSeat("AAA", Host);            // slot 1
+            var friend = rooms.TryJoin("AAA", Friend);       // next free = 2
+
+            Assert.Equal(2, friend.PlayerSlot);
+            Assert.Equal(0, rooms.TryJoin("AAA", Host).PlayerSlot);       // rejoin → primary
+            Assert.Equal(0, rooms.Heartbeat("AAA", Host)!.YourSlot);      // heartbeat too
+            Assert.Equal(new[] { Host, Host, Friend }, rooms.Heartbeat("AAA", Host)!.PlayerUserIds);
+        }
+
+        [Fact]
+        public void Releasing_an_extra_seat_frees_it_but_the_primary_is_untouchable()
+        {
+            var rooms = BoundRoom("AAA", maxPlayers: 2);
+            var extra = rooms.TryClaimExtraSeat("AAA", Host);
+
+            Assert.False(rooms.ReleaseSeat("AAA", Friend, extra.PlayerSlot)); // not their seat
+            Assert.True(rooms.ReleaseSeat("AAA", Host, extra.PlayerSlot));
+            Assert.False(rooms.ReleaseSeat("AAA", Host, 0));                  // last seat — Leave's job
+
+            var friend = rooms.TryJoin("AAA", Friend);                        // the freed port is usable
+            Assert.Equal(extra.PlayerSlot, friend.PlayerSlot);
+        }
+
+        [Fact]
+        public void Leaving_frees_every_seat_the_user_held()
+        {
+            var rooms = BoundRoom("AAA", maxPlayers: 4);
+            rooms.TryClaimExtraSeat("AAA", Host);
+            rooms.TryClaimExtraSeat("AAA", Host);
+            rooms.TryJoin("AAA", Friend);
+
+            rooms.Leave("AAA", Host);
+
+            var status = rooms.Heartbeat("AAA", Friend)!;
+            Assert.Equal(new[] { Friend }, status.PlayerUserIds); // no orphaned local seats
+        }
     }
 }

@@ -145,6 +145,28 @@ function profileFor(system) {
   return PROFILES[(system || "").toLowerCase()] || PROFILES.default;
 }
 
+// ── Local multiplayer: pad ownership across sessions ─────────────────────────────────────────────
+// One browser can hold SEVERAL CloudRetro connections (the primary + one input-only session per extra
+// local controller — the wire protocol routes input by connection, so an extra pad needs an extra
+// connection). Each extra session is PINNED to one Gamepad-API index; this registry is how the primary
+// session's adopt-any-active-pad heuristic knows to leave those pads alone.
+const claimedPadIndexes = new Set();
+
+/**
+ * One poll pass looking for "the new player pressed a button": returns the index of a connected pad
+ * with any button currently pressed that is neither claimed by a local-player session nor in
+ * `excludeIndexes` (the caller passes the primary's current pad), or -1. The room page polls this
+ * after "Add local player" so the new controller identifies itself the way consoles do.
+ */
+export function findNewPad(excludeIndexes = []) {
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  for (const gp of pads) {
+    if (!gp || claimedPadIndexes.has(gp.index) || excludeIndexes.includes(gp.index)) continue;
+    if (gp.buttons.some((b) => b.pressed)) return gp.index;
+  }
+  return -1;
+}
+
 /** The on-screen control hint for a system's input profile (rendered by the room page). */
 export function arcadeInputHint(system) {
   return profileFor(system).hint;
@@ -239,6 +261,13 @@ export function createCloudRetroSession(descriptor, opts) {
   // Watch-only seat. Trust the explicit flag, but fall back to the slot itself so an older descriptor
   // (or a hand-built one in a test) can't accidentally hand a watcher a controller.
   const spectator = descriptor.spectator === true || (descriptor.playerSlot | 0) < 0;
+  // Local multiplayer: an extra INPUT-ONLY session pinned to one physical pad. It joins the room like
+  // any second player (own WS + PeerConnection + DataChannel, own seat via t=108) but renders nothing —
+  // the primary session already plays the room's one shared stream. No keyboard (the primary owns it),
+  // no pad adoption (exactly pads[padIndex]), no aux audio PC (nothing to hear).
+  const pinnedPad = Number.isInteger(opts && opts.padIndex) ? opts.padIndex : -1;
+  const inputOnly = pinnedPad >= 0;
+  if (inputOnly) claimedPadIndexes.add(pinnedPad);
 
   let ws = null;
   let pc = null;
@@ -316,12 +345,22 @@ export function createCloudRetroSession(descriptor, opts) {
 
   function readGamepad() {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-    let gp = activePadIndex >= 0 ? pads[activePadIndex] : null;
-    if (!gp || (!padActive(gp) && Array.prototype.some.call(pads, (p) => p && p !== gp && padActive(p)))) {
-      gp = Array.prototype.find.call(pads, (p) => p && padActive(p)) || gp
-        || Array.prototype.find.call(pads, (p) => p) || null;
-    }
     const mask0 = { mask: 0, axes: [0, 0, 0, 0] };
+    let gp;
+    if (inputOnly) {
+      // Pinned to one physical pad — never adopt another. If Chrome re-enumerates the pad away
+      // (Bluetooth sleep), send neutral until it returns at the same index.
+      gp = pads[pinnedPad] || null;
+    } else {
+      // Never adopt a pad a local-player session has claimed — without this the primary and the
+      // extra seat would both forward the same physical controller.
+      const free = (p) => p && !claimedPadIndexes.has(p.index);
+      gp = activePadIndex >= 0 && !claimedPadIndexes.has(activePadIndex) ? pads[activePadIndex] : null;
+      if (!gp || (!padActive(gp) && Array.prototype.some.call(pads, (p) => free(p) && p !== gp && padActive(p)))) {
+        gp = Array.prototype.find.call(pads, (p) => free(p) && padActive(p)) || gp
+          || Array.prototype.find.call(pads, (p) => free(p)) || null;
+      }
+    }
     if (!gp) return mask0;
     activePadIndex = gp.index;
 
@@ -385,8 +424,12 @@ export function createCloudRetroSession(descriptor, opts) {
     // A spectator holds no controller port: no key/gamepad listeners, no poll, so pumpInput's dc.send
     // can never run. This is the single guard that keeps a watcher from touching the game.
     if (spectator) return;
-    window.addEventListener("keydown", keyDown);
-    window.addEventListener("keyup", keyUp);
+    // An input-only local-player session drives its pinned pad only — the PRIMARY session owns the
+    // keyboard, and wiring it here too would send every keystroke to two seats at once.
+    if (!inputOnly) {
+      window.addEventListener("keydown", keyDown);
+      window.addEventListener("keyup", keyUp);
+    }
     window.addEventListener("blur", onWindowBlur);
     window.addEventListener("focus", onWindowFocus);
     // Poll at ~60 Hz; only actually send on change (pumpInput dedupes).
@@ -438,7 +481,8 @@ export function createCloudRetroSession(descriptor, opts) {
     // Kick off: we are not the offerer — the server sends the SDP offer. sdp:"audio-pc" asks a
     // patch-0020 worker to put opus on a dedicated aux PeerConnection (ignored by older workers —
     // the worker only reads init sdp when initiator is true, so audio then just rides this PC).
-    send(T.INIT_WEBRTC, AUDIO_PC ? { initiator: false, sdp: "audio-pc" } : { initiator: false });
+    // An input-only local-player session plays nothing, so it never asks for the aux audio PC.
+    send(T.INIT_WEBRTC, AUDIO_PC && !inputOnly ? { initiator: false, sdp: "audio-pc" } : { initiator: false });
   }
 
   // Shared by BOTH PeerConnections. Cloud gaming wants minimal receive buffering. Chrome's ADAPTIVE
@@ -680,6 +724,7 @@ export function createCloudRetroSession(descriptor, opts) {
     closed = true;
     status("closed");
     stopInput();
+    if (inputOnly) claimedPadIndexes.delete(pinnedPad);
     try { send(T.GAME_QUIT, { room_id: roomIdFromWsUrl(descriptor.wsUrl) }); } catch { /* */ }
     try { dc && dc.close(); } catch { /* */ }
     try { discDc && discDc.close(); } catch { /* */ }
@@ -698,6 +743,9 @@ export function createCloudRetroSession(descriptor, opts) {
 
   return {
     close,
+    // The pad the session is currently reading (the primary's is fluid; a local player's is pinned).
+    // The room page excludes it when listening for a NEW controller's button press.
+    getActivePadIndex: () => (inputOnly ? pinnedPad : activePadIndex),
     save: asPlayer(() => send(T.GAME_SAVE, {})),
     load: asPlayer(() => send(T.GAME_LOAD, {})),
     reset: asPlayer(() => send(T.GAME_RESET, {})),

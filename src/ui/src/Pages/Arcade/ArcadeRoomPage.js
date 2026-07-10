@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad } from "./cloudRetroClient";
 import { useWakeLock } from "../../useWakeLock";
 
 const { Title, Text } = Typography;
@@ -55,6 +55,14 @@ export default function ArcadeRoomPage() {
   const [system, setSystem] = useState(location.state?.descriptor?.system ?? null);
   const [players, setPlayers] = useState([]);
   const [spectators, setSpectators] = useState([]);
+  const [maxPlayers, setMaxPlayers] = useState(0);
+  // Local multiplayer: extra controllers on THIS machine, each holding its own seat via an extra
+  // input-only CloudRetro session (the wire protocol routes input per connection). State drives the
+  // chips; the live session objects live in the ref (they're not renderable data).
+  const [localPlayers, setLocalPlayers] = useState([]); // [{ slot, padIndex }]
+  const [addingLocal, setAddingLocal] = useState(false);
+  const localSessionsRef = useRef(new Map()); // slot -> session
+  const addingLocalRef = useRef(false);
   const [fatal, setFatal] = useState(null);
   const [needsTap, setNeedsTap] = useState(false);
   const [discCount, setDiscCount] = useState(location.state?.descriptor?.discCount ?? 0);
@@ -137,6 +145,11 @@ export default function ArcadeRoomPage() {
       const hadSession = !!sessionRef.current;
       sessionRef.current?.close?.();
       sessionRef.current = null;
+      // Local players ride along: close their input sessions too. Their seats are freed server-side
+      // by the Leave below (it releases EVERY seat the user holds), so no per-seat Release here.
+      addingLocalRef.current = false;
+      for (const s of localSessionsRef.current.values()) s?.close?.();
+      localSessionsRef.current.clear();
       // Only tell the server we left if a session actually opened. StrictMode's throwaway first
       // mount cleans up before the deferred start fires — a Leave there would free the creator's
       // seat 0 and reap the just-created (still-unbound) room out from under the real mount.
@@ -156,6 +169,7 @@ export default function ArcadeRoomPage() {
           if (!alive) return;
           setPlayers(s.players || []);
           setSpectators(s.spectators || []);
+          if (s.maxPlayers) setMaxPlayers(s.maxPlayers);
           if (s.yourSlot != null) setYourSlot(s.yourSlot);
         });
       }).catch(() => {});
@@ -273,6 +287,61 @@ export default function ArcadeRoomPage() {
       () => message.success("Invite link copied"),
       () => message.info(url)
     );
+  }
+
+  // ── Local multiplayer ────────────────────────────────────────────────────────────────────────
+  // "Add local player": wait for a button press on a controller no one here is using (the console
+  // way of asking "which pad is the new player holding?"), claim an extra seat for it, and open an
+  // input-only CloudRetro session pinned to that pad. The room's one video/audio stream already
+  // plays through the primary session — the extra connection carries nothing but that pad's input.
+  async function addLocalPlayer() {
+    if (addingLocalRef.current) return;
+    addingLocalRef.current = true;
+    setAddingLocal(true);
+    message.info("Press any button on the NEW controller…", 4);
+    try {
+      let padIndex = -1;
+      for (let i = 0; i < 160 && addingLocalRef.current; i++) { // ~20 s at 125 ms
+        const primaryPad = sessionRef.current?.getActivePadIndex?.() ?? -1;
+        padIndex = findNewPad(primaryPad >= 0 ? [primaryPad] : []);
+        if (padIndex >= 0) break;
+        await delay(125);
+      }
+      if (padIndex < 0) {
+        if (addingLocalRef.current) message.info("No new controller detected — plug one in and try again.");
+        return;
+      }
+      const res = await MovieAPI.claimArcadeSeat(code);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        message.warning(body.message || "Couldn't add a local player.");
+        return;
+      }
+      const descriptor = await res.json();
+      const slot = descriptor.playerSlot;
+      const session = createCloudRetroSession(descriptor, {
+        padIndex,
+        onStatus: (s) => {
+          // The only state a local seat can silently die in mid-game (negotiated channels can't
+          // reopen). Surface it; the fix is remove + re-add.
+          if (s === "input-lost") message.warning(`Local player P${slot + 1} lost its controls — remove and re-add it.`);
+        },
+        onError: () => {},
+      });
+      localSessionsRef.current.set(slot, session);
+      setLocalPlayers((lp) => [...lp, { slot, padIndex }]);
+      message.success(`Local player added — they're P${slot + 1}`);
+    } finally {
+      addingLocalRef.current = false;
+      setAddingLocal(false);
+    }
+  }
+
+  function removeLocalPlayer(slot) {
+    localSessionsRef.current.get(slot)?.close?.();
+    localSessionsRef.current.delete(slot);
+    setLocalPlayers((lp) => lp.filter((p) => p.slot !== slot));
+    MovieAPI.releaseArcadeSeat(code, slot);
   }
 
   // Save a NAMED snapshot (arcade-saves-plan S3): flush the live state, then ask the gateway to copy it
@@ -463,6 +532,19 @@ export default function ArcadeRoomPage() {
           {players.length === 0
             ? <Text type="secondary">just you</Text>
             : players.map((p, i) => <Tag key={i} color={p.you ? "purple" : "default"}>{p.name}{p.you ? " (you)" : ""}</Tag>)}
+          {localPlayers.map((p) => (
+            <Tag key={`local-${p.slot}`} color="geekblue" closable onClose={(e) => { e.preventDefault(); removeLocalPlayer(p.slot); }}>
+              🎮 P{p.slot + 1} (local)
+            </Tag>
+          ))}
+          {!spectator && LIVE_STATUS.includes(status)
+            && (maxPlayers === 0 || players.length < maxPlayers) && (
+            <Tooltip title="Play together on this machine: another controller gets its own seat. You'll be asked to press a button on the new controller.">
+              <Button size="small" loading={addingLocal} onClick={addLocalPlayer}>
+                {addingLocal ? "Press a button on the new controller…" : "➕ Local player"}
+              </Button>
+            </Tooltip>
+          )}
           {spectators.length > 0 && (
             <>
               <Text strong style={{ marginLeft: 8 }}>Watching:</Text>

@@ -55,7 +55,7 @@ namespace MovieTheater.Arcade
         }
 
         public enum BindResult { Ok, NotFound, NotCreator, AlreadyBound }
-        public enum JoinOutcome { Ok, NotFound, NotBound, Full }
+        public enum JoinOutcome { Ok, NotFound, NotBound, Full, NotSeated }
 
         /// <summary><see cref="PlayerSlot"/> is <see cref="SpectatorSlot"/> when <see cref="IsSpectator"/>.</summary>
         public sealed record JoinResult(JoinOutcome Outcome, int PlayerSlot, bool IsSpectator = false);
@@ -151,14 +151,15 @@ namespace MovieTheater.Arcade
                 if (state.CloudRetroRoomId == null)
                     return new JoinResult(JoinOutcome.NotBound, -1);
 
-                // Already seated (reconnect / duplicate Join) → same seat, no new allocation. A spectator
+                // Already seated (reconnect / duplicate Join) → same seat, no new allocation. A user can
+                // hold SEVERAL seats (local multiplayer claims extras), so answer with their PRIMARY —
+                // the lowest — which is the one their main session's input pump drives. A spectator
                 // stays a spectator even if a player seat has since freed up: silently promoting them would
                 // hand a controller to someone whose page never opened an input pump.
-                var existing = state.Seats.FirstOrDefault(kv => kv.Value == userId);
-                if (existing.Value == userId && state.Seats.ContainsKey(existing.Key))
+                if (state.Seats.TryGetValue2(userId, out var existingSlot))
                 {
                     state.Viewers[userId] = now;
-                    return new JoinResult(JoinOutcome.Ok, existing.Key);
+                    return new JoinResult(JoinOutcome.Ok, existingSlot);
                 }
                 if (state.Spectators.Contains(userId))
                 {
@@ -183,6 +184,57 @@ namespace MovieTheater.Arcade
                 }
 
                 return new JoinResult(JoinOutcome.Full, -1);
+            }
+        }
+
+        /// <summary>
+        /// Local multiplayer: give an ALREADY-SEATED player an ADDITIONAL controller port, so several
+        /// controllers plugged into one machine can each hold a real seat. The extra seat is a normal
+        /// entry in <see cref="RoomState.Seats"/> (slot → userId, same userId repeated) — the browser
+        /// opens one extra input-only CloudRetro connection per claimed seat, because the wire protocol
+        /// routes input by CONNECTION, not by any in-frame player id. Spectators can't claim (their page
+        /// never opens an input pump); presence rides the user's one heartbeat, covering every seat.
+        /// </summary>
+        public JoinResult TryClaimExtraSeat(string roomCode, int userId)
+        {
+            lock (gate)
+            {
+                if (!rooms.TryGetValue(roomCode, out var state))
+                    return new JoinResult(JoinOutcome.NotFound, -1);
+
+                var now = DateTime.UtcNow;
+                Prune(roomCode, state, now);
+                if (!rooms.ContainsKey(roomCode))
+                    return new JoinResult(JoinOutcome.NotFound, -1);
+
+                if (state.CloudRetroRoomId == null)
+                    return new JoinResult(JoinOutcome.NotBound, -1);
+
+                if (!state.Seats.ContainsValue(userId))
+                    return new JoinResult(JoinOutcome.NotSeated, -1);
+
+                int slot = LowestFreeSlot(state);
+                if (slot < 0)
+                    return new JoinResult(JoinOutcome.Full, -1);
+
+                state.Seats[slot] = userId;
+                state.Viewers[userId] = now;
+                return new JoinResult(JoinOutcome.Ok, slot);
+            }
+        }
+
+        /// <summary>Release one of a user's EXTRA seats (local player removed). Only a seat they own, and
+        /// never their last one — the primary seat is freed by <see cref="Leave"/>, not by this.</summary>
+        public bool ReleaseSeat(string roomCode, int userId, int slot)
+        {
+            lock (gate)
+            {
+                if (!rooms.TryGetValue(roomCode, out var state)) return false;
+                if (!state.Seats.TryGetValue(slot, out var owner) || owner != userId) return false;
+                if (state.Seats.Count(kv => kv.Value == userId) < 2) return false;
+                state.Seats.Remove(slot);
+                state.Viewers[userId] = DateTime.UtcNow;
+                return true;
             }
         }
 
@@ -274,9 +326,10 @@ namespace MovieTheater.Arcade
         {
             state.Viewers.Remove(userId);
             state.Spectators.Remove(userId);
-            var seat = state.Seats.FirstOrDefault(kv => kv.Value == userId);
-            if (seat.Value == userId && state.Seats.ContainsKey(seat.Key))
-                state.Seats.Remove(seat.Key);
+            // ALL their seats, not just the first hit — a local-multiplayer host holds several, and
+            // leaving/pruning must free every controller port they were occupying.
+            foreach (var slot in state.Seats.Where(kv => kv.Value == userId).Select(kv => kv.Key).ToList())
+                state.Seats.Remove(slot);
         }
 
         // Drop players gone quiet past the TTL (freeing their seats). If that empties the room, remove it
@@ -306,20 +359,24 @@ namespace MovieTheater.Arcade
         private RoomStatus StatusFor(RoomState state, int userId)
         {
             int? yourSlot = state.Seats.TryGetValue2(userId, out var slot) ? slot : null;
-            return new RoomStatus(state.CloudRetroRoomId != null, state.MaxPlayers, state.Seats.Values.ToList(),
+            // Slot order, not dictionary insertion order — the roster renders P1..Pn from this list.
+            return new RoomStatus(state.CloudRetroRoomId != null, state.MaxPlayers,
+                state.Seats.OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList(),
                 state.Spectators.ToList(), yourSlot, state.Spectators.Contains(userId));
         }
     }
 
     internal static class SeatDictExtensions
     {
-        /// <summary>Reverse lookup: the slot a user occupies, if any.</summary>
+        /// <summary>Reverse lookup: the LOWEST slot a user occupies, if any — their PRIMARY seat, since a
+        /// local-multiplayer host holds several.</summary>
         public static bool TryGetValue2(this Dictionary<int, int> seats, int userId, out int slot)
         {
-            foreach (var kv in seats)
-                if (kv.Value == userId) { slot = kv.Key; return true; }
             slot = -1;
-            return false;
+            bool found = false;
+            foreach (var kv in seats)
+                if (kv.Value == userId && (!found || kv.Key < slot)) { slot = kv.Key; found = true; }
+            return found;
         }
     }
 }

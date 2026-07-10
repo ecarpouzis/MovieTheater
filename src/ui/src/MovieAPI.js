@@ -730,6 +730,20 @@ function joinArcadeRoom(code) {
 }
 
 // Presence heartbeat + room status ({ bound, maxPlayers, yourSlot, players[] }); the room page polls it.
+// Local multiplayer: claim an extra controller port in a room you're already playing in (one per
+// extra local pad); release it when that local player leaves.
+function claimArcadeSeat(code) {
+  return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/ClaimSeat`, { method: "post" });
+}
+
+function releaseArcadeSeat(code, slot) {
+  return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/ReleaseSeat`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slot }),
+  }).catch(() => {});
+}
+
 function arcadeHeartbeat(code) {
   return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Heartbeat`, { method: "post" }).catch(() => {});
 }
@@ -1034,6 +1048,8 @@ const MovieAPI = {
   importArcadeSave,
   bindArcadeRoom,
   joinArcadeRoom,
+  claimArcadeSeat,
+  releaseArcadeSeat,
   arcadeHeartbeat,
   leaveArcadeRoom,
   beaconLeaveArcadeRoom,

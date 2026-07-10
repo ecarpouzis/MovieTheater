@@ -768,6 +768,66 @@ namespace MovieTheater.Controllers
             return Json(ToJson(descriptor, discCount));
         }
 
+        /// <summary>
+        /// Local multiplayer: claim an ADDITIONAL controller port for a player who is already seated in
+        /// the room — one per extra controller plugged into their machine. Returns a normal join
+        /// descriptor for the new slot; the browser opens one extra INPUT-ONLY CloudRetro connection with
+        /// it (the wire protocol routes input by connection, so an extra local pad needs an extra
+        /// connection, not an extra byte). Presence rides the user's existing heartbeat.
+        /// </summary>
+        [HttpPost("/API/Arcade/Room/{code}/ClaimSeat")]
+        public async Task<IActionResult> ClaimSeat(string code)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            if (!host.IsConfigured)
+                return StatusCode(501, new { message = "The arcade is not configured on this server." });
+
+            var session = await movieDb.ArcadeSessions
+                .FirstOrDefaultAsync(s => s.RoomCode == code && s.EndedUtc == null);
+            if (session == null)
+                return NotFound(new { message = "Room not found." });
+
+            var game = await movieDb.ArcadeGames.FirstOrDefaultAsync(g => g.Id == session.ArcadeGameId);
+            if (game == null)
+                return NotFound(new { message = "Game not found." });
+
+            var claim = rooms.TryClaimExtraSeat(code, userId.Value);
+            switch (claim.Outcome)
+            {
+                case ArcadeRoomService.JoinOutcome.NotFound:
+                    return NotFound(new { message = "Room not found." });
+                case ArcadeRoomService.JoinOutcome.NotBound:
+                    return Conflict(new { code = "starting", message = "The room is still starting — try again in a moment." });
+                case ArcadeRoomService.JoinOutcome.NotSeated:
+                    return Conflict(new { code = "notSeated", message = "Only a seated player can add local players." });
+                case ArcadeRoomService.JoinOutcome.Full:
+                    return Conflict(new { code = "full", message = "All the controller ports are taken." });
+            }
+
+            var boundRoomId = rooms.BoundRoomId(code) ?? string.Empty;
+            var (launchKey, discCount) = await ResolveLaunchAsync(game);
+            var descriptor = host.BuildJoinDescriptor(
+                userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, game.System),
+                code, boundRoomId, claim.PlayerSlot, isCreator: false);
+
+            return Json(ToJson(descriptor, discCount));
+        }
+
+        public class ReleaseSeatRequest { public int Slot { get; set; } }
+
+        /// <summary>Release one of the caller's extra local-player seats (never their primary — Leave does that).</summary>
+        [HttpPost("/API/Arcade/Room/{code}/ReleaseSeat")]
+        public IActionResult ReleaseSeat(string code, [FromBody] ReleaseSeatRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            var ok = request != null && rooms.ReleaseSeat(code, userId.Value, request.Slot);
+            return Json(new { ok });
+        }
+
         [HttpPost("/API/Arcade/Room/{code}/Heartbeat")]
         public async Task<IActionResult> Heartbeat(string code)
         {
