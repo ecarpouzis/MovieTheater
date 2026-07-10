@@ -177,13 +177,7 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
                 await mirrorSave(meta);
         }
         catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade harvest-on-reconnect failed for {Id}", requestedRoomId); }
-    }
 
-    if (saveStore != null
-        && ArcadeSaveId.TryParse(requestedRoomId, out svUser, out svGame, out svSlot, out _, out _)
-        && svUser == payload.UserId && svGame == payload.GameId
-        && !saveStore.MountHasSave(requestedRoomId))
-    {
         var fresh = context.Request.Query["fresh"].ToString();
         bool newGame = fresh == "1" || string.Equals(fresh, "true", StringComparison.OrdinalIgnoreCase);
         // Resume-from-snapshot: ?seedslot=N seeds a chosen snapshot slot's bytes into the (slot-0) room,
@@ -193,12 +187,19 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
         {
             if (newGame)
             {
+                // The clear must be UNCONDITIONAL. It used to sit behind the !MountHasSave guard below,
+                // which inverted it: the one time "New game" has stale mount files to remove is exactly
+                // when MountHasSave is true — so the clear never ran, and the deterministic id booted
+                // the leftover .dat anyway (a wedged state then resurrected on every "New game";
+                // Snowboard Kids, 2026-07-10). Harmless if a room is somehow live: CloudRetro only
+                // reads these files at boot, and its close-save rewrites them.
                 saveStore.ClearSession(requestedRoomId);
                 saveStore.ClearCoreSaveDir(requestedRoomId); // PSP/DC/… save-dir tree, if any
                 app.Logger.LogInformation("Arcade save cleared (New game) for user {User} game {Game}", svUser, svGame);
             }
-            else
+            else if (!saveStore.MountHasSave(requestedRoomId))
             {
+                // Mount files present = the room is live (or just harvested above) — don't stomp them.
                 bool seeded = saveStore.SeedSession(svUser, svGame, requestedRoomId, seedSlot);
                 // Save-dir cores (PSP memstick / DC-Naomi VMU / DOS) don't ride SAVE_RAM — restore their tree too.
                 bool seededCore = saveStore.SeedCoreSaveDir(svUser, svGame, requestedRoomId);

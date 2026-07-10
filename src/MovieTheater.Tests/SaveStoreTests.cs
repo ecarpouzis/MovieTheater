@@ -27,8 +27,14 @@ namespace MovieTheater.Tests
 
         public void Dispose() { try { Directory.Delete(root, true); } catch { /* best effort */ } }
 
-        private SaveStore NewStore(int maxStates = 20, long maxBytes = 100L * 1024 * 1024 * 1024) =>
-            new(new SaveStoreOptions { StoreDir = store, SavesMountDir = mount, MaxStatesPerGame = maxStates, MaxBytes = maxBytes },
+        // Debounce 0 by default: these tests write mount files and harvest in the same instant, which the
+        // write-stability guard would otherwise (correctly) skip.
+        private SaveStore NewStore(int maxStates = 20, long maxBytes = 100L * 1024 * 1024 * 1024, int debounceMs = 0) =>
+            new(new SaveStoreOptions
+                {
+                    StoreDir = store, SavesMountDir = mount, MaxStatesPerGame = maxStates,
+                    MaxBytes = maxBytes, HarvestDebounceMs = debounceMs,
+                },
                 NullLogger.Instance);
 
         private void WriteMountSave(string sessionId, string ext, byte[] bytes) =>
@@ -98,6 +104,74 @@ namespace MovieTheater.Tests
         {
             var s = NewStore();
             Assert.False(s.SeedSession(1, 1, "sess___G", slotId: 0));
+        }
+
+        [Fact]
+        public async Task Delete_removes_the_mount_copy_so_it_cannot_resurrect()
+        {
+            // A REAL deterministic id — DeleteSave finds the mount counterpart by parsing candidates.
+            const string sid = "sv-7-42-0-n64___Snowboard Kids (USA)";
+            WriteMountSave(sid, ".srm", Bytes(2048, 1));
+            WriteMountSave(sid, ".dat", Bytes(4096, 2));
+            var s = NewStore();
+            await s.HarvestSessionAsync(7, 42, "n64", sid, true);
+
+            Assert.True(s.DeleteSave(7, 42, "state", 0));
+
+            Assert.False(File.Exists(Blob(7, 42, "slot-000.dat")), "store blob deleted");
+            Assert.False(File.Exists(Path.Combine(mount, sid + ".dat")), "mount .dat deleted with the Continue state");
+            Assert.True(File.Exists(Path.Combine(mount, sid + ".srm")), "SRAM untouched by a state delete");
+
+            Assert.True(s.DeleteSave(7, 42, "sram", 0));
+            Assert.False(File.Exists(Path.Combine(mount, sid + ".srm")), "mount .srm deleted with the SRAM");
+
+            // Nothing left for a sweep to resurrect.
+            Assert.Empty(await s.HarvestSessionAsync(7, 42, "n64", sid, true));
+        }
+
+        [Fact]
+        public async Task Delete_of_a_snapshot_slot_leaves_the_mount_alone()
+        {
+            const string sid = "sv-7-42-0-n64___Game";
+            WriteMountSave(sid, ".dat", Bytes(4096, 3));
+            var s = NewStore();
+            await s.HarvestSessionAsync(7, 42, "n64", sid, true);
+            var snap = await s.SnapshotCurrentAsync(7, 42, "n64", sid, "Boss fight");
+            Assert.NotNull(snap);
+
+            Assert.True(s.DeleteSave(7, 42, "state", snap!.SlotId));
+
+            Assert.True(File.Exists(Path.Combine(mount, sid + ".dat")), "live Continue .dat survives a snapshot delete");
+            Assert.True(File.Exists(Blob(7, 42, "slot-000.dat")), "Continue store blob survives too");
+        }
+
+        [Fact]
+        public async Task Harvest_skips_files_still_being_written()
+        {
+            const string sid = "sv-1-2-0-n64___Game";
+            WriteMountSave(sid, ".dat", Bytes(4096, 4));
+            var s = NewStore(debounceMs: 60_000); // just-written file is inside the window
+
+            Assert.Empty(await s.HarvestSessionAsync(1, 2, "n64", sid, true));
+
+            // Once the writer has been quiet past the window, the same call harvests it.
+            File.SetLastWriteTimeUtc(Path.Combine(mount, sid + ".dat"), DateTime.UtcNow.AddMinutes(-5));
+            Assert.Single(await s.HarvestSessionAsync(1, 2, "n64", sid, true));
+        }
+
+        [Fact]
+        public async Task Sweep_retries_an_unsettled_session_instead_of_marking_it_swept()
+        {
+            const string sid = "sv-1-2-0-n64___Game";
+            WriteMountSave(sid, ".dat", Bytes(4096, 5));
+            var s = NewStore(debounceMs: 60_000);
+
+            Assert.Equal(0, await s.HarvestMountChangesAsync(_ => Task.FromResult(true)));
+
+            // The file settles (no new writes) → the NEXT sweep must pick it up, i.e. the skip above
+            // must not have advanced the per-session cursor.
+            File.SetLastWriteTimeUtc(Path.Combine(mount, sid + ".dat"), DateTime.UtcNow.AddMinutes(-5));
+            Assert.Equal(1, await s.HarvestMountChangesAsync(_ => Task.FromResult(true)));
         }
 
         [Fact]

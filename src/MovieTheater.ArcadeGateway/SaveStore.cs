@@ -113,7 +113,7 @@ public sealed class SaveStore
         if (string.IsNullOrEmpty(sessionId)) return results;
 
         var srm = MountFile(sessionId, ".srm");
-        if (File.Exists(srm))
+        if (File.Exists(srm) && IsSettled(srm))
         {
             var m = await CopyIntoStoreAsync(userId, gameId, system, KindSram, ContinueSlot, label: null,
                 coreName: null, coreVersion: null, src: srm, destName: "sram.srm", isAutosave, ct);
@@ -121,7 +121,7 @@ public sealed class SaveStore
         }
 
         var dat = MountFile(sessionId, ".dat");
-        if (File.Exists(dat))
+        if (File.Exists(dat) && IsSettled(dat))
         {
             var m = await CopyIntoStoreAsync(userId, gameId, system, KindState, ContinueSlot, label: null,
                 coreName: null, coreVersion: null, src: dat, destName: SlotFile(ContinueSlot), isAutosave, ct);
@@ -173,6 +173,10 @@ public sealed class SaveStore
         foreach (var (sessionId, mtime) in sessions)
         {
             if (lastSwept.TryGetValue(sessionId, out var seen) && seen >= mtime) continue;
+            // Still being written (close-save/autosave in flight): skip WITHOUT marking swept, so the
+            // next sweep retries once the writer is done. Harvesting mid-write once vaulted a torn
+            // save that then re-seeded every boot (Snowboard Kids, 2026-07-10).
+            if (now().Ticks - mtime < TimeSpan.FromMilliseconds(opt.HarvestDebounceMs).Ticks) continue;
             if (!ArcadeSaveId.TryParse(sessionId, out var userId, out var gameId, out _, out var system, out _)) continue;
             try
             {
@@ -212,6 +216,15 @@ public sealed class SaveStore
     }
 
     private static long FileMtime(string f) { try { return new FileInfo(f).LastWriteTimeUtc.Ticks; } catch { return 0; } }
+
+    /// <summary>A mount file is "settled" once its last write is older than the debounce window — i.e.
+    /// the emulator's close-save/autosave writer is plausibly done with it. Guards every harvest read
+    /// against copying a half-written file into the vault.</summary>
+    private bool IsSettled(string f)
+    {
+        try { return now() - File.GetLastWriteTimeUtc(f) >= TimeSpan.FromMilliseconds(opt.HarvestDebounceMs); }
+        catch { return false; }
+    }
 
     private static long NewestMtime(string dir)
     {
@@ -373,8 +386,12 @@ public sealed class SaveStore
 
     // ── My Saves management (S3): delete / relabel / read / import ────────────────────────────────────
 
-    /// <summary>Delete a stored save (blob + sidecar) for a (user, game, kind, slot). Guarded to the store
-    /// root; never touches the mount. Slot 0 SRAM/Continue is deletable too (it's the user's data).</summary>
+    /// <summary>Delete a stored save (blob + sidecar) for a (user, game, kind, slot), AND its live-mount
+    /// counterpart. The mount copy must go too: the deterministic session id auto-restores any leftover
+    /// <c>.dat</c> at the next boot, and the harvest sweep would copy it straight back into the store —
+    /// so a store-only delete silently resurrected the save (Snowboard Kids, 2026-07-10). Only the
+    /// Continue-slot state / SRAM have mount counterparts (mount ids are always slot 0); snapshot slots
+    /// live only in the store. Slot 0 SRAM/Continue is deletable too (it's the user's data).</summary>
     public bool DeleteSave(int userId, int gameId, string kind, int slot)
     {
         var name = kind == KindSram ? "sram.srm" : SlotFile(slot);
@@ -382,7 +399,26 @@ public sealed class SaveStore
         bool existed = File.Exists(blob);
         TryDeleteUnder(storeRoot, blob);
         TryDeleteUnder(storeRoot, SidecarPath(blob));
+
+        if (kind == KindSram || slot == ContinueSlot)
+        {
+            var ext = kind == KindSram ? ".srm" : ".dat";
+            foreach (var f in MountFilesFor(userId, gameId, ext))
+                TryDeleteUnder(savesMount, f);
+        }
         return existed;
+    }
+
+    /// <summary>This (user, game)'s save files in the live mount, by extension. The session id embeds the
+    /// game key, which the store doesn't know — so match by parsing each candidate's id instead of
+    /// reconstructing the filename.</summary>
+    private IEnumerable<string> MountFilesFor(int userId, int gameId, string ext)
+    {
+        if (!Directory.Exists(savesMount)) yield break;
+        foreach (var f in Directory.EnumerateFiles(savesMount, "sv-*" + ext))
+            if (ArcadeSaveId.TryParse(Path.GetFileNameWithoutExtension(f), out var u, out var g, out _, out _, out _)
+                && u == userId && g == gameId)
+                yield return f;
     }
 
     /// <summary>Rename a stored save's label (updates the sidecar so a future re-list stays consistent).</summary>
