@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
-import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select } from "antd";
+import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwap, setFaceSwap } from "./cloudRetroClient";
 import { useWakeLock } from "../../useWakeLock";
 
 const { Title, Text } = Typography;
@@ -68,6 +68,8 @@ export default function ArcadeRoomPage() {
   const [primaryPad, setPrimaryPad] = useState(null);
   const [showControllers, setShowControllers] = useState(false);
   const [padList, setPadList] = useState([]); // [{ index, id }]
+  // Nintendo↔Xbox face-button swap — mirrors the shim's machine-wide localStorage flag.
+  const [faceSwap, setFaceSwapState] = useState(getFaceSwap());
   const [fatal, setFatal] = useState(null);
   const [needsTap, setNeedsTap] = useState(false);
   const [discCount, setDiscCount] = useState(location.state?.descriptor?.discCount ?? 0);
@@ -698,6 +700,19 @@ export default function ArcadeRoomPage() {
         {padList.length === 0 && (
           <Text type="secondary">No controllers detected — connect one and press any button on it.</Text>
         )}
+        {/* Nintendo↔Xbox face-button relabel — the one rebinding everyone actually needs. Applies to
+            every controller THIS machine drives (it's a machine-wide localStorage setting read by the
+            shim per poll, so it takes effect immediately, mid-game). Full rebinding is future work. */}
+        <div style={{ borderTop: "1px solid rgba(128,128,128,0.25)", marginTop: 12, paddingTop: 12 }}>
+          <Tooltip title="Nintendo and Xbox pads mirror their face-button labels. If confirm/cancel feel backwards in games, flip this — it swaps what the four face buttons send for every controller on this machine.">
+            <Checkbox
+              checked={faceSwap}
+              onChange={(e) => { setFaceSwap(e.target.checked); setFaceSwapState(e.target.checked); }}
+            >
+              Swap face buttons (A↔B, X↔Y)
+            </Checkbox>
+          </Tooltip>
+        </div>
         <Text type="secondary" style={{ display: "block", marginTop: 12, fontSize: 12 }}>
           Controllers plugged into other players' machines are assigned on their screens.
           A controller drives one player; assigning it elsewhere frees its old seat's controls.

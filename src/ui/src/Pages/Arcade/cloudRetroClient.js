@@ -152,6 +152,20 @@ function profileFor(system) {
 // session's adopt-any-active-pad heuristic knows to leave those pads alone.
 const claimedPadIndexes = new Set();
 
+// ── Face-button swap (Nintendo ↔ Xbox layout) ────────────────────────────────────────────────────
+// The per-system PROFILES map by physical POSITION (Gamepad-API 0 south, 1 east, 2 west, 3 north),
+// which is right for one label layout and backwards for the other: Nintendo pads put A east/B south,
+// Xbox pads put A south/B east (X/Y mirror the same way). This machine-wide toggle relabels the four
+// face buttons before profile mapping (south↔east, west↔north — i.e. index ^ 1), so it composes with
+// every per-system profile and applies to ALL seats this machine drives (primary + local players).
+// Full per-user rebinding is future WS-G work; this covers the one swap everyone actually hits.
+let faceSwap = (() => { try { return localStorage.getItem("arcade.faceSwap") === "1"; } catch { return false; } })();
+export function getFaceSwap() { return faceSwap; }
+export function setFaceSwap(on) {
+  faceSwap = !!on;
+  try { localStorage.setItem("arcade.faceSwap", on ? "1" : "0"); } catch { /* storage disabled */ }
+}
+
 /**
  * One poll pass looking for "the new player pressed a button": returns the index of a connected pad
  * with any button currently pressed that is neither claimed by a local-player session nor in
@@ -384,7 +398,11 @@ export function createCloudRetroSession(descriptor, opts) {
     let mask = 0;
     const axes = [0, 0, 0, 0];
     gp.buttons.forEach((b, i) => {
-      if (b.pressed && gamepad[i] !== undefined) mask |= (1 << gamepad[i]);
+      // Face-button relabel (see faceSwap above): swap south↔east and west↔north when the
+      // player's pad labels don't match the profile's positional assumption. Read per poll so
+      // toggling the panel checkbox takes effect mid-game.
+      const pi = faceSwap && i < 4 ? (i ^ 1) : i;
+      if (b.pressed && gamepad[pi] !== undefined) mask |= (1 << gamepad[pi]);
     });
     // Real analog axes ride the frame (N64 steering wants them); a left-stick→dpad fold is kept
     // so analog-only pads still drive pure-dpad 2D cores. (Dpad+stick doubling is harmless: cores
