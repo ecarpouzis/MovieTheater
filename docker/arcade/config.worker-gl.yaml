@@ -396,7 +396,12 @@ emulator:
             # stutter (rare audio skips on first sight of each effect) SELF-HEALS via the persistent
             # per-game shader cache (legacy_save/User/Cache/Shaders — F-Zero GX grew a 1.3 GB pipeline
             # cache in one evening); wait_for_shaders precompiles the cache at boot.
-            dolphin_main_cpu_thread: "disabled"
+            # DUAL-CORE (2026-07-09, round 3 of the F-Zero audio hunt): with shaders fully cached the
+            # audio still dropped at the SAME content points (race start, announcer) — that's not
+            # compiles, it's single-core CPU saturation at the game's heaviest moments. Dual-core was
+            # originally disabled for the null-shared-context crash — the exact thing our patched core
+            # (dolphin_custom_libretro) fixes. If GC rooms crash at boot: revert to "disabled".
+            dolphin_main_cpu_thread: "enabled"
             # "2" = Async (Ubershaders): new shaders compile on SHARED-CONTEXT worker threads (our
             # patched core makes those real) while ubershaders render the frame meanwhile — no
             # compile stall, no first-sight audio skip. Was "0" (Synchronous), forced by the stock
