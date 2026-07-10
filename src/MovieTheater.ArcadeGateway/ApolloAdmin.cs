@@ -23,19 +23,58 @@ public sealed class ApolloAdmin
 {
     private readonly HttpClient http;
     private readonly ILogger log;
+    private readonly string? user;
+    private readonly string? password;
+    private readonly SemaphoreSlim loginSem = new(1, 1);
+    private bool loggedIn;
 
     public ApolloAdmin(HeavyOptions opt, ILogger log)
     {
         this.log = log;
+        user = opt.ApolloUser;
+        password = opt.ApolloPassword;
         // Apollo serves a self-signed cert on localhost — bypass validation for exactly this client.
+        // Auth is SESSION-COOKIE based (verified against Apollo 0.4.6 on 2026-07-10): basic auth
+        // 401s; the web UI POSTs /api/login {username,password} and rides the returned cookie. The
+        // CookieContainer carries it for us; EnsureLoginAsync re-logins when the session lapses.
         var handler = new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+            UseCookies = true,
+            CookieContainer = new System.Net.CookieContainer(),
         };
         http = new HttpClient(handler) { BaseAddress = new Uri(opt.ApolloBaseUrl.TrimEnd('/') + "/"), Timeout = TimeSpan.FromSeconds(15) };
-        if (!string.IsNullOrEmpty(opt.ApolloUser))
-            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                Convert.ToBase64String(Encoding.UTF8.GetBytes($"{opt.ApolloUser}:{opt.ApolloPassword}")));
+    }
+
+    private async Task<bool> EnsureLoginAsync(CancellationToken ct, bool force = false)
+    {
+        if (loggedIn && !force) return true;
+        await loginSem.WaitAsync(ct);
+        try
+        {
+            if (loggedIn && !force) return true;
+            var resp = await http.PostAsJsonAsync("api/login", new { username = user, password }, ct);
+            loggedIn = resp.IsSuccessStatusCode;
+            if (!loggedIn) log.LogWarning("Apollo login failed: {Status}", (int)resp.StatusCode);
+            return loggedIn;
+        }
+        catch (Exception ex)
+        {
+            log.LogWarning(ex, "Apollo login failed");
+            loggedIn = false;
+            return false;
+        }
+        finally { loginSem.Release(); }
+    }
+
+    // One authed call with a single re-login retry on 401 (session lapse / Apollo restart).
+    private async Task<HttpResponseMessage?> SendAsync(Func<HttpRequestMessage> make, CancellationToken ct)
+    {
+        if (!await EnsureLoginAsync(ct)) return null;
+        var resp = await http.SendAsync(make(), ct);
+        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized && await EnsureLoginAsync(ct, force: true))
+            resp = await http.SendAsync(make(), ct);
+        return resp;
     }
 
     /// <summary>Complete a Moonlight pairing: the 4-digit PIN the client shows + the device name the
@@ -45,7 +84,9 @@ public sealed class ApolloAdmin
     {
         try
         {
-            var resp = await http.PostAsJsonAsync("api/pin", new { pin, name = deviceName }, ct);
+            var resp = await SendAsync(() => new HttpRequestMessage(HttpMethod.Post, "api/pin")
+            { Content = JsonContent.Create(new { pin, name = deviceName }) }, ct);
+            if (resp == null) return (false, "Apollo login failed — check the host credentials.");
             var body = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode) return (false, $"Apollo answered {(int)resp.StatusCode}");
             // Sunshine-family answers {"status":"true"|"false"} (string) or a bool — accept either.
@@ -61,12 +102,14 @@ public sealed class ApolloAdmin
         }
     }
 
-    /// <summary>Apollo's current app list (name → app object), or null when unreachable.</summary>
+    /// <summary>Apollo's current app list, or null when unreachable.</summary>
     public async Task<List<JsonObject>?> GetAppsAsync(CancellationToken ct)
     {
         try
         {
-            var body = await http.GetStringAsync("api/apps", ct);
+            var resp = await SendAsync(() => new HttpRequestMessage(HttpMethod.Get, "api/apps"), ct);
+            if (resp == null || !resp.IsSuccessStatusCode) return null;
+            var body = await resp.Content.ReadAsStringAsync(ct);
             var root = JsonNode.Parse(body)!.AsObject();
             return root["apps"]!.AsArray().Select(n => n!.AsObject()).ToList();
         }
@@ -77,15 +120,16 @@ public sealed class ApolloAdmin
         }
     }
 
-    /// <summary>Upsert one app (index -1 = append, else replace in place — Sunshine API semantics).</summary>
-    public async Task<bool> UpsertAppAsync(JsonObject app, int index, CancellationToken ct)
+    /// <summary>Upsert one app. Apollo (unlike stock Sunshine's index scheme) keys edits by the app's
+    /// <c>uuid</c>: include it to edit in place, omit it and Apollo creates the app (verified against
+    /// its own web UI code, apps-*.js).</summary>
+    public async Task<bool> UpsertAppAsync(JsonObject app, CancellationToken ct)
     {
-        app["index"] = index;
         try
         {
-            var resp = await http.PostAsync("api/apps",
-                new StringContent(app.ToJsonString(), Encoding.UTF8, "application/json"), ct);
-            return resp.IsSuccessStatusCode;
+            var resp = await SendAsync(() => new HttpRequestMessage(HttpMethod.Post, "api/apps")
+            { Content = new StringContent(app.ToJsonString(), Encoding.UTF8, "application/json") }, ct);
+            return resp is { IsSuccessStatusCode: true };
         }
         catch (Exception ex)
         {
@@ -101,13 +145,13 @@ public sealed class ApolloAdmin
     public async Task<object> SyncAppsAsync(HeavyAppRegistry registry, HeavyStager? stager, HeavyOptions opt, bool apply, CancellationToken ct)
     {
         var current = await GetAppsAsync(ct);
-        if (current == null) return new { ok = false, error = "Apollo is unreachable — is the service running?" };
+        if (current == null) return new { ok = false, error = "Apollo is unreachable — is the service running (and are the host creds right)?" };
 
-        var byName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        for (int i = 0; i < current.Count; i++)
+        var byName = new Dictionary<string, JsonObject>(StringComparer.OrdinalIgnoreCase);
+        foreach (var a in current)
         {
-            var name = (string?)current[i]["name"];
-            if (!string.IsNullOrEmpty(name)) byName[name] = i;
+            var name = (string?)a["name"];
+            if (!string.IsNullOrEmpty(name)) byName[name] = a;
         }
 
         var adds = new List<string>();
@@ -123,16 +167,17 @@ public sealed class ApolloAdmin
             { skipped.Add(new { app.Id, reason = "not staged yet — Prepare it first" }); continue; }
 
             var compiled = Compile(app, stager, opt);
-            bool exists = byName.TryGetValue(app.Title, out int idx);
+            bool exists = byName.TryGetValue(app.Title, out var existing);
             // Unchanged? Compare the fields we own; leave hand-tuned extras alone.
-            if (exists && SameManagedFields(current[idx], compiled)) continue;
+            if (exists && SameManagedFields(existing!, compiled)) continue;
             (exists ? updates : adds).Add(app.Title);
 
             if (apply)
             {
-                // Preserve any fields Apollo/hand-editing added that we don't manage.
-                var target = exists ? MergeInto(current[idx], compiled) : compiled;
-                if (await UpsertAppAsync(target, exists ? idx : -1, ct)) applied.Add(app.Title);
+                // Preserve any fields Apollo/hand-editing added that we don't manage — CRUCIALLY the
+                // uuid, which is how Apollo knows this is an edit and not a new app.
+                var target = exists ? MergeInto(existing!, compiled) : compiled;
+                if (await UpsertAppAsync(target, ct)) applied.Add(app.Title);
                 else return new { ok = false, error = $"Upsert failed at '{app.Title}' — aborted (list may be partially applied).", applied };
             }
         }
@@ -178,7 +223,7 @@ public sealed class ApolloAdmin
             ["elevated"] = false,
             ["auto-detach"] = true,
             ["wait-all"] = true,
-            ["exit-timeout"] = "10",
+            ["exit-timeout"] = 10, // Apollo stores this as a number (its hand-authored apps show 10)
         };
         if (prepCmd.Count > 0) o["prep-cmd"] = prepCmd;
         if (!string.IsNullOrEmpty(app.WorkingDir)) o["working-dir"] = app.WorkingDir;
