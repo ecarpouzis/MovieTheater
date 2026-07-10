@@ -340,6 +340,11 @@ export function createCloudRetroSession(descriptor, opts) {
   // showing real activity (pressed button / deflected stick); only then fall back to first
   // non-null. A phantom is never active, so a woken pad wins with its first button press.
   let activePadIndex = -1;
+  // When the adopted pad last showed real input. The primary session latches the first connected pad
+  // even for a keyboard-only player, so "which pad is the primary using" must mean RECENTLY used —
+  // otherwise adding a local player on a keyboard host's only spare pad is impossible (the idle
+  // latched pad would be excluded from the press-a-button detector).
+  let lastPadActiveAt = 0;
   const padActive = (gp) =>
     gp.buttons.some((b) => b.pressed) || gp.axes.some((a) => Math.abs(a) > 0.2);
 
@@ -363,6 +368,7 @@ export function createCloudRetroSession(descriptor, opts) {
     }
     if (!gp) return mask0;
     activePadIndex = gp.index;
+    if (!inputOnly && padActive(gp)) lastPadActiveAt = Date.now();
 
     let mask = 0;
     const axes = [0, 0, 0, 0];
@@ -743,9 +749,12 @@ export function createCloudRetroSession(descriptor, opts) {
 
   return {
     close,
-    // The pad the session is currently reading (the primary's is fluid; a local player's is pinned).
-    // The room page excludes it when listening for a NEW controller's button press.
-    getActivePadIndex: () => (inputOnly ? pinnedPad : activePadIndex),
+    // The pad this seat is ACTIVELY using — pinned for a local player; for the primary, the latched
+    // pad only while it has shown input in the last 10 s (-1 otherwise). The room page excludes it
+    // when listening for a NEW controller's button press, and a keyboard-only primary must not
+    // shadow the idle pad it passively latched.
+    getActivePadIndex: () =>
+      (inputOnly ? pinnedPad : (Date.now() - lastPadActiveAt < 10_000 ? activePadIndex : -1)),
     save: asPlayer(() => send(T.GAME_SAVE, {})),
     load: asPlayer(() => send(T.GAME_LOAD, {})),
     reset: asPlayer(() => send(T.GAME_RESET, {})),
