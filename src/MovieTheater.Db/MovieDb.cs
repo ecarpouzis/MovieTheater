@@ -330,6 +330,12 @@ namespace MovieTheater.Db
                 .WithMany()
                 .HasForeignKey(c => c.ArcadeGameId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Heavy lane (docs/arcade-heavy-lane-plan.md §7.3): paired Moonlight devices → site users.
+            // ClientName is the join key against Apollo's client name; unique so re-pairing re-owns.
+            modelBuilder.Entity<HeavyClient>()
+                .HasIndex(c => c.ClientName)
+                .IsUnique();
         }
 
         public DbSet<Movie> Movies { get; set; }
@@ -370,6 +376,7 @@ namespace MovieTheater.Db
         public DbSet<ArcadeSave> ArcadeSaves { get; set; }
         public DbSet<ArcadeCheat> ArcadeCheats { get; set; }
         public DbSet<ArcadeGameProfile> ArcadeGameProfiles { get; set; }
+        public DbSet<HeavyClient> HeavyClients { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)

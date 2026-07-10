@@ -282,6 +282,131 @@ app.MapPost("/w-load/{token}", async (HttpContext ctx, string token) =>
 bool InternalAuth(HttpContext c) => !string.IsNullOrEmpty(secret) &&
     string.Equals(c.Request.Headers["X-Arcade-Internal-Secret"].ToString(), secret, StringComparison.Ordinal);
 
+// ── Heavy lane (docs/arcade-heavy-lane-plan.md §7): Moonlight/Apollo-streamed emulators ─────────
+// The gateway is the heavy lane's Ziggy-side control plane: descriptor registry, the one-session
+// lock, the pre-staged big-title cache, and the only channel to Apollo's admin API. Everything is
+// behind the same internal secret — the SITE proxies what browsers need (with its own auth/age
+// gates), and heavy-launch.ps1 calls prepare/attach/finish from this same machine.
+var heavyOptions = new MovieTheater.ArcadeGateway.HeavyOptions();
+config.GetSection("Heavy").Bind(heavyOptions);
+if (heavyOptions.Enabled)
+{
+    var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+    var heavyRegistry = new MovieTheater.ArcadeGateway.HeavyAppRegistry(
+        heavyOptions.AppsDir!, loggerFactory.CreateLogger("HeavyApps"));
+    var heavyLock = new MovieTheater.ArcadeGateway.HeavyLock(heavyOptions.StaleLockMinutes);
+    MovieTheater.ArcadeGateway.HeavyStager? heavyStager = null;
+    if (!string.IsNullOrWhiteSpace(heavyOptions.CacheDir))
+        heavyStager = new MovieTheater.ArcadeGateway.HeavyStager(
+            heavyOptions.CacheDir!, heavyOptions.CacheMaxBytes, heavyOptions.ChunkBytes, loggerFactory.CreateLogger("HeavyStager"));
+    var apollo = new MovieTheater.ArcadeGateway.ApolloAdmin(heavyOptions, loggerFactory.CreateLogger("Apollo"));
+    app.Logger.LogInformation("Heavy lane enabled: {Count} descriptor(s), cache={Cache}",
+        heavyRegistry.All().Count, heavyOptions.CacheDir ?? "(none)");
+
+    // Resolve an app by descriptor id OR its ArcadeGame row id (the site speaks gameId).
+    MovieTheater.ArcadeGateway.HeavyApp? ResolveApp(string idOrGameId) =>
+        heavyRegistry.Get(idOrGameId)
+        ?? (int.TryParse(idOrGameId, out var gid) ? heavyRegistry.GetByArcadeGameId(gid) : null);
+
+    // Lane + staging status in one call — what the lobby needs for every heavy card.
+    app.MapGet("/heavy/status", (HttpContext ctx) =>
+    {
+        if (!InternalAuth(ctx)) return Results.Unauthorized();
+        var held = heavyLock.Current();
+        var heldTitle = held != null ? heavyRegistry.Get(held.AppId)?.Title ?? held.AppId : null;
+        var apps = heavyRegistry.All().Select(a => new
+        {
+            id = a.Id,
+            title = a.Title,
+            system = a.System,
+            arcadeGameId = a.ArcadeGameId,
+            enabled = a.Enabled,
+            staging = heavyStager != null ? heavyStager.Progress(a) : new { state = "local" } as object,
+        });
+        return Results.Json(new
+        {
+            locked = held != null,
+            appId = held?.AppId,
+            title = heldTitle,
+            clientName = held?.ClientName,
+            sinceUtc = held?.SinceUtc,
+            apps,
+        });
+    });
+
+    // Advance one staging chunk (the caller — card UI or an admin loop — drives to completion).
+    app.MapPost("/heavy/stage/{appId}", (HttpContext ctx, string appId) =>
+    {
+        if (!InternalAuth(ctx)) return Results.Unauthorized();
+        if (heavyStager == null) return Results.Json(new { state = "error", error = "No heavy cache configured." });
+        var a = ResolveApp(appId);
+        return a == null ? Results.NotFound() : Results.Json(heavyStager.Advance(a));
+    });
+
+    // Complete a Moonlight pairing PIN (site-proxied; the site records the device→user mapping).
+    app.MapPost("/heavy/pair", async (HttpContext ctx) =>
+    {
+        if (!InternalAuth(ctx)) return Results.Unauthorized();
+        var r = await ctx.Request.ReadFromJsonAsync<Dictionary<string, string?>>(ctx.RequestAborted);
+        var pin = r?.GetValueOrDefault("pin")?.Trim();
+        var name = r?.GetValueOrDefault("name")?.Trim();
+        if (string.IsNullOrEmpty(pin) || string.IsNullOrEmpty(name)) return Results.BadRequest();
+        var (ok, detail) = await apollo.PairAsync(pin, name, ctx.RequestAborted);
+        return Results.Json(new { ok, detail });
+    });
+
+    // Compile descriptors → Apollo's app list. Dry-run unless ?apply=1 (upsert-only, never deletes).
+    app.MapPost("/heavy/sync-apps", async (HttpContext ctx) =>
+    {
+        if (!InternalAuth(ctx)) return Results.Unauthorized();
+        bool apply = ctx.Request.Query["apply"].ToString() == "1";
+        return Results.Json(await apollo.SyncAppsAsync(heavyRegistry, heavyStager, heavyOptions, apply, ctx.RequestAborted));
+    });
+
+    // ── The heavy-launch.ps1 contract (plan §4): prepare → attach → finish ──────────────────────
+    app.MapPost("/heavy/prepare/{appId}", (HttpContext ctx, string appId) =>
+    {
+        if (!InternalAuth(ctx)) return Results.Unauthorized();
+        var a = ResolveApp(appId);
+        if (a == null) return Results.NotFound();
+        // Prepare NEVER stages (plan trap #8: the play click must not become a 40 GB copy) — the
+        // card's Prepare flow exists exactly so the ROM is already local here.
+        if (a.NeedsStaging && (heavyStager == null || !heavyStager.IsStaged(a)))
+            return Results.Json(new { ok = false, error = "Title is not staged — Prepare it from its arcade card first." },
+                statusCode: StatusCodes.Status409Conflict);
+        var clientName = ctx.Request.Query["client"].ToString();
+        if (!heavyLock.TryAcquire(a.Id, string.IsNullOrEmpty(clientName) ? null : clientName, out var holder))
+        {
+            var t = heavyRegistry.Get(holder.AppId)?.Title ?? holder.AppId;
+            return Results.Json(new { ok = false, error = $"The heavy lane is in use: {t}.", appId = holder.AppId, sinceUtc = holder.SinceUtc },
+                statusCode: StatusCodes.Status409Conflict);
+        }
+        string rom = a.NeedsStaging && heavyStager != null ? heavyStager.TargetPathFor(a) : "";
+        string args = (a.ArgsTemplate ?? "").Replace("{rom}", rom);
+        app.Logger.LogInformation("Heavy prepare: {App} (client {Client})", a.Id, clientName);
+        return Results.Json(new { ok = true, appId = a.Id, exe = a.Exe, args, workingDir = a.WorkingDir ?? "", rom });
+    });
+
+    app.MapPost("/heavy/attach/{appId}", async (HttpContext ctx, string appId) =>
+    {
+        if (!InternalAuth(ctx)) return Results.Unauthorized();
+        var r = await ctx.Request.ReadFromJsonAsync<Dictionary<string, int>>(ctx.RequestAborted);
+        int pid = r?.GetValueOrDefault("pid") ?? 0;
+        var a = ResolveApp(appId);
+        if (a == null || pid <= 0) return Results.BadRequest();
+        return Results.Json(new { ok = heavyLock.Attach(a.Id, pid) });
+    });
+
+    app.MapPost("/heavy/finish/{appId}", (HttpContext ctx, string appId) =>
+    {
+        if (!InternalAuth(ctx)) return Results.Unauthorized();
+        var a = ResolveApp(appId);
+        bool released = a != null && heavyLock.Release(a.Id);
+        if (released) app.Logger.LogInformation("Heavy finish: {App}", a!.Id);
+        return Results.Json(new { ok = released });
+    });
+}
+
 app.MapPost("/internal/save-delete", async (HttpContext ctx) =>
 {
     if (saveStore == null) return Results.NotFound();

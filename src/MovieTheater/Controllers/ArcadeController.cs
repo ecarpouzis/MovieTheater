@@ -207,6 +207,9 @@ namespace MovieTheater.Controllers
                     publisher = meta?.Publisher,
                     gameModes = meta?.GameModes,
                     esrb = meta?.EsrbRating,
+                    // 'heavy' = Moonlight-streamed (plan §7.1): the card's action becomes
+                    // Prepare/Play-via-Moonlight instead of creating a CloudRetro room.
+                    lane = vs.Select(g => g.Lane).FirstOrDefault(l => l != null),
                     versions = versions.Select(v => new
                     {
                         id = v.Id, label = v.Label, region = v.Region,
@@ -429,6 +432,11 @@ namespace MovieTheater.Controllers
             if (game == null)
                 return NotFound(new { message = "Game not found." });
 
+            // Heavy-lane titles are Moonlight-streamed (docs/arcade-heavy-lane-plan.md) — they have no
+            // CloudRetro core, so a room token minted for one would just hang a worker connection.
+            if (string.Equals(game.Lane, "heavy", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "This title plays via Moonlight, not in the browser — use its card's Play instructions." });
+
             var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
             if (game.RatingCeiling > ageRestriction)
                 return StatusCode(403, new { message = "This game isn't available on your account." });
@@ -595,6 +603,116 @@ namespace MovieTheater.Controllers
             { Content = JsonContent.Create(body) };
             req.Headers.Add("X-Arcade-Internal-Secret", config.ArcadeTokenSecret);
             try { return await gatewayClient.SendAsync(req); } catch { return null; }
+        }
+
+        // Same channel, GET (the heavy status read has no body).
+        private async Task<HttpResponseMessage?> GetGatewayAsync(string path)
+        {
+            var baseUrl = config.ArcadeGatewayBaseUrl;
+            if (string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(config.ArcadeTokenSecret)) return null;
+            using var req = new HttpRequestMessage(HttpMethod.Get, baseUrl.TrimEnd('/') + "/" + path);
+            req.Headers.Add("X-Arcade-Internal-Secret", config.ArcadeTokenSecret);
+            try { return await gatewayClient.SendAsync(req); } catch { return null; }
+        }
+
+        // ── Heavy lane (docs/arcade-heavy-lane-plan.md §7): Moonlight-streamed titles ────────────
+        // The gateway on Ziggy owns descriptors, the one-session lock, staging, and the Apollo API;
+        // these endpoints are the browser's authenticated path to it. The site adds what the gateway
+        // can't know: user auth, the age gate, and the Moonlight-client→user mapping (HeavyClient).
+
+        /// <summary>Lane status for the lobby: who holds the heavy session (username, not device
+        /// name), plus per-app staging state keyed by ArcadeGame id for the heavy cards.</summary>
+        [HttpGet("/API/Arcade/Heavy/Status")]
+        public async Task<IActionResult> HeavyStatus()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var resp = await GetGatewayAsync("heavy/status");
+            if (resp == null || !resp.IsSuccessStatusCode)
+                return StatusCode(501, new { message = "The heavy lane is not configured." });
+
+            var raw = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            // Resolve the Apollo device name to the site user who paired it (plan §7.3).
+            string byUser = null;
+            if (raw.TryGetProperty("clientName", out var cn) && cn.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                var name = cn.GetString();
+                var client = await movieDb.HeavyClients.FirstOrDefaultAsync(c => c.ClientName == name);
+                if (client != null)
+                    byUser = await movieDb.Users.Where(u => u.UserID == client.UserId).Select(u => u.Username).FirstOrDefaultAsync();
+            }
+            return Json(new
+            {
+                locked = raw.TryGetProperty("locked", out var l) && l.GetBoolean(),
+                title = raw.TryGetProperty("title", out var t) && t.ValueKind == System.Text.Json.JsonValueKind.String ? t.GetString() : null,
+                byUser,
+                sinceUtc = raw.TryGetProperty("sinceUtc", out var s) && s.ValueKind == System.Text.Json.JsonValueKind.String ? s.GetString() : null,
+                apps = raw.TryGetProperty("apps", out var a) ? a : default,
+            });
+        }
+
+        /// <summary>Advance ONE staging chunk for a heavy title (the browser drives the loop — the
+        /// bulk-job house rule: bounded per call, progress every chunk, resumable). Anyone age-visible
+        /// may prepare; preparing is a disk copy, not a session, so it's allowed while someone plays.</summary>
+        [HttpPost("/API/Arcade/Heavy/Stage/{gameId:int}")]
+        public async Task<IActionResult> HeavyStage(int gameId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var game = await movieDb.ArcadeGames.FirstOrDefaultAsync(g => g.Id == gameId && g.IsEnabled);
+            if (game == null || !string.Equals(game.Lane, "heavy", StringComparison.OrdinalIgnoreCase))
+                return NotFound(new { message = "Not a heavy-lane title." });
+            var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
+            if (game.RatingCeiling > ageRestriction)
+                return StatusCode(403, new { message = "This game isn't available on your account." });
+
+            var resp = await CallGatewayAsync($"heavy/stage/{gameId}", new { });
+            if (resp == null) return StatusCode(501, new { message = "The heavy lane is not configured." });
+            var body = await resp.Content.ReadAsStringAsync();
+            return Content(body, "application/json");
+        }
+
+        /// <summary>Complete a Moonlight pairing PIN and record the device→user mapping. Editor-gated
+        /// (plan §10): pairing is physical-seat-equivalent trust, so handing it out is deliberate.</summary>
+        [HttpPost("/API/Arcade/Heavy/Pair")]
+        public async Task<IActionResult> HeavyPair([FromBody] HeavyPairRequest req)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var editor = await movieDb.UserSettings.FirstOrDefaultAsync(s =>
+                s.UserID == userId.Value && s.SettingKey == "CanEditMovies");
+            if (editor?.SettingValue != "true")
+                return StatusCode(403, new { message = "Pairing new devices is editor-only for now." });
+            var pin = req?.Pin?.Trim();
+            var name = req?.DeviceName?.Trim();
+            if (string.IsNullOrEmpty(pin) || string.IsNullOrEmpty(name))
+                return BadRequest(new { message = "PIN and a device name are both required." });
+
+            var resp = await CallGatewayAsync("heavy/pair", new { pin, name });
+            if (resp == null) return StatusCode(501, new { message = "The heavy lane is not configured." });
+            var result = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            bool ok = result.TryGetProperty("ok", out var okEl) && okEl.GetBoolean();
+            string detail = result.TryGetProperty("detail", out var d) ? d.GetString() : null;
+            if (!ok) return Json(new { ok = false, detail });
+
+            // Record (or re-own) the device → the user who completed the pairing owns its sessions.
+            var row = await movieDb.HeavyClients.FirstOrDefaultAsync(c => c.ClientName == name);
+            if (row == null)
+                movieDb.HeavyClients.Add(new HeavyClient { ClientName = name, UserId = userId.Value, PairedUtc = DateTime.UtcNow });
+            else
+            {
+                row.UserId = userId.Value;
+                row.PairedUtc = DateTime.UtcNow;
+            }
+            await movieDb.SaveChangesAsync();
+            logger.LogInformation("Heavy device paired: {Name} → user {UserId}", name, userId.Value);
+            return Json(new { ok = true, detail = "paired" });
+        }
+
+        public class HeavyPairRequest
+        {
+            public string Pin { get; set; }
+            public string DeviceName { get; set; }
         }
 
         /// <summary>Delete one of the user's saves (My Saves): the app-DB row + the on-disk blob on Ziggy.</summary>

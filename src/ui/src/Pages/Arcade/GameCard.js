@@ -14,7 +14,11 @@ import { systemLabel } from "./arcadeSystems";
  * offer. Controls (version, cheats) sit on their own row directly above the actions (start, saves), so a
  * card's height doesn't depend on how many of them a given game happens to have.
  */
-function GameCard({ game, onStart, onManageSaves, creating }) {
+function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
+  // Heavy-lane titles (docs/arcade-heavy-lane-plan.md §7.1) stream via Moonlight instead of playing
+  // in the browser: the card's one action opens the Prepare/Play modal, and the room-centric extras
+  // (cheats, browser saves) don't apply.
+  const heavy = game.lane === "heavy";
   // Genres arrive comma- OR semicolon-joined ("Action; Adventure", "Shooter, Tactical, Adventure"),
   // so split on both — otherwise the chip prints two genres.
   const genre = game.genres ? game.genres.split(/[;,]/)[0].trim() : null;
@@ -33,7 +37,7 @@ function GameCard({ game, onStart, onManageSaves, creating }) {
   const [cheats, setCheats] = useState(version?.defaultCheats || []);
   useEffect(() => { setCheats(version?.defaultCheats || []); }, [version?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const start = () => onStart(sel, game.title, cheats);
+  const start = () => (heavy ? onHeavy?.(game) : onStart(sel, game.title, cheats));
 
   return (
     <div className="arcade-card" onClick={start}>
@@ -54,6 +58,7 @@ function GameCard({ game, onStart, onManageSaves, creating }) {
         <div className="arcade-tags">
           <span className="arcade-chip arcade-chip--system">{systemLabel(game.system)}</span>
           <span className="arcade-chip">{game.maxPlayers}P</span>
+          {heavy && <span className="arcade-chip arcade-chip--genre" title="Streams to your device via Moonlight — couch play, not in-browser">Moonlight</span>}
           {region && <span className="arcade-chip">{region}</span>}
           {genre && <span className="arcade-chip arcade-chip--genre" title={genre}>{genre}</span>}
         </div>
@@ -62,8 +67,9 @@ function GameCard({ game, onStart, onManageSaves, creating }) {
 
         <div className="arcade-card__footer">
           {/* Row 1 — what you're about to launch. Both are dropdowns and both are optional, so the row
-              collapses to nothing on a single-version game with no cheats. */}
-          {(multiVersion || version?.cheatCount > 0) && (
+              collapses to nothing on a single-version game with no cheats. Heavy titles have neither
+              (cheats and versions are room-lane concepts). */}
+          {!heavy && (multiVersion || version?.cheatCount > 0) && (
             <div className="arcade-card__controls">
               {multiVersion && (
                 <span className="arcade-chip arcade-chip--select" onClick={stop} title={version?.label}>
@@ -91,15 +97,18 @@ function GameCard({ game, onStart, onManageSaves, creating }) {
               loading={creating === sel}
               onClick={(e) => { stop(e); start(); }}
             >
-              ▶ Start room
+              {heavy ? "🎮 Play via Moonlight" : "▶ Start room"}
             </Button>
-            <button
-              type="button"
-              className="arcade-link"
-              onClick={(e) => { stop(e); onManageSaves?.(sel); }}
-            >
-              My saves
-            </button>
+            {/* Browser-save management is a room-lane feature; heavy saves attach at H4. */}
+            {!heavy && (
+              <button
+                type="button"
+                className="arcade-link"
+                onClick={(e) => { stop(e); onManageSaves?.(sel); }}
+              >
+                My saves
+              </button>
+            )}
           </div>
         </div>
       </div>

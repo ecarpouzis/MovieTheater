@@ -684,6 +684,24 @@ function listArcadeSaves(gameId) {
   return fetch(`/API/Arcade/Games/${gameId}/Saves`).then((r) => (r.ok ? r.json() : [])).catch(() => []);
 }
 
+// ── Heavy lane (Moonlight-streamed titles, docs/arcade-heavy-lane-plan.md §7) ────────────────────
+// Lane status: who holds the one heavy session + per-app staging state for the heavy cards.
+function getArcadeHeavyStatus() {
+  return fetch("/API/Arcade/Heavy/Status");
+}
+// Advance ONE staging chunk; the caller loops until state === "done" (bounded, resumable, chunked).
+function stageArcadeHeavy(gameId) {
+  return fetch(`/API/Arcade/Heavy/Stage/${gameId}`, { method: "post" });
+}
+// Complete a Moonlight pairing PIN (editor-gated server-side).
+function pairArcadeHeavy(pin, deviceName) {
+  return fetch("/API/Arcade/Heavy/Pair", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pin, deviceName }),
+  });
+}
+
 // Cheats offered for ONE version (ROM) of a game — lazy-loaded when the card's picker opens, because a
 // popular title carries hundreds of community codes.
 function getArcadeCheats(gameId) {
@@ -1042,6 +1060,9 @@ const MovieAPI = {
   createArcadeRoom,
   listArcadeSaves,
   getArcadeCheats,
+  getArcadeHeavyStatus,
+  stageArcadeHeavy,
+  pairArcadeHeavy,
   deleteArcadeSave,
   renameArcadeSave,
   arcadeSaveDownloadUrl,

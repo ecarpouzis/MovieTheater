@@ -127,6 +127,14 @@ namespace MovieTheater.Db
         [MaxLength(20)]
         public string? EsrbRating { get; set; }
 
+        /// <summary>Which delivery lane plays this title (docs/arcade-heavy-lane-plan.md §7.1).
+        /// Null = 'cloudretro' (the in-browser WebRTC lane — every pre-heavy row). 'heavy' = streamed
+        /// via Moonlight/Apollo; heavy rows join the same lobby/age-gate/box-art pipeline but their
+        /// card action is Prepare/Play-via-Moonlight instead of creating a CloudRetro room, and
+        /// <see cref="RomPath"/>/<see cref="CloudRetroGameKey"/> hold the heavy descriptor id.</summary>
+        [MaxLength(20)]
+        public string? Lane { get; set; }
+
         public bool IsEnabled { get; set; } = true;
 
         /// <summary>The single canonical row of its (System, Title) group for the lobby's default lens —

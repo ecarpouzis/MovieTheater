@@ -9,6 +9,7 @@ import "./index.css";
 // ones (Table, DatePicker, Tree, Tabs, Drawer, Menu, Form, Upload, …) are dropped.
 // MAINTENANCE: if you start using a new antd component anywhere in the app, add its style import here
 // (`antd/es/<kebab-name>/style/css`) or it will render unstyled.
+import "antd/es/alert/style/css";
 import "antd/es/auto-complete/style/css";
 import "antd/es/button/style/css";
 import "antd/es/card/style/css";
@@ -22,6 +23,7 @@ import "antd/es/list/style/css";
 import "antd/es/modal/style/css";
 import "antd/es/pagination/style/css";
 import "antd/es/popconfirm/style/css";
+import "antd/es/progress/style/css";
 import "antd/es/radio/style/css";
 import "antd/es/result/style/css";
 import "antd/es/select/style/css";

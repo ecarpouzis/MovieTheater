@@ -3,6 +3,7 @@ import { useHistory, useLocation } from "react-router-dom";
 import { Button, Empty, Modal, Select, Spin, Typography, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import GameCard from "./GameCard";
+import HeavyGameModal from "./HeavyGameModal";
 import LiveRooms from "./LiveRooms";
 import SavesManager from "./SavesManager";
 import "./ArcadePage.css";
@@ -86,6 +87,7 @@ export default function ArcadePage() {
   const [rooms, setRooms] = useState([]);
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
+  const [heavyGame, setHeavyGame] = useState(null); // heavy-lane card → the Play-via-Moonlight modal
   const [quality, setQuality] = useState(loadQuality); // creator's per-room stream quality (persisted)
   const unconfiguredRef = useRef(false);
 
@@ -287,6 +289,7 @@ export default function ArcadePage() {
               <div className="arcade-grid">
                 {games.map((game) => (
                   <GameCard key={game.key} game={game} onStart={createRoom} creating={creating}
+                    onHeavy={setHeavyGame}
                     onManageSaves={(id) => setManageSaves({ gameId: id, title: game.title })} />
                 ))}
               </div>
@@ -304,6 +307,9 @@ export default function ArcadePage() {
 
       {manageSaves && (
         <SavesManager game={manageSaves} onClose={() => setManageSaves(null)} onResume={doCreateRoom} />
+      )}
+      {heavyGame && (
+        <HeavyGameModal game={heavyGame} onClose={() => setHeavyGame(null)} />
       )}
     </div>
   );

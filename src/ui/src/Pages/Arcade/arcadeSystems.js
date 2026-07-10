@@ -8,6 +8,8 @@ const SYSTEM_LABEL = {
   sega32x: "32X", pce: "TurboGrafx-16", ngpc: "Neo Geo Pocket", wsc: "WonderSwan Color",
   a2600: "Atari 2600", a7800: "Atari 7800", lynx: "Atari Lynx", vb: "Virtual Boy",
   fds: "Famicom Disk System", neogeo: "Neo Geo",
+  // Heavy lane (Moonlight-streamed, docs/arcade-heavy-lane-plan.md §7.1).
+  switch: "Switch", ps3: "PlayStation 3", ps4: "PlayStation 4", wiiu: "Wii U", x360: "Xbox 360",
 };
 
 export const systemLabel = (s) => SYSTEM_LABEL[s] || (s ? s.toUpperCase() : "");
