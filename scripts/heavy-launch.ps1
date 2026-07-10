@@ -67,7 +67,11 @@ if ($Finish) {
 }
 
 # ── 1. Prepare: take the lane lock, get the resolved command ─────────────────────────────────────
-$clientName = $env:SUNSHINE_CLIENT_NAME  # Apollo exports the paired device's name to app commands
+# The paired device's name → the gateway resolves it to a site user (HeavyClient) for save
+# seed/harvest. Apollo 0.4.6 exports APOLLO_CLIENT_NAME (verified in the binary's strings —
+# there is NO SUNSHINE_CLIENT_NAME); the fallback covers a future rename back.
+$clientName = $env:APOLLO_CLIENT_NAME
+if (-not $clientName) { $clientName = $env:SUNSHINE_CLIENT_NAME }
 $prepareUri = "/heavy/prepare/$AppId"
 if ($clientName) { $prepareUri += "?client=" + [uri]::EscapeDataString($clientName) }
 
@@ -107,7 +111,7 @@ catch {
 }
 finally {
     # ── 3. Release the lane. The undo prep-cmd will repeat this harmlessly (idempotent). ────────
-    try { Invoke-Gateway "POST" "/heavy/finish/$AppId" $null | Out-Null; Write-Log "lane released" }
+    try { $fin = Invoke-Gateway "POST" "/heavy/finish/$AppId" $null; Write-Log "finish → released=$($fin.ok)" }
     catch { Write-Log "finish failed (PID self-heal will release): $_" }
 }
 exit $exitCode

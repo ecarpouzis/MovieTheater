@@ -210,9 +210,21 @@ public sealed class HeavyLock
 
     private readonly object gate = new();
     private readonly int staleMinutes;
+    private readonly int pidGraceSeconds;
     private LockState? state;
+    private DateTime? pidDeadSince;
 
-    public HeavyLock(int staleMinutes = 15) => this.staleMinutes = Math.Max(1, staleMinutes);
+    /// <param name="staleMinutes">Reclaim window for a lock that never attached a PID.</param>
+    /// <param name="pidGraceSeconds">How long a DEAD attached PID keeps the lock. Not zero: the
+    /// emulator always exits BEFORE the launch script's finish call arrives (WaitForExit → POST),
+    /// and any status poll in that gap would otherwise self-heal the lock first — the finish then
+    /// releases nothing and the save harvest (keyed to "the finish that releases") is silently
+    /// skipped. Caught live 2026-07-10: the lobby's 12 s poll would have eaten most harvests.</param>
+    public HeavyLock(int staleMinutes = 15, int pidGraceSeconds = 90)
+    {
+        this.staleMinutes = Math.Max(1, staleMinutes);
+        this.pidGraceSeconds = Math.Max(0, pidGraceSeconds);
+    }
 
     /// <summary>Current holder, or null. Self-heals: a stale/dead holder is dropped on read.</summary>
     public LockState? Current()
@@ -234,7 +246,8 @@ public sealed class HeavyLock
             if (state != null && !string.Equals(state.AppId, appId, StringComparison.OrdinalIgnoreCase))
             { holder = state; return false; }
             state = new LockState(appId, clientName ?? state?.ClientName, state?.SinceUtc ?? DateTime.UtcNow,
-                state?.AppId == appId ? state.Pid : null);
+                state?.AppId == appId ? state.Pid : null, state?.AppId == appId ? state.UserId : null);
+            pidDeadSince = null;
             holder = state;
             return true;
         }
@@ -247,6 +260,7 @@ public sealed class HeavyLock
         {
             if (state == null || !string.Equals(state.AppId, appId, StringComparison.OrdinalIgnoreCase)) return false;
             state = state with { Pid = pid };
+            pidDeadSince = null;
             return true;
         }
     }
@@ -268,6 +282,7 @@ public sealed class HeavyLock
         {
             if (state == null || !string.Equals(state.AppId, appId, StringComparison.OrdinalIgnoreCase)) return false;
             state = null;
+            pidDeadSince = null;
             return true;
         }
     }
@@ -276,9 +291,15 @@ public sealed class HeavyLock
     {
         if (s.Pid is int pid)
         {
-            try { System.Diagnostics.Process.GetProcessById(pid); return false; } // alive
-            catch (ArgumentException) { return true; } // exited — reclaim
-            catch { return false; } // access issues ≠ dead
+            bool alive;
+            try { System.Diagnostics.Process.GetProcessById(pid); alive = true; }
+            catch (ArgumentException) { alive = false; } // exited
+            catch { alive = true; } // access issues ≠ dead
+            if (alive) { pidDeadSince = null; return false; }
+            // Dead — but hold the lock through the grace window so the launch script's own finish
+            // (arriving seconds after the emulator exits) still finds it and harvests the save.
+            pidDeadSince ??= DateTime.UtcNow;
+            return DateTime.UtcNow - pidDeadSince.Value > TimeSpan.FromSeconds(pidGraceSeconds);
         }
         // No PID ever attached: the launch script died between prepare and attach (or is still
         // staging/seeding). Give it the stale window, then self-heal.

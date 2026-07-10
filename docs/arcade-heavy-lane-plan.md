@@ -463,6 +463,23 @@ copies single files (Switch xci/nsp); PS3/PS4 install-shaped titles use `staging
 `HeavyClient→User` ownership; displaced-content safety; manual download/upload works for heavy
 saves; Deck round-trip test on one Switch + one RPCS3 title (G4 proof).
 
+*BUILT 2026-07-10.* `HeavyVault` (gateway): deterministic dir-zips (sorted entries + fixed
+timestamps → zip sha256 = content hash), livePath GLOBS for RPCS3's `savedata\<TITLEID>-*`
+spread, displace-to-`_displaced`-never-delete seeding, harvest-on-release-only (finish runs
+twice by design). Blobs use the SaveStore layout (`dirzip.zip` via the shared `BlobName`) so
+My-Saves export/import/delete work unchanged; export = a Deck-usable zip. Owner resolution:
+gateway → site `POST /API/Arcade/Internal/ResolveHeavyClient` (HeavyClient mapping) at prepare;
+unmapped device = no vault ops. Deltas from the sketch: no mid-session debounced watcher yet
+(harvest is exit-time only — a hard crash loses the session's delta; acceptable v1), and the
+"fresh start" card option is not built (the vault always seeds Continue). Deck round-trip test
+still pending (needs the Deck). TRAP found live: the emulator exits BEFORE the launch script's
+finish arrives, and a dead attached PID must NOT free the lock immediately — a status poll in
+that gap (the lobby polls every 12 s) reclaims it first and the releasing finish (which owns
+the harvest) finds nothing. Fix: 90 s grace window on dead-PID reclaim. Verified end-to-end
+2026-07-10: resolve → seed (restored a removed save byte-exact) → harvest (1.1 MB dirzip) →
+ArcadeSave mirror row → unchanged-skip on the next session. Also: Apollo exports
+**APOLLO_CLIENT_NAME** (no SUNSHINE_CLIENT_NAME exists in the 0.4.6 binary).
+
 **H5 — Experiments & reach (bounded).** Apollo multi-client shared session (§6.4); second Apollo
 instance for a second concurrent lane (§2.1); Tailscale remote play; `moonlight://` deep links if
 upstream shipped; Wii/pointer + RetroArch-ParaLLEl descriptors; RetroAchievements per-user logins.

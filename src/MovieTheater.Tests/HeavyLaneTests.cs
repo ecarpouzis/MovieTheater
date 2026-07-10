@@ -88,12 +88,29 @@ namespace MovieTheater.Tests
         [Fact]
         public void Lock_self_heals_when_the_attached_process_is_dead()
         {
-            var l = new HeavyLock();
+            var l = new HeavyLock(pidGraceSeconds: 0); // grace elapsed — the crash-recovery path
             Assert.True(l.TryAcquire("app-a", null, out _));
             // A PID that can't exist: kernel PIDs are multiples of 4; pick a huge non-multiple.
             Assert.True(l.Attach("app-a", int.MaxValue - 2));
+            System.Threading.Thread.Sleep(15);           // let the 0 s grace window elapse
             Assert.Null(l.Current());                    // read self-heals
             Assert.True(l.TryAcquire("app-b", null, out _)); // lane is free again
+        }
+
+        [Fact]
+        public void Lock_holds_a_dead_pid_through_the_grace_window_so_finish_can_harvest()
+        {
+            // The normal end-of-session order is: emulator exits → status polls → the launch
+            // script's finish. Without the grace, any poll in that gap reclaims the lock and the
+            // releasing finish (which triggers the save harvest) finds nothing — caught live.
+            var l = new HeavyLock(pidGraceSeconds: 300);
+            Assert.True(l.TryAcquire("app-a", null, out _));
+            l.SetUser("app-a", 7);
+            Assert.True(l.Attach("app-a", int.MaxValue - 2)); // already-dead pid
+            Assert.NotNull(l.Current());                      // a status poll does NOT strip it
+            Assert.Equal(7, l.Current()!.UserId);             // the owner survives for the harvest
+            Assert.True(l.Release("app-a"));                  // the finish still releases
+            Assert.Null(l.Current());
         }
 
         [Fact]
