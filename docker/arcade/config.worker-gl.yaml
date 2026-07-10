@@ -334,7 +334,12 @@ emulator:
           # which async-shader threads dereference — the 0xc0000005). The custom lib NAME pins it against
           # repo.sync nightly overwrites; the stock dolphin_libretro stays beside it as instant rollback
           # (flip lib back + shader_compilation_mode to "0"). Build recipe: D:\Arcade\build\dolphin\build-core.bat.
-          lib: dolphin_libretro  # REVERTED to stock 2026-07-09 late — see task 22 / gc memory: custom-core session was laggier; suspects (version drift vs context churn vs dual-core) need instrumented isolation, not ear tests. Custom core + patch + build recipe all retained.
+          # REBASED custom core (2026-07-09, task 22): the CreateSharedContext patch rebuilt on the
+          # STOCK revision 287ab2dba6 (hash verified embedded in the DLL) — the master-drift build
+          # ran races at half speed because its shader format could not reuse the warm pipeline
+          # cache (measured via pace-diag). This build = yesterday's core + async shaders, nothing
+          # else. Rollback: lib: dolphin_libretro + shader_compilation_mode "0".
+          lib: dolphin_custom_libretro  # (see revert note above — see task 22 / gc memory: custom-core session was laggier; suspects (version drift vs context churn vs dual-core) need instrumented isolation, not ear tests. Custom core + patch + build recipe all retained.
           folder: gc
           roms: ["gcz", "iso", "rvz", "ciso", "gcm", "m3u"]
           isGlAllowed: true
@@ -411,7 +416,7 @@ emulator:
             # compile stall, no first-sight audio skip. Was "0" (Synchronous), forced by the stock
             # core's nullptr CreateSharedContext. main_cpu_thread stays disabled deliberately: one
             # variable at a time — the dual-core GPU thread is a separate risk with its own testing.
-            dolphin_shader_compilation_mode: "0"   # reverted with the core (async needs the custom core)
+            dolphin_shader_compilation_mode: "2"   # Async (Ubershaders) — the patched core makes the shared contexts real
             dolphin_wait_for_shaders: "enabled"
 
         # --- ported from docker/arcade/config.yaml (Windows-only migration): the tuned
