@@ -450,6 +450,15 @@ descriptor registry, Apollo proxy (pin + apps), heavy tier of the stager (chunke
 adopts `E:\Switch Games`), lock + watchdog; `heavy-sync` CLI (dry-run first); card UX
 (Prepare/Play/busy, pairing helper). CloudRetro pad-detector mitigation lands here too.
 
+*BUILT 2026-07-10.* Deltas from the sketch above: the lane lock is gateway-memory with PID-based
+self-healing (no DB status row — the site reads `/heavy/status` live); `heavy-sync` is a gateway
+endpoint (`POST /heavy/sync-apps`, dry-run default), not a CLI; Apollo 0.4.6's admin API turned
+out to be session-cookie auth (`POST /api/login`) with uuid-keyed app upserts, not stock
+Sunshine's basic-auth/index scheme. Six descriptors live on the host; all six Apollo apps launch
+through `heavy-launch.ps1` (contract verified end-to-end: prepare→lock→launch→attach→exit→
+release). Five curated cards in the catalog (3 Switch + Trash Panic + Bloodborne). v1 stager
+copies single files (Switch xci/nsp); PS3/PS4 install-shaped titles use `staging: null`.
+
 **H4 — Save vault attach.** Dir-zip kind; seed/harvest via prepare/finish + watcher;
 `HeavyClient→User` ownership; displaced-content safety; manual download/upload works for heavy
 saves; Deck round-trip test on one Switch + one RPCS3 title (G4 proof).
