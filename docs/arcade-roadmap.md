@@ -297,6 +297,10 @@ rclone/Syncthing or EmuDeck CloudSync's own transport; name-mapping keyed on
 All bulk sync jobs: chunked, resumable, guarded, dry-run first (house rule).
 
 ### WS-E — Heavy lane pilot (PS2 / GC / Wii / Switch) — **shape now decided by §2.3/§2.4**
+> **Execution plan written 2026-07-10: `docs/arcade-heavy-lane-plan.md`** — scope updated there
+> (PS2/GC now live in-browser via CloudRetro; heavy lane = Switch/PS3/PS4/WiiU/X360 via Apollo +
+> Moonlight, generic per-app descriptor layer, save-vault attach). That doc supersedes the sketch
+> below where they differ.
 **Pilot = Apollo (or Sunshine) natively on Ziggy's Windows + Moonlight clients.** Rationale:
 no browser multi-gamepad streamer exists (§2.3); WSL2 can't run Vulkan emulators and no
 real-driver Linux VM is possible on this box (§2.4); native Windows gets full GPU + 2× NVENC.
