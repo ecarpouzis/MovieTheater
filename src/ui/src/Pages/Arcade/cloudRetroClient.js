@@ -347,6 +347,11 @@ export function createCloudRetroSession(descriptor, opts) {
   // otherwise adding a local player on a keyboard host's only spare pad is impossible (the idle
   // latched pad would be excluded from the press-a-button detector).
   let lastPadActiveAt = 0;
+  // While the room page listens for a NEW controller's button press, the primary must not adopt it:
+  // this 16 ms poll otherwise steals the pad the instant it's pressed (beating the 125 ms detector),
+  // reports it as "the primary's pad", and the detector excludes the very pad being pressed —
+  // observed live 2026-07-10: quick-add could never complete. Held = keep the current pad only.
+  let adoptionHeld = false;
   const padActive = (gp) =>
     gp.buttons.some((b) => b.pressed) || gp.axes.some((a) => Math.abs(a) > 0.2);
 
@@ -366,7 +371,8 @@ export function createCloudRetroSession(descriptor, opts) {
       // extra seat would both forward the same physical controller.
       const free = (p) => p && !claimedPadIndexes.has(p.index);
       gp = activePadIndex >= 0 && !claimedPadIndexes.has(activePadIndex) ? pads[activePadIndex] : null;
-      if (!gp || (!padActive(gp) && Array.prototype.some.call(pads, (p) => free(p) && p !== gp && padActive(p)))) {
+      if (!adoptionHeld
+          && (!gp || (!padActive(gp) && Array.prototype.some.call(pads, (p) => free(p) && p !== gp && padActive(p))))) {
         gp = Array.prototype.find.call(pads, (p) => free(p) && padActive(p)) || gp
           || Array.prototype.find.call(pads, (p) => free(p)) || null;
       }
@@ -760,6 +766,9 @@ export function createCloudRetroSession(descriptor, opts) {
     // shadow the idle pad it passively latched.
     getActivePadIndex: () =>
       (pinnedPad >= 0 ? pinnedPad : (inputOnly || Date.now() - lastPadActiveAt >= 10_000 ? -1 : activePadIndex)),
+    // Freeze/unfreeze the primary's fluid pad adoption — the room page holds it while listening for
+    // a new controller's button press, so the primary can't steal (and thereby hide) that pad.
+    setAdoptionHeld: (held) => { adoptionHeld = !!held; },
     // Re-pin this seat to another physical pad (Controllers panel). null/undefined = unassign: a
     // local seat then sends neutral; the primary falls back to fluid adopt-any-unclaimed-pad.
     setPad: (idx) => {

@@ -330,11 +330,17 @@ export default function ArcadeRoomPage() {
     addingLocalRef.current = true;
     setAddingLocal(true);
     message.info("Press any button on the NEW controller…", 4);
+    // Freeze the primary's pad adoption for the whole listen window, and exclude only the pad it
+    // held BEFORE the press. Without the hold, the primary's 16 ms poll adopts the new pad the
+    // instant it's pressed (beating this 125 ms loop), which then excluded the very pad being
+    // pressed — the add could never complete.
+    sessionRef.current?.setAdoptionHeld?.(true);
     try {
+      const primary = sessionRef.current?.getActivePadIndex?.() ?? -1;
+      const exclude = primary >= 0 ? [primary] : [];
       let padIndex = -1;
       for (let i = 0; i < 160 && addingLocalRef.current; i++) { // ~20 s at 125 ms
-        const primary = sessionRef.current?.getActivePadIndex?.() ?? -1;
-        padIndex = findNewPad(primary >= 0 ? [primary] : []);
+        padIndex = findNewPad(exclude);
         if (padIndex >= 0) break;
         await delay(125);
       }
@@ -344,6 +350,7 @@ export default function ArcadeRoomPage() {
       }
       await openLocalSession(padIndex);
     } finally {
+      sessionRef.current?.setAdoptionHeld?.(false);
       addingLocalRef.current = false;
       setAddingLocal(false);
     }

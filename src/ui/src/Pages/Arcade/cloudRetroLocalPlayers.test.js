@@ -149,6 +149,28 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
     s.close();
   });
 
+  it("adoption hold keeps the primary off a newly pressed pad (the quick-add race)", async () => {
+    setPads(pad(0), pad(1));
+    const s = createCloudRetroSession(descriptorFor({ playerSlot: 0 }), { videoEl: null });
+    await driveToGameStart(sockets[0]);
+    const dc = channels.find((c) => c.label === "data");
+    dc.onopen?.();
+    await vi.advanceTimersByTimeAsync(50); // the primary latches idle pad 0 (fluid fallback)
+
+    s.setAdoptionHeld(true);
+    setPads(pad(0), pad(1, [0])); // the NEW player presses a button to identify their pad
+    await vi.advanceTimersByTimeAsync(100);
+
+    // Un-held, the primary's 16 ms poll adopts pad 1 here: its press rides seat 0 and the detector
+    // excludes the very pad being pressed. Held, the pad stays visible and the seat stays quiet.
+    expect(findNewPad([0])).toBe(1);
+    const masks = dc.sent.map((f) => new Int16Array(f)[0]);
+    expect(masks[masks.length - 1]).toBe(0);
+
+    s.setAdoptionHeld(false);
+    s.close();
+  });
+
   it("setPad moves the pad claim between physical pads", async () => {
     setPads(pad(1), pad(2));
     const s = createCloudRetroSession(descriptorFor(), { padIndex: 1 });
