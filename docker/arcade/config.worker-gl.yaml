@@ -339,7 +339,7 @@ emulator:
           # ran races at half speed because its shader format could not reuse the warm pipeline
           # cache (measured via pace-diag). This build = yesterday's core + async shaders, nothing
           # else. Rollback: lib: dolphin_libretro + shader_compilation_mode "0".
-          lib: dolphin_custom_libretro  # (see revert note above — see task 22 / gc memory: custom-core session was laggier; suspects (version drift vs context churn vs dual-core) need instrumented isolation, not ear tests. Custom core + patch + build recipe all retained.
+          lib: dolphin_custom_libretro  # versioned rebase (287ab2d + patch) — cache validates now — see task 22 / gc memory: custom-core session was laggier; suspects (version drift vs context churn vs dual-core) need instrumented isolation, not ear tests. Custom core + patch + build recipe all retained.
           folder: gc
           roms: ["gcz", "iso", "rvz", "ciso", "gcm", "m3u"]
           isGlAllowed: true
@@ -410,13 +410,21 @@ emulator:
             # compiles, it's single-core CPU saturation at the game's heaviest moments. Dual-core was
             # originally disabled for the null-shared-context crash — the exact thing our patched core
             # (dolphin_custom_libretro) fixes. If GC rooms crash at boot: revert to "disabled".
-            dolphin_main_cpu_thread: "disabled"  # reverted — also caused a teardown WEDGE with close-save
+            # 2026-07-10 verdict: STAYS DISABLED — measured F-Zero GX (versioned rebased core, warm
+            # cache) at a locked 59.9-60 ticks/s through 10+ min of title/attract-demo/menus; the
+            # "half-speed racing" was the master-drift core (fixed by the rebase) and the mid-play
+            # dip-and-crash reports were worker patches 0034/0035's bugs (port drift + WS ping
+            # starvation), both fixed. Re-try dual-core ONLY if real interactive races still dip —
+            # and note the "close-save teardown wedge" that forced the last revert matches the 0035
+            # ping-starvation signature (a slow serialize blocking the read pump), so it is likely
+            # de-risked now.
+            dolphin_main_cpu_thread: "disabled"
             # "2" = Async (Ubershaders): new shaders compile on SHARED-CONTEXT worker threads (our
             # patched core makes those real) while ubershaders render the frame meanwhile — no
             # compile stall, no first-sight audio skip. Was "0" (Synchronous), forced by the stock
             # core's nullptr CreateSharedContext. main_cpu_thread stays disabled deliberately: one
             # variable at a time — the dual-core GPU thread is a separate risk with its own testing.
-            dolphin_shader_compilation_mode: "2"   # Async (Ubershaders) — the patched core makes the shared contexts real
+            dolphin_shader_compilation_mode: "2"   # async on the versioned build
             dolphin_wait_for_shaders: "enabled"
 
         # --- ported from docker/arcade/config.yaml (Windows-only migration): the tuned

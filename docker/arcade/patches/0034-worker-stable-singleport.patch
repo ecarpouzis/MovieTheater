@@ -1,0 +1,95 @@
+diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
+index aa79d9c..bc6e56f 100644
+--- a/pkg/network/webrtc/factory.go
++++ b/pkg/network/webrtc/factory.go
+@@ -124,9 +124,22 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 		// 127.0.0.1 only into an AF_INET socket, never the AF_INET6 dualstack one — so a [::]:port bind
+ 		// silently drops the browser's loopback ICE checks (works for TCP, not UDP). All WebRTC clients
+ 		// are IPv4, so IPv4-only single-port is harmless in production too.
+-		l, err = socket.NewSocketPortRoll("udp4", conf.SinglePort)
+-		if err != nil {
+-			return
++		//
++		// STRICT bind, never roll (patch 0034): the single port is router-forwarded and firewall-scoped —
++		// a worker that silently rolls to port+N advertises ICE candidates no remote client can reach and
++		// every room it takes is media-dead. Rolling only ever masked a bug (the old factory's mux left
++		// bound across a coordinator reconnect). Retry briefly for a stale predecessor's socket, then fail
++		// the boot — the runner/watchdog respawn path handles it from there.
++		for attempt := 1; ; attempt++ {
++			l, err = socket.NewSocket("udp4", conf.SinglePort)
++			if err == nil {
++				break
++			}
++			if !socket.IsPortBusyError(err) || attempt >= 10 {
++				return nil, fmt.Errorf("single-port %d bind failed (attempt %d): %w", conf.SinglePort, attempt, err)
++			}
++			log.Warn().Msgf("single-port %d busy (attempt %d), retrying in 1s", conf.SinglePort, attempt)
++			time.Sleep(time.Second)
+ 		}
+ 		udp, ok := l.(*net.UDPConn)
+ 		if !ok {
+diff --git a/pkg/worker/coordinator.go b/pkg/worker/coordinator.go
+index 2840a0e..c55a441 100644
+--- a/pkg/worker/coordinator.go
++++ b/pkg/worker/coordinator.go
+@@ -7,7 +7,6 @@ import (
+ 	"github.com/giongto35/cloud-game/v3/pkg/com"
+ 	"github.com/giongto35/cloud-game/v3/pkg/config"
+ 	"github.com/giongto35/cloud-game/v3/pkg/logger"
+-	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
+ )
+ 
+ type Connection interface {
+@@ -63,10 +62,9 @@ func newCoordinatorConnection(host string, conf config.Worker, addr string, log
+ }
+ 
+ func (c *coordinator) HandleRequests(w *Worker) chan struct{} {
+-	ap, err := webrtc.NewApiFactory(w.conf.Webrtc, c.log, nil)
+-	if err != nil {
+-		c.log.Panic().Err(err).Msg("WebRTC API creation has been failed")
+-	}
++	// The ApiFactory (single-port UDP mux) is process-lifetime state created in worker.New — creating
++	// it here, per coordinator connection, is what caused the reconnect port-drift (patch 0034).
++	ap := w.api
+ 
+ 	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
+ 		var out api.Out
+diff --git a/pkg/worker/worker.go b/pkg/worker/worker.go
+index 856cdfa..8456f4e 100644
+--- a/pkg/worker/worker.go
++++ b/pkg/worker/worker.go
+@@ -10,6 +10,7 @@ import (
+ 	"github.com/giongto35/cloud-game/v3/pkg/monitoring"
+ 	"github.com/giongto35/cloud-game/v3/pkg/network"
+ 	"github.com/giongto35/cloud-game/v3/pkg/network/httpx"
++	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/cloud"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
+@@ -17,6 +18,7 @@ import (
+ 
+ type Worker struct {
+ 	address  string
++	api      *webrtc.ApiFactory
+ 	conf     config.WorkerConfig
+ 	cord     *coordinator
+ 	lib      games.GameLibrary
+@@ -49,6 +51,18 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+ 		router:   room.NewGameRouter(),
+ 	}
+ 
++	// ONE WebRTC ApiFactory (and thus ONE single-port UDP mux) per process, created at boot (patch
++	// 0034). It used to be created inside HandleRequests, i.e. once per COORDINATOR CONNECTION: a
++	// coordinator reconnect then bound a second mux while the first stayed open, the strict/rolling
++	// bind drifted to port+N, and the worker advertised ICE candidates nothing could reach — every
++	// room after the reconnect was media-dead until the watchdog recycled the process. The factory
++	// depends only on config, so reconnects have no business rebinding it.
++	apiFactory, err := webrtc.NewApiFactory(conf.Webrtc, log, nil)
++	if err != nil {
++		return nil, fmt.Errorf("webrtc api init fail: %w", err)
++	}
++	worker.api = apiFactory
++
+ 	h, err := httpx.NewServer(
+ 		conf.Worker.GetAddr(),
+ 		func(s *httpx.Server) httpx.Handler {

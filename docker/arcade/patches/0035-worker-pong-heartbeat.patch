@@ -1,0 +1,40 @@
+diff --git a/pkg/network/websocket/websocket.go b/pkg/network/websocket/websocket.go
+index 794e500..457c6ff 100644
+--- a/pkg/network/websocket/websocket.go
++++ b/pkg/network/websocket/websocket.go
+@@ -205,9 +205,32 @@ func (c *Connection) writer() {
+ 			}
+ 		}
+ 	} else {
+-		for message := range c.send {
+-			if !c.handleMessage(message, true) {
+-				return
++		// CLIENT connections (the worker's link to the coordinator): unsolicited pong heartbeat
++		// (patch 0035). The read pump executes packet handlers INLINE — a dolphin game start or a
++		// close-save serialize blocks it for seconds — and gorilla only answers server pings inside
++		// ReadMessage, so a handler that straddled the coordinator's 7s pong deadline got the socket
++		// severed mid-boot ("read tcp i/o timeout" coordinator-side; ~55% odds for a 3.5s dolphin
++		// boot against the 6.3s ping cadence). The reconnect's Reset then killed the just-started
++		// room. RFC 6455 §5.5.3 allows unsolicited pongs as a one-way heartbeat, and the server's
++		// PongHandler only refreshes its read deadline — so the writer goroutine keeps pongs
++		// flowing regardless of what the handler is doing. A REAL pump wedge is the GL Worker
++		// Watchdog's job (busy + silent log), not the pong deadline's.
++		ticker := time.NewTicker(pongTime / 2)
++		defer ticker.Stop()
++
++		for {
++			select {
++			case message, ok := <-c.send:
++				if !c.handleMessage(message, ok) {
++					return
++				}
++			case <-ticker.C:
++				err := c.conn.writeControl(websocket.PongMessage, nil, time.Now().Add(writeWait))
++				if err != nil && err != websocket.ErrCloseSent {
++					if e, ok := err.(net.Error); !ok || !e.Timeout() {
++						return
++					}
++				}
+ 			}
+ 		}
+ 	}

@@ -518,3 +518,37 @@ recycles the worker. NOTE the JSON "port" is the worker HTTP port from the hands
 (9000/9001...), NOT the UDP mux port -- the watchdog maps rooms to workers via the "New room"
 log line instead. The coordinator is localhost-only behind the gateway; the endpoint leaks
 nothing beyond room ids.
+
+## 0034-worker-stable-singleport
+
+One WebRTC ApiFactory (= one single-port UDP mux) per WORKER PROCESS, and the mux bind is now
+STRICT — no port roll. Fixes the reconnect port-drift that killed live F-Zero GX rooms twice on
+2026-07-10 (16:35 + 19:06): the factory used to be created inside HandleRequests, i.e. once per
+coordinator CONNECTION, so when the worker's coordinator WS died and auto-reconnected it bound a
+SECOND mux while the first stayed open, NewSocketPortRoll walked 8446→8448, and the worker
+advertised ICE candidates the router doesn't forward — every room after the reconnect was
+media-dead until watchdog check B recycled the process (taking whatever room it had just been
+handed down with it). The factory depends only on config, so it now lives on the Worker struct
+(created at boot, reused across reconnects: reconnect no longer touches the mux at all). The
+strict bind retries up to 10×1 s for a stale predecessor's socket (runner respawn gap), then
+fails the boot — an unreachable advertised port is strictly worse than a dead worker, and the
+runner/watchdog respawn path already owns recovery. Worker-only (coordinator does not create
+ApiFactory).
+
+## 0035-worker-pong-heartbeat
+
+The worker's coordinator link now sends an unsolicited PONG every 3.5 s from the WRITER goroutine
+(client connections only; RFC 6455 §5.5.3 permits one-way pong heartbeats, and the coordinator's
+PongHandler only refreshes its read deadline). ROOT CAUSE FIX for the recurring
+"read tcp i/o timeout → worker reconnect → room dies at boot" chain: the read pump executes packet
+handlers INLINE, and gorilla only answers server pings inside ReadMessage — so any handler that
+blocks for seconds (a dolphin game start ~3.5 s, a close-save serialize, a PS2 load) starved the
+coordinator's 7 s pong deadline whenever it straddled one (~55% odds at the 6.3 s ping cadence for
+a dolphin boot, which is why GC rooms died constantly and 2D almost never). The severed socket
+then canceled the game start ("malformed game start response"), and the worker's reconnect loop
+Reset() every live room — the 2026-07-10 F-Zero GX "slow then crashed" report, live-fired again at
+20:00 the same day under harness. Companion to 0034 (which stopped the SAME reconnect from
+drifting the UDP mux port); with both, a slow handler costs nothing and a genuinely wedged pump is
+the GL Worker Watchdog's job (busy-at-coordinator + silent log), not the pong deadline's. NOTE the
+coordinator's 10 s RPC CallTimeout still bounds a game start — a cold-shader-cache boot >10 s fails
+that one join cleanly (retry works; socket and rooms survive). Worker-only rebuild.
