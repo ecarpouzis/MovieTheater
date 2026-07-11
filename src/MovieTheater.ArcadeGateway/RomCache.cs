@@ -240,6 +240,87 @@ public sealed class RomCache
         }
     }
 
+    /// <summary>
+    /// Materialize one source file into the mount. Plain sources are copied byte-for-byte; a Dolphin
+    /// <c>.gcz</c> is DECOMPRESSED to the raw disc image, written under the SAME <c>.gcz</c> filename
+    /// (Dolphin's DiscIO opens by content sniffing, not extension, so the game key, manifest, eviction
+    /// whitelist and DB paths all stay untouched). Why: GameCube titles with disc-streamed (DTK) audio
+    /// — F-Zero GX's announcer being the canonical case — issue continuous small disc reads during play,
+    /// and each read of a compressed image pays zlib inflation on the emulator thread. Uncompressed on
+    /// the cache disk removes that class of stutter for the cost of ~40% more staged bytes, which is
+    /// exactly what the LRU cap is for. (2026-07-11, the F-Zero GX slowdown post-mortem.)
+    /// </summary>
+    private async Task StageRomFileAsync(string source, string dest, CancellationToken ct)
+    {
+        if (Path.GetExtension(source).Equals(".gcz", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                await Task.Run(() => GczDecompressTo(source, dest, ct), ct);
+                log.LogInformation("RomCache decompressed gcz -> raw image: {Dest}", dest);
+                return;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // A malformed/unknown gcz falls back to the plain copy — the core reads compressed
+                // images fine; this path is an optimization, never a gate.
+                log.LogWarning(ex, "RomCache gcz decompress failed for {Source}; staging compressed copy", source);
+            }
+        }
+        using var src = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using var dst = new FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.None);
+        await src.CopyToAsync(dst, ct);
+    }
+
+    /// <summary>
+    /// Dolphin GCZ → raw disc image. Format: 32-byte header (magic <c>0xB10BC001</c>, sub-type,
+    /// compressed_size u64, data_size u64, block_size u32, num_blocks u32), then u64 block pointers
+    /// (top bit set = block stored raw), u32 adler32 table (unused here), then block data. Compressed
+    /// blocks are zlib-wrapped deflate.
+    /// </summary>
+    internal static void GczDecompressTo(string source, string dest, CancellationToken ct)
+    {
+        using var src = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using var br = new BinaryReader(src);
+        if (br.ReadUInt32() != 0xB10BC001u) throw new InvalidDataException("not a GCZ file");
+        _ = br.ReadUInt32();                       // sub-type
+        var compressedSize = br.ReadUInt64();
+        var dataSize = br.ReadUInt64();
+        _ = br.ReadUInt32();                       // block size
+        var numBlocks = br.ReadUInt32();
+        var ptrs = new ulong[numBlocks];
+        for (var i = 0; i < numBlocks; i++) ptrs[i] = br.ReadUInt64();
+        src.Seek(4L * numBlocks, SeekOrigin.Current); // adler table
+        var dataStart = src.Position;
+
+        const ulong RawFlag = 1UL << 63;
+        using var dst = new FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.None);
+        long written = 0;
+        for (var i = 0; i < numBlocks; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var off = (long)(ptrs[i] & ~RawFlag);
+            var end = i + 1 < numBlocks ? (long)(ptrs[i + 1] & ~RawFlag) : (long)compressedSize;
+            src.Seek(dataStart + off, SeekOrigin.Begin);
+            var chunk = new byte[end - off];
+            src.ReadExactly(chunk);
+            if ((ptrs[i] & RawFlag) != 0)
+            {
+                dst.Write(chunk);
+                written += chunk.Length;
+            }
+            else
+            {
+                using var z = new System.IO.Compression.ZLibStream(new MemoryStream(chunk), System.IO.Compression.CompressionMode.Decompress);
+                var before = dst.Position;
+                z.CopyTo(dst);
+                written += dst.Position - before;
+            }
+        }
+        if ((ulong)written != dataSize)
+            throw new InvalidDataException($"gcz decompress size mismatch: wrote {written}, header says {dataSize}");
+    }
+
     private async Task ExtractAsync(ManifestGame g, CancellationToken ct)
     {
         var dest = FolderDest(g);
@@ -261,9 +342,7 @@ public sealed class RomCache
                 if (DiscSourceIsRom(d))
                 {
                     var to = Path.Combine(dest, d.File);
-                    using var src = new FileStream(d.Archive, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    using var dst = new FileStream(to, FileMode.Create, FileAccess.Write, FileShare.None);
-                    await src.CopyToAsync(dst, ct);
+                    await StageRomFileAsync(d.Archive, to, ct);
                 }
                 else
                 {
@@ -284,9 +363,7 @@ public sealed class RomCache
         if (SourceIsRom(g))
         {
             var to = CopyDest(g);
-            using var src = new FileStream(g.Archive, FileMode.Open, FileAccess.Read, FileShare.Read);
-            using var dst = new FileStream(to, FileMode.Create, FileAccess.Write, FileShare.None);
-            await src.CopyToAsync(dst, ct);
+            await StageRomFileAsync(g.Archive, to, ct);
             if (!IsPresent(g))
                 throw new InvalidOperationException($"copy of {g.GameKey} produced no {string.Join('/', ExtsOf(g))} in {dest}.");
             return;

@@ -43,6 +43,56 @@ namespace MovieTheater.Tests
         private string CueOf(string key) => Path.Combine(romsDir, "psx", key + ".cue");
 
         [Fact]
+        public void Gcz_decompresses_to_original_bytes()
+        {
+            // Synthesize a tiny GCZ (mixed raw + deflate blocks) and round-trip it through the
+            // decompressor the gateway uses to stage GameCube images uncompressed (the F-Zero GX
+            // disc-streamed-audio lesson, 2026-07-11).
+            var rnd = new Random(42);
+            var blockSize = 4096;
+            var blocks = new byte[3][];
+            blocks[0] = new byte[blockSize]; rnd.NextBytes(blocks[0]);                    // random → stored raw
+            blocks[1] = Enumerable.Repeat((byte)0xAB, blockSize).ToArray();               // compressible
+            blocks[2] = Enumerable.Range(0, blockSize).Select(i => (byte)(i % 7)).ToArray();
+            var original = blocks.SelectMany(b => b).ToArray();
+
+            var parts = new List<byte[]>();
+            var ptrs = new ulong[3];
+            ulong off = 0;
+            for (var i = 0; i < 3; i++)
+            {
+                byte[] payload;
+                using (var ms = new MemoryStream())
+                {
+                    using (var z = new System.IO.Compression.ZLibStream(ms, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true))
+                        z.Write(blocks[i]);
+                    payload = ms.ToArray();
+                }
+                var raw = payload.Length >= blockSize; // GCZ stores raw when compression doesn't help
+                if (raw) payload = blocks[i];
+                ptrs[i] = off | (raw ? 1UL << 63 : 0);
+                parts.Add(payload);
+                off += (ulong)payload.Length;
+            }
+
+            var gcz = Path.Combine(root, "t.gcz");
+            var iso = Path.Combine(root, "t.iso");
+            using (var f = new BinaryWriter(new FileStream(gcz, FileMode.Create)))
+            {
+                f.Write(0xB10BC001u); f.Write(0u);
+                f.Write((ulong)parts.Sum(p => p.Length));          // compressed_size
+                f.Write((ulong)original.Length);                   // data_size
+                f.Write((uint)blockSize); f.Write(3u);
+                foreach (var p in ptrs) f.Write(p);
+                for (var i = 0; i < 3; i++) f.Write(0u);           // adler table (unused)
+                foreach (var p in parts) f.Write(p);
+            }
+
+            RomCache.GczDecompressTo(gcz, iso, CancellationToken.None);
+            Assert.Equal(original, File.ReadAllBytes(iso));
+        }
+
+        [Fact]
         public async Task Extracts_on_demand_and_is_idempotent()
         {
             if (!File.Exists(SevenZip)) return; // 7-Zip absent → skip (present in dev/CI)
