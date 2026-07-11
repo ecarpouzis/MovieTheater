@@ -261,12 +261,16 @@ browser. It filters the two AUTOMATIC paths (fluid adoption + press-a-button det
 panel assignment still works on any pad as a deliberate override. Option 2 (suspend detector
 while the heavy lock is held) still layers on at H3 for seat-UI noise.
 
-### 6.4 EXPERIMENT (H5) — Apollo multi-client shared session
-Apollo documents multiple clients connected to a single instance (bandwidth stacks per client). If
-that mode lets a *second* Moonlight device join the *same* running app with its own pad, that is
-LAN couch co-op **across rooms/houses** — a real fraction of the CloudRetro multiplayer magic on
-heavy titles. Unverified; treat as a bounded experiment with two clients at H5, never a roadmap
-promise.
+### 6.4 EXPERIMENT (H5) — browser capture lane (supersedes the Apollo multi-client sketch)
+H5 is now fully planned in **`docs/arcade-capture-worker-plan.md`** (2026-07-11): a desktop
+capture/encode caged mod inside the CloudRetro worker streams heavy titles (and eventually Steam)
+into the browser tab over the existing WebRTC lane, with per-seat ViGEm pads = remote multiplayer
+on heavy titles — strictly more than the original sketch below aimed for. It reuses this plan's
+prepare/attach/finish contract, HeavyLock, HeavyVault, and input profiles unchanged.
+(Original sketch, kept for the record: Apollo documents multiple clients connected to a single
+instance; if a second Moonlight device could join the same running app with its own pad, that
+would be LAN couch co-op across houses. The capture lane answers the same want without depending
+on unverified Apollo behavior.)
 
 ### 6.5 Client hotkeys / guest ergonomics
 Moonlight's local quit combo (Ctrl+Alt+Shift+Q; long-press Select/Back combos on controller-only
