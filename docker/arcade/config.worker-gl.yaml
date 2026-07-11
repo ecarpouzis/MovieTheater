@@ -350,9 +350,15 @@ emulator:
           # first retro_run, so the load-time retro_serialize_size probe walks save-state into a NULL
           # g_vertex_manager → 0xc0000005. The probe only feeds a log line; saves re-query at save time.
           hacks: [skip_hw_context_destroy, skip_serialize_size_probe]
-          # Render efb_scale 3 (1920x1584), deliver 1280x1056: supersampled on TOP of 4x MSAA (MSAA works
-          # here; see dolphin_anti_aliasing). 60fps, 0 dropped, ~1.38 CPU cores, GPU 22%.
-          scale: 0.6667
+          # 2026-07-10 late: back to efb_scale 2 delivered NATIVELY (scale 1) from efb 3 + scale 0.6667.
+          # Same 1280x1056 on the wire; what changed is the INTERNAL render, and that matters because
+          # F-Zero GX EFB-PEEKS constantly (its own GameSettings INI documents whole-screen peeks) — EFB
+          # readback cost scales with internal pixels, and Eric's real races dipped to 28–50 ticks/s in
+          # 5–20 s windows at efb 3 (attract/menus hold 60 and were how the supersample verdict slipped
+          # through — attract is NOT representative). efb 2 is the b504c40-era config verified
+          # 60fps/0-drop on GX itself; 4x MSAA stays (the one core where MSAA measurably works), only
+          # the supersample-on-top goes. Re-raise only against a REAL driven race, never attract.
+          scale: 1
           scaleMethod: bilinear2
           options:
             # OpenGL backend so Dolphin draws into CloudRetro's GL (WGL) hw-render context. A Vulkan/D3D
@@ -371,11 +377,8 @@ emulator:
             # (partial deadlock — /echo alive, coordinator WS dead) at ANY scale (reproduced at "1" too);
             # the GL Worker Watchdog task auto-recycles a wedged worker within ~60s. Real fix = debug the
             # teardown deadlock (dump: scratchpad worker-hung-27168.dmp).
-            # TEMPORARILY "2" (2026-07-09 late, F-Zero audio A/B): with compiles cached AND dual-core
-            # on, audio still dropped at peak-load moments. This run isolates the raw load envelope:
-            # clean audio at 2x (1280x1056) = tune the envelope; still drops = context-churn lead
-            # (124 shared-context creations logged in one session — cache worker contexts core-side).
-            dolphin_efb_scale: "3"
+            # "2" since 2026-07-10 late (paired with scale: 1 above — same delivered 1280x1056).
+            dolphin_efb_scale: "2"
             # 4x MSAA. The ONLY core where MSAA measurably does anything: A/B'd on RAW pre-encode frames
             # (patch 0022) over 3 runs each, the share of edges that are HARD fell 6.29% -> 4.08%, with no
             # overlap between the groups. n64 (gliden64) and psp (ppsspp) produce BIT-IDENTICAL frames with
@@ -410,14 +413,14 @@ emulator:
             # compiles, it's single-core CPU saturation at the game's heaviest moments. Dual-core was
             # originally disabled for the null-shared-context crash — the exact thing our patched core
             # (dolphin_custom_libretro) fixes. If GC rooms crash at boot: revert to "disabled".
-            # 2026-07-10 verdict: STAYS DISABLED — measured F-Zero GX (versioned rebased core, warm
-            # cache) at a locked 59.9-60 ticks/s through 10+ min of title/attract-demo/menus; the
-            # "half-speed racing" was the master-drift core (fixed by the rebase) and the mid-play
-            # dip-and-crash reports were worker patches 0034/0035's bugs (port drift + WS ping
-            # starvation), both fixed. Re-try dual-core ONLY if real interactive races still dip —
-            # and note the "close-save teardown wedge" that forced the last revert matches the 0035
-            # ping-starvation signature (a slow serialize blocking the read pump), so it is likely
-            # de-risked now.
+            # DUAL-CORE IS A DEAD END FOR F-ZERO GX — settled 2026-07-10 late, after a ~15-minute
+            # "enabled" experiment kept logging "CPU Thread separate = No": Dolphin's OWN game INI
+            # (Sys/GameSettings/GFZ.ini) sets `CPUThread = False` for GFZ* and the game-local config
+            # layer overrides our base option. Upstream forbids dual-core for this game (it EFB-peeks
+            # constantly — the same INI's Video_Hacks note). So the 07-09 "dual-core ON" round never
+            # actually engaged for GX either, and per the per-ROM-fixes rule the emulator's DB wins:
+            # this stays disabled (flipping it only affects OTHER GC titles, untested). The real
+            # lever for GX's heavy-moment dips is EFB work ∝ internal resolution — see efb_scale.
             dolphin_main_cpu_thread: "disabled"
             # "2" = Async (Ubershaders): new shaders compile on SHARED-CONTEXT worker threads (our
             # patched core makes those real) while ubershaders render the frame meanwhile — no
