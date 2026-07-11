@@ -152,10 +152,10 @@ index 85ede12..6d1d955 100644
  
 diff --git a/pkg/worker/caged/capture/capture.go b/pkg/worker/caged/capture/capture.go
 new file mode 100644
-index 0000000..f2e06ae
+index 0000000..ddd3403
 --- /dev/null
 +++ b/pkg/worker/caged/capture/capture.go
-@@ -0,0 +1,393 @@
+@@ -0,0 +1,403 @@
 +// Package capture implements the "capture" caged mod (heavy browser lane, H5): instead of running
 +// a libretro core it launches a native Windows program through the heavy gateway contract, captures
 +// the desktop with GStreamer (Windows Graphics Capture), feeds frames/PCM into the UNCHANGED
@@ -446,9 +446,16 @@ index 0000000..f2e06ae
 +		a.log.Warn().Msgf("capture: SoundVolumeView not at %s — game audio stays on the host speakers", a.conf.SoundVolumeView)
 +		return
 +	}
++	// W5: poll TIGHTLY (every 250 ms for ~12 s) instead of a few sparse retries. /SetAppDefault only
++	// moves a session that already EXISTS, and the emulator opens its audio session some seconds into
++	// boot (after shader compile), so the sparse version left ~5 s of the game blasting the HOST
++	// speakers. Tight polling catches the session within ~250 ms of it opening (per-PID = still
++	// session-scoped; a stale/closed room bails). Re-routing an already-routed session is a harmless
++	// no-op, so we keep asserting through the boot window without needing to detect "done".
 +	go func() {
-+		for _, d := range []time.Duration{200 * time.Millisecond, 2 * time.Second, 5 * time.Second} {
-+			time.Sleep(d)
++		routed := false
++		deadline := time.Now().Add(12 * time.Second)
++		for time.Now().Before(deadline) {
 +			a.mu.Lock()
 +			stale := a.closed || a.gamePid != pid // don't route a PREVIOUS room's pid into the next room
 +			a.mu.Unlock()
@@ -457,9 +464,12 @@ index 0000000..f2e06ae
 +			}
 +			if err := exec.Command(a.conf.SoundVolumeView, "/SetAppDefault", a.conf.AudioSink, "all", strconv.Itoa(pid)).Run(); err != nil {
 +				a.log.Warn().Err(err).Msg("capture: audio route to virtual sink failed")
++			} else if !routed {
++				routed = true
++				a.log.Info().Msgf("capture: routing pid %d audio -> %s (off the host speakers)", pid, a.conf.AudioSink)
 +			}
++			time.Sleep(250 * time.Millisecond)
 +		}
-+		a.log.Info().Msgf("capture: routed pid %d audio -> %s (off the host speakers)", pid, a.conf.AudioSink)
 +	}()
 +}
 +
@@ -1200,11 +1210,27 @@ index 0000000..6cc9eb1
 +}
 diff --git a/pkg/worker/caged/capture/pipeline.go b/pkg/worker/caged/capture/pipeline.go
 new file mode 100644
-index 0000000..020aa26
+index 0000000..7f30ee3
 --- /dev/null
 +++ b/pkg/worker/caged/capture/pipeline.go
-@@ -0,0 +1,254 @@
+@@ -0,0 +1,272 @@
 +package capture
++
++/*
++#cgo pkg-config: gstreamer-1.0 gstreamer-video-1.0
++#include <gst/gst.h>
++#include <gst/video/gstvideometa.h>
++
++// bufferVideoStride0 returns the REAL row stride of plane 0 from the buffer's GstVideoMeta, or -1
++// when there is no meta (fall back to a size/height heuristic). d3d12download can row-pad, so the
++// authoritative stride lives in the meta, not width*4 (W6 / trap #3).
++static int bufferVideoStride0(void *buf) {
++	GstVideoMeta *m = gst_buffer_get_video_meta((GstBuffer*)buf);
++	if (m == NULL) return -1;
++	return (int)m->stride[0];
++}
++*/
++import "C"
 +
 +import (
 +	"fmt"
@@ -1278,8 +1304,10 @@ index 0000000..020aa26
 +			src := unsafe.Slice((*byte)(mi.Data()), size)
 +			h := a.height()
 +			stride := a.width() * 4
-+			if h > 0 && size%h == 0 {
-+				stride = size / h // real row stride (d3d12download may row-pad; never assume W*4)
++			if s := int(C.bufferVideoStride0(unsafe.Pointer(buf.Instance()))); s > 0 {
++				stride = s // authoritative row stride from GstVideoMeta (W6)
++			} else if h > 0 && size%h == 0 {
++				stride = size / h // fallback: single-plane packed buffer (size == stride*height)
 +			}
 +			a.cacheAndPush(src, stride, dur)
 +			buf.Unmap()
