@@ -537,8 +537,14 @@ namespace MovieTheater.Controllers
             descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + vbr };
             if (request.AudioFec is 1 or 2)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fec=" + request.AudioFec };
-            if (request.PaceMs > 0)
-                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&pace=" + Math.Clamp(request.PaceMs, 1, 20) };
+            // In-frame packet pacing (patch 0028). Capture rooms DEFAULT it to 8 ms server-side (like vbr
+            // defaults): the capture stream is the fattest we send (12 Mbps H.264, intra-refresh ⇒ every
+            // frame is sizable), and un-paced bursts on tablet WiFi queue behind each other and jitter the
+            // audio packets sharing the air, growing the browser's audio jitter buffer (plan §12C). An
+            // explicit lobby choice still wins.
+            var paceMs = request.PaceMs > 0 ? request.PaceMs : (isCapture ? 8 : 0);
+            if (paceMs > 0)
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&pace=" + Math.Clamp(paceMs, 1, 20) };
             // Codec rides the WS URL like vbr/fec — but unlike them it ALSO rides every joiner's URL
             // (see Join/ClaimSeat): the shim echoes it in INIT_WEBRTC, where each peer's track mime is
             // fixed, and every track must match the room's one encoder.
