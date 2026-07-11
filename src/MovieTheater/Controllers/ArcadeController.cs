@@ -976,8 +976,12 @@ namespace MovieTheater.Controllers
 
             var boundRoomId = rooms.BoundRoomId(code) ?? string.Empty;
             var (launchKey, discCount) = await ResolveLaunchAsync(game);
+            // Use the room's ACTUAL system from its bound id (a capture room is "capture", not the
+            // catalog "switch") so a joiner's descriptor.system matches the creator's — client tables
+            // keyed on descriptor.system (aspect fallback, the "Live" label) would otherwise diverge (R2).
+            var joinSystem = ArcadeSaveId.TryParse(boundRoomId, out _, out _, out _, out var jsys, out _) ? jsys : game.System;
             var descriptor = host.BuildJoinDescriptor(
-                userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, game.System),
+                userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, joinSystem),
                 code, boundRoomId, join.PlayerSlot, isCreator: false);
 
             // The room's codec (patch 0036): a joiner's track mime is fixed at INIT_WEBRTC and must match
@@ -1029,8 +1033,10 @@ namespace MovieTheater.Controllers
 
             var boundRoomId = rooms.BoundRoomId(code) ?? string.Empty;
             var (launchKey, discCount) = await ResolveLaunchAsync(game);
+            // Match the room's real system (capture rooms are "capture", not "switch") — see R2 in Join.
+            var claimSystem = ArcadeSaveId.TryParse(boundRoomId, out _, out _, out _, out var csys, out _) ? csys : game.System;
             var descriptor = host.BuildJoinDescriptor(
-                userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, game.System),
+                userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, claimSystem),
                 code, boundRoomId, claim.PlayerSlot, isCreator: false);
 
             // Input-only sessions never attach media, but their peer still negotiates a track — keep its

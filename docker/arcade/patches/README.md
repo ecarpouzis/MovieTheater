@@ -575,3 +575,30 @@ bounds receiver backlog. AV1 stays the room default; the creator picks H.264 whe
 play. Rehydration caveat: the room codec lives in the site's in-memory state only — after a pod
 restart a NEW joiner of a codec-overridden room falls back to the default track mime (video
 broken for that joiner only; accepted rare-edge, noted in ArcadeRoomService).
+
+## 0037-capture-caged-mod.patch
+The "capture" caged mod — the heavy BROWSER lane (H5, docs/arcade-capture-worker-plan.md). A second
+`app.App` implementation alongside libretro: instead of running a core it launches a native Windows
+program through the gateway heavy contract (prepare/attach/finish), captures the desktop with
+GStreamer `d3d12screencapturesrc` (WGC, `tonemap=reinhard` so HDR desktops don't wash out), feeds
+BGRA frames + PID-scoped PCM into the UNCHANGED media/encode/WebRTC pipeline, and turns browser
+RetroPad packets into ViGEm virtual Xbox 360 pads. New package `pkg/worker/caged/capture/` (capture/
+pipeline/input/launch/monitor) + wiring: `caged.go` registers the mod + `CaptureSystem`; `worker.go`
+loads it when `conf.Capture.Enabled`; `coordinatorhandlers.go` branches on `gameInfo.System ==
+"capture"` (the ONE app-select point — libretro path untouched); `config/worker.go` gains the
+`Capture` section. Adds `github.com/openstadia/go-vigem` (go.mod/go.sum) — needs `vigemclient.dll`
+beside worker.exe (built from Nefarius source; not in this patch).
+
+**Why:** heavy titles (yuzu/RPCS3/…) that structurally can't run in libretro become playable in a
+browser tab with per-seat internet pads — the zero-install complement to the Moonlight/Artemis lane
+(both launch paths coexist on the card). Only the capture worker enables it (zone=capture);
+config in `docker/arcade/config.worker-capture.yaml`.
+
+**Load-bearing worker gotchas baked into the code (all verified live):** the video pipeline stays
+PLAYING for the process's whole life and gating is done by dropping frames — a d3d12 WGC capture
+session can NOT be PAUSE- or NULL-then-resumed in-process (room 2 froze at ~1 fps otherwise);
+per-room goroutines (exit-watcher, audio-router) capture their own proc and bail when
+`a.gamePid` moves on, or a stale room blanks the next one; `Close()` nil-guards the re-push channel
+and only `gwFinish`es when it actually acquired the lock (a prepare 409 must not release an Artemis
+session of the same title). `cmd/capture-probe` (the hardcoded live harness) is intentionally NOT
+in this patch.

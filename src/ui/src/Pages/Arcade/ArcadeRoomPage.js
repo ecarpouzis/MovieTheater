@@ -562,6 +562,7 @@ export default function ArcadeRoomPage() {
           ngpc: 160 / 152,           // ~1.05 — was rendered at 1.33
           lynx: 160 / 102,
           vb: 384 / 224,
+          capture: 16 / 9,           // browser capture lane — 1080p desktop; never fall back to 4:3 (R3)
         };
         const ar = coreAspect || FALLBACK_AR[system] || 4 / 3;
         // A quarter-turn swaps the element's axes. The box is `ar` wide-over-tall; for the rotated video

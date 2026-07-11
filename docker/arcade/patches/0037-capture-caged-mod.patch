@@ -1,0 +1,1664 @@
+diff --git a/go.mod b/go.mod
+index 46034dc..19b7a10 100644
+--- a/go.mod
++++ b/go.mod
+@@ -12,13 +12,17 @@ require (
+ 	github.com/knadh/koanf/maps v0.1.2
+ 	github.com/knadh/koanf/v2 v2.3.5
+ 	github.com/minio/minio-go/v7 v7.2.1
++	github.com/openstadia/go-vigem v0.0.0-20231112104545-cd0c86b3b050
+ 	github.com/pion/ice/v4 v4.2.7
+ 	github.com/pion/interceptor v0.1.45
+ 	github.com/pion/logging v0.2.4
++	github.com/pion/rtcp v1.2.17
++	github.com/pion/rtp v1.10.2
+ 	github.com/pion/webrtc/v4 v4.2.16
+ 	github.com/rs/xid v1.6.0
+ 	github.com/rs/zerolog v1.35.1
+ 	golang.org/x/crypto v0.53.0
++	golang.org/x/sys v0.46.0
+ 	gopkg.in/yaml.v3 v3.0.1
+ )
+ 
+@@ -42,8 +46,6 @@ require (
+ 	github.com/pion/dtls/v3 v3.1.4 // indirect
+ 	github.com/pion/mdns/v2 v2.1.0 // indirect
+ 	github.com/pion/randutil v0.1.0 // indirect
+-	github.com/pion/rtcp v1.2.17 // indirect
+-	github.com/pion/rtp v1.10.2 // indirect
+ 	github.com/pion/sctp v1.10.3 // indirect
+ 	github.com/pion/sdp/v3 v3.0.19 // indirect
+ 	github.com/pion/srtp/v3 v3.0.12 // indirect
+@@ -56,7 +58,6 @@ require (
+ 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+ 	golang.org/x/exp v0.0.0-20260611194520-c48552f49976 // indirect
+ 	golang.org/x/net v0.56.0 // indirect
+-	golang.org/x/sys v0.46.0 // indirect
+ 	golang.org/x/text v0.38.0 // indirect
+ 	golang.org/x/time v0.15.0 // indirect
+ 	gopkg.in/ini.v1 v1.67.3 // indirect
+diff --git a/go.sum b/go.sum
+index a206751..d9ec08f 100644
+--- a/go.sum
++++ b/go.sum
+@@ -52,6 +52,8 @@ github.com/mitchellh/copystructure v1.2.0 h1:vpKXTN4ewci03Vljg/q9QvCGUDttBOGBIa1
+ github.com/mitchellh/copystructure v1.2.0/go.mod h1:qLl+cE2AmVv+CoeAwDPye/v+N2HKCj9FbZEVFJRxO9s=
+ github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=
+ github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
++github.com/openstadia/go-vigem v0.0.0-20231112104545-cd0c86b3b050 h1:gz6elCqkUpr4JQwnRs5oIwPJyPLnvbrL/tMy8G+pDAg=
++github.com/openstadia/go-vigem v0.0.0-20231112104545-cd0c86b3b050/go.mod h1:Gzd9Xtz6AH44tm5Az1mCGYZCp8VSRIFpKUMY2lBdep8=
+ github.com/philhofer/fwd v1.2.0 h1:e6DnBTl7vGY+Gz322/ASL4Gyp1FspeMvx1RNDoToZuM=
+ github.com/philhofer/fwd v1.2.0/go.mod h1:RqIHx9QI14HlwKwm98g9Re5prTQ6LdeRQn+gXJFxsJM=
+ github.com/pion/datachannel v1.6.2 h1:7EXQ8TH3vTouBUdRWYbcX2edSx9Yj6k5zl5P+qyxEPc=
+diff --git a/pkg/config/worker.go b/pkg/config/worker.go
+index 6a19ddb..b93c799 100644
+--- a/pkg/config/worker.go
++++ b/pkg/config/worker.go
+@@ -21,6 +21,29 @@ type WorkerConfig struct {
+ 	Worker    Worker
+ 	Webrtc    Webrtc
+ 	Version   Version
++	Capture   Capture
++}
++
++// Capture configures the desktop-capture caged mod (heavy browser lane, H5). Only the capture
++// worker enables it; retro workers leave Enabled=false and never construct the mod. See
++// docs/arcade-capture-worker-plan.md.
++type Capture struct {
++	Enabled      bool
++	GatewayUrl   string // heavy gateway base, e.g. http://localhost:2303
++	SecretFile   string // file holding X-Arcade-Internal-Secret
++	ProfilesFile string // heavy input profiles.json (same file heavy-launch.ps1 uses)
++	MonitorIndex int    // index into the ENUMERATED PHYSICAL monitors (logged at boot; SudoVDA trap)
++	Width        int    // encode input width  (default 1920)
++	Height       int    // encode input height (default 1080)
++	Fps          int    // capture/encode fps  (default 60)
++	AudioScope   string // "process" (PID-scoped loopback) | "system" (whole endpoint)
++	// Per-app audio isolation to a virtual sink (VB-CABLE): route ONLY the launched game's audio to
++	// a virtual device so it doesn't blast the host speakers, then capture from that device. Routing
++	// is by PID (session-scoped — reverts the instant the game exits; the host stays normal otherwise).
++	// When AudioSink is set these override AudioScope. Leave empty to keep the loopback behavior.
++	AudioSink          string // SoundVolumeView device name/id to route the game to, e.g. "CABLE Input"
++	AudioCaptureDevice string // wasapi2src device id to capture from, e.g. VB-CABLE's "CABLE Output" endpoint
++	SoundVolumeView    string // path to SoundVolumeView.exe (bundled beside worker.exe)
+ }
+ 
+ type Storage struct {
+diff --git a/pkg/worker/caged/caged.go b/pkg/worker/caged/caged.go
+index 85ede12..6d1d955 100644
+--- a/pkg/worker/caged/caged.go
++++ b/pkg/worker/caged/caged.go
+@@ -7,6 +7,7 @@ import (
+ 	"github.com/giongto35/cloud-game/v3/pkg/config"
+ 	"github.com/giongto35/cloud-game/v3/pkg/logger"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/app"
++	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/capture"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro"
+ )
+ 
+@@ -25,6 +26,11 @@ type ModName string
+ 
+ const Libretro ModName = "libretro"
+ 
++// Capture is the desktop-capture mod (heavy browser lane). CaptureSystem is the gameInfo.System
++// value that routes a start to it. Both mirror capture.System.
++const Capture ModName = "capture"
++const CaptureSystem = capture.System
++
+ func NewManager(log *logger.Logger) *Manager {
+ 	return &Manager{log: log, list: make(map[ModName]app.App)}
+ }
+@@ -32,16 +38,40 @@ func NewManager(log *logger.Logger) *Manager {
+ func (m *Manager) Get(name ModName) app.App { return m.list[name] }
+ 
+ func (m *Manager) Load(name ModName, conf any) error {
+-	if name == Libretro {
++	switch name {
++	case Libretro:
+ 		caged, err := m.loadLibretro(conf)
+ 		if err != nil {
+ 			return err
+ 		}
+ 		m.list[name] = caged
++	case Capture:
++		capApp, err := m.loadCapture(conf)
++		if err != nil {
++			return err
++		}
++		m.list[name] = capApp
+ 	}
+ 	return nil
+ }
+ 
++func (m *Manager) loadCapture(conf any) (*capture.App, error) {
++	s := reflect.ValueOf(conf)
++	c := s.FieldByName("Capture")
++	if !c.IsValid() {
++		return nil, errors.New("no capture conf")
++	}
++	cfg, ok := c.Interface().(config.Capture)
++	if !ok {
++		return nil, errors.New("capture conf wrong type")
++	}
++	capApp := capture.New(cfg, m.log)
++	if err := capApp.Init(); err != nil {
++		return nil, err
++	}
++	return capApp, nil
++}
++
+ func (m *Manager) loadLibretro(conf any) (*libretro.Caged, error) {
+ 	s := reflect.ValueOf(conf)
+ 
+diff --git a/pkg/worker/caged/capture/capture.go b/pkg/worker/caged/capture/capture.go
+new file mode 100644
+index 0000000..f2e06ae
+--- /dev/null
++++ b/pkg/worker/caged/capture/capture.go
+@@ -0,0 +1,393 @@
++// Package capture implements the "capture" caged mod (heavy browser lane, H5): instead of running
++// a libretro core it launches a native Windows program through the heavy gateway contract, captures
++// the desktop with GStreamer (Windows Graphics Capture), feeds frames/PCM into the UNCHANGED
++// encode/WebRTC pipeline, and turns browser RetroPad packets into ViGEm virtual Xbox 360 pads.
++// See docs/arcade-capture-worker-plan.md.
++package capture
++
++import (
++	"net/http"
++	"os"
++	"os/exec"
++	"strconv"
++	"strings"
++	"sync"
++	"sync/atomic"
++	"time"
++
++	"github.com/giongto35/cloud-game/v3/pkg/config"
++	"github.com/giongto35/cloud-game/v3/pkg/logger"
++	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/app"
++	"github.com/go-gst/go-gst/gst"
++)
++
++// System is the pseudo-core / gameInfo.System value that routes a start to this mod.
++const System = "capture"
++
++type App struct {
++	conf   config.Capture
++	log    *logger.Logger
++	http   *http.Client
++	secret string
++
++	hmonitor uint64
++
++	videoCb func(app.Video)
++	audioCb func(app.Audio)
++
++	pads *padManager
++
++	// media pipelines + last-frame cache (guarded by frameMu)
++	videoPipe *gst.Pipeline
++	audioPipe *gst.Pipeline
++	capturing atomic.Bool // gates whether live desktop frames are pushed — the video pipeline stays
++	//            PLAYING for the worker's whole life (a d3d12 WGC session can't be PAUSE/NULL-resumed
++	//            in-process — room 2 froze), so between rooms we drop frames instead of stopping capture.
++	pipeMu     sync.Mutex // guards videoPipe/audioPipe teardown (exitWatcher vs Close race)
++	frameMu    sync.Mutex
++	lastFrame  []byte
++	lastStride int
++	lastDur    time.Duration
++	lastPush   time.Time
++	frames     uint64
++	stopRepush chan struct{}
++
++	// per-room launch state
++	heavyAppId  string
++	roomId      string
++	ownerUserId int
++	swappedExe  string
++	proc        *gameProc
++	gamePid     int
++
++	mu       sync.Mutex
++	started  bool
++	closed   bool
++	prepared bool // true once gwPrepare acquired the heavy lock — only then may Close() gwFinish (W1)
++}
++
++// New constructs the mod from config (does not connect anything — Init does).
++func New(conf config.Capture, log *logger.Logger) *App {
++	return &App{
++		conf: conf,
++		log:  log,
++		http: &http.Client{Timeout: 8 * time.Second},
++	}
++}
++
++func (a *App) width() int {
++	if a.conf.Width > 0 {
++		return a.conf.Width
++	}
++	return 1920
++}
++func (a *App) height() int {
++	if a.conf.Height > 0 {
++		return a.conf.Height
++	}
++	return 1080
++}
++func (a *App) fps() int {
++	if a.conf.Fps > 0 {
++		return a.conf.Fps
++	}
++	return 60
++}
++
++// ── app.App interface ───────────────────────────────────────────────────────────────────────────
++
++func (a *App) Init() error {
++	gst.Init(nil) // idempotent; media package also calls it
++
++	if b, err := os.ReadFile(a.conf.SecretFile); err == nil {
++		a.secret = strings.TrimSpace(string(b))
++	} else {
++		a.log.Warn().Err(err).Msg("capture: gateway secret unreadable — prepare/attach/finish will fail")
++	}
++
++	mons := enumMonitors()
++	for i, m := range mons {
++		a.log.Info().Msgf("capture monitor[%d] %s %dx%d primary=%v hmonitor=%d", i, m.device, m.width, m.height, m.primary, m.handle)
++	}
++	h, chosen, ok := pickMonitor(mons, a.conf.MonitorIndex)
++	if !ok {
++		a.log.Error().Msg("capture: no monitors enumerated")
++	} else {
++		a.hmonitor = h
++		a.log.Info().Msgf("capture: pinned monitor %s (%dx%d hmonitor=%d) index=%d", chosen.device, chosen.width, chosen.height, h, a.conf.MonitorIndex)
++	}
++
++	a.pads = newPadManager(4)
++	if err := a.pads.connect(); err != nil {
++		a.log.Warn().Err(err).Msg("capture: ViGEm unavailable — pads disabled (video/audio still stream)")
++	}
++	return nil
++}
++
++func (a *App) AudioSampleRate() int     { return 48000 }
++func (a *App) AspectRatio() float32     { return float32(a.width()) / float32(a.height()) }
++func (a *App) AspectEnabled() bool      { return true }
++func (a *App) Flipped() bool            { return false }
++func (a *App) ViewportSize() (int, int) { return a.width(), a.height() }
++func (a *App) Scale() (float64, string) { return 1.0, "nearest-neighbour" }
++func (a *App) Rotation() uint           { return 0 }
++func (a *App) PixFormat() uint32        { return 1 } // BGRA (gstreamer.go pixfmt map)
++func (a *App) FPS() float64             { return float64(a.fps()) }
++func (a *App) KbMouseSupport() bool     { return false } // P3
++
++func (a *App) SetVideoCb(cb func(app.Video)) { a.videoCb = cb }
++func (a *App) SetAudioCb(cb func(app.Audio)) { a.audioCb = cb }
++func (a *App) SetDataCb(func([]byte))        {} // room never wires it
++
++// Input routes a RetroPad packet to the seat's virtual pad. Keyboard/mouse (devices != RetroPad)
++// are ignored in v1 (KbMouseSupport() is false, so the room won't open those channels anyway).
++func (a *App) Input(port int, device byte, data []byte) {
++	if a.pads == nil {
++		return
++	}
++	a.pads.apply(port, data)
++}
++
++// Start begins the video+audio pipelines, the re-push ticker, and the heartbeat. Idempotent.
++func (a *App) Start() {
++	a.mu.Lock()
++	if a.started {
++		a.mu.Unlock()
++		return
++	}
++	a.started = true
++	a.mu.Unlock()
++
++	a.stopRepush = make(chan struct{})
++	a.capturing.Store(true) // push live desktop frames for this room
++	if err := a.startVideoPipeline(); err != nil {
++		a.log.Error().Err(err).Msg("capture: video pipeline failed to start")
++	}
++	if err := a.startAudioPipeline(a.gamePid); err != nil {
++		a.log.Warn().Err(err).Msg("capture: audio pipeline failed to start")
++	}
++	go a.repushLoop()
++	go a.heartbeat()
++}
++
++// Close tears everything down. Idempotent, must finish well under 10 s (media-teardown watchdog).
++// Runs on the coordinator's clean-failure path too (LoadApp error → r.Close()) — BEFORE Start() on
++// a failed start — so every step tolerates "never started".
++func (a *App) Close() {
++	a.mu.Lock()
++	if a.closed {
++		a.mu.Unlock()
++		return
++	}
++	a.closed = true
++	prepared := a.prepared
++	a.mu.Unlock()
++
++	a.stopPipelines() // nil-guards stopRepush when Start() never ran (W1)
++	if a.proc != nil {
++		a.proc.kill()
++	}
++	if a.swappedExe != "" {
++		a.restoreInputProfile(a.swappedExe)
++	}
++	if a.pads != nil {
++		a.pads.removeTargets()
++	}
++	a.frameMu.Lock()
++	a.lastFrame = nil // free the ~8 MB frame buffer (W7)
++	a.frameMu.Unlock()
++	// Only release the heavy lock if WE acquired it. On a prepare 409 the lock is held by ANOTHER
++	// session (possibly an Artemis session of the SAME title — HeavyLock.Release keys on appId only),
++	// so an unconditional gwFinish here would release + harvest that session mid-play (W1).
++	if prepared {
++		a.gwFinish(a.heavyAppId)
++	}
++}
++
++// ── Lifecycle (called from the coordinator branch) ─────────────────────────────────────────────
++
++// resetForRoom clears all per-room state so a SECOND room on this long-lived worker process starts
++// clean (W2 — the mod is a process-lifetime singleton; workers serve sequential rooms without
++// restarting). The libretro app gets the equivalent via ReloadFrontend(); the capture mod does it here.
++func (a *App) resetForRoom() {
++	a.mu.Lock()
++	a.started = false
++	a.closed = false
++	a.prepared = false
++	a.gamePid = 0
++	a.mu.Unlock()
++	a.proc = nil
++	a.swappedExe = ""
++	a.heavyAppId = ""
++	a.roomId = ""
++	a.ownerUserId = 0
++	a.stopRepush = nil
++	a.frameMu.Lock()
++	a.lastFrame = nil
++	a.lastStride = 0
++	a.frames = 0
++	a.frameMu.Unlock()
++}
++
++// LoadApp runs prepare -> profile swap -> pad0 -> launch -> attach, and arms the exit watcher.
++// Returns an error (fails the room start) on a gateway 409 or a launch failure.
++func (a *App) LoadApp(heavyAppId, roomId string) error {
++	a.resetForRoom() // this mod is a process-lifetime singleton serving sequential rooms (W2)
++	a.roomId = roomId
++	a.heavyAppId = heavyAppId
++	if uid, _, _, system, gameKey, ok := parseRoomId(roomId); ok {
++		if system == System && (gameKey == heavyAppId || heavyAppId == "") {
++			a.ownerUserId = uid
++			a.heavyAppId = gameKey
++		} else {
++			a.log.Warn().Msgf("capture: room id gameKey/system mismatch (system=%s key=%s app=%s) — proceeding without owner", system, gameKey, heavyAppId)
++		}
++	} else {
++		a.log.Warn().Msgf("capture: room id %q not a minted sv- id — proceeding with ownerUserId=0", roomId)
++	}
++
++	prep, err := a.gwPrepare(a.heavyAppId)
++	if err != nil {
++		return err // 409/decode error → prepared stays false → Close won't touch the lock (W1)
++	}
++	a.mu.Lock()
++	a.prepared = true // we now hold the heavy lock; Close() must gwFinish to release it
++	a.mu.Unlock()
++	a.log.Info().Msgf("capture: prepare ok exe=%s args=%s", prep.Exe, prep.Args)
++
++	a.swappedExe = a.applyStreamedInputProfile(prep.Exe)
++	a.pads.ensurePad(0) // yuzu binds Player 1 at boot
++
++	proc, err := launchGame(prep.Exe, prep.Args, prep.WorkingDir)
++	if err != nil {
++		a.restoreInputProfile(prep.Exe)
++		return err
++	}
++	a.proc = proc
++	a.mu.Lock()
++	a.gamePid = proc.pid
++	a.mu.Unlock()
++	a.log.Info().Msgf("capture: launched pid %d", proc.pid)
++
++	a.gwAttach(a.heavyAppId, proc.pid)
++	go focusPid(proc.pid)
++	a.routeAudioToSink(proc.pid)
++	go a.exitWatcher(proc, a.heavyAppId, a.swappedExe)
++	return nil
++}
++
++// routeAudioToSink moves ONLY this game's audio (by PID) to the configured virtual sink (VB-CABLE)
++// so it doesn't play on the host speakers; we then capture from that sink. By-PID routing is
++// session-scoped — it reverts the instant the game exits, and never touches the host's own audio.
++// Re-asserted a few times because the emulator opens its audio session a couple seconds into boot.
++func (a *App) routeAudioToSink(pid int) {
++	if a.conf.AudioSink == "" || a.conf.SoundVolumeView == "" {
++		return
++	}
++	if _, err := os.Stat(a.conf.SoundVolumeView); err != nil {
++		a.log.Warn().Msgf("capture: SoundVolumeView not at %s — game audio stays on the host speakers", a.conf.SoundVolumeView)
++		return
++	}
++	go func() {
++		for _, d := range []time.Duration{200 * time.Millisecond, 2 * time.Second, 5 * time.Second} {
++			time.Sleep(d)
++			a.mu.Lock()
++			stale := a.closed || a.gamePid != pid // don't route a PREVIOUS room's pid into the next room
++			a.mu.Unlock()
++			if stale {
++				return
++			}
++			if err := exec.Command(a.conf.SoundVolumeView, "/SetAppDefault", a.conf.AudioSink, "all", strconv.Itoa(pid)).Run(); err != nil {
++				a.log.Warn().Err(err).Msg("capture: audio route to virtual sink failed")
++			}
++		}
++		a.log.Info().Msgf("capture: routed pid %d audio -> %s (off the host speakers)", pid, a.conf.AudioSink)
++	}()
++}
++
++// exitWatcher blanks the stream and finishes the session if the game dies while the room is open
++// (privacy: never stream the bare desktop). It captures ITS room's proc/appId/exe as params — never
++// the shared fields, which the NEXT room overwrites — and bails if a newer room already owns the
++// worker (a.gamePid moved on / closed). Without this guard, room 1's watcher fired after room 2's
++// resetForRoom cleared `closed` and blanked room 2 (froze its video). finish is re-entrant.
++func (a *App) exitWatcher(proc *gameProc, appId, swappedExe string) {
++	proc.waitExit()
++	a.mu.Lock()
++	stale := a.closed || a.gamePid != proc.pid
++	a.mu.Unlock()
++	if stale {
++		return
++	}
++	a.log.Warn().Msg("capture: game exited while room open — blanking + finishing")
++	// Stop pushing live-desktop frames FIRST (privacy — trap #12), THEN pin a black frame the re-push
++	// ticker holds. Order matters: if we blanked first, an in-flight appsink frame would overwrite it.
++	a.stopVideoOnly()
++	a.pushBlackFrames()
++	a.restoreInputProfile(swappedExe)
++	a.gwFinish(appId)
++}
++
++// pushBlackFrames replaces the last-frame cache with black so viewers see black, not the desktop.
++func (a *App) pushBlackFrames() {
++	a.frameMu.Lock()
++	n := a.width() * a.height() * 4
++	if cap(a.lastFrame) < n {
++		a.lastFrame = make([]byte, n)
++	}
++	a.lastFrame = a.lastFrame[:n]
++	for i := range a.lastFrame {
++		a.lastFrame[i] = 0
++	}
++	a.lastStride = a.width() * 4
++	a.lastDur = time.Second / time.Duration(a.fps())
++	a.pushLocked()
++	a.frameMu.Unlock()
++}
++
++// heartbeat emits a 5 s "capture tick" so the GL-worker watchdog's check C doesn't read a busy
++// room with a silent log as a wedge (plan §4.6).
++func (a *App) heartbeat() {
++	t := time.NewTicker(5 * time.Second)
++	defer t.Stop()
++	for {
++		select {
++		case <-a.stopRepush:
++			return
++		case <-t.C:
++			a.mu.Lock()
++			closed := a.closed
++			a.mu.Unlock()
++			if closed {
++				return
++			}
++			a.frameMu.Lock()
++			f := a.frames
++			a.frameMu.Unlock()
++			a.log.Info().Msgf("capture tick: frames=%d pads=%d", f, a.pads.count())
++		}
++	}
++}
++
++// parseRoomId ports ArcadeSaveId.TryParse: sv-<userId>-<gameId>-<slotId>-<system>___<gameKey>.
++func parseRoomId(id string) (userId, gameId, slotId int, system, gameKey string, ok bool) {
++	const prefix, sep = "sv-", "___"
++	if !strings.HasPrefix(id, prefix) {
++		return
++	}
++	si := strings.Index(id, sep)
++	if si < 0 {
++		return
++	}
++	gameKey = id[si+len(sep):]
++	parts := strings.SplitN(id[len(prefix):si], "-", 4)
++	if len(parts) != 4 {
++		return
++	}
++	u, e1 := strconv.Atoi(parts[0])
++	g, e2 := strconv.Atoi(parts[1])
++	s, e3 := strconv.Atoi(parts[2])
++	if e1 != nil || e2 != nil || e3 != nil || gameKey == "" || parts[3] == "" {
++		return
++	}
++	return u, g, s, parts[3], gameKey, true
++}
+diff --git a/pkg/worker/caged/capture/input.go b/pkg/worker/caged/capture/input.go
+new file mode 100644
+index 0000000..585f635
+--- /dev/null
++++ b/pkg/worker/caged/capture/input.go
+@@ -0,0 +1,203 @@
++package capture
++
++import (
++	"encoding/binary"
++	"fmt"
++	"sync"
++
++	vigem "github.com/openstadia/go-vigem"
++	x360 "github.com/openstadia/go-vigem/x360"
++)
++
++// padManager owns the ViGEm client and one virtual Xbox 360 pad per occupied seat. Port 0 is
++// created eagerly in LoadApp (yuzu binds Player 1 at boot); ports 1..maxPads-1 are created lazily
++// on the first packet from that seat. All targets are removed in Close().
++//
++// Tolerant by design: if ViGEm is unavailable (missing vigemclient.dll or bus driver), connect()
++// records the failure and every pad op becomes a no-op so video/audio still stream.
++type padManager struct {
++	mu      sync.Mutex
++	client  *vigem.ClientImpl
++	pads    map[int]*x360.Gamepad
++	maxPads int
++	ok      bool
++}
++
++func newPadManager(maxPads int) *padManager {
++	if maxPads <= 0 {
++		maxPads = 1
++	}
++	return &padManager{pads: make(map[int]*x360.Gamepad), maxPads: maxPads}
++}
++
++// connect allocates + connects the ViGEm client. Returns an error (never panics out) — the caller
++// logs and continues; pads are simply disabled when this fails.
++func (p *padManager) connect() (err error) {
++	defer func() {
++		if r := recover(); r != nil {
++			err = fmt.Errorf("vigem connect failed: %v", r)
++		}
++	}()
++	p.mu.Lock()
++	defer p.mu.Unlock()
++	p.client = vigem.NewClient() // panics on alloc/connect failure -> recovered above
++	p.ok = true
++	return nil
++}
++
++// ensurePadLocked returns (creating if needed) the pad for a seat, or nil when ViGEm is down or the
++// seat is beyond maxPads. Caller MUST hold p.mu.
++func (p *padManager) ensurePadLocked(port int) *x360.Gamepad {
++	if !p.ok || port < 0 || port >= p.maxPads {
++		return nil
++	}
++	if pad, ok := p.pads[port]; ok {
++		return pad
++	}
++	pad := x360.NewGamepad(p.client)
++	pad.Connect()
++	p.pads[port] = pad
++	return pad
++}
++
++// ensurePad is the locked entry point (used from LoadApp for the eager port-0 pad).
++func (p *padManager) ensurePad(port int) *x360.Gamepad {
++	p.mu.Lock()
++	defer p.mu.Unlock()
++	return p.ensurePadLocked(port)
++}
++
++// removeTargets disconnects+releases every pad but KEEPS the ViGEm client connected so the next
++// room on this worker can reuse it. Called from App.Close().
++func (p *padManager) removeTargets() {
++	p.mu.Lock()
++	defer p.mu.Unlock()
++	for _, pad := range p.pads {
++		func() {
++			defer func() { _ = recover() }()
++			pad.Disconnect()
++			pad.Release()
++		}()
++	}
++	p.pads = make(map[int]*x360.Gamepad)
++}
++
++// count returns the number of live pads (for the heartbeat log).
++func (p *padManager) count() int {
++	p.mu.Lock()
++	defer p.mu.Unlock()
++	return len(p.pads)
++}
++
++// removeAll disconnects and releases every pad AND the client (full shutdown). Idempotent.
++func (p *padManager) removeAll() {
++	p.mu.Lock()
++	defer p.mu.Unlock()
++	for _, pad := range p.pads {
++		func() {
++			defer func() { _ = recover() }()
++			pad.Disconnect()
++			pad.Release()
++		}()
++	}
++	p.pads = make(map[int]*x360.Gamepad)
++	if p.client != nil {
++		func() {
++			defer func() { _ = recover() }()
++			p.client.Release()
++		}()
++		p.client = nil
++	}
++	p.ok = false
++}
++
++// RetroPad button bit -> XUSB button. Index is the RetroPad bit (see the plan's §4.5 table and
++// pkg/worker/caged/libretro/nanoarch/input.go). Bits 12/13 (L2/R2) and analog triggers handled
++// separately below; 0xFFFF sentinel = no direct button.
++var retroPadToXusb = [16]uint16{
++	0:  x360.XUSB_GAMEPAD_A,              // RetroPad B
++	1:  x360.XUSB_GAMEPAD_X,              // RetroPad Y
++	2:  x360.XUSB_GAMEPAD_BACK,           // RetroPad SELECT
++	3:  x360.XUSB_GAMEPAD_START,          // RetroPad START
++	4:  x360.XUSB_GAMEPAD_DPAD_UP,        // RetroPad UP
++	5:  x360.XUSB_GAMEPAD_DPAD_DOWN,      // RetroPad DOWN
++	6:  x360.XUSB_GAMEPAD_DPAD_LEFT,      // RetroPad LEFT
++	7:  x360.XUSB_GAMEPAD_DPAD_RIGHT,     // RetroPad RIGHT
++	8:  x360.XUSB_GAMEPAD_B,              // RetroPad A
++	9:  x360.XUSB_GAMEPAD_Y,              // RetroPad X
++	10: x360.XUSB_GAMEPAD_LEFT_SHOULDER,  // RetroPad L
++	11: x360.XUSB_GAMEPAD_RIGHT_SHOULDER, // RetroPad R
++	12: 0xFFFF,                           // RetroPad L2 -> left trigger
++	13: 0xFFFF,                           // RetroPad R2 -> right trigger
++	14: x360.XUSB_GAMEPAD_LEFT_THUMB,     // RetroPad L3
++	15: x360.XUSB_GAMEPAD_RIGHT_THUMB,    // RetroPad R3
++}
++
++// invertAxis negates a Gamepad-API axis (down-positive) into XInput's up-positive convention,
++// clamping the asymmetric -32768 to avoid int16 overflow when negated.
++func invertAxis(v int16) int16 {
++	if v == -32768 {
++		v = -32767
++	}
++	return -v
++}
++
++// apply parses one RetroPad packet (little-endian: [BTN u16] optionally [LX i16][LY i16][RX i16]
++// [RY i16] optionally [L2 i16][R2 i16]) and writes the full XUSB state onto the seat's pad. The
++// whole body runs under p.mu (W4): the pad ops call into vigemclient.dll on a target that
++// Close→removeTargets can free concurrently, so fetch + use must be atomic. Input is ~60 Hz.
++func (p *padManager) apply(port int, data []byte) {
++	if len(data) < 2 { // buttons-only (2-byte) packets are valid, like libretro (W9)
++		return
++	}
++	p.mu.Lock()
++	defer p.mu.Unlock()
++	pad := p.ensurePadLocked(port)
++	if pad == nil {
++		return
++	}
++	btn := binary.LittleEndian.Uint16(data[0:2])
++	var lx, ly, rx, ry int16
++	if len(data) >= 10 {
++		lx = int16(binary.LittleEndian.Uint16(data[2:4]))
++		ly = int16(binary.LittleEndian.Uint16(data[4:6]))
++		rx = int16(binary.LittleEndian.Uint16(data[6:8]))
++		ry = int16(binary.LittleEndian.Uint16(data[8:10]))
++	}
++
++	pad.Reset()
++	for bit := 0; bit < 16; bit++ {
++		if btn&(1<<uint(bit)) == 0 {
++			continue
++		}
++		if x := retroPadToXusb[bit]; x != 0xFFFF && x != 0 {
++			pad.PressButton(x)
++		}
++	}
++
++	// Triggers: prefer the analog L2/R2 int16 (0..32767 -> 0..255) when present; else digital
++	// from bits 12/13.
++	var lt, rt uint8
++	if len(data) >= 14 {
++		l2 := int16(binary.LittleEndian.Uint16(data[10:12]))
++		r2 := int16(binary.LittleEndian.Uint16(data[12:14]))
++		if l2 > 0 {
++			lt = uint8(l2 >> 7)
++		}
++		if r2 > 0 {
++			rt = uint8(r2 >> 7)
++		}
++	}
++	if btn&(1<<12) != 0 && lt == 0 {
++		lt = 255
++	}
++	if btn&(1<<13) != 0 && rt == 0 {
++		rt = 255
++	}
++	pad.LeftTrigger(lt)
++	pad.RightTrigger(rt)
++
++	pad.LeftJoystick(lx, invertAxis(ly))
++	pad.RightJoystick(rx, invertAxis(ry))
++	pad.Update()
++}
+diff --git a/pkg/worker/caged/capture/launch.go b/pkg/worker/caged/capture/launch.go
+new file mode 100644
+index 0000000..a1e5fe3
+--- /dev/null
++++ b/pkg/worker/caged/capture/launch.go
+@@ -0,0 +1,354 @@
++package capture
++
++import (
++	"bytes"
++	"encoding/json"
++	"fmt"
++	"io"
++	"net/http"
++	"net/url"
++	"os"
++	"os/exec"
++	"path/filepath"
++	"strings"
++	"syscall"
++	"time"
++	"unsafe"
++
++	"golang.org/x/sys/windows"
++)
++
++// ── Gateway heavy contract (reused verbatim from heavy-launch.ps1) ──────────────────────────────
++
++type prepareResp struct {
++	Ok         bool   `json:"ok"`
++	AppId      string `json:"appId"`
++	Exe        string `json:"exe"`
++	Args       string `json:"args"`
++	WorkingDir string `json:"workingDir"`
++	Rom        string `json:"rom"`
++	Error      string `json:"error"`
++}
++
++func (a *App) gwDo(method, path string, body any) (*http.Response, error) {
++	var rdr io.Reader
++	if body != nil {
++		b, _ := json.Marshal(body)
++		rdr = bytes.NewReader(b)
++	}
++	url := strings.TrimRight(a.conf.GatewayUrl, "/") + path
++	req, err := http.NewRequest(method, url, rdr)
++	if err != nil {
++		return nil, err
++	}
++	req.Header.Set("X-Arcade-Internal-Secret", a.secret)
++	if body != nil {
++		req.Header.Set("Content-Type", "application/json")
++	}
++	return a.http.Do(req)
++}
++
++// gwPrepare takes the heavy lane lock and returns the resolved launch command. A 409 (lane busy or
++// not staged) is surfaced as an error so the room start fails cleanly.
++func (a *App) gwPrepare(appId string) (*prepareResp, error) {
++	path := "/heavy/prepare/" + url.PathEscape(appId) + "?client=capture-room"
++	if a.ownerUserId > 0 {
++		path += fmt.Sprintf("&userId=%d", a.ownerUserId) // gateway skips HeavyClient lookup (P2)
++	}
++	resp, err := a.gwDo("POST", path, nil)
++	if err != nil {
++		return nil, err
++	}
++	defer resp.Body.Close()
++	raw, _ := io.ReadAll(resp.Body)
++	if resp.StatusCode == http.StatusConflict {
++		return nil, fmt.Errorf("heavy lane unavailable (409): %s", strings.TrimSpace(string(raw)))
++	}
++	var pr prepareResp
++	if err := json.Unmarshal(raw, &pr); err != nil {
++		return nil, fmt.Errorf("prepare decode (%d): %s", resp.StatusCode, strings.TrimSpace(string(raw)))
++	}
++	if !pr.Ok {
++		return nil, fmt.Errorf("prepare not ok: %s", pr.Error)
++	}
++	return &pr, nil
++}
++
++func (a *App) gwAttach(appId string, pid int) {
++	resp, err := a.gwDo("POST", "/heavy/attach/"+url.PathEscape(appId), map[string]int{"pid": pid})
++	if err != nil {
++		a.log.Warn().Err(err).Msg("capture: heavy attach failed (lock stays time-based)")
++		return
++	}
++	resp.Body.Close()
++}
++
++func (a *App) gwFinish(appId string) {
++	resp, err := a.gwDo("POST", "/heavy/finish/"+url.PathEscape(appId), nil)
++	if err != nil {
++		a.log.Warn().Err(err).Msg("capture: heavy finish failed")
++		return
++	}
++	resp.Body.Close()
++}
++
++// ── Input profile swap (Go port of heavy-launch.ps1 Apply/Restore-StreamedInputProfile) ─────────
++
++type inputProfile struct {
++	ExeMatch        string `json:"exeMatch"`
++	ConfigFile      string `json:"configFile"`
++	KeyPrefix       string `json:"keyPrefix"`
++	StreamedProfile string `json:"streamedProfile"`
++}
++
++func (a *App) getInputProfile(exePath string) *inputProfile {
++	raw, err := os.ReadFile(a.conf.ProfilesFile)
++	if err != nil {
++		return nil
++	}
++	var all []inputProfile
++	if json.Unmarshal(raw, &all) != nil {
++		return nil
++	}
++	leaf := filepath.Base(exePath)
++	for i := range all {
++		if strings.EqualFold(all[i].ExeMatch, leaf) {
++			return &all[i]
++		}
++	}
++	return nil
++}
++
++func readLines(path string) ([]string, error) {
++	raw, err := os.ReadFile(path)
++	if err != nil {
++		return nil, err
++	}
++	s := strings.ReplaceAll(string(raw), "\r\n", "\n")
++	return strings.Split(strings.TrimSuffix(s, "\n"), "\n"), nil
++}
++
++// writeLines writes CRLF-joined, UTF-8 no-BOM (matches the PS UTF8Encoding($false) contract).
++func writeLines(path string, lines []string) error {
++	return os.WriteFile(path, []byte(strings.Join(lines, "\r\n")+"\r\n"), 0644)
++}
++
++// swapConfigLines replaces every <keyPrefix>* line with newLines at the first old line's position.
++func swapConfigLines(configFile, keyPrefix string, newLines []string) error {
++	lines, err := readLines(configFile)
++	if err != nil {
++		return err
++	}
++	kept := make([]string, 0, len(lines))
++	insertAt := -1
++	for _, l := range lines {
++		if strings.HasPrefix(l, keyPrefix) {
++			if insertAt < 0 {
++				insertAt = len(kept)
++			}
++			continue
++		}
++		kept = append(kept, l)
++	}
++	if insertAt < 0 {
++		insertAt = len(kept)
++	}
++	out := make([]string, 0, len(kept)+len(newLines))
++	out = append(out, kept[:insertAt]...)
++	out = append(out, newLines...)
++	out = append(out, kept[insertAt:]...)
++	return writeLines(configFile, out)
++}
++
++func (a *App) restoreInputProfile(exePath string) {
++	p := a.getInputProfile(exePath)
++	if p == nil {
++		return
++	}
++	restore := p.StreamedProfile + ".restore"
++	if _, err := os.Stat(restore); err != nil {
++		return
++	}
++	lines, err := readLines(restore)
++	if err != nil {
++		return
++	}
++	if err := swapConfigLines(p.ConfigFile, p.KeyPrefix, lines); err != nil {
++		a.log.Warn().Err(err).Msg("capture: input profile restore failed")
++		return
++	}
++	_ = os.Remove(restore)
++	a.log.Info().Msgf("capture: input profile restored (%s)", filepath.Base(p.ConfigFile))
++}
++
++// applyStreamedInputProfile heals a crashed session's leftover swap, backs up the live player_0
++// block to <streamedProfile>.restore, then swaps in the streamed bindings. Returns the exe on
++// success so Close knows to restore.
++func (a *App) applyStreamedInputProfile(exePath string) string {
++	p := a.getInputProfile(exePath)
++	if p == nil {
++		return ""
++	}
++	if _, err := os.Stat(p.StreamedProfile); err != nil {
++		a.log.Warn().Msgf("capture: no streamed profile %s — pads may be dead in this emulator", p.StreamedProfile)
++		return ""
++	}
++	a.restoreInputProfile(exePath) // heal a leftover swap first
++	cur, err := readLines(p.ConfigFile)
++	if err != nil {
++		a.log.Warn().Err(err).Msg("capture: read config for profile swap failed")
++		return ""
++	}
++	var block []string
++	for _, l := range cur {
++		if strings.HasPrefix(l, p.KeyPrefix) {
++			block = append(block, l)
++		}
++	}
++	if err := writeLines(p.StreamedProfile+".restore", block); err != nil {
++		a.log.Warn().Err(err).Msg("capture: write .restore failed")
++		return ""
++	}
++	streamed, err := readLines(p.StreamedProfile)
++	if err != nil {
++		return ""
++	}
++	if err := swapConfigLines(p.ConfigFile, p.KeyPrefix, streamed); err != nil {
++		a.log.Warn().Err(err).Msg("capture: input profile swap failed (launching with current bindings)")
++		return ""
++	}
++	a.log.Info().Msgf("capture: input profile swapped to streamed bindings for %s", filepath.Base(exePath))
++	return exePath
++}
++
++// ── Process launch under a kill-on-close Job Object ─────────────────────────────────────────────
++
++type gameProc struct {
++	cmd *exec.Cmd
++	job windows.Handle
++	pid int
++}
++
++// launchGame starts the emulator with the exact command line the gateway resolved (Start-Process
++// semantics: raw args string appended to the quoted exe), assigns it to a Job Object with
++// KILL_ON_JOB_CLOSE so the tree dies with the worker no matter what.
++func launchGame(exe, args, workingDir string) (*gameProc, error) {
++	cmd := exec.Command(exe)
++	cmd.Dir = workingDir
++	cmdLine := `"` + exe + `"`
++	if strings.TrimSpace(args) != "" {
++		cmdLine += " " + args
++	}
++	cmd.SysProcAttr = &syscall.SysProcAttr{CmdLine: cmdLine}
++	if err := cmd.Start(); err != nil {
++		return nil, fmt.Errorf("launch %s: %w", exe, err)
++	}
++	gp := &gameProc{cmd: cmd, pid: cmd.Process.Pid}
++
++	job, err := windows.CreateJobObject(nil, nil)
++	if err == nil {
++		var info windows.JOBOBJECT_EXTENDED_LIMIT_INFORMATION
++		info.BasicLimitInformation.LimitFlags = windows.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
++		_, _ = windows.SetInformationJobObject(job,
++			windows.JobObjectExtendedLimitInformation,
++			uintptr(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info)))
++		if ph, oerr := windows.OpenProcess(windows.PROCESS_SET_QUOTA|windows.PROCESS_TERMINATE, false, uint32(gp.pid)); oerr == nil {
++			if aerr := windows.AssignProcessToJobObject(job, ph); aerr == nil {
++				gp.job = job
++			}
++			windows.CloseHandle(ph)
++		}
++	}
++	return gp, nil
++}
++
++// kill terminates the game tree: closing the job handle triggers KILL_ON_JOB_CLOSE; falls back to
++// killing the root process directly if there was no job.
++func (gp *gameProc) kill() {
++	if gp == nil {
++		return
++	}
++	if gp.job != 0 {
++		windows.CloseHandle(gp.job)
++		gp.job = 0
++	}
++	if gp.cmd != nil && gp.cmd.Process != nil {
++		_ = gp.cmd.Process.Kill()
++	}
++}
++
++// waitExit blocks until the game process exits and returns.
++func (gp *gameProc) waitExit() {
++	if gp != nil && gp.cmd != nil {
++		_ = gp.cmd.Wait()
++	}
++}
++
++// ── Foreground focus (best-effort; yuzu -f usually self-foregrounds) ────────────────────────────
++
++var (
++	procEnumWindows        = user32.NewProc("EnumWindows")
++	procGetWindowThreadPid = user32.NewProc("GetWindowThreadProcessId")
++	procIsWindowVisible    = user32.NewProc("IsWindowVisible")
++	procSetForegroundWin   = user32.NewProc("SetForegroundWindow")
++	procShowWindow         = user32.NewProc("ShowWindow")
++	procBringWindowToTop   = user32.NewProc("BringWindowToTop")
++	procKeybdEvent         = user32.NewProc("keybd_event")
++)
++
++const (
++	swShow         = 5
++	vkMenu         = 0x12 // ALT
++	keyeventfKeyUp = 0x02
++)
++
++// focus enum state — the callback is created ONCE at package init (W3): syscall.NewCallback slots
++// are process-global and NEVER freed (Go caps ~2000), so one per launch would eventually panic on a
++// long-lived worker serving many rooms. One room at a time ⇒ these globals need no lock.
++var (
++	focusTargetPid  int
++	focusFoundHwnd  uintptr
++	focusEnumWindow = syscall.NewCallback(func(hwnd, lparam uintptr) uintptr {
++		var wpid uint32
++		procGetWindowThreadPid.Call(hwnd, uintptr(unsafe.Pointer(&wpid)))
++		if int(wpid) == focusTargetPid {
++			if vis, _, _ := procIsWindowVisible.Call(hwnd); vis != 0 {
++				focusFoundHwnd = hwnd
++				return 0 // stop
++			}
++		}
++		return 1
++	})
++)
++
++// focusPid polls (up to ~20 s) for a visible top-level window owned by pid and foregrounds it.
++// SetForegroundWindow is silently ignored for a BACKGROUND process (Windows foreground lock), which
++// is exactly our case — the worker isn't the foreground app. Synthesizing an ALT tap first makes
++// Windows treat this as user-initiated and honor the change (the documented unlock). We also raise
++// + re-assert a few times because yuzu creates a splash then its real window.
++func focusPid(pid int) {
++	deadline := time.Now().Add(20 * time.Second)
++	asserts := 0
++	focusTargetPid = pid
++	for time.Now().Before(deadline) {
++		focusFoundHwnd = 0
++		procEnumWindows.Call(focusEnumWindow, 0)
++		found := focusFoundHwnd
++		if found != 0 {
++			// Unlock the foreground lock with a benign ALT tap, then show + foreground + raise.
++			procKeybdEvent.Call(vkMenu, 0, 0, 0)
++			procKeybdEvent.Call(vkMenu, 0, keyeventfKeyUp, 0)
++			procShowWindow.Call(found, swShow)
++			procSetForegroundWin.Call(found)
++			procBringWindowToTop.Call(found)
++			// Re-assert 3x over ~1.5s: yuzu's window can lose focus to its own late-created child.
++			asserts++
++			if asserts >= 3 {
++				return
++			}
++			time.Sleep(500 * time.Millisecond)
++			continue
++		}
++		time.Sleep(300 * time.Millisecond)
++	}
++}
+diff --git a/pkg/worker/caged/capture/monitor.go b/pkg/worker/caged/capture/monitor.go
+new file mode 100644
+index 0000000..6cc9eb1
+--- /dev/null
++++ b/pkg/worker/caged/capture/monitor.go
+@@ -0,0 +1,74 @@
++package capture
++
++import (
++	"syscall"
++	"unsafe"
++)
++
++// monitorInfo is one physical/virtual display as seen by Win32 EnumDisplayMonitors.
++type monitorInfo struct {
++	handle  uint64 // HMONITOR — passed verbatim to d3d11screencapturesrc monitor-handle
++	device  string // \\.\DISPLAYn
++	width   int
++	height  int
++	primary bool
++}
++
++var (
++	user32              = syscall.NewLazyDLL("user32.dll")
++	procEnumDisplayMons = user32.NewProc("EnumDisplayMonitors")
++	procGetMonitorInfoW = user32.NewProc("GetMonitorInfoW")
++)
++
++type win32rect struct{ left, top, right, bottom int32 }
++
++type monitorInfoEx struct {
++	cbSize    uint32
++	rcMonitor win32rect
++	rcWork    win32rect
++	dwFlags   uint32
++	szDevice  [32]uint16
++}
++
++const monitorinfofPrimary = 0x1
++
++// enumMonitors lists every monitor the desktop currently exposes, in EnumDisplayMonitors order.
++// The order is generally stable within a session; we log all of them and select by config index
++// so the operator can dodge a SudoVDA virtual display (plan §1 — the index into GDI display
++// numbers is NOT stable, but the HMONITOR we resolve to IS absolute for the element).
++func enumMonitors() []monitorInfo {
++	var out []monitorInfo
++	cb := syscall.NewCallback(func(hMonitor, hdc, lprc, lparam uintptr) uintptr {
++		var mi monitorInfoEx
++		mi.cbSize = uint32(unsafe.Sizeof(mi))
++		if r, _, _ := procGetMonitorInfoW.Call(hMonitor, uintptr(unsafe.Pointer(&mi))); r != 0 {
++			out = append(out, monitorInfo{
++				handle:  uint64(hMonitor),
++				device:  syscall.UTF16ToString(mi.szDevice[:]),
++				width:   int(mi.rcMonitor.right - mi.rcMonitor.left),
++				height:  int(mi.rcMonitor.bottom - mi.rcMonitor.top),
++				primary: mi.dwFlags&monitorinfofPrimary != 0,
++			})
++		}
++		return 1 // TRUE = keep enumerating
++	})
++	procEnumDisplayMons.Call(0, 0, cb, 0)
++	return out
++}
++
++// pickMonitor selects the configured index; on an out-of-range index it falls back to the
++// primary monitor (and then the first). Returns the HMONITOR and the chosen record.
++func pickMonitor(mons []monitorInfo, index int) (uint64, monitorInfo, bool) {
++	if len(mons) == 0 {
++		return 0, monitorInfo{}, false
++	}
++	if index >= 0 && index < len(mons) {
++		return mons[index].handle, mons[index], true
++	}
++	for _, m := range mons {
++		if m.primary {
++			return m.handle, m, true
++		}
++	}
++	return mons[0].handle, mons[0], true
++}
+diff --git a/pkg/worker/caged/capture/pipeline.go b/pkg/worker/caged/capture/pipeline.go
+new file mode 100644
+index 0000000..020aa26
+--- /dev/null
++++ b/pkg/worker/caged/capture/pipeline.go
+@@ -0,0 +1,254 @@
++package capture
++
++import (
++	"fmt"
++	"time"
++	"unsafe"
++
++	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/app"
++	"github.com/go-gst/go-gst/gst"
++	gstapp "github.com/go-gst/go-gst/gst/app"
++)
++
++// startVideoPipeline builds and starts the capture->downscale->download->appsink pipeline. Frames
++// are pushed through App.videoCb into the UNCHANGED media/appsrc path (PixFormat BGRA), so every
++// encoder behavior (per-room codec, ABR, forced keyframes, PLI) is reused (plan §3.6, design A).
++func (a *App) startVideoPipeline() error {
++	// Reuse across rooms: a d3d12 WGC capture session, once created, cannot be cleanly re-acquired by
++	// a freshly-built pipeline in the same process (go-gst only unrefs the old GstPipeline on GC, so
++	// its capture lingers and the new one gets no frames — room 2 video froze at ~1 fps). So we build
++	// the video pipeline ONCE and PAUSE↔PLAY it per room instead of NULL+rebuild. (The audio pipeline
++	// is per-room — it keys on the game PID / CABLE device — and is torn down normally.)
++	a.pipeMu.Lock()
++	if a.videoPipe != nil {
++		a.pipeMu.Unlock()
++		return nil // already PLAYING for the process's life; Start's capturing flag gates pushing
++	}
++	a.pipeMu.Unlock()
++
++	// d3d12screencapturesrc (NOT d3d11): it has built-in HDR handling the d3d11 element lacks — when
++	// the desktop is in HDR mode it tonemaps to correct SDR (tonemap=reinhard preserves highlights);
++	// when SDR it passes through. This makes the lane color-correct in ALL display states (plan §11
++	// Tier 1). ⚠ Constrain format+framerate AFTER d3d12convert — putting them on the src caps fails
++	// negotiation (not-negotiated). Rest of the path (limited-range encode downstream) is unchanged.
++	launch := fmt.Sprintf(
++		"d3d12screencapturesrc name=cap_src monitor-handle=%d show-cursor=false tonemap=reinhard "+
++			"! d3d12convert "+
++			"! video/x-raw(memory:D3D12Memory),format=BGRA,width=%d,height=%d,framerate=%d/1 "+
++			"! d3d12download "+
++			"! queue max-size-buffers=2 leaky=downstream "+
++			"! appsink name=cap_sink sync=false max-buffers=2 drop=true",
++		a.hmonitor, a.width(), a.height(), a.fps())
++
++	pipe, err := gst.NewPipelineFromString(launch)
++	if err != nil {
++		return fmt.Errorf("build video pipeline: %w", err)
++	}
++	sinkEl, err := pipe.GetElementByName("cap_sink")
++	if err != nil {
++		return fmt.Errorf("no cap_sink: %w", err)
++	}
++	sink := gstapp.SinkFromElement(sinkEl)
++	if sink == nil {
++		return fmt.Errorf("cap_sink is not an appsink")
++	}
++
++	dur := time.Second / time.Duration(a.fps())
++	sink.SetCallbacks(&gstapp.SinkCallbacks{
++		NewSampleFunc: func(s *gstapp.Sink) gst.FlowReturn {
++			sample := s.PullSample()
++			if sample == nil {
++				return gst.FlowEOS
++			}
++			buf := sample.GetBuffer()
++			if buf == nil {
++				return gst.FlowOK
++			}
++			mi := buf.Map(gst.MapRead)
++			if mi == nil {
++				return gst.FlowOK
++			}
++			size := int(buf.GetSize())
++			src := unsafe.Slice((*byte)(mi.Data()), size)
++			h := a.height()
++			stride := a.width() * 4
++			if h > 0 && size%h == 0 {
++				stride = size / h // real row stride (d3d12download may row-pad; never assume W*4)
++			}
++			a.cacheAndPush(src, stride, dur)
++			buf.Unmap()
++			return gst.FlowOK
++		},
++	})
++
++	if err := pipe.SetState(gst.StatePlaying); err != nil {
++		return fmt.Errorf("video pipeline play: %w", err)
++	}
++	a.videoPipe = pipe
++	return nil
++}
++
++// startAudioPipeline builds the PID-scoped (or system) WASAPI loopback -> S16LE 48k stereo ->
++// appsink pipeline. Must be called AFTER attach (needs the game PID) for process scope.
++func (a *App) startAudioPipeline(pid int) error {
++	var srcProps string
++	switch {
++	case a.conf.AudioCaptureDevice != "":
++		// Per-app isolation (VB-CABLE): the game was routed to the virtual sink's render side, which
++		// loops to this capture endpoint ("CABLE Output"). This is a real capture device, NOT loopback,
++		// and it carries ONLY the game (host speakers stay clean). No PID filter needed.
++		srcProps = fmt.Sprintf("low-latency=true device=\"%s\"", a.conf.AudioCaptureDevice)
++	case a.conf.AudioScope != "system" && pid > 0:
++		srcProps = fmt.Sprintf("loopback=true low-latency=true loopback-mode=include-process-tree loopback-target-pid=%d", pid)
++	default:
++		srcProps = "loopback=true low-latency=true" // whole-endpoint (heavy lock => nothing else intended)
++	}
++	launch := fmt.Sprintf(
++		"wasapi2src name=aud_src %s "+
++			"! audioconvert ! audioresample "+
++			"! audio/x-raw,format=S16LE,rate=48000,channels=2,layout=interleaved "+
++			"! appsink name=aud_sink sync=false max-buffers=4 drop=true",
++		srcProps)
++
++	pipe, err := gst.NewPipelineFromString(launch)
++	if err != nil {
++		return fmt.Errorf("build audio pipeline: %w", err)
++	}
++	sinkEl, err := pipe.GetElementByName("aud_sink")
++	if err != nil {
++		return fmt.Errorf("no aud_sink: %w", err)
++	}
++	sink := gstapp.SinkFromElement(sinkEl)
++	if sink == nil {
++		return fmt.Errorf("aud_sink is not an appsink")
++	}
++	sink.SetCallbacks(&gstapp.SinkCallbacks{
++		NewSampleFunc: func(s *gstapp.Sink) gst.FlowReturn {
++			sample := s.PullSample()
++			if sample == nil {
++				return gst.FlowEOS
++			}
++			buf := sample.GetBuffer()
++			if buf == nil {
++				return gst.FlowOK
++			}
++			mi := buf.Map(gst.MapRead)
++			if mi == nil {
++				return gst.FlowOK
++			}
++			size := int(buf.GetSize())
++			out := make([]byte, size)
++			copy(out, unsafe.Slice((*byte)(mi.Data()), size))
++			buf.Unmap()
++			if cb := a.audioCb; cb != nil {
++				cb(app.Audio{Data: out, Duration: 0}) // opus frame-size drives audio timing
++			}
++			return gst.FlowOK
++		},
++	})
++	if err := pipe.SetState(gst.StatePlaying); err != nil {
++		return fmt.Errorf("audio pipeline play: %w", err)
++	}
++	a.audioPipe = pipe
++	return nil
++}
++
++// cacheAndPush copies the frame into the reusable last-frame buffer and pushes it to the media
++// path, serialized so the re-push ticker and the capture callback never overlap ProcessVideo.
++// Dropped when not capturing (between rooms / after the game dies) — the pipeline keeps running but
++// its live desktop frames must not reach the stream (privacy + no stale-desktop between rooms).
++func (a *App) cacheAndPush(src []byte, stride int, dur time.Duration) {
++	if !a.capturing.Load() {
++		return
++	}
++	a.frameMu.Lock()
++	if cap(a.lastFrame) < len(src) {
++		a.lastFrame = make([]byte, len(src))
++	}
++	a.lastFrame = a.lastFrame[:len(src)]
++	copy(a.lastFrame, src)
++	a.lastStride = stride
++	a.lastDur = dur
++	a.lastPush = time.Now()
++	a.pushLocked()
++	a.frameMu.Unlock()
++}
++
++// pushLocked emits the cached frame to videoCb. Caller holds frameMu.
++func (a *App) pushLocked() {
++	cb := a.videoCb
++	if cb == nil || len(a.lastFrame) == 0 {
++		return
++	}
++	a.frames++
++	cb(app.Video{
++		Frame:    app.RawFrame{Data: a.lastFrame, Stride: a.lastStride, W: a.width(), H: a.height()},
++		Duration: a.lastDur,
++	})
++}
++
++// repushLoop re-pushes the last frame when Windows Graphics Capture goes quiet (WGC only delivers
++// on screen change; a static screen would starve the encoder and leave joiners with nothing to
++// decode). 2 Hz; re-push only when >500 ms since the last real/re-pushed frame (plan trap #2).
++func (a *App) repushLoop() {
++	t := time.NewTicker(250 * time.Millisecond)
++	defer t.Stop()
++	for {
++		select {
++		case <-a.stopRepush:
++			return
++		case <-t.C:
++			a.frameMu.Lock()
++			if len(a.lastFrame) > 0 && time.Since(a.lastPush) > 500*time.Millisecond {
++				a.lastPush = time.Now()
++				a.pushLocked()
++			}
++			a.frameMu.Unlock()
++		}
++	}
++}
++
++// blockNull drives a pipeline to NULL and WAITS for the state change to complete (with a timeout
++// backstop), so the element's OS resources are released before we drop it. Plain async SetState(NULL)
++// returns before the d3d12 WGC screen-capture session is actually freed — the NEXT room's capture
++// then gets no frames (verified: room 2 video froze at ~1 fps). BlockSetState fixes that; the timeout
++// keeps a wedged nvcodec/WGC teardown from hanging Close past the 10 s media-teardown watchdog.
++func blockNull(p *gst.Pipeline) {
++	if p == nil {
++		return
++	}
++	done := make(chan struct{})
++	go func() { defer close(done); _ = p.BlockSetState(gst.StateNull) }()
++	select {
++	case <-done:
++	case <-time.After(3 * time.Second):
++	}
++}
++
++// stopVideoOnly stops pushing live desktop frames (privacy: called from the exit-watcher the moment
++// the game dies) by flipping the capturing flag — the pipeline stays PLAYING (a d3d12 WGC session
++// can't be PAUSE/NULL-resumed in-process). The re-push ticker + audio stay alive so a black frame
++// keeps flowing. Idempotent.
++func (a *App) stopVideoOnly() {
++	a.capturing.Store(false)
++}
++
++// stopPipelines tears down both pipelines (NULL state) and the re-push loop. Idempotent, and safe
++// to call when Start() never ran (stopRepush is nil on a failed room start — closing it would panic,
++// which used to take down the whole worker on any prepare 409 / launch failure, W1).
++func (a *App) stopPipelines() {
++	if a.stopRepush != nil {
++		select {
++		case <-a.stopRepush:
++		default:
++			close(a.stopRepush)
++		}
++	}
++	a.capturing.Store(false) // stop pushing live frames; leave the video pipeline PLAYING for reuse
++	a.pipeMu.Lock()
++	defer a.pipeMu.Unlock()
++	if a.audioPipe != nil {
++		blockNull(a.audioPipe) // audio IS per-room (PID/CABLE) — fully release it
++		a.audioPipe = nil
++	}
++}
+diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
+index e7ed859..819aad7 100644
+--- a/pkg/worker/coordinatorhandlers.go
++++ b/pkg/worker/coordinatorhandlers.go
+@@ -10,6 +10,7 @@ import (
+ 	"github.com/giongto35/cloud-game/v3/pkg/games"
+ 	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
++	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/capture"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
+ )
+@@ -159,88 +160,110 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 		w.router.SetRoom(r)
+ 		c.log.Info().Str("room", r.Id()).Str("game", game.Name).Msg("New room")
+ 
+-		// start the emulator
+-		app := room.WithEmulator(w.mana.Get(caged.Libretro))
+-		app.ReloadFrontend()
+-		app.SetSessionId(uid)
+-		app.SetSaveOnClose(true)
+-		app.EnableCloudStorage(uid, w.storage)
+-		app.EnableRecording(rq.Record, rq.RecordUser, gameName)
+-
+-		// Per-room cheats (arcade cheats feature). MUST be set before app.Load: core options are read by
+-		// the core during retro_load_game, and the cheat codes are applied immediately after it returns.
+-		// Called UNCONDITIONALLY — nanoarch is a process-wide singleton, so a room with no cheats has to
+-		// clear what the previous room on this worker staged, not just skip staging its own.
+-		app.SetRoomCheats(rq.CoreOptions, rq.Cheats)
+-		if len(rq.CoreOptions) > 0 || len(rq.Cheats) > 0 {
+-			w.log.Info().Msgf("Per-room cheats: %d core option(s), %d code(s)", len(rq.CoreOptions), len(rq.Cheats))
+-		}
+-
+-		r.SetApp(app)
+-
+-		// Per-room encoder quality (arcade per-room bitrate/FEC): the creator's t=104 carries an
+-		// optional video bitrate (kbps) + opus FEC choice. WithOverrides applies them to a per-room
+-		// COPY of the encoder config (it deep-copies the codec map, never mutating the shared config),
+-		// so concurrent rooms don't affect each other. No-op when both are unset (0).
++		// Per-room encoder quality (arcade per-room bitrate/FEC) — SHARED by both lanes. The creator's
++		// t=104 carries an optional video bitrate (kbps) + opus FEC + codec. WithOverrides applies them
++		// to a per-room COPY of the encoder config (deep-copies the codec map, never mutating the shared
++		// config) so concurrent rooms don't affect each other. No-op when all are unset.
+ 		roomCodec := w.roomVideoCodec(rq.VideoCodec)
+ 		encConf := w.conf.Encoder.WithOverrides(rq.VideoBitrate, rq.AudioFec, roomCodec)
+ 		if rq.VideoBitrate > 0 || rq.AudioFec != 0 || rq.VideoCodec != "" {
+ 			w.log.Info().Msgf("Per-room encoder overrides: bitrate=%d kbps fec=%d codec=%s", rq.VideoBitrate, rq.AudioFec, roomCodec)
+ 		}
+-		// Per-room in-frame packet pacing (patch 0028): set unconditionally from every room start so
+-		// a no-pacing room can never inherit the previous room's window (the nanoarch cheat-staging
+-		// lesson). One worker hosts one room, so the process-global is correct.
++		// Per-room in-frame packet pacing (patch 0028): set unconditionally so a no-pacing room can
++		// never inherit the previous room's window. One worker hosts one room.
+ 		webrtc.SetPacing(rq.Pace)
+ 		if rq.Pace > 0 {
+ 			w.log.Info().Msgf("Per-room pacing: %d ms in-frame smoothing", rq.Pace)
+ 		}
+ 		m := media.NewGstreamer(encConf, w.log)
+ 
+-		// recreate the video encoder
+-		app.VideoChangeCb(func() {
+-			app.ViewportRecalculate()
+-			m.VideoW, m.VideoH = app.ViewportSize()
+-			m.VideoScale, m.ScaleMethod = app.Scale()
+-
+-			if err := m.Reinit(); err != nil {
+-				c.log.Error().Err(err).Msgf("reinit fail")
++		if gameInfo.System == caged.CaptureSystem {
++			// Heavy browser lane (capture mod): launch a native program + capture the desktop through
++			// the gateway heavy contract. No libretro frontend/cheats/cloud-save/VideoChangeCb — the
++			// capture size is fixed. r.SetApp accepts any app.App.
++			capApp, ok := w.mana.Get(caged.Capture).(*capture.App)
++			if !ok || capApp == nil {
++				c.log.Error().Msg("capture start on a non-capture worker (zone misroute)")
++				r.Close()
++				w.router.SetRoom(nil)
++				return api.EmptyPacket
+ 			}
+-
+-			data, err := api.Wrap(api.Out{
+-				T: uint8(api.AppVideoChange),
+-				Payload: api.AppVideoInfo{
+-					W:    m.VideoW,
+-					H:    m.VideoH,
+-					A:    app.AspectRatio(),
+-					S:    int(m.VideoScale),
+-					SM:   m.ScaleMethod,
+-					Flip: app.Flipped(),
+-					Rot:  app.Rotation(),
+-				}})
+-			if err != nil {
+-				c.log.Error().Err(err).Msgf("wrap")
++			r.SetApp(capApp)
++			if err := capApp.LoadApp(gameName, uid); err != nil {
++				c.log.Error().Err(err).Msg("capture prepare/launch failed")
++				r.Close()
++				w.router.SetRoom(nil)
++				return api.EmptyPacket
++			}
++		} else {
++			// start the emulator (libretro lane)
++			app := room.WithEmulator(w.mana.Get(caged.Libretro))
++			app.ReloadFrontend()
++			app.SetSessionId(uid)
++			app.SetSaveOnClose(true)
++			app.EnableCloudStorage(uid, w.storage)
++			app.EnableRecording(rq.Record, rq.RecordUser, gameName)
++
++			// Per-room cheats: MUST be set before app.Load. Called UNCONDITIONALLY — nanoarch is a
++			// process-wide singleton, so a room with no cheats clears the previous room's staging.
++			app.SetRoomCheats(rq.CoreOptions, rq.Cheats)
++			if len(rq.CoreOptions) > 0 || len(rq.Cheats) > 0 {
++				w.log.Info().Msgf("Per-room cheats: %d core option(s), %d code(s)", len(rq.CoreOptions), len(rq.Cheats))
+ 			}
+-			r.Send(data)
+-		})
+ 
+-		w.log.Info().Msgf("Starting the game: %v", gameName)
+-		if err := app.Load(game, w.conf.Library.BasePath); err != nil {
+-			c.log.Error().Err(err).Msgf("couldn't load the game %v", game)
+-			r.Close()
+-			w.router.SetRoom(nil)
+-			return api.EmptyPacket
++			r.SetApp(app)
++
++			// recreate the video encoder when the core's frame size changes at runtime
++			app.VideoChangeCb(func() {
++				app.ViewportRecalculate()
++				m.VideoW, m.VideoH = app.ViewportSize()
++				m.VideoScale, m.ScaleMethod = app.Scale()
++
++				if err := m.Reinit(); err != nil {
++					c.log.Error().Err(err).Msgf("reinit fail")
++				}
++
++				data, err := api.Wrap(api.Out{
++					T: uint8(api.AppVideoChange),
++					Payload: api.AppVideoInfo{
++						W:    m.VideoW,
++						H:    m.VideoH,
++						A:    app.AspectRatio(),
++						S:    int(m.VideoScale),
++						SM:   m.ScaleMethod,
++						Flip: app.Flipped(),
++						Rot:  app.Rotation(),
++					}})
++				if err != nil {
++					c.log.Error().Err(err).Msgf("wrap")
++				}
++				r.Send(data)
++			})
++
++			w.log.Info().Msgf("Starting the game: %v", gameName)
++			if err := app.Load(game, w.conf.Library.BasePath); err != nil {
++				c.log.Error().Err(err).Msgf("couldn't load the game %v", game)
++				r.Close()
++				w.router.SetRoom(nil)
++				return api.EmptyPacket
++			}
+ 		}
+ 
+-		m.AudioSrcHz = app.AudioSampleRate()
+-		m.VideoW, m.VideoH = app.ViewportSize()
+-		m.VideoScale, m.ScaleMethod = app.Scale()
+-		coreConf := w.conf.Emulator.GetLibretroCoreConfig(game.System)
++		// Media finalize — SHARED by both lanes, read through the app.App interface. FPS() is not on
++		// the interface (concrete on both apps), so it's fetched via a tiny local interface.
++		ap := r.App()
++		m.AudioSrcHz = ap.AudioSampleRate()
++		m.VideoW, m.VideoH = ap.ViewportSize()
++		m.VideoScale, m.ScaleMethod = ap.Scale()
++		coreConf := w.conf.Emulator.GetLibretroCoreConfig(game.System) // zero-value for "capture"
+ 		m.MaxThreads = coreConf.MaxThreads
+-		m.VideoFPS = app.FPS()
++		if f, ok := ap.(interface{ FPS() float64 }); ok {
++			m.VideoFPS = f.FPS()
++		}
+ 		m.VideoVFR = coreConf.VFR
+ 
+-		m.SetPixFmt(app.PixFormat())
+-		m.SetRot(app.Rotation())
++		m.SetPixFmt(ap.PixFormat())
++		m.SetRot(ap.Rotation())
+ 
+ 		r.SetMedia(m)
+ 
+diff --git a/pkg/worker/worker.go b/pkg/worker/worker.go
+index 8456f4e..fd43f05 100644
+--- a/pkg/worker/worker.go
++++ b/pkg/worker/worker.go
+@@ -38,6 +38,13 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+ 	if err := manager.Load(caged.Libretro, conf); err != nil {
+ 		return nil, fmt.Errorf("couldn't cage libretro: %v", err)
+ 	}
++	// Capture mod (heavy browser lane) — only the capture worker enables it.
++	if conf.Capture.Enabled {
++		if err := manager.Load(caged.Capture, conf); err != nil {
++			return nil, fmt.Errorf("couldn't cage capture: %v", err)
++		}
++		log.Info().Msg("capture mod enabled (heavy browser lane)")
++	}
+ 
+ 	library := games.NewLib(conf.Library, conf.Emulator, log)
+ 	library.Scan()
