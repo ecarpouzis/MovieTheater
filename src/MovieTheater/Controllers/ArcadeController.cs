@@ -693,6 +693,33 @@ namespace MovieTheater.Controllers
             return Content(body, "application/json");
         }
 
+        /// <summary>An Artemis launch shortcut (.art) for a heavy title: tapping the downloaded file
+        /// on a PAIRED Android device streams the game directly — the closest thing to the card
+        /// launching the app (moonlight:// deep links still don't exist upstream; Artemis' .art
+        /// trampoline does). Same gates as playing: signed-in + age-visible.</summary>
+        [HttpGet("/API/Arcade/Heavy/Shortcut/{gameId:int}")]
+        public async Task<IActionResult> HeavyShortcut(int gameId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var game = await movieDb.ArcadeGames.FirstOrDefaultAsync(g => g.Id == gameId && g.IsEnabled);
+            if (game == null || !string.Equals(game.Lane, "heavy", StringComparison.OrdinalIgnoreCase))
+                return NotFound(new { message = "Not a heavy-lane title." });
+            var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
+            if (game.RatingCeiling > ageRestriction)
+                return StatusCode(403, new { message = "This game isn't available on your account." });
+
+            var resp = await GetGatewayAsync($"heavy/shortcut/{gameId}");
+            if (resp == null || !resp.IsSuccessStatusCode)
+                return StatusCode(501, new { message = "The heavy lane is not configured." });
+            var text = await resp.Content.ReadAsStringAsync();
+            var safe = game.Title;
+            foreach (var c in Path.GetInvalidFileNameChars()) safe = safe.Replace(c, '_');
+            // Octet-stream + a real .art filename: Android routes the tapped download to Artemis'
+            // ShortcutTrampoline by the file extension, not by MIME.
+            return File(System.Text.Encoding.UTF8.GetBytes(text), "application/octet-stream", $"{safe}.art");
+        }
+
         /// <summary>Complete a Moonlight pairing PIN and record the device→user mapping. Editor-gated
         /// (plan §10): pairing is physical-seat-equivalent trust, so handing it out is deliberate.</summary>
         [HttpPost("/API/Arcade/Heavy/Pair")]

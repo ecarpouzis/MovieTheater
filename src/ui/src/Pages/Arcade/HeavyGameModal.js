@@ -152,13 +152,26 @@ export default function HeavyGameModal({ game, onClose }) {
             </div>
           ) : (
             <div style={{ marginBottom: 12 }}>
-              <ol style={{ paddingLeft: 20, marginBottom: 8 }}>
-                <li>Open <b>Moonlight</b> on your device (TV, Deck, phone, PC).</li>
-                <li>Pick the computer <b>Ziggy</b>.</li>
-                <li>Launch <b>{appTitle}</b>.</li>
-              </ol>
-              <Text type="secondary" style={{ fontSize: 12 }}>Desktop shortcut: </Text>
-              <Text code copyable style={{ fontSize: 12 }}>{copyCmd}</Text>
+              {/* Artemis .art trampoline: the closest thing to launching from the card — the tapped
+                  file streams the game directly on a paired Android device. (moonlight:// links
+                  still don't exist upstream, and the browser can't carry the Moonlight protocol
+                  itself, so a fully in-page launch isn't possible on this lane.) */}
+              <Button type="primary" href={`/API/Arcade/Heavy/Shortcut/${versionId}`} style={{ marginBottom: 6 }}>
+                ▶ Launch on this device (Artemis)
+              </Button>
+              <div style={{ marginBottom: 10 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Android + Artemis, already paired: this downloads a tiny <Text code>.art</Text> shortcut —
+                  tap it in your downloads and the stream starts straight into the game. Keep the file
+                  and it's a one-tap launcher from now on (you can even add it to your home screen).
+                </Text>
+              </div>
+              <Text type="secondary" style={{ fontSize: 12 }}>Or by hand: </Text>
+              <Text style={{ fontSize: 12 }}>open <b>Moonlight/Artemis</b> → <b>Ziggy</b> → <b>{appTitle}</b>.</Text>
+              <div>
+                <Text type="secondary" style={{ fontSize: 12 }}>Desktop shortcut: </Text>
+                <Text code copyable style={{ fontSize: 12 }}>{copyCmd}</Text>
+              </div>
             </div>
           )}
 

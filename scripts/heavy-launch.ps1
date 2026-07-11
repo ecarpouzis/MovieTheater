@@ -59,10 +59,86 @@ function Invoke-Gateway([string]$method, [string]$path, $body) {
     Invoke-RestMethod @args
 }
 
+# ── Per-context input profiles ───────────────────────────────────────────────────────────────────
+# Emulators bind players to ONE specific device, so local pads (DualSense at the desk) and streamed
+# pads (ViGEm Xbox 360) steal Player 1 from each other — whoever configured last wins, and you can't
+# re-bind from the couch. Fix: profiles.json maps an emulator exe to (config file, key prefix,
+# streamed-profile file). Before launch we swap the streamed binding in (backing the local one up to
+# a .restore file); on finish we swap the local binding back. The emulator only reads its config at
+# boot, so the timing is exact. A missing streamed-profile file = no-op (capture it once, per the
+# profiles/README). A leftover .restore (crash) is healed on the next launch before swapping.
+$profilesJson = Join-Path $heavyRoot "profiles\profiles.json"
+
+function Get-InputProfile([string]$exePath) {
+    if (-not (Test-Path $profilesJson)) { return $null }
+    try {
+        $all = Get-Content $profilesJson -Raw | ConvertFrom-Json
+        $exeName = Split-Path $exePath -Leaf
+        return $all | Where-Object { $_.exeMatch -eq $exeName } | Select-Object -First 1
+    } catch { Write-Log "profiles.json unreadable: $_"; return $null }
+}
+
+function Swap-ConfigLines([string]$configFile, [string]$keyPrefix, [string[]]$newLines) {
+    # Replace every <keyPrefix>* line with $newLines, inserted where the first old line sat (all
+    # such keys live in one INI group, so position within the group is what matters).
+    $lines = [IO.File]::ReadAllLines($configFile)
+    $kept = New-Object System.Collections.Generic.List[string]
+    $insertAt = -1
+    foreach ($line in $lines) {
+        if ($line -like "$keyPrefix*") {
+            if ($insertAt -lt 0) { $insertAt = $kept.Count }
+            continue
+        }
+        $kept.Add($line)
+    }
+    if ($insertAt -lt 0) { $insertAt = $kept.Count }
+    $kept.InsertRange($insertAt, [string[]]$newLines)
+    [IO.File]::WriteAllLines($configFile, $kept, (New-Object System.Text.UTF8Encoding($false)))
+}
+
+function Restore-InputProfile([string]$exePath) {
+    $p = Get-InputProfile $exePath
+    if (-not $p) { return }
+    $restore = "$($p.streamedProfile).restore"
+    if (-not (Test-Path $restore)) { return }
+    try {
+        Swap-ConfigLines $p.configFile $p.keyPrefix ([IO.File]::ReadAllLines($restore))
+        Remove-Item $restore -Force
+        Write-Log "input profile restored (local bindings back in $(Split-Path $p.configFile -Leaf))"
+    } catch { Write-Log "input profile restore FAILED: $_" }
+}
+
+function Apply-StreamedInputProfile([string]$exePath) {
+    $p = Get-InputProfile $exePath
+    if (-not $p -or -not (Test-Path $p.streamedProfile)) { return $null }
+    try {
+        Restore-InputProfile $exePath  # heal a crashed session's leftover swap first
+        $current = [IO.File]::ReadAllLines($p.configFile) | Where-Object { $_ -like "$($p.keyPrefix)*" }
+        [IO.File]::WriteAllLines("$($p.streamedProfile).restore", $current, (New-Object System.Text.UTF8Encoding($false)))
+        Swap-ConfigLines $p.configFile $p.keyPrefix ([IO.File]::ReadAllLines($p.streamedProfile))
+        Write-Log "input profile swapped to streamed bindings for $(Split-Path $exePath -Leaf)"
+        return $exePath
+    } catch { Write-Log "input profile swap FAILED (launching with current bindings): $_"; return $null }
+}
+
 # ── Finish mode (the undo prep-cmd, and our own exit path) ──────────────────────────────────────
 if ($Finish) {
     try { $r = Invoke-Gateway "POST" "/heavy/finish/$AppId" $null; Write-Log "finish → ok=$($r.ok)" }
     catch { Write-Log "finish failed: $_" }
+    # The undo prep-cmd runs even when Apollo hard-kills the session — restore local bindings here
+    # too. We don't know the exe in this mode; restore every profile with a pending .restore.
+    if (Test-Path $profilesJson) {
+        try {
+            foreach ($p in (Get-Content $profilesJson -Raw | ConvertFrom-Json)) {
+                $restore = "$($p.streamedProfile).restore"
+                if (Test-Path $restore) {
+                    Swap-ConfigLines $p.configFile $p.keyPrefix ([IO.File]::ReadAllLines($restore))
+                    Remove-Item $restore -Force
+                    Write-Log "input profile restored (finish mode): $($p.exeMatch)"
+                }
+            }
+        } catch { Write-Log "finish-mode profile restore failed: $_" }
+    }
     exit 0
 }
 
@@ -88,6 +164,7 @@ if (-not $prep.ok) { Write-Log "prepare not ok: $($prep | ConvertTo-Json -Compre
 Write-Log "prepare ok (client='$clientName') exe=$($prep.exe) args=$($prep.args)"
 
 # ── 2. Launch the emulator and hold the lane while it lives ─────────────────────────────────────
+$swapped = Apply-StreamedInputProfile $prep.exe
 $exitCode = 0
 try {
     $startArgs = @{ FilePath = $prep.exe; PassThru = $true }
@@ -110,6 +187,9 @@ catch {
     $exitCode = 1
 }
 finally {
+    # Put the LOCAL input bindings back before anything else — desk play must never inherit the
+    # streamed profile. (The undo prep-cmd's finish also does this, belt-and-suspenders.)
+    if ($swapped) { Restore-InputProfile $prep.exe }
     # ── 3. Release the lane. The undo prep-cmd will repeat this harmlessly (idempotent). ────────
     try { $fin = Invoke-Gateway "POST" "/heavy/finish/$AppId" $null; Write-Log "finish → released=$($fin.ok)" }
     catch { Write-Log "finish failed (PID self-heal will release): $_" }

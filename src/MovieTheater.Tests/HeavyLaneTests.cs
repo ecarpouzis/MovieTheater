@@ -249,6 +249,21 @@ namespace MovieTheater.Tests
         }
 
         [Fact]
+        public void Art_shortcut_matches_the_artemis_trampoline_format()
+        {
+            // Format from Artemis' own ShortcutTrampoline/ShortcutHelper (moonlight-noir): line-based
+            // [key] value; host_uuid + host_name + an app identifier are what make it launchable.
+            var art = ApolloAdmin.BuildArtShortcut("HOST-UUID-1", "Ziggy", "APP-UUID-2", "Kirby and the Forgotten Land (Switch)");
+            var lines = art.Split('\n');
+            Assert.Contains("[host_uuid] HOST-UUID-1", lines);
+            Assert.Contains("[host_name] Ziggy", lines);
+            Assert.Contains("[app_uuid] APP-UUID-2", lines);
+            Assert.Contains("[app_name] Kirby and the Forgotten Land (Switch)", lines);
+            // Every non-empty, non-comment line must be [key] value — the trampoline throws otherwise.
+            Assert.All(lines.Where(l => l.Length > 0 && !l.StartsWith('#')), l => Assert.StartsWith("[", l));
+        }
+
+        [Fact]
         public void Compile_falls_back_to_the_raw_command_without_a_script()
         {
             var app = new HeavyApp { Id = "x", Title = "X", Exe = @"C:\emu\emu.exe", ArgsTemplate = "-f" };

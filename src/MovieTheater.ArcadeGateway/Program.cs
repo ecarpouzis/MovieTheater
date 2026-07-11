@@ -393,6 +393,28 @@ if (heavyOptions.Enabled)
         return Results.Json(await apollo.SyncAppsAsync(heavyRegistry, heavyStager, heavyOptions, apply, ctx.RequestAborted));
     });
 
+    // An Artemis .art launch shortcut for one app (plan §7.5 upgraded): tapping the file on a
+    // PAIRED Android device jumps straight into the stream — the site card serves it so "play"
+    // is one tap instead of navigating the client's grid. Text is built fresh per request so it
+    // always carries Apollo's current uuids.
+    app.MapGet("/heavy/shortcut/{appId}", async (HttpContext ctx, string appId) =>
+    {
+        if (!InternalAuth(ctx)) return Results.Unauthorized();
+        var a = ResolveApp(appId);
+        if (a == null) return Results.NotFound();
+        var snap = await apollo.GetAppsSnapshotAsync(ctx.RequestAborted);
+        if (snap == null || string.IsNullOrEmpty(snap.HostUuid))
+            return Results.Json(new { error = "Apollo is unreachable." }, statusCode: StatusCodes.Status503ServiceUnavailable);
+        var appObj = snap.Apps.FirstOrDefault(o =>
+            string.Equals((string?)o["name"], a.Title, StringComparison.OrdinalIgnoreCase));
+        var appUuid = (string?)appObj?["uuid"];
+        if (appObj == null || string.IsNullOrEmpty(appUuid))
+            return Results.Json(new { error = "App is not synced to Apollo yet — run sync-apps." }, statusCode: StatusCodes.Status404NotFound);
+        return Results.Text(
+            MovieTheater.ArcadeGateway.ApolloAdmin.BuildArtShortcut(snap.HostUuid!, snap.HostName ?? "Ziggy", appUuid!, a.Title),
+            "text/plain");
+    });
+
     // ── The heavy-launch.ps1 contract (plan §4): prepare → attach → finish ──────────────────────
     app.MapPost("/heavy/prepare/{appId}", async (HttpContext ctx, string appId) =>
     {
