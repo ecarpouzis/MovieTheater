@@ -770,10 +770,10 @@ index 0000000..585f635
 +}
 diff --git a/pkg/worker/caged/capture/launch.go b/pkg/worker/caged/capture/launch.go
 new file mode 100644
-index 0000000..a1e5fe3
+index 0000000..100c50f
 --- /dev/null
 +++ b/pkg/worker/caged/capture/launch.go
-@@ -0,0 +1,354 @@
+@@ -0,0 +1,389 @@
 +package capture
 +
 +import (
@@ -1038,11 +1038,21 @@ index 0000000..a1e5fe3
 +	return gp, nil
 +}
 +
-+// kill terminates the game tree: closing the job handle triggers KILL_ON_JOB_CLOSE; falls back to
-+// killing the root process directly if there was no job.
++// kill stops the game tree. GRACEFUL FIRST: post WM_CLOSE so the emulator stops cleanly and flushes
++// its shader/pipeline cache — a hard kill mid-shader-compile truncates yuzu's vulkan_pipelines.bin,
++// and the NEXT launch then crashes loading it (observed live; yuzu's confirmStop is off so no dialog
++// blocks the close). Wait up to 3 s for a clean exit, THEN the hard path: closing the job handle
++// triggers KILL_ON_JOB_CLOSE, plus a direct Process.Kill fallback.
 +func (gp *gameProc) kill() {
 +	if gp == nil {
 +		return
++	}
++	if gp.pid > 0 {
++		postCloseToPid(gp.pid)
++		if h, err := windows.OpenProcess(windows.SYNCHRONIZE, false, uint32(gp.pid)); err == nil {
++			windows.WaitForSingleObject(h, 3000) // clean exit flushes the cache; timeout ⇒ hard-kill below
++			windows.CloseHandle(h)
++		}
 +	}
 +	if gp.job != 0 {
 +		windows.CloseHandle(gp.job)
@@ -1070,7 +1080,32 @@ index 0000000..a1e5fe3
 +	procShowWindow         = user32.NewProc("ShowWindow")
 +	procBringWindowToTop   = user32.NewProc("BringWindowToTop")
 +	procKeybdEvent         = user32.NewProc("keybd_event")
++	procPostMessageW       = user32.NewProc("PostMessageW")
 +)
++
++const wmClose = 0x0010
++
++// postClose enum state — the callback is created ONCE at package init (same NewCallback-slot-leak
++// reason as focusEnumWindow, W3). One room closes at a time ⇒ no lock needed.
++var (
++	postCloseTargetPid int
++	postCloseEnum      = syscall.NewCallback(func(hwnd, lparam uintptr) uintptr {
++		var wpid uint32
++		procGetWindowThreadPid.Call(hwnd, uintptr(unsafe.Pointer(&wpid)))
++		if int(wpid) == postCloseTargetPid {
++			if vis, _, _ := procIsWindowVisible.Call(hwnd); vis != 0 {
++				procPostMessageW.Call(hwnd, wmClose, 0, 0)
++			}
++		}
++		return 1 // keep going — close every top-level window the pid owns
++	})
++)
++
++// postCloseToPid posts WM_CLOSE to every visible top-level window owned by pid (graceful stop).
++func postCloseToPid(pid int) {
++	postCloseTargetPid = pid
++	procEnumWindows.Call(postCloseEnum, 0)
++}
 +
 +const (
 +	swShow         = 5
