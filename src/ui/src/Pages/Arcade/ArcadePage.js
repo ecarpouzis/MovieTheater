@@ -331,7 +331,11 @@ export default function ArcadePage() {
         <SavesManager game={manageSaves} onClose={() => setManageSaves(null)} onResume={doCreateRoom} />
       )}
       {heavyGame && (
-        <HeavyGameModal game={heavyGame} onClose={() => setHeavyGame(null)} />
+        <HeavyGameModal
+          game={heavyGame}
+          onClose={() => setHeavyGame(null)}
+          onPlayInBrowser={(versionId) => { setHeavyGame(null); doCreateRoom(versionId, {}); }}
+        />
       )}
     </div>
   );

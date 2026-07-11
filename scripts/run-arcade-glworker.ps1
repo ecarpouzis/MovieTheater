@@ -30,12 +30,19 @@
     starts (or pre-warm the core once) if you ever add one.
 #>
 param(
-    [string]$WorkerExe  = "D:\Arcade\build\cloud-game-gl\bin\worker.exe",
-    [string]$ConfDir    = "D:\ArcadeStorage\worker-gl",
-    [string]$Ucrt64Bin  = "D:\msys64\ucrt64\bin",
-    [string]$IceIpMap   = "",   # resolved from docker/arcade/.env ZIGGY_PUBLIC_IP below; never hardcode the IP here
-    [int]   $SinglePort = 8446,
-    [string]$LogFile    = "D:\ArcadeStorage\logs\glworker.log"
+    [string]$WorkerExe   = "D:\Arcade\build\cloud-game-gl\bin\worker.exe",
+    [string]$ConfDir     = "D:\ArcadeStorage\worker-gl",
+    [string]$Ucrt64Bin   = "D:\msys64\ucrt64\bin",
+    [string]$IceIpMap    = "",   # resolved from docker/arcade/.env ZIGGY_PUBLIC_IP below; never hardcode the IP here
+    [int]   $SinglePort  = 8446,
+    # Worker network zone. "main" = the retro pool (every non-capture room). "capture" = the H5 browser
+    # capture worker (docs/arcade-capture-worker-plan.md). The gateway derives a room's zone from its
+    # room id, so these MUST match: retro workers "main", the capture worker "capture".
+    [string]$Zone        = "main",
+    # Library base. env CLOUD_GAME_LIBRARY_BASEPATH OVERRIDES the yaml, so the capture worker must point
+    # it at its .capture stub dir (not the retro roms) or FindAppByName won't resolve capture titles.
+    [string]$LibraryBasePath = "D:\ArcadeStorage\roms",
+    [string]$LogFile     = "D:\ArcadeStorage\logs\glworker.log"
 )
 
 # Resolve the ICE IP from docker/arcade/.env (ZIGGY_PUBLIC_IP) — the SAME source the WSL workers use,
@@ -63,12 +70,12 @@ $env:Path = "$Ucrt64Bin;$env:Path"
 # zone "main": the Windows-native workers are now the ONLY pool (docker/WSL retired), so they must take
 # every room, not just GL 3D cores. (Was "gl" back when the WSL pool served 2D/N64 and this pool only
 # handled flycast/ppsspp; the merged worker-gl/config.yaml now carries the full tuned core list.)
-$env:CLOUD_GAME_WORKER_NETWORK_ZONE               = "main"
+$env:CLOUD_GAME_WORKER_NETWORK_ZONE               = $Zone
 $env:CLOUD_GAME_WORKER_NETWORK_COORDINATORADDRESS = "localhost:8000"   # WSL coordinator via mirrored net
 $env:CLOUD_GAME_WORKER_NETWORK_SECURE             = "false"
 $env:CLOUD_GAME_WEBRTC_SINGLEPORT                 = "$SinglePort"        # router must UDP-forward this → Ziggy
 $env:CLOUD_GAME_WEBRTC_ICEIPMAP                   = $IceIpMap
-$env:CLOUD_GAME_LIBRARY_BASEPATH                  = "D:\ArcadeStorage\roms"
+$env:CLOUD_GAME_LIBRARY_BASEPATH                  = $LibraryBasePath
 $env:CLOUD_GAME_EMULATOR_STORAGE                  = "D:\ArcadeStorage\saves"
 
 New-Item -ItemType Directory -Force (Split-Path $LogFile) | Out-Null

@@ -25,6 +25,25 @@ namespace MovieTheater.Services.Arcade
 
         public int MaxConcurrentRooms => config.ArcadeMaxConcurrentRooms;
 
+        /// <summary>
+        /// Heavy titles that ALSO play in the browser via the capture lane (H5,
+        /// docs/arcade-capture-worker-plan.md). Gated by an explicit allowlist — NOT by
+        /// CloudRetroGameKey, because every heavy row already carries that (it is the title's
+        /// heavy descriptor id / launch key), so it can't distinguish "has a capture worker stub".
+        /// Each key here MUST have a matching <c>&lt;key&gt;.capture</c> stub on the capture worker
+        /// (D:\ArcadeStorage\heavy\capture-stubs) and a heavy descriptor — add both together.
+        /// The Artemis/Moonlight launch is unaffected either way (both lanes coexist).
+        /// </summary>
+        public static readonly IReadOnlySet<string> CaptureEnabledKeys =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "switch-kirby-forgotten-land",
+            };
+
+        /// <summary>True when a heavy title's key is capture-enabled (has a browser capture stub).</summary>
+        public static bool IsCaptureEnabled(string? cloudRetroGameKey) =>
+            !string.IsNullOrEmpty(cloudRetroGameKey) && CaptureEnabledKeys.Contains(cloudRetroGameKey);
+
         public ArcadeJoinDescriptor BuildJoinDescriptor(
             int userId, ArcadeGameDescriptor game, string roomCode, string cloudRetroRoomId, int playerSlot, bool isCreator)
         {
@@ -97,6 +116,9 @@ namespace MovieTheater.Services.Arcade
         /// </summary>
         public static int DefaultVideoBitrateKbps(string? system) => system?.ToLowerInvariant() switch
         {
+            // Capture lane (H5): full 1080p desktop of a native heavy title (yuzu/RPCS3). ~2.07 Mpx, the
+            // largest frame we encode — 12 Mbps ≈ 0.09 bpp, with ABR (0021) backing off for thin uplinks.
+            "capture" => 12000,
             // Real 3D detail, ordered by encoded pixels per frame. All measured live 2026-07-09.
             "gc" => 14000,  // 1280x1056 = 1.35 Mpx; at 5 Mbps it ran ~0.06 bpp
             "ps2" => 12000, // 1280x896  = 1.15 Mpx after the 2x upscale. NOT optional: at the old 6 Mbps

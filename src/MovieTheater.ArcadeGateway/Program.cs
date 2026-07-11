@@ -164,7 +164,11 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
     // continuously by the background sweep.
     if (saveStore != null
         && ArcadeSaveId.TryParse(requestedRoomId, out var svUser, out var svGame, out var svSlot, out var svSystem, out _)
-        && svUser == payload.UserId && svGame == payload.GameId)
+        && svUser == payload.UserId && svGame == payload.GameId
+        // Capture rooms (heavy browser lane) ride HeavyVault at prepare/finish, NOT the CloudRetro
+        // save mount. Skipping keeps a heavy dir-zip from ever being seeded into the .dat/.srm mount
+        // (the Snowboard-Kids wedge class — plan §5.2 / trap #8).
+        && !string.Equals(svSystem, "capture", StringComparison.Ordinal))
     {
         // Harvest-on-reconnect (the close-save race fix): the background sweep can lose a foot-race
         // with a quick End→relaunch — the worker's close-time save lands on the mount AFTER the
@@ -440,7 +444,15 @@ if (heavyOptions.Enabled)
         // the displaced content is always recoverable from the store's _displaced graveyard.
         if (heavyVault != null)
         {
-            var userId = await ResolveHeavyUserAsync(clientName, ctx.RequestAborted);
+            // Capture lane (H5): the room is site-authenticated and the owner is baked into the
+            // deterministic room id, so the worker passes ?userId= directly and we skip the
+            // HeavyClient device lookup. This endpoint is InternalAuth-gated, so trusting the param
+            // is safe. Apollo/Artemis (no param) still resolves the user from its client name.
+            int? userId;
+            if (int.TryParse(ctx.Request.Query["userId"].ToString(), out var directUid) && directUid > 0)
+                userId = directUid;
+            else
+                userId = await ResolveHeavyUserAsync(clientName, ctx.RequestAborted);
             if (userId is int uid)
             {
                 heavyLock.SetUser(a.Id, uid); // finish() harvests for this user
@@ -558,12 +570,24 @@ sealed class WsTransformer : HttpTransformer
         await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix, cancellationToken);
 
         var query = httpContext.Request.QueryString.Value ?? string.Empty;
-        // One-pool arcade: the site still tags GL-core rooms (dc/naomi/atomiswave/psp) with zone=gl for the
-        // old two-pool routing, but there is a single Windows worker pool now (registered zone "main"). Strip
-        // the zone so those rooms match it instead of the coordinator returning "no free workers" (PSP/DC were
-        // disconnecting after the Windows-only migration flipped the workers from zone "gl" to "main").
+        // Zone routing (capture lane, H5 — docs/arcade-capture-worker-plan.md). The worker pool is split
+        // by zone: retro/GL cores run on the "main" workers, the capture mod runs on the "capture" worker.
+        // We DERIVE the zone from the room id's system (every room id the site mints is
+        // sv-…-<system>___<gameKey>): a capture room (system "capture") → zone "capture"; everything else,
+        // including GL rooms that still carry zone=gl for the retired two-pool routing, and legacy/random
+        // ids that don't parse → zone "main". This is independent of whatever zone the site tagged.
+        // ⚠ This REPLACES the old blanket strip. A stripped/empty zone matched ANY worker via Worker.In("")
+        // — once a capture worker joins the coordinator, that would let a retro room land on it and fail
+        // its FindAppByName (plan trap #7). Deriving a concrete zone here closes that off at the gateway,
+        // with no dependency on a matching site deploy.
+        var roomIdForZone = httpContext.Request.Query["room_id"].ToString();
+        string zone = "main";
+        if (ArcadeSaveId.TryParse(roomIdForZone, out _, out _, out _, out var zoneSystem, out _)
+            && string.Equals(zoneSystem, "capture", StringComparison.Ordinal))
+            zone = "capture";
         query = System.Text.RegularExpressions.Regex.Replace(query, @"[?&]zone=[^&]*", "");
         if (query.StartsWith("&")) query = "?" + query.Substring(1);
+        query = string.IsNullOrEmpty(query) || query == "?" ? "?zone=" + zone : query + "&zone=" + zone;
         proxyRequest.RequestUri = new Uri(destinationPrefix + "/ws" + query);
         proxyRequest.Headers.Host = null;
     }

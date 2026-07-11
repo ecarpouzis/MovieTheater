@@ -546,6 +546,31 @@ isolates the game; note measured CPU/GPU. Also spike the P4 zero-copy string
 only. If `monitor-index=0` grabs a SudoVDA display, enumerate with
 `gst-device-monitor-1.0 Source/Monitor` and pin by handle — and write down the mapping.
 
+**P0 RESULTS (executed 2026-07-11 on Ziggy, GStreamer 1.28.4).** All gates pass.
+- Video design-A path steady **~60.2 fps avg, 0 dropped** at 1080p
+  (`d3d11screencapturesrc → d3d11convert(BGRA) → d3d11download → videoconvert → NV12 → nvav1enc
+  preset=p6 cbr 8000`). 767 frames in ~13 s, `current` 58.8–61.9.
+- ⚠ **CORRECTION to the P0 string above**: this build's `nvav1enc` sink caps are
+  `video/x-raw{,(memory:CUDAMemory|D3D12Memory|GLMemory)} format={NV12,P010_10LE,VUYA,RGBA,RGBx,
+  BGRA,BGRx,RGB10A2_LE}` — **I420 is NOT accepted**. Use `format=NV12` (or feed BGRA straight in).
+  The worker's design-A path is unaffected (it pushes BGRA into the media package's existing
+  appsrc, which converts), but any direct-to-nvenc string must say NV12.
+- Audio loopback negotiates cleanly (`wasapi2src loopback=true low-latency=true → audioconvert →
+  audioresample → S16LE/48000/2 → opusenc`), no errors. PID-scoping not yet exercised (no game
+  running at spike time) — validate `loopback-target-pid`/`include-process-tree` at P1.
+- P4 zero-copy (`d3d11convert(NV12,D3D11) → nvautogpuav1enc`, no download) **negotiates + runs
+  60 fps 0-dropped**. Confirms the P4 optimization is viable; still deferred.
+- **Monitor map (no SudoVDA active at spike time — no Apollo client connected):**
+  DISPLAY1 = **primary**, 2560×1440, `hmonitor=1959992039`; DISPLAY2 = 2560×1440,
+  `hmonitor=24447515`; both on the RTX 4070 Ti. Enumerate at boot and pin by hmonitor (SudoVDA
+  churns the GDI numbers — §1). `monitor-index` on `d3d11screencapturesrc` also works but is the
+  unstable coordinate.
+- **ViGEm decision (P1 §4.5):** only the bus driver is installed
+  (`C:\Program Files\Nefarius Software Solutions\ViGEm Bus Driver\ViGEmBus.sys`) — there is **no
+  `ViGEmClient.dll`/SDK on the box**. So the cgo `ViGEmClient` route would require vendoring the
+  native lib; the **pure-Go `github.com/openstadia/go-vigem`** (talks the ViGEmBus IOCTLs directly,
+  needs only the driver) is fetchable and is the chosen binding.
+
 ### P1 — the capture mod, hardcoded (worker only; ~3-5 days)
 Patch 0037 v0: mod + branch + video/audio pipelines + ViGEm port-0 pad + direct exe launch
 (hardcode one stub + exe path; SKIP the gateway contract). Room reached by starting the capture
@@ -553,6 +578,41 @@ worker with zone `capture` and hand-minting a room (temporary: point a dev site 
 or temporarily register the capture worker as the only worker in a test coordinator on :8001).
 Gates: play Kirby in a browser tab on the LAN — video+audio+pad all live; second browser joins
 as spectator; retro rooms unaffected (zone isolation proven); `Close()` kills the game.
+
+**P1 RESULTS (executed 2026-07-11 on Ziggy).** The capture caged mod is WRITTEN and the whole
+worker COMPILES against the pinned tree; the capture lane is proven live against real Kirby.
+- **Code (new package `pkg/worker/caged/capture/`):** `capture.go` (App + app.App interface +
+  LoadApp/Start/Close/exit-watcher/heartbeat + ArcadeSaveId parse), `pipeline.go` (go-gst
+  video+audio appsink pipelines + last-frame re-push ticker), `input.go` (go-vigem X360 pad
+  manager + RetroPad→XUSB), `launch.go` (gateway prepare/attach/finish + profile-swap Go port +
+  Job-Object KILL_ON_JOB_CLOSE launch + foreground focus), `monitor.go` (EnumDisplayMonitors →
+  HMONITOR). Wiring: `caged.go` (register Capture mod + `CaptureSystem`), `worker.go` (conditional
+  Load when `conf.Capture.Enabled`), `coordinatorhandlers.go` (the ONE branch at the app-select
+  point — shared encoder/media block, libretro path untouched), `config/worker.go` (`Capture`
+  struct). `go build ./cmd/worker` = **exit 0** (CGO + go-gst + go-vigem all link).
+- **ViGEm reality vs the note above:** `go-vigem` is NOT pure-IOCTL — it `LazyDLL`s
+  `vigemclient.dll`, which is NOT on the box (Apollo/Sunshine static-link it). **Built
+  `ViGEmClient.dll` (x64) from Nefarius source with the UCRT64 g++** (`-DVIGEM_DYNAMIC`, 30/30
+  `vigem_*` exports) and ship it beside `worker.exe`. Smoke test: go-vigem created a real virtual
+  X360 pad (`attached=true`, pressed A, moved stick).
+- **Live probe (`cmd/capture-probe`, NOT part of patch 0037 — delete before packaging):** drove
+  `capture.App` against real Kirby through the real gateway. Verified: monitor pinned; **prepare
+  took the heavy lock**; yuzu launched + **attach** posted; **video 60 fps** to the media callback
+  (1319 frames/22 s); **audio ~50/s** PID-scoped WASAPI loopback; **ViGEm pad created**;
+  exit-watcher blanked; heartbeat ticked; **Close released the lock**. Retro workers + coordinator
+  + gateway untouched throughout.
+- **⚠ Two prerequisites for the emulator half of the gate (NOT capture-code bugs):** (1) yuzu
+  exited ~1.6 s into its library scan — **session isolation**: launched outside the interactive
+  desktop it can't stand up its Vulkan/GL context (the real worker runs as an Interactive-principal
+  scheduled task, which fixes this). (2) `yuzu-streamed.player0.ini` does not exist yet → pads are
+  created but **unbound in yuzu** until the one-time streamed-profile capture runs (trap #10).
+- **Deploy artifacts staged:** repo `docker/arcade/config.worker-capture.yaml` (authoritative;
+  encoder in lockstep with worker-gl); `D:\ArcadeStorage\worker-capture\bin\` (worker.exe target +
+  `vigemclient.dll`); Kirby stub `D:\ArcadeStorage\heavy\capture-stubs\switch-kirby-forgotten-land.capture`.
+- **REMAINING for the full browser-tab gate:** run the capture worker as the Interactive scheduled
+  task (so yuzu survives) + the WebRTC/coordinator/browser leg. Reaching a browser safely requires
+  P2's zone routing (retro rooms send/derive `zone=main`) so a capture worker can share the live
+  coordinator without stealing retro rooms (trap #7) — i.e. the browser gate lands together with P2.
 
 ### P2 — full integration (site+gateway+deploy; ~2-3 days)
 Gateway (§5), site (§6), lifecycle-via-gateway (prepare/attach/finish + profile swap + job

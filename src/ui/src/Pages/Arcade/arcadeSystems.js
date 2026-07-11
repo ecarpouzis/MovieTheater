@@ -10,6 +10,8 @@ const SYSTEM_LABEL = {
   fds: "Famicom Disk System", neogeo: "Neo Geo",
   // Heavy lane (Moonlight-streamed, docs/arcade-heavy-lane-plan.md §7.1).
   switch: "Switch", ps3: "PlayStation 3", ps4: "PlayStation 4", wiiu: "Wii U", x360: "Xbox 360",
+  // Capture lane (H5): a browser room for a heavy title shows system "capture" in its descriptor.
+  capture: "Live",
 };
 
 export const systemLabel = (s) => SYSTEM_LABEL[s] || (s ? s.toUpperCase() : "");

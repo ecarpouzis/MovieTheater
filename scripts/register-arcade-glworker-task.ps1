@@ -33,7 +33,16 @@ param(
     [string]$RunScript  = (Join-Path $PSScriptRoot "run-arcade-glworker.ps1"),
     [int]   $WorkerId   = 1,
     [int]   $SinglePort = 0,      # 0 => 8445 + WorkerId
-    [string]$LogFile    = ""      # ""=> D:\ArcadeStorage\logs\glworker[-N].log
+    [string]$LogFile    = "",     # ""=> D:\ArcadeStorage\logs\glworker[-N].log
+    # Capture worker (H5): register worker 3 as the browser capture lane —
+    #   -WorkerId 3 -Zone capture -ConfDir D:\ArcadeStorage\worker-capture `
+    #   -LibraryBasePath D:\ArcadeStorage\heavy\capture-stubs `
+    #   -WorkerExe D:\ArcadeStorage\worker-capture\bin\worker.exe
+    # (that bin dir also holds vigemclient.dll, next to worker.exe). Retro workers use the defaults.
+    [string]$Zone            = "main",
+    [string]$ConfDir         = "",  # "" => run script default (worker-gl)
+    [string]$LibraryBasePath = "",  # "" => run script default (roms)
+    [string]$WorkerExe       = ""   # "" => run script default
 )
 
 if ($SinglePort -le 0) { $SinglePort = 8445 + $WorkerId }
@@ -50,10 +59,17 @@ if (-not $LogFile) {
 
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive
 
+# Optional passthroughs (capture worker). Empty = the run script's own defaults (retro worker-gl).
+$extra = ""
+if ($Zone)            { $extra += " -Zone $Zone" }
+if ($ConfDir)         { $extra += " -ConfDir `"$ConfDir`"" }
+if ($LibraryBasePath) { $extra += " -LibraryBasePath `"$LibraryBasePath`"" }
+if ($WorkerExe)       { $extra += " -WorkerExe `"$WorkerExe`"" }
+
 # conhost --headless keeps it windowless, same trick as the WSL keepalive task.
 $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\conhost.exe" `
     -Argument ("--headless powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden " +
-               "-File `"$RunScript`" -SinglePort $SinglePort -LogFile `"$LogFile`"")
+               "-File `"$RunScript`" -SinglePort $SinglePort -LogFile `"$LogFile`"$extra")
 
 $trigger  = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 $settings = New-ScheduledTaskSettingsSet `

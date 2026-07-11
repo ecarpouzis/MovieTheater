@@ -23,7 +23,7 @@ const fmtGB = (b) => (b > 0 ? `${(b / GB).toFixed(1)} GB` : "");
  * Pairing helper: first-time devices need a one-time PIN pairing; editor-gated server-side (pairing
  * is physical-seat-equivalent trust — plan §10), so the section is discreet and failures are honest.
  */
-export default function HeavyGameModal({ game, onClose }) {
+export default function HeavyGameModal({ game, onClose, onPlayInBrowser }) {
   const [status, setStatus] = useState(null);   // /Heavy/Status payload
   const [preparing, setPreparing] = useState(false);
   const [progress, setProgress] = useState(null); // last stage-chunk response
@@ -105,14 +105,15 @@ export default function HeavyGameModal({ game, onClose }) {
 
   return (
     <Modal
-      title={`${game.title} — play via Moonlight`}
+      title={`${game.title} — play${game.capture ? "" : " via Moonlight"}`}
       open
       onCancel={onClose}
       footer={<Button onClick={onClose}>Close</Button>}
     >
       <Paragraph type="secondary" style={{ marginBottom: 12 }}>
-        This title runs on the game PC and streams to your device — it doesn't play in the browser.
-        You'll need the Moonlight app (or Artemis on Android) on the same network.
+        {game.capture
+          ? "This title runs on the game PC. Play it right in the browser (no app needed), or stream it with lowest latency via Moonlight/Artemis on the same network."
+          : "This title runs on the game PC and streams to your device — it doesn't play in the browser. You'll need the Moonlight app (or Artemis on Android) on the same network."}
       </Paragraph>
 
       {status === null ? (
@@ -152,12 +153,29 @@ export default function HeavyGameModal({ game, onClose }) {
             </div>
           ) : (
             <div style={{ marginBottom: 12 }}>
+              {/* Capture lane (H5): a heavy title with a CloudRetroGameKey ALSO plays in the browser —
+                  the room routes to the capture worker, which launches the native game and streams the
+                  desktop over the same WebRTC pipeline the retro cards use. This sits ALONGSIDE Artemis
+                  so neither launch path is lost. */}
+              {game.capture && !busy && (
+                <div style={{ marginBottom: 14 }}>
+                  <Button type="primary" onClick={() => onPlayInBrowser?.(versionId)} style={{ marginBottom: 6 }}>
+                    ▶ Play in browser
+                  </Button>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      No app, no pairing — plays right here in the tab, and friends can join with a controller
+                      over the internet. Slightly higher latency than Artemis (~80–120 ms vs ~40–70 on LAN).
+                    </Text>
+                  </div>
+                </div>
+              )}
               {/* Artemis .art trampoline: the closest thing to launching from the card — the tapped
                   file streams the game directly on a paired Android device. (moonlight:// links
                   still don't exist upstream, and the browser can't carry the Moonlight protocol
                   itself, so a fully in-page launch isn't possible on this lane.) */}
-              <Button type="primary" href={`/API/Arcade/Heavy/Shortcut/${versionId}`} style={{ marginBottom: 6 }}>
-                ▶ Launch on this device (Artemis)
+              <Button type={game.capture ? "default" : "primary"} href={`/API/Arcade/Heavy/Shortcut/${versionId}`} style={{ marginBottom: 6 }}>
+                ▶ Launch on this device (Artemis){game.capture ? " — lowest latency" : ""}
               </Button>
               <div style={{ marginBottom: 10 }}>
                 <Text type="secondary" style={{ fontSize: 12 }}>

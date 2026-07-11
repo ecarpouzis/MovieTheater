@@ -210,6 +210,9 @@ namespace MovieTheater.Controllers
                     // 'heavy' = Moonlight-streamed (plan §7.1): the card's action becomes
                     // Prepare/Play-via-Moonlight instead of creating a CloudRetro room.
                     lane = vs.Select(g => g.Lane).FirstOrDefault(l => l != null),
+                    // capture (H5): a heavy title on the capture allowlist ALSO offers browser play — the
+                    // modal shows "Play in browser" beside the Artemis launch (docs/arcade-capture-worker-plan.md §6.3).
+                    capture = vs.Any(g => string.Equals(g.Lane, "heavy", StringComparison.OrdinalIgnoreCase) && CloudRetroHost.IsCaptureEnabled(g.CloudRetroGameKey)),
                     versions = versions.Select(v => new
                     {
                         id = v.Id, label = v.Label, region = v.Region,
@@ -439,9 +442,14 @@ namespace MovieTheater.Controllers
             if (game == null)
                 return NotFound(new { message = "Game not found." });
 
-            // Heavy-lane titles are Moonlight-streamed (docs/arcade-heavy-lane-plan.md) — they have no
-            // CloudRetro core, so a room token minted for one would just hang a worker connection.
-            if (string.Equals(game.Lane, "heavy", StringComparison.OrdinalIgnoreCase))
+            // Heavy-lane titles are Moonlight-streamed by default (docs/arcade-heavy-lane-plan.md). A heavy
+            // title with a CloudRetroGameKey ALSO offers the browser "capture" lane (H5): the room routes to
+            // the capture worker, which launches the native program and streams the desktop. Both launch
+            // paths coexist — the card keeps its Artemis button. A heavy title WITHOUT a capture key stays
+            // Moonlight-only.
+            var isHeavy = string.Equals(game.Lane, "heavy", StringComparison.OrdinalIgnoreCase);
+            var isCapture = isHeavy && CloudRetroHost.IsCaptureEnabled(game.CloudRetroGameKey);
+            if (isHeavy && !isCapture)
                 return BadRequest(new { message = "This title plays via Moonlight, not in the browser — use its card's Play instructions." });
 
             var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
@@ -478,16 +486,34 @@ namespace MovieTheater.Controllers
             // creator's browser does that (empty room_id) and then calls Bind (§8 steps 2–3).
             rooms.CreateRoom(roomCode, game.Id, game.MaxPlayers, userId.Value, codec);
 
-            var (launchKey, discCount) = await ResolveLaunchAsync(game);
+            string launchKey;
+            int discCount;
+            string roomSystem;
+            if (isCapture)
+            {
+                // The capture launch key IS the CloudRetroGameKey (== the heavy descriptor id == the
+                // worker's .capture stub filename). The room's system is the literal "capture" so the
+                // gateway routes it to the capture worker (zone) and the worker's branch fires on it.
+                launchKey = game.CloudRetroGameKey!;
+                discCount = 0;
+                roomSystem = "capture";
+            }
+            else
+            {
+                (launchKey, discCount) = await ResolveLaunchAsync(game);
+                roomSystem = game.System;
+            }
 
             // Durable, user-scoped saves (docs/arcade-saves-plan.md): instead of an empty room id ("create
             // a random room"), the creator carries a DETERMINISTIC id encoding (user, game, slot 0, system)
             // with the launch key as the CloudRetro-resolvable suffix. This makes the session's save files
             // predictable, so the gateway seeds this user's save before boot and harvests it after — the
             // save belongs to the user+game, not the room. Slot 0 = the "Continue" slot (multi-slot is S3).
-            var saveId = ArcadeSaveId.Mint(userId.Value, game.Id, 0, game.System, launchKey);
+            // Capture rooms encode system="capture" here: HeavyVault owns their saves (the gateway skips the
+            // CloudRetro save mount for them), and the worker parses this id for the owner + heavy app id.
+            var saveId = ArcadeSaveId.Mint(userId.Value, game.Id, 0, roomSystem, launchKey);
             var descriptor = host.BuildJoinDescriptor(
-                userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, game.System),
+                userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, roomSystem),
                 roomCode, cloudRetroRoomId: saveId, playerSlot: 0, isCreator: true);
 
             // "New game": tell the gateway (via ?fresh=1 on the WS URL) to clear the mount so the game
@@ -507,7 +533,7 @@ namespace MovieTheater.Controllers
             // big ones. See CloudRetroHost.DefaultVideoBitrateKbps. An explicit lobby choice always wins.
             var vbr = request.VideoBitrateKbps > 0
                 ? Math.Clamp(request.VideoBitrateKbps, 500, 20000)
-                : CloudRetroHost.DefaultVideoBitrateKbps(game.System);
+                : CloudRetroHost.DefaultVideoBitrateKbps(roomSystem); // "capture" → 1080p desktop ceiling
             descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + vbr };
             if (request.AudioFec is 1 or 2)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fec=" + request.AudioFec };
@@ -522,7 +548,7 @@ namespace MovieTheater.Controllers
             // Per-room cheats (arcade cheats feature). Resolve the ids the creator ticked against what this
             // exact ROM actually offers — never trust the client's idea of what a cheat is, because a code is
             // a raw memory poke and one aimed at another game's addresses corrupts state rather than failing.
-            if (request.Cheats is { Count: > 0 })
+            if (!isCapture && request.Cheats is { Count: > 0 })
             {
                 var offered = await BuildCheatListAsync(game);
                 var picked = offered.Where(o => request.Cheats.Contains(o.Id, StringComparer.Ordinal))

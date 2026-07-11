@@ -43,7 +43,9 @@ param(
     [int]    $IntervalSec = 30,
     [int]    $GraceSec = 60,
     [int]    $WedgeStaleSec = 150,
-    [int[]]  $WorkerPorts = @(8446, 8447),   # extend when register-arcade-glworker-task adds workers
+    [int[]]  $WorkerPorts = @(8446, 8447, 8448),   # 8448 = capture worker (H5). Extend when adding workers.
+    #  ⚠ The running watchdog TASK must be re-registered to pick up a new port — otherwise it reaps the
+    #    new worker as "port drift" (bound a mux port not in this list). See the watchdog task registration.
     [string] $LogDir = "D:\ArcadeStorage\logs",
     [string] $LogFile = "D:\ArcadeStorage\logs\glworker-watchdog.log"
 )
