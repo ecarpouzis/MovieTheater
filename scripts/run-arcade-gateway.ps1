@@ -18,6 +18,10 @@ param(
     [string]$LogFile = "D:\ArcadeStorage\logs\gateway.log"
 )
 
+# PRIORITY (2026-07-11): Task Scheduler defaults tasks to BelowNormal → E-cores on the 13700K.
+# Normal keeps token checks + WS proxying off the slow cores; children inherit the class.
+(Get-Process -Id $PID).PriorityClass = 'Normal'
+
 $env:ASPNETCORE_ENVIRONMENT = "Production"
 
 New-Item -ItemType Directory -Force (Split-Path $LogFile) | Out-Null

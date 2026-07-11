@@ -339,7 +339,18 @@ emulator:
           # ran races at half speed because its shader format could not reuse the warm pipeline
           # cache (measured via pace-diag). This build = yesterday's core + async shaders, nothing
           # else. Rollback: lib: dolphin_libretro + shader_compilation_mode "0".
-          lib: dolphin_custom_libretro  # versioned rebase (287ab2d + patch) — cache validates now — see task 22 / gc memory: custom-core session was laggier; suspects (version drift vs context churn vs dual-core) need instrumented isolation, not ear tests. Custom core + patch + build recipe all retained.
+          # STOCK CORE — VERDICT 2026-07-11 02:46, THE F-ZERO RACE-SLOWDOWN FIX. The custom core
+          # (dolphin_custom_libretro, live 07-09 21:25 → 07-11 02:44) ran GX races at 28–50 ticks/s
+          # (uniform ~25ms retro_run, one busy core, GPU idle) at DETERMINISTIC track spots; the
+          # stock 2606.0.88 nightly runs the same races at a flat 58.5–60 (verified live, Big Blue,
+          # raw-ISO rip, MSAA 0, sync shaders). Root cause inside the custom build unresolved
+          # (deoptimized build despite the Release recipe? the CreateSharedContext patch itself?
+          # its DLL is 30% larger than stock) — investigate before EVER redeploying it. Everything
+          # else was exonerated one variable at a time on 07-10/11: GPU clocks, process priority,
+          # E-cores, efb scale, codec, network, pacing, save-states, shader/pipeline caches, gcz
+          # compression, MSAA, dual-core (GFZ.ini vetoes it). Async shaders are moot on stock
+          # (mode "0" below is REQUIRED — stock's async path nulls shared contexts and crashes).
+          lib: dolphin_libretro
           folder: gc
           roms: ["gcz", "iso", "rvz", "ciso", "gcm", "m3u"]
           isGlAllowed: true
@@ -350,15 +361,11 @@ emulator:
           # first retro_run, so the load-time retro_serialize_size probe walks save-state into a NULL
           # g_vertex_manager → 0xc0000005. The probe only feeds a log line; saves re-query at save time.
           hacks: [skip_hw_context_destroy, skip_serialize_size_probe]
-          # 2026-07-10 late: back to efb_scale 2 delivered NATIVELY (scale 1) from efb 3 + scale 0.6667.
-          # Same 1280x1056 on the wire; what changed is the INTERNAL render, and that matters because
-          # F-Zero GX EFB-PEEKS constantly (its own GameSettings INI documents whole-screen peeks) — EFB
-          # readback cost scales with internal pixels, and Eric's real races dipped to 28–50 ticks/s in
-          # 5–20 s windows at efb 3 (attract/menus hold 60 and were how the supersample verdict slipped
-          # through — attract is NOT representative). efb 2 is the b504c40-era config verified
-          # 60fps/0-drop on GX itself; 4x MSAA stays (the one core where MSAA measurably works), only
-          # the supersample-on-top goes. Re-raise only against a REAL driven race, never attract.
-          scale: 1
+          # Render efb_scale 3 (1920x1584), deliver 1280x1056: supersampled on TOP of 4x MSAA — the
+          # 07-09 quality-pass ideal, RESTORED 2026-07-11 after the race-slowdown hunt exonerated
+          # resolution entirely (races dipped identically at efb 2 and 3; the culprit was the custom
+          # dolphin core, now retired — see lib above).
+          scale: 0.6667
           scaleMethod: bilinear2
           options:
             # OpenGL backend so Dolphin draws into CloudRetro's GL (WGL) hw-render context. A Vulkan/D3D
@@ -377,8 +384,8 @@ emulator:
             # (partial deadlock — /echo alive, coordinator WS dead) at ANY scale (reproduced at "1" too);
             # the GL Worker Watchdog task auto-recycles a wedged worker within ~60s. Real fix = debug the
             # teardown deadlock (dump: scratchpad worker-hung-27168.dmp).
-            # "2" since 2026-07-10 late (paired with scale: 1 above — same delivered 1280x1056).
-            dolphin_efb_scale: "2"
+            # "3" (paired with scale: 0.6667 above — supersampled to 1280x1056 on the wire).
+            dolphin_efb_scale: "3"
             # 4x MSAA. The ONLY core where MSAA measurably does anything: A/B'd on RAW pre-encode frames
             # (patch 0022) over 3 runs each, the share of edges that are HARD fell 6.29% -> 4.08%, with no
             # overlap between the groups. n64 (gliden64) and psp (ppsspp) produce BIT-IDENTICAL frames with
@@ -387,6 +394,8 @@ emulator:
             #
             # This is invisible from the browser: H.264 quantization erases the sub-pixel edge gradients AA
             # creates. Never A/B anti-aliasing on the decoded stream.
+            # 4x MSAA, RESTORED 2026-07-11 (was briefly "0" as a slowdown diagnostic — exonerated:
+            # the bad custom core dipped identically with MSAA off; stock runs 60 regardless).
             dolphin_anti_aliasing: "2"
             # 16x anisotropic. Not an AA operation, so hardShare can't score it — what it does show is
             # RETAINED texture detail: on dc the same measurement moved mid-frequency edges +7% with no
@@ -427,7 +436,17 @@ emulator:
             # compile stall, no first-sight audio skip. Was "0" (Synchronous), forced by the stock
             # core's nullptr CreateSharedContext. main_cpu_thread stays disabled deliberately: one
             # variable at a time — the dual-core GPU thread is a separate risk with its own testing.
-            dolphin_shader_compilation_mode: "2"   # async on the versioned build
+            # BACK TO "0" SYNCHRONOUS (2026-07-11 02:30, the launch-week config): the entire GX
+            # race-slowdown era (28-50 ticks/s, "skipping audio") coincides exactly with async
+            # ubershaders (mode "2", deployed 07-09 21:25). Evidence the async path never delivers
+            # specialized pipelines on our core: dips persist on a FRESHLY REBUILT cache; no compile
+            # activity logs during dips (async workers idle/broken); the binary cache re-grew its
+            # whole working set EVERY session (2.5 GB in 2 days); and the one great race since sat
+            # on an accidental 8.5-min full synchronous precompile. Mode 2 = permanent ubershader
+            # rendering in heavy scenes ≈ 25 ms/frame. Sync's old first-sight stutter is now ~nil
+            # (NVIDIA driver shader cache warm). If mode 2 is ever re-attempted, verify with a REAL
+            # driven race and check the specialized cache STOPS growing between sessions.
+            dolphin_shader_compilation_mode: "0"
             dolphin_wait_for_shaders: "enabled"
 
         # --- ported from docker/arcade/config.yaml (Windows-only migration): the tuned

@@ -29,6 +29,11 @@ $exe = Join-Path $ConfDir "coordinator.exe"
 if (-not (Test-Path $exe))                             { throw "coordinator.exe not found at $exe" }
 if (-not (Test-Path (Join-Path $ConfDir "web\index.html"))) { throw "web\index.html missing in $ConfDir - the coordinator will panic at boot" }
 
+# PRIORITY (2026-07-11): Task Scheduler starts tasks at BelowNormal; on the hybrid 13700K that
+# steers threads to E-cores and adds ping/relay jitter. Normal is enough here (signaling only) —
+# coordinator.exe inherits the class from this parent, so respawns keep it.
+(Get-Process -Id $PID).PriorityClass = 'Normal'
+
 # Origin check for the browser's signaling WS. Config carries it too; env wins and documents intent.
 $env:CLOUD_GAME_COORDINATOR_ORIGIN_USERWS = "https://theater.carpouzis.com"
 

@@ -49,6 +49,13 @@ if (-not $IceIpMap) {
 }
 if (-not $IceIpMap) { Write-Warning "IceIpMap unset and ZIGGY_PUBLIC_IP not found in .env - ICE candidates will be wrong." }
 
+# PRIORITY (2026-07-11): Task Scheduler starts tasks at BelowNormal, and on a hybrid CPU
+# (13700K) Windows steers below-normal threads onto E-CORES — the emulator's hot thread then
+# plateaus at a uniform ~25 ms/tick (~40 fps) on heavy scenes (F-Zero GX races; the entire
+# "audio drops at the same cached content points" hunt). Raise OUR priority; worker.exe
+# inherits the class from this parent, so every respawn in the loop below gets it too.
+(Get-Process -Id $PID).PriorityClass = 'High'
+
 # GStreamer DLLs (nvcodec, opus, etc.) resolve from the UCRT64 bin dir — must lead PATH.
 $env:Path = "$Ucrt64Bin;$env:Path"
 
