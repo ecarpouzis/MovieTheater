@@ -350,6 +350,13 @@ namespace MovieTheater.Controllers
             /// wire-speed bursts are the minimum-latency default.</summary>
             public int PaceMs { get; set; }
 
+            /// <summary>Per-room video codec (worker patch 0036): "av1"/"h264", null/empty = worker config
+            /// default (AV1). The lobby's Codec selector sets it — pick H.264 when a tablet/software-AV1
+            /// device will play: Chrome negotiates AV1 it can't decode in real time, and the keyframeless
+            /// intra-refresh stream then accumulates UNBOUNDED video delay (2026-07-10 tablet incident).
+            /// Room-wide (one encoder per room), so it also rides every joiner's descriptor.</summary>
+            public string? VideoCodec { get; set; }
+
             /// <summary>Cheat ids the creator ticked in the lobby, as returned by <c>GET .../Cheats</c>:
             /// <c>"c{ArcadeCheat.Id}"</c> for a stored cheat, <c>"s:{optionKey}"</c> for a system-wide option
             /// cheat. Unknown ids are ignored, not rejected — a stale card in an open tab shouldn't fail the
@@ -458,9 +465,18 @@ namespace MovieTheater.Controllers
             movieDb.ArcadeSessions.Add(session);
             await movieDb.SaveChangesAsync();
 
+            // Per-room codec (worker patch 0036): allowlist hard — this string reaches the worker's
+            // encoder selection, never forward a free-form value. "" = worker config default (AV1).
+            var codec = request.VideoCodec?.Trim().ToLowerInvariant() switch
+            {
+                "h264" => "h264",
+                "av1" => "av1",
+                _ => "",
+            };
+
             // Register live state with the creator in seat 0. The CloudRetro room isn't created yet — the
             // creator's browser does that (empty room_id) and then calls Bind (§8 steps 2–3).
-            rooms.CreateRoom(roomCode, game.Id, game.MaxPlayers, userId.Value);
+            rooms.CreateRoom(roomCode, game.Id, game.MaxPlayers, userId.Value, codec);
 
             var (launchKey, discCount) = await ResolveLaunchAsync(game);
 
@@ -497,6 +513,11 @@ namespace MovieTheater.Controllers
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fec=" + request.AudioFec };
             if (request.PaceMs > 0)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&pace=" + Math.Clamp(request.PaceMs, 1, 20) };
+            // Codec rides the WS URL like vbr/fec — but unlike them it ALSO rides every joiner's URL
+            // (see Join/ClaimSeat): the shim echoes it in INIT_WEBRTC, where each peer's track mime is
+            // fixed, and every track must match the room's one encoder.
+            if (codec != "")
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&codec=" + codec };
 
             // Per-room cheats (arcade cheats feature). Resolve the ids the creator ticked against what this
             // exact ROM actually offers — never trust the client's idea of what a cheat is, because a code is
@@ -906,6 +927,12 @@ namespace MovieTheater.Controllers
                 userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, game.System),
                 code, boundRoomId, join.PlayerSlot, isCreator: false);
 
+            // The room's codec (patch 0036): a joiner's track mime is fixed at INIT_WEBRTC and must match
+            // the room's one encoder, so every joiner echoes the creator's choice.
+            var roomCodec = rooms.RoomVideoCodec(code);
+            if (roomCodec != "")
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&codec=" + roomCodec };
+
             return Json(ToJson(descriptor, discCount));
         }
 
@@ -952,6 +979,12 @@ namespace MovieTheater.Controllers
             var descriptor = host.BuildJoinDescriptor(
                 userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, game.System),
                 code, boundRoomId, claim.PlayerSlot, isCreator: false);
+
+            // Input-only sessions never attach media, but their peer still negotiates a track — keep its
+            // mime consistent with the room's encoder (patch 0036) like every other descriptor.
+            var claimCodec = rooms.RoomVideoCodec(code);
+            if (claimCodec != "")
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&codec=" + claimCodec };
 
             return Json(ToJson(descriptor, discCount));
         }

@@ -543,7 +543,13 @@ export function createCloudRetroSession(descriptor, opts) {
     // patch-0020 worker to put opus on a dedicated aux PeerConnection (ignored by older workers —
     // the worker only reads init sdp when initiator is true, so audio then just rides this PC).
     // An input-only local-player session plays nothing, so it never asks for the aux audio PC.
-    send(T.INIT_WEBRTC, AUDIO_PC && !inputOnly ? { initiator: false, sdp: "audio-pc" } : { initiator: false });
+    // video_codec (worker patch 0036): the room's per-room codec, from ?codec= on EVERY member's
+    // wsUrl (creator's choice, stored room-side). The peer's TRACK mime is fixed here — before the
+    // game start — so it must match the room's one encoder. Absent = worker config default.
+    const init = AUDIO_PC && !inputOnly ? { initiator: false, sdp: "audio-pc" } : { initiator: false };
+    const codec = strFromWsUrl(descriptor.wsUrl, "codec");
+    if (codec) init.video_codec = codec;
+    send(T.INIT_WEBRTC, init);
   }
 
   // Shared by BOTH PeerConnections. Cloud gaming wants minimal receive buffering. Chrome's ADAPTIVE
@@ -662,8 +668,12 @@ export function createCloudRetroSession(descriptor, opts) {
     const vbr = numFromWsUrl(descriptor.wsUrl, "vbr");
     const fec = numFromWsUrl(descriptor.wsUrl, "fec");
     const pace = numFromWsUrl(descriptor.wsUrl, "pace");
+    const codec = strFromWsUrl(descriptor.wsUrl, "codec");
     if (vbr > 0) p.video_bitrate = vbr;
     if (fec > 0) p.audio_fec = fec;
+    // Per-room codec (worker patch 0036): the creator's t=104 selects which encoder.list entry this
+    // room's pipeline builds with; must match the video_codec every member sent at INIT_WEBRTC.
+    if (codec) p.video_codec = codec;
     // In-frame packet pacing window ms (worker patch 0028) — the lobby Network profile's opt-in
     // smoother for Remote/5G rooms. Absent/0 = LAN default, wire-speed bursts.
     if (pace > 0) p.pace = pace;
@@ -856,4 +866,13 @@ function numFromWsUrl(wsUrl, key) {
     const v = parseInt(new URLSearchParams(wsUrl.slice(q + 1)).get(key) || "0", 10);
     return Number.isFinite(v) && v > 0 ? v : 0;
   } catch { return 0; }
+}
+
+// A string query param off the gateway WS URL (per-room codec: ?codec=av1|h264, worker patch 0036).
+function strFromWsUrl(wsUrl, key) {
+  try {
+    const q = wsUrl.indexOf("?");
+    if (q < 0) return "";
+    return new URLSearchParams(wsUrl.slice(q + 1)).get(key) || "";
+  } catch { return ""; }
 }

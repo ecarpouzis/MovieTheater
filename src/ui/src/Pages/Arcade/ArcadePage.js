@@ -53,19 +53,29 @@ const NETWORK_PROFILES = {
   remote: { audioFec: 1, paceMs: 5 },
   "5g": { audioFec: 1, paceMs: 8 },
 };
+// Per-room video codec (worker patch 0036). AV1 is the default (better quality per bit), but a
+// device without HARDWARE AV1 decode — most tablets — still negotiates it (Chrome offers software
+// dav1d) and then can't decode 60fps in real time; the keyframeless AV1 stream gives it nothing to
+// resync to, so video falls minutes behind the (separately-decoded) audio. H.264 hardware-decodes
+// everywhere. Room-wide: one encoder per room, so pick H.264 when ANY player will be on a tablet.
+const CODEC_OPTIONS = [
+  { short: "Codec: AV1", label: "Codec: AV1 · best picture (PCs & recent devices)", value: "av1" },
+  { short: "Codec: H.264", label: "Codec: H.264 · smoothest on tablets & older devices", value: "h264" },
+];
 function loadQuality() {
   try {
     const q = JSON.parse(localStorage.getItem(QUALITY_KEY));
     if (q && typeof q.videoBitrateKbps === "number") {
       // Legacy audioFec-shaped values (pre network-profile) map to LAN — the old default behavior.
       const network = NETWORK_PROFILES[q.network] ? q.network : "lan";
-      return { videoBitrateKbps: q.videoBitrateKbps, network };
+      const codec = q.codec === "h264" ? "h264" : "av1";
+      return { videoBitrateKbps: q.videoBitrateKbps, network, codec };
     }
   } catch { /* ignore */ }
   // Auto + LAN. NOTE: a stored value is NOT migrated — someone who deliberately picked "Balanced ·
   // 5 Mbps" on a thin uplink should not be silently moved to Auto (whose ceiling reaches 14 Mbps on
   // GameCube; ABR would walk it back, but the choice is theirs). They opt in by choosing Auto once.
-  return { videoBitrateKbps: 0, network: "lan" };
+  return { videoBitrateKbps: 0, network: "lan", codec: "av1" };
 }
 function saveQuality(q) { try { localStorage.setItem(QUALITY_KEY, JSON.stringify(q)); } catch { /* ignore */ } }
 
@@ -210,7 +220,7 @@ export default function ArcadePage() {
     // worker stay profile-agnostic.
     const q = loadQuality();
     const net = NETWORK_PROFILES[q.network] || NETWORK_PROFILES.lan;
-    return MovieAPI.createArcadeRoom(versionId, { ...opts, videoBitrateKbps: q.videoBitrateKbps, ...net })
+    return MovieAPI.createArcadeRoom(versionId, { ...opts, videoBitrateKbps: q.videoBitrateKbps, ...net, videoCodec: q.codec })
       .then(async (r) => {
         if (r.status === 503) { message.warning("The arcade is full — every machine is in use. Try again shortly."); return null; }
         if (!r.ok) { message.error("Couldn't start that game."); return null; }
@@ -261,6 +271,18 @@ export default function ArcadePage() {
                   aria-label="Network profile"
                 >
                   {NETWORK_OPTIONS.map((o) => (
+                    <Select.Option key={o.value} value={o.value} label={o.short}>{o.label}</Select.Option>
+                  ))}
+                </Select>
+              </div>
+              <div className="arcade-pill">
+                <Select
+                  bordered={false} value={quality.codec || "av1"} optionLabelProp="label"
+                  onChange={(v) => setQ({ codec: v })}
+                  popupClassName="arcade-pill-dropdown" dropdownMatchSelectWidth={false}
+                  aria-label="Video codec"
+                >
+                  {CODEC_OPTIONS.map((o) => (
                     <Select.Option key={o.value} value={o.value} label={o.short}>{o.label}</Select.Option>
                   ))}
                 </Select>

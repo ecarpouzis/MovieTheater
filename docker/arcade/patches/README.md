@@ -552,3 +552,26 @@ drifting the UDP mux port); with both, a slow handler costs nothing and a genuin
 the GL Worker Watchdog's job (busy-at-coordinator + silent log), not the pong deadline's. NOTE the
 coordinator's 10 s RPC CallTimeout still bounds a game start — a cold-shader-cache boot >10 s fails
 that one join cleanly (retry works; socket and rooms survive). Worker-only rebuild.
+
+## 0036-per-room-video-codec
+
+Per-room video codec override, end to end: `video_codec` ("av1"/"h264") on BOTH the user
+INIT_WEBRTC packet (t=100) and the game start (t=104), relayed by the coordinator (rebuild it —
+the JSON relay drops unknown fields, the 0018 lesson) and consumed by the worker twice: the
+INIT value fixes each PEER's track mime (the PeerConnection is created before game start), the
+t=104 value swaps the active codec in the room's WithOverrides encoder copy (before the bitrate
+rewrite, so vbr lands on the right codec entry). The worker sanitizes against encoder.list and
+falls back to the config default on anything unknown. Site side: the lobby's Codec pill →
+CreateRoom {videoCodec} (allowlisted hard) → stored on the in-memory RoomState → `&codec=` on
+EVERY member's WS URL (creator, joiners, ClaimSeat input-only sessions), because all tracks must
+match the room's one encoder.
+
+**Why:** AV1 (default since 0024) is a tablet-killer in practice — Chrome advertises software
+dav1d, so a tablet NEGOTIATES AV1 it cannot decode at 1280x1056@60 in real time, and the
+keyframeless intra-refresh stream gives the decoder nothing to skip to: video falls minutes
+behind live audio (2026-07-10, Eric's tablet; audio rides the separately-decoded aux opus PC).
+H.264 hardware-decodes on effectively everything and its gop-size=120 IDR cadence naturally
+bounds receiver backlog. AV1 stays the room default; the creator picks H.264 when a tablet will
+play. Rehydration caveat: the room codec lives in the site's in-memory state only — after a pod
+restart a NEW joiner of a codec-overridden room falls back to the default track mime (video
+broken for that joiner only; accepted rare-edge, noted in ArcadeRoomService).

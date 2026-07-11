@@ -651,6 +651,17 @@ encoder:
     # 2.8-3.6ms vs 1.3ms (nowhere near the frame budget). ABR (0021) + VBV scaling (0025) carry over:
     # nvav1enc exposes the same live-changeable bitrate/vbv-buffer-size properties as nvh264enc.
     # INSTANT ROLLBACK: set codec: h264 and recycle the workers.
+    # ⚠ TABLET FINDING (2026-07-10 late): AV1 can be a tablet-killer — Eric's tablet accepted the
+    # AV1 track (Chrome advertises software dav1d, so negotiation succeeds) but could not
+    # software-decode 1280x1056@60 in real time, and the infinite-GOP intra-refresh stream has NO
+    # keyframes to resync/skip to, so the decode backlog grows WITHOUT BOUND (video minutes behind
+    # the live audio, which rides its own trivially-decoded Opus PC; server + ABR blameless — 60
+    # ticks/s and a clean worst-peer estimate all session; PCs with hardware AV1 unaffected). The
+    # old "decode cost 2.8-3.6ms" verdict was measured on PC-class hardware only. AV1 STAYS the
+    # default per Eric; the mitigation is the PER-ROOM codec override selectable in the lobby
+    # ("video_codec" on the game start, patch 0036) — pick H.264 when a tablet will play: it is
+    # hardware-decoded on effectively every device and its gop-size=120 IDR cadence naturally
+    # bounds any receiver backlog.
     codec: av1
     threads: 0
     # ⚠ INERT for av1/h264: gstreamer.go only arms this when the encoder params carry the VPX-only

@@ -48,6 +48,12 @@ namespace MovieTheater.Arcade
             public int MaxPlayers;
             public int CreatorUserId;
             public string? CloudRetroRoomId;                            // null until the creator Binds (§8)
+            /// <summary>Per-room video codec the creator chose ("av1"/"h264"; "" = worker config default).
+            /// Every join descriptor must carry it — each peer's WebRTC track mime is fixed at INIT time
+            /// and must match the room's one encoder. In-memory only: after a pod-restart Rehydrate it is
+            /// lost ("" = default), so a post-restart JOINER of a codec-overridden room would get a
+            /// mismatched track (video broken for them only) — accepted rare-edge for v1.</summary>
+            public string VideoCodec = "";
             public readonly Dictionary<int, int> Seats = new();         // slot -> userId (players only)
             public readonly HashSet<int> Spectators = new();            // userIds watching, no controller
             public readonly Dictionary<int, DateTime> Viewers = new();  // userId -> last seen (players AND spectators)
@@ -69,7 +75,7 @@ namespace MovieTheater.Arcade
         /// the reaper gives them the full TTL to connect and start heartbeating before the room could be
         /// swept as empty. The room starts unbound.
         /// </summary>
-        public void CreateRoom(string roomCode, int gameId, int maxPlayers, int creatorUserId)
+        public void CreateRoom(string roomCode, int gameId, int maxPlayers, int creatorUserId, string videoCodec = "")
         {
             lock (gate)
             {
@@ -80,6 +86,7 @@ namespace MovieTheater.Arcade
                     MaxPlayers = Math.Max(1, maxPlayers),
                     CreatorUserId = creatorUserId,
                     CreatedUtc = now,
+                    VideoCodec = videoCodec ?? "",
                 };
                 state.Seats[0] = creatorUserId;
                 state.Viewers[creatorUserId] = now;
@@ -108,6 +115,16 @@ namespace MovieTheater.Arcade
                     CloudRetroRoomId = cloudRetroRoomId,
                     CreatedUtc = DateTime.UtcNow,
                 };
+            }
+        }
+
+        /// <summary>The room's per-room video codec ("" = worker config default / room unknown). Joiners'
+        /// descriptors must carry it so their track mime matches the room's encoder.</summary>
+        public string RoomVideoCodec(string roomCode)
+        {
+            lock (gate)
+            {
+                return rooms.TryGetValue(roomCode, out var state) ? state.VideoCodec : "";
             }
         }
 

@@ -1,0 +1,180 @@
+diff --git a/pkg/api/user.go b/pkg/api/user.go
+index ffbd10b..8e05e91 100644
+--- a/pkg/api/user.go
++++ b/pkg/api/user.go
+@@ -14,6 +14,11 @@ type (
+ 		// request builds the encoder, so only its values take effect. 0 = leave config default.
+ 		VideoBitrate int `json:"video_bitrate,omitempty"` // kbps; 0 = config default
+ 		AudioFec     int `json:"audio_fec,omitempty"`     // 0 = default, 1 = FEC on, 2 = FEC off
++		// Per-room video codec ("av1"/"h264"; "" = config default). Selected in the lobby at room
++		// creation — AV1 stays the global default, but a software-AV1 client (tablets) accumulates
++		// UNBOUNDED decode backlog on the keyframeless intra-refresh stream, so the creator can pick
++		// hardware-everywhere h264 (patch 0036). Must match the codec sent in INIT_WEBRTC below.
++		VideoCodec string `json:"video_codec,omitempty"`
+ 		// In-frame packet pacing window (ms; 0 = off): break each encoded frame's RTP burst into
+ 		// spaced groups instead of firing it at wire speed. Opt-in via the lobby's Network profile
+ 		// (Remote/5G) — wire-speed bursts are the minimum-latency LAN default, but they slam
+@@ -52,5 +57,9 @@ type (
+ 	InitUserWebrtcStreamRequest struct {
+ 		Initiator bool   `json:"initiator"`
+ 		Sdp       string `json:"sdp,omitempty"`
++		// Per-room video codec (patch 0036). The peer's TRACK codec is fixed here, before the
++		// game start builds the encoder — every client of a room sends the same value (the site's
++		// join descriptor carries the creator's choice), so track and encoder always agree.
++		VideoCodec string `json:"video_codec,omitempty"`
+ 	}
+ )
+diff --git a/pkg/api/worker.go b/pkg/api/worker.go
+index bbf519b..705419b 100644
+--- a/pkg/api/worker.go
++++ b/pkg/api/worker.go
+@@ -24,6 +24,7 @@ type (
+ 		VideoBitrate int `json:"video_bitrate,omitempty"` // kbps
+ 		AudioFec     int `json:"audio_fec,omitempty"`     // 0 default, 1 on, 2 off
+ 		Pace         int `json:"pace,omitempty"`          // in-frame pacing window ms; 0 off
++		VideoCodec   string `json:"video_codec,omitempty"` // per-room codec ("av1"/"h264"; "" = config default), patch 0036
+ 		// Per-room cheats, forwarded from the creator's GameStartUserRequest. A field missing HERE
+ 		// is silently dropped by the coordinator's JSON relay even though the browser sent it —
+ 		// which is exactly how per-room bitrate went nowhere for days. Keep in sync with user.go.
+@@ -61,6 +62,9 @@ type (
+ 		Id        string `json:"id"`
+ 		Initiator bool   `json:"initiator"`
+ 		Sdp       string `json:"sdp,omitempty"`
++		// Per-room video codec for this peer's track (patch 0036); "" = config default. Set before
++		// game start because the PeerConnection (and its track mime) is created HERE.
++		VideoCodec string `json:"video_codec,omitempty"`
+ 	}
+ 	InitWebrtcStreamResponse string
+ 
+diff --git a/pkg/config/worker.go b/pkg/config/worker.go
+index dfd513c..6a19ddb 100644
+--- a/pkg/config/worker.go
++++ b/pkg/config/worker.go
+@@ -141,8 +141,12 @@ func (e Encoder) VideoBitrateKbps() int {
+ //	fec == 1        → force opus in-band FEC ON  (inband-fec=true,  packet-loss-percentage=15)
+ //	fec == 2        → force opus in-band FEC OFF (inband-fec=false, packet-loss-percentage=0)
+ //	fec == 0        → leave the opus params exactly as configured.
+-func (e Encoder) WithOverrides(bitrateKbps int, fec int) Encoder {
+-	if bitrateKbps <= 0 && fec == 0 {
++func (e Encoder) WithOverrides(bitrateKbps int, fec int, codec string) Encoder {
++	codec = strings.ToLower(strings.TrimSpace(codec))
++	if codec == strings.ToLower(e.Video.Codec) {
++		codec = "" // no-op: already the active codec
++	}
++	if bitrateKbps <= 0 && fec == 0 && codec == "" {
+ 		return e
+ 	}
+ 	nl := make(map[string]CodecSettings, len(e.List))
+@@ -151,6 +155,15 @@ func (e Encoder) WithOverrides(bitrateKbps int, fec int) Encoder {
+ 	}
+ 	e.List = nl
+ 
++	// Per-room codec swap (patch 0036) — BEFORE the bitrate rewrite below, so the bitrate lands on
++	// the codec this room will actually encode with. Callers sanitize against e.List (the worker's
++	// roomVideoCodec), so an unknown value can't reach the pipeline builder from here.
++	if codec != "" {
++		if _, ok := e.List[codec]; ok {
++			e.Video.Codec = codec
++		}
++	}
++
+ 	if bitrateKbps > 0 {
+ 		if bitrateKbps < 500 {
+ 			bitrateKbps = 500
+diff --git a/pkg/coordinator/userhandlers.go b/pkg/coordinator/userhandlers.go
+index 51e805c..cbe0a55 100644
+--- a/pkg/coordinator/userhandlers.go
++++ b/pkg/coordinator/userhandlers.go
+@@ -13,7 +13,7 @@ func (u *User) HandleInitWebrtcStream(rq api.InitUserWebrtcStreamRequest) {
+ 		u.log.Warn().Msg("no worker assigned")
+ 		return
+ 	}
+-	resp, err := u.w.InitWebrtcStream(u.Id().String(), rq.Initiator, rq.Sdp)
++	resp, err := u.w.InitWebrtcStream(u.Id().String(), rq.Initiator, rq.Sdp, rq.VideoCodec)
+ 	if err != nil || resp == nil || *resp == api.EMPTY {
+ 		u.log.Error().Err(err).Msg("malformed WebRTC init response")
+ 		return
+diff --git a/pkg/coordinator/workerapi.go b/pkg/coordinator/workerapi.go
+index 45520de..e24e5e4 100644
+--- a/pkg/coordinator/workerapi.go
++++ b/pkg/coordinator/workerapi.go
+@@ -2,9 +2,9 @@ package coordinator
+ 
+ import "github.com/giongto35/cloud-game/v3/pkg/api"
+ 
+-func (w *Worker) InitWebrtcStream(id string, initiator bool, sdp string) (*api.InitWebrtcStreamResponse, error) {
++func (w *Worker) InitWebrtcStream(id string, initiator bool, sdp string, videoCodec string) (*api.InitWebrtcStreamResponse, error) {
+ 	return api.UnwrapChecked[api.InitWebrtcStreamResponse](
+-		w.Send(api.InitWebrtcStream, api.InitWebrtcStreamRequest{Id: id, Initiator: initiator, Sdp: sdp}))
++		w.Send(api.InitWebrtcStream, api.InitWebrtcStreamRequest{Id: id, Initiator: initiator, Sdp: sdp, VideoCodec: videoCodec}))
+ }
+ 
+ func (w *Worker) WebrtcSignal(id string, sdp, ice *string) {
+@@ -25,6 +25,7 @@ func (w *Worker) StartGame(id string, req api.GameStartUserRequest) (*api.StartG
+ 			VideoBitrate: req.VideoBitrate,
+ 			AudioFec:     req.AudioFec,
+ 			Pace:         req.Pace,
++			VideoCodec:   req.VideoCodec,
+ 			// ...and the cheats they picked. The coordinator only relays: any field it doesn't know
+ 			// about is dropped here without an error, so this line is what makes the feature exist.
+ 			CoreOptions: req.CoreOptions,
+diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
+index 1a7c24d..e7ed859 100644
+--- a/pkg/worker/coordinatorhandlers.go
++++ b/pkg/worker/coordinatorhandlers.go
+@@ -2,6 +2,7 @@ package worker
+ 
+ import (
+ 	"encoding/json"
++	"strings"
+ 
+ 	"github.com/giongto35/cloud-game/v3/pkg/api"
+ 	"github.com/giongto35/cloud-game/v3/pkg/com"
+@@ -13,6 +14,21 @@ import (
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
+ )
+ 
++// roomVideoCodec sanitizes a client-requested per-room video codec (patch 0036): lowercase, must
++// have an encoder.list entry, else the config default. Never trust the wire value — an unknown
++// codec would fail the pipeline build after the peer was already created.
++func (w *Worker) roomVideoCodec(requested string) string {
++	c := strings.ToLower(strings.TrimSpace(requested))
++	if c == "" {
++		return w.conf.Encoder.Video.Codec
++	}
++	if _, ok := w.conf.Encoder.List[c]; !ok {
++		w.log.Warn().Msgf("unknown per-room video codec %q, using config default %s", requested, w.conf.Encoder.Video.Codec)
++		return w.conf.Encoder.Video.Codec
++	}
++	return c
++}
++
+ // buildConnQuery builds initial connection data query to a coordinator.
+ func buildConnQuery(id com.Uid, conf config.Worker, address string) (string, error) {
+ 	addr := conf.GetPingAddr(address)
+@@ -36,7 +52,10 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
+ 	}()
+ 
+ 	peer := webrtc.New(c.log, factory)
+-	codec := w.conf.Encoder.Video.Codec
++	// Per-room codec (patch 0036): the site's join descriptor hands every client of a room the
++	// creator's codec choice, and each client echoes it here — so this peer's track mime matches
++	// the encoder the creator's t=104 will build (or already built, for joiners).
++	codec := w.roomVideoCodec(rq.VideoCodec)
+ 
+ 	// Patch 0020: a non-initiator browser can set the (otherwise unused) init sdp field to
+ 	// "audio-pc" to ask for opus on a dedicated aux PeerConnection (see webrtc.go Peer.ac).
+@@ -163,9 +182,10 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 		// optional video bitrate (kbps) + opus FEC choice. WithOverrides applies them to a per-room
+ 		// COPY of the encoder config (it deep-copies the codec map, never mutating the shared config),
+ 		// so concurrent rooms don't affect each other. No-op when both are unset (0).
+-		encConf := w.conf.Encoder.WithOverrides(rq.VideoBitrate, rq.AudioFec)
+-		if rq.VideoBitrate > 0 || rq.AudioFec != 0 {
+-			w.log.Info().Msgf("Per-room encoder overrides: bitrate=%d kbps fec=%d", rq.VideoBitrate, rq.AudioFec)
++		roomCodec := w.roomVideoCodec(rq.VideoCodec)
++		encConf := w.conf.Encoder.WithOverrides(rq.VideoBitrate, rq.AudioFec, roomCodec)
++		if rq.VideoBitrate > 0 || rq.AudioFec != 0 || rq.VideoCodec != "" {
++			w.log.Info().Msgf("Per-room encoder overrides: bitrate=%d kbps fec=%d codec=%s", rq.VideoBitrate, rq.AudioFec, roomCodec)
+ 		}
+ 		// Per-room in-frame packet pacing (patch 0028): set unconditionally from every room start so
+ 		// a no-pacing room can never inherit the previous room's window (the nanoarch cheat-staging
