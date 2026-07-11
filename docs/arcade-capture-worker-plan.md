@@ -886,3 +886,80 @@ spec-open (w3c/webcodecs#384). The right time is when someone else ships the pla
 Bottom line: **Tier 1 ships as part of the W-fixes worker rebuild and makes the lane
 color-correct in all display states; true HDR waits for the browser world to catch up, and the
 tablet (probably a non-HDR panel — check it) would not benefit anyway.**
+
+---
+
+## 12. Performance review — audio lag on the tablet (2026-07-11, post-§10/§11)
+
+Context: all §10/§11 items are implemented and live (W1–W6 + graceful game close + d3d12
+tonemap; verified in code this pass — the fixes are correct, and the deploy round surfaced two
+genuinely subtle worker lessons now baked in: a d3d12 WGC capture session cannot be
+PAUSE/NULL-resumed in-process, so the video pipeline stays PLAYING for process life behind a
+`capturing` gate; and per-room goroutines must own their room's proc or room 1's exit-watcher
+blanks room 2). Remaining complaint from live play: **audio lags noticeably on the tablet**
+(H.264 room). Investigated; root cause found on the box.
+
+### 12.1 Root cause: VB-CABLE's internal transfer, misconfigured on top of that
+
+The audio path is: game → per-PID route → CABLE **Input** (render endpoint) → *VB-CABLE
+internal transfer buffer* → CABLE **Output** (capture endpoint) → `wasapi2src device=` →
+opus → WebRTC → tablet jitter buffer. Facts measured on Ziggy:
+
+- Registry `HKLM\SOFTWARE\VB-Audio\Cable`: `VBAudioCableWDM = 7168` (max-latency buffer,
+  samples) and `VBAudioCableWDM_SR = 96000` — **the cable's internal engine runs at 96 kHz
+  while every endpoint is 48 kHz**. So the game's audio is SRC'd 48k→96k→48k inside the
+  driver AND buffered up to ~7168 samples in the transfer: **≈75–150 ms added**, all of it
+  invisible to GStreamer. Everything downstream is already lean (`low-latency=true`, 10 ms
+  opus frames, `max-buffers=4 drop=true`, small queues), which is why the lag survived tuning.
+- Video has no comparable stage (capture→encode ≈ 5–10 ms), so audio trails video — exactly
+  the "laggy audio" percept.
+
+### 12.2 Fixes, ranked
+
+**A (recommended, ~5-line worker change + config): loopback-capture the CABLE *Input* render
+endpoint instead of the CABLE *Output* capture device.** WASAPI loopback taps the render-mix
+*before* the cable's internal transfer, so the 7168-sample buffer AND the 96 kHz double-SRC
+drop out of the path entirely — VB-CABLE's only remaining job is being a default device that
+isn't the speakers. **Verified live on Ziggy** (2026-07-11): `wasapi2src loopback=true
+low-latency=true device="{0.0.0.00000000}.{ceabe612-e9ce-404e-8be3-e5d660d90bfe}" !
+audioconvert ! audioresample ! S16LE/48k/2ch ! sink` negotiates and streams cleanly.
+Implementation: in `startAudioPipeline`'s `AudioCaptureDevice` branch, emit `loopback=true`
+when the configured id is a render endpoint (WASAPI render ids start `{0.0.0.`; capture ids
+start `{0.0.1.`) — or add an explicit `AudioCaptureLoopback: true` config bool; then point
+`AudioCaptureDevice` at the CABLE Input id above. Expected win: **−75–150 ms**, which should
+take the tablet from "noticeably laggy" to imperceptible. Refresh patch 0037 + rebuild.
+
+**B (no-code, complementary hygiene): fix the cable's own settings.** Run
+`VBCABLE_ControlPanel.exe` as admin: internal sample rate 96000 → **48000** (removes the
+double-SRC) and Max Latency 7168 → **2048** (~43 ms ceiling); needs a driver restart (the
+panel offers it; otherwise reboot). With fix A shipped this only matters for anything else
+that ever listens on CABLE Output, but it's 30 seconds of clicking and removes a trap.
+
+**C (site, one line): default in-frame pacing for capture rooms.** The capture stream is the
+site's fattest (12 Mbps H.264, intra-refresh so *every* frame is sizable); un-paced frame
+bursts on tablet WiFi queue behind each other and jitter the audio packets sharing the air,
+which grows the browser's adaptive audio jitter buffer. Patch 0028's `?pace=` exists but only
+rides the URL when the client asks (`ArcadeController.cs:541`); capture rooms should default
+it server-side (start with `pace=8`) the same way vbr defaults to 12000. Cheap, and it helps
+video smoothness on WiFi too.
+
+**D (housekeeping, found during this pass): Ziggy's system default render device is currently
+CABLE Input** — ALL system audio is going into the cable (host speakers silent), which looks
+like leftover test state, not the per-PID design (`routeAudioToSink` moves only the game).
+Restore Speakers as the Windows default; nothing in the lane depends on the default being the
+cable.
+
+### 12.3 Other optimization notes (no action needed now)
+
+- **Zero-copy got a new concrete option**: `d3d12h264enc` exists in this GStreamer build and
+  accepts `D3D12Memory` directly — a true end-to-end-GPU H.264 path
+  (`d3d12screencapturesrc ! d3d12convert(NV12) ! d3d12h264enc`) with zero downloads. Note
+  `nvautogpuh264enc/av1enc` take D3D11/CUDA memory, NOT D3D12, so the d3d12 encoder is the
+  natural partner for the new d3d12 capture chain. Still a P4 item (bypasses `ProcessVideo`,
+  so keyframe-forcing and ABR need rerouting to GstForceKeyUnit events + direct property
+  sets); today's two CPU copies at 1080p60 are comfortably within budget.
+- The always-PLAYING capture pipeline's idle cost is negligible (WGC delivers frames only on
+  change; an idle desktop produces a trickle).
+- Opus settings are already right for latency (10 ms frames, inband FEC); the browser's
+  adaptive audio jitter buffer is not directly controllable — steady delivery (fix C) is the
+  only lever on that term.
