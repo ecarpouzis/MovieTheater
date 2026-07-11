@@ -624,6 +624,35 @@ via Artemis and see the same save (cross-lane vault proof); (c) lock exclusion b
 second account; (e) crash-of-yuzu ⇒ black frames + harvest, no desktop leak; (f) both retro
 workers + capture room concurrent — watch encoder/GPU contention numbers.
 
+**P2 RESULTS (executed + deployed 2026-07-11, commit 86fd2ee).** Code done and live.
+- **Gateway** (runs LOCALLY on Ziggy from repo Debug bin — NOT k8s): zone is now DERIVED from the
+  room-id system in `WsTransformer` (capture→`capture`, everything else incl. GL `zone=gl` and
+  legacy/random ids → `main`) rather than stripped. This is safer than the plan's "site sends zone":
+  no deploy-order hazard, and it protects the retro/GL pool at the gateway (trap #7) with no site
+  dependency. Also: capture rooms skip the CloudRetro save-mount (`svSystem != "capture"` guard);
+  `/heavy/prepare` honors `?userId=`. Rebuilt (Debug) + task restarted; serving, lock free.
+- **Site** (prod k8s via CI): `ArcadeController.CreateRoom` capture branch (launchKey =
+  CloudRetroGameKey, mint `system="capture"`, cheats skipped, `roomSystem` threads vbr); games list
+  `capture` flag. **Capture-enabled gate = `CloudRetroHost.CaptureEnabledKeys` allowlist (Kirby),
+  NOT CloudRetroGameKey** — every heavy row already carries a key (it's the heavy descriptor id), so
+  that can't distinguish "has a capture stub". ⇒ the plan's DB `UPDATE … SET CloudRetroGameKey` is
+  UNNECESSARY (Kirby already `switch-kirby-forgotten-land`, MaxPlayers 2). To enable a new title: add
+  its key here AND drop a `<key>.capture` worker stub — together.
+- **UI**: `HeavyGameModal` shows **"▶ Play in browser" beside "Launch on this device (Artemis)"**
+  when `game.capture` — both coexist; title/intro adapt; `arcadeSystems.js` labels `capture`→"Live".
+- **Deploy**: `run-`/`register-arcade-glworker-task.ps1` gained `-Zone`/`-ConfDir`/`-LibraryBasePath`
+  /`-WorkerExe`; watchdog `WorkerPorts` includes 8448 (re-registered). `config.worker-capture.yaml`
+  authoritative in repo.
+- **LIVE on Ziggy**: capture worker = task **"MovieTheater - Arcade GL Worker 3"** (port 8448,
+  zone=capture, `-WorkerExe D:\ArcadeStorage\worker-capture\bin\worker.exe`). Coordinator `/status`
+  shows **2× main + 1× capture, all free**; the worker runs in **session 1 (physical console)** so a
+  launched yuzu renders (the probe's session-isolation death does NOT apply to the task). Stable, no
+  crash-loop, ViGEm DLL loaded (no warning).
+- **REMAINING before a full browser gate**: (D) capture the yuzu streamed input profile
+  (`yuzu-streamed.player0.ini`) so pads bind in yuzu — needs a one-time interactive bind at the
+  console (trap #10); until then video+audio+room work but pads are dead in yuzu. Router UDP 8448
+  forward only needed for OFF-LAN peers (Defender already allows 8443-8448 on LAN).
+
 ### P3 — Steam + keyboard/mouse (~3-4 days)
 Descriptor additions: `exeWatch` (child process name to track when `exe` is a launcher),
 `input.kbm: true`. Steam launch via `steam://rungameid/<appid>`; lifetime = poll for `exeWatch`
@@ -674,3 +703,186 @@ desktop stays private); fresh-start (`?fresh=1` analogue through HeavyVault).
     (small window); Close() also blanks. P4 virtual display eliminates the class.
 13. **Latency expectations** — glass-to-glass ~80–120 ms on LAN (vs Moonlight ~40–70). Set
     the card copy accordingly ("lowest latency: use Artemis").
+
+---
+
+## 10. Implementation review (2026-07-11, post-P2 / post first live browser test)
+
+Full audit of the shipped implementation: the worker capture mod (5 files in
+`pkg/worker/caged/capture/` + wiring), the repo side (commit 86fd2ee), configs, scripts, and
+deploy state. **Overall verdict: the architecture landed as designed and the lane works live**
+— zone derivation, save-mount skip, prepare `?userId=`, the allowlist gate, watchdog
+compatibility, input byte-mapping, the profile swap, the job object, and the privacy
+black-frame path all verified correct. The findings below are what's left, ranked. Items
+marked ✔ were fixed in the same pass as this review.
+
+### MUST FIX (worker crashes / dead rooms / lock leaks)
+
+**W1 — `Close()` panics on any failed room start (close of nil channel) → whole worker dies,
+heavy lock leaks.** `stopRepush` is only created in `Start()` (`capture.go:155`), but
+`stopPipelines` closes it unconditionally (`pipeline.go:204-207`). The coordinator's designed
+clean-failure path (`LoadApp` error → `r.Close()`, `coordinatorhandlers.go:190-196`) therefore
+**panics before `Start()` ever ran** — and there is no `recover()` anywhere on the websocket
+packet-pump path, so the process dies. Triggers on every prepare 409 (lane busy — a *normal*
+user action), missing secret file, or launch failure. When prepare succeeded but launch failed,
+the panic lands before `gwFinish`, so the acquired lock leaks until respawn.
+Fix: initialize `stopRepush` in the constructor (or nil-guard), AND gate teardown on a
+`started` flag. Related: **on a prepare 409, `Close()` must NOT call `gwFinish` at all** —
+`HeavyLock.Release` keys on appId only, so a capture 409 against an *Artemis session of the
+same title* would release that session's lock and harvest mid-play. Track a `prepared` bool;
+only finish if we actually acquired.
+
+**W2 — singleton `started`/`closed` latch forever → the SECOND capture room on the same worker
+process is dead.** The mod is a process-lifetime singleton and nothing resets state between
+rooms (`capture.go:146-153, 167-174`); worker processes serve sequential rooms without
+restarting (only crash/watchdog recycles them). Room #2: `Start()` no-ops (`started` still
+true) → no video/audio/heartbeat → watchdog recycle; worse, its `Close()` no-ops (`closed`
+still true) → game not killed, profile not restored, **lock not released**. The first live
+test worked because it was the process's first room.
+Fix: reset all per-room fields (`started`, `closed`, `proc`, `swappedExe`, `lastFrame`,
+`stopRepush`, `heavyAppId`, `roomId`, `prepared`) at the top of `LoadApp` — mirroring what
+`ReloadFrontend()` does for the libretro app. (A fresh App per room is cleaner but touches the
+manager contract; the field reset is the minimal correct fix.)
+
+**R1 — patch 0037 was never generated: the entire worker-side capture mod exists ONLY in
+`D:\Arcade\build\cloud-game-gl`.** `docker/arcade/patches/` ends at 0036. A rebuild-from-virgin
+(the documented workflow) silently loses the whole lane. Fix: after W1/W2 land, generate
+`0037-capture-caged-mod.patch` per `patches/README.md` (apply 0001–0036 to clean `13852a7`,
+commit, apply capture work, `git diff --cached`), delete `cmd/capture-probe` first (it's marked
+"delete before packaging"), commit the patch + a README entry. Until then the worker binary is
+unreproducible from the repo.
+
+### SHOULD FIX (leaks / races / dead config)
+
+**W3 — `syscall.NewCallback` allocated inside the `focusPid` poll loop** (`launch.go:312-325`).
+Callback slots are process-global and permanent (Go caps ~2000/process); ~66 allocations per
+launch. With W2 fixed (long-lived process, many rooms) this eventually panics
+("too many callbacks"). Fix: hoist the callback out of the loop (build once, reset the captured
+pointer per iteration).
+
+**W4 — pad use-after-free race**: `pads.apply` fetches the pad under `p.mu` but calls
+`Reset/PressButton/Update` unlocked (`input.go:142-190`) while `Close→removeTargets` releases
+targets — a pad packet racing teardown can call into `vigemclient.dll` on a freed target.
+Fix: hold `p.mu` across the whole `apply` (input is ~60 Hz; the serialization cost is nil).
+
+**W5 — ~~dead audio-routing config~~ RESOLVED while this review was running**: the VB-CABLE
+per-PID isolation landed in a parallel session (config.Capture gained
+`AudioSink`/`AudioCaptureDevice`/`SoundVolumeView`; `routeAudioToSink` moves only the game's
+audio to CABLE Input with escalating retries, `startAudioPipeline` captures from the CABLE
+Output device instead of loopback; verified live with Kirby). Remaining improvement: a few
+seconds of host-speaker bleed at boot until the retry catches yuzu's late audio session —
+consider `/Mute` on the app's session first, or pre-routing by exe name, when touching this.
+(Note: the W1–W4 line numbers above were read against the pre-VB-CABLE tree and may be
+slightly shifted; the findings themselves are in untouched code paths.)
+
+### NICE TO HAVE
+
+- **W6 stride heuristic**: appsink infers stride as `size/h` with fallback `w*4`
+  (`pipeline.go:57-61`) instead of reading `GstVideoMeta.stride[0]` — safe on this GPU today,
+  shear risk on other drivers. (Trap #3 said read the meta; do it when touching the file.)
+- **W7/W8 lastFrame**: ~8 MB retained for process lifetime (free it in Close once W2's reset
+  exists); the repush/capture writers share one buffer with the async `videoWorker` copy —
+  worst case cosmetic tearing, same class as the libretro contract; note only.
+- **W9 nits**: URL-escape `heavyAppId` in gateway paths (`launch.go:53,77,86`); accept 2-byte
+  buttons-only pad packets like libretro does (`input.go:143`); ALT-tap fires before
+  SetForegroundWindow and can momentarily pop an emulator menu (cosmetic).
+- **R2 Join/ClaimSeat descriptors carry `system="switch"`, creator gets `"capture"`**
+  (`ArcadeController.cs:980,1033` vs `:516`). Routing is immune (gateway re-derives zone from
+  room_id), but client tables keyed on `descriptor.system` (`profileFor`, `FALLBACK_AR`,
+  the "Live" label) silently diverge between creator and joiners the moment anyone adds a
+  `capture` entry. Fix: thread the stored room system into both descriptors.
+- **R3 no 16:9 fallback aspect**: `FALLBACK_AR` has no `capture` entry and the video element is
+  `objectFit:"fill"` — if av-info geometry ever fails to arrive, the 1080p desktop stretches to
+  4:3. Add `capture: 16/9`.
+- **R4** ✔ stale "IDENTICAL / keep in lockstep" comments in `config.worker-capture.yaml`
+  contradicted the deliberate colorimetry divergence (limited `2:3:5:1` vs GL pool's full
+  `1:3:5:1`) — reworded in this commit so nobody "resyncs" the washout bug back in.
+
+### Open items carried from the live test
+- ~~Audio host-bleed~~ solved via VB-CABLE per-PID routing (see W5); only the boot-bleed
+  window remains as polish.
+- yuzu streamed-profile capture (trap #10) still pending — pads dead in yuzu until then.
+- Router UDP 8448 forward for off-LAN peers.
+
+---
+
+## 11. HDR strategy
+
+Context: the first live play was washed out on the tablet. Two independent causes were
+identified: SDR full-range colorimetry (fixed — capture pool now encodes limited `2:3:5:1`)
+and the possibility of the desktop being in HDR mode during capture (yuzu exclusive-fullscreen
+flipped it to SDR in every probe so far, but the desktop is *usually* HDR). Investigated
+2026-07-11: what happens when HDR is on, and whether true HDR can reach the browser.
+
+**Can we patch HDR support in ourselves? Capture side: nothing to patch — it's already in the
+box. Browser side: no — the wall is Chrome's code running on the clients, not ours.** Detail:
+
+### Tier 1 — HDR-proof the SDR stream (do now; fixes washout permanently)
+
+`d3d12screencapturesrc` (present in the UCRT64 GStreamer 1.28.4 the workers run) has built-in
+HDR handling that the d3d11 element lacks: a `tonemap` property (enum `linear`|`reinhard`,
+"tonemapping method to use when HDR capturing is enabled") and 16-bit `RGBA64_LE` output.
+When the desktop is HDR it tonemaps to correct SDR; when SDR it passes through. Swap the
+capture source in `pipeline.go`:
+
+```
+d3d12screencapturesrc tonemap=reinhard show-cursor=false
+  ! d3d12convert
+  ! video/x-raw(memory:D3D12Memory),format=BGRA,width=1920,height=1080,framerate=60/1
+  ! d3d12download ! queue ... ! appsink        # rest unchanged, incl. limited-range encode
+```
+
+**Verified live on Ziggy (2026-07-11): this exact shape negotiates and runs (exit 0), including
+with `tonemap=reinhard` set.** One negotiation quirk found: constraining format+framerate
+directly on the src caps fails (`not-negotiated`); constrain AFTER `d3d12convert` (as above).
+Monitor pinning (`monitor-handle`/`monitor-index`) and `show-cursor` exist identically on the
+d3d12 element. Remaining verification is user-assisted: turn display HDR ON, start a capture
+room, confirm colors (and try both tonemap modes; `reinhard` preserves highlight detail,
+`linear` clips brighter). This also retires the CCD-API "force display to SDR" idea — no
+display-state mutation needed.
+
+### Tier 2 — true HDR to the browser (bounded weekend experiment; desktop-only; likely fails)
+
+Browser reality (researched 2026-07-11, sources in the session log):
+- Chrome's WebRTC **software** AV1 decoder (dav1d wrapper) **hard-rejects non-8-bit**
+  (`dav1d_decoder.cc`: "Only accept 8 bit depth", current main). A 10-bit stream = decode
+  error, not tone-mapped video. Any PLI-triggered fallback from hardware to software decode
+  kills the stream permanently. The Android tablet would land on software dav1d → dead.
+- H.264 High10 in browser WebRTC: **impossible** (profile not negotiable in libwebrtc).
+- The only browser HDR-over-WebRTC ever proven in production was **Stadia (2020) via VP9
+  Profile 2 hardware decode** — libwebrtc still carries the 10-bit VP9 frame plumbing — but
+  NVENC has no VP9 encoder, so that path would mean software libvpx encode: not viable.
+- Chrome DOES offer the libwebrtc **color-space RTP header extension**
+  (`http://www.webrtc.org/experiments/rtp-hdrext/color-space`, carries H.273 CICP + optional
+  HDR10 static metadata) in every video SDP by default; GStreamer ships `rtphdrextcolorspace`
+  (1.20+); Pion registers arbitrary extensions via `MediaEngine.RegisterHeaderExtension`.
+  Whether current Chrome actually *renders* a PQ WebRTC stream as HDR post-Stadia is
+  **unconfirmed by anyone** — the 10-minute empirical test beats further reading.
+
+If attempted anyway, the recipe: capture `RGBA64_LE` → `d3d12convert` → `P010_10LE`
+(**this negotiation is verified working on the box**, even from an SDR desktop) → `nvav1enc`
+10-bit PQ with caps `colorimetry=bt2100-pq` → repeat the AV1 sequence-header OBU on every
+keyframe (a known Chrome HW-decode trap even for 8-bit: a keyframe without it demotes Chrome
+to software decode) → stamp the color-space RTP extension on frame-final packets (worker patch:
+register in Pion + populate from caps). Test ONLY desktop Chrome + HW AV1 decode (RTX/Arc) +
+HDR monitor, behind a per-room flag, never default. Expected failure modes, in order: renders
+tone-mapped/washed anyway; first packet loss → software fallback → dead video; scRGB→PQ
+transfer conversion turns out unsupported in `d3d12convert` (if so, THAT is the one place a
+GStreamer patch by us is plausible — precedent: `gst-nvcodec-intrarefresh.patch`).
+
+One spillover check worth doing regardless of HDR: verify our current 8-bit AV1 keyframes
+(patch 0029 PLI responder path) carry the sequence-header OBU — if not, Chrome clients may be
+silently degrading from hardware to software AV1 decode after the first PLI, which is the
+known tablet-killer pattern.
+
+### Tier 3 — the future path (revisit ~2027, don't block on it)
+
+WebCodecs + WebTransport custom player: 10-bit AV1 NVENC → WebTransport → `VideoDecoder` →
+WebGPU float16 canvas with `toneMapping: {mode:'extended'}` (extended-range WebGPU canvas
+shipped default-on in Chrome 129, Sep 2024). All pieces exist; nobody has publicly assembled
+them for game streaming; you'd own jitter-buffer/AV-sync yourself and HDR metadata is still
+spec-open (w3c/webcodecs#384). The right time is when someone else ships the player skeleton.
+
+Bottom line: **Tier 1 ships as part of the W-fixes worker rebuild and makes the lane
+color-correct in all display states; true HDR waits for the browser world to catch up, and the
+tablet (probably a non-HDR panel — check it) would not benefit anyway.**

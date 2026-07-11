@@ -2,7 +2,8 @@
 # docs/arcade-capture-worker-plan.md). This worker runs the SAME cmd/worker binary as the GL
 # workers, but with the capture caged mod enabled (capture.enabled: true) instead of libretro
 # cores. It launches native heavy titles (yuzu/RPCS3/…) and streams the desktop through the
-# UNCHANGED encode/WebRTC pipeline, so the encoder block below is IDENTICAL to config.worker-gl.yaml.
+# UNCHANGED encode/WebRTC pipeline, so the encoder block below matches config.worker-gl.yaml —
+# EXCEPT colorimetry (deliberately limited-range here, full-range there; see the note in the block).
 #
 # It joins the SAME coordinator (localhost:8000) but in zone "capture" so retro rooms never land on
 # it and vice-versa (⚠ retro rooms MUST send zone=main — the gateway derives it from the room-id
@@ -14,7 +15,9 @@
 #   cp docker/arcade/config.worker-capture.yaml D:/ArcadeStorage/worker-capture/config.yaml
 #   then recycle the capture worker (Stop-Process worker for that task — runner respawns in ~4s).
 # Edit HERE, then deploy. Never hand-edit the D: copy (that is how config.worker-gl.yaml drifted).
-# ⚠ Keep plain UTF-8, no BOM. Keep the encoder block in LOCKSTEP with config.worker-gl.yaml.
+# ⚠ Keep plain UTF-8, no BOM. Keep the encoder block in lockstep with config.worker-gl.yaml
+#   EXCEPT colorimetry — "2:3:5:1" (limited) is a deliberate divergence; never "resync" it to the
+#   GL pool's full-range "1:3:5:1" or SDR desktops wash out on tablet H.264 decoders again.
 # ─────────────────────────────────────────────────────────────────────────────────────────────────
 
 coordinator:
@@ -55,15 +58,27 @@ capture:
   height: 1080
   fps: 60
   audioScope: "process"    # process (PID-scoped loopback) | system (whole endpoint)
+  # Per-app audio isolation to VB-CABLE (so the game doesn't blast the HOST speakers): route ONLY the
+  # game's audio (by PID — session-scoped, reverts when it exits) to "CABLE Input", capture from
+  # "CABLE Output". Leave audioSink empty to fall back to loopback on the host's default device.
+  audioSink: "CABLE Input"
+  audioCaptureDevice: "{0.0.1.00000000}.{4ac426e1-8464-4789-b503-d220fdd89cd3}"
+  soundVolumeView: "D:/ArcadeStorage/worker-capture/bin/SoundVolumeView.exe"
 
 encoder:
-  # ⚠ IDENTICAL to config.worker-gl.yaml — the capture lane reuses media.NewGstreamer unchanged, so
-  # AV1 default / per-room codec (0036) / ABR (0021) / intra-refresh all carry over. Keep in lockstep.
+  # ⚠ Matches config.worker-gl.yaml EXCEPT colorimetry (see below) — the capture lane reuses
+  # media.NewGstreamer unchanged, so AV1 default / per-room codec (0036) / ABR (0021) /
+  # intra-refresh all carry over. Keep in lockstep apart from that one deliberate divergence.
   video:
     codec: av1
     threads: 0
     keyframeInterval: 300
-    colorimetry: "1:3:5:1"   # full-range luma (BT709); see the GL config's long note
+    # LIMITED-range BT709 (2:3:5:1), NOT the retro pool's full-range 1:3:5:1. The capture source is a
+    # real sRGB desktop with true 0/255 blacks+whites; encoding it full-range washed out on a tablet
+    # whose H.264 decoder assumes limited range (blacks lift to 16, whites clamp — "HDR looks broken").
+    # Limited range is what every WebRTC decoder defaults to, so it renders correctly everywhere. The
+    # retro pool keeps full-range (its cores' code values are worth preserving); a desktop capture is not.
+    colorimetry: "2:3:5:1"
   list:
     av1:
       # gop-size=-1 + intra-refresh (patched nvcodec plugin); PLI responder = worker patch 0029.
