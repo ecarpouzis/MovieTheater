@@ -51,10 +51,10 @@ index a206751..d9ec08f 100644
  github.com/philhofer/fwd v1.2.0/go.mod h1:RqIHx9QI14HlwKwm98g9Re5prTQ6LdeRQn+gXJFxsJM=
  github.com/pion/datachannel v1.6.2 h1:7EXQ8TH3vTouBUdRWYbcX2edSx9Yj6k5zl5P+qyxEPc=
 diff --git a/pkg/config/worker.go b/pkg/config/worker.go
-index 6a19ddb..b93c799 100644
+index 6a19ddb..0c95619 100644
 --- a/pkg/config/worker.go
 +++ b/pkg/config/worker.go
-@@ -21,6 +21,29 @@ type WorkerConfig struct {
+@@ -21,6 +21,34 @@ type WorkerConfig struct {
  	Worker    Worker
  	Webrtc    Webrtc
  	Version   Version
@@ -79,8 +79,13 @@ index 6a19ddb..b93c799 100644
 +	// is by PID (session-scoped — reverts the instant the game exits; the host stays normal otherwise).
 +	// When AudioSink is set these override AudioScope. Leave empty to keep the loopback behavior.
 +	AudioSink          string // SoundVolumeView device name/id to route the game to, e.g. "CABLE Input"
-+	AudioCaptureDevice string // wasapi2src device id to capture from, e.g. VB-CABLE's "CABLE Output" endpoint
-+	SoundVolumeView    string // path to SoundVolumeView.exe (bundled beside worker.exe)
++	AudioCaptureDevice string // wasapi2src device id to capture from
++	// AudioCaptureLoopback: capture AudioCaptureDevice as a RENDER endpoint via WASAPI loopback rather
++	// than as a capture device. For VB-CABLE, loopback-tapping CABLE Input (render) skips the cable's
++	// internal 96kHz double-SRC + ~7168-sample transfer buffer that sits before CABLE Output — worth
++	// ~75-150ms of audio latency (plan §12). Point AudioCaptureDevice at the CABLE Input render id.
++	AudioCaptureLoopback bool
++	SoundVolumeView      string // path to SoundVolumeView.exe (bundled beside worker.exe)
  }
  
  type Storage struct {
@@ -152,10 +157,10 @@ index 85ede12..6d1d955 100644
  
 diff --git a/pkg/worker/caged/capture/capture.go b/pkg/worker/caged/capture/capture.go
 new file mode 100644
-index 0000000..ddd3403
+index 0000000..5c28dba
 --- /dev/null
 +++ b/pkg/worker/caged/capture/capture.go
-@@ -0,0 +1,403 @@
+@@ -0,0 +1,404 @@
 +// Package capture implements the "capture" caged mod (heavy browser lane, H5): instead of running
 +// a libretro core it launches a native Windows program through the heavy gateway contract, captures
 +// the desktop with GStreamer (Windows Graphics Capture), feeds frames/PCM into the UNCHANGED
@@ -208,6 +213,7 @@ index 0000000..ddd3403
 +	lastDur    time.Duration
 +	lastPush   time.Time
 +	frames     uint64
++	rawFrames  uint64 // diag: appsink deliveries before the capturing gate
 +	stopRepush chan struct{}
 +
 +	// per-room launch state
@@ -531,7 +537,7 @@ index 0000000..ddd3403
 +			a.frameMu.Lock()
 +			f := a.frames
 +			a.frameMu.Unlock()
-+			a.log.Info().Msgf("capture tick: frames=%d pads=%d", f, a.pads.count())
++			a.log.Info().Msgf("capture tick: frames=%d raw=%d capturing=%v pads=%d", f, atomic.LoadUint64(&a.rawFrames), a.capturing.Load(), a.pads.count())
 +		}
 +	}
 +}
@@ -1245,10 +1251,10 @@ index 0000000..6cc9eb1
 +}
 diff --git a/pkg/worker/caged/capture/pipeline.go b/pkg/worker/caged/capture/pipeline.go
 new file mode 100644
-index 0000000..7f30ee3
+index 0000000..7e35fe5
 --- /dev/null
 +++ b/pkg/worker/caged/capture/pipeline.go
-@@ -0,0 +1,272 @@
+@@ -0,0 +1,302 @@
 +package capture
 +
 +/*
@@ -1269,6 +1275,8 @@ index 0000000..7f30ee3
 +
 +import (
 +	"fmt"
++	"runtime"
++	"sync/atomic"
 +	"time"
 +	"unsafe"
 +
@@ -1281,17 +1289,18 @@ index 0000000..7f30ee3
 +// are pushed through App.videoCb into the UNCHANGED media/appsrc path (PixFormat BGRA), so every
 +// encoder behavior (per-room codec, ABR, forced keyframes, PLI) is reused (plan §3.6, design A).
 +func (a *App) startVideoPipeline() error {
-+	// Reuse across rooms: a d3d12 WGC capture session, once created, cannot be cleanly re-acquired by
-+	// a freshly-built pipeline in the same process (go-gst only unrefs the old GstPipeline on GC, so
-+	// its capture lingers and the new one gets no frames — room 2 video froze at ~1 fps). So we build
-+	// the video pipeline ONCE and PAUSE↔PLAY it per room instead of NULL+rebuild. (The audio pipeline
-+	// is per-room — it keys on the game PID / CABLE device — and is torn down normally.)
++	// Rebuild a FRESH capture pipeline per room. Reuse across rooms proved too fragile: keeping one
++	// d3d12 WGC pipeline PLAYING for the process life worked in isolation but stopped delivering in the
++	// real path once the previous room's MEDIA pipe was destroyed (room 2 = frames=0/black). A fresh
++	// pipeline built AFTER the room's media is set up is immune to that. The catch NULL+rebuild used to
++	// hit — the old WGC session lingering because go-gst only unrefs on GC — is handled by releaseVideo
++	// (SetState NULL + drop ref + force GC) in stopPipelines, so the old session is gone before we build.
 +	a.pipeMu.Lock()
-+	if a.videoPipe != nil {
-+		a.pipeMu.Unlock()
-+		return nil // already PLAYING for the process's life; Start's capturing flag gates pushing
-+	}
++	stalePipe := a.videoPipe != nil
 +	a.pipeMu.Unlock()
++	if stalePipe {
++		a.releaseVideo() // defensive: a prior room should have released it at Close
++	}
 +
 +	// d3d12screencapturesrc (NOT d3d11): it has built-in HDR handling the d3d11 element lacks — when
 +	// the desktop is in HDR mode it tonemaps to correct SDR (tonemap=reinhard preserves highlights);
@@ -1335,6 +1344,7 @@ index 0000000..7f30ee3
 +			if mi == nil {
 +				return gst.FlowOK
 +			}
++			atomic.AddUint64(&a.rawFrames, 1) // diag: counts BEFORE the capturing gate (pipeline liveness)
 +			size := int(buf.GetSize())
 +			src := unsafe.Slice((*byte)(mi.Data()), size)
 +			h := a.height()
@@ -1363,10 +1373,16 @@ index 0000000..7f30ee3
 +	var srcProps string
 +	switch {
 +	case a.conf.AudioCaptureDevice != "":
-+		// Per-app isolation (VB-CABLE): the game was routed to the virtual sink's render side, which
-+		// loops to this capture endpoint ("CABLE Output"). This is a real capture device, NOT loopback,
-+		// and it carries ONLY the game (host speakers stay clean). No PID filter needed.
-+		srcProps = fmt.Sprintf("low-latency=true device=\"%s\"", a.conf.AudioCaptureDevice)
++		// Per-app isolation (VB-CABLE): the game was routed to the virtual sink. We capture from that
++		// sink; it carries ONLY the game (host speakers stay clean), no PID filter needed.
++		// LOOPBACK the CABLE *Input* render endpoint (AudioCaptureLoopback) rather than the CABLE
++		// *Output* capture device — the render-mix tap is BEFORE the cable's internal 96kHz double-SRC
++		// and ~7168-sample transfer buffer, cutting ~75-150ms of audio latency (plan §12A).
++		lb := ""
++		if a.conf.AudioCaptureLoopback {
++			lb = "loopback=true "
++		}
++		srcProps = fmt.Sprintf("%slow-latency=true device=\"%s\"", lb, a.conf.AudioCaptureDevice)
 +	case a.conf.AudioScope != "system" && pid > 0:
 +		srcProps = fmt.Sprintf("loopback=true low-latency=true loopback-mode=include-process-tree loopback-target-pid=%d", pid)
 +	default:
@@ -1502,9 +1518,28 @@ index 0000000..7f30ee3
 +	a.capturing.Store(false)
 +}
 +
-+// stopPipelines tears down both pipelines (NULL state) and the re-push loop. Idempotent, and safe
-+// to call when Start() never ran (stopRepush is nil on a failed room start — closing it would panic,
-+// which used to take down the whole worker on any prepare 409 / launch failure, W1).
++// releaseVideo drives the capture pipeline to NULL and FREES it, so the d3d12 WGC session is gone
++// before the next room builds a fresh one. go-gst unrefs GstObjects via a runtime finalizer, so after
++// dropping our reference we force a GC (with a yield between) to run it — else the old WGC session
++// lingers and the next pipeline gets no frames (the room-2 freeze). Idempotent.
++func (a *App) releaseVideo() {
++	a.pipeMu.Lock()
++	p := a.videoPipe
++	a.videoPipe = nil
++	a.pipeMu.Unlock()
++	if p == nil {
++		return
++	}
++	blockNull(p) // stop capture at the element level (releases the WGC frame pool)
++	p = nil      // drop the last Go reference so the object is collectible
++	runtime.GC()
++	time.Sleep(60 * time.Millisecond) // let the finalizer goroutine run gst_object_unref → free
++	runtime.GC()
++}
++
++// stopPipelines tears down both pipelines and the re-push loop. Idempotent, and safe to call when
++// Start() never ran (stopRepush is nil on a failed room start — closing it would panic, which used to
++// take down the whole worker on any prepare 409 / launch failure, W1).
 +func (a *App) stopPipelines() {
 +	if a.stopRepush != nil {
 +		select {
@@ -1513,7 +1548,8 @@ index 0000000..7f30ee3
 +			close(a.stopRepush)
 +		}
 +	}
-+	a.capturing.Store(false) // stop pushing live frames; leave the video pipeline PLAYING for reuse
++	a.capturing.Store(false)
++	a.releaseVideo() // free the video pipe + WGC session so the NEXT room rebuilds cleanly
 +	a.pipeMu.Lock()
 +	defer a.pipeMu.Unlock()
 +	if a.audioPipe != nil {
