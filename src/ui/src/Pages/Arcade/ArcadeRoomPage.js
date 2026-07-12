@@ -419,6 +419,50 @@ export default function ArcadeRoomPage() {
     }
   }
 
+  // The gateway's reserved quicksave slot (SaveStore.QuickSlot) — keep the two in step.
+  const QUICK_SLOT = 99;
+
+  // Pull the capability token + gateway origin back out of the descriptor's WS url.
+  function gatewayFor(d) {
+    const token = (d?.wsUrl?.match(/\/w\/([^/?]+)/) || [])[1];
+    return token ? { token, base: d.wsUrl.replace(/^ws/, "http").replace(/\/w\/.*$/, "") } : null;
+  }
+
+  // Save = QUICKSAVE. Flush the live state (t=106), then have the gateway copy it into the quicksave
+  // slot. Save must NOT be left in slot 0: that slot belongs to save-on-quit (and, once it's on,
+  // autosave), so leaving the room would re-serialize whatever state you were in over your deliberate
+  // save — save before the secret level, die, exit, and your save is the death.
+  async function quickSave() {
+    const g = gatewayFor(descriptorRef.current);
+    if (!g || snapping) { if (!g) message.error("Can't save this session."); return; }
+    setSnapping(true);
+    try {
+      sessionRef.current?.save?.();                     // flush current state to /saves/<id>.dat
+      await new Promise((r) => setTimeout(r, 1300));    // let it land before the gateway copies it
+      const res = await fetch(`${g.base}/w-quick/${g.token}`, { method: "post" });
+      const j = await res.json().catch(() => null);
+      if (j && j.ok) message.success(j.label ? `Saved — ${j.label}` : "Saved");
+      else message.warning((j && j.reason) || "Couldn't save — play a moment, then try again.");
+    } catch { message.error("Couldn't save."); }
+    finally { setSnapping(false); }
+  }
+
+  // Load = QUICKLOAD: swap the quicksave slot's bytes into the live mount, then tell the core to restore
+  // them (t=107) — no room restart.
+  async function quickLoad() {
+    const g = gatewayFor(descriptorRef.current);
+    if (!g) { message.error("Can't load this session."); return; }
+    try {
+      const res = await fetch(`${g.base}/w-load/${g.token}`, {
+        method: "post", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: QUICK_SLOT }),
+      });
+      const j = await res.json().catch(() => null);
+      if (!j || !j.ok) { message.warning("No quicksave yet — press Save first."); return; }
+      sessionRef.current?.load?.();
+      message.info("Loading your quicksave…");
+    } catch { message.error("Couldn't load your quicksave."); }
+  }
+
   // Save a NAMED snapshot (arcade-saves-plan S3): flush the live state, then ask the gateway to copy it
   // into a new numbered slot you can resume later. Owner-only (the gateway rejects a guest's token).
   async function saveSnapshot() {
@@ -641,11 +685,11 @@ export default function ArcadeRoomPage() {
               LibCo serialize — and the buttons returned with it.) */}
           {!spectator && (
             <>
-              <Tooltip title="Save your place (a state you can reload with Load)">
-                <Button onClick={() => { sessionRef.current?.save?.(); message.success("State saved"); }}>Save</Button>
+              <Tooltip title="Quicksave — keeps your place until you press Save again. Leaving the room never overwrites it.">
+                <Button loading={snapping} onClick={quickSave}>Save</Button>
               </Tooltip>
-              <Tooltip title="Reload your last saved state">
-                <Button onClick={() => { sessionRef.current?.load?.(); message.info("Loading last state…"); }}>Load</Button>
+              <Tooltip title="Reload your quicksave">
+                <Button onClick={quickLoad}>Load</Button>
               </Tooltip>
             </>
           )}

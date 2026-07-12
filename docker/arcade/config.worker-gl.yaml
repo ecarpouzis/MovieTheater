@@ -34,18 +34,32 @@ library:
   # Native Windows path — NO /mnt/d translation on this worker. Overridable via CLOUD_GAME_LIBRARY_BASEPATH.
   basePath: "D:/ArcadeStorage/roms"
   watchMode: true
+  # Room ids carry the SITE's system code (ArcadeGame.System), and the worker resolves the ROM
+  # inside that system so a name shared with another system can't be launched by mistake (patch
+  # 0037). It scopes by ROM sub-folder, which IS the site's code for every system except these
+  # two. Add a line here whenever a new system's folder name differs from its site code —
+  # otherwise it silently falls back to the old, unscoped, cross-system lookup.
+  systemAliases:
+    ps1: psx      # site "ps1"    -> roms/psx   (core key "pcsx")
+    arcade: mame  # site "arcade" -> roms/mame  (core key "mame")
 
 emulator:
-  # autosave DISABLED on the GL worker (stock CloudRetro default is 0). CAPTURED-CRASH FIX
-  # (glworker-2.log 2026-07-05, Exception 0xc0000005 at autosave(0x3c)=60s): the 60s autosave calls
-  # SaveState → retro_serialize_size (nanoarch.go:532) DIRECTLY on the autosave goroutine — off the
-  # emulator libco thread and BEFORE the skip_same_thread_save guard (line 536, which only reroutes
-  # the serialize call, not serialize_size). PPSSPP's serialize_size touches live emu state → hard
-  # access violation off-thread → worker died every ~60s ("Loco Roco 2 crashed >1 min in"). flycast
-  # (dc) also HITCHES on autosave (serialize stops+restarts the emu thread). PSP memory-card progress
-  # is written to the virtual memstick (SaveRAM/core filesystem), NOT save-state, so this loses no
-  # game saves. Proper GL save-state (serialize on the emu thread) is future work with the saves vault.
-  autosaveSec: 0
+  # autosave RE-ENABLED 2026-07-12. Without it the ONLY write to disk is a graceful room close, so a
+  # killed or crashed worker loses the whole session — that is not theoretical: a worker restart mid-race
+  # cost Kristen ~18 min of Diddy Kong (all three re-boots logged "Arcade save none (fresh)"), and the
+  # known exit-139/exit-1 teardowns would do the same to any player. Autosave gives the gateway a recent
+  # <roomId>.dat to harvest into the vault even when the process dies without a goodbye.
+  #
+  # It was 0 because the autosave path AV'd (glworker-2.log 2026-07-05, 0xc0000005 at autosave(0x3c)):
+  # SaveState called retro_serialize_size DIRECTLY on the autosave goroutine — off the emulator's libco
+  # thread — and PPSSPP's serialize_size touches live emu state. Worker patch 0030 FIXED exactly that
+  # (serialize AND its size probe now run on the core's own thread), so the reason for 0 is stale.
+  #
+  # 120s, not 60: a serialize STOPS the emulator for its duration, and the GL cores' states are big
+  # (Dolphin ~122 MB, PCSX2 ~50 MB) — flycast (dc) is documented to hitch on it. 120s halves the hitch
+  # count while still bounding a crash's cost to two minutes. Autosave writes the CONTINUE slot (0); it
+  # can never touch a player's Save, which lives in the reserved quicksave slot (SaveStore.QuickSlot).
+  autosaveSec: 120
   storage: "D:/ArcadeStorage/saves"    # overridable via CLOUD_GAME_EMULATOR_STORAGE
   libretro:
     saveCompression: false

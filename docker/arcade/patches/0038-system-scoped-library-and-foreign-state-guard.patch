@@ -1,0 +1,452 @@
+--- a/pkg/config/shared.go
++++ b/pkg/config/shared.go
+@@ -18,6 +18,12 @@
+ 	Verbose bool
+ 	// enable directory changes watch
+ 	WatchMode bool
++	// SystemAliases maps a CALLER's system code to the ROM sub-folder it lives in, for the
++	// system-scoped game lookup (see library.set). The site (MovieTheater ArcadeGame.System)
++	// and this config disagree on a few names — the site says "ps1"/"arcade", the ROM folders
++	// are "psx"/"mame" — and the room id carries the SITE's code. Anything not listed is used
++	// as the folder name verbatim, which is the case for every other system.
++	SystemAliases map[string]string
+ }
+ 
+ func (l Library) GetSupportedExtensions() []string { return l.Supported }
+--- a/pkg/config/emulator.go
++++ b/pkg/config/emulator.go
+@@ -129,6 +129,9 @@
+ 	return found
+ }
+ 
++// GetCoreFolder returns the ROM sub-folder a core owns, if it pins one.
++func (e Emulator) GetCoreFolder(emu string) string { return e.Libretro.Cores.List[emu].Folder }
++
+ func (e Emulator) GetSupportedExtensions() []string {
+ 	var extensions []string
+ 	for _, core := range e.Libretro.Cores.List {
+--- a/pkg/games/library.go
++++ b/pkg/games/library.go
+@@ -25,6 +25,8 @@
+ 	verbose     bool
+ 	watchMode   bool
+ 	sessionPath string
++	// caller's system code -> ROM sub-folder (config.Library.SystemAliases)
++	systemAliases map[string]string
+ }
+ 
+ type library struct {
+@@ -33,12 +35,22 @@
+ 	hasSource bool
+ 	// scan time
+ 	lastScanDuration time.Duration
+-	// library entries
+-	// !should be a tree-based structure
+-	// game name -> game meta
+-	// games with duplicate names are merged
++	// library entries, keyed by the game's path relative to the library root, lowercased.
++	// That path is unique per FILE, so nothing is ever merged away here (see byName).
+ 	games map[string]GameMetadata
+-	log   *logger.Logger
++	// name -> every game with that name, across all systems. Stock keyed the library by bare
++	// name alone and let a later duplicate overwrite an earlier one ("games with duplicate
++	// names are merged"), so of two same-named ROMs in different systems only the last one
++	// scanned was reachable: 1352 names collide in our library, and a GameCube room booted the
++	// PS2 disc of the same name (live 2026-07-11). Resolve scoped when the caller knows the
++	// system; this index stays for unscoped/legacy callers.
++	byName map[string][]GameMetadata
++	// "<scope>/<name>" -> games, where scope is the ROM sub-folder AND the core key (they differ
++	// for a few systems: folder "psx" / core "pcsx"). Both are indexed so either resolves.
++	byScope map[string][]GameMetadata
++	// every scope (folder or core key) the library actually contains
++	scopes map[string]struct{}
++	log    *logger.Logger
+ 
+ 	// ids of saved games to find closed sessions
+ 	sessions []string
+@@ -55,6 +67,13 @@
+ type GameLibrary interface {
+ 	GetAll() []GameMetadata
+ 	FindGameByName(name string) GameMetadata
++	// FindGame resolves a game within one system. system is the CALLER's code (the site's
++	// ArcadeGame.System, carried in the room id); "" means "search every system".
++	FindGame(system, name string) (GameMetadata, bool)
++	// HasSystem reports whether the library holds any game for the caller's system code.
++	// False means the code is meaningless here (a legacy/stock room id) and the caller may
++	// fall back to an unscoped lookup; true means a miss is a real miss.
++	HasSystem(system string) bool
+ 	Sessions() []string
+ 	Scan()
+ }
+@@ -62,6 +81,7 @@
+ type WithEmulatorInfo interface {
+ 	GetSupportedExtensions() []string
+ 	GetEmulator(rom string, path string) string
++	GetCoreFolder(emu string) string
+ 	SessionStoragePath() string
+ }
+ 
+@@ -99,12 +119,16 @@
+ 			path:        dir,
+ 			supported:   toMap(conf.Supported),
+ 			ignored:     conf.Ignored,
+-			verbose:     conf.Verbose,
+-			watchMode:   conf.WatchMode,
+-			sessionPath: emu.SessionStoragePath(),
++			verbose:       conf.Verbose,
++			watchMode:     conf.WatchMode,
++			sessionPath:   emu.SessionStoragePath(),
++			systemAliases: lowerKeys(conf.SystemAliases),
+ 		},
+ 		mu:        sync.Mutex{},
+ 		games:     map[string]GameMetadata{},
++		byName:    map[string][]GameMetadata{},
++		byScope:   map[string][]GameMetadata{},
++		scopes:    map[string]struct{}{},
+ 		hasSource: hasSource,
+ 		log:       log,
+ 		emuConf:   emu,
+@@ -129,14 +153,79 @@
+ 	return res
+ }
+ 
+-// FindGameByName returns some game info with its full filepath
++// FindGameByName returns some game info with its full filepath, searching every system.
++// When two systems hold a game of the same name this can only return one of them — prefer
++// FindGame, which scopes the search and cannot cross systems.
+ func (lib *library) FindGameByName(name string) GameMetadata {
+-	var game GameMetadata
+-	if val, ok := lib.games[name]; ok {
+-		val.Base = lib.config.path
+-		return val
++	if games := lib.byName[name]; len(games) > 0 {
++		game := games[0]
++		game.Base = lib.config.path
++		return game
+ 	}
+-	return game
++	return GameMetadata{}
++}
++
++// FindGame resolves a game within one system, so a name shared with another system's ROM
++// (1352 of them here) can never resolve across.
++func (lib *library) FindGame(system, name string) (GameMetadata, bool) {
++	if system == "" {
++		game := lib.FindGameByName(name)
++		return game, game.Path != ""
++	}
++	games := lib.byScope[scopeKey(lib.scope(system), name)]
++	if len(games) == 0 {
++		return GameMetadata{}, false
++	}
++	game := games[0]
++	game.Base = lib.config.path
++	return game, true
++}
++
++func (lib *library) HasSystem(system string) bool {
++	_, ok := lib.scopes[lib.scope(system)]
++	return ok
++}
++
++// scope maps the caller's system code to the key this library is indexed by: the ROM
++// sub-folder, which is the system code itself for all but a few (site "ps1" lives in "psx",
++// site "arcade" in "mame") — those are config.Library.SystemAliases.
++func (lib *library) scope(system string) string {
++	system = strings.ToLower(system)
++	if folder, ok := lib.config.systemAliases[system]; ok {
++		return strings.ToLower(folder)
++	}
++	return system
++}
++
++// ownsItsFolder reports whether the game sits in the ROM folder its own core owns — i.e. whether
++// the core that will be handed this file is the one that folder is FOR. A flat library (the
++// capture worker's stubs) has no folders and always qualifies.
++func (lib *library) ownsItsFolder(game GameMetadata) bool {
++	folder := folderOf(game.Path)
++	if folder == "" || game.System == "" {
++		return folder == ""
++	}
++	return folder == strings.ToLower(game.System) ||
++		folder == strings.ToLower(lib.emuConf.GetCoreFolder(game.System))
++}
++
++func scopeKey(scope, name string) string { return scope + "/" + name }
++
++func lowerKeys(m map[string]string) map[string]string {
++	res := make(map[string]string, len(m))
++	for key, value := range m {
++		res[strings.ToLower(key)] = value
++	}
++	return res
++}
++
++// folderOf returns the game's top-level ROM sub-folder ("gc/Foo.gcz" -> "gc"), or "" for a
++// game sitting at the library root (the capture worker's stubs, which are flat).
++func folderOf(relPath string) string {
++	if i := strings.IndexAny(relPath, `/\`); i > 0 {
++		return strings.ToLower(relPath[:i])
++	}
++	return ""
+ }
+ 
+ func (lib *library) AliasFileMaybe() map[string]string {
+@@ -320,11 +409,77 @@
+ }
+ 
+ func (lib *library) set(games []GameMetadata) {
+-	res := make(map[string]GameMetadata)
++	res := make(map[string]GameMetadata, len(games))
+ 	for _, value := range games {
+-		res[value.Name] = value
++		res[strings.ToLower(filepath.ToSlash(value.Path))] = value
++	}
++
++	// Order the games so that a name which IS ambiguous (one game, several files — a .cue next to
++	// the .bin it indexes, a .chd rip beside a .cue) always resolves to the same file, and to the
++	// RIGHT one. Two rules, in order:
++	//
++	//  1. A file whose core actually owns its folder beats one whose core does not. The library's
++	//     supported-extension set is the union of every core's, so psx/Foo.bin is indexed too and
++	//     GetEmulator hands it to whichever core claims ".bin" (Atari's) — a file that could only
++	//     ever load into the wrong emulator. Stock hid those by accident (the .cue, scanned later,
++	//     overwrote them by name); nothing may now let one shadow the .cue that IS the game.
++	//  2. Then by path, so the choice is stable across scans. Silently picking a different ROM
++	//     after a restart is the bug this whole index exists to prevent.
++	paths := make([]string, 0, len(res))
++	for path := range res {
++		paths = append(paths, path)
++	}
++	sort.Slice(paths, func(i, j int) bool {
++		a, b := lib.ownsItsFolder(res[paths[i]]), lib.ownsItsFolder(res[paths[j]])
++		if a != b {
++			return a
++		}
++		return paths[i] < paths[j]
++	})
++
++	byName := make(map[string][]GameMetadata)
++	byScope := make(map[string][]GameMetadata)
++	scopes := make(map[string]struct{})
++	for _, path := range paths {
++		game := res[path]
++		byName[game.Name] = append(byName[game.Name], game)
++		for _, scope := range []string{folderOf(game.Path), strings.ToLower(game.System)} {
++			if scope == "" {
++				continue
++			}
++			scopes[scope] = struct{}{}
++			key := scopeKey(scope, game.Name)
++			// folder and core key are the same string for most systems — index once
++			if n := len(byScope[key]); n > 0 && byScope[key][n-1].Path == game.Path {
++				continue
++			}
++			byScope[key] = append(byScope[key], game)
++		}
++	}
++
++	lib.games, lib.byName, lib.byScope, lib.scopes = res, byName, byScope, scopes
++
++	// Ambiguity is now surfaced instead of merged away. Same name in DIFFERENT systems is
++	// normal and handled (each scope resolves to its own ROM); same name TWICE IN ONE system
++	// is a genuine coin-flip, so say so — the first path wins, deterministically.
++	for _, key := range sortedKeys(byScope) {
++		if dup := byScope[key]; len(dup) > 1 {
++			others := make([]string, 0, len(dup)-1)
++			for _, game := range dup[1:] {
++				others = append(others, game.Path)
++			}
++			lib.log.Warn().Msgf("Lib: %v resolves to %v, shadowing %v", key, dup[0].Path, strings.Join(others, ", "))
++		}
++	}
++}
++
++func sortedKeys[V any](m map[string]V) []string {
++	keys := make([]string, 0, len(m))
++	for key := range m {
++		keys = append(keys, key)
+ 	}
+-	lib.games = res
++	sort.Strings(keys)
++	return keys
+ }
+ 
+ func (lib *library) isExtAllowed(path string) bool {
+--- a/pkg/games/launcher.go
++++ b/pkg/games/launcher.go
+@@ -9,7 +9,9 @@
+ 
+ type Launcher interface {
+ 	FindAppByName(name string) (AppMeta, error)
++	FindApp(system, name string) (AppMeta, error)
+ 	ExtractAppNameFromUrl(name string) string
++	ExtractSystemFromUrl(name string) string
+ 	GetAppNames() []AppMeta
+ }
+ 
+@@ -28,24 +30,43 @@
+ 
+ func NewGameLauncher(lib GameLibrary) GameLauncher { return GameLauncher{lib: lib} }
+ 
+-func (gl GameLauncher) FindAppByName(name string) (AppMeta, error) {
+-	game := gl.lib.FindGameByName(name)
+-	if game.Path == "" {
++func (gl GameLauncher) FindAppByName(name string) (AppMeta, error) { return gl.FindApp("", name) }
++
++// FindApp resolves a game, scoped to the caller's system when it supplied one (our room ids carry
++// it — see ExtractSystemFromUrl). Scoping is what keeps a room on the ROM it asked for: 1352 game
++// names in this library exist in more than one system, and an unscoped lookup can only return one
++// of them, so a "gc" room booted the same-named PS2 disc in the PS2 core (live 2026-07-11) — which
++// then hard-crashed on the GameCube save state it was handed.
++func (gl GameLauncher) FindApp(system, name string) (AppMeta, error) {
++	game, ok := gl.lib.FindGame(system, name)
++	if !ok {
+ 		// JIT ROM materialization (MovieTheater patch): a game can be extracted into the ROM dir on
+ 		// demand, AFTER the worker's boot-time scan. fsnotify WatchMode does not reliably fire across a
+ 		// Windows-host → WSL2 bind mount, so on a miss force one (throttled) rescan and retry before
+ 		// giving up. Scan() re-walks the tree, so it needs no inotify event.
+ 		gl.lib.Scan()
+-		game = gl.lib.FindGameByName(name)
++		game, ok = gl.lib.FindGame(system, name)
++	}
++	if ok {
++		return AppMeta(game), nil
++	}
++	// The system is one we hold ROMs for, so this is a real miss. Do NOT widen the search to other
++	// systems: booting a different system's same-named ROM is worse than not booting at all.
++	if system != "" && gl.lib.HasSystem(system) {
++		return AppMeta{}, fmt.Errorf("couldn't find game %v in system %v", name, system)
+ 	}
+-	if game.Path == "" {
+-		return AppMeta{}, fmt.Errorf("couldn't find game info for the game %v", name)
++	// No usable system (a stock random room id, or a code this library knows nothing about):
++	// fall back to the unscoped index, which is all stock CloudRetro ever had.
++	if game := gl.lib.FindGameByName(name); game.Path != "" {
++		return AppMeta(game), nil
+ 	}
+-	return AppMeta(game), nil
++	return AppMeta{}, fmt.Errorf("couldn't find game info for the game %v", name)
+ }
+ 
+ func (gl GameLauncher) ExtractAppNameFromUrl(name string) string { return ExtractGame(name) }
+ 
++func (gl GameLauncher) ExtractSystemFromUrl(name string) string { return ExtractSystem(name) }
++
+ func (gl GameLauncher) GetAppNames() (apps []AppMeta) {
+ 	for _, game := range gl.lib.GetAll() {
+ 		apps = append(apps, AppMeta{Alias: game.Alias, Name: game.Name, System: game.System})
+@@ -64,6 +85,31 @@
+ 	return ""
+ }
+ 
++// savePrefix marks a room id minted by the site rather than by GenerateRoomID.
++const savePrefix = "sv-"
++
++// ExtractSystem parses the SYSTEM out of one of the site's deterministic save-room ids,
++// "sv-<userId>-<gameId>-<slotId>-<system>___<gameKey>" (MovieTheater ArcadeSaveId — keep the two
++// in step). The system is the caller's own code ("ps1", "arcade", "gc"), not necessarily a core
++// name or a ROM folder; the library maps it (config library.systemAliases).
++//
++// Returns "" for a stock random room id, which correctly means "unscoped" to FindApp.
++func ExtractSystem(roomID string) string {
++	if !strings.HasPrefix(roomID, savePrefix) {
++		return ""
++	}
++	sep := strings.Index(roomID, separator)
++	if sep < 0 {
++		return ""
++	}
++	// "<userId>-<gameId>-<slotId>-<system>"; system codes never contain '-'
++	parts := strings.SplitN(roomID[len(savePrefix):sep], "-", 4)
++	if len(parts) != 4 {
++		return ""
++	}
++	return parts[3]
++}
++
+ // GenerateRoomID generate a unique room ID containing 16 digits.
+ // RoomID contains random number + gameName
+ // Next time when we only get roomID, we can launch game based on gameName
+--- a/pkg/worker/coordinatorhandlers.go
++++ b/pkg/worker/coordinatorhandlers.go
+@@ -124,6 +124,9 @@
+ 	// the name of the game either in the `room id` field or
+ 	// it's in the initial request
+ 	gameName := rq.Game
++	// The room id also carries the SYSTEM the room was minted for, which is what keeps the lookup
++	// on the right ROM when the same game name exists in several systems (it does, 1352 times).
++	system := ""
+ 	if rq.Rid != "" {
+ 		name := w.launcher.ExtractAppNameFromUrl(rq.Rid)
+ 		if name == "" {
+@@ -131,9 +134,10 @@
+ 			return api.EmptyPacket
+ 		}
+ 		gameName = name
++		system = w.launcher.ExtractSystemFromUrl(rq.Rid)
+ 	}
+ 
+-	gameInfo, err := w.launcher.FindAppByName(gameName)
++	gameInfo, err := w.launcher.FindApp(system, gameName)
+ 	if err != nil {
+ 		c.log.Error().Err(err).Send()
+ 		return api.EmptyPacket
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+@@ -628,13 +628,17 @@
+ //  2. same_thread_with_args read the Go POINTER-to-size as the size itself, so every LibCo
+ //     serialize/unserialize got a garbage byte count — a size-validating core fastfails, and
+ //     load-state "flakiness" (mupen) matches corrupt sizes exactly. Size now travels by value.
+-func SaveState() (State, error) {
+-	var size C.size_t
++// serializeSize asks the core how many bytes ITS state is, on the thread the core lives on
++// (see SaveState's note 1 — the probe access-violates if it runs anywhere else for LibCo cores).
++func serializeSize() C.size_t {
+ 	if Nan0.LibCo && !Nan0.hackSkipSameThreadSave {
+-		size = C.size_t(C.same_thread_serialize_size(retroSerializeSize))
+-	} else {
+-		size = C.bridge_retro_serialize_size(retroSerializeSize)
++		return C.size_t(C.same_thread_serialize_size(retroSerializeSize))
+ 	}
++	return C.bridge_retro_serialize_size(retroSerializeSize)
++}
++
++func SaveState() (State, error) {
++	size := serializeSize()
+ 	if size == 0 {
+ 		return nil, errors.New("retro_serialize_size returned 0 (core cannot save-state this game)")
+ 	}
+@@ -660,6 +664,32 @@
+ 		return errors.New("empty load state")
+ 	}
+ 
++	// A state this core did not write must never reach retro_unserialize. Cores validate the
++	// buffer they are handed only loosely, and a rejected load does not leave them intact:
++	// PCSX2 given a Dolphin state logged "GS: Savestate version is incompatible. Load aborted."
++	// and then access-violated on the next tick (0xC0000005, live 2026-07-11). The worker died,
++	// the runner restarted it, the same save was re-seeded, and the room crash-looped forever —
++	// the game simply never booted again. A core is entitled to crash on foreign bytes; our job
++	// is not to hand them over.
++	//
++	// The test is SIZE, but it cannot be equality: retro_serialize_size is not stable for every
++	// core. Dolphin's grows as the game warms up — it reports 111,735,182 bytes five seconds into
++	// Gauntlet's boot (when the deferred restore runs) and writes 122,064,041 at session end, so
++	// demanding an exact match refused the player's own GameCube save (measured 2026-07-11).
++	//
++	// A foreign core is wrong by MULTIPLES, not percent: PCSX2 wants 50,599,322 bytes for that
++	// same 122 MB Dolphin state (2.4x), and a PS2 state offered to Dolphin is 0.45x. Same-core
++	// drift is single-digit percent. So bound the ratio generously — wide enough that no core's
++	// own state is ever turned away, tight enough that another core's never gets through.
++	want := serializeSize()
++	if want == 0 {
++		return errors.New("retro_serialize_size returned 0 (core cannot load-state this game)")
++	}
++	if ratio := float64(len(st)) / float64(want); ratio < 0.5 || ratio > 2 {
++		return fmt.Errorf("refusing a foreign save state: this core wants ~%v bytes, the save has %v (%.2fx)",
++			uint(want), len(st), ratio)
++	}
++
+ 	size := C.size_t(len(st))
+ 	rez := false
+ 

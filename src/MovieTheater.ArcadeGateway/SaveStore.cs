@@ -80,7 +80,20 @@ public sealed class SaveStore
     // it back on seed. Persistence rides the deterministic session id, no DB row required.
     public const string KindCoreSave = "coresave";
     public const string CoreSaveBlob = "coresave.tar";
+    /// <summary>The rolling "where you left off" slot. The MACHINE owns it: autosave and save-on-quit
+    /// write it, and it is expected to be overwritten every session.</summary>
     public const int ContinueSlot = 0;
+
+    /// <summary>The QUICKSAVE slot — what the in-room Save button writes and Load reads. The PLAYER owns
+    /// it: nothing automatic ever touches it.
+    ///
+    /// Save used to write <see cref="ContinueSlot"/>, which meant save-on-quit (an unconditional
+    /// re-serialize on every room close) silently overwrote a deliberate save with whatever state the
+    /// game happened to be in when you left — save before the secret level, die, exit, and the save is
+    /// the death. Autosave would have done it every 60s. Deliberate and automatic saves must not share
+    /// a slot. Numbered far above <c>NextSnapshotSlot</c>'s range (MaxStatesPerGame = 20) so it can
+    /// never collide with a named snapshot.</summary>
+    public const int QuickSlot = 99;
 
     private readonly SaveStoreOptions opt;
     private readonly ILogger log;
@@ -260,12 +273,18 @@ public sealed class SaveStore
     /// NEW numbered snapshot slot (≥1) with the user's label. The caller should have the client flush a
     /// SAVE (t=106) first so the .dat is current. Returns the new slot's metadata (to mirror into the DB),
     /// or null if there's no live state yet.</summary>
-    public async Task<SaveMeta?> SnapshotCurrentAsync(
-        int userId, int gameId, string system, string sessionId, string? label, CancellationToken ct = default)
+    public Task<SaveMeta?> SnapshotCurrentAsync(
+        int userId, int gameId, string system, string sessionId, string? label, CancellationToken ct = default) =>
+        SnapshotToSlotAsync(userId, gameId, system, sessionId, NextSnapshotSlot(userId, gameId), label, ct);
+
+    /// <summary>Copy the session's live state into a SPECIFIC slot, replacing whatever is there. This is
+    /// how the in-room Save button writes the <see cref="QuickSlot"/>: a deliberate save must land in a
+    /// slot the machine never writes.</summary>
+    public async Task<SaveMeta?> SnapshotToSlotAsync(
+        int userId, int gameId, string system, string sessionId, int slot, string? label, CancellationToken ct = default)
     {
         var dat = MountFile(sessionId, ".dat");
         if (!File.Exists(dat)) return null;
-        int slot = NextSnapshotSlot(userId, gameId);
         return await CopyIntoStoreAsync(userId, gameId, system, KindState, slot, label,
             coreName: null, coreVersion: null, src: dat, destName: SlotFile(slot), isAutosave: false, ct);
     }

@@ -602,3 +602,40 @@ per-room goroutines (exit-watcher, audio-router) capture their own proc and bail
 and only `gwFinish`es when it actually acquired the lock (a prepare 409 must not release an Artemis
 session of the same title). `cmd/capture-probe` (the hardcoded live harness) is intentionally NOT
 in this patch.
+
+## 0038-system-scoped-library-and-foreign-state-guard.patch
+
+**What:** two independent worker faults that combined into "Gauntlet Legends won't boot" (2026-07-11).
+
+*System-scoped library.* Stock indexes the ROM library by BARE FILENAME (`res[value.Name] = value`,
+"games with duplicate names are merged"), so of two same-named ROMs in different systems only the
+last one scanned is reachable — **1352 names in our library collide across systems**. The ROM tree
+walks alphabetically, so `ps2/Gauntlet - Dark Legacy (USA).cso` overwrote
+`gc/Gauntlet - Dark Legacy (USA).gcz`, and the GameCube card silently booted the PS2 disc in PCSX2.
+Now the library indexes by relative PATH and resolves within the room's system — which the room id
+already carries (`sv-<user>-<game>-<slot>-<system>___<key>`, the site's `ArcadeSaveId`), so **no
+protocol, coordinator, site or client change is needed**. On a miss inside a known system it REFUSES
+rather than widening the search: booting another system's ROM is worse than not booting.
+
+- The site's system code is not the core key and not always the folder (site `ps1` → folder `psx`,
+  core `pcsx`; site `arcade` → `mame`). Mapping lives in config: `library.systemAliases`. **A new
+  system whose folder name differs from its site code MUST be added there** or it silently falls
+  back to the old cross-system lookup.
+- Same name twice in ONE system is now ranked, not merged: a file whose core actually owns its folder
+  wins. The library's supported-extension set is the union of every core's, so `psx/Foo.bin` is
+  indexed too and `GetEmulator` hands it to whoever claims `.bin` (Atari's) — stock hid those by
+  accident (the `.cue`, scanned later, overwrote them). Ambiguity is now logged, never silent.
+
+*Foreign-state guard.* `RestoreSaveState` passed `len(st)` straight to `retro_unserialize`. Handed a
+Dolphin state, PCSX2 logged `GS: Savestate version is incompatible. Load aborted.` and then
+access-violated on the next tick (0xC0000005) — the worker died, the runner restarted it, the
+gateway re-seeded the same save, and the room **crash-looped forever**. A core is entitled to crash
+on foreign bytes; our job is not to hand them over. It now checks the save against
+`retro_serialize_size()` first.
+
+> **The test is size, but it must NOT be equality.** `retro_serialize_size` is not stable for every
+> core: Dolphin reports **111,735,182** bytes five seconds into Gauntlet's boot (when the deferred
+> restore runs) and writes **122,064,041** at session end. Strict equality refused the player's own
+> GameCube save — caught only by testing the restore live. A foreign core is wrong by MULTIPLES
+> (PCSX2 wants 50,599,322 for that same state, 2.4x; a PS2 state offered to Dolphin is 0.45x), so
+> the ratio is bounded to 0.5x–2x. Refusing costs only the resume; the vault copy is untouched.

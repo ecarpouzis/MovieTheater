@@ -183,11 +183,13 @@ export default function ArcadePage() {
           content: (
             <div>
               <div style={{ marginBottom: snaps.length ? 8 : 0 }}>
-                Continue where you left off, or start a new game.
+                <b>Continue</b> picks up where you left off — it's saved for you automatically each time
+                you leave, so it's always the most recent moment, whatever that was. Your own saves are
+                listed below and are never overwritten automatically.
               </div>
               {snaps.length > 0 && (
                 <div>
-                  <Text type="secondary" style={{ fontSize: 12 }}>Or resume a snapshot:</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>Or resume a save you made:</Text>
                   <div style={{ marginTop: 4, maxHeight: 180, overflowY: "auto" }}>
                     {snaps.map((s) => (
                       <div key={s.slotId} style={{ padding: "2px 0" }}>

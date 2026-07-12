@@ -267,6 +267,30 @@ app.MapPost("/w-snap/{token}", async (HttpContext ctx, string token) =>
     return Results.Json(new { ok = true, slot = meta.SlotId, label = meta.Label });
 });
 
+// In-room "Save" = QUICKSAVE: copy the live save into the reserved quicksave slot, replacing the last
+// one. Same flush-then-copy path as /w-snap, but a fixed slot and an auto label, so pressing Save is
+// one click. It deliberately does NOT write slot 0: that slot belongs to autosave/save-on-quit, which
+// would overwrite a player's save on the way out of the room (SaveStore.QuickSlot). Owner-only.
+app.MapPost("/w-quick/{token}", async (HttpContext ctx, string token) =>
+{
+    if (saveStore == null) return Results.NotFound();
+    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null) return Results.Forbid();
+    var id = p.CloudRetroRoomId ?? "";
+    // NOT owner-only, unlike /w-snap: Save acts on the room's one shared emulator, and every player has
+    // been able to press it (t=106) since the buttons existed. The token already proves membership of
+    // THIS room, and the state written is the room's world — which is the owner's save either way.
+    if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out var sys, out _) || g != p.GameId)
+        return Results.BadRequest();
+
+    var label = $"Quicksave {DateTime.Now:h:mm tt}";
+    var meta = await saveStore.SnapshotToSlotAsync(
+        u, g, sys, id, MovieTheater.ArcadeGateway.SaveStore.QuickSlot, label, ctx.RequestAborted);
+    if (meta == null) return Results.Json(new { ok = false, reason = "no live save yet — play a moment, then save" });
+    await mirrorSave(meta);
+    app.Logger.LogInformation("Arcade quicksave for user {User} game {Game}", u, g);
+    return Results.Json(new { ok = true, slot = meta.SlotId, label = meta.Label });
+});
+
 // In-room LOAD a snapshot WITHOUT restarting (arcade-saves-plan S3): swap the chosen slot's bytes into
 // the live mount, then the client sends t=107 to make the core restore it. Owner-only.
 app.MapPost("/w-load/{token}", async (HttpContext ctx, string token) =>
@@ -274,7 +298,8 @@ app.MapPost("/w-load/{token}", async (HttpContext ctx, string token) =>
     if (saveStore == null) return Results.NotFound();
     if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null) return Results.Forbid();
     var id = p.CloudRetroRoomId ?? "";
-    if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out _, out _) || u != p.UserId || g != p.GameId)
+    // Any player of this room may load (see /w-quick) — the emulator, and so the state, is shared.
+    if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out _, out _) || g != p.GameId)
         return Results.BadRequest();
     int slot = 0;
     try { var b = await ctx.Request.ReadFromJsonAsync<Dictionary<string, int>>(ctx.RequestAborted); b?.TryGetValue("slot", out slot); } catch { }
