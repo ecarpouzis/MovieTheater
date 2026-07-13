@@ -1832,7 +1832,7 @@ index 42e8a10..a2d3960 100644
 +}
 diff --git a/pkg/os/os_tree_test.go b/pkg/os/os_tree_test.go
 new file mode 100644
-index 0000000..1e83908
+index 0000000..55854fb
 --- /dev/null
 +++ b/pkg/os/os_tree_test.go
 @@ -0,0 +1,292 @@
@@ -1886,14 +1886,14 @@ index 0000000..1e83908
 +// (and overwrite) player A's characters.
 +func TestReplaceTreeLeavesNothingBehind(t *testing.T) {
 +	src, dst := t.TempDir(), t.TempDir()
-+	write(t, filepath.Join(src, "Card A", "kristen.gci"), "kristen")
++	write(t, filepath.Join(src, "Card A", "player-b.gci"), "player-b-save")
 +	write(t, filepath.Join(dst, "Card A", "eric.gci"), "eric")
 +	write(t, filepath.Join(dst, "stray.bin"), "stray")
 +
 +	if err := ReplaceTree(src, dst); err != nil {
 +		t.Fatal(err)
 +	}
-+	if got := read(t, filepath.Join(dst, "Card A", "kristen.gci")); got != "kristen" {
++	if got := read(t, filepath.Join(dst, "Card A", "player-b.gci")); got != "player-b-save" {
 +		t.Fatalf("card not seeded: %q", got)
 +	}
 +	if Exists(filepath.Join(dst, "Card A", "eric.gci")) {

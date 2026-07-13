@@ -46,7 +46,7 @@ library:
 emulator:
   # autosave RE-ENABLED 2026-07-12. Without it the ONLY write to disk is a graceful room close, so a
   # killed or crashed worker loses the whole session — that is not theoretical: a worker restart mid-race
-  # cost Kristen ~18 min of Diddy Kong (all three re-boots logged "Arcade save none (fresh)"), and the
+  # cost a player ~18 min of a race game (all three re-boots logged "Arcade save none (fresh)"), and the
   # known exit-139/exit-1 teardowns would do the same to any player. Autosave gives the gateway a recent
   # <roomId>.dat to harvest into the vault even when the process dies without a goodbye.
   #
