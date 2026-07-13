@@ -40,7 +40,11 @@ param(
     #   -WorkerExe D:\ArcadeStorage\worker-capture\bin\worker.exe
     # (that bin dir also holds vigemclient.dll, next to worker.exe). Retro workers use the defaults.
     [string]$Zone            = "main",
-    [string]$ConfDir         = "",  # "" => run script default (worker-gl)
+    # "" => per-worker default below. Each retro worker MUST have its OWN ConfDir: the cores write
+    # their virtual MEMORY CARDS into it (Dolphin under libretro\legacy_save, PCSX2 under
+    # libretro\system), and the worker seeds/harvests those per user (patch 0039). Two workers sharing
+    # a ConfDir would seed and harvest each other's cards — i.e. hand one player another's saves.
+    [string]$ConfDir         = "",
     [string]$LibraryBasePath = "",  # "" => run script default (roms)
     [string]$WorkerExe       = ""   # "" => run script default
 )
@@ -62,6 +66,11 @@ $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interac
 # Optional passthroughs (capture worker). Empty = the run script's own defaults (retro worker-gl).
 $extra = ""
 if ($Zone)            { $extra += " -Zone $Zone" }
+# Per-worker ConfDir (see the param note): worker 1 keeps the historical dir, worker N gets its own.
+# NEVER let two retro workers land on the same one.
+if (-not $ConfDir -and $Zone -eq "main") {
+    $ConfDir = if ($WorkerId -le 1) { "D:\ArcadeStorage\worker-gl" } else { "D:\ArcadeStorage\worker-gl-$WorkerId" }
+}
 if ($ConfDir)         { $extra += " -ConfDir `"$ConfDir`"" }
 if ($LibraryBasePath) { $extra += " -LibraryBasePath `"$LibraryBasePath`"" }
 if ($WorkerExe)       { $extra += " -WorkerExe `"$WorkerExe`"" }

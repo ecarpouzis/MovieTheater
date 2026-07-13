@@ -1,0 +1,74 @@
+--- a/pkg/config/worker.go
++++ b/pkg/config/worker.go
+@@ -36,6 +36,12 @@
+ 	Width        int    // encode input width  (default 1920)
+ 	Height       int    // encode input height (default 1080)
+ 	Fps          int    // capture/encode fps  (default 60)
++	// VideoSource: "d3d11" (default) | "d3d12". d3d12 has HDR tonemapping that d3d11 lacks, but
++	// d3d12screencapturesrc CRASHES the worker whenever the captured app is FULLSCREEN (which every
++	// heavy title is) — an OOB std::vector index inside libgstd3d12, fatal because MSYS2 builds with
++	// _GLIBCXX_ASSERTIONS. Upstream MR 7293 fixes it; MSYS2's newest (1.28.4) still reproduces.
++	// Keep d3d11 until GStreamer ships the fix. See startVideoPipeline.
++	VideoSource  string
+ 	AudioScope   string // "process" (PID-scoped loopback) | "system" (whole endpoint)
+ 	// Per-app audio isolation to a virtual sink (VB-CABLE): route ONLY the launched game's audio to
+ 	// a virtual device so it doesn't blast the host speakers, then capture from that device. Routing
+--- a/pkg/worker/caged/capture/pipeline.go
++++ b/pkg/worker/caged/capture/pipeline.go
+@@ -45,19 +45,43 @@
+ 		a.releaseVideo() // defensive: a prior room should have released it at Close
+ 	}
+ 
+-	// d3d12screencapturesrc (NOT d3d11): it has built-in HDR handling the d3d11 element lacks — when
+-	// the desktop is in HDR mode it tonemaps to correct SDR (tonemap=reinhard preserves highlights);
+-	// when SDR it passes through. This makes the lane color-correct in ALL display states (plan §11
+-	// Tier 1). ⚠ Constrain format+framerate AFTER d3d12convert — putting them on the src caps fails
+-	// negotiation (not-negotiated). Rest of the path (limited-range encode downstream) is unchanged.
+-	launch := fmt.Sprintf(
+-		"d3d12screencapturesrc name=cap_src monitor-handle=%d show-cursor=false tonemap=reinhard "+
+-			"! d3d12convert "+
+-			"! video/x-raw(memory:D3D12Memory),format=BGRA,width=%d,height=%d,framerate=%d/1 "+
+-			"! d3d12download "+
+-			"! queue max-size-buffers=2 leaky=downstream "+
+-			"! appsink name=cap_sink sync=false max-buffers=2 drop=true",
+-		a.hmonitor, a.width(), a.height(), a.fps())
++	// ⚠ d3d12screencapturesrc CRASHES THE WORKER when the captured app goes FULLSCREEN — which every
++	// heavy title does (yuzu launches with -f). An out-of-bounds std::vector index inside libgstd3d12
++	// trips libstdc++'s bounds assertion (MSYS2 builds with _GLIBCXX_ASSERTIONS, so what would be a
++	// silent overread elsewhere is an abort() here) and the process dies with 0xC0000409 ~10-30s in,
++	// every time. Confirmed by gdb backtrace (abort <- libstdc++ <- libgstd3d12) and by upstream:
++	// https://discourse.gstreamer.org/t/d3d12screencapturesrc-hangs-crash-when-using-a-full-screen-app/2088
++	// Fixed upstream in MR 7293, but MSYS2's newest (1.28.4) still reproduces it — so d3d11 it is.
++	// The upstream thread's own advice is the same: use d3d11screencapturesrc.
++	//
++	// What d3d11 costs us: d3d12screencapturesrc has built-in HDR tonemapping (tonemap=reinhard) that
++	// d3d11 lacks, so if the game PC's desktop is switched to HDR the stream will look washed out
++	// (plan §11 Tier 1). It's correct on an SDR desktop, which is what Ziggy runs. Flip videoSource
++	// back to "d3d12" once GStreamer ships the fix.
++	//
++	// ⚠ Constrain format+framerate AFTER the convert — putting them on the src caps fails negotiation
++	// (not-negotiated). Rest of the path (limited-range encode downstream) is unchanged.
++	var launch string
++	if a.conf.VideoSource == "d3d12" {
++		launch = fmt.Sprintf(
++			"d3d12screencapturesrc name=cap_src monitor-handle=%d show-cursor=false tonemap=reinhard "+
++				"! d3d12convert "+
++				"! video/x-raw(memory:D3D12Memory),format=BGRA,width=%d,height=%d,framerate=%d/1 "+
++				"! d3d12download "+
++				"! queue max-size-buffers=2 leaky=downstream "+
++				"! appsink name=cap_sink sync=false max-buffers=2 drop=true",
++			a.hmonitor, a.width(), a.height(), a.fps())
++	} else {
++		launch = fmt.Sprintf(
++			"d3d11screencapturesrc name=cap_src monitor-handle=%d show-cursor=false "+
++				"! d3d11convert "+
++				"! video/x-raw(memory:D3D11Memory),format=BGRA,width=%d,height=%d,framerate=%d/1 "+
++				"! d3d11download "+
++				"! queue max-size-buffers=2 leaky=downstream "+
++				"! appsink name=cap_sink sync=false max-buffers=2 drop=true",
++			a.hmonitor, a.width(), a.height(), a.fps())
++	}
++	a.log.Info().Msgf("capture: video source %v", map[bool]string{true: "d3d12", false: "d3d11"}[a.conf.VideoSource == "d3d12"])
+ 
+ 	pipe, err := gst.NewPipelineFromString(launch)
+ 	if err != nil {

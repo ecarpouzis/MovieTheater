@@ -23,11 +23,21 @@
 .PARAMETER LogFile      Per-worker log. MUST be distinct per worker or the rotation below races.
 
 .NOTES
-    Multiple workers share one ConfDir by design (same tuned core list, same BIOS junction, same
-    core cache) — the retired WSL pool shared its `cores` volume across 3 workers the same way.
-    Saves are keyed by room id, so a shared storage dir is safe. The one caveat: when a NEW core is
-    added, two workers may race to download it into ./assets/cores on first boot; stagger their
-    starts (or pre-warm the core once) if you ever add one.
+    EACH RETRO WORKER NEEDS ITS OWN ConfDir (worker-gl, worker-gl-2, ...). Workers used to share one
+    — same core list, same BIOS junction, same cache — which was fine while everything persistent was
+    keyed by room id. It stopped being fine with per-user memory cards (patch 0039): the cores write
+    their cards INTO the ConfDir (Dolphin under libretro\legacy_save\User\GC, PCSX2 under
+    libretro\system\pcsx2\memcards), and the worker seeds the room owner's card there on boot and
+    harvests it on close. Two workers sharing that directory would seed and harvest each other's
+    cards — one player's characters handed to another, or overwritten.
+
+    Consequently libretro\system is a REAL per-worker copy of D:\ArcadeStorage\bios, not a junction
+    to it (PCSX2 writes its cards into the system dir, so a shared junction is a shared card).
+    D:\ArcadeStorage\bios stays the pristine master to copy from.
+
+    Still shared and safe: the ROM library (read-only) and emulator.storage (save-states, keyed by
+    room id). Cost of the split is ~280 MB per worker (cores + BIOS) and each worker builds its own
+    shader cache.
 #>
 param(
     [string]$WorkerExe   = "D:\Arcade\build\cloud-game-gl\bin\worker.exe",

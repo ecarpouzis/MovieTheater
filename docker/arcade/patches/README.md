@@ -639,3 +639,58 @@ on foreign bytes; our job is not to hand them over. It now checks the save again
 > GameCube save — caught only by testing the restore live. A foreign core is wrong by MULTIPLES
 > (PCSX2 wants 50,599,322 for that same state, 2.4x; a PS2 state offered to Dolphin is 0.45x), so
 > the ratio is bounded to 0.5x–2x. Refusing costs only the resume; the vault copy is untouched.
+
+## 0039-per-user-memory-cards.patch
+
+**What:** virtual MEMORY CARDS become per-user, like every other save.
+
+A card is the one save class libretro never exposes: PCSX2 and Dolphin write theirs into their own
+directories, so a card was ONE file shared by every player, outside the save vault and unbacked. For
+some games the card IS the progress — Gauntlet Dark Legacy keeps its named characters on the
+GameCube card, not in the save-state — so a player's characters were visible to (and deletable by)
+everyone, and would die with the directory.
+
+The WORKER does the seed/harvest, not the gateway: the COORDINATOR chooses which worker serves a
+room, so the gateway can never know whose card directory is in play. The worker knows its own dirs
+and runs exactly one room at a time. It parses the owner out of the room id (`ArcadeSaveId`), seeds
+that user's card before `retro_load_game`, and harvests it back AFTER `Shutdown` (the core flushes
+the card as it closes — harvest earlier and you vault a stale one).
+
+- **Each GL worker now needs its OWN ConfDir** (`worker-gl`, `worker-gl-2`, …). Two workers sharing
+  one would seed and harvest each other's cards — one player's characters handed to another. And
+  `libretro\system` must be a REAL per-worker copy of the BIOS dir, **not a junction to the shared
+  one**: PCSX2 writes its cards into the system dir, so a shared junction is a shared card.
+  `register-arcade-glworker-task.ps1` now derives the ConfDir per worker so a re-register can't
+  silently re-merge them.
+- Config: `emulator.cardVault` + `emulator.cards` (`"<save|system>:<relpath>"`). **Only the card
+  subtree moves.** The save dir also holds Dolphin's ~850 MB of shader caches — shared, disposable,
+  and regenerating them per session (or vaulting them) would be absurd. That is why `uniqueSaveDir`,
+  which scopes the WHOLE save dir, is the wrong tool here.
+- A `.owner` stamp in the card dir recovers the previous player's card if a worker DIED without
+  harvesting (the known teardown crash) — never clear one player's progress to make room for another.
+- A user with no vault entry gets a FRESH card, not whatever the last player left behind. Existing
+  shared cards are migrated into each player's vault out of band before first use, so nobody starts
+  empty. Cards are backed up daily (`scripts/backup-arcade-memcards.ps1`).
+
+## 0040-capture-d3d11-screen-source.patch
+
+**What:** the capture lane's screen source moves from `d3d12screencapturesrc` to
+`d3d11screencapturesrc` (config: `capture.videoSource`).
+
+**Why:** `d3d12screencapturesrc` CRASHES THE WORKER whenever the captured app goes FULLSCREEN —
+which every heavy title does (yuzu launches with `-f`). An out-of-bounds `std::vector<unsigned char>`
+index inside `libgstd3d12` trips libstdc++'s bounds assertion and `abort()`s the process
+(`0xC0000409`) 10–30 s into every session; Kirby never survived past 30 s. It is fatal rather than a
+silent overread only because MSYS2 builds GStreamer with `_GLIBCXX_ASSERTIONS`.
+
+> **Log adjacency lied twice here.** The last line before every abort was GStreamer's audio loopback
+> (`fill_loopback_silence: Padding size 1056 is larger than or equal to buffer size 1056`) — a
+> genuinely broken-looking message from the chattiest thread. Disabling the loopback path removed the
+> message and the crash stayed. Only a gdb backtrace settled it: `abort ← libstdc++ ← libgstd3d12`.
+> **Install gdb (`pacman -S mingw-w64-ucrt-x86_64-gdb`) and get a stack; don't infer from the tail of
+> a log.**
+
+Known upstream (fixed in MR 7293), but MSYS2's newest — 1.28.4 — still reproduces:
+https://discourse.gstreamer.org/t/d3d12screencapturesrc-hangs-crash-when-using-a-full-screen-app/2088
+Cost of d3d11: it lacks d3d12's HDR tonemapping (`tonemap=reinhard`), so an HDR desktop would look
+washed out. Ziggy's desktop is SDR. Flip `videoSource` back to `d3d12` on a GStreamer bump.

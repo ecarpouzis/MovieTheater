@@ -20,20 +20,18 @@
 .PARAMETER KeepDays   Delete snapshot FOLDERS older than this. Only ever prunes this backup root.
 #>
 param(
-    [string]$WorkerDir = "D:\ArcadeStorage\worker-gl",
+    [string]$CardVault = "D:\ArcadeStorage\cards",
     [string]$BackupDir = "D:\ArcadeStorage\backup\memcards",
     [int]$KeepDays     = 30
 )
 
 $ErrorActionPreference = "Stop"
 
-# Where each core keeps its card. Add a line when a new memory-card system goes live.
-$sources = @(
-    # Dolphin: a DIRECTORY of .gci files per region (GameCube). This is Gauntlet's characters.
-    (Join-Path $WorkerDir "libretro\legacy_save\User\GC"),
-    # PCSX2: Mcd001.ps2 / Mcd002.ps2 (8 MB card images).
-    (Join-Path $WorkerDir "libretro\system\pcsx2\memcards")
-)
+# Since patch 0039 the cards are VAULTED PER USER at <CardVault>\<userId>\<system>\ — the worker
+# seeds the room owner's card in on boot and harvests it back on close. That vault is now the
+# authoritative copy (the per-worker ConfDir dirs hold only whichever card is currently loaded), so
+# it is what gets backed up. Cards still live outside the DB-backed save vault, hence this.
+$sources = @($CardVault)
 
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $dest  = Join-Path $BackupDir $stamp

@@ -77,14 +77,30 @@ function WorkerLogPath([int]$port) {
 }
 
 # The LAST "New room" id in a worker's log (checks the rotated .1 file as fallback).
-# Captures the id from:  New room ... room="sv-1-24-0-nes___Super Mario Bros. 3"
-$roomRx = 'New room.*room="([^"]+)"'
+# Captures the id from BOTH shapes the logger emits:
+#   room="sv-1-24-0-nes___Super Mario Bros. 3"      <- quoted, because the id contains spaces
+#   room=sv-1-61329-0-capture___switch-kirby-...    <- UNQUOTED: zerolog only quotes when it must
+# The quoted-only regex was a silent hole: CAPTURE room ids never contain spaces, so they never
+# matched, every cycle logged "busy room not found in any worker log (skip)", and check C could not
+# see the capture worker at all. It sat wedged holding its one room for a DAY (2026-07-11 -> 07-12)
+# while the watchdog "ran" — and a wedged capture worker looks exactly like "the arcade is full".
+#
+# ⚠ The worker log is COLORIZED: zerolog writes an ANSI escape between `room=` and the value, so a
+# pattern anchored on the literal `room="` matches NOTHING — check C was dead for EVERY worker, not
+# just capture. Strip the escapes first, then accept either shape.
+$roomRx = 'New room.*room=(?:"([^"]+)"|(\S+))'
+$ansiRx = "$([char]27)\[[0-9;]*m"
 function LastRoomInLog([string]$path) {
     foreach ($f in @($path, "$path.1")) {
         if (-not (Test-Path $f)) { continue }
         $m = Get-Content $f -Tail 20000 -ErrorAction SilentlyContinue |
+            ForEach-Object { $_ -replace $ansiRx, '' } |
             Select-String -Pattern $roomRx | Select-Object -Last 1
-        if ($m) { return $m.Matches[0].Groups[1].Value }
+        if ($m) {
+            $g = $m.Matches[0].Groups
+            if ($g[1].Success) { return $g[1].Value }
+            return $g[2].Value
+        }
     }
     return $null
 }

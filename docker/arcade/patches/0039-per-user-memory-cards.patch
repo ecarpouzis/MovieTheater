@@ -1,0 +1,380 @@
+--- a/pkg/config/emulator.go
++++ b/pkg/config/emulator.go
+@@ -17,6 +17,26 @@
+ 	AutosaveSec      int
+ 	SkipLateFrames   bool
+ 	LogDroppedFrames bool
++
++	// CardVault is the root under which each user's VIRTUAL MEMORY CARDS are kept:
++	// <CardVault>/<userId>/<system>/. Empty = the feature is off (cards stay shared, as before).
++	//
++	// Memory cards are the one save class libretro does not expose: the disc-era cores write them
++	// into their own directories, so a card is a single file shared by every player, outside the
++	// per-user vault — and for some games the card IS the progress (Gauntlet Dark Legacy keeps its
++	// named characters on the GameCube card, not in the save-state). The worker is the only piece
++	// that can move them: it alone knows which card directory it owns (the coordinator, not the
++	// gateway, chooses the worker), and it runs exactly one room at a time.
++	CardVault string
++	// Cards maps the SITE's system code (as carried in the room id) to that core's card location,
++	// written "<root>:<relative path>" where root is `save` (the libretro save dir) or `system`
++	// (the libretro system dir). Only the CARD subtree is moved — the save dir also holds Dolphin's
++	// shader caches (~850 MB here), which are shared, disposable, and must never be vaulted.
++	//
++	//   cards:
++	//     gc:  "save:User/GC"
++	//     ps2: "system:pcsx2/memcards"
++	Cards map[string]string
+ }
+ 
+ type LibretroConfig struct {
+--- a/pkg/os/os.go
++++ b/pkg/os/os.go
+@@ -9,6 +9,7 @@
+ 	"os"
+ 	"os/signal"
+ 	"os/user"
++	"path/filepath"
+ 	"syscall"
+ )
+ 
+@@ -123,3 +124,55 @@
+ func RemoveAll(path string) error {
+ 	return os.RemoveAll(path)
+ }
++
++// ── Directory trees (MovieTheater patch 0039: per-user memory cards) ─────────────────────────────
++
++// CopyTree copies every FILE under src into dst, creating dst. It merges into whatever is already
++// there and never deletes — the destination here is a player's save vault, so a bug must not be
++// able to erase it.
++func CopyTree(src, dst string) error {
++	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
++		if err != nil {
++			return err
++		}
++		rel, err := filepath.Rel(src, path)
++		if err != nil {
++			return err
++		}
++		target := filepath.Join(dst, rel)
++		if d.IsDir() {
++			return MakeDirAll(target)
++		}
++		if err := MakeDirAll(filepath.Dir(target)); err != nil {
++			return err
++		}
++		return CopyFile(path, target)
++	})
++}
++
++// ClearDir empties dir (leaving dir itself), creating it if absent.
++func ClearDir(dir string) error {
++	if !Exists(dir) {
++		return MakeDirAll(dir)
++	}
++	entries, err := os.ReadDir(dir)
++	if err != nil {
++		return err
++	}
++	for _, e := range entries {
++		if err := os.RemoveAll(filepath.Join(dir, e.Name())); err != nil {
++			return err
++		}
++	}
++	return nil
++}
++
++// ReplaceTree makes dst hold exactly what src holds. Unlike CopyTree it CLEARS dst first, so a card
++// seeded for one user can't leave another user's files behind — the caller must have vaulted
++// anything in dst that still matters.
++func ReplaceTree(src, dst string) error {
++	if err := ClearDir(dst); err != nil {
++		return err
++	}
++	return CopyTree(src, dst)
++}
+--- a/pkg/os/os_tree_test.go
++++ b/pkg/os/os_tree_test.go
+@@ -0,0 +1,76 @@
++package os
++
++import (
++	"os"
++	"path/filepath"
++	"testing"
++)
++
++func write(t *testing.T, path, body string) {
++	t.Helper()
++	if err := MakeDirAll(filepath.Dir(path)); err != nil {
++		t.Fatal(err)
++	}
++	if err := os.WriteFile(path, []byte(body), 0644); err != nil {
++		t.Fatal(err)
++	}
++}
++
++func read(t *testing.T, path string) string {
++	t.Helper()
++	b, err := os.ReadFile(path)
++	if err != nil {
++		return ""
++	}
++	return string(b)
++}
++
++// A player's card vault must never be emptied by a copy — CopyTree merges, so a bug upstream can
++// destroy a session's worth of progress at worst, not a whole card.
++func TestCopyTreeMergesAndNeverDeletes(t *testing.T) {
++	src, dst := t.TempDir(), t.TempDir()
++	write(t, filepath.Join(src, "Card A", "gauntlet.gci"), "characters")
++	write(t, filepath.Join(dst, "Card A", "older.gci"), "keep me")
++
++	if err := CopyTree(src, dst); err != nil {
++		t.Fatal(err)
++	}
++	if got := read(t, filepath.Join(dst, "Card A", "gauntlet.gci")); got != "characters" {
++		t.Fatalf("new file not copied: %q", got)
++	}
++	if got := read(t, filepath.Join(dst, "Card A", "older.gci")); got != "keep me" {
++		t.Fatalf("CopyTree deleted an existing vault file: %q", got)
++	}
++}
++
++// Seeding one user's card must leave NOTHING of the previous user's behind, or player B would see
++// (and overwrite) player A's characters.
++func TestReplaceTreeLeavesNothingBehind(t *testing.T) {
++	src, dst := t.TempDir(), t.TempDir()
++	write(t, filepath.Join(src, "Card A", "kristen.gci"), "kristen")
++	write(t, filepath.Join(dst, "Card A", "eric.gci"), "eric")
++	write(t, filepath.Join(dst, "stray.bin"), "stray")
++
++	if err := ReplaceTree(src, dst); err != nil {
++		t.Fatal(err)
++	}
++	if got := read(t, filepath.Join(dst, "Card A", "kristen.gci")); got != "kristen" {
++		t.Fatalf("card not seeded: %q", got)
++	}
++	if Exists(filepath.Join(dst, "Card A", "eric.gci")) {
++		t.Fatal("previous user's card survived the seed")
++	}
++	if Exists(filepath.Join(dst, "stray.bin")) {
++		t.Fatal("stray file survived the seed")
++	}
++}
++
++func TestClearDirCreatesWhenAbsent(t *testing.T) {
++	dir := filepath.Join(t.TempDir(), "not-there")
++	if err := ClearDir(dir); err != nil {
++		t.Fatal(err)
++	}
++	if !Exists(dir) {
++		t.Fatal("ClearDir should create a missing dir")
++	}
++}
+--- a/pkg/worker/caged/libretro/frontend.go
++++ b/pkg/worker/caged/libretro/frontend.go
+@@ -317,6 +317,9 @@
+ 		}
+ 		f.mui.Unlock()
+ 		f.Shutdown()
++		// AFTER Shutdown: the core flushes its memory card as it closes, so harvesting any earlier
++		// vaults a stale card (patch 0039).
++		f.harvestCards()
+ 		close(f.doneEvt)
+ 	}()
+ 
+@@ -385,13 +388,39 @@
+ 	var audioFrames int64       // cumulative audio frames produced (the audio clock)
+ 	floorNext := os.Nanotime()  // earliest allowed time for the next tick (max-rate floor)
+ 
++	// pace-diag (TEMPORARY, F-Zero audio hunt 2026-07-09): every 5s, log what the emulator actually
++	// produced — ticks/s, audio frames/s (should track the core's sample rate), the worst single
++	// retro_run of the window, and how many ticks blew a 20ms budget. Steady audio/s while the
++	// player hears gaps = the problem is DOWNSTREAM of the emulator (encode/network/client).
++	diagWindow := os.Nanotime()
++	var diagTicks, diagSlow int64
++	var diagAudioBase int64
++	var diagMaxTickNs int64
++
+ 	for {
+ 		select {
+ 		case <-f.done:
+ 			return
+ 		default:
++			tick0 := os.Nanotime()
+ 			f.Tick()
++			tickDur := os.Nanotime() - tick0
+ 			audioFrames += f.nano.TakeAudioFrames()
++			diagTicks++
++			if tickDur > diagMaxTickNs {
++				diagMaxTickNs = tickDur
++			}
++			if tickDur > 20*1e6 {
++				diagSlow++
++			}
++			if now := os.Nanotime(); now-diagWindow >= 5*1e9 {
++				winSec := float64(now-diagWindow) / 1e9
++				f.log.Info().Msgf("pace-diag: ticks/s=%.1f audio/s=%.0f maxTick=%.1fms slowTicks(>20ms)=%d",
++					float64(diagTicks)/winSec, float64(audioFrames-diagAudioBase)/winSec,
++					float64(diagMaxTickNs)/1e6, diagSlow)
++				diagWindow, diagTicks, diagSlow, diagMaxTickNs = now, 0, 0, 0
++				diagAudioBase = audioFrames
++			}
+ 
+ 			// Track mid-run fps changes (SET_SYSTEM_AV_INFO) so the floor follows the core's fps.
+ 			if fps := f.nano.VideoFramerate(); fps > 0 {
+@@ -455,9 +484,143 @@
+ 	if f.UniqueSaveDir {
+ 		f.copyFsMaybe(path)
+ 	}
++	f.seedCards()
+ 	return f.nano.LoadGame(path)
+ }
+ 
++// ── Per-user virtual memory cards (MovieTheater patch 0039) ──────────────────────────────────────
++//
++// A memory card is the one save class libretro never exposes: PCSX2 and Dolphin write theirs into
++// their own directories, so a card is ONE file shared by every player — outside the per-user vault,
++// with no backup. For some games that card IS the progress: Gauntlet Dark Legacy keeps its named
++// characters on the GameCube card, not in the save-state, so a player's characters were visible to
++// (and deletable by) everyone, and would vanish with the directory.
++//
++// The worker has to be the one to move them. The gateway can't: the COORDINATOR picks which worker
++// serves a room, so the gateway never knows whose card directory is in play. The worker knows its
++// own dirs and runs exactly one room at a time — which is also why each worker now needs its OWN
++// ConfDir (two workers sharing one would seed and harvest each other's cards).
++//
++// Only the CARD subtree moves. The save dir also holds Dolphin's shader caches (~850 MB), which are
++// shared, disposable, and regenerate — vaulting those per session would be absurd.
++
++// cardOwner parses the room id the site mints (sv-<user>-<game>-<slot>-<system>___<key>, ArcadeSaveId).
++// Returns ok=false for a stock random room id, which correctly means "no owner, leave cards alone".
++func cardOwner(roomId string) (user string, system string, ok bool) {
++	if !strings.HasPrefix(roomId, "sv-") {
++		return "", "", false
++	}
++	sep := strings.Index(roomId, "___")
++	if sep < 0 {
++		return "", "", false
++	}
++	parts := strings.SplitN(roomId[len("sv-"):sep], "-", 4)
++	if len(parts) != 4 || parts[0] == "" || parts[3] == "" {
++		return "", "", false
++	}
++	return parts[0], parts[3], true
++}
++
++// cardDir resolves the configured card directory for a system, e.g. "save:User/GC" ->
++// <saveDir>/User/GC. Empty when this system has no card (most cores) or the feature is off.
++func (f *Frontend) cardDir(system string) string {
++	if f.conf.CardVault == "" {
++		return ""
++	}
++	spec, ok := f.conf.Cards[system]
++	if !ok {
++		return ""
++	}
++	root, rel, found := strings.Cut(spec, ":")
++	if !found {
++		f.log.Error().Msgf("cards: bad spec for %v: %q (want \"save:<path>\" or \"system:<path>\")", system, spec)
++		return ""
++	}
++	switch root {
++	case "save":
++		return filepath.Join(f.nano.SaveDir(), filepath.FromSlash(rel))
++	case "system":
++		return filepath.Join(f.nano.SystemDir(), filepath.FromSlash(rel))
++	default:
++		f.log.Error().Msgf("cards: unknown root %q for %v", root, system)
++		return ""
++	}
++}
++
++func (f *Frontend) vaultDir(user, system string) string {
++	return filepath.Join(f.conf.CardVault, user, system)
++}
++
++// ownerFile records who the card currently in the worker's directory belongs to, so that a worker
++// that DIED without harvesting (the exit-139 teardown, a kill) can still have that player's card
++// recovered on the next room rather than cleared out from under them.
++const cardOwnerFile = ".owner"
++
++// seedCards puts THIS room owner's card in place before the core loads the game.
++func (f *Frontend) seedCards() {
++	user, system, ok := cardOwner(f.storage.MainPath())
++	if !ok {
++		return
++	}
++	dir := f.cardDir(system)
++	if dir == "" {
++		return
++	}
++
++	// Whoever used this directory last may never have been harvested (a killed worker skips the
++	// close path entirely). Recover their card before touching it — never clear another player's
++	// progress to make room for this one.
++	if prev, err := os.ReadFile(filepath.Join(dir, cardOwnerFile)); err == nil {
++		if p := strings.TrimSpace(string(prev)); p != "" && p != user {
++			if err := os.CopyTree(dir, f.vaultDir(p, system)); err != nil {
++				f.log.Error().Err(err).Msgf("cards: could not recover user %v's %v card", p, system)
++			} else {
++				f.log.Info().Msgf("cards: recovered an unharvested %v card for user %v", system, p)
++			}
++		}
++	}
++
++	vault := f.vaultDir(user, system)
++	if !os.Exists(vault) {
++		// First time this user plays this system. Their card starts EMPTY rather than inheriting
++		// whatever the previous player left behind — a fresh card, like a new console.
++		// (Existing shared cards are migrated into each user's vault out of band; see the skill.)
++		if err := os.ClearDir(dir); err != nil {
++			f.log.Error().Err(err).Msgf("cards: could not clear the %v card dir", system)
++			return
++		}
++		f.log.Info().Msgf("cards: fresh %v card for user %v", system, user)
++	} else if err := os.ReplaceTree(vault, dir); err != nil {
++		f.log.Error().Err(err).Msgf("cards: could not seed user %v's %v card", user, system)
++		return
++	} else {
++		f.log.Info().Msgf("cards: seeded user %v's %v card", user, system)
++	}
++
++	_ = os.MakeDirAll(dir)
++	if err := os.WriteFile(filepath.Join(dir, cardOwnerFile), []byte(user), 0644); err != nil {
++		f.log.Error().Err(err).Msg("cards: could not stamp the card owner")
++	}
++}
++
++// harvestCards copies the room owner's card back to their vault. Call it AFTER Shutdown — the core
++// flushes the card as it closes, so harvesting earlier can vault a stale one.
++func (f *Frontend) harvestCards() {
++	user, system, ok := cardOwner(f.storage.MainPath())
++	if !ok {
++		return
++	}
++	dir := f.cardDir(system)
++	if dir == "" || !os.Exists(dir) {
++		return
++	}
++	if err := os.CopyTree(dir, f.vaultDir(user, system)); err != nil {
++		f.log.Error().Err(err).Msgf("cards: could not harvest user %v's %v card", user, system)
++		return
++	}
++	f.log.Info().Msgf("cards: harvested user %v's %v card", user, system)
++}
++
+ func (f *Frontend) AspectRatio() float32          { return f.nano.AspectRatio() }
+ func (f *Frontend) AudioSampleRate() int          { return f.nano.AudioSampleRate() }
+ func (f *Frontend) FPS() float64                  { return f.nano.VideoFramerate() }
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+@@ -174,6 +174,7 @@
+ func (n *Nanoarch) SetLogger(log *logger.Logger)     { n.log = log }
+ func (n *Nanoarch) SetVideoDebounce(t time.Duration) { n.limiter = NewLimit(t) }
+ func (n *Nanoarch) SaveDir() string                  { return C.GoString(n.cSaveDirectory) }
++func (n *Nanoarch) SystemDir() string                { return C.GoString(n.cSystemDirectory) }
+ // SetRoomCheats stages one room's cheats for the next LoadGame, which consumes and clears them.
+ // Passing nils is meaningful: it wipes whatever the previous room on this worker staged.
+ func (n *Nanoarch) SetRoomCheats(opts map[string]string, codes []string) {

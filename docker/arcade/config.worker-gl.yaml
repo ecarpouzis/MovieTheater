@@ -61,6 +61,25 @@ emulator:
   # can never touch a player's Save, which lives in the reserved quicksave slot (SaveStore.QuickSlot).
   autosaveSec: 120
   storage: "D:/ArcadeStorage/saves"    # overridable via CLOUD_GAME_EMULATOR_STORAGE
+
+  # Per-user VIRTUAL MEMORY CARDS (patch 0039). A card is the one save class libretro never exposes —
+  # PCSX2 and Dolphin write theirs into their own dirs — so until now it was ONE file shared by every
+  # player, outside the save vault and unbacked. For some games the card IS the progress: Gauntlet
+  # Dark Legacy keeps its named characters on the GameCube card, not in the save-state.
+  #
+  # The worker does the seed/harvest because only it knows which card dir is in play (the COORDINATOR
+  # picks the worker, so the gateway can't know) and it runs one room at a time. That is why each GL
+  # worker now has its OWN ConfDir — two workers sharing one would seed and harvest each other's cards.
+  #
+  # Paths are "<root>:<relpath>", root = save (libretro save dir) or system (libretro system dir).
+  # ONLY the card subtree moves: the save dir also holds Dolphin's ~850 MB of shader caches, which are
+  # shared, disposable, and must never be vaulted.
+  cardVault: "D:/ArcadeStorage/cards"   # <vault>/<userId>/<system>/
+  cards:
+    gc:  "save:User/GC"                 # Dolphin: <region>/Card A/*.gci
+    ps2: "system:pcsx2/memcards"        # PCSX2: Mcd001.ps2 / Mcd002.ps2
+    # dc/psp also keep progress outside save-states (VMU / memstick) — not wired yet; they need the
+    # same treatment and the same per-worker isolation.
   libretro:
     saveCompression: false
     cores:

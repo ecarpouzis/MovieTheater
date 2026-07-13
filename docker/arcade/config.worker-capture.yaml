@@ -62,7 +62,20 @@ capture:
   # game's audio (by PID — session-scoped, reverts when it exits) to "CABLE Input", capture from
   # "CABLE Output". Leave audioSink empty to fall back to loopback on the host's default device.
   audioSink: "CABLE Input"
-  audioCaptureDevice: "{0.0.1.00000000}.{4ac426e1-8464-4789-b503-d220fdd89cd3}"
+  # LOOPBACK-tap CABLE Input (RENDER id {0.0.0.…}) — BEFORE the cable's internal 96kHz SRC + ~7168-
+  # sample transfer buffer that feeds CABLE Output ({0.0.1.…}). Saves ~75-150ms of audio lag (§12A).
+  audioCaptureDevice: "{0.0.0.00000000}.{ceabe612-e9ce-404e-8be3-e5d660d90bfe}"
+  audioCaptureLoopback: true
+  # VIDEO SOURCE — d3d11, NOT d3d12. d3d12screencapturesrc CRASHES the worker the moment the captured
+  # app goes FULLSCREEN, which every heavy title does (yuzu launches with -f): an out-of-bounds
+  # std::vector index inside libgstd3d12, fatal because MSYS2 builds GStreamer with
+  # _GLIBCXX_ASSERTIONS (elsewhere it would be a silent overread). The worker died with
+  # 0xC0000409 ten to thirty seconds into EVERY Kirby session; proven by a gdb backtrace
+  # (abort <- libstdc++ <- libgstd3d12) and known upstream:
+  #   https://discourse.gstreamer.org/t/d3d12screencapturesrc-hangs-crash-when-using-a-full-screen-app/2088
+  # Upstream MR 7293 fixes it, but MSYS2's newest (1.28.4) still reproduces, so we use d3d11 --
+  # whose only loss is HDR tonemapping, which an SDR desktop does not need. Revisit on a gst bump.
+  videoSource: "d3d11"
   soundVolumeView: "D:/ArcadeStorage/worker-capture/bin/SoundVolumeView.exe"
 
 encoder:
