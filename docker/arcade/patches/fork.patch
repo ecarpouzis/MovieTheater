@@ -6076,13 +6076,405 @@ index 6974d59..4ce8a6f 100644
 +	}
 +}
 diff --git a/pkg/worker/caged/libretro/graphics/opengl.go b/pkg/worker/caged/libretro/graphics/opengl.go
-index 0c9d773..97f3940 100644
+index 0c9d773..41a9805 100644
 --- a/pkg/worker/caged/libretro/graphics/opengl.go
 +++ b/pkg/worker/caged/libretro/graphics/opengl.go
-@@ -58,12 +58,28 @@ static void gl_delete_rb(GPDELETERENDERBUFFERS f, GLsizei a, const GLuint *b) {
- static void gl_delete_tex(GPDELETETEXTURES f, GLsizei a, const GLuint *b) { f(a, b); }
- static void gl_read_pixels(GPREADPIXELS f, GLint a, GLint b, GLsizei c, GLsizei d, GLenum e, GLenum g, void *h) { f(a, b, c, d, e, g, h); }
- static void gl_pixel_storei(GPPIXELSTOREI f, GLenum a, GLint b) { f(a, b); }
+@@ -1,335 +1,379 @@
+-package graphics
+-
+-/*
+-#cgo windows LDFLAGS: -lopengl32
+-#cgo linux   LDFLAGS: -lGL
+-#cgo darwin  LDFLAGS: -framework OpenGL
+-
+-#include <stdint.h>
+-
+-#ifndef APIENTRY
+-#define APIENTRY
+-#endif
+-#ifndef APIENTRYP
+-#define APIENTRYP APIENTRY*
+-#endif
+-
+-typedef unsigned int   GLenum;
+-typedef int            GLint;
+-typedef unsigned int   GLuint;
+-typedef int            GLsizei;
+-typedef unsigned char  GLubyte;
+-
+-typedef const GLubyte *(APIENTRYP GPGETSTRING)(GLenum name);
+-typedef GLenum          (APIENTRYP GPCHECKFRAMEBUFFERSTATUS)(GLenum target);
+-typedef GLenum          (APIENTRYP GPGETERROR)();
+-typedef void            (APIENTRYP GPBINDFRAMEBUFFER)(GLenum target, GLuint framebuffer);
+-typedef void            (APIENTRYP GPBINDRENDERBUFFER)(GLenum target, GLuint renderbuffer);
+-typedef void            (APIENTRYP GPBINDTEXTURE)(GLenum target, GLuint texture);
+-typedef void            (APIENTRYP GPDELETEFRAMEBUFFERS)(GLsizei n, const GLuint *framebuffers);
+-typedef void            (APIENTRYP GPDELETERENDERBUFFERS)(GLsizei n, const GLuint *renderbuffers);
+-typedef void            (APIENTRYP GPDELETETEXTURES)(GLsizei n, const GLuint* textures);
+-typedef void            (APIENTRYP GPFRAMEBUFFERRENDERBUFFER)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+-typedef void            (APIENTRYP GPFRAMEBUFFERTEXTURE2D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+-typedef void            (APIENTRYP GPGENFRAMEBUFFERS)(GLsizei n, GLuint *fb);
+-typedef void            (APIENTRYP GPGENRENDERBUFFERS)(GLsizei n, GLuint *rb);
+-typedef void            (APIENTRYP GPGENTEXTURES)(GLsizei n, GLuint *tex);
+-typedef void            (APIENTRYP GPREADPIXELS)(GLint x, GLint y, GLsizei w, GLsizei h, GLenum f, GLenum t, void *p);
+-typedef void            (APIENTRYP GPRENDERBUFFERSTORAGE)(GLenum t, GLenum i, GLsizei w, GLsizei h);
+-typedef void            (APIENTRYP GPTEXIMAGE2D)(GLenum t, GLint l, GLint i, GLsizei w, GLsizei h, GLint b, GLenum f, GLenum x, const void *px);
+-typedef void            (APIENTRYP GPTEXPARAMETERI)(GLenum t, GLenum n, GLint p);
+-typedef void            (APIENTRYP GPPIXELSTOREI)(GLenum n, GLint p);
+-
+-// Generic C wrappers — one per signature pattern, called from Go via function pointers.
+-static const GLubyte *gl_get_string(GPGETSTRING f, GLenum a)              { return f(a); }
+-static GLenum          gl_get_error(GPGETERROR f)                        { return f(); }
+-static GLenum          gl_check_fb_status(GPCHECKFRAMEBUFFERSTATUS f, GLenum a) { return f(a); }
+-static void gl_1u32(GPGENTEXTURES f, GLsizei a, GLuint *b)       { f(a, b); }
+-static void gl_bind_tex(GPBINDTEXTURE f, GLenum a, GLuint b)         { f(a, b); }
+-static void gl_bind_fb(GPBINDFRAMEBUFFER f, GLenum a, GLuint b)   { f(a, b); }
+-static void gl_bind_rb(GPBINDRENDERBUFFER f, GLenum a, GLuint b)  { f(a, b); }
+-static void gl_tex_param(GPTEXPARAMETERI f, GLenum a, GLenum b, GLint c) { f(a, b, c); }
+-static void gl_tex_image(GPTEXIMAGE2D f, GLenum a, GLint b, GLint c, GLsizei d, GLsizei e, GLint g, GLenum h, GLenum i, const void *j) { f(a, b, c, d, e, g, h, i, j); }
+-static void gl_fb_tex2d(GPFRAMEBUFFERTEXTURE2D f, GLenum a, GLenum b, GLenum c, GLuint d, GLint e) { f(a, b, c, d, e); }
+-static void gl_fb_rb(GPFRAMEBUFFERRENDERBUFFER f, GLenum a, GLenum b, GLenum c, GLuint d) { f(a, b, c, d); }
+-static void gl_rb_storage(GPRENDERBUFFERSTORAGE f, GLenum a, GLenum b, GLsizei c, GLsizei d) { f(a, b, c, d); }
+-static void gl_delete_fb(GPDELETEFRAMEBUFFERS f, GLsizei a, const GLuint *b) { f(a, b); }
+-static void gl_delete_rb(GPDELETERENDERBUFFERS f, GLsizei a, const GLuint *b) { f(a, b); }
+-static void gl_delete_tex(GPDELETETEXTURES f, GLsizei a, const GLuint *b) { f(a, b); }
+-static void gl_read_pixels(GPREADPIXELS f, GLint a, GLint b, GLsizei c, GLsizei d, GLenum e, GLenum g, void *h) { f(a, b, c, d, e, g, h); }
+-static void gl_pixel_storei(GPPIXELSTOREI f, GLenum a, GLint b) { f(a, b); }
+-*/
+-import "C"
+-import (
+-	"errors"
+-	"fmt"
+-	"math"
+-	"unsafe"
+-)
+-
+-const (
+-	gl_VENDOR               = 0x1F00
+-	gl_VERSION              = 0x1F02
+-	gl_RENDERER             = 0x1F01
+-	gl_SHADING_LANG_VERSION = 0x8B8C
+-	gl_TEXTURE_2D           = 0x0DE1
+-	gl_RENDERBUFFER         = 0x8D41
+-	gl_FRAMEBUFFER          = 0x8D40
+-	gl_TEXTURE_MIN_FILTER   = 0x2801
+-	gl_TEXTURE_MAG_FILTER   = 0x2800
+-	gl_NEAREST              = 0x2600
+-	gl_RGBA                 = 0x1908
+-	gl_RGB                  = 0x1907
+-	gl_BGRA                 = 0x80E1
+-	gl_RGBA8                = 0x8058
+-	gl_COLOR_ATTACHMENT0    = 0x8CE0
+-	gl_DEPTH_ATTACHMENT     = 0x8D00
+-	gl_DEPTH_STENCIL_ATTACH = 0x821A
+-	gl_DEPTH_COMPONENT24    = 0x81A6
+-	gl_DEPTH24_STENCIL8     = 0x88F0
+-	gl_FRAMEBUFFER_COMPLETE = 0x8CD5
+-	gl_PACK_ALIGNMENT       = 0x0D05
+-)
+-
+-// ---- GL function pointers ----
+-
+-var (
+-	gpGetString,
+-	gpGetError,
+-	gpBindTexture,
+-	gpBindFramebuffer,
+-	gpBindRenderbuffer,
+-	gpTexParameteri,
+-	gpTexImage2D,
+-	gpGenTextures,
+-	gpGenFramebuffers,
+-	gpGenRenderbuffers,
+-	gpFramebufferTexture2D,
+-	gpFramebufferRenderbuffer,
+-	gpRenderbufferStorage,
+-	gpCheckFramebufferStatus,
+-	gpDeleteFramebuffers,
+-	gpDeleteRenderbuffers,
+-	gpDeleteTextures,
+-	gpReadPixels,
+-	gpPixelStorei unsafe.Pointer
+-)
+-
+-type glFunc struct {
+-	ptr  *unsafe.Pointer
+-	name string
+-}
+-
+-var glFuncs = [...]glFunc{
+-	{&gpGetString, "glGetString"},
+-	{&gpGetError, "glGetError"},
+-	{&gpBindTexture, "glBindTexture"},
+-	{&gpBindFramebuffer, "glBindFramebuffer"},
+-	{&gpBindRenderbuffer, "glBindRenderbuffer"},
+-	{&gpTexParameteri, "glTexParameteri"},
+-	{&gpTexImage2D, "glTexImage2D"},
+-	{&gpGenTextures, "glGenTextures"},
+-	{&gpGenFramebuffers, "glGenFramebuffers"},
+-	{&gpGenRenderbuffers, "glGenRenderbuffers"},
+-	{&gpFramebufferTexture2D, "glFramebufferTexture2D"},
+-	{&gpFramebufferRenderbuffer, "glFramebufferRenderbuffer"},
+-	{&gpRenderbufferStorage, "glRenderbufferStorage"},
+-	{&gpCheckFramebufferStatus, "glCheckFramebufferStatus"},
+-	{&gpDeleteFramebuffers, "glDeleteFramebuffers"},
+-	{&gpDeleteRenderbuffers, "glDeleteRenderbuffers"},
+-	{&gpDeleteTextures, "glDeleteTextures"},
+-	{&gpReadPixels, "glReadPixels"},
+-	{&gpPixelStorei, "glPixelStorei"},
+-}
+-
+-type Context int
+-
+-const (
+-	CtxNone Context = iota
+-	CtxOpenGl
+-	CtxOpenGlEs2
+-	CtxOpenGlCore
+-	CtxOpenGlEs3
+-	CtxOpenGlEsVersion
+-	CtxVulkan
+-	CtxUnknown = math.MaxInt32 - 1
+-	CtxDummy   = math.MaxInt32
+-)
+-
+-type PixelFormat int
+-
+-const (
+-	UnsignedShort5551 PixelFormat = iota
+-	UnsignedShort565
+-	UnsignedInt8888Rev
+-)
+-
+-type Config struct {
+-	Ctx            Context
+-	W, H           int
+-	GLAutoContext  bool
+-	GLVersionMajor uint
+-	GLVersionMinor uint
+-	GLHasDepth     bool
+-	GLHasStencil   bool
+-}
+-
+-func initProcAddr(getProcAddr func(name string) unsafe.Pointer) error {
+-	for _, f := range glFuncs {
+-		p := getProcAddr(f.name)
+-		if p == nil {
+-			return errors.New(f.name)
+-		}
+-		*f.ptr = p
+-	}
+-	return nil
+-}
+-
+-func goStr(s *uint8) string { return C.GoString((*C.char)(unsafe.Pointer(s))) }
+-
+-func getString(name uint32) *uint8 {
+-	return (*uint8)(C.gl_get_string((C.GPGETSTRING)(gpGetString), C.GLenum(name)))
+-}
+-func genTextures(n int32, textures *uint32) {
+-	C.gl_1u32((C.GPGENTEXTURES)(gpGenTextures), C.GLsizei(n), (*C.GLuint)(unsafe.Pointer(textures)))
+-}
+-func bindTexture(target, texture uint32) {
+-	C.gl_bind_tex((C.GPBINDTEXTURE)(gpBindTexture), C.GLenum(target), C.GLuint(texture))
+-}
+-func bindFramebuffer(target, framebuffer uint32) {
+-	C.gl_bind_fb((C.GPBINDFRAMEBUFFER)(gpBindFramebuffer), C.GLenum(target), C.GLuint(framebuffer))
+-}
+-func bindRenderbuffer(target, renderbuffer uint32) {
+-	C.gl_bind_rb((C.GPBINDRENDERBUFFER)(gpBindRenderbuffer), C.GLenum(target), C.GLuint(renderbuffer))
+-}
+-func texParameteri(target, pname uint32, param int32) {
+-	C.gl_tex_param((C.GPTEXPARAMETERI)(gpTexParameteri), C.GLenum(target), C.GLenum(pname), C.GLint(param))
+-}
+-func texImage2D(target uint32, level, internalformat, width, height, border int32, format, xtype uint32, pixels unsafe.Pointer) {
+-	C.gl_tex_image((C.GPTEXIMAGE2D)(gpTexImage2D), C.GLenum(target), C.GLint(level), C.GLint(internalformat), C.GLsizei(width), C.GLsizei(height), C.GLint(border), C.GLenum(format), C.GLenum(xtype), pixels)
+-}
+-func genFramebuffers(n int32, framebuffers *uint32) {
+-	C.gl_1u32((C.GPGENTEXTURES)(gpGenFramebuffers), C.GLsizei(n), (*C.GLuint)(unsafe.Pointer(framebuffers)))
+-}
+-func framebufferTexture2D(target, attachment, texTarget, texture uint32, level int32) {
+-	C.gl_fb_tex2d((C.GPFRAMEBUFFERTEXTURE2D)(gpFramebufferTexture2D), C.GLenum(target), C.GLenum(attachment), C.GLenum(texTarget), C.GLuint(texture), C.GLint(level))
+-}
+-func genRenderbuffers(n int32, renderbuffers *uint32) {
+-	C.gl_1u32((C.GPGENTEXTURES)(gpGenRenderbuffers), C.GLsizei(n), (*C.GLuint)(unsafe.Pointer(renderbuffers)))
+-}
+-func renderbufferStorage(target, internalformat uint32, width, height int32) {
+-	C.gl_rb_storage((C.GPRENDERBUFFERSTORAGE)(gpRenderbufferStorage), C.GLenum(target), C.GLenum(internalformat), C.GLsizei(width), C.GLsizei(height))
+-}
+-func framebufferRenderbuffer(target, attachment, rbtarget, rb uint32) {
+-	C.gl_fb_rb((C.GPFRAMEBUFFERRENDERBUFFER)(gpFramebufferRenderbuffer), C.GLenum(target), C.GLenum(attachment), C.GLenum(rbtarget), C.GLuint(rb))
+-}
+-func checkFramebufferStatus(target uint32) uint32 {
+-	return uint32(C.gl_check_fb_status((C.GPCHECKFRAMEBUFFERSTATUS)(gpCheckFramebufferStatus), C.GLenum(target)))
+-}
+-func deleteRenderbuffers(n int32, renderbuffers *uint32) {
+-	C.gl_delete_rb((C.GPDELETERENDERBUFFERS)(gpDeleteRenderbuffers), C.GLsizei(n), (*C.GLuint)(unsafe.Pointer(renderbuffers)))
+-}
+-func deleteFramebuffers(n int32, framebuffers *uint32) {
+-	C.gl_delete_fb((C.GPDELETEFRAMEBUFFERS)(gpDeleteFramebuffers), C.GLsizei(n), (*C.GLuint)(unsafe.Pointer(framebuffers)))
+-}
+-func deleteTextures(n int32, textures *uint32) {
+-	C.gl_delete_tex((C.GPDELETETEXTURES)(gpDeleteTextures), C.GLsizei(n), (*C.GLuint)(unsafe.Pointer(textures)))
+-}
+-func readPixels(x, y, width, height int32, format, xtype uint32, pixels unsafe.Pointer) {
+-	C.gl_read_pixels((C.GPREADPIXELS)(gpReadPixels), C.GLint(x), C.GLint(y), C.GLsizei(width), C.GLsizei(height), C.GLenum(format), C.GLenum(xtype), pixels)
+-}
+-func pixelStorei(pname uint32, param int32) {
+-	C.gl_pixel_storei((C.GPPIXELSTOREI)(gpPixelStorei), C.GLenum(pname), C.GLint(param))
+-}
+-
+-var (
+-	fbo, tex, rbo      uint32
+-	hasDepth           bool
+-	pixType, pixFormat uint32
+-	buf                []byte
+-	bufPtr             unsafe.Pointer
+-)
+-
+-func initContext(getProcAddr func(name string) unsafe.Pointer) {
+-	if err := initProcAddr(getProcAddr); err != nil {
+-		panic(err)
+-	}
+-	pixelStorei(gl_PACK_ALIGNMENT, 1)
+-}
+-
+-func initFramebuffer(width, height int, depth, stencil bool) error {
+-	w, h := int32(width), int32(height)
+-	hasDepth = depth
+-
+-	genTextures(1, &tex)
+-	bindTexture(gl_TEXTURE_2D, tex)
+-	texParameteri(gl_TEXTURE_2D, gl_TEXTURE_MIN_FILTER, gl_NEAREST)
+-	texParameteri(gl_TEXTURE_2D, gl_TEXTURE_MAG_FILTER, gl_NEAREST)
+-	texImage2D(gl_TEXTURE_2D, 0, gl_RGBA8, w, h, 0, pixType, pixFormat, nil)
+-	bindTexture(gl_TEXTURE_2D, 0)
+-
+-	genFramebuffers(1, &fbo)
+-	bindFramebuffer(gl_FRAMEBUFFER, fbo)
+-	framebufferTexture2D(gl_FRAMEBUFFER, gl_COLOR_ATTACHMENT0, gl_TEXTURE_2D, tex, 0)
+-
+-	if depth {
+-		genRenderbuffers(1, &rbo)
+-		bindRenderbuffer(gl_RENDERBUFFER, rbo)
+-		format, attachment := uint32(gl_DEPTH_COMPONENT24), uint32(gl_DEPTH_ATTACHMENT)
+-		if stencil {
+-			format, attachment = gl_DEPTH24_STENCIL8, gl_DEPTH_STENCIL_ATTACH
+-		}
+-		renderbufferStorage(gl_RENDERBUFFER, format, w, h)
+-		framebufferRenderbuffer(gl_FRAMEBUFFER, attachment, gl_RENDERBUFFER, rbo)
+-		bindRenderbuffer(gl_RENDERBUFFER, 0)
+-	}
+-
+-	if status := checkFramebufferStatus(gl_FRAMEBUFFER); status != gl_FRAMEBUFFER_COMPLETE {
+-		return fmt.Errorf("framebuffer incomplete: 0x%X", status)
+-	}
+-	return nil
+-}
+-
+-func destroyFramebuffer() {
+-	if hasDepth {
+-		deleteRenderbuffers(1, &rbo)
+-	}
+-	deleteFramebuffers(1, &fbo)
+-	deleteTextures(1, &tex)
+-}
+-
+-// ReadFramebuffer reads the current FBO color attachment into the internal buffer.
+-// Call SetBuffer first to size the buffer (w * h * 4).
+-func ReadFramebuffer(size, w, h uint) []byte {
+-	bindFramebuffer(gl_FRAMEBUFFER, fbo)
+-	readPixels(0, 0, int32(w), int32(h), pixType, pixFormat, bufPtr)
+-	return buf[:size]
+-}
+-
+-func SetBuffer(size int) {
+-	buf = make([]byte, size)
+-	bufPtr = unsafe.Pointer(&buf[0])
+-}
+-
+-func SetPixelFormat(format PixelFormat) error {
+-	switch format {
+-	case UnsignedShort5551:
+-		pixFormat, pixType = 0x8034, gl_BGRA // GL_UNSIGNED_SHORT_5_5_5_1
+-	case UnsignedShort565:
+-		pixFormat, pixType = 0x8363, gl_RGB // GL_UNSIGNED_SHORT_5_6_5
+-	case UnsignedInt8888Rev:
+-		pixFormat, pixType = 0x8367, gl_BGRA // GL_UNSIGNED_INT_8_8_8_8_REV
+-	default:
+-		return errors.New("unknown pixel format")
+-	}
+-	return nil
+-}
+-
+-func GLInfo() (version, vendor, renderer, glsl string) {
+-	return goStr(getString(gl_VERSION)),
+-		goStr(getString(gl_VENDOR)),
+-		goStr(getString(gl_RENDERER)),
+-		goStr(getString(gl_SHADING_LANG_VERSION))
+-}
+-
+-func GlFbo() uint32 { return fbo }
++package graphics
++
++/*
++#cgo windows LDFLAGS: -lopengl32
++#cgo linux   LDFLAGS: -lGL
++#cgo darwin  LDFLAGS: -framework OpenGL
++
++#include <stdint.h>
++
++#ifndef APIENTRY
++#define APIENTRY
++#endif
++#ifndef APIENTRYP
++#define APIENTRYP APIENTRY*
++#endif
++
++typedef unsigned int   GLenum;
++typedef int            GLint;
++typedef unsigned int   GLuint;
++typedef int            GLsizei;
++typedef unsigned char  GLubyte;
++
++typedef const GLubyte *(APIENTRYP GPGETSTRING)(GLenum name);
++typedef GLenum          (APIENTRYP GPCHECKFRAMEBUFFERSTATUS)(GLenum target);
++typedef GLenum          (APIENTRYP GPGETERROR)();
++typedef void            (APIENTRYP GPBINDFRAMEBUFFER)(GLenum target, GLuint framebuffer);
++typedef void            (APIENTRYP GPBINDRENDERBUFFER)(GLenum target, GLuint renderbuffer);
++typedef void            (APIENTRYP GPBINDTEXTURE)(GLenum target, GLuint texture);
++typedef void            (APIENTRYP GPDELETEFRAMEBUFFERS)(GLsizei n, const GLuint *framebuffers);
++typedef void            (APIENTRYP GPDELETERENDERBUFFERS)(GLsizei n, const GLuint *renderbuffers);
++typedef void            (APIENTRYP GPDELETETEXTURES)(GLsizei n, const GLuint* textures);
++typedef void            (APIENTRYP GPFRAMEBUFFERRENDERBUFFER)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
++typedef void            (APIENTRYP GPFRAMEBUFFERTEXTURE2D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
++typedef void            (APIENTRYP GPGENFRAMEBUFFERS)(GLsizei n, GLuint *fb);
++typedef void            (APIENTRYP GPGENRENDERBUFFERS)(GLsizei n, GLuint *rb);
++typedef void            (APIENTRYP GPGENTEXTURES)(GLsizei n, GLuint *tex);
++typedef void            (APIENTRYP GPREADPIXELS)(GLint x, GLint y, GLsizei w, GLsizei h, GLenum f, GLenum t, void *p);
++typedef void            (APIENTRYP GPRENDERBUFFERSTORAGE)(GLenum t, GLenum i, GLsizei w, GLsizei h);
++typedef void            (APIENTRYP GPTEXIMAGE2D)(GLenum t, GLint l, GLint i, GLsizei w, GLsizei h, GLint b, GLenum f, GLenum x, const void *px);
++typedef void            (APIENTRYP GPTEXPARAMETERI)(GLenum t, GLenum n, GLint p);
++typedef void            (APIENTRYP GPPIXELSTOREI)(GLenum n, GLint p);
++
++// Generic C wrappers — one per signature pattern, called from Go via function pointers.
++static const GLubyte *gl_get_string(GPGETSTRING f, GLenum a)              { return f(a); }
++static GLenum          gl_get_error(GPGETERROR f)                        { return f(); }
++static GLenum          gl_check_fb_status(GPCHECKFRAMEBUFFERSTATUS f, GLenum a) { return f(a); }
++static void gl_1u32(GPGENTEXTURES f, GLsizei a, GLuint *b)       { f(a, b); }
++static void gl_bind_tex(GPBINDTEXTURE f, GLenum a, GLuint b)         { f(a, b); }
++static void gl_bind_fb(GPBINDFRAMEBUFFER f, GLenum a, GLuint b)   { f(a, b); }
++static void gl_bind_rb(GPBINDRENDERBUFFER f, GLenum a, GLuint b)  { f(a, b); }
++static void gl_tex_param(GPTEXPARAMETERI f, GLenum a, GLenum b, GLint c) { f(a, b, c); }
++static void gl_tex_image(GPTEXIMAGE2D f, GLenum a, GLint b, GLint c, GLsizei d, GLsizei e, GLint g, GLenum h, GLenum i, const void *j) { f(a, b, c, d, e, g, h, i, j); }
++static void gl_fb_tex2d(GPFRAMEBUFFERTEXTURE2D f, GLenum a, GLenum b, GLenum c, GLuint d, GLint e) { f(a, b, c, d, e); }
++static void gl_fb_rb(GPFRAMEBUFFERRENDERBUFFER f, GLenum a, GLenum b, GLenum c, GLuint d) { f(a, b, c, d); }
++static void gl_rb_storage(GPRENDERBUFFERSTORAGE f, GLenum a, GLenum b, GLsizei c, GLsizei d) { f(a, b, c, d); }
++static void gl_delete_fb(GPDELETEFRAMEBUFFERS f, GLsizei a, const GLuint *b) { f(a, b); }
++static void gl_delete_rb(GPDELETERENDERBUFFERS f, GLsizei a, const GLuint *b) { f(a, b); }
++static void gl_delete_tex(GPDELETETEXTURES f, GLsizei a, const GLuint *b) { f(a, b); }
++static void gl_read_pixels(GPREADPIXELS f, GLint a, GLint b, GLsizei c, GLsizei d, GLenum e, GLenum g, void *h) { f(a, b, c, d, e, g, h); }
++static void gl_pixel_storei(GPPIXELSTOREI f, GLenum a, GLint b) { f(a, b); }
 +
 +// GL zero-copy (zerocopy.go): a GPU->GPU copy of the core's frame into a pool texture, so the encoder
 +// can read it while the core renders the next one. glCopyImageSubData is GL 4.3; the workers run GL 4.6.
@@ -6098,42 +6490,260 @@ index 0c9d773..97f3940 100644
 +	  w, h, 1);
 +}
 +static void gl_flush(GPFLUSH f) { f(); }
- */
- import "C"
- import (
- 	"errors"
- 	"fmt"
- 	"math"
++static void gl_finish(GPFLUSH f) { f(); }
++*/
++import "C"
++import (
++	"errors"
++	"fmt"
++	"math"
 +	"time"
- 	"unsafe"
- )
- 
-@@ -112,7 +128,9 @@ var (
- 	gpDeleteRenderbuffers,
- 	gpDeleteTextures,
- 	gpReadPixels,
--	gpPixelStorei unsafe.Pointer
++	"unsafe"
++)
++
++const (
++	gl_VENDOR               = 0x1F00
++	gl_VERSION              = 0x1F02
++	gl_RENDERER             = 0x1F01
++	gl_SHADING_LANG_VERSION = 0x8B8C
++	gl_TEXTURE_2D           = 0x0DE1
++	gl_RENDERBUFFER         = 0x8D41
++	gl_FRAMEBUFFER          = 0x8D40
++	gl_TEXTURE_MIN_FILTER   = 0x2801
++	gl_TEXTURE_MAG_FILTER   = 0x2800
++	gl_NEAREST              = 0x2600
++	gl_RGBA                 = 0x1908
++	gl_RGB                  = 0x1907
++	gl_BGRA                 = 0x80E1
++	gl_RGBA8                = 0x8058
++	gl_COLOR_ATTACHMENT0    = 0x8CE0
++	gl_DEPTH_ATTACHMENT     = 0x8D00
++	gl_DEPTH_STENCIL_ATTACH = 0x821A
++	gl_DEPTH_COMPONENT24    = 0x81A6
++	gl_DEPTH24_STENCIL8     = 0x88F0
++	gl_FRAMEBUFFER_COMPLETE = 0x8CD5
++	gl_PACK_ALIGNMENT       = 0x0D05
++)
++
++// ---- GL function pointers ----
++
++var (
++	gpGetString,
++	gpGetError,
++	gpBindTexture,
++	gpBindFramebuffer,
++	gpBindRenderbuffer,
++	gpTexParameteri,
++	gpTexImage2D,
++	gpGenTextures,
++	gpGenFramebuffers,
++	gpGenRenderbuffers,
++	gpFramebufferTexture2D,
++	gpFramebufferRenderbuffer,
++	gpRenderbufferStorage,
++	gpCheckFramebufferStatus,
++	gpDeleteFramebuffers,
++	gpDeleteRenderbuffers,
++	gpDeleteTextures,
++	gpReadPixels,
 +	gpPixelStorei,
 +	gpCopyImageSubData,
-+	gpFlush unsafe.Pointer
- )
- 
- type glFunc struct {
-@@ -140,6 +158,10 @@ var glFuncs = [...]glFunc{
- 	{&gpDeleteTextures, "glDeleteTextures"},
- 	{&gpReadPixels, "glReadPixels"},
- 	{&gpPixelStorei, "glPixelStorei"},
++	gpFlush,
++	gpFinish unsafe.Pointer
++)
++
++type glFunc struct {
++	ptr  *unsafe.Pointer
++	name string
++}
++
++var glFuncs = [...]glFunc{
++	{&gpGetString, "glGetString"},
++	{&gpGetError, "glGetError"},
++	{&gpBindTexture, "glBindTexture"},
++	{&gpBindFramebuffer, "glBindFramebuffer"},
++	{&gpBindRenderbuffer, "glBindRenderbuffer"},
++	{&gpTexParameteri, "glTexParameteri"},
++	{&gpTexImage2D, "glTexImage2D"},
++	{&gpGenTextures, "glGenTextures"},
++	{&gpGenFramebuffers, "glGenFramebuffers"},
++	{&gpGenRenderbuffers, "glGenRenderbuffers"},
++	{&gpFramebufferTexture2D, "glFramebufferTexture2D"},
++	{&gpFramebufferRenderbuffer, "glFramebufferRenderbuffer"},
++	{&gpRenderbufferStorage, "glRenderbufferStorage"},
++	{&gpCheckFramebufferStatus, "glCheckFramebufferStatus"},
++	{&gpDeleteFramebuffers, "glDeleteFramebuffers"},
++	{&gpDeleteRenderbuffers, "glDeleteRenderbuffers"},
++	{&gpDeleteTextures, "glDeleteTextures"},
++	{&gpReadPixels, "glReadPixels"},
++	{&gpPixelStorei, "glPixelStorei"},
 +	// GL zero-copy. Optional: a driver without them simply leaves the readback path in place
 +	// (initContext tolerates a nil proc — see zerocopy.go's guard).
 +	{&gpCopyImageSubData, "glCopyImageSubData"},
 +	{&gpFlush, "glFlush"},
- }
- 
- type Context int
-@@ -302,10 +324,28 @@ func destroyFramebuffer() {
- // Call SetBuffer first to size the buffer (w * h * 4).
- func ReadFramebuffer(size, w, h uint) []byte {
- 	bindFramebuffer(gl_FRAMEBUFFER, fbo)
++	{&gpFinish, "glFinish"},
++}
++
++type Context int
++
++const (
++	CtxNone Context = iota
++	CtxOpenGl
++	CtxOpenGlEs2
++	CtxOpenGlCore
++	CtxOpenGlEs3
++	CtxOpenGlEsVersion
++	CtxVulkan
++	CtxUnknown = math.MaxInt32 - 1
++	CtxDummy   = math.MaxInt32
++)
++
++type PixelFormat int
++
++const (
++	UnsignedShort5551 PixelFormat = iota
++	UnsignedShort565
++	UnsignedInt8888Rev
++)
++
++type Config struct {
++	Ctx            Context
++	W, H           int
++	GLAutoContext  bool
++	GLVersionMajor uint
++	GLVersionMinor uint
++	GLHasDepth     bool
++	GLHasStencil   bool
++}
++
++func initProcAddr(getProcAddr func(name string) unsafe.Pointer) error {
++	for _, f := range glFuncs {
++		p := getProcAddr(f.name)
++		if p == nil {
++			return errors.New(f.name)
++		}
++		*f.ptr = p
++	}
++	return nil
++}
++
++func goStr(s *uint8) string { return C.GoString((*C.char)(unsafe.Pointer(s))) }
++
++func getString(name uint32) *uint8 {
++	return (*uint8)(C.gl_get_string((C.GPGETSTRING)(gpGetString), C.GLenum(name)))
++}
++func genTextures(n int32, textures *uint32) {
++	C.gl_1u32((C.GPGENTEXTURES)(gpGenTextures), C.GLsizei(n), (*C.GLuint)(unsafe.Pointer(textures)))
++}
++func bindTexture(target, texture uint32) {
++	C.gl_bind_tex((C.GPBINDTEXTURE)(gpBindTexture), C.GLenum(target), C.GLuint(texture))
++}
++func bindFramebuffer(target, framebuffer uint32) {
++	C.gl_bind_fb((C.GPBINDFRAMEBUFFER)(gpBindFramebuffer), C.GLenum(target), C.GLuint(framebuffer))
++}
++func bindRenderbuffer(target, renderbuffer uint32) {
++	C.gl_bind_rb((C.GPBINDRENDERBUFFER)(gpBindRenderbuffer), C.GLenum(target), C.GLuint(renderbuffer))
++}
++func texParameteri(target, pname uint32, param int32) {
++	C.gl_tex_param((C.GPTEXPARAMETERI)(gpTexParameteri), C.GLenum(target), C.GLenum(pname), C.GLint(param))
++}
++func texImage2D(target uint32, level, internalformat, width, height, border int32, format, xtype uint32, pixels unsafe.Pointer) {
++	C.gl_tex_image((C.GPTEXIMAGE2D)(gpTexImage2D), C.GLenum(target), C.GLint(level), C.GLint(internalformat), C.GLsizei(width), C.GLsizei(height), C.GLint(border), C.GLenum(format), C.GLenum(xtype), pixels)
++}
++func genFramebuffers(n int32, framebuffers *uint32) {
++	C.gl_1u32((C.GPGENTEXTURES)(gpGenFramebuffers), C.GLsizei(n), (*C.GLuint)(unsafe.Pointer(framebuffers)))
++}
++func framebufferTexture2D(target, attachment, texTarget, texture uint32, level int32) {
++	C.gl_fb_tex2d((C.GPFRAMEBUFFERTEXTURE2D)(gpFramebufferTexture2D), C.GLenum(target), C.GLenum(attachment), C.GLenum(texTarget), C.GLuint(texture), C.GLint(level))
++}
++func genRenderbuffers(n int32, renderbuffers *uint32) {
++	C.gl_1u32((C.GPGENTEXTURES)(gpGenRenderbuffers), C.GLsizei(n), (*C.GLuint)(unsafe.Pointer(renderbuffers)))
++}
++func renderbufferStorage(target, internalformat uint32, width, height int32) {
++	C.gl_rb_storage((C.GPRENDERBUFFERSTORAGE)(gpRenderbufferStorage), C.GLenum(target), C.GLenum(internalformat), C.GLsizei(width), C.GLsizei(height))
++}
++func framebufferRenderbuffer(target, attachment, rbtarget, rb uint32) {
++	C.gl_fb_rb((C.GPFRAMEBUFFERRENDERBUFFER)(gpFramebufferRenderbuffer), C.GLenum(target), C.GLenum(attachment), C.GLenum(rbtarget), C.GLuint(rb))
++}
++func checkFramebufferStatus(target uint32) uint32 {
++	return uint32(C.gl_check_fb_status((C.GPCHECKFRAMEBUFFERSTATUS)(gpCheckFramebufferStatus), C.GLenum(target)))
++}
++func deleteRenderbuffers(n int32, renderbuffers *uint32) {
++	C.gl_delete_rb((C.GPDELETERENDERBUFFERS)(gpDeleteRenderbuffers), C.GLsizei(n), (*C.GLuint)(unsafe.Pointer(renderbuffers)))
++}
++func deleteFramebuffers(n int32, framebuffers *uint32) {
++	C.gl_delete_fb((C.GPDELETEFRAMEBUFFERS)(gpDeleteFramebuffers), C.GLsizei(n), (*C.GLuint)(unsafe.Pointer(framebuffers)))
++}
++func deleteTextures(n int32, textures *uint32) {
++	C.gl_delete_tex((C.GPDELETETEXTURES)(gpDeleteTextures), C.GLsizei(n), (*C.GLuint)(unsafe.Pointer(textures)))
++}
++func readPixels(x, y, width, height int32, format, xtype uint32, pixels unsafe.Pointer) {
++	C.gl_read_pixels((C.GPREADPIXELS)(gpReadPixels), C.GLint(x), C.GLint(y), C.GLsizei(width), C.GLsizei(height), C.GLenum(format), C.GLenum(xtype), pixels)
++}
++func pixelStorei(pname uint32, param int32) {
++	C.gl_pixel_storei((C.GPPIXELSTOREI)(gpPixelStorei), C.GLenum(pname), C.GLint(param))
++}
++
++var (
++	fbo, tex, rbo      uint32
++	hasDepth           bool
++	pixType, pixFormat uint32
++	buf                []byte
++	bufPtr             unsafe.Pointer
++)
++
++func initContext(getProcAddr func(name string) unsafe.Pointer) {
++	if err := initProcAddr(getProcAddr); err != nil {
++		panic(err)
++	}
++	pixelStorei(gl_PACK_ALIGNMENT, 1)
++}
++
++func initFramebuffer(width, height int, depth, stencil bool) error {
++	w, h := int32(width), int32(height)
++	hasDepth = depth
++
++	genTextures(1, &tex)
++	bindTexture(gl_TEXTURE_2D, tex)
++	texParameteri(gl_TEXTURE_2D, gl_TEXTURE_MIN_FILTER, gl_NEAREST)
++	texParameteri(gl_TEXTURE_2D, gl_TEXTURE_MAG_FILTER, gl_NEAREST)
++	texImage2D(gl_TEXTURE_2D, 0, gl_RGBA8, w, h, 0, pixType, pixFormat, nil)
++	bindTexture(gl_TEXTURE_2D, 0)
++
++	genFramebuffers(1, &fbo)
++	bindFramebuffer(gl_FRAMEBUFFER, fbo)
++	framebufferTexture2D(gl_FRAMEBUFFER, gl_COLOR_ATTACHMENT0, gl_TEXTURE_2D, tex, 0)
++
++	if depth {
++		genRenderbuffers(1, &rbo)
++		bindRenderbuffer(gl_RENDERBUFFER, rbo)
++		format, attachment := uint32(gl_DEPTH_COMPONENT24), uint32(gl_DEPTH_ATTACHMENT)
++		if stencil {
++			format, attachment = gl_DEPTH24_STENCIL8, gl_DEPTH_STENCIL_ATTACH
++		}
++		renderbufferStorage(gl_RENDERBUFFER, format, w, h)
++		framebufferRenderbuffer(gl_FRAMEBUFFER, attachment, gl_RENDERBUFFER, rbo)
++		bindRenderbuffer(gl_RENDERBUFFER, 0)
++	}
++
++	if status := checkFramebufferStatus(gl_FRAMEBUFFER); status != gl_FRAMEBUFFER_COMPLETE {
++		return fmt.Errorf("framebuffer incomplete: 0x%X", status)
++	}
++	return nil
++}
++
++func destroyFramebuffer() {
++	if hasDepth {
++		deleteRenderbuffers(1, &rbo)
++	}
++	deleteFramebuffers(1, &fbo)
++	deleteTextures(1, &tex)
++}
++
++// ReadFramebuffer reads the current FBO color attachment into the internal buffer.
++// Call SetBuffer first to size the buffer (w * h * 4).
++func ReadFramebuffer(size, w, h uint) []byte {
++	bindFramebuffer(gl_FRAMEBUFFER, fbo)
 +	// glReadPixels is SYNCHRONOUS and runs on the emulator thread: it flushes the GL pipeline and
 +	// blocks until the frame has crossed PCIe. That stall is what CLOUD_GAME_GL_READBACK_STATS=1
 +	// measures (readback_stats.go) — it is the cost a GL/CUDA zero-copy path would remove.
@@ -6143,10 +6753,10 @@ index 0c9d773..97f3940 100644
 +		recordReadback(time.Since(start), size, w, h)
 +		return buf[:size]
 +	}
- 	readPixels(0, 0, int32(w), int32(h), pixType, pixFormat, bufPtr)
- 	return buf[:size]
- }
- 
++	readPixels(0, 0, int32(w), int32(h), pixType, pixFormat, bufPtr)
++	return buf[:size]
++}
++
 +// copyImageSubData copies a w*h region of one texture into another entirely on the GPU — no PCIe
 +// traffic, no CPU involvement. This is what replaces the synchronous readback for HW-rendered cores.
 +func copyImageSubData(src, dst uint32, w, h int32) {
@@ -6154,11 +6764,36 @@ index 0c9d773..97f3940 100644
 +		C.GLuint(src), C.GLuint(dst), C.GLsizei(w), C.GLsizei(h))
 +}
 +
-+func flush() { C.gl_flush((C.GPFLUSH)(gpFlush)) }
++func flush()  { C.gl_flush((C.GPFLUSH)(gpFlush)) }
++func finish() { C.gl_finish((C.GPFLUSH)(gpFinish)) }
 +
- func SetBuffer(size int) {
- 	buf = make([]byte, size)
- 	bufPtr = unsafe.Pointer(&buf[0])
++func SetBuffer(size int) {
++	buf = make([]byte, size)
++	bufPtr = unsafe.Pointer(&buf[0])
++}
++
++func SetPixelFormat(format PixelFormat) error {
++	switch format {
++	case UnsignedShort5551:
++		pixFormat, pixType = 0x8034, gl_BGRA // GL_UNSIGNED_SHORT_5_5_5_1
++	case UnsignedShort565:
++		pixFormat, pixType = 0x8363, gl_RGB // GL_UNSIGNED_SHORT_5_6_5
++	case UnsignedInt8888Rev:
++		pixFormat, pixType = 0x8367, gl_BGRA // GL_UNSIGNED_INT_8_8_8_8_REV
++	default:
++		return errors.New("unknown pixel format")
++	}
++	return nil
++}
++
++func GLInfo() (version, vendor, renderer, glsl string) {
++	return goStr(getString(gl_VERSION)),
++		goStr(getString(gl_VENDOR)),
++		goStr(getString(gl_RENDERER)),
++		goStr(getString(gl_SHADING_LANG_VERSION))
++}
++
++func GlFbo() uint32 { return fbo }
 diff --git a/pkg/worker/caged/libretro/graphics/readback_stats.go b/pkg/worker/caged/libretro/graphics/readback_stats.go
 new file mode 100644
 index 0000000..96877c5
@@ -6307,10 +6942,10 @@ index ce2471b..945223b 100644
  		return fmt.Errorf("rgfw: context not initialized")
 diff --git a/pkg/worker/caged/libretro/graphics/zerocopy.go b/pkg/worker/caged/libretro/graphics/zerocopy.go
 new file mode 100644
-index 0000000..b0fd918
+index 0000000..55e039f
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/graphics/zerocopy.go
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,136 @@
 +package graphics
 +
 +// GL zero-copy for hardware-rendered cores (n64/gc/ps2/psp/dc).
@@ -6318,86 +6953,133 @@ index 0000000..b0fd918
 +// The old path pulled every frame back with glReadPixels — SYNCHRONOUS, on the emulator thread, inside
 +// video_refresh. It flushes the GL pipeline and blocks until the frame has crossed PCIe. Measured
 +// (CLOUD_GAME_GL_READBACK_STATS=1): GameCube 1920x1584 = 11.6 MB/frame, p50 3.7-4.2 ms, p95 6-8 ms —
-+// the core sits blocked for a QUARTER of a 60fps frame budget, and up to half of it at p95. Then patch
-+// 0004 copied the frame again and NVENC uploaded it right back to the GPU.
++// the core sits blocked for a QUARTER of a 60fps frame budget, and up to half at p95.
 +//
-+// Instead we hand the encoder the texture. nvav1enc takes video/x-raw(memory:GLMemory) in RGBA
-+// directly (verified: gltestsrc -> glcolorscale -> nvav1enc encodes with temporal SVC intact), so the
-+// frame never leaves VRAM.
++// Instead we hand the encoder the texture: nvav1enc takes video/x-raw(memory:GLMemory) in RGBA
++// directly, so the frame never leaves VRAM.
 +//
-+// WHY A POOL AND NOT THE CORE'S TEXTURE. The core renders into the SAME texture every frame. The
-+// encoder consumes buffers asynchronously on GStreamer's thread, so handing it that texture directly
-+// would let the core overwrite the frame mid-encode — tearing that would look like a corrupt stream and
-+// be a nightmare to attribute. Each frame is copied GPU->GPU (glCopyImageSubData: no PCIe traffic, no
-+// CPU involvement) into a rotating pool, and the encoder gets the copy.
++// ── OWNERSHIP IS THE WHOLE PROBLEM, AND IT IS NOT OBVIOUS ──────────────────────────────────────────
++// The core re-renders into the SAME texture every frame, so we copy each frame GPU->GPU into a pool
++// texture and hand the encoder THAT. But a GstBuffer holds a *reference* to the texture, not a
++// snapshot — and the encoder consumes buffers asynchronously, several frames deep (the queue plus the
++// appsink hold ~5-6). A pool that simply cycles will therefore overwrite a texture the encoder has not
++// read yet, and that frame encodes pixels from the FUTURE. Then the next buffer shows the correct,
++// older content.
++//
++// That is not tearing and it is not a dropped frame — it is TIME going backwards, and it showed up
++// live as a scrolling marquee ("Select a Cup.") jumping back and forth while everything else looked
++// fine: 60fps, no freezes, no NACKs, clean audio.
++//
++// So a texture is only reusable once GStreamer has RELEASED the buffer holding it. Each wrapped
++// texture carries a destroy-notify that returns it to the free list (see media/glzerocopy.go); the
++// core takes the next FREE one, and if none is free it says so and the caller falls back to the
++// readback for that frame — a slow frame is always better than a wrong one.
 +
-+import "fmt"
++import (
++	"fmt"
++	"sync"
++)
 +
-+// zcPoolSize must exceed the number of frames the encoder can hold in flight, or we would wrap around
-+// and overwrite a texture still being read. The video queue is shallow by design (see media), so a
-+// handful is plenty; each texture is only w*h*4 of VRAM.
-+const zcPoolSize = 4
++// zcPoolSize must comfortably exceed the number of buffers that can be in flight (queue + appsink +
++// the encoder's own). 8 is generous; each texture is only w*h*4 of VRAM and running out just means one
++// frame takes the readback path.
++const zcPoolSize = 8
 +
 +var (
-+	zcPool   []uint32
-+	zcNext   int
++	zcMu     sync.Mutex
++	zcPool   []uint32 // every texture we own
++	zcFree   []uint32 // the ones GStreamer is not holding
 +	zcW, zcH int32
 +)
 +
-+// InitZeroCopyPool (re)allocates the texture pool for a given frame size. Called on the GL thread, with
-+// the core's context current.
++// InitZeroCopyPool (re)allocates the texture pool for a frame size. Runs on the GL thread with the
++// core's context current.
 +func InitZeroCopyPool(w, h int32) error {
 +	if gpCopyImageSubData == nil {
 +		return fmt.Errorf("glCopyImageSubData unavailable (needs GL 4.3+); GL zero-copy cannot run")
 +	}
-+	if zcW == w && zcH == h && len(zcPool) == zcPoolSize {
-+		return nil // already sized
++	zcMu.Lock()
++	sized := zcW == w && zcH == h && len(zcPool) == zcPoolSize
++	zcMu.Unlock()
++	if sized {
++		return nil
 +	}
 +	FreeZeroCopyPool()
 +
-+	zcPool = make([]uint32, zcPoolSize)
-+	genTextures(zcPoolSize, &zcPool[0])
-+	for _, id := range zcPool {
++	pool := make([]uint32, zcPoolSize)
++	genTextures(zcPoolSize, &pool[0])
++	for _, id := range pool {
 +		bindTexture(gl_TEXTURE_2D, id)
 +		texParameteri(gl_TEXTURE_2D, gl_TEXTURE_MIN_FILTER, gl_NEAREST)
 +		texParameteri(gl_TEXTURE_2D, gl_TEXTURE_MAG_FILTER, gl_NEAREST)
-+		// glCopyImageSubData needs the destination to have storage of a compatible format+size. RGBA8
-+		// is what GStreamer wraps as GST_GL_RGBA, which is what nvav1enc takes on its GLMemory sink.
 +		texImage2D(gl_TEXTURE_2D, 0, gl_RGBA8, w, h, 0, pixType, pixFormat, nil)
 +	}
 +	bindTexture(gl_TEXTURE_2D, 0)
-+	zcW, zcH, zcNext = w, h, 0
++
++	zcMu.Lock()
++	zcPool = pool
++	zcFree = append([]uint32(nil), pool...)
++	zcW, zcH = w, h
++	zcMu.Unlock()
 +	return nil
 +}
 +
++// FreeZeroCopyPool deletes the textures. GL thread only.
 +func FreeZeroCopyPool() {
-+	if len(zcPool) > 0 {
-+		deleteTextures(int32(len(zcPool)), &zcPool[0])
-+		zcPool = nil
++	zcMu.Lock()
++	pool := zcPool
++	zcPool, zcFree, zcW, zcH = nil, nil, 0, 0
++	zcMu.Unlock()
++
++	if len(pool) > 0 {
++		deleteTextures(int32(len(pool)), &pool[0])
 +	}
-+	zcW, zcH, zcNext = 0, 0, 0
 +}
 +
-+// CopyFrameToPool copies the core's just-rendered frame into the next pool texture and returns its id
-+// for the encoder. GPU->GPU: no readback, no CPU copy, and the emulator thread does not block on PCIe.
++// ReleaseZeroCopyTexture returns a texture to the free list. Called from GStreamer's thread when it
++// frees the buffer that wrapped it — that, and ONLY that, is what makes the texture safe to reuse.
++func ReleaseZeroCopyTexture(id uint32) {
++	zcMu.Lock()
++	defer zcMu.Unlock()
++	// Ignore textures from a pool we have already thrown away (a geometry change mid-flight).
++	for _, p := range zcPool {
++		if p == id {
++			zcFree = append(zcFree, id)
++			return
++		}
++	}
++}
++
++// CopyFrameToPool copies the core's just-rendered frame into a FREE pool texture and returns its id.
++// GPU->GPU: no readback, no CPU copy, and the emulator thread never blocks on PCIe.
 +//
-+// Returns 0 if the pool is not usable, which the caller must treat as "fall back to the readback path"
-+// rather than as an empty frame.
++// Returns 0 when the pool is unusable or every texture is still held by the encoder — the caller must
++// treat that as "use the readback for this frame", never as an empty frame.
 +func CopyFrameToPool(w, h int32) uint32 {
-+	if len(zcPool) == 0 || w != zcW || h != zcH {
++	zcMu.Lock()
++	needInit := len(zcPool) == 0 || w != zcW || h != zcH
++	zcMu.Unlock()
++	if needInit {
 +		if err := InitZeroCopyPool(w, h); err != nil {
 +			return 0
 +		}
 +	}
-+	dst := zcPool[zcNext]
-+	zcNext = (zcNext + 1) % len(zcPool)
++
++	zcMu.Lock()
++	if len(zcFree) == 0 {
++		zcMu.Unlock()
++		return 0 // encoder is holding every texture; this frame goes the slow way
++	}
++	dst := zcFree[len(zcFree)-1]
++	zcFree = zcFree[:len(zcFree)-1]
++	zcMu.Unlock()
 +
 +	// tex is the FBO's colour attachment — what the core just rendered into.
 +	copyImageSubData(tex, dst, w, h)
-+	// Make the copy visible to the GStreamer context, which shares this context's object space but runs
-+	// on its own thread. The buffer also carries a GstGLSyncMeta (media side) which is the real
-+	// ordering primitive; this flush is what guarantees the commands are actually submitted.
-+	flush()
++	// The encoder reads this texture from ANOTHER context, on another thread, as soon as we return. A
++	// glFlush would only mean "submitted", not "done" — so wait for the copy to actually land. No PCIe
++	// transfer happens here (that is the 11 MB/frame we are removing); this is a GPU-side sync only.
++	finish()
 +	return dst
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/framedump.go b/pkg/worker/caged/libretro/nanoarch/framedump.go
@@ -9840,10 +10522,10 @@ index 6972cc7..ccfe9bb 100644
 +}
 diff --git a/pkg/worker/media/glzerocopy.go b/pkg/worker/media/glzerocopy.go
 new file mode 100644
-index 0000000..24f7fa1
+index 0000000..bcd5a8b
 --- /dev/null
 +++ b/pkg/worker/media/glzerocopy.go
-@@ -0,0 +1,239 @@
+@@ -0,0 +1,256 @@
 +package media
 +
 +// GL zero-copy for hardware-rendered libretro cores (n64/gc/ps2/psp/dc).
@@ -9953,6 +10635,15 @@ index 0000000..24f7fa1
 +
 +static const char *zc_last_error(void) { return zc_err; }
 +
++// zc_tex_released is the GDestroyNotify on every wrapped texture: GStreamer calls it when it frees the
++// buffer, which is the ONLY moment the texture is safe for the core to render over again. Without this
++// the pool just cycles and the encoder ends up reading a texture the core has already overwritten —
++// frames then show FUTURE pixels and snap back (a scrolling marquee jitters back and forth).
++extern void goReleaseZeroCopyTexture(unsigned int texid);
++static void zc_tex_released(gpointer user_data) {
++	goReleaseZeroCopyTexture((unsigned int) (guintptr) user_data);
++}
++
 +// zc_set_context gives the pipeline our display + app context, so its GL elements build a context that
 +// SHARES with the core's rather than creating an isolated one (whose texture ids would mean nothing).
 +static void zc_set_context(GstElement *pipeline) {
@@ -9995,7 +10686,7 @@ index 0000000..24f7fa1
 +	GstGLMemoryAllocator *alloc = gst_gl_memory_allocator_get_default(zc_shared);
 +	GstGLVideoAllocationParams *params = gst_gl_video_allocation_params_new_wrapped_texture(
 +		zc_shared, NULL, &vinfo, 0, NULL, GST_GL_TEXTURE_TARGET_2D, GST_GL_RGBA,
-+		(guint) texid, NULL, NULL);
++		(guint) texid, (gpointer) (guintptr) texid, zc_tex_released);
 +	if (!params) { gst_object_unref(alloc); return; }
 +
 +	// Allocate the ONE plane directly rather than gst_gl_memory_setup_buffer(): that helper wants a
@@ -10014,14 +10705,16 @@ index 0000000..24f7fa1
 +
 +	GST_BUFFER_DURATION(buf) = durNs;
 +
-+	// No GstGLSyncMeta: setting its sync point has to happen on the PRODUCING context's thread, and
-+	// ours is the emulator thread holding the CORE's context — handing that to zc_shared would push GL
-+	// work onto GStreamer's thread and defeat the purpose. Ordering instead rests on the glFlush() the
-+	// producer issues right after the GPU->GPU copy (graphics.CopyFrameToPool): flushed commands in one
-+	// context of a share group are visible to the others.
++	// NO GstGLSyncMeta. It looks like the right tool and it is a trap here: set_sync_point() drives
++	// gst_gl_context_thread_add() on the context you give it, and the CORE's context is WRAPPED — it has
++	// no thread of its own, so that trips
++	//   'context->priv->active_thread == g_thread_self()' failed
++	// on every single frame (it spammed a worker to death). Handing it the SHARED context instead would
++	// bounce the fence onto GStreamer's thread, which is not where the copy happened.
 +	//
-+	// This is the part to suspect FIRST if frames ever tear or show a stale half-frame — it would be a
-+	// sync problem, not an encoder one.
++	// The producer waits instead: graphics.CopyFrameToPool does a glFinish after the GPU->GPU copy, so
++	// the texture is complete before the encoder is ever told about it. That costs a GPU sync on the
++	// emulator thread — but no PCIe transfer, which is the 11 MB/frame this whole path exists to remove.
 +	gst_app_src_push_buffer(src, buf);
 +}
 +*/
@@ -10031,8 +10724,14 @@ index 0000000..24f7fa1
 +	"fmt"
 +	"unsafe"
 +
++	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/graphics"
 +	"github.com/go-gst/go-gst/gst"
 +)
++
++//export goReleaseZeroCopyTexture
++func goReleaseZeroCopyTexture(texid C.uint) {
++	graphics.ReleaseZeroCopyTexture(uint32(texid))
++}
 +
 +// glZeroCopyReady reports whether the GL context has been wrapped successfully.
 +func glZeroCopyReady() bool { return C.zc_shared != nil }
