@@ -4757,6 +4757,121 @@ index 6974d59..ad44503 100644
  			if err := f.Save(); err != nil {
  				f.log.Error().Msgf("Autosave failed: %v", err)
  			} else {
+diff --git a/pkg/worker/caged/libretro/graphics/opengl.go b/pkg/worker/caged/libretro/graphics/opengl.go
+index 0c9d773..b0aee50 100644
+--- a/pkg/worker/caged/libretro/graphics/opengl.go
++++ b/pkg/worker/caged/libretro/graphics/opengl.go
+@@ -64,6 +64,7 @@ import (
+ 	"errors"
+ 	"fmt"
+ 	"math"
++	"time"
+ 	"unsafe"
+ )
+ 
+@@ -302,6 +303,15 @@ func destroyFramebuffer() {
+ // Call SetBuffer first to size the buffer (w * h * 4).
+ func ReadFramebuffer(size, w, h uint) []byte {
+ 	bindFramebuffer(gl_FRAMEBUFFER, fbo)
++	// glReadPixels is SYNCHRONOUS and runs on the emulator thread: it flushes the GL pipeline and
++	// blocks until the frame has crossed PCIe. That stall is what CLOUD_GAME_GL_READBACK_STATS=1
++	// measures (readback_stats.go) — it is the cost a GL/CUDA zero-copy path would remove.
++	if readbackStats.on {
++		start := time.Now()
++		readPixels(0, 0, int32(w), int32(h), pixType, pixFormat, bufPtr)
++		recordReadback(time.Since(start), size, w, h)
++		return buf[:size]
++	}
+ 	readPixels(0, 0, int32(w), int32(h), pixType, pixFormat, bufPtr)
+ 	return buf[:size]
+ }
+diff --git a/pkg/worker/caged/libretro/graphics/readback_stats.go b/pkg/worker/caged/libretro/graphics/readback_stats.go
+new file mode 100644
+index 0000000..96877c5
+--- /dev/null
++++ b/pkg/worker/caged/libretro/graphics/readback_stats.go
+@@ -0,0 +1,81 @@
++package graphics
++
++import (
++	"fmt"
++	"os"
++	"sort"
++	"sync"
++	"time"
++)
++
++// Instrumentation for the GL readback (env-gated: CLOUD_GAME_GL_READBACK_STATS=1).
++//
++// Hardware-rendered cores (n64, gc, ps2, psp, dc — everything 3D) render into an FBO on the GPU and we
++// pull the pixels back with glReadPixels, on the EMULATOR THREAD, inside video_refresh. That call is
++// synchronous: it flushes the GL pipeline and blocks until the frame has crossed PCIe into system
++// memory. Then patch 0004 copies it again, and NVENC uploads it straight back to the GPU.
++//
++// So the question this answers is NOT "how much bandwidth does the round trip cost" — it is "how long
++// does the core sit still doing nothing". At 60fps the whole frame budget is 16.7 ms. If the readback
++// is ~0.5 ms it is noise and GL/CUDA interop (which has to share a WGL context across libco cothreads
++// — a crash risk, not a glitch risk) is not worth it. If it is 5-8 ms it is the biggest single win
++// available on the 3D cores, and it also explains frame-pacing sag on the heavy ones.
++//
++// Measure before building: the same discipline settled P4 (9.2 ms vs 3.0 ms measured), and it is what
++// showed the +137 ms figure in arxiv 2507.00623 does not describe this stack.
++var readbackStats = struct {
++	on      bool
++	mu      sync.Mutex
++	samples []time.Duration
++	w, h    uint
++	bytes   uint
++	logged  int
++}{on: os.Getenv("CLOUD_GAME_GL_READBACK_STATS") == "1"}
++
++const readbackReportEvery = 300 // ~5s at 60fps
++
++// recordReadback times one glReadPixels and periodically reports the distribution. Called only when
++// the env gate is on; the zero-cost path is a single bool check in ReadFramebuffer.
++func recordReadback(d time.Duration, size, w, h uint) {
++	s := &readbackStats
++	s.mu.Lock()
++	s.samples = append(s.samples, d)
++	s.w, s.h, s.bytes = w, h, size
++	if len(s.samples) < readbackReportEvery {
++		s.mu.Unlock()
++		return
++	}
++	batch := s.samples
++	s.samples = nil
++	s.logged++
++	n := s.logged
++	s.mu.Unlock()
++
++	sorted := make([]time.Duration, len(batch))
++	copy(sorted, batch)
++	sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
++
++	pct := func(p int) float64 {
++		i := len(sorted) * p / 100
++		if i >= len(sorted) {
++			i = len(sorted) - 1
++		}
++		return float64(sorted[i].Microseconds()) / 1000
++	}
++	var total time.Duration
++	for _, d := range batch {
++		total += d
++	}
++	mean := float64(total.Microseconds()) / float64(len(batch)) / 1000
++
++	// A frame is 16.7 ms at 60fps — express the cost as the share of the budget the core spends
++	// blocked, because that is the number that decides whether this is worth fixing.
++	budgetPct := pct(50) / 16.67 * 100
++
++	fmt.Fprintf(os.Stderr,
++		"[gl-readback #%d] %dx%d %.1f MB/frame | p50 %.2f ms  p95 %.2f ms  max %.2f ms  mean %.2f ms "+
++			"| p50 = %.0f%% of a 60fps frame budget (n=%d)\n",
++		n, w, h, float64(size)/1024/1024,
++		pct(50), pct(95), float64(sorted[len(sorted)-1].Microseconds())/1000, mean,
++		budgetPct, len(batch))
++}
 diff --git a/pkg/worker/caged/libretro/graphics/rgfw.go b/pkg/worker/caged/libretro/graphics/rgfw.go
 index ce2471b..8de6eee 100644
 --- a/pkg/worker/caged/libretro/graphics/rgfw.go
