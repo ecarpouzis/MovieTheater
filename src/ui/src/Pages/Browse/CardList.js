@@ -4,6 +4,13 @@ import UserMovieOptions, { useViewingToggles } from "./UserMovieOptions";
 import "./CardList.css";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { preloadImages } from "../../preloadImages";
+import useGridWindow from "../../hooks/useGridWindow";
+
+// Posters fetched ahead of the mounted window, so a card's <img> renders from cache the moment the
+// window reaches it rather than snapping in. Bounded — the old code preloaded every card the list
+// had ever loaded, which meant 60 fresh image requests per appended page competing with the posters
+// actually on screen.
+const PRELOAD_AHEAD = 24;
 
 // Poster thumbnail with a graceful fallback: when the image 404s (common for Misc videos, which
 // usually have no poster), swap in a placeholder instead of the browser's broken-image glyph.
@@ -135,7 +142,7 @@ const MovieCard = memo(function MovieCard({
   );
 });
 
-function CardList({ movieDataArray, userData, setUserData, actorSearch, activePerson, onMovieClick, onToggleViewing }) {
+function CardList({ movieDataArray, userData, setUserData, actorSearch, activePerson, onMovieClick, onToggleViewing, listKey }) {
   const activeName = (activePerson || "").trim().toLowerCase();
 
   // O(1) membership checks per card (replaces an O(n) `.includes()` per card) — and only rebuilt
@@ -144,37 +151,52 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
   const wantSet = useMemo(() => new Set(userData?.moviesToWatch), [userData?.moviesToWatch]);
 
   // Stable seen/want toggles + a stable movie-click handler, so passing them to a memoized card
-  // doesn't defeat the memo (a fresh closure each render would). actorSearch/onMovieClick from the
-  // parent are already stable references.
+  // doesn't defeat the memo (a fresh closure each render would). actorSearch/onMovieClick/
+  // onToggleViewing are stabilized with useCallback in Browse — they used to be plain functions
+  // rebuilt on every render, which quietly defeated MovieCard's memo: appending page N re-rendered
+  // all N×60 mounted cards, as did every modal open and every Seen/Want toggle.
   const { toggleSeen, toggleWant } = useViewingToggles(userData, setUserData, onToggleViewing);
   const handleMovieClick = useCallback((id, kind) => onMovieClick(id, kind), [onMovieClick]);
   const handleActorSearch = useCallback((name) => actorSearch(name), [actorSearch]);
 
-  // Preload loaded cards' poster thumbnails (deduped) so below-the-fold lazy <img>s render from cache
-  // instead of snapping in on scroll. Bounded by what infinite-scroll has loaded.
+  // Only the rows near the viewport stay mounted (useGridWindow); the rest of the list's height is
+  // held by the two spacers. Cards are a fixed height here, so the reserved height is exact.
+  const { hostRef, gridRef, start, end, padTop, padBottom } = useGridWindow(movieDataArray.length, { resetKey: listKey });
+  const visible = useMemo(() => movieDataArray.slice(start, end), [movieDataArray, start, end]);
+
+  // Warm the poster cache for the mounted window plus a little ahead of it, so a card scrolled into
+  // the window renders its <img> from cache instead of fetching it (deduped globally).
   useEffect(() => {
-    preloadImages((movieDataArray || []).map((m) => MovieAPI.getPosterThumbnail(m.id, m.posterVersion, m.kind)));
-  }, [movieDataArray]);
+    const ahead = movieDataArray.slice(start, Math.min(movieDataArray.length, end + PRELOAD_AHEAD));
+    preloadImages(ahead.map((m) => MovieAPI.getPosterThumbnail(m.id, m.posterVersion, m.kind)));
+  }, [movieDataArray, start, end]);
 
   return (
-    <div className="card-list">
-      {movieDataArray.map((item, index) => (
-        // Eagerly fetch the first couple of rows (up to a 4-wide grid) so the posters above the fold
-        // paint immediately instead of waiting on lazy-load intersection; everything below stays lazy.
-        <MovieCard
-          key={`${item.kind || "movie"}-${item.id}`}
-          item={item}
-          isAboveFold={index < 8}
-          activeName={activeName}
-          showOptions={!!userData}
-          isWatched={userData ? seenSet.has(item.id) : false}
-          isWanted={userData ? wantSet.has(item.id) : false}
-          onMovieClick={handleMovieClick}
-          onActorSearch={handleActorSearch}
-          onToggleSeen={toggleSeen}
-          onToggleWant={toggleWant}
-        />
-      ))}
+    <div ref={hostRef} className="card-list-host">
+      {padTop > 0 && <div className="grid-spacer" style={{ height: padTop }} aria-hidden="true" />}
+      <div className="card-list" ref={gridRef}>
+        {visible.map((item, i) => {
+          const index = start + i;
+          // Eagerly fetch the first couple of rows (up to a 4-wide grid) so the posters above the fold
+          // paint immediately instead of waiting on lazy-load intersection; everything below stays lazy.
+          return (
+            <MovieCard
+              key={`${item.kind || "movie"}-${item.id}`}
+              item={item}
+              isAboveFold={index < 8}
+              activeName={activeName}
+              showOptions={!!userData}
+              isWatched={userData ? seenSet.has(item.id) : false}
+              isWanted={userData ? wantSet.has(item.id) : false}
+              onMovieClick={handleMovieClick}
+              onActorSearch={handleActorSearch}
+              onToggleSeen={toggleSeen}
+              onToggleWant={toggleWant}
+            />
+          );
+        })}
+      </div>
+      {padBottom > 0 && <div className="grid-spacer" style={{ height: padBottom }} aria-hidden="true" />}
     </div>
   );
 }

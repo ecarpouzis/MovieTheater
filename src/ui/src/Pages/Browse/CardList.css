@@ -9,14 +9,12 @@
   padding: 10px 10px 2px;
 }
 
-/* Off-screen cards skip layout + paint (views-perf catalog #5). Safe here because there's
-   no JS render-window unmounting these nodes — content-visibility is exactly the tool for a
-   long, fully-mounted list. `auto` in contain-intrinsic-size remembers each card's real
-   rendered height so the scrollbar stays stable as cards leave/enter the render zone. */
+/* The grid is now DOM-windowed (useGridWindow): off-screen cards are unmounted, not merely skipped.
+   `content-visibility: auto` was removed with that change — it's redundant once the nodes are gone,
+   and actively harmful to the window: a skipped card reports its `contain-intrinsic-size` rather
+   than its real height, which poisons the row measurements the spacers are sized from. */
 .card-cell {
   min-width: 0;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 240px;
 }
 
 @media (min-width: 768px) {

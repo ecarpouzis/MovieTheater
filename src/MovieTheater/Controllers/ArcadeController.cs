@@ -62,34 +62,24 @@ namespace MovieTheater.Controllers
             return setting != null && int.TryParse(setting.SettingValue, out var parsed) ? parsed : 100;
         }
 
-        // ONE CARD PER GAME (docs/arcade-dedupe-multidisc-plan.md): rows are grouped by (System, Title) into
-        // games, each carrying a version dropdown (region/rev/edition/disc/hack), so the same game's many
-        // ROMs collapse to a single card. Filters gate CARDS by version existence — a game shows iff it has
-        // ≥1 version matching. Defaults are English + non-modded; region/variant "all" broadens, a specific
-        // value narrows. Grouping is query-time so ingests fold in automatically. Age gate always applies.
-        [HttpGet("/API/Arcade/Games")]
-        public async Task<IActionResult> Games(
-            string system = null, string region = null, int? maxPlayers = null,
-            string variant = null, string genre = null, string sort = null, string search = null, int page = 1, int pageSize = 60)
+        // No explicit choice → default English + non-modded (but a name search spans everything).
+        private static (string Region, string Variant) NormalizeScope(string region, string variant, bool searching)
         {
-            var userId = GetCurrentUserId();
-            if (userId == null)
-                return Unauthorized();
-            if (!host.IsConfigured)
-                return StatusCode(501, new { message = "The arcade is not configured on this server." });
-
-            bool searching = !string.IsNullOrWhiteSpace(search);
-            // No explicit choice → default English + non-modded (but a name search spans everything).
             var reg = string.IsNullOrWhiteSpace(region) ? (searching ? "all" : "english") : region.Trim().ToLowerInvariant();
             var var_ = string.IsNullOrWhiteSpace(variant) ? (searching ? "all" : "release") : variant.Trim().ToLowerInvariant();
+            return (reg, var_);
+        }
 
-            var baseQ = await AgeVisibleGamesAsync(userId.Value);
-
-            // The match set: rows that make a game QUALIFY for a card.
+        // The match set: rows that make a game QUALIFY for a card. Shared by Games and GameLetters so a
+        // letter's offset indexes EXACTLY the list Games pages — the moment the two disagree about what
+        // matches, every letter jump lands on the wrong card.
+        private static IQueryable<ArcadeGame> ApplyCardFilters(
+            IQueryable<ArcadeGame> baseQ, string system, int? maxPlayers, string genre, string search, string reg, string var_)
+        {
             var matchQ = baseQ;
             if (!string.IsNullOrWhiteSpace(system)) matchQ = matchQ.Where(g => g.System == system);
             if (maxPlayers is int mp && mp > 1) matchQ = matchQ.Where(g => g.MaxPlayers >= mp);
-            if (searching) { var s = search.Trim(); matchQ = matchQ.Where(g => g.Title.Contains(s)); }
+            if (!string.IsNullOrWhiteSpace(search)) { var s = search.Trim(); matchQ = matchQ.Where(g => g.Title.Contains(s)); }
 
             if (reg == "english")
                 matchQ = matchQ.Where(g => g.Region == null || (g.Region != "Japan" && g.Region != "Asia" && g.Region != "Other"));
@@ -111,9 +101,39 @@ namespace MovieTheater.Controllers
                 matchQ = matchQ.Where(g => baseQ.Any(a => a.System == g.System && a.Title == g.Title
                     && a.Genres != null && a.Genres.Contains(gr)));
             }
+            return matchQ;
+        }
+
+        // ONE CARD PER GAME (docs/arcade-dedupe-multidisc-plan.md): rows are grouped by (System, Title) into
+        // games, each carrying a version dropdown (region/rev/edition/disc/hack), so the same game's many
+        // ROMs collapse to a single card. Filters gate CARDS by version existence — a game shows iff it has
+        // ≥1 version matching. Defaults are English + non-modded; region/variant "all" broadens, a specific
+        // value narrows. Grouping is query-time so ingests fold in automatically. Age gate always applies.
+        //
+        // `skip` is an absolute offset into the sorted card list and WINS over `page`: the lobby's pager
+        // seeks to a letter bucket, which starts wherever it starts — rounding that down to a page boundary
+        // would land the user in the tail of the previous letter.
+        [HttpGet("/API/Arcade/Games")]
+        public async Task<IActionResult> Games(
+            string system = null, string region = null, int? maxPlayers = null,
+            string variant = null, string genre = null, string sort = null, string search = null,
+            int page = 1, int pageSize = 60, int? skip = null)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            if (!host.IsConfigured)
+                return StatusCode(501, new { message = "The arcade is not configured on this server." });
+
+            bool searching = !string.IsNullOrWhiteSpace(search);
+            var (reg, var_) = NormalizeScope(region, variant, searching);
+
+            var baseQ = await AgeVisibleGamesAsync(userId.Value);
+            var matchQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, reg, var_);
 
             page = Math.Max(1, page);
             pageSize = Math.Clamp(pageSize, 1, 120);
+            int skipRows = Math.Max(0, skip ?? (page - 1) * pageSize);
             // Card-level aggregates for sorting: rating/year live on the anchor, players is the card max.
             var groupedQ = matchQ.GroupBy(g => new { g.System, g.Title })
                 .Select(grp => new
@@ -139,7 +159,7 @@ namespace MovieTheater.Controllers
                 _ => groupedQ.OrderBy(x => x.Sort).ThenBy(x => x.Title),
             };
             var pageKeys = await groupedQ
-                .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                .Skip(skipRows).Take(pageSize).ToListAsync();
 
             // All age-visible versions of the paged games (superset by System/Title IN, trimmed to exact
             // page keys in memory) — the dropdown lists every version, not just the ones that matched.
@@ -226,7 +246,67 @@ namespace MovieTheater.Controllers
                 };
             }).ToList();
 
-            return Json(new { games, totalCount, page, pageSize });
+            return Json(new { games, totalCount, page, pageSize, skip = skipRows });
+        }
+
+        // The A–Z bucket a card sorts into. Anything not starting A–Z (numbers, punctuation) is "#".
+        private static string LetterOf(string sortKey)
+        {
+            if (string.IsNullOrEmpty(sortKey)) return "#";
+            var c = char.ToUpperInvariant(sortKey[0]);
+            return c >= 'A' && c <= 'Z' ? c.ToString() : "#";
+        }
+
+        // Bucket sizes + OFFSETS for the alphabetically-ordered card list, under the lobby's current
+        // filters — what the lobby's letter pager jumps with (offset → ?skip=). Offsets are counted by
+        // walking the ordered list itself rather than by ordering the buckets ourselves, so they agree
+        // with SQL's collation instead of with an assumption about it.
+        //
+        // Only meaningful for the A–Z sort; under rating/year/system/players the buckets aren't
+        // contiguous and the pager shows page numbers instead, so it never calls this.
+        [HttpGet("/API/Arcade/GameLetters")]
+        public async Task<IActionResult> GameLetters(
+            string system = null, string region = null, int? maxPlayers = null,
+            string variant = null, string genre = null, string search = null)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            if (!host.IsConfigured)
+                return StatusCode(501, new { message = "The arcade is not configured on this server." });
+
+            bool searching = !string.IsNullOrWhiteSpace(search);
+            var (reg, var_) = NormalizeScope(region, variant, searching);
+
+            var baseQ = await AgeVisibleGamesAsync(userId.Value);
+            var matchQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, reg, var_);
+
+            // The same grouping + the same default ordering Games uses, so index i here is card i there.
+            var sortKeys = await matchQ.GroupBy(g => new { g.System, g.Title })
+                .Select(grp => new { Sort = grp.Min(x => x.SortTitle), grp.Key.Title })
+                .OrderBy(x => x.Sort).ThenBy(x => x.Title)
+                .Select(x => x.Sort)
+                .ToListAsync();
+
+            // First offset wins if a letter turns out not to be contiguous (a collation could sort some
+            // punctuation between letters): jumping to the bucket's first card is still right.
+            var order = new List<string>();
+            var counts = new Dictionary<string, int>();
+            var offsets = new Dictionary<string, int>();
+            for (int i = 0; i < sortKeys.Count; i++)
+            {
+                var letter = LetterOf(sortKeys[i]);
+                if (!counts.ContainsKey(letter))
+                {
+                    order.Add(letter);
+                    counts[letter] = 0;
+                    offsets[letter] = i;
+                }
+                counts[letter]++;
+            }
+
+            var letters = order.Select(l => new { letter = l, count = counts[l], offset = offsets[l] }).ToList();
+            return Json(new { total = sortKeys.Count, letters });
         }
 
         // Facets for the lobby filter controls: the systems / regions / variants actually present in the

@@ -6,11 +6,15 @@ import GameCard from "./GameCard";
 import HeavyGameModal from "./HeavyGameModal";
 import LiveRooms from "./LiveRooms";
 import SavesManager from "./SavesManager";
+import ArcadePager from "./ArcadePager";
 import { rememberLobbySearch } from "./arcadeLobbyState";
+import useInfiniteScroll from "../../hooks/useInfiniteScroll";
+import useGridWindow from "../../hooks/useGridWindow";
 import "./ArcadePage.css";
 
 const { Text } = Typography;
 const PAGE_SIZE = 60;
+const SENTINEL_STYLE = { height: 1 };
 
 // Per-room stream quality the creator picks (arcade per-room bitrate/FEC). Persisted so a friend group
 // keeps its setting across sessions; applied to every room YOU start (one encoder per room = creator's
@@ -93,14 +97,29 @@ export default function ArcadePage() {
 
   const [games, setGames] = useState(null); // null = first load
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
+  // The catalog is ONE list that the grid seeks into; `startIndex` is the absolute catalog index of
+  // games[0]. A pager jump re-anchors it (jump to "M" → startIndex = M's offset) and infinite scroll
+  // appends from there, so there's no page bookkeeping to keep coherent with the appended window.
+  const [startIndex, setStartIndex] = useState(0);
+  const [loading, setLoading] = useState(false); // first page / a pager jump (replaces the grid)
+  const [loadingMore, setLoadingMore] = useState(false); // appending the next page
+  const [letters, setLetters] = useState(null); // A–Z bucket offsets, for the pager (A–Z sort only)
   const [rooms, setRooms] = useState([]);
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
   const [heavyGame, setHeavyGame] = useState(null); // heavy-lane card → the Play-via-Moonlight modal
   const [quality, setQuality] = useState(loadQuality); // creator's per-room stream quality (persisted)
   const unconfiguredRef = useRef(false);
+  const sectionRef = useRef(null);
+
+  // Read by the identity-stable loaders below, so the scroll listener never re-subscribes.
+  const epochRef = useRef(0);
+  const abortRef = useRef(null);
+  const loadingMoreRef = useRef(false);
+  const gamesRef = useRef([]);
+  const startRef = useRef(0);
+  const totalRef = useRef(0);
+  const filtersRef = useRef(null);
 
   const setQ = (patch) => setQuality((prev) => { const next = { ...prev, ...patch }; saveQuality(next); return next; });
 
@@ -118,29 +137,82 @@ export default function ArcadePage() {
     };
   }, [location.search]);
   const filterKey = JSON.stringify(filters);
+  filtersRef.current = filters;
+  gamesRef.current = games || [];
+  startRef.current = startIndex;
+  totalRef.current = total;
 
   // Stash the filtered lobby URL so the room's exit buttons can come back to it (arcadeLobbyState).
   useEffect(() => { rememberLobbySearch(location.search); }, [location.search]);
 
-  const fetchPage = useCallback((pageNum, replace) => {
-    setLoading(true);
-    MovieAPI.getArcadeGames({ ...filters, page: pageNum, pageSize: PAGE_SIZE })
+  /**
+   * Load `pageSize` cards starting at absolute catalog index `skip`.
+   * `replace` = this is a new anchor (filters changed, or a pager jump): it cancels whatever is in
+   * flight, bumps the epoch so a late reply from the old query can't append its rows onto the new
+   * list, and re-seats the grid at `skip`. Otherwise it's an append.
+   */
+  const loadPage = useCallback((skip, replace) => {
+    if (replace) {
+      epochRef.current += 1;
+      abortRef.current?.abort();
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+      setLoading(true);
+    } else {
+      if (loadingMoreRef.current) return;
+      loadingMoreRef.current = true;
+      setLoadingMore(true);
+    }
+    const epoch = epochRef.current;
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    MovieAPI.getArcadeGames({ ...filtersRef.current, skip, pageSize: PAGE_SIZE }, controller.signal)
       .then((r) => {
         if (r.status === 501) { unconfiguredRef.current = true; return null; }
         return r.ok ? r.json() : null;
       })
       .then((data) => {
+        if (epochRef.current !== epoch) return; // a newer query owns the grid now
         if (!data) { setGames((g) => g || []); return; }
         setTotal(data.totalCount);
-        setPage(data.page);
-        setGames((prev) => (replace || !prev ? data.games : [...prev, ...data.games]));
+        if (replace) {
+          setStartIndex(data.skip ?? skip);
+          setGames(data.games);
+        } else if (data.games.length) {
+          setGames((prev) => (prev ? prev.concat(data.games) : data.games));
+        }
       })
-      .catch(() => setGames((g) => g || []))
-      .finally(() => setLoading(false));
-  }, [filters]);
+      .catch((err) => { if (err?.name !== "AbortError") setGames((g) => g || []); })
+      .finally(() => {
+        if (epochRef.current !== epoch) return;
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+        setLoading(false);
+      });
+  }, []);
 
-  // Reset + fetch page 1 whenever the filters change.
-  useEffect(() => { setGames(null); setPage(1); fetchPage(1, true); /* eslint-disable-next-line */ }, [filterKey]);
+  // Reset + fetch from the top whenever the filters change. Keyed on the serialized filters, not on
+  // the `filters` object (fresh every render) — loadPage reads them through a ref.
+  useEffect(() => {
+    setGames(null);
+    setStartIndex(0);
+    loadPage(0, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey]);
+
+  // A–Z bucket offsets for the pager. Only under the alphabetical sort — under any other sort the
+  // letter buckets aren't contiguous, so the strip shows page numbers and needs nothing from here.
+  useEffect(() => {
+    if (filters.sort) { setLetters(null); return undefined; }
+    let alive = true;
+    MovieAPI.getArcadeGameLetters(filters)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive) setLetters(d?.letters || []); })
+      .catch(() => {});
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey]);
 
   // Live-rooms strip, polled every 12 s.
   useEffect(() => {
@@ -151,19 +223,31 @@ export default function ArcadePage() {
     return () => { alive = false; clearInterval(id); };
   }, []);
 
-  // Infinite scroll: near the bottom, pull the next page (direct scroll-position check — the pattern
-  // that survives in this app, per the browse-infinite-scroll notes).
-  const hasMore = games != null && games.length < total;
-  useEffect(() => {
-    if (!hasMore) return undefined;
-    const onScroll = () => {
-      if (loading) return;
-      const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 600;
-      if (nearBottom) fetchPage(page + 1, false);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [hasMore, loading, page, fetchPage]);
+  // Infinite scroll. The old version listened on `window` and measured `document.body.offsetHeight`,
+  // which is wrong on desktop — the page scrolls inside .app-content, so scrollY never moved and the
+  // grid only ever grew via the Load more button. The shared hook resolves the real scroll root.
+  const hasMore = games != null && startIndex + games.length < total;
+  const loadMore = useCallback(() => {
+    const next = startRef.current + gamesRef.current.length;
+    if (loadingMoreRef.current || next >= totalRef.current) return;
+    loadPage(next, false);
+  }, [loadPage]);
+  const { sentinelRef, recheck } = useInfiniteScroll({ enabled: games != null, hasMore, onLoadMore: loadMore });
+  useEffect(() => { recheck(); }, [games, recheck]);
+
+  // Only the rows near the viewport stay mounted; the rest of the loaded list's height is held by
+  // spacers. An arcade card's height varies (box-art aspect, whether it has a version/cheats row), so
+  // the hook measures rows rather than assuming a fixed one.
+  const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart } = useGridWindow(games?.length || 0, {
+    resetKey: `${filterKey}:${startIndex}`,
+  });
+  const visibleGames = useMemo(() => (games || []).slice(start, end), [games, start, end]);
+
+  // Seek the grid to an absolute catalog offset (a letter bucket or a page boundary).
+  const jumpTo = useCallback((offset) => {
+    loadPage(Math.max(0, offset), true);
+    sectionRef.current?.scrollIntoView({ block: "start" });
+  }, [loadPage]);
 
   // `cheats` are the ids the creator ticked on the card (arcade cheats feature). They ride every path out
   // of this modal — Continue, New game, and a snapshot resume all launch the same room.
@@ -300,7 +384,7 @@ export default function ArcadePage() {
 
         <LiveRooms rooms={rooms} onJoin={joinRoom} />
 
-        <section className="arcade-section">
+        <section className="arcade-section" ref={sectionRef}>
           <div className="arcade-section__head arcade-section__head--games">
             <h2 className="arcade-section__title">Games</h2>
             <span className="arcade-section__count">
@@ -314,20 +398,36 @@ export default function ArcadePage() {
             <Empty description={anyFilter ? "No games match those filters." : "No games here yet."} />
           ) : (
             <>
-              <div className="arcade-grid">
-                {games.map((game) => (
-                  <GameCard key={game.key} game={game} onStart={createRoom} creating={creating}
-                    onHeavy={setHeavyGame}
-                    onManageSaves={(id) => setManageSaves({ gameId: id, title: game.title })} />
-                ))}
+              <div ref={hostRef}>
+                {padTop > 0 && <div className="grid-spacer" style={{ height: padTop }} aria-hidden="true" />}
+                <div className="arcade-grid" ref={gridRef}>
+                  {visibleGames.map((game) => (
+                    <GameCard key={game.key} game={game} onStart={createRoom} creating={creating}
+                      onHeavy={setHeavyGame}
+                      onManageSaves={(id) => setManageSaves({ gameId: id, title: game.title })} />
+                  ))}
+                </div>
+                {padBottom > 0 && <div className="grid-spacer" style={{ height: padBottom }} aria-hidden="true" />}
               </div>
+              <div ref={sentinelRef} aria-hidden="true" style={SENTINEL_STYLE} />
               <div className="arcade-more">
-                {loading ? <Spin /> : hasMore ? (
-                  <Button onClick={() => fetchPage(page + 1, false)}>Load more</Button>
+                {loadingMore ? <Spin /> : hasMore ? (
+                  <Button onClick={loadMore}>Load more</Button>
                 ) : (
                   <Text type="secondary">— that's all {total.toLocaleString()} —</Text>
                 )}
               </div>
+              {/* Letters when sorted A–Z, page numbers under any other sort. Both seek into the same
+                  continuous list; the active button follows the grid as you scroll. */}
+              <ArcadePager
+                mode={filters.sort ? "pages" : "letters"}
+                letters={letters}
+                total={total}
+                pageSize={PAGE_SIZE}
+                currentIndex={startIndex + visibleStart}
+                onJump={jumpTo}
+                disabled={loading}
+              />
             </>
           )}
         </section>

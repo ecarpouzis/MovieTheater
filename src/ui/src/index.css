@@ -4,6 +4,8 @@ body {
   align-items: flex-start;
   margin: 0;
   padding: 0;
+  /* Mobile scrolls the window, not .app-content — see the note there. */
+  overflow-anchor: none;
   /* font-family / background / color come from theme.css tokens */
 }
 
@@ -151,6 +153,16 @@ img {
   background: #dc3545 !important;
 }
 
+/* Reserves the height of the rows a windowed grid has recycled away (useGridWindow), above and below
+   the mounted window, so the scrollbar reflects the whole loaded list. It sits OUTSIDE the grid
+   element — a full-width child inside a grid would take a track and fight the layout. Shared by
+   Browse's card grid and the arcade lobby. */
+.grid-spacer {
+  width: 100%;
+  flex: none;
+  pointer-events: none;
+}
+
 /* App layout */
 .app-layout {
   height: 100vh;
@@ -165,6 +177,12 @@ img {
   -webkit-overflow-scrolling: touch;
   background: var(--content-bg);
   transition: background-color 0.2s ease;
+  /* The windowed grids (useGridWindow) compensate scroll themselves when a row above the fold is
+     re-measured. Native scroll anchoring would apply its own correction on top of ours, and the two
+     fight each other into a bounce. It's per scroll container and does NOT inherit, so it has to be
+     set on every scroller that hosts spacer-virtualized content — here and on <body> for mobile,
+     where .app-content stops scrolling and the window takes over. */
+  overflow-anchor: none;
 }
 
 @media (max-width: 768px) {

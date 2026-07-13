@@ -650,15 +650,33 @@ function beaconLeaveWatchparty(token) {
 // All same-origin, cookie-authed like the rest. The heavy lifting (WebRTC media +
 // input) is NOT here — it rides the CloudRetro client shim straight to the gateway.
 
-// Server-side filtered + paged (the catalog is ~12.5k games). params: { system, region, maxPlayers,
-// variant, search, page, pageSize }. Response: { games, totalCount, page, pageSize }.
-function getArcadeGames(params = {}) {
+function arcadeQuery(params) {
   const q = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
     if (v != null && v !== "" && v !== "all") q.set(k, v);
   });
   const qs = q.toString();
-  return fetch("/API/Arcade/Games" + (qs ? `?${qs}` : ""));
+  return qs ? `?${qs}` : "";
+}
+
+// Server-side filtered + paged (the catalog is ~17k cards). params: { system, region, maxPlayers,
+// variant, genre, sort, search, skip | page, pageSize }. `skip` is an absolute catalog offset and
+// wins over `page` — it's what lets the lobby's pager seek straight to a letter bucket, which starts
+// mid-page. Response: { games, totalCount, page, pageSize, skip }.
+function getArcadeGames(params = {}, signal) {
+  return fetch("/API/Arcade/Games" + arcadeQuery(params), { signal });
+}
+
+// A–Z bucket sizes + offsets for the SAME filtered catalog, in alphabetical order:
+// { total, letters: [{ letter, count, offset }] }. The lobby pager turns an offset into a jump.
+function getArcadeGameLetters(params = {}) {
+  // Letters are a property of the filter set, not of the sort or the paging window.
+  const filters = { ...params };
+  delete filters.sort;
+  delete filters.page;
+  delete filters.pageSize;
+  delete filters.skip;
+  return fetch("/API/Arcade/GameLetters" + arcadeQuery(filters));
 }
 
 // Facets for the lobby filter controls: { total, multiplayer, systems[], regions[], variants[] } (each { value, count }).
@@ -1055,6 +1073,7 @@ const MovieAPI = {
   leaveWatchparty,
   beaconLeaveWatchparty,
   getArcadeGames,
+  getArcadeGameLetters,
   getArcadeFilters,
   getArcadeRooms,
   createArcadeRoom,
