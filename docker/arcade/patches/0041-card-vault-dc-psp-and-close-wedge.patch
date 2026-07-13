@@ -1,0 +1,863 @@
+diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
+index 91d4a43..7eb10cd 100644
+--- a/pkg/config/emulator.go
++++ b/pkg/config/emulator.go
+@@ -100,10 +100,14 @@ type LibretroCoreConfig struct {
+ 	IsGlAllowed     bool
+ 	KbMouseSupport  bool
+ 	Lib             string
++	// NoSaveStates refuses to serialize this core at all (patch 0041). PPSSPP cannot survive it on
++	// EITHER thread: off its cothread retro_serialize_size access-violates, and on it the core wedges
++	// (boots, then stops producing frames). Its progress is the memstick card, which the vault carries.
++	NoSaveStates    bool
+ 	NonBlockingSave bool
+ 	Options         map[string]string
+ 	Options4rom     map[string]map[string]string // <(^_^)>
+-	Fps4rom         map[string]float64            // per-ROM forced framerate override (arcade per-game config)
++	Fps4rom         map[string]float64           // per-ROM forced framerate override (arcade per-game config)
+ 	Roms            []string
+ 	SaveStateFs     string
+ 	Scale           float64
+diff --git a/pkg/os/os.go b/pkg/os/os.go
+index b5a7dfe..a2d3960 100644
+--- a/pkg/os/os.go
++++ b/pkg/os/os.go
+@@ -10,6 +10,7 @@ import (
+ 	"os/signal"
+ 	"os/user"
+ 	"path/filepath"
++	"strings"
+ 	"syscall"
+ )
+ 
+@@ -80,6 +81,13 @@ func CopyFile(from string, to string) (err error) {
+ 	if err != nil {
+ 		return err
+ 	}
++
++	// Carry the modification time across. The card vault decides what to keep by comparing mtimes
++	// (CopyNewer), so a copy that stamped "now" on the destination would make every copy look like
++	// the freshest card and let a stale one win.
++	if fi, err := os.Stat(from); err == nil {
++		_ = os.Chtimes(to, fi.ModTime(), fi.ModTime())
++	}
+ 	return nil
+ }
+ 
+@@ -176,3 +184,174 @@ func ReplaceTree(src, dst string) error {
+ 	}
+ 	return CopyTree(src, dst)
+ }
++
++// ── File sets inside a shared directory (patch 0041: cards that are NOT a directory) ─────────────
++//
++// Some cores keep their card as loose files in a directory they share with data we must not touch:
++// flycast writes vmu_save_A1..D1.bin straight into the Dreamcast SYSTEM dir, next to dc_boot.bin
++// and dc_flash.bin. The whole-directory helpers above would vault the BIOS into every player's
++// card and overwrite it on seed, so these operate on a NAME PATTERN and never see anything else.
++
++// GlobFiles returns the files directly in dir whose base name matches pattern. Sub-directories are
++// ignored (never matched, never descended), and a missing dir is empty rather than an error.
++func GlobFiles(dir, pattern string) ([]string, error) {
++	if strings.ContainsAny(pattern, `/\`) {
++		return nil, errors.New("card pattern must be a bare file name, got " + pattern)
++	}
++	entries, err := os.ReadDir(dir)
++	if errors.Is(err, fs.ErrNotExist) {
++		return nil, nil
++	}
++	if err != nil {
++		return nil, err
++	}
++	var out []string
++	for _, e := range entries {
++		if e.IsDir() {
++			continue
++		}
++		ok, err := filepath.Match(pattern, e.Name())
++		if err != nil {
++			return nil, err // a malformed pattern is a config bug: report it, don't silently match nothing
++		}
++		if ok {
++			out = append(out, filepath.Join(dir, e.Name()))
++		}
++	}
++	return out, nil
++}
++
++// CopyGlob copies the matching files from srcDir into dstDir, creating dstDir. Like CopyTree it
++// merges and never deletes — dstDir is a player's vault.
++func CopyGlob(srcDir, pattern, dstDir string) error {
++	files, err := GlobFiles(srcDir, pattern)
++	if err != nil {
++		return err
++	}
++	if len(files) == 0 {
++		return nil
++	}
++	if err := MakeDirAll(dstDir); err != nil {
++		return err
++	}
++	for _, f := range files {
++		if err := CopyFile(f, filepath.Join(dstDir, filepath.Base(f))); err != nil {
++			return err
++		}
++	}
++	return nil
++}
++
++// ClearGlob removes ONLY the matching files in dir. Whatever else lives there (the BIOS) survives.
++func ClearGlob(dir, pattern string) error {
++	files, err := GlobFiles(dir, pattern)
++	if err != nil {
++		return err
++	}
++	for _, f := range files {
++		if err := os.Remove(f); err != nil {
++			return err
++		}
++	}
++	return nil
++}
++
++// ReplaceGlob makes dstDir's matching files exactly srcDir's matching files, touching nothing else
++// in dstDir. Clearing first is what stops one player's card from surviving into another's session.
++func ReplaceGlob(srcDir, pattern, dstDir string) error {
++	if err := ClearGlob(dstDir, pattern); err != nil {
++		return err
++	}
++	return CopyGlob(srcDir, pattern, dstDir)
++}
++
++// ── Copying INTO the vault (patch 0041) ──────────────────────────────────────────────────────────
++//
++// Seeding overwrites blindly — the worker's card dir is scratch. Vaulting must not: it is the only
++// copy of a player's progress. Two rules:
++//
++//	newer-wins   A card left behind by a crashed worker gets recovered by whichever room runs next on
++//	             that worker, which can be LONG after the player moved to the other worker and saved
++//	             again. Recovering it must not overwrite the fresher card with the stale one.
++//	torn-writes  A harvest can run while the core is live and land in the middle of the core writing
++//	             its card. Rather than GUESS that a file which has been quiet for N seconds must be
++//	             finished — a bet on a number, and wrong the moment a core writes more slowly than
++//	             expected — copy it and then ASK whether it changed underneath us. If it did, the
++//	             copy is torn: throw it away and leave the vault's previous copy alone. The next
++//	             harvest (or the close harvest, when the core is provably stopped) takes it.
++// Unchanged reports whether a file looked the same before and after we read it. This is the whole
++// torn-write test: if the core rewrote the card while the harvest was copying it, the copy is a mix
++// of two states and must be thrown away. Asking the file is a fact; waiting N seconds and assuming
++// the core must be finished is a guess.
++func Unchanged(before, after os.FileInfo) bool {
++	return before.Size() == after.Size() && before.ModTime().Equal(after.ModTime())
++}
++
++func copyFileToVault(from, to string) (bool, error) {
++	src, err := os.Stat(from)
++	if err != nil {
++		return false, err
++	}
++	if dst, err := os.Stat(to); err == nil && !src.ModTime().After(dst.ModTime()) {
++		return false, nil // the vault already holds this card, or a newer one
++	}
++	if err := MakeDirAll(filepath.Dir(to)); err != nil {
++		return false, err
++	}
++
++	// Copy to a scratch name first so a torn read can never become the vault's copy.
++	tmp := to + ".part"
++	if err := CopyFile(from, tmp); err != nil {
++		_ = os.Remove(tmp)
++		return false, err
++	}
++	after, err := os.Stat(from)
++	if err != nil {
++		_ = os.Remove(tmp)
++		return false, err
++	}
++	if !Unchanged(src, after) {
++		// The core wrote to it while we were reading. Whatever we copied is a mix of two states.
++		_ = os.Remove(tmp)
++		return false, nil
++	}
++	if err := os.Rename(tmp, to); err != nil { // atomic within a volume: the vault never sees a half file
++		_ = os.Remove(tmp)
++		return false, err
++	}
++	_ = os.Chtimes(to, after.ModTime(), after.ModTime())
++	return true, nil
++}
++
++// CopyTreeNewer vaults a directory card: like CopyTree, but never replaces a vault file with an
++// older one, and discards any copy the core tore by writing to it mid-read.
++func CopyTreeNewer(src, dst string) error {
++	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
++		if err != nil {
++			return err
++		}
++		if d.IsDir() {
++			return nil // directories are created on demand by the file copy below
++		}
++		rel, err := filepath.Rel(src, path)
++		if err != nil {
++			return err
++		}
++		_, err = copyFileToVault(path, filepath.Join(dst, rel))
++		return err
++	})
++}
++
++// CopyGlobNewer vaults a file-set card under the same two rules.
++func CopyGlobNewer(srcDir, pattern, dstDir string) error {
++	files, err := GlobFiles(srcDir, pattern)
++	if err != nil || len(files) == 0 {
++		return err
++	}
++	for _, f := range files {
++		if _, err := copyFileToVault(f, filepath.Join(dstDir, filepath.Base(f))); err != nil {
++			return err
++		}
++	}
++	return nil
++}
+diff --git a/pkg/os/os_tree_test.go b/pkg/os/os_tree_test.go
+index a320065..1e83908 100644
+--- a/pkg/os/os_tree_test.go
++++ b/pkg/os/os_tree_test.go
+@@ -4,6 +4,7 @@ import (
+ 	"os"
+ 	"path/filepath"
+ 	"testing"
++	"time"
+ )
+ 
+ func write(t *testing.T, path, body string) {
+@@ -74,3 +75,218 @@ func TestClearDirCreatesWhenAbsent(t *testing.T) {
+ 		t.Fatal("ClearDir should create a missing dir")
+ 	}
+ }
++
++// ── Glob cards (patch 0041) ─────────────────────────────────────────────────────────────────────
++//
++// The Dreamcast's VMUs live IN the BIOS directory. Every card operation therefore has to be able to
++// see the four vmu_save_*.bin files and nothing else — if any of these tests fail, the failure mode
++// in production is either "we copied the BIOS into a player's vault" or, far worse, "we overwrote
++// the BIOS with a player's vault".
++
++// dcDir builds a Dreamcast system dir: the real BIOS plus a VMU set.
++func dcDir(t *testing.T, vmuBody string) string {
++	t.Helper()
++	dir := t.TempDir()
++	write(t, filepath.Join(dir, "dc_boot.bin"), "BIOS")
++	write(t, filepath.Join(dir, "dc_flash.bin"), "FLASH")
++	write(t, filepath.Join(dir, "data", "syscalls.bin"), "DATA")
++	for _, v := range []string{"A1", "B1"} {
++		write(t, filepath.Join(dir, "vmu_save_"+v+".bin"), vmuBody+v)
++	}
++	return dir
++}
++
++func TestGlobFilesMatchesOnlyTheCard(t *testing.T) {
++	dir := dcDir(t, "card")
++	got, err := GlobFiles(dir, "vmu_save_*.bin")
++	if err != nil {
++		t.Fatal(err)
++	}
++	if len(got) != 2 {
++		t.Fatalf("want the 2 VMUs, got %v", got)
++	}
++	for _, f := range got {
++		if filepath.Base(f) == "dc_boot.bin" || filepath.Base(f) == "data" {
++			t.Fatalf("the glob reached the BIOS: %v", f)
++		}
++	}
++	// A sub-directory must never be matched or descended, even by a pattern that would match it.
++	if got, err := GlobFiles(dir, "d*"); err != nil || len(got) != 2 {
++		t.Fatalf("want the 2 dc_*.bin files and NOT the data/ dir, got %v (%v)", got, err)
++	}
++}
++
++func TestCopyGlobVaultsTheCardAndNotTheBios(t *testing.T) {
++	dir := dcDir(t, "card")
++	vault := filepath.Join(t.TempDir(), "1", "dc")
++	if err := CopyGlob(dir, "vmu_save_*.bin", vault); err != nil {
++		t.Fatal(err)
++	}
++	if read(t, filepath.Join(vault, "vmu_save_A1.bin")) != "cardA1" {
++		t.Fatal("the VMU did not reach the vault")
++	}
++	if Exists(filepath.Join(vault, "dc_boot.bin")) || Exists(filepath.Join(vault, "data")) {
++		t.Fatal("the BIOS was copied into the player's vault")
++	}
++}
++
++func TestClearGlobLeavesTheBiosIntact(t *testing.T) {
++	dir := dcDir(t, "card")
++	if err := ClearGlob(dir, "vmu_save_*.bin"); err != nil {
++		t.Fatal(err)
++	}
++	if Exists(filepath.Join(dir, "vmu_save_A1.bin")) {
++		t.Fatal("the VMU survived the clear — the next player would inherit it")
++	}
++	if read(t, filepath.Join(dir, "dc_boot.bin")) != "BIOS" ||
++		read(t, filepath.Join(dir, "data", "syscalls.bin")) != "DATA" {
++		t.Fatal("clearing the card destroyed the BIOS")
++	}
++}
++
++// Seeding player B over player A's session must leave B holding B's card only — and must not
++// resurrect a VMU that B's vault doesn't have (A's C1 slot must not linger).
++func TestReplaceGlobSwapsPlayersWithoutBleed(t *testing.T) {
++	dir := dcDir(t, "playerA")
++	write(t, filepath.Join(dir, "vmu_save_C1.bin"), "playerA-C1")
++
++	vaultB := filepath.Join(t.TempDir(), "31", "dc")
++	write(t, filepath.Join(vaultB, "vmu_save_A1.bin"), "playerB-A1")
++
++	if err := ReplaceGlob(vaultB, "vmu_save_*.bin", dir); err != nil {
++		t.Fatal(err)
++	}
++	if got := read(t, filepath.Join(dir, "vmu_save_A1.bin")); got != "playerB-A1" {
++		t.Fatalf("player B's card was not seeded, got %q", got)
++	}
++	if Exists(filepath.Join(dir, "vmu_save_C1.bin")) || Exists(filepath.Join(dir, "vmu_save_B1.bin")) {
++		t.Fatal("player A's VMU leaked into player B's session")
++	}
++	if read(t, filepath.Join(dir, "dc_boot.bin")) != "BIOS" {
++		t.Fatal("seeding a card overwrote the BIOS")
++	}
++}
++
++// A pattern with a path separator is a config bug (it would escape the card dir): refuse it.
++func TestGlobFilesRefusesAPathPattern(t *testing.T) {
++	if _, err := GlobFiles(t.TempDir(), "../*.bin"); err == nil {
++		t.Fatal("a pattern containing a path separator must be refused")
++	}
++}
++
++// ── Vaulting rules (patch 0041) ─────────────────────────────────────────────────────────────────
++
++func touch(t *testing.T, path string, age time.Duration) {
++	t.Helper()
++	when := time.Now().Add(-age)
++	if err := os.Chtimes(path, when, when); err != nil {
++		t.Fatal(err)
++	}
++}
++
++// The scenario this exists for: flycast dies on teardown, leaving player 33's card stranded on
++// worker 1. They rejoin, land on worker 2, play on, and their vault card moves ahead. Later, some
++// unrelated Dreamcast room runs on worker 1 and recovers the stranded card. That recovery must NOT
++// drag their progress backwards.
++func TestVaultNeverOverwritesANewerCardWithAStaleOne(t *testing.T) {
++	stranded, vault := t.TempDir(), t.TempDir()
++	write(t, filepath.Join(stranded, "vmu_save_A1.bin"), "old-stranded-card")
++	touch(t, filepath.Join(stranded, "vmu_save_A1.bin"), time.Hour)
++
++	write(t, filepath.Join(vault, "vmu_save_A1.bin"), "newer-card-from-worker-2")
++	touch(t, filepath.Join(vault, "vmu_save_A1.bin"), time.Minute)
++
++	if err := CopyGlobNewer(stranded, "vmu_save_*.bin", vault); err != nil {
++		t.Fatal(err)
++	}
++	if got := read(t, filepath.Join(vault, "vmu_save_A1.bin")); got != "newer-card-from-worker-2" {
++		t.Fatalf("a stale stranded card overwrote newer progress: %q", got)
++	}
++}
++
++func TestVaultTakesTheCardWhenItIsNewer(t *testing.T) {
++	dir, vault := t.TempDir(), t.TempDir()
++	write(t, filepath.Join(vault, "vmu_save_A1.bin"), "yesterday")
++	touch(t, filepath.Join(vault, "vmu_save_A1.bin"), time.Hour)
++	write(t, filepath.Join(dir, "vmu_save_A1.bin"), "just-saved")
++
++	if err := CopyGlobNewer(dir, "vmu_save_*.bin", vault); err != nil {
++		t.Fatal(err)
++	}
++	if got := read(t, filepath.Join(vault, "vmu_save_A1.bin")); got != "just-saved" {
++		t.Fatalf("a newer card was not vaulted: %q", got)
++	}
++}
++
++// A live harvest can land mid-write. We do not GUESS that a quiet file is a finished file — we copy
++// it and then ASK whether it changed under us. These two tests pin that check and its consequence.
++func TestUnchangedDetectsACoreWritingUnderUs(t *testing.T) {
++	dir := t.TempDir()
++	card := filepath.Join(dir, "vmu_save_A1.bin")
++	write(t, card, "state-A")
++	before, err := os.Stat(card)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if !Unchanged(before, before) {
++		t.Fatal("a file must compare equal to itself")
++	}
++
++	write(t, card, "state-B-longer") // the core saves again while we were reading
++	after, err := os.Stat(card)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if Unchanged(before, after) {
++		t.Fatal("a card rewritten mid-copy was reported as unchanged — a torn card would reach the vault")
++	}
++}
++
++// A completed harvest leaves the vault holding the card and no scratch file behind (the copy lands
++// via a .part rename, so the vault can never be caught holding half a card).
++func TestVaultHarvestLeavesNoScratchFile(t *testing.T) {
++	dir, vault := t.TempDir(), t.TempDir()
++	write(t, filepath.Join(dir, "vmu_save_A1.bin"), "finished-card")
++	if err := CopyGlobNewer(dir, "vmu_save_*.bin", vault); err != nil {
++		t.Fatal(err)
++	}
++	if got := read(t, filepath.Join(vault, "vmu_save_A1.bin")); got != "finished-card" {
++		t.Fatalf("card did not reach the vault: %q", got)
++	}
++	if Exists(filepath.Join(vault, "vmu_save_A1.bin.part")) {
++		t.Fatal("a .part scratch file survived into the vault")
++	}
++}
++
++// CopyFile must carry mtime across, or every newer-wins comparison above is meaningless.
++func TestCopyFilePreservesModTime(t *testing.T) {
++	dir := t.TempDir()
++	src, dst := filepath.Join(dir, "a"), filepath.Join(dir, "b")
++	write(t, src, "x")
++	touch(t, src, time.Hour)
++	if err := CopyFile(src, dst); err != nil {
++		t.Fatal(err)
++	}
++	s, _ := os.Stat(src)
++	d, _ := os.Stat(dst)
++	if !s.ModTime().Equal(d.ModTime()) {
++		t.Fatalf("mtime not preserved: src %v dst %v", s.ModTime(), d.ModTime())
++	}
++}
++
++// The directory-shaped cards (gc, ps2) go through the same rules.
++func TestCopyTreeNewerProtectsTheVault(t *testing.T) {
++	dir, vault := t.TempDir(), t.TempDir()
++	card := filepath.Join("USA", "Card A", "gauntlet.gci")
++	write(t, filepath.Join(vault, card), "newer-characters")
++	touch(t, filepath.Join(vault, card), time.Minute)
++	write(t, filepath.Join(dir, card), "older-stranded")
++	touch(t, filepath.Join(dir, card), time.Hour)
++
++	if err := CopyTreeNewer(dir, vault); err != nil {
++		t.Fatal(err)
++	}
++	if got := read(t, filepath.Join(vault, card)); got != "newer-characters" {
++		t.Fatalf("stale GameCube card overwrote newer progress: %q", got)
++	}
++}
+diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
+index 101f1ac..fde2622 100644
+--- a/pkg/worker/caged/libretro/frontend.go
++++ b/pkg/worker/caged/libretro/frontend.go
+@@ -86,8 +86,12 @@ type Frontend struct {
+ 	SaveOnClose       bool
+ 	UniqueSaveDir     bool
+ 	SaveStateFs       string
++	NoSaveStates      bool // this core cannot be serialized; its memory card is the progress (0041)
+ }
+ 
++// ErrNoSaveStates is returned instead of serializing a core that cannot survive it.
++var ErrNoSaveStates = errors.New("this system has no save states; its progress is kept on the memory card")
++
+ type Device byte
+ 
+ const (
+@@ -185,6 +189,10 @@ func (f *Frontend) LoadCore(emu string) {
+ 	}
+ 	f.mu.Lock()
+ 	f.SaveStateFs = conf.SaveStateFs
++	f.NoSaveStates = conf.NoSaveStates
++	if conf.NoSaveStates {
++		f.log.Info().Msgf("%v: save-states are off for this core; progress lives on the memory card", emu)
++	}
+ 	if conf.UniqueSaveDir {
+ 		f.UniqueSaveDir = true
+ 		f.nano.SetSaveDirSuffix(f.storage.MainPath())
+@@ -304,12 +312,19 @@ func (f *Frontend) Start() {
+ 	f.nano.LastFrameTime = time.Now()
+ 
+ 	defer func() {
++		// FIRST, before anything that can take the process down with it (patch 0041). Both steps
++		// below can: a serialize can access-violate inside a core, and flycast corrupts the heap on
++		// teardown — and a dead worker harvests nothing, so the room used to end with the player's
++		// card still sitting in the worker's dirs, unvaulted. The card is cheap to copy and it IS
++		// the progress on the systems that have one. It goes first.
++		f.harvestCards()
++
+ 		// Save game on quit — UNCONDITIONALLY (patch 0031). Stock gated this on HasSave()
+ 		// ("only re-save if saved before"), which meant a session where nobody clicked Save
+ 		// harvested nothing and the vault's Continue slot stayed empty — and PS2 players
+ 		// couldn't click Save at all until patch 0030. One serialize at teardown costs
+ 		// nothing anyone can see; it runs before Shutdown so the core is still live.
+-		if f.SaveOnClose {
++		if f.SaveOnClose && !f.NoSaveStates {
+ 			f.log.Debug().Msg("save on quit")
+ 			if err := f.Save(); err != nil {
+ 				f.log.Error().Err(err).Msg("save on quit failed")
+@@ -317,8 +332,9 @@ func (f *Frontend) Start() {
+ 		}
+ 		f.mui.Unlock()
+ 		f.Shutdown()
+-		// AFTER Shutdown: the core flushes its memory card as it closes, so harvesting any earlier
+-		// vaults a stale card (patch 0039).
++		// AND again after: the cores that DO survive teardown (Dolphin, PCSX2) flush their card on the
++		// way out, so this pass picks that up. It cannot undo the one above — vaulting never replaces
++		// a card with an older one (os.CopyTreeNewer).
+ 		f.harvestCards()
+ 		close(f.doneEvt)
+ 	}()
+@@ -342,7 +358,7 @@ func (f *Frontend) Start() {
+ 			}
+ 		}()
+ 	}
+-	if f.HasSave() && !f.nano.SkipBootRestore() {
++	if f.HasSave() && !f.nano.SkipBootRestore() && !f.NoSaveStates {
+ 		// advance 1 frame for Mupen, DOSBox save states
+ 		// loading will work if autostart is selected for DOSBox apps
+ 		f.Tick()
+@@ -521,30 +537,56 @@ func cardOwner(roomId string) (user string, system string, ok bool) {
+ 	return parts[0], parts[3], true
+ }
+ 
+-// cardDir resolves the configured card directory for a system, e.g. "save:User/GC" ->
+-// <saveDir>/User/GC. Empty when this system has no card (most cores) or the feature is off.
+-func (f *Frontend) cardDir(system string) string {
++// card is where a system keeps its memory card in the worker's dirs. Two shapes, because the cores
++// disagree:
++//
++//	dir  — the card IS a directory and everything under it is card (gc: <save>/User/GC, ps2:
++//	       <system>/pcsx2/memcards). Seed/harvest move the whole subtree.
++//	glob — the card is loose FILES in a directory that also holds things we must never touch (dc:
++//	       vmu_save_*.bin sit in the Dreamcast system dir next to dc_boot.bin/dc_flash.bin). Only
++//	       the matching files move; the BIOS beside them is invisible to every card operation.
++type card struct {
++	dir     string // directory the core reads/writes
++	pattern string // "" = the whole dir is the card; otherwise only files matching this name
++}
++
++func (c card) empty() bool { return c.dir == "" }
++
++// cardFor resolves the configured card for a system: "<root>:<path>", root = save|system. A trailing
++// path element containing a wildcard makes it a file set rather than a directory, e.g.
++// "system:dc/vmu_save_*.bin". Empty when the system has no card (most cores) or the feature is off.
++func (f *Frontend) cardFor(system string) card {
+ 	if f.conf.CardVault == "" {
+-		return ""
++		return card{}
+ 	}
+ 	spec, ok := f.conf.Cards[system]
+ 	if !ok {
+-		return ""
++		return card{}
+ 	}
+ 	root, rel, found := strings.Cut(spec, ":")
+ 	if !found {
+ 		f.log.Error().Msgf("cards: bad spec for %v: %q (want \"save:<path>\" or \"system:<path>\")", system, spec)
+-		return ""
++		return card{}
+ 	}
++	var base string
+ 	switch root {
+ 	case "save":
+-		return filepath.Join(f.nano.SaveDir(), filepath.FromSlash(rel))
++		base = f.nano.SaveDir()
+ 	case "system":
+-		return filepath.Join(f.nano.SystemDir(), filepath.FromSlash(rel))
++		base = f.nano.SystemDir()
+ 	default:
+ 		f.log.Error().Msgf("cards: unknown root %q for %v", root, system)
+-		return ""
++		return card{}
++	}
++
++	rel = filepath.FromSlash(rel)
++	if last := filepath.Base(rel); strings.ContainsAny(last, "*?[") {
++		if dir := filepath.Dir(rel); dir != "." {
++			return card{dir: filepath.Join(base, dir), pattern: last}
++		}
++		return card{dir: base, pattern: last}
+ 	}
++	return card{dir: filepath.Join(base, rel)}
+ }
+ 
+ func (f *Frontend) vaultDir(user, system string) string {
+@@ -553,71 +595,135 @@ func (f *Frontend) vaultDir(user, system string) string {
+ 
+ // ownerFile records who the card currently in the worker's directory belongs to, so that a worker
+ // that DIED without harvesting (the exit-139 teardown, a kill) can still have that player's card
+-// recovered on the next room rather than cleared out from under them.
++// recovered on the next room rather than cleared out from under them. A glob card's dir is SHARED
++// (dc's VMUs sit in the BIOS dir), so its stamp is system-scoped and can't collide with a neighbour.
+ const cardOwnerFile = ".owner"
+ 
++func (f *Frontend) cardOwnerPath(system string, c card) string {
++	if c.pattern == "" {
++		return filepath.Join(c.dir, cardOwnerFile)
++	}
++	return filepath.Join(c.dir, cardOwnerFile+"-"+system)
++}
++
++// vaultCard copies the card OUT of the worker's dir into a player's vault. It never deletes, never
++// replaces a vault file with an older one, and discards any copy the core tore by writing to the
++// card mid-read (see os.CopyTreeNewer) — so it is safe to call while the core is still running.
++func (f *Frontend) vaultCard(c card, vault string) error {
++	if c.pattern == "" {
++		return os.CopyTreeNewer(c.dir, vault)
++	}
++	return os.CopyGlobNewer(c.dir, c.pattern, vault)
++}
++
++// vaultHasCard reports whether this player has a card of this shape already stored.
++func (f *Frontend) vaultHasCard(c card, vault string) bool {
++	if c.pattern == "" {
++		return os.Exists(vault)
++	}
++	files, err := os.GlobFiles(vault, c.pattern)
++	return err == nil && len(files) > 0
++}
++
+ // seedCards puts THIS room owner's card in place before the core loads the game.
+ func (f *Frontend) seedCards() {
+ 	user, system, ok := cardOwner(f.storage.MainPath())
+ 	if !ok {
+ 		return
+ 	}
+-	dir := f.cardDir(system)
+-	if dir == "" {
++	c := f.cardFor(system)
++	if c.empty() {
+ 		return
+ 	}
+ 
+-	// Whoever used this directory last may never have been harvested (a killed worker skips the
+-	// close path entirely). Recover their card before touching it — never clear another player's
+-	// progress to make room for this one.
+-	if prev, err := os.ReadFile(filepath.Join(dir, cardOwnerFile)); err == nil {
+-		if p := strings.TrimSpace(string(prev)); p != "" && p != user {
+-			if err := os.CopyTree(dir, f.vaultDir(p, system)); err != nil {
++	// Whoever used this directory last may never have been harvested: a worker that dies skips the
++	// close path entirely, and that is NOT rare — flycast corrupts the heap on teardown often enough
++	// (0xC0000374) that a Dreamcast room ending in a dead worker is routine. Vault what's here before
++	// touching it.
++	//
++	// This runs even when the previous owner IS this user, and that is the whole point. Skipping it
++	// then looks harmless but is the worst case there is: a first-time player crashes before their
++	// first harvest, rejoins, and — with an empty vault and their only copy sitting right here — the
++	// "fresh card" branch below would wipe the session the crash already failed to save.
++	if prev, err := os.ReadFile(f.cardOwnerPath(system, c)); err == nil {
++		if p := strings.TrimSpace(string(prev)); p != "" {
++			if err := f.vaultCard(c, f.vaultDir(p, system)); err != nil {
+ 				f.log.Error().Err(err).Msgf("cards: could not recover user %v's %v card", p, system)
+-			} else {
++			} else if p != user {
+ 				f.log.Info().Msgf("cards: recovered an unharvested %v card for user %v", system, p)
++			} else {
++				f.log.Info().Msgf("cards: recovered your own unharvested %v card (user %v)", system, p)
+ 			}
+ 		}
+ 	}
+ 
+ 	vault := f.vaultDir(user, system)
+-	if !os.Exists(vault) {
++	switch {
++	case !f.vaultHasCard(c, vault):
+ 		// First time this user plays this system. Their card starts EMPTY rather than inheriting
+-		// whatever the previous player left behind — a fresh card, like a new console.
++		// whatever the previous player left behind — a fresh card, like a new console. The core
++		// re-creates (and formats) what it needs on boot.
+ 		// (Existing shared cards are migrated into each user's vault out of band; see the skill.)
+-		if err := os.ClearDir(dir); err != nil {
+-			f.log.Error().Err(err).Msgf("cards: could not clear the %v card dir", system)
++		var err error
++		if c.pattern == "" {
++			err = os.ClearDir(c.dir)
++		} else {
++			err = os.ClearGlob(c.dir, c.pattern)
++		}
++		if err != nil {
++			f.log.Error().Err(err).Msgf("cards: could not clear the %v card", system)
+ 			return
+ 		}
+ 		f.log.Info().Msgf("cards: fresh %v card for user %v", system, user)
+-	} else if err := os.ReplaceTree(vault, dir); err != nil {
+-		f.log.Error().Err(err).Msgf("cards: could not seed user %v's %v card", user, system)
+-		return
+-	} else {
++	default:
++		var err error
++		if c.pattern == "" {
++			err = os.ReplaceTree(vault, c.dir)
++		} else {
++			err = os.ReplaceGlob(vault, c.pattern, c.dir)
++		}
++		if err != nil {
++			f.log.Error().Err(err).Msgf("cards: could not seed user %v's %v card", user, system)
++			return
++		}
+ 		f.log.Info().Msgf("cards: seeded user %v's %v card", user, system)
+ 	}
+ 
+-	_ = os.MakeDirAll(dir)
+-	if err := os.WriteFile(filepath.Join(dir, cardOwnerFile), []byte(user), 0644); err != nil {
++	_ = os.MakeDirAll(c.dir)
++	if err := os.WriteFile(f.cardOwnerPath(system, c), []byte(user), 0644); err != nil {
+ 		f.log.Error().Err(err).Msg("cards: could not stamp the card owner")
+ 	}
+ }
+ 
+-// harvestCards copies the room owner's card back to their vault. Call it AFTER Shutdown — the core
+-// flushes the card as it closes, so harvesting earlier can vault a stale one.
+-func (f *Frontend) harvestCards() {
++// harvestCards copies the room owner's card back to their vault. Called twice on close — once with
++// the core still alive (it may not survive its own teardown) and once after, for the cores that do
++// and that flush their card on the way out. Running twice is safe: newer-wins, and the second pass
++// logs nothing new if it copies nothing.
++func (f *Frontend) harvestCards() { f.harvest(false) }
++
++// harvestCardsLive vaults the card WITHOUT waiting for the room to end. The close harvest is not a
++// guarantee: flycast corrupts the heap on teardown often enough that a Dreamcast worker regularly
++// dies before it can run, and a killed worker never runs it at all. Called on the autosave tick, so
++// a crash costs a player at most one autosave period of card progress instead of the whole session.
++func (f *Frontend) harvestCardsLive() { f.harvest(true) }
++
++func (f *Frontend) harvest(quiet bool) {
+ 	user, system, ok := cardOwner(f.storage.MainPath())
+ 	if !ok {
+ 		return
+ 	}
+-	dir := f.cardDir(system)
+-	if dir == "" || !os.Exists(dir) {
++	c := f.cardFor(system)
++	if c.empty() || !os.Exists(c.dir) {
+ 		return
+ 	}
+-	if err := os.CopyTree(dir, f.vaultDir(user, system)); err != nil {
++	if err := f.vaultCard(c, f.vaultDir(user, system)); err != nil {
+ 		f.log.Error().Err(err).Msgf("cards: could not harvest user %v's %v card", user, system)
+ 		return
+ 	}
++	if quiet {
++		f.log.Debug().Msgf("cards: live-harvested user %v's %v card", user, system)
++		return
++	}
+ 	f.log.Info().Msgf("cards: harvested user %v's %v card", user, system)
+ }
+ 
+@@ -704,6 +810,9 @@ func (f *Frontend) Close() {
+ 
+ // Save writes the current state to the filesystem.
+ func (f *Frontend) Save() error {
++	if f.NoSaveStates {
++		return ErrNoSaveStates
++	}
+ 	f.mu.Lock()
+ 	defer f.mu.Unlock()
+ 
+@@ -727,6 +836,9 @@ func (f *Frontend) Save() error {
+ 
+ // Load restores the state from the filesystem.
+ func (f *Frontend) Load() error {
++	if f.NoSaveStates {
++		return ErrNoSaveStates
++	}
+ 	f.mu.Lock()
+ 	defer f.mu.Unlock()
+ 
+@@ -763,6 +875,13 @@ func (f *Frontend) autosave(periodSec int) {
+ 			if f.nano.IsStopped() {
+ 				return
+ 			}
++			// The card comes first: it is progress in its own right, and it survives a core that
++			// dies during the save-state below. On a NoSaveStates core it is the ONLY thing there
++			// is to persist, which is exactly why the tick still runs for them.
++			f.harvestCardsLive()
++			if f.NoSaveStates {
++				continue
++			}
+ 			if err := f.Save(); err != nil {
+ 				f.log.Error().Msgf("Autosave failed: %v", err)
+ 			} else {
+diff --git a/pkg/worker/room/room.go b/pkg/worker/room/room.go
+index 1f497d9..8fc2e21 100644
+--- a/pkg/worker/room/room.go
++++ b/pkg/worker/room/room.go
+@@ -1,16 +1,24 @@
+ package room
+ 
+ import (
+-	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
+ 	"iter"
++	"log"
++	"os"
+ 	"sync"
+ 	"sync/atomic"
+ 	"time"
+ 
++	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/app"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
+ )
+ 
++// closeGiveUp bounds how long a room's teardown may take before the worker concludes its core is
++// wedged and exits (patch 0041). It is deliberately generous: it only ever measures the shutdown of
++// a room that has already lost its last player, so firing late costs nothing and firing on a healthy
++// session is impossible. Teardown is meant to take milliseconds.
++const closeGiveUp = 30 * time.Second
++
+ type MediaPipe interface {
+ 	// Destroy frees all allocated resources.
+ 	Destroy()
+@@ -121,14 +129,40 @@ func (r *Room[T]) Close() {
+ 		return
+ 	}
+ 
+-	if r.app != nil {
+-		r.app.Close()
+-	}
+-	if r.media != nil {
+-		r.media.Destroy()
+-	}
+-	if r.HandleClose != nil {
+-		r.HandleClose()
++	// TEARDOWN MUST NOT BE ABLE TO HANG FOREVER (patch 0041). Stock ran app.Close() straight, so a
++	// core that never returned from it took the whole worker with it: HandleClose below was never
++	// reached, the coordinator went on believing this worker was BUSY with a room that had no players
++	// left in it, and — one room per worker — the pool quietly lost a slot. Enough of those and every
++	// new room is turned away with "the arcade is full". Seen live: a PPSSPP room hung inside a boot
++	// restore and pinned its worker until an external watchdog killed it three minutes later.
++	//
++	// Note what is bounded here: the teardown of a room that has ALREADY lost its last player. It
++	// never policies a live session, so it cannot cut a slow game short — the worst a wrong bound can
++	// do is retire an idle worker a little early.
++	done := make(chan struct{})
++	go func() {
++		defer close(done)
++		if r.app != nil {
++			r.app.Close() // vaults the memory card before it touches anything that can hang
++		}
++		if r.media != nil {
++			r.media.Destroy()
++		}
++	}()
++
++	select {
++	case <-done:
++		if r.HandleClose != nil {
++			r.HandleClose() // the room really is gone: let the coordinator hand this worker a new one
++		}
++	case <-time.After(closeGiveUp):
++		// The core is wedged inside C — nothing to unwind, no one to ask nicely. Do NOT tell the
++		// coordinator the room closed: that would advertise this worker as free while its core is
++		// still stuck, and the next player would be routed straight into it. Exit instead. The
++		// coordinator drops a worker that disconnects, and the runner brings a clean one back in ~4s.
++		log.Printf("room %v: the core did not finish shutting down after %v — it is wedged. Exiting so "+
++			"this worker is replaced rather than handed to the next player.", r.id, closeGiveUp)
++		os.Exit(70) // EX_SOFTWARE — deliberate, distinct from a core's crash code
+ 	}
+ }
+ 

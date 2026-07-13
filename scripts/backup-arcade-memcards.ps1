@@ -4,14 +4,14 @@
 
 .DESCRIPTION
     Save-states and libretro battery saves (.srm) are vaulted per user by the gateway's SaveStore. Virtual
-    memory cards are NOT: the disc-era cores write them straight into the worker's own system dir, so each
-    is a SINGLE GLOBAL FILE shared by every player, with no vault copy and no backup. That is where real
-    in-game progress lives for those systems — Gauntlet Dark Legacy keeps its named characters on the
-    GameCube card, not in the save-state — so losing that directory loses the characters no matter how
-    healthy the save vault is.
+    memory cards are vaulted per user by the WORKER (patches 0039 gc/ps2, 0041 dc/psp) into
+    <CardVault>\<userId>\<system>\. This snapshots that vault: a dated copy, kept for -KeepDays.
 
-    Per-user memory-card vaulting is the real fix (arcade task: "Vault virtual memory cards per user").
-    Until it lands, this is the cheap insurance: a dated copy, kept for -KeepDays.
+    It matters because for several systems the card IS the progress — Gauntlet Dark Legacy keeps its
+    named characters on the GameCube card, not in the save-state, and a PSP game's whole memstick save
+    lives here — so losing the vault loses the progress no matter how healthy the save-state store is.
+    Copy-only; it never deletes a card. New systems are picked up automatically (the whole vault is
+    copied), so adding one to `emulator.cards` needs no change here.
 
     Register it with scripts/register-arcade-memcard-backup-task.ps1 (daily).
 

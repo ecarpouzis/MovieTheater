@@ -718,3 +718,51 @@ prefer it over the d3d11 fallback (`capture.videoSource`).
 > silently brings the crash back.** Re-run `scripts/build-gst-d3d12-patched.ps1` after any upgrade.
 > Stock DLL is kept at `D:\ArcadeStorage\backup\libgstd3d12.dll.msys2-stock-<version>`. Retire this
 > patch once a release stops containing `src_pos + size` in that function.
+
+## 0041-card-vault-dc-psp-and-close-wedge.patch
+
+`pkg/os/os.go` (+tests), `pkg/worker/caged/libretro/frontend.go`, `pkg/config/emulator.go`,
+`pkg/worker/room/room.go` — finishes the memory-card vault (patch 0039) for the last two systems that
+keep progress outside a save-state, and stops a hung core from taking the whole worker pool with it.
+
+**Cards for dc and psp.**
+- **dc** — flycast's VMUs are LOOSE FILES (`vmu_save_A1..D1.bin`) sitting in the Dreamcast **system**
+  dir, next to `dc_boot.bin` / `dc_flash.bin`. 0039's whole-subtree seed/harvest would have copied the
+  BIOS into every player's vault and overwritten it on the next seed. Card specs therefore grow a glob
+  form — `dc: "system:dc/vmu_save_*.bin"` — and every card operation (seed, harvest, crash-recovery)
+  is pattern-scoped, so the BIOS beside them is invisible to all of it.
+- **psp** — `psp: "save:PSP/SAVEDATA"`. Note the save root is the dir the CORES see,
+  `<ConfDir>/libretro/legacy_save` (nanoarch), **not** `emulator.storage` (which holds CloudRetro's
+  room-keyed save-states). Deliberately NOT `PSP/SYSTEM` (ppsspp.ini + CACHE) or `PPSSPP_STATE`.
+
+**Vaulting rules** (all three of these were live data-loss paths):
+- **Recovery now runs even when the previous owner is the SAME user.** It used to skip that case as a
+  no-op. It is the worst case there is: a first-time player crashes before their first harvest,
+  rejoins with an empty vault while their only copy sits in the worker's dir — and the "fresh card"
+  branch wiped the session the crash had already failed to save.
+- **Newer-wins.** A card stranded by a crashed worker is recovered by whatever room runs there next,
+  which can be long after the player moved to the other worker and saved again. Recovering it must not
+  drag their progress backwards. (`CopyTreeNewer`/`CopyGlobNewer`; `CopyFile` now preserves mtime, or
+  the comparison would be meaningless.)
+- **Harvest early and often.** Cards are vaulted on the autosave tick and BEFORE teardown, not only
+  after it — the close harvest was a bet that the core survives its own shutdown, and flycast
+  (`0xC0000374`) and PPSSPP (`0xC0000409`) routinely lose that bet. A torn copy is detected rather
+  than guessed at: copy to `.part`, re-stat the source, discard if it changed under us, rename in.
+
+**psp `noSaveStates`.** PPSSPP cannot be serialized *at all* — measured both ways. Off its libco
+cothread (`skip_same_thread_save`) `retro_serialize_size` access-violates; ON it, the save works but
+the core then **wedges** — 6 of 7 rooms booted, created their framebuffer, and never delivered another
+frame. Patch 0039's autosave turned the first into a crash every 120 s. So the core keeps the hack and
+never gets serialized: no autosave, no save-on-quit, no boot restore, and `Save`/`Load` return a clean
+error. PSP's progress is its memstick card, which the vault now carries — the same bargain the real
+console made. Revisit only with a PPSSPP whose libretro savestates work.
+
+**The close wedge (`room.go`) — this is the "the arcade is full" bug.** Stock `Room.Close()` ran
+`app.Close()` and only then told the coordinator the room was over. A core that never returns from
+teardown therefore meant the coordinator was NEVER told: it went on believing the worker was BUSY with
+a room that had no players left in it, and — one room per worker — the pool silently lost a slot.
+Teardown now runs in a goroutine; if it does not finish, the worker **exits** (the runner replaces it
+in ~4 s) and the coordinator drops it. It deliberately does NOT report the room closed in that case:
+that would advertise a worker as free while its core is still stuck, and route the next player
+straight into it. Note what is bounded — the teardown of a room that has *already* lost its last
+player. It never policies a live session, so it cannot cut a slow game short.

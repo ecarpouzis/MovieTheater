@@ -62,6 +62,11 @@ emulator:
   autosaveSec: 120
   storage: "D:/ArcadeStorage/saves"    # overridable via CLOUD_GAME_EMULATOR_STORAGE
 
+  # (Wedge handling is NOT a tunable and deliberately has no knob here. A room closes when its last
+  #  player leaves — an event, not a timer — and the coordinator is now told the moment that happens
+  #  rather than after the core finishes tearing down, so a hung core can no longer keep this worker
+  #  marked BUSY. See Room.Close in patch 0041.)
+
   # Per-user VIRTUAL MEMORY CARDS (patch 0039). A card is the one save class libretro never exposes —
   # PCSX2 and Dolphin write theirs into their own dirs — so until now it was ONE file shared by every
   # player, outside the save vault and unbacked. For some games the card IS the progress: Gauntlet
@@ -71,15 +76,26 @@ emulator:
   # picks the worker, so the gateway can't know) and it runs one room at a time. That is why each GL
   # worker now has its OWN ConfDir — two workers sharing one would seed and harvest each other's cards.
   #
-  # Paths are "<root>:<relpath>", root = save (libretro save dir) or system (libretro system dir).
-  # ONLY the card subtree moves: the save dir also holds Dolphin's ~850 MB of shader caches, which are
-  # shared, disposable, and must never be vaulted.
-  cardVault: "D:/ArcadeStorage/cards"   # <vault>/<userId>/<system>/
+  # Paths are "<root>:<relpath>", root = save or system. NOTE the save root is the dir the CORES see,
+  # <ConfDir>/libretro/legacy_save (nanoarch.go), NOT `storage:` above — that one holds CloudRetro's
+  # own room-keyed save-states. Get this wrong and you vault an empty directory forever.
+  #
+  # ONLY the card moves. Everything else in these dirs is shared, disposable, or sacred: the save dir
+  # also holds Dolphin's ~850 MB of shader cache and PPSSPP's config, and dc's card sits IN the BIOS
+  # dir. If the last path element contains a wildcard the card is that FILE SET rather than the whole
+  # directory (patch 0041) — that is the only safe way to express dc.
+  cardVault: "D:/ArcadeStorage/cards"      # <vault>/<userId>/<system>/
   cards:
-    gc:  "save:User/GC"                 # Dolphin: <region>/Card A/*.gci
-    ps2: "system:pcsx2/memcards"        # PCSX2: Mcd001.ps2 / Mcd002.ps2
-    # dc/psp also keep progress outside save-states (VMU / memstick) — not wired yet; they need the
-    # same treatment and the same per-worker isolation.
+    gc:  "save:User/GC"                    # Dolphin: <region>/Card A/*.gci
+    ps2: "system:pcsx2/memcards"           # PCSX2: Mcd001.ps2 / Mcd002.ps2
+    psp: "save:PSP/SAVEDATA"               # PPSSPP memstick: ms0:/PSP/SAVEDATA/<TITLEID>. Deliberately
+                                           # NOT PSP/SYSTEM (ppsspp.ini + CACHE) or PSP/PPSSPP_STATE.
+    dc:  "system:dc/vmu_save_*.bin"        # flycast VMUs A1-D1 — loose files sharing the Dreamcast
+                                           # BIOS dir (dc_boot.bin, dc_flash.bin, data/), so this MUST
+                                           # stay a glob. A dir spec here would vault the BIOS per user
+                                           # and overwrite it on the next seed.
+                                           # dc_nvmem.bin is machine state (clock/language), not a
+                                           # card: it stays shared on purpose.
   libretro:
     saveCompression: false
     cores:
@@ -155,12 +171,21 @@ emulator:
           # the core-author-documented remedy ("May help with crashes, for example, with PPSSPP" —
           # config.yaml hacks doc): we skip the core's per-object GL free and let glCtx.Deinit() drop
           # the whole context immediately after (driver frees everything) — safe at teardown.
-          # skip_same_thread_save is the core-author's documented PPSSPP companion hack (routes the
-          # serialize call off the libco thread). NOTE: it does NOT fix the ">1 min in" autosave crash
-          # — that was retro_serialize_size AV'ing off-thread and is fixed by emulator.autosaveSec:0
-          # above (SaveState is no longer called on a timer). Kept as the documented default for any
-          # future on-demand save path.
+          #
+          # PPSSPP CANNOT BE SERIALIZED, EITHER WAY — MEASURED, 2026-07-13 (patch 0041). Both paths lose:
+          #   * WITHOUT skip_same_thread_save (serialize on the core's libco cothread, the path patch
+          #     0030 built and that mupen/flycast use happily): the SAVE works — a PSP room wrote a 40 MB
+          #     state and closed cleanly — but the core then wedges. 6 of 7 rooms booted (modules loaded,
+          #     FBO created, encoder running with peers=1) and the emulation thread simply stopped:
+          #     zero frames, zero pace-diag, forever. A wedge is WORSE than a crash — it pins the worker.
+          #   * WITH it (serialize off-thread, below): PPSSPP access-violates in retro_serialize_size
+          #     (0xC0000005) — which patch 0039's autosave turned into a crash every 120s.
+          # So the core streams reliably only if it is NEVER serialized: keep the hack AND turn states
+          # off (noSaveStates). PSP's progress is its MEMSTICK SAVE, which the card vault now carries
+          # per-user (cards.psp), so nothing is actually lost — this is the same bargain the real console
+          # made. Revisit only with a PPSSPP build whose savestates work under libretro.
           hacks: [skip_hw_context_destroy, skip_same_thread_save]
+          noSaveStates: true
           # SUPERSAMPLING (patch 0023). MSAA is INERT on this core — libretro's hw_render FBO isn't
           # multisampled, so ppsspp/mupen64plus produce BIT-IDENTICAL frames with it on or off (only
           # Dolphin, which owns its framebuffers, really multisamples). The AA that DOES work here is to
