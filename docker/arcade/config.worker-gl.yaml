@@ -54,6 +54,26 @@ library:
     arcade: mame  # site "arcade" -> roms/mame  (core key "mame")
 
 emulator:
+  # GL ZERO-COPY (3D cores only: n64/gc/ps2/psp/dc). Hand the encoder the texture the core just
+  # rendered instead of pulling every frame back to system memory with glReadPixels.
+  #
+  # The readback is SYNCHRONOUS and runs on the EMULATOR THREAD, so the core blocks on it. Measured
+  # (CLOUD_GAME_GL_READBACK_STATS=1, which is still there for the A/B):
+  #   GameCube (F-Zero GX)  1920x1584  11.6 MB/frame   p50 3.7-4.2ms  p95 6-8ms   max 14ms
+  #   N64 (Mario Kart 64)   1920x1440  10.5 MB/frame   p50 3.0-3.2ms  p95 5.3-5.8ms
+  # i.e. the core sat idle for ~a QUARTER of a 60fps frame budget, up to half at p95. Note the cores
+  # render far LARGER than we encode (efb_scale / internal res), so the readback was ~11 MB/frame, not
+  # the 1280x1056 we ship.
+  #
+  # nvav1enc takes video/x-raw(memory:GLMemory) in RGBA directly, so the frame never leaves VRAM:
+  # appsrc(GLMemory) ! glcolorscale ! nvav1enc — no download, no upload, no videoconvert. The core's
+  # frame is copied GPU->GPU into a small texture pool first (graphics/zerocopy.go) so the core can
+  # render the next frame immediately without racing the encoder.
+  #
+  # Software (2D) cores ignore this entirely — their frames are already in system memory, there is
+  # nothing to keep on the GPU. The capture lane has its own zero-copy (capture.zeroCopy).
+  # ROLLBACK: set false. The readback path is untouched and stays the A/B baseline.
+  glZeroCopy: true
   # autosave RE-ENABLED 2026-07-12. Without it the ONLY write to disk is a graceful room close, so a
   # killed or crashed worker loses the whole session — that is not theoretical: a worker restart mid-race
   # cost a player ~18 min of a race game (all three re-boots logged "Arcade save none (fresh)"), and the
