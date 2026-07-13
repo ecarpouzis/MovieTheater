@@ -119,7 +119,17 @@ encoder:
       # gop-size=-1 + intra-refresh (patched nvcodec plugin); PLI responder = worker patch 0029.
       # capture bitrate ceiling defaults higher than retro (1080p desktop) â€” the site's per-system
       # Auto bitrate (capture ~12 Mbps) + ABR move it; this is the CBR base the encoder builds with.
-      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=-1 intra-refresh-period=120 intra-refresh-count=15 zerolatency=true"
+      # temporal-layers=3: same per-peer SVC as the retro pool (see config.worker-gl.yaml for the full
+      # note). Verified at THIS lane's geometry — 1920x1080 @12 Mbps produces the same clean pyramid
+      # (tid 0/1/2 = 30/30/60 frames of 120), so a weak viewer of a heavy title drops to 30 or 15 fps
+      # instead of pulling the whole room's 1080p encode down.
+      #
+      # ⚠ NOT verified through a browser on THIS box, and it cannot be: a fullscreen native title
+      # occludes Chrome, an occluded Chrome stops compositing, and rVFC then never fires — the video
+      # reads as black with zero frames even when the stream is perfect (test-roms gotcha 0b). Verify
+      # from a SECOND machine. Rollback is deleting the key (the worker then reads 1 layer and the drop
+      # path can never fire).
+      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=-1 intra-refresh-period=120 intra-refresh-count=15 temporal-layers=3 zerolatency=true"
       caps: video/x-av1,stream-format=obu-stream ! av1parse ! video/x-av1,stream-format=obu-stream,alignment=tu
     h264:
       encoder: nvh264enc
