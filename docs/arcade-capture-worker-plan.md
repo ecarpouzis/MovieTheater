@@ -604,8 +604,8 @@ worker COMPILES against the pinned tree; the capture lane is proven live against
 - **⚠ Two prerequisites for the emulator half of the gate (NOT capture-code bugs):** (1) yuzu
   exited ~1.6 s into its library scan — **session isolation**: launched outside the interactive
   desktop it can't stand up its Vulkan/GL context (the real worker runs as an Interactive-principal
-  scheduled task, which fixes this). (2) `yuzu-streamed.player0.ini` does not exist yet → pads are
-  created but **unbound in yuzu** until the one-time streamed-profile capture runs (trap #10).
+  scheduled task, which fixes this). (2) `yuzu-streamed.player0.ini` did not exist yet → assumed
+  pads were unbound in yuzu. That assumption was WRONG (see trap #10); profile captured 2026-07-13.
 - **Deploy artifacts staged:** repo `docker/arcade/config.worker-capture.yaml` (authoritative;
   encoder in lockstep with worker-gl); `D:\ArcadeStorage\worker-capture\bin\` (worker.exe target +
   `vigemclient.dll`); Kirby stub `D:\ArcadeStorage\heavy\capture-stubs\switch-kirby-forgotten-land.capture`.
@@ -648,10 +648,10 @@ workers + capture room concurrent — watch encoder/GPU contention numbers.
   shows **2× main + 1× capture, all free**; the worker runs in **session 1 (physical console)** so a
   launched yuzu renders (the probe's session-isolation death does NOT apply to the task). Stable, no
   crash-loop, ViGEm DLL loaded (no warning).
-- **REMAINING before a full browser gate**: (D) capture the yuzu streamed input profile
-  (`yuzu-streamed.player0.ini`) so pads bind in yuzu — needs a one-time interactive bind at the
-  console (trap #10); until then video+audio+room work but pads are dead in yuzu. Router UDP 8448
-  forward only needed for OFF-LAN peers (Defender already allows 8443-8448 on LAN).
+- ~~**REMAINING before a full browser gate**: (D) capture the yuzu streamed input profile~~ — done
+  2026-07-13, and it was never blocking: yuzu was already bound to the Xbox 360 guid that ViGEm
+  presents, so pads worked (trap #10). Router UDP 8448 forward only needed for OFF-LAN peers
+  (Defender already allows 8443-8448 on LAN).
 
 ### P3 — Steam + keyboard/mouse (~3-4 days)
 Descriptor additions: `exeWatch` (child process name to track when `exe` is a launcher),
@@ -693,9 +693,15 @@ desktop stays private); fresh-start (`?fresh=1` analogue through HeavyVault).
    savestore layout could be mis-seeded into the CloudRetro mount (§5.2).
 9. **Prepare-before-stage** — gateway prepare 409s when unstaged (by design); the card gates
    "Play in browser" on staging state so users normally never hit it.
-10. **yuzu input profile** — the capture lane depends on the SAME one-time streamed-profile
-    capture as the Apollo lane (bind P1 → Xbox 360 Controller once, run
-    `capture-yuzu-streamed.ps1`). If that hasn't been done, pads will be dead in yuzu only.
+10. **yuzu input profile** (resolved 2026-07-13; keep the mechanism, distrust the warning) — the
+    swap only matters when the emulator's saved bindings name a DIFFERENT pad than the streamed
+    one. They didn't: ViGEm XUSB *is* an Xbox 360 pad (SDL guid `030000005e04...7801`) and yuzu was
+    already bound to that guid, so pads worked without any swap. The worker logs `no streamed
+    profile — pads may be dead` whenever the file is absent, which is a guess, not a measurement —
+    verify with the guid before believing it. `capture-yuzu-streamed.ps1` has now been run, so the
+    swap is armed for the case that actually breaks: someone rebinds yuzu to a DualSense at the desk.
+    (That script was also unrunnable until now — saved UTF-8 **without a BOM**, so PowerShell 5.1
+    read the em-dashes as ANSI and the file didn't parse. Any .ps1 with non-ASCII text needs a BOM.)
 11. **Encoder/GPU contention** — capture room + 2 retro rooms = 3 NVENC sessions (fine) but
     yuzu/RPCS3 3D load + retro GL cores share the 4070 Ti; measure at P2 gate (f); consider
     `preset=p4` for the capture encoder or per-room bitrate ceilings if retro rooms stutter.
@@ -801,7 +807,12 @@ slightly shifted; the findings themselves are in untouched code paths.)
 ### Open items carried from the live test
 - ~~Audio host-bleed~~ solved via VB-CABLE per-PID routing (see W5); only the boot-bleed
   window remains as polish.
-- yuzu streamed-profile capture (trap #10) still pending — pads dead in yuzu until then.
+- ~~yuzu streamed-profile capture (trap #10)~~ CLOSED 2026-07-13, and it was never actually
+  broken: yuzu's live P1 binding uses SDL guid `030000005e0400008e02000000007801` — the **Xbox 360
+  Controller** guid, which is exactly what a ViGEm XUSB pad presents. Our virtual pad matched the
+  existing bindings, so pads worked in yuzu all along; the worker's `no streamed profile — pads may
+  be dead` warning is what made this look pending. The profile is now captured anyway, so the swap
+  is ARMED: rebinding yuzu to another pad at the desk can no longer silently kill streamed pads.
 - Router UDP 8448 forward for off-LAN peers.
 
 ---
