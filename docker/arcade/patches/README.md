@@ -1,14 +1,43 @@
-# CloudRetro image patches
+# CloudRetro fork — what we changed, and why
 
-Small source edits we own on top of the pinned CloudRetro commit (`13852a7`). CloudRetro cuts no
-releases and exposes no plugin seam for these, so we patch the source before `docker build`. Applied
-in `../README.md` → "Building the image".
+The arcade does not run on upstream CloudRetro. It runs on a **fork**: ~4.4k lines across 42 files on
+top of the pinned commit `13852a7`. CloudRetro cuts no releases and exposes no plugin seam, so the
+changes live in the source.
 
-Apply (from the CloudRetro checkout, after `git checkout 13852a7`):
+## Where the fork lives (read this before touching anything here)
+
+| | |
+|---|---|
+| **Source of truth** | branch **`movietheater-fork`** in the cloud-game checkout (`D:\Arcade\build\cloud-game-gl`), pushed to our **private `cloud-game-gl` fork repo** (the `github` remote in that checkout — this repo is public, so the owner is not written down here). `worker.exe` is built from this. |
+| **The rebuild artifact** | **`fork.patch`** — a GENERATED diff of that branch vs `13852a7`. Apply it to a clean upstream checkout and you get our worker. Never hand-edit it. |
+| **The numbered patches below** | **narrative only.** They explain WHY each change exists — the crash it fixed, the thing that burned us. They are no longer individually applicable and are not used to build anything. |
 
 ```bash
-git apply /path/to/docker/arcade/patches/0001-jit-scan-on-miss.patch
+# rebuild from scratch
+git clone https://github.com/giongto35/cloud-game && cd cloud-game
+git checkout 13852a7 && git apply /path/to/docker/arcade/patches/fork.patch
+
+# after changing the fork: regenerate + PROVE the patch (applies to virgin AND compiles)
+pwsh scripts/export-arcade-fork.ps1
 ```
+
+> **Why the model changed (2026-07-13).** The numbered patches used to be the backup, maintained by
+> hand. They had rotted: four of them (`0028`, `0036`, `0037`, `0040`) no longer applied in sequence,
+> two files (`nanoarch.h`, `overrides.go`) were captured in **no** patch at all, and `0030` never
+> included its C header change — so `same_thread_serialize_size` was called but never declared and the
+> chain **would not even compile**. Meanwhile the real fork existed only as uncommitted edits on one
+> machine, on a detached HEAD. A backup nobody ever restores is not a backup; `export-arcade-fork.ps1`
+> now restores it (apply + build) every time it runs, so this cannot rot silently again.
+>
+> The other lesson is in the failures themselves: these changes were never independent. `0030` gave
+> PSP a correct on-thread serialize; PSP opted out of it with a hack from an earlier patch; that
+> opt-out was harmless only because autosave was off; `0039` turned autosave on and made it fatal. No
+> single patch was wrong — the COMBINATION was, and a numbered series is exactly the model that hides
+> that. Read the notes below as history, and trust the branch.
+
+---
+
+# Change notes (historical, by patch number)
 
 ## 0001-jit-scan-on-miss.patch
 
