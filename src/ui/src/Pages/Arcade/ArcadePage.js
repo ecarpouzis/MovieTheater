@@ -6,6 +6,7 @@ import GameCard from "./GameCard";
 import HeavyGameModal from "./HeavyGameModal";
 import LiveRooms from "./LiveRooms";
 import SavesManager from "./SavesManager";
+import { rememberLobbySearch } from "./arcadeLobbyState";
 import "./ArcadePage.css";
 
 const { Text } = Typography;
@@ -117,6 +118,9 @@ export default function ArcadePage() {
     };
   }, [location.search]);
   const filterKey = JSON.stringify(filters);
+
+  // Stash the filtered lobby URL so the room's exit buttons can come back to it (arcadeLobbyState).
+  useEffect(() => { rememberLobbySearch(location.search); }, [location.search]);
 
   const fetchPage = useCallback((pageNum, replace) => {
     setLoading(true);

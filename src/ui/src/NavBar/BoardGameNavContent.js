@@ -112,12 +112,17 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
 
       <div id="SearchToolContainer" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid var(--sidebar-border)" }}>
         <span style={{ ...inputLabelStyle, marginTop: 0 }}>Game Title</span>
-        <Search
-          placeholder="Title"
-          style={{ width: "100%" }}
-          onSearch={(v) => (v && v.trim() ? navigate("title", v) : navigate())}
-          enterButton
-        />
+        {/* Single-field <form> so a tablet keyboard's Enter searches instead of jumping focus to the
+            Players dropdown below (see SearchTools for the full note). onSearch still navigates. */}
+        <form onSubmit={(e) => e.preventDefault()}>
+          <Search
+            placeholder="Title"
+            style={{ width: "100%" }}
+            enterKeyHint="search"
+            onSearch={(v) => (v && v.trim() ? navigate("title", v) : navigate())}
+            enterButton
+          />
+        </form>
 
         <span style={{ ...inputLabelStyle, marginTop: "18px" }}>Players</span>
         <Select

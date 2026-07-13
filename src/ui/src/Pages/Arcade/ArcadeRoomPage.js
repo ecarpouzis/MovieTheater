@@ -3,6 +3,7 @@ import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwap, setFaceSwap, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad } from "./cloudRetroClient";
+import { lobbyPath } from "./arcadeLobbyState";
 import { useWakeLock } from "../../useWakeLock";
 
 const { Title, Text } = Typography;
@@ -542,7 +543,7 @@ export default function ArcadeRoomPage() {
         <Title level={3}>Can't join this room</Title>
         <Text type="secondary">{fatal}</Text>
         <div style={{ marginTop: 24 }}>
-          <Button type="primary" onClick={() => history.push("/arcade")}>Back to arcade</Button>
+          <Button type="primary" onClick={() => history.push(lobbyPath())}>Back to arcade</Button>
         </div>
       </div>
     );
@@ -562,7 +563,7 @@ export default function ArcadeRoomPage() {
     <div className="arcade-room-page" style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 24px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
         <Space>
-          <Button onClick={() => history.push("/arcade")}>← Arcade</Button>
+          <Button onClick={() => history.push(lobbyPath())}>← Arcade</Button>
           <Tag color={LIVE_STATUS.includes(status) ? "green" : "blue"}>{STATUS_TEXT[status] || status}</Tag>
           {spectator
             ? <Tag color="blue">👁 Spectating</Tag>
@@ -706,7 +707,7 @@ export default function ArcadeRoomPage() {
           <Tooltip title="Fullscreen">
             <Button onClick={goFullscreen}>⛶ Fullscreen</Button>
           </Tooltip>
-          <Button danger onClick={() => history.push("/arcade")}>{spectator ? "Stop watching" : "End"}</Button>
+          <Button danger onClick={() => history.push(lobbyPath())}>{spectator ? "Stop watching" : "End"}</Button>
         </Space>
       </div>
 

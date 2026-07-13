@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input, Select } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
@@ -50,6 +50,8 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
   const history = useHistory();
   const location = useLocation();
   const [facets, setFacets] = useState(null);
+  const [query, setQuery] = useState(() => new URLSearchParams(location.search).get("q") || "");
+  const searchRef = useRef(null);
   const getPopup = (t) => t.parentElement;
 
   useEffect(() => {
@@ -68,6 +70,11 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
   }
 
   const p = new URLSearchParams(location.search);
+  const activeQuery = p.get("q") || "";
+  // Follow the URL when q changes from anywhere but this box — Clear filters, browser back, or coming
+  // back out of a room with the filters restored. (The old uncontrolled field kept showing stale text.)
+  useEffect(() => { setQuery(activeQuery); }, [activeQuery]);
+
   const activeSystem = p.get("system") || "";
   const activeRegion = p.get("region") || "english";
   const activePlayers = p.get("players") || "";
@@ -89,6 +96,14 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
     ...((facets?.genres || []).map((g) => ({ value: g.value, label: `${g.value} (${g.count})` }))),
   ];
 
+  function submitSearch(e) {
+    e.preventDefault();
+    // Dismiss the on-screen keyboard — on a tablet the rail is a drawer that closes on navigation, so
+    // leaving the field focused parks the keyboard over the results the user just asked for.
+    searchRef.current?.blur();
+    updateParam("q", query.trim());
+  }
+
   return (
     <>
       {userData ? (
@@ -101,16 +116,27 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
         <span className="arcade-filter-heading">FILTER LIBRARY</span>
         {/* A magnifier INSIDE the field, per the design — antd's <Input.Search> always renders a
             separate addon button, which this rail doesn't want. Enter searches; the clear "×"
-            (or emptying the box and pressing Enter) drops the filter. */}
-        <Input
-          placeholder="Search title…"
-          prefix={<SearchOutlined />}
-          allowClear
-          defaultValue={p.get("q") || ""}
-          style={{ width: "100%" }}
-          onPressEnter={(e) => updateParam("q", e.target.value.trim())}
-          onChange={(e) => { if (!e.target.value) updateParam("q", ""); }}
-        />
+            (or emptying the box) drops the filter.
+
+            The <form> is load-bearing, not decoration. A bare input followed by more focusable fields
+            makes a tablet keyboard render its Enter key as "Next" — it moves focus to the Sort/System
+            dropdown instead of searching. A single-field form gets implicit submission, so the key
+            becomes "Go"/"Search" (enterKeyHint names it) and Enter runs the search. */}
+        <form onSubmit={submitSearch}>
+          <Input
+            ref={searchRef}
+            placeholder="Search title…"
+            prefix={<SearchOutlined />}
+            allowClear
+            enterKeyHint="search"
+            value={query}
+            style={{ width: "100%" }}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              if (!e.target.value && activeQuery) updateParam("q", "");
+            }}
+          />
+        </form>
 
         <span style={inputLabelStyle}>Sort by</span>
         <Select style={{ width: "100%" }} value={activeSort} onChange={(v) => updateParam("sort", v)}

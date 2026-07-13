@@ -166,31 +166,42 @@ function SearchTools({ search, userData }) {
   return (
     <div id="SearchToolContainer" style={{ padding: "8px 16px", color: "white" }}>
       <span style={{ ...inputLabelStyle, marginTop: 0 }}>Movie Title</span>
-      <Search
-        placeholder="Title"
-        style={{ width: "100%" }}
-        onSearch={(value) => {
-          if (value && value.trim()) {
-            navigateToBrowseSearch("title", value);
-          } else {
-            navigateToBrowseSearch();
-          }
-        }}
-        enterButton
-      />
+      {/* Each search field gets its OWN single-field <form>. A loose input with more focusable fields
+          below it makes a mobile/tablet keyboard label its Enter key "Next", which moves focus to the
+          next filter instead of searching; a single-field form implicitly submits, so the key becomes
+          "Go"/"Search" (enterKeyHint names it) and antd's onSearch fires as it does on desktop. The
+          submit handler only stops the default page reload — onSearch still does the navigating. */}
+      <form onSubmit={(e) => e.preventDefault()}>
+        <Search
+          placeholder="Title"
+          style={{ width: "100%" }}
+          enterKeyHint="search"
+          onSearch={(value) => {
+            if (value && value.trim()) {
+              navigateToBrowseSearch("title", value);
+            } else {
+              navigateToBrowseSearch();
+            }
+          }}
+          enterButton
+        />
+      </form>
       <span style={inputLabelStyle}>People</span>
-      <Search
-        placeholder="Actor, director, or writer"
-        style={{ width: "100%" }}
-        onSearch={(value) => {
-          if (value && value.trim()) {
-            navigateToBrowseSearch("actor", value);
-          } else {
-            navigateToBrowseSearch();
-          }
-        }}
-        enterButton
-      />
+      <form onSubmit={(e) => e.preventDefault()}>
+        <Search
+          placeholder="Actor, director, or writer"
+          style={{ width: "100%" }}
+          enterKeyHint="search"
+          onSearch={(value) => {
+            if (value && value.trim()) {
+              navigateToBrowseSearch("actor", value);
+            } else {
+              navigateToBrowseSearch();
+            }
+          }}
+          enterButton
+        />
+      </form>
       {genres.length > 0 && (
         <>
           <span style={inputLabelStyle}>Genre</span>

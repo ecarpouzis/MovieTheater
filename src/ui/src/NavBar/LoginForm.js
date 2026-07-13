@@ -87,6 +87,10 @@ function LoginForm({ onUserLoggedIn, popupClassName = "login-user-dropdown" }) {
             placeholder="Username"
             prefix={<UserOutlined className="site-form-item-icon" />}
             className="login-input"
+            // Without it, a tablet keyboard labels Enter "Next" and moves focus to the ▸ button rather
+            // than logging in. (No <form> here — the AutoComplete owns the field; the hint is enough to
+            // make the action key send Enter, which onPressEnter already handles.)
+            enterKeyHint="go"
             onPressEnter={onClickLogin}
             suffix={
               <Tooltip title="Most accounts need no password. If an account has one set, you'll be asked for it.">
@@ -106,6 +110,7 @@ function LoginForm({ onUserLoggedIn, popupClassName = "login-user-dropdown" }) {
           prefix={<LockOutlined className="site-form-item-icon" />}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          enterKeyHint="go"
           onPressEnter={() => attemptLogin(searchValue, password)}
           autoFocus
         />
