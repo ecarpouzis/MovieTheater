@@ -13,13 +13,23 @@
 # nvcodec present (else set encoder.video.codec: vp8), cores download from the windows/x86_64 buildbot.
 #
 # ─────────────────────────────────────────────────────────────────────────────────────────────────
-# THIS FILE IS AUTHORITATIVE. It is the config BOTH GL worker tasks run (they share one ConfDir).
+# THIS FILE IS AUTHORITATIVE. It is the config BOTH GL worker tasks run — but each worker has its
+# OWN ConfDir (worker-gl, worker-gl-2), and MUST: they would otherwise seed and harvest each other's
+# memory cards (see cardVault below). Deploy this same file into each of them.
 # It had drifted badly once: the repo copy lost the ps2/gc/2D core blocks that existed only on the
 # worker box, so a redeploy would have silently reverted live tuning. Reconciled 2026-07-08.
 #
 #   Deploy:  cp docker/arcade/config.worker-gl.yaml D:/ArcadeStorage/worker-gl/config.yaml
+#            AND  D:/ArcadeStorage/worker-gl-2/config.yaml   ← BOTH. Every ConfDir gets every file.
 #            then recycle the workers (Stop-Process worker — the runner loop respawns in ~4s).
 #            Workers read config ONLY at startup.
+#
+#   ⚠ The SAME applies to game-overrides.json (per-game fps/core-option fixes, written by
+#     `arcade-gameconfig-export -o <ConfDir>/game-overrides.json`). It is resolved from the worker's
+#     CWD, i.e. PER ConfDir — export it into EVERY one. It was empty in worker-gl and absent from
+#     worker-gl-2 (2026-07-13), which is harmless only while the manifest is empty: the moment a game
+#     needs a fix, it would apply or not depending on which worker the coordinator happened to pick.
+#     (Per-ROM fixes normally ride the emulators' OWN databases; this manifest is the exception path.)
 #
 # Edit HERE, then deploy. Never hand-edit the copy on D: — that is how the drift started.
 # ⚠ Keep this plain UTF-8, no BOM. The D: copy had accumulated 27 mojibake sequences from a

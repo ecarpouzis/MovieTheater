@@ -9,79 +9,6 @@ index 49d7160..865a248 100644
 +
 +# MovieTheater fork: local test artifacts
 +_rendered/
-diff --git a/cmd/capture-probe/main.go b/cmd/capture-probe/main.go
-new file mode 100644
-index 0000000..05566f0
---- /dev/null
-+++ b/cmd/capture-probe/main.go
-@@ -0,0 +1,67 @@
-+// capture-probe: P1 live harness — drives the capture App against a real heavy title through the
-+// real gateway (prepare/attach/finish + launch + desktop capture), counting frames delivered to
-+// the media callbacks. Proves the capture lane end-to-end WITHOUT the coordinator/WebRTC/retro
-+// workers. NOT part of the shipped patch (delete before packaging 0037).
-+package main
-+
-+import (
-+	"flag"
-+	"fmt"
-+	"sync/atomic"
-+	"time"
-+
-+	"github.com/giongto35/cloud-game/v3/pkg/config"
-+	"github.com/giongto35/cloud-game/v3/pkg/logger"
-+	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/app"
-+	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/capture"
-+)
-+
-+func main() {
-+	appId := flag.String("app", "switch-kirby-forgotten-land", "heavy app id / gameKey")
-+	gameId := flag.Int("gid", 61329, "arcade game id (for the minted room id)")
-+	secs := flag.Int("secs", 20, "seconds to run before close")
-+	mon := flag.Int("mon", 0, "monitor index")
-+	rooms := flag.Int("rooms", 1, "sequential rooms on ONE process (W2 per-room-reset test)")
-+	flag.Parse()
-+
-+	log := logger.NewConsole(true, "cap", false)
-+	cfg := config.Capture{
-+		Enabled:      true,
-+		GatewayUrl:   "http://localhost:2303",
-+		SecretFile:   "D:/ArcadeStorage/heavy/gateway-secret.txt",
-+		ProfilesFile: "D:/ArcadeStorage/heavy/profiles/profiles.json",
-+		MonitorIndex: *mon,
-+		Width:        1920, Height: 1080, Fps: 60,
-+		AudioScope:         "process",
-+		AudioSink:          "CABLE Input",
-+		AudioCaptureDevice: "{0.0.1.00000000}.{4ac426e1-8464-4789-b503-d220fdd89cd3}",
-+		SoundVolumeView:    "D:/ArcadeStorage/worker-capture/bin/SoundVolumeView.exe",
-+	}
-+	a := capture.New(cfg, log)
-+	if err := a.Init(); err != nil {
-+		log.Error().Err(err).Msg("Init failed")
-+		return
-+	}
-+	var vframes, aframes int64
-+	a.SetVideoCb(func(v app.Video) { atomic.AddInt64(&vframes, 1) })
-+	a.SetAudioCb(func(au app.Audio) { atomic.AddInt64(&aframes, 1) })
-+
-+	for r := 0; r < *rooms; r++ {
-+		roomId := fmt.Sprintf("sv-1-%d-0-capture___%s", *gameId, *appId)
-+		fmt.Printf("== room %d/%d LoadApp %s ==\n", r+1, *rooms, *appId)
-+		if err := a.LoadApp(*appId, roomId); err != nil {
-+			// W1: a failed start must Close cleanly (no nil-channel panic, no gwFinish on 409).
-+			fmt.Printf("LoadApp failed: %v — calling Close() (W1 clean-failure test)\n", err)
-+			a.Close()
-+			continue
-+		}
-+		a.Start()
-+		for i := 0; i < *secs; i++ {
-+			time.Sleep(time.Second)
-+			fmt.Printf("  room %d t=%2ds  video=%d  audio=%d\n", r+1, i+1, atomic.LoadInt64(&vframes), atomic.LoadInt64(&aframes))
-+		}
-+		fmt.Printf("== room %d Close ==\n", r+1)
-+		a.Close()
-+	}
-+	fmt.Printf("DONE rooms=%d video=%d audio=%d\n", *rooms, atomic.LoadInt64(&vframes), atomic.LoadInt64(&aframes))
-+}
 diff --git a/go.mod b/go.mod
 index 46034dc..19b7a10 100644
 --- a/go.mod
@@ -280,7 +207,7 @@ index 9e70576..5f5c29f 100644
  
  func (l Library) GetSupportedExtensions() []string { return l.Supported }
 diff --git a/pkg/config/worker.go b/pkg/config/worker.go
-index be5ac42..110169b 100644
+index be5ac42..6c52024 100644
 --- a/pkg/config/worker.go
 +++ b/pkg/config/worker.go
 @@ -6,6 +6,7 @@ import (
@@ -291,7 +218,7 @@ index be5ac42..110169b 100644
  	"strings"
  
  	"github.com/giongto35/cloud-game/v3/pkg/os"
-@@ -20,6 +21,40 @@ type WorkerConfig struct {
+@@ -20,6 +21,49 @@ type WorkerConfig struct {
  	Worker    Worker
  	Webrtc    Webrtc
  	Version   Version
@@ -310,13 +237,22 @@ index be5ac42..110169b 100644
 +	Width        int    // encode input width  (default 1920)
 +	Height       int    // encode input height (default 1080)
 +	Fps          int    // capture/encode fps  (default 60)
-+	// VideoSource: "d3d11" (default) | "d3d12". d3d12 has HDR tonemapping that d3d11 lacks, but
-+	// d3d12screencapturesrc CRASHES the worker whenever the captured app is FULLSCREEN (which every
-+	// heavy title is) — an OOB std::vector index inside libgstd3d12, fatal because MSYS2 builds with
-+	// _GLIBCXX_ASSERTIONS. Upstream MR 7293 fixes it; MSYS2's newest (1.28.4) still reproduces.
-+	// Keep d3d11 until GStreamer ships the fix. See startVideoPipeline.
-+	VideoSource  string
-+	AudioScope   string // "process" (PID-scoped loopback) | "system" (whole endpoint)
++	// VideoSource: "d3d12" (what we RUN) | "d3d11" (fallback, no HDR tonemapping).
++	//
++	// ⚠ Do NOT "fix" this back to d3d11 on the strength of an old comment. d3d12screencapturesrc did
++	// abort the worker on every fullscreen title (an OOB read in libgstd3d12's monochrome-cursor path,
++	// fatal because MSYS2 builds libstdc++ with _GLIBCXX_ASSERTIONS) — so WE PATCHED GSTREAMER instead
++	// of giving up the HDR tonemapping only d3d12 has: docker/arcade/patches/gst/, installed by
++	// scripts/build-gst-d3d12-patched.ps1. The bug is still unfixed upstream (1.28.5).
++	//
++	// The dependency that creates: a pacman -Syu touching GStreamer restores the STOCK libgstd3d12.dll
++	// and the crash comes straight back (presenting to players as "the arcade is full"). Re-run that
++	// script after any upgrade. d3d11 remains the escape hatch if the patched DLL is ever unavailable.
++	VideoSource string
++	// AudioScope: "process" (PID-scoped loopback) | "system" (whole endpoint). NOTE this is only
++	// consulted when AudioCaptureDevice is EMPTY — naming a device wins. The live config names one,
++	// so in production this knob is inert; it is the fallback path, not the main one.
++	AudioScope string
 +	// Per-app audio isolation to a virtual sink (VB-CABLE): route ONLY the launched game's audio to
 +	// a virtual device so it doesn't blast the host speakers, then capture from that device. Routing
 +	// is by PID (session-scoped — reverts the instant the game exits; the host stays normal otherwise).
@@ -332,7 +268,7 @@ index be5ac42..110169b 100644
  }
  
  type Storage struct {
-@@ -86,6 +121,111 @@ type CodecSettings struct {
+@@ -86,6 +130,111 @@ type CodecSettings struct {
  	Caps    string
  }
  
@@ -2330,10 +2266,10 @@ index 85ede12..6d1d955 100644
  
 diff --git a/pkg/worker/caged/capture/capture.go b/pkg/worker/caged/capture/capture.go
 new file mode 100644
-index 0000000..5c28dba
+index 0000000..73d3c2b
 --- /dev/null
 +++ b/pkg/worker/caged/capture/capture.go
-@@ -0,0 +1,404 @@
+@@ -0,0 +1,405 @@
 +// Package capture implements the "capture" caged mod (heavy browser lane, H5): instead of running
 +// a libretro core it launches a native Windows program through the heavy gateway contract, captures
 +// the desktop with GStreamer (Windows Graphics Capture), feeds frames/PCM into the UNCHANGED
@@ -2376,9 +2312,10 @@ index 0000000..5c28dba
 +	// media pipelines + last-frame cache (guarded by frameMu)
 +	videoPipe *gst.Pipeline
 +	audioPipe *gst.Pipeline
-+	capturing atomic.Bool // gates whether live desktop frames are pushed — the video pipeline stays
-+	//            PLAYING for the worker's whole life (a d3d12 WGC session can't be PAUSE/NULL-resumed
-+	//            in-process — room 2 froze), so between rooms we drop frames instead of stopping capture.
++	// capturing gates whether live desktop frames are pushed downstream. It is NOT the room lifecycle:
++	// the pipeline is rebuilt per room now (startVideoPipeline / releaseVideo). This flag exists to
++	// BLANK the stream the moment the captured game dies, so a dead room can never show the desktop.
++	capturing  atomic.Bool
 +	pipeMu     sync.Mutex // guards videoPipe/audioPipe teardown (exitWatcher vs Close race)
 +	frameMu    sync.Mutex
 +	lastFrame  []byte
@@ -2740,10 +2677,10 @@ index 0000000..5c28dba
 +}
 diff --git a/pkg/worker/caged/capture/input.go b/pkg/worker/caged/capture/input.go
 new file mode 100644
-index 0000000..585f635
+index 0000000..3c15057
 --- /dev/null
 +++ b/pkg/worker/caged/capture/input.go
-@@ -0,0 +1,203 @@
+@@ -0,0 +1,182 @@
 +package capture
 +
 +import (
@@ -2835,27 +2772,6 @@ index 0000000..585f635
 +	return len(p.pads)
 +}
 +
-+// removeAll disconnects and releases every pad AND the client (full shutdown). Idempotent.
-+func (p *padManager) removeAll() {
-+	p.mu.Lock()
-+	defer p.mu.Unlock()
-+	for _, pad := range p.pads {
-+		func() {
-+			defer func() { _ = recover() }()
-+			pad.Disconnect()
-+			pad.Release()
-+		}()
-+	}
-+	p.pads = make(map[int]*x360.Gamepad)
-+	if p.client != nil {
-+		func() {
-+			defer func() { _ = recover() }()
-+			p.client.Release()
-+		}()
-+		p.client = nil
-+	}
-+	p.ok = false
-+}
 +
 +// RetroPad button bit -> XUSB button. Index is the RetroPad bit (see the plan's §4.5 table and
 +// pkg/worker/caged/libretro/nanoarch/input.go). Bits 12/13 (L2/R2) and analog triggers handled
@@ -3424,10 +3340,10 @@ index 0000000..6cc9eb1
 +}
 diff --git a/pkg/worker/caged/capture/pipeline.go b/pkg/worker/caged/capture/pipeline.go
 new file mode 100644
-index 0000000..d9c09f1
+index 0000000..dcdcc88
 --- /dev/null
 +++ b/pkg/worker/caged/capture/pipeline.go
-@@ -0,0 +1,326 @@
+@@ -0,0 +1,327 @@
 +package capture
 +
 +/*
@@ -3475,19 +3391,20 @@ index 0000000..d9c09f1
 +		a.releaseVideo() // defensive: a prior room should have released it at Close
 +	}
 +
-+	// ⚠ d3d12screencapturesrc CRASHES THE WORKER when the captured app goes FULLSCREEN — which every
-+	// heavy title does (yuzu launches with -f). An out-of-bounds std::vector index inside libgstd3d12
-+	// trips libstdc++'s bounds assertion (MSYS2 builds with _GLIBCXX_ASSERTIONS, so what would be a
-+	// silent overread elsewhere is an abort() here) and the process dies with 0xC0000409 ~10-30s in,
-+	// every time. Confirmed by gdb backtrace (abort <- libstdc++ <- libgstd3d12) and by upstream:
-+	// https://discourse.gstreamer.org/t/d3d12screencapturesrc-hangs-crash-when-using-a-full-screen-app/2088
-+	// Fixed upstream in MR 7293, but MSYS2's newest (1.28.4) still reproduces it — so d3d11 it is.
-+	// The upstream thread's own advice is the same: use d3d11screencapturesrc.
++	// WE RUN d3d12 (config: videoSource), and d3d11 is the fallback. Both branches are live code.
 +	//
-+	// What d3d11 costs us: d3d12screencapturesrc has built-in HDR tonemapping (tonemap=reinhard) that
-+	// d3d11 lacks, so if the game PC's desktop is switched to HDR the stream will look washed out
-+	// (plan §11 Tier 1). It's correct on an SDR desktop, which is what Ziggy runs. Flip videoSource
-+	// back to "d3d12" once GStreamer ships the fix.
++	// History, because the obvious "fix" is to go back to d3d11: stock d3d12screencapturesrc aborts the
++	// worker (0xC0000409, ~10-30s in) on every FULLSCREEN title — which is every heavy title — via an
++	// out-of-bounds read in libgstd3d12's monochrome-cursor path, fatal only because MSYS2 builds
++	// libstdc++ with _GLIBCXX_ASSERTIONS. Confirmed by gdb (abort <- libstdc++ <- libgstd3d12). It is
++	// STILL unfixed upstream (1.28.5; the known MR 7293 is a different bug), so rather than lose the
++	// HDR tonemapping (tonemap=reinhard) that ONLY d3d12 has, we patch and build the plugin ourselves:
++	// docker/arcade/patches/gst/ + scripts/build-gst-d3d12-patched.ps1.
++	//
++	// ⚠ That patched DLL is a build artifact on the box, not in this repo: any pacman -Syu touching
++	// GStreamer silently restores the stock plugin and the crash returns. Re-run the script after an
++	// upgrade. If the patched DLL is ever unavailable, set videoSource: "d3d11" — correct on an SDR
++	// desktop, washed out on an HDR one.
 +	//
 +	// ⚠ Constrain format+framerate AFTER the convert — putting them on the src caps fails negotiation
 +	// (not-negotiated). Rest of the path (limited-range encode downstream) is unchanged.
@@ -3779,7 +3696,7 @@ index f3553b1..a26a9d8 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..fde2622 100644
+index 6974d59..ad44503 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
 @@ -86,8 +86,12 @@ type Frontend struct {
@@ -3893,7 +3810,7 @@ index 6974d59..fde2622 100644
  		// advance 1 frame for Mupen, DOSBox save states
  		// loading will work if autostart is selected for DOSBox apps
  		f.Tick()
-@@ -330,74 +384,349 @@ func (f *Frontend) Start() {
+@@ -330,74 +384,380 @@ func (f *Frontend) Start() {
  
  	batch := max(f.SpinBatch, 1)
  
@@ -3918,10 +3835,17 @@ index 6974d59..fde2622 100644
 +	var audioFrames int64       // cumulative audio frames produced (the audio clock)
 +	floorNext := os.Nanotime()  // earliest allowed time for the next tick (max-rate floor)
 +
-+	// pace-diag (TEMPORARY, F-Zero audio hunt 2026-07-09): every 5s, log what the emulator actually
-+	// produced — ticks/s, audio frames/s (should track the core's sample rate), the worst single
-+	// retro_run of the window, and how many ticks blew a 20ms budget. Steady audio/s while the
-+	// player hears gaps = the problem is DOWNSTREAM of the emulator (encode/network/client).
++	// pace-diag: every 5s, log what the emulator actually produced — ticks/s, audio frames/s (should
++	// track the core's sample rate), the worst single retro_run of the window, and how many ticks blew
++	// a 20ms budget. Steady audio/s while the player hears gaps = the problem is DOWNSTREAM of the
++	// emulator (encode/network/client).
++	//
++	// ⚠ DO NOT DELETE OR DEMOTE THIS TO Debug, despite it having started life as a temporary probe.
++	// It is now the GL worker's HEARTBEAT: nothing else logs periodically during a healthy room (ABR
++	// only logs on change), and the watchdog's wedge test is "the coordinator says this worker is BUSY
++	// but its log has been silent for >150s -> kill it" (scripts/watch-arcade-glworkers.ps1). Silence
++	// this line and a healthy long session looks exactly like a wedged one. The capture mod keeps its
++	// own 5s "capture tick" for the same reason.
 +	diagWindow := os.Nanotime()
 +	var diagTicks, diagSlow int64
 +	var diagAudioBase int64
@@ -4118,6 +4042,20 @@ index 6974d59..fde2622 100644
 +		f.log.Error().Msgf("cards: bad spec for %v: %q (want \"save:<path>\" or \"system:<path>\")", system, spec)
 +		return card{}
 +	}
++
++	// uniqueSaveDir and a save-rooted card are mutually exclusive, and silently so — which is why this
++	// refuses rather than warns. uniqueSaveDir re-points nano.SaveDir() at a PER-SESSION subdirectory,
++	// so "save:User/GC" would resolve somewhere the core never writes its card: we would faithfully
++	// vault an empty directory over the player's real one every session. It is off for every carded
++	// core today; this exists so that turning it back on fails loudly instead of eating saves.
++	if f.UniqueSaveDir && root == "save" {
++		f.log.Error().Msgf(
++			"cards: %v has uniqueSaveDir AND a save-rooted card (%q) — these cannot both be on: the card "+
++				"would resolve inside the per-session save dir. Cards DISABLED for this room; fix the config.",
++			system, spec)
++		return card{}
++	}
++
 +	var base string
 +	switch root {
 +	case "save":
@@ -4198,8 +4136,18 @@ index 6974d59..fde2622 100644
 +	if prev, err := os.ReadFile(f.cardOwnerPath(system, c)); err == nil {
 +		if p := strings.TrimSpace(string(prev)); p != "" {
 +			if err := f.vaultCard(c, f.vaultDir(p, system)); err != nil {
-+				f.log.Error().Err(err).Msgf("cards: could not recover user %v's %v card", p, system)
-+			} else if p != user {
++				// ABORT THE SEED. Do not log-and-continue: the seed below CLEARS or OVERWRITES this
++				// directory, so carrying on here would destroy the very card we just failed to save —
++				// a locked file or a full disk would turn into someone's progress gone for good. The
++				// room boots on whatever card is already in place (the previous player's, so we do
++				// not stamp a new owner either). Wrong card beats no card: it is recoverable, and the
++				// next room retries the recovery.
++				f.log.Error().Err(err).Msgf(
++					"cards: could not recover user %v's unharvested %v card — REFUSING to seed over it; "+
++						"this room runs on the card that is already here", p, system)
++				return
++			}
++			if p != user {
 +				f.log.Info().Msgf("cards: recovered an unharvested %v card for user %v", system, p)
 +			} else {
 +				f.log.Info().Msgf("cards: recovered your own unharvested %v card (user %v)", system, p)
@@ -4280,7 +4228,7 @@ index 6974d59..fde2622 100644
  func (f *Frontend) AspectRatio() float32          { return f.nano.AspectRatio() }
  func (f *Frontend) AudioSampleRate() int          { return f.nano.AudioSampleRate() }
  func (f *Frontend) FPS() float64                  { return f.nano.VideoFramerate() }
-@@ -434,6 +763,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
+@@ -434,6 +794,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
  	}
  }
  
@@ -4290,7 +4238,7 @@ index 6974d59..fde2622 100644
  func (f *Frontend) ViewportCalc() (nw int, nh int) {
  	w, h := f.FrameSize()
  	nw, nh = w, h
-@@ -478,6 +810,9 @@ func (f *Frontend) Close() {
+@@ -478,6 +841,9 @@ func (f *Frontend) Close() {
  
  // Save writes the current state to the filesystem.
  func (f *Frontend) Save() error {
@@ -4300,7 +4248,7 @@ index 6974d59..fde2622 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -501,6 +836,9 @@ func (f *Frontend) Save() error {
+@@ -501,6 +867,9 @@ func (f *Frontend) Save() error {
  
  // Load restores the state from the filesystem.
  func (f *Frontend) Load() error {
@@ -4310,7 +4258,7 @@ index 6974d59..fde2622 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -537,6 +875,13 @@ func (f *Frontend) autosave(periodSec int) {
+@@ -537,6 +906,13 @@ func (f *Frontend) autosave(periodSec int) {
  			if f.nano.IsStopped() {
  				return
  			}
@@ -5423,7 +5371,7 @@ index 6972cc7..cd86db4 100644
  	c.RegisterRoom(r.Id())
  
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..51d014b 100644
+index 4a6171f..74b72f5 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
 @@ -7,6 +7,7 @@ import (
@@ -5766,16 +5714,19 @@ index 4a6171f..51d014b 100644
  	}, nil
  }
  
-@@ -577,3 +698,45 @@ func watchBus(pipeline *gst.Pipeline, log *logger.Logger) {
+@@ -577,3 +698,47 @@ func watchBus(pipeline *gst.Pipeline, log *logger.Logger) {
  		}
  	}
  }
 +
 +// SetVideoBitrate live-sets the video encoder's target bitrate. This is the whole reason ABR is cheap
-+// here: nvh264enc/x264enc expose `bitrate` (kbit/s) as "changeable in the PLAYING state", so NVENC
-+// reconfigures its rate controller in place — no pipeline rebuild, no renegotiation, no reconnect, and
-+// (unlike a RESOLUTION change, which re-inits the pipeline via Reinit) nothing the viewer can see.
-+// vpx names the property differently and takes bit/s.
++// here: the NVENC encoders — nvav1enc (the DEFAULT codec) and nvh264enc, plus x264enc — expose
++// `bitrate` (kbit/s) as "changeable in the PLAYING state", so the encoder reconfigures its rate
++// controller in place: no pipeline rebuild, no renegotiation, no reconnect, and (unlike a RESOLUTION
++// change, which re-inits the pipeline via Reinit) nothing the viewer can see.
++//
++// The switch below is therefore by PROPERTY NAME, not by codec family: vpx is the odd one out
++// (`target-bitrate`, in bit/s), and everything else — av1 included — takes `bitrate` in kbit/s.
 +//
 +// Safe to call before the pipeline exists: the value is remembered and applied by initVideo.
 +func (g *GstMediaPipe) SetVideoBitrate(kbps int) error {
@@ -5811,7 +5762,6 @@ index 4a6171f..51d014b 100644
 +}
 +
 +// VideoBitrate is the ABR target currently applied (kbps), or 0 if ABR never set one.
-+func (g *GstMediaPipe) VideoBitrate() int { return int(g.vBitrate.Load()) }
 diff --git a/pkg/worker/room/room.go b/pkg/worker/room/room.go
 index 9ff9576..8fc2e21 100644
 --- a/pkg/worker/room/room.go
