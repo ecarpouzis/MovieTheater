@@ -57,11 +57,15 @@ namespace MovieTheater.Services.Arcade
             // Gateway base is https/http; the browser opens a WebSocket, so advertise wss/ws.
             var wsBase = ToWebSocketScheme(config.ArcadeGatewayBaseUrl!.TrimEnd('/'));
             // The room id embeds '___' and spaces — URL-encode it. Empty for a creator (⇒ "create").
-            // zone selects the worker pool (roadmap WS-B). Empty (v1 default, ArcadeZoningEnabled=false)
-            // is a wildcard that matches any worker; when zoning is on, GL 3D systems go to the "gl"
-            // pool (the Windows-native worker) and everything else to "main" (the WSL 2D workers).
             var roomIdParam = Uri.EscapeDataString(cloudRetroRoomId ?? string.Empty);
-            var zone = config.ArcadeZoningEnabled ? Uri.EscapeDataString(ZoneForSystem(game.System)) : string.Empty;
+            // ALWAYS send a zone. It used to be gated on ArcadeZoningEnabled (default off), which sent
+            // zone="" — a WILDCARD that matches any worker. With two pools that is a live misrouting bug,
+            // not a latent one: the coordinator hands the room to whatever worker is free FIRST, so a
+            // GameCube room lands on the CAPTURE worker (library = capture stubs), which answers
+            // "couldn't find game info" and the player is told "the arcade is full" while both GL workers
+            // sit idle. Seen 2026-07-13, repeatedly. It misroutes the other way too — a capture title onto
+            // a retro worker fails identically.
+            var zone = Uri.EscapeDataString(ZoneForSystem(game.System));
             var wsUrl = $"{wsBase}/w/{token}?room_id={roomIdParam}&zone={zone}";
 
             var ice = (config.ArcadeStunServers ?? new List<string>())
@@ -79,19 +83,19 @@ namespace MovieTheater.Services.Arcade
         /// Keep this list in lockstep with the gl worker's config.yaml core entries and the WSL workers'
         /// CLOUD_GAME_WORKER_NETWORK_ZONE=main.
         /// </summary>
-        /// ⚠ STALE + LATENT TRAP (noted 2026-07-08, deliberately not changed here). Since the docker/WSL
-        /// pool was retired, BOTH Windows worker tasks register <c>CLOUD_GAME_WORKER_NETWORK_ZONE=main</c>
-        /// (scripts/run-arcade-glworker.ps1) — so **no worker serves the "gl" zone**. Turning on
-        /// <c>ArcadeZoningEnabled</c> today would route psp/dc/naomi/atomiswave rooms at a pool that does
-        /// not exist. The list is also incomplete: ps2 and gc are GL cores too and were never added.
-        /// It is harmless only because zoning is off by default (the descriptor then sends zone=""), which
-        /// is a wildcard. Fix by deleting zoning, or by making every system return "main", before anyone
-        /// flips that flag.
-        internal static string ZoneForSystem(string? system) => system?.ToLowerInvariant() switch
-        {
-            "psp" or "dc" or "naomi" or "atomiswave" => "gl",
-            _ => "main",
-        };
+        /// The old "gl" zone is GONE, and its removal is the point. Since the docker/WSL pool was retired
+        /// every retro worker registers <c>CLOUD_GAME_WORKER_NETWORK_ZONE=main</c> (run-arcade-glworker.ps1)
+        /// and the capture worker registers <c>capture</c> — so the only two zones that EXIST are "main"
+        /// and "capture". Routing psp/dc/naomi/atomiswave at a "gl" pool would send them at nothing.
+        ///
+        /// The previous comment called this a latent trap, harmless because zoning was off. It was not:
+        /// zoning-off sends zone="" (a wildcard), and the coordinator then picks whatever worker is free
+        /// first — which is how a GameCube room ended up on the CAPTURE worker, failed with "couldn't find
+        /// game info", and told the player "the arcade is full" with both retro workers idle.
+        ///
+        /// Two zones, two pools, no wildcard. Keep in lockstep with the workers' registered zones.
+        internal static string ZoneForSystem(string? system) =>
+            string.Equals(system, "capture", StringComparison.OrdinalIgnoreCase) ? "capture" : "main";
 
         /// <summary>
         /// Default video bitrate (kbps) for a system when the creator leaves stream quality on "Auto"
