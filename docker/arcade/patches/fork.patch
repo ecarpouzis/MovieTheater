@@ -207,7 +207,7 @@ index 9e70576..5f5c29f 100644
  
  func (l Library) GetSupportedExtensions() []string { return l.Supported }
 diff --git a/pkg/config/worker.go b/pkg/config/worker.go
-index be5ac42..6c52024 100644
+index be5ac42..fa84ddd 100644
 --- a/pkg/config/worker.go
 +++ b/pkg/config/worker.go
 @@ -6,6 +6,7 @@ import (
@@ -218,7 +218,7 @@ index be5ac42..6c52024 100644
  	"strings"
  
  	"github.com/giongto35/cloud-game/v3/pkg/os"
-@@ -20,6 +21,49 @@ type WorkerConfig struct {
+@@ -20,6 +21,58 @@ type WorkerConfig struct {
  	Worker    Worker
  	Webrtc    Webrtc
  	Version   Version
@@ -265,10 +265,19 @@ index be5ac42..6c52024 100644
 +	// ~75-150ms of audio latency (plan §12). Point AudioCaptureDevice at the CABLE Input render id.
 +	AudioCaptureLoopback bool
 +	SoundVolumeView      string // path to SoundVolumeView.exe (bundled beside worker.exe)
++	// ZeroCopy (P4): keep captured frames in GPU memory all the way into NVENC instead of reading
++	// them back to system memory to hand to Go, which then uploaded them to the GPU again for the
++	// encoder. Measured on this box (same encoder, only the readback varying): the round trip costs
++	// 9.2 ms median vs 3.0 ms without it.
++	//
++	// It moves the capture source INTO the media pipeline (media.GstMediaPipe.VideoSrcChain), so the
++	// encoder — and with it ABR, per-room codec and forced keyframes — is untouched. Off = design A
++	// (the appsink→Go→appsrc path), which stays the rollback and the A/B baseline.
++	ZeroCopy bool
  }
  
  type Storage struct {
-@@ -86,6 +130,111 @@ type CodecSettings struct {
+@@ -86,6 +139,111 @@ type CodecSettings struct {
  	Caps    string
  }
  
@@ -1176,11 +1185,198 @@ index 0000000..4b247b7
 +		f()
 +	}
 +}
+diff --git a/pkg/network/webrtc/svc.go b/pkg/network/webrtc/svc.go
+new file mode 100644
+index 0000000..de4d34a
+--- /dev/null
++++ b/pkg/network/webrtc/svc.go
+@@ -0,0 +1,87 @@
++package webrtc
++
++import "sync/atomic"
++
++// Temporal SVC (arcade). The room's ONE encoder emits a hierarchical-P pyramid: layer 0 (the base)
++// references only itself, so frames in the upper layers can be discarded by the SENDER without
++// breaking anyone's reference chain. Each Peer owns its own TrackLocalStaticSample — and therefore
++// its own packetizer and its own RTP sequence numbers — so "drop a layer for this peer" is literally
++// "don't call WriteSample for that frame". No sequence gaps, no NACK storm, no Dependency Descriptor
++// header extension, and the browser never learns the stream was layered: it just sees fewer frames.
++//
++// That is what lets one peer on hotel wifi take 30fps (or 15) while the rest of the room keeps 60,
++// instead of ABR dragging the whole room's encode down to the worst receiver.
++//
++// Measured layer shares (nvav1enc, 640x480 ball pattern — real content varies, the shape does not):
++//
++//	3 layers: tid<=0 = 28% of bitrate @15fps | tid<=1 = 54% @30fps | tid<=2 = 100% @60fps
++//	2 layers: tid<=0 = 53% of bitrate @30fps | tid<=1 = 100% @60fps
++//
++// so a base-layer-only peer costs ~28% of the room's bitrate: the room may run ~3.5x that peer's
++// estimate and still serve it.
++
++// svcLayers is how many temporal layers the encoder is CURRENTLY producing (0/1 = not layered).
++// Process-global for the same reason SetPacing and OnKeyframeRequest are: one worker = one room, and
++// the encoder is built long after the peers' package is wired. 1 = every frame is tid 0, so the drop
++// path below can never fire — which is exactly the behaviour we want when SVC is off.
++var svcLayers atomic.Int32
++
++// SetTemporalLayers records the encoder's layer count. Called when the media pipe is built.
++func SetTemporalLayers(n int) { svcLayers.Store(int32(n)) }
++
++// TemporalLayers reports the encoder's layer count (0/1 = SVC off).
++func TemporalLayers() int { return int(svcLayers.Load()) }
++
++// av1TemporalID reads temporal_id out of an AV1 temporal unit's OBU extension header.
++//
++// The encoder hands us one temporal unit per sample (caps: alignment=tu), which is a TEMPORAL
++// DELIMITER OBU followed by the coded frame. The TD does not necessarily carry an extension header,
++// so we walk OBUs until we find the frame itself.
++//
++// Returns 0 for anything it cannot parse, and for every non-layered stream (with temporal-layers=1
++// NVENC emits NO extension headers at all — verified: 0 of 120 frames). 0 = base layer = never
++// dropped, so a parse failure degrades to "send it", never to "silently drop the room's video".
++func av1TemporalID(frame []byte) int {
++	// Low-overhead bitstream: [obu_header] [obu_extension?] [leb128 size] [payload]
++	for i := 0; i < len(frame); {
++		h := frame[i]
++		i++
++		obuType := (h >> 3) & 0xF
++		extFlag := (h >> 2) & 1
++		hasSize := (h >> 1) & 1
++
++		tid := 0
++		if extFlag == 1 {
++			if i >= len(frame) {
++				return 0
++			}
++			tid = int(frame[i] >> 5)
++			i++
++		}
++		// Without a size field we cannot find the next OBU, so we cannot keep walking. An
++		// OBU_FRAME/OBU_FRAME_HEADER here is still authoritative for this frame.
++		if hasSize == 0 {
++			return tid
++		}
++
++		size := 0
++		for shift := 0; ; shift += 7 {
++			if i >= len(frame) || shift > 56 {
++				return 0
++			}
++			b := frame[i]
++			i++
++			size |= int(b&0x7F) << shift
++			if b&0x80 == 0 {
++				break
++			}
++		}
++
++		// OBU_FRAME_HEADER (3) or OBU_FRAME (6) — the coded picture, and what carries the layer.
++		if obuType == 3 || obuType == 6 {
++			return tid
++		}
++		i += size
++	}
++	return 0
++}
+diff --git a/pkg/network/webrtc/svc_test.go b/pkg/network/webrtc/svc_test.go
+new file mode 100644
+index 0000000..2a3570c
+--- /dev/null
++++ b/pkg/network/webrtc/svc_test.go
+@@ -0,0 +1,88 @@
++package webrtc
++
++import "testing"
++
++// obu builds one OBU: type, optional extension header (temporal id), leb128 size, payload.
++func obu(obuType byte, tid int, hasExt bool, payload []byte) []byte {
++	h := obuType << 3
++	if hasExt {
++		h |= 1 << 2
++	}
++	h |= 1 << 1 // obu_has_size_field
++	out := []byte{h}
++	if hasExt {
++		out = append(out, byte(tid<<5))
++	}
++	// leb128 of len(payload)
++	n := len(payload)
++	for {
++		b := byte(n & 0x7F)
++		n >>= 7
++		if n > 0 {
++			b |= 0x80
++		}
++		out = append(out, b)
++		if n == 0 {
++			break
++		}
++	}
++	return append(out, payload...)
++}
++
++const (
++	obuTD       = 2
++	obuFrameHdr = 3
++	obuFrame    = 6
++	obuSeqHdr   = 1
++)
++
++func TestAV1TemporalID(t *testing.T) {
++	body := make([]byte, 200) // >127 so the size field needs two leb128 bytes
++
++	tests := []struct {
++		name string
++		in   []byte
++		want int
++	}{
++		// The shape NVENC actually emits: a temporal delimiter with no extension header, then the
++		// frame carrying the layer. Reading only the FIRST OBU would report 0 for every frame and
++		// silently disable the whole feature.
++		{"TD then frame tid=2", append(obu(obuTD, 0, false, nil), obu(obuFrame, 2, true, body)...), 2},
++		{"TD then frame tid=1", append(obu(obuTD, 0, false, nil), obu(obuFrame, 1, true, body)...), 1},
++		{"TD then frame tid=0", append(obu(obuTD, 0, false, nil), obu(obuFrame, 0, true, body)...), 0},
++
++		// temporal-layers=1: NVENC emits NO extension headers at all. Must read as base layer so the
++		// drop path can never fire when SVC is off.
++		{"no extension header", append(obu(obuTD, 0, false, nil), obu(obuFrame, 0, false, body)...), 0},
++
++		// A sequence header ahead of the frame (first frame of a stream) must be skipped over.
++		{"seq hdr then frame tid=2",
++			append(append(obu(obuTD, 0, false, nil), obu(obuSeqHdr, 0, false, body)...),
++				obu(obuFrame, 2, true, body)...), 2},
++
++		{"frame header OBU carries the id", obu(obuFrameHdr, 1, true, body), 1},
++
++		// Garbage must read as base layer: dropping is the dangerous direction. A parse failure that
++		// returned a high id would drop real frames and freeze the picture.
++		{"empty", []byte{}, 0},
++		{"truncated after header", []byte{obuFrame << 3}, 0},
++	}
++
++	for _, tc := range tests {
++		t.Run(tc.name, func(t *testing.T) {
++			if got := av1TemporalID(tc.in); got != tc.want {
++				t.Errorf("av1TemporalID() = %d, want %d", got, tc.want)
++			}
++		})
++	}
++}
++
++// The base layer must never be droppable, whatever the cap — that is the invariant that keeps a
++// starved peer showing a picture instead of a freeze.
++func TestBaseLayerNeverDropped(t *testing.T) {
++	body := make([]byte, 64)
++	frame := append(obu(obuTD, 0, false, nil), obu(obuFrame, 0, true, body)...)
++	if tid := av1TemporalID(frame); tid != 0 {
++		t.Fatalf("base-layer frame parsed as tid %d; it would be dropped for a capped peer", tid)
++	}
++}
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..b82bd26 100644
+index b342b6b..d49047a 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
-@@ -1,6 +1,7 @@
+@@ -1,14 +1,17 @@
  package webrtc
  
  import (
@@ -1188,7 +1384,9 @@ index b342b6b..b82bd26 100644
  	"cmp"
  	"encoding/json"
  	"fmt"
-@@ -9,6 +10,7 @@ import (
+ 	"strings"
+ 	"sync"
++	"sync/atomic"
  	"time"
  
  	"github.com/giongto35/cloud-game/v3/pkg/logger"
@@ -1196,7 +1394,7 @@ index b342b6b..b82bd26 100644
  	"github.com/pion/webrtc/v4"
  	"github.com/pion/webrtc/v4/pkg/media"
  )
-@@ -16,8 +18,22 @@ import (
+@@ -16,15 +19,43 @@ import (
  type Peer struct {
  	api *ApiFactory
  	c   *webrtc.PeerConnection
@@ -1219,8 +1417,37 @@ index b342b6b..b82bd26 100644
  	a *webrtc.TrackLocalStaticSample
  	v *webrtc.TrackLocalStaticSample
  	d *webrtc.DataChannel
-@@ -48,7 +64,7 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
- 	return &Peer{api: api, log: custom}
+ 
++	// Temporal SVC (see svc.go). maxLayer is the highest temporal layer THIS peer is fed; frames
++	// above it are dropped for this peer alone. Written by the ABR loop, read on the media thread.
++	// svcMaxLayerUncapped = send everything, which is the state until ABR has an opinion.
++	maxLayer atomic.Int32
++	// pendingNanos is the summed duration of the frames we dropped for this peer since its last sent
++	// one. Pion's packetizer advances the RTP timestamp by each sample's Duration, so a skipped frame
++	// whose time is not carried forward makes THIS peer's video clock run slow — the picture drifts
++	// behind its own audio and the longer you play the worse it gets. Carrying it forward keeps the
++	// RTP clock on wall-clock while sending fewer frames.
++	pendingNanos atomic.Int64
++
+ 	onMessage func(data []byte)
+ }
+ 
++// svcMaxLayerUncapped is above any real temporal id (NVENC allows at most 3 layers => ids 0..2).
++const svcMaxLayerUncapped = 7
++
+ var samplePool sync.Pool
+ 
+ var DefaultOfferAnswerOptions = webrtc.OfferAnswerOptions{ICETricklingSupported: true}
+@@ -45,10 +76,14 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
+ 			Str(logger.DirectionField, "").
+ 			Str(logger.ClientField, ""),
+ 	)
+-	return &Peer{api: api, log: custom}
++	p := &Peer{api: api, log: custom}
++	// Until ABR forms an opinion about this peer, feed it everything. A peer that joins mid-session
++	// must not start out silently capped to the base layer.
++	p.maxLayer.Store(svcMaxLayerUncapped)
++	return p
  }
  
 -func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err error) {
@@ -1228,7 +1455,7 @@ index b342b6b..b82bd26 100644
  	defer func() {
  		if err != nil {
  			err = fmt.Errorf("couldn't create webrtc seesion: %w", err)
-@@ -61,7 +77,7 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -61,7 +96,7 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.log.Debug().Msg("rtc start")
  
@@ -1237,7 +1464,7 @@ index b342b6b..b82bd26 100644
  		return
  	}
  
-@@ -96,6 +112,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -96,6 +131,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.c.OnDataChannel(func(ch *webrtc.DataChannel) { p.log.Debug().Msgf("rtc [chan] [%s] remote", ch.Label()) })
  
@@ -1273,7 +1500,7 @@ index b342b6b..b82bd26 100644
  	aCodec := "opus"
  	if err = p.InitMedia(vCodec, aCodec); err != nil {
  		return
-@@ -143,8 +188,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+@@ -143,8 +207,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
  	return encoded, nil
  }
  
@@ -1315,7 +1542,7 @@ index b342b6b..b82bd26 100644
  		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
  		if err != nil {
  			return err
-@@ -153,6 +231,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -153,6 +250,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  		return p.c.AddICECandidate(candidate)
  	}
  	if sdp != nil {
@@ -1333,7 +1560,7 @@ index b342b6b..b82bd26 100644
  		answer, err := fromJson[webrtc.SessionDescription](*sdp)
  		if err != nil {
  			return err
-@@ -176,6 +265,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -176,6 +284,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
  		mime = webrtc.MimeTypeVP8
  	case "video/vp9":
  		mime = webrtc.MimeTypeVP9
@@ -1347,7 +1574,40 @@ index b342b6b..b82bd26 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -250,6 +346,9 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -226,12 +341,32 @@ func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
+ 	}
+ }
+ 
++// SendVideo writes one encoded frame to THIS peer, unless the frame sits in a temporal layer this
++// peer is not being fed (see svc.go). Dropping here — per peer, before the packetizer — is what makes
++// SVC cheap: this peer's own packetizer simply never sees the frame, so its sequence numbers stay
++// contiguous and no receiver NACKs for something it was never promised.
+ func (p *Peer) SendVideo(data []byte, dur time.Duration) {
++	if svcLayers.Load() > 1 {
++		if int32(av1TemporalID(data)) > p.maxLayer.Load() {
++			p.pendingNanos.Add(int64(dur)) // keep this peer's RTP clock on wall-clock
++			return
++		}
++		if pending := p.pendingNanos.Swap(0); pending > 0 {
++			dur += time.Duration(pending)
++		}
++	}
+ 	if err := p.send(data, dur, p.v.WriteSample); err != nil {
+ 		p.log.Error().Err(err).Send()
+ 	}
+ }
+ 
++// SetMaxTemporalLayer caps which temporal layers this peer is fed (0 = base only). Called by the ABR
++// loop from its own goroutine.
++func (p *Peer) SetMaxTemporalLayer(l int) { p.maxLayer.Store(int32(l)) }
++
++// MaxTemporalLayer reports this peer's current layer cap.
++func (p *Peer) MaxTemporalLayer() int { return int(p.maxLayer.Load()) }
++
+ func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
+ 
+ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
+@@ -250,6 +385,9 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  }
  
  func (p *Peer) Disconnect() {
@@ -1357,7 +1617,7 @@ index b342b6b..b82bd26 100644
  	if p.c == nil {
  		return
  	}
-@@ -274,20 +373,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +412,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -1407,7 +1667,7 @@ index b342b6b..b82bd26 100644
  			}
  		}()
  	}
-@@ -313,3 +438,23 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +477,23 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -2066,34 +2326,45 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..e024e40
+index 0000000..ba8691e
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,128 @@
+@@ -0,0 +1,214 @@
 +package worker
 +
 +import (
 +	"time"
 +
 +	"github.com/giongto35/cloud-game/v3/pkg/logger"
++	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
 +)
 +
-+// Adaptive bitrate for a room's single video encoder (arcade ABR, patch 0021).
++// Adaptive bitrate for a room's single video encoder (arcade ABR, patch 0021; temporal SVC 0042).
 +//
-+// Why this is cheap: nvh264enc's `bitrate` is "changeable in the PLAYING state", so a rung costs one
++// Why this is cheap: nvav1enc's `bitrate` is "changeable in the PLAYING state", so a rung costs one
 +// property set — no pipeline rebuild, no renegotiation, no reconnect, nothing the player sees. Only
 +// bitrate is adapted; changing RESOLUTION would re-init the pipeline (a visible glitch), so we don't.
-+//
-+// Why the MINIMUM across peers: one encoder serves the whole room. The stream can only be as good as
-+// the worst receiver can carry, so a single friend on hotel wifi throttles everyone. That is inherent
-+// to shared-room emulation, not a bug.
 +//
 +// Why we probe upward instead of trusting the estimate: GCC is a congestion DETECTOR. Its estimate can
 +// never exceed what we actually send (you cannot measure capacity you never use), so simply following
 +// the estimate would pin the room forever at its starting bitrate. Instead we treat "estimate is
 +// keeping up with what we send" as permission to send more, and back off hard the moment it isn't.
++//
++// ── What temporal SVC changed ──────────────────────────────────────────────────────────────────────
++// This loop used to drive the encoder from the WORST peer's estimate, because one encoder serves the
++// whole room: a single friend on hotel wifi throttled everyone. That is no longer inherent.
++//
++// With a layered encoder (svc.go) each peer can be fed a DIFFERENT SUBSET of the same stream, so a
++// weak peer takes fewer frames instead of forcing a worse picture on everybody. Two consequences:
++//
++//  1. The room bitrate follows the peers we can actually SERVE at their assigned layer. A peer that
++//     has been dropped to base layer no longer vetoes the room's quality, because the bits it
++//     receives are already only ~28% of what we send.
++//  2. A peer drags the room down only when even the BASE layer will not fit down its link. Then we do
++//     lower the room — but only to what base layer needs (estimate / baseShare), which is ~3.5x
++//     higher than the old "drop the room to the worst estimate" behaviour.
 +const (
 +	abrTick = time.Second
 +
@@ -2101,19 +2372,58 @@ index 0000000..e024e40
 +	abrStartKbps = 6000 // conservative opener; a healthy LAN reaches a 14 Mbps ceiling in ~7 ticks
 +
 +	abrRampPct    = 15 // healthy: raise the target by this much per tick
-+	abrHealthyPct = 95 // estimate >= 95% of what we send  => the link is keeping up
-+	abrBackoffPct = 85 // estimate <  85% of what we send  => congestion, drop to the estimate
++	abrHealthyPct = 95 // estimate >= 95% of what that peer RECEIVES => its link is keeping up
++	abrBackoffPct = 85 // estimate <  85% of what that peer RECEIVES => congestion
 +
 +	abrMinStepKbps = 250 // don't bother with changes smaller than this
 +)
 +
-+// bwePeer is the slice of *webrtc.Peer that ABR needs. Declared as an interface so this package does
-+// not depend on the concrete session type (and so a peer without an estimator is simply skipped).
-+type bwePeer interface{ TargetBitrateKbps() int }
++// layerShare[n][l] = the percentage of the encoder's bitrate a peer receives when it is fed temporal
++// layers 0..l of an n-layer stream. Measured off nvav1enc (see svc.go). These shift with content, so
++// they are used only to CHOOSE a layer and are re-checked every tick against the peer's real
++// estimate — an over-optimistic share costs one extra tick of backoff, not a broken stream.
++var layerShare = map[int][]int{
++	1: {100},
++	2: {53, 100},
++	3: {28, 54, 100},
++}
 +
-+// startRoomAbr drives the room's encoder bitrate from the worst peer's send-side estimate.
-+// ceilKbps is the room's chosen quality (the creator's t=104 bitrate, else the config default): ABR
-+// never exceeds it, so "Auto" on the site still decides how good the room is allowed to look.
++// svcPeer is the slice of *webrtc.Peer that ABR needs. An interface so this package does not depend
++// on the concrete session type (and a peer without an estimator is simply skipped).
++type svcPeer interface {
++	TargetBitrateKbps() int
++	SetMaxTemporalLayer(int)
++	MaxTemporalLayer() int
++}
++
++// pickLayer returns the highest temporal layer whose share of `sendKbps` fits inside `estKbps`, and
++// whether even the base layer does not fit.
++//
++// Hysteresis: dropping a layer HALVES a peer's frame rate, which is far more visible than a bitrate
++// rung, so we refuse to do it on a marginal reading. Going DOWN needs the peer to be over budget
++// outright; coming back UP needs the higher layer to fit with 20% headroom. Without that gap a peer
++// parked near a boundary oscillates 60->30->60 fps every second, which looks worse than just staying
++// at 30.
++func pickLayer(layers, current, sendKbps, estKbps int) (layer int, starved bool) {
++	share := layerShare[layers]
++	if share == nil || estKbps <= 0 {
++		return current, false
++	}
++	for l := layers - 1; l >= 0; l-- {
++		need := sendKbps * share[l] / 100
++		if l > current {
++			need = need * 120 / 100 // 20% headroom to climb back up
++		}
++		if need <= estKbps {
++			return l, false
++		}
++	}
++	return 0, true // even base layer does not fit
++}
++
++// startRoomAbr drives the room's encoder bitrate, and each peer's temporal layer, from the peers'
++// send-side estimates. ceilKbps is the room's chosen quality (the creator's t=104 bitrate, else the
++// config default): ABR never exceeds it, so "Auto" on the site still decides how good a room may look.
 +func startRoomAbr(log *logger.Logger, r *room.Room[*room.GameSession], m *media.GstMediaPipe, ceilKbps int) {
 +	if ceilKbps <= 0 || r == nil || m == nil {
 +		return
@@ -2125,7 +2435,12 @@ index 0000000..e024e40
 +		log.Warn().Err(err).Msg("abr: encoder rejected the initial bitrate; ABR disabled for this room")
 +		return
 +	}
-+	log.Info().Msgf("abr: start %d kbps (floor %d, ceiling %d)", cur, floor, ceilKbps)
++	layers := webrtc.TemporalLayers()
++	if layers < 1 || layerShare[layers] == nil {
++		layers = 1 // not layered (or a layer count we have no shares for): behave exactly as before
++	}
++	log.Info().Msgf("abr: start %d kbps (floor %d, ceiling %d, temporal layers %d)",
++		cur, floor, ceilKbps, layers)
 +
 +	go func() {
 +		t := time.NewTicker(abrTick)
@@ -2135,9 +2450,7 @@ index 0000000..e024e40
 +		// delay-based detector occasionally reads one as congestion even on idle wired gigabit
 +		// (measured: a single-tick 11000->7828 dip on an ethernet LAN with a direct host pair).
 +		// Requiring TWO consecutive low ticks makes those one-tick artifacts invisible; genuine
-+		// congestion still backs off, one second later. While the estimate STAYS low the backoff
-+		// then applies every tick (the counter only resets on a non-low tick), so a real outage
-+		// is not smoothed away.
++		// congestion still backs off, one second later.
 +		lowTicks := 0
 +		for range t.C {
 +			if r.Closed() {
@@ -2145,18 +2458,47 @@ index 0000000..e024e40
 +				return
 +			}
 +
-+			worst, peers := 0, 0
++			// worstServable: the tightest estimate among peers we can still serve at their assigned
++			// layer, expressed in ROOM terms (scaled back up by the share they receive). That is what
++			// the room bitrate must respect.
++			// roomCap: a hard ceiling contributed by any STARVED peer (one for whom not even the base
++			// layer fits) — set to what base layer alone would need.
++			worstServable, roomCap, peers := 0, 0, 0
 +			for u := range r.Users().Values() {
-+				p, ok := u.Session.(bwePeer)
++				p, ok := u.Session.(svcPeer)
 +				if !ok {
 +					continue
 +				}
 +				// 0 = not connected yet, or no TWCC feedback has arrived. Not an opinion.
-+				if k := p.TargetBitrateKbps(); k > 0 {
-+					peers++
-+					if worst == 0 || k < worst {
-+						worst = k
++				est := p.TargetBitrateKbps()
++				if est <= 0 {
++					continue
++				}
++				peers++
++
++				layer, starved := pickLayer(layers, p.MaxTemporalLayer(), cur, est)
++				if layers > 1 && layer != p.MaxTemporalLayer() {
++					log.Info().Msgf("abr: peer layer %d -> %d (estimate %d kbps, room sends %d)",
++						p.MaxTemporalLayer(), layer, est, cur)
++					p.SetMaxTemporalLayer(layer)
++				}
++
++				if starved {
++					// Even the base layer is too much for this link. Lower the room only to what BASE
++					// needs — not to this peer's raw estimate. Everyone else keeps the layers above.
++					need := est * 100 / layerShare[layers][0]
++					if roomCap == 0 || need < roomCap {
++						roomCap = need
 +					}
++					continue
++				}
++				// This peer is served at `layer`, so it receives only a fraction of what we send.
++				// Judge its health against THAT, not against the full room bitrate: scale its estimate
++				// back up into room terms so one comparison works for every peer.
++				share := layerShare[layers][layer]
++				effective := est * 100 / max(share, 1)
++				if worstServable == 0 || effective < worstServable {
++					worstServable = effective
 +				}
 +			}
 +			if peers == 0 {
@@ -2165,16 +2507,20 @@ index 0000000..e024e40
 +
 +			next := cur
 +			switch {
-+			case worst*100 < cur*abrBackoffPct:
++			case worstServable > 0 && worstServable*100 < cur*abrBackoffPct:
 +				lowTicks++
-+				if lowTicks >= 2 { // confirmed: fall back to what the worst receiver says it can take
-+					next = worst
++				if lowTicks >= 2 { // confirmed congestion
++					next = worstServable
 +				}
-+			case worst*100 >= cur*abrHealthyPct && cur < ceilKbps:
++			case worstServable > 0 && worstServable*100 >= cur*abrHealthyPct && cur < ceilKbps:
 +				lowTicks = 0
 +				next = cur + max(abrMinStepKbps, cur*abrRampPct/100) // healthy: probe upward
 +			default:
 +				lowTicks = 0
++			}
++			// A starved peer's base-layer requirement is a hard ceiling on the room.
++			if roomCap > 0 {
++				next = min(next, roomCap)
 +			}
 +			next = min(max(next, floor), ceilKbps)
 +
@@ -2185,8 +2531,8 @@ index 0000000..e024e40
 +				log.Warn().Err(err).Msgf("abr: failed to set %d kbps", next)
 +				continue
 +			}
-+			log.Info().Msgf("abr: %d -> %d kbps (worst peer estimate %d, ceiling %d, peers %d)",
-+				cur, next, worst, ceilKbps, peers)
++			log.Info().Msgf("abr: %d -> %d kbps (servable %d, starved-cap %d, ceiling %d, peers %d)",
++				cur, next, worstServable, roomCap, ceilKbps, peers)
 +			cur = next
 +		}
 +	}()
@@ -2197,6 +2543,80 @@ index 0000000..e024e40
 +		return -n
 +	}
 +	return n
++}
+diff --git a/pkg/worker/abr_test.go b/pkg/worker/abr_test.go
+new file mode 100644
+index 0000000..b9fb347
+--- /dev/null
++++ b/pkg/worker/abr_test.go
+@@ -0,0 +1,68 @@
++package worker
++
++import "testing"
++
++// 3-layer shares: base 28% / +mid 54% / full 100% of the room bitrate.
++func TestPickLayer(t *testing.T) {
++	const layers, send = 3, 10000 // room sends 10 Mbps
++
++	tests := []struct {
++		name        string
++		current     int
++		est         int
++		wantLayer   int
++		wantStarved bool
++	}{
++		// A healthy peer takes everything.
++		{"fat pipe keeps all layers", 2, 12000, 2, false},
++		{"exactly enough for full", 2, 10000, 2, false},
++
++		// 6 Mbps cannot carry the full 10 Mbps stream, but carries layers 0-1 (5.4 Mbps) fine. THIS is
++		// the case the whole feature exists for: before SVC this peer dragged the room to 6 Mbps.
++		{"mid link drops to layer 1", 2, 6000, 1, false},
++
++		// 3 Mbps: only the base layer (2.8 Mbps) fits.
++		{"weak link drops to base", 2, 3000, 0, false},
++
++		// Below even the base layer -> starved. The room must come down for this one.
++		{"starved", 2, 1000, 0, true},
++
++		// Hysteresis. A peer sitting at layer 1 needs the FULL layer (10 Mbps) plus 20% headroom
++		// (12 Mbps) before climbing back to 2 — at 10.5 Mbps it must stay put, or it oscillates
++		// 30->60->30 fps every tick, which looks worse than simply holding 30.
++		{"no climb without headroom", 1, 10500, 1, false},
++		{"climbs with headroom", 1, 12500, 2, false},
++
++		// Going DOWN needs no headroom: congestion is not a moment to be brave.
++		{"drops immediately when over budget", 2, 9000, 1, false},
++	}
++
++	for _, tc := range tests {
++		t.Run(tc.name, func(t *testing.T) {
++			layer, starved := pickLayer(layers, tc.current, send, tc.est)
++			if layer != tc.wantLayer || starved != tc.wantStarved {
++				t.Errorf("pickLayer(cur=%d, est=%d) = (layer %d, starved %v), want (layer %d, starved %v)",
++					tc.current, tc.est, layer, starved, tc.wantLayer, tc.wantStarved)
++			}
++		})
++	}
++}
++
++// With SVC off, no peer may ever be capped below the only layer that exists.
++func TestPickLayerSVCOff(t *testing.T) {
++	layer, starved := pickLayer(1, 0, 10000, 500) // 1 layer, hopeless estimate
++	if layer != 0 {
++		t.Errorf("layer = %d, want 0 (the only layer)", layer)
++	}
++	if !starved {
++		t.Errorf("a peer that cannot carry the single layer should read as starved (room must drop)")
++	}
++}
++
++// An unknown layer count must not panic or silently cap peers.
++func TestPickLayerUnknownLayerCount(t *testing.T) {
++	layer, starved := pickLayer(99, 2, 10000, 100)
++	if layer != 2 || starved {
++		t.Errorf("unknown layer count should hold current layer, got (%d, %v)", layer, starved)
++	}
 +}
 diff --git a/pkg/worker/caged/caged.go b/pkg/worker/caged/caged.go
 index 85ede12..6d1d955 100644
@@ -2266,10 +2686,10 @@ index 85ede12..6d1d955 100644
  
 diff --git a/pkg/worker/caged/capture/capture.go b/pkg/worker/caged/capture/capture.go
 new file mode 100644
-index 0000000..73d3c2b
+index 0000000..4068432
 --- /dev/null
 +++ b/pkg/worker/caged/capture/capture.go
-@@ -0,0 +1,405 @@
+@@ -0,0 +1,461 @@
 +// Package capture implements the "capture" caged mod (heavy browser lane, H5): instead of running
 +// a libretro core it launches a native Windows program through the heavy gateway contract, captures
 +// the desktop with GStreamer (Windows Graphics Capture), feeds frames/PCM into the UNCHANGED
@@ -2278,6 +2698,7 @@ index 0000000..73d3c2b
 +package capture
 +
 +import (
++	"fmt"
 +	"net/http"
 +	"os"
 +	"os/exec"
@@ -2334,10 +2755,58 @@ index 0000000..73d3c2b
 +	proc        *gameProc
 +	gamePid     int
 +
++	// videoGate gates live desktop frames when the frames never reach Go (P4 zero-copy): the capture
++	// element lives in the MEDIA pipeline, so the only way to blank the stream is at that pipeline's
++	// valve. Wired by the coordinator's capture branch to media.SetVideoValveDrop; nil on design A,
++	// where the `capturing` flag does the same job on the Go frame path.
++	videoGate func(drop bool)
++
 +	mu       sync.Mutex
 +	started  bool
 +	closed   bool
 +	prepared bool // true once gwPrepare acquired the heavy lock — only then may Close() gwFinish (W1)
++}
++
++// ZeroCopy reports whether this room streams straight from GPU memory into the encoder (P4).
++func (a *App) ZeroCopy() bool { return a.conf.ZeroCopy }
++
++// SetVideoGate wires the pipeline-level frame gate used in zero-copy mode.
++func (a *App) SetVideoGate(fn func(drop bool)) { a.videoGate = fn }
++
++// VideoSrcChain is the GStreamer head the MEDIA pipeline uses in place of its appsrc (P4): capture →
++// GPU convert/scale to the encode geometry → NV12 still in GPU memory, linked straight into NVENC.
++// Nothing here may touch system memory — a d3d12download or a videoconvert would restore exactly the
++// round trip P4 removes.
++//
++// ⚠ Two details are load-bearing and were learned the hard way:
++//   - The framerate goes on the SOURCE caps. Windows Graphics Capture only delivers on screen CHANGE,
++//     so a still screen starves whatever is downstream; with the rate negotiated at the source the
++//     element paces itself (verified: 781 frames / 60.5 fps over a static desktop). That is what lets
++//     zero-copy drop design A's re-push ticker entirely.
++//   - format/size go AFTER the convert, never on the source caps — putting them there fails to
++//     negotiate.
++//
++// Colorimetry rides the convert's caps because zero-copy has no video_caps capsfilter to carry it.
++// Keep it LIMITED range for capture: full-range washed out on tablet H.264 decoders.
++func (a *App) VideoSrcChain(colorimetry string) string {
++	src := "d3d11screencapturesrc"
++	extra := ""
++	conv := "d3d11convert"
++	mem := "D3D11Memory"
++	if a.conf.VideoSource == "d3d12" {
++		src, conv, mem = "d3d12screencapturesrc", "d3d12convert", "D3D12Memory"
++		extra = "tonemap=reinhard " // the HDR handling only d3d12 has (needs our patched plugin)
++	}
++	caps := fmt.Sprintf("video/x-raw(memory:%s),format=NV12,width=%d,height=%d", mem, a.width(), a.height())
++	if colorimetry != "" {
++		caps += ",colorimetry=" + colorimetry
++	}
++	return fmt.Sprintf(
++		"%s name=video_src monitor-handle=%d show-cursor=false %s"+
++			"! video/x-raw(memory:%s),framerate=%d/1 "+
++			"! valve name=video_valve drop=true "+ // starts CLOSED: no desktop before the game is up
++			"! %s ! %s",
++		src, a.hmonitor, extra, mem, a.fps(), conv, caps)
 +}
 +
 +// New constructs the mod from config (does not connect anything — Init does).
@@ -2433,14 +2902,21 @@ index 0000000..73d3c2b
 +	a.mu.Unlock()
 +
 +	a.stopRepush = make(chan struct{})
-+	a.capturing.Store(true) // push live desktop frames for this room
-+	if err := a.startVideoPipeline(); err != nil {
++	a.setCapturing(true) // let this room's frames through
++	if a.conf.ZeroCopy {
++		// P4: the capture element lives in the MEDIA pipeline (already PLAYING), so there is no
++		// pipeline to build here — and no re-push ticker either: with the framerate on the source
++		// caps the capture element paces itself over a static screen, which is the only thing the
++		// ticker existed to cover.
++		a.log.Info().Msgf("capture: video ZERO-COPY (%s → NVENC, no readback)", a.conf.VideoSource)
++	} else if err := a.startVideoPipeline(); err != nil {
 +		a.log.Error().Err(err).Msg("capture: video pipeline failed to start")
++	} else {
++		go a.repushLoop()
 +	}
 +	if err := a.startAudioPipeline(a.gamePid); err != nil {
 +		a.log.Warn().Err(err).Msg("capture: audio pipeline failed to start")
 +	}
-+	go a.repushLoop()
 +	go a.heartbeat()
 +}
 +
@@ -3340,10 +3816,10 @@ index 0000000..6cc9eb1
 +}
 diff --git a/pkg/worker/caged/capture/pipeline.go b/pkg/worker/caged/capture/pipeline.go
 new file mode 100644
-index 0000000..dcdcc88
+index 0000000..6986296
 --- /dev/null
 +++ b/pkg/worker/caged/capture/pipeline.go
-@@ -0,0 +1,327 @@
+@@ -0,0 +1,336 @@
 +package capture
 +
 +/*
@@ -3624,12 +4100,21 @@ index 0000000..dcdcc88
 +	}
 +}
 +
-+// stopVideoOnly stops pushing live desktop frames (privacy: called from the exit-watcher the moment
-+// the game dies) by flipping the capturing flag — the pipeline stays PLAYING (a d3d12 WGC session
-+// can't be PAUSE/NULL-resumed in-process). The re-push ticker + audio stay alive so a black frame
-+// keeps flowing. Idempotent.
++// setCapturing opens/closes the desktop-frame gate. Design A gates in Go (the `capturing` flag, read
++// by cacheAndPush); zero-copy has no Go frame path to gate, so it closes the media pipeline's valve
++// instead. Both leave the client on the last decoded GAME frame — never the desktop.
++func (a *App) setCapturing(on bool) {
++	a.capturing.Store(on)
++	if g := a.videoGate; g != nil {
++		g(!on) // valve drop == not capturing
++	}
++}
++
++// stopVideoOnly stops live desktop frames reaching the stream (privacy: called from the exit-watcher
++// the moment the game dies). The pipeline stays PLAYING either way — a d3d12 WGC session can't be
++// PAUSE/NULL-resumed in-process. Audio stays alive. Idempotent.
 +func (a *App) stopVideoOnly() {
-+	a.capturing.Store(false)
++	a.setCapturing(false)
 +}
 +
 +// releaseVideo drives the capture pipeline to NULL and FREES it, so the d3d12 WGC session is gone
@@ -3662,7 +4147,7 @@ index 0000000..dcdcc88
 +			close(a.stopRepush)
 +		}
 +	}
-+	a.capturing.Store(false)
++	a.setCapturing(false)
 +	a.releaseVideo() // free the video pipe + WGC session so the NEXT room rebuilds cleanly
 +	a.pipeMu.Lock()
 +	defer a.pipeMu.Unlock()
@@ -5080,7 +5565,7 @@ index 2840a0e..c55a441 100644
  	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
  		var out api.Out
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..cd86db4 100644
+index 6972cc7..83f5a17 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
 @@ -2,6 +2,7 @@ package worker
@@ -5178,7 +5663,7 @@ index 6972cc7..cd86db4 100644
  	if err != nil {
  		c.log.Error().Err(err).Send()
  		return api.EmptyPacket
-@@ -124,63 +164,110 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+@@ -124,63 +164,130 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
  		w.router.SetRoom(r)
  		c.log.Info().Str("room", r.Id()).Str("game", game.Name).Msg("New room")
  
@@ -5199,9 +5684,6 @@ index 6972cc7..cd86db4 100644
 -			app.ViewportRecalculate()
 -			m.VideoW, m.VideoH = app.ViewportSize()
 -			m.VideoScale, m.ScaleMethod = app.Scale()
--
--			if err := m.Reinit(); err != nil {
--				c.log.Error().Err(err).Msgf("reinit fail")
 +		// Per-room encoder quality (arcade per-room bitrate/FEC) — SHARED by both lanes. The creator's
 +		// t=104 carries an optional video bitrate (kbps) + opus FEC + codec. WithOverrides applies them
 +		// to a per-room COPY of the encoder config (deep-copies the codec map, never mutating the shared
@@ -5219,6 +5701,18 @@ index 6972cc7..cd86db4 100644
 +		}
 +		m := media.NewGstreamer(encConf, w.log)
 +
++		// Temporal SVC (svc.go): tell the send path how many layers this room's encoder emits, so it
++		// can drop upper layers per-peer. Set unconditionally, like SetPacing above — a non-layered
++		// room must never inherit the previous room's layer count and start dropping frames that were
++		// never produced. One worker hosts one room.
++		layers := m.TemporalLayers()
++		webrtc.SetTemporalLayers(layers)
++		if layers > 1 {
++			w.log.Info().Msgf("Temporal SVC: %d layers (weak peers get fewer frames, not a worse room)", layers)
++		}
+ 
+-			if err := m.Reinit(); err != nil {
+-				c.log.Error().Err(err).Msgf("reinit fail")
 +		if gameInfo.System == caged.CaptureSystem {
 +			// Heavy browser lane (capture mod): launch a native program + capture the desktop through
 +			// the gateway heavy contract. No libretro frontend/cheats/cloud-save/VideoChangeCb — the
@@ -5244,6 +5738,16 @@ index 6972cc7..cd86db4 100644
 -				}})
 -			if err != nil {
 -				c.log.Error().Err(err).Msgf("wrap")
++			// P4 zero-copy: hand the media pipe the capture chain to use INSTEAD of its appsrc, so the
++			// frame goes capture → GPU convert → NVENC without ever touching system memory. The encoder
++			// stays where it was, so ABR (SetVideoBitrate), the per-room codec (encConf, applied above)
++			// and forced keyframes all keep working against the same `video_enc` element — only the
++			// keyframe CLOCK moves (to the encoded-frame side; see media.maybeForceKeyframe).
++			// The gate is how the app blanks the desktop, since no frame passes through Go to gate.
++			if capApp.ZeroCopy() {
++				m.VideoSrcChain = capApp.VideoSrcChain(encConf.Video.Colorimetry)
++				capApp.SetVideoGate(m.SetVideoValveDrop)
++			}
 +			r.SetApp(capApp)
 +			if err := capApp.LoadApp(gameName, uid); err != nil {
 +				c.log.Error().Err(err).Msg("capture prepare/launch failed")
@@ -5338,7 +5842,7 @@ index 6972cc7..cd86db4 100644
  
  		r.SetMedia(m)
  
-@@ -193,6 +280,15 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+@@ -193,6 +300,15 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
  
  		r.InitMedia()
  		r.StartApp()
@@ -5354,7 +5858,7 @@ index 6972cc7..cd86db4 100644
  	}
  
  	needsKbMouse := r.App().KbMouseSupport()
-@@ -203,6 +299,15 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+@@ -203,6 +319,15 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
  		_, _ = s.Channel("keyboard", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Keyboard), data) })
  		_, _ = s.Channel("mouse", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Mouse), data) })
  	}
@@ -5371,10 +5875,14 @@ index 6972cc7..cd86db4 100644
  	c.RegisterRoom(r.Id())
  
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..74b72f5 100644
+index 4a6171f..64cccd3 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -7,6 +7,7 @@ import (
+@@ -4,9 +4,11 @@ import (
+ 	"cmp"
+ 	"fmt"
+ 	"runtime"
++	"strconv"
  	"strings"
  	"sync"
  	"sync/atomic"
@@ -5382,7 +5890,7 @@ index 4a6171f..74b72f5 100644
  	"time"
  	"unsafe"
  
-@@ -32,12 +33,39 @@ static inline void doubleToFraction(const gdouble src, gint *num, gint *den) {
+@@ -32,12 +34,39 @@ static inline void doubleToFraction(const gdouble src, gint *num, gint *den) {
  	gst_util_double_to_fraction(src, num, den);
  }
  
@@ -5426,7 +5934,7 @@ index 4a6171f..74b72f5 100644
  	if (stride != 0) {
  		gsize offset[GST_VIDEO_MAX_PLANES] = {0};
  		gint strides[GST_VIDEO_MAX_PLANES] = {stride};
-@@ -46,6 +74,8 @@ static inline void pushVideoBuf(GstAppSrc *src, void *data, gsize len,
+@@ -46,6 +75,8 @@ static inline void pushVideoBuf(GstAppSrc *src, void *data, gsize len,
  	gst_app_src_push_buffer(src, buf);
  }
  
@@ -5435,7 +5943,7 @@ index 4a6171f..74b72f5 100644
  // pushAudioBuf copies audio data into a new buffer.
  static inline void pushAudioBuf(GstAppSrc *src, void *data, gsize len) {
  	GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
-@@ -87,6 +117,12 @@ const (
+@@ -87,6 +118,12 @@ const (
  	defaultAudioFrameMs = 20 * time.Millisecond
  
  	maxForcedKeyframes = 3
@@ -5448,7 +5956,7 @@ index 4a6171f..74b72f5 100644
  )
  
  var forceKeyframeEvent *gst.Event
-@@ -125,6 +161,13 @@ type GstMediaPipe struct {
+@@ -125,6 +162,13 @@ type GstMediaPipe struct {
  	a, v *pipe
  
  	onAudio func([]byte, time.Duration)
@@ -5462,7 +5970,24 @@ index 4a6171f..74b72f5 100644
  
  	conf config.Encoder
  
-@@ -143,10 +186,11 @@ type GstMediaPipe struct {
+@@ -138,15 +182,31 @@ type GstMediaPipe struct {
+ 	VideoVFR       bool
+ 	VideoFPS       float64
+ 
++	// VideoSrcChain (P4 zero-copy, capture lane only): a GStreamer fragment that REPLACES the
++	// appsrc head — capture source → convert → NV12 in GPU memory, linked straight into the encoder.
++	// Empty (the default, and every libretro room) keeps the appsrc path exactly as it was.
++	//
++	// The point is to keep the ENCODER in this package. Design-A read every frame back to system
++	// memory (d3d12download) only to hand it to Go, which pushed it into an appsrc that uploaded it
++	// to the GPU again for NVENC — a GPU→CPU→GPU round trip that measured 9.2 ms vs 3.0 ms for the
++	// same encoder fed directly from GPU memory. Moving the encoder into the capture app instead
++	// would have orphaned ABR, per-room codec and forced keyframes; swapping only the SOURCE HEAD
++	// keeps all three working against the same `video_enc` element.
++	VideoSrcChain string
++
+ 	oldPf  uint32
+ 	oldRot uint
  	bpp    int
  	vidFmt uint32 // cached GstVideoFormat enum
  
@@ -5470,6 +5995,9 @@ index 4a6171f..74b72f5 100644
 -	keyI     int  // periodic keyframe counter
 -	kfi      int  // 0=GStreamer auto, >0=force keyframe every N frames
 -	aSegSent bool // for Opusenc bug
++	encFrames  atomic.Uint64 // encoded frames out of the appsink (zero-copy: the only observable rate)
++	lastEncLog time.Time     // touched only from the appsink's streaming thread
++
 +	frameI   int          // for forced keyframes
 +	keyI     int          // periodic keyframe counter
 +	kfi      int          // 0=GStreamer auto, >0=force keyframe every N frames
@@ -5478,7 +6006,7 @@ index 4a6171f..74b72f5 100644
  
  	// used for reinit
  	videoCh   chan videoJob
-@@ -161,7 +205,6 @@ type videoJob struct {
+@@ -161,7 +221,6 @@ type videoJob struct {
  	data         []byte
  	w, h, stride int
  	dur          time.Duration
@@ -5486,15 +6014,93 @@ index 4a6171f..74b72f5 100644
  }
  
  type Video struct {
-@@ -180,6 +223,7 @@ type pipe struct {
+@@ -180,8 +239,15 @@ type pipe struct {
  	source   *app.Source
  	sink     *app.Sink
  	srcPad   *gst.Pad
 +	enc      *gst.Element // video encoder, kept for live bitrate changes (arcade ABR, patch 0021)
  	frameDur time.Duration
  	stale    atomic.Bool
++
++	// P4 zero-copy (capture lane): the head is a live capture element, not an appsrc, so `source`
++	// and `srcPad` are nil and no frame ever crosses into Go. `valve` gates desktop frames at the
++	// pipeline instead of at the Go callback (privacy — see SetVideoValveDrop).
++	zeroCopy bool
++	valve    *gst.Element
  }
-@@ -250,6 +294,13 @@ func (g *GstMediaPipe) initVideo() (err error) {
+ 
+ func (p *pipe) src() *C.GstAppSrc      { return (*C.GstAppSrc)(unsafe.Pointer(p.source.Instance())) }
+@@ -198,8 +264,29 @@ func (p *pipe) destroy() {
+ 	}
+ 	if p.pipeline != nil {
+ 		p.pipeline.GetPipelineBus().Post(gst.NewEOSMessage(p.pipeline))
+-		p.pipeline.SetState(gst.StateNull)
+-		p.pipeline = nil
++		if p.zeroCopy {
++			// The d3d12/d3d11 screen-capture element lives in THIS pipeline now, and an async
++			// SetState(NULL) returns before its WGC capture session is actually freed — the next
++			// room's capture then gets no frames (that is the "room 2 is black at ~1 fps" bug the
++			// capture app already had to solve). Drive it to NULL and WAIT, then drop the ref and
++			// force the GC so go-gst's finalizer actually unrefs the element. Bounded, because a
++			// wedged nvcodec/WGC teardown must not eat the 10 s media-teardown watchdog.
++			done := make(chan struct{})
++			go func() { defer close(done); _ = p.pipeline.BlockSetState(gst.StateNull) }()
++			select {
++			case <-done:
++			case <-time.After(3 * time.Second):
++			}
++			p.pipeline = nil
++			p.enc = nil
++			p.valve = nil
++			runtime.GC()
++			time.Sleep(60 * time.Millisecond) // let the finalizer run gst_object_unref → free
++			runtime.GC()
++		} else {
++			p.pipeline.SetState(gst.StateNull)
++			p.pipeline = nil
++		}
+ 	}
+ 	p.sink = nil
+ 	p.source = nil
+@@ -215,6 +302,32 @@ func (b *builder) writeIfSet(s string) {
+ 	}
+ }
+ 
++// TemporalLayers reports how many temporal SVC layers the configured encoder will emit, read from the
++// encoder's own params string (`temporal-layers=N` on nvav1enc — our patched nvcodec plugin).
++//
++// Deliberately parsed from the SAME string that configures the element rather than carried as a
++// separate config key: the send path drops frames by temporal id, so a Go-side count that disagreed
++// with the encoder's would silently drop layers that were never produced (or feed layers we believe
++// don't exist). One source of truth, no way to desync. Anything unparseable = 1 = SVC off.
++func (g *GstMediaPipe) TemporalLayers() int {
++	opts, _ := g.conf.VideoSettings()
++	if opts == nil {
++		return 1
++	}
++	for _, f := range strings.Fields(opts.Params) {
++		v, ok := strings.CutPrefix(f, "temporal-layers=")
++		if !ok {
++			continue
++		}
++		n, err := strconv.Atoi(v)
++		if err != nil || n < 1 {
++			return 1
++		}
++		return n
++	}
++	return 1
++}
++
+ func NewGstreamer(conf config.Encoder, log *logger.Logger) *GstMediaPipe {
+ 	return &GstMediaPipe{conf: conf, bpp: 4, vidFmt: gstVideoFormat("BGRx"), log: log}
+ }
+@@ -246,10 +359,17 @@ func (g *GstMediaPipe) initVideo() (err error) {
+ 		w, h = h, w
+ 	}
+ 	g.v, err = buildVideoPipeline(w, h, sw, sh, g.pixFmt, g.ScaleMethod, g.MaxThreads, g.conf,
+-		g.log, g.VideoFPS, g.VideoVFR)
++		g.log, g.VideoFPS, g.VideoVFR, g.VideoSrcChain)
  	if err != nil {
  		return
  	}
@@ -5508,21 +6114,29 @@ index 4a6171f..74b72f5 100644
  
  	// if params contain keyframe-mode=disabled, we force periodic keyframes
  	// ourselves instead of relying on GStreamer's auto mode
-@@ -261,7 +312,12 @@ func (g *GstMediaPipe) initVideo() (err error) {
+@@ -261,9 +381,18 @@ func (g *GstMediaPipe) initVideo() (err error) {
  
  	p := g.v
  	fmt := g.vidFmt
 -	g.videoCh = make(chan videoJob, 3)
+-	g.videoDone = make(chan struct{})
+-	go g.videoWorker(p, fmt, g.videoCh, g.videoDone)
 +	// Patch 0004: the sink delivers encoded frames via GStreamer's own streaming thread (like the
 +	// audio path always did) instead of a synchronous pull after each push — encode latency no
 +	// longer gates input throughput. Channel deepened 3→8: frames are now COPIED at push, so a
 +	// queued job can't be overwritten by the emulator reusing its frame buffer.
 +	p.sink.SetCallbacks(&app.SinkCallbacks{NewSampleFunc: func(*app.Sink) gst.FlowReturn { return g.pullVideo(p) }})
-+	g.videoCh = make(chan videoJob, 8)
- 	g.videoDone = make(chan struct{})
- 	go g.videoWorker(p, fmt, g.videoCh, g.videoDone)
++	// Zero-copy has no appsrc, so there is nothing to push and no push goroutine. Starting one would
++	// give videoWorker a pipe whose src() is nil.
++	if !p.zeroCopy {
++		g.videoCh = make(chan videoJob, 8)
++		g.videoDone = make(chan struct{})
++		go g.videoWorker(p, fmt, g.videoCh, g.videoDone)
++	}
  
-@@ -279,7 +335,31 @@ func (g *GstMediaPipe) SetPixFmt(f uint32) {
+ 	return p.pipeline.SetState(gst.StatePlaying)
+ }
+@@ -279,7 +408,31 @@ func (g *GstMediaPipe) SetPixFmt(f uint32) {
  }
  func (g *GstMediaPipe) SetRot(r uint) { g.oldRot = r }
  
@@ -5554,7 +6168,7 @@ index 4a6171f..74b72f5 100644
  	g.mu.Lock()
  	defer g.mu.Unlock()
  
-@@ -299,6 +379,11 @@ func (g *GstMediaPipe) Destroy() {
+@@ -299,6 +452,11 @@ func (g *GstMediaPipe) Destroy() {
  
  func (g *GstMediaPipe) ProcessAudio(audio []byte, cb func([]byte, time.Duration)) {
  	g.onAudio = cb
@@ -5566,7 +6180,7 @@ index 4a6171f..74b72f5 100644
  	if !g.aSegSent {
  		g.aSegSent = true
  		g.a.srcPad.PushEvent(gst.NewSegmentEvent(cachedSegment))
-@@ -320,7 +405,8 @@ func (g *GstMediaPipe) pullAudio(_ *app.Sink) gst.FlowReturn {
+@@ -320,7 +478,8 @@ func (g *GstMediaPipe) pullAudio(_ *app.Sink) gst.FlowReturn {
  	return gst.FlowOK
  }
  
@@ -5576,7 +6190,7 @@ index 4a6171f..74b72f5 100644
  func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, done chan<- struct{}) {
  	defer close(done)
  	for job := range ch {
-@@ -329,32 +415,50 @@ func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, d
+@@ -329,33 +488,118 @@ func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, d
  		}
  		C.pushVideoBuf(v.src(),
  			unsafe.Pointer(&job.data[0]), C.gsize(len(job.data)),
@@ -5590,7 +6204,6 @@ index 4a6171f..74b72f5 100644
 -		buf := C.pullMappedBuffer(v.sinkPtr(), &mi)
 -		if buf == nil {
 -			continue
--		}
 +// pullVideo delivers encoded frames from the appsink's own streaming thread (patch 0004).
 +// The frame duration was stamped on the buffer at push time — restore it for RTP timestamps.
 +// The pipe is captured at registration so a late callback can't touch a successor pipeline.
@@ -5601,6 +6214,23 @@ index 4a6171f..74b72f5 100644
 +		return gst.FlowEOS
 +	}
 +	defer C.unmapAndUnref(buf, &mi)
++	if p.zeroCopy {
++		// The encoded frame IS the frame clock here — nothing arrives on the input side to count.
++		g.maybeForceKeyframe(p)
++		// And it is the ONLY place the capture lane's health can be observed. The capture app's own
++		// frame counters are design-A (they count what crossed into Go, which is now nothing), and a
++		// browser can't be trusted to tell us either: the captured game runs FULLSCREEN over the top
++		// of it, and an occluded Chrome throttles itself to a few fps — a healthy 60 fps stream reads
++		// as "fps: 2" in getStats. So the worker log is the source of truth for this lane.
++		if n := g.encFrames.Add(1); n%300 == 0 {
++			now := time.Now()
++			if prev := g.lastEncLog; !prev.IsZero() {
++				g.log.Info().Msgf("capture: encoded %d frames (%.1f fps out of NVENC, zero-copy)",
++					n, 300/now.Sub(prev).Seconds())
++			}
++			g.lastEncLog = now
+ 		}
++	}
 +	if g.onVideo != nil && !p.stale.Load() {
  		data := unsafe.Slice((*byte)(unsafe.Pointer(mi.data)), int(mi.size))
 -		job.cb(data, job.dur)
@@ -5610,24 +6240,49 @@ index 4a6171f..74b72f5 100644
 +	return gst.FlowOK
  }
  
+-func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
+-	if g.reinit.Load() {
+-		return
+-	}
++// SetVideoSink wires the callback that ships encoded frames to the peers. ProcessVideo assigns it per
++// frame on the appsrc path; zero-copy has no ProcessVideo, so it must be handed over up front or the
++// encoder encodes into a nil callback.
++func (g *GstMediaPipe) SetVideoSink(cb func([]byte, time.Duration)) { g.onVideo = cb }
++
 +// RequestKeyframe opens a spaced keyframe window (kfJoinWindow frames) so a NEW viewer syncs even
 +// though we run an effectively infinite GOP — periodic IDRs were the ~2s audio hitch (the browser
 +// stalled decoding each big IDR). Called from room.Router.AddUser.
 +func (g *GstMediaPipe) RequestKeyframe() { g.forceKf.Store(kfJoinWindow) }
-+
- func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
- 	if g.reinit.Load() {
- 		return
- 	}
  
 -	// when someone starts watching, force the first few keyframes to avoid stalling
 -	// and if scene-change detection is disabled (kfi > 0)
 -	if g.frameI < maxForcedKeyframes || (g.kfi > 0 && g.keyI%g.kfi == 0) {
-+	// Force a keyframe: at startup (frameI), during a post-join window every kfJoinSpacing frames (so
-+	// a still-connecting joiner gets one once ready), or on the kfi periodic path.
+-		g.v.srcPad.PushEvent(forceKeyframeEvent)
++// maybeForceKeyframe runs the keyframe POLICY — unchanged: a few at startup, a spaced burst after a
++// join (RequestKeyframe), and the periodic kfi path for encoders configured keyframe-mode=disabled.
++//
++// What P4 changes is only its CLOCK. The policy counts FRAMES, and it used to be driven from
++// ProcessVideo — i.e. by raw frames arriving from Go. In zero-copy no raw frame ever reaches Go, so
++// it is driven from pullVideo (encoded frames) instead. Both tick once per frame at the stream's
++// frame rate, so kfJoinWindow/kfJoinSpacing keep meaning exactly what they meant. Each clock has a
++// single streaming thread, so the non-atomic counters stay safe.
++func (g *GstMediaPipe) maybeForceKeyframe(p *pipe) {
 +	kf := g.forceKf.Load()
 +	if g.frameI < maxForcedKeyframes || (kf > 0 && kf%kfJoinSpacing == 0) || (g.kfi > 0 && g.keyI%g.kfi == 0) {
- 		g.v.srcPad.PushEvent(forceKeyframeEvent)
++		if p.zeroCopy {
++			// UPSTREAM, and sent straight to the encoder. The request now originates on the APPSINK's
++			// streaming thread, and we no longer own a src pad to push from: a serialized DOWNSTREAM
++			// event pushed from a foreign thread would contend for the capture element's stream lock.
++			// An upstream force-key-unit is handled directly by GstVideoEncoder — which nvh264enc and
++			// nvav1enc both derive from — with no locking games.
++			if p.enc != nil {
++				s := gst.NewStructure("GstForceKeyUnit")
++				s.SetValue("all-headers", true)
++				p.enc.SendEvent(gst.NewCustomEvent(gst.EventTypeCustomUpstream, s))
++			}
++		} else {
++			p.srcPad.PushEvent(forceKeyframeEvent)
++		}
  		if g.frameI < maxForcedKeyframes {
  			g.frameI++
  		}
@@ -5636,9 +6291,40 @@ index 4a6171f..74b72f5 100644
 +		g.forceKf.Add(-1)
 +	}
  	g.keyI++
++}
++
++// SetVideoValveDrop gates live desktop frames at the PIPELINE (P4 zero-copy). Design-A gated them in
++// Go — the capture app simply stopped calling ProcessVideo — but with no frame crossing into Go there
++// is nothing there to gate, and the desktop must never reach the stream between rooms or after the
++// game exits. Dropping at the valve leaves the client on the last decoded (game) frame, which is what
++// the Go-side gate did too. No-op on the appsrc path.
++func (g *GstMediaPipe) SetVideoValveDrop(drop bool) {
++	v := g.v
++	if v == nil || v.valve == nil {
++		return
++	}
++	if err := v.valve.SetProperty("drop", drop); err != nil {
++		g.log.Warn().Err(err).Msgf("capture: could not set video valve drop=%v", drop)
++	}
++}
++
++func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
++	if g.reinit.Load() {
++		return
++	}
++	// Zero-copy owns its own source; no raw frame should ever arrive here. room.NewRoom wires
++	// SetVideoCb unconditionally, so guard rather than trust that nothing calls us.
++	if p := g.v; p == nil || p.zeroCopy {
++		return
++	}
++
++	// Force a keyframe: at startup (frameI), during a post-join window every kfJoinSpacing frames (so
++	// a still-connecting joiner gets one once ready), or on the kfi periodic path.
++	g.maybeForceKeyframe(g.v)
  
  	w, h := v.Frame.W, v.Frame.H
-@@ -365,11 +469,16 @@ func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
+ 	stride := v.Frame.Stride
+@@ -365,11 +609,16 @@ func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
  		stride = 0
  	}
  
@@ -5658,9 +6344,68 @@ index 4a6171f..74b72f5 100644
  	}
  }
  
-@@ -434,13 +543,18 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
- 	build.write("\" ")
- 	build.write("! ")
+@@ -407,40 +656,62 @@ func (g *GstMediaPipe) Reinit() error {
+ }
+ 
+ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod string,
+-	maxThreads int, conf config.Encoder, log *logger.Logger, fps float64, vfr bool) (*pipe, error) {
++	maxThreads int, conf config.Encoder, log *logger.Logger, fps float64, vfr bool,
++	srcChain string) (*pipe, error) {
+ 	format := cmp.Or(pixFmtToGst[pixFmt], "RGBA")
+ 	kfi := cmp.Or(conf.Video.KeyframeInterval, 120)
+ 	opts, codec := conf.VideoSettings()
+ 	if opts == nil {
+ 		return nil, fmt.Errorf("unsupported codec: %s", conf.Video.Codec)
+ 	}
++	zeroCopy := srcChain != ""
++	// The I420-CPU head needs a videoconvert to reach NVENC's NV12-only sink; the GPU head already
++	// hands the encoder NV12 in D3D12Memory (which nvh264enc/nvav1enc accept directly), and putting a
++	// videoconvert there would drag the frame back to system memory — exactly what P4 removes.
++	conv := "videoconvert n-threads=2 ! "
++	if zeroCopy {
++		conv = ""
++	}
+ 
+ 	build := builder{}
+ 	build.Grow(512)
+-	build.write("appsrc name=video_src is-live=true ")
+-	var fn, fd C.gint
+-	C.doubleToFraction(C.gdouble(fps), &fn, &fd)
+-	if vfr {
+-		build.writef(`caps="video/x-raw,format=%s,width=%d,height=%d,framerate=0/1,max-framerate=%d/%d" `, format, w, h, int(fn), int(fd))
++	if zeroCopy {
++		// P4: the caller's chain already ends in NV12 GPU memory at the encode geometry (it does the
++		// convert/scale/colorimetry on the GPU, because doing any of it here would mean a download).
++		// It links STRAIGHT into the encoder below — no videoconvert, or the whole point is lost.
++		build.write(srcChain)
++		build.write(" ! ")
+ 	} else {
+-		build.writef(`caps="video/x-raw,format=%s,width=%d,height=%d,framerate=%d/%d" `, format, w, h, int(fn), int(fd))
+-	}
+-	build.writef("! videoconvertscale name=video_scale chroma-resampler=cubic method=%s n-threads=2 ", cmp.Or(scaleMethod, "nearest-neighbour"))
+-	build.write("! queue name=video_q max-size-buffers=1 ")
+-	build.writef("! capsfilter name=video_caps caps=\"video/x-raw,format=I420,color-range=0_255,width=%d,height=%d ", scaledW, scaledH)
+-	if conf.Video.Colorimetry != "" {
+-		build.writef(",colorimetry=%s", conf.Video.Colorimetry)
++		build.write("appsrc name=video_src is-live=true ")
++		var fn, fd C.gint
++		C.doubleToFraction(C.gdouble(fps), &fn, &fd)
++		if vfr {
++			build.writef(`caps="video/x-raw,format=%s,width=%d,height=%d,framerate=0/1,max-framerate=%d/%d" `, format, w, h, int(fn), int(fd))
++		} else {
++			build.writef(`caps="video/x-raw,format=%s,width=%d,height=%d,framerate=%d/%d" `, format, w, h, int(fn), int(fd))
++		}
++		build.writef("! videoconvertscale name=video_scale chroma-resampler=cubic method=%s n-threads=2 ", cmp.Or(scaleMethod, "nearest-neighbour"))
++		build.write("! queue name=video_q max-size-buffers=1 ")
++		build.writef("! capsfilter name=video_caps caps=\"video/x-raw,format=I420,color-range=0_255,width=%d,height=%d ", scaledW, scaledH)
++		if conf.Video.Colorimetry != "" {
++			build.writef(",colorimetry=%s", conf.Video.Colorimetry)
++		}
++		build.write("\" ")
++		build.write("! ")
+ 	}
+-	build.write("\" ")
+-	build.write("! ")
  	switch codec {
 -	// h264 - requires gstreamer1.0-plugins-ugly + x264 (GPL)
 -	// case "h264":
@@ -5675,16 +6420,16 @@ index 4a6171f..74b72f5 100644
 +	// bridges the shared I420 capsfilter to whatever the encoder actually takes (NVENC on WSL
 +	// probes NV12-only — the I420 caps won't link directly); it's passthrough when formats match.
 +	case "h264":
-+		build.writef("videoconvert n-threads=2 ! %s name=video_enc ", cmp.Or(opts.Encoder, "x264enc"))
++		build.writef("%s%s name=video_enc ", conv, cmp.Or(opts.Encoder, "x264enc"))
 +	// av1 (patch 0024): nvav1enc emits an obu-stream. Pion's AV1 payloader wants TEMPORAL-UNIT aligned
 +	// OBUs, so av1parse is not optional — without alignment=tu the receiver sees fragments of a TU and
 +	// renders nothing. Same shape as the h264 case: element + tuning come from encoder.list.
 +	case "av1":
-+		build.writef("videoconvert n-threads=2 ! %s name=video_enc ", cmp.Or(opts.Encoder, "nvav1enc"))
++		build.writef("%s%s name=video_enc ", conv, cmp.Or(opts.Encoder, "nvav1enc"))
  	case "vp8", "vp9":
  		encoder := cmp.Or(opts.Encoder, fmt.Sprintf("vp%cenc", codec[len(codec)-1]))
  		threads := cmp.Or(conf.Video.Threads, cpuCores)
-@@ -453,8 +567,11 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+@@ -453,8 +724,11 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
  	if opts.Caps != "" {
  		build.write(" ! " + opts.Caps)
  	}
@@ -5697,24 +6442,52 @@ index 4a6171f..74b72f5 100644
  
  	pipeDef := build.String()
  
-@@ -472,12 +589,16 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+@@ -464,21 +738,35 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
  	if err != nil {
  		return nil, err
  	}
+-	srcEl, err := pipeline.GetElementByName("video_src")
+-	if err != nil {
+-		return nil, err
+-	}
+ 	sinkEl, err := pipeline.GetElementByName("video_sink")
+ 	if err != nil {
+ 		return nil, err
+ 	}
+-	go watchBus(pipeline, log)
+-	return &pipe{
 +	// Not fatal when absent: ABR simply stays off for that pipeline.
 +	encEl, _ := pipeline.GetElementByName("video_enc")
 +
- 	go watchBus(pipeline, log)
- 	return &pipe{
++	p := &pipe{
  		pipeline: pipeline,
- 		source:   app.SrcFromElement(srcEl),
+-		source:   app.SrcFromElement(srcEl),
  		sink:     app.SinkFromElement(sinkEl),
- 		srcPad:   srcEl.GetStaticPad("src"),
+-		srcPad:   srcEl.GetStaticPad("src"),
+-	}, nil
 +		enc:      encEl,
- 	}, nil
++		zeroCopy: zeroCopy,
++	}
++	if zeroCopy {
++		// No appsrc to own: the head is a live capture element and frames never enter Go. The valve
++		// is how desktop frames get gated instead (privacy); absent is not fatal, it just means the
++		// caller's chain didn't ask for one.
++		p.valve, _ = pipeline.GetElementByName("video_valve")
++	} else {
++		srcEl, err := pipeline.GetElementByName("video_src")
++		if err != nil {
++			return nil, err
++		}
++		p.source = app.SrcFromElement(srcEl)
++		p.srcPad = srcEl.GetStaticPad("src")
++	}
++
++	go watchBus(pipeline, log)
++	return p, nil
  }
  
-@@ -577,3 +698,47 @@ func watchBus(pipeline *gst.Pipeline, log *logger.Logger) {
+ func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pipe, error) {
+@@ -577,3 +865,47 @@ func watchBus(pipeline *gst.Pipeline, log *logger.Logger) {
  		}
  	}
  }
@@ -5762,8 +6535,58 @@ index 4a6171f..74b72f5 100644
 +}
 +
 +// VideoBitrate is the ABR target currently applied (kbps), or 0 if ABR never set one.
+diff --git a/pkg/worker/media/gstreamer_test.go b/pkg/worker/media/gstreamer_test.go
+index f3e898f..4449865 100644
+--- a/pkg/worker/media/gstreamer_test.go
++++ b/pkg/worker/media/gstreamer_test.go
+@@ -109,13 +109,44 @@ var (
+ )
+ 
+ func TestBuildVideoPipeline(t *testing.T) {
+-	p, err := buildVideoPipeline(640, 480, 640, 480, pixFmtBGRx, "bilinear2", 0, testVideoCodec, testLog, 0, false)
++	p, err := buildVideoPipeline(640, 480, 640, 480, pixFmtBGRx, "bilinear2", 0, testVideoCodec, testLog, 0, false, "")
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
++	if p.zeroCopy || p.source == nil || p.srcPad == nil {
++		t.Fatal("empty srcChain must build the appsrc path")
++	}
+ 	p.destroy()
+ }
+ 
++// The zero-copy head (P4) replaces the appsrc with a live source and links it straight into the
++// encoder. videotestsrc stands in for the d3d12 capture element so this runs anywhere: what is under
++// test is the WIRING — that the head is honoured, that `video_enc` (ABR + per-room codec) and
++// `video_valve` (the desktop gate) still exist by name, and that there is no appsrc to push into.
++func TestBuildVideoPipelineZeroCopy(t *testing.T) {
++	// I420 because the stand-in encoder is vp8 (the real chain hands NVENC NV12 in GPU memory —
++	// see capture.App.VideoSrcChain). The head's job here is only to prove the wiring.
++	chain := "videotestsrc name=video_src is-live=true ! video/x-raw,framerate=60/1 " +
++		"! valve name=video_valve drop=true ! videoconvert ! video/x-raw,format=I420,width=640,height=480"
++	p, err := buildVideoPipeline(640, 480, 640, 480, pixFmtBGRx, "", 0, testFullCodec, testLog, 60, false, chain)
++	if err != nil {
++		t.Fatal(err)
++	}
++	defer p.destroy()
++	if !p.zeroCopy {
++		t.Fatal("srcChain must mark the pipe zero-copy")
++	}
++	if p.source != nil || p.srcPad != nil {
++		t.Fatal("zero-copy has no appsrc: nothing may push frames from Go")
++	}
++	if p.enc == nil {
++		t.Fatal("no video_enc: ABR and the per-room codec would silently stop working")
++	}
++	if p.valve == nil {
++		t.Fatal("no video_valve: the desktop could not be gated off the stream")
++	}
++}
++
+ func TestBuildAudioPipeline(t *testing.T) {
+ 	p, err := buildAudioPipeline(48000, testAudioCodec, testLog)
+ 	if err != nil {
 diff --git a/pkg/worker/room/room.go b/pkg/worker/room/room.go
-index 9ff9576..8fc2e21 100644
+index 9ff9576..3e7703a 100644
 --- a/pkg/worker/room/room.go
 +++ b/pkg/worker/room/room.go
 @@ -2,13 +2,23 @@ package room
@@ -5790,16 +6613,20 @@ index 9ff9576..8fc2e21 100644
  type MediaPipe interface {
  	// Destroy frees all allocated resources.
  	Destroy()
-@@ -20,6 +30,8 @@ type MediaPipe interface {
+@@ -20,6 +30,12 @@ type MediaPipe interface {
  	ProcessAudio([]byte, func([]byte, time.Duration))
  	// ProcessVideo pushes a video frame into the encoder.
  	ProcessVideo(media.Video, func([]byte, time.Duration))
++	// SetVideoSink hands the encoder the callback that ships encoded frames to the peers.
++	// ProcessVideo sets it per frame, which is enough for the appsrc path — but P4 zero-copy has NO
++	// frame crossing into Go, so ProcessVideo never runs and the sink must be wired explicitly.
++	SetVideoSink(func([]byte, time.Duration))
 +	// RequestKeyframe asks the encoder to emit a keyframe soon (a new viewer joined).
 +	RequestKeyframe()
  }
  
  type SessionManager[T Session] interface {
-@@ -50,7 +62,8 @@ type Room[T Session] struct {
+@@ -50,7 +66,8 @@ type Room[T Session] struct {
  	media MediaPipe
  	users SessionManager[T]
  
@@ -5809,7 +6636,7 @@ index 9ff9576..8fc2e21 100644
  	HandleClose func()
  }
  
-@@ -59,6 +72,17 @@ func NewRoom[T Session](id string, app app.App, um SessionManager[T], media Medi
+@@ -59,6 +76,17 @@ func NewRoom[T Session](id string, app app.App, um SessionManager[T], media Medi
  }
  
  func (r *Room[T]) InitMedia() {
@@ -5827,7 +6654,19 @@ index 9ff9576..8fc2e21 100644
  	r.app.SetAudioCb(func(a app.Audio) {
  		r.media.ProcessAudio(a.Data, r.sendAudio)
  	})
-@@ -82,6 +106,12 @@ func (r *Room[T]) sendVideo(data []byte, dur time.Duration) {
+@@ -68,6 +96,11 @@ func (r *Room[T]) InitMedia() {
+ 			Duration: v.Duration,
+ 		}, r.sendVideo)
+ 	})
++	// Where the encoded frames go. The appsrc path re-sets this on every ProcessVideo, so this is
++	// redundant there — but P4 zero-copy pushes no frame through Go, so without it the encoder runs at
++	// full speed into a nil callback and the room streams NOTHING (verified: 63 fps out of NVENC, zero
++	// frames at the browser). SetMedia runs before InitMedia, so r.media is live here.
++	r.media.SetVideoSink(r.sendVideo)
+ }
+ 
+ func (r *Room[T]) sendAudio(data []byte, dur time.Duration) {
+@@ -82,6 +115,12 @@ func (r *Room[T]) sendVideo(data []byte, dur time.Duration) {
  	}
  }
  
@@ -5840,7 +6679,7 @@ index 9ff9576..8fc2e21 100644
  func (r *Room[T]) App() app.App         { return r.app }
  func (r *Room[T]) Id() string           { return r.id }
  func (r *Room[T]) SetApp(app app.App)   { r.app = app }
-@@ -94,19 +124,45 @@ func (r *Room[T]) Send(data []byte) {
+@@ -94,19 +133,45 @@ func (r *Room[T]) Send(data []byte) {
  }
  
  func (r *Room[T]) Close() {
@@ -5896,7 +6735,7 @@ index 9ff9576..8fc2e21 100644
  	}
  }
  
-@@ -134,7 +190,16 @@ func (r *Router[T]) Remove(user T) {
+@@ -134,7 +199,16 @@ func (r *Router[T]) Remove(user T) {
  	}
  }
  

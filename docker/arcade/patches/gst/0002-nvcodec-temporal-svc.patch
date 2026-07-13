@@ -1,0 +1,189 @@
+--- a/sys/nvcodec/gstnvenc.c
++++ b/sys/nvcodec/gstnvenc.c
+@@ -434,7 +434,16 @@
+ }
+ 
+ /* To verify things when updating SDK */
+-#define USE_STATIC_SDK_VER 0
++/* 1, not 0: we vendor the SDK 13 nvEncodeAPI.h (for AV1 enableTemporalSVC/numTemporalLayers, which
++ * SDK 12's NV_ENC_CONFIG_AV1 simply does not have). In dynamic mode the struct versions below are
++ * hand-built for SDK 12 layout (STRUCT_VERSION(8,...)), so the driver would parse our SDK 13 structs
++ * with SDK 12 offsets — every temporal-layers>1 init failed with NV_ENC_ERR_INVALID_PARAM, while the
++ * same config driven against NVENC directly succeeded. Static mode takes the versions from the
++ * header, so header and wire agree.
++ *
++ * REQUIRES an NVENC 13.0 driver (verify: NvEncodeAPIGetMaxSupportedVersion >= 13.0; ours reports
++ * 13.0 on 596.21). version_list[0] is the header's own version, so the API negotiates 13.0 too. */
++#define USE_STATIC_SDK_VER 1
+ 
+ guint32
+ gst_nvenc_get_api_version (void)
+--- a/sys/nvcodec/gstnvav1encoder.cpp
++++ b/sys/nvcodec/gstnvav1encoder.cpp
+@@ -97,6 +97,9 @@
+ 
+   /* encoding config */
+   PROP_GOP_SIZE,
++  PROP_INTRA_REFRESH_PERIOD,
++  PROP_INTRA_REFRESH_COUNT,
++  PROP_TEMPORAL_LAYERS,
+   PROP_B_FRAMES,
+ 
+   /* rate-control params */
+@@ -136,6 +139,9 @@
+ #define DEFAULT_MULTI_PASS        GST_NV_ENCODER_MULTI_PASS_DEFAULT
+ #define DEFAULT_WEIGHTED_PRED     FALSE
+ #define DEFAULT_GOP_SIZE          75
++#define DEFAULT_INTRA_REFRESH_PERIOD 0
++#define DEFAULT_INTRA_REFRESH_COUNT 0
++#define DEFAULT_TEMPORAL_LAYERS   1
+ #define DEFAULT_B_FRAMES          0
+ #define DEFAULT_RATE_CONTROL      GST_NV_ENCODER_RC_MODE_DEFAULT
+ #define DEFAULT_QP                -1
+@@ -174,6 +180,9 @@
+   gboolean weighted_pred;
+ 
+   gint gop_size;
++  guint intra_refresh_period;
++  guint intra_refresh_count;
++  guint temporal_layers;
+   guint bframes;
+ 
+   GstNvEncoderRCMode rc_mode;
+@@ -332,6 +341,22 @@
+       g_param_spec_int ("gop-size", "GOP size",
+           "Number of frames between intra frames (-1 = infinite)",
+           -1, G_MAXINT, DEFAULT_GOP_SIZE, param_flags));
++  g_object_class_install_property (object_class, PROP_INTRA_REFRESH_PERIOD,
++      g_param_spec_uint ("intra-refresh-period", "Intra Refresh Period",
++          "Interval in frames between successive intra-refresh waves "
++          "(0 = disabled). Use with an infinite GOP for keyframe-free streams",
++          0, G_MAXINT, DEFAULT_INTRA_REFRESH_PERIOD, param_flags));
++  g_object_class_install_property (object_class, PROP_INTRA_REFRESH_COUNT,
++      g_param_spec_uint ("intra-refresh-count", "Intra Refresh Count",
++          "Length of an intra-refresh wave in frames "
++          "(must be smaller than intra-refresh-period)",
++          0, G_MAXINT, DEFAULT_INTRA_REFRESH_COUNT, param_flags));
++  g_object_class_install_property (object_class, PROP_TEMPORAL_LAYERS,
++      g_param_spec_uint ("temporal-layers", "Temporal Layers",
++          "Number of temporal SVC layers (1 = off). Frames in layers above the base are not "
++          "referenced by it, so a sender may drop them per-receiver to shed bitrate without "
++          "breaking the reference chain",
++          1, 3, DEFAULT_TEMPORAL_LAYERS, param_flags));
+   if (dev_caps->max_bframes > 0) {
+     g_object_class_install_property (object_class, PROP_B_FRAMES,
+         g_param_spec_uint ("bframes", "B Frames",
+@@ -522,6 +547,9 @@
+   self->multipass = DEFAULT_MULTI_PASS;
+   self->weighted_pred = DEFAULT_WEIGHTED_PRED;
+   self->gop_size = DEFAULT_GOP_SIZE;
++  self->intra_refresh_period = DEFAULT_INTRA_REFRESH_PERIOD;
++  self->intra_refresh_count = DEFAULT_INTRA_REFRESH_COUNT;
++  self->temporal_layers = DEFAULT_TEMPORAL_LAYERS;
+   self->bframes = DEFAULT_B_FRAMES;
+   self->rc_mode = DEFAULT_RATE_CONTROL;
+   self->qp_const_i = DEFAULT_QP;
+@@ -733,6 +761,15 @@
+     case PROP_GOP_SIZE:
+       update_int (self, &self->gop_size, value, UPDATE_INIT_PARAM);
+       break;
++    case PROP_INTRA_REFRESH_PERIOD:
++      update_uint (self, &self->intra_refresh_period, value, UPDATE_INIT_PARAM);
++      break;
++    case PROP_INTRA_REFRESH_COUNT:
++      update_uint (self, &self->intra_refresh_count, value, UPDATE_INIT_PARAM);
++      break;
++    case PROP_TEMPORAL_LAYERS:
++      update_uint (self, &self->temporal_layers, value, UPDATE_INIT_PARAM);
++      break;
+     case PROP_B_FRAMES:
+       update_uint (self, &self->bframes, value, UPDATE_INIT_PARAM);
+       break;
+@@ -847,6 +884,15 @@
+     case PROP_GOP_SIZE:
+       g_value_set_int (value, self->gop_size);
+       break;
++    case PROP_INTRA_REFRESH_PERIOD:
++      g_value_set_uint (value, self->intra_refresh_period);
++      break;
++    case PROP_INTRA_REFRESH_COUNT:
++      g_value_set_uint (value, self->intra_refresh_count);
++      break;
++    case PROP_TEMPORAL_LAYERS:
++      g_value_set_uint (value, self->temporal_layers);
++      break;
+     case PROP_B_FRAMES:
+       g_value_set_uint (value, self->bframes);
+       break;
+@@ -1155,8 +1201,7 @@
+   av1_config->enableFrameIdNumbers = FALSE;
+   av1_config->disableSeqHdr = FALSE;
+   av1_config->repeatSeqHdr = TRUE;
+-  /* TODO: property */
+-  av1_config->enableIntraRefresh = FALSE;
++  av1_config->enableIntraRefresh = self->intra_refresh_period > 0;
+   /* TODO: main profile only for now */
+   av1_config->chromaFormatIDC = 1;
+   av1_config->enableBitstreamPadding = FALSE;
+@@ -1164,13 +1209,29 @@
+   av1_config->enableCustomTileConfig = FALSE;
+   /* TODO: property, support user specified film grain params */
+   av1_config->enableFilmGrainParams = FALSE;
+-  av1_config->inputPixelBitDepthMinus8 = bitdepth_minus8;
+-  av1_config->pixelBitDepthMinus8 = bitdepth_minus8;
++  /* SDK 13 replaced the *PixelBitDepthMinus8 bitfields with an NV_ENC_BIT_DEPTH enum whose
++   * values ARE the bit depth (8/10), so minus8 + 8 maps straight across. */
++  av1_config->inputBitDepth = (NV_ENC_BIT_DEPTH) (bitdepth_minus8 + 8);
++  av1_config->outputBitDepth = (NV_ENC_BIT_DEPTH) (bitdepth_minus8 + 8);
+   av1_config->idrPeriod = config->gopLength;
+ 
+-  /* TODO: support intra refresh */
+-  av1_config->intraRefreshPeriod = 0;
+-  av1_config->intraRefreshCnt = 0;
++  av1_config->intraRefreshPeriod = self->intra_refresh_period;
++  av1_config->intraRefreshCnt = self->intra_refresh_count;
++
++  /* Temporal SVC. NVENC emits a hierarchical-P pyramid: layer 0 (the base) references only itself,
++   * so frames in the upper layers can be discarded by the SENDER without breaking the base's
++   * reference chain. We use that to shed bitrate per-receiver (a peer on a weak link is fed layer 0
++   * only = half rate) instead of dragging the whole room's encode down to the worst peer.
++   *
++   * Requires the SDK 13 header: SDK 12's NV_ENC_CONFIG_AV1 has maxTemporalLayersMinus1 but neither
++   * enableTemporalSVC nor numTemporalLayers, so there is no way to switch it on. The GPU itself has
++   * supported it since well before Blackwell (queried on an Ada AD104: temporal_svc=1, max 3 layers)
++   * — it is the header, not the silicon, that gated this. */
++  if (self->temporal_layers > 1) {
++    av1_config->enableTemporalSVC = 1;
++    av1_config->numTemporalLayers = self->temporal_layers;
++    av1_config->maxTemporalLayersMinus1 = self->temporal_layers - 1;
++  }
+ 
+   av1_config->maxNumRefFramesInDPB = 0;
+   av1_config->numFwdRefs = NV_ENC_NUM_REF_FRAMES_AUTOSELECT;
+--- a/sys/nvcodec/gstnvh264encoder.cpp
++++ b/sys/nvcodec/gstnvh264encoder.cpp
+@@ -1628,6 +1628,11 @@
+   h264_config->chromaFormatIDC = 1;
+   if (selected_profile == NV_ENC_H264_PROFILE_HIGH_444_GUID)
+     h264_config->chromaFormatIDC = 3;
++  /* SDK 13 added these to NV_ENC_CONFIG_H264 (SDK 12 had no bit-depth field here at all). Leaving
++   * them zeroed means NV_ENC_BIT_DEPTH_INVALID and the encoder refuses to initialize. This element
++   * only ever encodes 8-bit. */
++  h264_config->inputBitDepth = NV_ENC_BIT_DEPTH_8;
++  h264_config->outputBitDepth = NV_ENC_BIT_DEPTH_8;
+   h264_config->idrPeriod = config->gopLength;
+   h264_config->outputAUD = self->aud;
+   if (self->repeat_sequence_header) {
+--- a/sys/nvcodec/gstnvh265encoder.cpp
++++ b/sys/nvcodec/gstnvh265encoder.cpp
+@@ -1609,7 +1609,9 @@
+ 
+   hevc_config->level = NV_ENC_LEVEL_AUTOSELECT;
+   hevc_config->chromaFormatIDC = chroma_format_index;
+-  hevc_config->pixelBitDepthMinus8 = bitdepth_minus8;
++  /* SDK 13: NV_ENC_BIT_DEPTH enum (values are the depth itself) replaced pixelBitDepthMinus8. */
++  hevc_config->inputBitDepth = (NV_ENC_BIT_DEPTH) (bitdepth_minus8 + 8);
++  hevc_config->outputBitDepth = (NV_ENC_BIT_DEPTH) (bitdepth_minus8 + 8);
+   hevc_config->idrPeriod = config->gopLength;
+   hevc_config->outputAUD = self->aud;
+   if (self->stream_format == GST_NV_H265_ENCODER_HVC1) {

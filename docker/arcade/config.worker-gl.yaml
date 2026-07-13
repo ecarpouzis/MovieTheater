@@ -808,7 +808,27 @@ encoder:
       # unrepaired loss would freeze a viewer forever (the exact bug fixed earlier today).
       # Join sync stays on patch 0012's join-burst. INSTANT ROLLBACK: gop-size=120, drop the
       # intra-refresh-* keys (works on the stock plugin too).
-      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=-1 intra-refresh-period=120 intra-refresh-count=15 zerolatency=true"
+      #
+      # TEMPORAL SVC (temporal-layers=3). NVENC emits a hierarchical-P pyramid — layer 0 references
+      # only itself, so the SENDER can drop the upper layers for ONE peer without breaking anyone
+      # else's reference chain. Each peer has its own Pion track/packetizer, so "drop a layer for this
+      # peer" is literally "skip WriteSample" — no seq gaps, no NACKs, no Dependency Descriptor, and
+      # the browser just sees a lower frame rate.
+      #
+      # This is what killed the worst-peer drag: ABR used to pull the room's ONE encode down to
+      # whatever the weakest friend's link could carry, so one person on hotel wifi made the picture
+      # worse for everybody. Now that peer gets fewer FRAMES and the room keeps its bitrate.
+      #   tid<=0 = 28% of bitrate @15fps | tid<=1 = 54% @30fps | tid<=2 = 100% @60fps (measured)
+      # A base-layer peer costs ~28% of what we send, so the room may run ~3.5x that peer's estimate.
+      #
+      # ⚠ NEEDS THE PATCHED PLUGIN: scripts/build-gst-nvcodec-patched.ps1 (upstream nvcodec exposes no
+      # temporal-layer property for ANY codec, and it needs the SDK 13 header — SDK 12's
+      # NV_ENC_CONFIG_AV1 has no enableTemporalSVC field at all). The GPU was never the limit: this Ada
+      # 4070 Ti reports temporal_svc=1, 3 layers for AV1. Requires an NVENC 13.0 driver.
+      # ⚠ A pacman -Syu that touches gstreamer restores the STOCK dll and this key stops doing
+      # anything — silently, and the room falls back to 60fps-for-everyone + worst-peer ABR.
+      # INSTANT ROLLBACK: drop temporal-layers=3 (the worker then reads 1 layer and never drops).
+      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=5000 gop-size=-1 intra-refresh-period=120 intra-refresh-count=15 temporal-layers=3 zerolatency=true"
       caps: video/x-av1,stream-format=obu-stream ! av1parse ! video/x-av1,stream-format=obu-stream,alignment=tu
     h264:
       encoder: nvh264enc

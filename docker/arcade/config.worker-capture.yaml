@@ -1,24 +1,24 @@
-# CloudRetro config for the Windows-native CAPTURE worker (heavy browser lane, H5 —
+﻿# CloudRetro config for the Windows-native CAPTURE worker (heavy browser lane, H5 â€”
 # docs/arcade-capture-worker-plan.md). This worker runs the SAME cmd/worker binary as the GL
 # workers, but with the capture caged mod enabled (capture.enabled: true) instead of libretro
-# cores. It launches native heavy titles (yuzu/RPCS3/…) and streams the desktop through the
-# UNCHANGED encode/WebRTC pipeline, so the encoder block below matches config.worker-gl.yaml —
+# cores. It launches native heavy titles (yuzu/RPCS3/â€¦) and streams the desktop through the
+# UNCHANGED encode/WebRTC pipeline, so the encoder block below matches config.worker-gl.yaml â€”
 # EXCEPT colorimetry (deliberately limited-range here, full-range there; see the note in the block).
 #
 # It joins the SAME coordinator (localhost:8000) but in zone "capture" so retro rooms never land on
-# it and vice-versa (⚠ retro rooms MUST send zone=main — the gateway derives it from the room-id
-# system, plan §5.1). The flat knobs (zone, singlePort, iceIpMap, coordinator, Windows paths) come
+# it and vice-versa (âš  retro rooms MUST send zone=main â€” the gateway derives it from the room-id
+# system, plan Â§5.1). The flat knobs (zone, singlePort, iceIpMap, coordinator, Windows paths) come
 # from CLOUD_GAME_* env in scripts/register-arcade-glworker-task.ps1 -Zone capture.
 #
-# ─────────────────────────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # THIS FILE IS AUTHORITATIVE. Deploy:
 #   cp docker/arcade/config.worker-capture.yaml D:/ArcadeStorage/worker-capture/config.yaml
-#   then recycle the capture worker (Stop-Process worker for that task — runner respawns in ~4s).
+#   then recycle the capture worker (Stop-Process worker for that task â€” runner respawns in ~4s).
 # Edit HERE, then deploy. Never hand-edit the D: copy (that is how config.worker-gl.yaml drifted).
-# ⚠ Keep plain UTF-8, no BOM. Keep the encoder block in lockstep with config.worker-gl.yaml
-#   EXCEPT colorimetry — "2:3:5:1" (limited) is a deliberate divergence; never "resync" it to the
+# âš  Keep plain UTF-8, no BOM. Keep the encoder block in lockstep with config.worker-gl.yaml
+#   EXCEPT colorimetry â€” "2:3:5:1" (limited) is a deliberate divergence; never "resync" it to the
 #   GL pool's full-range "1:3:5:1" or SDR desktops wash out on tablet H.264 decoders again.
-# ─────────────────────────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 coordinator:
   origin:
@@ -38,7 +38,7 @@ emulator:
     saveCompression: false
     cores:
       repo:
-        sync: false   # this worker dlopens NO cores — the capture branch fires before any load
+        sync: false   # this worker dlopens NO cores â€” the capture branch fires before any load
       list:
         # Pseudo-core: a file "<id>.capture" -> System "capture". `lib: capture` is NEVER dlopened
         # (the coordinator branch tests gameInfo.System == "capture" and hands the room to the
@@ -53,38 +53,55 @@ capture:
   gatewayUrl: "http://localhost:2303"
   secretFile: "D:/ArcadeStorage/heavy/gateway-secret.txt"
   profilesFile: "D:/ArcadeStorage/heavy/profiles/profiles.json"
-  monitorIndex: 0          # index into the ENUMERATED PHYSICAL monitors (logged at boot; SudoVDA trap §1)
+  monitorIndex: 0          # index into the ENUMERATED PHYSICAL monitors (logged at boot; SudoVDA trap Â§1)
   width: 1920
   height: 1080
   fps: 60
   audioScope: "process"    # process (PID-scoped loopback) | system (whole endpoint)
   # Per-app audio isolation to VB-CABLE (so the game doesn't blast the HOST speakers): route ONLY the
-  # game's audio (by PID — session-scoped, reverts when it exits) to "CABLE Input", capture from
+  # game's audio (by PID â€” session-scoped, reverts when it exits) to "CABLE Input", capture from
   # "CABLE Output". Leave audioSink empty to fall back to loopback on the host's default device.
   audioSink: "CABLE Input"
-  # LOOPBACK-tap CABLE Input (RENDER id {0.0.0.…}) — BEFORE the cable's internal 96kHz SRC + ~7168-
-  # sample transfer buffer that feeds CABLE Output ({0.0.1.…}). Saves ~75-150ms of audio lag (§12A).
+  # LOOPBACK-tap CABLE Input (RENDER id {0.0.0.â€¦}) â€” BEFORE the cable's internal 96kHz SRC + ~7168-
+  # sample transfer buffer that feeds CABLE Output ({0.0.1.â€¦}). Saves ~75-150ms of audio lag (Â§12A).
   audioCaptureDevice: "{0.0.0.00000000}.{ceabe612-e9ce-404e-8be3-e5d660d90bfe}"
   audioCaptureLoopback: true
   # VIDEO SOURCE. d3d12 is the ONLY screen source with HDR tonemapping (tonemap=reinhard), so it is
-  # the one that stays colour-correct if this desktop is ever switched into HDR mode (plan §11).
+  # the one that stays colour-correct if this desktop is ever switched into HDR mode (plan Â§11).
   #
-  # ⚠ IT REQUIRES OUR PATCHED PLUGIN. Stock libgstd3d12 reads a monochrome cursor's XOR mask ~16x
+  # âš  IT REQUIRES OUR PATCHED PLUGIN. Stock libgstd3d12 reads a monochrome cursor's XOR mask ~16x
   # past the end of its buffer (buildMonochrom offsets by the DESTINATION RGBA size instead of
-  # height*Pitch), which abort()s the process — MSYS2 builds libstdc++ with _GLIBCXX_ASSERTIONS —
+  # height*Pitch), which abort()s the process â€” MSYS2 builds libstdc++ with _GLIBCXX_ASSERTIONS â€”
   # within seconds of ANY fullscreen game, because that is when Windows hands out a monochrome
   # cursor. Kirby died 10-30s in, every time (0xC0000409), and a wedged capture worker then reads
   # to players as "the arcade is full". Still unfixed upstream in 1.28.4/1.28.5.
   #
   # The fix: docker/arcade/patches/gst/0001-d3d12-dxgicapture-monochrome-cursor-oob.patch
-  # RE-RUN scripts/build-gst-d3d12-patched.ps1 AFTER ANY pacman -Syu THAT TOUCHES GSTREAMER —
+  # RE-RUN scripts/build-gst-d3d12-patched.ps1 AFTER ANY pacman -Syu THAT TOUCHES GSTREAMER â€”
   # the upgrade silently restores the stock DLL and the crash comes back. Fall back to "d3d11"
   # (no crash, no HDR tonemapping) if the plugin ever has to be un-patched.
   videoSource: "d3d12"
+  # P4 ZERO-COPY: keep the captured frame in GPU memory all the way into NVENC.
+  #
+  # Design A (zeroCopy: false) read every frame back to system memory (d3d12download) purely to hand it
+  # to Go, which pushed it into the media pipeline's appsrc â€” which uploaded it to the GPU again for the
+  # encoder. Measured on this box with the SAME encoder and only the readback varying:
+  #   design A: 9.2 ms median captureâ†’encode      zero-copy: 3.0 ms
+  # (arxiv 2507.00623 blames this round trip for +137 ms in a Unity/VR stack. That is NOT what it costs
+  # here â€” it is ~6 ms, and their gap is a stalled render thread, not the copy.)
+  #
+  # It works by moving the capture SOURCE into the media pipeline (media.GstMediaPipe.VideoSrcChain)
+  # rather than moving the encoder out of it â€” so ABR, the per-room codec and forced keyframes still act
+  # on the same `video_enc` element and did not have to be reimplemented. Only the keyframe CLOCK moved
+  # (encoded frames instead of raw input frames â€” media.maybeForceKeyframe).
+  #
+  # âš  Set this false to roll back to design A instantly (no rebuild): it is the A/B baseline, and it is
+  # the path every libretro room still uses.
+  zeroCopy: true
   soundVolumeView: "D:/ArcadeStorage/worker-capture/bin/SoundVolumeView.exe"
 
 encoder:
-  # ⚠ Matches config.worker-gl.yaml EXCEPT colorimetry (see below) — the capture lane reuses
+  # âš  Matches config.worker-gl.yaml EXCEPT colorimetry (see below) â€” the capture lane reuses
   # media.NewGstreamer unchanged, so AV1 default / per-room codec (0036) / ABR (0021) /
   # intra-refresh all carry over. Keep in lockstep apart from that one deliberate divergence.
   video:
@@ -93,14 +110,14 @@ encoder:
     keyframeInterval: 300
     # LIMITED-range BT709 (2:3:5:1), NOT the retro pool's full-range 1:3:5:1. The capture source is a
     # real sRGB desktop with true 0/255 blacks+whites; encoding it full-range washed out on a tablet
-    # whose H.264 decoder assumes limited range (blacks lift to 16, whites clamp — "HDR looks broken").
+    # whose H.264 decoder assumes limited range (blacks lift to 16, whites clamp â€” "HDR looks broken").
     # Limited range is what every WebRTC decoder defaults to, so it renders correctly everywhere. The
     # retro pool keeps full-range (its cores' code values are worth preserving); a desktop capture is not.
     colorimetry: "2:3:5:1"
   list:
     av1:
       # gop-size=-1 + intra-refresh (patched nvcodec plugin); PLI responder = worker patch 0029.
-      # capture bitrate ceiling defaults higher than retro (1080p desktop) — the site's per-system
+      # capture bitrate ceiling defaults higher than retro (1080p desktop) â€” the site's per-system
       # Auto bitrate (capture ~12 Mbps) + ABR move it; this is the CBR base the encoder builds with.
       params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=-1 intra-refresh-period=120 intra-refresh-count=15 zerolatency=true"
       caps: video/x-av1,stream-format=obu-stream ! av1parse ! video/x-av1,stream-format=obu-stream,alignment=tu
