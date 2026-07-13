@@ -1,0 +1,28 @@
+--- a/sys/d3d12/gstd3d12dxgicapture.cpp
++++ b/sys/d3d12/gstd3d12dxgicapture.cpp
+@@ -263,11 +263,24 @@
+     const BYTE white[] = { 0xff, 0xff, 0xff, 0xff };
+     const BYTE transparent[] = { 0, 0, 0, 0 };
+ 
++    /* A monochrome DXGI pointer shape is an AND mask followed by an XOR mask, BOTH strided by
++     * shape_info.Pitch (that is why shape_info.Height is twice the cursor's height). So the XOR
++     * mask begins at height_ * Pitch bytes into shape_buffer.
++     *
++     * It used to offset by `size` -- the DESTINATION RGBA size (height_ * width_ * 4), an unrelated
++     * and much larger quantity. For a 32x32 cursor shape_buffer is Pitch * Height = 4 * 64 = 256
++     * bytes while `size` is 4096, so every monochrome cursor read ~16x past the end of the buffer.
++     * Harmless-looking, but MSYS2 builds libstdc++ with _GLIBCXX_ASSERTIONS, so operator[] bounds
++     * -checks and abort()s: the capture process died (0xC0000409) seconds into every fullscreen
++     * game, which is when Windows hands out a monochrome cursor. */
++    auto xor_offset = height_ * shape_info.Pitch;
++
+     for (UINT row = 0; row < height_; row++) {
+       for (UINT col = 0; col < width_; col++) {
+         auto src_pos = (row * shape_info.Pitch) + (col / 8);
+         auto and_mask = (shape_buffer[src_pos] >> (7 - (col % 8))) & 0x1;
+-        auto xor_mask = (shape_buffer[src_pos + size] >> (7 - (col % 8))) & 0x1;
++        auto xor_mask =
++            (shape_buffer[src_pos + xor_offset] >> (7 - (col % 8))) & 0x1;
+         auto dst_pos = (row * stride_) + (col * pstride);
+ 
+         if (and_mask) {

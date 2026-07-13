@@ -694,3 +694,27 @@ Known upstream (fixed in MR 7293), but MSYS2's newest — 1.28.4 — still repro
 https://discourse.gstreamer.org/t/d3d12screencapturesrc-hangs-crash-when-using-a-full-screen-app/2088
 Cost of d3d11: it lacks d3d12's HDR tonemapping (`tonemap=reinhard`), so an HDR desktop would look
 washed out. Ziggy's desktop is SDR. Flip `videoSource` back to `d3d12` on a GStreamer bump.
+
+## gst/0001-d3d12-dxgicapture-monochrome-cursor-oob.patch (GStreamer, not CloudRetro)
+
+**The real fix for the capture-lane crash that 0040 worked around.** Rebuild + install with
+`scripts/build-gst-d3d12-patched.ps1`; the source is gst-plugins-bad (match the installed GStreamer
+version), and only the `d3d12` plugin is built.
+
+`PtrInfo::buildMonochrom()` in `sys/d3d12/gstd3d12dxgicapture.cpp` reads the XOR half of a monochrome
+cursor at `shape_buffer[src_pos + size]`, where `size` is the **destination** RGBA size
+(`height * width * 4`) instead of the source offset (`height * Pitch`). A monochrome DXGI pointer is
+a 1-bpp AND mask followed by an equally-sized XOR mask, both `Pitch`-strided — so for a 32×32 cursor
+the buffer is `Pitch * Height = 4 * 64 = 256` bytes while `size` is `4096`. It reads ~16× past the
+end, on EVERY monochrome cursor — which is exactly what Windows hands a FULLSCREEN game. Fatal rather
+than a silent overread because MSYS2 builds libstdc++ with `_GLIBCXX_ASSERTIONS`: `operator[]`
+bounds-checks and `abort()`s (`0xC0000409`). Kirby died 10–30 s into every session.
+
+Still unfixed upstream in **1.28.4 and 1.28.5** (the known "fullscreen" MR 7293 is a different bug).
+With the patch, d3d12 soaks 100 s clean and keeps its HDR tonemapping — which is the whole reason to
+prefer it over the d3d11 fallback (`capture.videoSource`).
+
+> ⚠ **A `pacman -Syu` that touches GStreamer overwrites `libgstd3d12.dll` with the stock build and
+> silently brings the crash back.** Re-run `scripts/build-gst-d3d12-patched.ps1` after any upgrade.
+> Stock DLL is kept at `D:\ArcadeStorage\backup\libgstd3d12.dll.msys2-stock-<version>`. Retire this
+> patch once a release stops containing `src_pos + size` in that function.

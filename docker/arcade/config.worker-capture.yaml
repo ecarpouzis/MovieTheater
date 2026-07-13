@@ -66,16 +66,21 @@ capture:
   # sample transfer buffer that feeds CABLE Output ({0.0.1.…}). Saves ~75-150ms of audio lag (§12A).
   audioCaptureDevice: "{0.0.0.00000000}.{ceabe612-e9ce-404e-8be3-e5d660d90bfe}"
   audioCaptureLoopback: true
-  # VIDEO SOURCE — d3d11, NOT d3d12. d3d12screencapturesrc CRASHES the worker the moment the captured
-  # app goes FULLSCREEN, which every heavy title does (yuzu launches with -f): an out-of-bounds
-  # std::vector index inside libgstd3d12, fatal because MSYS2 builds GStreamer with
-  # _GLIBCXX_ASSERTIONS (elsewhere it would be a silent overread). The worker died with
-  # 0xC0000409 ten to thirty seconds into EVERY Kirby session; proven by a gdb backtrace
-  # (abort <- libstdc++ <- libgstd3d12) and known upstream:
-  #   https://discourse.gstreamer.org/t/d3d12screencapturesrc-hangs-crash-when-using-a-full-screen-app/2088
-  # Upstream MR 7293 fixes it, but MSYS2's newest (1.28.4) still reproduces, so we use d3d11 --
-  # whose only loss is HDR tonemapping, which an SDR desktop does not need. Revisit on a gst bump.
-  videoSource: "d3d11"
+  # VIDEO SOURCE. d3d12 is the ONLY screen source with HDR tonemapping (tonemap=reinhard), so it is
+  # the one that stays colour-correct if this desktop is ever switched into HDR mode (plan §11).
+  #
+  # ⚠ IT REQUIRES OUR PATCHED PLUGIN. Stock libgstd3d12 reads a monochrome cursor's XOR mask ~16x
+  # past the end of its buffer (buildMonochrom offsets by the DESTINATION RGBA size instead of
+  # height*Pitch), which abort()s the process — MSYS2 builds libstdc++ with _GLIBCXX_ASSERTIONS —
+  # within seconds of ANY fullscreen game, because that is when Windows hands out a monochrome
+  # cursor. Kirby died 10-30s in, every time (0xC0000409), and a wedged capture worker then reads
+  # to players as "the arcade is full". Still unfixed upstream in 1.28.4/1.28.5.
+  #
+  # The fix: docker/arcade/patches/gst/0001-d3d12-dxgicapture-monochrome-cursor-oob.patch
+  # RE-RUN scripts/build-gst-d3d12-patched.ps1 AFTER ANY pacman -Syu THAT TOUCHES GSTREAMER —
+  # the upgrade silently restores the stock DLL and the crash comes back. Fall back to "d3d11"
+  # (no crash, no HDR tonemapping) if the plugin ever has to be un-patched.
+  videoSource: "d3d12"
   soundVolumeView: "D:/ArcadeStorage/worker-capture/bin/SoundVolumeView.exe"
 
 encoder:
