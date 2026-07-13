@@ -164,10 +164,12 @@ export function useMovieSearch() {
     });
   }, []);
 
-  const ratingSearch = useCallback((maxRatingId, types, sort) => {
+  // Browse ONE MPA rating (exact bucket — G, PG, PG-13, …), not a ceiling. `ratingId` is the MPA
+  // lookup id; a title is filed under the rating that actually gates it (cert → legacy → inferred).
+  const ratingSearch = useCallback((ratingId, types, sort) => {
     setSearch({
-      url: `/API/GetMoviesByRating?maxRatingId=${maxRatingId}${scopeSuffix(types)}${sortSuffix(sort)}`,
-      maxRatingId: String(maxRatingId),
+      url: `/API/GetMoviesByRating?ratingId=${ratingId}${scopeSuffix(types)}${sortSuffix(sort)}`,
+      ratingId: String(ratingId),
       titleTypes: types,
       sort,
       infinite: true,

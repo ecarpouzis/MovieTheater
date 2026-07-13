@@ -241,31 +241,35 @@ img {
   color: #ffffff !important;
 }
 
-/* MPA Rating Cap slider (on the dark sidebar) */
-.rating-cap-slider .ant-slider-rail {
-  background: rgba(255, 255, 255, 0.14);
+/* MPA Rating Search (on the dark sidebar) — one button per rating, each browsing that exact rating.
+   It replaced a cap SLIDER, which set a ceiling: dragging to PG-13 showed G, PG and PG-13 together
+   and there was no way to ask for just one. */
+.rating-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
-.rating-cap-slider .ant-slider-track {
-  background: var(--accent);
-}
-.rating-cap-slider .ant-slider-dot {
-  background: var(--sidebar-input-bg);
-  border-color: rgba(255, 255, 255, 0.25);
-}
-.rating-cap-slider .ant-slider-dot-active {
-  border-color: var(--accent);
-}
-.rating-cap-slider .ant-slider-handle {
-  border-color: var(--accent);
-}
-.rating-cap-slider .ant-slider:hover .ant-slider-track {
-  background: var(--accent);
-}
-.rating-cap-slider .ant-slider-mark-text {
+
+.rating-search-row .ant-btn.rating-search-btn {
+  flex: 1 1 auto;
+  min-width: 46px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: var(--sidebar-pill-bg);
+  border-color: var(--sidebar-input-border);
   color: var(--sidebar-text-muted);
-  font-size: 10px;
 }
-.rating-cap-slider .ant-slider-mark-text-active {
+
+.rating-search-row .ant-btn.rating-search-btn:hover {
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.rating-search-row .ant-btn.rating-search-btn--active,
+.rating-search-row .ant-btn.rating-search-btn--active:hover {
+  background-color: var(--accent);
+  border-color: var(--accent);
   color: #fff;
 }
 

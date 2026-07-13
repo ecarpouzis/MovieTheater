@@ -1,4 +1,4 @@
-import { Input, List, Button, Select, Slider } from "antd";
+import { Input, List, Button, Select } from "antd";
 import { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
@@ -13,18 +13,18 @@ const SORT_OPTIONS = [
   { label: "Popcornmeter", value: "popcorn" },
 ];
 
-// MPA Rating Cap stops. `cap` = the ceiling id sent to /API/GetMoviesByRating (a title shows when its
-// effective rating is ≤ cap). `restrict` = the rating id compared against the viewer's age restriction
-// to clamp the slider. X and NC-17 are combined into one "NC-17" stop (cap 6 includes both NC-17=5 and
-// X=6); "Unknown"(7) is not selectable, so unrated titles never appear under a cap. Index 0 = "Any"
-// (no cap → browse the current scope).
-const RATING_STOPS = [
-  { label: "Any", cap: null, restrict: 0 },
-  { label: "G", cap: 1, restrict: 1 },
-  { label: "PG", cap: 2, restrict: 2 },
-  { label: "PG-13", cap: 3, restrict: 3 },
-  { label: "R", cap: 4, restrict: 4 },
-  { label: "NC-17", cap: 6, restrict: 5 },
+// MPA Rating Search: each button browses ONE rating (the exact bucket), not a ceiling — clicking
+// "PG-13" shows the PG-13 movies. `id` is the MPA lookup id, which is also what the viewer's age
+// restriction is expressed in, so a rating above the restriction simply isn't offered. NC-17(5) and
+// X(6) are separate buckets here (the old cap slider merged them, which an exact search can't).
+// "Unknown"(7) isn't a rating anyone searches for, so it's not a button.
+const RATING_BUCKETS = [
+  { label: "G", id: 1 },
+  { label: "PG", id: 2 },
+  { label: "PG-13", id: 3 },
+  { label: "R", id: 4 },
+  { label: "NC-17", id: 5 },
+  { label: "X", id: 6 },
 ];
 
 const { Search } = Input;
@@ -136,31 +136,21 @@ function SearchTools({ search, userData }) {
     }
   }
 
-  // ── MPA Rating Cap slider ──────────────────────────────────────────────
-  // Clamp the highest selectable stop to the viewer's age restriction (an MPA id, or null = none).
-  const maxRatingIndex =
+  // ── MPA Rating Search ──────────────────────────────────────────────────
+  // Only offer ratings the viewer is allowed to see (their age restriction is an MPA id; null = no
+  // restriction). Nothing is gained by offering a button whose grid would be empty by policy.
+  const ratingButtons =
     userData?.ageRestriction != null
-      ? Math.max(0, RATING_STOPS.filter((s) => s.restrict <= userData.ageRestriction).length - 1)
-      : RATING_STOPS.length - 1;
+      ? RATING_BUCKETS.filter((r) => r.id <= userData.ageRestriction)
+      : RATING_BUCKETS;
 
-  // Reflect the active cap: find the stop whose `cap` matches the URL's maxRatingId (rating mode).
-  const activeCapIndex =
-    search.maxRatingId != null
-      ? Math.max(0, RATING_STOPS.findIndex((s) => String(s.cap) === String(search.maxRatingId)))
-      : 0;
+  const activeRatingId = search.ratingId != null ? String(search.ratingId) : null;
 
-  const ratingMarks = RATING_STOPS.slice(0, maxRatingIndex + 1).reduce((acc, s, i) => {
-    acc[i] = s.label;
-    return acc;
-  }, {});
-
-  function onRatingCapChange(index) {
-    const stop = RATING_STOPS[index];
-    if (!stop || stop.cap == null) {
-      navigateToBrowseSearch(); // "Any" → clear the cap, browse the current scope
-    } else {
-      navigateToBrowseSearch("rating", String(stop.cap));
-    }
+  // Clicking the active rating clears it and returns to the current scope — same toggle as the
+  // First Letter buttons below.
+  function ToggleRatingSearch(id) {
+    if (activeRatingId === String(id)) navigateToBrowseSearch();
+    else navigateToBrowseSearch("rating", String(id));
   }
 
   return (
@@ -254,17 +244,20 @@ function SearchTools({ search, userData }) {
         }}
         options={SORT_OPTIONS}
       />
-      <span style={inputLabelStyle}>MPA Rating Cap</span>
-      <div className="rating-cap-slider" style={{ padding: "0 6px 8px" }}>
-        <Slider
-          min={0}
-          max={maxRatingIndex}
-          step={1}
-          marks={ratingMarks}
-          tooltip={{ open: false }}
-          value={Math.min(activeCapIndex, maxRatingIndex)}
-          onChange={onRatingCapChange}
-        />
+      <span style={inputLabelStyle}>MPA Rating Search</span>
+      <div className="rating-search-row">
+        {ratingButtons.map((r) => {
+          const isActive = activeRatingId === String(r.id);
+          return (
+            <Button
+              key={r.id}
+              className={`rating-search-btn${isActive ? " rating-search-btn--active" : ""}`}
+              onClick={() => ToggleRatingSearch(r.id)}
+            >
+              {r.label}
+            </Button>
+          );
+        })}
       </div>
       <span style={inputLabelStyle}>First Letter</span>
       <List

@@ -2316,7 +2316,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpGet("/API/GetMoviesByRating")]
-        public async Task<IActionResult> GetMoviesByRating(int maxRatingId, int page = 1, int pageSize = 60, string? types = null, string? sort = null)
+        public async Task<IActionResult> GetMoviesByRating(int ratingId, int page = 1, int pageSize = 60, string? types = null, string? sort = null)
         {
             int ageRestriction = 100;
             var currentUserId = GetCurrentUserId();
@@ -2328,17 +2328,20 @@ namespace MovieTheater.Controllers
                     ageRestriction = parsedRestriction;
             }
 
-            var effectiveMax = Math.Min(maxRatingId, ageRestriction);
-
-            // "MPA Rating Cap": a CEILING, not an exact bucket — show every title whose effective
-            // rating is at or below the cap (G…cap). A cap below Unknown(7) naturally excludes
-            // unrated titles, and any cap ≥ NC-17(5) includes X(6) too (they're combined in the UI).
-            // Order at the DB (nulls last, then collation — digit-titles sort before letters) and
-            // page there, so the infinite-scroll client's repeated page fetches don't each
-            // re-materialize + re-sort the whole rating set.
+            // Browse by EXACT rating — clicking "PG-13" asks for the PG-13 movies, not "PG-13 and
+            // everything tamer" (which is what this endpoint used to do, as a rating CAP). A title is
+            // filed under the rating that actually gates it: real certificate → legacy → inferred
+            // (RatingGate.MovieEffectiveBucketIs), so a movie appears under one bucket and only one.
+            //
+            // The age gate still applies on top: asking for a bucket above the viewer's restriction
+            // is simply an empty grid — the two predicates intersect to nothing, no special-casing.
+            // Order at the DB (nulls last, then collation — digit-titles sort before letters) and page
+            // there, so the infinite-scroll client's repeated page fetches don't each re-materialize +
+            // re-sort the whole rating set.
             var baseQuery = movieDb.Movies
                 .Where(m => m.ReviewBatch == null)
-                .Where(Web.RatingGate.MovieVisibleAtAge(movieDb, effectiveMax));
+                .Where(Web.RatingGate.MovieVisibleAtAge(movieDb, ageRestriction))
+                .Where(Web.RatingGate.MovieEffectiveBucketIs(movieDb, ratingId));
 
             // Rating browse is movie-only, so apply just the Movie-bucket part of the Type scope.
             // (A scope without any movie bucket — e.g. Series-only — yields no rating results.)
