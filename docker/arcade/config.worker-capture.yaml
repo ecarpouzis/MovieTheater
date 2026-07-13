@@ -81,6 +81,14 @@ capture:
   # the upgrade silently restores the stock DLL and the crash comes back. Fall back to "d3d11"
   # (no crash, no HDR tonemapping) if the plugin ever has to be un-patched.
   videoSource: "d3d12"
+  # RUNTIME GUARD for exactly the trap described above. The worker hashes the plugin it is about to
+  # load and compares it with the hash build-gst-d3d12-patched.ps1 stamped when it installed the
+  # patched build. If a GStreamer upgrade has swapped the stock DLL back in, the hashes differ and the
+  # worker falls back to d3d11 with a loud error at boot — instead of aborting seconds into every heavy
+  # session, which players only ever experience as "the arcade is full" with nothing in the logs
+  # pointing at the cause. Clear either key to skip the check.
+  d3d12Plugin: "D:/msys64/ucrt64/lib/gstreamer-1.0/libgstd3d12.dll"
+  d3d12PluginSha256: "D:/msys64/ucrt64/lib/gstreamer-1.0/libgstd3d12.dll.sha256"
   # P4 ZERO-COPY: keep the captured frame in GPU memory all the way into NVENC.
   #
   # Design A (zeroCopy: false) read every frame back to system memory (d3d12download) purely to hand it

@@ -207,7 +207,7 @@ index 9e70576..5f5c29f 100644
  
  func (l Library) GetSupportedExtensions() []string { return l.Supported }
 diff --git a/pkg/config/worker.go b/pkg/config/worker.go
-index be5ac42..fa84ddd 100644
+index be5ac42..a27d001 100644
 --- a/pkg/config/worker.go
 +++ b/pkg/config/worker.go
 @@ -6,6 +6,7 @@ import (
@@ -218,7 +218,7 @@ index be5ac42..fa84ddd 100644
  	"strings"
  
  	"github.com/giongto35/cloud-game/v3/pkg/os"
-@@ -20,6 +21,58 @@ type WorkerConfig struct {
+@@ -20,6 +21,69 @@ type WorkerConfig struct {
  	Worker    Worker
  	Webrtc    Webrtc
  	Version   Version
@@ -249,6 +249,17 @@ index be5ac42..fa84ddd 100644
 +	// and the crash comes straight back (presenting to players as "the arcade is full"). Re-run that
 +	// script after any upgrade. d3d11 remains the escape hatch if the patched DLL is ever unavailable.
 +	VideoSource string
++	// D3D12Plugin / D3D12PluginSha256 arm a BOOT-TIME check that the libgstd3d12 we are about to use is
++	// still our patched build (see VideoSource above). scripts/build-gst-d3d12-patched.ps1 writes the
++	// patched DLL's SHA-256 into D3D12PluginSha256; if the hash on disk no longer matches, a package
++	// upgrade has swapped the stock plugin back in and d3d12 capture would abort the worker seconds
++	// into every heavy session — which players experience as "the arcade is full".
++	//
++	// Without this the failure is silent and remote: nothing in the logs says "your plugin changed",
++	// just a worker that dies on a timer. With it, we fall back to d3d11 (correct, minus HDR) and say
++	// exactly what happened and how to fix it. Leave either field empty to skip the check.
++	D3D12Plugin       string
++	D3D12PluginSha256 string
 +	// AudioScope: "process" (PID-scoped loopback) | "system" (whole endpoint). NOTE this is only
 +	// consulted when AudioCaptureDevice is EMPTY — naming a device wins. The live config names one,
 +	// so in production this knob is inert; it is the fallback path, not the main one.
@@ -277,7 +288,7 @@ index be5ac42..fa84ddd 100644
  }
  
  type Storage struct {
-@@ -86,6 +139,111 @@ type CodecSettings struct {
+@@ -86,6 +150,111 @@ type CodecSettings struct {
  	Caps    string
  }
  
@@ -452,7 +463,7 @@ index ac04d15..9842129 100644
  	var workers []*Worker
  	for w := range h.workers.Values() {
 diff --git a/pkg/coordinator/userhandlers.go b/pkg/coordinator/userhandlers.go
-index 51e805c..cbe0a55 100644
+index 51e805c..2bf4439 100644
 --- a/pkg/coordinator/userhandlers.go
 +++ b/pkg/coordinator/userhandlers.go
 @@ -13,7 +13,7 @@ func (u *User) HandleInitWebrtcStream(rq api.InitUserWebrtcStreamRequest) {
@@ -464,6 +475,63 @@ index 51e805c..cbe0a55 100644
  	if err != nil || resp == nil || *resp == api.EMPTY {
  		u.log.Error().Err(err).Msg("malformed WebRTC init response")
  		return
+@@ -68,21 +68,54 @@ func (u *User) HandleStartGame(rq api.GameStartUserRequest, conf config.Coordina
+ 			u.Notify(api.ErrNoFreeSlots, "")
+ 			return
+ 		}
+-	} else {
++	}
++
++	// reserved: WE took this worker's only slot in this call, so WE owe it back if the game does not
++	// actually start. Not set on the busy/join path above — that slot belongs to the running room and
++	// freeing it would hand the worker out from under live players.
++	reserved := false
++	if !busy {
+ 		// Worker is free: try to reserve the single slot for this new room.
+ 		if !u.w.TryReserve() {
+ 			u.Notify(api.ErrNoFreeSlots, "")
+ 			return
+ 		}
++		reserved = true
++	}
++
++	// A FAILED GAME START USED TO LEAK THE WORKER FOREVER.
++	//
++	// The slot is reserved here, but it was only ever released by HandleCloseRoom — which fires on
++	// `rq == w.RoomId`, and RoomId is set by HandleRegisterRoom, which the worker sends ONLY once a
++	// room actually exists. So when a start failed (say the game key isn't in THIS worker's library —
++	// trivially reachable: a gc title routed to the capture worker, whose library is stubs), the
++	// worker registered no room, closed no room, and this reservation was never undone. One worker =
++	// one room, so that is a permanently lost slot, and the next player is told "the arcade is full"
++	// while the worker sits idle with room="". (UnReserve() existed but was dead code — tests only.)
++	//
++	// Same shape as patch 0041, which fixed the leak on the TEARDOWN path; this is the START path, and
++	// unlike teardown it needs no crash to trigger — just a name the worker cannot find.
++	fail := func(msg string) {
++		if reserved {
++			u.w.FreeSlots()
++			u.w.RoomId = ""
++		}
++		// The client otherwise sits on "Connected" forever: nothing is sent, so the shim never leaves
++		// the connecting state and the room silently never begins. ErrNoFreeSlots is the only failure
++		// packet the protocol has — its wording ("arcade is full") is imprecise for a start failure,
++		// but an honest wrong-ish message beats an indefinite hang.
++		u.Notify(api.ErrNoFreeSlots, "")
++		u.log.Error().Msgf("game start failed (%s); slot released", msg)
+ 	}
+ 
+ 	startGameResp, err := u.w.StartGame(u.Id().String(), rq)
+ 	if err != nil || startGameResp == nil {
+ 		u.log.Error().Err(err).Msg("malformed game start response")
++		fail("malformed game start response")
+ 		return
+ 	}
+ 	if startGameResp.Rid == "" {
+-		u.log.Error().Msg("there is no room")
++		fail("worker started no room (unknown game for this worker's library?)")
+ 		return
+ 	}
+ 	u.log.Info().Str("id", startGameResp.Rid).Msg("Received room response from worker")
 diff --git a/pkg/coordinator/workerapi.go b/pkg/coordinator/workerapi.go
 index dbceaed..e24e5e4 100644
 --- a/pkg/coordinator/workerapi.go
@@ -1373,17 +1441,14 @@ index 0000000..2a3570c
 +	}
 +}
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..d49047a 100644
+index b342b6b..2e15f42 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
-@@ -1,14 +1,17 @@
- package webrtc
- 
- import (
-+	"github.com/pion/rtcp"
+@@ -4,11 +4,14 @@ import (
  	"cmp"
  	"encoding/json"
  	"fmt"
++	"github.com/pion/rtcp"
  	"strings"
  	"sync"
 +	"sync/atomic"
@@ -1394,7 +1459,7 @@ index b342b6b..d49047a 100644
  	"github.com/pion/webrtc/v4"
  	"github.com/pion/webrtc/v4/pkg/media"
  )
-@@ -16,15 +19,43 @@ import (
+@@ -16,15 +19,71 @@ import (
  type Peer struct {
  	api *ApiFactory
  	c   *webrtc.PeerConnection
@@ -1429,16 +1494,44 @@ index b342b6b..d49047a 100644
 +	// RTP clock on wall-clock while sending fewer frames.
 +	pendingNanos atomic.Int64
 +
++	// Each peer ships video on its OWN goroutine (vq + vsend). The room used to walk its peers and
++	// call WriteSample serially on the media thread, which made every per-peer cost ADDITIVE: the
++	// packet pacer (pacer.go) sleeps inside the RTP write path, so a capture room at pace=8ms with
++	// four viewers could hold the encoder's appsink thread for ~32ms on a single frame — twice the
++	// 16.6ms frame budget, and the pipeline starts dropping frames for EVERYONE. Same shape for any
++	// peer that is merely slow to write. Temporal SVC already stops a weak peer eating the room's
++	// BITRATE; this stops it eating the room's TIME.
++	//
++	// A full queue drops this peer's frame rather than blocking the room — the whole point — and the
++	// dropped duration is carried forward exactly like an SVC layer drop (see pendingNanos).
++	vq      chan vFrame
++	vqOnce  sync.Once
++	vqStop  chan struct{}
++	vDrops  atomic.Int64
++	vLogged atomic.Int64
++
  	onMessage func(data []byte)
  }
  
++// vFrame is one encoded frame queued for one peer. Data is owned by the room (copied once per frame,
++// shared immutably across peers) and outlives the media callback that produced it.
++type vFrame struct {
++	data []byte
++	dur  time.Duration
++}
++
++// vQueueDepth is how many encoded frames may be in flight to a single peer before we start dropping
++// that peer's frames. Deliberately shallow: a deep queue would just add latency to a peer that is
++// already behind, and video is only useful if it is current.
++const vQueueDepth = 4
++
 +// svcMaxLayerUncapped is above any real temporal id (NVENC allows at most 3 layers => ids 0..2).
 +const svcMaxLayerUncapped = 7
 +
  var samplePool sync.Pool
  
  var DefaultOfferAnswerOptions = webrtc.OfferAnswerOptions{ICETricklingSupported: true}
-@@ -45,10 +76,14 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
+@@ -45,10 +104,14 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
  			Str(logger.DirectionField, "").
  			Str(logger.ClientField, ""),
  	)
@@ -1455,7 +1548,7 @@ index b342b6b..d49047a 100644
  	defer func() {
  		if err != nil {
  			err = fmt.Errorf("couldn't create webrtc seesion: %w", err)
-@@ -61,7 +96,7 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -61,7 +124,7 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.log.Debug().Msg("rtc start")
  
@@ -1464,7 +1557,7 @@ index b342b6b..d49047a 100644
  		return
  	}
  
-@@ -96,6 +131,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -96,6 +159,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.c.OnDataChannel(func(ch *webrtc.DataChannel) { p.log.Debug().Msgf("rtc [chan] [%s] remote", ch.Label()) })
  
@@ -1500,7 +1593,7 @@ index b342b6b..d49047a 100644
  	aCodec := "opus"
  	if err = p.InitMedia(vCodec, aCodec); err != nil {
  		return
-@@ -143,8 +207,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+@@ -143,8 +235,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
  	return encoded, nil
  }
  
@@ -1542,7 +1635,7 @@ index b342b6b..d49047a 100644
  		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
  		if err != nil {
  			return err
-@@ -153,6 +250,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -153,6 +278,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  		return p.c.AddICECandidate(candidate)
  	}
  	if sdp != nil {
@@ -1560,7 +1653,7 @@ index b342b6b..d49047a 100644
  		answer, err := fromJson[webrtc.SessionDescription](*sdp)
  		if err != nil {
  			return err
-@@ -176,6 +284,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -176,6 +312,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
  		mime = webrtc.MimeTypeVP8
  	case "video/vp9":
  		mime = webrtc.MimeTypeVP9
@@ -1574,7 +1667,7 @@ index b342b6b..d49047a 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -226,12 +341,32 @@ func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
+@@ -226,12 +369,79 @@ func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
  	}
  }
  
@@ -1582,18 +1675,67 @@ index b342b6b..d49047a 100644
 +// peer is not being fed (see svc.go). Dropping here — per peer, before the packetizer — is what makes
 +// SVC cheap: this peer's own packetizer simply never sees the frame, so its sequence numbers stay
 +// contiguous and no receiver NACKs for something it was never promised.
++// SendVideo hands one encoded frame to THIS peer's sender goroutine and returns immediately. It must
++// never block: it runs on the media thread, which is shared by every peer in the room.
++//
++// `data` must outlive the call — the room copies each frame once before fanning it out, because the
++// bytes the encoder hands us are a window into a GStreamer buffer that is unmapped as soon as the
++// media callback returns.
  func (p *Peer) SendVideo(data []byte, dur time.Duration) {
-+	if svcLayers.Load() > 1 {
-+		if int32(av1TemporalID(data)) > p.maxLayer.Load() {
-+			p.pendingNanos.Add(int64(dur)) // keep this peer's RTP clock on wall-clock
-+			return
-+		}
-+		if pending := p.pendingNanos.Swap(0); pending > 0 {
-+			dur += time.Duration(pending)
+-	if err := p.send(data, dur, p.v.WriteSample); err != nil {
+-		p.log.Error().Err(err).Send()
++	p.startVideoSender()
++
++	select {
++	case p.vq <- vFrame{data: data, dur: dur}:
++	default:
++		// This peer is behind. Drop ITS frame — not the room's — and carry the time forward so its RTP
++		// clock stays on wall-clock (a skipped sample whose duration is lost makes the peer's video run
++		// slow and drift behind its own audio; see pendingNanos).
++		p.pendingNanos.Add(int64(dur))
++		if n := p.vDrops.Add(1); n-p.vLogged.Load() >= 120 { // ~2s of frames
++			p.vLogged.Store(n)
++			p.log.Warn().Msgf("peer is behind: dropped %v video frames to keep the room's encoder free", n)
 +		}
 +	}
- 	if err := p.send(data, dur, p.v.WriteSample); err != nil {
- 		p.log.Error().Err(err).Send()
++}
++
++func (p *Peer) startVideoSender() {
++	p.vqOnce.Do(func() {
++		p.vq = make(chan vFrame, vQueueDepth)
++		p.vqStop = make(chan struct{})
++		go p.videoSender()
++	})
++}
++
++// videoSender owns everything that costs TIME per peer — the temporal-SVC decision, the packet pacer's
++// sleeps, and the RTP write itself — so none of it is charged to the media thread or to other peers.
++// One goroutine per peer, so a peer's frames keep their order.
++func (p *Peer) videoSender() {
++	for {
++		select {
++		case <-p.vqStop:
++			return
++		case f, ok := <-p.vq:
++			if !ok {
++				return
++			}
++			dur := f.dur
++			if svcLayers.Load() > 1 {
++				if int32(av1TemporalID(f.data)) > p.maxLayer.Load() {
++					p.pendingNanos.Add(int64(dur)) // this peer is capped below this layer
++					continue
++				}
++			}
++			if pending := p.pendingNanos.Swap(0); pending > 0 {
++				dur += time.Duration(pending) // carry forward everything skipped since our last send
++			}
++			if v := p.v; v != nil {
++				if err := p.send(f.data, dur, v.WriteSample); err != nil {
++					p.log.Error().Err(err).Send()
++				}
++			}
++		}
  	}
  }
  
@@ -1607,17 +1749,30 @@ index b342b6b..d49047a 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -250,6 +385,9 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -250,6 +460,22 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  }
  
  func (p *Peer) Disconnect() {
++	// Stop this peer's video sender first: it is the only thing still touching the tracks, and a
++	// closed PeerConnection would make every queued write fail noisily. Closing vqStop (rather than
++	// vq) is safe against the media thread still enqueueing — a send on a full channel just drops.
++	if p.vqStop != nil {
++		select {
++		case <-p.vqStop: // already stopped
++		default:
++			close(p.vqStop)
++		}
++	}
++	if drops := p.vDrops.Load(); drops > 0 {
++		p.log.Info().Msgf("peer sent behind: %v video frames dropped over the session", drops)
++	}
 +	if p.ac != nil && p.ac.ConnectionState() < webrtc.PeerConnectionStateDisconnected {
 +		_ = p.ac.Close()
 +	}
  	if p.c == nil {
  		return
  	}
-@@ -274,20 +412,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +500,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -1667,7 +1822,7 @@ index b342b6b..d49047a 100644
  			}
  		}()
  	}
-@@ -313,3 +477,23 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +565,23 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -2686,10 +2841,10 @@ index 85ede12..6d1d955 100644
  
 diff --git a/pkg/worker/caged/capture/capture.go b/pkg/worker/caged/capture/capture.go
 new file mode 100644
-index 0000000..4068432
+index 0000000..bf4529e
 --- /dev/null
 +++ b/pkg/worker/caged/capture/capture.go
-@@ -0,0 +1,461 @@
+@@ -0,0 +1,519 @@
 +// Package capture implements the "capture" caged mod (heavy browser lane, H5): instead of running
 +// a libretro core it launches a native Windows program through the heavy gateway contract, captures
 +// the desktop with GStreamer (Windows Graphics Capture), feeds frames/PCM into the UNCHANGED
@@ -2698,6 +2853,7 @@ index 0000000..4068432
 +package capture
 +
 +import (
++	"crypto/sha256"
 +	"fmt"
 +	"net/http"
 +	"os"
@@ -2729,6 +2885,10 @@ index 0000000..4068432
 +	audioCb func(app.Audio)
 +
 +	pads *padManager
++
++	// effectiveSource holds "d3d11" when the boot-time plugin check demoted us off d3d12; empty
++	// otherwise (use conf.VideoSource). Read through videoSource().
++	effectiveSource atomic.Value
 +
 +	// media pipelines + last-frame cache (guarded by frameMu)
 +	videoPipe *gst.Pipeline
@@ -2793,7 +2953,7 @@ index 0000000..4068432
 +	extra := ""
 +	conv := "d3d11convert"
 +	mem := "D3D11Memory"
-+	if a.conf.VideoSource == "d3d12" {
++	if a.videoSource() == "d3d12" {
 +		src, conv, mem = "d3d12screencapturesrc", "d3d12convert", "D3D12Memory"
 +		extra = "tonemap=reinhard " // the HDR handling only d3d12 has (needs our patched plugin)
 +	}
@@ -2839,8 +2999,61 @@ index 0000000..4068432
 +
 +// ── app.App interface ───────────────────────────────────────────────────────────────────────────
 +
++// videoSource is the source we will ACTUALLY use — conf.VideoSource, unless the boot-time plugin
++// check demoted us to d3d11. Everything downstream must read this, not the config.
++func (a *App) videoSource() string {
++	if s := a.effectiveSource.Load(); s != nil {
++		return s.(string)
++	}
++	return a.conf.VideoSource
++}
++
++// verifyD3D12Plugin refuses to run d3d12 capture on a libgstd3d12 that is not our patched build.
++//
++// The d3d12 source only survives a fullscreen game because we patch GStreamer ourselves (an OOB read
++// in its monochrome-cursor path aborts the process otherwise; still unfixed upstream). That patched
++// DLL is a build artifact on this box — a `pacman -Syu` touching GStreamer silently restores the stock
++// one, and the crash comes back seconds into every heavy session. The worker then dies on a timer and
++// the lane reads as "the arcade is full", with nothing in the logs pointing at the real cause.
++//
++// So: hash the plugin we are about to load and compare it against the hash the build script recorded.
++// A mismatch demotes us to d3d11 — correct, just without HDR tonemapping — instead of crash-looping.
++func (a *App) verifyD3D12Plugin() {
++	if a.conf.VideoSource != "d3d12" || a.conf.D3D12Plugin == "" || a.conf.D3D12PluginSha256 == "" {
++		return
++	}
++
++	demote := func(why string, args ...any) {
++		a.effectiveSource.Store("d3d11")
++		a.log.Error().Msgf("capture: "+why+
++			" — falling back to videoSource=d3d11 (no HDR tonemapping). Re-run "+
++			"scripts/build-gst-d3d12-patched.ps1 to reinstall the patched plugin.", args...)
++	}
++
++	want, err := os.ReadFile(a.conf.D3D12PluginSha256)
++	if err != nil {
++		demote("cannot read the expected libgstd3d12 hash (%v)", err)
++		return
++	}
++	dll, err := os.ReadFile(a.conf.D3D12Plugin)
++	if err != nil {
++		demote("cannot read %v (%v)", a.conf.D3D12Plugin, err)
++		return
++	}
++	got := fmt.Sprintf("%x", sha256.Sum256(dll))
++	if !strings.EqualFold(got, strings.TrimSpace(string(want))) {
++		demote("libgstd3d12 IS NOT OUR PATCHED BUILD (a GStreamer upgrade replaced it): "+
++			"expected %.16s…, found %.16s…. Stock d3d12 aborts the worker on every fullscreen title",
++			strings.TrimSpace(string(want)), got)
++		return
++	}
++	a.log.Info().Msg("capture: libgstd3d12 is the patched build (d3d12 + HDR tonemapping safe)")
++}
++
 +func (a *App) Init() error {
 +	gst.Init(nil) // idempotent; media package also calls it
++
++	a.verifyD3D12Plugin()
 +
 +	if b, err := os.ReadFile(a.conf.SecretFile); err == nil {
 +		a.secret = strings.TrimSpace(string(b))
@@ -2908,7 +3121,7 @@ index 0000000..4068432
 +		// pipeline to build here — and no re-push ticker either: with the framerate on the source
 +		// caps the capture element paces itself over a static screen, which is the only thing the
 +		// ticker existed to cover.
-+		a.log.Info().Msgf("capture: video ZERO-COPY (%s → NVENC, no readback)", a.conf.VideoSource)
++		a.log.Info().Msgf("capture: video ZERO-COPY (%s → NVENC, no readback)", a.videoSource())
 +	} else if err := a.startVideoPipeline(); err != nil {
 +		a.log.Error().Err(err).Msg("capture: video pipeline failed to start")
 +	} else {
@@ -3816,7 +4029,7 @@ index 0000000..6cc9eb1
 +}
 diff --git a/pkg/worker/caged/capture/pipeline.go b/pkg/worker/caged/capture/pipeline.go
 new file mode 100644
-index 0000000..6986296
+index 0000000..dab0715
 --- /dev/null
 +++ b/pkg/worker/caged/capture/pipeline.go
 @@ -0,0 +1,336 @@
@@ -3885,7 +4098,7 @@ index 0000000..6986296
 +	// ⚠ Constrain format+framerate AFTER the convert — putting them on the src caps fails negotiation
 +	// (not-negotiated). Rest of the path (limited-range encode downstream) is unchanged.
 +	var launch string
-+	if a.conf.VideoSource == "d3d12" {
++	if a.videoSource() == "d3d12" {
 +		launch = fmt.Sprintf(
 +			"d3d12screencapturesrc name=cap_src monitor-handle=%d show-cursor=false tonemap=reinhard "+
 +				"! d3d12convert "+
@@ -3904,7 +4117,7 @@ index 0000000..6986296
 +				"! appsink name=cap_sink sync=false max-buffers=2 drop=true",
 +			a.hmonitor, a.width(), a.height(), a.fps())
 +	}
-+	a.log.Info().Msgf("capture: video source %v", map[bool]string{true: "d3d12", false: "d3d11"}[a.conf.VideoSource == "d3d12"])
++	a.log.Info().Msgf("capture: video source %v", map[bool]string{true: "d3d12", false: "d3d11"}[a.videoSource() == "d3d12"])
 +
 +	pipe, err := gst.NewPipelineFromString(launch)
 +	if err != nil {
@@ -6701,7 +6914,7 @@ index f3e898f..4449865 100644
  	p, err := buildAudioPipeline(48000, testAudioCodec, testLog)
  	if err != nil {
 diff --git a/pkg/worker/room/room.go b/pkg/worker/room/room.go
-index 9ff9576..3e7703a 100644
+index 9ff9576..96529e1 100644
 --- a/pkg/worker/room/room.go
 +++ b/pkg/worker/room/room.go
 @@ -2,13 +2,23 @@ package room
@@ -6781,7 +6994,21 @@ index 9ff9576..3e7703a 100644
  }
  
  func (r *Room[T]) sendAudio(data []byte, dur time.Duration) {
-@@ -82,6 +115,12 @@ func (r *Room[T]) sendVideo(data []byte, dur time.Duration) {
+@@ -77,11 +110,25 @@ func (r *Room[T]) sendAudio(data []byte, dur time.Duration) {
+ }
+ 
+ func (r *Room[T]) sendVideo(data []byte, dur time.Duration) {
++	// COPY ONCE, then fan out. Peers send on their own goroutines now, so a frame outlives this
++	// callback — and `data` is a window into a GStreamer buffer that is unmapped the moment we return.
++	// Handing that slice to another goroutine is a use-after-free. One copy per FRAME (not per peer)
++	// is the cost, and it is small: an encoded frame is ~17 KB at 8 Mbps/60fps.
++	//
++	// The copy is immutable from here on, so all peers can share it safely.
++	buf := make([]byte, len(data))
++	copy(buf, data)
+ 	for u := range r.users.Values() {
+-		u.SendVideo(data, dur)
++		u.SendVideo(buf, dur)
  	}
  }
  
@@ -6794,7 +7021,7 @@ index 9ff9576..3e7703a 100644
  func (r *Room[T]) App() app.App         { return r.app }
  func (r *Room[T]) Id() string           { return r.id }
  func (r *Room[T]) SetApp(app app.App)   { r.app = app }
-@@ -94,19 +133,45 @@ func (r *Room[T]) Send(data []byte) {
+@@ -94,19 +141,45 @@ func (r *Room[T]) Send(data []byte) {
  }
  
  func (r *Room[T]) Close() {
@@ -6850,7 +7077,7 @@ index 9ff9576..3e7703a 100644
  	}
  }
  
-@@ -134,7 +199,16 @@ func (r *Router[T]) Remove(user T) {
+@@ -134,7 +207,16 @@ func (r *Router[T]) Remove(user T) {
  	}
  }
  

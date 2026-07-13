@@ -106,8 +106,17 @@ if ($running) {
 Copy-Item $dll $target -Force
 Write-Host "installed patched libgstd3d12.dll -> $target"
 
+# Stamp the patched DLL's hash where the capture worker can check it at boot (capture.d3d12PluginSha256).
+# This is what makes the pacman trap DETECTABLE instead of silent: if an upgrade swaps the stock plugin
+# back in, the hash no longer matches, and the worker falls back to d3d11 with a loud error rather than
+# aborting seconds into every heavy session (which players only ever see as "the arcade is full").
+$stamp = "$target.sha256"
+(Get-FileHash -Path $target -Algorithm SHA256).Hash.ToLower() | Set-Content -Path $stamp -Encoding ascii -NoNewline
+Write-Host "stamped expected hash -> $stamp"
+
 if ($running) {
     Start-ScheduledTask -TaskName 'MovieTheater - Arcade GL Worker 3'
     Write-Host "capture worker restarted"
 }
 Write-Host "`nVerify: launch a heavy title and confirm it survives >60s (it used to die in 10-30s)."
+Write-Host "The capture worker logs 'libgstd3d12 is the patched build' at boot when the stamp matches."
