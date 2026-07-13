@@ -18,7 +18,10 @@ const FALLBACK_ASPECT = 3 / 4;
  * tile sits on the left of a horizontal card, so its variable width is simply absorbed — the details
  * column flexes into whatever is left, and every card stays the same total width.
  *
- * `height` is the shared pin: 118px in the grid, 64px for the smaller Live-rooms thumbnail.
+ * `height` is the shared pin: "100%" in the lobby grid, where the art column stretches to the card's
+ * full height (the details column sets it), and a fixed 64px for the smaller Live-rooms thumbnail.
+ * Note the height must never come FROM the cover in the grid, or the card's height and the cover's
+ * height would define each other.
  */
 function GameCover({ game, artId, height, className = "" }) {
   const id = artId ?? game?.artId;

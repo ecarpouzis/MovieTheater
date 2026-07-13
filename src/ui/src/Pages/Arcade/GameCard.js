@@ -41,13 +41,20 @@ function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
 
   return (
     <div className="arcade-card" onClick={start}>
+      {/* The score pins to the CARD's top-right corner, not the art's — over the art it sat on top of
+          the box, which is the one part of the card anyone is looking at. */}
+      {game.rating != null && (
+        <span className="arcade-card__rating" title={game.ratingCount ? `${game.ratingCount.toLocaleString()} votes` : undefined}>
+          ★ {game.rating}
+        </span>
+      )}
+
       <div className="arcade-card__art">
-        <GameCover game={game} height={118} />
-        {game.rating != null && (
-          <span className="arcade-card__rating" title={game.ratingCount ? `${game.ratingCount.toLocaleString()} votes` : undefined}>
-            ★ {game.rating}
-          </span>
-        )}
+        {/* Full card height, natural aspect: the card's height is set by the details column, and the
+            box art was pinned to 118px in the middle of it — leaving dead space above and below. It
+            now fills that height and its width follows its own ratio, so covers get bigger without
+            being cropped or stretched. */}
+        <GameCover game={game} height="100%" />
       </div>
 
       <div className="arcade-card__body">

@@ -344,6 +344,8 @@
   /* stretch, not center: the body is now a column that ends in a footer pinned to the bottom, so a card
      with a 2-line title and a card with a 1-line title still line their Start buttons up. */
   align-items: stretch;
+  /* The rating chip pins to the card's own top-right corner. */
+  position: relative;
   gap: 14px;
   padding: 12px;
   border-radius: 12px;
@@ -365,19 +367,21 @@
   .arcade-card:hover { transform: none; }
 }
 
-/* Wraps the cover so the rating badge can pin to the art's own top-right corner (the wrapper is
-   exactly as wide as the cover, whatever shape that cover turned out to be). */
+/* The art column runs the FULL height of the card (the details column decides that height), and the
+   cover inside it keeps its own aspect ratio — so the width follows the shape of the box, exactly as
+   before, just bigger. It used to be pinned to 118px and aligned to the top, which left dead space
+   under every cover. */
 .arcade-card__art {
   flex: none;
-  position: relative;
   display: flex;
-  align-self: flex-start;
+  align-self: stretch;
 }
 
 .arcade-card__rating {
   position: absolute;
-  top: 7px;
-  right: 7px;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
   background: var(--rating-chip-bg);
   border: 1px solid var(--rating-chip-border);
   color: var(--rating-chip-text);
@@ -409,6 +413,9 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 2.4em;
+  /* Keeps the first line clear of the rating chip in the corner above it. Reserved on every card, not
+     just rated ones, so a rated and an unrated game still clamp their titles at the same width. */
+  padding-right: 46px;
 }
 
 /* ONE tag line now that the version picker moved to the footer: system, players, region, genre. Chips
