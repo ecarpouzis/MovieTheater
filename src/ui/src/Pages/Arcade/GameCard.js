@@ -4,15 +4,29 @@ import GameCover from "./GameCover";
 import CheatPicker from "./CheatPicker";
 import { systemLabel } from "./arcadeSystems";
 
-// The art box. COVER_H is the height a PORTRAIT cover reaches — it's a hair over the height of a
-// card's details column, so it sets the card's height and every card in the grid comes out the same
-// height, art filling it top to bottom. COVER_MAX_W is the width a LANDSCAPE cover is allowed to
-// reach before its height comes down instead: at a shared height a 4:3 cartridge box is nearly twice
-// as wide as a 3:4 jewel case, and letting it have that width leaves the details column with nothing.
-// (A landscape cover therefore doesn't fill the card's height — nothing can make it, short of
-// cropping it or stretching it out of shape, so it centers in the space instead.)
-const COVER_H = 168;
-const COVER_MAX_W = 150;
+// The art column: a fixed BOX, identical on every card. Three rules fall out of it, in this order.
+//
+// 1. EVERY CARD IS THE SAME HEIGHT. COVER_H (180) is deliberately taller than the tallest the details
+//    column can ever be (~165px: a 2-line title 36 + tags 18 + a 2-line summary 32 + the footer's
+//    controls + actions rows 58 + gaps 21 — every one of those is clamped or fixed, so 165 is a
+//    ceiling, not a typical value). So the ART sets the card's height, on every card, and the grid
+//    comes out flat. Nothing here is a percentage of the card: the art must never take its size from
+//    the thing whose size it is deciding.
+//
+// 2. THE ART IS NEVER CLIPPED. The cover renders at its true aspect, at whatever size fits inside the
+//    box (coverBox), and CENTERS in it. A portrait cover reaches the full 180 height; a landscape one
+//    is limited by ART_W and comes out shorter. The leftover is plain card background — the art is
+//    never cropped to fill the box, and never letterboxed inside a frame.
+//
+// 3. THE DETAILS COLUMN ALWAYS HAS THE SAME ROOM. Because ART_W is fixed, the details column's width
+//    doesn't depend on the shape of the box art — which is what went wrong before: a landscape cover
+//    is nearly twice as wide as a portrait one at the same height, so the column it left behind
+//    swung wildly from card to card. At the narrowest card the grid can make (a 355px track) the
+//    details column is 175px, enough for the actions row (Start room + My saves ≈ 165px).
+const COVER_H = 180;
+const ART_W = 140;
+// The column that box lives in. Hoisted — a fresh object literal per render is a new prop identity.
+const ART_STYLE = { flex: `0 0 ${ART_W}px`, width: ART_W, height: COVER_H };
 
 /**
  * One card per game (docs/arcade-dedupe-multidisc-plan.md): box art at its natural aspect on the
@@ -59,14 +73,8 @@ function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
         </span>
       )}
 
-      <div className="arcade-card__art">
-        {/* The art is sized from CONSTANTS, never from the card: a cover that takes its height from
-            the card while the card takes its height from the cover is circular, and resolves to the
-            image's intrinsic pixel size (which is how covers once grew until they crowded the details
-            column out of the card entirely). COVER_H is tuned to fill a typical card; COVER_MAX_W
-            keeps a landscape box — twice as wide as a portrait one at the same height — from eating
-            the details column. See coverBox in GameCover. */}
-        <GameCover game={game} height={COVER_H} maxWidth={COVER_MAX_W} />
+      <div className="arcade-card__art" style={ART_STYLE}>
+        <GameCover game={game} height={COVER_H} maxWidth={ART_W} />
       </div>
 
       <div className="arcade-card__body">

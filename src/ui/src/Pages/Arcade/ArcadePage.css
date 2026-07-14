@@ -372,18 +372,24 @@
   .arcade-card:hover { transform: none; }
 }
 
-/* The art column. The cover inside it is sized in px from constants (GameCard's COVER_H/COVER_MAX_W),
-   never from the card — the art and the card cannot both take their height from the other.
-   `align-self: center` handles the leftover: a landscape cover is width-limited, so it can't reach the
-   card's full height, and it sits centered rather than pinned to the top with a pool of dead space
-   under it. The max-width is a backstop for the narrowest possible card (a 355px grid track), where a
-   wide cover at its full COVER_MAX_W would leave the details column too little to work with; the
-   image is `object-fit: contain`, so if it ever bites, the art letterboxes rather than distorting. */
+/* The art column: the SAME fixed box on every card (GameCard's ART_W × COVER_H — see the reasoning
+   there). Fixed width, so the details column beside it is the same width on every card whatever shape
+   the box art turned out to be. Fixed height, taller than the details column can ever be, so the art
+   is what sets the card's height and the grid is flat.
+
+   The cover is centered in the box rather than filling it: it renders at its own true aspect at
+   whatever size fits (coverBox), so it is never cropped and never letterboxed — the space around a
+   cover that doesn't fill the box is just card background.
+
+   The column's width comes from GameCard as an inline style — ONE source of truth for the number,
+   shared with the cover that has to fit inside it. Below the grid's 355px minimum (a phone narrower
+   than ~380px) `max-width` lets the column give way; the cover's own `max-width: 100%` then scales it
+   down with `object-fit: contain`, so it shrinks rather than cropping. */
 .arcade-card__art {
-  flex: none;
   display: flex;
-  align-self: center;
-  max-width: 45%;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
 }
 
 .arcade-card__rating {
@@ -402,6 +408,14 @@
   white-space: nowrap;
 }
 
+/* The details column. Everything in it is clamped or fixed-height (2-line title, one tag line, 2-line
+   summary, a footer of two fixed rows), so it tops out around 165px — under the art's 180px, and that
+   is what lets the art set a uniform card height for the whole grid. Add an unclamped row here and
+   cards start varying in height again, so anything new needs a bound.
+
+   Deliberately NOT `overflow: hidden`: the version/cheats dropdowns render into their chip in the
+   footer (getPopupContainer), and clipping this column is what once reduced an open dropdown to a
+   sliver — the same bug the note on .arcade-chip--select describes. */
 .arcade-card__body {
   flex: 1;
   min-width: 0;
