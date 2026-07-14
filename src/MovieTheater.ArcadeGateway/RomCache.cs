@@ -252,7 +252,8 @@ public sealed class RomCache
     /// </summary>
     private async Task StageRomFileAsync(string source, string dest, CancellationToken ct)
     {
-        if (Path.GetExtension(source).Equals(".gcz", StringComparison.OrdinalIgnoreCase))
+        var ext = Path.GetExtension(source);
+        if (ext.Equals(".gcz", StringComparison.OrdinalIgnoreCase))
         {
             try
             {
@@ -267,9 +268,106 @@ public sealed class RomCache
                 log.LogWarning(ex, "RomCache gcz decompress failed for {Source}; staging compressed copy", source);
             }
         }
+        else if (ext.Equals(".cso", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                await Task.Run(() => CsoDecompressTo(source, dest, ct), ct);
+                log.LogInformation("RomCache decompressed cso -> raw iso: {Dest}", dest);
+                return;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Same contract as gcz: an optimization, never a gate. A ZSO (LZ4) or an already-raw
+                // image named .cso lands here and is copied as-is, which still plays.
+                log.LogWarning(ex, "RomCache cso decompress failed for {Source}; staging compressed copy", source);
+            }
+        }
         using var src = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
         using var dst = new FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.None);
         await src.CopyToAsync(dst, ct);
+    }
+
+    /// <summary>
+    /// PSP CSO (CISO) → raw ISO, written under the SAME <c>.cso</c> filename — the identical bargain the
+    /// <c>.gcz</c> path makes above, and for the identical reason. PPSSPP picks its block device by
+    /// SNIFFING the magic (<c>constructBlockDevice</c>: "CISO" → CISOFileBlockDevice, else a plain
+    /// FileBlockDevice), so a raw image keeping the .cso name plays fine and the game key, manifest,
+    /// eviction whitelist and DB paths all stay untouched.
+    ///
+    /// Why it matters: a compressed image inflates zlib ON THE EMULATOR THREAD for every disc read. PSP
+    /// games stream ATRAC3+ music and assets off the disc continuously during play — LocoRoco is the
+    /// canonical case — so those inflations land as stalls inside retro_run, which is a hole in the audio
+    /// the encoder cannot fill. It is the same stutter class the gcz change fixed for GameCube DTK audio.
+    /// Costs ~40% more staged bytes, which is what the LRU cap is for.
+    ///
+    /// Format (CISO v1): 24-byte header — magic "CISO", header_size u32, total_bytes u64, block_size u32,
+    /// version u8, index_shift u8, 2 reserved. Then (blocks+1) u32 index entries: offset = (e &amp; 0x7FFFFFFF)
+    /// &lt;&lt; index_shift, and the top bit means the block is stored RAW. Compressed blocks are BARE deflate
+    /// (no zlib header) — the one real difference from gcz, and getting it wrong yields garbage, not an error.
+    /// </summary>
+    internal static void CsoDecompressTo(string source, string dest, CancellationToken ct)
+    {
+        using var src = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using var br = new BinaryReader(src);
+        if (br.ReadUInt32() != 0x4F534943u) throw new InvalidDataException("not a CISO file"); // "CISO" LE
+        _ = br.ReadUInt32();                     // header size (24)
+        var totalBytes = br.ReadUInt64();
+        var blockSize = br.ReadUInt32();
+        var version = br.ReadByte();
+        var indexShift = br.ReadByte();
+        _ = br.ReadUInt16();                     // reserved
+        if (version > 1) throw new InvalidDataException($"unsupported CISO version {version}");
+        if (blockSize == 0 || totalBytes == 0) throw new InvalidDataException("degenerate CISO header");
+
+        var numBlocks = (int)(totalBytes / blockSize);
+        var index = new uint[numBlocks + 1];     // +1: the last entry bounds the final block
+        for (var i = 0; i <= numBlocks; i++) index[i] = br.ReadUInt32();
+
+        const uint RawFlag = 0x80000000u;
+        // ReadWrite (not Write): the ISO9660 signature check below reads back what we wrote.
+        using var dst = new FileStream(dest, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
+        var block = new byte[blockSize];
+        long written = 0;
+        for (var i = 0; i < numBlocks; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var raw = (index[i] & RawFlag) != 0;
+            var off = (long)(index[i] & ~RawFlag) << indexShift;
+            var end = (long)(index[i + 1] & ~RawFlag) << indexShift;
+            var len = (int)(end - off);
+            if (len <= 0) throw new InvalidDataException($"bad CISO index at block {i}");
+
+            src.Seek(off, SeekOrigin.Begin);
+            if (raw)
+            {
+                // A raw block is exactly one block; index alignment can make `len` overshoot into padding.
+                src.ReadExactly(block, 0, (int)blockSize);
+                dst.Write(block, 0, (int)blockSize);
+            }
+            else
+            {
+                var chunk = new byte[len];
+                src.ReadExactly(chunk);
+                using var z = new System.IO.Compression.DeflateStream(
+                    new MemoryStream(chunk), System.IO.Compression.CompressionMode.Decompress);
+                var got = z.ReadAtLeast(block, (int)blockSize, throwOnEndOfStream: false);
+                if (got != (int)blockSize) throw new InvalidDataException($"short CISO block {i}: {got}/{blockSize}");
+                dst.Write(block, 0, (int)blockSize);
+            }
+            written += blockSize;
+        }
+        if ((ulong)written != totalBytes)
+            throw new InvalidDataException($"cso decompress size mismatch: wrote {written}, header says {totalBytes}");
+
+        // Prove it is actually an ISO before we hand it to the core. A size-correct but WRONG decode (a
+        // misread index, the zlib-vs-bare-deflate trap) would otherwise ship a corrupt image silently and
+        // present as "the game won't boot" — far worse than the compressed copy this falls back to.
+        dst.Seek(0x8001, SeekOrigin.Begin);
+        var sig = new byte[5];
+        dst.ReadExactly(sig);
+        if (!sig.AsSpan().SequenceEqual("CD001"u8))
+            throw new InvalidDataException("cso decompressed to something that is not an ISO9660 image");
     }
 
     /// <summary>
