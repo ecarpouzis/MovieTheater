@@ -169,6 +169,14 @@ emulator:
         # PSP: no BIOS required. Ad-hoc multiplayer is unsupported in libretro → 1-player rooms
         # (set MaxPlayers 1 at ingest, like our n64 solo rooms).
         psp:
+          # PPSSPP declares 44100 Hz and delivers ~43850 (733 samples/frame where its own fps + rate
+          # imply 735.7). The pacer's fps floor always beats that slow audio clock, so the core
+          # under-feeds the Opus encoder by ~250 samples/sec, forever — the client's audio buffer
+          # drains in ~15 s and the player hears a faint crackle. audioMaster lets the audio clock
+          # pull the loop slightly above the fps floor (bounded 2%) so the core produces exactly what
+          # the encoder consumes. gc does NOT need this: Dolphin emits the 533.9 samples/frame it
+          # promises, which is why GameCube is clean in the same browser.
+          audioMaster: true
           lib: ppsspp_libretro
           folder: psp
           roms: ["iso", "cso", "pbp", "chd"]

@@ -1,0 +1,94 @@
+diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
+index 38178be..d906957 100644
+--- a/pkg/config/emulator.go
++++ b/pkg/config/emulator.go
+@@ -125,7 +125,16 @@ type CoreCache struct {
+ }
+ 
+ type LibretroCoreConfig struct {
+-	AltRepo         bool
++	AltRepo bool
++	// AudioMaster lets the AUDIO clock pace this core, even when that means running slightly FASTER
++	// than the core's advertised fps (patch 0043). Opt-in, because it exists for cores that lie:
++	// PPSSPP declares 44100 Hz and delivers ~43850 (733 samples/frame against the 735.7 its own fps
++	// and rate imply). The pacer's fps floor then always wins, the core never speeds up to service
++	// the audio clock, and the Opus encoder is fed 250 samples/sec less than it consumes — forever.
++	// That deficit drains the client's audio buffer in ~15 s, and the player hears a faint crackle.
++	// Dolphin, by contrast, produces exactly the 533.9 samples/frame it promises, which is why gc is
++	// clean in the same browser. The speed-up is bounded (audioPullMax) so a silent core cannot run away.
++	AudioMaster     bool
+ 	AutoGlContext   bool // hack: keep it here to pass it down the emulator
+ 	CoreAspectRatio bool
+ 	CoreCache       CoreCache
+diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
+index 972135f..29b30fb 100644
+--- a/pkg/worker/caged/libretro/frontend.go
++++ b/pkg/worker/caged/libretro/frontend.go
+@@ -89,6 +89,7 @@ type Frontend struct {
+ 	UniqueSaveDir     bool
+ 	SaveStateFs       string
+ 	NoSaveStates      bool // this core cannot be serialized; its memory card is the progress (0041)
++	AudioMaster       bool // the audio clock paces this core, even above its fps floor (0043)
+ }
+ 
+ // ErrNoSaveStates is returned instead of serializing a core that cannot survive it.
+@@ -192,6 +193,10 @@ func (f *Frontend) LoadCore(emu string) {
+ 	f.mu.Lock()
+ 	f.SaveStateFs = conf.SaveStateFs
+ 	f.NoSaveStates = conf.NoSaveStates
++	f.AudioMaster = conf.AudioMaster
++	if conf.AudioMaster {
++		f.log.Info().Msgf("%v: audio-mastered pacing (the audio clock may outrun the fps floor)", emu)
++	}
+ 	if conf.NoSaveStates {
+ 		f.log.Info().Msgf("%v: save-states are off for this core; progress lives on the memory card", emu)
+ 	}
+@@ -389,6 +394,12 @@ func (f *Frontend) Start() {
+ 	// how many frames will be considered not normal
+ 	const lateFramesThreshold = 3
+ 
++	// How far an audio-mastered core may be pulled ABOVE its advertised fps to keep its audio clock
++	// fed, as a fraction of one frame. 2% covers PPSSPP's ~0.35-0.6% shortfall many times over while
++	// staying far below anything a player could perceive as fast (60.0 -> 61.2 fps worst case), and it
++	// is a hard ceiling: a core that stopped producing audio entirely could not drift beyond it.
++	const audioPullMax = 0.02
++
+ 	batch := max(f.SpinBatch, 1)
+ 
+ 	// AUDIO-DRIVEN PACING. We pace retro_run against the emulated AUDIO clock (the game should produce
+@@ -435,7 +446,8 @@ func (f *Frontend) Start() {
+ 			tick0 := os.Nanotime()
+ 			f.Tick()
+ 			tickDur := os.Nanotime() - tick0
+-			audioFrames += f.nano.TakeAudioFrames()
++			audioDelta := f.nano.TakeAudioFrames()
++			audioFrames += audioDelta
+ 			diagTicks++
+ 			if tickDur > diagMaxTickNs {
+ 				diagMaxTickNs = tickDur
+@@ -462,7 +474,24 @@ func (f *Frontend) Start() {
+ 			// Audio deadline: when real-time SHOULD be, given the audio produced so far.
+ 			audioDeadline := audioEpoch + int64(float64(audioFrames)/sr*1e9)
+ 			// Floor: never run faster than the core fps (covers silence + no-audio cores).
+-			deadline := floorNext
++			floor := floorNext
++			// ...unless this core is audio-mastered, and it is actually producing audio right now.
++			//
++			// A core whose audio clock runs SLOWER than its video clock can never be rescued by the
++			// max() below: its audioDeadline is always earlier than the floor, so the floor always wins,
++			// the loop never speeds up, and the core keeps under-feeding the encoder for the whole
++			// session. PPSSPP does exactly this (733 samples/frame where its own 44100 Hz @ 59.94 fps
++			// implies 735.7) and the missing ~250 samples/sec drain the client's audio buffer until it
++			// underruns — the faint PSP crackle. Letting the audio clock pull the loop a little faster
++			// than nominal makes the core produce exactly what the encoder consumes.
++			//
++			// Two guards, and they are the whole reason this is safe: the pull is bounded to audioPullMax
++			// (a core cannot run away), and it only applies while audio is FLOWING (a silent or audio-less
++			// core keeps the honest fps floor, which is what the floor was there for in the first place).
++			if f.AudioMaster && audioDelta > 0 {
++				floor -= int64(float64(targetFrameTimeNs) * audioPullMax)
++			}
++			deadline := floor
+ 			if audioDeadline > deadline {
+ 				deadline = audioDeadline
+ 			}
