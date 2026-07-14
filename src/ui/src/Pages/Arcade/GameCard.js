@@ -63,8 +63,16 @@ function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
 
   const start = () => (heavy ? onHeavy?.(game) : onStart(sel, game.title, cheats));
 
+  // Is one of this card's popups (version, cheats) open? Both render INSIDE their chip, so they're
+  // part of the card's box — and the card is a stacking context of its own (position: relative for the
+  // rating chip, plus a transform on hover). A z-index on the chip therefore can't lift the popup out
+  // of the card, so the cards that come after it in the grid paint straight over the open list: you
+  // see a sliver of it and nothing else. The CARD is what has to rise. (Rendering the popup into
+  // <body> instead would dodge this, but then it doesn't travel with the card when the grid scrolls.)
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <div className="arcade-card" onClick={start}>
+    <div className={`arcade-card${menuOpen ? " arcade-card--menu-open" : ""}`} onClick={start}>
       {/* The score pins to the CARD's top-right corner, not the art's — over the art it sat on top of
           the box, which is the one part of the card anyone is looking at. */}
       {game.rating != null && (
@@ -105,6 +113,7 @@ function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
                     bordered={false}
                     value={sel}
                     onChange={setSel}
+                    onDropdownVisibleChange={setMenuOpen}
                     getPopupContainer={(t) => t.parentElement}
                     popupClassName="arcade-version-dropdown"
                     dropdownMatchSelectWidth={false}
@@ -112,7 +121,7 @@ function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
                   />
                 </span>
               )}
-              <CheatPicker version={version} value={cheats} onChange={setCheats} disabled={creating === sel} />
+              <CheatPicker version={version} value={cheats} onChange={setCheats} disabled={creating === sel} onOpenChange={setMenuOpen} />
             </div>
           )}
 

@@ -367,6 +367,16 @@
     border-color: var(--accent);
   }
 }
+
+/* A card with an open version/cheats popup paints above every other card.
+   The popup renders INSIDE its chip (getPopupContainer), so it's part of the card's box — and the card
+   is its own stacking context (position: relative, and a transform on hover), so no z-index on the chip
+   can lift the list out of the card. Without this, the cards that follow in the grid paint straight over
+   the open dropdown and you see a sliver of it. It's the CARD that has to rise. */
+.arcade-card--menu-open,
+.arcade-card--menu-open:hover {
+  z-index: 20;
+}
 @media (prefers-reduced-motion: reduce) {
   .arcade-card { transition: none; }
   .arcade-card:hover { transform: none; }

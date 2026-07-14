@@ -23,7 +23,7 @@ import { MovieAPI } from "../../MovieAPI";
  *    you picked one, so the two numbers were never visible together and the collapsed chip read as though the
  *    game only had two cheats. It now always reads "N of M", and the open dropdown says so in words.
  */
-export default function CheatPicker({ version, value, onChange, disabled }) {
+export default function CheatPicker({ version, value, onChange, disabled, onOpenChange }) {
   const [cheats, setCheats] = useState(null); // null = not fetched yet
   const [loading, setLoading] = useState(false);
   const gameId = version?.id;
@@ -66,7 +66,9 @@ export default function CheatPicker({ version, value, onChange, disabled }) {
         disabled={disabled}
         value={value}
         onChange={onChange}
-        onDropdownVisibleChange={(open) => open && load()}
+        // The card has to know: an open popup renders inside this chip, and the card must be lifted
+        // above the cards after it in the grid or they paint straight over the list (see GameCard).
+        onDropdownVisibleChange={(open) => { if (open) load(); onOpenChange?.(open); }}
         loading={loading}
         options={options}
         // The chip is ~150px; individual cheat tags would blow it apart, so the collapsed state is a count.

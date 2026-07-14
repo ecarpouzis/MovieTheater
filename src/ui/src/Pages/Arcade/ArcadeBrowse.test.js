@@ -125,6 +125,17 @@ describe("GameCard", () => {
     expect(container.querySelector(".arcade-chip--cheats").title).toBe("2 of 28 cheats on — click to change");
   });
 
+  // Both popups render inside their chip, so they're part of the card's box — and the card is its own
+  // stacking context (position: relative + a hover transform). If the card doesn't rise, the cards after
+  // it in the grid paint straight over the open list and all you see is a sliver.
+  it("lifts the whole card while a dropdown is open, so later cards can't paint over it", () => {
+    const { container } = render(<GameCard game={ps2()} onStart={vi.fn()} creating={0} />);
+    expect(container.querySelector(".arcade-card--menu-open")).toBeNull();
+
+    fireEvent.mouseDown(container.querySelector(".arcade-chip--cheats .ant-select-selector"));
+    expect(container.querySelector(".arcade-card--menu-open")).toBeTruthy();
+  });
+
   it("singularizes a lone cheat", () => {
     const one = ps2({
       versions: [{ id: 11, label: "USA", region: "USA", maxPlayers: 1, cheatCount: 1, defaultCheats: [] }],
