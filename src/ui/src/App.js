@@ -1,6 +1,7 @@
 import { Layout, Spin } from "antd";
 import { MovieAPI } from "./MovieAPI";
-import { useState, useRef, lazy, Suspense } from "react";
+import { useState, useRef, Suspense } from "react";
+import { lazyWithReload as lazy } from "./lazyWithReload";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import NavBar from "./NavBar/NavBar";
 import Browse from "./Pages/Browse/Browse";
@@ -11,6 +12,8 @@ import { useTheme } from "./hooks/useTheme";
 // other page loads on demand, keeping its heavy deps out of the initial download — most notably
 // hls.js + the video player (Watch/TV), @dnd-kit (Rate), the boardgames pages, and the ingest/admin
 // tooling. Each lazy() below becomes its own chunk, fetched only when its route is first visited.
+// lazyWithReload: a chunk fetched after a deploy no longer exists, so a stale tab reloads instead of
+// blanking (see lazyWithReload.js).
 const BoardGames = lazy(() => import("./Pages/BoardGames/BoardGames"));
 const MoviePage = lazy(() => import("./Pages/MoviePage"));
 const InsertPage = lazy(() => import("./Pages/InsertPage"));

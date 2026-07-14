@@ -1,5 +1,6 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
+import { lazyWithReload as lazy } from "../../lazyWithReload";
 import CardList from "./CardList";
 import SimpleCardList from "./SimpleCardList";
 import NowOnTvRail from "./NowOnTvRail";

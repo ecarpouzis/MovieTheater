@@ -1,7 +1,8 @@
 import { MenuOutlined } from "@ant-design/icons";
 import { Layout } from "antd";
-import { lazy, Suspense, useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useHistory, useLocation } from "react-router-dom";
+import { lazyWithReload as lazy } from "../lazyWithReload";
 import "./NavBar.css";
 
 import SearchTools from "./SearchTools";
