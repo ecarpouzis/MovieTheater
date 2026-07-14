@@ -323,7 +323,7 @@ export function createCloudRetroSession(descriptor, opts) {
   // tiny opus packets, so audio arrives late/bursty and Chrome's NetEq over-buffers toward ~260ms and
   // TIME-STRETCHES (~8%) — the warble the user hears. Two levers, both tunable via localStorage so a
   // real browser (the only place smoothness can be judged) can A/B them live:
-  //  • arcade.audioJitterMs (default 80): give NetEq a small STABLE audio target so it stops adaptively
+  //  • arcade.audioJitterMs (default 80; 150 on psp/gc — see AUDIO_JITTER_BY_SYSTEM): give NetEq a small STABLE audio target so it stops adaptively
   //    inflating + stretching. Video stays at 0 (Pion uses separate stream ids, so audio delay never
   //    drags video). ~80ms audio latency is imperceptible for game SFX. Set 0 to restore old behavior.
   //  • arcade.audioPC (default ON; opt out with "0"): give audio its OWN PeerConnection so video bursts can't
@@ -339,7 +339,7 @@ export function createCloudRetroSession(descriptor, opts) {
   //    main PC as always, so the flag is safe against any worker build. Verified on prod 2026-07-08:
   //    2 PCs both connected, video-only on main / opus-only on aux, Playing in 4s. Escape hatch if a
   //    room ever has video but NO audio: localStorage.setItem("arcade.audioPC","0") + reload.
-  // Audio jitter buffer depth. 80 → 150 (2026-07-14), and the reason is a stall, not the network.
+  // Audio jitter buffer depth — PER SYSTEM, because the stall it absorbs is per system.
   //
   // An emulator is single-threaded and does its file IO inline, so a load — PPSSPP reading its savedata
   // when the player walks into a sign, a core's first-use lazy asset load — stalls retro_run for tens of
@@ -349,16 +349,46 @@ export function createCloudRetroSession(descriptor, opts) {
   // else: concealedSamples > 0 with packetsLost == 0 — the decoder invented audio because none arrived.
   // It was never loss, never FEC, never the encoder.
   //
-  // Depth is unusually cheap for us: audio rides its OWN PeerConnection (the aux audio PC above), so
-  // there is no RTCP lip-sync tying it to video, and raising it does NOT delay the picture or input.
-  // Video's jitter buffer runs ~6 ms while audio already sat ~105 ms behind it — nobody has ever noticed.
-  // 150 covers every stall we have measured (worst: a cold GameCube boot at ~110 ms) with margin.
+  // ONLY psp. The depth is sized to PPSSPP's MEASURED stall ceiling, and to nothing else. From 759
+  // PSP-only pace-diag samples (2026-07-14): median 10.6 ms, p90 26.7, p99 97.9, WORST 147.5 — and zero
+  // samples above 150. Two stall sources, both confirmed in the worker log rather than assumed:
+  //   * the savedata dialog — AES EncryptData + the inline write — 87-147 ms, on every save/load. This
+  //     is what sets the ceiling.
+  //   * a lazy VFPU table load (PPSSPP's InitVFPU has an eager "load all in advance" preload that is
+  //     #if 0'd out, so vfpu_asin_lut65536 & friends read from disk on FIRST USE, inside retro_run) —
+  //     92-115 ms, once per session. Enabling that preload would remove these, but it needs a custom
+  //     PPSSPP build and would NOT lower the ceiling, since savedata is the taller stall. Not worth it.
+  // Absorbing a BOUNDED stall with a buffer is the correct answer; 150 covers 147.5 with margin. What was
+  // wrong before was the SCOPE, not the number: this was global, so every core paid for PPSSPP.
   //
-  // Tunable live, no deploy: localStorage.setItem("arcade.audioJitterMs", "220") + reload. Raise it if a
-  // system turns out to stall harder than this; lower it if the audio ever feels detached from the action.
+  // gc is deliberately NOT here. Dolphin's long stalls are shader compilation and a cold boot — they
+  // happen at loads, gc has never actually skipped, and a session-long latency tax to cover a loading
+  // screen is a bad trade. The 2D cores, PS1 and N64 don't stall at all.
+  //
+  // The cost being avoided is not input latency — video's buffer stays 0 (~6 ms) and audio rides its OWN
+  // PeerConnection (the aux audio PC above), so no RTCP lip-sync drags the picture — it is AUDIO latency:
+  // at 150 the sound sits ~175 ms behind the video, past the ~125 ms where a lagging soundtrack becomes
+  // detectable. That lands hardest on the one genre that cannot absorb it, because a rhythm player reacts
+  // to what they HEAR: every extra ms of audio delay puts their input that much later against the beat.
+  // Patapon, Gitaroo Man and Beaterator are all PSP — the very system that needs the buffer. They pay it
+  // because they must; nobody else does.
+  //
+  // The only fix that would DELETE this buffer is making PPSSPP's savedata encrypt+write asynchronous —
+  // on the one system whose memory card is the sole progress (noSaveStates) and has no save-state to fall
+  // back on. Risking save corruption to reclaim 70 ms of audio delay is not a trade worth making.
+  //
+  // Tunable live, no deploy: localStorage.setItem("arcade.audioJitterMs", "220") + reload (overrides the
+  // per-system value). Raise it if a system turns out to stall harder than this; lower it if the audio
+  // ever feels detached from the action.
+  const AUDIO_JITTER_BY_SYSTEM = { psp: 150 };
+  const AUDIO_JITTER_DEFAULT_MS = 80;
   const AUDIO_JITTER_MS = (() => {
-    try { const v = parseInt(localStorage.getItem("arcade.audioJitterMs"), 10); return Number.isFinite(v) && v >= 0 ? v : 150; }
-    catch { return 150; }
+    try {
+      const v = parseInt(localStorage.getItem("arcade.audioJitterMs"), 10);
+      if (Number.isFinite(v) && v >= 0) return v;
+    } catch { /* localStorage unavailable — fall through to the per-system default */ }
+    const sys = String(descriptor.system || "").toLowerCase();
+    return AUDIO_JITTER_BY_SYSTEM[sys] ?? AUDIO_JITTER_DEFAULT_MS;
   })();
   const AUDIO_PC = (() => { try { return localStorage.getItem("arcade.audioPC") !== "0"; } catch { return true; } })();
 
@@ -576,7 +606,7 @@ export function createCloudRetroSession(descriptor, opts) {
   // the standard; playoutDelayHint is the legacy Chrome name — set both, harmless where unknown.)
   // Roadmap WS-A.4: N64 was fine at 0, but cross-network multiplayer (4-player, mixed LAN+remote)
   // hits the exact "reopen" condition noted here — the send-path bursts make NetEq inflate + stretch.
-  // Give AUDIO a small stable target (arcade.audioJitterMs, default 80ms) to absorb the bursts; keep
+  // Give AUDIO a small stable target (AUDIO_JITTER_MS: 80ms, 150ms on the cores that stall) to absorb the bursts; keep
   // VIDEO at 0 so it stays responsive (separate stream ids → video never lip-sync-waits on audio).
   // CloudRetro (Pion) sends audio and video as SEPARATE m-lines/streams (and with arcade.audioPC,
   // separate PeerConnections) — collect EVERY inbound track into ONE MediaStream so the element
