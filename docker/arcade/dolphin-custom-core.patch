@@ -1,0 +1,367 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c98ef09..f13538b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -114,7 +114,19 @@ option(FASTLOG "Enable all logs" OFF)
+ 
+ if (MSVC)
+    set(CMAKE_CXX_FLAGS_DEBUG   "/MTd")
+-   set(CMAKE_CXX_FLAGS_RELEASE "/MT")
++   # MT PATCH: upstream sets this to bare "/MT", which does not ADD to CMake's default Release flags
++   # ("/MD /O2 /Ob2 /DNDEBUG") -- it REPLACES them. So an MSVC "Release" build compiles every C++ file
++   # with no /O2 (MSVC falls back to /Od) and no NDEBUG (assertions live). It clobbers only the CXX
++   # flags, so the C code still gets /O2 and the build looks entirely healthy.
++   #
++   # Dolphin is C++. That means the PowerPC JIT, VideoCommon and Common -- the whole emulator -- were
++   # built unoptimized. Measured: F-Zero GX raced at 30-50 ticks/s with one core pegged and the GPU
++   # idle, against 58-60 on the stock nightly (the libretro buildbot passes its own flags and never
++   # hits this). Every symptom pointed at the GPU/shader stack; none of it pointed here.
++   #
++   # This cannot be fixed with -DCMAKE_CXX_FLAGS_RELEASE on the command line: a plain set() creates a
++   # normal variable that SHADOWS the cache entry, so the -D is silently ignored. It has to be here.
++   set(CMAKE_CXX_FLAGS_RELEASE "/MT /O2 /Ob2 /DNDEBUG")
+ endif()
+ 
+ # TODO: Add DSPSpy
+diff --git a/Source/Core/Common/CMakeLists.txt b/Source/Core/Common/CMakeLists.txt
+index 0ed507c..4044a79 100644
+--- a/Source/Core/Common/CMakeLists.txt
++++ b/Source/Core/Common/CMakeLists.txt
+@@ -325,12 +325,15 @@ if(WIN32)
+     WindowsDevice.cpp
+     WindowsDevice.h
+   )
+-  if(NOT LIBRETRO)
+-    target_sources(common PRIVATE
+-      GL/GLInterface/WGL.cpp
+-      GL/GLInterface/WGL.h
+-    )
+-  endif()
++  # MovieTheater: WGL.cpp is needed under LIBRETRO too â€” GLContextLR mints REAL share-linked
++  # worker contexts from it (CreateExternalSharedContext), which is what makes async shader
++  # compilation possible against a frontend-owned GL context.
++  target_sources(common PRIVATE
++    GL/GLInterface/WGL.cpp
++    GL/GLInterface/WGL.h
++  )
++  # wgl* imports for the WGL context code above.
++  target_link_libraries(common PRIVATE opengl32.lib)
+   if(MSVC)
+     target_sources(common PRIVATE
+       CompatPatches.cpp
+diff --git a/Source/Core/Common/GL/GLInterface/WGL.cpp b/Source/Core/Common/GL/GLInterface/WGL.cpp
+index a85a27a..3deb842 100644
+--- a/Source/Core/Common/GL/GLInterface/WGL.cpp
++++ b/Source/Core/Common/GL/GLInterface/WGL.cpp
+@@ -368,6 +368,68 @@ std::unique_ptr<GLContext> GLContextWGL::CreateSharedContext()
+   return context;
+ }
+ 
++static HDC s_external_main_dc = nullptr;
++static HGLRC s_external_main_rc = nullptr;
++
++bool GLContextWGL::CaptureExternalMainContext()
++{
++  s_external_main_dc = wglGetCurrentDC();
++  s_external_main_rc = wglGetCurrentContext();
++  if (!s_external_main_dc || !s_external_main_rc)
++  {
++    WARN_LOG_FMT(VIDEO, "CaptureExternalMainContext: no current WGL context on this thread");
++    return false;
++  }
++  LoadWGLExtensions();  // needs a current context, which we verifiably have right now
++  if (!wglCreateContextAttribsARB || !wglCreatePbufferARB || !wglGetPbufferDCARB)
++  {
++    WARN_LOG_FMT(VIDEO, "CaptureExternalMainContext: WGL extensions unavailable");
++    return false;
++  }
++  INFO_LOG_FMT(VIDEO, "CaptureExternalMainContext: captured frontend dc/rc, extensions loaded");
++  return true;
++}
++
++std::unique_ptr<GLContext> GLContextWGL::CreateExternalSharedContext()
++{
++  if (!s_external_main_dc || !s_external_main_rc)
++    return nullptr;
++
++  HANDLE pbuffer;
++  HDC dc;
++  if (!CreatePBuffer(s_external_main_dc, 1, 1, &pbuffer, &dc))
++    return nullptr;
++
++  HGLRC rc = CreateCoreContext(dc, s_external_main_rc);
++  if (!rc)
++  {
++    // Core-profile share against the frontend's legacy/compat context can be refused by some
++    // drivers; fall back to a plain compat context + wglShareLists â€” legal here because the new
++    // context is brand-new and empty.
++    rc = wglCreateContext(dc);
++    if (rc && !wglShareLists(s_external_main_rc, rc))
++    {
++      WARN_LOG_FMT(VIDEO, "CreateExternalSharedContext: wglShareLists failed ({})", GetLastError());
++      wglDeleteContext(rc);
++      rc = nullptr;
++    }
++  }
++  if (!rc)
++  {
++    wglReleasePbufferDCARB(static_cast<HPBUFFERARB>(pbuffer), dc);
++    wglDestroyPbufferARB(static_cast<HPBUFFERARB>(pbuffer));
++    return nullptr;
++  }
++
++  std::unique_ptr<GLContextWGL> context = std::make_unique<GLContextWGL>();
++  context->m_pbuffer_handle = pbuffer;
++  context->m_dc = dc;
++  context->m_rc = rc;
++  context->m_opengl_mode = Mode::OpenGL;
++  context->m_is_shared = true;
++  return context;
++}
++
+ HGLRC GLContextWGL::CreateCoreContext(HDC dc, HGLRC share_context)
+ {
+   if (!wglCreateContextAttribsARB)
+diff --git a/Source/Core/Common/GL/GLInterface/WGL.h b/Source/Core/Common/GL/GLInterface/WGL.h
+index 2f5a81e..57c8d7a 100644
+--- a/Source/Core/Common/GL/GLInterface/WGL.h
++++ b/Source/Core/Common/GL/GLInterface/WGL.h
+@@ -26,6 +26,14 @@ public:
+ 
+   void* GetFuncAddress(const std::string& name) override;
+ 
++  // MovieTheater (libretro external-context support): the FRONTEND owns the main GL context, but
++  // Dolphin's shader-compiler threads still need real share-linked contexts. Capture the frontend's
++  // dc/rc (and load the WGL extension pointers) while its context is CURRENT â€” GLContextLR calls
++  // this from Initialize, which runs inside context_reset on the frontend's GL thread â€” then mint
++  // pbuffer-backed shared contexts from any thread.
++  static bool CaptureExternalMainContext();
++  static std::unique_ptr<GLContext> CreateExternalSharedContext();
++
+ protected:
+   bool Initialize(const WindowSystemInfo& wsi, bool stereo, bool core) override;
+ 
+diff --git a/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.cpp b/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.cpp
+index 1a42fb7..be7419f 100644
+--- a/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.cpp
++++ b/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.cpp
+@@ -6,6 +6,9 @@
+ #include "DolphinLibretro/Common/Options.h"
+ #include "DolphinLibretro/VideoContexts/ContextStatus.h"
+ #include "DolphinLibretro/Video.h"
++#ifdef _WIN32
++#include "Common/GL/GLInterface/WGL.h"
++#endif
+ 
+ GLContextLR::GLContextLR()
+ {
+@@ -45,9 +48,25 @@ bool GLContextLR::Initialize(const WindowSystemInfo& wsi, bool stereo, bool core
+ 
+   m_initialized = true;
+ 
++#ifdef _WIN32
++  // The frontend's GL context is current on THIS thread right now (we are inside context_reset â†’
++  // backend init). Capture it so CreateSharedContext can mint share-linked worker contexts later.
++  if (m_opengl_mode == Mode::OpenGL)
++    GLContextWGL::CaptureExternalMainContext();
++#endif
++
+   return true;
+ }
+ 
++std::unique_ptr<GLContext> GLContextLR::CreateSharedContext()
++{
++#ifdef _WIN32
++  if (m_opengl_mode == Mode::OpenGL)
++    return GLContextWGL::CreateExternalSharedContext();
++#endif
++  return nullptr;
++}
++
+ void GLContextLR::Swap()
+ {
+   Libretro::Video::video_cb(VideoCommon::g_is_duplicate_frame ? nullptr : RETRO_HW_FRAME_BUFFER_VALID,
+diff --git a/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.h b/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.h
+index 84238cb..da28979 100644
+--- a/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.h
++++ b/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.h
+@@ -11,6 +11,9 @@ public:
+   ~GLContextLR() override;
+   
+   bool IsHeadless() const override { return false; }
++  // MovieTheater: real share-linked worker contexts (async shader compilation). The base class
++  // returns nullptr, which Dolphin's async paths dereference â€” the frontend-side crash we chased.
++  std::unique_ptr<GLContext> CreateSharedContext() override;
+   void Swap() override;
+   void* GetFuncAddress(const std::string& name) override;
+   bool Initialize(const WindowSystemInfo& wsi, bool stereo, bool core) override;
+diff --git a/Source/Core/VideoCommon/ShaderCache.cpp b/Source/Core/VideoCommon/ShaderCache.cpp
+index 2627656..7a0f265 100644
+--- a/Source/Core/VideoCommon/ShaderCache.cpp
++++ b/Source/Core/VideoCommon/ShaderCache.cpp
+@@ -102,8 +102,45 @@ void ShaderCache::Reload()
+   m_async_shader_compiler->ResizeWorkerThreads(g_ActiveConfig.GetShaderCompilerThreads());
+ }
+ 
++// MT INSTRUMENTATION — "is it actually USING the shaders it compiles?"
++//
++// Async ubershaders only pay off if a specialized pipeline, once compiled, takes over from the
++// ubershader. That handoff depends on RetrieveAsyncShaders() running, and it is hooked to
++// after_frame_event — whose ONLY per-frame trigger is the EFB->XFB copy in BPStructs.cpp ("as closest
++// as we have to an end of the frame... works 99% of the time"). If that does not fire under the
++// libretro port, finished pipelines are never collected, `pending` never clears, and the game renders
++// with ubershaders FOREVER while the compiler threads keep churning. That reads exactly like a game
++// that is slow at the same track spots on every restart.
++//
++// So: count it. mt_retrieve_calls == 0 during a race IS the answer.
++static u64 mt_async_hit = 0;       // specialized pipeline ready and used
++static u64 mt_async_pending = 0;   // ubershader used because the specialized one is still compiling
++static u64 mt_async_queued = 0;    // brand-new uid, compile queued
++static u64 mt_retrieve_calls = 0;  // times after_frame_event actually collected finished work
++static u64 mt_installed = 0;       // pipelines handed back by the async compiler and installed
++static u64 mt_requeued = 0;        // work items that were NOT ready and re-queued for another frame
++
++void ShaderCache::MTCountInstalled()
++{
++  mt_installed++;
++}
++void ShaderCache::MTCountRequeued()
++{
++  mt_requeued++;
++}
++
++void ShaderCache::MTReportAsyncStats()
++{
++  INFO_LOG_FMT(VIDEO,
++               "[MT] async: specialized_hit={} ubershader_pending={} queued={} retrieve_calls={} "
++               "installed={} requeued={}",
++               mt_async_hit, mt_async_pending, mt_async_queued, mt_retrieve_calls, mt_installed,
++               mt_requeued);
++}
++
+ void ShaderCache::RetrieveAsyncShaders()
+ {
++  mt_retrieve_calls++;
+   m_async_shader_compiler->RetrieveWorkItems();
+ }
+ 
+@@ -138,16 +175,28 @@ const AbstractPipeline* ShaderCache::GetPipelineForUid(const GXPipelineUid& uid)
+ 
+ std::optional<const AbstractPipeline*> ShaderCache::GetPipelineForUidAsync(const GXPipelineUid& uid)
+ {
++  // MT: dump from the DRAW path, not the frame-end path — if after_frame_event never fires (the very
++  // thing under suspicion) a frame-end reporter would never print and we would learn nothing.
++  if (((mt_async_hit + mt_async_pending + mt_async_queued) % 20000) == 0)
++    MTReportAsyncStats();
++
+   auto it = m_gx_pipeline_cache.find(uid);
+   if (it != m_gx_pipeline_cache.end())
+   {
+     // .second is the pending flag, i.e. compiling in the background.
+     if (!it->second.second)
++    {
++      mt_async_hit++;
+       return it->second.first.get();
++    }
+     else
++    {
++      mt_async_pending++;
+       return {};
++    }
+   }
+ 
++  mt_async_queued++;
+   AppendGXPipelineUID(uid);
+   QueuePipelineCompile(uid, COMPILE_PRIORITY_ONDEMAND_PIPELINE);
+   return {};
+@@ -294,19 +343,30 @@ void ShaderCache::LoadPipelineCache(T& cache, Common::LinearDiskCache<DiskKeyTyp
+     {
+       KeyType real_uid;
+       UnserializePipelineUid(key, real_uid);
++      n_read++;
+ 
+       // Skip those which are already compiled.
+       if (failed || cache.contains(real_uid))
++      {
++        n_already++;
+         return;
++      }
+ 
+       auto config = this_ptr->GetGXPipelineConfig(real_uid);
+       if (!config)
++      {
++        // MT INSTRUMENTATION: this path is SILENT upstream. An entry dropped here is recompiled
++        // later at runtime and re-appended to the disk cache as a DUPLICATE — which is how a cache
++        // grows without bound while the game still stutters compiling what it already had.
++        n_no_config++;
+         return;
++      }
+ 
+       auto pipeline = g_gfx->CreatePipeline(*config, value, value_size);
+       if (!pipeline)
+       {
+         // If any of the pipelines fail to create, consider the cache stale.
++        n_create_failed++;
+         failed = true;
+         return;
+       }
+@@ -314,8 +374,12 @@ void ShaderCache::LoadPipelineCache(T& cache, Common::LinearDiskCache<DiskKeyTyp
+       auto& entry = cache[real_uid];
+       entry.first = std::move(pipeline);
+       entry.second = false;
++      n_inserted++;
+     }
+ 
++    // MT INSTRUMENTATION
++    u32 n_read = 0, n_already = 0, n_no_config = 0, n_create_failed = 0, n_inserted = 0;
++
+   private:
+     ShaderCache* this_ptr;
+     T& cache;
+@@ -326,6 +390,13 @@ void ShaderCache::LoadPipelineCache(T& cache, Common::LinearDiskCache<DiskKeyTyp
+   CacheReader reader(this, cache);
+   const u32 count = disk_cache.OpenAndRead(filename, reader);
+   INFO_LOG_FMT(VIDEO, "Loaded {} cached pipelines from {}", count, filename);
++  // MT INSTRUMENTATION: "Loaded N" above counts entries READ off disk, NOT entries kept. Anything
++  // dropped here is silently recompiled later. Print what actually survived.
++  INFO_LOG_FMT(VIDEO,
++               "[MT] pipeline cache {}: read={} inserted={} already_present={} "
++               "DROPPED_no_config={} create_failed={}",
++               type, reader.n_read, reader.n_inserted, reader.n_already, reader.n_no_config,
++               reader.n_create_failed);
+ 
+   // If any of the pipelines in the cache failed to create, it's likely because of a change of
+   // driver version, or system configuration. In this case, when the UID cache picks up the pipeline
+@@ -1062,11 +1133,15 @@ void ShaderCache::QueuePipelineCompile(const GXPipelineUid& uid, u32 priority)
+     {
+       if (stages_ready)
+       {
++        ShaderCache::MTCountInstalled();
+         shader_cache->InsertGXPipeline(uid, std::move(pipeline));
+       }
+       else
+       {
+         // Re-queue for next frame.
++        // MT: an item that never becomes stages_ready re-queues FOREVER — compiler threads stay busy
++        // and the pipeline never installs. mt_requeued climbing without mt_installed is that.
++        ShaderCache::MTCountRequeued();
+         auto wi = shader_cache->m_async_shader_compiler->CreateWorkItem<PipelineWorkItem>(
+             shader_cache, uid, priority);
+         shader_cache->m_async_shader_compiler->QueueWorkItem(std::move(wi), priority);
+diff --git a/Source/Core/VideoCommon/ShaderCache.h b/Source/Core/VideoCommon/ShaderCache.h
+index c76f7da..1d4daf3 100644
+--- a/Source/Core/VideoCommon/ShaderCache.h
++++ b/Source/Core/VideoCommon/ShaderCache.h
+@@ -62,6 +62,12 @@ public:
+   // Retrieves all pending shaders/pipelines from the async compiler.
+   void RetrieveAsyncShaders();
+ 
++  // MT INSTRUMENTATION: does a compiled specialized pipeline ever actually take over from the
++  // ubershader? Static because the async work item reports from inside its own class.
++  static void MTReportAsyncStats();
++  static void MTCountInstalled();
++  static void MTCountRequeued();
++
+   // Accesses ShaderGen shader caches
+   const AbstractPipeline* GetPipelineForUid(const GXPipelineUid& uid);
+   const AbstractPipeline* GetUberPipelineForUid(const GXUberPipelineUid& uid);

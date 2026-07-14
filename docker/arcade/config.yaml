@@ -237,6 +237,25 @@ emulator:
           # The trap that hid it for weeks: .uidcache lives NEXT TO User/Cache/Shaders/, not inside
           # it, so every "clear the shader cache" left the poison in place. coreCache below now makes
           # this structurally impossible — do not remove it.
+          # ⚠ THE CUSTOM CORE MUST BE BUILT OPTIMIZED, AND IT WAS NOT — that, finally, is the whole
+          # "GX slowdown" (settled 2026-07-13 late, on a driven race, at 60.0 locked). Dolphin's
+          # CMakeLists.txt does, for MSVC: set(CMAKE_CXX_FLAGS_RELEASE "/MT") — which REPLACES CMake's
+          # default ("/MD /O2 /Ob2 /DNDEBUG") instead of appending. So a "Release" build got NO /O2
+          # (MSVC falls back to /Od) and NO NDEBUG (assertions live). It clobbers only the CXX flags,
+          # so the C code still got /O2 and the build looked perfectly healthy — but Dolphin is C++:
+          # all 806 C++ TUs, the PowerPC JIT and VideoCommon included, were built UNOPTIMIZED.
+          # Symptoms: races 30-50 ticks/s, one core pegged, GPU idle, slow at the same track spots;
+          # menus fine (light CPU). The stock nightly is fast because the libretro buildbot passes its
+          # own flags and never hits that line. Fixed in docker/arcade/dolphin-custom-core.patch;
+          # build with docker/arcade/dolphin-build-core.bat. ⚠ You CANNOT fix this with
+          # -DCMAKE_CXX_FLAGS_RELEASE on the command line — a plain set() shadows the cache entry and
+          # the -D is silently ignored. VERIFY after any core update: every C++ TU must carry /O2 and
+          # /DNDEBUG in bld2/build.ninja, and the DLL should be ~13 MB (an unoptimized one is ~21 MB).
+          #
+          # This ALSO voids every perf verdict ever measured against the old DLL. MSAA and efb_scale
+          # were both "exonerated" and mode 2 was blamed, all on the crippled build. On the optimized
+          # core, a driven Big Blue race holds 60.0 with slowTicks=0 and maxTick ~8 ms WITH 4x MSAA,
+          # efb 3 and async ubershaders all on at once — none of which was affordable before.
           lib: dolphin_custom_libretro
           folder: gc
           roms: ["gcz", "iso", "rvz", "ciso", "gcm", "m3u"]
