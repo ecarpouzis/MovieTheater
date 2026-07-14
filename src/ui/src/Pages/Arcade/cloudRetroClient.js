@@ -339,9 +339,26 @@ export function createCloudRetroSession(descriptor, opts) {
   //    main PC as always, so the flag is safe against any worker build. Verified on prod 2026-07-08:
   //    2 PCs both connected, video-only on main / opus-only on aux, Playing in 4s. Escape hatch if a
   //    room ever has video but NO audio: localStorage.setItem("arcade.audioPC","0") + reload.
+  // Audio jitter buffer depth. 80 → 150 (2026-07-14), and the reason is a stall, not the network.
+  //
+  // An emulator is single-threaded and does its file IO inline, so a load — PPSSPP reading its savedata
+  // when the player walks into a sign, a core's first-use lazy asset load — stalls retro_run for tens of
+  // milliseconds and produces NO AUDIO for that whole span. Measured on Loco Roco: stalls of 90-110 ms
+  // against a buffer that actually held ~105 ms. That is a knife-edge, so it failed occasionally and the
+  // player heard a faint crackle at area transitions. The receiver stats say exactly this and nothing
+  // else: concealedSamples > 0 with packetsLost == 0 — the decoder invented audio because none arrived.
+  // It was never loss, never FEC, never the encoder.
+  //
+  // Depth is unusually cheap for us: audio rides its OWN PeerConnection (the aux audio PC above), so
+  // there is no RTCP lip-sync tying it to video, and raising it does NOT delay the picture or input.
+  // Video's jitter buffer runs ~6 ms while audio already sat ~105 ms behind it — nobody has ever noticed.
+  // 150 covers every stall we have measured (worst: a cold GameCube boot at ~110 ms) with margin.
+  //
+  // Tunable live, no deploy: localStorage.setItem("arcade.audioJitterMs", "220") + reload. Raise it if a
+  // system turns out to stall harder than this; lower it if the audio ever feels detached from the action.
   const AUDIO_JITTER_MS = (() => {
-    try { const v = parseInt(localStorage.getItem("arcade.audioJitterMs"), 10); return Number.isFinite(v) && v >= 0 ? v : 80; }
-    catch { return 80; }
+    try { const v = parseInt(localStorage.getItem("arcade.audioJitterMs"), 10); return Number.isFinite(v) && v >= 0 ? v : 150; }
+    catch { return 150; }
   })();
   const AUDIO_PC = (() => { try { return localStorage.getItem("arcade.audioPC") !== "0"; } catch { return true; } })();
 
