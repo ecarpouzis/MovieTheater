@@ -795,3 +795,73 @@ in ~4 s) and the coordinator drops it. It deliberately does NOT report the room 
 that would advertise a worker as free while its core is still stuck, and route the next player
 straight into it. Note what is bounded — the teardown of a room that has *already* lost its last
 player. It never policies a live session, so it cannot cut a slow game short.
+
+## 0042-core-cache-isolation-and-game-start-budget.patch
+
+**Two fixes that only exist because async ubershaders (`dolphin_shader_compilation_mode: "2"`) are
+back on.** Mode 2 needs our patched Dolphin (the stock core's `CreateSharedContext` returns `nullptr`
+and its async threads deref it), and turning it on walks into both of these.
+
+### Cache isolation — a pipeline cache belongs to ONE core build
+
+A shader cache is only meaningful to the exact build that wrote it. Dolphin keys pipelines by a UID
+struct compared with `memcmp`, and two builds of the same emulator lay that struct out differently
+(different compilers ⇒ different padding). So a core handed a foreign cache matches **nothing**,
+recompiles every pipeline **inline on the emulator thread**, and appends its own UIDs beside the ones
+it could not read. The file grows forever without ever becoming useful, and it does this on *every*
+boot, not just the first.
+
+That is what "the custom Dolphin core is slow" actually was. It ran F-Zero GX races at 28–50 ticks/s
+with one core pegged and the GPU idle, and it was blamed on the build (deoptimized? the
+`CreateSharedContext` patch?) and retired on 07-11. Wrong. It was reading ~1,947 uids the STOCK core
+had written. Measured on an identical replay with an instrumented build: **stale uidcache = +54 MB of
+cache growth per run; uidcache removed = +568 KB.** ~95x.
+
+The trap that hid it for weeks: `User/Cache/<GAMEID>.uidcache` sits **next to** `User/Cache/Shaders/`,
+not inside it — so every "clear the shader cache" reset anyone ever did left the poison in place.
+
+The fix makes sharing structurally impossible instead of relying on remembering. The worker hashes the
+core library (`coreBuildId` — the *build*, not the name: we rebuild the custom core, and repo.sync
+overwrites the stock one, same filename either way) and stamps the cache dir with it. A core that finds
+a stamp that isn't its own drops the cache rather than trying to read it. Declared per-core, so nothing
+is hardcoded to Dolphin:
+
+```yaml
+coreCache:
+  dir: "User/Cache"          # relative to the core's save dir
+  purge: ["Shaders", "*.uidcache"]
+```
+
+Only what `purge` names is deleted, and only at the top level of `dir`. **Dolphin's memory cards live
+under this same `User` tree** (`User/GC`) and must survive a core swap, so this never sweeps broadly —
+it also refuses outright if `dir` would escape the save dir. An **unstamped** cache counts as foreign:
+every cache that exists today is unstamped, and those are precisely the poisoned ones. Regenerating a
+shader cache is cheap and automatic; reading a poisoned one never stops being expensive.
+
+`ShaderCache.cpp`'s cache reader is instrumented in our Dolphin build and stays that way. Upstream's
+`Loaded N cached pipelines` counts entries **read off disk, not entries kept** — a line that misled
+every prior investigation. The build now prints `read / inserted / already_present / DROPPED_no_config
+/ create_failed`, which is the number that would have ended this in an evening.
+
+### The game-start budget — a boot is not a late reply
+
+A game start is the one RPC that runs an entire emulator boot inline (`HandleGameStart` → `app.Load` →
+`retro_load_game` → `context_reset`), and Dolphin does its shader work on the way up. Mode 2 makes the
+worst case much worse: `InitializeShaderCache()` queues the **whole ubershader permutation set**, and
+`wait_for_shaders` ("precompile shaders before starting") then **blocks until all of it finishes** —
+minutes on a cold cache, against `com.DefaultCallTimeout` of **10 s**.
+
+Timing that call out does not cancel anything. The worker keeps booting and goes on to register its
+room, while the coordinator has already released the slot and told the player **"the arcade is full"**.
+The two now disagree about who is running what — the same class of divergence as the close wedge.
+
+So: `RPC.CallWith` / `SocketClient.SendWith` give a single call its own deadline, and StartGame gets
+`coordinator.GameStartTimeout` (60 s) while every other call keeps the short 10 s leash that is how a
+dead worker gets noticed. The ceiling is deliberately far above a healthy boot rather than tuned close
+to it — it is a backstop against a hung worker, not a performance knob.
+
+The *real* fix is in the config, though: `dolphin_wait_for_shaders: "disabled"` under mode 2. There is
+nothing left to wait for — precompiling is exactly what async ubershaders exist to avoid. The compile
+work still happens, in the background, on the shared-context worker threads, while the game is already
+playable. Sync mode ("0", the stock core's only option) still wants it enabled, and still carries a
+smaller version of the same cold-cache boot risk.

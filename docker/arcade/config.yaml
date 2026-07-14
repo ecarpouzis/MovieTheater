@@ -210,46 +210,134 @@ emulator:
           coreAspectRatio: true
           uniqueSaveDir: true   # flycast NVRAM/VMU → coresaves/<sessionId>/ → gateway harvest (see psp)
 
-        # GameCube via dolphin_libretro — LIVE 2026-07-07 (F-Zero GX verified: 60fps, input, memory card).
-        # GL 3D core — renders ONLY on the native Windows GL worker (D:\ArcadeStorage\worker-gl\config.yaml
-        # carries the authoritative copy of this block); WSLg's GLX/EGL can't host it, same as psp/dc/ps2.
-        # Same recipe as ps2: isGlAllowed + coreAspectRatio (the Flip contract), usesLibCo, vfr:false,
-        # skip_hw_context_destroy. PLUS two dolphin-specific requirements (both patch 0016):
-        #   - skip_serialize_size_probe: dolphin defers video/emu init to context_reset + first retro_run,
-        #     so the load-time retro_serialize_size probe walks save-state into a NULL g_vertex_manager
-        #     → 0xc0000005 at boot. The probe only feeds a log line; saves re-query at save time.
-        #   - the worker must grant RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT (env 44).
-        # 4 controller ports → MaxPlayers 4 at ingest. Source ROMs are .gcz (RomCache copies, not extracts).
+        # GameCube via dolphin_libretro. GL 3D core like psp/dc/ps2: same isGlAllowed + coreAspectRatio
+        # Flip contract, usesLibCo thread-affinity, vfr:false (correct game speed), skip_hw_context_destroy
+        # teardown hack. No BIOS required — Dolphin HLE-boots the GC IPL. Source ROMs are .gcz (Dolphin's
+        # compressed format, R:\Roms\Games\Nintendo GameCube), read directly by the core → RomCache COPIES
+        # the .gcz into roms/gc/ on first play (plain-file branch, like ps2 .cso), never a 7z extract.
+        # 4 controller ports (MaxPlayers 4 at ingest) — a strong fit for the shared-room model.
         gc:
-          lib: dolphin_libretro
+          # OUR PATCHED BUILD (docker/arcade/dolphin-createsharedcontext.patch): implements
+          # GLContextLR::CreateSharedContext. Upstream's external-context path inherits the base's
+          # nullptr (Common/GL/GLContext.cpp:45), and Dolphin's async-shader threads dereference it —
+          # the 0xc0000005. That nullptr is the ONLY reason async shaders were ever off, so mode "2"
+          # below and this lib are a package: the stock core MUST run mode "0" or it crashes at boot.
+          # The custom lib NAME pins it against repo.sync nightly overwrites, and keeps the stock core
+          # beside it as an instant rollback (lib: dolphin_libretro + shader_compilation_mode "0").
+          # Build recipe: D:\Arcade\build\dolphin\build-core.bat.
+          #
+          # ⚠ THE CUSTOM CORE WAS ONCE BLAMED FOR THE "GX SLOWDOWN" AND THAT VERDICT WAS WRONG
+          # (retired 07-11, exonerated 07-13). It was never a deoptimized build. Dolphin's per-game
+          # .uidcache had been written by the STOCK core, and the two builds emit different UID BYTES
+          # for the same pipeline (different compilers ⇒ different struct padding; the UIDs are
+          # compared with memcmp). So the custom core read ~1,947 foreign uids, matched none, and
+          # recompiled every one of them INLINE ON THE EMULATOR THREAD — every session, forever. That
+          # is the 25 ms retro_run with one core pegged and the GPU idle. Measured on an identical
+          # replay: stale uidcache = +54 MB of cache growth per run; uidcache removed = +568 KB.
+          # The trap that hid it for weeks: .uidcache lives NEXT TO User/Cache/Shaders/, not inside
+          # it, so every "clear the shader cache" left the poison in place. coreCache below now makes
+          # this structurally impossible — do not remove it.
+          lib: dolphin_custom_libretro
           folder: gc
           roms: ["gcz", "iso", "rvz", "ciso", "gcm", "m3u"]
           isGlAllowed: true
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
+          # A pipeline cache is only readable by the exact core BUILD that wrote it (see above). The
+          # worker hashes the core library and stamps the cache with that identity; a core meeting a
+          # stamp that isn't its own throws the cache away instead of trying to read it. Only these
+          # entries are dropped — Dolphin's memory cards live under this same User tree (User/GC) and
+          # must survive a core swap, so nothing here sweeps broadly.
+          coreCache:
+            dir: "User/Cache"
+            purge: ["Shaders", "*.uidcache"]
+          # skip_serialize_size_probe (patch 0016): dolphin defers video/emu init to context_reset +
+          # first retro_run, so the load-time retro_serialize_size probe walks save-state into a NULL
+          # g_vertex_manager → 0xc0000005. The probe only feeds a log line; saves re-query at save time.
           hacks: [skip_hw_context_destroy, skip_serialize_size_probe]
+          # Render efb_scale 3 (1920x1584), deliver 1280x1056: supersampled on TOP of 4x MSAA. The
+          # race-slowdown hunt exonerated resolution entirely (races dipped identically at efb 2 and
+          # 3, because the cause was a poisoned pipeline cache — see lib above), so quality stands.
+          scale: 0.6667
+          scaleMethod: bilinear2
           options:
-            # OpenGL backend so Dolphin draws into CloudRetro's GL (WGL) hw-render context — a Vulkan/D3D
-            # backend would render to a private device the GL capture never sees → black frame (the exact
-            # ps2 pcsx2_renderer:OpenGL lesson).
+            # OpenGL backend so Dolphin draws into CloudRetro's GL (WGL) hw-render context. A Vulkan/D3D
+            # backend renders to a private device the GL capture never sees -> black frame (the ps2
+            # pcsx2_renderer:OpenGL lesson). Native internal res for the first boot to prove the path on
+            # the 4070 Ti; raise dolphin_efb_scale once it renders.
             dolphin_renderer: "Hardware"
             dolphin_cpu_core: "JIT64"
-            # ⚠ OPTION VALUES are the core-options-v2 VALUE strings, NOT display labels (verified against
-            # DolphinLibretro/Common/Options.cpp @287ab2dba6). An unmatched value leaves the port's typed
-            # option cache at T{}=0 — for efb_scale that means retro_get_system_av_info returns 0x0
-            # geometry → null video objects → boot crash. shader_compilation_mode: "0"=Synchronous (avoids
-            # the async shader worker threads, whose shared-GL-context init doesn't work under nanoarch yet).
-            # efb_scale "2" = 1280x1056 internal render/stream — verified 60fps 0-drop on F-Zero GX
-            # (decode 0.6ms); "1" (native 640x528) is the fallback if a heavy title ever struggles.
-            dolphin_efb_scale: "2"
-            dolphin_shader_compilation_mode: "0"
-            dolphin_wait_for_shaders: "enabled"
-            # Single-core: everything on the one emulator thread — the simplest topology under libretro.
-            # Dual core ("enabled") was tried 2026-07-07 and did NOT engage ("CPU Thread separate = No" —
-            # the port defers it to a core restart), and single-core already holds a locked 60fps at 2x on
-            # F-Zero GX, so it stays off: no deficit to fix, only thread-teardown risk to add.
+            # OPTION VALUES are the core-options-v2 VALUE strings, NOT the display labels (verified against
+            # DolphinLibretro/Common/Options.cpp @287ab2dba6): efb_scale = "1".."6" (labels "1x Native
+            # (640x528)" etc are display-only). An unmatched value leaves the port's typed cache at T{}=0
+            # → retro_get_system_av_info returns 0x0 geometry → null video objects → 0xc0000005 at boot.
+            # THAT was the gc boot crash. shader_compilation_mode: "0"=Synchronous "1"=Sync(Uber)
+            # "2"=Async(Uber) "3"=Async(Skip Rendering).
+            # efb_scale "2" = 1280x1056, verified 60fps/0-drop. NOTE: dolphin TEARDOWN can wedge the worker
+            # (partial deadlock — /echo alive, coordinator WS dead) at ANY scale (reproduced at "1" too);
+            # the GL Worker Watchdog task auto-recycles a wedged worker within ~60s. Real fix = debug the
+            # teardown deadlock (dump: scratchpad worker-hung-27168.dmp).
+            # "3" (paired with scale: 0.6667 above — supersampled to 1280x1056 on the wire).
+            dolphin_efb_scale: "3"
+            # 4x MSAA. The ONLY core where MSAA measurably does anything: A/B'd on RAW pre-encode frames
+            # (patch 0022) over 3 runs each, the share of edges that are HARD fell 6.29% -> 4.08%, with no
+            # overlap between the groups. n64 (gliden64) and psp (ppsspp) produce BIT-IDENTICAL frames with
+            # their MSAA options on or off — libretro's hw_render FBO isn't multisampled, and only Dolphin's
+            # OGL backend manages its own framebuffers. Values: 0 None, 1/2/3 = 2x/4x/8x MSAA, 4/5/6 = SSAA.
+            #
+            # This is invisible from the browser: H.264 quantization erases the sub-pixel edge gradients AA
+            # creates. Never A/B anti-aliasing on the decoded stream.
+            # 4x MSAA (briefly "0" as a slowdown diagnostic, and exonerated: the dips were identical
+            # with MSAA off — the cause was the poisoned pipeline cache, see lib above).
+            dolphin_anti_aliasing: "2"
+            # 16x anisotropic. Not an AA operation, so hardShare can't score it — what it does show is
+            # RETAINED texture detail: on dc the same measurement moved mid-frequency edges +7% with no
+            # meaningful hard-edge change. Values are numeric: 0=1x(off) 1=2x 2=4x 3=8x 4=16x.
+            dolphin_max_anisotropy: "4"
+            # NOT set on purpose: dolphin_force_true_color and dolphin_disable_copy_filter are already
+            # default-ON in this libretro port — proven by deleting GFX.ini and regenerating it with the
+            # options absent from this config (ForceTrueColor=True, DisableCopyFilter=True). Setting them
+            # would be a no-op; leaving this note so nobody "adds" them again (docs §17). Also learned:
+            # F-Zero GX boots are NOT frame-deterministic (raw dumps differ run-to-run), so dolphin
+            # verdicts need GFX.ini/behavioural evidence, not raw-frame A/B.
+            # SINGLE-THREADED CPU, but shaders are ASYNC now: the nullptr CreateSharedContext that
+            # forced sync compiles is exactly what our patched lib implements (see lib above). env 44
+            # (SET_HW_SHARED_CONTEXT) stays granted — it is what lets the core make those contexts.
+            # DUAL-CORE IS A DEAD END FOR F-ZERO GX — settled 2026-07-10 late, after a ~15-minute
+            # "enabled" experiment kept logging "CPU Thread separate = No": Dolphin's OWN game INI
+            # (Sys/GameSettings/GFZ.ini) sets `CPUThread = False` for GFZ* and the game-local config
+            # layer overrides our base option. Upstream forbids dual-core for this game (it EFB-peeks
+            # constantly — the same INI's Video_Hacks note). So the 07-09 "dual-core ON" round never
+            # actually engaged for GX either, and per the per-ROM-fixes rule the emulator's DB wins:
+            # this stays disabled (flipping it only affects OTHER GC titles, untested). The real
+            # lever for GX's heavy-moment dips is EFB work ∝ internal resolution — see efb_scale.
             dolphin_main_cpu_thread: "disabled"
+            # "2" = Async (Ubershaders): a specialized shader compiles on SHARED-CONTEXT worker
+            # threads (which only exist because of our patched lib) while an ubershader draws the
+            # frame in the meantime — so a first-sight effect costs a slightly more expensive frame
+            # instead of a stall and an audio skip. The 07-11 rollback to "0" blamed mode 2 for the
+            # GX slowdown; that was the poisoned uidcache, not the mode (see lib above).
+            #
+            # ⚠ wait_for_shaders MUST BE "disabled" HERE, AND THAT IS NOT A TUNING CHOICE — IT IS
+            # WHAT KEEPS GC ROOMS FROM FAILING TO START. It means "precompile shaders before
+            # starting" (ShaderCache::InitializeShaderCache → WaitForAsyncCompiler). Under mode 2 the
+            # init ALSO queues the entire ubershader permutation set, so on a cold cache that wait is
+            # minutes — and the whole boot runs INLINE inside the coordinator's StartGame RPC
+            # (HandleGameStart → app.Load → retro_load_game → context_reset). Blow that call's
+            # deadline and nothing gets canceled: the worker keeps booting and registers its room
+            # while the coordinator has already freed the slot and told the player "the arcade is
+            # full". A 60s ceiling now covers slow boots (coordinator.GameStartTimeout), but the real
+            # reason this is safe is that there is nothing left to wait FOR — precompiling is exactly
+            # what async ubershaders exist to avoid. The compile work still happens, in the
+            # background, on the worker threads, while the game is already playable.
+            #
+            # Sync mode ("0") is the stock core's only option and DOES want wait_for_shaders enabled
+            # (its stalls are otherwise visible). It carries the same cold-cache boot risk, just more
+            # rarely — it never queues the ubershader set.
+            dolphin_shader_compilation_mode: "2"
+            dolphin_wait_for_shaders: "disabled"
+
 
         # ─── Sega family on the genesis_plus_gx core we already load (the gb/gbc pattern: one lib,
         # distinct folders). Master System / Game Gear / SG-1000 are BIOS-free; Sega CD needs a

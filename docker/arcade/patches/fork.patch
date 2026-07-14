@@ -133,8 +133,122 @@ index d8c7324..705419b 100644
  	}
  	InitWebrtcStreamResponse string
  
+diff --git a/pkg/com/com.go b/pkg/com/com.go
+index 8b47562..444d962 100644
+--- a/pkg/com/com.go
++++ b/pkg/com/com.go
+@@ -1,6 +1,10 @@
+ package com
+ 
+-import "github.com/giongto35/cloud-game/v3/pkg/logger"
++import (
++	"time"
++
++	"github.com/giongto35/cloud-game/v3/pkg/logger"
++)
+ 
+ type stringer interface {
+ 	comparable
+@@ -100,6 +104,16 @@ func (c *SocketClient[T, P, X, P2]) Send(t T, data any) ([]byte, error) {
+ 	return c.rpc.Call(c.sock.conn, rq)
+ }
+ 
++// SendWith makes a blocking call that is allowed to take up to timeout instead of the
++// connection-wide default. See RPC.CallWith.
++func (c *SocketClient[T, P, X, P2]) SendWith(t T, data any, timeout time.Duration) ([]byte, error) {
++	c.log.Debug().Str(logger.DirectionField, logger.MarkOut).Msgf("ᵇ%v", t)
++	rq := P2(new(X))
++	rq.SetType(uint8(t))
++	rq.SetPayload(data)
++	return c.rpc.CallWith(c.sock.conn, rq, timeout)
++}
++
+ // Notify just sends a message and goes further.
+ func (c *SocketClient[T, P, X, P2]) Notify(t T, data any) {
+ 	c.log.Debug().Str(logger.DirectionField, logger.MarkOut).Msgf("%v", t)
+diff --git a/pkg/com/net.go b/pkg/com/net.go
+index 5b2e0f2..0b59f02 100644
+--- a/pkg/com/net.go
++++ b/pkg/com/net.go
+@@ -121,6 +121,20 @@ func (t *RPC[_, _]) Send(w Writer, packet any) error {
+ }
+ 
+ func (t *RPC[_, _]) Call(w Writer, rq HasCallId) ([]byte, error) {
++	return t.CallWith(w, rq, t.callTimeout())
++}
++
++// CallWith is Call with an explicit deadline for THIS call instead of the connection-wide one.
++//
++// The connection-wide timeout has to stay short: it is how fast a dead worker is noticed, and every
++// other call on this socket (save, load, change player, signal) answers in milliseconds. But a game
++// start is not like the others — it runs the whole emulator boot inline (HandleGameStart → app.Load →
++// retro_load_game → context_reset), and for a hardware core on a COLD shader cache that is seconds,
++// not milliseconds. Timing that out does not cancel anything: the worker keeps booting and goes on to
++// register a room, while the coordinator has already released the slot and told the user the arcade is
++// full. The two then disagree about who is running what. So slow boots get room to finish, and only the
++// calls that genuinely should be instant keep the short leash.
++func (t *RPC[_, _]) CallWith(w Writer, rq HasCallId, timeout time.Duration) ([]byte, error) {
+ 	id := NewUid()
+ 	// set new request id for the external request structure as string
+ 	rq.SetGetId(id)
+@@ -134,7 +148,7 @@ func (t *RPC[_, _]) Call(w Writer, rq HasCallId) ([]byte, error) {
+ 	w.Write(r)
+ 	select {
+ 	case <-task.done:
+-	case <-time.After(t.callTimeout()):
++	case <-time.After(timeout):
+ 		task.err = errTimeout
+ 	}
+ 	return task.response, task.err
+diff --git a/pkg/config/corecache_bind_test.go b/pkg/config/corecache_bind_test.go
+new file mode 100644
+index 0000000..2aa55cc
+--- /dev/null
++++ b/pkg/config/corecache_bind_test.go
+@@ -0,0 +1,41 @@
++package config
++
++import (
++	"os"
++	"path/filepath"
++	"testing"
++)
++
++// Proves coreCache actually binds from YAML. A silent bind failure leaves Dir empty, which skips the
++// purge entirely and looks identical to a healthy run — the exact way the poisoned cache went
++// unnoticed for weeks. So it gets a test.
++func TestCoreCacheBinds(t *testing.T) {
++	dir := t.TempDir()
++	yml := `
++emulator:
++  libretro:
++    cores:
++      list:
++        gc:
++          lib: dolphin_custom_libretro
++          coreCache:
++            dir: "User/Cache"
++            purge: ["Shaders", "*.uidcache"]
++`
++	if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(yml), 0644); err != nil {
++		t.Fatal(err)
++	}
++
++	var conf struct{ Emulator Emulator }
++	if _, err := LoadConfig(&conf, dir); err != nil {
++		t.Fatal(err)
++	}
++
++	gc := conf.Emulator.Libretro.Cores.List["gc"]
++	if gc.CoreCache.Dir != "User/Cache" {
++		t.Fatalf("coreCache.dir did not bind: %q", gc.CoreCache.Dir)
++	}
++	if len(gc.CoreCache.Purge) != 2 || gc.CoreCache.Purge[0] != "Shaders" || gc.CoreCache.Purge[1] != "*.uidcache" {
++		t.Fatalf("coreCache.purge did not bind: %#v", gc.CoreCache.Purge)
++	}
++}
 diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
-index baf701e..48589c2 100644
+index baf701e..38178be 100644
 --- a/pkg/config/emulator.go
 +++ b/pkg/config/emulator.go
 @@ -17,6 +17,38 @@ type Emulator struct {
@@ -176,7 +290,42 @@ index baf701e..48589c2 100644
  }
  
  type LibretroConfig struct {
-@@ -80,9 +112,14 @@ type LibretroCoreConfig struct {
+@@ -69,10 +101,34 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
+ 		errors.New("core mapping not found for " + runtime.GOOS + ":" + runtime.GOARCH)
+ }
+ 
++// CoreCache declares a cache subtree whose contents are valid ONLY for the exact core BUILD that
++// wrote them, so the worker can drop it when the build underneath changes.
++//
++// This exists because of a real, expensive bug (see arcade patch 0042). Dolphin keys its pipeline
++// cache by a UID struct it compares with memcmp. Two builds of the same emulator — the stock nightly
++// and our patched one — lay that struct out differently (different compilers ⇒ different padding), so
++// the UIDs one build writes are unrecognizable to the other. A core reading a foreign cache matches
++// NOTHING, recompiles every pipeline inline on the emulator thread, and appends its own UIDs beside
++// the ones it could not read. That is not a slow first boot, it is a slow EVERY boot: the file only
++// grows, and both builds keep re-recompiling. It cost weeks and read as "the custom core is slow".
++//
++// The trap that hid it: Dolphin's per-game .uidcache sits NEXT TO the shader directory, not inside it,
++// so every "clear the shader cache" ever done left the poison in place.
++type CoreCache struct {
++	// Dir is the cache root, relative to the core's save dir (e.g. "User/Cache" for Dolphin).
++	Dir string
++	// Purge lists entries inside Dir to delete when the core build changes. Names are matched with
++	// filepath.Match against the top level of Dir, so both a directory ("Shaders") and a glob
++	// ("*.uidcache") work. Anything not listed is left alone — memory cards and saves live in these
++	// trees too, and they must survive a core swap.
++	Purge []string
++}
++
+ type LibretroCoreConfig struct {
+ 	AltRepo         bool
+ 	AutoGlContext   bool // hack: keep it here to pass it down the emulator
+ 	CoreAspectRatio bool
++	CoreCache       CoreCache
+ 	Folder          string
+ 	Hacks           []string
+ 	Height          int
+@@ -80,9 +136,14 @@ type LibretroCoreConfig struct {
  	IsGlAllowed     bool
  	KbMouseSupport  bool
  	Lib             string
@@ -191,7 +340,7 @@ index baf701e..48589c2 100644
  	Roms            []string
  	SaveStateFs     string
  	Scale           float64
-@@ -128,6 +165,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
+@@ -128,6 +189,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
  	return found
  }
  
@@ -428,10 +577,10 @@ index ffc5c7d..85afeb9 100644
  	})
  	if err != nil {
 diff --git a/pkg/coordinator/hub.go b/pkg/coordinator/hub.go
-index ac04d15..7fdb0de 100644
+index ac04d15..a0c5ad9 100644
 --- a/pkg/coordinator/hub.go
 +++ b/pkg/coordinator/hub.go
-@@ -1,336 +1,376 @@
+@@ -1,336 +1,380 @@
 -package coordinator
 -
 -import (
@@ -776,6 +925,7 @@ index ac04d15..7fdb0de 100644
 +	"fmt"
 +	"net/http"
 +	"net/url"
++	"time"
 +
 +	"github.com/giongto35/cloud-game/v3/pkg/api"
 +	"github.com/giongto35/cloud-game/v3/pkg/com"
@@ -789,6 +939,9 @@ index ac04d15..7fdb0de 100644
 +	ProcessPackets(func(api.In[com.Uid]) error) chan struct{}
 +
 +	Send(api.PT, any) ([]byte, error)
++	// SendWith is Send with a per-call deadline, for the calls whose work is genuinely slow (a game
++	// start boots an emulator) rather than merely late.
++	SendWith(api.PT, any, time.Duration) ([]byte, error)
 +	Notify(api.PT, any)
 +}
 +
@@ -1215,14 +1368,34 @@ index 51e805c..2bf4439 100644
  	}
  	u.log.Info().Str("id", startGameResp.Rid).Msg("Received room response from worker")
 diff --git a/pkg/coordinator/workerapi.go b/pkg/coordinator/workerapi.go
-index dbceaed..e24e5e4 100644
+index dbceaed..aac85aa 100644
 --- a/pkg/coordinator/workerapi.go
 +++ b/pkg/coordinator/workerapi.go
-@@ -2,9 +2,9 @@ package coordinator
+@@ -1,10 +1,28 @@
+ package coordinator
  
- import "github.com/giongto35/cloud-game/v3/pkg/api"
+-import "github.com/giongto35/cloud-game/v3/pkg/api"
++import (
++	"time"
  
 -func (w *Worker) InitWebrtcStream(id string, initiator bool, sdp string) (*api.InitWebrtcStreamResponse, error) {
++	"github.com/giongto35/cloud-game/v3/pkg/api"
++)
++
++// GameStartTimeout is how long the coordinator lets a worker take to boot a game before it gives up.
++//
++// It is not the 10s default (com.DefaultCallTimeout) because a game start is the one call that runs an
++// entire emulator boot inline, and a hardware core's boot is dominated by shader work that the default
++// never budgeted for. Dolphin on a COLD pipeline cache is the worst case: it compiles on the way up,
++// and mode-2 (async ubershaders) additionally QUEUES the whole ubershader set at init.
++//
++// Timing a start out does not stop it. The worker finishes booting and registers its room, while the
++// coordinator has already released the slot and told the user "the arcade is full" — the two now
++// disagree about who is running what, which is the wedge this budget exists to prevent. So the ceiling
++// is deliberately far above any healthy boot (seconds) rather than tuned close to it: it is a
++// backstop against a hung worker, not a performance knob. A genuinely hung boot still fails, just later.
++const GameStartTimeout = 60 * time.Second
++
 +func (w *Worker) InitWebrtcStream(id string, initiator bool, sdp string, videoCodec string) (*api.InitWebrtcStreamResponse, error) {
  	return api.UnwrapChecked[api.InitWebrtcStreamResponse](
 -		w.Send(api.InitWebrtcStream, api.InitWebrtcStreamRequest{Id: id, Initiator: initiator, Sdp: sdp}))
@@ -1230,10 +1403,18 @@ index dbceaed..e24e5e4 100644
  }
  
  func (w *Worker) WebrtcSignal(id string, sdp, ice *string) {
-@@ -21,6 +21,15 @@ func (w *Worker) StartGame(id string, req api.GameStartUserRequest) (*api.StartG
+@@ -15,13 +33,22 @@ func (w *Worker) WebrtcSignal(id string, sdp, ice *string) {
+ 
+ func (w *Worker) StartGame(id string, req api.GameStartUserRequest) (*api.StartGameResponse, error) {
+ 	return api.UnwrapChecked[api.StartGameResponse](
+-		w.Send(api.StartGame, api.StartGameRequest{
++		w.SendWith(api.StartGame, api.StartGameRequest{
+ 			StatefulRoom: api.StatefulRoom{Id: id, Rid: req.RoomId},
+ 			Game:         req.GameName,
  			PlayerIndex:  req.PlayerIndex,
  			Record:       req.Record,
  			RecordUser:   req.RecordUser,
+-		}))
 +			// Forward the creator's per-room encoder quality choice to the worker.
 +			VideoBitrate: req.VideoBitrate,
 +			AudioFec:     req.AudioFec,
@@ -1243,9 +1424,10 @@ index dbceaed..e24e5e4 100644
 +			// about is dropped here without an error, so this line is what makes the feature exist.
 +			CoreOptions: req.CoreOptions,
 +			Cheats:      req.Cheats,
- 		}))
++		}, GameStartTimeout))
  }
  
+ func (w *Worker) QuitGame(id string) {
 diff --git a/pkg/games/launcher.go b/pkg/games/launcher.go
 index 8850ea7..13b2220 100644
 --- a/pkg/games/launcher.go
@@ -5208,10 +5390,10 @@ index f3553b1..a26a9d8 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..4ce8a6f 100644
+index 6974d59..972135f 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,955 @@
+@@ -1,578 +1,1087 @@
 -package libretro
 -
 -import (
@@ -5793,8 +5975,10 @@ index 6974d59..4ce8a6f 100644
 +package libretro
 +
 +import (
++	"crypto/sha256"
 +	"errors"
 +	"fmt"
++	"io/fs"
 +	"path/filepath"
 +	"runtime"
 +	"strings"
@@ -5990,6 +6174,10 @@ index 6974d59..4ce8a6f 100644
 +		f.nano.SetSaveDirSuffix(f.storage.MainPath())
 +		f.log.Debug().Msgf("Using unique dir for saves: %v", f.storage.MainPath())
 +	}
++	// Drop a cache the current core build did not write. Must run HERE: the save dir is final by now
++	// (the block above may have re-pointed it), and the core reads its cache during the load that
++	// follows — context_reset, still inside this same call. A purge after that point would be a no-op.
++	f.purgeForeignCoreCache(conf, corePath(conf, libExt))
 +	// Scale > 1 magnifies (2D cores: integer nearest upscale, which is what preserves pixel art and puts
 +	// the 4:2:0 chroma plane back at native resolution). Scale < 1 SHRINKS, which is supersampling:
 +	// render the core at N x native and average it down before the encoder sees it. That is the only
@@ -6287,6 +6475,132 @@ index 6974d59..4ce8a6f 100644
 +			floorNext = deadline + targetFrameTimeNs
 +		}
 +	}
++}
++
++// ── Core-build cache isolation (MovieTheater patch 0042) ────────────────────────────────────────
++//
++// A shader/pipeline cache is only meaningful to the exact core BUILD that wrote it. Dolphin compares
++// its pipeline UIDs with memcmp, and two builds of the same emulator lay that struct out differently,
++// so a core handed a foreign cache matches nothing, recompiles every pipeline INLINE on the emulator
++// thread, and appends its own UIDs next to the ones it could not read. The file grows without ever
++// becoming useful, and it happens on every boot, not just the first — the "GX slowdown" was this.
++//
++// So the cache is stamped with the identity of the build that owns it, and a core that finds someone
++// else's stamp throws the cache away rather than trying to read it. Regenerating a shader cache is
++// cheap and automatic; reading a poisoned one never stops being expensive.
++
++// coreBuildId identifies a core BUILD, not a core name. The name is not enough: we rebuild the custom
++// Dolphin against upstream, and the stock core is overwritten by the nightly repo sync — same filename,
++// different pipeline UIDs, same poison. Hashing the library is the only identity that tracks that.
++func coreBuildId(libPath string) (string, error) {
++	lib, err := os.ReadFile(libPath)
++	if err != nil {
++		return "", err
++	}
++	return fmt.Sprintf("%x", sha256.Sum256(lib))[:16], nil
++}
++
++// corePath rebuilds the library path nanoarch will actually dlopen (see nanoarch.coreLoad).
++func corePath(conf config.LibretroCoreConfig, libExt string) string { return conf.Lib + libExt }
++
++func (f *Frontend) purgeForeignCoreCache(conf config.LibretroCoreConfig, libPath string) {
++	if conf.CoreCache.Dir == "" || len(conf.CoreCache.Purge) == 0 {
++		return
++	}
++
++	saveDir := f.nano.SaveDir()
++	cacheDir := filepath.Join(saveDir, filepath.FromSlash(conf.CoreCache.Dir))
++	// Containment guard. Everything below deletes, and the dir comes from config — a "../.." in it
++	// would aim this at the save tree. Refuse rather than trust.
++	if rel, err := filepath.Rel(saveDir, cacheDir); err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
++		f.log.Error().Msgf("coreCache.dir %q escapes the save dir — refusing to purge", conf.CoreCache.Dir)
++		return
++	}
++	if !os.Exists(cacheDir) {
++		return // nothing cached yet; the core will create it and we stamp it on the next boot
++	}
++
++	id, err := coreBuildId(libPath)
++	if err != nil {
++		// Unreadable core: the load about to happen will fail anyway. Don't delete on a guess.
++		f.log.Warn().Err(err).Msgf("couldn't identify the core build; leaving the cache alone")
++		return
++	}
++
++	stampPath := filepath.Join(cacheDir, ".core-build")
++	stamp, err := os.ReadFile(stampPath)
++	owner := strings.TrimSpace(string(stamp))
++	switch {
++	case err == nil && owner == id:
++		// Say so on every boot. A silently-unbound config would leave Dir empty and skip this whole
++		// function — which looks EXACTLY like a healthy run in the logs, right up until the cache is
++		// poisoned again. The presence of this line is the proof that isolation is actually armed.
++		f.log.Info().Msgf("core cache %v owned by this build (%v)", conf.CoreCache.Dir, id)
++		return // ours
++	case err == nil:
++		f.log.Info().Msgf("core cache belongs to build %v, this is %v — dropping it", owner, id)
++	default:
++		// No stamp. Written by a build from before this existed, so it CANNOT be vouched for — and the
++		// unstamped caches that exist today are exactly the poisoned ones. Unknown means foreign.
++		f.log.Info().Msgf("core cache is unstamped (unknown build) — dropping it")
++	}
++
++	var removed int
++	var freed int64
++	for _, pattern := range conf.CoreCache.Purge {
++		// Matched against the TOP LEVEL of the cache dir only, and only against what the core config
++		// named. Dolphin keeps its memory cards under this same User tree; nothing sweeps broadly here.
++		hits, err := filepath.Glob(filepath.Join(cacheDir, pattern))
++		if err != nil {
++			f.log.Error().Err(err).Msgf("bad coreCache.purge pattern %q — skipped", pattern)
++			continue
++		}
++		for _, hit := range hits {
++			freed += treeSize(hit)
++			if err := os.RemoveAll(hit); err != nil {
++				f.log.Error().Err(err).Msgf("couldn't drop cached %v", hit)
++				continue
++			}
++			removed++
++		}
++	}
++	f.log.Info().Msgf("core cache purged: %d entr(ies), ~%v freed, now owned by build %v",
++		removed, byteCount(freed), id)
++
++	if err := os.WriteFile(stampPath, []byte(id), 0644); err != nil {
++		// Non-fatal, but say so loudly: an unwritable stamp means the next boot purges again.
++		f.log.Error().Err(err).Msgf("couldn't stamp the core cache — it will be re-purged next boot")
++	}
++}
++
++// treeSize is the size of the whole subtree. The shader cache is a DIRECTORY, and a plain Stat on a
++// directory reports the dir entry (a handful of bytes), not the megabytes that are the only reason
++// this number is worth logging.
++func treeSize(root string) int64 {
++	var total int64
++	_ = filepath.WalkDir(root, func(_ string, d fs.DirEntry, err error) error {
++		if err != nil || d.IsDir() {
++			return nil
++		}
++		if fi, err := d.Info(); err == nil {
++			total += fi.Size()
++		}
++		return nil
++	})
++	return total
++}
++
++func byteCount(b int64) string {
++	const unit = 1024
++	if b < unit {
++		return fmt.Sprintf("%d B", b)
++	}
++	div, exp := int64(unit), 0
++	for n := b / unit; n >= unit; n /= unit {
++		div *= unit
++		exp++
++	}
++	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "KMGTPE"[exp])
 +}
 +
 +// SetRoomCheats stages per-room core-option overrides + cheat codes for the next LoadGame.
