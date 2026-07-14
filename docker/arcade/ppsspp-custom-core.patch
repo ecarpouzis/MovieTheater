@@ -1,0 +1,43 @@
+diff --git a/Common/MachineContext.h b/Common/MachineContext.h
+index b704b2e..bb0ae52 100644
+--- a/Common/MachineContext.h
++++ b/Common/MachineContext.h
+@@ -15,7 +15,18 @@
+ 
+ typedef CONTEXT SContext;
+ 
+-#if defined(__LIBRETRO__)
++// MT PATCH: upstream blanket-disables the machine context for ANY libretro build, even on Windows
++// x64 where CONTEXT and AddVectoredExceptionHandler are perfectly available and the AMD64 branch
++// below compiles verbatim. The cost of that opt-out is not small: without MACHINE_CONTEXT_SUPPORTED
++// InstallExceptionHandler() logs "Exception handler not implemented on this platform, can't install",
++// so fastmem has no fault handler, so a stray guest access is a raw 0xC0000005 that kills the worker
++// — which forced us onto "IR JIT" + fast_memory=disabled (software address translation) on a 13700K.
++// Re-enabling it is safe HERE because the handler is well-behaved: it only claims EXCEPTION_ACCESS_
++// VIOLATION, and Memory::HandleFault declines immediately unless the faulting PC is inside PPSSPP's
++// OWN jit buffer (MIPSComp::jit->CodeInRange), returning EXCEPTION_CONTINUE_SEARCH otherwise. A Go
++// runtime or GStreamer fault therefore passes straight through to their handlers, untouched.
++// Scoped to AMD64 so every other libretro platform keeps upstream's behaviour exactly.
++#if defined(__LIBRETRO__) && !PPSSPP_ARCH(AMD64)
+ 
+ #elif PPSSPP_ARCH(AMD64)
+ 
+diff --git a/Common/Render/Text/draw_text_uwp.cpp b/Common/Render/Text/draw_text_uwp.cpp
+index ecaf551..b12fee6 100644
+--- a/Common/Render/Text/draw_text_uwp.cpp
++++ b/Common/Render/Text/draw_text_uwp.cpp
+@@ -11,7 +11,13 @@
+ #include "Common/StringUtils.h"
+ #include "Common/File/Path.h"
+ 
+-#if defined(_WIN32) && !defined(USING_QT_UI)
++// MT PATCH: guard mismatch with our own header — draw_text_uwp.h declares TextDrawerUWP under
++//   #if defined(_WIN32) && !defined(USING_QT_UI) && !defined(__LIBRETRO__)
++// while this body was compiled under the same condition MINUS the __LIBRETRO__ exclusion. So a
++// Windows libretro build compiles the implementation of a class its header never declared, and every
++// member reference is an undeclared identifier. Match the header. (Upstream break; nothing to do with
++// the MachineContext change.)
++#if defined(_WIN32) && !defined(USING_QT_UI) && !defined(__LIBRETRO__)
+ 
+ #include <string>
+ 

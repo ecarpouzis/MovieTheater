@@ -5416,10 +5416,10 @@ index f3553b1..a26a9d8 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..0864b80 100644
+index 6974d59..257c162 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,1140 @@
+@@ -1,578 +1,1180 @@
 -package libretro
 -
 -import (
@@ -6445,6 +6445,26 @@ index 6974d59..0864b80 100644
 +	var diagAudioBase int64
 +	var diagMaxTickNs int64
 +
++	// pace-diag II — the audio-underrun probe (2026-07-14). The four fields above CANNOT see the PSP
++	// crackle, and that blindness cost us a wrong verdict (we A/B'd two cores on maxTick, saw a wash,
++	// and rolled back the one that actually fixed the sound). They are blind structurally:
++	//
++	//   * audio/s reads ~100% of the sample rate on ANY arm, because the pacer TARGETS the audio clock.
++	//     It says what the loop asked for, not whether the core could deliver it.
++	//   * maxTick is the WORST retro_run of a 5 s window — an outlier. Repaying an audio deficit needs
++	//     the core to run <=2% FAST for seconds on end, which is a question about the MEAN frame cost.
++	//
++	// So measure the thing that decides whether a stall gets repaid or becomes a permanent hole in the
++	// stream: HEADROOM. sumTick/ticks is what a frame really costs; noSleep counts the ticks that had no
++	// spare time at all (the loop was already late leaving retro_run — at that point the core CANNOT run
++	// fast, so the deficit stands and the client's jitter buffer eats it, forever). deficit is the audio
++	// clock's live debt at window end, and forgiven counts the stalls the pacer gave up on repaying.
++	// A core that crackles should show: noSleep high, deficit climbing, forgiven > 0.
++	var diagSumTickNs int64
++	var diagNoSleep int64
++	var diagForgiven int64
++	var diagMaxDeficitNs int64
++
 +	for {
 +		select {
 +		case <-f.done:
@@ -6456,6 +6476,7 @@ index 6974d59..0864b80 100644
 +			audioDelta := f.nano.TakeAudioFrames()
 +			audioFrames += audioDelta
 +			diagTicks++
++			diagSumTickNs += tickDur
 +			if tickDur > diagMaxTickNs {
 +				diagMaxTickNs = tickDur
 +			}
@@ -6464,10 +6485,19 @@ index 6974d59..0864b80 100644
 +			}
 +			if now := os.Nanotime(); now-diagWindow >= 5*1e9 {
 +				winSec := float64(now-diagWindow) / 1e9
-+				f.log.Info().Msgf("pace-diag: ticks/s=%.1f audio/s=%.0f maxTick=%.1fms slowTicks(>20ms)=%d",
++				// Live audio debt: how far real time has run past where the audio the core produced says
++				// it should be. Positive = the client is owed samples that do not exist yet.
++				deficitNs := os.Nanotime() - (audioEpoch + int64(float64(audioFrames)/sr*1e9))
++				f.log.Info().Msgf(
++					"pace-diag: ticks/s=%.1f audio/s=%.0f maxTick=%.1fms slowTicks(>20ms)=%d "+
++						"meanTick=%.2fms noSleep=%.1f%% deficit=%.1fms maxDeficit=%.1fms forgiven=%d",
 +					float64(diagTicks)/winSec, float64(audioFrames-diagAudioBase)/winSec,
-+					float64(diagMaxTickNs)/1e6, diagSlow)
++					float64(diagMaxTickNs)/1e6, diagSlow,
++					float64(diagSumTickNs)/float64(max(diagTicks, 1))/1e6,
++					100*float64(diagNoSleep)/float64(max(diagTicks, 1)),
++					float64(deficitNs)/1e6, float64(diagMaxDeficitNs)/1e6, diagForgiven)
 +				diagWindow, diagTicks, diagSlow, diagMaxTickNs = now, 0, 0, 0
++				diagSumTickNs, diagNoSleep, diagForgiven, diagMaxDeficitNs = 0, 0, 0, 0
 +				diagAudioBase = audioFrames
 +			}
 +
@@ -6523,7 +6553,13 @@ index 6974d59..0864b80 100644
 +			if f.AudioMaster {
 +				resyncAfter = int64(audioForgiveAfter)
 +			}
++			if lateBy := now - deadline; lateBy > diagMaxDeficitNs {
++				diagMaxDeficitNs = lateBy
++			}
 +			if now-deadline > resyncAfter {
++				// The pacer is about to FORGIVE this much audio — samples the core never produced and
++				// now never will. Each one is a permanent hole the client's jitter buffer absorbs.
++				diagForgiven++
 +				audioEpoch += now - deadline
 +				deadline = now
 +			}
@@ -6544,6 +6580,10 @@ index 6974d59..0864b80 100644
 +				}
 +				f.skipVideo = false
 +			} else {
++				// No sleep left: retro_run itself ate the whole frame budget. This is the tick that
++				// decides the crackle — a core with no spare time cannot run the <=2% fast that repaying
++				// an audio deficit requires, so the debt stands and the buffer ratchets down.
++				diagNoSleep++
 +				if f.conf.LogDroppedFrames {
 +					f.log.Debug().Msgf("[] Frame drop: %v", time.Duration(-sleepNs))
 +				}

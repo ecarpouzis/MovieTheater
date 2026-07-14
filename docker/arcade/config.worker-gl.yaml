@@ -178,11 +178,51 @@ emulator:
         # the bottom-left-origin GL frame upside down — the exact n64 lesson). Mirror of the WSL
         # config's GPU-core block; keep in lockstep with CloudRetroHost.ZoneForSystem's "gl" list.
         psp:
+          # STOCK core is LIVE — and that is a deliberate choice, not a default. Eric's read from real play:
+          # stock feels snappier in general LocoRoco play; the custom core removes a RARE audio crackle but
+          # trades a little of that general responsiveness. Stock wins the everyday case, so it ships; the
+          # custom core is BUILT, staged, and switch-ready for anyone who wants the no-crackle trade.
+          #
+          # ── The custom core (docker/arcade/ppsspp-custom-core.patch + ppsspp-build-core.bat) ──
+          # Built the buildbot's way: libretro/Makefile + MSVC, static /MT — NOT CMake, NEVER MinGW. It
+          # exists because Common/MachineContext.h blanket-disables the machine context for ANY libretro
+          # build, even on Windows x64 where CONTEXT + AddVectoredExceptionHandler are available, so
+          # InstallExceptionHandler() fails, fastmem has no AV-rescue handler, and a stray guest access is a
+          # raw 0xC0000005 that kills the worker — which is exactly what pins STOCK to IR JIT + fastmem=off.
+          # The patch re-enables the handler for AMD64 only (safe: Memory::HandleFault declines any fault
+          # whose PC is outside PPSSPP's own jit buffer), so the custom core can run real JIT + fastmem.
+          # Earlier "custom is 20% slower / has ~1 s stalls" verdicts were RETRACTED measurement artifacts
+          # (CMake /MD build; investigator's own file scans). The Makefile /MT build is at throughput PARITY.
+          #
+          # ── What the crackle actually is (measured 2026-07-14, pace-diag II + client WebRTC stats) ──
+          # An audio UNDERRUN, downstream of the emulator: a core stall (savedata LIST/load, first-use VFPU
+          # LUT read, a heavy screen like the World Map) drops audio the client then conceals
+          # (concealedSamples up, packetsLost 0). The audio-mastered REPAY pacer (fork 1d3aa7c) already
+          # killed the SUSTAINED crackle — what's left is a RARE single-event underrun when one stall
+          # momentarily exceeds the ~150 ms jitter buffer. Custom's only edge here is HEADROOM (lower
+          # meanTick shaves the worst tails); it is NOT a throughput win. The stock-vs-custom rare-crackle
+          # RATE is still un-quantified — an idle box won't reproduce it and a local test browser contends
+          # on Ziggy and fabricates stalls (see the arcade-benchmark-isolation memory).
+          #
+          # ── Switch to custom (all THREE lines move together) ──
+          #   lib: ppsspp_custom_libretro   +   ppsspp_cpu_core: "JIT"   +   ppsspp_fast_memory: "enabled"
+          # The custom lib NAME pins it against repo.sync nightly overwrites (same trick as dolphin).
           lib: ppsspp_libretro
           folder: psp
           roms: ["iso", "cso", "pbp", "chd"]
           isGlAllowed: true
           coreAspectRatio: true
+          # audioMaster (patch 0043). PPSSPP declares 44100 Hz and delivers ~43850 (733 samples/frame
+          # where its own fps + rate imply 735.7). The pacer's fps floor always beats that slow audio
+          # clock, so the core under-feeds the Opus encoder by ~250 samples/sec, forever — the client's
+          # audio buffer drains in ~15 s and the player hears a faint crackle. audioMaster lets the audio
+          # clock pull the loop slightly above the fps floor (bounded 2%) so the core produces exactly
+          # what the encoder consumes. gc does NOT need this: Dolphin emits the 533.9 samples/frame it
+          # promises, which is why GameCube is clean in the same browser.
+          # ⚠ THIS LINE LIVES HERE, NOT IN config.yaml. Commit 44ff8cd put it in config.yaml only — the
+          # retired CPU/docker config that NOTHING reads — so it reached the live worker solely as an
+          # undocumented hand-edit, and was lost the moment this file was deployed over it (2026-07-14).
+          audioMaster: true
           # vfr OFF (matches the working N64 mupen entry): the default vfr:true timestamps each encoded
           # frame by its VARIABLE wall-clock delta, which on this path plays back too fast (Sonic Adventure
           # ran double-speed, Patapon/LocoRoco unplayable). Fixed cadence paces the RTP timestamps to the
@@ -214,7 +254,12 @@ emulator:
           # off (noSaveStates). PSP's progress is its MEMSTICK SAVE, which the card vault now carries
           # per-user (cards.psp), so nothing is actually lost — this is the same bargain the real console
           # made. Revisit only with a PPSSPP build whose savestates work under libretro.
-          hacks: [skip_hw_context_destroy, skip_same_thread_save]
+          # skip_serialize_size_probe: with noSaveStates the probe's result is DEAD — nothing ever
+          # serializes this core — yet the boot probe still calls retro_serialize_size, the exact
+          # function documented two lines up as access-violating here (0xC0000005). It only ever fed
+          # a log line ("Save file size: 128.0 MiB"). Keeping a known-fragile call for a value we
+          # discard is pure downside, so don't make it. (Same reasoning as dolphin's, patch 0016.)
+          hacks: [skip_hw_context_destroy, skip_same_thread_save, skip_serialize_size_probe]
           noSaveStates: true
           # SUPERSAMPLING (patch 0023). MSAA is INERT on this core — libretro's hw_render FBO isn't
           # multisampled, so ppsspp/mupen64plus produce BIT-IDENTICAL frames with it on or off (only
@@ -228,10 +273,10 @@ emulator:
           scaleMethod: bilinear2
           options:
             ppsspp_internal_resolution: "1920x1088"
-            # IR JIT, NOT the default fastmem JIT: PPSSPP's fastmem relies on a SIGSEGV/AV handler
-            # ("Exception handler not implemented on this platform, can't install" in the embedded worker) —
-            # without it a benign fastmem fault becomes a hard 0xc0000005 crash in retro_run. IR JIT does
-            # software address translation (no fastmem AVs); stable and fast enough on the 13700K.
+            # IR JIT — the only SAFE cpu_core on the STOCK lib, because stock has no exception handler, so
+            # fastmem's benign faults become hard 0xc0000005 crashes in retro_run. Software address
+            # translation; stable and fast enough on the 13700K. Move to "JIT" ONLY with the custom lib +
+            # fast_memory: enabled (all three together — see the lib: note above).
             ppsspp_cpu_core: "IR JIT"
             # 16x anisotropic (docs/arcade-quality-plan.md §17). dc/gc/ps2 all ship aniso; psp was the
             # one 3D core without it. Not an AA op — what it retains is texture detail at oblique
@@ -243,11 +288,11 @@ emulator:
             # Core-author option: "gets rid of some visual artifacts" from unnecessary bilinear on 2D
             # UI/text elements — the PSP renders a lot of native-res 2D that plain filtering smears.
             ppsspp_smart_2d_texture_filtering: "enabled"
-            # REQUIRED, root cause of the boot 0xc0000005: every libretro Windows PPSSPP build has the
-            # fastmem AV-rescue handler COMPILED OUT (MachineContext.h empty __LIBRETRO__ branch), and
-            # IR JIT does NOT bypass fastmem (its address-validation pass is disabled while
-            # bFastMemory=true). Default is "enabled" ("Unstable." per the core's own option text) —
-            # the first stray guest access is then a raw host access violation that kills the worker.
+            # DISABLED on stock, and it MUST stay that way: the fastmem AV-rescue handler is compiled out of
+            # the stock nightly (MachineContext.h's empty __LIBRETRO__ branch) and IR JIT does not bypass
+            # fastmem, so the first stray guest access is a raw host access violation that kills the worker —
+            # which is why the core's own option text calls "enabled" Unstable. Only the custom lib installs
+            # the handler; enable this ONLY there (all three lines together — see the lib: note above).
             ppsspp_fast_memory: "disabled"
         dc:
           lib: flycast_libretro
@@ -351,7 +396,23 @@ emulator:
         # prove the path on the 4070 Ti, bump pcsx2_upscale_multiplier once it renders. .cso = the
         # compressed-ISO master format (R:\Roms\Games\Sony Playstation 2), read directly by the core.
         ps2:
-          lib: pcsx2_libretro
+          # OUR PATCHED CORE (2026-07-14). Stock LRPS2 with ONE data edit: the Stuntman (SLUS-20250)
+          # entry in the GameDB that is compiled into the DLL. Recipe + rationale + the byte-for-byte
+          # constraint: docker/arcade/lrps2-patch-gamedb.py. NOT a code change — the executable code
+          # is byte-identical to stock; 124 bytes of embedded YAML differ and nothing else.
+          #
+          # Why a patched DLL and not config: the GameDB is the ONLY way to reach roundModes/clampModes
+          # (they are not core options), and the GameDB cannot be overridden — `pcsx2_use_external_
+          # gameindex` is DEAD CODE in this port (re-tested 2026-07-14: still "12806 games on record",
+          # and the core never even logs its own "External GameIndex.yaml not found" line). Setting the
+          # GS fixes by hand instead would need pcsx2_enable_hw_hacks, which DISABLES the entire GameDB
+          # auto-fix system for all 12,806 games. So: patch the data.
+          #
+          # The custom lib NAME is the guard: libretro.cores.repo.sync pulls nightly cores by name and
+          # would silently overwrite a patched pcsx2_libretro.dll. Same trick as the custom Dolphin core.
+          # ⚠ Re-run the script after any core update — it refuses to patch if the stock entry changed.
+          # ROLLBACK: lib: pcsx2_libretro (stock is untouched and sits right beside it).
+          lib: pcsx2_custom_libretro
           folder: ps2
           roms: ["iso", "cso", "chd", "bin", "mdf", "zso"]
           isGlAllowed: true
@@ -399,6 +460,17 @@ emulator:
             # ~0.073 bits/pixel/frame vs ~0.29 at native — i.e. it would have looked WORSE. It ships with
             # per-system Auto bitrate (ps2 = 12 Mbps ceiling) + ABR (patch 0021) behind it.
             pcsx2_upscale_multiplier: "2x Native (~720p)"
+            # pcsx2_hw_download_mode stays at the core default ("Accurate") — MEASURED and REJECTED
+            # 2026-07-14 (Stuntman audio). It is under `Video >`, not `HW Hacks >`, so unlike the sprite
+            # hacks it can be set WITHOUT tripping pcsx2_enable_hw_hacks and killing the GameDB auto-fixes
+            # — which makes it the tempting lever for a game whose GameDB entry forces CPU sprite
+            # rendering (Stuntman: cpuSpriteRenderBW=4), since "Accurate" syncs CPU/GPU on every readback.
+            # It did cut slow ticks (~143 -> ~105 per 5 s window driving) but introduced 58-92 ms maxTick
+            # spikes where the default has none, and BOTH arms already held a flat 60 fps / 48000 audio.
+            # Paying for noisy headroom with "incorrect results in games that read back GPU-rendered
+            # content" (the core's own words) is a bad trade in the one game whose texture fix IS a
+            # readback. Revisit only with a deterministic bed and a visual diff.
+            # Values: Accurate|Disable Readbacks|Unsynchronized|Disabled.
             # Sharpens ground/road planes at oblique angles, and it HELPS the encoder: less texture
             # shimmer = less high-frequency temporal noise to spend bits on. Values: disabled|2x|4x|8x|16x.
             pcsx2_anisotropic_filtering: "8x"
@@ -438,13 +510,28 @@ emulator:
           # E-cores, efb scale, codec, network, pacing, save-states, shader/pipeline caches, gcz
           # compression, MSAA, dual-core (GFZ.ini vetoes it). Async shaders are moot on stock
           # (mode "0" below is REQUIRED — stock's async path nulls shared contexts and crashes).
-          lib: dolphin_libretro
+          #
+          # ⚠ SUPERSEDED 2026-07-14 (commit c149cf2). The verdict above was measured against a CRIPPLED
+          # custom build: its CMake set() shadowed the release flags, so the DLL shipped WITHOUT /O2 —
+          # that, not CreateSharedContext and not async shaders, was the GX race slowdown. The rebuilt,
+          # actually-optimized core (~13 MB; an unoptimized one is ~21 MB) holds a driven Big Blue race
+          # at 60.0, slowTicks=0, maxTick ~8 ms with 4x MSAA + efb 3 + async ubershaders ALL on. So the
+          # custom core is live and async shaders come WITH it: lib and shader_compilation_mode must move
+          # together (mode "2" crashes on stock). Build: docker/arcade/dolphin-build-core.bat.
+          # ⚠ As with audioMaster above, c149cf2 wrote this into config.yaml — which nothing reads. It
+          # belongs HERE, in the file the workers actually load. Rollback pair: dolphin_libretro + "0".
+          lib: dolphin_custom_libretro
           folder: gc
           roms: ["gcz", "iso", "rvz", "ciso", "gcm", "m3u"]
           isGlAllowed: true
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
+          # A pipeline cache is only readable by the exact core BUILD that wrote it — purge the stale
+          # shader cache when the core identity changes, or the new build silently recompiles forever.
+          coreCache:
+            dir: "User/Cache"
+            purge: ["Shaders", "*.uidcache"]
           # skip_serialize_size_probe (patch 0016): dolphin defers video/emu init to context_reset +
           # first retro_run, so the load-time retro_serialize_size probe walks save-state into a NULL
           # g_vertex_manager → 0xc0000005. The probe only feeds a log line; saves re-query at save time.
@@ -534,8 +621,13 @@ emulator:
             # rendering in heavy scenes ≈ 25 ms/frame. Sync's old first-sight stutter is now ~nil
             # (NVIDIA driver shader cache warm). If mode 2 is ever re-attempted, verify with a REAL
             # driven race and check the specialized cache STOPS growing between sessions.
-            dolphin_shader_compilation_mode: "0"
-            dolphin_wait_for_shaders: "enabled"
+            # "2" = Async (Ubershaders), and it REQUIRES the custom core above (stock's async path nulls
+            # the shared context and crashes). Ubershaders render the frame while specialized pipelines
+            # compile on worker threads — no compile stall inside retro_run. Synchronous mode "0" is what
+            # produced the 441 ms – 12.8 s stalls in the worker log (GLSL compiler output sits directly
+            # in front of every one of them). wait_for_shaders is then unnecessary: nothing to wait for.
+            dolphin_shader_compilation_mode: "2"
+            dolphin_wait_for_shaders: "disabled"
 
         # --- ported from docker/arcade/config.yaml (Windows-only migration): the tuned
         # non-GL cores so this pool renders 2D/N64 correctly (scale, N64 framebuffer opts). ---
