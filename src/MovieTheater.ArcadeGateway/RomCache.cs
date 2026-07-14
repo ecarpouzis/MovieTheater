@@ -119,7 +119,10 @@ public sealed class RomCache
     /// and safe under concurrency: a per-game lock collapses simultaneous first-plays into one extraction;
     /// an already-present game just refreshes its LRU stamp. No-op for non-managed games.
     /// </summary>
-    public async Task EnsureMaterializedAsync(int gameId, CancellationToken ct = default)
+    public Task EnsureMaterializedAsync(int gameId, CancellationToken ct = default)
+        => EnsureMaterializedAsync(gameId, ct, null);
+
+    private async Task EnsureMaterializedAsync(int gameId, CancellationToken ct, StageJob? job)
     {
         MaybeReloadManifest();
         ManifestGame? g;
@@ -142,14 +145,110 @@ public sealed class RomCache
             await extractSem.WaitAsync(ct);
             try
             {
+                progress.Value = job;
                 await ExtractAsync(g, ct);
             }
-            finally { extractSem.Release(); }
+            finally { progress.Value = null; extractSem.Release(); }
 
             RecordMaterialized(gameId, g);
             Evict();
         }
         finally { gameLock.Release(); }
+    }
+
+    // The staging job for the extraction running on THIS async flow, so the decompressors can report
+    // progress without threading a parameter through every call site (7-Zip, copy, gcz, cso).
+    private static readonly AsyncLocal<StageJob?> progress = new();
+
+    private void ReportProgress(long done, long total)
+    {
+        var j = progress.Value;
+        if (j is null) return;
+        lock (gate) { j.Done = done; j.Total = total; }
+    }
+
+    // ── Staging as an OBSERVABLE, DETACHED job (2026-07-14) ─────────────────────────────────────────
+    //
+    // Staging used to run inline on the WebSocket upgrade with the caller's RequestAborted token, which
+    // made the player's patience the timeout: the browser sat on "Connecting…" while a 562 MB image was
+    // inflated, gave up, and the abort CANCELLED the extraction — so the next attempt started from
+    // scratch and could never finish either. A ROM being prepared is a STATE, not a race; the client is
+    // entitled to be told about it.
+    //
+    // So preparation is a background job keyed by game id, running on CancellationToken.None (nobody's
+    // disconnect can kill it), and the client polls Status() to render "Preparing ROM… n%" and connects
+    // when it flips to Ready.
+
+    public enum StageState { Absent, Preparing, Ready, Failed }
+
+    public sealed record StageStatus(StageState State, int Percent, string? Error);
+
+    private readonly Dictionary<int, StageJob> jobs = new();
+
+    private sealed class StageJob
+    {
+        public Task? Task;
+        public long Done, Total;
+        public string? Error;
+    }
+
+    /// <summary>Where this game's ROM is: already staged, being prepared (with progress), or failed.</summary>
+    public StageStatus Status(int gameId)
+    {
+        MaybeReloadManifest();
+        ManifestGame? g;
+        lock (gate) { byId.TryGetValue(gameId, out g); }
+        if (g is null) return new StageStatus(StageState.Ready, 100, null); // not JIT-backed: nothing to prepare
+        if (IsPresent(g)) return new StageStatus(StageState.Ready, 100, null);
+
+        lock (gate)
+        {
+            if (!jobs.TryGetValue(gameId, out var j)) return new StageStatus(StageState.Absent, 0, null);
+            if (j.Error is not null) return new StageStatus(StageState.Failed, 0, j.Error);
+            var pct = j.Total > 0 ? (int)Math.Clamp(j.Done * 100 / j.Total, 0, 99) : 0;
+            return new StageStatus(StageState.Preparing, pct, null);
+        }
+    }
+
+    /// <summary>
+    /// Start (or join) this game's preparation and return immediately. The job is DETACHED — it runs on
+    /// CancellationToken.None, so a client that closes the tab mid-inflate no longer aborts the work that
+    /// the next player will need anyway.
+    /// </summary>
+    public void BeginMaterialize(int gameId)
+    {
+        if (!IsManaged(gameId)) return;
+        lock (gate)
+        {
+            if (jobs.TryGetValue(gameId, out var existing) && existing.Task is { IsCompleted: false }) return;
+            var job = new StageJob();
+            jobs[gameId] = job;
+            job.Task = Task.Run(async () =>
+            {
+                try
+                {
+                    await EnsureMaterializedAsync(gameId, CancellationToken.None, job);
+                }
+                catch (Exception ex)
+                {
+                    lock (gate) job.Error = ex.Message;
+                    log.LogError(ex, "RomCache preparation failed for game {GameId}", gameId);
+                }
+            });
+        }
+    }
+
+    /// <summary>Await this game's preparation, starting it if nobody has. Never cancelled by the caller.</summary>
+    public async Task WaitMaterializedAsync(int gameId, CancellationToken ct = default)
+    {
+        BeginMaterialize(gameId);
+        Task? t;
+        lock (gate) { jobs.TryGetValue(gameId, out var j); t = j?.Task; }
+        if (t is null) return;
+        // ct only abandons the WAIT, never the WORK.
+        await t.WaitAsync(ct);
+        var s = Status(gameId);
+        if (s.State == StageState.Failed) throw new InvalidOperationException(s.Error ?? "ROM preparation failed");
     }
 
     /// <summary>Mark a game in-use for the life of a connection so eviction won't pull it mid-session.</summary>
@@ -250,42 +349,68 @@ public sealed class RomCache
     /// the cache disk removes that class of stutter for the cost of ~40% more staged bytes, which is
     /// exactly what the LRU cap is for. (2026-07-11, the F-Zero GX slowdown post-mortem.)
     /// </summary>
+    /// <remarks>
+    /// EVERYTHING here writes to a <c>.part</c> file and RENAMES it into place only on success, because
+    /// "present" is decided by <see cref="IsPresent"/> — which just asks whether the file exists. A
+    /// half-written image left behind by a cancel (the player closed the tab), a crash, or an eviction
+    /// racing an extract therefore does not merely waste a stage: it counts as STAGED FOREVER, and the
+    /// core boots a TRUNCATED disc image. Observed live: a cancelled cso decompress left a 499 MB stub of
+    /// a 562 MB ISO, and nothing in the cache would ever have noticed. Rename is atomic on NTFS, so the
+    /// destination only ever exists complete.
+    /// </remarks>
     private async Task StageRomFileAsync(string source, string dest, CancellationToken ct)
     {
-        var ext = Path.GetExtension(source);
-        if (ext.Equals(".gcz", StringComparison.OrdinalIgnoreCase))
+        var part = dest + ".part";
+        try
         {
-            try
+            var ext = Path.GetExtension(source);
+            var decompressed = false;
+            if (ext.Equals(".gcz", StringComparison.OrdinalIgnoreCase))
             {
-                await Task.Run(() => GczDecompressTo(source, dest, ct), ct);
-                log.LogInformation("RomCache decompressed gcz -> raw image: {Dest}", dest);
-                return;
+                try
+                {
+                    await Task.Run(() => GczDecompressTo(source, part, ct, ReportProgress), ct);
+                    log.LogInformation("RomCache decompressed gcz -> raw image: {Dest}", dest);
+                    decompressed = true;
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // A malformed/unknown gcz falls back to the plain copy — the core reads compressed
+                    // images fine; this path is an optimization, never a gate.
+                    log.LogWarning(ex, "RomCache gcz decompress failed for {Source}; staging compressed copy", source);
+                }
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            else if (ext.Equals(".cso", StringComparison.OrdinalIgnoreCase))
             {
-                // A malformed/unknown gcz falls back to the plain copy — the core reads compressed
-                // images fine; this path is an optimization, never a gate.
-                log.LogWarning(ex, "RomCache gcz decompress failed for {Source}; staging compressed copy", source);
+                try
+                {
+                    await Task.Run(() => CsoDecompressTo(source, part, ct, ReportProgress), ct);
+                    log.LogInformation("RomCache decompressed cso -> raw iso: {Dest}", dest);
+                    decompressed = true;
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // Same contract as gcz: an optimization, never a gate. A ZSO (LZ4) or an already-raw
+                    // image named .cso lands here and is copied as-is, which still plays.
+                    log.LogWarning(ex, "RomCache cso decompress failed for {Source}; staging compressed copy", source);
+                }
             }
+
+            if (!decompressed)
+            {
+                using var src = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var dst = new FileStream(part, FileMode.Create, FileAccess.Write, FileShare.None);
+                await src.CopyToAsync(dst, ct);
+            }
+
+            File.Move(part, dest, overwrite: true);
         }
-        else if (ext.Equals(".cso", StringComparison.OrdinalIgnoreCase))
+        catch
         {
-            try
-            {
-                await Task.Run(() => CsoDecompressTo(source, dest, ct), ct);
-                log.LogInformation("RomCache decompressed cso -> raw iso: {Dest}", dest);
-                return;
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                // Same contract as gcz: an optimization, never a gate. A ZSO (LZ4) or an already-raw
-                // image named .cso lands here and is copied as-is, which still plays.
-                log.LogWarning(ex, "RomCache cso decompress failed for {Source}; staging compressed copy", source);
-            }
+            // Never leave a stub that IsPresent() would mistake for a staged ROM.
+            try { if (File.Exists(part)) File.Delete(part); } catch { /* best effort */ }
+            throw;
         }
-        using var src = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
-        using var dst = new FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.None);
-        await src.CopyToAsync(dst, ct);
     }
 
     /// <summary>
@@ -306,7 +431,8 @@ public sealed class RomCache
     /// &lt;&lt; index_shift, and the top bit means the block is stored RAW. Compressed blocks are BARE deflate
     /// (no zlib header) — the one real difference from gcz, and getting it wrong yields garbage, not an error.
     /// </summary>
-    internal static void CsoDecompressTo(string source, string dest, CancellationToken ct)
+    internal static void CsoDecompressTo(string source, string dest, CancellationToken ct,
+                                         Action<long, long>? onProgress = null)
     {
         using var src = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
         using var br = new BinaryReader(src);
@@ -356,7 +482,9 @@ public sealed class RomCache
                 dst.Write(block, 0, (int)blockSize);
             }
             written += blockSize;
+            if ((i & 0x3FF) == 0) onProgress?.Invoke(written, (long)totalBytes); // every ~1k blocks
         }
+        onProgress?.Invoke(written, (long)totalBytes);
         if ((ulong)written != totalBytes)
             throw new InvalidDataException($"cso decompress size mismatch: wrote {written}, header says {totalBytes}");
 
@@ -376,7 +504,8 @@ public sealed class RomCache
     /// (top bit set = block stored raw), u32 adler32 table (unused here), then block data. Compressed
     /// blocks are zlib-wrapped deflate.
     /// </summary>
-    internal static void GczDecompressTo(string source, string dest, CancellationToken ct)
+    internal static void GczDecompressTo(string source, string dest, CancellationToken ct,
+                                         Action<long, long>? onProgress = null)
     {
         using var src = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
         using var br = new BinaryReader(src);
@@ -414,7 +543,9 @@ public sealed class RomCache
                 z.CopyTo(dst);
                 written += dst.Position - before;
             }
+            if ((i & 0xFF) == 0) onProgress?.Invoke(written, (long)dataSize);
         }
+        onProgress?.Invoke(written, (long)dataSize);
         if ((ulong)written != dataSize)
             throw new InvalidDataException($"gcz decompress size mismatch: wrote {written}, header says {dataSize}");
     }

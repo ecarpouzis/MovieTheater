@@ -42,6 +42,8 @@ export default function ArcadeRoomPage() {
   const [snapping, setSnapping] = useState(false);
 
   const [status, setStatus] = useState("connecting");
+  // null = not staging. 0-99 = the gateway is preparing this game's ROM (first play of a compressed image).
+  const [romPercent, setRomPercent] = useState(null);
   const statusRef = useRef(status);
   statusRef.current = status;
   // States where our session is over — no presence to assert. Beating from these would resurrect
@@ -108,6 +110,28 @@ export default function ArcadeRoomPage() {
     throw new Error("The room is taking too long to start.");
   }
 
+  // Poll the gateway until this game's ROM is staged. Returns false only if preparation actually FAILED
+  // — an unreachable status endpoint is not fatal (an older gateway has no /rom-status, and every
+  // already-staged game is ready anyway), so we fall through and let the connection attempt speak.
+  async function waitForRom(descriptor, onPercent) {
+    const g = gatewayFor(descriptor);
+    if (!g) return true;
+    for (;;) {
+      let s;
+      try {
+        const res = await fetch(`${g.base}/rom-status/${g.token}`);
+        if (!res.ok) return true;
+        s = await res.json();
+      } catch {
+        return true;
+      }
+      if (s.state === "ready") return true;
+      if (s.state === "failed") return false;
+      onPercent(s.percent ?? 0);
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
     // Defer a tick so React 18 StrictMode's mount→unmount→mount doesn't open two sessions: the first
@@ -124,6 +148,18 @@ export default function ArcadeRoomPage() {
       setYourSlot(descriptor.playerSlot);
       setSystem(descriptor.system ?? null);
       setDiscCount(descriptor.discCount || 0);
+
+      // A JIT game's first play may have to inflate a compressed disc image (a PSP .cso, a GameCube
+      // .gcz — hundreds of MB) before any worker can open it. Wait for it EXPLICITLY, and say so.
+      // Connecting first and hoping meant the player watched "Connecting…" while the gateway worked,
+      // and if they gave up, the aborted request CANCELLED the extraction — so the next attempt began
+      // at zero and could never finish either. Ask, show progress, connect when it says ready.
+      if (!(await waitForRom(descriptor, (pct) => { if (!cancelled) setRomPercent(pct); }))) {
+        if (!cancelled) setFatal("Couldn't prepare this game's ROM.");
+        return;
+      }
+      if (cancelled) return;
+      setRomPercent(null);
 
       descriptorRef.current = descriptor;
       sessionRef.current = createCloudRetroSession(descriptor, {
@@ -564,7 +600,13 @@ export default function ArcadeRoomPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
         <Space>
           <Button onClick={() => history.push(lobbyPath())}>← Arcade</Button>
-          <Tag color={LIVE_STATUS.includes(status) ? "green" : "blue"}>{STATUS_TEXT[status] || status}</Tag>
+          {/* While the gateway inflates a compressed disc image, say THAT — not "Connecting…", which is
+              a lie the player can only respond to by giving up (and giving up used to cancel the work). */}
+          <Tag color={romPercent != null ? "orange" : LIVE_STATUS.includes(status) ? "green" : "blue"}>
+            {romPercent != null
+              ? (romPercent > 0 ? `Preparing game… ${romPercent}%` : "Preparing game…")
+              : (STATUS_TEXT[status] || status)}
+          </Tag>
           {spectator
             ? <Tag color="blue">👁 Spectating</Tag>
             : yourSlot != null && <Tag color="purple">You are P{yourSlot + 1}</Tag>}

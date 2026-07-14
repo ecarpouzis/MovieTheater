@@ -1,3 +1,4 @@
+using MovieTheater.ArcadeGateway;
 using MovieTheater.Core;
 using Yarp.ReverseProxy.Forwarder;
 
@@ -126,6 +127,38 @@ var forwarder = app.Services.GetRequiredService<IHttpForwarder>();
 // Liveness probe for Caddy / monitoring — reveals nothing.
 app.MapGet("/healthz", () => Results.Text("ok"));
 
+// Is this game's ROM ready to play, and if not, how far along is preparing it?
+//
+// A JIT game's first play may have to inflate a compressed disc image (a PSP .cso, a GameCube .gcz —
+// hundreds of MB) before any worker can open it. That used to happen INSIDE the WebSocket upgrade, so
+// the player watched "Connecting…" and the browser's patience was the de-facto timeout — and when they
+// gave up, the abort cancelled the extraction, leaving the next attempt to start from zero. Preparing a
+// ROM is a STATE the client is entitled to see, not a race it has to win. The client polls this, shows
+// "Preparing…" with progress, and connects when it reads Ready.
+//
+// Safe to expose: it takes a capability token like every other endpoint here, and returns nothing beyond
+// the state of a game the caller was already authorized to launch.
+app.MapGet("/rom-status/{token}", (HttpContext ctx, string token) =>
+{
+    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var payload) || payload is null)
+        return Results.Unauthorized();
+    if (romCache is null || !romCache.IsManaged(payload.GameId))
+        return Results.Json(new { state = "ready", percent = 100 });
+
+    var s = romCache.Status(payload.GameId);
+    if (s.State == RomCache.StageState.Absent)
+    {
+        romCache.BeginMaterialize(payload.GameId); // first ask starts the work
+        return Results.Json(new { state = "preparing", percent = 0 });
+    }
+    return Results.Json(new
+    {
+        state = s.State.ToString().ToLowerInvariant(),
+        percent = s.Percent,
+        error = s.Error,
+    });
+});
+
 app.Map("/w/{token}", async (HttpContext context, string token) =>
 {
     if (!ArcadeCapabilityToken.TryValidate(secret, token, out var payload) || payload is null)
@@ -221,7 +254,11 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
     {
         try
         {
-            await romCache.EnsureMaterializedAsync(payload.GameId, context.RequestAborted);
+            // WaitMaterialized, not EnsureMaterialized(RequestAborted): the WORK must not belong to this
+            // request. A player who gives up on a slow first-play used to CANCEL the extraction — so the
+            // next attempt restarted from zero and could never finish either. Now the job outlives them,
+            // and /Arcade/RomStatus lets the client show "Preparing…" instead of guessing at a timeout.
+            await romCache.WaitMaterializedAsync(payload.GameId, context.RequestAborted);
         }
         catch (Exception ex)
         {
