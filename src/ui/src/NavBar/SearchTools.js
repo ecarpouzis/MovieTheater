@@ -1,4 +1,4 @@
-import { Input, List, Button, Select } from "antd";
+import { Input, List, Button, Select, Slider } from "antd";
 import { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
@@ -13,19 +13,21 @@ const SORT_OPTIONS = [
   { label: "Popcornmeter", value: "popcorn" },
 ];
 
-// MPA Rating Search: each button browses ONE rating (the exact bucket), not a ceiling — clicking
-// "PG-13" shows the PG-13 movies. `id` is the MPA lookup id, which is also what the viewer's age
-// restriction is expressed in, so a rating above the restriction simply isn't offered. NC-17(5) and
-// X(6) are separate buckets here (the old cap slider merged them, which an exact search can't).
-// "Unknown"(7) isn't a rating anyone searches for, so it's not a button.
-const RATING_BUCKETS = [
-  { label: "G", id: 1 },
-  { label: "PG", id: 2 },
-  { label: "PG-13", id: 3 },
-  { label: "R", id: 4 },
-  { label: "NC-17", id: 5 },
-  { label: "X", id: 6 },
+// MPA Rating Search stops. Each stop browses THAT rating — "PG-13" shows the PG-13 movies, not
+// "PG-13 and everything tamer" (which is what this used to be: a cap/ceiling). `ids` are the MPA
+// lookup ids the stop stands for: NC-17 covers both NC-17(5) and X(6), one certificate as far as
+// anyone browsing is concerned. `ids[0]` is what the viewer's age restriction is compared against, so
+// a rating above it isn't offered. "Unknown"(7) is not a rating anyone searches for, so it has no stop.
+// There is no "Any" stop — the slider simply starts empty, and picking the selected stop again clears it.
+const RATING_STOPS = [
+  { label: "G", ids: [1] },
+  { label: "PG", ids: [2] },
+  { label: "PG-13", ids: [3] },
+  { label: "R", ids: [4] },
+  { label: "NC-17", ids: [5, 6] },
 ];
+
+const stopValue = (stop) => stop.ids.join(",");
 
 const { Search } = Input;
 
@@ -136,21 +138,33 @@ function SearchTools({ search, userData }) {
     }
   }
 
-  // ── MPA Rating Search ──────────────────────────────────────────────────
+  // ── MPA Rating Search slider ───────────────────────────────────────────
   // Only offer ratings the viewer is allowed to see (their age restriction is an MPA id; null = no
-  // restriction). Nothing is gained by offering a button whose grid would be empty by policy.
-  const ratingButtons =
+  // restriction). Nothing is gained by a stop whose grid would be empty by policy.
+  const ratingStops =
     userData?.ageRestriction != null
-      ? RATING_BUCKETS.filter((r) => r.id <= userData.ageRestriction)
-      : RATING_BUCKETS;
+      ? RATING_STOPS.filter((s) => s.ids[0] <= userData.ageRestriction)
+      : RATING_STOPS;
 
-  const activeRatingId = search.ratingId != null ? String(search.ratingId) : null;
+  // -1 = nothing selected. The slider then renders "empty" (handle + track hidden, see index.css) —
+  // an antd Slider always has a numeric value, so "no rating" is a presentation state, not a value.
+  const activeRatingIndex = search.ratingIds
+    ? ratingStops.findIndex((s) => stopValue(s) === String(search.ratingIds))
+    : -1;
 
-  // Clicking the active rating clears it and returns to the current scope — same toggle as the
-  // First Letter buttons below.
-  function ToggleRatingSearch(id) {
-    if (activeRatingId === String(id)) navigateToBrowseSearch();
-    else navigateToBrowseSearch("rating", String(id));
+  const ratingMarks = ratingStops.reduce((acc, s, i) => {
+    acc[i] = s.label;
+    return acc;
+  }, {});
+
+  // onAfterChange, NOT onChange: picking the stop that's already selected has to CLEAR it, and
+  // onChange only fires when the value actually changes — so a second click on the same stop would
+  // be silently swallowed. onAfterChange fires on every release, changed or not.
+  function onRatingPick(index) {
+    const stop = ratingStops[index];
+    if (!stop) return;
+    if (index === activeRatingIndex) navigateToBrowseSearch(); // same stop again → clear, back to the scope
+    else navigateToBrowseSearch("rating", stopValue(stop));
   }
 
   return (
@@ -245,19 +259,19 @@ function SearchTools({ search, userData }) {
         options={SORT_OPTIONS}
       />
       <span style={inputLabelStyle}>MPA Rating Search</span>
-      <div className="rating-search-row">
-        {ratingButtons.map((r) => {
-          const isActive = activeRatingId === String(r.id);
-          return (
-            <Button
-              key={r.id}
-              className={`rating-search-btn${isActive ? " rating-search-btn--active" : ""}`}
-              onClick={() => ToggleRatingSearch(r.id)}
-            >
-              {r.label}
-            </Button>
-          );
-        })}
+      <div
+        className={`rating-search-slider${activeRatingIndex < 0 ? " rating-search-slider--empty" : ""}`}
+        style={{ padding: "0 6px 8px" }}
+      >
+        <Slider
+          min={0}
+          max={ratingStops.length - 1}
+          step={1}
+          marks={ratingMarks}
+          tooltip={{ open: false }}
+          value={activeRatingIndex < 0 ? 0 : activeRatingIndex}
+          onAfterChange={onRatingPick}
+        />
       </div>
       <span style={inputLabelStyle}>First Letter</span>
       <List

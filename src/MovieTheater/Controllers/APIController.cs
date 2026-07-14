@@ -2316,7 +2316,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpGet("/API/GetMoviesByRating")]
-        public async Task<IActionResult> GetMoviesByRating(int ratingId, int page = 1, int pageSize = 60, string? types = null, string? sort = null)
+        public async Task<IActionResult> GetMoviesByRating(string ratingIds, int page = 1, int pageSize = 60, string? types = null, string? sort = null)
         {
             int ageRestriction = 100;
             var currentUserId = GetCurrentUserId();
@@ -2328,20 +2328,32 @@ namespace MovieTheater.Controllers
                     ageRestriction = parsedRestriction;
             }
 
-            // Browse by EXACT rating — clicking "PG-13" asks for the PG-13 movies, not "PG-13 and
+            // Browse by the rating ITSELF — clicking "PG-13" asks for the PG-13 movies, not "PG-13 and
             // everything tamer" (which is what this endpoint used to do, as a rating CAP). A title is
             // filed under the rating that actually gates it: real certificate → legacy → inferred
-            // (RatingGate.MovieEffectiveBucketIs), so a movie appears under one bucket and only one.
+            // (RatingGate.MovieEffectiveBucketIn), so a movie shows up under one button and only one.
             //
-            // The age gate still applies on top: asking for a bucket above the viewer's restriction
-            // is simply an empty grid — the two predicates intersect to nothing, no special-casing.
+            // A SET of buckets, not a single id, because one button can stand for more than one: NC-17
+            // covers NC-17(5) and X(6), which are one certificate to anyone browsing.
+            //
+            // The age gate still applies on top: asking for a bucket above the viewer's restriction is
+            // simply an empty grid — the two predicates intersect to nothing, no special-casing.
             // Order at the DB (nulls last, then collation — digit-titles sort before letters) and page
             // there, so the infinite-scroll client's repeated page fetches don't each re-materialize +
             // re-sort the whole rating set.
+            var buckets = (ratingIds ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out var id) ? id : 0)
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+            if (buckets.Count == 0)
+                return Ok(await PageCardsAsync(movieDb.Movies.Where(m => false).Select(ToCardDto), page, pageSize));
+
             var baseQuery = movieDb.Movies
                 .Where(m => m.ReviewBatch == null)
                 .Where(Web.RatingGate.MovieVisibleAtAge(movieDb, ageRestriction))
-                .Where(Web.RatingGate.MovieEffectiveBucketIs(movieDb, ratingId));
+                .Where(Web.RatingGate.MovieEffectiveBucketIn(movieDb, buckets));
 
             // Rating browse is movie-only, so apply just the Movie-bucket part of the Type scope.
             // (A scope without any movie bucket — e.g. Series-only — yields no rating results.)

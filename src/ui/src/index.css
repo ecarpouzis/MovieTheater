@@ -241,36 +241,47 @@ img {
   color: #ffffff !important;
 }
 
-/* MPA Rating Search (on the dark sidebar) — one button per rating, each browsing that exact rating.
-   It replaced a cap SLIDER, which set a ceiling: dragging to PG-13 showed G, PG and PG-13 together
-   and there was no way to ask for just one. */
-.rating-search-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+/* MPA Rating Search slider (on the dark sidebar). Each stop browses THAT rating — it used to be a
+   cap, where PG-13 meant "PG-13 and everything tamer". */
+.rating-search-slider .ant-slider-rail {
+  background: rgba(255, 255, 255, 0.14);
 }
-
-.rating-search-row .ant-btn.rating-search-btn {
-  flex: 1 1 auto;
-  min-width: 46px;
-  padding: 0 8px;
-  font-size: 12px;
-  font-weight: 600;
-  background-color: var(--sidebar-pill-bg);
-  border-color: var(--sidebar-input-border);
+.rating-search-slider .ant-slider-track {
+  background: var(--accent);
+}
+.rating-search-slider .ant-slider-dot {
+  background: var(--sidebar-input-bg);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.rating-search-slider .ant-slider-dot-active {
+  border-color: var(--accent);
+}
+.rating-search-slider .ant-slider-handle {
+  border-color: var(--accent);
+}
+.rating-search-slider .ant-slider:hover .ant-slider-track {
+  background: var(--accent);
+}
+.rating-search-slider .ant-slider-mark-text {
   color: var(--sidebar-text-muted);
+  font-size: 10px;
 }
-
-.rating-search-row .ant-btn.rating-search-btn:hover {
-  border-color: var(--accent);
+.rating-search-slider .ant-slider-mark-text-active {
   color: #fff;
 }
 
-.rating-search-row .ant-btn.rating-search-btn--active,
-.rating-search-row .ant-btn.rating-search-btn--active:hover {
-  background-color: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+/* No rating selected. An antd Slider always holds a number, so "nothing picked" can't be a value —
+   it's this state: the handle, the filled track and the active-stop styling all disappear, leaving a
+   bare rail. The rail still takes clicks, which is how you make the first pick. */
+.rating-search-slider--empty .ant-slider-handle,
+.rating-search-slider--empty .ant-slider-track {
+  opacity: 0;
+}
+.rating-search-slider--empty .ant-slider-dot-active {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.rating-search-slider--empty .ant-slider-mark-text-active {
+  color: var(--sidebar-text-muted);
 }
 
 /* Card title overflow handling for desktop and mobile */

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using MovieTheater.Db;
@@ -101,5 +102,19 @@ namespace MovieTheater.Web
                 ?? db.RatingMaps.Where(rm => rm.MovieRating == m.MpaaRatingInferred && rm.MPARatingID >= 1 && rm.MPARatingID <= MaxRealBucket).Select(rm => (int?)rm.MPARatingID).FirstOrDefault()
                 ?? UnknownRatingId
             ) == bucket;
+
+        /// <summary>
+        /// EF-translatable predicate: is this movie's effective bucket one of <paramref name="buckets"/>?
+        /// One UI button can stand for more than one bucket — NC-17 covers both NC-17(5) and X(6), which
+        /// are one certificate as far as anyone browsing is concerned — so the browse-by-rating grid
+        /// takes a SET, not a single id.
+        /// </summary>
+        public static Expression<Func<Movie, bool>> MovieEffectiveBucketIn(MovieDb db, ICollection<int> buckets) =>
+            m => buckets.Contains(
+                db.RatingMaps.Where(rm => rm.MovieRating == m.MpaaRating && rm.MPARatingID >= 1 && rm.MPARatingID <= MaxRealBucket).Select(rm => (int?)rm.MPARatingID).FirstOrDefault()
+                ?? db.RatingMaps.Where(rm => rm.MovieRating == m.Rating && rm.MPARatingID >= 1 && rm.MPARatingID <= MaxRealBucket).Select(rm => (int?)rm.MPARatingID).FirstOrDefault()
+                ?? db.RatingMaps.Where(rm => rm.MovieRating == m.MpaaRatingInferred && rm.MPARatingID >= 1 && rm.MPARatingID <= MaxRealBucket).Select(rm => (int?)rm.MPARatingID).FirstOrDefault()
+                ?? UnknownRatingId
+            );
     }
 }
