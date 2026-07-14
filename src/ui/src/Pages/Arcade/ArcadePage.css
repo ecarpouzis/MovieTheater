@@ -577,6 +577,46 @@
   max-height: 260px !important;
 }
 
+/* The count in words, above the list — the chip is ~150px and has room for "⚡ 2 of 28" and nothing
+   else, so the dropdown is where this gets spelled out. Carries the way back out too: undoing a
+   default-on cheat (PS2's widescreen patch) otherwise means finding it again among hundreds. */
+.arcade-cheat-dropdown__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+.arcade-cheat-dropdown__head b {
+  color: var(--text-primary);
+}
+.arcade-cheat-dropdown__clear {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.arcade-cheat-dropdown__clear:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Cheats are actually ON — the chip fills in, so a card with active cheats is obvious at a glance in
+   the grid without reading the number. */
+.arcade-chip--cheats-on {
+  background: var(--accent-soft);
+  border-color: var(--chip-cheat-border, var(--accent));
+  font-weight: 600;
+}
+
 .arcade-card__summary {
   font-size: 11.5px;
   line-height: 1.4;

@@ -95,10 +95,42 @@ describe("GameCard", () => {
   it("shows the cheat picker with a count, and hides it when a version has no cheats", () => {
     const { container, rerender } = render(<GameCard game={ps2()} onStart={vi.fn()} creating={0} />);
     expect(container.querySelector(".arcade-chip--cheats")).toBeTruthy();
-    expect(screen.getByText(/Cheats \(2\)|1 cheat/)).toBeTruthy();
+    // 1 of the version's 2 cheats is on by default (the widescreen patch).
+    expect(screen.getByText(/1 of 2/)).toBeTruthy();
 
     rerender(<GameCard game={game()} onStart={vi.fn()} creating={0} />);
     expect(container.querySelector(".arcade-chip--cheats")).toBeNull();
+  });
+
+  // The collapsed chip has to answer BOTH questions — how many cheats this version has, and how many are
+  // on. It used to answer only one at a time: the available count as a placeholder, replaced by the
+  // selected count once you picked one, so "⚡ 2 cheats" looked like a game with two cheats.
+  it("shows the AVAILABLE count when no cheat is on", () => {
+    const noDefaults = ps2({
+      versions: [{ id: 11, label: "USA", region: "USA", maxPlayers: 1, cheatCount: 28, defaultCheats: [] }],
+    });
+    const { container } = render(<GameCard game={noDefaults} onStart={vi.fn()} creating={0} />);
+    expect(screen.getByText(/28 cheats/)).toBeTruthy();
+    expect(container.querySelector(".arcade-chip--cheats-on")).toBeNull();
+    expect(container.querySelector(".arcade-chip--cheats").title).toBe("28 cheats available for this version");
+  });
+
+  it("shows selected AND available once a cheat is on, and fills the chip in", () => {
+    const withDefaults = ps2({
+      versions: [{ id: 11, label: "USA", region: "USA", maxPlayers: 1, cheatCount: 28, defaultCheats: ["c1", "c2"] }],
+    });
+    const { container } = render(<GameCard game={withDefaults} onStart={vi.fn()} creating={0} />);
+    expect(screen.getByText(/2 of 28/)).toBeTruthy();
+    expect(container.querySelector(".arcade-chip--cheats-on")).toBeTruthy();
+    expect(container.querySelector(".arcade-chip--cheats").title).toBe("2 of 28 cheats on — click to change");
+  });
+
+  it("singularizes a lone cheat", () => {
+    const one = ps2({
+      versions: [{ id: 11, label: "USA", region: "USA", maxPlayers: 1, cheatCount: 1, defaultCheats: [] }],
+    });
+    const { container } = render(<GameCard game={one} onStart={vi.fn()} creating={0} />);
+    expect(container.querySelector(".arcade-chip--cheats").title).toBe("1 cheat available for this version");
   });
 
   // The whole point of shipping defaultCheats with the card: a player who never opens the picker still
