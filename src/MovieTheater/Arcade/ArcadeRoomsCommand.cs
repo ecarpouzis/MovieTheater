@@ -29,6 +29,18 @@ namespace MovieTheater.Arcade
         [CommandOption("kill", Description = "Mark the room with this code ended (stamps EndedUtc).")]
         public string? Kill { get; set; }
 
+        [CommandOption("close-stale", Description = "Close ghost rows: rooms still marked live whose last heartbeat is older than --stale-minutes. DRY RUN unless --apply.")]
+        public bool CloseStale { get; set; }
+
+        [CommandOption("apply", Description = "With --close-stale: actually stamp EndedUtc (default is a dry run that only reports).")]
+        public bool Apply { get; set; }
+
+        [CommandOption("stale-minutes", Description = "With --close-stale: how quiet a room must be to count as dead. Default 60.")]
+        public int StaleMinutes { get; set; } = 60;
+
+        [CommandOption("limit", Description = "With --close-stale: max rows per run (chunked; re-run to continue). Default 200.")]
+        public int Limit { get; set; } = 200;
+
         private readonly IDbContextFactory<MovieDb> dbFactory;
 
         public ArcadeRoomsCommand(MovieTheaterConfiguration config) : base(config)
@@ -48,6 +60,52 @@ namespace MovieTheater.Arcade
                 room.EndedUtc = DateTime.UtcNow;
                 await db.SaveChangesAsync();
                 w.WriteLine($"Room {Kill} marked ended. (The emulator frees when its players disconnect or the worker is restarted.)");
+                return;
+            }
+
+            if (CloseStale)
+            {
+                // Ghost rows: "live" forever because the pod that knew about them restarted (the reaper's
+                // old prompt-only pass could not see them). This CLI is a separate process with NO view of
+                // the web app's in-memory registry, so it must not judge liveness aggressively — the stale
+                // window defaults to a full hour, far beyond the reaper's own 5 min, so a room someone is
+                // ACTUALLY playing right now (heartbeating every ~30 s into LastSeenUtc) can never be hit.
+                // Chunked + idempotent per the bulk-jobs rule: bounded --limit per run, re-run to continue.
+                var now = DateTime.UtcNow;
+                var cutoff = now.AddMinutes(-Math.Max(1, StaleMinutes));
+                var q0 = db.ArcadeSessions
+                    .Where(s => s.EndedUtc == null && (s.LastSeenUtc ?? s.CreatedUtc) < cutoff);
+
+                var total = await q0.CountAsync();
+                var batch = await q0.OrderBy(s => s.CreatedUtc).Take(Math.Max(1, Limit)).ToListAsync();
+                if (total == 0) { w.WriteLine("No stale room rows. Nothing to close."); return; }
+
+                var ids = batch.Select(r => r.ArcadeGameId).Distinct().ToList();
+                var gameTitles = await db.ArcadeGames.Where(g => ids.Contains(g.Id))
+                    .ToDictionaryAsync(g => g.Id, g => g.Title);
+
+                w.WriteLine($"{(Apply ? "CLOSING" : "DRY RUN — would close")} {batch.Count} of {total} stale row(s) " +
+                            $"(no heartbeat since {cutoff:yyyy-MM-dd HH:mm} UTC):\n");
+                w.WriteLine($"{"CODE",-8} {"GAME",-28} {"CREATED (UTC)",-18} LAST SEEN (UTC)");
+                foreach (var r in batch)
+                {
+                    var title = Trunc(gameTitles.GetValueOrDefault(r.ArcadeGameId) ?? $"#{r.ArcadeGameId}", 28);
+                    var seen = r.LastSeenUtc?.ToString("yyyy-MM-dd HH:mm") ?? "never";
+                    w.WriteLine($"{r.RoomCode,-8} {title,-28} {r.CreatedUtc,-18:yyyy-MM-dd HH:mm} {seen}");
+                }
+
+                if (!Apply)
+                {
+                    w.WriteLine($"\nDry run — nothing written. Re-run with --apply to close these {batch.Count}.");
+                    return;
+                }
+
+                foreach (var r in batch)
+                    r.EndedUtc = now;
+                await db.SaveChangesAsync();
+                var remaining = total - batch.Count;
+                w.WriteLine($"\nClosed {batch.Count}. {remaining} stale row(s) remain" +
+                            (remaining > 0 ? " — re-run to continue." : "."));
                 return;
             }
 

@@ -58,7 +58,14 @@ namespace MovieTheater.Arcade
             public readonly HashSet<int> Spectators = new();            // userIds watching, no controller
             public readonly Dictionary<int, DateTime> Viewers = new();  // userId -> last seen (players AND spectators)
             public DateTime CreatedUtc;
+            /// <summary>Last time this room's liveness was written to ArcadeSession.LastSeenUtc. Throttles
+            /// that UPDATE to one per <see cref="HeartbeatPersistEvery"/> instead of one per heartbeat.</summary>
+            public DateTime LastPersistedUtc;
         }
+
+        /// <summary>How often a live room's heartbeat is persisted to the durable row. Well under the
+        /// reaper's stale window, so a genuinely live room can never be mistaken for a corpse.</summary>
+        public static readonly TimeSpan HeartbeatPersistEvery = TimeSpan.FromSeconds(30);
 
         public enum BindResult { Ok, NotFound, NotCreator, AlreadyBound }
         public enum JoinOutcome { Ok, NotFound, NotBound, Full, NotSeated }
@@ -308,6 +315,40 @@ namespace MovieTheater.Arcade
                         kv.Key, kv.Value.GameId, kv.Value.MaxPlayers, kv.Value.CloudRetroRoomId != null,
                         kv.Value.Seats.Values.ToList(), kv.Value.Spectators.ToList(), kv.Value.CreatorUserId))
                     .ToList();
+            }
+        }
+
+        /// <summary>
+        /// Codes of the rooms this pod currently holds live, AFTER pruning the expired ones. The reaper
+        /// uses it as a "hands off" list: never close a DB row for a room the registry is still serving,
+        /// however old its durable stamp looks. It is a safety net only — NOT a liveness oracle. An empty
+        /// set means "this pod knows of no rooms", which is also exactly what a pod says one second after
+        /// it starts, so absence from this set is never on its own grounds to close anything.
+        /// </summary>
+        public IReadOnlyCollection<string> LiveRoomCodes()
+        {
+            lock (gate)
+            {
+                PruneAll(DateTime.UtcNow);
+                return rooms.Keys.ToHashSet(StringComparer.Ordinal);
+            }
+        }
+
+        /// <summary>
+        /// True at most once per <see cref="HeartbeatPersistEvery"/> per room — the caller then writes
+        /// <c>ArcadeSession.LastSeenUtc</c>. Claiming the slot and stamping it happen together under the
+        /// lock, so N concurrent heartbeats from N players produce ONE write, not N.
+        /// </summary>
+        public bool ShouldPersistHeartbeat(string roomCode, DateTime now)
+        {
+            lock (gate)
+            {
+                if (!rooms.TryGetValue(roomCode, out var state))
+                    return false;
+                if (now - state.LastPersistedUtc < HeartbeatPersistEvery)
+                    return false;
+                state.LastPersistedUtc = now;
+                return true;
             }
         }
 

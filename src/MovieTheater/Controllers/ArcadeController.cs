@@ -1180,6 +1180,19 @@ namespace MovieTheater.Controllers
                     return NotFound(new { message = "Room not found." });
             }
 
+            // Durable proof-of-life for the reaper (throttled to one UPDATE per room per 30 s, whatever the
+            // player count). Without this the ONLY record that a room is alive is the in-memory registry,
+            // which a deploy wipes — and the reaper then cannot tell a live room from a corpse, so it left
+            // every restarted-through session open forever. Fire-and-forget-ish: a failed stamp just means
+            // the row looks staler than it is, and the next beat (≤12 s) writes it again.
+            var beatNow = DateTime.UtcNow;
+            if (rooms.ShouldPersistHeartbeat(code, beatNow))
+            {
+                await movieDb.ArcadeSessions
+                    .Where(s => s.RoomCode == code && s.EndedUtc == null)
+                    .ExecuteUpdateAsync(u => u.SetProperty(s => s.LastSeenUtc, beatNow));
+            }
+
             var roster = status.PlayerUserIds.Concat(status.SpectatorUserIds).Distinct().ToList();
             var names = await movieDb.Users
                 .Where(u => roster.Contains(u.UserID))

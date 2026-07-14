@@ -40,5 +40,19 @@ namespace MovieTheater.Db
 
         /// <summary>Stamped when the room ends (all seats aged out, or the creator ended it). Null = live.</summary>
         public DateTime? EndedUtc { get; set; }
+
+        /// <summary>
+        /// Last time a player's browser heartbeated this room, written DURABLY (throttled to ~30 s by
+        /// <c>ArcadeRoomService.ShouldPersistHeartbeat</c>, so it costs one UPDATE per room per 30 s).
+        /// Null = never heartbeated since this column existed; treat <see cref="CreatedUtc"/> as the floor.
+        ///
+        /// This exists because "is this room alive?" could previously only be answered from the pod's
+        /// IN-MEMORY registry, which a restart wipes — so every deploy orphaned its live rows as
+        /// EndedUtc=NULL forever (795 of them by 2026-07-14). Reconciling against the in-memory set alone
+        /// cannot fix that: at startup that set is EMPTY, so it would close the very rooms that are still
+        /// playing and about to Rehydrate on their next heartbeat. A durable liveness stamp is the only
+        /// signal that survives the restart, which is what <c>ArcadeRoomReaperService</c> reconciles on.
+        /// </summary>
+        public DateTime? LastSeenUtc { get; set; }
     }
 }
