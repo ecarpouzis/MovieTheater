@@ -248,7 +248,7 @@ index 0000000..2aa55cc
 +	}
 +}
 diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
-index baf701e..38178be 100644
+index baf701e..d906957 100644
 --- a/pkg/config/emulator.go
 +++ b/pkg/config/emulator.go
 @@ -17,6 +17,38 @@ type Emulator struct {
@@ -290,7 +290,7 @@ index baf701e..38178be 100644
  }
  
  type LibretroConfig struct {
-@@ -69,10 +101,34 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
+@@ -69,10 +101,43 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
  		errors.New("core mapping not found for " + runtime.GOOS + ":" + runtime.GOARCH)
  }
  
@@ -318,14 +318,24 @@ index baf701e..38178be 100644
 +}
 +
  type LibretroCoreConfig struct {
- 	AltRepo         bool
+-	AltRepo         bool
++	AltRepo bool
++	// AudioMaster lets the AUDIO clock pace this core, even when that means running slightly FASTER
++	// than the core's advertised fps (patch 0043). Opt-in, because it exists for cores that lie:
++	// PPSSPP declares 44100 Hz and delivers ~43850 (733 samples/frame against the 735.7 its own fps
++	// and rate imply). The pacer's fps floor then always wins, the core never speeds up to service
++	// the audio clock, and the Opus encoder is fed 250 samples/sec less than it consumes — forever.
++	// That deficit drains the client's audio buffer in ~15 s, and the player hears a faint crackle.
++	// Dolphin, by contrast, produces exactly the 533.9 samples/frame it promises, which is why gc is
++	// clean in the same browser. The speed-up is bounded (audioPullMax) so a silent core cannot run away.
++	AudioMaster     bool
  	AutoGlContext   bool // hack: keep it here to pass it down the emulator
  	CoreAspectRatio bool
 +	CoreCache       CoreCache
  	Folder          string
  	Hacks           []string
  	Height          int
-@@ -80,9 +136,14 @@ type LibretroCoreConfig struct {
+@@ -80,9 +145,14 @@ type LibretroCoreConfig struct {
  	IsGlAllowed     bool
  	KbMouseSupport  bool
  	Lib             string
@@ -340,7 +350,7 @@ index baf701e..38178be 100644
  	Roms            []string
  	SaveStateFs     string
  	Scale           float64
-@@ -128,6 +189,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
+@@ -128,6 +198,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
  	return found
  }
  
@@ -5390,10 +5400,10 @@ index f3553b1..a26a9d8 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..972135f 100644
+index 6974d59..29b30fb 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,1087 @@
+@@ -1,578 +1,1116 @@
 -package libretro
 -
 -import (
@@ -6063,6 +6073,7 @@ index 6974d59..972135f 100644
 +	UniqueSaveDir     bool
 +	SaveStateFs       string
 +	NoSaveStates      bool // this core cannot be serialized; its memory card is the progress (0041)
++	AudioMaster       bool // the audio clock paces this core, even above its fps floor (0043)
 +}
 +
 +// ErrNoSaveStates is returned instead of serializing a core that cannot survive it.
@@ -6166,6 +6177,10 @@ index 6974d59..972135f 100644
 +	f.mu.Lock()
 +	f.SaveStateFs = conf.SaveStateFs
 +	f.NoSaveStates = conf.NoSaveStates
++	f.AudioMaster = conf.AudioMaster
++	if conf.AudioMaster {
++		f.log.Info().Msgf("%v: audio-mastered pacing (the audio clock may outrun the fps floor)", emu)
++	}
 +	if conf.NoSaveStates {
 +		f.log.Info().Msgf("%v: save-states are off for this core; progress lives on the memory card", emu)
 +	}
@@ -6363,6 +6378,12 @@ index 6974d59..972135f 100644
 +	// how many frames will be considered not normal
 +	const lateFramesThreshold = 3
 +
++	// How far an audio-mastered core may be pulled ABOVE its advertised fps to keep its audio clock
++	// fed, as a fraction of one frame. 2% covers PPSSPP's ~0.35-0.6% shortfall many times over while
++	// staying far below anything a player could perceive as fast (60.0 -> 61.2 fps worst case), and it
++	// is a hard ceiling: a core that stopped producing audio entirely could not drift beyond it.
++	const audioPullMax = 0.02
++
 +	batch := max(f.SpinBatch, 1)
 +
 +	// AUDIO-DRIVEN PACING. We pace retro_run against the emulated AUDIO clock (the game should produce
@@ -6409,7 +6430,8 @@ index 6974d59..972135f 100644
 +			tick0 := os.Nanotime()
 +			f.Tick()
 +			tickDur := os.Nanotime() - tick0
-+			audioFrames += f.nano.TakeAudioFrames()
++			audioDelta := f.nano.TakeAudioFrames()
++			audioFrames += audioDelta
 +			diagTicks++
 +			if tickDur > diagMaxTickNs {
 +				diagMaxTickNs = tickDur
@@ -6436,7 +6458,24 @@ index 6974d59..972135f 100644
 +			// Audio deadline: when real-time SHOULD be, given the audio produced so far.
 +			audioDeadline := audioEpoch + int64(float64(audioFrames)/sr*1e9)
 +			// Floor: never run faster than the core fps (covers silence + no-audio cores).
-+			deadline := floorNext
++			floor := floorNext
++			// ...unless this core is audio-mastered, and it is actually producing audio right now.
++			//
++			// A core whose audio clock runs SLOWER than its video clock can never be rescued by the
++			// max() below: its audioDeadline is always earlier than the floor, so the floor always wins,
++			// the loop never speeds up, and the core keeps under-feeding the encoder for the whole
++			// session. PPSSPP does exactly this (733 samples/frame where its own 44100 Hz @ 59.94 fps
++			// implies 735.7) and the missing ~250 samples/sec drain the client's audio buffer until it
++			// underruns — the faint PSP crackle. Letting the audio clock pull the loop a little faster
++			// than nominal makes the core produce exactly what the encoder consumes.
++			//
++			// Two guards, and they are the whole reason this is safe: the pull is bounded to audioPullMax
++			// (a core cannot run away), and it only applies while audio is FLOWING (a silent or audio-less
++			// core keeps the honest fps floor, which is what the floor was there for in the first place).
++			if f.AudioMaster && audioDelta > 0 {
++				floor -= int64(float64(targetFrameTimeNs) * audioPullMax)
++			}
++			deadline := floor
 +			if audioDeadline > deadline {
 +				deadline = audioDeadline
 +			}
@@ -11506,10 +11545,10 @@ index 6972cc7..ccfe9bb 100644
 +}
 diff --git a/pkg/worker/media/glzerocopy.go b/pkg/worker/media/glzerocopy.go
 new file mode 100644
-index 0000000..bcd5a8b
+index 0000000..1de3477
 --- /dev/null
 +++ b/pkg/worker/media/glzerocopy.go
-@@ -0,0 +1,256 @@
+@@ -0,0 +1,288 @@
 +package media
 +
 +// GL zero-copy for hardware-rendered libretro cores (n64/gc/ps2/psp/dc).
@@ -11661,6 +11700,38 @@ index 0000000..bcd5a8b
 +static void zc_push(GstAppSrc *src, unsigned int texid, int w, int h, unsigned long long durNs) {
 +	if (!zc_shared || !src || !texid) return;
 +
++	// Renegotiate the source caps when the core's frame size changes at runtime — the SAME fix
++	// pushVideoBuf (gstreamer.go) already carries for the CPU path, which the GL path needs just as
++	// badly and shipped without. The appsrc caps are fixed at pipeline-build time, so once the core's
++	// geometry diverges we push a buffer whose video meta says 894 into caps that still claim 896;
++	// downstream gst_video_frame_map_id() then asserts 'info->height <= meta->height', the appsrc
++	// errors with "Internal data stream error", and the VIDEO STREAM STOPS FOR THE REST OF THE SESSION
++	// while the emulator runs on at a happy 60fps — a black room, with the core looking perfectly healthy
++	// in every log. (Found 2026-07-14 on PS2 Stuntman, which flips 1280x896 <-> 1280x894 the moment a
++	// save resumes. The CPU path's own comment names the rest of the victims: God of War, Kingdom Hearts,
++	// FFX, Shadow of the Colossus, Monster Hunter — PS2 games switch field/frame height mid-run as a
++	// matter of course, and GL zero-copy is armed for exactly these 3D cores.)
++	//
++	// Only width/height move; format and framerate are preserved. glcolorscale sits between this appsrc
++	// and the video_caps capsfilter that pins the ENCODE geometry, so it simply rescales the new size to
++	// the same output — the encoder never re-inits, and WebRTC never renegotiates. Nothing downstream
++	// can even tell.
++	GstCaps *cur = gst_app_src_get_caps(src);
++	if (cur) {
++		GstStructure *st = gst_caps_get_structure(cur, 0);
++		gint cw = 0, ch = 0;
++		gst_structure_get_int(st, "width", &cw);
++		gst_structure_get_int(st, "height", &ch);
++		if (cw != (gint) w || ch != (gint) h) {
++			g_printerr("[video] gl source caps %dx%d -> %dx%d (core frame size changed)\n", cw, ch, w, h);
++			GstCaps *nc = gst_caps_copy(cur);
++			gst_caps_set_simple(nc, "width", G_TYPE_INT, (gint) w, "height", G_TYPE_INT, (gint) h, NULL);
++			gst_app_src_set_caps(src, nc);
++			gst_caps_unref(nc);
++		}
++		gst_caps_unref(cur);
++	}
++
 +	GstVideoInfo vinfo;
 +	gst_video_info_set_format(&vinfo, GST_VIDEO_FORMAT_RGBA, w, h);
 +
@@ -11767,10 +11838,10 @@ index 0000000..bcd5a8b
 +	C.zc_push(g.v.src(), C.uint(texID), C.int(w), C.int(h), C.ulonglong(durNs))
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..7ddde9b 100644
+index 4a6171f..bfeafc5 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,967 @@
+@@ -1,579 +1,970 @@
 -package media
 -
 -import (
@@ -12975,7 +13046,10 @@ index 4a6171f..7ddde9b 100644
 +
 +	// GL zero-copy: the frame is a texture, not bytes. Push it as GLMemory and we are done — no
 +	// videoconvert, no upload, and no copy of a frame that is already exactly where the encoder wants
-+	// it. (A geometry change still rebuilds the pipeline through the usual path below.)
++	// it. A mid-run geometry change is handled INSIDE zc_push (it renegotiates the appsrc caps), not
++	// by the CPU path below — this branch returns, so nothing below it ever runs for a GL core. An
++	// earlier version of this comment claimed the code below covered it; it does not, and that
++	// sentence is exactly why PS2 shipped with a video stream that died on the first height change.
 +	if v.Frame.Tex != 0 {
 +		g.onVideo = cb
 +		g.pushGLTexture(v.Frame.Tex, v.Frame.W, v.Frame.H, uint64(v.Duration.Nanoseconds()))
