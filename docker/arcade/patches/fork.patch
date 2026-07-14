@@ -1783,6 +1783,22 @@ index 5586f46..581120b 100644
  }
  
  func (lib *library) isExtAllowed(path string) bool {
+diff --git a/pkg/logger/logger.go b/pkg/logger/logger.go
+index 53c3a2d..e5db5d0 100644
+--- a/pkg/logger/logger.go
++++ b/pkg/logger/logger.go
+@@ -84,7 +84,10 @@ func NewConsole(isDebug bool, tag string, noColor bool) *Logger {
+ 	}
+ 	zerolog.SetGlobalLevel(logLevel)
+ 	zerolog.TimeFieldFormat = time.RFC3339Nano
+-	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "15:04:05.0000", NoColor: noColor,
++	// Date included on purpose. These logs are long-lived append-only files that span many days, so a
++	// bare wall-clock time makes every "what happened at 13:02" grep silently span days -- and a
++	// yesterday-vs-today mix-up reads as a contended box that was actually idle.
++	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.0000", NoColor: noColor,
+ 		PartsOrder: []string{
+ 			zerolog.TimestampFieldName,
+ 			"pid",
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
 index 99e02b8..bc6e56f 100644
 --- a/pkg/network/webrtc/factory.go
@@ -5400,10 +5416,10 @@ index f3553b1..a26a9d8 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..29b30fb 100644
+index 6974d59..0864b80 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,1116 @@
+@@ -1,578 +1,1140 @@
 -package libretro
 -
 -import (
@@ -6384,6 +6400,13 @@ index 6974d59..29b30fb 100644
 +	// is a hard ceiling: a core that stopped producing audio entirely could not drift beyond it.
 +	const audioPullMax = 0.02
 +
++	// How far behind the audio clock an audio-mastered core may fall and still REPAY it rather than have
++	// it forgiven. Sized off what repayment costs: at audioPullMax (2%) a 500 ms deficit takes ~25 s of
++	// imperceptibly-fast emulation to work off, which is fine; a multi-second desync would take minutes,
++	// which is not — that one gets forgiven, as before. Comfortably above any load stall we have measured
++	// (the worst PSP transition is ~60 ms; a cold gc boot ~110 ms).
++	const audioForgiveAfter = 500 * time.Millisecond
++
 +	batch := max(f.SpinBatch, 1)
 +
 +	// AUDIO-DRIVEN PACING. We pace retro_run against the emulated AUDIO clock (the game should produce
@@ -6483,7 +6506,24 @@ index 6974d59..29b30fb 100644
 +			now := os.Nanotime()
 +			// Resync if we've fallen far behind the audio clock (emulation stall / big catch-up batch):
 +			// rebase the audio epoch so we don't sprint to catch up.
-+			if now-deadline > targetFrameTimeNs*lateFramesThreshold {
++			//
++			// But rebasing FORGIVES the audio the core failed to produce, and forgiven audio is a hole in
++			// the stream that nothing ever fills. A 60 ms load stall (PSP reading its savedata when the
++			// player walks into a sign) is ~55 ms of samples the client's jitter buffer silently eats —
++			// and it never gets them back, so buffer depth ratchets down with every transition until it
++			// underruns and the player hears a crackle. That is the PSP crackle, and it is OUR pacer's
++			// doing, not the core's.
++			//
++			// An audio-mastered core is allowed to REPAY a stall instead: leaving the epoch alone keeps the
++			// audio clock authoritative, so the loop runs (bounded by audioPullMax, i.e. ≤2% fast) until the
++			// missing samples are made up and the buffer refills — a few seconds later, inaudibly. The
++			// rebase still exists for a stall so large that repaying it would mean sprinting for minutes;
++			// that is a genuine desync, not a hiccup, and forgiving it is right.
++			resyncAfter := targetFrameTimeNs * lateFramesThreshold
++			if f.AudioMaster {
++				resyncAfter = int64(audioForgiveAfter)
++			}
++			if now-deadline > resyncAfter {
 +				audioEpoch += now - deadline
 +				deadline = now
 +			}
