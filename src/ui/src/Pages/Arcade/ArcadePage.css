@@ -300,6 +300,8 @@
   box-shadow: var(--art-shadow);
   background: var(--tile-base);
   line-height: 0;
+  /* Respect the art column's max-width backstop instead of overflowing the card. */
+  max-width: 100%;
 }
 
 /* Sized by the box (height + aspect-ratio), so `contain` never crops: once the cover's real ratio is
@@ -346,6 +348,9 @@
   align-items: stretch;
   /* The rating chip pins to the card's own top-right corner. */
   position: relative;
+  /* A grid item's default min-width is its CONTENT's — so an over-wide card doesn't shrink, it
+     overflows its track and spills across its neighbours. 0 lets the card stay inside its column. */
+  min-width: 0;
   gap: 14px;
   padding: 12px;
   border-radius: 12px;
@@ -367,14 +372,18 @@
   .arcade-card:hover { transform: none; }
 }
 
-/* The art column runs the FULL height of the card (the details column decides that height), and the
-   cover inside it keeps its own aspect ratio — so the width follows the shape of the box, exactly as
-   before, just bigger. It used to be pinned to 118px and aligned to the top, which left dead space
-   under every cover. */
+/* The art column. The cover inside it is sized in px from constants (GameCard's COVER_H/COVER_MAX_W),
+   never from the card — the art and the card cannot both take their height from the other.
+   `align-self: center` handles the leftover: a landscape cover is width-limited, so it can't reach the
+   card's full height, and it sits centered rather than pinned to the top with a pool of dead space
+   under it. The max-width is a backstop for the narrowest possible card (a 355px grid track), where a
+   wide cover at its full COVER_MAX_W would leave the details column too little to work with; the
+   image is `object-fit: contain`, so if it ever bites, the art letterboxes rather than distorting. */
 .arcade-card__art {
   flex: none;
   display: flex;
-  align-self: stretch;
+  align-self: center;
+  max-width: 45%;
 }
 
 .arcade-card__rating {

@@ -2,7 +2,7 @@ import { render, screen, within, cleanup, fireEvent } from "@testing-library/rea
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import GameCard from "./GameCard";
-import GameCover from "./GameCover";
+import GameCover, { coverBox } from "./GameCover";
 import LiveRooms from "./LiveRooms";
 import { getCoverAspect, rememberCoverAspect } from "./coverAspect";
 
@@ -16,12 +16,6 @@ global.matchMedia = global.matchMedia || ((query) => ({
 }));
 global.ResizeObserver = global.ResizeObserver || class { observe() {} unobserve() {} disconnect() {} };
 
-// happy-dom normalises `aspect-ratio: 0.75` to the two-value form "0.75 / 1", so read the ratio
-// rather than coercing the raw string.
-const aspectOf = (el) => {
-  const [w, h] = el.style.aspectRatio.split("/").map((n) => Number(n.trim()));
-  return h ? w / h : w;
-};
 
 const game = (over = {}) => ({
   key: "n64|GoldenEye", title: "007 - GoldenEye", system: "n64", artId: 42, hasBoxArt: true,
@@ -146,35 +140,67 @@ describe("GameCard", () => {
   });
 });
 
+describe("coverBox — the art's exact, bounded box", () => {
+  it("gives a portrait cover the full height; the width follows its shape", () => {
+    expect(coverBox(3 / 4, 168, 150)).toEqual({ width: "126px", height: "168px" });
+  });
+
+  it("width-limits a landscape cover and brings its HEIGHT down to keep the aspect exact", () => {
+    // 4:3 at 168 tall would be 224 wide — wider than the details column can spare. Capped at 150, the
+    // height must come down to 113 (150 ÷ 4/3) or the art would be stretched.
+    expect(coverBox(4 / 3, 168, 150)).toEqual({ width: "150px", height: "113px" });
+  });
+
+  it("takes the full height when no cap is given (the Live-rooms thumbnail)", () => {
+    expect(coverBox(4 / 3, 64)).toEqual({ width: "85px", height: "64px" });
+  });
+
+  it("falls back to the jewel-case shape when the aspect isn't known yet", () => {
+    expect(coverBox(null, 100)).toEqual({ width: "75px", height: "100px" });
+    expect(coverBox(0, 100)).toEqual({ width: "75px", height: "100px" });
+  });
+});
+
 describe("GameCover — natural aspect on a shared height", () => {
   beforeEach(() => { window.sessionStorage.clear(); });
 
   it("pins the height and adopts the cover's measured aspect ratio", () => {
-    const { container } = render(<GameCover game={game()} height={118} />);
+    const { container } = render(<GameCover game={game()} height={168} maxWidth={150} />);
     const box = container.querySelector(".arcade-cover");
-    expect(box.style.height).toBe("118px");
-    // Unmeasured: reserves the 3:4 jewel-case shape.
-    expect(aspectOf(box)).toBeCloseTo(0.75, 3);
+    // Unmeasured: reserves the 3:4 jewel-case shape at the full height.
+    expect(box.style.height).toBe("168px");
+    expect(box.style.width).toBe("126px");
 
-    // A 4:3 landscape box reports its natural size on load → the tile snaps to it, never cropping.
+    // A 4:3 landscape box reports its natural size on load → the tile snaps to its true shape (never
+    // cropped, never stretched), width-limited, so its height comes down to match.
     const img = container.querySelector(".arcade-cover__img");
     Object.defineProperty(img, "naturalWidth", { value: 640 });
     Object.defineProperty(img, "naturalHeight", { value: 480 });
     fireEvent.load(img);
-    expect(aspectOf(box)).toBeCloseTo(4 / 3, 3);
-    expect(box.style.height).toBe("118px");
+    expect(box.style.width).toBe("150px");
+    expect(box.style.height).toBe("113px");
+  });
+
+  it("never lets the art size itself from the card (the bug that blew the cards apart)", () => {
+    // Every dimension is an absolute px value computed from the constants — no percentages, which
+    // inside an indefinite-height flex item resolve to the image's intrinsic size and make the art
+    // and the card each take their height from the other.
+    const { container } = render(<GameCover game={game()} height={168} maxWidth={150} />);
+    const box = container.querySelector(".arcade-cover");
+    expect(box.style.height).toMatch(/^\d+px$/);
+    expect(box.style.width).toMatch(/^\d+px$/);
   });
 
   it("remembers a measured aspect so the tile never re-settles", () => {
-    const { container, unmount } = render(<GameCover game={game()} height={118} />);
+    const { container, unmount } = render(<GameCover game={game()} height={140} />);
     const img = container.querySelector(".arcade-cover__img");
     Object.defineProperty(img, "naturalWidth", { value: 500 });
     Object.defineProperty(img, "naturalHeight", { value: 700 });
     fireEvent.load(img);
     unmount();
 
-    const { container: second } = render(<GameCover game={game()} height={118} />);
-    expect(aspectOf(second.querySelector(".arcade-cover"))).toBeCloseTo(5 / 7, 3);
+    const { container: second } = render(<GameCover game={game()} height={140} />);
+    expect(second.querySelector(".arcade-cover").style.width).toBe("100px"); // 140 × 5/7
   });
 
   it("ignores a broken decode rather than pinning a 0-width tile", () => {
@@ -183,7 +209,7 @@ describe("GameCover — natural aspect on a shared height", () => {
   });
 
   it("falls back to a labelled placeholder for a system with no box art", () => {
-    const { container } = render(<GameCover game={game({ system: "naomi", hasBoxArt: false })} height={118} />);
+    const { container } = render(<GameCover game={game({ system: "naomi", hasBoxArt: false })} height={168} maxWidth={150} />);
     expect(container.querySelector(".arcade-cover--empty")).toBeTruthy();
     expect(screen.getByText("007 - GoldenEye")).toBeTruthy();
   });
