@@ -87,6 +87,13 @@ $env:CLOUD_GAME_WEBRTC_SINGLEPORT                 = "$SinglePort"        # route
 $env:CLOUD_GAME_WEBRTC_ICEIPMAP                   = $IceIpMap
 $env:CLOUD_GAME_LIBRARY_BASEPATH                  = $LibraryBasePath
 $env:CLOUD_GAME_EMULATOR_STORAGE                  = "D:\ArcadeStorage\saves"
+# GRACEFUL-STOP sentinel (paired with scripts/recycle-arcade-glworker.ps1 and the watchdog). The worker
+# watches this file (pkg/os ExpectTermination) and, when it appears, shuts down CLEANLY — flushing the GS
+# shader cache and tearing down GL/NVENC — instead of being force-killed, which dumps the shader cache
+# (cold-cache = periodic in-game audio skips for the next player) and can strand a kernel-stuck teardown
+# thread (the unkillable zombie that holds this ConfDir's DLL + cache locked). One file per ConfDir.
+$StopFile = Join-Path $ConfDir ".stop"
+$env:CLOUD_GAME_STOP_FILE                         = $StopFile
 
 New-Item -ItemType Directory -Force (Split-Path $LogFile) | Out-Null
 
@@ -108,6 +115,10 @@ function Write-LogLine([string]$msg) {
 # does a real OS-level stream merge, so panics AND C faults are written verbatim to the log. The exit code
 # then disambiguates: 2 = Go panic, 0xC0000005/-1073741819 = access violation, 0 = clean exit.
 while ($true) {
+    # Clear a stale graceful-stop sentinel from a prior recycle, or the fresh worker would see it and
+    # exit immediately in a tight respawn loop. (The recycler removes it after the worker exits, but a
+    # crash mid-recycle could leave it behind.)
+    if (Test-Path $StopFile) { Remove-Item $StopFile -Force -ErrorAction SilentlyContinue }
     # Rotate so a fresh crash isn't buried under hours of prior output.
     if ((Test-Path $LogFile) -and ((Get-Item $LogFile).Length -gt 25MB)) {
         Move-Item $LogFile "$LogFile.1" -Force -ErrorAction SilentlyContinue

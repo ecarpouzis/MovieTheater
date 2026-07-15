@@ -105,9 +105,52 @@ function LastRoomInLog([string]$path) {
     return $null
 }
 
+# Map a worker PID to its ConfDir via the mux UDP port it owns (8446 -> worker-gl, 8447 -> worker-gl-2, ...),
+# so we can drop that worker's graceful-stop sentinel.
+function ConfDirForPid([int]$wpid) {
+    $p = (Get-NetUDPEndpoint -ErrorAction SilentlyContinue |
+        Where-Object { [int]$_.OwningProcess -eq $wpid -and $_.LocalPort -ge 8446 -and $_.LocalPort -le 8465 } |
+        Select-Object -First 1).LocalPort
+    if (-not $p) { return $null }
+    $id = $p - 8445
+    if ($id -le 1) { return "D:\ArcadeStorage\worker-gl" } else { return "D:\ArcadeStorage\worker-gl-$id" }
+}
+
+# $zombies: PIDs that SURVIVED a force-kill (kernel-stuck GPU-teardown thread, unkillable from user mode).
+# They hold their ConfDir's DLL + shader cache locked and their coordinator slot is dead until a reboot.
+# We track them so we (a) surface them every cycle instead of silently forgetting (PID 7948 sat 10 h), and
+# (b) do not thrash them with useless kills.
+$zombies = @{}
+
 function KillWorker([int]$wpid, [string]$why) {
-    Log ("KILLING worker PID {0} -- {1} -- restart loop will respawn it" -f $wpid, $why)
+    if ($zombies[$wpid]) { return }   # known unkillable; surfaced in the main loop, don't thrash it
+    # GRACEFUL first: let the worker flush its GS shader cache and tear down GL/NVENC cleanly, so we don't
+    # hand the next player a cold cache (periodic in-game audio skips) or strand a kernel thread (zombie).
+    # Requires a worker built with the stop-file watch (pkg/os ExpectTermination); older binaries ignore
+    # the sentinel and we fall through to force after the short wait -- still correct, just not graceful.
+    $conf = ConfDirForPid $wpid
+    if ($conf) {
+        Log ("worker PID {0} -- requesting GRACEFUL stop ({1})" -f $wpid, $why)
+        $sf = Join-Path $conf ".stop"
+        Set-Content -Path $sf -Value (Get-Date -Format o) -Encoding ASCII -ErrorAction SilentlyContinue
+        for ($i = 0; $i -lt 16 -and (Get-Process -Id $wpid -ErrorAction SilentlyContinue); $i++) { Start-Sleep -Milliseconds 500 }
+        Remove-Item $sf -Force -ErrorAction SilentlyContinue
+        if (-not (Get-Process -Id $wpid -ErrorAction SilentlyContinue)) {
+            Log ("worker PID {0} exited GRACEFULLY -- {1} -- restart loop respawns it" -f $wpid, $why); return
+        }
+    }
+    Log ("KILLING worker PID {0} (force) -- {1}" -f $wpid, $why)
     Stop-Process -Id $wpid -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 2
+    # VERIFY: a force-kill that does not take means the thread is stuck in the GPU driver (kernel wait).
+    if (Get-Process -Id $wpid -ErrorAction SilentlyContinue) {
+        $m = ("WEDGED/UNKILLABLE: worker PID {0} SURVIVED force-kill (kernel-stuck GPU teardown). Holds its " +
+              "ConfDir locked, coordinator slot dead. BOX REBOOT REQUIRED. ({1})") -f $wpid, $why
+        Log $m
+        $zombies[$wpid] = $true
+        Set-Content -Path (Join-Path $LogDir ("WEDGED-worker-{0}.flag" -f $wpid)) `
+            -Value ("{0}  {1}" -f (Get-Date -Format o), $m) -Encoding UTF8 -ErrorAction SilentlyContinue
+    }
 }
 
 Log "watchdog v2 started (coordinator port: $CoordinatorPort, interval: ${IntervalSec}s, worker ports: $($WorkerPorts -join ','), wedge stale: ${WedgeStaleSec}s)"
@@ -181,6 +224,13 @@ while ($true) {
             }
         }
         foreach ($k in @($wedgeStrikes.Keys)) { if (-not $wedgedPids[$k]) { $wedgeStrikes.Remove($k) | Out-Null } }
+
+        # Surface unkillable zombies every cycle -- they do NOT self-clear (only a reboot frees the
+        # kernel-stuck thread), so an operator must see them. Clear the entry once the PID is finally gone.
+        foreach ($zp in @($zombies.Keys)) {
+            if ($livePids[$zp]) { Log ("REMINDER: worker PID {0} still WEDGED/unkillable -- BOX REBOOT REQUIRED" -f $zp) }
+            else { $zombies.Remove($zp) | Out-Null }
+        }
 
         # Tidy strike entries for PIDs that no longer exist.
         foreach ($k in @($strikes.Keys)) { if (-not $livePids[$k]) { $strikes.Remove($k) | Out-Null } }

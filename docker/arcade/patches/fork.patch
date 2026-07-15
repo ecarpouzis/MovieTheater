@@ -2818,19 +2818,63 @@ index 5b3d3fe..457c6ff 100644
  		}
  	}
 diff --git a/pkg/os/os.go b/pkg/os/os.go
-index 42e8a10..a2d3960 100644
+index 42e8a10..bc51c97 100644
 --- a/pkg/os/os.go
 +++ b/pkg/os/os.go
-@@ -9,6 +9,8 @@ import (
+@@ -9,7 +9,10 @@ import (
  	"os"
  	"os/signal"
  	"os/user"
 +	"path/filepath"
 +	"strings"
  	"syscall"
++	"time"
  )
  
-@@ -79,6 +81,13 @@ func CopyFile(from string, to string) (err error) {
+ const ReadChunk = 1024
+@@ -32,13 +35,39 @@ func MakeDirAll(path string) error {
+ 	return os.MkdirAll(path, os.ModeDir|os.ModePerm)
+ }
+ 
++// ExpectTermination returns a channel that fires once the process should shut down GRACEFULLY —
++// letting the worker run w.Stop() (close the room, flush the GS shader cache, tear down GL/NVENC)
++// instead of being TerminateProcess'd from outside, which both dumps the shader cache AND can strand
++// a thread inside a GPU-driver teardown call (the unkillable "zombie" worker that holds its ConfDir's
++// DLL + shader cache locked). It fires on the usual signals AND, if CLOUD_GAME_STOP_FILE is set, when
++// that sentinel file appears. The file path exists because on Windows the native worker shares the
++// runner's console, so a console ctrl-event (SIGINT/SIGTERM analogue) would also hit the runner — a
++// sentinel file is the one unambiguous way for the recycle/watchdog scripts to ask ONE worker to stop.
+ func ExpectTermination() chan struct{} {
+ 	signals := make(chan os.Signal, 1)
+ 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+ 	done := make(chan struct{}, 1)
++	stopFile := os.Getenv("CLOUD_GAME_STOP_FILE")
+ 	go func() {
+-		<-signals
+-		done <- struct{}{}
++		if stopFile == "" {
++			<-signals
++			done <- struct{}{}
++			return
++		}
++		ticker := time.NewTicker(500 * time.Millisecond)
++		defer ticker.Stop()
++		for {
++			select {
++			case <-signals:
++				done <- struct{}{}
++				return
++			case <-ticker.C:
++				if _, err := os.Stat(stopFile); err == nil {
++					done <- struct{}{}
++					return
++				}
++			}
++		}
+ 	}()
+ 	return done
+ }
+@@ -79,6 +108,13 @@ func CopyFile(from string, to string) (err error) {
  	if err != nil {
  		return err
  	}
@@ -2844,7 +2888,7 @@ index 42e8a10..a2d3960 100644
  	return nil
  }
  
-@@ -123,3 +132,226 @@ func StatSize(path string) (int64, error) {
+@@ -123,3 +159,226 @@ func StatSize(path string) (int64, error) {
  func RemoveAll(path string) error {
  	return os.RemoveAll(path)
  }
