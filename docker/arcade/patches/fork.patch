@@ -1800,7 +1800,7 @@ index 53c3a2d..e5db5d0 100644
  			zerolog.TimestampFieldName,
  			"pid",
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
-index 99e02b8..bc6e56f 100644
+index 99e02b8..89bcf26 100644
 --- a/pkg/network/webrtc/factory.go
 +++ b/pkg/network/webrtc/factory.go
 @@ -3,19 +3,40 @@ package webrtc
@@ -1924,25 +1924,54 @@ index 99e02b8..bc6e56f 100644
  		}
  		udp, ok := l.(*net.UDPConn)
  		if !ok {
-@@ -69,8 +150,15 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -68,9 +149,44 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 		s.SetICEUDPMux(webrtc.NewICEUDPMux(customLogger, udp))
  		log.Info().Msgf("The single port mode is active for %s", udp.LocalAddr())
  	}
++	mappedSrflx := false
  	if conf.HasIceIpMap() {
 -		s.SetNAT1To1IPs([]string{conf.IceIpMap}, webrtc.ICECandidateTypeHost)
 -		log.Info().Msgf("The NAT mapping is active for %v", conf.IceIpMap)
-+		// IceIpMap may be a comma-separated list (e.g. LAN,public): advertise a host candidate for EACH,
-+		// so a LAN browser takes the direct 192.168 path (no router hairpin — that hairpin caused bursty
-+		// late audio) while a remote browser still uses the public IP. Both ride the same forwarded port.
-+		ips := strings.Split(conf.IceIpMap, ",")
-+		for i := range ips {
-+			ips[i] = strings.TrimSpace(ips[i])
++		// IceIpMap is a comma-separated list (e.g. "LAN,WAN"). Split it by ROLE by WHERE each IP lives —
++		// this is the fix for the 2026-07-15 LAN-hairpin starvation:
++		//   • an IP that matches one of THIS host's own interfaces (the LAN IP, 192.168.68.69) needs NO
++		//     mapping — pion's natural host gathering already emits it as a host candidate on the mux port.
++		//     (Host-mode NAT1To1 REPLACES the natural host IPs, which is the only reason the list used to
++		//     have to carry the LAN IP explicitly.)
++		//   • any OTHER IP (the WAN, 98.15.249.217, which is the router's public IP — never a local
++		//     interface here) is advertised as a SRFLX candidate. Its ICE type preference (100) sits below
++		//     host (126, RFC 8445 §5.1.2), and type preference dominates pair priority — so a LAN browser
++		//     that can reach the host candidate ALWAYS wins the host↔host pair, while a remote browser (which
++		//     fails the LAN host checks fast) lands on the host↔srflx pair. This is the priority the ".env
++		//     ORDER IS LOAD-BEARING — LAN FIRST" comment always WANTED but never got: as two equal-priority
++		//     HOST candidates, the LAN and WAN pairs were indistinguishable and a LAN browser could nominate
++		//     the router-hairpin (WAN) pair and starve the stream (24 fps @ 3 Mbps hairpinned). Do NOT re-add
++		//     the WAN as host — that reintroduces the equal-priority hairpin bug.
++		var srflx []string
++		for _, raw := range strings.Split(conf.IceIpMap, ",") {
++			ip := strings.TrimSpace(raw)
++			if ip == "" {
++				continue
++			}
++			if isLocalInterfaceIP(ip) {
++				log.Info().Msgf("ICE map: %s is a local interface — riding natural host candidates (not mapped)", ip)
++				continue
++			}
++			srflx = append(srflx, ip)
 +		}
-+		s.SetNAT1To1IPs(ips, webrtc.ICECandidateTypeHost)
-+		log.Info().Msgf("The NAT mapping is active for %v", ips)
++		if len(srflx) > 0 {
++			// SetNAT1To1IPs in srflx mode APPENDS a server-reflexive candidate per IP (verified against the
++			// pinned pion webrtc v4.2.16 / ice v4.2.7: legacy NAT1To1 → append-mode address-rewrite rule;
++			// the natural host candidates are kept, and the srflx related-address is the mux's local host
++			// addr — no STUN round-trip needed).
++			s.SetNAT1To1IPs(srflx, webrtc.ICECandidateTypeSrflx)
++			mappedSrflx = true
++			log.Info().Msgf("ICE map: %v advertised as srflx (lower priority than host — chosen only when host is unreachable)", srflx)
++		}
  	}
  
  	s.SetICEMulticastDNSMode(ice.MulticastDNSModeDisabled)
-@@ -90,6 +178,10 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -90,23 +206,103 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  		mod(m, i, &s)
  	}
  
@@ -1951,9 +1980,31 @@ index 99e02b8..bc6e56f 100644
 +	// browser-side un-bundle experiment could never complete DTLS (patch 0019, reverted). Audio
 +	// isolation is done with a second audio-only PeerConnection instead (patch 0020, webrtc.go).
  	c := webrtc.Configuration{ICEServers: []webrtc.ICEServer{}}
- 	for _, server := range conf.IceServers {
- 		c.ICEServers = append(c.ICEServers, webrtc.ICEServer{
-@@ -100,13 +192,48 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+-	for _, server := range conf.IceServers {
+-		c.ICEServers = append(c.ICEServers, webrtc.ICEServer{
+-			URLs:       []string{server.Urls},
+-			Username:   server.Username,
+-			Credential: server.Credential,
+-		})
++	if mappedSrflx {
++		// We advertise the WAN as a NAT1To1 srflx candidate on the forwarded mux port, so the worker has no
++		// reason to self-discover its reflexive address via STUN. Keeping the (stock-default) STUN server
++		// alongside srflx NAT1To1 would only gather a REDUNDANT srflx candidate (identical under this
++		// endpoint-independent NAT, potentially a different/unreachable port under a symmetric one), add
++		// per-room outbound STUN + a gather timeout, and lean on pion tolerating a combination its own docs
++		// warn against. Drop it for the worker; the BROWSER still gets its own STUN from the site's
++		// ArcadeStunServers — that side is unaffected.
++		if len(conf.IceServers) > 0 {
++			log.Info().Msg("ICE map: srflx NAT1To1 active — dropping worker STUN servers (WAN advertised directly)")
++		}
++	} else {
++		for _, server := range conf.IceServers {
++			c.ICEServers = append(c.ICEServers, webrtc.ICEServer{
++				URLs:       []string{server.Urls},
++				Username:   server.Username,
++				Credential: server.Credential,
++			})
++		}
  	}
  
  	return &ApiFactory{
@@ -2002,6 +2053,34 @@ index 99e02b8..bc6e56f 100644
 +	case <-time.After(250 * time.Millisecond):
 +		return pc, nil, nil
 +	}
++}
++
++// isLocalInterfaceIP reports whether ip is assigned to one of THIS host's own network interfaces.
++// Such an IP needs no NAT1To1 mapping — pion's natural host gathering already advertises it as a host
++// candidate on the mux port; only an off-host IP (a public IP living behind a 1:1 port-forward) has to
++// be mapped. Used to split the IceIpMap list into "LAN → natural host" and "WAN → srflx".
++func isLocalInterfaceIP(ip string) bool {
++	target := net.ParseIP(ip)
++	if target == nil {
++		return false
++	}
++	addrs, err := net.InterfaceAddrs()
++	if err != nil {
++		return false
++	}
++	for _, a := range addrs {
++		var ifIP net.IP
++		switch v := a.(type) {
++		case *net.IPNet:
++			ifIP = v.IP
++		case *net.IPAddr:
++			ifIP = v.IP
++		}
++		if ifIP != nil && ifIP.Equal(target) {
++			return true
++		}
++	}
++	return false
  }
  
  func filterIP(i net.IP, filter []string) bool {
