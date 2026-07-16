@@ -34,10 +34,15 @@ candidate** (the change's key assumption; a same-host room can only connect via 
 **STILL OPEN — Eric only:** the genuinely-remote leg (a browser on cellular/external network selecting
 the WAN **srflx** pair). Cannot be run from Ziggy. Do not consider the WAN half proven until it is.
 
-**Capture worker (8448) was deliberately NOT touched.** It runs an older (host-mode) binary; its runner
-keeps its own cached LAN-only `IceIpMap` and a retro deploy does not restart it, so restoring `.env`
-does not reach it — zero capture regression. Giving capture the same srflx priority is a clean
-follow-up: rebuild its (separate, ~36 MB) binary from the fork and restart its runner.
+**Capture worker (8448) — now ALSO on srflx (~23:23 2026-07-15).** The capture `worker.exe` turned out
+to be a byte-identical copy of the general `./cmd/worker` build (its capture behavior is the patched
+`libgstd3d12.dll` + config, NOT a build tag), so the same new binary was copied to
+`D:\ArcadeStorage\worker-capture\bin\worker.exe` (rollback `worker.pre-srflx-20260715.exe`) and its
+runner restarted to re-read `.env`. Log confirms `capture mod enabled (heavy browser lane)`,
+`libgstd3d12 is the patched build`, and the srflx split — so the capture DLL/config survive the swap.
+The old (7/14, pre-stop-file) capture binary ignored the `.stop` sentinel and was force-killed; it did
+not zombie (no WEDGED flag) and the new binary honors the sentinel going forward. The whole pool
+(8446/8447/8448) is now on the fix.
 
 <details><summary>Original pre-deploy notes (kept for the record)</summary>
 
