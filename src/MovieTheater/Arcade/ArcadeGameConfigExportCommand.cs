@@ -38,11 +38,21 @@ namespace MovieTheater.Arcade
             dbFactory = GetRequiredService<IDbContextFactory<MovieDb>>();
         }
 
-        // Matches the Go nanoarch.GameOverride shape (lowercase json tags). Fps/Options omitted when empty.
+        // Matches the Go nanoarch.GameOverride shape (lowercase json tags). Fps/Options/HwContext omitted
+        // when empty (DefaultIgnoreCondition.WhenWritingNull below).
         private sealed class Entry
         {
             public double? fps { get; set; }
             public Dictionary<string, string>? options { get; set; }
+            public string? hwContext { get; set; }
+        }
+
+        // Only "gl"/"vulkan" are valid hw-context values; anything else (typo, stale value) is dropped so a
+        // bad row can't pin a game onto a nonexistent context — mirrors nanoarch.GameHwContext's guard.
+        private static string? NormalizeHwContext(string? v)
+        {
+            v = v?.Trim().ToLowerInvariant();
+            return v is "gl" or "vulkan" ? v : null;
         }
 
         public async ValueTask ExecuteAsync(IConsole console)
@@ -68,9 +78,11 @@ namespace MovieTheater.Arcade
                     catch (Exception ex) { w.WriteLine($"  WARN [{p.System}] {p.TitleKey}: bad CoreOptionsJson ({ex.Message}) — skipping its options."); }
                 }
 
+                var hwContext = NormalizeHwContext(p.HwContext);
                 bool hasFps = p.ForcedFps is > 0;
                 bool hasOpts = opts is { Count: > 0 };
-                if (!hasFps && !hasOpts) { emptyProfiles++; continue; }
+                bool hasHw = hwContext is not null;
+                if (!hasFps && !hasOpts && !hasHw) { emptyProfiles++; continue; }
 
                 // Fan the identity out to every ROM whose normalized Title matches. TitleKey is the
                 // lowercased Title; compare case-insensitively so the manifest covers all variants.
@@ -90,6 +102,7 @@ namespace MovieTheater.Arcade
                     {
                         fps = hasFps ? p.ForcedFps : null,
                         options = hasOpts ? opts : null,
+                        hwContext = hwContext,
                     };
                     romsCovered++;
                 }

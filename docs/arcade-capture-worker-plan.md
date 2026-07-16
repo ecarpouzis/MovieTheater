@@ -974,3 +974,44 @@ cable.
 - Opus settings are already right for latency (10 ms frames, inband FEC); the browser's
   adaptive audio jitter buffer is not directly controllable — steady delivery (fix C) is the
   only lever on that term.
+
+---
+
+# 2026-07-16 live-ops findings — doc/code drift closure + W9 status
+
+Written during the Vulkan live-ops session. The capture worker (8448) was updated to the current worker
+build (srflx ICE + M2 zero-copy + W3 fixes) — it previously ran a pre-srflx/pre-M2 binary. Registered
+clean ("capture: libgstd3d12 is the patched build", "srflx NAT1To1 active", coordinator-connected).
+
+## DRIFT CLOSED — items this doc listed as deferred/missing that are ALREADY LIVE
+- **§12.2-C server-side pace default for capture rooms — SHIPPED.** `ArcadeController.cs:625`:
+  `var paceMs = request.PaceMs > 0 ? request.PaceMs : (isCapture ? 8 : 0);` — capture rooms already
+  default to pace=8 the same way vbr defaults. No change needed.
+- **R3 FALLBACK_AR capture entry — SHIPPED.** `ArcadeRoomPage.js:681`: `capture: 16 / 9`. No change needed.
+- (Per the umbrella note: config `zeroCopy: true` + capture.go ZeroCopy, d3d12 tonemap capture,
+  limited-range colorimetry, and the §12.2-A loopback audio fix are also live — the doc's §8 P4
+  "deferred" list is partially shipped.)
+
+## W9 ITEM 1 — AV1 sequence-header OBU audit: RESOLVED, no bug (evidence-first)
+Verified with gst-launch on the box (msys2 gst 1.28.4, patched nvcodec):
+- `nvav1enc gop-size=30 bitrate=5000 preset=p6 ... ! av1parse` over 150 frames → **5 sequence-header OBUs
+  for 5 keyframes** (GST_DEBUG=av1parse:7). So nvav1enc attaches an OBU_SEQUENCE_HEADER to EVERY KEY_FRAME.
+- The live intra-refresh params (`gop-size=-1 intra-refresh-period=120 intra-refresh-count=15`) → **1**
+  sequence header at start (correct: an infinite GOP has no periodic keyframes).
+- A PLI-forced keyframe (patch 0029 responder / ABR / capture GstForceKeyUnit) is a KEY_FRAME, so it
+  carries the sequence header too. `nvav1enc` has **no `repeat-sequence-header` property** (only nvh264enc
+  does) — it does not need one; av1 emits the header per keyframe inherently.
+- **Verdict: the tablet-killer "keyframe without sequence header → HW→SW AV1 decode after first PLI" bug is
+  NOT present in our AV1 path.** No encoder/parse fix needed. The only remaining confirmation is a live PLI
+  observation (decodeMs jump / fps sag fingerprint) via the capture test-card harness (item 0d) — a
+  validation, not a fix.
+
+## W9 remaining — scoped follow-up (NOT built this session; designs stand)
+Items 0 (machine-readable test-card app + capture-diag.mjs harness), 2 (zero-copy tracer A/B), 3
+(bitrate/preset ladder, judged on the test card's banding-step + sharpness + latency metrics), 6 (SudoVDA
+per-room virtual-display isolation — privacy window + Apollo screen-fight + per-room resolution/supersampling),
+and 7 (per-title fidelity profiles) are a coherent day-scale build best done as a focused follow-up with the
+test card landing FIRST (it is the instrument every other item is judged with). Item 8 (Tier-2 HDR/10-bit)
+stays out of scope. The OBU finding above means item 1 is closed; the pace/AR drift means items 4 and 5c are
+closed. Hygiene reads (§12.2-B VB-Audio registry, §12.2-D default render device) need admin/driver-restart
+and are flagged for Eric, not automated. Router UDP 8448 forward for off-LAN peers remains Eric's action.

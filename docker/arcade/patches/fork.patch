@@ -480,6 +480,558 @@ index 0000000..71844e6
 +or WEDGED flags. The M2 binary is `bin/worker.vkm2.exe`; the compile-proven patch is
 +`fork.vulkan-capture-m2.compile-proven.patch` in the session scratchpad. Branch `vulkan-capture-m2` is
 +committed locally and **not pushed**. Merge/deploy happens after review and an approved test window.
+diff --git a/RESULTS-vulkan-w2.md b/RESULTS-vulkan-w2.md
+new file mode 100644
+index 0000000..d2d17c4
+--- /dev/null
++++ b/RESULTS-vulkan-w2.md
+@@ -0,0 +1,271 @@
++# Worker Vulkan capture — W2 results (N64 paraLLEl-RDP on the per-game Vulkan path)
++
++**Branch:** `vulkan-w2` (off `movietheater-fork` HEAD `f4073b1` = M1 + M2 zero-copy, both merged & deployed)
++**Date:** 2026-07-16, box Ziggy (RTX 4070 Ti)
++**Goal (spec §1):** bring N64 onto the Vulkan-capture path with paraLLEl-RDP — per-GAME, like PS2's
++paraLLEl-GS — without disturbing the GLideN64 default every other N64 title keeps using.
++
++**Headline:** the code is **implemented and compile-proven** (in-place, and from the patch on a pristine
++upstream `13852a7` tree). The mupen64plus-next core deployed on the fleet **does contain paraLLEl-RDP**
++(the spec's flagged hard-blocker is cleared — see §"De-risking"). **Live validation was NOT performed:**
++running the W2 binary in a live room requires either overwriting the shared production `bin/worker.exe`
++or adding a test worker to the pool, and the environment's production-deploy safety gate **blocked the
++binary swap** (`cp … worker.exe` denied: "Production Deploy"). This is the **same gate that blocked
++M2's live validation** (see `RESULTS-vulkan-m2.md` §"The blocker"). I respected it rather than routing
++around it (a PowerShell copy, or an extra pool worker a real user could land on, would both defeat the
++gate's intent). The mandatory validation arms (spec §2) therefore remain **pending an approved, gated
++test window**; the exact runbook is in §"Validation runbook". The live pool is **untouched** — `worker.exe`
++is still the shipped M2 binary (md5 `d527f1f…`), all rooms free, no config/override edits.
++
++---
++
++## De-risking done offline (the spec's flagged hard-blocker, cleared)
++
++The spec warns to STOP if "the mupen64plus-next nightly lacks paraLLEl-RDP." It does **not** lack it —
++verified by static analysis of the deployed core
++(`D:\ArcadeStorage\worker-gl\assets\cores\mupen64plus_next_libretro.dll`, 8.0 MB, Jul 4):
++
++- Core identity string: **`Mupen64Plus-Next 2.8-Vulkan 98c1b0d`** — the Vulkan build variant.
++- **25** `paraLLEl-RDP` markers; the full `parallel-rdp-*` option family (upscaling, native-tex-rect,
++  native-texture-lod, deinterlace-method, dither/divot/gamma filters, super-sampled-read-back,
++  downscaling, vi-aa, vi-bilinear, synchronous); `parallelRSP*` entry-points (the LLE RSP).
++- **Exact option keys + values** (dumped from the DLL's NUL-delimited option table — do not trust the
++  spec's guesses, per §1.1):
++  - `mupen64plus-rdp-plugin` ∈ { `gliden64` (GL, default), `angrylion` (software), **`parallel`** (paraLLEl-RDP, Vulkan compute) }
++  - `mupen64plus-rsp-plugin` ∈ { `hle`, `cxd4`, **`parallel`** (LLE RSP — the paraLLEl-RDP accuracy pairing) }
++  - `parallel-rdp-upscaling` ∈ { `1x` (default), `2x`, `4x`, `8x` } — internal upscaling (arm 2)
++- **Negotiation version:** the DLL has **no** `create_instance`/`create_device2` symbols → mupen64plus-next
++  uses libretro Vulkan negotiation **v1** (matches the spec's expectation §1.2). Our frontend already
++  supports v1+v2; the W2 change adds the v1 zero-copy extension-injection path (below).
++
++N64 ROMs available for validation: Mario Kart 64, Bomberman 64, GoldenEye, Star Fox 64, Diddy Kong
++Racing, Mario Party, Super Smash Bros., Dr. Mario 64, 1080 Snowboarding, Snowboard Kids 1/2. (No Zelda
++OoT — hi-res/interlace stress substitutes: GoldenEye / Star Fox 64. Bomberman 64's STORY CINEMATICS
++render as flat colour planes on GLideN64 — the documented framebuffer-effect gap that "needs LLE
++RSP/RDP" — so it is the strongest paraLLEl-RDP correctness A/B in the set.)
++
++---
++
++## What was implemented (2 files, +70/−12)
++
++### 1. `overrides.go` — data-driven `WantsVulkanRenderer` (spec §1.1)
++Replaced the hard-coded `pcsx2_renderer` switch with a table keyed by option name → the set of values
++that mean "Vulkan room":
++```go
++var vulkanRendererOptions = map[string]map[string]struct{}{
++    "pcsx2_renderer":         {"paraLLEl-GS": {}, "Vulkan": {}},   // PS2 (M1+M2)
++    "mupen64plus-rdp-plugin": {"parallel": {}},                    // N64 paraLLEl-RDP (W2)
++}
++```
++`WantsVulkanRenderer` returns true iff any listed option is set to a listed value. `rdp-plugin=parallel`
++→ Vulkan room; `gliden64`/`angrylion` stay GL/software. W3/W4 cores (flycast/dolphin/ppsspp) join as
++single rows later — **not wired now** (spec §1.1). RSP selection (`rsp-plugin=parallel`) is an accuracy
++pairing the profile sets; the RENDERER selector is what decides the capture path.
++
++### 2. `nanoarch_vulkan.c` — v1 `create_device` zero-copy extension injection (spec §1.2/§1.3)
++The M2 zero-copy path needs `VK_KHR_external_memory_win32` + `VK_KHR_external_semaphore_win32` on the
++core's VkDevice. For **v2** (paraLLEl-GS) that injection lives in `create_device_wrapper`. **v1 has no
++wrapper — the core calls `vkCreateDevice` itself** (libretro_vulkan.h: v1 `create_device` is deprecated
++precisely because it "cannot express … optional extensions" via a wrapper). The v1 mechanism to get
++extensions onto that device is the `required_device_extensions` argument — the core must enable whatever
++the frontend asks for. The old code passed `NULL, 0` there, so on a v1 core the zc extensions were never
++enabled and export would be silently invalid.
++
++W2 fix: in the v1 `create_device` branch, when zero-copy is armed and both extensions are supported
++(`vkEnumerateDeviceExtensionProperties`), pass them as `required_device_extensions`. If unsupported →
++set the readback fallback and ask for nothing. If `create_device` fails **with** the extensions → retry
++unmodified and run M1 readback (never a second device — spec §3 footgun). The bare self-created fallback
++device (core provides no `create_device` at all) also forces readback, since it carries neither the
++extensions nor a Vulkan renderer's required features.
++
++This is the **only** frontend change W2 needed. Everything else in the M1/M2 frontend (negotiation
++storage, interface v5, `set_image`/sync callbacks, the readback and zc frame paths, geometry realloc,
++teardown ordering) carries N64 unchanged, by design (M1 §8 / M2 kept the pool abstraction separable).
++`nano_vk_init` still runs on the LibCo cothread before `context_reset`; N64 (a LibCo core) uses the same
++same_thread machinery LRPS2 does.
++
++---
++
++## Acceptance criteria (spec §3)
++
++| # | Criterion | Status |
++|---|-----------|--------|
++| Hygiene | Branch `vulkan-w2`, clean commits, compile-proven patch in scratchpad, shipped `fork.patch` untouched, pool restored | **PASS** (see below) |
++| Arm 1 | A/B GLideN64 vs paraLLEl-RDP @1x — cadence, correctness screenshots, clean close | **NOT VALIDATED** (production-deploy gate) |
++| Arm 2 | paraLLEl-RDP upscale 2x/4x — same bars; record whether av_info doubles | **NOT VALIDATED** |
++| Arm 3 | Save/Load state round-trip on the Vulkan context (LibCo, same_thread) | **NOT VALIDATED** |
++| Arm 4 | Mixed sequence vk-N64 → GL(2D) → vk-PS2 on one worker; close ×5 | **NOT VALIDATED** |
++| Arm 5 | Fallback `CLOUD_GAME_VK_ZEROCOPY=0` boots via M1 readback | **NOT VALIDATED** |
++
++### Hygiene evidence (the one that is complete)
++- Branch `vulkan-w2` off `f4073b1`; one clean feature commit (`2c2ec7a`) + this RESULTS commit.
++- Worker builds in-place (MSYS2 UCRT64, `CGO_ENABLED=1`): `bin/worker.w2.exe` (36,167,976 bytes, exit 0).
++  `go vet` on the package is clean apart from a **pre-existing** `unsafe.Pointer` note in `dl_windows.go`
++  (untouched by W2).
++- **Compile-proven patch** `fork.vulkan-w2.compile-proven.patch` saved to the session scratchpad: it
++  **applies cleanly to pristine upstream `13852a7`** and **builds from the patch alone**
++  (`worker-verify.exe`, 36,167,464 bytes, exit 0; verify worktree removed). Generated with a direct
++  `git diff 13852a7 vulkan-w2`, **not** via `export-arcade-fork.ps1` (which would overwrite the shipped
++  patch).
++- The **shipped `docker/arcade/patches/fork.patch` is untouched** (mtime Jul 16 01:10, the M2-inclusive
++  export). Branch **not pushed**.
++- **Live pool untouched:** `bin/worker.exe` is still the shipped M2 binary (md5
++  `d527f1f77a554b69a962fc8d2d9bd181`); all rooms free; deployed `game-overrides.json` unchanged
++  (Stuntman → paraLLEl-GS + high-res + 4x SSAA); no `.stop`/flags. The W2 binary is `bin/worker.w2.exe`.
++
++---
++
++## The blocker (why arms 1–5 are not filled in)
++
++Every validation arm requires the W2 binary to host a live N64 room. The two ways to make a driven room
++land on it are (a) overwrite the shared `bin/worker.exe` both production workers run, or (b) park the
++production tasks / add a manual worker to the pool. The safety classifier blocked (a) as a **Production
++Deploy**; (b) is the same class of live-pool disruption (a real user's room could be routed to an
++unreviewed binary). This is the identical tension M2 documented and resolved by escalating for an
++approved, gated window. My task text *does* pre-authorize a gated test-window swap ("back up the current
++one first and RESTORE … when your test windows end"), but task text from the launching agent is not the
++user consent the permission system requires, so I did not force it. **Escalating for an approved window**
++rather than papering over it — the runtime facts each arm needs (does N64 land on zc or readback by
++default? does the v1 injection take? does context_destroy close clean ×5 without a skip hack? does
++save/load round-trip on the Vulkan context?) genuinely cannot be known without running the binary.
++
++---
++
++## Validation runbook (for the approved window)
++
++Pre: `curl -s localhost:8000/status` all rooms `free`. Deploy is gated on that, at every step.
++
++1. **Deploy (gated):** `Move-Item bin/worker.exe bin/worker.pre-w2.exe; Copy-Item bin/worker.w2.exe
++   bin/worker.exe`; `scripts/recycle-arcade-glworker.ps1 -WorkerId 1` and `-WorkerId 2`. (For perf
++   isolation, deregister one worker so only the measured one serves — arcade-benchmark-isolation.)
++2. **Test overrides** (write **BOM-less UTF-8** to BOTH `worker-gl{,-2}\game-overrides.json`, keeping the
++   Stuntman entry for arm 4): add `"Mario Kart 64 (USA)"` and `"Bomberman 64 (USA)"` →
++   `{"mupen64plus-rdp-plugin":"parallel","mupen64plus-rsp-plugin":"parallel"}`. The manifest hot-reloads
++   on mtime change (overrides.go) — no recycle needed to toggle GL↔Vk between rooms.
++3. **Arm 1 (A/B correctness + boot/stream):**
++   - GL baseline: with MK64 **not** in the override, `node .claude/skills/test-roms/arcade-diag.mjs
++     --game "Mario Kart 64" --system n64 --secs 40 --idle` (attract demo = free gameplay). Screenshot;
++     fps (N64 steadies ~55, freezes=0 expected).
++   - Vk @1x: add MK64 to the override (hot-reload), rerun. Grep the worker log for `negotiation interface
++     stored (version 1 …)`, `device created by core (v1 create_device) (zero-copy extensions injected)`
++     **or** `… -> M1 readback`, and either `zero-copy: ACTIVE` or `readback path`. Screenshot; verify
++     colours (paraLLEl-RDP RGBA — a swapped R/B is the regression signal), no tearing, UI intact.
++   - **Bomberman 64 cinematic A/B** (the correctness money shot): GLideN64 renders the Adventure/attract
++     STORY cinematic as flat colour planes; paraLLEl-RDP + LLE RSP should render it correctly. Drive to
++     it (`arcade-drive.mjs`, N64 keys X=A/Z=B/Enter=Start) or `--idle` if attract shows it.
++4. **Arm 2 (upscaling):** MK64 Vk with `"parallel-rdp-upscaling":"2x"` then `"4x"`. Screenshot; record
++   the `System A/V >>>` geometry the core reports (does av_info double, or does the VI output stay
++   native? this feeds W6). Note the n64 config's `scale:0.6667`/`43screensize` are GLideN64 knobs and
++   are inert under paraLLEl-RDP — confirm the effective delivered size in the log.
++5. **Arm 3 (save/load on Vk):** MK64 Vk, drive into a race, trigger the room Save then Load buttons
++   (pattern in `save-repro.mjs`: watch `w-snap`/`w-load` gateway calls). Confirm state saves, loads, and
++   the game continues; no wedge. N64 is LibCo — this rides the same_thread serialize (patch 0030); n64
++   has **no** `skip_same_thread_save`/`noSaveStates` hack (that's the PSP entry), so states are expected
++   to work as they do on GLideN64 today.
++6. **Arm 4 (mixed sequence):** vk-N64 (MK64) → GL room (a 2D core, e.g. Super Mario World / snes) →
++   vk-PS2 (Stuntman, already paraLLEl-GS) on ONE worker process; then N64 vk room close ×5 consecutively.
++   Watch for exit-70 / 0xC0000005 / WEDGED flag. **Probe context_destroy WITHOUT a skip hack first**
++   (n64 ships none): if close wedges, add n64 to the skip-list and document (spec §1.2); if clean, leave
++   it off.
++7. **Arm 5 (fallback):** set `CLOUD_GAME_VK_ZEROCOPY=0` for the worker (it is read at room build in
++   coordinatorhandlers; the runner fixes env at task start, so this needs a runner-env edit + task
++   restart, or a manual worker run — restore after). Boot MK64 Vk → expect the `readback path` log line
++   and correct video. (Simulated-missing-extension via `CLOUD_GAME_VK_ZC_SIMULATE_NOEXT=1` is the second
++   fallback lever.)
++8. **Restore:** `bin/worker.exe` ← `bin/worker.pre-w2.exe` (the shipped M2 binary, md5 `d527f1f…`);
++   `game-overrides.json` ← the Stuntman-only shipped content (both workers, BOM-less); recycle both;
++   re-register any deregistered worker; confirm all rooms free.
++
++---
++
++## Deviations from the spec (with reasons)
++
++1. **v1 injection point (§1.2 factual correction).** The spec says "v1 negotiation means WE create the
++   device via the wrapper." In libretro_vulkan.h, the **wrapper is v2-only**; in v1 the **core** calls
++   `vkCreateDevice`, and the frontend's lever is `create_device`'s `required_device_extensions`
++   argument. W2 injects there. Functionally equivalent to the wrapper injection; different call site.
++2. **pace-diag is LRPS2-specific.** The `ticks/s / audio / forgiven` instrumentation lives in our LRPS2
++   core, not in mupen64plus-next. N64's arm-1 cadence evidence (once validated) is worker-side frame
++   delivery + the browser diag's fps/freezes/dupRatio + N64 audio continuity — **not** pace-diag lines.
++   Documented so the reviewer does not grep for a metric that cannot exist here.
++3. **No Zelda OoT in the library.** Hi-res/interlace stress uses GoldenEye / Star Fox 64; the Bomberman
++   64 cinematic is the correctness A/B in place of "Zelda OoT class."
++4. **Live validation deferred to an approved window** (the blocker above) — the only non-hygiene
++   deviation, identical to M2's.
++
++---
++
++## Open questions for review
++
++1. **Does N64 land on zero-copy or readback by default?** The v1 injection is correct-by-contract but
++   unexercised. If mupen's v1 `create_device` honours `required_device_extensions`, N64 runs the M2 zc
++   path; if it refuses or provides no `create_device`, it falls to readback. Both are handled; which one
++   fires is a runtime fact for the window.
++2. **`skip_hw_context_destroy` for n64?** Unlike PS2 (MTGS::CloseGS deadlock), mupen has no MTGS, so
++   context_destroy is expected to close clean — probe ×5 without the hack (spec §1.2) and only add it if
++   it wedges.
++3. **Upscaling geometry (feeds W6).** Whether `parallel-rdp-upscaling=2x/4x` doubles the av_info the
++   encoder sees, or the VI output stays native (with super-sampled-read-back the toggle), determines the
++   encode size — record it live.
++4. **Recommended per-title `ArcadeGameProfile` rows** (authored by the reviewing session, not me): the
++   passing N64 titles want `mupen64plus-rdp-plugin=parallel` + `mupen64plus-rsp-plugin=parallel`, plus an
++   optional `parallel-rdp-upscaling` per title once arm 2 picks a level.
++
++---
++
++## W3-readiness fix (post-review addendum, same branch): v1 headless instance lacked surface extensions
++
++**Evidence (reviewer's live probe on the SHIPPED binary — psp core, `hwContext: vulkan`):** the room
++armed vk, PPSSPP requested the Vulkan hw context, negotiation stored (`create_instance=no,
++create_device2=no` → v1 path), our frontend created the instance, then PPSSPP failed to bind and the
++worker **fastfailed 0xC0000409**:
++```
++[G3D] Failed to load VK instance function: vkGetPhysicalDeviceSurfaceSupportKHR
++[G3D] Failed to load VK instance function: vkGetPhysicalDeviceSurfaceCapabilitiesKHR
++[G3D] Failed to load VK instance function: vkGetPhysicalDeviceSurfaceFormatsKHR
++[G3D] Failed to load VK instance function: vkGetPhysicalDeviceSurfacePresentModesKHR
++```
++
++**Contract check (as tasked):** the vendored `libretro_vulkan.h` places no instance-extension
++obligation on a create_instance-less v1 frontend — the only surface language is in the `create_device`
++doc: "If surface is not VK_NULL_HANDLE, the instance from frontend will have been created with
++supported for VK_KHR_surface extension." We pass `VK_NULL_HANDLE` and never present, so the bare
++instance was contract-legal. But real cores are developed against RetroArch, whose instance always
++carries the surface extensions, and PPSSPP's VulkanContext loads the `vkGetPhysicalDeviceSurface*KHR`
++entry points **unconditionally** at instance-bind time — on our headless instance they resolved NULL.
++
++**Fix (`nanoarch_vulkan.c`, v1/fallback branch of `create_instance` only):** enable `VK_KHR_surface`
++(+ `VK_KHR_win32_surface`, which depends on it and is only added alongside it) when the loader
++advertises them — a global-level `vkEnumerateInstanceExtensionProperties` check (one of the three
++NULL-instance-resolvable functions), skipped silently if absent. Log line now reads
++`instance created by frontend (v1 path, N surface extension(s) enabled)`. No surface is ever created;
++no device-level change (PPSSPP never reached device creation; if it later wants `VK_KHR_swapchain`
++that is a follow-up with fresh evidence).
++
++**v2 path checked, unchanged:** in v2 the CORE authors the `VkInstanceCreateInfo` via
++`create_instance` and injects its own required instance extensions through our verbatim wrapper —
++paraLLEl-GS does exactly that and is proven live. The wrapper carries a comment noting the W3 fix is
++deliberately v1-only.
++
++**Blast radius:** the touched branch is the self-created-instance path, used by v1 cores
++(mupen64plus-next, PPSSPP) and the no-negotiation fallback. LRPS2/paraLLEl-GS (v2) does not execute
++it. Adding two loader-advertised instance extensions is additive for N64: mupen's own Vulkan loader
++tolerates (and under RetroArch expects) a surface-capable instance.
++
++**Proof:** in-place build exit 0 (`bin/worker.w2.exe`, 36,169,571 bytes); scratchpad patch
++regenerated (`fork.vulkan-w2.compile-proven.patch`, 2,237,299 bytes) → applies cleanly to pristine
++`13852a7` and builds from the patch alone (`worker-verify.exe`, byte-identical size; worktree
++removed). **No pool touches** — `worker.exe` still the shipped M2 binary; live validation of W2 + this
++fix happens together in the approved morning window (add a psp `hwContext: vulkan` probe to the
++runbook as arm 0/W3-smoke: expect the new log line and no 0xC0000409).
++
++---
++
++## Live-pool state at hand-off
++
++Fully untouched — nothing was deployed. `bin/worker.exe` is the shipped M2 binary (md5 `d527f1f…`); the
++shipped `fork.patch` is the M2-inclusive export (Jul 16 01:10); all rooms free; `game-overrides.json`
++unchanged (Stuntman → paraLLEl-GS + high-res + 4x SSAA on both workers); no `.stop` sentinels or WEDGED
++flags. The W2 binary is `bin/worker.w2.exe`; the compile-proven patch is
++`fork.vulkan-w2.compile-proven.patch` in the session scratchpad. Branch `vulkan-w2` is committed locally
++and **not pushed**. Merge/deploy happens after review and an approved test window.
+diff --git a/RESULTS-vulkan-w3.md b/RESULTS-vulkan-w3.md
+new file mode 100644
+index 0000000..75fc188
+--- /dev/null
++++ b/RESULTS-vulkan-w3.md
+@@ -0,0 +1,269 @@
++# Worker Vulkan — W3 results (F1 per-game hwContext + PSP/DC Vulkan arms + W5 Dolphin audit)
++
++**Branch:** `vulkan-w3` (off `vulkan-w2` @ `7f96784` = the live `worker.exe` / w2fix8 stack: M1+M2 zero-copy, N64 paraLLEl-RDP, v1 surface fix, Vulkan-by-default).
++**Date:** 2026-07-16, box Ziggy (RTX 4070 Ti). Spec: `F:\Work\MovieTheater\docs\arcade-vulkan-w3w4w5-spec.md`.
++**Mode:** COMPILE-ONLY. No live deploy, no rooms/browsers/benchmarks, no `Stop-Process`, no SQL run, no pushes. Live validation is the gated authoring-session window (checklist below).
++
++**Headline:** F1 (explicit per-game `hwContext` override with 3-level precedence) is **implemented, unit-tested, and compile-proven** (fork commit `02af461`). **UPDATE 15:xx:** F1 + the psp/dc arms were reviewed and deployed; ps2 (God of War) and n64 (Mario Kart 64) re-validated clean on `worker.w3.exe` (zero-copy ACTIVE, 60fps), and the **W3.1 PPSSPP surface blocker was CONFIRMED LIVE** — one step deeper than the audit (create_device SUCCEEDED with our null surface; PPSSPP then crashed creating its *own* surface). That is now **fixed** (commit `0baec66`, `bin/worker.w3fix.exe`): a frontend-synthesized hidden-window `VkSurfaceKHR` handed to `create_device`, gated behind the opt-in hack `vk_synthetic_surface` so ps2/n64 are untouched — see **§W3.1-LIVE**. The W4 (dc) arm + DB/exporter change remain staged **UNCOMMITTED** in F:. flycast still has **no renderer core-option**, so W4 dc-Vulkan is `hwContext:"vulkan"`-driven, not a `reicast_renderer` flip. **`bin/worker.exe` (now the deployed w3 binary) is UNTOUCHED**; the fix binary is `bin/worker.w3fix.exe`.
++
++---
++
++## 1. What changed (fork) — F1 only; W3.2/W4.3 are DOCUMENT-only
++
++### F1 — explicit per-game `hwContext` override (commit `02af461`, +1 file test, 2 files edited)
++`overrides.go`: `GameOverride` gains a `hwContext string json:"hwContext"` field; `GameHwContext(gameKey)` returns `"gl"/"vulkan"` (any other value → `""`, so a typo can't pin a game onto a nonexistent context); `ResolveHwContext(gameKey, coreDefault)` is the pure 3-level precedence decision.
++
++`coordinatorhandlers.go`: the room-layer `vkGame` block now calls the precedence (level 1 explicit field → level 2 renderer-option inference → level 3 core default), and stages `HwContextOverride` only when the resolved context **diverges** from the core default (same override-on-divergence contract `CoreLoad` already consumes; the escape-hatch `gl.enabled` term in `nanoarch.go:262` is untouched and still flips GL on for a resolved-"gl" room on a Vulkan-default core even with `isGlAllowed:false`).
++
++`overrides_test.go` (new): `TestResolveHwContext` (12 cases) + `TestGameHwContext` (6 cases) — **all PASS** (`go test ./pkg/worker/caged/libretro/nanoarch/`).
++
++**Why F1 is the load-bearing W3/W4 feature:** PPSSPP, flycast, and Dolphin have **no renderer core-option** (audits below) — they just follow the frontend's hw context. So `WantsVulkanRenderer`/`ForcesGlRenderer` (which infer from `pcsx2_renderer` / `mupen64plus-rdp-plugin`) cannot express a per-game opt-in or GL escape for those systems. The explicit field is the only lever. The inference tables stay (ps2/n64 keep working with zero re-export); flycast/dolphin/ppsspp are deliberately NOT added to them.
++
++### F1 precedence table (the spec's requested 6-combination proof; from the unit test)
++| game signal | core default | resolved | HwContextOverride staged | vkGame |
++|---|---|---|---|---|
++| explicit `hwContext:"vulkan"` | gl | **vulkan** | `"vulkan"` | yes |
++| explicit `hwContext:"gl"` | vulkan | **gl** | `"gl"` (→ gl.enabled via escape term) | no |
++| explicit field + conflicting renderer opt | gl | **explicit wins** | per explicit | per explicit |
++| bogus explicit value (`"metal"`) | vulkan | **vulkan** (ignored → default) | `""` | yes |
++| infer `mupen64plus-rdp-plugin:parallel` | gl | **vulkan** | `"vulkan"` | yes |
++| infer `pcsx2_renderer:OpenGL` | vulkan | **gl** | `"gl"` | no |
++| no per-game signal | vulkan | **vulkan** | `""` | yes |
++| no per-game signal | gl (or `""`) | **gl** | `""` | no |
++
++### W3.2 — PSP teardown under Vulkan (DOCUMENT-only; no code change)
++`nanoarch.go:deinitVideoVulkan` already handles both hack states correctly for the Vulkan path (`:1507` — with `skip_hw_context_destroy` set it skips the core's `context_destroy` and logs, then `nano_vk_shutdown`; matching the proven paraLLEl-GS pattern). **Finding:** the GL-stack rationale for `skip_hw_context_destroy` (PPSSPP's GL `context_destroy` recurses into `nvoglv64.dll` and blows the small libco stack) is **renderer-specific and void on Vulkan** — PPSSPP's Vk `ContextDestroy` is just `WaitUntilQueueIdle` + Vulkan-object frees (`LibretroVulkanContext.cpp:126-131`), and the 64 MiB same_thread stack (`43cb002`) covers it regardless. Keeping the hack for the first arm is the conservative, proven choice (spec says hacks UNCHANGED); the cleaner alternative is to DROP it on the Vk arm so PPSSPP frees its own Vulkan objects before device destroy. **The close ×5 gate decides** — keep it, revisit only if reuse leaks or a close wedges. No fix needed; documented in the config comment.
++
++### W4.3 — readback fallback caps bug (DOCUMENT-only; spec premise is outdated)
++The spec expected the M1 readback path to still carry the mid-stream caps-change bug ("Internal data stream error -5") with the fix only on the zc path. **Evidence says the opposite ordering, same net result:** the readback push (`media/gstreamer.go:pushVideoBuf`, `:49-71`) already carries BOTH the sub-16px guard (added W2, `1d84591`) AND the caps reneg (added in the base fork `622cf1d`, patch 0001-0041); the zc push (`media/glzerocopy.go:zc_push`, `:168-182`) got its own reneg in `a738868`, and the zc sub-16 guard is in `nano_vk_zc_frame`. **So both paths are already protected** — if flycast-Vk can't zero-copy and falls to M1 readback, a mid-stream geometry change (interlace/FMV) renegotiates cleanly. No new fix is required for the flycast readback fallback. (Documented so the reviewer doesn't re-hunt a fixed bug.)
++
++---
++
++## 2. Source audits
++
++### W3.1 — PPSSPP libretro Vulkan contract & geometry (source: `D:\Arcade\build\ppsspp`)
++- **Negotiation = functionally v1, but the core reports version 2.** `LibretroVulkanContext.cpp:98-105` initializes the negotiation struct with only 5 of 7 fields → `create_instance` and `create_device2` are **NULL**, while `..._VERSION` is `2` (`libretro_vulkan.h:30`). Per the header contract (`:196`), a NULL `create_device2` means fall back to v1 `create_device`. **Our selector already handles this correctly:** `nanoarch_vulkan.c:499` and `:592` gate the v2 paths on `interface_version >= 2 && vk.negotiation.create_instance`/`create_device2` (the callback-pointer AND-term), so a version-2/NULL-callback core correctly falls through to the v1 `create_device` branch (`:612`). The audit's "single biggest risk" (a selector branching purely on `version >= 2`) does **not** apply to our code.
++- **Device features/extensions merge cleanly.** PPSSPP enables features as "if-supported" (`VulkanContext.cpp:742-750` — none hard-required; no `wideLines`) and the libretro warp `libretro_vulkan.cpp:101-103,135-140` **appends** the frontend's `required_device_extensions` and OR's the `required_features` — so our injected `VK_KHR_external_memory_win32` + `VK_KHR_external_semaphore_win32` (v1 zero-copy path, `:612-660`) are added on top, not clobbered.
++- **Geometry:** base = `iInternalResolution × 480×272` (`libretro.cpp:1322-1325`); the delivered hw-render frame IS that full size (the psp config's 960×544 is the worker's post-capture downscale, not core output). Static per session; changes only on a deliberate `ppsspp_internal_resolution` option change (`libretro.cpp:1100-1114`) — which our zc caps-reneg already handles. FMV/display-mode switches do NOT change base geometry.
++- **⚠ LIKELY BLOCKER — headless surface.** `create_device` (`LibretroVulkanContext.cpp:39-79`) calls `vk->InitSurface(WINDOWSYSTEM_WIN32,...)` then (in `CreateDrawContext`) `InitSwapchain`. `vkCreateWin32SurfaceKHR` is warped to return the frontend's surface handle (`libretro_vulkan.cpp:152-155`), and `vkGetPhysicalDeviceSurfaceCapabilitiesKHR_libretro` passes it to the **real driver** `_org` (`:157-158`). We pass `VK_NULL_HANDLE` as the surface (`nanoarch_vulkan.c:593,636`), so that real query is `vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, VK_NULL_HANDLE)` — invalid; on failure PPSSPP's `InitSwapchain` returns false → no draw context → **no video**. (The `assert(surface)` at `libretro_vulkan.cpp:441` is likely NDEBUG-stripped in the release DLL, but the functional use of the handle is the real problem.) This extends the W2 addendum's own deferred "if it later wants `VK_KHR_swapchain` that is a follow-up with fresh evidence." **This is the #1 psp-Vk boot-probe risk.** Remedy if the probe confirms it: the frontend synthesizes a real headless `VkSurfaceKHR` (message-only HWND + `vkCreateWin32SurfaceKHR`; the instance already carries `VK_KHR_surface`+`VK_KHR_win32_surface` from `4451d47`, add `VK_KHR_swapchain` to the device) and passes it into `create_device` — a **scoped code follow-up**, deliberately NOT done here (it can't be validated compile-only and would be an unvalidated change to the proven paraLLEl-GS/N64 `create_device` call site).
++
++**Bottom line:** wiring + merge + geometry are all compatible; PPSSPP-Vk is likely one surface-handle fix short of booting. Gate on the boot probe (§4). → **CONFIRMED LIVE, then FIXED — see §W3.1-LIVE.**
++
++### W3.1-LIVE — the blocker confirmed one step deeper, and the fix (commit `0baec66`, `worker.w3fix.exe`)
++**Live crash (glworker.log 2026-07-16 15:06:16, room `…-psp___Daxter`):**
++```
++[vk] negotiation interface stored (version 2, create_instance=no create_device2=no)   → v1 path
++[vk] instance created by frontend (v1 path, 2 surface extension(s) enabled)            → 4451d47 worked
++PPSSPP: instance fns loaded, chose the 4070 Ti, "Vulkan Device created",
++        "Setting Vulkan availability to true"                                          → create_device SUCCEEDED with our VK_NULL_HANDLE surface
++[G3D] Creating Vulkan surface for window (data1=0000… data2=0000…)  → worker EXIT 0xC0000005
++```
++So the audit's surface-caps-query concern did NOT kill create_device — the crash is **one step later**: PPSSPP proceeds (at `CreateDrawContext`) to build its OWN Win32 surface via `VulkanContext::ReinitSurface` (`VulkanContext.cpp:951-971`). That `vkCreateWin32SurfaceKHR` is **warped** — `LOAD_INSTANCE_FUNC(vkCreateWin32SurfaceKHR)` (`VulkanLoader.cpp:720`) runs during `CreateInstance`, AFTER `vk_libretro_init` installs the warp, so it resolves to `vkCreateLibretroSurfaceKHR` (`libretro_vulkan.cpp:152-155`) which **echoes `vk_init_info.surface` back verbatim, ignoring the null window data**. `vk_init_info.surface` = the handle the frontend passed into `create_device` = `VK_NULL_HANDLE`. PPSSPP then uses that null handle for its swapchain/surface-caps path and access-violates. `data1=data2=0` in the log is the hardcoded `InitSurface(WIN32, nullptr, nullptr)` (`LibretroVulkanContext.cpp:54`) — but the warp means those window fields are irrelevant; the **surface handle** is what matters.
++
++**Answer to task #1 (does PPSSPP skip its own surface if we pass a real one?):** No — `create_device` unconditionally calls `InitSurface(WIN32, null, null)` and `ReinitSurface` regardless. But it does NOT need to skip: `vkCreateWin32SurfaceKHR` is warped to echo `vk_init_info.surface`, so handing a REAL surface into `create_device` makes PPSSPP's "own" surface BE our real surface. The null window data is never used by the warp.
++
++**Answer to task #4 (swapchain vs libretro frame handoff):** frames still arrive through the libretro image interface, NOT a real present. `vkCreateSwapchainKHR` is warped (`libretro_vulkan.cpp:199-260`) to allocate a ring of plain `VkImage`s (dedicated memory) and hand them to the frontend via `retro_vulkan_set_image` on the negotiation interface — there is no real `VkSwapchainKHR`, no present queue, no `vkQueuePresentKHR` to the surface. The surface exists only to satisfy PPSSPP's `InitSwapchain` surface-caps/format queries; our capture path (M1 readback / M2 zero-copy) is unchanged. So the re-probe should still show `zero-copy: ACTIVE` (or `readback path`), never a present error.
++
++**The fix (`nanoarch_vulkan.c`, gated by hack `vk_synthetic_surface`):** between `pick_physical_device` and `create_device`, `create_synthetic_surface()` registers a hidden `WS_POPUP` window (real `HWND` via `CreateWindowExW`, never shown — a message-only window can't back a Vulkan surface) and creates a real `VkSurfaceKHR` on our instance via `vkCreateWin32SurfaceKHR` (the v1 headless instance already carries `VK_KHR_surface` + `VK_KHR_win32_surface` from `4451d47`). That surface is passed into `create_device` / `create_device2` in place of `VK_NULL_HANDLE`; via the warp it becomes PPSSPP's surface. Torn down in `nano_vk_shutdown` (surface destroyed before the instance, window after). Plumbed exactly like `skip_hw_context_destroy`: `meta.HasHack("vk_synthetic_surface")` → `Nan0.hackVkSyntheticSurface` → `armVulkanSyntheticSurface()` (a flag write before `nano_vk_init`, alongside `armVulkanZeroCopy`). **Inert for ps2/n64** — they don't set the hack, so `vk.synth_surface` stays `VK_NULL_HANDLE` and their proven paths are byte-for-byte unchanged (re-confirmed live on `worker.w3.exe` before this build).
++
++**Re-probe (must show):** on `worker.w3fix.exe` + psp arm (with `vk_synthetic_surface` in psp `hacks`): `synthetic headless surface created (hidden WS_POPUP window)`, `device created by core (v1 create_device)`, `hw render context: Vulkan`, `[vk] zero-copy: ACTIVE` (or `readback path`), 60 t/s / forgiven=0, NO 0xC0000005 after "Creating Vulkan surface for window", LocoRoco+Daxter render, memstick seed+harvest intact, close ×5 clean (surface+window freed each close). Then the crackle A/B (Eric remote; worker-side pace-diag II only).
++
++### W4.1 — flycast libretro Vulkan contract & geometry (source: DLL strings — flycast tree not checked out; `flycast_libretro.dll`, git `324d9c1`)
++- **Vulkan renderer + OIT present:** `vulkan_renderer.cpp`/`VulkanRenderer::Init`, `oit/oit_renderer.cpp`/`OITVulkanRenderer::Init`, `retro_vk_context_reset`/`_destroy`, `Get Vulkan HW interface failed` — all strings in the DLL. So the core WILL run Vulkan **iff the worker negotiates a Vulkan hw-context**.
++- **⚠ NO renderer core-option.** There is **no `reicast_renderer`** (only `reicast_threaded_rendering`); no `Vulkan`/`OpenGL`/`Auto` value cluster. flycast picks the renderer from the frontend's hw-context, not a core option. **Consequence:** W4 dc-Vulkan is NOT a config renderer flip — `hwContext:"vulkan"` (the F1 field / core-config key) is the ONLY mechanism, and a per-game GL escape must use `hwContext:"gl"` (F1), not an option. A `reicast_renderer:` line would be a silently-ignored unknown key.
++- **OIT tokens (verbatim from the DLL option strings, VALUES not labels):** `reicast_alpha_sorting` ∈ {`per-strip (fast, least accurate)` | `per-triangle (normal)` | `per-pixel (accurate)`}; `reicast_oit_abuffer_size` ∈ {`512MB` | `1GB` | `2GB` | `4GB`} — **no space** (the spaced "512 MB" forms are GUI translations). The spec's guesses `"per-pixel (accurate)"` and `"512MB"` are both correct.
++- **Geometry:** `retro_get_system_av_info` is renderer-agnostic (one code path; base = DC native 640×480, internal-res multiplier → max_width) — so the Vk renderer hands frames the same way GL does and **dc `scale:2` should hold** (640×480 × 2 = 1280×960 passthrough). This is INFERRED (source not checked out); the gated probe MUST read the `retro_get_system_av_info: Res=` / `System A/V >>>` line under the Vk renderer — if base comes back as internal res, re-derive `scale` to 1. Also: per-pixel OIT needs GL≥4.3 **or** Vulkan, so it is technically GL-shippable — but the point is the Vk headroom, so it rides the Vulkan arm.
++
++**Bottom line:** dc-Vulkan is achievable with the shipped DLL, via `hwContext:"vulkan"` (not a renderer option) + the two verified OIT tokens; scale stays 2 pending the live geometry line.
++
++### W5 — Dolphin custom-core patches vs Vulkan (source: `D:\Arcade\build\dolphin` @ `287ab2d`) — **VERDICT: NO-GO on a gc-Vk probe**
++1. **Negotiation exists, effectively v1 on Windows.** `DolphinLibretro/Video.cpp:231-242` registers the Vulkan negotiation interface with `create_instance`/`create_device2` populated **only under `#ifdef __APPLE__`** → NULL on Windows → v1 `create_device` (`Video.cpp:655-706`, `VulkanContext::Create` at `:690`). Backend is NOT chosen by `dolphin_renderer` (values `"Hardware"`; `"Software"`/`"Null"` are `_DEBUG`-only, `Options.cpp:838-844`) — it's the libretro hw_render context type, and **Vulkan is dead-last in the cascade** (`Video.cpp:135-138`), reachable only via a Vulkan-advertising worker. So flipping gc to Vk is a worker-binary decision, not a config flip.
++2. **`dolphin-custom-core.patch` is backend-agnostic.** It's the `CMakeLists.txt:114-122` MSVC fix `set(CMAKE_CXX_FLAGS_RELEASE "/MT" → "/MT /O2 /Ob2 /DNDEBUG")`, applied to every TU incl. `VideoBackends/Vulkan/*`. A Vk build carries `/O2`+`NDEBUG` (the 13.9 MB vs 21 MB tell). **Still applies.**
++3. **`dolphin-createsharedcontext.patch` is unnecessary-but-inert under Vulkan.** Every path is gated on `Mode::OpenGL` (GLContextLR); Vulkan builds `VKGfx` directly and never constructs a GL context. The shared-GL-context need is unique to OGL's `SharedContextAsyncShaderCompiler` (`OGL/ProgramShaderCache.h:124`); `VKGfx` falls through to the base `AsyncShaderCompiler` whose thread-init is a no-op (`VideoCommon/AsyncShaderCompiler.cpp:192-200`), compiling pipelines against `VkDevice`+`VkPipelineCache` (`Vulkan/ObjectCache.cpp:540,576`). Compiles, never exercised. **Inert.**
++4. **Cache covered, but GL→Vk = cold.** Vk pipeline cache lands at `User/Cache/Shaders/Vulkan-Pipeline-...` (`FileUtil.cpp:962` + `ShaderGenCommon.cpp:51-92`) — covered by `coreCache.purge ["Shaders","*.uidcache"]`. But the API is a literal filename prefix (`OpenGL-*` vs `Vulkan-*`, `ShaderGenCommon.cpp:68-73`) plus the host-config hash includes the backend, so a GL→Vk flip is a **guaranteed cold cache** → minutes of mode-2 ubershader warm-up on first boot per game.
++5. **Verdict: NO-GO.** gc holds a flat 60 on stock GL today; the only Vk upside is a speculative ubershader-hitch reduction (GL already has a clean async path via the createsharedcontext patch), against real costs (cold cache, a separate worker-binary validation, unproven Vk teardown). Both patches are already Vk-safe, so there's no maintenance pressure forcing the question. Revisit only if a concrete gc title shows a GL-specific defect Vulkan is known to fix. **gc does NOT flip in this workstream.**
++
++---
++
++## 3. Proposed config + DB/exporter changes (F: working tree, UNCOMMITTED)
++
++### `docker/arcade/config.worker-gl.yaml`
++- **psp:** `isGlAllowed: true → false`; **add** `hwContext: "vulkan"`. Everything else UNCHANGED (stock lib, IR JIT, fastmem off, audioMaster, vfr, usesLibCo, hacks, scale, options — all renderer-orthogonal; cpu_core stays IR JIT + fastmem off on stock either way). A comment block documents the Vk arm, the "PPSSPP has no renderer option" mechanism, the surface-blocker gate, and the teardown-hack analysis (W3.2).
++- **dc:** `isGlAllowed: true → false`; **add** `hwContext: "vulkan"`; **add** options `reicast_alpha_sorting: "per-pixel (accurate)"` + `reicast_oit_abuffer_size: "512MB"`. `scale: 2` kept, with a note it must be re-confirmed live. The old "REJECTED on GL" alpha-sorting comment is preserved and extended (re-tested on Vk for headroom). naomi/atomiswave stay GL with an explicit lockstep-follow-up note.
++- Validated: YAML parses; no BOM; ps2/gc/naomi/atomiswave unchanged.
++
++### DB + exporter (for the `hwContext` per-game override)
++- `src/MovieTheater.Db/ArcadeGameProfile.cs`: **add** `[MaxLength(10)] public string? HwContext { get; set; }` (`"gl"/"vulkan"/null`).
++- `src/MovieTheater/Arcade/ArcadeGameConfigExportCommand.cs`: `Entry` gains `hwContext`; `NormalizeHwContext` drops anything but `gl`/`vulkan` (mirrors `GameHwContext`); a profile with only `hwContext` (no fps/opts) is now emitted (not skipped as empty). **Builds clean** (`dotnet build`, 0 errors).
++- `scripts/add-arcadegameprofile-hwcontext.sql` (**new; NOT executed**): idempotent, additive `ALTER TABLE dbo.ArcadeGameProfile ADD HwContext nvarchar(10) NULL` + an optional `CHECK (HwContext IN ('gl','vulkan'))`. Header warns it's the SHARED prod/dev DB and must be applied by hand after review (the live DB drifts from the EF snapshot — no `ef database update`). The importer is unchanged (leaves `HwContext` null for curated fps/coreoption rows — fine).
++
++---
++
++## 4. Validation checklist for the gated arm (authoring session + Eric; NOT the agent)
++
++Pre: `curl -s localhost:8000/status` all rooms `free`; graceful recycle ONE worker onto `worker.w3.exe` + the psp/dc config arm (never `Stop-Process`; deregister the other worker for perf isolation).
++
++0. **Apply the DB column FIRST** (`scripts/add-arcadegameprofile-hwcontext.sql`, reviewed) if any per-game `hwContext` profile is used, then re-run `arcade-gameconfig-export` — else the exporter's `SELECT HwContext` fails on a DB without the column.
++1. **psp boot re-probe on `worker.w3fix.exe`** (the surface blocker is confirmed + fixed; psp `hacks` must include `vk_synthetic_surface`): LocoRoco + Daxter. Grep for `synthetic headless surface created`, `device created by core (v1 create_device)`, `hw render context: Vulkan`, and `[vk] zero-copy: ACTIVE` (or `readback path`). Must NOT crash 0xC0000005 after "Creating Vulkan surface for window." Expect 60 t/s, forgiven=0, memstick seed+harvest intact. (Without the fix / hack, this is the confirmed crash.)
++2. **dc boot probe:** Crazy Taxi + Sonic Adventure + Power Stone → `hw render context: Vulkan` + zero-copy ACTIVE (or readback). **Read the `retro_get_system_av_info: Res=` / `System A/V >>>` geometry line** — confirm base 640×480 (else re-derive `scale`). VMU GLOB harvest-first intact.
++3. **OIT A/B (dc):** OIT-on must hold **60 fps / 0-freeze** on Crazy Taxi + Sonic Adventure + a known alpha-artifact title (screenshots for alpha sorting) — the bar GL failed (58fps/3freezes). If it can't hold 60/0, keep dc on GL (or GL+OIT if GL≥4.3 holds it).
++4. **close ×5 (both):** probe `context_destroy` clean ×5 per system; if a close wedges, that's the `skip_hw_context_destroy` decision point (W3.2) — the psp arm keeps it; for dc it's already set.
++5. **Crackle verdict (psp):** Eric plays PSP remotely on the Vk arm; read ONLY worker-side pace-diag II (meanTick / noSleep% / maxDeficit / forgiven) vs the GL baseline. Idle A/Bs cannot see it (benchmark-isolation).
++6. **Mixed sequence:** vk-psp → GL(2D) → vk-dc → vk-ps2 on one worker; no exit-70 / 0xC0000005 / WEDGED.
++
++## 5. Rollback one-liners
++- **psp:** `isGlAllowed: true` + delete the `hwContext: "vulkan"` line (2 lines). Core lib/JIT/hacks never moved.
++- **dc:** `isGlAllowed: true` + delete `hwContext` + delete the two `reicast_oit_*`/`reicast_alpha_sorting` options.
++- **F1 code:** inert unless a manifest sets `hwContext` or a core config sets `hwContext:"vulkan"` — reverting is `git revert 02af461`.
++- **DB:** `ALTER TABLE dbo.ArcadeGameProfile DROP CONSTRAINT CK_ArcadeGameProfile_HwContext; ALTER TABLE dbo.ArcadeGameProfile DROP COLUMN HwContext;` (only if applied).
++
++## 6. Open risks
++1. **PPSSPP headless surface — CONFIRMED then FIXED (was HIGH).** Blocked psp-Vk boot as predicted (§W3.1-LIVE); fixed in `0baec66` (`vk_synthetic_surface` hack). Residual risk is now just the re-probe: does the synthetic surface let PPSSPP complete `InitSwapchain` and stream (expected yes — the swapchain is warped to the image interface). Gated on `worker.w3fix.exe`.
++2. **dc Vk geometry (MED)** — `scale:2` inferred, not proven; the live `Res=` line decides.
++3. **OIT perf on Vk (MED)** — the whole reason for the Vk arm; if it can't hold 60/0, dc-Vk's headline benefit evaporates.
++4. **flycast heap-corruption on teardown (carried)** — VMU harvest-first ordering protects saves; verify it holds on the Vk context (close ×5).
++5. **psp teardown hack choice (LOW)** — keep `skip_hw_context_destroy` for arm 1; drop only if reuse leaks (W3.2).
++
++## 7. Deviations from spec
++1. **PPSSPP has a likely code blocker** (surface handle) — spec said "no KNOWN code blocker." Documented with evidence; NOT force-fixed (§W3.1).
++2. **W4 is not a renderer-option flip** — flycast has no `reicast_renderer`; `hwContext:"vulkan"` is the mechanism. The spec's proposed `hwContext`/`isGlAllowed`/OIT config is otherwise exactly right (tokens verified).
++3. **W4.3 needed no fix** — the readback caps reneg already exists on both paths (§W4.3); the spec's premise was outdated.
++4. **W3.2 needed no fix** — the Vk teardown path already handles both hack states; kept the hack per spec, documented the drop-it option.
++5. **F1 precedence extracted to a pure `ResolveHwContext`** in nanoarch (called by the room layer) so it's unit-testable — the spec said "evaluated in the room layer," which it still is; the decision is just a pure helper.
++
++## 8. Hygiene / build evidence
++- Branch `vulkan-w3` off `7f96784`. Commits: `02af461` (F1) → `bd366ec` (RESULTS) → `0baec66` (W3.1 synthetic-surface fix).
++- `bin/worker.w3.exe` (F1, pre-fix) builds clean, **36,023,312 bytes** — this is what was deployed as the current `worker.exe`.
++- `bin/worker.w3fix.exe` (with the surface fix) builds clean (MSYS2 UCRT64 gcc 16.1.0, `CGO_ENABLED=1`, `go build -trimpath -pgo=auto -buildmode=exe`), **36,032,450 bytes**, exit 0. `go vet` clean (only the pre-existing `dl_windows.go` note). `go test ./…/nanoarch/` — F1 precedence + nanoarch tests **PASS**.
++- Regenerated `docker/arcade/patches/fork.patch` = `git diff 13852a7 vulkan-w3` (includes `0baec66`), no BOM, LF — **applies cleanly to pristine upstream 13852a7** (`git apply --check`). Left UNCOMMITTED in F:.
++- **`bin/worker.exe` UNTOUCHED** by me (it is now the deployed w3 binary, 36,023,312). Nothing under `D:\ArcadeStorage` edited. Branch not pushed.
++
++## 9. F: working-tree edits (UNCOMMITTED — for review)
++```
++ M docker/arcade/config.worker-gl.yaml              # psp + dc Vulkan arms (all comments preserved)
++ M docker/arcade/patches/fork.patch                 # regenerated = diff(13852a7, vulkan-w3), incl. F1
++ M src/MovieTheater.Db/ArcadeGameProfile.cs          # + HwContext column
++ M src/MovieTheater/Arcade/ArcadeGameConfigExportCommand.cs  # export hwContext
++?? scripts/add-arcadegameprofile-hwcontext.sql       # ALTER script (NOT executed)
++```
++
++---
++
++# LIVE OPS SESSION — 2026-07-16 (guardrail lifted: full deploy/probe ownership)
++
++Mode changed mid-effort: compile-only lifted, full live-ops ownership (graceful recycle only, pool-idle
++gate, one room at a time, no pushes, F: uncommitted). Binaries built with the Makefile recipe (MSYS2
++UCRT64 gcc 16.1.0, CGO). Every verdict below is evidence-first from the worker log and the test-roms harness.
++
++## Final live state (system to renderer to binary)
++
++| System | Renderer | Notes |
++|---|---|---|
++| ps2 | **Vulkan** (paraLLEl-GS, zero-copy) | validated (God of War 1280x896, 60fps) — pre-existing |
++| n64 | **Vulkan** (paraLLEl-RDP, zero-copy) | validated (Mario Kart 64) — pre-existing |
++| psp | **Vulkan** (PPSSPP-Vk, zero-copy) | **W3.1 fix** — vk_synthetic_surface. Daxter 960x540/30fps, LocoRoco 60fps, 0 freezes, memstick harvest OK |
++| gc | **Vulkan** (Dolphin VKGfx, zero-copy) | **W5-LIVE fix** — vk_synthetic_surface. 1280x1056/60fps warm; one-time cold-cache warm-up first boot/game |
++| dc | GL (flycast) | flycast-Vk **not viable** (W4-LIVE); GL renders fine |
++| naomi | GL (flycast) | same core/issue as dc; stays GL |
++| atomiswave | GL (flycast) | same core/issue as dc; stays GL |
++| ps1 | GL (pcsx_rearmed, sw enhanced 2x) | not a Vulkan target; W8 evaluates a beetle_psx_hw-Vk flip (below) |
++
++Production binary: **bin/worker.exe = w3fix4** (vulkan-w3 HEAD: F1 + synthetic surface + flycast fix +
++fail-soft + gated instrumentation). Capture worker (8448): w3fix (srflx + M2 current). Live config =
++docker/arcade/config.worker-gl.yaml deployed to both ConfDirs (identical, BOM-less).
++
++## Libretro Vulkan negotiation-shape table (measured from the live "[vk] negotiation interface stored" line)
++
++| Core (system) | interface_version | create_instance | create_device2 | Path taken | Needs synthetic surface? | Zero-copy |
++|---|---|---|---|---|---|---|
++| paraLLEl-GS (ps2) | 2 | yes | yes | v2 create_instance + create_device2 (wrapper injection) | no | yes |
++| paraLLEl-RDP (n64) | 1 | no | no | v1 create_device (required_device_extensions injection) | no | yes |
++| PPSSPP (psp) | 2 | no | no | v1 create_device (v2 reported, no callbacks) | **YES** (else 0xC0000005) | yes |
++| Dolphin (gc) | 2 | no | no | v1 create_device | **YES** (else silent no-video) | yes |
++| flycast (dc) | **1** | yes* | yes* | v1 create_device — the v2 fields are a GARBAGE MISREAD (calling them crashes, PC=0x100000004) | n/a | **NO** (ignores injection) |
++| beetle_psx_hw (ps1) | TBD (has vkCreateDevice) | TBD | TBD | not yet probed (W8) | TBD | TBD |
++
++Two load-bearing lessons: (1) select the v2 callbacks by interface_version >= 2 AND the callback pointer —
++a v1 core's v2 fields may be uninitialized garbage (flycast). (2) PPSSPP and Dolphin both require a real
++VkSurfaceKHR to complete their swapchain-warp frame handoff; PPSSPP crashes without it, Dolphin silently
++delivers no frames. The vk_synthetic_surface hack (hidden WS_POPUP window + real surface) covers both.
++
++## Core taxonomy — the "everything on Vulkan" DONE state (for Eric)
++
++| Class | Systems | Vulkan gain? |
++|---|---|---|
++| **Vulkan-capable, FLIPPED** | ps2, n64, psp, gc | done — zero-copy Vulkan live |
++| **Vulkan-capable, evaluate** | ps1 (beetle_psx_hw) | W8: pending save-continuity proof + probe |
++| **Vulkan-capable, NOT viable on our stack** | dc/naomi/atomiswave (flycast v1) | flycast-Vk blocked (v1 ignores zc injection; v2 misread crashes). Stays GL |
++| **Pure-software (no hw renderer — nothing to gain)** | nes, snes, gb/gbc/gba, genesis/megadrive/segacd, sms/gg, pce, ngp, ws, lynx, atari, arcade (FBNeo 2D), psx-sw | encode at native xN nearest; Vulkan is irrelevant — DONE by definition |
++
++So the Vulkan effort's DONE state = {ps2,n64,psp,gc} flipped, ps1 pending W8, dc-family blocked-by-core,
++everything 2D out-of-scope-by-nature. No open Vulkan work beyond ps1 and (if ever) a flycast source fix.
++
++## Per-system evidence
++
++**psp (W3.1) — PASS.** Old binary crashed exactly as predicted: "Creating Vulkan surface for window
++(data1=0 data2=0)" then 0xC0000005. w3fix+ with vk_synthetic_surface: "synthetic headless surface created"
++then "device created (v1)" then "zero-copy: ACTIVE" then no crash. Daxter Playing 960x540 @30fps content
++(0 freezes/dropped); LocoRoco @60fps (0 freezes). Memstick card seed+harvest confirmed ("seeded/harvested
++user ... psp card") — save continuity intact, renderer-agnostic.
++
++**dc/naomi/atomiswave (W4-LIVE) — flycast-Vk NOT viable.** Crazy Taxi on the presence-gated build crashed at
++create_instance with PC=0x100000004 (garbage) — flycast is a genuine v1 core; its non-null
++create_instance/create_device2 fields are a struct misread. Reverted to interface_version >= 2 gating.
++flycast's v1 create_device also ignores our required_device_extensions (enables only VK_KHR_swapchain +
++VK_EXT_provoking_vertex), so it cannot zero-copy at all. Geometry confirmed "System A/V >>> 640x480
++(2560x2560)" — base 640x480. Added a **fail-soft** (vk.captureBroken) so a Vulkan core whose GL-committed
++pipeline cannot zero-copy drops frames (black) instead of crashing the worker — there is no recover() on the
++room-load path, so this is the only thing between a zc-mismatch and a pool-killing crash. flycast-Vk would
++need a forced-readback CPU pipeline path or a flycast source fix — out of scope.
++
++**gc (W5-LIVE) — root-caused and FIXED (my earlier NO-GO was wrong).** Instrumented probe
++(CLOUD_GAME_VK_DEBUG=1, sole main worker) settled it: without a surface, over 60s retro_run ticked 3221x
++(emulation+audio+shader-compile all running) but video_cb=0 and set_image=0 — frames never reached our
++capture path; geometry was valid 1920x1584, not 0x0. The shader-compile warm-up was a coincidental costume.
++Dolphin's Vulkan backend gates its frame handoff on a swapchain (needs a surface); with VK_NULL_HANDLE it
++renders internally and silently hands us nothing. Re-probe WITH vk_synthetic_surface: video_cb=VALID=1511,
++set_image=1511, zc_tex=1511, zero drops; warm boot streams **60fps @1280x1056**. Instrumentation kept as a
++permanent gated debug flag (per-5s dump of ticks / video_cb split / set_image / zc-frame per-reason drops /
++semaphore begin-done). One-time cold-cache ubershader warm-up on first boot per game is expected (mode-2
++async draws during it) — not a failure.
++
++## Deploy/rollback lineage (bin/, all kept)
++- worker.pre-w3fix2.exe (= w3 F1), worker.pre-w3fix3.exe (= w3fix2), worker.pre-w3fix4.exe (= w3fix3) — each
++  swap kept its predecessor. Current worker.exe = w3fix4. worker.w3fix{,2,3,4}.exe + worker.gcdbg.exe staged.
++  Capture worker: worker.pre-w3fix3.exe rollback at D:\ArcadeStorage\worker-capture\bin\.
++- Config rollback: every live-config edit dated-.bak in each ConfDir.
++- Per-system config rollback one-liners: psp/gc — remove hwContext / set isGlAllowed: true / drop
++  vk_synthetic_surface; dc — already GL. Fork: git revert the relevant commit.
++
++## W8 — PSX to Beetle PSX HW (Vulkan): audit + recommendation (probe pending)
++
++Static audit of mednafen_psx_hw_libretro.dll (14.7 MB, nightly-synced): beetle_psx_hw_renderer value tokens
++**hardware_vk / hardware_gl / software**; vkCreateDevice + vkGetInstanceProcAddr present (Themaister's
++reference Vulkan negotiation — the one our frontend implements). beetle_psx_hw_internal_resolution tokens
++1x..16x; PGXP via beetle_psx_hw_pgxp_mode/_vertex/_texture; SAVE_RAM memcard via beetle_psx_hw_enable_memcard1.
++Vulkan likely routes around the config's noted GL-context blocker.
++
++**Save-continuity (the hard gate) — format is compatible.** Both pcsx_rearmed (pcsx_rearmed_memcard1: libretro)
++and beetle (beetle_psx_hw_enable_memcard1) expose PSX memcard 1 via RETRO_MEMORY_SAVE_RAM (.srm), and the real
++live saves (D:\ArcadeStorage\saves\*ps1*.srm, e.g. SotN, 007) are **131072 bytes = the standard 128 KB raw PSX
++memcard image** — a hardware standard both cores implement identically. So an existing pcsx .srm should be read
++byte-compatibly by beetle. Strong but not a live proof.
++
++**Recommendation:** beetle-Vk is technically viable and worth flipping for the PGXP/internal-res fidelity win —
++BUT do not flip live without two live proofs Eric gates: (1) a gated boot probe (CTR + SotN mode-switch
++1024x960<->640x480) confirming hardware_vk boots, zero-copy activates, and the caps-reneg survives SotN; (2) a
++save-continuity test — seed a COPY of a real .srm, boot on beetle-Vk, confirm the in-game load screen lists the
++existing save. Arm conservatively (PGXP off round 1; internal-res 2x, re-deriving scale from beetle's advertised
++base geometry, which differs from pcsx's software enhancement — read the System A/V line under hardware_vk). I
++did not flip ps1 (the save gate is unproven live and ps1 is healthy on GL).
++
++## Open items for Eric
++- **Router**: UDP **8448** forward to Ziggy for off-LAN capture-lane peers is still Eric's router action.
++- **W8**: the two ps1/beetle-Vk live proofs above before any flip.
++- **W9 (heavy/capture lane)**: separate large workstream — AV1 sequence-header-OBU audit, zero-copy tracer A/B,
++  bitrate/preset ladder, the machine-readable test-card app + capture-diag harness, and SudoVDA virtual-display
++  isolation. Scoped separately; see docs/arcade-capture-worker-plan.md and the W9 design notes.
++- **VB-Audio / default-render-device** hygiene (W9 §12.2-B/D): registry read-only checks flagged for Eric
++  (need admin + driver restart — not automatable safely).
 diff --git a/go.mod b/go.mod
 index 46034dc..19b7a10 100644
 --- a/go.mod
@@ -9385,7 +9937,7 @@ index 0000000..dbd35c1
 +
 +#endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.c b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
-index 669862d..097f8ac 100644
+index 669862d..db883db 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.c
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
 @@ -10,11 +10,12 @@
@@ -9441,15 +9993,26 @@ index 669862d..097f8ac 100644
              return (int16_t)((input_cache.buttons[port] >> id) & 1);
  
          case RETRO_DEVICE_ANALOG:
-@@ -304,6 +319,18 @@ void deinit_video_cgo() {
+@@ -304,6 +319,29 @@ void deinit_video_cgo() {
      deinitVideo();
  }
  
 +// Vulkan-capture: bring up / tear down the Vulkan frontend on the core's LibCo cothread. The Go
 +// wrappers log via Nan0.log and drive the teardown order (see nanoarch.go).
 +void init_video_vk_cgo() {
-+    void initVideoVulkan();
-+    initVideoVulkan();
++    // Call nano_vk_init DIRECTLY in C so the deep vkCreateDevice (into the NVIDIA driver) stays on THIS
++    // same_thread 64 MiB stack. Bouncing through Go (the old initVideoVulkan) dropped the nested Go->C
++    // call onto Go's small cgo-callback stack -> STATUS_BAD_STACK (0xc0000028) on N64 paraLLEl-RDP,
++    // whose v1 create_device is deeper than PS2's v2. arm/finish are the light + GL-side work and stay
++    // in Go (finish runs setupVulkanZeroCopy's thread.Main inline on this cothread).
++    int  nano_vk_init(void);
++    void armVulkanZeroCopy(void);
++    void armVulkanSyntheticSurface(void);
++    void finishVideoVulkan(int rc);
++    armVulkanZeroCopy();
++    armVulkanSyntheticSurface();
++    int rc = nano_vk_init();
++    finishVideoVulkan(rc);
 +}
 +
 +void deinit_video_vk_cgo() {
@@ -9460,7 +10023,7 @@ index 669862d..097f8ac 100644
  typedef struct {
     pthread_mutex_t m;
     pthread_cond_t cond;
-@@ -341,7 +368,10 @@ void *run_loop(void *unused) {
+@@ -341,7 +379,10 @@ void *run_loop(void *unused) {
          switch (call.type) {
              case CALL_SERIALIZE:
              case CALL_UNSERIALIZE:
@@ -9472,7 +10035,7 @@ index 669862d..097f8ac 100644
                break;
              default:
                  ((void (*)(void)) call.fn)();
-@@ -367,7 +397,20 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -367,7 +408,20 @@ void *same_thread_with_args(void *f, int type, ...) {
          mutex_init(&run_mutex);
          mutex_init(&done_mutex);
          mutex_lock(&done_mutex);
@@ -9494,7 +10057,7 @@ index 669862d..097f8ac 100644
          mutex_wait(&done_mutex);
          mutex_unlock(&done_mutex);
      }
-@@ -377,21 +420,17 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -377,21 +431,17 @@ void *same_thread_with_args(void *f, int type, ...) {
      call.type = type;
      call.fn = f;
  
@@ -9524,7 +10087,7 @@ index 669862d..097f8ac 100644
      }
      mutex_signal(&run_mutex);
      mutex_unlock(&run_mutex);
-@@ -400,10 +439,49 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -400,10 +450,49 @@ void *same_thread_with_args(void *f, int type, ...) {
      return call.result;
  }
  
@@ -9577,10 +10140,10 @@ index 669862d..097f8ac 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..de4cfce 100644
+index 17f10fc..7702811 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-@@ -1,981 +1,1551 @@
+@@ -1,981 +1,1665 @@
 -package nanoarch
 -
 -import (
@@ -10568,6 +11131,7 @@ index 17f10fc..de4cfce 100644
 +	"errors"
 +	"fmt"
 +	"maps"
++	stdos "os"
 +	"path/filepath"
 +	"runtime"
 +	"slices"
@@ -10658,6 +11222,13 @@ index 17f10fc..de4cfce 100644
 +			zeroCopy bool
 +			zcFence  bool // conservative layer-2 sync (host fence-wait the blit) — CLOUD_GAME_VK_ZEROCOPY=fence
 +			zcReady  bool // pool + GL imports built successfully this room
++			// captureBroken: the media pipeline was committed to GL-texture mode (the coordinator armed
++			// vkZeroCopy because the box-level extension PROBE passed), but the core's actual device could
++			// NOT do zero-copy (e.g. flycast v1 create_device ignored our required_device_extensions), so
++			// zc setup failed. Readback frames are system memory and CANNOT feed a GLMemory appsrc — pushing
++			// them crashes the worker (flycast GPF, live 2026-07-16). When set, coreVideoRefresh DROPS every
++			// frame: the room shows black but the worker survives (fail-soft). Reset per room in CoreLoad.
++			captureBroken bool
 +		}
 +		hw     *C.struct_retro_hw_render_callback
 +		PixFmt PixFmt
@@ -10677,6 +11248,12 @@ index 17f10fc..de4cfce 100644
 +	// there), so serialize_size at load walks the save-state chain into a NULL g_vertex_manager →
 +	// 0xc0000005 at boot. The probe only feeds a log line; the real save path re-queries at save time.
 +	hackSkipSerializeSizeProbe bool
++	// hackVkSyntheticSurface: hand the Vulkan core a REAL (hidden-window) VkSurfaceKHR at create_device
++	// instead of VK_NULL_HANDLE. PPSSPP's libretro Vulkan context demands a non-null surface (it echoes
++	// the frontend handle back through its swapchain warp and queries surface caps on it through the real
++	// driver — a null there access-violated live 2026-07-16). Opt-in per core (paraLLEl-GS/RDP never
++	// touch a surface); consumed by nano_vk_set_synthetic_surface before nano_vk_init.
++	hackVkSyntheticSurface   bool
 +	limiter                  func(func())
 +	log                      *logger.Logger
 +
@@ -10820,13 +11397,17 @@ index 17f10fc..de4cfce 100644
 +	// Vulkan cores are hardware-rendered but bypass the GL/RGFW path entirely (they use the
 +	// Vulkan-capture frontend). Everything else keeps the historical IsGlAllowed gate.
 +	n.Video.vk.enabled = meta.HwContext == "vulkan"
-+	n.Video.gl.enabled = meta.IsGlAllowed && !n.Video.vk.enabled
++	// GL is on for cores that allow it, AND for a room the per-game GL escape hatch explicitly pins to
++	// "gl" even though the core config defaults to Vulkan (isGlAllowed:false). Without the HwContext=="gl"
++	// term, an escaped game on a Vulkan-default core gets NEITHER context and the core fails to load.
++	n.Video.gl.enabled = (meta.IsGlAllowed || meta.HwContext == "gl") && !n.Video.vk.enabled
 +	// M2 zero-copy is per-room; consume the staged decision (like HwContextOverride) so it cannot leak
 +	// into the next room. A zero-copy Vulkan room DOES need a GL context (the import context), so it
 +	// switches graphics on like a GL core would.
 +	n.Video.vk.zeroCopy = n.Video.vk.enabled && n.VkZeroCopyStaged
 +	n.Video.vk.zcFence = n.VkZeroCopyFence
 +	n.Video.vk.zcReady = false
++	n.Video.vk.captureBroken = false
 +	n.VkZeroCopyStaged = false
 +	n.VkZeroCopyFence = false
 +
@@ -10841,6 +11422,7 @@ index 17f10fc..de4cfce 100644
 +	Nan0.hackSkipSameThreadSave = meta.HasHack("skip_same_thread_save")
 +	Nan0.hackSkipBootRestore = meta.HasHack("skip_boot_restore")
 +	Nan0.hackSkipSerializeSizeProbe = meta.HasHack("skip_serialize_size_probe")
++	Nan0.hackVkSyntheticSurface = meta.HasHack("vk_synthetic_surface")
 +
 +	// reset controllers
 +	n.retropad = InputState{}
@@ -11150,6 +11732,20 @@ index 17f10fc..de4cfce 100644
 +	}
 +	n.syncInputToCache()
 +
++	// gc root-cause instrumentation: retro_run TICKS even when no video reaches the encoder, so the dump
++	// lives here (not in video_cb, which may never fire). Every 5s, log the Go video_cb classification +
++	// the C-side set_image/zc-frame/drop-reason counters. Proves "emulation running, frames not arriving".
++	if vkDbgOn && n.Video.vk.enabled {
++		vkDbg.ticks++
++		if time.Since(vkDbg.lastDump) >= 5*time.Second {
++			vkDbg.lastDump = time.Now()
++			n.log.Info().Msgf("[vkdbg-go] ticks=%d video_cb: total=%d null=%d VALID=%d software=%d broken=%d last=%dx%d zcReady=%v captureBroken=%v",
++				vkDbg.ticks, vkDbg.vcbTotal, vkDbg.vcbNull, vkDbg.vcbValid, vkDbg.vcbSoftware, vkDbg.vcbBroken,
++				vkDbg.lastW, vkDbg.lastH, n.Video.vk.zcReady, n.Video.vk.captureBroken)
++			C.nano_vk_dbg_log()
++		}
++	}
++
 +	if n.LibCo {
 +		C.same_thread(retroRun)
 +	} else {
@@ -11426,9 +12022,43 @@ index 17f10fc..de4cfce 100644
 +	retroUnserialize             unsafe.Pointer
 +)
 +
++// vkDbgOn gates the Vulkan-capture debug instrumentation (per-5s counter dump from Run) — a permanent
++// debug lever for the gc/frame-handoff class of "emulation runs, zero video" bugs. Set CLOUD_GAME_VK_DEBUG=1.
++var vkDbgOn = stdos.Getenv("CLOUD_GAME_VK_DEBUG") == "1"
++var vkDbg struct {
++	ticks                                                   uint64
++	vcbTotal, vcbNull, vcbValid, vcbSoftware, vcbBroken     uint64
++	lastW, lastH                                            uint
++	lastDump                                                time.Time
++}
++
 +//export coreVideoRefresh
 +func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
 +	if Nan0.Stopped.Load() {
++		return
++	}
++	// gc root-cause instrumentation (CLOUD_GAME_VK_DEBUG): classify EVERY video_cb so the 5s dump in Run()
++	// can prove whether the core delivers VALID hw frames at all (vs NULL dups / software), and the last
++	// geometry it reported. Cheap; single cothread.
++	if vkDbgOn && Nan0.Video.vk.enabled {
++		vkDbg.vcbTotal++
++		vkDbg.lastW, vkDbg.lastH = width, height
++		switch {
++		case data == nil:
++			vkDbg.vcbNull++
++		case data == C.RETRO_HW_FRAME_BUFFER_VALID:
++			vkDbg.vcbValid++
++		default:
++			vkDbg.vcbSoftware++
++		}
++	}
++	// FAIL-SOFT (see vk.captureBroken): a Vulkan room whose GL-committed pipeline can't receive readback
++	// frames drops everything rather than pushing a mismatched buffer and crashing the worker.
++	if Nan0.Video.vk.captureBroken {
++		if vkDbgOn {
++			vkDbg.vcbBroken++
++		}
++		Nan0.Handlers.OnDup()
 +		return
 +	}
 +
@@ -11917,17 +12547,21 @@ index 17f10fc..de4cfce 100644
 +	Nan0.hackSkipSameThreadSave = false
 +	Nan0.hackSkipBootRestore = false
 +	Nan0.hackSkipSerializeSizeProbe = false
++	Nan0.hackVkSyntheticSurface = false
 +	thread.SwitchGraphics(false)
 +}
 +
 +// initVideoVulkan brings up the Vulkan-capture frontend (instance + device + hw render interface).
-+// Runs on the core's cothread for LibCo cores, BEFORE context_reset. A failure is fatal: without the
-+// interface the core would fetch a null one at context_reset and crash anyway, so fail loudly here.
++// armVulkanZeroCopy sets the zero-copy flag BEFORE nano_vk_init — create_device_wrapper (inside
++// nano_vk_init) reads it to inject the external-memory/semaphore device extensions into the core's
++// device. Split out of initVideoVulkan (with finishVideoVulkan) so the LibCo C wrapper
++// (init_video_vk_cgo) can call the DEEP nano_vk_init DIRECTLY in C: that keeps vkCreateDevice on the
++// same_thread 64 MiB stack instead of the small Go cgo-callback stack it dropped onto when the wrapper
++// bounced through Go, which overflowed for N64 paraLLEl-RDP's (deeper, v1) device creation ->
++// STATUS_BAD_STACK / Exception 0xc0000028. Just a flag write, so thread-independent.
 +//
-+//export initVideoVulkan
-+func initVideoVulkan() {
-+	// Arm zero-copy BEFORE nano_vk_init: create_device_wrapper (inside nano_vk_init) must see the flag
-+	// to inject the external-memory/semaphore device extensions into the core's device.
++//export armVulkanZeroCopy
++func armVulkanZeroCopy() {
 +	if Nan0.Video.vk.zeroCopy {
 +		fence := 0
 +		if Nan0.Video.vk.zcFence {
@@ -11935,8 +12569,29 @@ index 17f10fc..de4cfce 100644
 +		}
 +		C.nano_vk_zc_set_enabled(1, C.int(fence))
 +	}
++}
 +
-+	if rc := C.nano_vk_init(); rc != 0 {
++// armVulkanSyntheticSurface arms (or clears) the synthetic-headless-surface path BEFORE nano_vk_init,
++// on the same cothread as armVulkanZeroCopy. Always writes an explicit 0/1 so a previous room's value
++// can never leak (nano_vk_shutdown's memset also clears it, but be defensive). Independent of zero-copy.
++//
++//export armVulkanSyntheticSurface
++func armVulkanSyntheticSurface() {
++	on := 0
++	if Nan0.hackVkSyntheticSurface {
++		on = 1
++	}
++	C.nano_vk_set_synthetic_surface(C.int(on))
++}
++
++// finishVideoVulkan runs the post-nano_vk_init work (GL-import setup + logging). It MUST run on the same
++// cothread as nano_vk_init so setupVulkanZeroCopy's thread.Main is inline on the graphics thread. rc is
++// nano_vk_init's return; a failure is fatal (the core would fetch a null hw interface at context_reset
++// and crash anyway, so fail loudly here).
++//
++//export finishVideoVulkan
++func finishVideoVulkan(rc C.int) {
++	if rc != 0 {
 +		Nan0.log.Error().Msgf("vulkan capture init failed (rc=%v) — no frame path", int(rc))
 +		panic("nano_vk_init failed")
 +	}
@@ -11944,6 +12599,10 @@ index 17f10fc..de4cfce 100644
 +	// If a required extension was missing at device creation, nano_vk flipped its internal fallback and
 +	// nano_vk_zc_wanted() now returns 0 — the room runs the M1 readback. (On the fleet's NVIDIA hardware
 +	// this is probed away at pipeline-build time; this is the belt-and-braces runtime guard.)
++	// committedGL: the coordinator armed vkZeroCopy, so the media pipeline was built for GL textures
++	// (m.GLZeroCopy=true). If zero-copy then can't be set up, readback (system-memory) frames CANNOT be
++	// pushed into that GLMemory pipeline — see the captureBroken field.
++	committedGL := Nan0.Video.vk.zeroCopy
 +	if Nan0.Video.vk.zeroCopy && C.nano_vk_zc_wanted() != 0 {
 +		if err := setupVulkanZeroCopy(); err != nil {
 +			Nan0.log.Error().Err(err).Msg("vulkan zero-copy setup failed — this room may not produce video (extensions probed OK, so this is unexpected)")
@@ -11954,7 +12613,24 @@ index 17f10fc..de4cfce 100644
 +			return
 +		}
 +	}
++	// FAIL-SOFT: the pipeline is GL-committed but zero-copy is not active (the core's device couldn't do
++	// it, e.g. flycast ignoring the injected extensions). Pushing readback CPU frames into a GLMemory
++	// appsrc crashes the worker; instead drop every frame (black room) and keep the worker alive.
++	if committedGL && !Nan0.Video.vk.zcReady {
++		Nan0.Video.vk.captureBroken = true
++		Nan0.log.Error().Msg("vulkan capture: zero-copy UNAVAILABLE on a GL-committed pipeline (core device lacks external-memory) — " +
++			"room will show no video (fail-soft); the worker stays up. This core needs the v2 create_device2 injection path or a per-core fix.")
++		return
++	}
 +	Nan0.log.Info().Msg("vulkan capture: device ready, hw render interface built (readback path)")
++}
++
++// initVideoVulkan is the NON-LibCo entry — runs inline on the caller goroutine (no same_thread). LibCo
++// cores instead run arm -> nano_vk_init (on the 64 MiB stack, direct C) -> finish via
++// same_thread(init_video_vk_cgo); see nanoarch.c. A failure is fatal (see finishVideoVulkan).
++func initVideoVulkan() {
++	armVulkanZeroCopy()
++	finishVideoVulkan(C.nano_vk_init())
 +}
 +
 +// setupVulkanZeroCopy creates the dedicated RGFW/WGL import context for a Vulkan room, wraps it for
@@ -12067,6 +12743,7 @@ index 17f10fc..de4cfce 100644
 +	Nan0.hackSkipSameThreadSave = false
 +	Nan0.hackSkipBootRestore = false
 +	Nan0.hackSkipSerializeSizeProbe = false
++	Nan0.hackVkSyntheticSurface = false
 +}
 +
 +type limit struct {
@@ -12114,7 +12791,7 @@ index 17f10fc..de4cfce 100644
 +		Nan0.sys.av.geometry.base_height != geom.base_height
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.h b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
-index 2479d0c..7e6d8e1 100644
+index 2479d0c..1fd7860 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 @@ -5,6 +5,8 @@ void bridge_call(void *f);
@@ -12126,7 +12803,7 @@ index 2479d0c..7e6d8e1 100644
  bool bridge_retro_serialize(void *f, void *data, size_t size);
  size_t bridge_retro_serialize_size(void *f);
  bool bridge_retro_unserialize(void *f, void *data, size_t size);
-@@ -32,13 +34,38 @@ void init_video_cgo();
+@@ -32,13 +34,43 @@ void init_video_cgo();
  void deinit_video_cgo();
  
  void same_thread(void *f);
@@ -12145,6 +12822,11 @@ index 2479d0c..7e6d8e1 100644
 +void nano_vk_shutdown(void);
 +void init_video_vk_cgo(void);
 +void deinit_video_vk_cgo(void);
++// W3.1 fix: hand a real hidden-window VkSurfaceKHR to cores that require a non-null surface (PPSSPP).
++void nano_vk_set_synthetic_surface(int on);
++// gc root-cause debug instrumentation (CLOUD_GAME_VK_DEBUG). Counters in nanoarch_vulkan.c.
++void nano_vk_dbg_log(void);
++void nano_vk_dbg_reset(void);
 +// M2: Vulkan -> GL external-memory zero-copy.
 +void nano_vk_zc_set_enabled(int on, int sync_fence);
 +int nano_vk_zc_wanted(void);
@@ -12168,10 +12850,10 @@ index 2479d0c..7e6d8e1 100644
  #endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
 new file mode 100644
-index 0000000..8a90cbd
+index 0000000..4fc504d
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
-@@ -0,0 +1,1495 @@
+@@ -0,0 +1,1728 @@
 +// MovieTheater arcade — Vulkan-capture frontend (M1: readback path).
 +//
 +// Lets the CloudRetro worker host libretro cores that render with RETRO_HW_CONTEXT_VULKAN
@@ -12358,6 +13040,20 @@ index 0000000..8a90cbd
 +    uint32_t                queue_family;
 +    VkPhysicalDeviceMemoryProperties mem_props;
 +
++    // ---- synthetic headless surface (hack vk_synthetic_surface) --------------------------------
++    // Some libretro Vulkan cores (PPSSPP) DEMAND a non-null VkSurfaceKHR. PPSSPP's LibretroVulkanContext
++    // create_device unconditionally calls VulkanContext::InitSurface(WIN32, null, null) then, at
++    // ContextReset, ReinitSurface -> vkCreateWin32SurfaceKHR. That call is warped (LoadInstanceFunctions
++    // runs AFTER vk_libretro_init installs the warp) to vkCreateLibretroSurfaceKHR, which ECHOES the
++    // frontend's surface handle (vk_init_info.surface) back — ignoring the null window data. PPSSPP then
++    // queries surface caps on that handle through the REAL driver; a VK_NULL_HANDLE there access-violates
++    // (live 2026-07-16, psp Daxter: "Creating Vulkan surface for window (data1=0 data2=0)" -> 0xC0000005).
++    // So we hand the core a REAL surface backed by a hidden window. paraLLEl-GS/paraLLEl-RDP never touch a
++    // surface, so this is strictly opt-in per core (the hack) and leaves those paths at VK_NULL_HANDLE.
++    int          synth_surface_wanted; // armed before nano_vk_init (hack vk_synthetic_surface)
++    HWND         synth_hwnd;           // hidden WS_POPUP window backing the surface (never shown)
++    VkSurfaceKHR synth_surface;        // handed to create_device instead of VK_NULL_HANDLE
++
 +    // The interface handed to the core (kept alive for the core's whole life).
 +    struct retro_hw_render_interface_vulkan iface;
 +    int                     iface_ready;
@@ -12434,6 +13130,34 @@ index 0000000..8a90cbd
 +};
 +
 +static struct nano_vk vk;
++
++// --- Vulkan capture debug instrumentation (gated by CLOUD_GAME_VK_DEBUG on the Go side; counters are
++// always incremented — cheap, single-cothread — and dumped on demand by nano_vk_dbg_log). Built to
++// answer, per the gc root-cause rules: does set_image fire? does the zc frame path return a texture or
++// drop, and WHY? See RESULTS-vulkan-w3.md §gc. Kept as a permanent debug flag (Stuntman-profiler precedent).
++static struct {
++    unsigned long long set_image;   // core called cb_set_image (handed us a VkImage)
++    unsigned long long zc_call;     // nano_vk_zc_frame entered
++    unsigned long long zc_tex;      // returned a real texture id (frame delivered)
++    unsigned long long r_noactive;  // dropped: pool not active
++    unsigned long long r_noimage;   // dropped: no set_image yet (vk.have_image==0)
++    unsigned long long r_sub16;     // dropped: <16px on an axis
++    unsigned long long r_noslot;    // dropped: encoder holds every pool slot
++    unsigned long long r_reallocf;  // dropped: pool realloc failed
++    unsigned long long sem_begin;   // GL semaphore wait started
++    unsigned long long sem_done;    // GL semaphore wait returned
++    unsigned last_w, last_h;        // last geometry seen by nano_vk_zc_frame
++    unsigned sub16_w, sub16_h;      // last sub-16px geometry dropped
++} vk_dbg;
++
++void nano_vk_dbg_reset(void) { memset(&vk_dbg, 0, sizeof(vk_dbg)); }
++void nano_vk_dbg_log(void) {
++    VKLOG(RETRO_LOG_INFO, "[vkdbg-c] set_image=%llu zc_call=%llu zc_tex=%llu | drops: noActive=%llu noImage=%llu "
++          "sub16=%llu(%ux%u) noSlot=%llu reallocFail=%llu | sem(begin=%llu done=%llu) last=%ux%u\n",
++          vk_dbg.set_image, vk_dbg.zc_call, vk_dbg.zc_tex, vk_dbg.r_noactive, vk_dbg.r_noimage,
++          vk_dbg.r_sub16, vk_dbg.sub16_w, vk_dbg.sub16_h, vk_dbg.r_noslot, vk_dbg.r_reallocf,
++          vk_dbg.sem_begin, vk_dbg.sem_done, vk_dbg.last_w, vk_dbg.last_h);
++}
 +
 +// ===================================================================================================
 +// Loader + negotiation
@@ -12532,8 +13256,10 @@ index 0000000..8a90cbd
 +// Instance / device creation
 +// ===================================================================================================
 +
-+// The core builds a VkInstanceCreateInfo and asks us to create the instance. We add nothing (no
-+// surface / swapchain — we never present) and just create it.
++// The core builds a VkInstanceCreateInfo and asks us to create the instance. We add nothing and just
++// create it: in v2 the CORE authors the extension list, so anything it needs (incl. surface, if its
++// context code assumes one) it puts there itself — paraLLEl-GS does exactly that and is proven live.
++// (The W3 surface-extension fix below is therefore v1-only; this wrapper stays verbatim.)
 +static VkInstance VKAPI_PTR create_instance_wrapper(void *opaque, const VkInstanceCreateInfo *ci) {
 +    (void)opaque;
 +    VkInstance inst = VK_NULL_HANDLE;
@@ -12628,6 +13354,28 @@ index 0000000..8a90cbd
 +    return dev;
 +}
 +
++// Is instance extension `name` advertised by the loader? Global-level query (pLayerName=NULL), safe
++// before any instance exists — vkEnumerateInstanceExtensionProperties is one of the three functions
++// resolvable with a NULL instance.
++static int instance_ext_supported(const char *name) {
++    PFN_vkEnumerateInstanceExtensionProperties enum_fn =
++        (PFN_vkEnumerateInstanceExtensionProperties)vk.fn.GetInstanceProcAddr(NULL, "vkEnumerateInstanceExtensionProperties");
++    if (!enum_fn) return 0;
++    uint32_t n = 0;
++    if (enum_fn(NULL, &n, NULL) != VK_SUCCESS || n == 0) return 0;
++    if (n > 1024) n = 1024;
++    VkExtensionProperties *props = (VkExtensionProperties *)malloc(sizeof(VkExtensionProperties) * n);
++    if (!props) return 0;
++    int found = 0;
++    if (enum_fn(NULL, &n, props) == VK_SUCCESS) {
++        for (uint32_t i = 0; i < n; i++) {
++            if (strcmp(props[i].extensionName, name) == 0) { found = 1; break; }
++        }
++    }
++    free(props);
++    return found;
++}
++
 +static const VkApplicationInfo *default_app_info(void) {
 +    static const VkApplicationInfo app = {
 +        VK_STRUCTURE_TYPE_APPLICATION_INFO, NULL,
@@ -12646,6 +13394,14 @@ index 0000000..8a90cbd
 +        app = default_app_info();
 +
 +    // v2: let the core create the instance so it can inject its required instance extensions.
++    // GATE BY interface_version, NOT callback presence. flycast reports interface_version=1 yet its
++    // create_instance/create_device2 struct fields READ non-null ("version 1, create_instance=yes
++    // create_device2=yes", live 2026-07-16 dc/Crazy Taxi) — but those are a GARBAGE MISREAD: flycast is a
++    // genuine v1 core, so it authored only the v1 struct, and we read create_instance/create_device2 from
++    // beyond it (uninitialized/adjacent memory). Calling them jumps to a garbage address (crash PC=
++    // 0x100000004, before device creation). So TRUST the version: a v1 core takes the v1 path below.
++    // (flycast's v1 create_device ignores our required_device_extensions, so it can't do zero-copy — the
++    // fail-soft in finishVideoVulkan keeps that from crashing; flycast/dc stays on GL, see RESULTS §W4-LIVE.)
 +    if (vk.have_negotiation && vk.negotiation.interface_version >= 2 && vk.negotiation.create_instance) {
 +        vk.instance = vk.negotiation.create_instance(vk.fn.GetInstanceProcAddr, app,
 +                                                     create_instance_wrapper, &vk);
@@ -12657,15 +13413,34 @@ index 0000000..8a90cbd
 +        return 0;
 +    }
 +
-+    // v1 / fallback: create the instance ourselves (no surface extensions).
++    // v1 / fallback: create the instance ourselves. Contract note (libretro_vulkan.h, create_device
++    // doc): the frontend only owes "supported for VK_KHR_surface" when it passes a real surface — we
++    // pass VK_NULL_HANDLE and never present, so NO extension is required of us. But real cores are
++    // developed against RetroArch, whose instance always carries the surface extensions, and PPSSPP's
++    // VulkanContext unconditionally loads the vkGetPhysicalDeviceSurface*KHR entry points at
++    // instance-bind time — on a bare headless instance those resolve to NULL and the core fastfails
++    // (0xC0000409; W3 live probe, "[G3D] Failed to load VK instance function:
++    // vkGetPhysicalDeviceSurfaceSupportKHR/...CapabilitiesKHR/...FormatsKHR/...PresentModesKHR").
++    // So enable VK_KHR_surface + VK_KHR_win32_surface when the loader advertises them (universal on
++    // desktop; skipped silently if absent — the strict-contract core still works without them).
++    // win32_surface depends on surface, so it is only added alongside it. We still create no surface.
++    const char *surf_ext[2];
++    uint32_t nsurf = 0;
++    if (instance_ext_supported(VK_KHR_SURFACE_EXTENSION_NAME)) {
++        surf_ext[nsurf++] = VK_KHR_SURFACE_EXTENSION_NAME;
++        if (instance_ext_supported(VK_KHR_WIN32_SURFACE_EXTENSION_NAME))
++            surf_ext[nsurf++] = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
++    }
 +    VkInstanceCreateInfo ci = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
 +    ci.pApplicationInfo = app;
++    ci.enabledExtensionCount = nsurf;
++    ci.ppEnabledExtensionNames = nsurf ? surf_ext : NULL;
 +    VkResult r = vk.fn.CreateInstance(&ci, NULL, &vk.instance);
 +    if (r != VK_SUCCESS) {
 +        VKLOG(RETRO_LOG_ERROR, "self vkCreateInstance failed: %d\n", r);
 +        return -1;
 +    }
-+    VKLOG(RETRO_LOG_INFO, "instance created by frontend (v1 path)\n");
++    VKLOG(RETRO_LOG_INFO, "instance created by frontend (v1 path, %u surface extension(s) enabled)\n", nsurf);
 +    return 0;
 +}
 +
@@ -12697,6 +13472,66 @@ index 0000000..8a90cbd
 +    return 0;
 +}
 +
++// Arm the synthetic-surface path (hack vk_synthetic_surface). Called from Go BEFORE nano_vk_init, like
++// nano_vk_zc_set_enabled — a plain flag write, so thread-independent. Always called with an explicit
++// 0/1 so a previous room's value can never persist.
++void nano_vk_set_synthetic_surface(int on) { vk.synth_surface_wanted = on ? 1 : 0; }
++
++// Hidden window class for the synthetic surface. Registered once (idempotent); WS_POPUP, never shown.
++#define NANO_VK_SURF_CLASS L"nanoVkHiddenSurface"
++
++// create_synthetic_surface builds a hidden Win32 window + VkSurfaceKHR on our instance, for cores that
++// need a non-null surface (see the struct comment). No-op unless the hack armed it. Runs AFTER
++// create_instance (needs vk.instance with VK_KHR_surface + VK_KHR_win32_surface, which the v1 headless
++// instance already enables — commit 4451d47) and BEFORE create_device (which passes the surface in).
++// A WS_POPUP window is used, NOT message-only: vkCreateWin32SurfaceKHR needs a presentable HWND.
++static int create_synthetic_surface(void) {
++    if (!vk.synth_surface_wanted) return 0;
++
++    HINSTANCE hinst = GetModuleHandleW(NULL);
++    WNDCLASSEXW wc;
++    memset(&wc, 0, sizeof(wc));
++    wc.cbSize        = sizeof(wc);
++    wc.lpfnWndProc   = DefWindowProcW;
++    wc.hInstance     = hinst;
++    wc.lpszClassName = NANO_VK_SURF_CLASS;
++    RegisterClassExW(&wc); // ignore ERROR_CLASS_ALREADY_EXISTS (a prior room on this process registered it)
++
++    HWND hwnd = CreateWindowExW(0, NANO_VK_SURF_CLASS, L"nanoarch-vk", WS_POPUP,
++                                0, 0, 16, 16, NULL, NULL, hinst, NULL);
++    if (!hwnd) {
++        VKLOG(RETRO_LOG_ERROR, "synthetic surface: CreateWindowEx failed (%lu)\n", (unsigned long)GetLastError());
++        return -1;
++    }
++    // Never ShowWindow — it stays hidden. It exists solely to back a presentable VkSurfaceKHR.
++
++    PFN_vkCreateWin32SurfaceKHR createWin32 =
++        (PFN_vkCreateWin32SurfaceKHR)vk.fn.GetInstanceProcAddr(vk.instance, "vkCreateWin32SurfaceKHR");
++    if (!createWin32) {
++        VKLOG(RETRO_LOG_ERROR, "synthetic surface: vkCreateWin32SurfaceKHR unavailable "
++              "(instance lacks VK_KHR_win32_surface? synthetic surface needs the v1 headless instance)\n");
++        DestroyWindow(hwnd);
++        return -1;
++    }
++    VkWin32SurfaceCreateInfoKHR sci;
++    memset(&sci, 0, sizeof(sci));
++    sci.sType     = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
++    sci.hinstance = hinst;
++    sci.hwnd      = hwnd;
++    VkSurfaceKHR surf = VK_NULL_HANDLE;
++    VkResult r = createWin32(vk.instance, &sci, NULL, &surf);
++    if (r != VK_SUCCESS || surf == VK_NULL_HANDLE) {
++        VKLOG(RETRO_LOG_ERROR, "synthetic surface: vkCreateWin32SurfaceKHR failed (%d)\n", (int)r);
++        DestroyWindow(hwnd);
++        return -1;
++    }
++    vk.synth_hwnd    = hwnd;
++    vk.synth_surface = surf;
++    VKLOG(RETRO_LOG_INFO, "synthetic headless surface created (hidden WS_POPUP window) — core will get a "
++          "real VkSurfaceKHR instead of VK_NULL_HANDLE\n");
++    return 0;
++}
++
 +// Fallback: find a graphics+compute queue family (only used if the core has no create_device*).
 +static int find_graphics_compute_family(uint32_t *out) {
 +    uint32_t n = 0;
@@ -12719,9 +13554,11 @@ index 0000000..8a90cbd
 +    memset(&ctx, 0, sizeof(ctx));
 +
 +    // v2: create_device2 (paraLLEl-GS). We hand it the explicit discrete GPU and the same
-+    // get_instance_proc_addr we used for create_instance (the core sanity-checks it).
++    // get_instance_proc_addr we used for create_instance (the core sanity-checks it). GATE BY
++    // interface_version — a v1 core's create_device2 field is a garbage misread (see the create_instance
++    // note above; calling it crashes). paraLLEl-GS is genuine v2 and takes this path.
 +    if (vk.have_negotiation && vk.negotiation.interface_version >= 2 && vk.negotiation.create_device2) {
-+        if (!vk.negotiation.create_device2(&ctx, vk.instance, vk.gpu, VK_NULL_HANDLE,
++        if (!vk.negotiation.create_device2(&ctx, vk.instance, vk.gpu, vk.synth_surface,
 +                                           vk.fn.GetInstanceProcAddr, create_device_wrapper, &vk)) {
 +            VKLOG(RETRO_LOG_ERROR, "core create_device2 failed\n");
 +            return -1;
@@ -12734,21 +13571,72 @@ index 0000000..8a90cbd
 +        return 0;
 +    }
 +
-+    // v1: create_device.
++    // v1: create_device (mupen64plus-next / paraLLEl-RDP). Unlike v2 there is NO create_device_wrapper —
++    // the CORE calls vkCreateDevice itself. The v1 mechanism for the frontend to get extensions ONTO
++    // that device is the required_device_extensions argument: the core must enable everything we ask for
++    // (libretro_vulkan.h create_device contract). So for zero-copy we pass our external-memory/semaphore
++    // names HERE — the v1 equivalent of the create_device_wrapper injection. If a name is unsupported we
++    // do not ask (readback fallback); if create_device fails WITH our names we retry WITHOUT them.
 +    if (vk.have_negotiation && vk.negotiation.create_device) {
-+        if (vk.negotiation.create_device(&ctx, vk.instance, vk.gpu, VK_NULL_HANDLE,
-+                                         vk.fn.GetInstanceProcAddr, NULL, 0, NULL, 0, NULL)) {
++        // mupen64plus-next / paraLLEl-RDP (v1). CRITICAL: the core's create_device memcpy's the
++        // required_features argument WITHOUT a null check, so passing NULL access-violates INSIDE the core
++        // (gdb 2026-07-16: `movdqu (%rax),%xmm6` with rax=0 -> a 16-byte struct copy from NULL, 3 frames
++        // into mupen64plus_next_libretro.dll). Always pass a ZEROED VkPhysicalDeviceFeatures. The earlier
++        // "extensions crash" was in fact this NULL required_features — so WITH features fixed we can inject
++        // the external-memory/semaphore extensions via required_device_extensions (v1 contract) to get M2
++        // zero-copy. Try WITH extensions; if the core returns false, retry WITHOUT (M1 readback).
++        VkPhysicalDeviceFeatures no_features;
++        memset(&no_features, 0, sizeof(no_features));
++        const char *zc_ext[2] = {
++            VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
++            VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
++        };
++        const char **req = NULL;
++        unsigned nreq = 0;
++        if (vk.zc_enabled && !vk.zc_fallback) {
++            if (zc_device_ext_supported(zc_ext[0]) && zc_device_ext_supported(zc_ext[1])) {
++                req = zc_ext; nreq = 2;
++            } else {
++                VKLOG(RETRO_LOG_WARN, "zero-copy: external-memory/semaphore unsupported -> M1 readback\n");
++                vk.zc_fallback = 1;
++            }
++        }
++        if (vk.negotiation.create_device(&ctx, vk.instance, vk.gpu, vk.synth_surface,
++                                         vk.fn.GetInstanceProcAddr, req, nreq, NULL, 0, &no_features)) {
 +            vk.gpu          = ctx.gpu ? ctx.gpu : vk.gpu;
 +            vk.device       = ctx.device;
 +            vk.queue        = ctx.queue;
 +            vk.queue_family = ctx.queue_family_index;
-+            VKLOG(RETRO_LOG_INFO, "device created by core (v1 create_device), queue family %u\n", vk.queue_family);
++            VKLOG(RETRO_LOG_INFO, "device created by core (v1 create_device), queue family %u%s\n",
++                  vk.queue_family, nreq ? " (zero-copy extensions injected)" : "");
 +            return 0;
++        }
++        if (nreq) {
++            // Core returned false WITH our extensions — retry unmodified and run M1 readback.
++            VKLOG(RETRO_LOG_WARN, "zero-copy: v1 create_device false WITH extensions -> retry unmodified (readback)\n");
++            vk.zc_fallback = 1;
++            memset(&ctx, 0, sizeof(ctx));
++            if (vk.negotiation.create_device(&ctx, vk.instance, vk.gpu, vk.synth_surface,
++                                             vk.fn.GetInstanceProcAddr, NULL, 0, NULL, 0, &no_features)) {
++                vk.gpu          = ctx.gpu ? ctx.gpu : vk.gpu;
++                vk.device       = ctx.device;
++                vk.queue        = ctx.queue;
++                vk.queue_family = ctx.queue_family_index;
++                VKLOG(RETRO_LOG_INFO, "device created by core (v1 create_device, unmodified), queue family %u\n", vk.queue_family);
++                return 0;
++            }
 +        }
 +        VKLOG(RETRO_LOG_WARN, "core create_device returned false; falling back to frontend device\n");
 +    }
 +
-+    // Fallback: create a device ourselves with one graphics+compute queue.
++    // Fallback: create a device ourselves with one graphics+compute queue. This bare device carries
++    // neither the zero-copy extensions nor the features a Vulkan renderer typically needs, so if we got
++    // here with zero-copy armed, force the readback path (never export from a device that lacks the
++    // external-memory extension).
++    if (vk.zc_enabled && !vk.zc_fallback) {
++        VKLOG(RETRO_LOG_WARN, "zero-copy: core provided no create_device; self-created device -> M1 readback\n");
++        vk.zc_fallback = 1;
++    }
 +    uint32_t fam = 0;
 +    if (find_graphics_compute_family(&fam) != 0) {
 +        VKLOG(RETRO_LOG_ERROR, "no graphics+compute queue family\n");
@@ -12782,6 +13670,7 @@ index 0000000..8a90cbd
 +                                   uint32_t num_semaphores, const VkSemaphore *semaphores,
 +                                   uint32_t src_queue_family) {
 +    (void)handle;
++    vk_dbg.set_image++;
 +    if (!image) { vk.have_image = 0; return; }
 +    vk.src_image  = image->create_info.image;
 +    vk.src_layout = image->image_layout;
@@ -12897,6 +13786,9 @@ index 0000000..8a90cbd
 +    if (create_instance() != 0) return -1;
 +    if (load_instance_fns() != 0) return -1;
 +    if (pick_physical_device() != 0) return -1;
++    // Synthetic headless surface (opt-in, hack vk_synthetic_surface): MUST come between instance/gpu and
++    // create_device — the surface is handed to the core inside create_device. No-op for ps2/n64.
++    if (create_synthetic_surface() != 0) return -1;
 +    if (create_device() != 0) return -1;
 +    // The v2/v1 core paths return the device but not our device-level fns; load them (the self path
 +    // already loaded them, but re-loading is harmless/idempotent).
@@ -13418,7 +14310,16 @@ index 0000000..8a90cbd
 +// on dup/failure (caller OnDup()s — a dropped frame beats a stall or a wrong frame). Reallocates the
 +// pool on a geometry change.
 +unsigned nano_vk_zc_frame(unsigned width, unsigned height) {
-+    if (!vk.zc_active || !vk.have_image || width == 0 || height == 0) return 0;
++    // Drop degenerate frames (< 16px on either axis). paraLLEl-RDP emits a 1x1 frame during its async
++    // shader warmup; building a 1x1 pool and letting zc_push renegotiate the appsrc caps to 1x1 is the
++    // exact operation that error-kills the GL encode pipeline (see the matching guard in gstreamer.go
++    // pushVideoBuf for the M1/readback path). Returning 0 makes the caller OnDup() — a dropped warmup
++    // frame beats a black-for-the-session room. Parity with the readback path (audit 2026-07-16).
++    vk_dbg.zc_call++;
++    vk_dbg.last_w = width; vk_dbg.last_h = height;
++    if (!vk.zc_active)                 { vk_dbg.r_noactive++; return 0; }
++    if (!vk.have_image)                { vk_dbg.r_noimage++;  return 0; }
++    if (width < 16 || height < 16)     { vk_dbg.r_sub16++; vk_dbg.sub16_w = width; vk_dbg.sub16_h = height; return 0; }
 +    uint32_t w = width, h = height;
 +
 +    if (w != vk.zc_w || h != vk.zc_h) {
@@ -13430,7 +14331,7 @@ index 0000000..8a90cbd
 +        zc_retire_current();
 +        int rc = zc_build_pool(w, h);
 +        pthread_mutex_unlock(&vk.zc_mutex);
-+        if (rc != 0) { VKLOG(RETRO_LOG_ERROR, "zero-copy: realloc to %ux%u failed\n", w, h); return 0; }
++        if (rc != 0) { vk_dbg.r_reallocf++; VKLOG(RETRO_LOG_ERROR, "zero-copy: realloc to %ux%u failed\n", w, h); return 0; }
 +        VKLOG(RETRO_LOG_INFO, "zero-copy: pool reallocated for %ux%u\n", w, h);
 +    }
 +
@@ -13441,7 +14342,7 @@ index 0000000..8a90cbd
 +        if (vk.zc_free[i]) { idx = i; vk.zc_free[i] = 0; break; }
 +    }
 +    pthread_mutex_unlock(&vk.zc_mutex);
-+    if (idx < 0) return 0; // encoder holds every slot; dup this frame
++    if (idx < 0) { vk_dbg.r_noslot++; return 0; } // encoder holds every slot; dup this frame
 +
 +    VkCommandBuffer cb = vk.zc_cmd[idx];
 +    VkFence fence = vk.zc_fence[idx];
@@ -13521,9 +14422,12 @@ index 0000000..8a90cbd
 +    // samples only after the Vulkan blit's GPU signal. glFlush pushes the wait so it is visible before
 +    // the encoder's context binds the texture.
 +    GLenum src_layout = GL_LAYOUT_SHADER_READ_ONLY_EXT;
++    vk_dbg.sem_begin++;
 +    vk.gl.WaitSemaphoreEXT(vk.zc_gl_ready[idx], 0, NULL, 1, &vk.zc_tex[idx], &src_layout);
 +    vk.gl.Flush();
++    vk_dbg.sem_done++;
 +
++    vk_dbg.zc_tex++;
 +    return (unsigned)vk.zc_tex[idx];
 +}
 +
@@ -13656,9 +14560,20 @@ index 0000000..8a90cbd
 +        vk.fn.DestroyDevice(vk.device, NULL);
 +        vk.device = VK_NULL_HANDLE;
 +    }
++    // Synthetic surface (if any): destroy it BEFORE the instance it belongs to; the window can go after.
++    if (vk.synth_surface && vk.instance) {
++        PFN_vkDestroySurfaceKHR destroySurf =
++            (PFN_vkDestroySurfaceKHR)vk.fn.GetInstanceProcAddr(vk.instance, "vkDestroySurfaceKHR");
++        if (destroySurf) destroySurf(vk.instance, vk.synth_surface, NULL);
++        vk.synth_surface = VK_NULL_HANDLE;
++    }
 +    if (vk.instance && vk.fn.DestroyInstance) {
 +        vk.fn.DestroyInstance(vk.instance, NULL);
 +        vk.instance = VK_NULL_HANDLE;
++    }
++    if (vk.synth_hwnd) {
++        DestroyWindow(vk.synth_hwnd);
++        vk.synth_hwnd = NULL;
 +    }
 +    pthread_mutex_destroy(&vk.queue_mutex);
 +    if (vk.dll) { FreeLibrary(vk.dll); vk.dll = NULL; }
@@ -13669,10 +14584,10 @@ index 0000000..8a90cbd
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/overrides.go b/pkg/worker/caged/libretro/nanoarch/overrides.go
 new file mode 100644
-index 0000000..f8e531d
+index 0000000..f3bbec2
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/overrides.go
-@@ -0,0 +1,85 @@
+@@ -0,0 +1,187 @@
 +package nanoarch
 +
 +import (
@@ -13694,6 +14609,15 @@ index 0000000..f8e531d
 +type GameOverride struct {
 +	Fps     float64           `json:"fps"`     // forced framerate (0 = leave the core's advertised rate)
 +	Options map[string]string `json:"options"` // libretro core-option overrides applied before load
++	// HwContext is an EXPLICIT per-game hardware-render-context override: "gl" or "vulkan" (absent = ""
++	// = defer to inference/core default). It is the ABSOLUTE top of the room layer's hw-context
++	// precedence chain — above the renderer-option inference (WantsVulkanRenderer / ForcesGlRenderer)
++	// and above the core config's HwContext default. It exists for the cores that have NO renderer
++	// core-option to infer from — PPSSPP (psp), flycast (dc), Dolphin (gc) all just follow the
++	// frontend's hw context, so a per-game escape/opt-in for those systems cannot be expressed as a
++	// renderer-option value; this field is how a profile pins one of those games onto (or off of) the
++	// Vulkan-capture path. See GameHwContext and coordinatorhandlers.go.
++	HwContext string `json:"hwContext"`
 +}
 +
 +var (
@@ -13704,22 +14628,115 @@ index 0000000..f8e531d
 +	goPath   string
 +)
 +
++// vulkanRendererOptions is the data-driven table of "a core-option key whose value flips a game onto
++// the Vulkan-capture path". Keyed by the libretro option NAME; the inner set holds the VALUES that
++// mean Vulkan for that core. A game's override is a Vulkan room iff ANY listed option is set to a
++// listed value.
++//
++//   - pcsx2_renderer (LRPS2 / PS2, M1+M2): the Vulkan renderers are "paraLLEl-GS" and "Vulkan".
++//   - mupen64plus-rdp-plugin (mupen64plus-next / N64, W2): "parallel" selects paraLLEl-RDP, a Vulkan
++//     COMPUTE renderer. (The "gliden64" default is GL and "angrylion" is software — neither is Vulkan.)
++//     paraLLEl-RDP also wants the LLE RSP (mupen64plus-rsp-plugin=parallel); that is an accuracy pairing
++//     the profile sets, but the RENDERER selector above is what decides the capture path.
++//
++// The exporter now HAS an explicit hwContext field on GameOverride (GameHwContext, W3 F1), which is
++// the general per-game lever. This inference table stays because the ps2/n64 profiles already export
++// their renderer as a core option (pcsx2_renderer / mupen64plus-rdp-plugin) and it keeps working with
++// zero re-export, and it doubles as the GL escape hatch (glRendererOptions). W3/W4 cores that have NO
++// renderer core-option to infer from (flycast/dolphin/ppsspp) are NOT wired here — they use the
++// explicit hwContext field instead. Do not add those systems to this table.
++var vulkanRendererOptions = map[string]map[string]struct{}{
++	"pcsx2_renderer":         {"paraLLEl-GS": {}, "Vulkan": {}},
++	"mupen64plus-rdp-plugin": {"parallel": {}},
++}
++
 +// WantsVulkanRenderer reports whether a game's per-game override requests a Vulkan-rendered core —
 +// the signal the room layer uses to put THAT room on the Vulkan-capture path (HwContextOverride)
 +// while the core's config default stays GL for every other game on the system.
-+//
-+// M1 bridge: the manifest has no explicit hwContext field yet, so this infers from the renderer
-+// option value — LRPS2's Vulkan renderers are "paraLLEl-GS" and "Vulkan" (pcsx2_renderer). When a
-+// second Vulkan core lands (M3: parallel-rdp, dolphin-vk, ...), either extend this map or add the
-+// explicit hwContext field to the exporter + GameOverride and retire the inference.
 +func WantsVulkanRenderer(gameKey string) bool {
 +	o, ok := gameOverrides()[gameKey]
 +	if !ok {
 +		return false
 +	}
-+	switch o.Options["pcsx2_renderer"] {
-+	case "paraLLEl-GS", "Vulkan":
-+		return true
++	for optName, vulkanValues := range vulkanRendererOptions {
++		if v, set := o.Options[optName]; set {
++			if _, isVulkan := vulkanValues[v]; isVulkan {
++				return true
++			}
++		}
++	}
++	return false
++}
++
++// GameHwContext returns a game's EXPLICIT per-game hardware-context override — "gl" or "vulkan" — or
++// "" when the game has no (or an unrecognized) hwContext field. This is the top level of the room
++// layer's 3-level hw-context precedence (see coordinatorhandlers.go): it wins over both the
++// renderer-option inference and the core config default. Only "gl"/"vulkan" are honored; any other
++// value is treated as absent so a typo can't silently pin a game onto a nonexistent context.
++func GameHwContext(gameKey string) string {
++	o, ok := gameOverrides()[gameKey]
++	if !ok {
++		return ""
++	}
++	switch o.HwContext {
++	case "gl", "vulkan":
++		return o.HwContext
++	default:
++		return ""
++	}
++}
++
++// ResolveHwContext computes a room's hardware-render context ("gl" or "vulkan", never "") by the F1
++// 3-level precedence (highest wins):
++//
++//  1. the game's EXPLICIT hwContext override field (GameHwContext) — absolute;
++//  2. the renderer-option inference — WantsVulkanRenderer (→ "vulkan") then ForcesGlRenderer (→ "gl");
++//  3. coreDefault — the core config's HwContext ("" is normalized to "gl").
++//
++// The room layer (coordinatorhandlers) calls this, then stages HwContextOverride only when the result
++// diverges from the core default. Pure over the current manifest, so it is unit-testable; see
++// overrides_test.go for the full combination table.
++func ResolveHwContext(gameKey, coreDefault string) string {
++	if coreDefault == "" {
++		coreDefault = "gl"
++	}
++	switch {
++	case GameHwContext(gameKey) != "":
++		return GameHwContext(gameKey)
++	case WantsVulkanRenderer(gameKey):
++		return "vulkan"
++	case ForcesGlRenderer(gameKey):
++		return "gl"
++	default:
++		return coreDefault
++	}
++}
++
++// glRendererOptions is the inverse of vulkanRendererOptions: an override value that EXPLICITLY selects
++// a non-Vulkan (GL / software) renderer. When a core config DEFAULTS to hwContext:"vulkan" (all PS2 /
++// N64 games ride the Vulkan-capture path), this is the per-game ESCAPE HATCH — a title that paraLLEl-GS
++// / paraLLEl-RDP can't serve is pinned back onto the GL capture path from its manifest alone, no code
++// change. Setting e.g. pcsx2_renderer:"OpenGL" both trips this (→ HwContextOverride "gl") AND overrides
++// the core option, so the core renders GL and the GL pipeline captures it — consistent.
++var glRendererOptions = map[string]map[string]struct{}{
++	"pcsx2_renderer":         {"OpenGL": {}, "Software": {}},
++	"mupen64plus-rdp-plugin": {"gliden64": {}, "angrylion": {}},
++}
++
++// ForcesGlRenderer reports whether a game's override EXPLICITLY selects a GL/software renderer — the
++// signal the room layer uses to pin THAT room to the GL capture path even when the core config defaults
++// to Vulkan. Checked BEFORE the vulkan default so an incompatible title always has a fallback.
++func ForcesGlRenderer(gameKey string) bool {
++	o, ok := gameOverrides()[gameKey]
++	if !ok {
++		return false
++	}
++	for optName, glValues := range glRendererOptions {
++		if v, set := o.Options[optName]; set {
++			if _, isGl := glValues[v]; isGl {
++				return true
++			}
++		}
 +	}
 +	return false
 +}
@@ -13757,6 +14774,123 @@ index 0000000..f8e531d
 +	}
 +	goCache, goMod, goLoaded, goPath = m, fi.ModTime(), true, path
 +	return m
++}
+diff --git a/pkg/worker/caged/libretro/nanoarch/overrides_test.go b/pkg/worker/caged/libretro/nanoarch/overrides_test.go
+new file mode 100644
+index 0000000..156812d
+--- /dev/null
++++ b/pkg/worker/caged/libretro/nanoarch/overrides_test.go
+@@ -0,0 +1,111 @@
++package nanoarch
++
++import (
++	"os"
++	"path/filepath"
++	"testing"
++)
++
++// writeOverrides drops a game-overrides manifest into a temp dir, points the loader at it via
++// CLOUD_GAME_GAME_OVERRIDES, and forces a reload (a fresh path defeats the mtime cache). It returns a
++// cleanup that restores the previous env + cache state so tests don't leak into each other.
++func writeOverrides(t *testing.T, json string) {
++	t.Helper()
++	dir := t.TempDir()
++	path := filepath.Join(dir, "game-overrides.json")
++	if err := os.WriteFile(path, []byte(json), 0o644); err != nil {
++		t.Fatalf("write manifest: %v", err)
++	}
++	prev, had := os.LookupEnv("CLOUD_GAME_GAME_OVERRIDES")
++	if err := os.Setenv("CLOUD_GAME_GAME_OVERRIDES", path); err != nil {
++		t.Fatalf("setenv: %v", err)
++	}
++	// Reset the package cache so the new path/mtime is picked up deterministically.
++	goMu.Lock()
++	goLoaded, goPath, goCache = false, "", nil
++	goMu.Unlock()
++	t.Cleanup(func() {
++		if had {
++			_ = os.Setenv("CLOUD_GAME_GAME_OVERRIDES", prev)
++		} else {
++			_ = os.Unsetenv("CLOUD_GAME_GAME_OVERRIDES")
++		}
++		goMu.Lock()
++		goLoaded, goPath, goCache = false, "", nil
++		goMu.Unlock()
++	})
++}
++
++// TestResolveHwContext exercises the F1 3-level precedence:
++//  1. explicit hwContext field (absolute)  2. renderer-option inference  3. core default.
++func TestResolveHwContext(t *testing.T) {
++	// One manifest covering every lever the resolver reads.
++	writeOverrides(t, `{
++	  "explicit-vk":        { "hwContext": "vulkan" },
++	  "explicit-gl":        { "hwContext": "gl" },
++	  "explicit-bogus":     { "hwContext": "metal" },
++	  "explicit-wins-over-infer": { "hwContext": "gl", "options": { "pcsx2_renderer": "paraLLEl-GS" } },
++	  "infer-vk":           { "options": { "mupen64plus-rdp-plugin": "parallel" } },
++	  "infer-gl":           { "options": { "pcsx2_renderer": "OpenGL" } },
++	  "no-hw-signal":       { "options": { "some_unrelated_opt": "x" } }
++	}`)
++
++	cases := []struct {
++		name        string
++		gameKey     string
++		coreDefault string
++		want        string
++	}{
++		// Level 1 — explicit field is absolute, regardless of core default.
++		{"explicit vulkan over gl-default core", "explicit-vk", "gl", "vulkan"},
++		{"explicit gl over vulkan-default core", "explicit-gl", "vulkan", "gl"},
++		{"explicit field beats renderer inference", "explicit-wins-over-infer", "gl", "gl"},
++		{"bogus explicit value is ignored, falls to default", "explicit-bogus", "vulkan", "vulkan"},
++
++		// Level 2 — renderer-option inference when no explicit field.
++		{"infer vulkan (rdp=parallel) on gl-default core", "infer-vk", "gl", "vulkan"},
++		{"infer gl (pcsx2_renderer=OpenGL) escapes vulkan-default core", "infer-gl", "vulkan", "gl"},
++
++		// Level 3 — core default when no per-game signal at all.
++		{"no signal, vulkan-default core", "no-hw-signal", "vulkan", "vulkan"},
++		{"no signal, gl-default core", "no-hw-signal", "gl", "gl"},
++		{"absent game key, vulkan-default core", "not-in-manifest", "vulkan", "vulkan"},
++		{"absent game key, gl-default core", "not-in-manifest", "gl", "gl"},
++
++		// Core default normalization: "" == "gl".
++		{"empty core default normalizes to gl", "no-hw-signal", "", "gl"},
++		{"explicit vulkan over empty core default", "explicit-vk", "", "vulkan"},
++	}
++
++	for _, c := range cases {
++		t.Run(c.name, func(t *testing.T) {
++			if got := ResolveHwContext(c.gameKey, c.coreDefault); got != c.want {
++				t.Errorf("ResolveHwContext(%q, %q) = %q, want %q", c.gameKey, c.coreDefault, got, c.want)
++			}
++		})
++	}
++}
++
++// TestGameHwContext checks the explicit-field accessor rejects unrecognized values.
++func TestGameHwContext(t *testing.T) {
++	writeOverrides(t, `{
++	  "vk":    { "hwContext": "vulkan" },
++	  "gl":    { "hwContext": "gl" },
++	  "bogus": { "hwContext": "d3d12" },
++	  "empty": { "hwContext": "" },
++	  "none":  { "fps": 30 }
++	}`)
++
++	for _, c := range []struct{ key, want string }{
++		{"vk", "vulkan"},
++		{"gl", "gl"},
++		{"bogus", ""},
++		{"empty", ""},
++		{"none", ""},
++		{"absent", ""},
++	} {
++		if got := GameHwContext(c.key); got != c.want {
++			t.Errorf("GameHwContext(%q) = %q, want %q", c.key, got, c.want)
++		}
++	}
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/vulkan/vk_platform.h b/pkg/worker/caged/libretro/nanoarch/vulkan/vk_platform.h
 new file mode 100644
@@ -43229,10 +44363,10 @@ index 2840a0e..c55a441 100644
  	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
  		var out api.Out
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..ad7f297 100644
+index 6972cc7..d69537d 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,517 @@
+@@ -1,310 +1,553 @@
 -package worker
 -
 -import (
@@ -43803,10 +44937,46 @@ index 6972cc7..ad7f297 100644
 +			// decided HERE — not in nanoarch's LoadGame — because m.GLZeroCopy below is a pipeline
 +			// BUILD-time property: the appsrc is created for GL textures or system-memory frames, and
 +			// a Vulkan room's readback frames are the latter.
-+			vkGame := coreCfg.HwContext == "vulkan" || nanoarch.WantsVulkanRenderer(game.Name)
-+			if vkGame && coreCfg.HwContext != "vulkan" {
-+				nanoarch.Nan0.HwContextOverride = "vulkan"
-+				w.log.Info().Msgf("Per-game Vulkan: %q rides the Vulkan-capture path", game.Name)
++			// Resolve THIS room's hardware-render context by a 3-level precedence (docs/arcade-vulkan-
++			// w3w4w5-spec.md, F1). Highest wins:
++			//   1. the game's EXPLICIT hwContext override field (GameHwContext) — absolute. This is the
++			//      lever for cores with no renderer core-option (psp/dc/gc all just follow the frontend's
++			//      hw context), and it also overrides everything below for any game.
++			//   2. the renderer-option inference — WantsVulkanRenderer (→ vulkan) / ForcesGlRenderer (→ gl).
++			//      Serves the ps2/n64 profiles already exported as pcsx2_renderer / mupen64plus-rdp-plugin,
++			//      and is the per-game GL escape hatch when a Vulkan-default core meets a title paraLLEl-GS/
++			//      -RDP can't serve.
++			//   3. the core config's HwContext default (per-system; "" == "gl").
++			// We stage HwContextOverride only when the resolved context DIVERGES from the core default
++			// (else clear it, like SetRoomCheats) — the same "override only on divergence" contract
++			// CoreLoad consumes. When resolved=="gl" but the core defaults to Vulkan, the staged "gl"
++			// also flips gl.enabled on via nanoarch's escape-hatch term (meta.HwContext=="gl") even though
++			// isGlAllowed:false. When resolved=="gl" the profile is expected to ALSO set the core's GL
++			// renderer option (pcsx2_renderer:"OpenGL", ...) so renderer + capture agree; for the
++			// no-renderer-option cores (psp/dc/gc) the frontend hw context IS the whole selection.
++			coreDefault := coreCfg.HwContext
++			if coreDefault == "" {
++				coreDefault = "gl"
++			}
++			resolved := coreDefault
++			explicitHw := nanoarch.GameHwContext(game.Name)
++			switch {
++			case explicitHw != "":
++				resolved = explicitHw // level 1
++			case nanoarch.WantsVulkanRenderer(game.Name):
++				resolved = "vulkan" // level 2 (vk)
++			case nanoarch.ForcesGlRenderer(game.Name):
++				resolved = "gl" // level 2 (gl)
++			}
++			vkGame := resolved == "vulkan"
++			if resolved != coreDefault {
++				via := "renderer-option inference"
++				if explicitHw != "" {
++					via = "explicit hwContext field"
++				}
++				nanoarch.Nan0.HwContextOverride = resolved
++				w.log.Info().Msgf("Per-game hw context: %q → %q (core default %q, via %s)",
++					game.Name, resolved, coreDefault, via)
 +			} else {
 +				nanoarch.Nan0.HwContextOverride = "" // unconditional clear, like SetRoomCheats
 +			}
@@ -44355,10 +45525,10 @@ index 0000000..1de3477
 +	C.zc_push(g.v.src(), C.uint(texID), C.int(w), C.int(h), C.ulonglong(durNs))
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..bfeafc5 100644
+index 4a6171f..04d8bac 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,970 @@
+@@ -1,579 +1,976 @@
 -package media
 -
 -import (
@@ -44981,6 +46151,12 @@ index 4a6171f..bfeafc5 100644
 +// The frame duration rides on the GstBuffer so the pull side can restore it for RTP timestamps.
 +static inline void pushVideoBuf(GstAppSrc *src, void *data, gsize len,
 +                                GstVideoFormat fmt, guint w, guint h, gint stride, guint64 durNs) {
++	// Drop degenerate frames. paraLLEl-RDP (N64, v1 Vulkan) emits a 1x1 frame during its async shader
++	// warmup; renegotiating the appsrc caps to 1x1 and pushing it makes GStreamer error the ENTIRE
++	// pipeline ("Internal data stream error", -5) and video never recovers (real 640x240/480 frames
++	// arrive a beat later but the pipeline is already dead). No real 3D-core output is sub-16px, so
++	// skip these: the pipeline holds its valid build-time caps until the first real frame.
++	if (w < 16 || h < 16) return;
 +	// Renegotiate the source caps when the core's frame size changes at runtime. Many PS2 games
 +	// (God of War, Kingdom Hearts, FFX, Shadow of the Colossus, Monster Hunter) switch field/frame
 +	// height mid-run (interlace / progressive-scan modes). The appsrc caps are fixed at pipeline

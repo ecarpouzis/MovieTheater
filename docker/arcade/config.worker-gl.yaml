@@ -217,7 +217,29 @@ emulator:
           lib: ppsspp_libretro
           folder: psp
           roms: ["iso", "cso", "pbp", "chd"]
-          isGlAllowed: true
+          # ── VULKAN ARM (W3, docs/arcade-vulkan-w3w4w5-spec.md) — PROPOSED, gated ──
+          # PPSSPP's Vk backend has lower driver overhead + steadier frame pacing than GL; the win we
+          # want is HEADROOM (a lower/steadier tick shaves the rare crackle's worst tails — see the
+          # crackle note below). Flip = these TWO lines only; the whole GL arm (stock lib, IR JIT,
+          # fastmem off, audioMaster, vfr, usesLibCo, hacks, scale, all options) is UNCHANGED and
+          # renderer-orthogonal — cpu_core stays pinned to IR JIT + fastmem off on the stock lib either
+          # way (the renderer is a frontend hw-context choice, not a CPU one). PPSSPP has NO renderer
+          # core-option, so this is the ONLY way to put psp on Vulkan (verified: no ppsspp_renderer/
+          # gpu_backend option key in the DLL) — the frontend's hwContext IS the whole selection, and a
+          # per-GAME GL escape must use the explicit hwContext:"gl" override field (W3 F1), not a core
+          # option. Rollback one-liner: isGlAllowed: true  +  delete the hwContext line.
+          #
+          # ⚠ NEEDS worker.w3fix.exe (the vk_synthetic_surface fix) — see the hacks note below. The audit
+          # blocker was CONFIRMED LIVE 2026-07-16 (psp Daxter): PPSSPP armed vk, created its device with
+          # our VK_NULL_HANDLE surface, then crashed 0xC0000005 right after "Creating Vulkan surface for
+          # window (data1=0 data2=0)" — its LibretroVulkanContext echoes the frontend surface handle back
+          # through its swapchain warp and queries surface caps on it through the REAL driver, and a null
+          # handle AVs there. FIXED in the fork (commit 0baec66): behind the vk_synthetic_surface hack the
+          # frontend hands the core a real hidden-window VkSurfaceKHR. Re-probe on worker.w3fix.exe:
+          # expect "synthetic headless surface created", "hw render context: Vulkan", zero-copy ACTIVE,
+          # 60 t/s, close ×5 clean. See RESULTS-vulkan-w3.md §W3.1-LIVE.
+          isGlAllowed: false          # Vulkan by default (see hwContext); GL zero-copy arming stays off
+          hwContext: "vulkan"         # psp renders on PPSSPP-Vk via the Vulkan-capture path
           coreAspectRatio: true
           # audioMaster (patch 0043). PPSSPP declares 44100 Hz and delivers ~43850 (733 samples/frame
           # where its own fps + rate imply 735.7). The pacer's fps floor always beats that slow audio
@@ -266,7 +288,28 @@ emulator:
           # function documented two lines up as access-violating here (0xC0000005). It only ever fed
           # a log line ("Save file size: 128.0 MiB"). Keeping a known-fragile call for a value we
           # discard is pure downside, so don't make it. (Same reasoning as dolphin's, patch 0016.)
-          hacks: [skip_hw_context_destroy, skip_same_thread_save, skip_serialize_size_probe]
+          #
+          # ── hacks UNDER VULKAN (W3.2) ── hacks are UNCHANGED for the Vk arm, deliberately. On the Vk
+          # teardown path (nanoarch.go deinitVideoVulkan) skip_hw_context_destroy makes us skip the
+          # core's context_destroy, matching the PROVEN paraLLEl-GS/PS2 pattern (leak the core's Vulkan
+          # objects into a device we then destroy — accepted, verified clean on back-to-back rooms).
+          # NOTE the GL-stack rationale above (context_destroy recurses into nvoglv64.dll and blows the
+          # small libco stack) is renderer-SPECIFIC and does NOT apply on Vk — PPSSPP's Vk ContextDestroy
+          # is just WaitUntilQueueIdle + Vulkan object frees, and the 64 MiB same_thread stack (patch
+          # 43cb002) covers it anyway. So DROPPING skip_hw_context_destroy on the Vk arm (to let PPSSPP
+          # free its own Vulkan objects cleanly before device destroy) is a valid, arguably-cleaner
+          # alternative — but the close ×5 gate decides. Keep it for the first arm (conservative + proven);
+          # revisit only if reuse leaks or a close wedges. skip_same_thread_save + noSaveStates are
+          # renderer-agnostic (PPSSPP still can't serialize on Vk) — keep. See RESULTS-vulkan-w3.md §W3.2.
+          #
+          # ── vk_synthetic_surface (W3.1 fix, REQUIRED for the Vulkan arm; needs worker.w3fix.exe) ──
+          # PPSSPP's libretro Vulkan context demands a non-null VkSurfaceKHR (it echoes the frontend handle
+          # back through its swapchain warp and queries surface caps on it through the real driver). Our
+          # headless frontend passed VK_NULL_HANDLE → 0xC0000005 at boot (CONFIRMED LIVE 2026-07-16). This
+          # hack makes the frontend create a real hidden-window surface and hand it to create_device. It is
+          # opt-in and inert on ps2/n64 (they never touch a surface). REMOVE this hack if psp ever rolls
+          # back to GL (isGlAllowed: true) — it is meaningless on the GL path.
+          hacks: [skip_hw_context_destroy, skip_same_thread_save, skip_serialize_size_probe, vk_synthetic_surface]
           noSaveStates: true
           # SUPERSAMPLING (patch 0023). MSAA is INERT on this core — libretro's hw_render FBO isn't
           # multisampled, so ppsspp/mupen64plus produce BIT-IDENTICAL frames with it on or off (only
@@ -305,7 +348,21 @@ emulator:
           lib: flycast_libretro
           folder: dc
           roms: ["chd", "gdi", "cdi", "cue"]
-          isGlAllowed: true
+          # ── VULKAN + PER-PIXEL OIT ARM (W4, docs/arcade-vulkan-w3w4w5-spec.md) — PROPOSED, gated ──
+          # flycast's Vulkan renderer (incl. the per-pixel OIT path, OITVulkanRenderer) fixes DC's chronic
+          # alpha-sorting artifacts AND is expected to give the HEADROOM that made per-pixel OIT too
+          # expensive on GL (rejected below at 58fps+3freezes). Flip = these TWO lines + the two OIT
+          # options below.
+          # ⚠ CRITICAL (static DLL audit, flycast_libretro.dll git 324d9c1): flycast has NO renderer
+          # core-option — there is NO `reicast_renderer` key (only reicast_threaded_rendering), and a
+          # `reicast_renderer:` line would be one of the SILENTLY-ignored unknown keys. So Vulkan is
+          # selected PURELY by the frontend negotiating a Vulkan hw-context, i.e. hwContext:"vulkan" here
+          # is the WHOLE mechanism (same worker-side path LRPS2/mupen use — it is NOT a config renderer
+          # flip). There is likewise no OpenGL escape VALUE token; a per-GAME GL escape must use the
+          # explicit hwContext:"gl" override field (W3 F1), NOT a core option.
+          # Rollback one-liner: isGlAllowed: true + delete hwContext + delete the two OIT options.
+          isGlAllowed: true  # BLOCKED 2026-07-16 (W4-LIVE): flycast is a v1 core — its v1 create_device ignores our zero-copy extension injection, and its garbage v2-callback misread crashes; flycast-Vk not viable. Stays GL. See RESULTS-vulkan-w3.md §W4-LIVE
+          # hwContext: "vulkan"         # PROPOSED — dc renders on flycast-Vk via the Vulkan-capture path   # TEMP ROLLBACK (re-arm)
           coreAspectRatio: true
           usesLibCo: true   # GL thread-affinity — see the psp note above (flycast GPF'd without it)
           vfr: false        # correct game speed — see the psp vfr note (Sonic Adventure ran double-speed)
@@ -321,6 +378,14 @@ emulator:
           # SOURCE caps to the core's real frame size — so base(640x480) x scale(2) == source(1280x960)
           # makes videoconvertscale a passthrough and the full frame reaches NVENC. Verified: the client
           # receives 1280x960, 60fps, 0 dropped.
+          #
+          # ── scale UNDER VULKAN (W4) — expected UNCHANGED, must be live-confirmed ── flycast's
+          # retro_get_system_av_info is renderer-AGNOSTIC (one code path; base = DC native 640x480,
+          # internal-res multiplier → max_width) — the Vulkan renderer hands frames the same way the GL
+          # renderer does, rendered at internal res and advertised base 640x480. So scale:2 should stay a
+          # passthrough on Vk. This is INFERRED (static; flycast source not checked out) — the gated probe
+          # MUST read the `retro_get_system_av_info: Res=` / `System A/V >>>` geometry line under the
+          # Vulkan renderer: if base comes back as the internal res (not 640x480), re-derive scale to 1.
           scale: 2
           scaleMethod: bilinear2   # ⚠ REQUIRED: the source is now bigger than the output, so this is a
                                    # DOWNSCALE. nearest here would point-sample and alias.
@@ -332,8 +397,18 @@ emulator:
             # 16x anisotropic. `off` measured IDENTICAL to the core's stated default, so the default is
             # effectively off; 16 demonstrably changes the frame (mid-frequency detail +7%).
             reicast_anisotropic_filtering: "16"
-            # REJECTED: reicast_alpha_sorting "per-pixel (accurate)". Correct, but it cost 58fps and 3
-            # freezes vs 60fps/0 at the per-triangle default. Per-pixel OIT is not worth it here.
+            # PER-PIXEL OIT (W4) — PROPOSED, gated. Was REJECTED on GL: "per-pixel (accurate)" cost 58fps
+            # + 3 freezes vs 60/0 at the per-triangle default (still the verdict for the GL arm). The Vk
+            # arm re-tests it because flycast-Vk is expected to have the headroom the GL path lacked; the
+            # gated A/B (Crazy Taxi + Sonic Adventure + a known alpha-artifact title) must hold 60/0-freeze
+            # with OIT ON before this ships. Value tokens verified verbatim from the DLL option strings
+            # (VALUES not labels): reicast_alpha_sorting ∈ {per-strip (fast, least accurate) | per-triangle
+            # (normal) | per-pixel (accurate)}; reicast_oit_abuffer_size ∈ {512MB | 1GB | 2GB | 4GB}
+            # (NO space — the spaced "512 MB" forms in the DLL are GUI translations, not option tokens).
+            # NOTE per-pixel OIT actually needs GL≥4.3 OR Vulkan, so it is technically GL-shippable too —
+            # but the whole point here is the Vk headroom, so it rides the Vulkan arm.
+            # reicast_alpha_sorting: "per-pixel (accurate)"   # TEMP ROLLBACK (re-arm)
+            # reicast_oit_abuffer_size: "512MB"   # TEMP ROLLBACK (re-arm)
           # ⚠ DC RESOLUTION IS NOT RAISEABLE FROM HERE. Measured 2026-07-08 (docs/arcade-quality-plan.md §10):
           # CloudRetro pins the encode size to the core's BASE geometry — Frontend.FrameSize() returns
           # nano.BaseWidth()/BaseHeight() (frontend.go:424) and ignores the per-frame size video_cb reports.
@@ -367,7 +442,12 @@ emulator:
           lib: flycast_libretro
           folder: naomi
           roms: ["zip", "chd", "lst", "dat", "bin"]
-          isGlAllowed: true
+          # ── VULKAN (W4 lockstep, Eric's everything-on-Vulkan go 2026-07-16) ── same flycast core as
+          # dc, same mechanism (no renderer core-option; hwContext IS the selection). Validated via the
+          # dc arm; per-game escape = explicit hwContext:"gl" override (W3 F1). Rollback: isGlAllowed:
+          # true + delete hwContext (same one-liner as dc).
+          isGlAllowed: true  # BLOCKED 2026-07-16 (W4-LIVE): flycast is a v1 core — its v1 create_device ignores our zero-copy extension injection, and its garbage v2-callback misread crashes; flycast-Vk not viable. Stays GL. See RESULTS-vulkan-w3.md §W4-LIVE
+          # hwContext: "vulkan"   # TEMP ROLLBACK (re-arm)
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
@@ -383,7 +463,9 @@ emulator:
           lib: flycast_libretro
           folder: atomiswave
           roms: ["zip", "chd"]
-          isGlAllowed: true
+          # ── VULKAN (W4 lockstep) ── see the naomi note above; same rollback one-liner.
+          isGlAllowed: true  # BLOCKED 2026-07-16 (W4-LIVE): flycast is a v1 core — its v1 create_device ignores our zero-copy extension injection, and its garbage v2-callback misread crashes; flycast-Vk not viable. Stays GL. See RESULTS-vulkan-w3.md §W4-LIVE
+          # hwContext: "vulkan"   # TEMP ROLLBACK (re-arm)
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
@@ -553,7 +635,21 @@ emulator:
           lib: dolphin_custom_libretro
           folder: gc
           roms: ["gcz", "iso", "rvz", "ciso", "gcm", "m3u"]
-          isGlAllowed: true
+          # ── VULKAN ARM (W5 reversal, Eric 2026-07-16) ── The W5 audit verdict was NO-GO purely on the
+          # cold-cache cost; Eric overruled it ("we don't have many caches built for GC — the flip is
+          # worth it"). The audit's TECHNICAL findings all said Vk-safe: dolphin picks its backend from
+          # the libretro hw-context TYPE, not dolphin_renderer (Video.cpp:135-138 cascade — Vulkan is
+          # reachable only from a Vulkan-advertising frontend, which hwContext:"vulkan" makes us);
+          # negotiation is effectively v1 on Windows (create_instance/create_device2 are __APPLE__-only,
+          # Video.cpp:231-242); the custom-core /O2 patch covers VideoBackends/Vulkan/*; the
+          # createsharedcontext patch is GL-only and INERT under Vk (VKGfx uses the base
+          # AsyncShaderCompiler, no shared GL contexts needed — mode "2" still valid); Vk pipeline
+          # caches land under User/Cache/Shaders/Vulkan-* (covered by coreCache.purge). Old OpenGL-*
+          # caches stay on disk harmlessly (filename-prefix keyed); expect a per-game mode-2 ubershader
+          # warm-up (~29 t/s for the first minutes) on each title's first Vk boot — accepted.
+          # Rollback one-liner: isGlAllowed: true + delete the hwContext line.
+          isGlAllowed: false          # Vulkan by default (see hwContext); GL zero-copy arming stays off
+          hwContext: "vulkan"         # gc renders on Dolphin-Vk (VKGfx) via the Vulkan-capture path
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
@@ -565,7 +661,17 @@ emulator:
           # skip_serialize_size_probe (patch 0016): dolphin defers video/emu init to context_reset +
           # first retro_run, so the load-time retro_serialize_size probe walks save-state into a NULL
           # g_vertex_manager → 0xc0000005. The probe only feeds a log line; saves re-query at save time.
-          hacks: [skip_hw_context_destroy, skip_serialize_size_probe]
+          #
+          # ── vk_synthetic_surface (W5-LIVE, REQUIRED for the Vulkan arm) ── Dolphin's Vulkan libretro
+          # backend gates its FRAME HANDOFF (video_cb/set_image) on having a swapchain, which needs a
+          # VkSurfaceKHR. With VK_NULL_HANDLE it renders internally and hands us NOTHING — retro_run ticks,
+          # audio + shaders run, but video_cb fires 0x (root-caused live 2026-07-16 with CLOUD_GAME_VK_DEBUG:
+          # video_cb=0/set_image=0 over 3221 ticks; NOT a shader-cache warm-up). Unlike PPSSPP it does not
+          # crash on the null surface — it silently produces no video. The hack hands it a real hidden-window
+          # surface; Dolphin then makes its swapchain and its glue warps it to set_image → frames flow to
+          # zero-copy (re-probe: video_cb=VALID=1511, set_image=1511, zc_tex=1511, warm-boot 60fps@1280x1056).
+          # Inert on GL. REMOVE if gc ever rolls back to GL.
+          hacks: [skip_hw_context_destroy, skip_serialize_size_probe, vk_synthetic_surface]
           # Render efb_scale 3 (1920x1584), deliver 1280x1056: supersampled on TOP of 4x MSAA — the
           # 07-09 quality-pass ideal, RESTORED 2026-07-11 after the race-slowdown hunt exonerated
           # resolution entirely (races dipped identically at efb 2 and 3; the culprit was the custom

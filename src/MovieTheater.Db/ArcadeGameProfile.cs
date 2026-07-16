@@ -41,6 +41,16 @@ namespace MovieTheater.Db
         /// internal resolution, frameskip, …) — mirrors RetroArch per-game core options.</summary>
         public string? CoreOptionsJson { get; set; }
 
+        /// <summary>Explicit per-game hardware-render context: <c>"gl"</c> or <c>"vulkan"</c> (null = defer
+        /// to the worker's renderer-option inference and the core config default). Exported to the worker's
+        /// game-overrides.json <c>hwContext</c> field, where it is the ABSOLUTE top of the room layer's
+        /// 3-level hw-context precedence (above renderer-option inference and the core default). This is the
+        /// lever for cores with no renderer core-option — PPSSPP (psp), flycast (dc), Dolphin (gc) all just
+        /// follow the frontend's hw context — to pin one game onto (or off of) the Vulkan-capture path.
+        /// See docs/arcade-vulkan-w3w4w5-spec.md (F1) and nanoarch.GameHwContext.</summary>
+        [MaxLength(10)]
+        public string? HwContext { get; set; }
+
         /// <summary>Free-form provenance/why (e.g. "30fps-locked engine; community list").</summary>
         public string? Notes { get; set; }
     }
