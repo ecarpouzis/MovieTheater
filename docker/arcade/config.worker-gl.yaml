@@ -422,7 +422,10 @@ emulator:
           lib: pcsx2_custom_libretro
           folder: ps2
           roms: ["iso", "cso", "chd", "bin", "mdf", "zso"]
-          isGlAllowed: true
+          isGlAllowed: false   # Vulkan by default (see hwContext); GL zero-copy arming stays off
+          # VULKAN BY DEFAULT: every PS2 game renders on paraLLEl-GS via the Vulkan-capture path.
+          # Per-game GL escape: set pcsx2_renderer:"OpenGL" in game-overrides.json.
+          hwContext: "vulkan"
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
@@ -448,7 +451,9 @@ emulator:
           options:
             # OpenGL renderer so PCSX2 draws into CloudRetro's libretro GL (WGL) hw-render context.
             # Auto/Vulkan/D3D would render to a private device the GL capture never sees -> black frame.
-            pcsx2_renderer: "OpenGL"
+            pcsx2_renderer: "paraLLEl-GS"   # Vulkan GS renderer — the default (was OpenGL)
+            pcsx2_pgs_high_res_scanout: "enabled"
+            pcsx2_pgs_ssaa: "8x SSAA (can high-res)"
             # Boot straight into the game, skipping the PS2 BIOS boot animation (faster attract testing).
             pcsx2_fastboot: "enabled"
             # Name the BIOS explicitly. LRPS2 read "Bios Found: USA v01.60" from its root scan but the
@@ -659,7 +664,10 @@ emulator:
         n64:
           lib: mupen64plus_next_libretro
           roms: ["n64", "v64", "z64"]
-          isGlAllowed: true
+          isGlAllowed: false   # Vulkan by default (see hwContext); GL zero-copy arming stays off
+          # VULKAN BY DEFAULT: every N64 game renders on paraLLEl-RDP via the Vulkan-capture path.
+          # Per-game GL escape: set mupen64plus-rdp-plugin:"gliden64" in game-overrides.json.
+          hwContext: "vulkan"
           usesLibCo: true
           # vfr OFF: variable frame timing produced juddery presentation in the browser — a steady
           # ~16% of frame intervals landed at ~50ms (measured via rVFC pacing histogram) and the
@@ -675,12 +683,15 @@ emulator:
           # point-samples and ALIASES rather than anti-aliases.
           # Render 1920x1440 (6x native), deliver 1280x960: supersampled AND higher resolution.
           # Costs ~1.0 CPU core per room (0.37 without); two concurrent rooms fit easily on the 13700K.
-          scale: 0.6667
+          scale: 2
           scaleMethod: bilinear2
           options:
             # Legal values are a fixed list (verified in mupen64plus_next_libretro.dll):
             # 320x240, 640x480, 960x720, 1280x960, ..., 1920x1440 — not an arbitrary WxH.
-            mupen64plus-43screensize: "1920x1440"
+            mupen64plus-43screensize: "640x480"
+            mupen64plus-parallel-rdp-upscaling: "4x"
+            mupen64plus-rdp-plugin: "parallel"   # paraLLEl-RDP (Vulkan LLE) — the default renderer
+            mupen64plus-rsp-plugin: "parallel"   # LLE RSP accuracy pairing
             # MSAA left OFF (core default). "4" was tried and A/B-measured on Mario Kart 64 at 960x720:
             # hardEdgeFrac 1.033% (MSAA=4) vs 1.028% (MSAA=0) — NO measurable anti-aliasing. Two candidate
             # reasons, both unresolved: the probe reads the H.264-decoded stream (quantization at 5 Mbps
