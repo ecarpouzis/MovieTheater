@@ -75,6 +75,18 @@ export default function ArcadeRoomPage() {
   const [faceSwap, setFaceSwapState] = useState(getFaceSwap());
   const [ignoreStreamed, setIgnoreStreamedState] = useState(getIgnoreStreamedPads());
   const [fatal, setFatal] = useState(null);
+  // Crash-loop detector. A worker that segfaults at core load (a bad ROM — Stuntman Ignition,
+  // 2026-07-16) boots the room, dies in under a second, and the shim/refocus recovery just retries
+  // forever: the player stares at a black video with no explanation. Deaths that happen this early
+  // aren't connection blips, and retrying can't fix them — count them across reloads
+  // (sessionStorage survives window.location.reload) and stop with a real message on the second.
+  const CRASH_KEY = `arcade-crashloop-${code}`;
+  const crashLiveAtRef = useRef(0);
+  const countCrash = () => {
+    const n = (parseInt(sessionStorage.getItem(CRASH_KEY), 10) || 0) + 1;
+    sessionStorage.setItem(CRASH_KEY, String(n));
+    return n;
+  };
   const [needsTap, setNeedsTap] = useState(false);
   const [discCount, setDiscCount] = useState(location.state?.descriptor?.discCount ?? 0);
   const [disc, setDisc] = useState(0);
@@ -167,7 +179,21 @@ export default function ArcadeRoomPage() {
         onStatus: (s) => {
           if (cancelled) return;
           setStatus(s);
-          if (LIVE_STATUS.includes(s)) tryPlayVideo();
+          if (LIVE_STATUS.includes(s)) {
+            tryPlayVideo();
+            if (!crashLiveAtRef.current) crashLiveAtRef.current = Date.now();
+            // A session that stays alive past 30s is genuinely playing — forgive earlier stumbles.
+            setTimeout(() => {
+              if (!cancelled && LIVE_STATUS.includes(statusRef.current)) sessionStorage.removeItem(CRASH_KEY);
+            }, 30000);
+          }
+          if (s === "disconnected" || s === "failed") {
+            const aliveMs = crashLiveAtRef.current ? Date.now() - crashLiveAtRef.current : 0;
+            if (aliveMs < 25000 && countCrash() >= 2) {
+              sessionRef.current?.close?.();
+              setFatal("This game keeps crashing right after launch — its ROM or emulator looks broken on the server, and retrying won't help. Try another game.");
+            }
+          }
         },
         onSeat: (idx) => { if (!cancelled) setYourSlot(idx); },
         onAspect: ({ aspect, rot, flip }) => {
@@ -243,6 +269,9 @@ export default function ArcadeRoomPage() {
     let armed = true; // re-armed each mount; disarmed after one auto-reload so we can't loop
     const recover = () => {
       if (!armed || document.visibilityState !== "visible") return;
+      // A crash-looping title (see the detector above) must not be revived by refocus — the
+      // reload would remount, re-arm, and spin the loop forever with no message.
+      if ((parseInt(sessionStorage.getItem(CRASH_KEY), 10) || 0) >= 2) return;
       if (DEAD_STATUS.includes(statusRef.current)) {
         armed = false;
         window.location.reload();
