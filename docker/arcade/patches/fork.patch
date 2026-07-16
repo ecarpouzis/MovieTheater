@@ -10140,10 +10140,10 @@ index 669862d..db883db 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..7702811 100644
+index 17f10fc..ae9b850 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-@@ -1,981 +1,1665 @@
+@@ -1,981 +1,1682 @@
 -package nanoarch
 -
 -import (
@@ -12051,6 +12051,18 @@ index 17f10fc..7702811 100644
 +		default:
 +			vkDbg.vcbSoftware++
 +		}
++		// Window-trace the transition (the beetle "~146 frames then garbage" boundary): per-frame
++		// validity + dims + the core's set_image VkImage handle, so we can tell resize-attempt vs stop
++		// vs mishandled-valid-images apart. Bounded to a window so it can't spam.
++		if vkDbg.vcbTotal >= 138 && vkDbg.vcbTotal <= 172 {
++			valid := "VALID"
++			if data == nil {
++				valid = "NULL(dup)"
++			} else if data != C.RETRO_HW_FRAME_BUFFER_VALID {
++				valid = "software"
++			}
++			Nan0.log.Info().Msgf("[vkdbg-frame %d] %s %dx%d srcImage=%#x", vkDbg.vcbTotal, valid, width, height, uint64(C.nano_vk_src_image_handle()))
++		}
 +	}
 +	// FAIL-SOFT (see vk.captureBroken): a Vulkan room whose GL-committed pipeline can't receive readback
 +	// frames drops everything rather than pushing a mismatched buffer and crashing the worker.
@@ -12769,6 +12781,11 @@ index 17f10fc..7702811 100644
 +func geometryChange(geom C.struct_retro_game_geometry) {
 +	Nan0.limiter(func() {
 +		old := Nan0.sys.av.geometry
++		if vkDbgOn && Nan0.Video.vk.enabled {
++			Nan0.log.Info().Msgf("[vkdbg-geom] geometryChange base %dx%d->%dx%d max %dx%d->%dx%d (frame~%d)",
++				old.base_width, old.base_height, geom.base_width, geom.base_height,
++				old.max_width, old.max_height, geom.max_width, geom.max_height, vkDbg.vcbTotal)
++		}
 +		Nan0.sys.av.geometry = geom
 +
 +		if Nan0.Video.gl.enabled && (old.max_width != geom.max_width || old.max_height != geom.max_height) {
@@ -12791,7 +12808,7 @@ index 17f10fc..7702811 100644
 +		Nan0.sys.av.geometry.base_height != geom.base_height
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.h b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
-index 2479d0c..1fd7860 100644
+index 2479d0c..e1a78dc 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 @@ -5,6 +5,8 @@ void bridge_call(void *f);
@@ -12803,7 +12820,7 @@ index 2479d0c..1fd7860 100644
  bool bridge_retro_serialize(void *f, void *data, size_t size);
  size_t bridge_retro_serialize_size(void *f);
  bool bridge_retro_unserialize(void *f, void *data, size_t size);
-@@ -32,13 +34,43 @@ void init_video_cgo();
+@@ -32,13 +34,44 @@ void init_video_cgo();
  void deinit_video_cgo();
  
  void same_thread(void *f);
@@ -12827,6 +12844,7 @@ index 2479d0c..1fd7860 100644
 +// gc root-cause debug instrumentation (CLOUD_GAME_VK_DEBUG). Counters in nanoarch_vulkan.c.
 +void nano_vk_dbg_log(void);
 +void nano_vk_dbg_reset(void);
++unsigned long long nano_vk_src_image_handle(void);
 +// M2: Vulkan -> GL external-memory zero-copy.
 +void nano_vk_zc_set_enabled(int on, int sync_fence);
 +int nano_vk_zc_wanted(void);
@@ -12850,10 +12868,10 @@ index 2479d0c..1fd7860 100644
  #endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
 new file mode 100644
-index 0000000..4fc504d
+index 0000000..ca7118e
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
-@@ -0,0 +1,1728 @@
+@@ -0,0 +1,1774 @@
 +// MovieTheater arcade — Vulkan-capture frontend (M1: readback path).
 +//
 +// Lets the CloudRetro worker host libretro cores that render with RETRO_HW_CONTEXT_VULKAN
@@ -12900,9 +12918,11 @@ index 0000000..4fc504d
 +void core_log_cgo(enum retro_log_level level, const char *fmt, ...);
 +#define VKLOG(lvl, ...) core_log_cgo(lvl, "[vk] " __VA_ARGS__)
 +
-+// Number of in-flight readback slots (command buffer + fence). paraLLEl-GS never calls
-+// get_sync_index / wait_sync_index, but the interface promises a ring, so we keep one.
-+#define NANO_VK_SYNC 2
++// Number of in-flight sync-index slots (command buffer + fence) = the swapchain ring depth we advertise
++// via get_sync_index_mask. paraLLEl-GS/mupen/PPSSPP/dolphin never call get/wait_sync_index, but beetle
++// (Themaister's reference core) cycles the full ring every frame — RetroArch's real swapchain is triple-
++// buffered, so we advertise 3 (a depth-2 ring desynced beetle's per-frame resource tracking, live).
++#define NANO_VK_SYNC 3
 +
 +// XRGB8888 as libretro/nanoarch's CPU path expects it: a 32-bit pixel 0x00RRGGBB, i.e. bytes
 +// [B,G,R,X] in memory. Blitting the core's R8G8B8A8_UNORM image into a B8G8R8A8_UNORM image makes
@@ -13066,6 +13086,10 @@ index 0000000..4fc504d
 +    VkCommandBuffer         cmd[NANO_VK_SYNC];
 +    VkFence                 fence[NANO_VK_SYNC];
 +    uint32_t                sync_index;
++    // sync_slot[i] = the zc pool slot the LAST frame with sync index i used (or -1). wait_sync_index(i)
++    // blocks on that slot's copy fence so a core (beetle) can safely recycle its per-frame GPU context
++    // for index i — the real image-lifetime handshake the interface promises (libretro_vulkan.h:405-412).
++    int                     sync_slot[8];  // sized to the max NANO_VK_SYNC we'd use
 +
 +    // Latest image handed over by set_image (copied — the pointer's lifetime ends at the next call).
 +    int                     have_image;
@@ -13146,6 +13170,9 @@ index 0000000..4fc504d
 +    unsigned long long r_reallocf;  // dropped: pool realloc failed
 +    unsigned long long sem_begin;   // GL semaphore wait started
 +    unsigned long long sem_done;    // GL semaphore wait returned
++    unsigned long long get_sync;    // core called get_sync_index (uses the sync-index protocol)
++    unsigned long long wait_sync;   // core called wait_sync_index
++    unsigned long long set_cmdbuf;  // core called set_command_buffers (alt frame handover)
 +    unsigned last_w, last_h;        // last geometry seen by nano_vk_zc_frame
 +    unsigned sub16_w, sub16_h;      // last sub-16px geometry dropped
 +} vk_dbg;
@@ -13157,6 +13184,8 @@ index 0000000..4fc504d
 +          vk_dbg.set_image, vk_dbg.zc_call, vk_dbg.zc_tex, vk_dbg.r_noactive, vk_dbg.r_noimage,
 +          vk_dbg.r_sub16, vk_dbg.sub16_w, vk_dbg.sub16_h, vk_dbg.r_noslot, vk_dbg.r_reallocf,
 +          vk_dbg.sem_begin, vk_dbg.sem_done, vk_dbg.last_w, vk_dbg.last_h);
++    VKLOG(RETRO_LOG_INFO, "[vkdbg-c2] sync-index protocol: get_sync_index=%llu wait_sync_index=%llu set_command_buffers=%llu sync_index=%u\n",
++          vk_dbg.get_sync, vk_dbg.wait_sync, vk_dbg.set_cmdbuf, vk.sync_index);
 +}
 +
 +// ===================================================================================================
@@ -13708,12 +13737,27 @@ index 0000000..4fc504d
 +    }
 +}
 +
-+static uint32_t VKAPI_PTR cb_get_sync_index(void *handle)      { (void)handle; return vk.sync_index; }
++static uint32_t VKAPI_PTR cb_get_sync_index(void *handle)      { (void)handle; vk_dbg.get_sync++; return vk.sync_index; }
 +static uint32_t VKAPI_PTR cb_get_sync_index_mask(void *handle) { (void)handle; return (1u << NANO_VK_SYNC) - 1u; }
 +
 +static void VKAPI_PTR cb_wait_sync_index(void *handle) {
 +    (void)handle;
-+    // Block until the prior GPU work for the current sync index is done (fence wait).
++    vk_dbg.wait_sync++;
++    // ZERO-COPY PATH (beetle & every real Vulkan core): the core recycles its per-frame GPU context
++    // (command buffers / transient allocations) for sync index i gated on this call — it MUST block until
++    // the frontend's GPU work that read the image for the LAST frame with index i has completed, else the
++    // core recycles resources we are still reading and its rendering corrupts (beetle: garbage scanouts
++    // after the pipeline fills, ~146 frames). Block on that slot's copy fence. This is the real
++    // image-lifetime handshake (libretro_vulkan.h:405-412); the always-signalled readback fence below was
++    // a no-op that only happened to be safe for cores that never call wait_sync_index.
++    if (vk.zc_active) {
++        int s = (vk.sync_index < 8u) ? vk.sync_slot[vk.sync_index] : -1;
++        if (s >= 0 && s < NANO_VK_ZC_SLOTS && vk.zc_submitted[s] && vk.zc_fence[s]) {
++            vk.fn.WaitForFences(vk.device, 1, &vk.zc_fence[s], VK_TRUE, UINT64_MAX);
++        }
++        return;
++    }
++    // M1 readback path: block until the prior GPU work for the current sync index is done (fence wait).
 +    //
 +    // KNOWN LIMITATION (review N1, revisit for M3 cores): if a core called this concurrently from
 +    // another thread while nano_vk_readback is between its ResetFences and QueueSubmit, this would
@@ -13731,6 +13775,7 @@ index 0000000..4fc504d
 +
 +static void VKAPI_PTR cb_set_command_buffers(void *handle, uint32_t num, const VkCommandBuffer *cmd) {
 +    (void)handle; (void)num; (void)cmd;
++    vk_dbg.set_cmdbuf++;
 +    // paraLLEl-GS does not use this alternative frame-handover mode. Log once so a future core that
 +    // needs it is not silently dropped.
 +    if (!vk.command_buffers_warned) {
@@ -13827,6 +13872,7 @@ index 0000000..4fc504d
 +        }
 +    }
 +
++    for (int i = 0; i < 8; i++) vk.sync_slot[i] = -1; // no frame has used any sync index yet
 +    build_interface();
 +    VKLOG(RETRO_LOG_INFO, "hw render interface ready (version %u)\n", (unsigned)vk.iface.interface_version);
 +    return 0;
@@ -13838,6 +13884,9 @@ index 0000000..4fc504d
 +}
 +
 +int nano_vk_have_image(void) { return vk.have_image; }
++
++// Debug: the current set_image VkImage handle (for the transition trace). 0 if none.
++unsigned long long nano_vk_src_image_handle(void) { return (unsigned long long)(uintptr_t)vk.src_image; }
 +
 +// ===================================================================================================
 +// Staging (re)allocation
@@ -14317,6 +14366,18 @@ index 0000000..4fc504d
 +    // frame beats a black-for-the-session room. Parity with the readback path (audit 2026-07-16).
 +    vk_dbg.zc_call++;
 +    vk_dbg.last_w = width; vk_dbg.last_h = height;
++    // SYNC-INDEX PROTOCOL (libretro_vulkan.h:391-412). The frontend MUST advance the sync index once per
++    // frame so the core can cycle its per-frame resources (fences/buffers keyed by get_sync_index()). The
++    // M1 readback path advances it (nano_vk_readback), but the M2 zero-copy path historically did NOT — so
++    // a core that LEANS on the protocol (beetle_psx_hw, Themaister's reference client) saw a frozen index,
++    // desynced its VRAM-upload tracking after its ring filled, and delivered degenerate strip frames
++    // (1400x4) — while cores that ignore the protocol (paraLLEl-GS/mupen/PPSSPP/dolphin) were unaffected.
++    // Advance here, once per delivered frame (before the drop guards so a dropped frame still cycles).
++    // cur_sync is THIS frame's index (the value get_sync_index already returned to the core before
++    // video_cb); we record which pool slot serviced it (below) so wait_sync_index(cur_sync) can block on
++    // the real copy fence next time the ring lands on this index.
++    uint32_t cur_sync = vk.sync_index;
++    vk.sync_index = (cur_sync + 1) % NANO_VK_SYNC;
 +    if (!vk.zc_active)                 { vk_dbg.r_noactive++; return 0; }
 +    if (!vk.have_image)                { vk_dbg.r_noimage++;  return 0; }
 +    if (width < 16 || height < 16)     { vk_dbg.r_sub16++; vk_dbg.sub16_w = width; vk_dbg.sub16_h = height; return 0; }
@@ -14343,6 +14404,9 @@ index 0000000..4fc504d
 +    }
 +    pthread_mutex_unlock(&vk.zc_mutex);
 +    if (idx < 0) { vk_dbg.r_noslot++; return 0; } // encoder holds every slot; dup this frame
++    // Record which slot serviced this frame's sync index, so wait_sync_index(cur_sync) — called by the
++    // core the next time the ring lands on this index — blocks on this copy's fence (image-lifetime handshake).
++    vk.sync_slot[cur_sync] = idx;
 +
 +    VkCommandBuffer cb = vk.zc_cmd[idx];
 +    VkFence fence = vk.zc_fence[idx];

@@ -144,42 +144,52 @@ emulator:
         # default, which supplies NO memory-card option → pcsx logs "non memcard config?" and boots with no
         # card. Mirror the WSL pool's PS1 fix (docker/arcade/config.yaml) so a leaked PSX room works here too:
         # memcard1=libretro exposes card 1 via RETRO_MEMORY_SAVE_RAM (.srm), dualshock pads for analog games.
+        # ── PS1 on Beetle PSX HW / VULKAN (W8, 2026-07-16) — LIVE. Hardware Vulkan renderer (parallel-psx):
+        # real 3D + internal upscale, replacing pcsx_rearmed's software enhancement. Negotiation v2/no-callbacks
+        # -> v1 create_device, zero-copy ACTIVE, NO synthetic surface needed. CTR renders 60fps/640x480 moving,
+        # SotN survives its hi-res intro + mode changes (caps-reneg handles the varying delivered sizes).
+        #
+        # ⚠ THE SCANLINE OPTIONS BELOW ARE LOAD-BEARING — DO NOT REMOVE. Without them beetle FROZE at the
+        # BIOS->game transition (~frame 147): its display_height collapsed to 1-2 lines (video_cb 1400x4 /
+        # 560x2), sub-16px-guarded to a dead stream (root-caused live with CLOUD_GAME_VK_DEBUG + beetle source
+        # rhi_lib_vulkan.c:7104 display_height = last_scanline - initial_scanline + 1). Cause: beetle's
+        # core-options-v2 default for last_scanline is a bad first-value token ("210", not the C default 239),
+        # and the unset option collapsed the range at the transition — the "values not labels" / embedded-default
+        # class (dolphin patch 0016, pcsx frameskip). Pinning the full NTSC/PAL scanline window fixes it. See
+        # RESULTS-vulkan-w3.md §W8-LIVE.
+        #
+        # ROLLBACK to the healthy software path: lib: pcsx_rearmed_libretro + drop hwContext/isGlAllowed/vfr/
+        # usesLibCo + scaleMethod: nearest-neighbour + options {pcsx_rearmed_drc:enabled, frameskip_type:disabled,
+        # pad1type/pad2type:dualshock, memcard1:libretro, memcard2:none, neon_enhancement_enable:enabled,
+        # neon_enhancement_tex_adj_v2:enabled}. pcsx_rearmed stays on the fleet (repo.sync).
         pcsx:
-          lib: pcsx_rearmed_libretro
+          lib: mednafen_psx_hw_libretro
           roms: ["m3u", "cue", "chd"]
           folder: psx
-          # QUALITY (docs/arcade-quality-plan.md Phase 1). PS1 encoded at its native 256x240, which puts
-          # H.264's 4:2:0 chroma plane BELOW the native pixel grid: colour bleeds across every hard edge
-          # and no bitrate can recover it. A nearest 2x upscale before encode restores chroma to >= native.
-          # It costs almost no bitrate -- an integer nearest upscale adds no high-frequency detail, so the
-          # encoder sees flat 2x2 blocks. scaleMethod is pinned explicitly: a multi-tap method here would
-          # blur the exact pixels we are preserving. (Hi-res PS1 modes 640x480 -> 1280x960; same reasoning.)
+          isGlAllowed: false          # Vulkan by default (see hwContext); GL zero-copy arming stays off
+          hwContext: "vulkan"         # PS1 renders on Beetle PSX HW's Vulkan renderer via the capture path
+          coreAspectRatio: true       # hw core reports av geometry (Flip contract) — see the psp/gc note
+          vfr: false                  # correct game speed (matches ps2/n64/psp/dc/gc capture arms)
+          usesLibCo: true             # retro_run + context_reset on one cothread (Vulkan-capture brings the
+                                      # device up there). Non-libco crashed the worker (exit 2), live.
+          # beetle pins base at PSX native (System A/V >>> 320x240 (1400x1152)) and puts internal-res in
+          # max_width (the flycast pattern): scale:2 makes base(320x240)x2 == the 2x internal frame a
+          # passthrough (patch 0015 caps-reneg), so full hardware detail reaches NVENC. Delivered sizes vary
+          # by PSX display mode (1400x960 / 560x480 / ...); the caps-reneg tracks each.
           scale: 2
-          scaleMethod: nearest-neighbour
+          scaleMethod: bilinear2
           options:
-            pcsx_rearmed_drc: enabled
-            # CloudRetro's EMBEDDED default (pkg/config/config.yaml) sets frameskip_type: auto, so PS1 was
-            # allowed to DROP frames on a 13700K that never needs to. "disabled" is pcsx_rearmed's own default.
-            pcsx_rearmed_frameskip_type: disabled
-            pcsx_rearmed_pad1type: dualshock
-            pcsx_rearmed_pad2type: dualshock
-            pcsx_rearmed_memcard1: libretro
-            pcsx_rearmed_memcard2: none
-            # ENHANCED RESOLUTION (docs/arcade-quality-plan.md §17). The software GPU's enhanced
-            # renderer draws low-res video modes at TWICE the native internal resolution — real 3D
-            # detail, no GL context needed (this is the same-core alternative to the beetle_psx_hw
-            # path, which stays blocked on a core-profile GL context). Per the core's own option
-            # text it only applies to games NOT already in hi-res modes (480i/512i), so SotN-style
-            # 640x480 content is untouched, and "2D elements are generally unaffected". Base
-            # geometry doubles with it, so scale:2 above now encodes 320x240 games at 1280x960
-            # carrying REAL 640x480 detail.
-            # KNOWN RISK: a minority of titles glitch with enhancement — that is why RetroArch
-            # defaults it off. Per-title opt-out belongs in ArcadeGameProfile.CoreOptionsJson.
-            pcsx_rearmed_neon_enhancement_enable: enabled
-            # The core-author companion fixup ("solves some texturing issues in Enhanced
-            # Resolution mode"); its cost is noise on a 13700K. The OTHER companion,
-            # neon_enhancement_no_main, is a compatibility-REDUCING speed hack — leave it off.
-            pcsx_rearmed_neon_enhancement_tex_adj_v2: enabled
+            beetle_psx_hw_renderer: "hardware_vk"   # Vulkan renderer (VALUE token verified from the DLL)
+            beetle_psx_hw_internal_resolution: "2x" # 640x480-class hardware upscale (raise per-title later)
+            beetle_psx_hw_pgxp_mode: "disabled"     # PGXP off round 1 (geometry correction; per-title later)
+            beetle_psx_hw_enable_memcard1: "enabled" # memcard 1 via RETRO_MEMORY_SAVE_RAM (.srm)
+            # ⚠ SCANLINE WINDOW — pin the FULL range explicitly (see the block header). beetle's unset-option
+            # default collapsed display_height at the game transition and froze the stream.
+            beetle_psx_hw_initial_scanline: "0"
+            beetle_psx_hw_last_scanline: "239"
+            beetle_psx_hw_initial_scanline_pal: "0"
+            beetle_psx_hw_last_scanline_pal: "287"
+            beetle_psx_hw_crop_overscan: "disabled"
         # GL 3D cores only — this pool exists for these. isGlAllowed + coreAspectRatio are the Flip
         # contract (without coreAspectRatio the GAME_START av payload is null and the client renders
         # the bottom-left-origin GL frame upside down — the exact n64 lesson). Mirror of the WSL
