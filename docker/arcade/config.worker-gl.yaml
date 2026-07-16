@@ -21,8 +21,15 @@
 #
 #   Deploy:  cp docker/arcade/config.worker-gl.yaml D:/ArcadeStorage/worker-gl/config.yaml
 #            AND  D:/ArcadeStorage/worker-gl-2/config.yaml   ← BOTH. Every ConfDir gets every file.
-#            then recycle the workers (Stop-Process worker — the runner loop respawns in ~4s).
-#            Workers read config ONLY at startup.
+#            then recycle each worker with scripts/recycle-arcade-glworker.ps1 -WorkerId N (the runner
+#            loop respawns in ~4s). Workers read config ONLY at startup.
+#            ⚠ Do NOT `Stop-Process worker -Force` to recycle. A force-kill of a GL/NVENC worker can
+#            strand a kernel-stuck GPU-teardown thread → an UNKILLABLE zombie holding this ConfDir
+#            locked (the PID-7948 class, 2026-07-15). The recycle script stops it GRACEFULLY (stop-file
+#            sentinel), forces only as a fallback, and VERIFIES the kill.
+#            (An earlier version of this note also claimed a force-kill dumps PCSX2's shader cache —
+#            RETRACTED 2026-07-15: the cache appends immediately on compile, kills lose nothing. The
+#            zombie risk above is the sole reason for the graceful path. docs/arcade-stuntman-plan.md)
 #
 #   ⚠ The SAME applies to game-overrides.json (per-game fps/core-option fixes, written by
 #     `arcade-gameconfig-export -o <ConfDir>/game-overrides.json`). It is resolved from the worker's
@@ -423,6 +430,14 @@ emulator:
           # then close-save re-serializes the wedge — a poison loop on the deterministic save id
           # (live 2026-07-09). Boot-resume stays OFF for ps2 until made safe; manual in-session
           # Save/Load (patch 0030) works.
+          #
+          # ⚠ DO NOT remove skip_hw_context_destroy to try to persist the GS shader cache (tried & REVERTED
+          # 2026-07-15). PCSX2's context_destroy DEADLOCKS in our single-thread (LibCo/same_thread) model —
+          # the room-close watchdog then kills the worker (exit 70) after 30 s, on EVERY ps2 close. A 64 MiB
+          # same_thread stack (nanoarch.c) stopped the STATUS_BAD_STACK crash but NOT the deadlock. And it's
+          # moot anyway: the gl_programs write does NOT live in context_destroy — it happens in
+          # retro_unload_game (proven: the cache grew 71→98→101 across clean room-closes WITH this hack on).
+          # The real cache-persist bug is elsewhere (see arcade-stuntman-audio-skip memory).
           hacks: [skip_hw_context_destroy, skip_boot_restore]
           # PS2 games often render a narrower framebuffer than the base geometry (God of War: raw 1024x896
           # vs delivered 1280x896 — measured with the patch-0022 frame dump). CloudRetro stretches that to
@@ -481,6 +496,16 @@ emulator:
             # per-title (pcsx2_half_pixel_offset, pcsx2_round_sprite, ...) and are all gated behind
             # pcsx2_enable_hw_hacks, which must NEVER be a global default. They belong in
             # ArcadeGameProfile.CoreOptionsJson (docs/arcade-per-game-config.md).
+            #
+            # ── STUNTMAN (SLUS-20250) per-game setup — 2026-07-15, see docker/arcade/lrps2-patch-gamedb.py ──
+            # Two independent layers, because the fix it needs is split across a GameDB field and a core
+            # option: (1) `eeClampMode: 3` (Full FP clamp) for its non-IEEE-FP "crazy car AI" softlock —
+            # reachable ONLY via the GameDB, hence the byte-patched pcsx2_custom_libretro.dll (lib: above);
+            # (2) `pcsx2_upscale_multiplier: "1x Native (PS2)"` in game-overrides.json to claw back the
+            # audio headroom Full clamp + the 2x cpuSpriteRenderBW readback eat in heavy scenes. Round modes
+            # were tried and RETRACTED (vuRoundMode tanked fps 3x; even eeRoundMode doesn't fix the AI).
+            # Soft-float (PCSX2 #12001) — the only complete AI fix — is interpreter-only and NOT in this
+            # core (binary-scanned), so it is off the table. Full rationale in the patch script's header.
 
         # GameCube via dolphin_libretro. GL 3D core like psp/dc/ps2: same isGlAllowed + coreAspectRatio
         # Flip contract, usesLibCo thread-affinity, vfr:false (correct game speed), skip_hw_context_destroy

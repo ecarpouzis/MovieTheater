@@ -6,12 +6,13 @@
 
 .DESCRIPTION
     Use this INSTEAD of `Stop-Process worker -Force` for every deploy/recycle. Force-killing a GL/NVENC
-    worker is what created the two failure modes we hit 2026-07-14/15:
-      * it skips PCSX2's GS shader-cache flush -> the next player gets a COLD cache and recompiles
-        shaders constantly -> a regular in-game audio skip (docs: the Stuntman investigation);
+    worker is what created the failure mode we hit 2026-07-14/15:
       * TerminateProcess mid-GPU-teardown can strand a thread inside the NVIDIA driver -> a process
         that survives even `taskkill /F` (kernel-mode wait), lingering as a zombie with its ConfDir
         locked. PID 7948 sat like this for ~10 h, silently cutting the pool to one room.
+    (RETRACTED 2026-07-15: this header originally also blamed force-kills for dumping PCSX2's GS
+    shader cache -> cold-cache audio skips. Source-confirmed wrong: the cache appends immediately on
+    compile; a kill loses nothing. The zombie above is the sole reason. docs/arcade-stuntman-plan.md)
 
     Order of operations:
       1. LIVE-ROOM GUARD. If the coordinator says this worker owns a room whose log is still ticking

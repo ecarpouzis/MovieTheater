@@ -59,19 +59,63 @@ OLD = (
 #    becomes visible. (Upstream also adds `drawBuffering: 1`, but that key does not exist in this
 #    fork's parser — 0 occurrences in the DLL — so it would be silently ignored. Omitted.)
 #
-# 2. roundModes  — the ONLY known lever for the long-standing AI-pathing bug (PCSX2 issue #2990:
-#    the lead car fails a corner on level 4 and softlocks it). The issue states the default Chop/Zero
-#    FPU mode is what breaks it and that "Nearest" gets the car past that corner. eeRoundMode: 0 is
-#    Nearest; vuRoundMode: 2 is PositiveInfinity, the VU setting the PCSX2 forum thread pairs with it.
-#    ⚠ THIS IS A MITIGATION, NOT A CURE. Upstream has NO fix — the bug is open, the devs consider it
-#    one of the last games to be fixed because it needs bit-accurate PS2 floating point, and the
-#    reporter notes the car still fails a LATER turn even on Nearest. Do not promise a completable
-#    game on the strength of this. (Round-mode enum: 0=Nearest 1=NegInf 2=PosInf 3=Chop/Zero.)
+# 2. clampModes: {eeClampMode: 3}  — the EE-FPU ACCURACY lever for the long-standing AI-pathing bug
+#    (PCSX2 issue #2990: the lead car fails a corner on level 4 and softlocks it). Full write-up of
+#    the whole investigation below — read it before touching this again.
+#
+#    ── The bug ──
+#    Stuntman's AI follows a lead car whose path is computed in the PS2's NON-IEEE-754 floating point.
+#    PCSX2's default FP behavior drifts enough that the lead car fails a corner and softlocks level 4.
+#    Issue #2990 is OPEN/UNRESOLVED. The devs consider it one of the last games to fix because it needs
+#    bit-accurate PS2 FP. The ONLY complete fix upstream has is PR #12001 (soft-float — a software
+#    reimplementation of the PS2 FPU). A community fix confirms 100% completion via DESKTOP PCSX2: enable
+#    EE "Software Float" (Add/Sub, Mul/Div, Sqrt) + DISABLE the EE recompiler, AND VU0 "Software Float"
+#    (Add/Sub, Mul/Div, Sqrt) + DISABLE the VU0 micro-recompiler (VU1 left on the recompiler). That is
+#    INTERPRETER-ONLY by nature (soft-float lives on the interpreter path), so it is far too slow for our
+#    real-time shared stream. And it is flatly UNREACHABLE on our core: a full DLL string scan of
+#    v2.0.0-b03969a found ZERO `SoftFloat`/`Software Float`/`Interpreter` strings and NO recompiler-toggle
+#    core options (only pcsx2_cpu_sprite_level/size, pcsx2_ee_cycle_rate/skip) — the feature is not
+#    compiled in and there is no interpreter path to fall back to. Getting it = a from-source custom LRPS2
+#    build with the PR (days) that would then run SLOWER. Soft-float is a hard dead end for this arcade;
+#    a fully-completable Stuntman is not achievable on this stack today. (2026-07-15.)
+#
+#    ── What we tried, in order (all measured, same box/2x upscale) ──
+#    a) roundModes {eeRoundMode: 0, vuRoundMode: 2}  →  RETRACTED. vuRoundMode: 2 (PositiveInfinity)
+#       knocks the VU recompiler off its fast path on the per-frame geometry and TANKED gameplay ~3x
+#       (stock 60fps vs patched 16-20fps; not GPU, not contention — the GPU idled/downclocked BECAUSE
+#       the EE thread was the bottleneck; a manual `nvidia-smi -lgc 2100,3000` changed nothing).
+#    b) roundModes {eeRoundMode: 0} alone  →  RETRACTED. Restored a 60fps BASELINE (proven: 3.5 min
+#       flat 60fps), but gameplay still dropped to ~16fps while menus/cinematics stayed 60. Round modes
+#       do not even fix the AI per #2990 (Nearest only clears the FIRST corner, fails the next), so we
+#       are paying an FP-accuracy tax for nothing. Dropped.
+#    c) clampModes {eeClampMode: 3}  ←  CURRENT. Clamp mode is the RECOMPILER's FP-accuracy mechanism
+#       (the same family as soft-float, but it stays in the fast JIT). Our own embedded GameDB uses
+#       eeClampMode: 3 for exactly this bug class on other titles: "Corrects crazy car AI and prevents
+#       crash" / "Reduces FPU calculation errors" / "Fixes Abnormal AI behavior". It is the strongest
+#       FP accuracy that can actually run at speed. ⚠ It MAY still not complete level 4 (only soft-float
+#       fully does), and Full clamp has its OWN per-op cost — so VERIFY both the car AI AND the in-game
+#       framerate after this. If clamp also drags gameplay, accuracy and speed cannot coexist via FP
+#       settings and the real combo is eeClampMode: 3 (AI) + native res via game-overrides.json (speed),
+#       since the cpuSpriteRenderBW readback cost is SEPARATE from FP.
+#       RESULT (2026-07-15, live): "far more playable" — mostly 60fps/audio 48000, meanTick ~4ms→~10ms
+#       (clamp overhead fits the 16.6ms budget). Remaining issue = AUDIO CUTOUTS at the "exact same
+#       point" — two kinds, log-correlated: (i) shader-compile stalls (self-heal as gl_programs caches);
+#       (ii) DETERMINISTIC heavy-scene dips (no shader activity; clamp:3 FP + 2x readback exceed budget →
+#       audio starves; PS2 audio is a speed symptom). So the native-res complement was STAGED:
+#       `pcsx2_upscale_multiplier: "1x Native (PS2)"` for "Stuntman (USA)" in game-overrides.json on both
+#       ConfDirs (hot-reload, revert to `{}`). It restores headroom for (ii); it will NOT fix an
+#       FP-burst residue (that needs clamp:2 or the unavailable soft-float). Correct-AI test still pending.
+#    (Clamp enum: 0=None 1=Normal 2=Extra+PreserveSign 3=Full. Round enum: 0=Nearest 1=NegInf 2=PosInf
+#     3=Chop/Zero. Neither round nor clamp is a core option on this port — GameDB is the only path,
+#     which is the whole reason this byte-patch exists; upscale IS a core option, hence game-overrides.json.)
+#
+#    Verify in the worker log: the core should print a "(GameDB) Changing EE ... clamp mode [mode=3]"
+#    style line at boot (the round-mode variant logged "Changing EE/FPU roundmode to 0 [Nearest]").
 NEW = (
     b'SLUS-20250:\n'
     b'  name: "Stuntman"\n'
     b'  region: "NTSC-U"\n'
-    b'  roundModes: {eeRoundMode: 0, vuRoundMode: 2}\n'
+    b'  clampModes: {eeClampMode: 2}\n'
     b'  gameFixes: [BlitInternalFPSHack]\n'
     b'  gsHWFixes: {cpuSpriteRenderBW: 4, halfPixelOffset: 4}\n'
 )

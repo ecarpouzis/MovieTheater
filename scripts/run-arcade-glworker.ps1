@@ -66,11 +66,15 @@ if (-not $IceIpMap) {
 }
 if (-not $IceIpMap) { Write-Warning "IceIpMap unset and ZIGGY_PUBLIC_IP not found in .env - ICE candidates will be wrong." }
 
-# PRIORITY (2026-07-11): Task Scheduler starts tasks at BelowNormal, and on a hybrid CPU
-# (13700K) Windows steers below-normal threads onto E-CORES — the emulator's hot thread then
-# plateaus at a uniform ~25 ms/tick (~40 fps) on heavy scenes (F-Zero GX races; the entire
-# "audio drops at the same cached content points" hunt). Raise OUR priority; worker.exe
-# inherits the class from this parent, so every respawn in the loop below gets it too.
+# PRIORITY (2026-07-11, ROOT-FIXED 2026-07-15): Task Scheduler starts tasks at BelowNormal, and on
+# a hybrid CPU (13700K) Windows steers normal-or-below threads onto E-CORES — the emulator's hot
+# thread then plateaus at a uniform ~25-40 ms/tick (F-Zero GX races; the ENTIRE Stuntman
+# "audio skip / 60<->21fps oscillation" hunt of 2026-07-15, which survived every emulator-side
+# config arm because it was never the emulator).
+# ⚠ The original fix raised only OUR priority and assumed worker.exe inherits it. IT DOES NOT:
+# Windows propagates a parent's priority class to children only for Idle/BelowNormal — a HIGH
+# parent spawns NORMAL children. Every worker ran at Normal for four days while this comment
+# claimed otherwise. The class must be set ON THE CHILD, after each spawn (see the loop below).
 (Get-Process -Id $PID).PriorityClass = 'High'
 
 # GStreamer DLLs (nvcodec, opus, etc.) resolve from the UCRT64 bin dir — must lead PATH.
@@ -124,6 +128,33 @@ while ($true) {
         Move-Item $LogFile "$LogFile.1" -Force -ErrorAction SilentlyContinue
     }
     Write-LogLine "starting glworker (zone=$($env:CLOUD_GAME_WORKER_NETWORK_ZONE) port=$SinglePort ice=$IceIpMap exe=$WorkerExe)"
+    # Raise the CHILD's priority class once it binds its mux port. This must target the worker
+    # process itself — a raised class does NOT inherit (see the PRIORITY note above). Runs as a
+    # background job beside the blocking spawn below; identifies OUR worker by its UDP port so
+    # concurrent workers (worker-gl-2, capture) are never touched.
+    Get-Job -State Completed -ErrorAction SilentlyContinue | Remove-Job -Force -ErrorAction SilentlyContinue
+    Start-Job -ScriptBlock {
+        param($port)
+        for ($i = 0; $i -lt 120; $i++) {
+            Start-Sleep -Milliseconds 500
+            $ep = Get-NetUDPEndpoint -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($ep) {
+                $p = Get-Process -Id $ep.OwningProcess -ErrorAction SilentlyContinue
+                if ($p -and $p.Name -eq 'worker') {
+                    # High class biases the Win11 scheduler toward P-cores; the explicit affinity mask
+                    # FORBIDS E-cores outright (13700K: 8P x 2SMT = logical 0-15). Measured 2026-07-15:
+                    # at Normal, the emulator's hot thread oscillated P<->E core (60 <-> 21-25 fps, the
+                    # entire Stuntman audio-skip hunt); High alone still allowed periodic E-core dips.
+                    # 0x5555 (not 0xFFFF): one logical CPU per PHYSICAL P-core — with both SMT siblings
+                    # allowed, the EE and GS hot threads sometimes landed on the SAME physical core and
+                    # robbed each other ~30% (meanTick 12ms <-> 20ms oscillation on identical content).
+                    # 8 physical P-cores >> the worker's 4-5 hot threads; nothing is lost.
+                    try { $p.PriorityClass = 'High'; $p.ProcessorAffinity = [IntPtr]0x5555 } catch {}
+                    break
+                }
+            }
+        }
+    } -ArgumentList $SinglePort | Out-Null
     & cmd.exe /c "`"$WorkerExe`" --w-conf `"$ConfDir`" >> `"$LogFile`" 2>&1"
     $code = $LASTEXITCODE
     Write-LogLine ("glworker EXITED exitcode={0} (0x{1:X8}) - restarting in 4s" -f $code, ($code -band 0xFFFFFFFF))
