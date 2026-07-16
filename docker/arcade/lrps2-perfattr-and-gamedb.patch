@@ -1,0 +1,452 @@
+diff --git a/bin/resources/GameIndex.yaml b/bin/resources/GameIndex.yaml
+index 2416d52..2ac8214 100644
+--- a/bin/resources/GameIndex.yaml
++++ b/bin/resources/GameIndex.yaml
+@@ -52979,10 +52979,17 @@ SLUS-20250:
+   name: "Stuntman"
+   region: "NTSC-U"
+   compat: 5
++  # clampModes REMOVED (2026-07-15 evening arm): eeClampMode:3 costs ~5-9ms/frame on the EE thread —
++  # exactly the margin between the post-priority-fix ~19ms heavy-scene ticks and the 16.6ms budget.
++  # It existed only for the level-4 AI softlock (PCSX2 #2990), which clamp may not fix anyway
++  # (untested). If level 4 softlocks at stock, that is a documented limitation, not a perf tax paid
++  # on every frame of every mission. mtvu:0 also removed (measured: no effect on the collapse —
++  # that was the Normal-priority E-core steering in the WORKER, not the emulator).
+   gameFixes:
+     - BlitInternalFPSHack # Fixes internal FPS detection.
+   gsHWFixes:
+     cpuSpriteRenderBW: 4 # Fixes textures.
++    halfPixelOffset: 4 # Fixes misaligned post-processing (upstream master's entry; matters at 2x).
+ SLUS-20251:
+   name: "Harvest Moon - Save the Homeland"
+   region: "NTSC-U"
+diff --git a/build-core.bat b/build-core.bat
+new file mode 100644
+index 0000000..2bc8adf
+--- /dev/null
++++ b/build-core.bat
+@@ -0,0 +1,26 @@
++@echo off
++rem Build pcsx2_libretro.dll (LRPS2) from source — CMake + Ninja + MSVC, mirroring
++rem docker/arcade/dolphin-build-core.bat (the proven custom-core recipe on this box).
++rem
++rem WHY CMAKE, NOT THE LIBRETRO MAKEFILE (2026-07-15): the Makefile's windows_msvc2017_* branch is
++rem vestigial — it lacks the Windows platform defines (-D__SSE4_1__, -D_WIN32_WINNT, HAVE_D3D11/12,
++rem ZIP_STATIC...) that only its MinGW branch carries, and that branch's own comment says it "targets
++rem full feature parity with the cmake LIBRETRO=ON Windows build" — i.e. CMake IS the canonical
++rem Windows build. (The Makefile route died at common/VectorIntrin.h "requires at least SSE2".)
++rem The stock nightly DLL imports no CRT DLL at all -> static /MT MSVC; match it.
++rem
++rem ⚠ Dolphin lesson (see dolphin-build-core.bat): verify /O2 + /DNDEBUG survive on every C++ TU
++rem after any CMAKE_CXX_FLAGS_RELEASE override in the tree — a plain set() clobber ships a
++rem no-optimization "Release" core that loses 50% of its speed invisibly.
++set "PATH=%PATH%;C:\Program Files (x86)\Microsoft Visual Studio\Installer"
++call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" -arch=x64 -host_arch=x64 -no_logo
++if errorlevel 1 exit /b 1
++where cl || exit /b 1
++set "CMAKE=C:\Users\Atoramos\AppData\Roaming\Python\Python313\site-packages\cmake\data\bin\cmake.exe"
++set "PATH=%PATH%;C:\Users\Atoramos\AppData\Roaming\Python\Python313\Scripts"
++cd /d D:\Arcade\build\lrps2
++rem CMAKE_POLICY_VERSION_MINIMUM: the vendored 3rdparty (cpuinfo/clog) declares cmake_minimum_required
++rem below 3.5, which CMake 4.x refuses outright; this flag is the documented escape hatch.
++"%CMAKE%" -S . -B bld -G Ninja -DLIBRETRO=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_POLICY_VERSION_MINIMUM=3.5
++if errorlevel 1 exit /b 1
++"%CMAKE%" --build bld --target pcsx2_libretro --parallel 14
+diff --git a/libretro/main.cpp b/libretro/main.cpp
+index 1a145b2..3671110 100644
+--- a/libretro/main.cpp
++++ b/libretro/main.cpp
+@@ -25,6 +25,7 @@
+ #include "../pcsx2/CDVD/CDVD.h"
+ #include "../pcsx2/USB/USB.h"
+ #include "../pcsx2/MTVU.h"
++#include "../pcsx2/PerfAttr.h"
+ #include "../pcsx2/Counters.h"
+ #include "../pcsx2/Host.h"
+ 
+@@ -2278,8 +2279,75 @@ void retro_run(void)
+ 	if (cpu_thread_state.load(std::memory_order_acquire) == VMState::Paused)
+ 		cpu_thread_resume();
+ 
+-	MTGS::MainLoop(false);
++	{
++		// perf-attr: the whole GS drain for this tick (see PerfAttr.h round-2 note).
++		PerfAttr::Timer pt(PerfAttr::mainloop_ns);
++		MTGS::MainLoop(false);
++	}
+ 	upload_output_audio_buffer();
++
++	// perf-attr dump (Phase A instrumentation, see pcsx2/PerfAttr.h): every 300 frames (~5 s NTSC
++	// at full speed; longer wall-clock when the core is slow) log where GS-side time went, formatted
++	// to sit beside the worker's pace-diag lines. Counters reset on read.
++	//
++	// Round 3: wall + REAL CPU time of the two hot threads (GetThreadTimes) per window. This is the
++	// discriminator the wait-based channels cannot provide (mainloop includes waiting for the EE):
++	//   ee_cpu ~ wall  -> the EE thread is genuinely compute-bound
++	//   gs_cpu ~ wall  -> the GS/libretro thread is genuinely compute-bound
++	//   both  << wall while ticks sag -> neither is working: a scheduling/wait pathology
++	{
++		static unsigned s_perfattr_frames = 0;
++		if (++s_perfattr_frames >= 300)
++		{
++			s_perfattr_frames = 0;
++			constexpr double ms = 1.0 / 1000000.0;
++			double wall_ms = 0.0, ee_cpu_ms = 0.0, gs_cpu_ms = 0.0;
++			{
++				static std::chrono::steady_clock::time_point s_prev_wall = std::chrono::steady_clock::now();
++				const auto now = std::chrono::steady_clock::now();
++				wall_ms = std::chrono::duration_cast<std::chrono::microseconds>(now - s_prev_wall).count() / 1000.0;
++				s_prev_wall = now;
++#ifdef _WIN32
++				static unsigned long long s_prev_ee = 0, s_prev_gs = 0;
++				auto cpu100 = [](HANDLE h) -> unsigned long long {
++					FILETIME c, e, k, u;
++					if (!GetThreadTimes(h, &c, &e, &k, &u))
++						return 0;
++					return ((static_cast<unsigned long long>(k.dwHighDateTime) << 32) | k.dwLowDateTime) +
++					       ((static_cast<unsigned long long>(u.dwHighDateTime) << 32) | u.dwLowDateTime);
++				};
++				const unsigned long long ee = cpu_thread.joinable() ? cpu100(static_cast<HANDLE>(cpu_thread.native_handle())) : 0;
++				const unsigned long long gs = cpu100(GetCurrentThread());
++				ee_cpu_ms = (ee - s_prev_ee) / 10000.0;
++				gs_cpu_ms = (gs - s_prev_gs) / 10000.0;
++				s_prev_ee = ee;
++				s_prev_gs = gs;
++#endif
++			}
++			log_cb(RETRO_LOG_INFO,
++				"[perf-attr] wall=%.0fms ee_cpu=%.0fms gs_cpu=%.0fms gsidle=%.0fms xfer=%.1fms(n=%llu) hash=%.1fms(n=%llu) mainloop=%.1fms vidpush=%.1fms vswait=%.1fms fifo=%.1fms(n=%llu) compile=%.1fms(n=%llu) binload=%.1fms(n=%llu) texmap=%.1fms(n=%llu) texunmap=%.1fms texupd=%.1fms(n=%llu)\n",
++				wall_ms, ee_cpu_ms, gs_cpu_ms,
++				PerfAttr::gsidle_ns.exchange(0) * ms,
++				PerfAttr::xfer_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::xfer_n.exchange(0)),
++				PerfAttr::hash_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::hash_n.exchange(0)),
++				PerfAttr::mainloop_ns.exchange(0) * ms,
++				PerfAttr::vidpush_ns.exchange(0) * ms,
++				PerfAttr::vswait_ns.exchange(0) * ms,
++				PerfAttr::fifowait_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::fifowait_n.exchange(0)),
++				PerfAttr::compile_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::compile_n.exchange(0)),
++				PerfAttr::binload_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::binload_n.exchange(0)),
++				PerfAttr::texmap_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::texmap_n.exchange(0)),
++				PerfAttr::texunmap_ns.exchange(0) * ms,
++				PerfAttr::texupd_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::texupd_n.exchange(0)));
++		}
++	}
+ }
+ 
+ std::optional<WindowInfo> Host::AcquireRenderWindow(void)
+diff --git a/pcsx2/CDVD/InputIsoFile.cpp b/pcsx2/CDVD/InputIsoFile.cpp
+index 271acb9..ea5827e 100644
+--- a/pcsx2/CDVD/InputIsoFile.cpp
++++ b/pcsx2/CDVD/InputIsoFile.cpp
+@@ -13,6 +13,7 @@
+  *  If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
++#include "../../common/Console.h"
+ #include "../../common/Path.h"
+ #include "../../common/StringUtil.h"
+ 
+@@ -35,9 +36,17 @@ static std::unique_ptr<ThreadedFileReader> GetFileReader(const char *path)
+ 		if (Strncasecmp(extension, "chd", 3) == 0)
+ 			return std::make_unique<ChdFileReader>();
+ 
+-		if (       (Strncasecmp(extension, "cso", 3) == 0) 
++		if (       (Strncasecmp(extension, "cso", 3) == 0)
+ 			|| (Strncasecmp(extension, "zso", 3) == 0))
+-			return std::make_unique<CsoFileReader>();
++		{
++			// Trust the magic, not the extension: the arcade gateway stages CSOs as raw
++			// ISOs under the SAME .cso filename (PPSSPP/Dolphin sniff, so the name is the
++			// cache's stable key). A file without a CISO/ZISO header reads flat.
++			if (CsoFileReader::CanHandle(path, path))
++				return std::make_unique<CsoFileReader>();
++			Console.Warning("(GetFileReader) %s has no CISO header; reading as a raw image.", path);
++			return std::make_unique<FlatFileReader>();
++		}
+ 	}
+ 	else if (ext_length == 2)
+ 	{
+diff --git a/pcsx2/GS/GSState.cpp b/pcsx2/GS/GSState.cpp
+index b20a00f..9fdd817 100644
+--- a/pcsx2/GS/GSState.cpp
++++ b/pcsx2/GS/GSState.cpp
+@@ -23,6 +23,7 @@
+ 
+ #include "GSState.h"
+ #include "GSUtil.h"
++#include "PerfAttr.h"
+ 
+ int GSState::s_n = 0;
+ int GSState::s_last_transfer_draw_n = 0;
+@@ -2200,6 +2201,8 @@ void GSState::ReadbackTextureCache()
+ 
+ void GSState::Transfer(const u8* mem, u32 size)
+ {
++	// perf-attr round 5: GIF path-3 transfers (texture/image DMA -> emulated-VRAM swizzle writes).
++	PerfAttr::Timer pt(PerfAttr::xfer_ns, &PerfAttr::xfer_n);
+ 	GIFPath& path = m_path[3];
+ 
+ 	while (size > 0)
+diff --git a/pcsx2/GS/Renderers/HW/GSTextureCache.cpp b/pcsx2/GS/Renderers/HW/GSTextureCache.cpp
+index 2c81bb2..de7cde4 100644
+--- a/pcsx2/GS/Renderers/HW/GSTextureCache.cpp
++++ b/pcsx2/GS/Renderers/HW/GSTextureCache.cpp
+@@ -13,6 +13,7 @@
+ #include "common/Align.h"
+ #include "common/Console.h"
+ #include "common/HashCombine.h"
++#include "PerfAttr.h"
+ 
+ #include "GSTextureCache.h"
+ #include "GSTextureReplacements.h"
+@@ -993,6 +994,9 @@ GSTextureCache::Source* GSTextureCache::LookupDepthSource(const bool is_depth, c
+ 
+ GSTextureCache::Source* GSTextureCache::LookupSource(const bool is_color, const GIFRegTEX0& TEX0, const GIFRegTEXA& TEXA, const GIFRegCLAMP& CLAMP, const GSVector4i& r, const GSVector2i* lod, const bool possible_shuffle, const bool linear, const u32 frame_fbp, bool req_color, bool req_alpha)
+ {
++	// perf-attr round 5: the HW renderer's per-draw source lookup - hashing, cache management, and
++	// (on miss) conversion. This whole layer does not exist on the SW renderer.
++	PerfAttr::Timer pt(PerfAttr::hash_ns, &PerfAttr::hash_n);
+ 	const GSLocalMemory::psm_t& psm_s = GSLocalMemory::m_psm[TEX0.PSM];
+ 	//const GSLocalMemory::psm_t& cpsm = psm.pal > 0 ? GSLocalMemory::m_psm[TEX0.CPSM] : psm;
+ 
+diff --git a/pcsx2/GS/Renderers/OpenGL/GLShaderCache.cpp b/pcsx2/GS/Renderers/OpenGL/GLShaderCache.cpp
+index 7d61634..1a65a61 100644
+--- a/pcsx2/GS/Renderers/OpenGL/GLShaderCache.cpp
++++ b/pcsx2/GS/Renderers/OpenGL/GLShaderCache.cpp
+@@ -19,6 +19,7 @@
+ #include "GS/GS.h"
+ 
+ #include "Config.h"
++#include "PerfAttr.h"
+ #include "ShaderCacheVersion.h"
+ 
+ #include "common/Console.h"
+@@ -273,12 +274,25 @@ std::optional<GLProgram> GLShaderCache::GetProgram(const std::string_view vertex
+ 		const std::string_view fragment_shader, const PreLinkCallback& callback)
+ {
+ 	if (!m_program_binary_supported || !m_blob_file)
++	{
++		// perf-attr: no usable disk cache -> every program is a true driver compile.
++		PerfAttr::Timer pt(PerfAttr::compile_ns, &PerfAttr::compile_n);
+ 		return CompileProgram(vertex_shader, fragment_shader, callback, false);
++	}
+ 
+ 	const auto key = GetCacheKey(vertex_shader, fragment_shader);
+ 	auto iter = m_index.find(key);
+ 	if (iter == m_index.end())
++	{
++		// perf-attr: disk-cache MISS -> true GLSL driver compile (the slow path).
++		PerfAttr::Timer pt(PerfAttr::compile_ns, &PerfAttr::compile_n);
+ 		return CompileAndAddProgram(key, vertex_shader, fragment_shader, callback);
++	}
++
++	// perf-attr: disk-cache HIT -> program-binary load. Individually fast (~ms) but BATCHED at scene
++	// transitions, and re-paid every room because the in-memory program map is per-room. (The rare
++	// failed-load fallthrough to Recreate below is counted here too - acceptable noise.)
++	PerfAttr::Timer pt(PerfAttr::binload_ns, &PerfAttr::binload_n);
+ 
+ 	std::vector<u8> data(iter->second.blob_size);
+ 	if (rfseek(m_blob_file, iter->second.file_offset, SEEK_SET) != 0 ||
+diff --git a/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp b/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp
+index 0d10dc2..711028b 100644
+--- a/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp
++++ b/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp
+@@ -26,6 +26,7 @@
+ 
+ #include "GS/GSState.h"
+ #include "GS/GSUtil.h"
++#include "PerfAttr.h"
+ #include "GSDeviceOGL.h"
+ #include "GLState.h"
+ #include "Host.h"
+@@ -688,6 +689,9 @@ GSDevice::PresentResult GSDeviceOGL::BeginPresent(bool frame_skip)
+ 
+ void GSDeviceOGL::EndPresent()
+ {
++	// perf-attr: the frontend's video callback runs synchronously here - for the arcade worker
++	// that is the GL zero-copy push (zc_push: GPU->GPU copy into the encoder's texture pool).
++	PerfAttr::Timer pt(PerfAttr::vidpush_ns);
+ 	if(m_current)
+ 		video_cb(RETRO_HW_FRAME_BUFFER_VALID, m_current->GetWidth(), m_current->GetHeight(), 0);
+ 	else
+diff --git a/pcsx2/GS/Renderers/OpenGL/GSTextureOGL.cpp b/pcsx2/GS/Renderers/OpenGL/GSTextureOGL.cpp
+index 0d4f817..9318479 100644
+--- a/pcsx2/GS/Renderers/OpenGL/GSTextureOGL.cpp
++++ b/pcsx2/GS/Renderers/OpenGL/GSTextureOGL.cpp
+@@ -18,6 +18,7 @@
+ #include "GSTextureOGL.h"
+ #include "GLState.h"
+ #include "GS/GSExtra.h"
++#include "PerfAttr.h"
+ #include "common/Align.h"
+ #include "common/AlignedMalloc.h"
+ #include "common/StringUtil.h"
+@@ -185,6 +186,9 @@ bool GSTextureOGL::Update(const GSVector4i& r, const void* data, int pitch, int
+ 	if (layer >= m_mipmap_levels)
+ 		return true;
+ 
++	// perf-attr round 4: direct-path upload cost (caller-converted pixels -> GL).
++	PerfAttr::Timer pt(PerfAttr::texupd_ns, &PerfAttr::texupd_n);
++
+ 	// Default upload path for the texture is the Map/Unmap
+ 	// This path is mostly used for palette. But also for texture that could
+ 	// overflow the pbo buffer
+@@ -240,6 +244,9 @@ bool GSTextureOGL::Map(GSMap& m, const GSVector4i* _r, int layer)
+ 	if (layer >= m_mipmap_levels || IsCompressedFormat())
+ 		return false;
+ 
++	// perf-attr round 4: stream-buffer acquisition (includes any fence wait on ring wrap).
++	PerfAttr::Timer pt(PerfAttr::texmap_ns, &PerfAttr::texmap_n);
++
+ 	GSDeviceOGL::GetInstance()->CommitClear(this, true);
+ 
+ 	GSVector4i r = _r ? *_r : GSVector4i(0, 0, m_size.x, m_size.y);
+@@ -275,6 +282,8 @@ void GSTextureOGL::Unmap()
+ {
+ 	if (m_type == Type::Texture || m_type == Type::RenderTarget)
+ 	{
++		// perf-attr round 4: glTexSubImage from the upload ring (the GL-driver share of an upload).
++		PerfAttr::Timer pt(PerfAttr::texunmap_ns);
+ 		GSDeviceOGL::GetInstance()->CommitClear(this, true);
+ 
+ 		const u32 pitch = Common::AlignUpPow2(m_r_w << m_int_shift, TEXTURE_UPLOAD_PITCH_ALIGNMENT);
+diff --git a/pcsx2/MTGS.cpp b/pcsx2/MTGS.cpp
+index 01e7e53..bf9cf55 100644
+--- a/pcsx2/MTGS.cpp
++++ b/pcsx2/MTGS.cpp
+@@ -14,6 +14,7 @@
+  */
+ 
+ #include "Common.h"
++#include "PerfAttr.h"
+ 
+ #include <atomic>
+ #include <cstring>
+@@ -122,7 +123,11 @@ void MTGS::PostVsyncStart()
+ 	// the libretro topology, this WaitGS IS the frame-pacing mechanism: it
+ 	// blocks cpu_thread until the libretro thread (= MTGS thread) drains
+ 	// the ring through this VSYNC packet.
+-	WaitGS(false);
++	{
++		// perf-attr: per-frame EE-blocked-on-GS time (the frame-pacing wait).
++		PerfAttr::Timer pt(PerfAttr::vswait_ns);
++		WaitGS(false);
++	}
+ 
+ 	// Vsyncs should always start the GS thread, regardless of how little has actually be queued.
+ 	s_sem_event.NotifyOfWork();
+@@ -148,7 +153,12 @@ void MTGS::InitAndReadFIFO(u8* mem, u32 qwc)
+ 	tag.pointer                 = (uptr)mem;
+ 
+ 	s_WritePos.store((writepos + 1) & RINGBUFFERMASK, std::memory_order_release);
+-	WaitGS(false);
++	{
++		// perf-attr: readback sync (Accurate hw_download / cpuSpriteRenderBW path) - the EE
++		// stalls here until the GS drains the ring and services the FIFO read.
++		PerfAttr::Timer pt(PerfAttr::fifowait_ns, &PerfAttr::fifowait_n);
++		WaitGS(false);
++	}
+ }
+ 
+ void MTGS::TryOpenGS(void)
+@@ -190,7 +200,13 @@ void MTGS::MainLoop(bool flush_all)
+ 		{
+ 			if (mtvu_mode)
+ 				mtvu_lock.unlock();
+-			s_sem_event.WaitForWork();
++			{
++				// perf-attr round 5: idle time (incl. the WorkSema busy-spin) - subtract from gs_cpu
++				// to get the GS thread's REAL work share. The spin was inflating gs_cpu by 1-3s per
++				// 5s window (a paused game measured MORE gs_cpu than active driving).
++				PerfAttr::Timer pt(PerfAttr::gsidle_ns);
++				s_sem_event.WaitForWork();
++			}
+ 			if (mtvu_mode)
+ 				mtvu_lock.lock();
+ 		}
+diff --git a/pcsx2/PerfAttr.h b/pcsx2/PerfAttr.h
+new file mode 100644
+index 0000000..5c1c2b6
+--- /dev/null
++++ b/pcsx2/PerfAttr.h
+@@ -0,0 +1,73 @@
++// Phase A instrumentation (MovieTheater arcade, docs/arcade-stuntman-plan.md, 2026-07-15).
++//
++// Attributes slow retro_run ticks to their cause. In this port's topology (see MTGS.cpp
++// PostVsyncStart) retro_run IS the GS MainLoop, so GS-side work (shader compiles, program-binary
++// loads) extends the tick directly, while the EE thread's WaitGS time measures how long the
++// emulated CPU sat blocked on the GS. Four seams are sampled:
++//   compile_*  - true GLSL driver compiles (GLShaderCache miss path)      [GS thread]
++//   binload_*  - program-binary loads from gl_programs.bin (cache hits)   [GS thread]
++//   vswait_ns  - per-frame WaitGS in MTGS::PostVsyncStart (frame pacing)  [EE thread]
++//   fifowait_* - WaitGS in MTGS::InitAndReadFIFO (readback sync; the
++//                cpuSpriteRenderBW / hw_download path)                    [EE thread]
++// Dumped + reset every 300 frames (~5 s NTSC) by retro_run (libretro/main.cpp) as a
++// "[perf-attr] ..." log line, designed to sit beside the worker's pace-diag lines.
++//
++// C++17 inline atomics: header-only on purpose - no build-system changes to carry.
++#pragma once
++#include <atomic>
++#include <chrono>
++#include <cstdint>
++
++namespace PerfAttr
++{
++	inline std::atomic<std::uint64_t> compile_ns{0}, compile_n{0};
++	inline std::atomic<std::uint64_t> binload_ns{0}, binload_n{0};
++	inline std::atomic<std::uint64_t> vswait_ns{0};
++	inline std::atomic<std::uint64_t> fifowait_ns{0}, fifowait_n{0};
++	// Round 2 (post-restart collapse attribution): split the GS drain itself.
++	//   mainloop_ns - MTGS::MainLoop inside retro_run = the whole GS drain           [libretro thread]
++	//   vidpush_ns  - the video_cb call in GSDeviceOGL::EndPresent = the WORKER's
++	//                 zero-copy push (zc_push + GL copy), i.e. OUR pipeline's share  [libretro thread]
++	// mainloop - vidpush - compile - binload ~= PCSX2's raw GS render work (draws,
++	// texture uploads). Whichever side owns the post-restart 30-40ms/frame is the villain.
++	inline std::atomic<std::uint64_t> mainloop_ns{0};
++	inline std::atomic<std::uint64_t> vidpush_ns{0};
++	// Round 4 (level-start texture-burst profile, GL HW renderer): split the GS thread's texture
++	// work so the async-upload fix targets the measured hot spot, not a guess.
++	//   texmap_*    - GSTextureOGL::Map    (stream-buffer acquisition, incl. fence waits on wrap)
++	//   texunmap_ns - GSTextureOGL::Unmap  (glTexSubImage from the upload ring)
++	//   texupd_*    - GSTextureOGL::Update (direct-path upload: caller-converted pixels -> GL)
++	// gs_cpu minus these ~= draw/state/conversion work elsewhere on the GS thread.
++	inline std::atomic<std::uint64_t> texmap_ns{0}, texmap_n{0};
++	inline std::atomic<std::uint64_t> texunmap_ns{0};
++	inline std::atomic<std::uint64_t> texupd_ns{0}, texupd_n{0};
++	// Round 5: the texture-UPLOAD theory measured dead (texmap/texunmap/texupd ~0 in the burst while
++	// gs_cpu ran 80% of wall). Split what actually remains on the GS thread:
++	//   xfer_*    - GSState::Transfer (GIF texture DMA -> emulated-VRAM swizzle writes; CPU memwork
++	//               present on BOTH renderers)
++	//   hash_*    - GSTextureCache source lookup (HW-renderer-ONLY per-draw hash/cache work; absent
++	//               on SW, which is the leading explanation for why SW cured the burst)
++	//   gsidle_ns - MTGS WaitForWork (the busy-spin that contaminates gs_cpu; subtract it)
++	inline std::atomic<std::uint64_t> xfer_ns{0}, xfer_n{0};
++	inline std::atomic<std::uint64_t> hash_ns{0}, hash_n{0};
++	inline std::atomic<std::uint64_t> gsidle_ns{0};
++
++	struct Timer
++	{
++		std::atomic<std::uint64_t>& ns;
++		std::atomic<std::uint64_t>* n;
++		std::chrono::steady_clock::time_point t0;
++
++		explicit Timer(std::atomic<std::uint64_t>& ns_, std::atomic<std::uint64_t>* n_ = nullptr)
++			: ns(ns_), n(n_), t0(std::chrono::steady_clock::now()) {}
++		~Timer()
++		{
++			ns.fetch_add(static_cast<std::uint64_t>(
++				std::chrono::duration_cast<std::chrono::nanoseconds>(
++					std::chrono::steady_clock::now() - t0).count()),
++				std::memory_order_relaxed);
++			if (n)
++				n->fetch_add(1, std::memory_order_relaxed);
++		}
++	};
++} // namespace PerfAttr

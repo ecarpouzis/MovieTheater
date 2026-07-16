@@ -21,6 +21,7 @@ using Yarp.ReverseProxy.Forwarder;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpForwarder();
+builder.Services.AddCors();
 
 var app = builder.Build();
 
@@ -29,6 +30,15 @@ string secret = config["ArcadeTokenSecret"]
     ?? throw new InvalidOperationException("ArcadeTokenSecret is required.");
 string coordinatorBase = (config["CoordinatorBaseUrl"] ?? "http://localhost:8000").TrimEnd('/');
 string siteOrigin = config["SiteOrigin"] ?? "https://your-movie-site.example";
+
+// CORS for the browser-called REST endpoints (rom-status, w-quick/w-snap/w-load…). The site and the
+// gateway are DIFFERENT origins (theater.* → arcade.*), and without these headers the browser split
+// the API in half invisibly: a bare POST (w-quick — a CORS "simple request") was still SENT and
+// processed but its response was unreadable, so the UI toasted failure over a save that succeeded;
+// anything with a JSON body (w-snap, w-load) died in preflight and NEVER arrived (found 2026-07-16,
+// "Couldn't save the snapshot"). The WebSocket never noticed — WS is exempt from CORS, so rooms
+// played fine while every fetch beside them failed. Scoped to the one trusted site origin.
+app.UseCors(p => p.WithOrigins(siteOrigin).AllowAnyHeader().WithMethods("GET", "POST"));
 
 // Optional just-in-time ROM cache (docs/arcade-jit-cache.md). When configured (a manifest + the ROM
 // mount path), a game whose ROM isn't pre-staged is extracted from its source archive on demand before
