@@ -16,7 +16,30 @@ bug re-manifesting; the 07-06 fix (advertise both, LAN first) treated the sympto
 BROKEN until this plan ships.** Rollback of the interim = restore
 `192.168.68.69,98.15.249.217` (backup at `docker/arcade/.env.bak-hairpin-test`).
 
-## Implementation status (2026-07-15) — CODE DONE, DEPLOY GATED
+## Implementation status (2026-07-15) — DEPLOYED to the retro pool; remote leg still Eric's to verify
+
+**LIVE on both retro workers (8446, 8447) as of ~22:54 2026-07-15.** Built `worker.exe` from fork
+7af7f03 (+ the live nanoarch instrumentation), swapped in (rollback kept as
+`bin\worker.pre-srflx-20260715.exe`), restored `.env` to `192.168.68.69,98.15.249.217`, restarted both
+retro runners (kill runner → `.stop` sentinel → swap → `Start-ScheduledTask`), watchdog re-enabled.
+Both workers log the split and dropped STUN, and are registered + free:
+```
+ICE map: 192.168.68.69 is a local interface — riding natural host candidates (not mapped)
+ICE map: [98.15.249.217] advertised as srflx (lower priority than host — chosen only when host is unreachable)
+ICE map: srflx NAT1To1 active — dropping worker STUN servers (WAN advertised directly)
+```
+**Verified same-host** (`test-roms/arcade-diag`, Super Mario World): room reached Playing, 60 fps, 0
+freezes, 0 concealed audio, rttMs≈0 — i.e. pion's **natural host gathering produces a working host
+candidate** (the change's key assumption; a same-host room can only connect via that candidate).
+**STILL OPEN — Eric only:** the genuinely-remote leg (a browser on cellular/external network selecting
+the WAN **srflx** pair). Cannot be run from Ziggy. Do not consider the WAN half proven until it is.
+
+**Capture worker (8448) was deliberately NOT touched.** It runs an older (host-mode) binary; its runner
+keeps its own cached LAN-only `IceIpMap` and a retro deploy does not restart it, so restoring `.env`
+does not reach it — zero capture regression. Giving capture the same srflx priority is a clean
+follow-up: rebuild its (separate, ~36 MB) binary from the fork and restart its runner.
+
+<details><summary>Original pre-deploy notes (kept for the record)</summary>
 
 **Done (committed, compile-proven, NOT yet live):**
 - Fork change `movietheater-fork` **7af7f03** (`pkg/network/webrtc/factory.go`): splits `IceIpMap`
@@ -58,6 +81,8 @@ WIP, so a live rebuild would bake it in — decide that separately before buildi
    for **all three** GL workers. Confirm each logs `ICE map: … advertised as srflx` + the local-interface
    line for 192.168.68.69, and NOT "NAT mapping is active" (the old host-mode message).
 5. Verify per the matrix — **including the remote/cellular leg, which is Eric's to run.**
+
+</details>
 
 ## The fix — advertise the WAN as srflx, not host
 
