@@ -1,0 +1,38 @@
+diff --git a/core/rend/vulkan/vk_context_lr.cpp b/core/rend/vulkan/vk_context_lr.cpp
+index 1e8fbeb..af6e7a6 100644
+--- a/core/rend/vulkan/vk_context_lr.cpp
++++ b/core/rend/vulkan/vk_context_lr.cpp
+@@ -224,6 +224,33 @@ bool VkCreateDevice(retro_vulkan_context* context, VkInstance instance, VkPhysic
+ 	VulkanContext::samplerAnisotropy = features.samplerAnisotropy;
+ 	VulkanContext::fragmentStoresAndAtomics = features.fragmentStoresAndAtomics;
+ 
++	// MovieTheater (custom core): honor the frontend's required_device_extensions. The libretro v1
++	// create_device contract obliges the core to enable every extension the frontend requests, but stock
++	// flycast silently ignored them (it enabled only swapchain + provoking_vertex). The CloudRetro capture
++	// frontend passes VK_KHR_external_memory_win32 / VK_KHR_external_semaphore_win32 here so it can import
++	// flycast's rendered frame as a GL texture (M2 zero-copy) — without them zero-copy setup fails and the
++	// room falls to a black/soft state. Guarded on physical-device support (tryAddDeviceExtension) and
++	// de-duplicated against flycast's own list.
++	for (unsigned i = 0; i < num_required_device_extensions; i++)
++	{
++		const char *reqExt = required_device_extensions[i];
++		bool already = false;
++		for (const char *e : enabledExtensions)
++			if (!strcmp(e, reqExt)) { already = true; break; }
++		if (!already)
++			tryAddDeviceExtension(reqExt);
++	}
++
++	// MovieTheater: prove the OIT-critical device features are ENABLED. flycast creates the device with
++	// its OWN queried features (physicalDevice.getFeatures/getFeatures2 above returns every SUPPORTED
++	// feature, and that struct — featuresChain/&features below — is what reaches vkCreateDevice), so the
++	// frontend's zeroed required_features NEVER wins: per-pixel OIT's SSBO + fragment atomic-counter path
++	// is safe whenever the GPU supports fragmentStoresAndAtomics (it does on the RTX 4070 Ti). Logged so
++	// the probe confirms it before enabling reicast_alpha_sorting "per-pixel (accurate)".
++	NOTICE_LOG(RENDERER, "MT device features enabled: fragmentStoresAndAtomics=%d independentBlend=%d shaderStorageImageExtendedFormats=%d fragmentShaderInterlock(feat2 n/a here)=%d",
++		(int)features.fragmentStoresAndAtomics, (int)features.independentBlend,
++		(int)features.shaderStorageImageExtendedFormats, (int)features.geometryShader);
++
+ 	// create a Device
+ 	float queuePriority = 1.0f;
+ 	vk::DeviceQueueCreateInfo deviceQueueCreateInfo[] = {

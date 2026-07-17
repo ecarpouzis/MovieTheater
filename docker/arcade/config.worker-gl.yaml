@@ -355,9 +355,11 @@ emulator:
             # the handler; enable this ONLY there (all three lines together — see the lib: note above).
             ppsspp_fast_memory: "disabled"
         dc:
-          lib: flycast_libretro
+          lib: flycast_custom_libretro
           folder: dc
           roms: ["chd", "gdi", "cdi", "cue"]
+          # ── VULKAN + zero-copy — LIVE 2026-07-16 (W4). dc renders on flycast-Vk, 60fps/0-freeze,
+          #    zero-copy ACTIVE (set_image==zc_tex, 0 drops), VMU seed+harvest cycling, close x5 clean. ──
           # ── VULKAN + PER-PIXEL OIT ARM (W4, docs/arcade-vulkan-w3w4w5-spec.md) — PROPOSED, gated ──
           # flycast's Vulkan renderer (incl. the per-pixel OIT path, OITVulkanRenderer) fixes DC's chronic
           # alpha-sorting artifacts AND is expected to give the HEADROOM that made per-pixel OIT too
@@ -371,8 +373,15 @@ emulator:
           # flip). There is likewise no OpenGL escape VALUE token; a per-GAME GL escape must use the
           # explicit hwContext:"gl" override field (W3 F1), NOT a core option.
           # Rollback one-liner: isGlAllowed: true + delete hwContext + delete the two OIT options.
-          isGlAllowed: true  # BLOCKED 2026-07-16 (W4-LIVE): flycast is a v1 core — its v1 create_device ignores our zero-copy extension injection, and its garbage v2-callback misread crashes; flycast-Vk not viable. Stays GL. See RESULTS-vulkan-w3.md §W4-LIVE
-          # hwContext: "vulkan"         # PROPOSED — dc renders on flycast-Vk via the Vulkan-capture path   # TEMP ROLLBACK (re-arm)
+          # UNBLOCKED 2026-07-16: the earlier "flycast-Vk not viable" verdict was WRONG. flycast IS a
+          # genuine v1 core, but its v1 create_device honors our injected zero-copy extensions via the
+          # custom core (flycast-custom-core.patch) — zero-copy is ACTIVE. The real crash was OURS: the
+          # SET_HW_RENDER handler stored the core's retro_hw_render_callback POINTER, and flycast passes
+          # a STACK-LOCAL struct (set_vulkan_hw_render), so context_reset later called a dangling/garbage
+          # fn ptr (GPF PC=0/1 right after "zero-copy: ACTIVE"). Fix = copy the struct (nano_store_hw_render,
+          # nanoarch.c/.go), matching RetroArch. See RESULTS-vulkan-w3.md §W4-LIVE.
+          isGlAllowed: false
+          hwContext: "vulkan"   # THE Vulkan-select mechanism (frontend negotiates a Vk hw-context)
           coreAspectRatio: true
           usesLibCo: true   # GL thread-affinity — see the psp note above (flycast GPF'd without it)
           vfr: false        # correct game speed — see the psp vfr note (Sonic Adventure ran double-speed)

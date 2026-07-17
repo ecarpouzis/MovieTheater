@@ -759,10 +759,10 @@ index 0000000..d2d17c4
 +and **not pushed**. Merge/deploy happens after review and an approved test window.
 diff --git a/RESULTS-vulkan-w3.md b/RESULTS-vulkan-w3.md
 new file mode 100644
-index 0000000..75fc188
+index 0000000..e523d92
 --- /dev/null
 +++ b/RESULTS-vulkan-w3.md
-@@ -0,0 +1,269 @@
+@@ -0,0 +1,331 @@
 +# Worker Vulkan — W3 results (F1 per-game hwContext + PSP/DC Vulkan arms + W5 Dolphin audit)
 +
 +**Branch:** `vulkan-w3` (off `vulkan-w2` @ `7f96784` = the live `worker.exe` / w2fix8 stack: M1+M2 zero-copy, N64 paraLLEl-RDP, v1 surface fix, Vulkan-by-default).
@@ -1032,6 +1032,68 @@ index 0000000..75fc188
 +  isolation. Scoped separately; see docs/arcade-capture-worker-plan.md and the W9 design notes.
 +- **VB-Audio / default-render-device** hygiene (W9 §12.2-B/D): registry read-only checks flagged for Eric
 +  (need admin + driver restart — not automatable safely).
++
++---
++
++# W8-LIVE — PS1 flipped to Beetle PSX HW / Vulkan (Eric waived save continuity)
++
++**Outcome: FLIPPED and LIVE.** ps1 now runs `mednafen_psx_hw` on `hardware_vk` (parallel-psx), replacing
++pcsx_rearmed's software enhancement — real hardware Vulkan rendering + internal upscale. Production binary
++w3fix5, both workers. Negotiation: `version 2, create_instance=no create_device2=no` -> v1 create_device,
++zero-copy ACTIVE, **no synthetic surface needed**, v1 create_device honors our injection (added to the
++negotiation table). Geometry: beetle pins base at PSX native (`System A/V >>> 320x240 (1400x1152)`,
++flycast pattern); `scale:2` + patch-0015 caps-reneg passes the 2x internal frame through; delivered sizes
++vary by PSX mode (1400x960 / 560x480 / …) and the reneg tracks each. CTR: 640x480, 60fps, moving
++(dupRatio 0.07). SotN: boots, hi-res intro + 640x480 output at 60fps, mode changes survive.
++
++## The freeze, root-caused (the coordinator's rejection of my first "NO-GO" was correct)
++First attempt froze at the BIOS->game transition (~frame 147): `video_cb` delivered VALID frames with
++collapsed geometry (1400x4 / 560x2 — heights 2-4px), sub-16px-guarded to a dead stream (dupRatio=1). I
++initially wrote it off as "beetle-incompatible"; Eric rejected that (beetle is Themaister's reference
++client — the presumption is OUR interface). Reopened with instrument -> discriminate -> fix:
++
++- **Structural audit + instrumentation** (CLOUD_GAME_VK_DEBUG): beetle calls `get_sync_index` AND
++  `wait_sync_index` EVERY frame (299/300 ticks); every core that worked so far never calls them (the
++  "narrow subset" gap). Our v5 interface advanced `sync_index` ONLY in the readback path, and
++  `wait_sync_index` was a no-op. **Fixed both** (commits `35c757d`, `a6a5a24`) — real interface
++  completeness that benefits every future Vulkan core (sync index advances per frame in the zc path;
++  `wait_sync_index` now blocks on the real per-slot copy fence, the image-lifetime handshake
++  libretro_vulkan.h:405-412 promises). **These were necessary but NOT sufficient** — the geometry stayed
++  collapsed with them in.
++- **Transition trace** named it: frames 138-146 `64x64` (static), then frame 147 abrupt `1400x4` with a
++  fresh scanout handle each frame; NO `geometryChange`/SET_SYSTEM_AV_INFO. Source (beetle
++  `rhi/rhi_lib_vulkan.c:7104`): `display_height = last_scanline - initial_scanline + 1`. So the collapse
++  was in the visible-scanline window, not the sync protocol.
++- **Root cause = a bad core-options-v2 default** (the coordinator's cheapest hypothesis, #3). beetle's C
++  default for `last_scanline` is 239, but the core-options-v2 definition's first value token is **"210"**,
++  and the unset option resolved to a value that collapsed the range at the transition — the "values not
++  labels" / embedded-default class (dolphin patch 0016, pcsx frameskip). **Fix: pin the full scanline
++  window explicitly** (`initial_scanline:0 / last_scanline:239 / _pal:0/287 / crop_overscan:disabled`).
++  With that, frame 147 transitions `64x64 -> 1400x960` (full height) and the stream stays live.
++
++**Two-part fix**: the sync-index interface completeness (fork, shippable, all cores) + the scanline-option
++pin (config, load-bearing — the block header marks it DO-NOT-REMOVE). Save path: `.srm` via
++RETRO_MEMORY_SAVE_RAM (memcard1 enabled); pcsx test saves were quarantine-renamed then restored on the
++earlier revert, now beetle writes its own (continuity waived).
++
++## Regression check (the sync-index change is fleet-wide via NANO_VK_SYNC 2->3)
++ps2 God of War, psp Daxter — no regression on w3fix5 (moving, no freeze); the sync-index callbacks are
++inert for cores that don't call them (paraLLEl-GS/mupen/PPSSPP/dolphin). ps1 CTR confirmed live.
++
++## Updated final live state
++psp / gc / ps2 / n64 / **ps1** = Vulkan (ps1 = Beetle PSX HW hardware_vk). dc / naomi / atomiswave = GL
++(flycast v1, blocked). Binary: w3fix5 (F1 + synthetic surface + flycast fail-soft + sync-index
++completeness). Rollbacks kept: worker.pre-w3fix5.exe etc.
++
++## Negotiation-table addition
++| beetle_psx_hw (ps1) | 2 | no | no | v1 create_device (honors injection) | no | yes |
++
++## Open / next (not blocking)
++- The core-options-v2 default that resolved wrong for `last_scanline` is a broader CloudRetro option-
++  handling smell (first-token vs default_value) — worth an audit; pinning options sidesteps it per-core.
++- SotN mid-game 1024x960<->640x480 confirmed via caps-reneg on delivered sizes; a driven-into-gameplay
++  probe would fully exercise it.
++- PGXP + higher internal-res are per-title upgrades (ArcadeGameProfile) now that the base arm is live.
 diff --git a/go.mod b/go.mod
 index 46034dc..19b7a10 100644
 --- a/go.mod
@@ -9937,7 +9999,7 @@ index 0000000..dbd35c1
 +
 +#endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.c b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
-index 669862d..db883db 100644
+index 669862d..d10f1de 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.c
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
 @@ -10,11 +10,12 @@
@@ -9958,7 +10020,7 @@ index 669862d..db883db 100644
  } call_def_t;
  
  call_def_t call;
-@@ -23,6 +24,7 @@ enum call_type {
+@@ -23,10 +24,25 @@ enum call_type {
      CALL_VOID = -1,
      CALL_SERIALIZE = 1,
      CALL_UNSERIALIZE = 2,
@@ -9966,7 +10028,25 @@ index 669862d..db883db 100644
  };
  
  void *same_thread_with_args(void *f, int type, ...);
-@@ -124,6 +126,14 @@ bool bridge_retro_load_game(void *f, struct retro_game_info *gi) {
+ 
++// Stable frontend-owned copy of the core's retro_hw_render_callback. The libretro contract does NOT
++// guarantee the struct passed to RETRO_ENVIRONMENT_SET_HW_RENDER outlives the environment call. flycast
++// declares it as a STACK LOCAL in set_vulkan_hw_render() (`retro_hw_render_callback hw_render{};`) and
++// passes &hw_render, so that pointer dangles the instant the function returns. Storing the raw pointer
++// and later dereferencing .context_reset / .context_destroy reads reused stack — a garbage function
++// pointer whose call GPFs at PC=0/1 right after "zero-copy: ACTIVE" (flycast dc, 2026-07-16). RetroArch
++// copies the struct into frontend-owned storage; so do we. Cores that use a static/global struct
++// (psp/gc/ps2/n64) were unaffected, but a copy is strictly correct for them too.
++static struct retro_hw_render_callback nano_hw_render_copy;
++void *nano_store_hw_render(const void *src) {
++    memcpy(&nano_hw_render_copy, src, sizeof(nano_hw_render_copy));
++    return &nano_hw_render_copy;
++}
++
+ // Input State Cache
+ 
+ #define INPUT_MAX_PORTS 4
+@@ -124,6 +140,14 @@ bool bridge_retro_load_game(void *f, struct retro_game_info *gi) {
      return ((bool (*)(struct retro_game_info *)) f)(gi);
  }
  
@@ -9981,7 +10061,7 @@ index 669862d..db883db 100644
  size_t bridge_retro_get_memory_size(void *f, unsigned id) {
      return ((size_t (*)(unsigned)) f)(id);
  }
-@@ -206,6 +216,11 @@ int16_t core_input_state_cgo(unsigned port, unsigned device, unsigned index, uns
+@@ -206,6 +230,11 @@ int16_t core_input_state_cgo(unsigned port, unsigned device, unsigned index, uns
  
      switch (device) {
          case RETRO_DEVICE_JOYPAD:
@@ -9993,7 +10073,7 @@ index 669862d..db883db 100644
              return (int16_t)((input_cache.buttons[port] >> id) & 1);
  
          case RETRO_DEVICE_ANALOG:
-@@ -304,6 +319,29 @@ void deinit_video_cgo() {
+@@ -304,6 +333,29 @@ void deinit_video_cgo() {
      deinitVideo();
  }
  
@@ -10023,7 +10103,7 @@ index 669862d..db883db 100644
  typedef struct {
     pthread_mutex_t m;
     pthread_cond_t cond;
-@@ -341,7 +379,10 @@ void *run_loop(void *unused) {
+@@ -341,7 +393,10 @@ void *run_loop(void *unused) {
          switch (call.type) {
              case CALL_SERIALIZE:
              case CALL_UNSERIALIZE:
@@ -10035,7 +10115,7 @@ index 669862d..db883db 100644
                break;
              default:
                  ((void (*)(void)) call.fn)();
-@@ -367,7 +408,20 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -367,7 +422,20 @@ void *same_thread_with_args(void *f, int type, ...) {
          mutex_init(&run_mutex);
          mutex_init(&done_mutex);
          mutex_lock(&done_mutex);
@@ -10057,7 +10137,7 @@ index 669862d..db883db 100644
          mutex_wait(&done_mutex);
          mutex_unlock(&done_mutex);
      }
-@@ -377,21 +431,17 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -377,21 +445,17 @@ void *same_thread_with_args(void *f, int type, ...) {
      call.type = type;
      call.fn = f;
  
@@ -10087,7 +10167,7 @@ index 669862d..db883db 100644
      }
      mutex_signal(&run_mutex);
      mutex_unlock(&run_mutex);
-@@ -400,10 +450,49 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -400,10 +464,49 @@ void *same_thread_with_args(void *f, int type, ...) {
      return call.result;
  }
  
@@ -10140,10 +10220,10 @@ index 669862d..db883db 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..ae9b850 100644
+index 17f10fc..1e1b8f2 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-@@ -1,981 +1,1682 @@
+@@ -1,981 +1,1694 @@
 -package nanoarch
 -
 -import (
@@ -12355,7 +12435,12 @@ index 17f10fc..ae9b850 100644
 +				Nan0.log.Warn().Msgf("vulkan core requested non-Vulkan hw context type: %v", uint(hw.context_type))
 +				return false
 +			}
-+			Nan0.Video.hw = hw
++			// COPY the struct — do NOT retain the core's pointer. flycast passes a stack-local
++			// retro_hw_render_callback (set_vulkan_hw_render), so the pointer dangles the moment that
++			// function returns; dereferencing .context_reset later called a garbage fn ptr (GPF PC=0/1
++			// right after "zero-copy: ACTIVE"). The Vulkan path never needs get_current_framebuffer /
++			// get_proc_address written back into the core's struct, so a pure copy is complete here.
++			Nan0.Video.hw = (*C.struct_retro_hw_render_callback)(C.nano_store_hw_render(unsafe.Pointer(hw)))
 +			Nan0.log.Info().Msgf("hw render context: Vulkan (version %v.%v)",
 +				uint(hw.version_major), uint(hw.version_minor))
 +			return true
@@ -12594,6 +12679,13 @@ index 17f10fc..ae9b850 100644
 +		on = 1
 +	}
 +	C.nano_vk_set_synthetic_surface(C.int(on))
++	// Phase 1b: instrument the get_instance_proc_addr we hand the core (flycast builds its whole dispatch
++	// from it). Gated by CLOUD_GAME_VK_DEBUG so production is unaffected.
++	dbg := 0
++	if vkDbgOn {
++		dbg = 1
++	}
++	C.nano_vk_set_log_gipa(C.int(dbg))
 +}
 +
 +// finishVideoVulkan runs the post-nano_vk_init work (GL-import setup + logging). It MUST run on the same
@@ -12808,7 +12900,7 @@ index 17f10fc..ae9b850 100644
 +		Nan0.sys.av.geometry.base_height != geom.base_height
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.h b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
-index 2479d0c..e1a78dc 100644
+index 2479d0c..be133df 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 @@ -5,6 +5,8 @@ void bridge_call(void *f);
@@ -12820,11 +12912,14 @@ index 2479d0c..e1a78dc 100644
  bool bridge_retro_serialize(void *f, void *data, size_t size);
  size_t bridge_retro_serialize_size(void *f);
  bool bridge_retro_unserialize(void *f, void *data, size_t size);
-@@ -32,13 +34,44 @@ void init_video_cgo();
+@@ -32,13 +34,49 @@ void init_video_cgo();
  void deinit_video_cgo();
  
  void same_thread(void *f);
 -void *same_thread_with_args2(void *f, int type, void *arg1, void *arg2);
++// Copy the core's retro_hw_render_callback into stable frontend-owned storage and return its address.
++// The struct passed to SET_HW_RENDER may be a stack local (flycast) — storing the raw pointer dangles.
++void *nano_store_hw_render(const void *src);
 +void *same_thread_with_args2(void *f, int type, void *arg1, size_t size);
 +size_t same_thread_serialize_size(void *f);
  void same_thread_stop();
@@ -12841,6 +12936,8 @@ index 2479d0c..e1a78dc 100644
 +void deinit_video_vk_cgo(void);
 +// W3.1 fix: hand a real hidden-window VkSurfaceKHR to cores that require a non-null surface (PPSSPP).
 +void nano_vk_set_synthetic_surface(int on);
++// Phase 1b: log every symbol the core requests through the get_instance_proc_addr we hand create_device.
++void nano_vk_set_log_gipa(int on);
 +// gc root-cause debug instrumentation (CLOUD_GAME_VK_DEBUG). Counters in nanoarch_vulkan.c.
 +void nano_vk_dbg_log(void);
 +void nano_vk_dbg_reset(void);
@@ -12868,10 +12965,10 @@ index 2479d0c..e1a78dc 100644
  #endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
 new file mode 100644
-index 0000000..ca7118e
+index 0000000..394e013
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
-@@ -0,0 +1,1774 @@
+@@ -0,0 +1,1793 @@
 +// MovieTheater arcade — Vulkan-capture frontend (M1: readback path).
 +//
 +// Lets the CloudRetro worker host libretro cores that render with RETRO_HW_CONTEXT_VULKAN
@@ -13415,6 +13512,8 @@ index 0000000..ca7118e
 +    return &app;
 +}
 +
++static PFN_vkGetInstanceProcAddr core_gipa(void); // Phase 1b GIPA instrumentation (defined below)
++
 +static int create_instance(void) {
 +    const VkApplicationInfo *app = NULL;
 +    if (vk.have_negotiation && vk.negotiation.get_application_info)
@@ -13432,7 +13531,7 @@ index 0000000..ca7118e
 +    // (flycast's v1 create_device ignores our required_device_extensions, so it can't do zero-copy — the
 +    // fail-soft in finishVideoVulkan keeps that from crashing; flycast/dc stays on GL, see RESULTS §W4-LIVE.)
 +    if (vk.have_negotiation && vk.negotiation.interface_version >= 2 && vk.negotiation.create_instance) {
-+        vk.instance = vk.negotiation.create_instance(vk.fn.GetInstanceProcAddr, app,
++        vk.instance = vk.negotiation.create_instance(core_gipa(), app,
 +                                                     create_instance_wrapper, &vk);
 +        if (vk.instance == VK_NULL_HANDLE) {
 +            VKLOG(RETRO_LOG_ERROR, "core create_instance returned VK_NULL_HANDLE\n");
@@ -13505,6 +13604,23 @@ index 0000000..ca7118e
 +// nano_vk_zc_set_enabled — a plain flag write, so thread-independent. Always called with an explicit
 +// 0/1 so a previous room's value can never persist.
 +void nano_vk_set_synthetic_surface(int on) { vk.synth_surface_wanted = on ? 1 : 0; }
++
++// ---- get_instance_proc_addr instrumentation (Phase 1b, CLOUD_GAME_VK_DEBUG) --------------------------
++// flycast is the FIRST core that builds its ENTIRE Vulkan dispatch (vulkan-hpp VULKAN_HPP_DEFAULT_DISPATCHER
++// + VMA) from the get_instance_proc_addr we hand create_device. Every core that worked so far links/loads
++// its own entry points, so a deficient callback from us would have been invisible. This wrapper logs every
++// symbol the core requests through our GIPA and whether we returned NULL — one boot = the full manifest.
++static int vk_log_gipa = 0;
++void nano_vk_set_log_gipa(int on) { vk_log_gipa = on ? 1 : 0; }
++static PFN_vkVoidFunction VKAPI_PTR logging_gipa(VkInstance inst, const char *name) {
++    PFN_vkVoidFunction p = vk.fn.GetInstanceProcAddr(inst, name);
++    core_log_cgo(RETRO_LOG_INFO, "[gipa] inst=%p %s -> %s\n", (void *)inst, name ? name : "(null)", p ? "ok" : "NULL");
++    return p;
++}
++// The GIPA we hand the core: the logging wrapper when instrumented, else the raw loader function.
++static PFN_vkGetInstanceProcAddr core_gipa(void) {
++    return vk_log_gipa ? logging_gipa : vk.fn.GetInstanceProcAddr;
++}
 +
 +// Hidden window class for the synthetic surface. Registered once (idempotent); WS_POPUP, never shown.
 +#define NANO_VK_SURF_CLASS L"nanoVkHiddenSurface"
@@ -13588,7 +13704,7 @@ index 0000000..ca7118e
 +    // note above; calling it crashes). paraLLEl-GS is genuine v2 and takes this path.
 +    if (vk.have_negotiation && vk.negotiation.interface_version >= 2 && vk.negotiation.create_device2) {
 +        if (!vk.negotiation.create_device2(&ctx, vk.instance, vk.gpu, vk.synth_surface,
-+                                           vk.fn.GetInstanceProcAddr, create_device_wrapper, &vk)) {
++                                           core_gipa(), create_device_wrapper, &vk)) {
 +            VKLOG(RETRO_LOG_ERROR, "core create_device2 failed\n");
 +            return -1;
 +        }
@@ -13631,7 +13747,7 @@ index 0000000..ca7118e
 +            }
 +        }
 +        if (vk.negotiation.create_device(&ctx, vk.instance, vk.gpu, vk.synth_surface,
-+                                         vk.fn.GetInstanceProcAddr, req, nreq, NULL, 0, &no_features)) {
++                                         core_gipa(), req, nreq, NULL, 0, &no_features)) {
 +            vk.gpu          = ctx.gpu ? ctx.gpu : vk.gpu;
 +            vk.device       = ctx.device;
 +            vk.queue        = ctx.queue;
@@ -13646,7 +13762,7 @@ index 0000000..ca7118e
 +            vk.zc_fallback = 1;
 +            memset(&ctx, 0, sizeof(ctx));
 +            if (vk.negotiation.create_device(&ctx, vk.instance, vk.gpu, vk.synth_surface,
-+                                             vk.fn.GetInstanceProcAddr, NULL, 0, NULL, 0, &no_features)) {
++                                             core_gipa(), NULL, 0, NULL, 0, &no_features)) {
 +                vk.gpu          = ctx.gpu ? ctx.gpu : vk.gpu;
 +                vk.device       = ctx.device;
 +                vk.queue        = ctx.queue;
