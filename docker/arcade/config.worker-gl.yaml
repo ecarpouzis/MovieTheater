@@ -437,6 +437,33 @@ emulator:
             reicast_alpha_sorting: "per-triangle (normal)"
             # reicast_alpha_sorting: "per-pixel (accurate)"   # REJECTED 2026-07-17 (menu UI-quad garble) — see evidence above
             # reicast_oit_abuffer_size: "512MB"               # only meaningful with per-pixel; kept for the revisit
+            #
+            # ── THREADED RENDERING = DISABLED (Vulkan zero-copy sync fix, 2026-07-17). ──────────────────
+            # Value token (verbatim from live DLL flycast_libretro.dll + source libretro_core_options.h:
+            # `{ "disabled", NULL }` — NULL label ⇒ bare token, NOT a "(…)"-labelled value like alpha_sorting):
+            # reicast_threaded_rendering ∈ {disabled | enabled}. Default = enabled.
+            #
+            # WHY WE DISABLE IT: dc Crazy Taxi showed residual garbage/stale frames in GAMEPLAY on the Vulkan
+            # zero-copy path after the gc/F-Zero semaphore cure landed. Root cause (live [zc-stat] + flycast
+            # source, RESULTS-vulkan-w3 §"dc Crazy Taxi residual"): flycast passes ZERO set_image semaphores
+            # (`set_image(...,0,nullptr,...)` in vk_context_lr.cpp PresentFrame) and signals only a fence on
+            # its render submit (`SubmitInfo(...,nullptr)` signalSemaphores). With ThreadedRendering=enabled
+            # (default) that render submit runs on flycast's OWN render thread, while video_cb/our zero-copy
+            # blit run on the emu cothread. flycast's lock_queue only SERIALIZES the two submits (no validation
+            # error) — it does NOT order its render before our copy. No semaphore ⇒ nothing for our copy's wait
+            # to bind to ⇒ the blit races the render ⇒ reads pre/mid-render ⇒ garbage/stale.
+            #   • paraLLEl-GS (PS2) is SAFE with zero semaphores only because it is single-threaded: render →
+            #     set_image → copy are sequential on one thread = deterministic order.
+            #   • Dolphin (gc) was CURED by patch #3 (it signals + passes a present semaphore our copy waits on).
+            #   flycast is "the gc bug WITHOUT the cure available." Disabling threading makes flycast render
+            #   INLINE on the cothread (retro_run→emu.render()), restoring paraLLEl-GS's single-threaded
+            #   deterministic order = synced. Zero-code, reversible.
+            # COST: flycast upstream calls threading "highly recommended" for perf. DC is light (inline render
+            #   expected to hold 60fps). If a heavy title ever drops fps from this, the documented ESCALATION is
+            #   Option A — a flycast custom-core patch that signals a renderComplete VkSemaphore on the present
+            #   submit and passes it to set_image (~20 lines in vk_context_lr; our copy ALREADY waits on
+            #   set_image semaphores). That keeps threading AND fixes the race. See RESULTS-vulkan-w3 for both.
+            reicast_threaded_rendering: "disabled"
           # ⚠ DC RESOLUTION IS NOT RAISEABLE FROM HERE. Measured 2026-07-08 (docs/arcade-quality-plan.md §10):
           # CloudRetro pins the encode size to the core's BASE geometry — Frontend.FrameSize() returns
           # nano.BaseWidth()/BaseHeight() (frontend.go:424) and ignores the per-frame size video_cb reports.
@@ -490,6 +517,7 @@ emulator:
             reicast_alpha_sorting: "per-triangle (normal)"   # lockstep w/ dc: per-pixel REJECTED (menu garble), see dc block
             # reicast_alpha_sorting: "per-pixel (accurate)"  # REJECTED 2026-07-17 (see dc)
             # reicast_oit_abuffer_size: "512MB"
+            reicast_threaded_rendering: "disabled"           # lockstep w/ dc: zero-copy semaphore-race fix (see dc block). ⚠ naomi's 3D-heavy boards are the likeliest place inline render could cost fps → escalate to Option A (see dc note) if so.
         atomiswave:
           lib: flycast_custom_libretro
           folder: atomiswave
@@ -512,6 +540,7 @@ emulator:
             reicast_alpha_sorting: "per-triangle (normal)"   # lockstep w/ dc: per-pixel REJECTED (menu garble), see dc block
             # reicast_alpha_sorting: "per-pixel (accurate)"  # REJECTED 2026-07-17 (see dc)
             # reicast_oit_abuffer_size: "512MB"
+            reicast_threaded_rendering: "disabled"           # lockstep w/ dc: zero-copy semaphore-race fix (see dc block)
 
         # PS2 via pcsx2_libretro (LRPS2). GL 3D core like psp/dc: same isGlAllowed + coreAspectRatio
         # Flip contract, usesLibCo thread-affinity, and skip_hw_context_destroy teardown hack. Requires

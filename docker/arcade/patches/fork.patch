@@ -759,10 +759,10 @@ index 0000000..d2d17c4
 +and **not pushed**. Merge/deploy happens after review and an approved test window.
 diff --git a/RESULTS-vulkan-w3.md b/RESULTS-vulkan-w3.md
 new file mode 100644
-index 0000000..f200374
+index 0000000..a2d2d49
 --- /dev/null
 +++ b/RESULTS-vulkan-w3.md
-@@ -0,0 +1,382 @@
+@@ -0,0 +1,397 @@
 +# Worker Vulkan — W3 results (F1 per-game hwContext + PSP/DC Vulkan arms + W5 Dolphin audit)
 +
 +**Branch:** `vulkan-w3` (off `vulkan-w2` @ `7f96784` = the live `worker.exe` / w2fix8 stack: M1+M2 zero-copy, N64 paraLLEl-RDP, v1 surface fix, Vulkan-by-default).
@@ -788,6 +788,21 @@ index 0000000..f200374
 +- **Attract-only probes pass while menus/UI break** — menus exercise punch-through/UI quads (symptom 1) and different res (symptom 2) that attract never does. `menu-probe.mjs` + the input-focus gotcha (after "Start room" the button keeps keyboard focus; click the video first) are the ladder additions. (In SKILL.md.)
 +- **Refine the hypothesis from evidence, don't defend it.** "present-trap to hidden window" → the warp exists; "sync-index caused Stuntman" → inert for PS2; "F-Zero-specific dolphin menu" → systemic gc / tiny window. The instrumentation (recurrence detector, frame-serial ordering, per-realloc in-flight) is what turned each guess into a verdict.
 +- **Discriminate rendering vs ordering vs geometry with the right instrument:** static-menu hash recurrence (ordering vs render), frame-serial release order (worker-side vs downstream), synthetic-window extent (the whole gc class).
++
++### Follow-up: dc Crazy Taxi residual garbage/stale in GAMEPLAY (2026-07-17, live-play diagnosis — NO deploy yet)
++
++After the gc/F-Zero semaphore cure validated (Stuntman + F-Zero "seem fine now"), Eric reports **DC Crazy Taxi still shows the residual garbage/stale class in gameplay.** Root-caused to **"the gc bug WITHOUT the cure available"** — confirmed by live logs + flycast source:
++
++- **Live evidence (glworker-2, Crazy Taxi 1920×1440):** `[zc-stat] inflight=1/8 serials[X..X span=0]` (clean retention — NOT the Stuntman backlog class) with **`setimg_sem(waited=5006 none=13383→…)` — the `none` counter grows every frame, `waited` flat.** So **flycast passes ZERO set_image semaphores** (like paraLLEl-GS), so our copy has nothing to wait on.
++- **flycast source (`core/rend/vulkan/vk_context_lr.cpp`, `.h`):** `PresentFrame` → `endFrame` → `CommandPool::EndFrame` → `SubmitCommandBuffers(buffers, fence)` which does `queue.submit(SubmitInfo(nullptr,nullptr,buffers,**nullptr**), fence)` — **signals only a fence, NO signal semaphore** — then `set_image(handle, &img, **0, nullptr**, QueueFamilyIgnored)`. Same VkQueue as our copy (`vk.queue == ctx.queue`), and `SubmitCommandBuffers` DOES take our `lock_queue`/`unlock_queue` — so no concurrent-access validation error.
++- **The mechanism (why it's unlike paraLLEl-GS):** `rend.ThreadedRendering` **defaults enabled** (`shell/libretro/libretro.cpp:558`, `core/cfg/option.cpp:112`; option key `reicast_threaded_rendering`, values enabled/disabled). So flycast's GPU render is submitted **on a separate render thread**, while `video_cb`/our copy run on the emu cothread. `lock_queue` only *serializes* the two submits (prevents the validation error); it does **NOT order** flycast's render submit *before* our copy's blit. With no semaphore to encode the dependency, the copy races the render → reads pre/mid-render → garbage/stale. paraLLEl-GS is safe only because it is single-threaded (render→set_image→copy all sequential on one thread = deterministic order); flycast's threaded submit breaks exactly that ordering, and — unlike gc/Dolphin, which we patched to signal+pass a present semaphore (patch #3) — flycast provides none, so the cure our copy already implements has nothing to bind to.
++
++**dc fix design (two options; we own the flycast custom core):**
++- **Option B — config-only, cheapest test AND possible full fix (recommended first):** set `reicast_threaded_rendering: disabled` for dc/naomi/atomiswave. `retro_run` then calls `emu.render()` inline on the cothread → render submit → set_image → video_cb → our copy are all sequential on ONE thread = deterministic order = synced (identical safety to paraLLEl-GS). **Zero code, zero build, reversible via one config line.** If the garbage vanishes, the mechanism is 100% confirmed; keep it if dc holds 60fps (DC is light — likely fine), else move to Option A. flycast upstream flags threading "highly recommended" for perf, so measure fps.
++- **Option A — flycast custom-core patch #2, robust fix that KEEPS threading:** patch flycast to signal a VkSemaphore on the present-frame render submit and pass it to `set_image`: (1) add a `renderComplete` semaphore ring to `VulkanContext`; (2) add it as `signalSemaphores` on the present-pass `SubmitCommandBuffers` (the last submit before `set_image`, in `endFrame`/`CommandPool::EndFrame`); (3) `PresentFrame` passes `set_image(..., 1, &renderComplete[idx], queue_family)`. Our copy **already waits on set_image semaphores** (the gc semaphore-wait fix, `nanoarch_vulkan.c` ~1658) → it binds automatically → synced with threading intact. This mirrors the gc/Dolphin cure exactly; ~20 bounded lines in `vk_context_lr` + wiring the semaphore from `CommandPool::EndFrame` up to `PresentFrame`.
++
++### Phase-2 / W6 fidelity-ceiling queue (carried forward, no action now)
++- **PS2 Stuntman "visually a bit blurry"** (Eric, 2026-07-17) — likely the PS2 **delivered-resolution ceiling**: paraLLEl-GS scanout extent vs encode size, and/or `scaleMethod`. Investigate whether the core's presented image is below the encode geometry (upscale-on-encode softening) and whether SSAA/scale is landing. Fidelity-ceiling item, not a correctness bug.
 +
 +**Headline:** F1 (explicit per-game `hwContext` override with 3-level precedence) is **implemented, unit-tested, and compile-proven** (fork commit `02af461`). **UPDATE 15:xx:** F1 + the psp/dc arms were reviewed and deployed; ps2 (God of War) and n64 (Mario Kart 64) re-validated clean on `worker.w3.exe` (zero-copy ACTIVE, 60fps), and the **W3.1 PPSSPP surface blocker was CONFIRMED LIVE** — one step deeper than the audit (create_device SUCCEEDED with our null surface; PPSSPP then crashed creating its *own* surface). That is now **fixed** (commit `0baec66`, `bin/worker.w3fix.exe`): a frontend-synthesized hidden-window `VkSurfaceKHR` handed to `create_device`, gated behind the opt-in hack `vk_synthetic_surface` so ps2/n64 are untouched — see **§W3.1-LIVE**. The W4 (dc) arm + DB/exporter change remain staged **UNCOMMITTED** in F:. flycast still has **no renderer core-option**, so W4 dc-Vulkan is `hwContext:"vulkan"`-driven, not a `reicast_renderer` flip. **`bin/worker.exe` (now the deployed w3 binary) is UNTOUCHED**; the fix binary is `bin/worker.w3fix.exe`.
 +
@@ -6680,10 +6695,10 @@ index f3553b1..a26a9d8 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..52cbb3e 100644
+index 6974d59..68c4409 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,1181 @@
+@@ -1,578 +1,1189 @@
 -package libretro
 -
 -import (
@@ -7520,6 +7535,14 @@ index 6974d59..52cbb3e 100644
 +	if fr == nil {
 +		fr = new(app.Video)
 +	}
++	// STALE-FRAME FIX #1 (2026-07-17): on a per-frame geometry reneg (PS2 field/frame flip, loading<->level
++	// at 1280x447<->1280x896), the previous lastFrame is PRE-transition content. Drop the reference so a
++	// dropped-frame dup (handleDup re-pushes lastFrame) can never replay the old geometry across the
++	// transition — the new frame below re-seeds it. Pairs with fix #2 (leaky appsrc drops the stale backlog).
++	if lastFrame != nil && (int(fi.W) != lastFrame.Frame.W || int(fi.H) != lastFrame.Frame.H) {
++		lastFrame = nil
++	}
++
 +	fr.Frame.Data = data
 +	fr.Frame.Tex = fi.Tex
 +	fr.Frame.W = int(fi.W)
@@ -13032,10 +13055,10 @@ index 2479d0c..97891a2 100644
  #endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
 new file mode 100644
-index 0000000..2202f0a
+index 0000000..66224f0
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
-@@ -0,0 +1,1854 @@
+@@ -0,0 +1,1895 @@
 +// MovieTheater arcade — Vulkan-capture frontend (M1: readback path).
 +//
 +// Lets the CloudRetro worker host libretro cores that render with RETRO_HW_CONTEXT_VULKAN
@@ -13352,6 +13375,9 @@ index 0000000..2202f0a
 +    unsigned long long get_sync;    // core called get_sync_index (uses the sync-index protocol)
 +    unsigned long long wait_sync;   // core called wait_sync_index
 +    unsigned long long set_cmdbuf;  // core called set_command_buffers (alt frame handover)
++    unsigned long long sem_setimg_waited; // zc submit waited on a set_image semaphore (core provided one)
++    unsigned long long sem_setimg_none;   // zc submit proceeded with NO set_image semaphore (unsignaled read risk)
++    unsigned long long stat_frame;  // last frame_serial at which the always-on [zc-stat] line was emitted
 +    unsigned last_w, last_h;        // last geometry seen by nano_vk_zc_frame
 +    unsigned sub16_w, sub16_h;      // last sub-16px geometry dropped
 +} vk_dbg;
@@ -14641,6 +14667,23 @@ index 0000000..2202f0a
 +    // INSTR: stamp this slot with the next monotonic frame serial (frame-ordering probe).
 +    vk.zc_serial[idx] = ++vk.frame_serial;
 +
++    // ALWAYS-ON periodic stats (~every 600 delivered frames / 10s) for ORGANIC-play diagnosis without
++    // CLOUD_GAME_VK_DEBUG. Two signals Eric's session needs: (1) RETENTION = how many pool slots are held
++    // downstream RIGHT NOW + their serial SPAN (the true stale-frame signal — a large span = an old frame
++    // still queued deep in the encode/RTP path; replaces the noisy release-ORDER OOO check); (2) the
++    // set_image-semaphore wait rate (sem_setimg_none rising on gc = frames imported with no blit-completion
++    // sync = the black-frame path). Cheap: a handful of int ops once per ~600 frames.
++    if (vk.frame_serial - vk_dbg.stat_frame >= 600) {
++        vk_dbg.stat_frame = vk.frame_serial;
++        int nheld = 0; uint64_t lo = 0, hi = 0;
++        for (int i = 0; i < NANO_VK_ZC_SLOTS; i++)
++            if (!vk.zc_free[i]) { nheld++; uint64_t s = vk.zc_serial[i]; if (!lo || s < lo) lo = s; if (s > hi) hi = s; }
++        VKLOG(RETRO_LOG_INFO, "[zc-stat] emit=%llu inflight=%d/%d serials[%llu..%llu span=%llu] setimg_sem(waited=%llu none=%llu) reallocs=%llu\n",
++              (unsigned long long)vk.frame_serial, nheld, NANO_VK_ZC_SLOTS,
++              (unsigned long long)lo, (unsigned long long)hi, (unsigned long long)(hi > lo ? hi - lo : 0),
++              vk_dbg.sem_setimg_waited, vk_dbg.sem_setimg_none, (unsigned long long)vk.realloc_count);
++    }
++
 +    VkCommandBuffer cb = vk.zc_cmd[idx];
 +    VkFence fence = vk.zc_fence[idx];
 +    if (vk.zc_submitted[idx]) {
@@ -14697,10 +14740,31 @@ index 0000000..2202f0a
 +    si.pCommandBuffers = &cb;
 +    si.signalSemaphoreCount = 1;
 +    si.pSignalSemaphores = &vk.zc_ready[idx];   // Vulkan -> GL ready
++    // GC BLACK-FRAME FIX (2026-07-17): WAIT on the set_image semaphores here. Dolphin's present-semaphore
++    // patch (#3) hands us the semaphore its ASYNC submit-thread blit signals, but the zc blit historically
++    // did NOT wait on it (only the readback path did) — so our copy could read src_image BEFORE dolphin's
++    // blit landed and import the cleared (black) PRE-BLIT image = F-Zero's intermittent black frames.
++    // num_wait_sems==0 (paraLLEl-GS passes none; syncs by same-queue ordering) makes this a no-op, safe for
++    // all cores. sem_setimg_{waited,none} counters below say how often the core actually hands us a semaphore.
++    VkPipelineStageFlags zc_wait_stages[8];
++    if (vk.num_wait_sems > 0) {
++        uint32_t n = vk.num_wait_sems > 8 ? 8 : vk.num_wait_sems;
++        for (uint32_t i = 0; i < n; i++) zc_wait_stages[i] = VK_PIPELINE_STAGE_TRANSFER_BIT;
++        si.waitSemaphoreCount = n;
++        si.pWaitSemaphores = vk.wait_sems;
++        si.pWaitDstStageMask = zc_wait_stages;
++        vk_dbg.sem_setimg_waited++;
++    } else {
++        vk_dbg.sem_setimg_none++;
++    }
 +
 +    cb_lock_queue(&vk);
 +    VkResult r = vk.fn.QueueSubmit(vk.queue, 1, &si, fence);
 +    cb_unlock_queue(&vk);
++    // A set_image semaphore is single-use: it was signalled once by the core's blit and consumed by this
++    // submit's wait. Clear so the NEXT frame (which may be a dup with no fresh set_image) can't re-wait a
++    // spent semaphore. The core re-arms wait_sems on its next set_image.
++    vk.num_wait_sems = 0;
 +    if (r != VK_SUCCESS) {
 +        VKLOG(RETRO_LOG_ERROR, "zero-copy: blit submit failed: %d\n", r);
 +        pthread_mutex_lock(&vk.zc_mutex); vk.zc_free[idx] = 1; pthread_mutex_unlock(&vk.zc_mutex);
@@ -45540,10 +45604,10 @@ index 6972cc7..d69537d 100644
 +}
 diff --git a/pkg/worker/media/glzerocopy.go b/pkg/worker/media/glzerocopy.go
 new file mode 100644
-index 0000000..1de3477
+index 0000000..be84e8e
 --- /dev/null
 +++ b/pkg/worker/media/glzerocopy.go
-@@ -0,0 +1,288 @@
+@@ -0,0 +1,303 @@
 +package media
 +
 +// GL zero-copy for hardware-rendered libretro cores (n64/gc/ps2/psp/dc).
@@ -45766,6 +45830,21 @@ index 0000000..1de3477
 +	// the texture is complete before the encoder is ever told about it. That costs a GPU sync on the
 +	// emulator thread — but no PCIe transfer, which is the 11 MB/frame this whole path exists to remove.
 +	gst_app_src_push_buffer(src, buf);
++
++	// ALWAYS-ON appsrc-depth localization (2026-07-17). Pairs with nanoarch's [zc-stat] "inflight" (total zc
++	// slots held across the WHOLE pipeline): if [zc-stat] shows a deep backlog while this appsrc queue stays
++	// ~0-1, the retention is DOWNSTREAM (encoder input / video_q / RTP pacing / room-start WebRTC ramp-up),
++	// NOT the appsrc — which is exactly why the reverted always-leaky appsrc could not touch it. Every ~600
++	// pushes / 10s so it is free.
++	{
++		static unsigned long long zc_push_n = 0;
++		if ((++zc_push_n % 600) == 0) {
++			guint64 lvlb = 0, lvlbytes = 0;
++			g_object_get(G_OBJECT(src), "current-level-buffers", &lvlb, "current-level-bytes", &lvlbytes, NULL);
++			g_printerr("[zc-appsrc] push#%llu appsrc queue: %llu buffers, %llu bytes (frame %dx%d)\n",
++			           (unsigned long long) zc_push_n, (unsigned long long) lvlb, (unsigned long long) lvlbytes, w, h);
++		}
++	}
 +}
 +*/
 +import "C"
@@ -45833,10 +45912,10 @@ index 0000000..1de3477
 +	C.zc_push(g.v.src(), C.uint(texID), C.int(w), C.int(h), C.ulonglong(durNs))
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..04d8bac 100644
+index 4a6171f..3dd74fb 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,976 @@
+@@ -1,579 +1,983 @@
 -package media
 -
 -import (
@@ -47146,6 +47225,13 @@ index 4a6171f..04d8bac 100644
 +		//
 +		// Verified end-to-end before any of this was written: gltestsrc(1920x1584) ! glcolorscale !
 +		// GLMemory(1280x1056) ! nvav1enc encodes cleanly with temporal SVC intact.
++		//
++		// NOTE (2026-07-17): an always-leaky appsrc (max-buffers=4 leaky-type=downstream) was tried as a
++		// stale-frame fix and REVERTED — it shed buffers in STEADY state (Eric saw the Stuntman countdown
++		// "jump around" at stable geometry) AND did not help: the retained backlog (serials 2..109 held at
++		// emit~196) sits DOWNSTREAM of the appsrc (encoder/queue + room-start WebRTC ramp-up), which the
++		// appsrc's own queue leak cannot touch. The real fix must be TARGETED at the reneg boundary, not a
++		// blanket leak. Keeping the appsrc plain.
 +		build.write("appsrc name=video_src is-live=true ")
 +		var fn, fd C.gint
 +		C.doubleToFraction(C.gdouble(fps), &fn, &fd)
