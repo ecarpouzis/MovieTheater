@@ -1,5 +1,5 @@
 diff --git a/core/rend/vulkan/vk_context_lr.cpp b/core/rend/vulkan/vk_context_lr.cpp
-index 1e8fbeb..af6e7a6 100644
+index 1e8fbeb..eef737c 100644
 --- a/core/rend/vulkan/vk_context_lr.cpp
 +++ b/core/rend/vulkan/vk_context_lr.cpp
 @@ -224,6 +224,33 @@ bool VkCreateDevice(retro_vulkan_context* context, VkInstance instance, VkPhysic
@@ -36,3 +36,72 @@ index 1e8fbeb..af6e7a6 100644
  	// create a Device
  	float queuePriority = 1.0f;
  	vk::DeviceQueueCreateInfo deviceQueueCreateInfo[] = {
+@@ -427,11 +454,24 @@ void VulkanContext::PresentFrame(vk::Image image, vk::ImageView imageView, const
+ 	quadDrawer->Draw(cmdBuffer, imageView, vtx, false);
+ 	overlay->Draw(cmdBuffer, extent, config::EmulateFramebuffer ? 1 : (int)config::RenderResolution / 480.f,
+ 			true, true);
++
++	// MovieTheater (custom core, Option A): arm a render-done semaphore for THIS image before endFrame's
++	// submit, then hand it to set_image so the CloudRetro zero-copy capture waits on it. Without this,
++	// flycast's threaded render submit races the frontend's blit (flycast passes no set_image semaphore,
++	// unlike the safe single-threaded paraLLEl-GS) → pre/mid-render reads = garbage/stale. Lazily grow the
++	// per-image ring; pendingSignalSem is consumed by SubmitCommandBuffers (called from endFrame below).
++	int imgIdx = GetCurrentImageIndex();
++	while ((int)renderCompleteSems.size() <= imgIdx)
++		renderCompleteSems.push_back(device.createSemaphoreUnique(vk::SemaphoreCreateInfo()));
++	vk::Semaphore frameSem = *renderCompleteSems[imgIdx];
++	pendingSignalSem = frameSem;
++
+ 	endFrame(image);
+ 
+-	retro_image.image_view = (VkImageView)colorAttachments[GetCurrentImageIndex()]->GetImageView();
+-	retro_image.create_info.image = (VkImage)colorAttachments[GetCurrentImageIndex()]->GetImage();
+-	retro_render_if->set_image(retro_render_if->handle, &retro_image, 0, nullptr, vk::QueueFamilyIgnored);
++	retro_image.image_view = (VkImageView)colorAttachments[imgIdx]->GetImageView();
++	retro_image.create_info.image = (VkImage)colorAttachments[imgIdx]->GetImage();
++	VkSemaphore waitSem = (VkSemaphore)frameSem;
++	retro_render_if->set_image(retro_render_if->handle, &retro_image, 1, &waitSem, vk::QueueFamilyIgnored);
+ }
+ 
+ void VulkanContext::beginFrame(vk::Extent2D extent, vk::Image barrierImage)
+diff --git a/core/rend/vulkan/vk_context_lr.h b/core/rend/vulkan/vk_context_lr.h
+index 3726b98..afc8a5f 100644
+--- a/core/rend/vulkan/vk_context_lr.h
++++ b/core/rend/vulkan/vk_context_lr.h
+@@ -53,7 +53,19 @@ public:
+ 	void WaitIdle() const { queue.waitIdle(); }
+ 	void SubmitCommandBuffers(const std::vector<vk::CommandBuffer> &buffers, vk::Fence fence) {
+ 		retro_render_if->lock_queue(retro_render_if->handle);
+-		queue.submit(vk::SubmitInfo(nullptr, nullptr, buffers, nullptr), fence);
++		// MovieTheater (custom core, Option A): if PresentFrame armed a present-done semaphore, signal it
++		// on THIS submit. flycast renders on its own thread (rend.ThreadedRendering) and passes NO
++		// set_image semaphore, so the CloudRetro zero-copy capture (which imports colorAttachments[idx]
++		// and blits from the emu cothread) would otherwise race this render submit and read a pre/mid-
++		// render image = garbage/stale. Signaling here + passing the same semaphore to set_image lets the
++		// frontend's copy WAIT on render completion (mirrors the Dolphin present-semaphore cure). The
++		// semaphore is single-use per frame and consumed immediately below.
++		vk::Semaphore sig = pendingSignalSem;
++		pendingSignalSem = vk::Semaphore();
++		if (sig)
++			queue.submit(vk::SubmitInfo(nullptr, nullptr, buffers, sig), fence);
++		else
++			queue.submit(vk::SubmitInfo(nullptr, nullptr, buffers, nullptr), fence);
+ 		retro_render_if->unlock_queue(retro_render_if->handle);
+ 	}
+ 	vk::DeviceSize GetUniformBufferAlignment() const { return uniformBufferAlignment; }
+@@ -165,6 +177,15 @@ private:
+ 	std::unique_ptr<VulkanOverlay> overlay;
+ 
+ 	retro_vulkan_image retro_image;
++
++	// MovieTheater (custom core, Option A): per-image render-done semaphores handed to set_image so the
++	// CloudRetro zero-copy capture waits on flycast's (threaded) render before importing the frame. Keyed
++	// by GetCurrentImageIndex() (the frontend sync index, cycles over swapchain size); reused safely
++	// because CommandPool::BeginFrame fences the slot before reuse and the frontend consumes the wait the
++	// same frame. Lazily grown in PresentFrame. `pendingSignalSem` is the scratch handoff to
++	// SubmitCommandBuffers (armed by PresentFrame, signalled + cleared by the very next submit).
++	std::vector<vk::UniqueSemaphore> renderCompleteSems;
++	vk::Semaphore pendingSignalSem;
+ };
+ 
+ const VkApplicationInfo* VkGetApplicationInfo();

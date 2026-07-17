@@ -759,10 +759,10 @@ index 0000000..d2d17c4
 +and **not pushed**. Merge/deploy happens after review and an approved test window.
 diff --git a/RESULTS-vulkan-w3.md b/RESULTS-vulkan-w3.md
 new file mode 100644
-index 0000000..a2d2d49
+index 0000000..d82ab22
 --- /dev/null
 +++ b/RESULTS-vulkan-w3.md
-@@ -0,0 +1,397 @@
+@@ -0,0 +1,466 @@
 +# Worker Vulkan — W3 results (F1 per-game hwContext + PSP/DC Vulkan arms + W5 Dolphin audit)
 +
 +**Branch:** `vulkan-w3` (off `vulkan-w2` @ `7f96784` = the live `worker.exe` / w2fix8 stack: M1+M2 zero-copy, N64 paraLLEl-RDP, v1 surface fix, Vulkan-by-default).
@@ -800,6 +800,75 @@ index 0000000..a2d2d49
 +**dc fix design (two options; we own the flycast custom core):**
 +- **Option B — config-only, cheapest test AND possible full fix (recommended first):** set `reicast_threaded_rendering: disabled` for dc/naomi/atomiswave. `retro_run` then calls `emu.render()` inline on the cothread → render submit → set_image → video_cb → our copy are all sequential on ONE thread = deterministic order = synced (identical safety to paraLLEl-GS). **Zero code, zero build, reversible via one config line.** If the garbage vanishes, the mechanism is 100% confirmed; keep it if dc holds 60fps (DC is light — likely fine), else move to Option A. flycast upstream flags threading "highly recommended" for perf, so measure fps.
 +- **Option A — flycast custom-core patch #2, robust fix that KEEPS threading:** patch flycast to signal a VkSemaphore on the present-frame render submit and pass it to `set_image`: (1) add a `renderComplete` semaphore ring to `VulkanContext`; (2) add it as `signalSemaphores` on the present-pass `SubmitCommandBuffers` (the last submit before `set_image`, in `endFrame`/`CommandPool::EndFrame`); (3) `PresentFrame` passes `set_image(..., 1, &renderComplete[idx], queue_family)`. Our copy **already waits on set_image semaphores** (the gc semaphore-wait fix, `nanoarch_vulkan.c` ~1658) → it binds automatically → synced with threading intact. This mirrors the gc/Dolphin cure exactly; ~20 bounded lines in `vk_context_lr` + wiring the semaphore from `CommandPool::EndFrame` up to `PresentFrame`.
++
++### Follow-up 2: Option B TESTED → REVERTED; Option A BUILT + DEPLOYED + sync-proven (2026-07-17)
++
++**Option B (`reicast_threaded_rendering: disabled`) — REVERTED same day.** Smoke passed (dc held 60fps, ticks/s 59.9–60), but Eric's live play hit **"crazy latency"** and the visual garbage was inconclusive. Reverted immediately (both live configs restored from dated `.bak`, both workers recycled to threaded default). **Option B is permanently off the table for flycast.**
++- *Why inline rendering caused the latency (hypothesis, Option B post-mortem):* with threading disabled, `emu.render()` runs INLINE inside `retro_run` on the emu cothread — the full GS/TA render + the present-quad submit now block the cothread every frame instead of overlapping on flycast's own render thread. That lengthens and destabilises each `retro_run` tick, which is the beat the pacer/audio-master loop is timed against; the pacer's per-frame deficit grows and the client's jitter buffers fill → queued frames = felt latency. (Also flycast upstream flags threading "highly recommended" for perf — inline is a known regression path.) It is a *pacing* cost, not a render cost, which is why fps still read 60 while latency climbed. This is the reason Option B cannot be used for flycast even though it would fix the ordering.
++
++**Option A (flycast custom-core semaphore patch) — BUILT, DEPLOYED, sync-PROVEN.** `flycast-custom-core.patch` hunk #2 (`vk_context_lr.h` + `.cpp`): a per-image `renderCompleteSems` ring keyed by `GetCurrentImageIndex()`, armed in `PresentFrame` via `pendingSignalSem`, signalled on the present-pass `SubmitCommandBuffers` submit, and passed to `set_image(..., 1, &sem, qf)`. Our deployed set_image wait binds automatically (mirrors Dolphin patch #3). Built MinGW/ucrt64 `/O2` (DLL 22,692,864 B, +8KB vs prior custom — no de-opt), deployed to both workers' `assets/cores/flycast_custom_libretro.dll` (dated `.preOptionA.bak`), recycled.
++- **Direct sync proof (glworker, Crazy Taxi):** `setimg_sem(waited=599 none=0)` → `1199/0` → `1799/0` → `2399/0` — `waited` grows every frame, **`none=0`** (Option B was the inverse: `waited=0 none=growing`). dc now hands a semaphore every frame and our copy WAITS on it. Retention clean (`inflight=1/8 span=0`); pace-diag locks 59.9–60.0 ticks/s, meanTick 0.24ms (the wait does NOT stall the emulator); content crisp. **The garbage/stale race is fixed at the mechanism level.**
++
++### LATENCY THREAD (separate problem — opened 2026-07-17, its own round)
++Eric reports **the same "crazy latency" on gc F-Zero**, which Option B never touched → the latency is a **separate problem from the frame/garbage race**. Concrete evidence gathered here:
++- **Option A dc smoke surfaced it too:** video rock-solid 60fps / video-jbMs 7ms, worker audio clean (`audio/s≈44100`), but the **client AUDIO jitter buffer ratcheted 128→~500ms** over ~40s (with `sped` climbing to 41,948 as the client drained). The earlier Option B dc run held audio-jbMs bounded ~100ms. Caveat: this run had a rough boot (shader-compile maxTick 123–159ms, one 39,480-sample conceal event ~12s) that could have kicked off the buffer growth, and the last two samples (523→500) were draining, not still climbing — so boot-stall-triggered vs steady ratchet is unresolved.
++- **Interpretation:** dc latency present *with threading back on* (Option A) ⇒ the inline-render attribution does not explain gc, and the shared cause takes over. Prime candidate = **(a) the deployed frontend set_image semaphore-WAIT** (gc has used it since the F-Zero cure; dc now uses it via Option A — both show latency), a wait-index/ring mismatch would make each frame wait on a stale semaphore and ratchet delay over a session (fits "appeared later"). Also **(b)** always-on instrumentation overhead (cheap to rule out) and **(c)** client/box-side (jitter-buffer/contention ratchet).
++- **Next round (not done here):** instrument the semaphore-wait DURATION per frame on gc (waits ~0ms ⇒ wait code exonerated; waits growing over session ⇒ ring/index bug), plus track client jbMs/playout progression. Option A stays deployed meanwhile — it is proven correct at its job and reverting it would lose the garbage fix without touching the latency (which gc has WITHOUT Option A).
++
++### DC CLOSED + GC latency forensics (2026-07-17)
++
++**DC CLOSED.** Eric real-play verdict: "Crazy Taxi no longer has the latency, and I don't think I see any garbage now." Option A (semaphore) validated — garbage gone. dc's earlier latency was **Option B's inline render** (reverted), NOT the semaphore wait: Eric's live dc pace-diag was clean (`meanTick 0.06–1.15ms`, deficit ~0, not growing) → the wait adds no emu-thread stall. dc done.
++
++**GC latency — forensics (evidence before any code).** Eric: warm F-Zero, **constant 0.5–1s, "mainly input latency" + visual jumps + a wrong frame while idling at the replay screen.** Findings from his LIVE racing session + code:
++- **Semaphore/ring theories REFUTED.** Steady-state gc pace-diag is clean and STABLE (`meanTick 3–8ms`, deficit negative/ahead, no growth across the session) → the set_image semaphore wait does not ratchet and adds no standing delay. The wait is GPU-side (`pWaitSemaphores`), and the only per-frame emu-thread fence wait (nanoarch_vulkan.c:1631, slot-reuse) is ~0ms (slot is GStreamer-freed → blit long done → before reuse); layer-2 host fence (1717) is OFF (`zc_sync_fence=0`, log `sync=semaphore(layer1)`). Magnitude (0.5–1s) alone rules out a k-frame ring off-by (≤~50ms).
++- **audioMaster-repay REFUTED for gc.** gc is **NOT audioMastered** (no `audioMaster` key in the gc config block; only psp sets it). The non-audioMaster pacer FORGIVES stalls (`frontend.go`: `audioEpoch += now-deadline; deadline = now`, `forgiven++` observed) — it does not repay/catch-up. So the repay-accumulation mechanism is not gc's driver.
++- **What IS present: recurring mid-play compile stalls.** During racing, ~6/40 pace windows show stalls (`maxTick 23–164ms`, `slowTicks` 1–4, deficit spikes to +148ms) ≈ 1 per 30s — dolphin shader/pipeline compiles = the "visual jumps." `[MT]` shows the cache **re-warming** (`ubershader_pending` 11752→552 as he plays), consistent with the **patch-#3 dolphin rebuild having purged the coreCache stamp** → Eric has been on cold/rebuilding caches today. Also a mid-session **`[AV-CHANGE] sample_rate 44100→32029`** (dolphin switches audio format) — a candidate client-NetEQ disruption. My warm `--idle` probe was fine (audio jb 50–71ms, draining) because idle/attract has no race-compile stalls; racing hits them — reconciles the discrepancy.
++- **The "wrong frame at idle" is a distinct DUP-path bug (M2 zero-copy).** `handleVideo` sets `lastFrame.Frame.Tex = fi.Tex` — a BORROWED zc-slot GL-texture reference, not a pinned/owned copy (unlike the M1 readback path which copies pixels into `Frame.Data`). GStreamer frees that slot (`nano_vk_zc_release`) after encode; a later frame can re-acquire and re-blit the same slot → the texture id's CONTENT changes out from under `lastFrame`. When `handleDup` re-pushes `lastFrame` (dup-heavy idle/replay screens), it encodes whatever is now in that slot = a wrong/stale frame. Slot is not pinned for `lastFrame`'s lifetime.
++
++**Best-supported mechanism:** dolphin's recurring mid-play compile stalls (acutely worsened by today's patch-#3 cache purge) each cause late-delivery + catch-up/burst that inflate a standing client buffer (video+audio); slow NetEQ/pipeline drain + repeated stalls = the constant 0.5–1s. Testable prediction: as caches re-warm, F-Zero improves across sessions (tomorrow < today).
++
++**Fix directions (DESIGN only — not implemented this round):**
++- (a) ACUTE/self-healing: dolphin shader caches persist + re-warm; the patch-#3 rebuild purged them — verify cache stamp + whether a persistent/precompiled cache can be seeded. Likely the dominant lever.
++- (b) SYSTEMIC stall→buffer protection: on catch-up, advance emulation but push only the NEWEST frame (drop the stale backlog) + bound CUMULATIVE audio forgive/repay (a "repay budget per window") — designed against the crackle/underrun history (arcade-crackle-mechanism), do NOT reintroduce underrun.
++- (c) DUP/slot-reference fix: pin (or serial-guard) the slot `lastFrame` references so a dup cannot push a reused slot's content; or fall the dup back to a copied buffer.
++- Instrumentation to pin (a)-vs-buffer-accumulation needs a worker build+stage for Eric's NEXT room (per-frame wait duration + per-stall audio-sample-burst + video-push count) — NOT a live recycle (his session is live).
++
++### GC latency round 2 — audio-rate probe (#1), cache test (#3), operational fix (#4) — 2026-07-17
++
++**#1 — Audio sample-rate handling: a CONFIRMED LATENT BUG, but NOT the demonstrated F-Zero driver.**
++- The audio GStreamer pipeline appsrc caps rate is **fixed at room-start** (`buildAudioPipeline(srcHz)`, `gstreamer.go:853` `caps=...,rate=%d`; `AudioSrcHz` captured once at `coordinatorhandlers.go:397`). There is **NO renegotiation** on a mid-session `SET_SYSTEM_AV_INFO` sample-rate change — unlike video geometry (which re-caps). `SET_SYSTEM_AV_INFO` DOES update the stored timing (`nanoarch.go:1127`, so the pacer + `AudioSampleRate()` follow), but the resampler ratio + appsrc caps do not. A mid-session rate change would therefore feed e.g. 32029-rate PCM through a `rate=44100→48000` resampler = a ~27% timeline corruption = standing/growing lag. **This should be fixed regardless** (re-cap the audio appsrc on rate change; the audio analog of the video reneg).
++- BUT: the F-Zero logs do **not** show a mid-session sample-rate change — `[AV-CHANGE]` fires on **fps** (59.9453→59.8266), while `sample_rate` prints from==to (`44100→44100` or `32029→32029`). Different F-Zero *rooms* boot at 44100 or 32029, but within a room the rate is stable, and `AudioSrcHz` is captured AFTER `app.Load` (matches the load-time rate). So the trigger for the latent bug does not clearly fire here → **#1 is not the confirmed dominant gc mechanism.** (Add a divergence assert: warn if live `AudioSampleRate()` ever ≠ the pipeline's `AudioSrcHz`.)
++
++**#3 — Cache-warming test (done TODAY, current binary): compile-stall theory SUPPORTED + a per-worker cache split found.**
++- Ran F-Zero attract rooms myself (no human). **Warming demonstrably reduces stalls:** worker 1 went `ubershader_pending` 11752 → ~5 (installed 1016→1206) and stall windows **8/40 → 1/20**. As new attract tracks appear, pending briefly re-climbs (e.g. →965) then re-drains — the cache converges across sessions but F-Zero's varied demo content keeps some churn.
++- **KEY: the dolphin shader cache is PER-WORKER (per ConfDir).** Worker 1 warmed to pending ~5 (stalls 1/20); **worker 2 (`glworker-2`) stayed COLD** (pending 2918, stalls 6/20) because the coordinator kept assigning my rooms to worker 1 (worker 2 hadn't hosted a room since 15:44). **So a title boots warm or cold depending on which worker the room lands on — this alone explains inconsistent per-session latency**, and confirms the cache/compile-stall mechanism is real and material. Recommend Eric's warm re-test note WHICH worker (or warm both first).
++
++**#4 — Operational mitigation (do this):** every core rebuild purges caches by build-identity stamp → post-rebuild the fleet is cold until played. Add an **automated post-rebuild attract-warmup** across BOTH workers for the popular titles of the affected system (esp. gc/dolphin, which compiles heavily) before humans hit them. A small script (occupy worker A, drive a room onto worker B, repeat per popular title) or a documented runbook step. Prevents the "played on a cold fleet" week from recurring.
++
++**HELD (per steer):** the systemic stall→buffer policy (b) — pending #1 (latent, not firing) + #3 (warm-cache re-test). If warm caches on both workers remove the latency, (b) is unnecessary.
++
++**NEXT (staged, not yet built): the DUP-PIN fix (#2) + per-frame latency instrumentation, one binary.** Dup-pin design (serial-guard, cheapest): add `Serial uint64` to `FrameInfo` (from `vk.zc_serial[idx]` at the `nano_vk_zc_frame` return, `nanoarch.go:992/1039`); store it on `lastFrame`; add a C query `nano_vk_zc_tex_current(tex, serial)→bool` (slot holding `tex` still allocated with `serial`); in `handleDup`, skip the push if it fails (a skipped dup is harmless — encoder repeats). Deploy at a pool-idle gate, no live recycle.
++
++### GC latency round 3 — dup-pin binary DEPLOYED + copy-path EXONERATED by direct measurement (2026-07-17)
++
++**Log mining (step 1) — warm/cold verdict is NOT clean; stalls are CONTENT-driven.** Per-session stall rates swing 8%–53% on BOTH workers, uncorrelated with warm/cold: worker-1 (warm) 16:08 session = 8% stalls but 16:17 = 26%; worker-2 (cold) = 25–36%. F-Zero compiles new shaders per new track/scene mid-session, so a warmed worker still stalls on unseen content. → The warm/cold split is a *contributing* factor, not the clean dominant driver; "inconsistency" = which content each session exercises. (Also: logs had no fresh post-reset Eric sessions — mtimes stop at 16:23; analysis used the day's sessions.)
++
++**Dup-pin fix + per-frame block instrumentation — BUILT + DEPLOYED (`worker.duppin.exe` → `worker.exe`, both main workers; rollback `worker.pre-duppin-20260717-183908.exe`).**
++- Dup-pin (serial-guard): `RawFrame`/`FrameInfo` gain `Serial` (from `nano_vk_zc_last_serial()` right after `nano_vk_zc_frame`); `handleDup` calls `nano.ZcTexCurrent(tex,serial)` → C `nano_vk_zc_tex_current` (slot still holds this tex, not free, same serial) and **skips the dup if the slot was reused/freed** (harmless — encoder repeats). Fixes the "wrong frame while idling" class. Readback frames (Serial 0) unaffected.
++- **DECISIVE: the per-frame emu-thread copy block is `block(mean=0.04ms max=0.73–1.79ms n=599)`** in `[zc-stat]`. The whole copy cost (slot-reuse fence wait + record + queue lock + submit) is ~0.04ms/frame. **This directly EXONERATES the capture/copy path (and the semaphore wait) as the gc latency / audio-jitter source** — the coordinator's #1 suspect is measured out. Combined with the content-driven-stall finding, the gc latency mechanism is **dolphin's mid-play shader/pipeline compiles**, not our pipeline.
++- Deploy discipline verified: pool-idle gate, stop tasks→swap→restart (+ watchdog), no crash, `setimg_sem(waited=1199 none=0)`, and **`[MT] pending` stayed low after the swap (worker 1: 271, worker 2: 845 — NOT ~11752) confirming the binary swap does not purge dolphin's cache** (keyed off core-DLL identity, unchanged).
++
++**Deferred to next round (specs):**
++- **Audio-rate-reneg (#4, Eric's "audio issues"):** re-cap/rebuild the GStreamer audio pipeline when `SET_SYSTEM_AV_INFO` changes `sample_rate` (currently fixed at room-start `AudioSrcHz`, no reneg — `gstreamer.go:853`/`coordinatorhandlers.go:397`) + a divergence assert (warn if live `AudioSampleRate()` ≠ pipeline `AudioSrcHz`). LATENT (F-Zero's rate is stable per room, so it doesn't fire), but real for 32kHz-booting gc titles / any rate-hot-switching core. Its own build+deploy.
++- **Commit round (#5):** fork commit (dup-pin + RESULTS) + regenerate `fork.patch = git diff 13852a7 vulkan-w3` + push to `github`; F: commit the config B-revert note on `arcade-worker-graceful-recycle`.
++- **Step 3 (warm worker 2): skipped** — the cold-worker correlation was not cleanly confirmed (content-driven), so the condition wasn't met; worker 2 incidentally warmed to 845 via the smoke probe.
++- **Item 6 (Beetle PSX ps1 diagnostics prep): queued, not started** (correctly after steps 1–5).
++
++### GC latency round 4 — audio-rate-reneg (A) DEPLOYED; compile-stall mitigation (B) was ALREADY in place (2026-07-17)
++
++**A — audio-rate-reneg fix: BUILT + DEPLOYED + validated (`worker.audioreneg.exe` → `worker.exe`; rollback `worker.pre-audioreneg-20260717-185444.exe`).** The audio appsrc caps + resampler ratio were pinned at room-start `AudioSrcHz` with no reneg on a mid-session `SET_SYSTEM_AV_INFO` rate change (gc 32029 vs 44100 class → ~27% timeline drift). Fix: `room` audio callback watches `app.AudioSampleRate()`; on a change it calls `media.ReconfigureAudio(hz)`, which logs the divergence and live-updates the audio appsrc caps rate via `reconfAudioCaps` (mirrors the proven video `pushVideoBuf` caps-reneg). Guarded on `audioBuiltHz != 48000` (a 48000-built pipeline has no resampler; that case — which no rate-switching libretro core hits — is logged-and-skipped rather than broken). Validated: F-Zero (stable rate) did **not** fire the reneg (passive until a real change), block instrumentation intact (`block(mean=0.04ms)`), no crash.
++
++**B — compile-stall mitigation: async UberShaders was ALREADY the gc default; no change needed (evidence-backed).** `dolphin_shader_compilation_mode: "2"` = Async (UberShaders, the hybrid render-with-ubershaders-while-specialized-compile-async mode) is set in the gc config (line 810) and genuinely active: the `[MT] async` compile system runs and dolphin loads the persisted pipeline cache at boot (`Read 1206 pipeline UIDs from ...GFZE01.uidcache`). Value tokens confirmed (numeric strings not labels: "0" Sync, "1" Sync-Uber, "2" Async-Uber, "3" Async-Skip). So the fix the warm/cold theory approximated is already deployed — the residual gc stalls are the irreducible on-demand ubershader-variant / Vulkan-pipeline compilation that async mode minimizes (no specialized-shader stall — it falls back to the ubershader) but can't eliminate for never-seen content. **Offered incremental (NOT flipped — UX tradeoff, Eric's call):** `dolphin_wait_for_shaders: "enabled"` would precompile the cached pipeline UIDs at boot (front-load → fewer mid-play stalls for SEEN content) at the cost of a longer boot; it cannot cover unseen content. Sampled-gate it (boot time vs mid-play stall windows) before defaulting it on.
 +
 +### Phase-2 / W6 fidelity-ceiling queue (carried forward, no action now)
 +- **PS2 Stuntman "visually a bit blurry"** (Eric, 2026-07-17) — likely the PS2 **delivered-resolution ceiling**: paraLLEl-GS scanout extent vs encode size, and/or `scaleMethod`. Investigate whether the core's presented image is below the encode geometry (upscale-on-encode softening) and whether SSAA/scale is landing. Fidelity-ceiling item, not a correctness bug.
@@ -4990,10 +5059,10 @@ index 0000000..03dffe0
 +	}
 +}
 diff --git a/pkg/worker/caged/app/app.go b/pkg/worker/caged/app/app.go
-index e6cbdd4..32833c7 100644
+index e6cbdd4..b9460e4 100644
 --- a/pkg/worker/caged/app/app.go
 +++ b/pkg/worker/caged/app/app.go
-@@ -1,39 +1,41 @@
+@@ -1,39 +1,44 @@
 -package app
 -
 -import "time"
@@ -5070,6 +5139,9 @@ index e6cbdd4..32833c7 100644
 +type RawFrame struct {
 +	// Tex: GL zero-copy (HW cores). Non-zero => the frame is a GL texture, Data is nil.
 +	Tex    uint32
++	// Serial: the zc-slot generation stamped on this texture (dup-pin). Lets handleDup verify the slot
++	// still holds THIS frame before re-pushing a borrowed texture. Zero for the readback path.
++	Serial uint64
 +	Data   []byte
 +	Stride int
 +	W, H   int
@@ -6695,10 +6767,10 @@ index f3553b1..a26a9d8 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..68c4409 100644
+index 6974d59..c59aee7 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,1189 @@
+@@ -1,578 +1,1199 @@
 -package libretro
 -
 -import (
@@ -7545,6 +7617,7 @@ index 6974d59..68c4409 100644
 +
 +	fr.Frame.Data = data
 +	fr.Frame.Tex = fi.Tex
++	fr.Frame.Serial = fi.Serial
 +	fr.Frame.W = int(fi.W)
 +	fr.Frame.H = int(fi.H)
 +	fr.Frame.Stride = int(fi.Stride)
@@ -7557,9 +7630,18 @@ index 6974d59..68c4409 100644
 +}
 +
 +func (f *Frontend) handleDup() {
-+	if lastFrame != nil {
-+		f.onVideo(*lastFrame)
++	if lastFrame == nil {
++		return
 +	}
++	// DUP-PIN (gc "wrong frame at idle"): lastFrame.Frame.Tex is a BORROWED zero-copy slot texture, not an
++	// owned copy. GStreamer frees the slot after encode and a later frame can re-blit new content into the
++	// same texture id — so re-pushing a stale borrowed slot encodes the wrong frame. If this is a zc frame
++	// (Serial != 0) and its slot no longer holds this exact serial, SKIP the dup: a skipped dup is harmless
++	// (the encoder just repeats its last frame). Readback frames (Serial 0) own their pixels — always safe.
++	if lastFrame.Frame.Serial != 0 && !f.nano.ZcTexCurrent(lastFrame.Frame.Tex, lastFrame.Frame.Serial) {
++		return
++	}
++	f.onVideo(*lastFrame)
 +}
 +
 +func (f *Frontend) Shutdown() {
@@ -10294,10 +10376,10 @@ index 669862d..d10f1de 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..bf6ca65 100644
+index 17f10fc..49dd086 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-@@ -1,981 +1,1710 @@
+@@ -1,981 +1,1728 @@
 -package nanoarch
 -
 -import (
@@ -11428,6 +11510,9 @@ index 17f10fc..bf6ca65 100644
 +	// and the frame never left VRAM: the encoder reads the texture directly instead of us pulling it
 +	// back over PCIe with glReadPixels. See graphics/zerocopy.go.
 +	Tex uint32
++	// Serial: zc-slot generation stamped on Tex (dup-pin); read from nano_vk_zc_last_serial right after
++	// the frame. Lets the dup path verify the slot still holds this content before re-pushing it.
++	Serial uint64
 +	W      uint
 +	H      uint
 +	Stride uint
@@ -12261,6 +12346,7 @@ index 17f10fc..bf6ca65 100644
 +
 +	var data_ []byte
 +	var texID uint32
++	var texSerial uint64
 +	if data != C.RETRO_HW_FRAME_BUFFER_VALID {
 +		//noinspection GoRedundantConversion
 +		data_ = unsafe.Slice((*byte)(data), bytes)
@@ -12275,6 +12361,9 @@ index 17f10fc..bf6ca65 100644
 +			Nan0.Handlers.OnDup()
 +			return
 +		}
++		// DUP-PIN: tag this frame with its zc-slot generation (same cothread as the frame just above, so
++		// the serial cannot have advanced). handleDup uses it to skip re-pushing a slot that was reused.
++		texSerial = uint64(C.nano_vk_zc_last_serial())
 +	} else if Nan0.Video.vk.enabled {
 +		// VULKAN CAPTURE (M1 readback): the frame is a VkImage the core just handed us via set_image.
 +		// Copy it into a host-visible staging buffer (blit RGBA->BGRA + copy-to-buffer, fenced) and
@@ -12317,7 +12406,7 @@ index 17f10fc..bf6ca65 100644
 +		dumpFrame(data_, width, height, packed, bpp, int(Nan0.Video.PixFmt.C), data == C.RETRO_HW_FRAME_BUFFER_VALID)
 +	}
 +
-+	Nan0.Handlers.OnVideo(data_, dt, FrameInfo{W: width, H: height, Stride: packed, Tex: texID})
++	Nan0.Handlers.OnVideo(data_, dt, FrameInfo{W: width, H: height, Stride: packed, Tex: texID, Serial: texSerial})
 +}
 +
 +// audioClockFrames accumulates audio frames (per channel) produced since the last read. The frontend
@@ -12328,6 +12417,17 @@ index 17f10fc..bf6ca65 100644
 +
 +// TakeAudioFrames returns and resets the audio frames produced since the last call.
 +func (n *Nanoarch) TakeAudioFrames() int64 { return audioClockFrames.Swap(0) }
++
++// ZcTexCurrent (dup-pin): reports whether GL texture tex is still the live zero-copy slot holding serial.
++// The dup path uses it to avoid re-pushing a borrowed slot whose content was reused/freed. Serial 0 (the
++// readback / GL-pool paths, which do not use the nano zc pool) returns false so the caller can skip the
++// guard for those paths.
++func (n *Nanoarch) ZcTexCurrent(tex uint32, serial uint64) bool {
++	if serial == 0 || tex == 0 {
++		return false
++	}
++	return C.nano_vk_zc_tex_current(C.uint(tex), C.ulonglong(serial)) != 0
++}
 +
 +//export coreAudioSampleBatch
 +func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
@@ -12990,7 +13090,7 @@ index 17f10fc..bf6ca65 100644
 +		Nan0.sys.av.geometry.base_height != geom.base_height
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.h b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
-index 2479d0c..97891a2 100644
+index 2479d0c..26d953b 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 @@ -5,6 +5,8 @@ void bridge_call(void *f);
@@ -13002,7 +13102,7 @@ index 2479d0c..97891a2 100644
  bool bridge_retro_serialize(void *f, void *data, size_t size);
  size_t bridge_retro_serialize_size(void *f);
  bool bridge_retro_unserialize(void *f, void *data, size_t size);
-@@ -32,13 +34,49 @@ void init_video_cgo();
+@@ -32,13 +34,51 @@ void init_video_cgo();
  void deinit_video_cgo();
  
  void same_thread(void *f);
@@ -13038,6 +13138,8 @@ index 2479d0c..97891a2 100644
 +int nano_vk_zc_active(void);
 +int nano_vk_zc_setup(unsigned w, unsigned h);
 +unsigned nano_vk_zc_frame(unsigned width, unsigned height);
++unsigned long long nano_vk_zc_last_serial(void);
++int nano_vk_zc_tex_current(unsigned tex, unsigned long long serial);
 +int nano_vk_zc_release(unsigned texid);
 +void nano_vk_zc_teardown(void);
 +int nano_vk_probe_zerocopy(void);
@@ -13055,10 +13157,10 @@ index 2479d0c..97891a2 100644
  #endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
 new file mode 100644
-index 0000000..66224f0
+index 0000000..adbe830
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
-@@ -0,0 +1,1895 @@
+@@ -0,0 +1,1944 @@
 +// MovieTheater arcade — Vulkan-capture frontend (M1: readback path).
 +//
 +// Lets the CloudRetro worker host libretro cores that render with RETRO_HW_CONTEXT_VULKAN
@@ -13089,6 +13191,7 @@ index 0000000..66224f0
 +#include <pthread.h>
 +#include <stdint.h>
 +#include <string.h>
++#include <time.h>
 +
 +#define VK_NO_PROTOTYPES
 +#include "libretro_vulkan.h"
@@ -13380,7 +13483,20 @@ index 0000000..66224f0
 +    unsigned long long stat_frame;  // last frame_serial at which the always-on [zc-stat] line was emitted
 +    unsigned last_w, last_h;        // last geometry seen by nano_vk_zc_frame
 +    unsigned sub16_w, sub16_h;      // last sub-16px geometry dropped
++    // Per-frame emu-thread CPU-BLOCK instrumentation (gc-latency investigation): wall-time the copy path
++    // blocks the emu cothread each frame (slot-reuse fence wait 1631 + queue lock + submit). If this
++    // grows/ratchets it jitters audio production; ~0ms exonerates the capture path. Reset per stat window.
++    double zc_block_sum_ms;         // sum of per-frame block ms in the current window
++    double zc_block_max_ms;         // worst per-frame block ms in the current window
++    unsigned long long zc_block_n;  // frames measured in the current window
 +} vk_dbg;
++
++// Monotonic wall clock in ms (ucrt64/mingw has clock_gettime). Cheap; used for the per-frame block probe.
++static inline double nano_now_ms(void) {
++    struct timespec ts;
++    clock_gettime(CLOCK_MONOTONIC, &ts);
++    return (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1.0e6;
++}
 +
 +void nano_vk_dbg_reset(void) { memset(&vk_dbg, 0, sizeof(vk_dbg)); }
 +void nano_vk_dbg_log(void) {
@@ -14559,6 +14675,27 @@ index 0000000..66224f0
 +int nano_vk_zc_wanted(void) { return (vk.zc_enabled && !vk.zc_fallback) ? 1 : 0; }
 +int nano_vk_zc_active(void) { return vk.zc_active; }
 +
++// DUP-PIN (gc "wrong frame at idle"): the serial stamped on the slot the most recent nano_vk_zc_frame
++// filled. Go reads it right after nano_vk_zc_frame (same cothread, no race) to tag the frame so a later
++// dup can verify the slot still holds THIS content before re-pushing it.
++unsigned long long nano_vk_zc_last_serial(void) { return vk.frame_serial; }
++
++// DUP-PIN: is GL texture `tex` STILL the live current-gen slot holding `serial`? lastFrame borrows a raw
++// zc-slot texture; GStreamer frees the slot after encode and a later frame can re-blit new content into
++// the same texture id. Before re-pushing lastFrame, handleDup asks this: return 1 only if some current
++// slot has this exact tex, is NOT free, and carries the same serial. Any mismatch (freed / reused / a
++// retired gen after a geometry flip) => 0 => skip the dup (harmless: the encoder simply repeats).
++int nano_vk_zc_tex_current(unsigned tex, unsigned long long serial) {
++    if (!vk.zc_mutex_init || tex == 0) return 0;
++    int ok = 0;
++    pthread_mutex_lock(&vk.zc_mutex);
++    for (int i = 0; i < NANO_VK_ZC_SLOTS; i++) {
++        if (vk.zc_tex[i] == (GLuint)tex && !vk.zc_free[i] && vk.zc_serial[i] == serial) { ok = 1; break; }
++    }
++    pthread_mutex_unlock(&vk.zc_mutex);
++    return ok;
++}
++
 +// Build the import context's GL function table, the Vulkan command pool + fences, and the initial pool.
 +// WGL context must be current on the calling (cothread) thread. Returns 0 on success.
 +int nano_vk_zc_setup(unsigned w, unsigned h) {
@@ -14678,11 +14815,19 @@ index 0000000..66224f0
 +        int nheld = 0; uint64_t lo = 0, hi = 0;
 +        for (int i = 0; i < NANO_VK_ZC_SLOTS; i++)
 +            if (!vk.zc_free[i]) { nheld++; uint64_t s = vk.zc_serial[i]; if (!lo || s < lo) lo = s; if (s > hi) hi = s; }
-+        VKLOG(RETRO_LOG_INFO, "[zc-stat] emit=%llu inflight=%d/%d serials[%llu..%llu span=%llu] setimg_sem(waited=%llu none=%llu) reallocs=%llu\n",
++        double blk_mean = vk_dbg.zc_block_n ? vk_dbg.zc_block_sum_ms / (double)vk_dbg.zc_block_n : 0.0;
++        VKLOG(RETRO_LOG_INFO, "[zc-stat] emit=%llu inflight=%d/%d serials[%llu..%llu span=%llu] setimg_sem(waited=%llu none=%llu) reallocs=%llu block(mean=%.2fms max=%.2fms n=%llu)\n",
 +              (unsigned long long)vk.frame_serial, nheld, NANO_VK_ZC_SLOTS,
 +              (unsigned long long)lo, (unsigned long long)hi, (unsigned long long)(hi > lo ? hi - lo : 0),
-+              vk_dbg.sem_setimg_waited, vk_dbg.sem_setimg_none, (unsigned long long)vk.realloc_count);
++              vk_dbg.sem_setimg_waited, vk_dbg.sem_setimg_none, (unsigned long long)vk.realloc_count,
++              blk_mean, vk_dbg.zc_block_max_ms, vk_dbg.zc_block_n);
++        vk_dbg.zc_block_sum_ms = 0.0; vk_dbg.zc_block_max_ms = 0.0; vk_dbg.zc_block_n = 0;
 +    }
++
++    // Per-frame emu-thread block probe (gc-latency): time the whole copy CPU cost — slot-reuse fence
++    // wait + command recording + queue lock + submit. Growing/large here = the capture path stalling the
++    // emu thread (audio-jitter suspect); ~0ms exonerates it. Ended just after the submit below.
++    double _blk_t0 = nano_now_ms();
 +
 +    VkCommandBuffer cb = vk.zc_cmd[idx];
 +    VkFence fence = vk.zc_fence[idx];
@@ -14761,6 +14906,12 @@ index 0000000..66224f0
 +    cb_lock_queue(&vk);
 +    VkResult r = vk.fn.QueueSubmit(vk.queue, 1, &si, fence);
 +    cb_unlock_queue(&vk);
++    {
++        double _blk = nano_now_ms() - _blk_t0;
++        vk_dbg.zc_block_sum_ms += _blk;
++        if (_blk > vk_dbg.zc_block_max_ms) vk_dbg.zc_block_max_ms = _blk;
++        vk_dbg.zc_block_n++;
++    }
 +    // A set_image semaphore is single-use: it was signalled once by the core's blit and consumed by this
 +    // submit's wait. Clear so the NEXT frame (which may be a dup with no fresh set_image) can't re-wait a
 +    // spent semaphore. The core re-arms wait_sems on its next set_image.
@@ -45912,10 +46063,10 @@ index 0000000..be84e8e
 +	C.zc_push(g.v.src(), C.uint(texID), C.int(w), C.int(h), C.ulonglong(durNs))
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..3dd74fb 100644
+index 4a6171f..94789ec 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,983 @@
+@@ -1,579 +1,1034 @@
 -package media
 -
 -import (
@@ -46588,6 +46739,29 @@ index 4a6171f..3dd74fb 100644
 +	gst_app_src_push_buffer(src, buf);
 +}
 +
++// reconfAudioCaps re-caps the audio appsrc when the core changes its sample rate mid-session
++// (SET_SYSTEM_AV_INFO). The appsrc caps + the audioresample ratio are fixed at pipeline build time, so
++// an unhandled rate change feeds e.g. 32029-rate PCM through a 44100->48000 resampler = a ~27% audio
++// timeline drift (a standing/growing lag). Mirrors the video pushVideoBuf caps-renegotiation exactly:
++// update only "rate" (format/channels/layout preserved); audioresample re-derives its ratio to 48000.
++// Only valid when a resampler is present (room built at a non-48000 rate — the caller guards on that).
++static inline void reconfAudioCaps(GstAppSrc *src, gint rate) {
++	GstCaps *cur = gst_app_src_get_caps(src);
++	if (cur) {
++		GstStructure *st = gst_caps_get_structure(cur, 0);
++		gint cr = 0;
++		gst_structure_get_int(st, "rate", &cr);
++		if (cr != rate) {
++			g_printerr("[audio] source caps rate %d -> %d (core sample_rate changed)\n", cr, rate);
++			GstCaps *nc = gst_caps_copy(cur);
++			gst_caps_set_simple(nc, "rate", G_TYPE_INT, rate, NULL);
++			gst_app_src_set_caps(src, nc);
++			gst_caps_unref(nc);
++		}
++		gst_caps_unref(cur);
++	}
++}
++
 +// pullMappedBuffer pulls a sample from the appsink, gets its buffer,
 +// and maps it for reading. Returns the buffer (with ref held) on success,
 +// or NULL if no sample/buffer is available.
@@ -46682,6 +46856,11 @@ index 4a6171f..3dd74fb 100644
 +	ScaleMethod    string
 +	MaxThreads     int
 +	AudioSrcHz     int
++	// audioBuiltHz: the rate the audio pipeline was actually built at (initAudio). A live re-cap
++	// (ReconfigureAudio) is only valid when a resampler is present, i.e. the room was built at a
++	// non-48000 rate; if it was built at 48000 there is no audioresample and re-capping to a non-opus
++	// rate would break the pipeline, so we log-and-skip that (essentially-never) case.
++	audioBuiltHz   int
 +	VideoVFR       bool
 +	VideoFPS       float64
 +
@@ -46855,8 +47034,31 @@ index 4a6171f..3dd74fb 100644
 +	return nil
 +}
 +
++// ReconfigureAudio re-caps the audio appsrc when the core changes its sample rate mid-session
++// (SET_SYSTEM_AV_INFO). Without it the appsrc caps + audioresample ratio stay pinned to the room-start
++// rate, drifting the audio timeline (gc 32029 vs 44100 class = a latent standing/growing lag). Called
++// from the room's audio callback when the emulator's live rate diverges from what we built. Safe to call
++// on the audio-cb thread (same thread ProcessAudio runs on — no concurrent appsrc access).
++func (g *GstMediaPipe) ReconfigureAudio(hz int) {
++	if hz <= 0 || hz == g.AudioSrcHz || g.a == nil {
++		return
++	}
++	if g.audioBuiltHz == 48000 {
++		// No resampler in the pipeline (built straight-to-opus at 48000); re-capping to a non-opus rate
++		// would fail to link. This case does not occur for the libretro cores that hot-switch rates
++		// (all boot at 32029/44100); log so we'd see it if a new core ever hit it.
++		g.log.Warn().Msgf("[audio] core sample_rate %d->%d but pipeline built at 48000 (no resampler) — NOT re-capped; would need a rebuild", g.AudioSrcHz, hz)
++		g.AudioSrcHz = hz
++		return
++	}
++	g.log.Info().Msgf("[audio] core sample_rate changed %d -> %d; re-capping appsrc (was pinned = timeline drift)", g.AudioSrcHz, hz)
++	g.AudioSrcHz = hz
++	C.reconfAudioCaps(g.a.src(), C.gint(hz))
++}
++
 +func (g *GstMediaPipe) initAudio() (err error) {
 +	srcHz := g.AudioSrcHz
++	g.audioBuiltHz = srcHz
 +	g.a, err = buildAudioPipeline(srcHz, g.conf, g.log)
 +	if err != nil {
 +		return
@@ -48021,10 +48223,10 @@ index f3e898f..cc81359 100644
 +	}
 +}
 diff --git a/pkg/worker/room/room.go b/pkg/worker/room/room.go
-index 9ff9576..c66252b 100644
+index 9ff9576..808e5b4 100644
 --- a/pkg/worker/room/room.go
 +++ b/pkg/worker/room/room.go
-@@ -1,171 +1,253 @@
+@@ -1,171 +1,270 @@
 -package room
 -
 -import (
@@ -48226,6 +48428,8 @@ index 9ff9576..c66252b 100644
 +	Reinit() error
 +	// ProcessAudio pushes 16bit PCM audio frames into the encoder.
 +	ProcessAudio([]byte, func([]byte, time.Duration))
++	// ReconfigureAudio re-caps the audio pipeline when the core changes its sample rate mid-session.
++	ReconfigureAudio(int)
 +	// ProcessVideo pushes a video frame into the encoder.
 +	ProcessVideo(media.Video, func([]byte, time.Duration))
 +	// SetVideoSink hands the encoder the callback that ships encoded frames to the peers.
@@ -48264,6 +48468,12 @@ index 9ff9576..c66252b 100644
 +	media MediaPipe
 +	users SessionManager[T]
 +
++	// lastAudioHz: the core sample rate we last saw in the audio callback. Detects a mid-session
++	// SET_SYSTEM_AV_INFO rate change so we re-cap the audio pipeline (audio-rate-reneg fix). 0 until
++	// the first audio frame; the room-start build already matches the initial rate, so the first
++	// observation only records it (no reconfigure).
++	lastAudioHz int
++
 +	// atomic: the ABR loop (patch 0021) reads this from its own goroutine while Close() writes it.
 +	closed      atomic.Bool
 +	HandleClose func()
@@ -48286,6 +48496,15 @@ index 9ff9576..c66252b 100644
 +		}
 +	})
 +	r.app.SetAudioCb(func(a app.Audio) {
++		// AUDIO-RATE-RENEG: watch for a mid-session sample-rate change (a core issuing SET_SYSTEM_AV_INFO
++		// with a new rate — gc 32029 vs 44100 class). The audio appsrc caps + resampler ratio are pinned
++		// at room-start, so an unhandled change drifts the audio timeline. Cheap int compare per batch.
++		if hz := r.app.AudioSampleRate(); hz > 0 && hz != r.lastAudioHz {
++			if r.lastAudioHz != 0 {
++				r.media.ReconfigureAudio(hz)
++			}
++			r.lastAudioHz = hz
++		}
 +		r.media.ProcessAudio(a.Data, r.sendAudio)
 +	})
 +	r.app.SetVideoCb(func(v app.Video) {
