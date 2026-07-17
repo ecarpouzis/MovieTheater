@@ -759,10 +759,10 @@ index 0000000..d2d17c4
 +and **not pushed**. Merge/deploy happens after review and an approved test window.
 diff --git a/RESULTS-vulkan-w3.md b/RESULTS-vulkan-w3.md
 new file mode 100644
-index 0000000..e523d92
+index 0000000..5d5d29a
 --- /dev/null
 +++ b/RESULTS-vulkan-w3.md
-@@ -0,0 +1,331 @@
+@@ -0,0 +1,362 @@
 +# Worker Vulkan — W3 results (F1 per-game hwContext + PSP/DC Vulkan arms + W5 Dolphin audit)
 +
 +**Branch:** `vulkan-w3` (off `vulkan-w2` @ `7f96784` = the live `worker.exe` / w2fix8 stack: M1+M2 zero-copy, N64 paraLLEl-RDP, v1 surface fix, Vulkan-by-default).
@@ -928,9 +928,9 @@ index 0000000..e523d92
 +| n64 | **Vulkan** (paraLLEl-RDP, zero-copy) | validated (Mario Kart 64) — pre-existing |
 +| psp | **Vulkan** (PPSSPP-Vk, zero-copy) | **W3.1 fix** — vk_synthetic_surface. Daxter 960x540/30fps, LocoRoco 60fps, 0 freezes, memstick harvest OK |
 +| gc | **Vulkan** (Dolphin VKGfx, zero-copy) | **W5-LIVE fix** — vk_synthetic_surface. 1280x1056/60fps warm; one-time cold-cache warm-up first boot/game |
-+| dc | GL (flycast) | flycast-Vk **not viable** (W4-LIVE); GL renders fine |
-+| naomi | GL (flycast) | same core/issue as dc; stays GL |
-+| atomiswave | GL (flycast) | same core/issue as dc; stays GL |
++| dc | **Vulkan** (flycast_custom, zero-copy) | **W4-LIVE fix 2026-07-16** — custom core honors zc injection + hw_render copy fix. Crazy Taxi 1280x960/60fps, 0 freeze, VMU harvest OK, close ×5 clean |
++| naomi | Vulkan (flycast_custom) — lockstep | same core+fix as dc; flip in progress (one boot probe each) |
++| atomiswave | Vulkan (flycast_custom) — lockstep | same core+fix as dc; flip in progress (one boot probe each) |
 +| ps1 | GL (pcsx_rearmed, sw enhanced 2x) | not a Vulkan target; W8 evaluates a beetle_psx_hw-Vk flip (below) |
 +
 +Production binary: **bin/worker.exe = w3fix4** (vulkan-w3 HEAD: F1 + synthetic surface + flycast fix +
@@ -945,7 +945,7 @@ index 0000000..e523d92
 +| paraLLEl-RDP (n64) | 1 | no | no | v1 create_device (required_device_extensions injection) | no | yes |
 +| PPSSPP (psp) | 2 | no | no | v1 create_device (v2 reported, no callbacks) | **YES** (else 0xC0000005) | yes |
 +| Dolphin (gc) | 2 | no | no | v1 create_device | **YES** (else silent no-video) | yes |
-+| flycast (dc) | **1** | yes* | yes* | v1 create_device — the v2 fields are a GARBAGE MISREAD (calling them crashes, PC=0x100000004) | n/a | **NO** (ignores injection) |
++| flycast (dc) | **1** | yes* | yes* | v1 create_device — v2 fields are a GARBAGE MISREAD (ignore them); **custom core honors required_device_extensions** | no (works w/o; synthetic surface untested) | **yes** (custom core + hw_render copy fix) |
 +| beetle_psx_hw (ps1) | TBD (has vkCreateDevice) | TBD | TBD | not yet probed (W8) | TBD | TBD |
 +
 +Two load-bearing lessons: (1) select the v2 callbacks by interface_version >= 2 AND the callback pointer —
@@ -957,13 +957,12 @@ index 0000000..e523d92
 +
 +| Class | Systems | Vulkan gain? |
 +|---|---|---|
-+| **Vulkan-capable, FLIPPED** | ps2, n64, psp, gc | done — zero-copy Vulkan live |
++| **Vulkan-capable, FLIPPED** | ps2, n64, psp, gc, **dc** (+naomi/atomiswave lockstep) | done — zero-copy Vulkan live (dc via flycast_custom + hw_render copy fix, 2026-07-16) |
 +| **Vulkan-capable, evaluate** | ps1 (beetle_psx_hw) | W8: pending save-continuity proof + probe |
-+| **Vulkan-capable, NOT viable on our stack** | dc/naomi/atomiswave (flycast v1) | flycast-Vk blocked (v1 ignores zc injection; v2 misread crashes). Stays GL |
 +| **Pure-software (no hw renderer — nothing to gain)** | nes, snes, gb/gbc/gba, genesis/megadrive/segacd, sms/gg, pce, ngp, ws, lynx, atari, arcade (FBNeo 2D), psx-sw | encode at native xN nearest; Vulkan is irrelevant — DONE by definition |
 +
-+So the Vulkan effort's DONE state = {ps2,n64,psp,gc} flipped, ps1 pending W8, dc-family blocked-by-core,
-+everything 2D out-of-scope-by-nature. No open Vulkan work beyond ps1 and (if ever) a flycast source fix.
++So the Vulkan effort's DONE state = {ps2,n64,psp,gc,dc} flipped (naomi/atomiswave lockstep in progress),
++ps1 pending W8, everything 2D out-of-scope-by-nature. No open Vulkan work beyond ps1.
 +
 +## Per-system evidence
 +
@@ -973,15 +972,47 @@ index 0000000..e523d92
 +(0 freezes/dropped); LocoRoco @60fps (0 freezes). Memstick card seed+harvest confirmed ("seeded/harvested
 +user ... psp card") — save continuity intact, renderer-agnostic.
 +
-+**dc/naomi/atomiswave (W4-LIVE) — flycast-Vk NOT viable.** Crazy Taxi on the presence-gated build crashed at
-+create_instance with PC=0x100000004 (garbage) — flycast is a genuine v1 core; its non-null
-+create_instance/create_device2 fields are a struct misread. Reverted to interface_version >= 2 gating.
-+flycast's v1 create_device also ignores our required_device_extensions (enables only VK_KHR_swapchain +
-+VK_EXT_provoking_vertex), so it cannot zero-copy at all. Geometry confirmed "System A/V >>> 640x480
-+(2560x2560)" — base 640x480. Added a **fail-soft** (vk.captureBroken) so a Vulkan core whose GL-committed
-+pipeline cannot zero-copy drops frames (black) instead of crashing the worker — there is no recover() on the
-+room-load path, so this is the only thing between a zc-mismatch and a pool-killing crash. flycast-Vk would
-+need a forced-readback CPU pipeline path or a flycast source fix — out of scope.
++**dc/naomi/atomiswave (W4-LIVE) — RESOLVED 2026-07-16: flycast-Vk IS viable and LIVE.** The earlier
++"not viable" verdict was WRONG on both counts. (1) flycast is a genuine v1 core (its create_instance/
++create_device2 fields ARE a misread — that part held), but its v1 create_device honors our injected
++zero-copy extensions once the **custom core** (`docker/arcade/flycast-custom-core.patch` — VkCreateDevice
++loops over `required_device_extensions`) is built. Zero-copy is **ACTIVE** (set_image==zc_tex, 0 drops).
++(2) The real crash was **OURS, not flycast's**: our SET_HW_RENDER handler stored the core's
++`retro_hw_render_callback` POINTER, and flycast declares that struct as a **stack local**
++(`set_vulkan_hw_render()`, libretro.cpp:2042), so the pointer dangled the instant that function returned;
++`context_reset` later called a garbage fn ptr → GPF right after "zero-copy: ACTIVE". Fix = **copy** the
++struct (`nano_store_hw_render`, nanoarch.c/.go), matching RetroArch. **LIVE:** Crazy Taxi 60fps/0-freeze/0-
++dropped, 1280x960 (internal 1920x1440), zero-copy ACTIVE, VMU seed+harvest cycling, close ×5 on one PID with
++no wedge. dc flipped to `flycast_custom_libretro` + `hwContext: vulkan` (fork 3047753, F: b7ab83f). The
++fail-soft (vk.captureBroken) stays as belt-and-braces. naomi/atomiswave share the core → same fix applies.
++
++**How the crash was cracked (method, for the file).** The GPF PC *varied across runs* (0x1407498c0,
++0x1407499b0, 0x0, **0x1**) — the signature of a **call through a garbage function pointer**, not a fixed
++null-deref. The GIPA-instrumentation hypothesis was exonerated (746 requests, 44 NULLs, all benign KHR-
++aliases/optional-EXT). What named the culprit: a **RelWithDebInfo flycast build** whose GPF handler was
++patched to **stack-walk `[rsp]`** and print each return address's module+RVA. RET[0] resolved to
++**worker.exe RVA 0x7499b3 = our own `run_loop` (`nanoarch.c:388` `((void(*)(void))call.fn)()`)** dispatching
++`Nan0.Video.hw.context_reset` — i.e. the dangling pointer. The earlier "flycast DLL" PCs were also
++worker.exe (base 0x140000000), originally misattributed.
++
++**GPF stack-walk diagnostic — where it lives, how to resurrect it (NOT shipped in the release patch).**
++Deliberately kept OUT of `flycast-custom-core.patch` so the production release core stays minimal. It is a
++local edit to `D:\Arcade\build\flycast\core\windows\fault_handler.cpp` (in the `[GPF]` handler at ~line 156):
++after the existing PC print, a lambda `printModRva(tag, addr)` does `GetModuleHandleExA(FROM_ADDRESS|
++UNCHANGED_REFCOUNT)` + `GetModuleFileNameA` and prints `module=…base=…RVA=(addr-base)`; it prints the PC and
++then walks 12 stack slots from `context.rsp` (`RET[0..11]`) — the pushed return address of a garbage-target
++`call` names the caller. To resurrect for the next flycast crash: re-apply that edit, then build the
++**symbolized DLL**:
++```
++export PATH=/d/msys64/ucrt64/bin:$PATH
++cd /d/Arcade/build/flycast
++cmake -S . -B bld-dbg -G Ninja -DLIBRETRO=ON -DUSE_LIBCDIO=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
++cmake --build bld-dbg --target flycast_libretro --parallel 14
++cp bld-dbg/flycast_libretro.dll flycast_dbg_libretro.dll   # ~198 MB, DWARF-symboled
++```
++Deploy it over `…/assets/cores/flycast_custom_libretro.dll` (back up the release DLL first), reproduce, then
++`addr2line -f -C -e <the crashing module> <PC or RET RVA>`. The DLL loads at an ASLR base, so the printed
++`RVA` (not the raw PC) is what addr2line resolves. (`bld-dbg` + `flycast_dbg_libretro.dll` are already built.)
 +
 +**gc (W5-LIVE) — root-caused and FIXED (my earlier NO-GO was wrong).** Instrumented probe
 +(CLOUD_GAME_VK_DEBUG=1, sole main worker) settled it: without a surface, over 60s retro_run ticked 3221x
@@ -10220,10 +10251,10 @@ index 669862d..d10f1de 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..1e1b8f2 100644
+index 17f10fc..bf6ca65 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-@@ -1,981 +1,1694 @@
+@@ -1,981 +1,1710 @@
 -package nanoarch
 -
 -import (
@@ -12523,7 +12554,18 @@ index 17f10fc..1e1b8f2 100644
 +		return true
 +	case C.RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
 +		Nan0.log.Debug().Msgf("Keyboard event callback was set")
-+		Nan0.keyboardCb = (*C.struct_retro_keyboard_callback)(data)
++		// COPY the struct — do NOT retain the core's pointer (same dangling class as the SET_HW_RENDER
++		// fix, nano_store_hw_render). This .callback fn ptr is dereferenced on EVERY keypress during
++		// gameplay (bridge_retro_keyboard_callback), long after this env call returns; a core that passes
++		// a stack-local retro_keyboard_callback would leave us calling a garbage pointer. Cores that use a
++		// static struct were unaffected — but a copy is correct for all. Mirrors the audioBuffCb handler.
++		if data == nil {
++			Nan0.keyboardCb = nil
++			return true
++		}
++		src := (*C.struct_retro_keyboard_callback)(data)
++		Nan0.keyboardCb = new(C.struct_retro_keyboard_callback)
++		*Nan0.keyboardCb = *src
 +		return true
 +	case C.RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK:
 +		if data == nil {
@@ -12678,7 +12720,12 @@ index 17f10fc..1e1b8f2 100644
 +	if Nan0.hackVkSyntheticSurface {
 +		on = 1
 +	}
-+	C.nano_vk_set_synthetic_surface(C.int(on))
++	// Size the hidden surface window to the core's MAX geometry. Dolphin sizes its swapchain from the
++	// surface, so a tiny (16x16) window collapsed every gc frame to a point-sample (root cause 2026-07-17).
++	// max_width/max_height is the upper bound the core will render (efb-scaled for gc); falls back in C.
++	w := int(Nan0.sys.av.geometry.max_width)
++	h := int(Nan0.sys.av.geometry.max_height)
++	C.nano_vk_set_synthetic_surface(C.int(on), C.int(w), C.int(h))
 +	// Phase 1b: instrument the get_instance_proc_addr we hand the core (flycast builds its whole dispatch
 +	// from it). Gated by CLOUD_GAME_VK_DEBUG so production is unaffected.
 +	dbg := 0
@@ -12900,7 +12947,7 @@ index 17f10fc..1e1b8f2 100644
 +		Nan0.sys.av.geometry.base_height != geom.base_height
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.h b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
-index 2479d0c..be133df 100644
+index 2479d0c..97891a2 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 @@ -5,6 +5,8 @@ void bridge_call(void *f);
@@ -12935,7 +12982,7 @@ index 2479d0c..be133df 100644
 +void init_video_vk_cgo(void);
 +void deinit_video_vk_cgo(void);
 +// W3.1 fix: hand a real hidden-window VkSurfaceKHR to cores that require a non-null surface (PPSSPP).
-+void nano_vk_set_synthetic_surface(int on);
++void nano_vk_set_synthetic_surface(int on, int w, int h);
 +// Phase 1b: log every symbol the core requests through the get_instance_proc_addr we hand create_device.
 +void nano_vk_set_log_gipa(int on);
 +// gc root-cause debug instrumentation (CLOUD_GAME_VK_DEBUG). Counters in nanoarch_vulkan.c.
@@ -12965,10 +13012,10 @@ index 2479d0c..be133df 100644
  #endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
 new file mode 100644
-index 0000000..394e013
+index 0000000..2202f0a
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
-@@ -0,0 +1,1793 @@
+@@ -0,0 +1,1854 @@
 +// MovieTheater arcade — Vulkan-capture frontend (M1: readback path).
 +//
 +// Lets the CloudRetro worker host libretro cores that render with RETRO_HW_CONTEXT_VULKAN
@@ -13168,6 +13215,7 @@ index 0000000..394e013
 +    // So we hand the core a REAL surface backed by a hidden window. paraLLEl-GS/paraLLEl-RDP never touch a
 +    // surface, so this is strictly opt-in per core (the hack) and leaves those paths at VK_NULL_HANDLE.
 +    int          synth_surface_wanted; // armed before nano_vk_init (hack vk_synthetic_surface)
++    int          synth_w, synth_h;     // hidden-window size = the core's geometry (see the tiny-window bug)
 +    HWND         synth_hwnd;           // hidden WS_POPUP window backing the surface (never shown)
 +    VkSurfaceKHR synth_surface;        // handed to create_device instead of VK_NULL_HANDLE
 +
@@ -13248,6 +13296,20 @@ index 0000000..394e013
 +    GLuint                  zc_r_tex[NANO_VK_ZC_SLOTS];
 +    VkSemaphore             zc_r_ready[NANO_VK_ZC_SLOTS];
 +    GLuint                  zc_r_gl_ready[NANO_VK_ZC_SLOTS];
++    // ---- Frame-ordering instrumentation (Round 4, the Stuntman stale-frame probe) ----------------
++    // A monotonic serial is stamped on each slot at copy time; the frontend EMITS in serial order by
++    // construction (zc_frame is synchronous per video_cb). So if the client sees a stale/old frame while
++    // these serials stay ordered at emit, the reordering is DOWNSTREAM (encoder/RTP), not the zc pool.
++    // The RELEASE order (GStreamer frees a slot after the encoder consumed its frame) is the proxy for
++    // "encoder consumed": a LOWER serial released after a higher one = a stale/reordered frame reached the
++    // encoder late — the direct smoking gun. Retire-time in-flight count = frames queued across a flip.
++    uint64_t                zc_serial[NANO_VK_ZC_SLOTS]; // serial stamped when the slot is filled
++    uint64_t                zc_r_serial[NANO_VK_ZC_SLOTS]; // serial carried into the retired gen (stale probe)
++    uint64_t                frame_serial;                // monotonic; ++ per copied frame
++    uint64_t                last_released_serial;        // highest serial GStreamer has released
++    unsigned long long      release_disorder;            // count of out-of-order releases (stale/reorder)
++    unsigned long long      realloc_count;               // geometry reallocations seen
++    int                     retire_inflight_max;         // max slots in-flight across any reallocation
 +};
 +
 +static struct nano_vk vk;
@@ -13283,6 +13345,9 @@ index 0000000..394e013
 +          vk_dbg.sem_begin, vk_dbg.sem_done, vk_dbg.last_w, vk_dbg.last_h);
 +    VKLOG(RETRO_LOG_INFO, "[vkdbg-c2] sync-index protocol: get_sync_index=%llu wait_sync_index=%llu set_command_buffers=%llu sync_index=%u\n",
 +          vk_dbg.get_sync, vk_dbg.wait_sync, vk_dbg.set_cmdbuf, vk.sync_index);
++    VKLOG(RETRO_LOG_INFO, "[vkdbg-c3] frame-order: emit_serial=%llu released=%llu reallocs=%llu inflight_max=%d OUT-OF-ORDER_releases=%llu\n",
++          (unsigned long long)vk.frame_serial, (unsigned long long)vk.last_released_serial,
++          (unsigned long long)vk.realloc_count, vk.retire_inflight_max, vk.release_disorder);
 +}
 +
 +// ===================================================================================================
@@ -13603,7 +13668,17 @@ index 0000000..394e013
 +// Arm the synthetic-surface path (hack vk_synthetic_surface). Called from Go BEFORE nano_vk_init, like
 +// nano_vk_zc_set_enabled — a plain flag write, so thread-independent. Always called with an explicit
 +// 0/1 so a previous room's value can never persist.
-+void nano_vk_set_synthetic_surface(int on) { vk.synth_surface_wanted = on ? 1 : 0; }
++void nano_vk_set_synthetic_surface(int on, int w, int h) {
++    vk.synth_surface_wanted = on ? 1 : 0;
++    // The hidden window's size determines the surface currentExtent, and a core that sizes its swapchain
++    // from surface caps (Dolphin) will render into a swapchain image THAT big. A 16x16 window made Dolphin
++    // blit the full XFB into a 16x16 image, which set_image then handed us to stretch to full res — a flat
++    // point-sample of the scene + huge edge smears, on every gc title (root cause 2026-07-17). So size the
++    // window to the core's geometry. PPSSPP ignores the window (its warp allocates from its own render
++    // dims), so this is inert for psp.
++    vk.synth_w = w;
++    vk.synth_h = h;
++}
 +
 +// ---- get_instance_proc_addr instrumentation (Phase 1b, CLOUD_GAME_VK_DEBUG) --------------------------
 +// flycast is the FIRST core that builds its ENTIRE Vulkan dispatch (vulkan-hpp VULKAN_HPP_DEFAULT_DISPATCHER
@@ -13642,8 +13717,14 @@ index 0000000..394e013
 +    wc.lpszClassName = NANO_VK_SURF_CLASS;
 +    RegisterClassExW(&wc); // ignore ERROR_CLASS_ALREADY_EXISTS (a prior room on this process registered it)
 +
++    // Size the hidden window to the core's geometry (NOT 16x16 — see nano_vk_set_synthetic_surface). A
++    // core that sizes its swapchain from the surface renders into an image THIS big; too small = the whole
++    // frame collapses to a point-sample. Floor at 640x480 in case av_info geometry wasn't supplied.
++    int win_w = vk.synth_w >= 64 ? vk.synth_w : 640;
++    int win_h = vk.synth_h >= 64 ? vk.synth_h : 480;
++    VKLOG(RETRO_LOG_INFO, "synthetic surface: hidden window %dx%d (from core geometry)\n", win_w, win_h);
 +    HWND hwnd = CreateWindowExW(0, NANO_VK_SURF_CLASS, L"nanoarch-vk", WS_POPUP,
-+                                0, 0, 16, 16, NULL, NULL, hinst, NULL);
++                                0, 0, win_w, win_h, NULL, NULL, hinst, NULL);
 +    if (!hwnd) {
 +        VKLOG(RETRO_LOG_ERROR, "synthetic surface: CreateWindowEx failed (%lu)\n", (unsigned long)GetLastError());
 +        return -1;
@@ -14320,6 +14401,7 @@ index 0000000..394e013
 +        vk.zc_r_tex[i]      = vk.zc_tex[i];      vk.zc_tex[i]    = 0;
 +        vk.zc_r_ready[i]    = vk.zc_ready[i];    vk.zc_ready[i]  = VK_NULL_HANDLE;
 +        vk.zc_r_gl_ready[i] = vk.zc_gl_ready[i]; vk.zc_gl_ready[i] = 0;
++        vk.zc_r_serial[i]   = vk.zc_serial[i];   vk.zc_serial[i] = 0; // INSTR: carry serial into retired gen
 +    }
 +    vk.zc_retired_valid = 1;
 +}
@@ -14505,6 +14587,19 @@ index 0000000..394e013
 +        // renegotiates the appsrc caps on its own from the new w/h — we do not touch the pipeline.
 +        vk.fn.DeviceWaitIdle(vk.device);
 +        pthread_mutex_lock(&vk.zc_mutex);
++        // INSTR: how many frames are still GStreamer-held (in-flight) across this reallocation? These move
++        // to the retired gen and can still display AFTER new-gen frames — the stale-flash mechanism. If a
++        // retired (low-serial) frame reaches the encoder after new-gen frames, the release-order check fires.
++        {
++            int inflight = 0; uint64_t lo = 0, hi = 0;
++            for (int i = 0; i < NANO_VK_ZC_SLOTS; i++)
++                if (!vk.zc_free[i]) { inflight++; uint64_t s = vk.zc_serial[i]; if (!lo || s < lo) lo = s; if (s > hi) hi = s; }
++            vk.realloc_count++;
++            if (inflight > vk.retire_inflight_max) vk.retire_inflight_max = inflight;
++            VKLOG(RETRO_LOG_INFO, "[zc-instr] REALLOC #%llu %ux%u->%ux%u: %d slot(s) in-flight (serials %llu..%llu) at emit=%llu\n",
++                  vk.realloc_count, vk.zc_w, vk.zc_h, w, h, inflight,
++                  (unsigned long long)lo, (unsigned long long)hi, (unsigned long long)vk.frame_serial);
++        }
 +        zc_retire_current();
 +        int rc = zc_build_pool(w, h);
 +        pthread_mutex_unlock(&vk.zc_mutex);
@@ -14523,6 +14618,8 @@ index 0000000..394e013
 +    // Record which slot serviced this frame's sync index, so wait_sync_index(cur_sync) — called by the
 +    // core the next time the ring lands on this index — blocks on this copy's fence (image-lifetime handshake).
 +    vk.sync_slot[cur_sync] = idx;
++    // INSTR: stamp this slot with the next monotonic frame serial (frame-ordering probe).
++    vk.zc_serial[idx] = ++vk.frame_serial;
 +
 +    VkCommandBuffer cb = vk.zc_cmd[idx];
 +    VkFence fence = vk.zc_fence[idx];
@@ -14616,16 +14713,27 @@ index 0000000..394e013
 +// retired gen), 0 otherwise (a long-gone gen — ignore, like graphics.ReleaseZeroCopyTexture).
 +int nano_vk_zc_release(unsigned texid) {
 +    if (!vk.zc_mutex_init || texid == 0) return 0;
-+    int owned = 0;
++    int owned = 0; uint64_t rel_serial = 0;
 +    pthread_mutex_lock(&vk.zc_mutex);
 +    for (int i = 0; i < NANO_VK_ZC_SLOTS; i++) {
-+        if (vk.zc_tex[i] == (GLuint)texid) { vk.zc_free[i] = 1; owned = 1; break; }
++        if (vk.zc_tex[i] == (GLuint)texid) { vk.zc_free[i] = 1; owned = 1; rel_serial = vk.zc_serial[i]; break; }
 +    }
 +    if (!owned && vk.zc_retired_valid) {
 +        for (int i = 0; i < NANO_VK_ZC_SLOTS; i++)
-+            if (vk.zc_r_tex[i] == (GLuint)texid) { owned = 1; break; } // retired gen freed wholesale later
++            if (vk.zc_r_tex[i] == (GLuint)texid) { owned = 1; rel_serial = vk.zc_r_serial[i]; break; } // retired gen freed wholesale later
++    }
++    // INSTR: release order = the proxy for "encoder consumed this frame". GStreamer frees a slot after the
++    // encoder+muxer finished with its frame, so releases SHOULD be in serial order. A lower serial freed
++    // after a higher one = an old frame reached the encoder LATE (stale/reordered) — the direct smoking gun.
++    unsigned long long disorder_now = 0, gap = 0;
++    if (rel_serial) {
++        if (rel_serial < vk.last_released_serial) { vk.release_disorder++; disorder_now = vk.release_disorder; gap = vk.last_released_serial - rel_serial; }
++        else vk.last_released_serial = rel_serial;
 +    }
 +    pthread_mutex_unlock(&vk.zc_mutex);
++    if (disorder_now)
++        VKLOG(RETRO_LOG_INFO, "[zc-instr] OUT-OF-ORDER release #%llu: serial %llu freed after %llu (%llu behind) — stale frame reached the encoder late\n",
++              disorder_now, (unsigned long long)rel_serial, (unsigned long long)(rel_serial + gap), gap);
 +    return owned;
 +}
 +

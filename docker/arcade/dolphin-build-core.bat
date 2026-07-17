@@ -1,4 +1,15 @@
 @echo off
+rem ── Builds dolphin_custom_libretro.dll from D:\Arcade\build\dolphin. THREE MovieTheater patches must be
+rem    applied to that source tree (git-applied; verify with `git status` before building):
+rem      1. dolphin-createsharedcontext.patch  — WGL shared GL context (GLContextLR / WGL / ShaderCache)
+rem      2. dolphin-custom-core.patch           — includes the CMakeLists /O2 MT PATCH (see line ~129:
+rem                                                CMAKE_CXX_FLAGS_RELEASE "/MT /O2 /Ob2 /DNDEBUG")
+rem      3. dolphin-present-semaphore.patch      — enable the warped vkQueuePresentKHR wait-semaphore path
+rem                                                (Vulkan.cpp) so set_image gates on the async XFB blit;
+rem                                                WITHOUT it, gc/Dolphin-Vulkan delivers FLAT frames on
+rem                                                every title (root cause 2026-07-17). See the patch header.
+rem    After build: confirm /O2 in build.ninja for a C++ TU + DLL size ~= prior custom build (the /MT-clobber
+rem    tell is a ~30% larger DLL with no /O2). Deploy keeps the name dolphin_custom_libretro.dll (pins vs repo.sync).
 set "PATH=%PATH%;C:\Program Files (x86)\Microsoft Visual Studio\Installer"
 call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" -arch=x64 -host_arch=x64 -no_logo
 if errorlevel 1 exit /b 1

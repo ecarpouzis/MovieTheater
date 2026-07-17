@@ -416,18 +416,27 @@ emulator:
             # 16x anisotropic. `off` measured IDENTICAL to the core's stated default, so the default is
             # effectively off; 16 demonstrably changes the frame (mid-frequency detail +7%).
             reicast_anisotropic_filtering: "16"
-            # PER-PIXEL OIT (W4) — PROPOSED, gated. Was REJECTED on GL: "per-pixel (accurate)" cost 58fps
-            # + 3 freezes vs 60/0 at the per-triangle default (still the verdict for the GL arm). The Vk
-            # arm re-tests it because flycast-Vk is expected to have the headroom the GL path lacked; the
-            # gated A/B (Crazy Taxi + Sonic Adventure + a known alpha-artifact title) must hold 60/0-freeze
-            # with OIT ON before this ships. Value tokens verified verbatim from the DLL option strings
-            # (VALUES not labels): reicast_alpha_sorting ∈ {per-strip (fast, least accurate) | per-triangle
-            # (normal) | per-pixel (accurate)}; reicast_oit_abuffer_size ∈ {512MB | 1GB | 2GB | 4GB}
-            # (NO space — the spaced "512 MB" forms in the DLL are GUI translations, not option tokens).
-            # NOTE per-pixel OIT actually needs GL≥4.3 OR Vulkan, so it is technically GL-shippable too —
-            # but the whole point here is the Vk headroom, so it rides the Vulkan arm.
-            # reicast_alpha_sorting: "per-pixel (accurate)"   # TEMP ROLLBACK (re-arm)
-            # reicast_oit_abuffer_size: "512MB"   # TEMP ROLLBACK (re-arm)
+            # ── ALPHA SORTING = per-triangle (dc default). PER-PIXEL OIT TESTED & REJECTED 2026-07-17. ──
+            # Value tokens (verbatim from DLL, VALUES not labels): reicast_alpha_sorting ∈ {per-strip (fast,
+            # least accurate) | per-triangle (normal) | per-pixel (accurate)}; reicast_oit_abuffer_size ∈
+            # {512MB | 1GB | 2GB | 4GB} (NO space — the spaced "512 MB" forms are GUI translations).
+            #
+            # EVIDENCE CHAIN (menu-probe.mjs, RESULTS-vulkan-w3 §W4-OIT). per-pixel held 60/0-freeze in
+            # in-level/attract play (Crazy Taxi, Sonic Adventure, Jet Grind Radio) — but it CORRUPTED and
+            # FLICKERED the UI/punch-through text quads on MENUS: Crazy Taxi's VMU "A1" label rendered as
+            # garbled "ΛΙ"/"A·1" changing frame-to-frame (frame-hash distinct≈frames = per-frame
+            # instability). per-triangle renders the SAME quads CRISP (distinct stable). It is NOT an
+            # abuffer overflow — 512MB AND 1GB were both garbled (sizing ruled out). It is NOT frame
+            # ordering — the recurrence detector found no whole-frame staleness on the static menu (only at
+            # scene transitions). Upstream corroborates per-pixel is a fragile flycast mode (libretro/
+            # flycast #914 per-pixel crash, #691 can't-set). So the attract-only sample passed while menus
+            # broke → the quality lever steps DOWN SYSTEM-WIDE per Eric's sampled-gate policy.
+            # REVISIT trigger: a flycast upstream fix to per-pixel punch-through / UI-quad sorting.
+            # per-pixel as a per-title opt-IN is BANNED (no-enrollment policy); a per-title opt-OUT is the
+            # only allowed exception mechanism and none is needed here.
+            reicast_alpha_sorting: "per-triangle (normal)"
+            # reicast_alpha_sorting: "per-pixel (accurate)"   # REJECTED 2026-07-17 (menu UI-quad garble) — see evidence above
+            # reicast_oit_abuffer_size: "512MB"               # only meaningful with per-pixel; kept for the revisit
           # ⚠ DC RESOLUTION IS NOT RAISEABLE FROM HERE. Measured 2026-07-08 (docs/arcade-quality-plan.md §10):
           # CloudRetro pins the encode size to the core's BASE geometry — Frontend.FrameSize() returns
           # nano.BaseWidth()/BaseHeight() (frontend.go:424) and ignores the per-frame size video_cb reports.
@@ -458,15 +467,15 @@ emulator:
           # The `fps4rom:` core-config field still exists as a static fallback, but production overrides
           # (e.g. Sonic Adventure 1/2 → 30fps for their frame-locked engines) live in the DB.
         naomi:
-          lib: flycast_libretro
+          lib: flycast_custom_libretro
           folder: naomi
           roms: ["zip", "chd", "lst", "dat", "bin"]
-          # ── VULKAN (W4 lockstep, Eric's everything-on-Vulkan go 2026-07-16) ── same flycast core as
-          # dc, same mechanism (no renderer core-option; hwContext IS the selection). Validated via the
-          # dc arm; per-game escape = explicit hwContext:"gl" override (W3 F1). Rollback: isGlAllowed:
-          # true + delete hwContext (same one-liner as dc).
-          isGlAllowed: true  # BLOCKED 2026-07-16 (W4-LIVE): flycast is a v1 core — its v1 create_device ignores our zero-copy extension injection, and its garbage v2-callback misread crashes; flycast-Vk not viable. Stays GL. See RESULTS-vulkan-w3.md §W4-LIVE
-          # hwContext: "vulkan"   # TEMP ROLLBACK (re-arm)
+          # ── VULKAN + OIT (W4 lockstep, LIVE 2026-07-16) ── same flycast_custom core + mechanism as dc
+          # (no renderer core-option; hwContext IS the selection; the hw_render copy fix in the worker is
+          # what unblocked it). Inherits dc's PASSED OIT verdict. Per-game GL escape = hwContext:"gl" (F1).
+          # Rollback: lib: flycast_libretro + isGlAllowed: true + delete hwContext + the two OIT options.
+          isGlAllowed: false
+          hwContext: "vulkan"
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
@@ -478,13 +487,17 @@ emulator:
           options:
             reicast_internal_resolution: "1920x1440"
             reicast_anisotropic_filtering: "16"   # flycast libco-teardown fault — see dc note
+            reicast_alpha_sorting: "per-triangle (normal)"   # lockstep w/ dc: per-pixel REJECTED (menu garble), see dc block
+            # reicast_alpha_sorting: "per-pixel (accurate)"  # REJECTED 2026-07-17 (see dc)
+            # reicast_oit_abuffer_size: "512MB"
         atomiswave:
-          lib: flycast_libretro
+          lib: flycast_custom_libretro
           folder: atomiswave
           roms: ["zip", "chd"]
-          # ── VULKAN (W4 lockstep) ── see the naomi note above; same rollback one-liner.
-          isGlAllowed: true  # BLOCKED 2026-07-16 (W4-LIVE): flycast is a v1 core — its v1 create_device ignores our zero-copy extension injection, and its garbage v2-callback misread crashes; flycast-Vk not viable. Stays GL. See RESULTS-vulkan-w3.md §W4-LIVE
-          # hwContext: "vulkan"   # TEMP ROLLBACK (re-arm)
+          # ── VULKAN + OIT (W4 lockstep, LIVE 2026-07-16) ── see the naomi note above; same custom core,
+          # hw_render fix, OIT verdict, and rollback one-liner.
+          isGlAllowed: false
+          hwContext: "vulkan"
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
@@ -496,6 +509,9 @@ emulator:
           options:
             reicast_internal_resolution: "1920x1440"
             reicast_anisotropic_filtering: "16"   # flycast libco-teardown fault — see dc note
+            reicast_alpha_sorting: "per-triangle (normal)"   # lockstep w/ dc: per-pixel REJECTED (menu garble), see dc block
+            # reicast_alpha_sorting: "per-pixel (accurate)"  # REJECTED 2026-07-17 (see dc)
+            # reicast_oit_abuffer_size: "512MB"
 
         # PS2 via pcsx2_libretro (LRPS2). GL 3D core like psp/dc: same isGlAllowed + coreAspectRatio
         # Flip contract, usesLibCo thread-affinity, and skip_hw_context_destroy teardown hack. Requires
