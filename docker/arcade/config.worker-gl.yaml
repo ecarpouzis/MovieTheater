@@ -808,7 +808,13 @@ emulator:
             # produced the 441 ms – 12.8 s stalls in the worker log (GLSL compiler output sits directly
             # in front of every one of them). wait_for_shaders is then unnecessary: nothing to wait for.
             dolphin_shader_compilation_mode: "2"
-            dolphin_wait_for_shaders: "disabled"
+            # wait_for_shaders ENABLED (2026-07-17, default-on/opt-out policy). Precompiles the persisted
+            # pipeline UID cache at boot so previously-seen content has NO mid-play compile stall (async
+            # ubershaders mode "2" still covers genuinely-new content). MEASURED tradeoff: on a WARM cache
+            # it costs only ~0.4-0.7s at boot (shaders are LOADED from disk, not recompiled — worker log
+            # "Loaded N cached shaders from Vulkan-*.cache"); a cold first-ever boot per title pays the real
+            # compile cost once, then it's cached. Rollback: dolphin_wait_for_shaders: "disabled".
+            dolphin_wait_for_shaders: "enabled"
 
         # --- ported from docker/arcade/config.yaml (Windows-only migration): the tuned
         # non-GL cores so this pool renders 2D/N64 correctly (scale, N64 framebuffer opts). ---

@@ -759,10 +759,10 @@ index 0000000..d2d17c4
 +and **not pushed**. Merge/deploy happens after review and an approved test window.
 diff --git a/RESULTS-vulkan-w3.md b/RESULTS-vulkan-w3.md
 new file mode 100644
-index 0000000..6b0401c
+index 0000000..2d94839
 --- /dev/null
 +++ b/RESULTS-vulkan-w3.md
-@@ -0,0 +1,486 @@
+@@ -0,0 +1,492 @@
 +# Worker Vulkan — W3 results (F1 per-game hwContext + PSP/DC Vulkan arms + W5 Dolphin audit)
 +
 +**Branch:** `vulkan-w3` (off `vulkan-w2` @ `7f96784` = the live `worker.exe` / w2fix8 stack: M1+M2 zero-copy, N64 paraLLEl-RDP, v1 surface fix, Vulkan-by-default).
@@ -889,6 +889,12 @@ index 0000000..6b0401c
 +3. Also try a mode-switcher (**Final Fantasy VII** — field↔battle) and a 3D title (**Crash Bandicoot**) to see if it generalizes.
 +4. Tell us the room + times. We map them to `[geom-f]` mode-change lines (raw core dims at the flash), the `[geom]` boot AR, the `[video]` zc caps-reneg (encoder input), and pace-diag/`block` — that triple pins whether a bar/flash is core-side geometry, our stretch, or the encoder.
 +5. Already known from the instrumentation (no session needed): the 5 `pcsx_rearmed_*` options are inert under beetle (dead-key log) — a config cleanup, separate from the visual symptoms.
++
++### Closing (2026-07-17): wait_for_shaders default-on + dead-key removal — DEPLOYED + gated
++
++- **`dolphin_wait_for_shaders: "enabled"` is now the system-wide gc default** (config.worker-gl.yaml, per the default-on/opt-out policy + the measured ~0.4–0.7s warm-boot cost). Gate: F-Zero + Beyond Good & Evil boot 60/61fps, `[opt]` self-confirms `wait_for_shaders="enabled"`, `8/8` keys read, `block(mean=0.04ms)`. Rollback comment in config names the tradeoff.
++- **5 dead `pcsx_rearmed_*` keys REMOVED** from the EMBEDDED base config (`pkg/config/config.yaml` — go:embed'd, options merge into the ps1/pcsx arm; overlay can't delete, so the fix had to be in the base + a rebuild). SotN `[opt] reconcile` went `9/14` → **`9/9`** (dead keys gone). gc showed `8/8` (no dead keys on other arms). Comment left so nobody re-adds them; the pcsx_rearmed rollback path re-adds them explicitly.
++- Deploy used the corrected binary-swap procedure (Start-ScheduledTask + verify LastRun advanced + retry) — the retry FIRED for both worker tasks, confirming the "Stop wedged in Stopping → Start no-ops" lesson is real and the guard works.
 +
 +### Phase-2 / W6 fidelity-ceiling queue (carried forward, no action now)
 +- **PS2 Stuntman "visually a bit blurry"** (Eric, 2026-07-17) — likely the PS2 **delivered-resolution ceiling**: paraLLEl-GS scanout extent vs encode size, and/or `scaleMethod`. Investigate whether the core's presented image is below the encode geometry (upscale-on-encode softening) and whether SSAA/scale is landing. Fidelity-ceiling item, not a correctness bug.
@@ -1440,6 +1446,32 @@ index 5b2e0f2..0b59f02 100644
  		task.err = errTimeout
  	}
  	return task.response, task.err
+diff --git a/pkg/config/config.yaml b/pkg/config/config.yaml
+index a55461e..d81ca78 100644
+--- a/pkg/config/config.yaml
++++ b/pkg/config/config.yaml
+@@ -279,13 +279,14 @@ emulator:
+                     roms: ["cue", "chd"]
+                     # example of folder override
+                     folder: psx
+-                    # see: https://github.com/libretro/pcsx_rearmed/blob/master/frontend/libretro_core_options.h
+-                    options:
+-                        pcsx_rearmed_show_bios_bootlogo: enabled
+-                        pcsx_rearmed_drc: enabled
+-                        pcsx_rearmed_frameskip_type: auto
+-                        pcsx_rearmed_spu_interpolation: gaussian
+-                        pcsx_rearmed_rgb32_output: enabled
++                    # DEAD-KEY CLEANUP (2026-07-17): the pcsx_rearmed_* options that used to sit here were
++                    # REMOVED. ps1 now runs on beetle_psx_hw (mednafen_psx_hw, config.worker-gl.yaml ps1 arm),
++                    # and beetle NEVER queries the pcsx_rearmed_* keys — the [opt] dead-key detector proved it
++                    # (9/14 keys read; these 5 inert). Because base+overlay options MERGE (overlay can't delete),
++                    # leaving them here leaked 5 permanently-inert keys into every ps1 room. They belong ONLY
++                    # to the pcsx_rearmed rollback path, which re-adds them explicitly (see the ps1 arm's
++                    # ROLLBACK comment: pcsx_rearmed_drc/frameskip_type/rgb32_output/show_bios_bootlogo/
++                    # spu_interpolation). Do NOT re-add them here.
+                 # MAME core requires additional manual setup, please read:
+                 # https://docs.libretro.com/library/fbneo/
+                 mame:
 diff --git a/pkg/config/corecache_bind_test.go b/pkg/config/corecache_bind_test.go
 new file mode 100644
 index 0000000..2aa55cc
