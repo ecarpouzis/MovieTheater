@@ -759,15 +759,35 @@ index 0000000..d2d17c4
 +and **not pushed**. Merge/deploy happens after review and an approved test window.
 diff --git a/RESULTS-vulkan-w3.md b/RESULTS-vulkan-w3.md
 new file mode 100644
-index 0000000..5d5d29a
+index 0000000..f200374
 --- /dev/null
 +++ b/RESULTS-vulkan-w3.md
-@@ -0,0 +1,362 @@
+@@ -0,0 +1,382 @@
 +# Worker Vulkan — W3 results (F1 per-game hwContext + PSP/DC Vulkan arms + W5 Dolphin audit)
 +
 +**Branch:** `vulkan-w3` (off `vulkan-w2` @ `7f96784` = the live `worker.exe` / w2fix8 stack: M1+M2 zero-copy, N64 paraLLEl-RDP, v1 surface fix, Vulkan-by-default).
 +**Date:** 2026-07-16, box Ziggy (RTX 4070 Ti). Spec: `F:\Work\MovieTheater\docs\arcade-vulkan-w3w4w5-spec.md`.
 +**Mode:** COMPILE-ONLY. No live deploy, no rooms/browsers/benchmarks, no `Stop-Process`, no SQL run, no pushes. Live validation is the gated authoring-session window (checklist below).
++
++---
++
++## Vulkan fidelity REGRESSION CAMPAIGN — 2026-07-17 (Eric's 5 play-test symptoms → mechanism → outcome)
++
++After the Vulkan fleet flip, Eric play-tested and reported 5 real-play issues that the attract-only probes missed. Each was root-caused by MECHANISM (not by game) and fixed on our side where the evidence landed. Table:
++
++| # | Symptom (Eric) | Mechanism (root cause) | Outcome |
++|---|---|---|---|
++| 1 | DC Crazy Taxi menu: UI text quads garbled + flickering | **per-pixel OIT** corrupts flycast punch-through/UI quads (not abuffer sizing: 512MB+1GB both garbled; not ordering: static-menu recurrence detector clean; per-triangle crisp). Upstream flycast #914/#691 corroborate. | **FIXED** — dc/naomi/atomiswave default → `per-triangle` (system-wide step-down per the sampled-gate policy). Shipped. |
++| 2 | GC F-Zero (+ ALL gc): flat gray field, nested border smears, gradient up the sides | **synthetic-surface window was 16×16.** Dolphin sizes its swapchain from the surface → renders the game into a 16×16 image → set_image handed us 16×16 → we stretched to 1920×1584 = **point-sample of the scene** (color tracks content) + edge pixels smeared. Every gc title, both capture paths, efb/semaphore-independent. Path: no-surface→Dolphin starved→synthetic surface→frames flowed but at 16×16→content-blind "flow=works" validation shipped it. | **FIXED** — size the hidden window to the core's `max_width/max_height` (`nano_vk_set_synthetic_surface(on,w,h)`); + dolphin patch #3 (enable the `#if 0`'d warped-present wait-semaphore, fixing the async-submit race the tiny window was masking). 4/4 gc titles render full content; psp unregressed (PPSSPP ignores the window). |
++| 3 | PSX SotN: pillarbox bars + black rectangle behind flame sprites | **pillarbox:** `coreAspectRatio:true` + beetle reports 4:3 and the client DOES stretch to it (full-width SotN title displays correct) → we are NOT rendering narrow modes unstretched; the bars are most likely beetle's **in-frame overscan borders** (`crop_overscan:disabled`). **black-rect:** unconfirmed — needs a flame/blend gameplay scene; hypothesis = beetle-hw blend at hw upscale. | **OPEN (carried forward)** — the one remaining item. Needs persistent-gameplay capture (save-state resume fix or name-entry drive) for the narrow-mode pillarbox frame + the black-rect. Fix candidates: `beetle_psx_hw_crop_overscan:enabled` (pillarbox, vs RetroArch); per-title opt-OUT / GL-escape (black-rect) if core-side, with citation. |
++| 4 | PS2 Stuntman: stale loading frame flashes AFTER the level loaded | **frame ordering.** Suspects ruled out with evidence: sync-index commits INERT (`get_sync=0/wait_sync=0` for paraLLEl-GS); zc-pool realloc path EXONERATED (realloc instrumentation: 0 out-of-order releases across every scene, incl. 4 reallocs / 5 in-flight). Worker-side emit==release order is perfect. | **CLOSED (terminal)** — worker-side exonerated end-to-end; remaining suspects are downstream (RTP-timestamp-at-reneg / client jitter-buffer). **Passive out-of-order-release detector deployed** — self-logs if Eric reproduces it in organic play. |
++| 5 | N64 | — | fine (no action). |
++
++### Campaign lessons (permanent)
++- **CONTENT-BLIND VALIDATION is the cardinal sin.** Flow counters (60fps / `video_cb=VALID` / `set_image` / `zc_tex` climbing / 0 drops) are NOT rendering. gc shipped flat for weeks because Phase-1 validated F-Zero *frame-flow* and never viewed a screenshot of a second title or a menu. Every flip must check CONTENT: screenshot + luma/variance across a ≥3-title breadth set + a menu. (In SKILL.md.)
++- **Attract-only probes pass while menus/UI break** — menus exercise punch-through/UI quads (symptom 1) and different res (symptom 2) that attract never does. `menu-probe.mjs` + the input-focus gotcha (after "Start room" the button keeps keyboard focus; click the video first) are the ladder additions. (In SKILL.md.)
++- **Refine the hypothesis from evidence, don't defend it.** "present-trap to hidden window" → the warp exists; "sync-index caused Stuntman" → inert for PS2; "F-Zero-specific dolphin menu" → systemic gc / tiny window. The instrumentation (recurrence detector, frame-serial ordering, per-realloc in-flight) is what turned each guess into a verdict.
++- **Discriminate rendering vs ordering vs geometry with the right instrument:** static-menu hash recurrence (ordering vs render), frame-serial release order (worker-side vs downstream), synthetic-window extent (the whole gc class).
 +
 +**Headline:** F1 (explicit per-game `hwContext` override with 3-level precedence) is **implemented, unit-tested, and compile-proven** (fork commit `02af461`). **UPDATE 15:xx:** F1 + the psp/dc arms were reviewed and deployed; ps2 (God of War) and n64 (Mario Kart 64) re-validated clean on `worker.w3.exe` (zero-copy ACTIVE, 60fps), and the **W3.1 PPSSPP surface blocker was CONFIRMED LIVE** — one step deeper than the audit (create_device SUCCEEDED with our null surface; PPSSPP then crashed creating its *own* surface). That is now **fixed** (commit `0baec66`, `bin/worker.w3fix.exe`): a frontend-synthesized hidden-window `VkSurfaceKHR` handed to `create_device`, gated behind the opt-in hack `vk_synthetic_surface` so ps2/n64 are untouched — see **§W3.1-LIVE**. The W4 (dc) arm + DB/exporter change remain staged **UNCOMMITTED** in F:. flycast still has **no renderer core-option**, so W4 dc-Vulkan is `hwContext:"vulkan"`-driven, not a `reicast_renderer` flip. **`bin/worker.exe` (now the deployed w3 binary) is UNTOUCHED**; the fix binary is `bin/worker.w3fix.exe`.
 +
