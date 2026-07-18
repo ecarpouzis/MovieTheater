@@ -5,8 +5,8 @@ import "./index.css";
 // On-demand antd styles: import only the components the app actually uses instead of the full
 // antd/dist/antd.css (~576 KB). Each component's style/css.js pulls antd's shared base PLUS that
 // component's CSS and its transitive style dependencies (e.g. popconfirm → button+popover,
-// list → empty+grid+pagination+spin), so every used component is fully styled while the ~37 unused
-// ones (Table, DatePicker, Tree, Tabs, Drawer, Menu, Form, Upload, …) are dropped.
+// list → empty+grid+pagination+spin), so every used component is fully styled while the ~35 unused
+// ones (Table, DatePicker, Tree, Tabs, Drawer, Form, Upload, …) are dropped.
 // MAINTENANCE: if you start using a new antd component anywhere in the app, add its style import here
 // (`antd/es/<kebab-name>/style/css`) or it will render unstyled.
 import "antd/es/alert/style/css";
@@ -15,11 +15,13 @@ import "antd/es/button/style/css";
 import "antd/es/card/style/css";
 import "antd/es/checkbox/style/css";
 import "antd/es/collapse/style/css";
+import "antd/es/dropdown/style/css";
 import "antd/es/empty/style/css";
 import "antd/es/input/style/css";
 import "antd/es/input-number/style/css";
 import "antd/es/layout/style/css";
 import "antd/es/list/style/css";
+import "antd/es/menu/style/css";
 import "antd/es/modal/style/css";
 import "antd/es/pagination/style/css";
 import "antd/es/popconfirm/style/css";

@@ -139,6 +139,26 @@ const PROFILES = {
     rstick: { up: "KeyI", down: "KeyK", left: "KeyJ", right: "KeyL" },
     hint: "Gamepad recommended (right stick = C-stick; triggers = L/R). Keyboard: arrows = move, X = A (confirm), Z = B, I J K L = C-stick, Q W = L/R triggers, E = Z, Enter = Start.",
   },
+  // Wii, per-port device Wiimote+Nunchuk (config.worker-gl.yaml `hid` → RETRO_DEVICE_WIIMOTE_NC).
+  // dolphin_libretro binds this straight to RetroPad letters (Wiimote A ← RetroPad B, Wiimote B ← A,
+  // Nunchuk C ← X, Nunchuk Z ← Y, Wiimote -/+ ← L/R) — the DEFAULT face-button map already lines up
+  // (south=primary, same as every other system here), so no override needed there, unlike n64/gc.
+  // The two things that DO need adding: the IR pointer rides the RIGHT STICK (dolphin_ir_mode, core
+  // side — we just need to feed it real stick values, keyboard included) and swing gestures/Nunchuk
+  // shake sit behind L2 (dolphin_swing_modifier: "L2" in config; Nunchuk shake is unconditionally on L2
+  // per the core's own hardcoded binding). UNVERIFIED live yet — this is the "ingest now, curate later"
+  // system; confirm face-button feel and IR responsiveness with the test-roms skill on a menu-heavy
+  // title before trusting it for anything twitchier.
+  wii: {
+    gamepad: DEFAULT_GAMEPAD,
+    keymap: {
+      ...DEFAULT_KEYMAP,
+      KeyE: PAD.L2, // hold = swing / Nunchuk shake
+    },
+    // Keyboard drive for the right analog stick = Wiimote IR pointer (dolphin_ir_mode reads it).
+    rstick: { up: "KeyI", down: "KeyK", left: "KeyJ", right: "KeyL" },
+    hint: "Gamepad recommended (right stick = Wiimote pointer; hold L2 to swing). Keyboard: arrows = move, Z = A (confirm), X = B, A = Nunchuk Z, S = Nunchuk C, I J K L = pointer, E = swing/shake, Enter = 1, Shift = 2.",
+  },
 };
 
 function profileFor(system) {
@@ -716,11 +736,15 @@ export function createCloudRetroSession(descriptor, opts) {
     const fec = numFromWsUrl(descriptor.wsUrl, "fec");
     const pace = numFromWsUrl(descriptor.wsUrl, "pace");
     const codec = strFromWsUrl(descriptor.wsUrl, "codec");
+    const hwctx = strFromWsUrl(descriptor.wsUrl, "hwctx");
     if (vbr > 0) p.video_bitrate = vbr;
     if (fec > 0) p.audio_fec = fec;
     // Per-room codec (worker patch 0036): the creator's t=104 selects which encoder.list entry this
     // room's pipeline builds with; must match the video_codec every member sent at INIT_WEBRTC.
     if (codec) p.video_codec = codec;
+    // Per-launch GL/Vulkan force (play-button dropdown). Creator-only — it only affects the room's
+    // one-time CoreLoad, so unlike codec it never needs to ride a joiner's descriptor.
+    if (hwctx) p.hw_context = hwctx;
     // In-frame packet pacing window ms (worker patch 0028) — the lobby Network profile's opt-in
     // smoother for Remote/5G rooms. Absent/0 = LAN default, wire-speed bursts.
     if (pace > 0) p.pace = pace;

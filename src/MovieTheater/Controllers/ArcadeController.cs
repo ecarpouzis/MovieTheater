@@ -233,6 +233,9 @@ namespace MovieTheater.Controllers
                     // capture (H5): a heavy title on the capture allowlist ALSO offers browser play — the
                     // modal shows "Play in browser" beside the Artemis launch (docs/arcade-capture-worker-plan.md §6.3).
                     capture = vs.Any(g => string.Equals(g.Lane, "heavy", StringComparison.OrdinalIgnoreCase) && CloudRetroHost.IsCaptureEnabled(g.CloudRetroGameKey)),
+                    // Per-launch GL/Vulkan force (play-button dropdown): only 3D systems with a real
+                    // render-context choice offer it; see CloudRetroHost.HwToggleSystems.
+                    supportsHwToggle = CloudRetroHost.SupportsHwToggle(k.System),
                     versions = versions.Select(v => new
                     {
                         id = v.Id, label = v.Label, region = v.Region,
@@ -445,6 +448,14 @@ namespace MovieTheater.Controllers
             /// cheat. Unknown ids are ignored, not rejected — a stale card in an open tab shouldn't fail the
             /// launch. Capped at <see cref="ArcadeCheatCatalog.MaxCheatsPerRoom"/>.</summary>
             public List<string>? Cheats { get; set; }
+
+            /// <summary>Per-launch GL/Vulkan render-context force from the play-button dropdown:
+            /// "gl"/"vulkan", null/empty = defer to the existing server precedence (the DB-pinned
+            /// <see cref="MovieTheater.Db.ArcadeGameProfile.HwContext"/>, then renderer-option inference,
+            /// then the core's config default). An explicit value here is the TOP of that precedence —
+            /// it wins even over an admin's DB pin. Only meaningful for <see cref="CloudRetroHost.HwToggleSystems"/>;
+            /// ignored for every other system and for capture rooms.</summary>
+            public string? HwContext { get; set; }
         }
 
         /// <summary>Cheats available for ONE version (ROM) of a game — the card's version dropdown decides
@@ -630,6 +641,18 @@ namespace MovieTheater.Controllers
             // fixed, and every track must match the room's one encoder.
             if (codec != "")
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&codec=" + codec };
+
+            // Per-launch GL/Vulkan force (play-button dropdown). Allowlist hard AND re-gate on
+            // SupportsHwToggle server-side — never trust the client to only ever send this for an
+            // eligible system. Unlike codec, this does NOT need to ride Join/ClaimSeat: it only
+            // affects the creator's one-time CoreLoad when the room's core boots; joiners just attach
+            // to the already-running core. Meaningless for capture rooms (a native desktop capture,
+            // not a libretro core).
+            var hwctx = CloudRetroHost.SupportsHwToggle(game.System)
+                ? request.HwContext?.Trim().ToLowerInvariant() switch { "gl" => "gl", "vulkan" => "vulkan", _ => "" }
+                : "";
+            if (hwctx != "" && !isCapture)
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&hwctx=" + hwctx };
 
             // Per-room cheats (arcade cheats feature). Resolve the ids the creator ticked against what this
             // exact ROM actually offers — never trust the client's idea of what a cheat is, because a code is

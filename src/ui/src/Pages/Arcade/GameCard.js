@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Select } from "antd";
+import { Button, Dropdown, Select } from "antd";
 import GameCover from "./GameCover";
 import CheatPicker from "./CheatPicker";
 import { systemLabel } from "./arcadeSystems";
@@ -61,7 +61,12 @@ function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
   const [cheats, setCheats] = useState(version?.defaultCheats || []);
   useEffect(() => { setCheats(version?.defaultCheats || []); }, [version?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const start = () => (heavy ? onHeavy?.(game) : onStart(sel, game.title, cheats));
+  // Play-button dropdown (arcade Vulkan/GL launch picker): the default action forces Vulkan on
+  // systems that have the choice at all (game.supportsHwToggle, from CloudRetroHost.HwToggleSystems);
+  // everything else launches with no override, same as before this feature existed.
+  const defaultHwContext = !heavy && game.supportsHwToggle ? "vulkan" : "";
+  const start = (hwContext = defaultHwContext) =>
+    (heavy ? onHeavy?.(game) : onStart(sel, game.title, cheats, hwContext));
 
   // Is one of this card's popups (version, cheats) open? Both render INSIDE their chip, so they're
   // part of the card's box — and the card is a stacking context of its own (position: relative for the
@@ -127,14 +132,32 @@ function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
 
           {/* Row 2 — the actions. Always present, always in the same place. */}
           <div className="arcade-card__actions">
-            <Button
-              type="primary"
-              className="arcade-btn-start"
-              loading={creating === sel}
-              onClick={(e) => { stop(e); start(); }}
-            >
-              {heavy ? "🎮 Play via Moonlight" : "▶ Start room"}
-            </Button>
+            {!heavy && game.supportsHwToggle ? (
+              // Play-button dropdown: default click forces Vulkan; the arrow offers "Force GL" for
+              // the rare title that runs better/only on the legacy GL path. Wrapped in a stop-on-click
+              // span (same pattern as the version Select above) so neither the primary button nor the
+              // arrow's popup interaction bubbles up to the card's own onClick.
+              <span onClick={stop}>
+                <Dropdown.Button
+                  type="primary"
+                  className="arcade-btn-start"
+                  loading={creating === sel}
+                  onClick={() => start("vulkan")}
+                  menu={{ items: [{ key: "gl", label: "Force GL" }], onClick: () => start("gl") }}
+                >
+                  ▶ Start room
+                </Dropdown.Button>
+              </span>
+            ) : (
+              <Button
+                type="primary"
+                className="arcade-btn-start"
+                loading={creating === sel}
+                onClick={(e) => { stop(e); start(); }}
+              >
+                {heavy ? "🎮 Play via Moonlight" : "▶ Start room"}
+              </Button>
+            )}
             {/* Heavy titles get dirzip vault rows too (H4) — export/import/delete all apply;
                 SavesManager hides Resume for them (nothing to resume in a browser). */}
             <button

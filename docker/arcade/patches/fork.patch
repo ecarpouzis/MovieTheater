@@ -1308,10 +1308,10 @@ index a206751..d9ec08f 100644
  github.com/philhofer/fwd v1.2.0/go.mod h1:RqIHx9QI14HlwKwm98g9Re5prTQ6LdeRQn+gXJFxsJM=
  github.com/pion/datachannel v1.6.2 h1:7EXQ8TH3vTouBUdRWYbcX2edSx9Yj6k5zl5P+qyxEPc=
 diff --git a/pkg/api/user.go b/pkg/api/user.go
-index e487b93..8e05e91 100644
+index e487b93..1040f24 100644
 --- a/pkg/api/user.go
 +++ b/pkg/api/user.go
-@@ -10,6 +10,25 @@ type (
+@@ -10,6 +10,30 @@ type (
  		Record      bool   `json:"record,omitempty"`
  		RecordUser  string `json:"record_user,omitempty"`
  		PlayerIndex int    `json:"player_index"`
@@ -1329,6 +1329,11 @@ index e487b93..8e05e91 100644
 +		// (Remote/5G) — wire-speed bursts are the minimum-latency LAN default, but they slam
 +		// cellular/shallow-buffer queues and panic the bandwidth estimator (measured 2026-07-09).
 +		Pace int `json:"pace,omitempty"`
++		// Per-launch GL/Vulkan render-context force from the site's play-button dropdown:
++		// "gl"/"vulkan", "" = defer to the worker's existing hw-context precedence (DB pin, then
++		// renderer inference, then core config default). Only the creator's request carries this —
++		// it's consumed once at CoreLoad, never re-applied on a joiner.
++		HwContext string `json:"hw_context,omitempty"`
 +		// Per-room cheats the creator enabled in the lobby (arcade cheats feature).
 +		// CoreOptions are libretro core-option overrides applied just before retro_load_game
 +		// (e.g. pcsx2_widescreen_hint); Cheats are raw codes handed to retro_cheat_set after it.
@@ -1337,7 +1342,7 @@ index e487b93..8e05e91 100644
  	}
  	GameStartUserResponse struct {
  		RoomId  string        `json:"roomId"`
-@@ -38,5 +57,9 @@ type (
+@@ -38,5 +62,9 @@ type (
  	InitUserWebrtcStreamRequest struct {
  		Initiator bool   `json:"initiator"`
  		Sdp       string `json:"sdp,omitempty"`
@@ -1348,10 +1353,10 @@ index e487b93..8e05e91 100644
  	}
  )
 diff --git a/pkg/api/worker.go b/pkg/api/worker.go
-index d8c7324..705419b 100644
+index d8c7324..433137f 100644
 --- a/pkg/api/worker.go
 +++ b/pkg/api/worker.go
-@@ -19,6 +19,17 @@ type (
+@@ -19,6 +19,22 @@ type (
  		RecordUser  string
  		Game        string `json:"game"`
  		PlayerIndex int    `json:"player_index"`
@@ -1361,6 +1366,11 @@ index d8c7324..705419b 100644
 +		AudioFec     int `json:"audio_fec,omitempty"`     // 0 default, 1 on, 2 off
 +		Pace         int `json:"pace,omitempty"`          // in-frame pacing window ms; 0 off
 +		VideoCodec   string `json:"video_codec,omitempty"` // per-room codec ("av1"/"h264"; "" = config default), patch 0036
++		// Per-launch GL/Vulkan render-context force ("gl"/"vulkan", "" = defer to precedence).
++		// Keep in sync with user.go. A field missing HERE is silently dropped by the coordinator's
++		// JSON relay even though the browser sent it — that's exactly how per-room bitrate went
++		// nowhere for days; also remember to add it to the workerapi.go StartGameRequest literal.
++		HwContext string `json:"hw_context,omitempty"`
 +		// Per-room cheats, forwarded from the creator's GameStartUserRequest. A field missing HERE
 +		// is silently dropped by the coordinator's JSON relay even though the browser sent it —
 +		// which is exactly how per-room bitrate went nowhere for days. Keep in sync with user.go.
@@ -1369,7 +1379,7 @@ index d8c7324..705419b 100644
  	}
  	GameInfo struct {
  		Alias  string `json:"alias"`
-@@ -51,6 +62,9 @@ type (
+@@ -51,6 +67,9 @@ type (
  		Id        string `json:"id"`
  		Initiator bool   `json:"initiator"`
  		Sdp       string `json:"sdp,omitempty"`
@@ -2655,7 +2665,7 @@ index 51e805c..2bf4439 100644
  	}
  	u.log.Info().Str("id", startGameResp.Rid).Msg("Received room response from worker")
 diff --git a/pkg/coordinator/workerapi.go b/pkg/coordinator/workerapi.go
-index dbceaed..aac85aa 100644
+index dbceaed..ee7ccf7 100644
 --- a/pkg/coordinator/workerapi.go
 +++ b/pkg/coordinator/workerapi.go
 @@ -1,10 +1,28 @@
@@ -2690,7 +2700,7 @@ index dbceaed..aac85aa 100644
  }
  
  func (w *Worker) WebrtcSignal(id string, sdp, ice *string) {
-@@ -15,13 +33,22 @@ func (w *Worker) WebrtcSignal(id string, sdp, ice *string) {
+@@ -15,13 +33,24 @@ func (w *Worker) WebrtcSignal(id string, sdp, ice *string) {
  
  func (w *Worker) StartGame(id string, req api.GameStartUserRequest) (*api.StartGameResponse, error) {
  	return api.UnwrapChecked[api.StartGameResponse](
@@ -2707,6 +2717,8 @@ index dbceaed..aac85aa 100644
 +			AudioFec:     req.AudioFec,
 +			Pace:         req.Pace,
 +			VideoCodec:   req.VideoCodec,
++			// ...and the per-launch GL/Vulkan force from the play-button dropdown.
++			HwContext: req.HwContext,
 +			// ...and the cheats they picked. The coordinator only relays: any field it doesn't know
 +			// about is dropped here without an error, so this line is what makes the feature exist.
 +			CoreOptions: req.CoreOptions,
@@ -45034,10 +45046,10 @@ index 2840a0e..c55a441 100644
  	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
  		var out api.Out
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..d69537d 100644
+index 6972cc7..ece9b0d 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,553 @@
+@@ -1,310 +1,566 @@
 -package worker
 -
 -import (
@@ -45608,16 +45620,24 @@ index 6972cc7..d69537d 100644
 +			// decided HERE — not in nanoarch's LoadGame — because m.GLZeroCopy below is a pipeline
 +			// BUILD-time property: the appsrc is created for GL textures or system-memory frames, and
 +			// a Vulkan room's readback frames are the latter.
-+			// Resolve THIS room's hardware-render context by a 3-level precedence (docs/arcade-vulkan-
++			// Resolve THIS room's hardware-render context by a 4-level precedence (docs/arcade-vulkan-
 +			// w3w4w5-spec.md, F1). Highest wins:
-+			//   1. the game's EXPLICIT hwContext override field (GameHwContext) — absolute. This is the
-+			//      lever for cores with no renderer core-option (psp/dc/gc all just follow the frontend's
-+			//      hw context), and it also overrides everything below for any game.
++			//   0. the CREATOR's explicit per-launch request (rq.HwContext, the site's play-button
++			//      dropdown) — absolute, wins even over an admin's DB pin below. Gated on
++			//      coreCfg.HwContext != "" as defense in depth: only systems whose config already
++			//      declares a hw-context default may honor a request override at all, so a stray/stale
++			//      value for an out-of-scope (2D) system can never reach a core with no Vulkan path.
++			//   1. the game's EXPLICIT hwContext override field (GameHwContext) — DB-pinned admin
++			//      override. This is the lever for cores with no renderer core-option (psp/dc/gc all
++			//      just follow the frontend's hw context), and it overrides everything below for any game.
 +			//   2. the renderer-option inference — WantsVulkanRenderer (→ vulkan) / ForcesGlRenderer (→ gl).
 +			//      Serves the ps2/n64 profiles already exported as pcsx2_renderer / mupen64plus-rdp-plugin,
 +			//      and is the per-game GL escape hatch when a Vulkan-default core meets a title paraLLEl-GS/
 +			//      -RDP can't serve.
 +			//   3. the core config's HwContext default (per-system; "" == "gl").
++			// This inline switch is the authoritative precedence — nanoarch.ResolveHwContext (overrides.go)
++			// is a narrower 3-level pure function exercised only by its own unit tests, not by this path;
++			// don't assume it's in sync with level 0 here.
 +			// We stage HwContextOverride only when the resolved context DIVERGES from the core default
 +			// (else clear it, like SetRoomCheats) — the same "override only on divergence" contract
 +			// CoreLoad consumes. When resolved=="gl" but the core defaults to Vulkan, the staged "gl"
@@ -45632,6 +45652,8 @@ index 6972cc7..d69537d 100644
 +			resolved := coreDefault
 +			explicitHw := nanoarch.GameHwContext(game.Name)
 +			switch {
++			case (rq.HwContext == "gl" || rq.HwContext == "vulkan") && coreCfg.HwContext != "":
++				resolved = rq.HwContext // level 0 — explicit per-request override, wins over everything
 +			case explicitHw != "":
 +				resolved = explicitHw // level 1
 +			case nanoarch.WantsVulkanRenderer(game.Name):
@@ -45642,7 +45664,10 @@ index 6972cc7..d69537d 100644
 +			vkGame := resolved == "vulkan"
 +			if resolved != coreDefault {
 +				via := "renderer-option inference"
-+				if explicitHw != "" {
++				switch {
++				case rq.HwContext != "" && coreCfg.HwContext != "" && resolved == rq.HwContext:
++					via = "per-request override"
++				case explicitHw != "":
 +					via = "explicit hwContext field"
 +				}
 +				nanoarch.Nan0.HwContextOverride = resolved

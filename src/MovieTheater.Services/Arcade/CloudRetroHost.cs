@@ -44,6 +44,23 @@ namespace MovieTheater.Services.Arcade
         public static bool IsCaptureEnabled(string? cloudRetroGameKey) =>
             !string.IsNullOrEmpty(cloudRetroGameKey) && CaptureEnabledKeys.Contains(cloudRetroGameKey);
 
+        /// <summary>
+        /// Systems whose worker config declares a per-core <c>hwContext</c> (GL vs Vulkan render
+        /// path) — i.e. the ones where a per-launch hw-context override is meaningful at all. Must be
+        /// kept in lockstep with every <c>hwContext:</c> core entry in
+        /// docker/arcade/config.worker-gl.yaml (currently pcsx/ps1, psp, dc, naomi, atomiswave, ps2,
+        /// gc, wii, n64). 2D systems and heavy/capture titles have no such choice.
+        /// </summary>
+        public static readonly IReadOnlySet<string> HwToggleSystems =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "ps1", "ps2", "psp", "n64", "gc", "wii", "dc", "naomi", "atomiswave",
+            };
+
+        /// <summary>True when a system supports a per-launch GL/Vulkan hw-context override.</summary>
+        public static bool SupportsHwToggle(string? system) =>
+            !string.IsNullOrEmpty(system) && HwToggleSystems.Contains(system);
+
         public ArcadeJoinDescriptor BuildJoinDescriptor(
             int userId, ArcadeGameDescriptor game, string roomCode, string cloudRetroRoomId, int playerSlot, bool isCreator)
         {
