@@ -1318,6 +1318,15 @@ emulator:
           folder: scummvm
           roms: ["scummvm"]
           scale: 3
+          options:
+            # FORCE the software surface path (2026-07-18 root-cause). The core's default OpenGL
+            # graphics mode sends RETRO_HW_FRAME_BUFFER_VALID frames; on this software-armed room
+            # (no GL context) that crashed the worker in ReadFramebuffer (now fail-softed). Disabled
+            # = REQUEST_SW from boot: real RGB565 pixel frames down the normal software path.
+            # NOTE the companion fix that unblocked ANY output at all: the frontend now ANSWERS
+            # GET_AUDIO_VIDEO_ENABLE (nanoarch.c) — ScummVM reads a refusal as "produce nothing"
+            # and ticked forever with video_cb never called.
+            scummvm_video_hw_acceleration: "disabled"
         cdi:
           # same_cdi (MAME's CD-i driver, stripped to a libretro core) — pure software, safe. Needs
           # cdimono1.zip both at the BIOS root AND under same_cdi/bios/ (the core's own lookup path).

@@ -759,10 +759,10 @@ index 0000000..d2d17c4
 +and **not pushed**. Merge/deploy happens after review and an approved test window.
 diff --git a/RESULTS-vulkan-w3.md b/RESULTS-vulkan-w3.md
 new file mode 100644
-index 0000000..e9e0a56
+index 0000000..466a9dc
 --- /dev/null
 +++ b/RESULTS-vulkan-w3.md
-@@ -0,0 +1,523 @@
+@@ -0,0 +1,643 @@
 +# Worker Vulkan — W3 results (F1 per-game hwContext + PSP/DC Vulkan arms + W5 Dolphin audit)
 +
 +**Branch:** `vulkan-w3` (off `vulkan-w2` @ `7f96784` = the live `worker.exe` / w2fix8 stack: M1+M2 zero-copy, N64 paraLLEl-RDP, v1 surface fix, Vulkan-by-default).
@@ -1286,6 +1286,126 @@ index 0000000..e9e0a56
 +- SotN mid-game 1024x960<->640x480 confirmed via caps-reneg on delivered sizes; a driven-into-gameplay
 +  probe would fully exercise it.
 +- PGXP + higher internal-res are per-title upgrades (ArcadeGameProfile) now that the base arm is live.
++
++# Phase 2 fidelity pass — round 1 (2026-07-18, coordinator hands-on)
++
++Context: Eric pulled the agents (bad calls incl. a gc GL rollback) — coordinator now drives.
++Policy this pass: system-wide default-on raises, LIGHT SMOKE only (boot+stream+fps+geometry),
++heavy A/B deferred to a later validation pass. All smokes ran on a free pool, one room at a time.
++
++| system | lever | was → now | smoke | rollback |
++|---|---|---|---|---|
++| gc/wii | backend | (agent GL rollback) → **Vulkan RESTORED** | F-Zero GX 60fps, synthetic surface + zc ACTIVE @1920x1584 | isGlAllowed:true + del hwContext (DON'T — directive is Vulkan) |
++| ps1 | internal_resolution | 2x → **4x** (supersamples to unchanged 640x480 encode) | SotN 59fps/0 freeze | "2x" |
++| ps1 | crop_overscan | disabled → **enabled** — SIDE PILLARS GONE (boot screen edge-to-edge; bars were core-baked h-blanking) | same session | "disabled" |
++| n64 | parallel-rdp-upscaling | 4x → **8x** | MK64 60fps/0 freeze/0 drop, 1280x960 unchanged | "4x" |
++| psp | ppsspp_internal_resolution | 1920x1088 → **2880x1632** (verified: swapchain 2880x1620 in log) | Loco Roco 60fps/0 freeze | "1920x1088" |
++| dc/naomi/aw | reicast_internal_resolution | 1920x1440 → **2560x1920** (2x supersample) | Crazy Taxi 60fps end-state, 1280x960 unchanged (5.3s boot warm-up freeze = known class) | "1920x1440" |
++
++Already at ceiling (no change): ps2 (pgs_ssaa 8x + high_res_scanout; GSdx-era aniso/blending keys
++are DEAD under paraLLEl-GS — kept in config for the GL/GSdx path per Eric's dead-key rule below).
++gc levers unchanged (efb_scale 3 + 4x MSAA + 16x aniso + wait_for_shaders).
++
++⚠ ERIC'S DEAD-KEY RULE (2026-07-18): GL/Vulkan are dynamically selectable per launch — a key
++dead under one renderer may be LIVE under the other. Only cull a key proven unqueried under BOTH
++hw contexts; renderer-conditional keys stay, annotated with which renderer reads them.
++
++Deferred/next: ps1 vertical ~8-line overscan bands (taste call); ps1 8x (if 4x proves clean in
++play); encode bitrate/VBV ladder; the beetle-vk black-rect internals fix (post-Phase-2 project);
++F-Zero ~126ms periodic stall; keyboard Square/Triangle fix needs a UI build to reach Eric.
++Vertical residual + all rollbacks are one-liners in config.worker-gl.yaml.
++
++# Phase 2 round 2 (2026-07-18 late, coordinator) — ps2 real Vk levers, parity, toggles
++
++**Verification pass:** every round-1 raise CONFIRMED from logs, not fps: ps1 `[opt] internal_resolution="4x"
++crop_overscan="enabled"`; n64 "Using 8x upscaling!"; psp swapchain 2880x1620; dc zc pool reallocated
++2560x1920.
++
++**PS2 — the dead keys pointed at real Vulkan levers (Eric's hunch was right).** paraLLEl-GS has exactly
++5 option keys (source: lrps2 libretro_core_options.h): ssaa, high_res_scanout (both were set),
++disable_mipmaps, deblur, ss_tex (all three were UNSET). Shipped:
++- `pcsx2_pgs_ssaa: "16x SSAA (can high-res)"` — the option list goes past our old "8x ceiling".
++  Gate: Stuntman (heaviest known) held ticks/s=59.9, audio/s=48000 (full 800.8x60 rate), maxTick 11ms.
++- `pcsx2_pgs_disable_mipmaps: "enabled"` default-on ("better IQ, small handful of games glitch" = the
++  opt-out policy shape; per-title opt-out via game-overrides.json).
++- deblur + ss_tex → CHEAT-DROPDOWN TOGGLES (experimental, game-specific = user opt-in per room).
++
++**GL vs Vulkan parity (Eric's question):** gc F-Zero — both 60fps @1280x1056; dolphin's quality options
++(efb_scale/MSAA/aniso) are backend-identical; Vulkan's only cost is first-boot-per-title shader warm-up
++(wait_for_shaders + caches mitigate; GL era caches made the GL run warm). ps1 SotN — both 60fps @640x480,
++title-screen shots visually equal (parity-sotn-gl.png vs parity-sotn-vk2.png). Verdict: same quality,
++same steady-state performance; expect Vulkan ≥ GL once caches are warm. harness: arcade-diag.mjs grew
++`--hwctx gl` (drives the card dropdown's Force GL).
++
++**Vertical bands: NOT a fixable border — WONTFIX.** SotN's title screen fills all 240 lines edge-to-edge
++(both renderers) — screens showing thin top/bottom bands (Konami logo) letterbox their own content.
++A scanline crop (8/231) would cut real content from full-height screens. Side pillars remain FIXED
++(crop_overscan, round 1); verticals are authentic.
++
++**Cheat-dropdown toggles added (ArcadeCheatCatalog.cs, compiles clean):** ps2 "Sharper picture (deblur)"
+++ "Super-sample textures"; ps1 "Stable 3D geometry (PGXP)" (`memory only` — token verified in the DLL;
++"memory + CPU" deliberately not offered, breaks SotN-class games). ⚠ Reaches players after a SITE
++restart (site runs live from repo bin, PID lock seen at build) — Eric's call when.
++
++# BEETLE BLACK-RECT FLASH: FIXED (2026-07-18, coordinator) — upstream nightly core
++
++**Rung 1 of the internals plan closed the whole case.** Method: single-variable A/B via the automated
++quicksave dog-kill repro (sotn-dog-repro.mjs; seed = Eric's slot-099 quicksave copied into BOTH the
++room-keyed saves\sv-33-... file AND vault slot-000 — harvest overwrites both on room close, so re-seed
++EVERY run; that clobber cost 3 false runs today).
++
++- **Baseline (our DLL, md5 d5331122...):** black rectangle at the kill (sotn-dog-23.png, 15:47 run) —
++  hard-edged box wiping the lower-left quadrant. Reproduced every kill, matches all prior evidence.
++- **Nightly (buildbot latest, DLL 2026-07-16, md5 e9d05ea4...):** THREE kills across two runs, zero
++  rectangles — explosion peaks show background intact + authentic charred-dog sprite only
++  (sotn-dog-24/25.png run 1; sotn-dog-14/19.png run 2, incl. a second dog by the window).
++- **Integration verified:** v5 vk interface, zero-copy ACTIVE (semaphore), all 9 pinned options
++  recognized (no DEAD keys — token drift would have logged), OLD SAVE-STATES LOAD in the nightly,
++  Crash Bandicoot 60fps/0-freeze breadth boot.
++- **Adopted:** nightly live on both workers; rollback = *.pre-nightly.bak next to each DLL.
++- Eric's real-play confirmation = the final gate (config comment at ps1 lib documents provenance).
++
++⚠ Ops lessons burned in today: (1) NEVER Set-Content the worker YAML — PowerShell utf8 writes a BOM
++and the worker crash-loops (exitcode=2, pool went capture-only); deploy = Copy-Item from the repo file
++ONLY. (2) The room-close harvest clobbers seeded test saves — always re-seed immediately before each
++repro run and verify by md5.
++
++# F-Zero ~126ms periodic stall: ROOT-CAUSED (2026-07-18) — it's the room AUTOSAVE
++
++Eric's 7/17 F-Zero session (glworker.log): maxTick spikes 115-140ms at 20:04:22, 20:06:22, 20:08:22,
++... 20:22:23 — EXACTLY every 120s on the :22 grid = the `autosaveSec: 120` timer. His "hiccup ~8:20
++into play" = the 20:10:22 spike. Mechanism: autosave runs retro_serialize ON the core thread (must —
++patch 0030 lesson) and dolphin's state is ~122MB; the memcpy IS the ~126ms. NOT the earlier
++pipeline-cache-flush suspicion — that's retired.
++
++Verdict: irreducible per-save with current cores; the config's 120s choice already documents the
++trade (hitch count vs crash-loss window). DECISION TO ERIC: keep 120s (2-min crash bound, one small
++hitch per 2 min) or raise to 180-300s (fewer hitches, longer crash-loss window). No change shipped.
++
++# ScummVM PIPELINE STALL: FIXED + LIVE (2026-07-18, coordinator) — 376 games enabled
++
++Root cause chain (each step from a purpose-built instrument, no guessing):
++1. New ALWAYS-ON `video/s`+`vnull/s` in pace-diag → proved video_cb was NEVER called (60 ticks/s,
++   real 14ms work per tick, video/s=0.0) — core-side starvation, not our pipeline.
++2. New ALWAYS-ON `[env-miss]` (logs every REFUSED env cmd once) → showed what the core asked for.
++3. Core source read (scummvm libretro-core.cpp retro_run): `audio_video_enable=0;
++   environ_cb(GET_AUDIO_VIDEO_ENABLE,...)` — a REFUSAL leaves 0 → `&1`/`&2` gates skip video_cb AND
++   audio_run forever. Our nanoarch.c fast-path explicitly `return false`d that cmd (before the Go
++   layer — invisible to env-miss until read in C). FIX: answer bitmask 3 (video+audio always).
++4. That unblocked frames — which CRASHED the worker: ScummVM defaults to its OpenGL graphics mode
++   and sends RETRO_HW_FRAME_BUFFER_VALID with no GL context behind it (software-armed room) →
++   ReadFramebuffer AV'd. TWO fixes: `scummvm_video_hw_acceleration: "disabled"` (config — core
++   boots REQUEST_SW, real RGB565 frames) + fail-soft guard in coreVideoRefresh (HW frame with no
++   GL context = drop + log-once, never AV — same class as the SET_HW_RENDER fail-soft).
++
++Also fixed en route: refreshed romcache manifest (arcade-romcache-export → docker/arcade/
++arcade-romcache.json — the gateway hot-reloads by mtime; enabled rows are invisible until export).
++scummvm.dat/theme bundle staged from buildbot assets (was a REFUTED lead for the stall, but the
++launcher/GUI needs it, so it stays). Sampled gate: Beneath a Steel Sky (Sky), Day of the Tentacle
++(SCUMM, JIT-staged from scratch), Simon the Sorcerer (AGOS) — all stream 60fps w/ audio.
++All 376 rows ENABLED. Saves: core reported "retro_serialize_size returned 0" on quit for sky —
++save-states may be per-engine unreliable; ScummVM native saves ride the save dir (harvest class) —
++VERIFY before promising save UI for scummvm.
 diff --git a/go.mod b/go.mod
 index 46034dc..19b7a10 100644
 --- a/go.mod
@@ -6937,10 +7057,10 @@ index f3553b1..a26a9d8 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..8d089b8 100644
+index 6974d59..161fca8 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,1368 @@
+@@ -1,578 +1,1370 @@
 -package libretro
 -
 -import (
@@ -8028,10 +8148,12 @@ index 6974d59..8d089b8 100644
 +				// Live audio debt: how far real time has run past where the audio the core produced says
 +				// it should be. Positive = the client is owed samples that do not exist yet.
 +				deficitNs := os.Nanotime() - (audioEpoch + int64(float64(audioFrames)/sr*1e9))
++				vcb, vnull := f.nano.TakeVideoFrames()
 +				f.log.Info().Msgf(
-+					"pace-diag: ticks/s=%.1f audio/s=%.0f maxTick=%.1fms slowTicks(>20ms)=%d "+
++					"pace-diag: ticks/s=%.1f audio/s=%.0f video/s=%.1f vnull/s=%.1f maxTick=%.1fms slowTicks(>20ms)=%d "+
 +						"meanTick=%.2fms noSleep=%.1f%% deficit=%.1fms maxDeficit=%.1fms forgiven=%d",
 +					float64(diagTicks)/winSec, float64(audioFrames-diagAudioBase)/winSec,
++					float64(vcb)/winSec, float64(vnull)/winSec,
 +					float64(diagMaxTickNs)/1e6, diagSlow,
 +					float64(diagSumTickNs)/float64(max(diagTicks, 1))/1e6,
 +					100*float64(diagNoSleep)/float64(max(diagTicks, 1)),
@@ -10494,7 +10616,7 @@ index 0000000..dbd35c1
 +
 +#endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.c b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
-index 669862d..d10f1de 100644
+index 669862d..793aa6c 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.c
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
 @@ -10,11 +10,12 @@
@@ -10556,7 +10678,21 @@ index 669862d..d10f1de 100644
  size_t bridge_retro_get_memory_size(void *f, unsigned id) {
      return ((size_t (*)(unsigned)) f)(id);
  }
-@@ -206,6 +230,11 @@ int16_t core_input_state_cgo(unsigned port, unsigned device, unsigned index, uns
+@@ -166,7 +190,12 @@ bool core_environment_cgo(unsigned cmd, void *data) {
+           return false;
+           break;
+         case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
+-          return false;
++          /* Answer, never refuse: bit0=video, bit1=audio — we always want both. ScummVM gates ALL
++           * output on this call and reads a refusal as 0 (produce nothing): the core ticked at 60fps
++           * forever with video_cb/audio never called (the 2026-07-18 "pipeline stall"). Refusing is
++           * only safe for cores that default the bitmask to 3 themselves. */
++          if (data != NULL) *(int *)data = 3;
++          return true;
+           break;
+         case RETRO_ENVIRONMENT_GET_CLEAR_ALL_THREAD_WAITS_CB:
+           *(retro_environment_t *)data = clear_all_thread_waits_cb;
+@@ -206,6 +235,11 @@ int16_t core_input_state_cgo(unsigned port, unsigned device, unsigned index, uns
  
      switch (device) {
          case RETRO_DEVICE_JOYPAD:
@@ -10568,7 +10704,7 @@ index 669862d..d10f1de 100644
              return (int16_t)((input_cache.buttons[port] >> id) & 1);
  
          case RETRO_DEVICE_ANALOG:
-@@ -304,6 +333,29 @@ void deinit_video_cgo() {
+@@ -304,6 +338,29 @@ void deinit_video_cgo() {
      deinitVideo();
  }
  
@@ -10598,7 +10734,7 @@ index 669862d..d10f1de 100644
  typedef struct {
     pthread_mutex_t m;
     pthread_cond_t cond;
-@@ -341,7 +393,10 @@ void *run_loop(void *unused) {
+@@ -341,7 +398,10 @@ void *run_loop(void *unused) {
          switch (call.type) {
              case CALL_SERIALIZE:
              case CALL_UNSERIALIZE:
@@ -10610,7 +10746,7 @@ index 669862d..d10f1de 100644
                break;
              default:
                  ((void (*)(void)) call.fn)();
-@@ -367,7 +422,20 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -367,7 +427,20 @@ void *same_thread_with_args(void *f, int type, ...) {
          mutex_init(&run_mutex);
          mutex_init(&done_mutex);
          mutex_lock(&done_mutex);
@@ -10632,7 +10768,7 @@ index 669862d..d10f1de 100644
          mutex_wait(&done_mutex);
          mutex_unlock(&done_mutex);
      }
-@@ -377,21 +445,17 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -377,21 +450,17 @@ void *same_thread_with_args(void *f, int type, ...) {
      call.type = type;
      call.fn = f;
  
@@ -10662,7 +10798,7 @@ index 669862d..d10f1de 100644
      }
      mutex_signal(&run_mutex);
      mutex_unlock(&run_mutex);
-@@ -400,10 +464,49 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -400,10 +469,49 @@ void *same_thread_with_args(void *f, int type, ...) {
      return call.result;
  }
  
@@ -10715,10 +10851,10 @@ index 669862d..d10f1de 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..a324c96 100644
+index 17f10fc..2ea5ead 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-@@ -1,981 +1,1882 @@
+@@ -1,981 +1,1919 @@
 -package nanoarch
 -
 -import (
@@ -12685,6 +12821,10 @@ index 17f10fc..a324c96 100644
 +	if Nan0.Stopped.Load() {
 +		return
 +	}
++	videoCbFrames.Add(1)
++	if data == nil {
++		videoCbNull.Add(1)
++	}
 +	// D (Beetle-PSX diagnostics, ALWAYS-ON): log every core frame-SIZE change. SotN mode-switches
 +	// (560x480 <-> 800x480) and any rapid per-frame flicker show up here as the raw core output dims —
 +	// pair with the zero-copy realloc line (encoder input) and the [geom] boot line (AR) to see where a
@@ -12809,6 +12949,17 @@ index 17f10fc..a324c96 100644
 +			data_ = graphics.ReadFramebuffer(bytes, width, height)
 +		}
 +	} else {
++		// FAIL-SOFT: a core can send RETRO_HW_FRAME_BUFFER_VALID with NO GL context behind it (ScummVM
++		// in its OpenGL graphics mode on a software-armed room, 2026-07-18 — SET_HW_RENDER accepted but
++		// no context was ever created). ReadFramebuffer would AV inside glReadPixels and kill the
++		// worker; drop the frame instead. Log-once so the room's symptom (no video) is attributable.
++		if Nan0.glCtx == nil {
++			if hwFrameNoCtxOnce.CompareAndSwap(false, true) {
++				Nan0.log.Error().Msg("core sent a HW frame but no GL context exists (software-armed room?) — dropping frames (fail-soft, no video); check the core's hw-acceleration option")
++			}
++			Nan0.Handlers.OnDup()
++			return
++		}
 +		// if Libretro renders frame with OpenGL context
 +		data_ = graphics.ReadFramebuffer(bytes, width, height)
 +	}
@@ -12834,6 +12985,16 @@ index 17f10fc..a324c96 100644
 +
 +// TakeAudioFrames returns and resets the audio frames produced since the last call.
 +func (n *Nanoarch) TakeAudioFrames() int64 { return audioClockFrames.Swap(0) }
++
++// videoCbFrames / videoCbNull count video_cb invocations (and the NULL-dup subset) since the last
++// read. pace-diag prints them as video/s + vnull/s: a core that ticks at 60 with video/s=0 never
++// calls video_cb at all (the ScummVM stall class) — that one number separates "core produces
++// nothing" from "our pipeline drops it", which otherwise needs a debugger to tell apart.
++var videoCbFrames atomic.Int64
++var videoCbNull atomic.Int64
++
++// TakeVideoFrames returns and resets (video_cb calls, NULL-frame subset) since the last call.
++func (n *Nanoarch) TakeVideoFrames() (int64, int64) { return videoCbFrames.Swap(0), videoCbNull.Swap(0) }
 +
 +// ZcTexCurrent (dup-pin): reports whether GL texture tex is still the live zero-copy slot holding serial.
 +// The dup path uses it to avoid re-pushing a borrowed slot whose content was reused/freed. Serial 0 (the
@@ -13205,8 +13366,20 @@ index 17f10fc..a324c96 100644
 +		Nan0.log.Info().Uint("latency_ms", uint(latency)).Msg("audio latency requested")
 +		return true
 +	}
++	// [env-miss] Log each REFUSED env command once per session. A silent false here is how a core's
++	// missing dependency hides (ScummVM ticked at 60fps forever without ever drawing because the env
++	// calls it needed were refused without a trace). Bit 0x10000 = RETRO_ENVIRONMENT_EXPERIMENTAL.
++	if _, seen := envMissSeen.LoadOrStore(uint(cmd), true); !seen {
++		Nan0.log.Info().Msgf("[env-miss] refused env cmd %d (raw %#x)", uint(cmd)&0xFFFF, uint(cmd))
++	}
 +	return false
 +}
++
++// envMissSeen dedupes [env-miss] logging (one line per distinct refused cmd per worker process).
++var envMissSeen sync.Map
++
++// hwFrameNoCtxOnce dedupes the HW-frame-without-GL-context fail-soft log (once per process).
++var hwFrameNoCtxOnce atomic.Bool
 +
 +//export initVideo
 +func initVideo() {
