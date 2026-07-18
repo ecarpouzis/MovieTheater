@@ -1484,10 +1484,10 @@ index a55461e..d81ca78 100644
                  mame:
 diff --git a/pkg/config/corecache_bind_test.go b/pkg/config/corecache_bind_test.go
 new file mode 100644
-index 0000000..2aa55cc
+index 0000000..d83f053
 --- /dev/null
 +++ b/pkg/config/corecache_bind_test.go
-@@ -0,0 +1,41 @@
+@@ -0,0 +1,55 @@
 +package config
 +
 +import (
@@ -1511,6 +1511,12 @@ index 0000000..2aa55cc
 +          coreCache:
 +            dir: "User/Cache"
 +            purge: ["Shaders", "*.uidcache"]
++        ps2:
++          lib: pcsx2_libretro
++          coreCache:
++            dir: "pcsx2/cache"
++            systemDir: true
++            purge: ["gl_programs.bin", "gl_programs.idx"]
 +`
 +	if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(yml), 0644); err != nil {
 +		t.Fatal(err)
@@ -1528,9 +1534,17 @@ index 0000000..2aa55cc
 +	if len(gc.CoreCache.Purge) != 2 || gc.CoreCache.Purge[0] != "Shaders" || gc.CoreCache.Purge[1] != "*.uidcache" {
 +		t.Fatalf("coreCache.purge did not bind: %#v", gc.CoreCache.Purge)
 +	}
++
++	ps2 := conf.Emulator.Libretro.Cores.List["ps2"]
++	if !ps2.CoreCache.SystemDir {
++		t.Fatalf("coreCache.systemDir did not bind")
++	}
++	if gc.CoreCache.SystemDir {
++		t.Fatalf("coreCache.systemDir bound where it was not set")
++	}
 +}
 diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
-index baf701e..c8c59da 100644
+index baf701e..72d4927 100644
 --- a/pkg/config/emulator.go
 +++ b/pkg/config/emulator.go
 @@ -17,6 +17,38 @@ type Emulator struct {
@@ -1572,7 +1586,7 @@ index baf701e..c8c59da 100644
  }
  
  type LibretroConfig struct {
-@@ -69,20 +101,63 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
+@@ -69,20 +101,67 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
  		errors.New("core mapping not found for " + runtime.GOOS + ":" + runtime.GOARCH)
  }
  
@@ -1592,6 +1606,10 @@ index baf701e..c8c59da 100644
 +type CoreCache struct {
 +	// Dir is the cache root, relative to the core's save dir (e.g. "User/Cache" for Dolphin).
 +	Dir string
++	// SystemDir resolves Dir against the core's SYSTEM dir instead of its save dir. PCSX2 keeps
++	// gl_programs.bin under system/pcsx2/cache — outside the save tree entirely, where the
++	// save-dir-relative purge can never reach it, so an LRPS2 rebuild would silently poison it.
++	SystemDir bool
 +	// Purge lists entries inside Dir to delete when the core build changes. Names are matched with
 +	// filepath.Match against the top level of Dir, so both a directory ("Shaders") and a glob
 +	// ("*.uidcache") work. Anything not listed is left alone — memory cards and saves live in these
@@ -1637,7 +1655,7 @@ index baf701e..c8c59da 100644
  	Roms            []string
  	SaveStateFs     string
  	Scale           float64
-@@ -128,6 +203,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
+@@ -128,6 +207,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
  	return found
  }
  
@@ -4186,10 +4204,16 @@ index 5b3d3fe..457c6ff 100644
  		}
  	}
 diff --git a/pkg/os/os.go b/pkg/os/os.go
-index 42e8a10..bc51c97 100644
+index 42e8a10..07130b8 100644
 --- a/pkg/os/os.go
 +++ b/pkg/os/os.go
-@@ -9,7 +9,10 @@ import (
+@@ -4,12 +4,16 @@ import (
+ 	"bufio"
+ 	"bytes"
+ 	"errors"
++	"fmt"
+ 	"io"
+ 	"io/fs"
  	"os"
  	"os/signal"
  	"os/user"
@@ -4200,7 +4224,7 @@ index 42e8a10..bc51c97 100644
  )
  
  const ReadChunk = 1024
-@@ -32,13 +35,39 @@ func MakeDirAll(path string) error {
+@@ -32,13 +36,39 @@ func MakeDirAll(path string) error {
  	return os.MkdirAll(path, os.ModeDir|os.ModePerm)
  }
  
@@ -4242,7 +4266,7 @@ index 42e8a10..bc51c97 100644
  	}()
  	return done
  }
-@@ -79,6 +108,13 @@ func CopyFile(from string, to string) (err error) {
+@@ -79,6 +109,13 @@ func CopyFile(from string, to string) (err error) {
  	if err != nil {
  		return err
  	}
@@ -4256,7 +4280,7 @@ index 42e8a10..bc51c97 100644
  	return nil
  }
  
-@@ -123,3 +159,226 @@ func StatSize(path string) (int64, error) {
+@@ -123,3 +160,246 @@ func StatSize(path string) (int64, error) {
  func RemoveAll(path string) error {
  	return os.RemoveAll(path)
  }
@@ -4453,10 +4477,22 @@ index 42e8a10..bc51c97 100644
 +
 +// CopyTreeNewer vaults a directory card: like CopyTree, but never replaces a vault file with an
 +// older one, and discards any copy the core tore by writing to it mid-read.
++//
++// A per-FILE copy failure (locked/in-use) does NOT abort the walk — it is recorded and walking
++// continues, so one busy file can never cost every other file in the card. This matters concretely
++// for Dolphin's Wii NAND: it holds the Wii Menu's own "play_rec.dat" (title 00000001/00000002, NOT
++// the game's own save) open for the entire session, so it fails on literally every live-harvest
++// tick while a room is running. Before this fix, filepath.WalkDir aborted on that first error and
++// the live harvest copied NOTHING — silently defeating the crash-safety guarantee harvestCardsLive
++// exists for (a killed/crashed worker would have lost the whole session's Wii card, not just the
++// last tick, because no tick before the final one ever got past that one file). A real listing
++// failure on the root itself (src missing/unreadable) still aborts immediately — there is nothing
++// to partially succeed at in that case.
 +func CopyTreeNewer(src, dst string) error {
-+	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
++	var skipped []error
++	walkErr := filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
 +		if err != nil {
-+			return err
++			return err // can't even list this — a structural problem, not a busy file
 +		}
 +		if d.IsDir() {
 +			return nil // directories are created on demand by the file copy below
@@ -4465,23 +4501,31 @@ index 42e8a10..bc51c97 100644
 +		if err != nil {
 +			return err
 +		}
-+		_, err = copyFileToVault(path, filepath.Join(dst, rel))
-+		return err
++		if _, err := copyFileToVault(path, filepath.Join(dst, rel)); err != nil {
++			skipped = append(skipped, fmt.Errorf("%s: %w", rel, err))
++		}
++		return nil
 +	})
++	if walkErr != nil {
++		return walkErr
++	}
++	return errors.Join(skipped...)
 +}
 +
-+// CopyGlobNewer vaults a file-set card under the same two rules.
++// CopyGlobNewer vaults a file-set card under the same two rules — and the same per-file resilience
++// as CopyTreeNewer (a locked file among the set must not cost its siblings).
 +func CopyGlobNewer(srcDir, pattern, dstDir string) error {
 +	files, err := GlobFiles(srcDir, pattern)
 +	if err != nil || len(files) == 0 {
 +		return err
 +	}
++	var skipped []error
 +	for _, f := range files {
 +		if _, err := copyFileToVault(f, filepath.Join(dstDir, filepath.Base(f))); err != nil {
-+			return err
++			skipped = append(skipped, fmt.Errorf("%s: %w", filepath.Base(f), err))
 +		}
 +	}
-+	return nil
++	return errors.Join(skipped...)
 +}
 diff --git a/pkg/os/os_tree_test.go b/pkg/os/os_tree_test.go
 new file mode 100644
@@ -6831,10 +6875,10 @@ index f3553b1..a26a9d8 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..c59aee7 100644
+index 6974d59..deb5ef9 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,1199 @@
+@@ -1,578 +1,1205 @@
 -package libretro
 -
 -import (
@@ -8061,12 +8105,15 @@ index 6974d59..c59aee7 100644
 +		return
 +	}
 +
-+	saveDir := f.nano.SaveDir()
-+	cacheDir := filepath.Join(saveDir, filepath.FromSlash(conf.CoreCache.Dir))
++	baseDir, baseName := f.nano.SaveDir(), "save"
++	if conf.CoreCache.SystemDir {
++		baseDir, baseName = f.nano.SystemDir(), "system"
++	}
++	cacheDir := filepath.Join(baseDir, filepath.FromSlash(conf.CoreCache.Dir))
 +	// Containment guard. Everything below deletes, and the dir comes from config — a "../.." in it
-+	// would aim this at the save tree. Refuse rather than trust.
-+	if rel, err := filepath.Rel(saveDir, cacheDir); err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-+		f.log.Error().Msgf("coreCache.dir %q escapes the save dir — refusing to purge", conf.CoreCache.Dir)
++	// would aim this at the save/system tree. Refuse rather than trust.
++	if rel, err := filepath.Rel(baseDir, cacheDir); err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
++		f.log.Error().Msgf("coreCache.dir %q escapes the %s dir — refusing to purge", conf.CoreCache.Dir, baseName)
 +		return
 +	}
 +	if !os.Exists(cacheDir) {
@@ -8328,17 +8375,14 @@ index 6974d59..c59aee7 100644
 +	// "fresh card" branch below would wipe the session the crash already failed to save.
 +	if prev, err := os.ReadFile(f.cardOwnerPath(system, c)); err == nil {
 +		if p := strings.TrimSpace(string(prev)); p != "" {
++			// vaultCard's error now means "some individual files were skipped" (locked/in-use), not
++			// "nothing was recovered" — os.CopyTreeNewer/CopyGlobNewer keep going past a busy file
++			// instead of aborting the whole copy. The previous room has already closed by the time we
++			// get here, so nothing should still hold these files open; treat a residual error as
++			// noteworthy but non-fatal rather than refusing to seed over a card we mostly DID recover.
 +			if err := f.vaultCard(c, f.vaultDir(p, system)); err != nil {
-+				// ABORT THE SEED. Do not log-and-continue: the seed below CLEARS or OVERWRITES this
-+				// directory, so carrying on here would destroy the very card we just failed to save —
-+				// a locked file or a full disk would turn into someone's progress gone for good. The
-+				// room boots on whatever card is already in place (the previous player's, so we do
-+				// not stamp a new owner either). Wrong card beats no card: it is recoverable, and the
-+				// next room retries the recovery.
-+				f.log.Error().Err(err).Msgf(
-+					"cards: could not recover user %v's unharvested %v card — REFUSING to seed over it; "+
-+						"this room runs on the card that is already here", p, system)
-+				return
++				f.log.Warn().Err(err).Msgf(
++					"cards: recovered user %v's unharvested %v card with some files skipped", p, system)
 +			}
 +			if p != user {
 +				f.log.Info().Msgf("cards: recovered an unharvested %v card for user %v", system, p)
@@ -8407,9 +8451,15 @@ index 6974d59..c59aee7 100644
 +	if c.empty() || !os.Exists(c.dir) {
 +		return
 +	}
++	// A non-nil error here now means "one or more individual files were skipped" (os.CopyTreeNewer /
++	// CopyGlobNewer no longer abort the whole card on the first busy file — see their doc comments),
++	// not "nothing was vaulted". Dolphin holds the Wii Menu's play_rec.dat open for the WHOLE session,
++	// so a live Wii harvest hits this on literally every tick; treating that as total failure used to
++	// mean the live-harvest safety net (see harvestCardsLive) never actually protected a Wii session.
++	// Log what was skipped at WARN and still report the harvest, because the files that matter did
++	// make it across.
 +	if err := f.vaultCard(c, f.vaultDir(user, system)); err != nil {
-+		f.log.Error().Err(err).Msgf("cards: could not harvest user %v's %v card", user, system)
-+		return
++		f.log.Warn().Err(err).Msgf("cards: user %v's %v card harvested with some files skipped (likely still open)", user, system)
 +	}
 +	if quiet {
 +		f.log.Debug().Msgf("cards: live-harvested user %v's %v card", user, system)

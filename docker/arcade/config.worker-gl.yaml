@@ -597,6 +597,17 @@ emulator:
           # retro_unload_game (proven: the cache grew 71→98→101 across clean room-closes WITH this hack on).
           # The real cache-persist bug is elsewhere (see arcade-stuntman-audio-skip memory).
           hacks: [skip_hw_context_destroy, skip_boot_restore]
+          # Build-stamp isolation for the GL shader cache (docs/arcade-shader-cache-plan.md G4b). We build
+          # LRPS2 from source, and gl_programs written by one build can be garbage to the next (the same
+          # struct-layout trap the gc/wii coreCache note documents). systemDir: the cache lives under the
+          # SYSTEM dir (system/pcsx2/cache), not the save dir. Patterns are exact filenames on purpose —
+          # the *.bak/*.frozen forensic copies in that dir must survive a purge. The paraLLEl-GS (Vulkan)
+          # arm has NO disk cache to stamp: Granite only flushes at device teardown, which
+          # skip_hw_context_destroy (above) permanently skips — NVIDIA's driver cache is that arm's warmup.
+          coreCache:
+            dir: "pcsx2/cache"
+            systemDir: true
+            purge: ["gl_programs.bin", "gl_programs.idx"]
           # PS2 games often render a narrower framebuffer than the base geometry (God of War: raw 1024x896
           # vs delivered 1280x896 — measured with the patch-0022 frame dump). CloudRetro stretches that to
           # the output width, and the DEFAULT resampler is nearest-neighbour, so a 1.25x stretch duplicates

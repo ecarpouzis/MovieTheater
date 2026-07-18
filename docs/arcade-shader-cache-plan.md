@@ -99,17 +99,17 @@ in-race stutter is gone by session 2–3. Watch:
 
 ## 4. Remaining gaps + work items (priority order)
 
-- **G1 — Dolphin Reload fix** (§3). The payoff item; do first.
-- **G4a — psp coreCache stamp (config-only):** add to the `psp:` block —
+- **G1 — Dolphin Reload fix** (§3). ✅ **DONE 2026-07-18** — fix in the custom core
+  (`ShaderCache::Reload()` reopens the UID file), rebuilt, deployed to both ConfDirs
+  (rollback copy `dolphin_custom_libretro.pre-uidreload.dll`), patch re-exported.
+- **G4a — psp coreCache stamp (config-only):** ✅ **DONE 2026-07-18** — `psp:` block now has
   `coreCache: {dir: "PSP/SYSTEM/CACHE", purge: ["*.glshadercache", "*.vkshadercache"]}`.
-  Save-dir-resident, so the existing mechanism works as-is. Without it, a PPSSPP core update
-  reads a stale-format cache.
-- **G4b — ps2 cache vs core rebuilds:** `gl_programs.bin` lives under the **system** dir
-  (`libretro/system/pcsx2/cache`), which `purgeForeignCoreCache` cannot reach (it joins SaveDir
-  and has a containment guard). We rebuild LRPS2 from source, so poisoning is a real risk.
-  Either (a) extend `coreCache` with a `systemDir: true` variant (small worker change), or
-  (b) document a manual `del …\pcsx2\cache\gl_programs.*` step in the LRPS2 build procedure.
-  (b) is fine until the next rebuild.
+  Existing caches pre-stamped with the live PPSSPP build id so nothing was wiped at rollout.
+- **G4b — ps2 cache vs core rebuilds:** ✅ **DONE 2026-07-18** — worker gained
+  `coreCache.systemDir: true` (fork commit `1d4bbaf`: resolves `dir` against the SYSTEM dir,
+  same containment guard/stamp/purge), and the `ps2:` block stamps
+  `pcsx2/cache` purging exactly `gl_programs.bin`/`gl_programs.idx` (the `.bak`/`.frozen`
+  forensic copies survive). Existing caches pre-stamped with the live LRPS2 build id.
 - **G5 — NVIDIA driver-cache verification (backstop for flycast / paraLLEl-RDP / Beetle):**
   confirm the scheduled-task user's `%LOCALAPPDATA%\NVIDIA Corporation\GLCache` (note: a
   `NVIDIA Corporation` dir already sits inside each ConfDir — the worker's CWD may be receiving
@@ -117,15 +117,19 @@ in-race stutter is gone by session 2–3. Watch:
   size-thrashing; optionally pin `GL_SHADER_DISK_CACHE_PATH`/size env in
   `register-arcade-glworker-task.ps1` for observability. Vulkan equivalent: driver-managed
   `VkPipelineCache` data under the same tree.
-- **G3 — ps2 Vulkan arm has no disk cache:** paraLLEl-GS builds pipelines via Granite, which
-  supports on-disk (foz) pipeline caching in some embeddings. Investigate whether the
-  from-source LRPS2 exposes it; if yes, point it under `system/pcsx2/cache/`; if no, rely on G5
-  and measure. ⚠ Do **not** revisit `skip_hw_context_destroy` for this (§2 — tried & reverted).
-- **G2 — dual host-config double-compile (cosmetic):** Reload-affected games (RMCEA4) compile
-  ubershaders for the transient boot config (`…FF41`) then again for the final one (`…FF40`)
-  every boot — wasted boot seconds and duplicate cache files. After G1 lands, optionally find
-  which setting flips (compare the two `ShaderHostConfig` bit hashes) and align the base config
-  so boot config == final config. Low value; accept if awkward.
+- **G3 — ps2 Vulkan arm has no disk cache:** ❌ **CLOSED (structural) 2026-07-18.** Granite DOES
+  ship disk-cache support (`Device::init_pipeline_cache()` reads `cache://pipeline_cache.bin`),
+  but (a) the paraLLEl-GS embedding passes empty `SystemHandles` (`GSRendererPGS.cpp:99` — no
+  filesystem backend, so the path is dead code), and (b) Granite's only `flush_pipeline_cache()`
+  call sits in Device teardown — exactly the path `skip_hw_context_destroy` permanently skips
+  (§2, the accepted Granite-object leak). Wiring it would mean core surgery on the most
+  teardown-fragile system for a cache that could never flush on our close path. NVIDIA's driver
+  cache (G5, covers the expensive SPIR-V→SASS stage) is this arm's warmup. Do not reopen.
+- **G2 — dual host-config double-compile (cosmetic, identified):** the two hashes differ in
+  **bit 0 = `ShaderHostConfig.msaa`** (`ShaderGenCommon.h:152`) — RMCEA4's per-game INI flips
+  anti-aliasing after video init, which is per-game-*correct* behavior, so the transient-config
+  compile stays. Cost is a few boot seconds + one duplicate ubershader cache file per affected
+  game. Accepted; not fixable from the base config without breaking per-game INIs.
 - **G6 — cross-worker cold starts (optional):** each worker has its own cache, so a game warm on
   worker-gl is cold on worker-gl-2. Same core build → cache files are valid on either. If it
   ever annoys: an idle-time script that copies **missing files only** (never overwrite — Dolphin
@@ -134,6 +138,25 @@ in-race stutter is gone by session 2–3. Watch:
 - **G7 — crash loss (no action):** Dolphin's uidcache and PCSX2's gl_programs flush on *clean*
   unload. The graceful recycle script is already the mandated path; PPSSPP writes mid-session.
   Nothing new needed.
+
+---
+
+## 4b. Renderer-swap safety — swapping GL ↔ Vulkan never wipes a cache
+
+Audited 2026-07-18 for the per-launch pill. Per system:
+
+- **The purge mechanism can't fire on a swap.** `purgeForeignCoreCache` keys on the core DLL's
+  sha256 (`coreBuildId`) — the same DLL serves both renderers, so the stamp matches regardless
+  of which arm a room used. Only an actual core rebuild purges.
+- **dolphin (gc/wii):** pipeline caches are API-prefixed files (`OpenGL-*` vs `Vulkan-*`) that
+  coexist; the `<GameID>.uidcache` is **API-agnostic GX state shared by both arms** — playing a
+  game on GL also warms the UID list Vulkan precompiles from (and vice versa). Swap-positive,
+  not just swap-safe.
+- **ppsspp (psp):** separate `.glshadercache` / `.vkshadercache` files per game. Independent.
+- **pcsx2 (ps2):** the GL arm's `gl_programs.bin` is never opened by paraLLEl-GS (Vulkan), which
+  has no disk cache at all (G3). Independent.
+- **flycast / paraLLEl-RDP / beetle:** no core-level caches; the NVIDIA driver cache is keyed by
+  shader blob and accumulates entries for both APIs side by side.
 
 ---
 
