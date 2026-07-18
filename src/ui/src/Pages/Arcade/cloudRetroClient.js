@@ -101,10 +101,10 @@ const PROFILES = {
   ps1: {
     gamepad: DEFAULT_GAMEPAD,
     keymap: {
-      ...DEFAULT_KEYMAP,
-      KeyQ: PAD.L, KeyW: PAD.R, KeyA: PAD.L2, KeyS: PAD.R2, // L1/R1 shoulders, L2/R2 triggers
+      ...DEFAULT_KEYMAP,             // Z=Cross(B), X=Circle(A), A=Square(Y), S=Triangle(X), Q/W=L1/R1
+      KeyE: PAD.L2, KeyR: PAD.R2,    // L2/R2 on E/R so A/S KEEP Square/Triangle — SotN's main attack
     },
-    hint: "Gamepad recommended (both sticks work — DualShock). Keyboard: arrows = D-pad/left stick, Z = Cross, X = Circle, Q W = L1/R1, A S = L2/R2, Enter = Start, Shift = Select.",
+    hint: "Gamepad recommended (both sticks work — DualShock). Keyboard: arrows = D-pad/left stick, Z = Cross, X = Circle, A = Square, S = Triangle, Q W = L1/R1, E R = L2/R2, Enter = Start, Shift = Select.",
   },
   // Dreamcast: flycast maps DC A ← RetroPad B, B ← A, X ← Y, Y ← X (south → A/confirm, so the default
   // positional map fits). The DC triggers are ANALOG L/R → RetroPad L2/R2, not the bumpers, so put the
