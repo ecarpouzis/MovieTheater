@@ -402,7 +402,9 @@ emulator:
           scale: 0.5
           scaleMethod: bilinear2
           options:
-            ppsspp_internal_resolution: "1920x1088"
+            # Phase-2 raise 4x->6x (2026-07-18): supersampled down to the unchanged delivery size.
+            # ROLLBACK: "1920x1088".
+            ppsspp_internal_resolution: "2880x1632"
             # Real x86-64 JIT — safe ONLY on the custom lib (its MachineContext patch installs the fastmem
             # AV-rescue handler; verify from the worker log: "Installing exception handler"). On the STOCK
             # lib this must be "IR JIT": stock has no exception handler, so fastmem's benign faults become
@@ -481,8 +483,9 @@ emulator:
           options:
             # ⚠ THE PREFIX IS `reicast_`, NOT `flycast_` — the DLL has 140 reicast_* keys and zero real
             # flycast_* keys, and libretro SILENTLY IGNORES unknown option keys.
-            # 1920x1440 rendered, 1280x960 delivered (base 640x480 x scale 2) => 1.5x supersample.
-            reicast_internal_resolution: "1920x1440"
+            # Phase-2 raise (2026-07-18): 2560x1920 rendered, 1280x960 delivered (base 640x480 x
+            # scale 2) => 2x supersample (was 1920x1440 = 1.5x). ROLLBACK: "1920x1440".
+            reicast_internal_resolution: "2560x1920"
             # 16x anisotropic. `off` measured IDENTICAL to the core's stated default, so the default is
             # effectively off; 16 demonstrably changes the frame (mid-frequency detail +7%).
             reicast_anisotropic_filtering: "16"
@@ -563,7 +566,7 @@ emulator:
           scale: 2
           scaleMethod: bilinear2
           options:
-            reicast_internal_resolution: "1920x1440"
+            reicast_internal_resolution: "2560x1920"   # Phase-2 raise, lockstep w/ dc; ROLLBACK "1920x1440"
             reicast_anisotropic_filtering: "16"   # flycast libco-teardown fault — see dc note
             reicast_alpha_sorting: "per-triangle (normal)"   # lockstep w/ dc: per-pixel REJECTED (menu garble), see dc block
             # reicast_alpha_sorting: "per-pixel (accurate)"  # REJECTED 2026-07-17 (see dc)
@@ -586,7 +589,7 @@ emulator:
           scale: 2
           scaleMethod: bilinear2
           options:
-            reicast_internal_resolution: "1920x1440"
+            reicast_internal_resolution: "2560x1920"   # Phase-2 raise, lockstep w/ dc; ROLLBACK "1920x1440"
             reicast_anisotropic_filtering: "16"   # flycast libco-teardown fault — see dc note
             reicast_alpha_sorting: "per-triangle (normal)"   # lockstep w/ dc: per-pixel REJECTED (menu garble), see dc block
             # reicast_alpha_sorting: "per-pixel (accurate)"  # REJECTED 2026-07-17 (see dc)
@@ -1034,7 +1037,10 @@ emulator:
             # Legal values are a fixed list (verified in mupen64plus_next_libretro.dll):
             # 320x240, 640x480, 960x720, 1280x960, ..., 1920x1440 — not an arbitrary WxH.
             mupen64plus-43screensize: "640x480"
-            mupen64plus-parallel-rdp-upscaling: "4x"
+            # Phase-2 raise 4x->8x (2026-07-18): renders 8x native, downsampled to the unchanged
+            # 1280x960 delivery = deeper supersampling. Smoke gate: 60fps attract + geometry
+            # unchanged. ROLLBACK: "4x".
+            mupen64plus-parallel-rdp-upscaling: "8x"
             mupen64plus-rdp-plugin: "parallel"   # paraLLEl-RDP (Vulkan LLE) — the default renderer
             mupen64plus-rsp-plugin: "parallel"   # LLE RSP accuracy pairing
             # MSAA left OFF (core default). "4" was tried and A/B-measured on Mario Kart 64 at 960x720:
