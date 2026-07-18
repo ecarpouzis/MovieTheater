@@ -702,6 +702,30 @@
   filter: brightness(1.12);
 }
 
+/* Play-button dropdown (Vulkan/GL launch picker): Dropdown.Button splits "Start room" into two
+   real buttons (tagged .arcade-btn-start via buttonsRender in GameCard.js — className on
+   Dropdown.Button itself only reaches the outer wrapper, never the buttons). Each inherits the
+   full pill radius/shadow from the rule above; re-flatten per-side here so the pair reads as one
+   continuous pill instead of two separately-rounded buttons glued together. */
+.arcade-page .ant-dropdown-button.arcade-dropdown-start .ant-btn.arcade-btn-start {
+  box-shadow: none;
+  border-radius: 0;
+}
+.arcade-page .ant-dropdown-button.arcade-dropdown-start .ant-btn.arcade-btn-start:first-child {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+.arcade-page .ant-dropdown-button.arcade-dropdown-start .ant-btn.arcade-btn-start__arrow {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  padding: 8px 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
+}
+.arcade-page .ant-dropdown-button.arcade-dropdown-start {
+  box-shadow: var(--accent-glow);
+  border-radius: 8px;
+}
+
 .arcade-btn--join {
   border-radius: 9px;
   padding: 10px 20px;

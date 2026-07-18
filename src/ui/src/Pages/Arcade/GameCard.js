@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { cloneElement, useEffect, useState } from "react";
 import { Button, Dropdown, Select } from "antd";
 import GameCover from "./GameCover";
 import CheatPicker from "./CheatPicker";
@@ -140,10 +140,19 @@ function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
               <span onClick={stop}>
                 <Dropdown.Button
                   type="primary"
-                  className="arcade-btn-start"
+                  className="arcade-dropdown-start"
                   loading={creating === sel}
                   onClick={() => start("vulkan")}
                   menu={{ items: [{ key: "gl", label: "Force GL" }], onClick: () => start("gl") }}
+                  // Dropdown.Button applies `className` to its OUTER wrapper only, not to either
+                  // inner <button> (antd source: dropdown-button.js) — so .arcade-btn-start never
+                  // matched either real button and both fell through to the page's generic
+                  // "unstyled antd leftover" rule instead. buttonsRender is antd's supported hook
+                  // for reaching the actual buttons; tag both so they pick up the real pill style.
+                  buttonsRender={([left, right]) => [
+                    cloneElement(left, { className: [left.props.className, "arcade-btn-start"].filter(Boolean).join(" ") }),
+                    cloneElement(right, { className: [right.props.className, "arcade-btn-start", "arcade-btn-start__arrow"].filter(Boolean).join(" ") }),
+                  ]}
                 >
                   ▶ Start room
                 </Dropdown.Button>
