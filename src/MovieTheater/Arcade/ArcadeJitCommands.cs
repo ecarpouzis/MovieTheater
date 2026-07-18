@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CliFx;
 using CliFx.Attributes;
@@ -54,6 +55,9 @@ namespace MovieTheater.Arcade
         [CommandOption("after", Description = "Resume cursor: skip archives whose name is ≤ this (from a prior run's nextCursor).")]
         public string After { get; set; } = "";
 
+        [CommandOption("recursive", Description = "Also descend into subdirectories (GD-ROM-style dumps: one archive per named game folder, e.g. 'trizeal/gdl-0026.chd'). A matched file one level down uses its PARENT FOLDER name as the game key/title instead of its own arbitrary filename; top-level files keep the existing behavior.")]
+        public bool Recursive { get; set; }
+
         private readonly IDbContextFactory<MovieDb> dbFactory;
 
         public ArcadeJitIngestCommand(MovieTheaterConfiguration config) : base(config)
@@ -78,8 +82,9 @@ namespace MovieTheater.Arcade
             // extension so the RomPath matches on disk and any pre-staged copy (no duplicate rows); when the
             // source is an archive that unpacks to a different ROM, use the system's nominal extension.
             var romExt = sys.Extensions.Any(e => e.Equals(ext, StringComparison.OrdinalIgnoreCase)) ? ext : sys.Extensions[0];
-            var all = Directory.EnumerateFiles(dir, "*" + ext, SearchOption.TopDirectoryOnly)
-                .Select(p => BuildEntry(p, sys.Code, folder, romExt, sys.MaxPlayers))
+            var search = Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+            var all = Directory.EnumerateFiles(dir, "*" + ext, search)
+                .Select(p => BuildEntry(p, dir, sys.Code, folder, romExt, sys.MaxPlayers))
                 .OrderBy(e => e.ArchiveName, StringComparer.Ordinal)
                 .ToList();
             if (all.Count == 0)
@@ -157,9 +162,16 @@ namespace MovieTheater.Arcade
             }
         }
 
-        private static JitEntry BuildEntry(string archivePath, string system, string folder, string romExt, byte maxPlayers)
+        private static JitEntry BuildEntry(string archivePath, string rootDir, string system, string folder, string romExt, byte maxPlayers)
         {
-            var name = Path.GetFileNameWithoutExtension(archivePath);   // "Air Combat (USA)" / "Super Mario World (USA)"
+            // GD-ROM/disc-style dumps: a file one level below the archives root sits in a folder named
+            // after the game, with an arbitrary internal filename (e.g. "trizeal/gdl-0026.chd" — the
+            // catalog serial, not the title). The immediate parent folder is the real name there;
+            // top-level files (the ordinary case) keep using their own filename.
+            var parentDir = Path.GetDirectoryName(archivePath)!;
+            var name = string.Equals(Path.GetFullPath(parentDir), Path.GetFullPath(rootDir), StringComparison.OrdinalIgnoreCase)
+                ? Path.GetFileNameWithoutExtension(archivePath)          // "Air Combat (USA)" / "Super Mario World (USA)"
+                : Path.GetFileName(parentDir);                           // "trizeal" (the containing game folder)
             return new JitEntry(
                 Archive: Path.GetFullPath(archivePath),
                 ArchiveName: Path.GetFileName(archivePath),
@@ -175,6 +187,191 @@ namespace MovieTheater.Arcade
         private sealed record JitEntry(
             string Archive, string ArchiveName, string System, string Folder,
             string GameKey, string RomPath, string Title, string SortTitle, byte MaxPlayers);
+    }
+
+    /// <summary>
+    /// Re-points EXISTING ArcadeGame rows onto a replacement archive, in place — for when a master
+    /// collection is swapped for a differently-named one (e.g. the PSX collection moving from
+    /// <c>L:\4 - Software\PSX Master Collection\*.7z</c> to a converted
+    /// <c>R:\Roms\Games\Sony Playstation\*.7z</c>: same games, almost entirely different filenames, so a
+    /// plain re-run of <c>arcade-jit-ingest</c> against the new directory would INSERT ~1,700 duplicate
+    /// rows instead of updating the ones that already carry curated Title/Region/RatingCeiling edits).
+    ///
+    /// <para>Takes a reconciliation CSV (arcade_id → new archive path) built out-of-band — see
+    /// <c>data/rom-catalog/psx_repoint_final.py</c> for the PSX case, which reused the project's existing
+    /// title-normalization tooling to match old rows to new filenames and hand-resolved the handful of
+    /// ambiguous ones. Only <c>SourceArchivePath</c>, <c>RomPath</c>, and <c>CloudRetroGameKey</c> change;
+    /// Title/SortTitle/Region/Variant/RatingCeiling/IsEnabled are hand-edits and are left untouched.</para>
+    ///
+    /// <para>A mapped row is skipped (not an error) until its target archive actually exists on disk —
+    /// so this command can be re-run after each conversion chunk lands and will pick up newly-ready rows
+    /// automatically, in step with a slow/partial conversion. An optional drops CSV (arcade_id, reason)
+    /// disables rows that have no replacement (never deleted — reversible).</para>
+    ///
+    /// <para><b>Bulk-job rules</b>: dry-run unless <c>--apply</c>; bounded by <c>--limit</c>, ordered by
+    /// arcade id, resumable via <c>--after</c>; idempotent (re-running a fully-applied map is a no-op).</para>
+    /// </summary>
+    [Command("arcade-jit-repoint", Description = "Re-point existing ArcadeGame rows onto a replacement archive per a reconciliation CSV (dry-run unless --apply).")]
+    public class ArcadeJitRepointCommand : BasicDICommand, ICommand
+    {
+        [CommandOption("map", Description = "CSV with an arcade_id column and a new archive path column (see data/rom-catalog/psx-repoint-map-FINAL.csv).", IsRequired = true)]
+        public string MapPath { get; set; } = default!;
+
+        [CommandOption("id-column", Description = "Header name of the arcade id column. Default arcade_id.")]
+        public string IdColumn { get; set; } = "arcade_id";
+
+        [CommandOption("path-column", Description = "Header name of the new archive path column. Default new_7z_path_R.")]
+        public string PathColumn { get; set; } = "new_7z_path_R";
+
+        [CommandOption("drops", Description = "Optional CSV with arcade_id + reason columns -- rows to disable (IsEnabled=false), applied in full every run.")]
+        public string? DropsPath { get; set; }
+
+        [CommandOption("apply", Description = "Write changes. Omit for a dry run (default).")]
+        public bool Apply { get; set; }
+
+        [CommandOption("limit", Description = "Max rows to repoint this run (default 500).")]
+        public int Limit { get; set; } = 500;
+
+        [CommandOption("after", Description = "Resume cursor: skip arcade ids <= this (from a prior run's nextCursor).")]
+        public int After { get; set; }
+
+        private readonly IDbContextFactory<MovieDb> dbFactory;
+
+        public ArcadeJitRepointCommand(MovieTheaterConfiguration config) : base(config)
+        {
+            dbFactory = GetRequiredService<IDbContextFactory<MovieDb>>();
+        }
+
+        public async ValueTask ExecuteAsync(IConsole console)
+        {
+            var w = console.Output;
+            if (!File.Exists(MapPath)) { w.WriteLine($"Map CSV not found: {MapPath}"); return; }
+
+            var map = ReadCsv(MapPath);
+            var idIdx = map.header.IndexOf(IdColumn);
+            var pathIdx = map.header.IndexOf(PathColumn);
+            if (idIdx < 0 || pathIdx < 0)
+            {
+                w.WriteLine($"Map CSV missing required column(s): {IdColumn}, {PathColumn}. Header: {string.Join(", ", map.header)}");
+                return;
+            }
+            var mapRows = map.rows
+                .Where(r => int.TryParse(r[idIdx], out _))
+                .Select(r => (Id: int.Parse(r[idIdx]), NewArchivePath: r[pathIdx]))
+                .OrderBy(r => r.Id)
+                .ToList();
+
+            await using var db = await dbFactory.CreateDbContextAsync();
+
+            int disabled = 0;
+            if (DropsPath != null)
+            {
+                if (!File.Exists(DropsPath)) { w.WriteLine($"Drops CSV not found: {DropsPath}"); return; }
+                var drops = ReadCsv(DropsPath);
+                var dropIdIdx = drops.header.IndexOf("arcade_id");
+                var dropIds = drops.rows.Where(r => int.TryParse(r[dropIdIdx], out _)).Select(r => int.Parse(r[dropIdIdx])).ToHashSet();
+                var dropRows = await db.ArcadeGames.Where(g => dropIds.Contains(g.Id)).ToListAsync();
+                foreach (var g in dropRows)
+                    if (g.IsEnabled) { if (Apply) g.IsEnabled = false; disabled++; }
+                var notFound = dropIds.Except(dropRows.Select(g => g.Id)).ToList();
+                if (notFound.Count > 0) w.WriteLine($"  ! {notFound.Count} drop id(s) not found in DB: {string.Join(", ", notFound)}");
+            }
+
+            var pending = mapRows.Where(r => r.Id > After).ToList();
+            var ready = pending.Where(r => File.Exists(r.NewArchivePath)).ToList();
+            var notYetConverted = pending.Count - ready.Count;
+            var batch = ready.Take(Math.Max(1, Limit)).ToList();
+
+            var ids = batch.Select(r => r.Id).ToHashSet();
+            var rows = await db.ArcadeGames.Where(g => ids.Contains(g.Id)).ToDictionaryAsync(g => g.Id);
+
+            int updated = 0, unchanged = 0, missing = 0;
+            var claimedRomPaths = new HashSet<(string, string)>();
+            foreach (var r in batch)
+            {
+                if (!rows.TryGetValue(r.Id, out var g)) { missing++; w.WriteLine($"  ! arcade id {r.Id} not found in DB (stale map?)"); continue; }
+
+                var sys = ArcadeSystems.All.FirstOrDefault(s => s.Code == g.System);
+                var folder = sys?.Folders[0] ?? FolderOf(g.RomPath);
+                var archiveExt = Path.GetExtension(r.NewArchivePath);
+                var romExt = sys != null && sys.Extensions.Any(e => e.Equals(archiveExt, StringComparison.OrdinalIgnoreCase))
+                    ? archiveExt : (sys?.Extensions.FirstOrDefault() ?? ".cue");
+                var gameKey = Path.GetFileNameWithoutExtension(r.NewArchivePath);
+                var newRomPath = $"{folder}/{gameKey}{romExt}";
+
+                var romKey = (g.System.ToLowerInvariant(), newRomPath.ToLowerInvariant());
+                if (!claimedRomPaths.Add(romKey))
+                {
+                    w.WriteLine($"  ! arcade id {r.Id}: computed RomPath '{newRomPath}' collides with another row repointed this same run -- skipped, check the map.");
+                    continue;
+                }
+
+                bool changed = g.SourceArchivePath != r.NewArchivePath || g.RomPath != newRomPath || g.CloudRetroGameKey != gameKey;
+                if (changed)
+                {
+                    if (Apply) { g.SourceArchivePath = r.NewArchivePath; g.RomPath = newRomPath; g.CloudRetroGameKey = gameKey; }
+                    updated++;
+                }
+                else unchanged++;
+            }
+
+            if (Apply) await db.SaveChangesAsync();
+
+            var nextCursor = batch.Count > 0 ? batch[^1].Id : After;
+            var remaining = ready.Count - batch.Count;
+
+            w.WriteLine();
+            w.WriteLine($"repointed {updated} row(s), {unchanged} already correct, {missing} not found, {disabled} disabled.");
+            w.WriteLine($"{{ processed: {batch.Count}, remaining: {remaining}, notYetConverted: {notYetConverted}, nextCursor: {nextCursor} }}");
+            if (!Apply) w.WriteLine("DRY RUN — nothing written. Re-run with --apply.");
+            else
+            {
+                w.WriteLine("Now regenerate the gateway manifest: arcade-romcache-export --out <path>.");
+                if (remaining > 0) w.WriteLine($"More to do: re-run with --after {nextCursor}.");
+                if (notYetConverted > 0) w.WriteLine($"{notYetConverted} mapped row(s) still waiting on their archive to finish converting.");
+            }
+        }
+
+        private static string FolderOf(string romPath)
+        {
+            var slash = romPath.IndexOf('/');
+            return slash > 0 ? romPath[..slash] : "";
+        }
+
+        // Minimal RFC4180 CSV reader (quoted fields, embedded commas/quotes/newlines) -- no external
+        // dependency for a handful of small reconciliation files.
+        private static (List<string> header, List<List<string>> rows) ReadCsv(string path)
+        {
+            var records = new List<List<string>>();
+            var field = new System.Text.StringBuilder();
+            var record = new List<string>();
+            bool inQuotes = false;
+            var text = File.ReadAllText(path);
+            void EndField() { record.Add(field.ToString()); field.Clear(); }
+            void EndRecord() { EndField(); records.Add(record); record = new List<string>(); }
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                if (inQuotes)
+                {
+                    if (c == '"' && i + 1 < text.Length && text[i + 1] == '"') { field.Append('"'); i++; }
+                    else if (c == '"') inQuotes = false;
+                    else field.Append(c);
+                }
+                else
+                {
+                    if (c == '"') inQuotes = true;
+                    else if (c == ',') EndField();
+                    else if (c == '\r') { }
+                    else if (c == '\n') EndRecord();
+                    else field.Append(c);
+                }
+            }
+            if (field.Length > 0 || record.Count > 0) EndRecord();
+            records.RemoveAll(r => r.Count == 1 && r[0].Length == 0);
+            var header = records.Count > 0 ? records[0] : new List<string>();
+            return (header, records.Skip(1).ToList());
+        }
     }
 
     /// <summary>
@@ -358,6 +555,18 @@ namespace MovieTheater.Arcade
         public static string CleanTitle(string name)
         {
             var t = name;
+            // Strip a TRAILING run of tag groups first ("(USA)", "[Hack]", "(Rev 1)" at the very end) —
+            // covers the ordinary "Title (Region)" case AND a hack's own "[Hack]" suffix without
+            // touching a subtitle that appears earlier in the name. (Kept identical to the
+            // ArcadeIngestCommand copy — see the gotcha note above.)
+            t = Regex.Replace(t, @"(\s*[\(\[][^\)\]]*[\)\]])+\s*$", "");
+            // ROM hacks conventionally name themselves "Base Game (Region) - Hack Name" — the region
+            // tag sits BEFORE the hack's own subtitle, not at the end (e.g. "Super Mario 64 (USA) -
+            // BAZR"). Cutting at the first tag as below would collapse every hack of the same base game
+            // to one indistinguishable title. If a leading tag is immediately followed by " - <text>",
+            // keep that text (it's the real name, not metadata).
+            var hackName = Regex.Match(t, @"^([^\(\[]+?)\s*[\(\[][^\)\]]*[\)\]]\s*-\s*(.+)$");
+            if (hackName.Success) t = $"{hackName.Groups[1].Value.Trim()} - {hackName.Groups[2].Value.Trim()}";
             int cut = t.IndexOfAny(new[] { '(', '[' });
             if (cut > 0) t = t[..cut];
             t = t.Replace('_', ' ').Trim();

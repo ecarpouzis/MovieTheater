@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CliFx;
 using CliFx.Attributes;
@@ -194,6 +195,17 @@ namespace MovieTheater.Arcade
         private static string CleanTitle(string name)
         {
             var t = name;
+            // Strip a TRAILING run of tag groups first ("(USA)", "[Hack]", "(Rev 1)" at the very end) —
+            // covers the ordinary "Title (Region)" case AND a hack's own "[Hack]" suffix without
+            // touching a subtitle that appears earlier in the name.
+            t = Regex.Replace(t, @"(\s*[\(\[][^\)\]]*[\)\]])+\s*$", "");
+            // ROM hacks conventionally name themselves "Base Game (Region) - Hack Name" — the region
+            // tag sits BEFORE the hack's own subtitle, not at the end (e.g. "Super Mario 64 (USA) -
+            // BAZR"). Cutting at the first tag as below would collapse every hack of the same base game
+            // to one indistinguishable title. If a leading tag is immediately followed by " - <text>",
+            // keep that text (it's the real name, not metadata).
+            var hackName = Regex.Match(t, @"^([^\(\[]+?)\s*[\(\[][^\)\]]*[\)\]]\s*-\s*(.+)$");
+            if (hackName.Success) t = $"{hackName.Groups[1].Value.Trim()} - {hackName.Groups[2].Value.Trim()}";
             int cut = t.IndexOfAny(new[] { '(', '[' });
             if (cut > 0) t = t[..cut];
             t = t.Replace('_', ' ').Trim();
@@ -249,9 +261,20 @@ namespace MovieTheater.Arcade
             // strong fit for the shared-room model (Mario Kart Double Dash, Smash Melee, Mario Party).
             // R:\Roms\Games\Nintendo GameCube is all .gcz (Dolphin's compressed format), read directly by
             // the core → RomCache COPIES it (plain-file branch, like ps2 .cso), never a 7z extract. Other
-            // Dolphin disc formats listed so a pre-staged .iso/.rvz still maps. (Wii is NOT ingested: no Wii
-            // ROMs on R:, and Wiimote/motion input doesn't map to the RetroPad; Wii U is Cemu, not Dolphin.)
+            // Dolphin disc formats listed so a pre-staged .iso/.rvz still maps. (Wii U is Cemu, not Dolphin —
+            // still not ingested.)
             new("gc",         new[] { "gc" },         new[] { ".gcz", ".iso", ".rvz", ".ciso", ".gcm" },        4),
+            // Wii, same dolphin_custom_libretro core/worker as gc, own "wii" folder (config.worker-gl.yaml).
+            // JIT-sourced from L:\4 - Software\Wii\Disc Games (.rvz — Dolphin's own compressed format, read
+            // directly, no decompress step needed like gcz). Default per-port device is Wiimote+Nunchuk
+            // (RETRO_DEVICE_WIIMOTE_NC): Nunchuk stick + C/Z ride the left stick/X/Y, and — the reason this
+            // was previously excluded turned out to be stale — the core's own dolphin_ir_mode option puts
+            // the IR pointer on the RIGHT STICK and swing gestures behind a modifier button, both of which
+            // ride our existing RetroPad-only input frame fine. True continuous-tilt games (steering-wheel-
+            // style Wiimote holds) still don't map and will feel wrong; curate/flag those as reports come in.
+            // WiiWare (.zip, NAND/WAD channel installs) is NOT covered by this ingest — different loading
+            // model entirely, not staged as a disc.
+            new("wii",        new[] { "wii" },        new[] { ".rvz", ".iso", ".wbfs", ".ciso", ".gcm" },       4),
             new("psp",        new[] { "psp" },        new[] { ".iso", ".cso", ".pbp", ".chd" },  1),  // GL; no BIOS; ad-hoc MP unsupported
             new("dc",         new[] { "dc" },         new[] { ".chd", ".gdi", ".cdi", ".cue" },  2),  // GL; dc_boot.bin + dc_flash.bin
             new("naomi",      new[] { "naomi" },      new[] { ".zip", ".chd", ".lst", ".dat" },  2),  // flycast arcade; naomi.zip BIOS

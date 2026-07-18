@@ -229,7 +229,7 @@ namespace MovieTheater.Services.Igdb
         public static int? PlatformId(string system) => system switch
         {
             "arcade" => 52, "neogeo" => 80,
-            "nes" or "fds" => 18, "snes" => 19, "n64" => 4, "gc" => 21,
+            "nes" or "fds" => 18, "snes" => 19, "n64" => 4, "gc" => 21, "wii" => 5,
             "gb" => 33, "gbc" => 22, "gba" => 24,
             "genesis" => 29, "sms" => 64, "gg" => 35, "sg1000" => 84, "segacd" => 78, "sega32x" => 30,
             "ps1" => 7, "ps2" => 8, "psp" => 38,

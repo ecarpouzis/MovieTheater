@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwap, setFaceSwap, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad } from "./cloudRetroClient";
+import { DEFAULT_CHORDS } from "./controllerChords";
+import { SYSTEM_LABEL, systemLabel } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
 import { useWakeLock } from "../../useWakeLock";
 
@@ -21,6 +23,20 @@ const STATUS_TEXT = {
 // The two statuses that mean "media is flowing" — both must kick autoplay, or a spectator stares at a
 // frozen first frame behind the "Tap to start" overlay.
 const LIVE_STATUS = ["playing", "spectating"];
+
+// Systems the button-mapping visualizer offers. Excludes the heavy-lane (Moonlight-streamed,
+// docs/arcade-heavy-lane-plan.md §7.1) and capture-lane entries: those pass a native controller
+// straight through rather than going through cloudRetroClient.js's RetroPad remapping, so a
+// mapping table for them would be meaningless.
+const NOT_REMAPPED_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "capture"]);
+const MAPPABLE_SYSTEM_OPTIONS = Object.keys(SYSTEM_LABEL)
+  .filter((s) => !NOT_REMAPPED_SYSTEMS.has(s))
+  .map((s) => ({ value: s, label: systemLabel(s) }))
+  .sort((a, b) => a.label.localeCompare(b.label));
+
+// Friendly names for the chord-bindable actions, used to render the "Quick actions" caption from
+// DEFAULT_CHORDS itself so it can't drift out of sync with what's actually bound.
+const CHORD_ACTION_LABEL = { quickSave: "Quick-save", quickLoad: "Quick-load", reset: "Reset (owner only)" };
 
 /**
  * The /arcade/room/:code player (docs/arcade-plan.md §7–§8). Two ways in: the creator arrives with a
@@ -53,6 +69,12 @@ export default function ArcadeRoomPage() {
   // either is not playably present, and both must arm the refocus auto-reload below.
   const TERMINAL_STATUS = ["disconnected", "failed", "input-lost", "closed", "arcade-full", "seat-rejected"];
   const [yourSlot, setYourSlot] = useState(location.state?.descriptor?.playerSlot ?? null);
+  // Mirrors yourSlot for the chord handler below: that callback is captured once inside the
+  // mount-time session-open effect and never recreated, so a plain `yourSlot === 0` check inside
+  // it would close over a stale value from before seating/heartbeat updates it (same idiom as
+  // statusRef above).
+  const yourSlotRef = useRef(yourSlot);
+  yourSlotRef.current = yourSlot;
   // A watch-only seat: no controller port (slot -1), so no player-only controls and no "You are P0".
   const spectator = yourSlot != null && yourSlot < 0;
   const [system, setSystem] = useState(location.state?.descriptor?.system ?? null);
@@ -71,8 +93,14 @@ export default function ArcadeRoomPage() {
   const [primaryPad, setPrimaryPad] = useState(null);
   const [showControllers, setShowControllers] = useState(false);
   const [padList, setPadList] = useState([]); // [{ index, id }]
-  // Nintendo↔Xbox face-button swap — mirrors the shim's machine-wide localStorage flag.
-  const [faceSwap, setFaceSwapState] = useState(getFaceSwap());
+  // Face-button convention override — mirrors the shim's machine-wide localStorage setting.
+  // "auto" (default) picks the convention from each pad's detected controller family; the other
+  // two values force it for pads that misreport.
+  const [faceSwapMode, setFaceSwapModeState] = useState(getFaceSwapMode());
+  // Button-mapping visualizer: which system's mapping the Controllers panel is currently showing.
+  // null = follow the room's own system (the common case); set once the player picks a different
+  // one from the dropdown to preview it.
+  const [mapSystem, setMapSystem] = useState(null);
   const [ignoreStreamed, setIgnoreStreamedState] = useState(getIgnoreStreamedPads());
   const [fatal, setFatal] = useState(null);
   // Crash-loop detector. A worker that segfaults at core load (a bad ROM — Stuntman Ignition,
@@ -207,6 +235,21 @@ export default function ArcadeRoomPage() {
           if (descriptor.isCreator) MovieAPI.bindArcadeRoom(code, roomId).catch(() => {});
         },
         onError: (err) => { if (!cancelled) message.error(err.message || "Connection problem."); },
+        onChordAction: (action) => {
+          if (cancelled) return;
+          // quickSave/quickLoad already report their own success/failure via message.* — no need
+          // to add a second toast on top of theirs.
+          if (action === "quickSave") { quickSave(); return; }
+          if (action === "quickLoad") { quickLoad(); return; }
+          if (action === "reset") {
+            // Owner-only: mirrors the existing owner-only gate on the (less disruptive) named
+            // snapshot actions below — an unrecoverable reset in a shared room is at least as
+            // disruptive, so a non-owner's chord no-ops instead of firing.
+            if (yourSlotRef.current !== 0) { message.info("Only the room owner can reset."); return; }
+            sessionRef.current?.reset?.();
+            message.success("Game reset");
+          }
+        },
       });
     }, 0);
 
@@ -624,6 +667,11 @@ export default function ArcadeRoomPage() {
     message.info(`Switching to disc ${target + 1}…`);
   }
 
+  // Best-effort pad to drive the mapping visualizer's detected-family display: the one pinned to
+  // the primary seat, or (fluid adoption) just the first connected pad — either is a reasonable
+  // stand-in when nothing's explicitly pinned, and mappingRowsFor tolerates a null pad fine.
+  const mappingPad = padList.find((p) => p.index === primaryPad) || padList[0] || null;
+
   return (
     <div className="arcade-room-page" style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 24px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
@@ -800,10 +848,15 @@ export default function ArcadeRoomPage() {
         </div>
         {padList.map((p) => (
           <div key={p.index} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
-            <Text style={{ flex: 1 }} ellipsis={{ tooltip: p.id }}>
-              🎮 {p.id || `Controller ${p.index + 1}`}
-              {isStreamedPad(p) && <Text type="secondary"> (streamed — not auto-adopted)</Text>}
-            </Text>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Text ellipsis={{ tooltip: p.id }} style={{ display: "block" }}>
+                🎮 {p.id || `Controller ${p.index + 1}`}
+                {isStreamedPad(p) && <Text type="secondary"> (streamed — not auto-adopted)</Text>}
+              </Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Detected: {controllerLabelFor(p)}{faceSwapMode !== "auto" && " (override applied)"}
+              </Text>
+            </div>
             <Select
               style={{ width: 190 }}
               value={padAssignment(p.index)}
@@ -821,19 +874,58 @@ export default function ArcadeRoomPage() {
         {padList.length === 0 && (
           <Text type="secondary">No controllers detected — connect one and press any button on it.</Text>
         )}
-        {/* Nintendo↔Xbox face-button relabel — the one rebinding everyone actually needs. Applies to
-            every controller THIS machine drives (it's a machine-wide localStorage setting read by the
-            shim per poll, so it takes effect immediately, mid-game). Full rebinding is future work. */}
-        <div style={{ borderTop: "1px solid rgba(128,128,128,0.25)", marginTop: 12, paddingTop: 12 }}>
-          <Tooltip title="Nintendo and Xbox pads mirror their face-button labels. If confirm/cancel feel backwards in games, flip this — it swaps what the four face buttons send for every controller on this machine.">
-            <Checkbox
-              checked={faceSwap}
-              onChange={(e) => { setFaceSwap(e.target.checked); setFaceSwapState(e.target.checked); }}
-            >
-              Swap face buttons (A↔B, X↔Y)
-            </Checkbox>
+        {/* Face-button convention — auto-detected per pad from its controller family (DualSense,
+            DualShock 4, Xbox, Switch Pro, generic), with a manual override for pads that misreport.
+            Machine-wide localStorage setting read by the shim per poll, so it takes effect
+            immediately, mid-game. Full per-user rebinding is future work. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: "1px solid rgba(128,128,128,0.25)", marginTop: 12, paddingTop: 12 }}>
+          <Tooltip title="Auto picks the face-button layout from each controller's detected type (PlayStation/Nintendo pads vs Xbox pads mirror their labels). Override it only if a pad misreports or still feels backwards.">
+            <Text style={{ flex: 1 }}>Face-button convention</Text>
           </Tooltip>
+          <Select
+            style={{ width: 190 }}
+            value={faceSwapMode}
+            onChange={(v) => { setFaceSwapMode(v); setFaceSwapModeState(v); }}
+            options={[
+              { value: "auto", label: "Auto (recommended)" },
+              { value: "nintendo", label: "Nintendo / PlayStation" },
+              { value: "xbox", label: "Xbox" },
+            ]}
+          />
         </div>
+
+        {/* Button-mapping visualizer: pick any system to see how the detected/primary controller's
+            physical buttons land on that console's native names. */}
+        <div style={{ borderTop: "1px solid rgba(128,128,128,0.25)", marginTop: 12, paddingTop: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+            <Text style={{ flex: 1 }}>Button mapping</Text>
+            <Select
+              style={{ width: 190 }}
+              value={mapSystem || system || undefined}
+              placeholder="Choose a system…"
+              onChange={(v) => setMapSystem(v)}
+              options={MAPPABLE_SYSTEM_OPTIONS}
+              showSearch
+              optionFilterProp="label"
+            />
+          </div>
+          {mappingRowsFor(mapSystem || system, mappingPad).map((row) => (
+            <div key={row.physicalLabel} style={{ display: "flex", gap: 12, padding: "2px 0", fontSize: 13 }}>
+              <Text type="secondary" style={{ flex: 1 }}>{row.physicalLabel}</Text>
+              <Text style={{ flex: 1 }}>{row.consoleLabel}</Text>
+            </div>
+          ))}
+          <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
+            {arcadeInputHint(mapSystem || system)}
+          </Text>
+        </div>
+
+        {/* Quick actions: hold-to-fire chords, generated from the shipped defaults so this text
+            can never drift out of sync with what actually fires. Fast-forward isn't listed — no
+            wire/worker support for it yet. */}
+        <Text type="secondary" style={{ display: "block", marginTop: 12, fontSize: 12 }}>
+          Quick actions (hold): {DEFAULT_CHORDS.map((c) => `${c.bits.join("+")} = ${CHORD_ACTION_LABEL[c.action] || c.action}`).join(" · ")}
+        </Text>
         {/* Heavy-lane guard (docs/arcade-heavy-lane-plan.md §6.3): on the PC that hosts Moonlight
             streams, guests' forwarded controllers surface as virtual Xbox 360 (XInput) pads that the
             press-a-button detector would happily seat into THIS room. Enable only on the stream host

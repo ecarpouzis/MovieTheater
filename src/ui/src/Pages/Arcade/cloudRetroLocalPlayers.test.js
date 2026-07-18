@@ -279,4 +279,31 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
     expect(dc.sent.length).toBe(before);
     s.close();
   });
+
+  // Chord/hold-to-fire bindings (controllerChords.js) ride the SAME pumpInput poll this whole file
+  // exercises — this proves onChordAction actually fires through a real tick, not just in the
+  // chord-watcher's own isolated unit tests.
+  it("onChordAction fires once the default quick-save chord (L3+R3) is held past its threshold", async () => {
+    // Physical pad indices 10/11 are DEFAULT_GAMEPAD's L3/R3 (see cloudRetroClient.js) — held
+    // continuously from the start of the session.
+    setPads(pad(0, [10, 11]));
+    const fired = [];
+    const s = createCloudRetroSession(descriptorFor({ playerSlot: 0 }), {
+      videoEl: null,
+      onChordAction: (action) => fired.push(action),
+    });
+    await driveToGameStart(sockets[0]);
+    const dc = channels.find((c) => c.label === "data");
+    dc.onopen?.();
+
+    await vi.advanceTimersByTimeAsync(500); // under quickSave's 600ms hold threshold
+    expect(fired).toEqual([]);
+
+    await vi.advanceTimersByTimeAsync(200); // now past it
+    expect(fired).toEqual(["quickSave"]);
+
+    await vi.advanceTimersByTimeAsync(500); // still held — must not re-fire without a release
+    expect(fired).toEqual(["quickSave"]);
+    s.close();
+  });
 });

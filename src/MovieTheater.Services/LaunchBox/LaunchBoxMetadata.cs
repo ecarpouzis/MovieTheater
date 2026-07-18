@@ -53,6 +53,7 @@ namespace MovieTheater.Services.LaunchBox
             ["Nintendo Game Boy Advance"] = "gba",
             ["Arcade"] = "arcade",
             ["Nintendo GameCube"] = "gc",
+            ["Nintendo Wii"] = "wii",
             ["Nintendo Game Boy"] = "gb",
             ["Nintendo Game Boy Color"] = "gbc",
             ["Sega Dreamcast"] = "dc",
@@ -71,6 +72,9 @@ namespace MovieTheater.Services.LaunchBox
             ["Nintendo Famicom Disk System"] = "fds",
             ["SNK Neo Geo AES"] = "neogeo",
             ["Sega SG-1000"] = "sg1000",
+            ["NEC TurboGrafx-CD"] = "pce",
+            ["Sega Naomi"] = "naomi",
+            ["Sammy Atomiswave"] = "atomiswave",
         };
 
         private static readonly Regex Parenthetical = new(@"\(.*?\)", RegexOptions.Compiled);

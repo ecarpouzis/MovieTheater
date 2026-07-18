@@ -35,6 +35,7 @@ namespace MovieTheater.Arcade
             ["gba"] = "Nintendo - Game Boy Advance",
             ["n64"] = "Nintendo - Nintendo 64",
             ["gc"] = "Nintendo - GameCube",
+            ["wii"] = "Nintendo - Wii",
             ["ps1"] = "Sony - PlayStation",
             ["ps2"] = "Sony - PlayStation 2",
             // Added 2026-07. naomi/atomiswave/neogeo are arcade-named (like fbneo) → omitted, they keep

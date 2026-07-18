@@ -12,6 +12,9 @@
 // web/js/input/retropad.js + web/js/input/keys.js): five int16s — [buttons, lx, ly, rx, ry] —
 // sent on change only, no player-index byte. See encodeInput() for the details.
 
+import { effectiveFaceSwap } from "./controllerIdentity";
+import { createChordWatcher } from "./controllerChords";
+
 // Packet types (Appendix A2).
 const T = {
   LATENCY: 3,
@@ -30,7 +33,7 @@ const T = {
 
 // Button → bit positions, CONFIRMED against CloudRetro's JOYPAD_KEYS order (web/js/input/keys.js):
 // [B, Y, SELECT, START, UP, DOWN, LEFT, RIGHT, A, X, L, R, L2, R2, L3, R3] — the standard RetroPad order.
-const PAD = { B: 0, Y: 1, SELECT: 2, START: 3, UP: 4, DOWN: 5, LEFT: 6, RIGHT: 7, A: 8, X: 9, L: 10, R: 11, L2: 12, R2: 13, L3: 14, R3: 15 };
+export const PAD = { B: 0, Y: 1, SELECT: 2, START: 3, UP: 4, DOWN: 5, LEFT: 6, RIGHT: 7, A: 8, X: 9, L: 10, R: 11, L2: 12, R2: 13, L3: 14, R3: 15 };
 
 // ── Per-system input profiles ────────────────────────────────────────────────────────────────────
 // The RetroPad bit layout (PAD) is fixed, but each libretro core maps those bits to native console
@@ -161,7 +164,7 @@ const PROFILES = {
   },
 };
 
-function profileFor(system) {
+export function profileFor(system) {
   return PROFILES[(system || "").toLowerCase()] || PROFILES.default;
 }
 
@@ -172,19 +175,22 @@ function profileFor(system) {
 // session's adopt-any-active-pad heuristic knows to leave those pads alone.
 const claimedPadIndexes = new Set();
 
-// ── Face-button swap (Nintendo ↔ Xbox layout) ────────────────────────────────────────────────────
+// ── Face-button swap (Nintendo/PlayStation ↔ Xbox layout) ────────────────────────────────────────
 // The per-system PROFILES map by physical POSITION (Gamepad-API 0 south, 1 east, 2 west, 3 north),
-// which is right for one label layout and backwards for the other: Nintendo pads put A east/B south,
-// Xbox pads put A south/B east (X/Y mirror the same way). This machine-wide toggle relabels the four
-// face buttons before profile mapping (south↔east, west↔north — i.e. index ^ 1), so it composes with
-// every per-system profile and applies to ALL seats this machine drives (primary + local players).
-// Full per-user rebinding is future WS-G work; this covers the one swap everyone actually hits.
-let faceSwap = (() => { try { return localStorage.getItem("arcade.faceSwap") === "1"; } catch { return false; } })();
-export function getFaceSwap() { return faceSwap; }
-export function setFaceSwap(on) {
-  faceSwap = !!on;
-  try { localStorage.setItem("arcade.faceSwap", on ? "1" : "0"); } catch { /* storage disabled */ }
-}
+// which is right for one label layout and backwards for the other: Nintendo/PlayStation pads put
+// confirm on the position DEFAULT_GAMEPAD already targets, Xbox pads mirror it. This used to be one
+// manual machine-wide boolean; it's now auto-detected PER PAD from the controller's own identity
+// (controllerIdentity.js classifies gp.id into a family — DualSense/DualShock4/Xbox/Switch Pro/
+// generic), with a manual override for pads that misreport. Barrel-exported here so
+// ArcadeRoomPage.js keeps importing the whole arcade-shim surface from one module.
+export {
+  controllerFamilyFor,
+  controllerLabelFor,
+  getFaceSwapMode,
+  setFaceSwapMode,
+  effectiveFaceSwap,
+} from "./controllerIdentity";
+export { mappingRowsFor, SYSTEM_BUTTON_LABELS } from "./controllerMapDisplay";
 
 // ── Streamed-pad guard (heavy lane, docs/arcade-heavy-lane-plan.md §6.3) ─────────────────────────
 // When this machine hosts Moonlight/Apollo streams, every guest controller is forwarded as a ViGEm
@@ -313,7 +319,7 @@ export function videoTransform(rot, flip) {
 }
 
 export function createCloudRetroSession(descriptor, opts) {
-  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect } = opts || {};
+  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect, onChordAction } = opts || {};
   const status = (s) => onStatus && onStatus(s);
   // Watch-only seat. Trust the explicit flag, but fall back to the slot itself so an older descriptor
   // (or a hand-built one in a test) can't accidentally hand a watcher a controller.
@@ -327,6 +333,12 @@ export function createCloudRetroSession(descriptor, opts) {
   let pinnedPad = Number.isInteger(opts && opts.padIndex) ? opts.padIndex : -1;
   const inputOnly = pinnedPad >= 0;
   if (pinnedPad >= 0) claimedPadIndexes.add(pinnedPad);
+
+  // Chord/hold-to-fire bindings (quick-save/quick-load/reset — see controllerChords.js). Only
+  // built when a caller passes onChordAction (the primary session; local-player extra sessions
+  // don't). No spectator guard needed here: pumpInput's own timer never starts for a spectator
+  // (see stopInput/startInput below), so this can never be polled for one.
+  const chordWatcher = onChordAction ? createChordWatcher(onChordAction) : null;
 
   let ws = null;
   let pc = null;
@@ -490,11 +502,13 @@ export function createCloudRetroSession(descriptor, opts) {
 
     let mask = 0;
     const axes = [0, 0, 0, 0];
+    // Face-button relabel (see faceSwap above): swap south↔east and west↔north when this SPECIFIC
+    // pad's convention doesn't match the profile's positional assumption. Computed per poll, per
+    // pad (not a machine-wide flag) so mixed-brand local multiplayer gets each pad right, and
+    // toggling the panel's override takes effect mid-game.
+    const swap = effectiveFaceSwap(gp);
     gp.buttons.forEach((b, i) => {
-      // Face-button relabel (see faceSwap above): swap south↔east and west↔north when the
-      // player's pad labels don't match the profile's positional assumption. Read per poll so
-      // toggling the panel checkbox takes effect mid-game.
-      const pi = faceSwap && i < 4 ? (i ^ 1) : i;
+      const pi = swap && i < 4 ? (i ^ 1) : i;
       if (b.pressed && gamepad[pi] !== undefined) mask |= (1 << gamepad[pi]);
     });
     // Real analog axes ride the frame (N64 steering wants them); a left-stick→dpad fold is kept
@@ -513,6 +527,11 @@ export function createCloudRetroSession(descriptor, opts) {
     if (closed || !dc || dc.readyState !== "open") return;
     const gp = readGamepad();
     const mask = keyMask.value | gp.mask;
+    // Chord watch must run on EVERY tick a chord's bits are held, not just the first — placed here,
+    // before the send-on-change dedupe below returns early once the mask stops changing (a steadily
+    // held chord produces an unchanged mask after tick 1, and the dedupe would otherwise starve it
+    // of the ticks it needs to reach its hold duration).
+    if (chordWatcher) chordWatcher.poll(mask, Date.now());
     // Keyboard arrows also drive the LEFT ANALOG STICK. N64 (and most 3D) games steer with the stick,
     // NOT the d-pad — so without this the keyboard couldn't turn. Full deflection from the arrow keys;
     // a real gamepad stick takes precedence when it's being pushed.
