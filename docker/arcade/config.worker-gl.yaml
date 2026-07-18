@@ -664,7 +664,15 @@ emulator:
             # Auto/Vulkan/D3D would render to a private device the GL capture never sees -> black frame.
             pcsx2_renderer: "paraLLEl-GS"   # Vulkan GS renderer — the default (was OpenGL)
             pcsx2_pgs_high_res_scanout: "enabled"
-            pcsx2_pgs_ssaa: "8x SSAA (can high-res)"
+            # Phase-2 raise 8x->16x (2026-07-18): the option list goes one step past our old "ceiling".
+            # ⚠ PS2 speed regressions present as AUDIO starvation (samples/frame ∝ fps) — smoke gate is
+            # the HEAVIEST title (Stuntman attract), not an average one. ROLLBACK: "8x SSAA (can high-res)".
+            pcsx2_pgs_ssaa: "16x SSAA (can high-res)"
+            # Force Texture LOD0 (Phase-2 default-on 2026-07-18): per the core's own description, better
+            # image quality with issues in "only a small handful of games" — the exact default-on/opt-out
+            # shape. Per-title opt-out via game-overrides.json if a title mips wrong. ROLLBACK: delete
+            # (core default disabled).
+            pcsx2_pgs_disable_mipmaps: "enabled"
             # Boot straight into the game, skipping the PS2 BIOS boot animation (faster attract testing).
             pcsx2_fastboot: "enabled"
             # Name the BIOS explicitly. LRPS2 read "Bios Found: USA v01.60" from its root scan but the

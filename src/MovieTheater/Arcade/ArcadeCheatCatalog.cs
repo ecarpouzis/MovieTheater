@@ -132,6 +132,23 @@ namespace MovieTheater.Arcade
             {
                 new OptionCheat("pcsx2_half_pixel_offset", "Align to Native", "Fix ghosting / double image", false,
                     "For games that smear or ghost when upscaled. Replaces this game's automatic per-game fixes — untick if anything looks worse."),
+                // paraLLEl-GS experimental enhancers (value tokens verbatim from libretro_core_options.h in the
+                // LRPS2 source). Both are game-specific wins the core itself labels experimental — the honest
+                // shape is a per-room toggle, not a system default (unlike pgs_disable_mipmaps, whose "small
+                // handful of games" downside made it a default with per-title opt-out).
+                new OptionCheat("pcsx2_pgs_deblur", "enabled", "Sharper picture (deblur)", false,
+                    "Sharpens games that blur their final image with extra blit passes. Experimental — untick if anything renders wrong."),
+                new OptionCheat("pcsx2_pgs_ss_tex", "enabled", "Super-sample textures", false,
+                    "Feeds higher-resolution textures back into rendering. Highly experimental — may glitch; untick if it does."),
+            },
+            // Beetle PSX HW: PGXP in its safe "memory only" mode straightens the PS1's wobbly/warping 3D
+            // geometry. A classic per-game enhancement: most 3D games look dramatically better, a minority
+            // glitch (and "memory + CPU", the aggressive mode, breaks games like SotN — deliberately not
+            // offered). 2D games see no change. Value tokens verified in mednafen_psx_hw_libretro.dll.
+            ["ps1"] = new[]
+            {
+                new OptionCheat("beetle_psx_hw_pgxp_mode", "memory only", "Stable 3D geometry (PGXP)", false,
+                    "Fixes PS1 3D wobble/warping. Most 3D games look better; untick if geometry glitches. No effect on 2D games."),
             },
         };
 
