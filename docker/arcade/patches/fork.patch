@@ -759,10 +759,10 @@ index 0000000..d2d17c4
 +and **not pushed**. Merge/deploy happens after review and an approved test window.
 diff --git a/RESULTS-vulkan-w3.md b/RESULTS-vulkan-w3.md
 new file mode 100644
-index 0000000..99eb49e
+index 0000000..e9e0a56
 --- /dev/null
 +++ b/RESULTS-vulkan-w3.md
-@@ -0,0 +1,505 @@
+@@ -0,0 +1,523 @@
 +# Worker Vulkan — W3 results (F1 per-game hwContext + PSP/DC Vulkan arms + W5 Dolphin audit)
 +
 +**Branch:** `vulkan-w3` (off `vulkan-w2` @ `7f96784` = the live `worker.exe` / w2fix8 stack: M1+M2 zero-copy, N64 paraLLEl-RDP, v1 surface fix, Vulkan-by-default).
@@ -906,8 +906,26 @@ index 0000000..99eb49e
 +
 +**BUG 2 (input):** **PS1 has no keyboard binding for Square (or Triangle).** The `ps1` profile overrides DEFAULT_KEYMAP's `KeyA: PAD.Y` (Square) → `PAD.L2` and `KeyS: PAD.X` (Triangle) → `PAD.R2` (cloudRetroClient.js:100-102), so keyboard players can't attack in SotN (Square). Gamepad works. Fix: give Square/Triangle keyboard keys (e.g. Comma/Period, or keep A/S on Square/Triangle and move L2/R2 elsewhere).
 +
-+### GL worker flip regression (Eric, via his GL/Vk room selector) — QUEUED
-+SotN on the **GL worker path renders UPSIDE-DOWN + MIRRORED**, bars present too. Suspect: the Vk zero-copy work changed FBO-origin/`bottom_left_origin` flip handling on the shared capture path (the GL leg needs the flip the Vk import handles differently). Bars on BOTH GL and Vk confirm the bars live in the shared scale step (stretch-to-fill fix stands). Not yet investigated.
++### SotN flash + GL — CLOSED via a forced hardware_gl repro (2026-07-18)
++
++Forced the GL renderer for the quicksave dog-kill repro by injecting `HwContext:"gl"` into the room-create POST (`rq.HwContext`, precedence-0 — Eric's selector lever; `sotn-dog-repro.mjs` `GL_FORCE=1`) AND setting config `beetle_psx_hw_renderer: "hardware_gl"` (needed too — the worker sets the frontend hwContext but NOT the beetle renderer option; `rq.HwContext=gl` + `renderer=hardware_vk` = beetle requests a Vulkan context the GL-armed frontend rejects → no video). Two answers, one boot:
++- **FLASH CLOSED — beetle-hardware-COMMON.** The dog-death black-rectangle-behind-fire is present on **hardware_gl too** (ladder/gl-hw_gl-50.png), identical to hardware_vk. So it is NOT Vulkan-renderer-specific — it's a beetle-hardware semi-transparency limitation (both HW renderers). No config lever fixes it (internal_res 1x, renderer_software_fb, dither, pgxp all NEGATIVE; software renderer = the only known fix for this class but it doesn't compose our GL/Vk zero-copy capture). **Decision inputs:** accept the brief flash, OR a per-title pcsx_rearmed/software opt-out (loses the hw upscale + zero-copy — per-title only, never a default). Alive enemies + the rest of the scene render correctly; only the semi-transparent death effect is affected.
++- **GL FLIP is config-specific, NOT the hardware_gl renderer.** hardware_gl renders **UPRIGHT and correct** (ladder/gl-hw_gl-01/25/44.png — HP bar top, floor bottom, warg + Alucard correct). So Eric's upside-down+mirrored is his selector keeping `renderer=hardware_vk` while the capture is GL-committed: beetle renders a **Vulkan (top-left)** frame, `gl.enabled` (from hwContext=gl) then flags it for the client's `scaleY(-1)` flip → upside-down (+ the Vk→GL import mirror). **Fix direction:** make `Flipped()` reflect the CORE's render ORIGIN (GL bottom-left ⇒ flip; Vk top-left ⇒ no flip) rather than `IsGL()` (the capture-path flag) — OR the GL selection should pair with `renderer=hardware_gl` (which is correct). Needs Eric to confirm exactly what his selector sets, since hardware_gl is already correct.
++
++### GL worker flip regression (Eric, via his GL/Vk room selector) — FIXED + VALIDATED (2026-07-18)
++Eric's GL selector sets ONLY `hwctx` (GameCard.js `start(hwContext)` → `&hwctx=gl` on the WS URL); it NEVER touches `beetle_psx_hw_renderer`, which stayed `hardware_vk`. So the GL-committed frontend armed a **beetle requesting a Vulkan context it rejects → beetle fell back to its internal SOFTWARE framebuffer** (top-left origin) without re-taking a GL context (`Video.hw` stays nil), and the old `Flipped()=IsGL()` flipped that top-left frame → **upside-down + mirrored**. Root cause = the renderer core-option and the capture path were set INDEPENDENTLY, so a forced hwctx could split them.
++
++**Fix — two complementary layers (fork, one rebuild):**
++- **Layer 1 (renderer pin, `overrides.go` `PinRendererForHwContext` + `nanoarch.go` LoadGame):** a forced/resolved hw context pins the core's OWN renderer option to agree — `beetle_psx_hw_renderer` → `hardware_gl` for a `gl` room, `hardware_vk` for `vulkan`. Runs LAST after all option merges; only touches a renderer option already present set to a known HW value (never injects into psp/dc/gc, never clobbers a deliberate `software`). Unit-tested (`TestPinRendererForHwContext`).
++- **Layer 2 (origin-aware flip, `nanoarch.go` `Flipped()` + `frontend.go`):** `Flipped()` now returns `gl.enabled && Video.hw != nil && bottom_left_origin` instead of bare `IsGL()`. A GL-committed room whose core fell back to a software framebuffer (no hw context) is no longer flipped — defensive against ANY future mismatch/fallback.
++
++**Live validation (Eric's EXACT config: `hwContext:vulkan` + `renderer:hardware_vk` baseline + forced `hwctx=gl`):** worker log shows `[hwctx-pin] beetle_psx_hw_renderer=hardware_gl to match resolved hw context "gl"`, **NO** `rejected non-GL hw render context type: 6` (the pre-fix failure), and SotN renders **UPRIGHT and correct** (HUD top, floor bottom). Was upside-down before the fix.
++
++### Stretch-to-fill / side-bars — MEASURED, no server change needed (2026-07-18)
++Verdict from the decoded-stream column-scan (`sotn-dog-repro.mjs` luma probe draws the video's NATIVE `videoWidth×videoHeight` into a canvas, then per-column black-run detects baked bars): **`bars[L0R0]` across all 80 SotN frames — the WebRTC stream has NO baked pillars.** Corroborated by the `[geom]` logs: beetle declares **AR=1.3333 (4:3) for every ps1 mode** (320x240 AND 320x224), and the client already **stretches-to-fill** (`objectFit:"fill"` into an inner box of `av.a`=4:3; ps1 fallback is also 4:3, so no boot-time AR flip). So the display is already the authentic 4:3 raster regardless of internal mode. Any bars Eric sees are **legitimate client letterboxing** — a correct 4:3 image centered in a wider window/monitor (fullscreen on 16:9 = ~25% side pillars, correct). No server-baked-bar bug exists; **no code change shipped** (a "force 4:3" toggle would be a no-op, and stretching 4:3 to fill a 16:9 WINDOW would distort). Residual: a full BIOS/560/800/1120 sweep would re-confirm the same mechanism; deductively covered (client draws the full decoded frame, which the probe proved has no baked bars).
++
++### PS1 Square/Triangle keyboard remap — FIXED (2026-07-18, F: `cloudRetroClient.js`)
++The `ps1` profile no longer overrides `KeyA`/`KeyS` off Square/Triangle. New map: **Z=Cross, X=Circle, A=Square, S=Triangle** (the four face buttons, from DEFAULT_KEYMAP), **Q/W=L1/R1, E/R=L2/R2**, arrows=D-pad/left stick, Enter=Start, Shift=Select. Keyboard players can attack in SotN again; L2/R2 stay reachable. Hint text updated. Vitest green (12/12).
 +
 +### Phase-2 / W6 fidelity-ceiling queue (carried forward, no action now)
 +- **PS2 Stuntman "visually a bit blurry"** (Eric, 2026-07-17) — likely the PS2 **delivered-resolution ceiling**: paraLLEl-GS scanout extent vs encode size, and/or `scaleMethod`. Investigate whether the core's presented image is below the encode geometry (upscale-on-encode softening) and whether SSAA/scale is landing. Fidelity-ceiling item, not a correctness bug.
@@ -1557,10 +1575,10 @@ index 0000000..d83f053
 +	}
 +}
 diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
-index baf701e..72d4927 100644
+index baf701e..3a9b1b2 100644
 --- a/pkg/config/emulator.go
 +++ b/pkg/config/emulator.go
-@@ -17,6 +17,38 @@ type Emulator struct {
+@@ -17,6 +17,53 @@ type Emulator struct {
  	AutosaveSec      int
  	SkipLateFrames   bool
  	LogDroppedFrames bool
@@ -1596,10 +1614,25 @@ index baf701e..72d4927 100644
 +	//     gc:  "save:User/GC"
 +	//     ps2: "system:pcsx2/memcards"
 +	Cards map[string]string
++
++	// WiiSdLoader supports Wii ROM hacks whose own loader boots an ELF/DOL instead of a disc and
++	// needs Dolphin's Wii SD card + a paired base disc mounted before boot — BrawlEx-based Brawl
++	// mods (Project REX, Smash Bros Infinite) crash when baked onto a standalone disc because their
++	// own file/config loader only reliably reads from a real SD card. See Frontend.seedWiiSdLoader.
++	WiiSdLoader WiiSdLoaderConfig
++}
++
++// WiiSdLoaderConfig points at the paired-asset store for Wii SD-loader ROM hacks.
++//
++// AssetsDir layout: <AssetsDir>/<CloudRetroGameKey>/{sd.raw, base.<ext>} — the folder name MUST
++// equal the loader ELF/DOL's filename sans extension (same convention CloudRetroGameKey and
++// game-overrides.json's romName already use). Empty AssetsDir = the feature is off entirely.
++type WiiSdLoaderConfig struct {
++	AssetsDir string
  }
  
  type LibretroConfig struct {
-@@ -69,20 +101,67 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
+@@ -69,20 +116,67 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
  		errors.New("core mapping not found for " + runtime.GOOS + ":" + runtime.GOARCH)
  }
  
@@ -1668,7 +1701,7 @@ index baf701e..72d4927 100644
  	Roms            []string
  	SaveStateFs     string
  	Scale           float64
-@@ -128,6 +207,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
+@@ -128,6 +222,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
  	return found
  }
  
@@ -4136,7 +4169,7 @@ index b342b6b..2e15f42 100644
 +	return bps / 1000
 +}
 diff --git a/pkg/network/websocket/websocket.go b/pkg/network/websocket/websocket.go
-index 5b3d3fe..457c6ff 100644
+index 5b3d3fe..e6ef733 100644
 --- a/pkg/network/websocket/websocket.go
 +++ b/pkg/network/websocket/websocket.go
 @@ -16,6 +16,18 @@ const (
@@ -4180,7 +4213,23 @@ index 5b3d3fe..457c6ff 100644
  			err := c.conn.writeControl(websocket.PongMessage, nil, time.Now().Add(writeWait))
  			if err == websocket.ErrCloseSent {
  				return nil
-@@ -187,9 +205,32 @@ func (c *Connection) writer() {
+@@ -184,12 +202,48 @@ func (c *Connection) writer() {
+ 				if err := c.conn.write(websocket.PingMessage, nil); err != nil {
+ 					return
+ 				}
++				// Extend OUR OWN read deadline directly, rather than relying on the peer's pong
++				// reply being processed by reader()'s ReadMessage loop. That loop can be blocked for
++				// the WHOLE DURATION of a long inline handler (HandleStartGame blocks up to
++				// coordinator.GameStartTimeout=60s waiting on the worker) — during which it never
++				// calls ReadMessage(), so it never sees ANY pong no matter how promptly the peer
++				// (browser or worker) answers. That starved this socket's OWN pongTime deadline even
++				// though the peer was perfectly healthy — the exact bug 0035 fixed on the CLIENT
++				// (pingPong=false) branch above, reopened here on the SERVER branch once 0042 gave
++				// StartGame a budget bigger than pongTime. See the "OPEN GAP" note in
++				// docker/arcade/patches/README.md (right after 0042) for the full trace.
++				// A genuinely dead peer is still caught: the ping WRITE above fails once the TCP
++				// connection is actually gone — same detection 0035 already relies on.
++				_ = c.conn.SetReadDeadline(time.Now().Add(pongTime))
  			}
  		}
  	} else {
@@ -6888,10 +6937,10 @@ index f3553b1..a26a9d8 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..deb5ef9 100644
+index 6974d59..8d089b8 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,1205 @@
+@@ -1,578 +1,1368 @@
 -package libretro
 -
 -import (
@@ -8228,6 +8277,7 @@ index 6974d59..deb5ef9 100644
 +		f.copyFsMaybe(path)
 +	}
 +	f.seedCards()
++	f.seedWiiSdLoader(path)
 +	return f.nano.LoadGame(path)
 +}
 +
@@ -8481,10 +8531,172 @@ index 6974d59..deb5ef9 100644
 +	f.log.Info().Msgf("cards: harvested user %v's %v card", user, system)
 +}
 +
++// ── Wii SD-card + ELF/DOL loader boot (MovieTheater, 2026-07-18) ────────────────────────────────
++//
++// A small number of Wii ROM hacks (BrawlEx-based Brawl mods: Project REX, Smash Bros Infinite) crash
++// when baked onto a standalone disc — their own file/config loader only reliably reads from a real
++// SD card, not a disc image. These ship as a loader ELF/DOL (the ArcadeGame row's own content path)
++// instead of a disc. Before it boots, Dolphin needs [Core] WiiSDCard/WiiSDCardPath pointed at the
++// mod's own SD card image and [Core] DefaultISO pointed at a paired base disc — Dolphin's stock
++// Boot.cpp (SetDefaultDisc) auto-inserts DefaultISO on any ELF/DOL ("Executable") boot, unmodified
++// upstream behavior, the same thing standalone `Dolphin.exe -e loader.elf` relies on.
++//
++// Dolphin.ini is shared by every Wii/GC room THIS worker ever serves (one file, not per-room), and
++// DolphinLibretro's retro_load_game/retro_unload_game fully tear down and rebuild Dolphin's Config
++// from that file on every single room (UICommon::Init/Shutdown, verified against Main.cpp) — so
++// seeding it here, synchronously before nano.LoadGame, reliably takes effect for the room about to
++// start. A wii room WITHOUT a matching asset folder must explicitly turn the SD card back OFF, or it
++// would silently inherit whatever mod a previous room on this worker left mounted.
++//
++// The card image is CACHED per worker per game (<SaveDir>/User/wiisd-cache/<GameKey>/sd.raw),
++// copied from the shared master only once — not fresh every boot. A first live test copied REX's
++// 8GB card synchronously on every room start: ~23s, which blocked this worker's report back to the
++// coordinator long enough that the browser gave up waiting and disconnected before a single frame
++// rendered (2026-07-18). Existing memory cards never hit this because those are KB/MB save files;
++// an SD card image is not. The cache is refreshed only when missing or the master's size changed,
++// so the ~23s cost is paid at most once per worker per game (and can be pre-warmed by an admin
++// simply touching the master file's mtime, or eliminated entirely with a one-time manual copy).
++func (f *Frontend) seedWiiSdLoader(path string) {
++	assetsDir := f.conf.WiiSdLoader.AssetsDir
++	if assetsDir == "" {
++		return
++	}
++	// Same room-id-derived system code the card vault uses (cardOwner) — not GC (that core never
++	// touches the Wii SDIO subsystem, and this would otherwise write keys it never looks at).
++	_, system, ok := cardOwner(f.storage.MainPath())
++	if !ok || system != "wii" {
++		return
++	}
++
++	userDir := filepath.Join(f.nano.SaveDir(), "User")
++	iniPath := filepath.Join(userDir, "Config", "Dolphin.ini")
++
++	gameKey := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
++	srcDir := filepath.Join(assetsDir, gameKey)
++	if !os.Exists(srcDir) {
++		if err := setDolphinIni(iniPath, map[dolphinIniKey]string{{"Core", "WiiSDCard"}: "False"}); err != nil {
++			f.log.Error().Err(err).Msg("wiiSdLoader: could not disable a stale SD card")
++		}
++		return
++	}
++
++	srcSd := filepath.Join(srcDir, "sd.raw")
++	if !os.Exists(srcSd) {
++		f.log.Error().Msgf("wiiSdLoader: %v has an asset folder but no sd.raw, leaving SD card disabled", gameKey)
++		return
++	}
++	bases, err := os.GlobFiles(srcDir, "base.*")
++	if err != nil || len(bases) != 1 {
++		f.log.Error().Msgf("wiiSdLoader: %v needs exactly one base.<ext> disc image in its asset folder, found %d", gameKey, len(bases))
++		return
++	}
++
++	// Cached, not re-copied every boot — see the doc comment above. Never opened directly from
++	// assetsDir: Dolphin writes to this file live, and two concurrent rooms of the SAME mod on the
++	// two different workers must not share one file handle (each worker gets its own cached copy).
++	cacheSd := filepath.Join(userDir, "wiisd-cache", gameKey, "sd.raw")
++	if wiiSdCacheStale(srcSd, cacheSd) {
++		if err := os.MakeDirAll(filepath.Dir(cacheSd)); err != nil {
++			f.log.Error().Err(err).Msgf("wiiSdLoader: could not prepare cache dir for %v", gameKey)
++			return
++		}
++		f.log.Info().Msgf("wiiSdLoader: caching sd card for %v (first use on this worker, or the master changed)…", gameKey)
++		if err := os.CopyFile(srcSd, cacheSd); err != nil {
++			f.log.Error().Err(err).Msgf("wiiSdLoader: could not cache sd card for %v", gameKey)
++			return
++		}
++	}
++	if err := setDolphinIni(iniPath, map[dolphinIniKey]string{
++		{"Core", "WiiSDCard"}:        "True",
++		{"General", "WiiSDCardPath"}: cacheSd,
++		{"Core", "DefaultISO"}:       bases[0], // read-only disc emulation — referenced directly, no copy
++	}); err != nil {
++		f.log.Error().Err(err).Msgf("wiiSdLoader: could not patch Dolphin.ini for %v", gameKey)
++		return
++	}
++	f.log.Info().Msgf("wiiSdLoader: seeded %v (sd card + DefaultISO=%v)", gameKey, filepath.Base(bases[0]))
++}
++
++// wiiSdCacheStale reports whether the cached SD card copy is missing or out of sync with the
++// master (by size — the master is a hand-staged, rarely-changed file, so a size compare is enough
++// to catch a real replacement without needing the pkg/os wrapper to expose full os.Stat/mtime).
++func wiiSdCacheStale(src, cache string) bool {
++	if !os.Exists(cache) {
++		return true
++	}
++	srcSize, err := os.StatSize(src)
++	if err != nil {
++		return true
++	}
++	cacheSize, err := os.StatSize(cache)
++	if err != nil {
++		return true
++	}
++	return srcSize != cacheSize
++}
++
++type dolphinIniKey struct{ Section, Key string }
++
++// setDolphinIni sets each Section/Key pair in the Dolphin.ini at path, creating the file (and any
++// missing section) if needed, and leaving everything else in the file untouched. Direct Go port of
++// Setup-BrawlSDMod.ps1's Set-IniValue (the LOCAL equivalent of this same seed step) — same shape,
++// because it solves the identical problem: point Dolphin.ini at a specific SD card + default disc
++// before the core reads it, without disturbing anything else already there.
++func setDolphinIni(path string, kv map[dolphinIniKey]string) error {
++	var lines []string
++	if os.Exists(path) {
++		raw, err := os.ReadFile(path)
++		if err != nil {
++			return err
++		}
++		lines = strings.Split(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\n")
++	}
++	for k, v := range kv {
++		lines = setIniValue(lines, k.Section, k.Key, v)
++	}
++	if err := os.MakeDirAll(filepath.Dir(path)); err != nil {
++		return err
++	}
++	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
++}
++
++func setIniValue(lines []string, section, key, value string) []string {
++	header, entry := "["+section+"]", key+" = "+value
++	secIdx := -1
++	for i, l := range lines {
++		if strings.TrimSpace(l) == header {
++			secIdx = i
++			break
++		}
++	}
++	if secIdx == -1 {
++		return append(append(lines, header), entry)
++	}
++	secEnd := len(lines)
++	for i := secIdx + 1; i < len(lines); i++ {
++		if strings.HasPrefix(strings.TrimSpace(lines[i]), "[") {
++			secEnd = i
++			break
++		}
++	}
++	for i := secIdx + 1; i < secEnd; i++ {
++		t := strings.TrimSpace(lines[i])
++		if strings.HasPrefix(t, key+"=") || strings.HasPrefix(t, key+" =") {
++			lines[i] = entry
++			return lines
++		}
++	}
++	out := make([]string, 0, len(lines)+1)
++	out = append(out, lines[:secIdx+1]...)
++	out = append(out, entry)
++	out = append(out, lines[secIdx+1:]...)
++	return out
++}
++
 +func (f *Frontend) AspectRatio() float32          { return f.nano.AspectRatio() }
 +func (f *Frontend) AudioSampleRate() int          { return f.nano.AudioSampleRate() }
 +func (f *Frontend) FPS() float64                  { return f.nano.VideoFramerate() }
-+func (f *Frontend) Flipped() bool                 { return f.nano.IsGL() }
++func (f *Frontend) Flipped() bool                 { return f.nano.Flipped() }
 +func (f *Frontend) FrameSize() (int, int)         { return f.nano.BaseWidth(), f.nano.BaseHeight() }
 +func (f *Frontend) HasSave() bool                 { return os.Exists(f.HashPath()) }
 +func (f *Frontend) HashPath() string              { return f.storage.GetSavePath() }
@@ -10503,10 +10715,10 @@ index 669862d..d10f1de 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..9e97da3 100644
+index 17f10fc..a324c96 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-@@ -1,981 +1,1832 @@
+@@ -1,981 +1,1882 @@
 -package nanoarch
 -
 -import (
@@ -11782,6 +11994,13 @@ index 17f10fc..9e97da3 100644
 +	n.Video.vk.captureBroken = false
 +	n.VkZeroCopyStaged = false
 +	n.VkZeroCopyFence = false
++	// Video.hw is set only when the CORE calls SET_HW_RENDER (nanoarch.go:1350/1362) and is never
++	// otherwise cleared, so a core that skips it this room (e.g. beetle_psx_hw sometimes only tries
++	// OpenGL, which we reject for a Vulkan-committed room, and does not retry) would inherit whatever
++	// the PREVIOUS room's core left behind -- a dangling pointer into an already-unloaded core (the
++	// documented flycast case below, nanoarch.go:1345). Reset it so a skipped SET_HW_RENDER reads as
++	// nil (caught by the guards below), never as stale garbage.
++	Nan0.Video.hw = nil
 +
 +	Nan0.audioBuffCb = nil
 +
@@ -11915,6 +12134,14 @@ index 17f10fc..9e97da3 100644
 +		n.log.Info().Msgf("[room-cheat] option %v=%v", k, v)
 +	}
 +
++	// Flip fix, layer 1 (W3): pin the core's OWN renderer option to agree with the room's resolved hw
++	// context. Runs LAST — after config/options4rom/game-override/room-cheat merges — so a forced context
++	// (per-launch rq.HwContext or admin hwContext pin) always wins and renderer + capture can't disagree.
++	// No-op unless the core actually has a renderer option (beetle today) and it's set to a HW renderer.
++	if optName, want, pinned := PinRendererForHwContext(n.options, n.meta.HwContext); pinned {
++		n.log.Info().Msgf("[hwctx-pin] %v=%v to match resolved hw context %q", optName, want, n.meta.HwContext)
++	}
++
 +	if ok := C.bridge_retro_load_game(retroLoadGame, &game); !ok {
 +		return fmt.Errorf("core failed to load ROM: %v", path)
 +	}
@@ -12024,10 +12251,24 @@ index 17f10fc..9e97da3 100644
 +		// LibCo cores (LRPS2). No GL context, no thread pinning (Vulkan objects are not thread-bound).
 +		if n.LibCo {
 +			C.same_thread(C.init_video_vk_cgo)
-+			C.same_thread(unsafe.Pointer(Nan0.Video.hw.context_reset))
++			// FAIL-SOFT (mirrors initVideo's guard above -- same underlying cause, this call site never
++			// had the check): a core can be routed to Vulkan capture and still never accept SET_HW_RENDER
++			// (confirmed live 2026-07-18 on beetle_psx_hw: it requests OpenGL first, we reject it for a
++			// Vulkan-committed room, and it does not always retry with Vulkan). Nan0.Video.hw is then nil
++			// (reset per-room above) -- calling .context_reset on it panicked the whole worker every time,
++			// always immediately after "[vk] zero-copy: core provided no create_device" in the log.
++			if Nan0.Video.hw == nil {
++				n.log.Error().Msg("LoadGame: no hw render callback for Vulkan capture (SET_HW_RENDER was never accepted) — skipping context_reset (fail-soft, room shows no video)")
++			} else {
++				C.same_thread(unsafe.Pointer(Nan0.Video.hw.context_reset))
++			}
 +		} else {
 +			initVideoVulkan()
-+			C.bridge_context_reset(Nan0.Video.hw.context_reset)
++			if Nan0.Video.hw == nil {
++				n.log.Error().Msg("LoadGame: no hw render callback for Vulkan capture (SET_HW_RENDER was never accepted) — skipping context_reset (fail-soft, room shows no video)")
++			} else {
++				C.bridge_context_reset(Nan0.Video.hw.context_reset)
++			}
 +		}
 +	}
 +
@@ -12154,6 +12395,21 @@ index 17f10fc..9e97da3 100644
 +
 +func (n *Nanoarch) IsSupported() error                  { return graphics.RGFWTryInit() }
 +func (n *Nanoarch) IsGL() bool                          { return n.Video.gl.enabled }
++
++// Flipped reports whether the CLIENT must vertically flip the frame (scaleY(-1)). It tracks the frame's
++// ACTUAL render origin, not merely IsGL(): a frame is flipped only when the core rendered through a GL
++// hw context (Video.hw != nil) that reports a bottom-left origin. This matters for the fallback case a
++// forced hw context can create — beetle_psx_hw committed to a GL room but requesting a Vulkan context
++// the GL frontend rejects will fall back to its INTERNAL SOFTWARE framebuffer (top-left origin) without
++// re-taking a GL context, leaving Video.hw nil. The old IsGL()-only flip flipped that top-left frame →
++// upside-down + mirrored SotN (Eric's GL selector). Origin-aware: no hw context ⇒ software fb ⇒ no flip.
++func (n *Nanoarch) Flipped() bool {
++	if !n.Video.gl.enabled {
++		return false // Vulkan / M1 readback frames are top-left origin — never flipped
++	}
++	// GL-committed room: flip only if the core actually took a GL hw context AND renders bottom-left.
++	return n.Video.hw != nil && bool(n.Video.hw.bottom_left_origin)
++}
 +func (n *Nanoarch) SkipBootRestore() bool               { return n.hackSkipBootRestore }
 +func (n *Nanoarch) IsStopped() bool                     { return n.Stopped.Load() }
 +func (n *Nanoarch) InputRetropad(port int, data []byte) { n.retropad.SetInput(port, data) }
@@ -13248,7 +13504,13 @@ index 17f10fc..9e97da3 100644
 +	//    vk_libretro_shutdown). Unlike the GL path there is no shared-context deadlock class here, so
 +	//    the Vulkan arm runs context_destroy by default (skip only if the hack is explicitly set).
 +	if !Nan0.hackSkipHwContextDestroy {
-+		C.bridge_context_reset(Nan0.Video.hw.context_destroy)
++		// Same fail-soft guard as the context_reset call sites in LoadGame: a room whose core never
++		// accepted SET_HW_RENDER never populated Nan0.Video.hw, so there is nothing to destroy.
++		if Nan0.Video.hw == nil {
++			Nan0.log.Warn().Msg("vulkan: no hw render callback to destroy (SET_HW_RENDER was never accepted this room) — skipping context_destroy")
++		} else {
++			C.bridge_context_reset(Nan0.Video.hw.context_destroy)
++		}
 +	} else {
 +		Nan0.log.Warn().Msg("vulkan: skipping context_destroy (skip_hw_context_destroy hack set)")
 +	}
@@ -15338,10 +15600,10 @@ index 0000000..adbe830
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/overrides.go b/pkg/worker/caged/libretro/nanoarch/overrides.go
 new file mode 100644
-index 0000000..f3bbec2
+index 0000000..c366ada
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/overrides.go
-@@ -0,0 +1,187 @@
+@@ -0,0 +1,240 @@
 +package nanoarch
 +
 +import (
@@ -15495,6 +15757,59 @@ index 0000000..f3bbec2
 +	return false
 +}
 +
++// rendererOptionForHwContext is the REVERSE of vulkanRendererOptions/glRendererOptions: given a room's
++// RESOLVED hw-context ("gl"/"vulkan"), the core-option value that makes the core's OWN renderer agree
++// with that capture path. When the room layer FORCES a context (a per-launch rq.HwContext or an admin
++// hwContext pin) the capture pipeline switches, but the renderer core-option was set INDEPENDENTLY in
++// config.yaml — so a forced "gl" on a Vulkan-configured beetle room leaves the core requesting a Vulkan
++// context the GL-committed frontend rejects → beetle falls back to its software framebuffer, whose
++// top-left frame the GL room then flips → upside-down SotN. Pinning the renderer to match closes the
++// mismatch at the source, so the selector can never create it.
++//
++// Keyed by core-option NAME → hw-context → value. Applied in LoadGame ONLY when the option is already
++// present in the room's options (so it only touches cores that actually HAVE a renderer option — beetle
++// today) AND the current value is itself a known HW renderer (so a deliberate "software" choice is left
++// alone). Do NOT add cores with no renderer core-option (psp/dc/gc) — they follow the frontend hw
++// context and have nothing to pin. beetle is the only core today with BOTH a renderer option and the
++// per-launch toggle; the pcsx2/n64 cores drive the context FROM their renderer option (level-2
++// inference) so they already agree and this is a no-op for them.
++var rendererOptionForHwContext = map[string]map[string]string{
++	"beetle_psx_hw_renderer": {"gl": "hardware_gl", "vulkan": "hardware_vk"},
++}
++
++// PinRendererForHwContext mutates opts so a known renderer option present agrees with the resolved
++// hwContext, returning the pinned (name, value, changed). hwContext "" is a no-op. It only rewrites an
++// option whose CURRENT value is one of the mapped HW renderers (never clobbers "software" or an unknown
++// value), and never injects an option a core lacks. Idempotent: already-agreeing options don't change.
++func PinRendererForHwContext(opts map[string]string, hwContext string) (string, string, bool) {
++	if hwContext == "" || opts == nil {
++		return "", "", false
++	}
++	for optName, byCtx := range rendererOptionForHwContext {
++		cur, present := opts[optName]
++		if !present {
++			continue
++		}
++		want, ok := byCtx[hwContext]
++		if !ok || cur == want {
++			continue
++		}
++		knownHw := false
++		for _, v := range byCtx {
++			if cur == v {
++				knownHw = true
++				break
++			}
++		}
++		if !knownHw {
++			continue // leave a deliberate software/unknown renderer choice untouched
++		}
++		opts[optName] = want
++		return optName, want, true
++	}
++	return "", "", false
++}
++
 +// gameOverrides returns the current per-game manifest (romName → override), transparently reloading
 +// when the file's mtime changes so admin edits take effect on the NEXT room without a worker restart.
 +// Path: CLOUD_GAME_GAME_OVERRIDES, else "game-overrides.json" resolved from the worker CWD (the same
@@ -15531,10 +15846,10 @@ index 0000000..f3bbec2
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/overrides_test.go b/pkg/worker/caged/libretro/nanoarch/overrides_test.go
 new file mode 100644
-index 0000000..156812d
+index 0000000..b54d698
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/overrides_test.go
-@@ -0,0 +1,111 @@
+@@ -0,0 +1,147 @@
 +package nanoarch
 +
 +import (
@@ -15620,6 +15935,42 @@ index 0000000..156812d
 +				t.Errorf("ResolveHwContext(%q, %q) = %q, want %q", c.gameKey, c.coreDefault, got, c.want)
 +			}
 +		})
++	}
++}
++
++// TestPinRendererForHwContext exercises the reverse pin (flip fix, layer 1): a forced hw context pins
++// the core's own renderer option to agree, but never injects an option a core lacks and never clobbers
++// a deliberate software/unknown renderer.
++func TestPinRendererForHwContext(t *testing.T) {
++	cases := []struct {
++		name      string
++		opts      map[string]string
++		hwCtx     string
++		wantVal   string // expected value of beetle_psx_hw_renderer after the pin ("" = key absent)
++		wantPin   bool
++	}{
++		{"gl pins vk→gl", map[string]string{"beetle_psx_hw_renderer": "hardware_vk"}, "gl", "hardware_gl", true},
++		{"vulkan pins gl→vk", map[string]string{"beetle_psx_hw_renderer": "hardware_gl"}, "vulkan", "hardware_vk", true},
++		{"already agrees (no-op)", map[string]string{"beetle_psx_hw_renderer": "hardware_vk"}, "vulkan", "hardware_vk", false},
++		{"software left untouched", map[string]string{"beetle_psx_hw_renderer": "software"}, "gl", "software", false},
++		{"unknown value left untouched", map[string]string{"beetle_psx_hw_renderer": "weird"}, "gl", "weird", false},
++		{"empty hwCtx is no-op", map[string]string{"beetle_psx_hw_renderer": "hardware_vk"}, "", "hardware_vk", false},
++		{"option absent → nothing injected", map[string]string{"other_opt": "x"}, "gl", "", false},
++	}
++	for _, c := range cases {
++		t.Run(c.name, func(t *testing.T) {
++			_, _, pinned := PinRendererForHwContext(c.opts, c.hwCtx)
++			if pinned != c.wantPin {
++				t.Errorf("pinned = %v, want %v", pinned, c.wantPin)
++			}
++			if got := c.opts["beetle_psx_hw_renderer"]; got != c.wantVal {
++				t.Errorf("renderer = %q, want %q", got, c.wantVal)
++			}
++		})
++	}
++	// nil map must not panic.
++	if _, _, pinned := PinRendererForHwContext(nil, "gl"); pinned {
++		t.Errorf("nil opts pinned true, want false")
 +	}
 +}
 +
