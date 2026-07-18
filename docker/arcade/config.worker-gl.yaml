@@ -189,7 +189,12 @@ emulator:
             beetle_psx_hw_last_scanline: "239"
             beetle_psx_hw_initial_scanline_pal: "0"
             beetle_psx_hw_last_scanline_pal: "287"
-            beetle_psx_hw_crop_overscan: "disabled"
+            # crop_overscan ENABLED (2026-07-17): fixes SotN's PILLARBOX. With it disabled beetle baked the
+            # overscan BORDER into every frame (live read: beetle emits 560x480/800x480 incl. border; the
+            # zero-copy path encodes exactly that), so narrow modes showed black bars. Enabled crops to the
+            # active picture so it fills. Rollback: "disabled". NOTE: genuinely-narrow active-video modes
+            # (SotN mode-switches) will still be stretched to 4:3 — that is authentic PSX rendering, not a bug.
+            beetle_psx_hw_crop_overscan: "enabled"
         # GL 3D cores only — this pool exists for these. isGlAllowed + coreAspectRatio are the Flip
         # contract (without coreAspectRatio the GAME_START av payload is null and the client renders
         # the bottom-left-origin GL frame upside down — the exact n64 lesson). Mirror of the WSL
