@@ -57,6 +57,21 @@ namespace MovieTheater.Db
         [MaxLength(500)]
         public string? SourceArchivePath { get; set; }
 
+        /// <summary>One ADDITIONAL file-or-directory a JIT game needs beyond its primary
+        /// <see cref="SourceArchivePath"/>, staged into a subfolder named after <see cref="CloudRetroGameKey"/>
+        /// — for the shapes a single archive can't express: a Naomi GD-ROM disc living in
+        /// <c>&lt;name&gt;/gdl-XXXX.chd</c> beside its own boot-stub zip, or a ScummVM game whose "ROM" is a
+        /// whole directory of loose data files (no single cartridge file at all — the primary
+        /// <see cref="SourceArchivePath"/> is then a tiny generated <c>.scummvm</c> hook naming the target,
+        /// and this field is the real game data). A companion that's a directory is copied recursively; a
+        /// companion that's a file is copied as-is into the subfolder. Same-basename SIBLING files next to
+        /// the primary archive (a CloneCD <c>.cue</c>'s <c>.img</c>/<c>.sub</c>/<c>.ccd</c>) need no entry
+        /// here at all — the gateway copies those automatically, flat, alongside the primary. Null for every
+        /// ordinary single-file game. Same LRU/eviction contract as <see cref="SourceArchivePath"/> — nothing
+        /// here is ever deleted on the library drive, only the copy under the ROM mount.</summary>
+        [MaxLength(500)]
+        public string? SourceCompanionPath { get; set; }
+
         public int? Year { get; set; }
 
         /// <summary>Normalized release region parsed from the ROM filename tags — USA/Europe/Japan/World/

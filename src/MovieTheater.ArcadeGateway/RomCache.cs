@@ -65,7 +65,7 @@ public sealed class RomCache
     // neogeo.zip). Without them fbneo reports "missing romset". Staged verbatim by filename, idempotently,
     // and deliberately NOT tracked for eviction: a BIOS zip is shared by hundreds of games, so it stays
     // resident once copied (the closure is small and bounded, far under the cap).
-    public sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[]? Exts = null, DiscRef[]? Discs = null, string[]? Deps = null);
+    public sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[]? Exts = null, DiscRef[]? Discs = null, string[]? Deps = null, string? CompanionPath = null);
 
     // A member disc of a multi-disc .m3u game: the source archive to extract + the .cue/.chd filename it
     // produces (which goes, in order, into the generated playlist). See docs/arcade-dedupe-multidisc-plan.md.
@@ -299,8 +299,15 @@ public sealed class RomCache
         Path.GetFullPath(Path.Combine(romsRoot, g.Folder));
 
     // "Present" = the launch ROM the catalog promised exists on disk under one of the system's candidate
-    // extensions (a PS1 .cue, a SNES .sfc, a Genesis .md/.bin, …).
-    private bool IsPresent(ManifestGame g) => ExtsOf(g).Any(e => File.Exists(RomDest(g, e)));
+    // extensions (a PS1 .cue, a SNES .sfc, a Genesis .md/.bin, …), AND — when this game has a companion
+    // (a Naomi GD-ROM disc, a ScummVM data directory) — that the companion subfolder actually landed too.
+    // Without the second check a room could be told "ready" right after the tiny primary file (a boot-stub
+    // zip, a .scummvm hook) copies but before the real data behind it exists.
+    private bool IsPresent(ManifestGame g) =>
+        ExtsOf(g).Any(e => File.Exists(RomDest(g, e))) &&
+        (g.CompanionPath is null || Directory.Exists(CompanionDest(g)) && Directory.EnumerateFileSystemEntries(CompanionDest(g)).Any());
+
+    private string CompanionDest(ManifestGame g) => Path.GetFullPath(Path.Combine(FolderDest(g), g.GameKey));
 
     // The source IS the launch ROM (an uncompressed N64 .z64, or a MAME .zip fbneo loads whole) when its
     // extension is one of the system's ROM extensions — then we COPY it into the mount rather than extract.
@@ -593,6 +600,11 @@ public sealed class RomCache
         {
             var to = CopyDest(g);
             await StageRomFileAsync(g.Archive, to, ct);
+            // Same-basename siblings next to a loose (non-archived) source — a CloneCD .cue's own
+            // .img/.sub/.ccd, sitting flat beside it on the library drive with no wrapper archive to
+            // carry them. Harmless no-op for every system whose source has no such siblings.
+            await StageSiblingsAsync(g.Archive, dest, ct);
+            await StageCompanionAsync(g, ct);
             if (!IsPresent(g))
                 throw new InvalidOperationException($"copy of {g.GameKey} produced no {string.Join('/', ExtsOf(g))} in {dest}.");
             return;
@@ -602,9 +614,85 @@ public sealed class RomCache
         // on a *warning* (non-fatal) and 2+ on a real error — so success is gated on the expected launch
         // ROM actually appearing, not on the exit code.
         var (code, err) = await RunSevenZipAsync(new[] { "x", "-y", "-bd", g.Archive, "-o" + dest }, ct);
+        await StageCompanionAsync(g, ct);
         if (!IsPresent(g))
             throw new InvalidOperationException(
                 $"7z exit {code} extracting {g.GameKey}; no {string.Join('/', ExtsOf(g))} found in {dest}. {Trunc(err)}");
+    }
+
+    // Same-basename sibling files next to a loose (non-archived) primary source: "SotN (USA).cue" pulls in
+    // "SotN (USA).img/.sub/.ccd" from the SAME source directory, copied flat alongside the primary — no
+    // manifest entry needed, this is discoverable purely from the primary archive's own path. A source with
+    // no such siblings (the overwhelming majority) makes this a single empty directory listing, effectively
+    // free.
+    private static async Task StageSiblingsAsync(string archive, string dest, CancellationToken ct)
+    {
+        var dir = Path.GetDirectoryName(archive);
+        if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
+        var stem = Path.GetFileNameWithoutExtension(archive);
+        var primaryExt = Path.GetExtension(archive);
+        foreach (var sibling in Directory.EnumerateFiles(dir, stem + ".*"))
+        {
+            ct.ThrowIfCancellationRequested();
+            if (Path.GetExtension(sibling).Equals(primaryExt, StringComparison.OrdinalIgnoreCase)) continue; // that's the primary itself
+            var to = Path.Combine(dest, Path.GetFileName(sibling));
+            if (File.Exists(to)) continue;
+            using var src = new FileStream(sibling, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var dst = new FileStream(to, FileMode.Create, FileAccess.Write, FileShare.None);
+            await src.CopyToAsync(dst, ct);
+        }
+    }
+
+    // The one-extra-thing a game needs beyond its primary file, staged into a subfolder named after its
+    // own GameKey (never flat — a Naomi disc's gdl-XXXX.chd and a ScummVM game's raw asset folder both need
+    // to sit somewhere the CORE's own relative lookup or the pre-generated scummvm.ini path= expects, not
+    // wherever a generic dep-copy would put them). A directory companion is copied recursively to a .tmp
+    // sibling then renamed into place — atomic on NTFS, same "never leave a stub IsPresent() would trust"
+    // contract as StageRomFileAsync's .part convention, just for a whole tree instead of one file. A file
+    // companion is the simpler case: copied straight into the subfolder under its own name.
+    private async Task StageCompanionAsync(ManifestGame g, CancellationToken ct)
+    {
+        if (g.CompanionPath is null) return;
+        var finalDest = CompanionDest(g);
+        if (Directory.Exists(finalDest) && Directory.EnumerateFileSystemEntries(finalDest).Any()) return; // already staged
+
+        if (Directory.Exists(g.CompanionPath))
+        {
+            var tmp = finalDest + ".tmp";
+            if (Directory.Exists(tmp)) Directory.Delete(tmp, recursive: true);
+            await CopyDirectoryAsync(g.CompanionPath, tmp, ct);
+            if (Directory.Exists(finalDest)) Directory.Delete(finalDest, recursive: true);
+            Directory.Move(tmp, finalDest);
+        }
+        else if (File.Exists(g.CompanionPath))
+        {
+            Directory.CreateDirectory(finalDest);
+            var to = Path.Combine(finalDest, Path.GetFileName(g.CompanionPath));
+            var part = to + ".part";
+            using (var src = new FileStream(g.CompanionPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var dst = new FileStream(part, FileMode.Create, FileAccess.Write, FileShare.None))
+                await src.CopyToAsync(dst, ct);
+            File.Move(part, to, overwrite: true);
+        }
+        else
+        {
+            throw new FileNotFoundException($"companion source missing for {g.GameKey}: {g.CompanionPath}");
+        }
+    }
+
+    private static async Task CopyDirectoryAsync(string sourceDir, string destDir, CancellationToken ct)
+    {
+        Directory.CreateDirectory(destDir);
+        foreach (var dir in Directory.EnumerateDirectories(sourceDir, "*", SearchOption.AllDirectories))
+            Directory.CreateDirectory(Path.Combine(destDir, Path.GetRelativePath(sourceDir, dir)));
+        foreach (var file in Directory.EnumerateFiles(sourceDir, "*", SearchOption.AllDirectories))
+        {
+            ct.ThrowIfCancellationRequested();
+            var to = Path.Combine(destDir, Path.GetRelativePath(sourceDir, file));
+            using var src = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var dst = new FileStream(to, FileMode.Create, FileAccess.Write, FileShare.None);
+            await src.CopyToAsync(dst, ct);
+        }
     }
 
     private void RecordMaterialized(int gameId, ManifestGame g)
@@ -647,18 +735,40 @@ public sealed class RomCache
             return discFiles;
         }
 
-        // A copied-in ROM owns exactly one file on disk (the copy); an extracted archive owns whatever it
-        // unpacked, derived from its listing.
+        // A copied-in ROM owns exactly one file on disk (the copy) plus any same-basename siblings staged
+        // beside it (StageSiblingsAsync); an extracted archive owns whatever it unpacked, derived from its
+        // listing. Either way, a companion (its own subfolder, recursively) is owned on top of that.
+        List<string> result;
         if (SourceIsRom(g))
         {
             var to = CopyDest(g);
-            return (IsUnderRoot(to) && File.Exists(to)) ? new List<string> { to } : new List<string>();
+            result = (IsUnderRoot(to) && File.Exists(to)) ? new List<string> { to } : new List<string>();
+            var srcDir = Path.GetDirectoryName(g.Archive);
+            if (!string.IsNullOrEmpty(srcDir) && Directory.Exists(srcDir))
+            {
+                var stem = Path.GetFileNameWithoutExtension(g.Archive);
+                foreach (var sibling in Directory.EnumerateFiles(srcDir, stem + ".*"))
+                {
+                    var full = Path.GetFullPath(Path.Combine(dest, Path.GetFileName(sibling)));
+                    if (IsUnderRoot(full) && File.Exists(full) && !result.Contains(full)) result.Add(full);
+                }
+            }
         }
-        var result = new List<string>();
-        foreach (var internalPath in ListArchiveEntries(g.Archive))
+        else
         {
-            var full = Path.GetFullPath(Path.Combine(dest, internalPath));
-            if (IsUnderRoot(full) && File.Exists(full)) result.Add(full);
+            result = new List<string>();
+            foreach (var internalPath in ListArchiveEntries(g.Archive))
+            {
+                var full = Path.GetFullPath(Path.Combine(dest, internalPath));
+                if (IsUnderRoot(full) && File.Exists(full)) result.Add(full);
+            }
+        }
+
+        if (g.CompanionPath is not null)
+        {
+            var companionDir = CompanionDest(g);
+            if (IsUnderRoot(companionDir) && Directory.Exists(companionDir))
+                result.AddRange(Directory.EnumerateFiles(companionDir, "*", SearchOption.AllDirectories));
         }
         return result;
     }
@@ -675,6 +785,15 @@ public sealed class RomCache
                 if (total <= opt.MaxBytes) break;
                 var (gameId, s) = (kv.Key, kv.Value);
                 long freed = DeleteFiles(s.Files);
+                // A companion's own subfolder is now an empty shell (its files are in s.Files above, already
+                // gone) — remove the shell too, or every evicted companion game leaks one empty directory
+                // forever instead of the clean "nothing here" a fresh materialize expects.
+                if (byId.TryGetValue(gameId, out var g) && g.CompanionPath is not null)
+                {
+                    var companionDir = CompanionDest(g);
+                    if (IsUnderRoot(companionDir) && Directory.Exists(companionDir))
+                    { try { Directory.Delete(companionDir, recursive: true); } catch { /* best effort */ } }
+                }
                 materialized.Remove(gameId);
                 total -= s.Bytes;
                 log.LogInformation("RomCache evicted game {GameId} (freed ~{MB} MB)", gameId, freed / (1024 * 1024));

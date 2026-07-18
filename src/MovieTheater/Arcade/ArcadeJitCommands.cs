@@ -439,7 +439,7 @@ namespace MovieTheater.Arcade
                 games.Add(new ManifestGame(
                     GameId: g.Id, GameKey: g.CloudRetroGameKey, System: g.System,
                     Folder: FolderOf(g.RomPath), Archive: g.SourceArchivePath!, Exts: ExtsFor(g.System),
-                    Deps: DepsFor(g, dat)));
+                    Deps: DepsFor(g, dat), CompanionPath: g.SourceCompanionPath));
 
             games = games.OrderBy(g => g.GameId).ToList();
 
@@ -484,7 +484,7 @@ namespace MovieTheater.Arcade
         }
 
         private sealed record Manifest(int Version, List<ManifestGame> Games);
-        private sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[] Exts, DiscRef[]? Discs = null, string[]? Deps = null);
+        private sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[] Exts, DiscRef[]? Discs = null, string[]? Deps = null, string? CompanionPath = null);
         private sealed record DiscRef(string Archive, string File);
     }
 
@@ -582,6 +582,157 @@ namespace MovieTheater.Arcade
                 if (title.StartsWith(article, StringComparison.OrdinalIgnoreCase))
                     return title[article.Length..].TrimEnd() + ", " + article.Trim();
             return title;
+        }
+    }
+
+    /// <summary>
+    /// Ingests ScummVM games from a target list generated OFFLINE by the standalone ScummVM CLI
+    /// (<c>scummvm --add --recursive --path=&lt;R: root&gt; --config=&lt;out.ini&gt;</c>, run once — never
+    /// a runtime dependency; the arcade itself only ever talks to the buildbot's <c>scummvm_libretro</c>
+    /// core, same as every other system). Each detected target becomes an <c>ArcadeGame</c> row whose
+    /// "ROM" is a tiny generated <c>&lt;target&gt;.scummvm</c> hook file (checked into
+    /// <c>data/arcade/scummvm-hooks/</c>, content = the target name) — the JIT-copied primary the gateway
+    /// materializes like any other. <see cref="ArcadeGame.SourceCompanionPath"/> carries the REAL game
+    /// data directory on R:, staged into <c>roms/scummvm/&lt;target&gt;/</c> by the same companion
+    /// mechanism that fixed Naomi's GD-ROM pairs — the deployed <c>scummvm.ini</c>'s per-target
+    /// <c>path=</c> must point at exactly that materialized location (generated alongside, not here —
+    /// see <c>docs/arcade-scummvm.md</c> for the deploy step).
+    ///
+    /// <para><b>Bulk-job rules</b> (same contract as the other ingest commands): dry-run unless
+    /// <c>--apply</c>; bounded by <c>--limit</c>, ordered by target name, resumable via <c>--after</c>;
+    /// idempotent upsert on the (System, RomPath) unique key; never deletes.</para>
+    /// </summary>
+    [Command("arcade-scummvm-ingest", Description = "Catalog ScummVM targets from a detected-games ini as JIT ArcadeGames (dry-run unless --apply).")]
+    public class ArcadeScummvmIngestCommand : BasicDICommand, ICommand
+    {
+        [CommandOption("ini", Description = "Path to the ScummVM-generated targets ini. Default data/arcade/scummvm-detected.ini.")]
+        public string IniPath { get; set; } = "data/arcade/scummvm-detected.ini";
+
+        [CommandOption("hooks-dir", Description = "Where to write the generated .scummvm hook files. Default data/arcade/scummvm-hooks.")]
+        public string HooksDir { get; set; } = "data/arcade/scummvm-hooks";
+
+        [CommandOption("apply", Description = "Write changes. Omit for a dry run (default).")]
+        public bool Apply { get; set; }
+
+        [CommandOption("limit", Description = "Max targets to process this run (default 500).")]
+        public int Limit { get; set; } = 500;
+
+        [CommandOption("after", Description = "Resume cursor: skip targets whose name is ≤ this (from a prior run's nextCursor).")]
+        public string After { get; set; } = "";
+
+        private readonly IDbContextFactory<MovieDb> dbFactory;
+
+        public ArcadeScummvmIngestCommand(MovieTheaterConfiguration config) : base(config)
+        {
+            dbFactory = GetRequiredService<IDbContextFactory<MovieDb>>();
+        }
+
+        public async ValueTask ExecuteAsync(IConsole console)
+        {
+            var w = console.Output;
+            var iniFull = Path.GetFullPath(IniPath);
+            if (!File.Exists(iniFull)) { w.WriteLine($"Targets ini not found: {iniFull}"); return; }
+            var hooksFull = Path.GetFullPath(HooksDir);
+
+            var targets = ParseTargets(iniFull)
+                .OrderBy(t => t.Target, StringComparer.Ordinal)
+                .ToList();
+            if (targets.Count == 0) { w.WriteLine($"No targets found in {iniFull}."); return; }
+
+            var pending = targets.Where(t => string.CompareOrdinal(t.Target, After) > 0).ToList();
+            var batch = pending.Take(Math.Max(1, Limit)).ToList();
+
+            await using var db = await dbFactory.CreateDbContextAsync();
+            var existing = await db.ArcadeGames.Where(g => g.System == "scummvm").ToListAsync();
+            var byRomPath = existing.ToDictionary(g => g.RomPath, StringComparer.OrdinalIgnoreCase);
+
+            int inserted = 0, updated = 0, skipped = 0;
+            if (Apply) Directory.CreateDirectory(hooksFull);
+            foreach (var t in batch)
+            {
+                if (!Directory.Exists(t.Path))
+                {
+                    w.WriteLine($"  ! [{t.Target}] source directory missing, skipped: {t.Path}");
+                    skipped++;
+                    continue;
+                }
+
+                var romPath = $"scummvm/{t.Target}.scummvm";
+                var hookFile = Path.Combine(hooksFull, $"{t.Target}.scummvm");
+                var title = ArcadeNaming.CleanTitle(t.Description);
+
+                if (byRomPath.TryGetValue(romPath, out var row))
+                {
+                    bool changed = false;
+                    if (!row.IsEnabled) { if (Apply) row.IsEnabled = true; changed = true; }
+                    if (row.SourceCompanionPath != t.Path) { if (Apply) row.SourceCompanionPath = t.Path; changed = true; }
+                    if (row.SourceArchivePath != hookFile) { if (Apply) row.SourceArchivePath = hookFile; changed = true; }
+                    if (changed) updated++; else skipped++;
+                }
+                else
+                {
+                    if (Apply)
+                    {
+                        await File.WriteAllTextAsync(hookFile, t.Target + "\n");
+                        db.ArcadeGames.Add(new ArcadeGame
+                        {
+                            Title = title,
+                            SortTitle = ArcadeNaming.ArticleInvert(title),
+                            System = "scummvm",
+                            RomPath = romPath,
+                            CloudRetroGameKey = t.Target,
+                            SourceArchivePath = hookFile,
+                            SourceCompanionPath = t.Path,
+                            MaxPlayers = 1,
+                            RatingCeiling = 0,
+                            IsEnabled = true,
+                        });
+                    }
+                    inserted++;
+                    w.WriteLine($"  + [{t.Target}] {title}");
+                }
+            }
+
+            if (Apply) await db.SaveChangesAsync();
+
+            var remaining = pending.Count - batch.Count;
+            var nextCursor = batch.Count > 0 ? batch[^1].Target : After;
+
+            w.WriteLine();
+            w.WriteLine($"scanned {targets.Count} target(s); this run: {inserted} inserted, {updated} updated, {skipped} unchanged/skipped.");
+            w.WriteLine($"{{ processed: {batch.Count}, remaining: {remaining}, nextCursor: \"{nextCursor}\" }}");
+            if (!Apply) w.WriteLine("DRY RUN — nothing written. Re-run with --apply.");
+            else if (remaining > 0) w.WriteLine($"More to do: re-run with --after \"{nextCursor}\".");
+        }
+
+        private sealed record ScummvmTarget(string Target, string GameId, string Description, string Path);
+
+        // Minimal INI reader for exactly the shape `scummvm --add` writes: `[target]` sections, `key=value`
+        // lines. Skips the leading `[scummvm]` global-settings section (no `path=`, so it's naturally
+        // filtered by the `path` presence check below).
+        private static IEnumerable<ScummvmTarget> ParseTargets(string iniPath)
+        {
+            string? target = null;
+            var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var raw in File.ReadLines(iniPath))
+            {
+                var line = raw.Trim();
+                if (line.Length == 0) continue;
+                if (line.StartsWith('[') && line.EndsWith(']'))
+                {
+                    if (target != null && fields.TryGetValue("path", out var p))
+                        yield return new ScummvmTarget(target, fields.GetValueOrDefault("gameid", target),
+                            fields.GetValueOrDefault("description", target), p.TrimEnd('\\', '/'));
+                    target = line[1..^1];
+                    fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    continue;
+                }
+                var eq = line.IndexOf('=');
+                if (eq > 0) fields[line[..eq]] = line[(eq + 1)..];
+            }
+            if (target != null && fields.TryGetValue("path", out var lastPath))
+                yield return new ScummvmTarget(target, fields.GetValueOrDefault("gameid", target),
+                    fields.GetValueOrDefault("description", target), lastPath.TrimEnd('\\', '/'));
         }
     }
 }

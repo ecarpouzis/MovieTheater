@@ -1257,6 +1257,20 @@ emulator:
           scale: 3
           options:
             opera_bios: "panafz10.bin"
+        scummvm:
+          # Pure software, safe (same profile as opera/same_cdi above). "ROM" = a tiny generated
+          # .scummvm hook file naming a target in the deployed scummvm.ini; the actual game data is a
+          # directory the gateway's companion mechanism stages into roms/scummvm/<target>/ (same fix
+          # that unlocked Naomi's GD-ROM pairs — see RomCache.StageCompanionAsync). Needs
+          # system/scummvm/scummvm.dat (GUI/engine resources, must version-match this core build) and a
+          # scummvm.ini with one [target] section per game, path= pointing at that same materialized
+          # location — both deployed alongside this config, not carried here.
+          # Gamepad-only by design: the core's OWN built-in cursor emulation (left stick moves the
+          # pointer, L/R = click) reads our existing continuous analog axes — no input-profile change.
+          lib: scummvm_libretro
+          folder: scummvm
+          roms: ["scummvm"]
+          scale: 3
         cdi:
           # same_cdi (MAME's CD-i driver, stripped to a libretro core) — pure software, safe. Needs
           # cdimono1.zip both at the BIOS root AND under same_cdi/bios/ (the core's own lookup path).

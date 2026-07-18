@@ -313,6 +313,13 @@ namespace MovieTheater.Arcade
             new("3do",         new[] { "3do" },         new[] { ".cue", ".chd", ".iso" }, 1),  // panafz10.bin/goldstar.bin
             new("cdi",         new[] { "cdi" },         new[] { ".chd", ".iso", ".cue" }, 1),  // cdimono1.zip; no save-states
             new("saturn",      new[] { "saturn" },      new[] { ".chd", ".cue", ".ccd", ".iso", ".mds", ".zip", ".m3u" }, 2),  // sega_101.bin+mpr-17933.bin
+            // ScummVM (2026-07-18): the "ROM" is a tiny generated .scummvm hook file (data/arcade/
+            // scummvm-hooks/<target>.scummvm) naming a target in the deployed scummvm.ini; the real game
+            // data — a whole directory of loose files, not a single cartridge — rides SourceCompanionPath
+            // via arcade-scummvm-ingest. No BIOS; needs system/scummvm/scummvm.dat staged (GUI/engine
+            // resources) matched to the core build. Gamepad-only: the core has its own built-in analog-
+            // stick-to-cursor emulation (L/R = click), so this rides our existing RetroPad input untouched.
+            new("scummvm",     new[] { "scummvm" },     new[] { ".scummvm" },   1),
         };
     }
 }
