@@ -181,6 +181,13 @@ emulator:
           options:
             beetle_psx_hw_renderer: "hardware_vk"   # Vulkan renderer (VALUE token verified from the DLL)
             beetle_psx_hw_internal_resolution: "2x" # 640x480-class hardware upscale (raise per-title later)
+            # SUPER_SAMPLING enabled (2026-07-17) — FLASH FIX for SotN's death-sprite transparency artifact.
+            # Confirmed live (Eric "dog death now" + log: NO geometry event at the kill) that the flash is
+            # beetle-hw rendering PSX semi-transparency WRONG at 2x internal res. Supersampling renders high
+            # then composites/downsamples so transparency is correct. Tradeoff: some sharp-upscale look for
+            # correct blending. ⚠ changes beetle's OUTPUT geometry class (downsamples) — verified on probe it
+            # composes with the Vk zero-copy path. Rollback (flash A/B step 1): "disabled".
+            beetle_psx_hw_super_sampling: "enabled"
             beetle_psx_hw_pgxp_mode: "disabled"     # PGXP off round 1 (geometry correction; per-title later)
             beetle_psx_hw_enable_memcard1: "enabled" # memcard 1 via RETRO_MEMORY_SAVE_RAM (.srm)
             # ⚠ SCANLINE WINDOW — pin the FULL range explicitly (see the block header). beetle's unset-option
@@ -189,12 +196,13 @@ emulator:
             beetle_psx_hw_last_scanline: "239"
             beetle_psx_hw_initial_scanline_pal: "0"
             beetle_psx_hw_last_scanline_pal: "287"
-            # crop_overscan ENABLED (2026-07-17): fixes SotN's PILLARBOX. With it disabled beetle baked the
-            # overscan BORDER into every frame (live read: beetle emits 560x480/800x480 incl. border; the
-            # zero-copy path encodes exactly that), so narrow modes showed black bars. Enabled crops to the
-            # active picture so it fills. Rollback: "disabled". NOTE: genuinely-narrow active-video modes
-            # (SotN mode-switches) will still be stretched to 4:3 — that is authentic PSX rendering, not a bug.
-            beetle_psx_hw_crop_overscan: "enabled"
+            # crop_overscan REVERTED to disabled (2026-07-17). Enabling it did NOT fix the pillarbox (Eric
+            # confirmed bars still present + they CHANGE as SotN switches modes) — the bars are NOT beetle's
+            # overscan border; they are our GPU scale step fitting each varying-width mode (560/800/1120) into
+            # the fixed encode with mode-dependent letterbox/pillarbox (the real bars fix is the scaler, not
+            # here). Reverted to the original known-good. (Flip to "enabled" only if a future overscan case
+            # actually needs it.)
+            beetle_psx_hw_crop_overscan: "disabled"
         # GL 3D cores only — this pool exists for these. isGlAllowed + coreAspectRatio are the Flip
         # contract (without coreAspectRatio the GAME_START av payload is null and the client renders
         # the bottom-left-origin GL frame upside down — the exact n64 lesson). Mirror of the WSL
