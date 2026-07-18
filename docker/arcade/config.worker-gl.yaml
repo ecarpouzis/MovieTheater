@@ -202,6 +202,14 @@ emulator:
         # pad1type/pad2type:dualshock, memcard1:libretro, memcard2:none, neon_enhancement_enable:enabled,
         # neon_enhancement_tex_adj_v2:enabled}. pcsx_rearmed stays on the fleet (repo.sync).
         pcsx:
+          # CORE UPDATED 2026-07-18 to libretro buildbot nightly (DLL dated 2026-07-16, md5
+          # e9d05ea4db030d668b6852a26d4910fd): fixes the SotN dog-death BLACK-RECTANGLE flash — a
+          # hardware_vk semi-transparency artifact our old DLL (md5 d5331122...) showed on every kill.
+          # A/B'd mechanically via the quicksave dog-kill repro (sotn-dog-repro.mjs): same config, same
+          # save, same scene — old DLL flashes, nightly clean across 3 kills. Nightly verified: v5 vk
+          # interface, zero-copy ACTIVE, all 9 pinned options recognized (no dead keys), old save-states
+          # load, Crash 60fps. Rollback: assets\cores\mednafen_psx_hw_libretro.dll.pre-nightly.bak on
+          # both workers.
           lib: mednafen_psx_hw_libretro
           roms: ["m3u", "cue", "chd"]
           folder: psx
