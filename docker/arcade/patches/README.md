@@ -865,3 +865,58 @@ nothing left to wait for — precompiling is exactly what async ubershaders exis
 work still happens, in the background, on the shared-context worker threads, while the game is already
 playable. Sync mode ("0", the stock core's only option) still wants it enabled, and still carries a
 smaller version of the same cold-cache boot risk.
+
+### 0045-coordinator-user-deadline (found + fixed 2026-07-18): 0042 reopened 0035's bug on the OTHER leg
+
+**0035 fixed "a slow game start kills the room" only on the worker↔coordinator link. Raising
+`GameStartTimeout` to 60s here (above) reopened the identical failure mode on the coordinator↔user
+link, which 0035 never touched.** Symptom: a room whose boot takes longer than ~7s (confirmed as low
+as ~5-25s in testing — a slow shader/asset load, not just a cold ubershader cache) dies at the exact
+moment the coordinator tries to tell the browser the room is ready. Coordinator log shows, same
+timestamp, same goroutine:
+```
+INF c     Received room response from worker   cid=<cid> id="<room-id>"
+ERR c ← u error="read tcp 127.0.0.1:8000->127.0.0.1:<port>: i/o timeout"
+```
+Root cause (confirmed in source, `pkg/network/websocket/websocket.go`): every coordinator-side socket —
+**both** the user-facing one and the worker-facing one — is created via `com.Server.Connect` →
+`newSocket(conn, true)`, i.e. **server role**, `pingPong=true`, governed by the tight `pongTime = 7s`
+deadline. 0035's fix (an unsolicited pong sent from the writer goroutine every 3.5s) was applied only
+to the **client**-role branch (`pingPong=false`) — the worker's own outbound link *to* the coordinator,
+which got the generous `clientReadWait = 60s` instead. The user's link was never in scope for 0035
+because at the time `com.DefaultCallTimeout` (10s) bounded every RPC including a game start, so no
+single blocking handler could run long enough to starve a 7s deadline either direction. 0042 broke that
+invariant for exactly one call (`StartGame`, budget now 60s) without revisiting the user-side deadline
+that assumption was protecting.
+
+Mechanically: `HandleStartGame` (`pkg/coordinator/userhandlers.go`) runs **inline**, in the SAME
+goroutine as the user socket's own `reader()` pump (same inline-dispatch design 0035's writeup
+describes), and blocks inside `RPC.CallWith`/`SocketClient.SendWith` for however long the worker takes
+to answer `StartGame` — up to the full 60s. Nothing refreshes the user socket's 7s read deadline while
+that goroutine is blocked (only an actual incoming Pong frame does, and the pump isn't looping to
+receive one). The instant the worker replies and the handler returns, `reader()` calls `ReadMessage()`
+again and finds the deadline long expired → `i/o timeout` → the read pump's deferred cleanup closes the
+connection → `User.Disconnect()` → `Worker.TerminateSession` → the just-booted room is torn down
+20-200ms after it finished loading, before the browser ever sees a frame. This reproduced live
+(2026-07-18) testing the new Wii SD-loader boot path (Project REX / Smash Bros Infinite — see the
+`wiiSdLoader` entries elsewhere in this file), and the failure vanished once boot time dropped under
+~5s — consistent with the 7s deadline, not a REX-specific bug. **Anything whose boot legitimately
+takes 5-60s — a cold shader cache on ANY dolphin title, a slow disk read, a big JIT extraction that
+lands inside this window rather than before it — can hit this on ANY worker, not just Wii SD-loader
+rooms.**
+
+**Fixed.** Not a literal mirror of 0035 (an unsolicited pong FROM the peer can't help here — the
+stuck reader is exactly what would have to process it). Instead, `writer()`'s `pingPong=true` branch
+extends its OWN read deadline directly (`c.conn.SetReadDeadline(time.Now().Add(pongTime))`) every
+`pingTime` tick, right after a successful ping write — from the writer goroutine, which is never
+blocked by the reader. A genuinely dead peer is still caught: the ping *write* fails once the TCP
+connection is actually gone, same detection 0035 already relies on. `pkg/network/websocket/websocket.go`,
+worker-only + coordinator-only rebuild (shared package, both binaries touched, no `StartGame`
+wire-format change — no other services need rebuilding).
+
+**Verified 2026-07-18** by deliberately clearing Project REX's per-worker SD-card cache (forces a real
+~17-23s recopy, independent of and without touching the shared Dolphin shader cache other titles rely
+on) and confirming the room survived: `New room` → `Received room response from worker` spanned
+**17.8s** (well past the old 7s deadline), no `i/o timeout` in the coordinator log, `sawPlaying=true`,
+clean streaming. Same test against the pre-fix binary reliably killed the room at this boot time; post-fix
+it did not.

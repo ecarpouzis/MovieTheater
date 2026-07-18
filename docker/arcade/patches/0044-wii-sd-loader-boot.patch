@@ -1,0 +1,206 @@
+From 7d3f2f014654f0bfde4d7d6858147c120af95d0e Mon Sep 17 00:00:00 2001
+From: Eric <Atoramos@Gmail.com>
+Date: Sat, 18 Jul 2026 10:59:57 -0400
+Subject: [PATCH] feat(arcade): Wii SD-card + ELF/DOL loader boot (BrawlEx
+ romhacks)
+
+BrawlEx-based Brawl mods (Project REX, Smash Bros Infinite) crash when baked
+onto a standalone disc - their own file/config loader only reliably reads
+from a real SD card. Adds a worker-side seed step (seedWiiSdLoader, called
+from Frontend.LoadGame alongside seedCards) that, for a wii room whose ROM
+has a paired <wiiSdLoader.assetsDir>/<CloudRetroGameKey>/{sd.raw,base.<ext>}
+folder, copies the SD card fresh into this worker's own systemDir and patches
+Dolphin.ini (WiiSDCard/WiiSDCardPath/DefaultISO) before retro_load_game -
+mirroring what Dolphin.exe -e loader.elf does locally via Setup-BrawlSDMod.ps1.
+A wii room without a matching asset folder explicitly disables the SD card,
+since Dolphin.ini is shared by every Wii/GC room this worker ever serves.
+
+Verified DolphinLibretro's retro_load_game/retro_unload_game fully tear down
+and rebuild Config from Dolphin.ini on every room (not just once per process),
+so this seed reliably takes effect without a worker restart between rooms.
+---
+ pkg/config/emulator.go                |  15 +++
+ pkg/worker/caged/libretro/frontend.go | 134 ++++++++++++++++++++++++++
+ 2 files changed, 149 insertions(+)
+
+diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
+index 72d4927..3a9b1b2 100644
+--- a/pkg/config/emulator.go
++++ b/pkg/config/emulator.go
+@@ -49,6 +49,21 @@ type Emulator struct {
+ 	//     gc:  "save:User/GC"
+ 	//     ps2: "system:pcsx2/memcards"
+ 	Cards map[string]string
++
++	// WiiSdLoader supports Wii ROM hacks whose own loader boots an ELF/DOL instead of a disc and
++	// needs Dolphin's Wii SD card + a paired base disc mounted before boot — BrawlEx-based Brawl
++	// mods (Project REX, Smash Bros Infinite) crash when baked onto a standalone disc because their
++	// own file/config loader only reliably reads from a real SD card. See Frontend.seedWiiSdLoader.
++	WiiSdLoader WiiSdLoaderConfig
++}
++
++// WiiSdLoaderConfig points at the paired-asset store for Wii SD-loader ROM hacks.
++//
++// AssetsDir layout: <AssetsDir>/<CloudRetroGameKey>/{sd.raw, base.<ext>} — the folder name MUST
++// equal the loader ELF/DOL's filename sans extension (same convention CloudRetroGameKey and
++// game-overrides.json's romName already use). Empty AssetsDir = the feature is off entirely.
++type WiiSdLoaderConfig struct {
++	AssetsDir string
+ }
+ 
+ type LibretroConfig struct {
+diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
+index deb5ef9..ddc129e 100644
+--- a/pkg/worker/caged/libretro/frontend.go
++++ b/pkg/worker/caged/libretro/frontend.go
+@@ -756,6 +756,7 @@ func (f *Frontend) LoadGame(path string) error {
+ 		f.copyFsMaybe(path)
+ 	}
+ 	f.seedCards()
++	f.seedWiiSdLoader(path)
+ 	return f.nano.LoadGame(path)
+ }
+ 
+@@ -1009,6 +1010,139 @@ func (f *Frontend) harvest(quiet bool) {
+ 	f.log.Info().Msgf("cards: harvested user %v's %v card", user, system)
+ }
+ 
++// ── Wii SD-card + ELF/DOL loader boot (MovieTheater, 2026-07-18) ────────────────────────────────
++//
++// A small number of Wii ROM hacks (BrawlEx-based Brawl mods: Project REX, Smash Bros Infinite) crash
++// when baked onto a standalone disc — their own file/config loader only reliably reads from a real
++// SD card, not a disc image. These ship as a loader ELF/DOL (the ArcadeGame row's own content path)
++// instead of a disc. Before it boots, Dolphin needs [Core] WiiSDCard/WiiSDCardPath pointed at the
++// mod's own SD card image and [Core] DefaultISO pointed at a paired base disc — Dolphin's stock
++// Boot.cpp (SetDefaultDisc) auto-inserts DefaultISO on any ELF/DOL ("Executable") boot, unmodified
++// upstream behavior, the same thing standalone `Dolphin.exe -e loader.elf` relies on.
++//
++// Dolphin.ini is shared by every Wii/GC room THIS worker ever serves (one file, not per-room), and
++// DolphinLibretro's retro_load_game/retro_unload_game fully tear down and rebuild Dolphin's Config
++// from that file on every single room (UICommon::Init/Shutdown, verified against Main.cpp) — so
++// seeding it here, synchronously before nano.LoadGame, reliably takes effect for the room about to
++// start. A wii room WITHOUT a matching asset folder must explicitly turn the SD card back OFF, or it
++// would silently inherit whatever mod a previous room on this worker left mounted.
++func (f *Frontend) seedWiiSdLoader(path string) {
++	assetsDir := f.conf.WiiSdLoader.AssetsDir
++	if assetsDir == "" {
++		return
++	}
++	// Same room-id-derived system code the card vault uses (cardOwner) — not GC (that core never
++	// touches the Wii SDIO subsystem, and this would otherwise write keys it never looks at).
++	_, system, ok := cardOwner(f.storage.MainPath())
++	if !ok || system != "wii" {
++		return
++	}
++
++	userDir := filepath.Join(f.nano.SaveDir(), "User")
++	iniPath := filepath.Join(userDir, "Config", "Dolphin.ini")
++
++	gameKey := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
++	srcDir := filepath.Join(assetsDir, gameKey)
++	if !os.Exists(srcDir) {
++		if err := setDolphinIni(iniPath, map[dolphinIniKey]string{{"Core", "WiiSDCard"}: "False"}); err != nil {
++			f.log.Error().Err(err).Msg("wiiSdLoader: could not disable a stale SD card")
++		}
++		return
++	}
++
++	srcSd := filepath.Join(srcDir, "sd.raw")
++	if !os.Exists(srcSd) {
++		f.log.Error().Msgf("wiiSdLoader: %v has an asset folder but no sd.raw, leaving SD card disabled", gameKey)
++		return
++	}
++	bases, err := os.GlobFiles(srcDir, "base.*")
++	if err != nil || len(bases) != 1 {
++		f.log.Error().Msgf("wiiSdLoader: %v needs exactly one base.<ext> disc image in its asset folder, found %d", gameKey, len(bases))
++		return
++	}
++
++	dstSd := filepath.Join(userDir, "sd.raw")
++	if err := os.MakeDirAll(userDir); err != nil {
++		f.log.Error().Err(err).Msgf("wiiSdLoader: could not prepare %v", userDir)
++		return
++	}
++	// Fresh copy EVERY boot, never vaulted/harvested — this is static mod content re-copied from the
++	// shared master, not per-user save data. It also must never be opened in place from assetsDir:
++	// Dolphin writes to it live, and two concurrent rooms of the SAME mod on the two different
++	// workers must not share one file handle.
++	if err := os.CopyFile(srcSd, dstSd); err != nil {
++		f.log.Error().Err(err).Msgf("wiiSdLoader: could not seed sd card for %v", gameKey)
++		return
++	}
++	if err := setDolphinIni(iniPath, map[dolphinIniKey]string{
++		{"Core", "WiiSDCard"}:        "True",
++		{"General", "WiiSDCardPath"}: dstSd,
++		{"Core", "DefaultISO"}:       bases[0], // read-only disc emulation — referenced directly, no copy
++	}); err != nil {
++		f.log.Error().Err(err).Msgf("wiiSdLoader: could not patch Dolphin.ini for %v", gameKey)
++		return
++	}
++	f.log.Info().Msgf("wiiSdLoader: seeded %v (sd card + DefaultISO=%v)", gameKey, filepath.Base(bases[0]))
++}
++
++type dolphinIniKey struct{ Section, Key string }
++
++// setDolphinIni sets each Section/Key pair in the Dolphin.ini at path, creating the file (and any
++// missing section) if needed, and leaving everything else in the file untouched. Direct Go port of
++// Setup-BrawlSDMod.ps1's Set-IniValue (the LOCAL equivalent of this same seed step) — same shape,
++// because it solves the identical problem: point Dolphin.ini at a specific SD card + default disc
++// before the core reads it, without disturbing anything else already there.
++func setDolphinIni(path string, kv map[dolphinIniKey]string) error {
++	var lines []string
++	if os.Exists(path) {
++		raw, err := os.ReadFile(path)
++		if err != nil {
++			return err
++		}
++		lines = strings.Split(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\n")
++	}
++	for k, v := range kv {
++		lines = setIniValue(lines, k.Section, k.Key, v)
++	}
++	if err := os.MakeDirAll(filepath.Dir(path)); err != nil {
++		return err
++	}
++	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
++}
++
++func setIniValue(lines []string, section, key, value string) []string {
++	header, entry := "["+section+"]", key+" = "+value
++	secIdx := -1
++	for i, l := range lines {
++		if strings.TrimSpace(l) == header {
++			secIdx = i
++			break
++		}
++	}
++	if secIdx == -1 {
++		return append(append(lines, header), entry)
++	}
++	secEnd := len(lines)
++	for i := secIdx + 1; i < len(lines); i++ {
++		if strings.HasPrefix(strings.TrimSpace(lines[i]), "[") {
++			secEnd = i
++			break
++		}
++	}
++	for i := secIdx + 1; i < secEnd; i++ {
++		t := strings.TrimSpace(lines[i])
++		if strings.HasPrefix(t, key+"=") || strings.HasPrefix(t, key+" =") {
++			lines[i] = entry
++			return lines
++		}
++	}
++	out := make([]string, 0, len(lines)+1)
++	out = append(out, lines[:secIdx+1]...)
++	out = append(out, entry)
++	out = append(out, lines[secIdx+1:]...)
++	return out
++}
++
+ func (f *Frontend) AspectRatio() float32          { return f.nano.AspectRatio() }
+ func (f *Frontend) AudioSampleRate() int          { return f.nano.AudioSampleRate() }
+ func (f *Frontend) FPS() float64                  { return f.nano.VideoFramerate() }
+-- 
+2.49.0.windows.1
+

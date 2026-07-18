@@ -1,0 +1,56 @@
+From 8c85ca1a08700e3e6453fc4f5fce7cfe77399487 Mon Sep 17 00:00:00 2001
+From: Eric <Atoramos@Gmail.com>
+Date: Sat, 18 Jul 2026 13:20:35 -0400
+Subject: [PATCH] fix(arcade): coordinator server-role sockets no longer starve
+ their own read deadline
+
+0035 fixed a slow inline handler starving the CLIENT-role (pingPong=false)
+read deadline by having the writer send unsolicited pongs. It never touched
+the SERVER-role (pingPong=true) branch, because at the time
+com.DefaultCallTimeout (10s) bounded every RPC so no handler could run long
+enough to matter either direction. 0042 later gave StartGame its own 60s
+budget, which reopened the identical starvation on the coordinator's OWN
+sockets (both user-facing and worker-facing are pingPong=true): HandleStartGame
+runs inline in the read pump and blocks it for up to 60s, during which the
+pump never calls ReadMessage() and so never sees an incoming pong no matter
+how promptly the peer answers - the deadline expires and the peer's own
+healthy reply arrives too late to matter, and the room dies right after it
+finishes loading.
+
+Unlike 0035's case, an unsolicited pong FROM the peer can't fix this - the
+stuck reader is what would have to process it, and it's exactly what's
+blocked. Fix instead extends the read deadline directly from the writer
+goroutine (which is never blocked by the reader) every ping tick, regardless
+of whether a reply was received. A genuinely dead peer is still caught via
+the ping WRITE failing once the TCP connection is actually gone.
+---
+ pkg/network/websocket/websocket.go | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/pkg/network/websocket/websocket.go b/pkg/network/websocket/websocket.go
+index 457c6ff..e6ef733 100644
+--- a/pkg/network/websocket/websocket.go
++++ b/pkg/network/websocket/websocket.go
+@@ -202,6 +202,19 @@ func (c *Connection) writer() {
+ 				if err := c.conn.write(websocket.PingMessage, nil); err != nil {
+ 					return
+ 				}
++				// Extend OUR OWN read deadline directly, rather than relying on the peer's pong
++				// reply being processed by reader()'s ReadMessage loop. That loop can be blocked for
++				// the WHOLE DURATION of a long inline handler (HandleStartGame blocks up to
++				// coordinator.GameStartTimeout=60s waiting on the worker) — during which it never
++				// calls ReadMessage(), so it never sees ANY pong no matter how promptly the peer
++				// (browser or worker) answers. That starved this socket's OWN pongTime deadline even
++				// though the peer was perfectly healthy — the exact bug 0035 fixed on the CLIENT
++				// (pingPong=false) branch above, reopened here on the SERVER branch once 0042 gave
++				// StartGame a budget bigger than pongTime. See the "OPEN GAP" note in
++				// docker/arcade/patches/README.md (right after 0042) for the full trace.
++				// A genuinely dead peer is still caught: the ping WRITE above fails once the TCP
++				// connection is actually gone — same detection 0035 already relies on.
++				_ = c.conn.SetReadDeadline(time.Now().Add(pongTime))
+ 			}
+ 		}
+ 	} else {
+-- 
+2.49.0.windows.1
+
