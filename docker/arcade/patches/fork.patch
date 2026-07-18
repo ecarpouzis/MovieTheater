@@ -759,10 +759,10 @@ index 0000000..d2d17c4
 +and **not pushed**. Merge/deploy happens after review and an approved test window.
 diff --git a/RESULTS-vulkan-w3.md b/RESULTS-vulkan-w3.md
 new file mode 100644
-index 0000000..466a9dc
+index 0000000..6a94788
 --- /dev/null
 +++ b/RESULTS-vulkan-w3.md
-@@ -0,0 +1,643 @@
+@@ -0,0 +1,670 @@
 +# Worker Vulkan — W3 results (F1 per-game hwContext + PSP/DC Vulkan arms + W5 Dolphin audit)
 +
 +**Branch:** `vulkan-w3` (off `vulkan-w2` @ `7f96784` = the live `worker.exe` / w2fix8 stack: M1+M2 zero-copy, N64 paraLLEl-RDP, v1 surface fix, Vulkan-by-default).
@@ -1406,6 +1406,33 @@ index 0000000..466a9dc
 +All 376 rows ENABLED. Saves: core reported "retro_serialize_size returned 0" on quit for sky —
 +save-states may be per-engine unreliable; ScummVM native saves ride the save dir (harvest class) —
 +VERIFY before promising save UI for scummvm.
++
++# Saturn/Kronos crash — MAJOR PROGRESS (2026-07-18, coordinator): it's a GL-environment delta, crash named
++
++Prior session's core assumption OVERTURNED: the "byte-identical PC 0x7ff80ee5ebe9" is inside
++**nvoglv64.dll (the NVIDIA OpenGL driver)**, NOT kronos — gdb-ATTACH backtrace (attach to the live
++worker = no task-stopping, no coordinator re-registration; the isolation problem that session hit
++is fully solved by attaching): driver ← 4 kronos frames ← our bridge retro_run.
++
++Evidence chain today:
++- Options isolation: ALL 6 kronos options stripped → identical crash. Options ruled out.
++- CONTROL: the SAME kronos DLL (== current buildbot nightly, hash-verified) + same ROM + same BIOS
++  runs FINE in real RetroArch on this box/driver (gl driver, past "Saturn Emulation mode", stable).
++  → the bug is OUR frontend's GL environment, full stop.
++- New always-on `[proc]` map (every get_proc_address resolve logged name→pointer) names the crash:
++  fault PC lands in **glMapBufferARB** (entry 0x...d460, next entry 0x...ee60). Call site disasm:
++  indirect call through kronos's resolved-pointer slot with ecx=0x120.
++- WGL ARB context fix RE-IMPLEMENTED PROPERLY AND COMMITTED (the reverted fix from the prior
++  session, this time landed): bootstrap legacy ctx → wglCreateContextAttribsARB → real 4.3 Core
++  (default 4.6 when core-profile requested w/o version), legacy fallback. Correct in isolation
++  (only Saturn requests core profile today). Crash PERSISTS on the genuine core context —
++  independently confirms the prior session's finding.
++
++NEXT (documented, not done): cross-ref the glMapBufferARB call in kronos source (repo FCare/Kronos,
++yabause/src/ygl*/vidogl*) — suspect an unchecked extension/buffer-state assumption RetroArch
++satisfies and we don't (kronos imports NO wgl functions: single-context, all GL through OUR
++get_proc_address, so the delta is state/extensions, not context plumbing). Candidate fixes: custom
++kronos core patch (established pattern) or frontend shim. Saturn rows remain IsEnabled=0.
 diff --git a/go.mod b/go.mod
 index 46034dc..19b7a10 100644
 --- a/go.mod
@@ -9816,10 +9843,10 @@ index 0000000..96877c5
 +		budgetPct, len(batch))
 +}
 diff --git a/pkg/worker/caged/libretro/graphics/rgfw.go b/pkg/worker/caged/libretro/graphics/rgfw.go
-index ce2471b..945223b 100644
+index ce2471b..f593ba9 100644
 --- a/pkg/worker/caged/libretro/graphics/rgfw.go
 +++ b/pkg/worker/caged/libretro/graphics/rgfw.go
-@@ -201,7 +201,10 @@ static RGFW_proc RGFW_getProcAddress_OpenGL(const char* name) {
+@@ -201,11 +201,21 @@ static RGFW_proc RGFW_getProcAddress_OpenGL(const char* name) {
      static HMODULE glModule;
      if (!glModule) glModule = LoadLibraryA("opengl32.dll");
      if (glModule) { RGFW_proc p = (RGFW_proc)GetProcAddress(glModule, name); if (p) return p; }
@@ -9830,8 +9857,71 @@ index ce2471b..945223b 100644
 +    return p;
  }
  
++// WGL_ARB_create_context bits (not in the base wingdi headers).
++#define NANO_WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
++#define NANO_WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
++#define NANO_WGL_CONTEXT_PROFILE_MASK_ARB  0x9126
++#define NANO_WGL_CONTEXT_CORE_PROFILE_BIT_ARB          0x00000001
++#define NANO_WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB 0x00000002
++typedef HGLRC (WINAPI *nano_wglCreateContextAttribsARB_t)(HDC, HGLRC, const int*);
++
  static RGFW_bool RGFW_window_createContextPtr_OpenGL(RGFW_window* win, RGFW_glContext* ctx, RGFW_glHints* hints) {
-@@ -456,6 +459,22 @@ static RGFW_glContext* RGFW_window_createContext_OpenGL(RGFW_window* win, RGFW_g
+-    (void)hints;
+     if (!win || !win->src.hdc || !ctx) return RGFW_FALSE;
+ 
+     PIXELFORMATDESCRIPTOR pfd = {0};
+@@ -221,9 +231,48 @@ static RGFW_bool RGFW_window_createContextPtr_OpenGL(RGFW_window* win, RGFW_glCo
+     int pf = ChoosePixelFormat(win->src.hdc, &pfd);
+     if (!pf || !SetPixelFormat(win->src.hdc, pf, &pfd)) return RGFW_FALSE;
+ 
+-    ctx->ctx = wglCreateContext(win->src.hdc);
+-    if (!ctx->ctx) return RGFW_FALSE;
++    // Legacy context first. It is BOTH the fallback and the bootstrap: wglGetProcAddress only works
++    // with a current context (WGL's chicken-and-egg), so resolving wglCreateContextAttribsARB
++    // requires making this one current for a moment.
++    HGLRC legacy = wglCreateContext(win->src.hdc);
++    if (!legacy) return RGFW_FALSE;
++
++    // A core that asks for a real version/profile (Kronos: 4.3 Core) can NEVER get it from plain
++    // wglCreateContext — that call only ever yields a compatibility context. The driver still hands
++    // out modern function pointers on it, and calling some of them there faults inside nvoglv64
++    // (the Saturn 0x3108 crash class). Honor the hints via WGL_ARB_create_context.
++    if (hints && (hints->major > 0 || hints->minor > 0 || hints->profile == RGFW_glCore)) {
++        HGLRC prevCtx = wglGetCurrentContext(); HDC prevDc = wglGetCurrentDC();
++        wglMakeCurrent(win->src.hdc, legacy);
++        nano_wglCreateContextAttribsARB_t create =
++            (nano_wglCreateContextAttribsARB_t)wglGetProcAddress("wglCreateContextAttribsARB");
++        if (create) {
++            // ARB rejects a literal 0.0 version (unlike legacy "don't care"): when the core asked
++            // for Core profile without naming a version, request the max this driver ships (4.6).
++            int maj = hints->major > 0 ? hints->major : 4;
++            int min = hints->major > 0 ? hints->minor : 6;
++            int mask = (hints->profile == RGFW_glCompatibility)
++                ? NANO_WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB : NANO_WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
++            const int attribs[] = {
++                NANO_WGL_CONTEXT_MAJOR_VERSION_ARB, maj,
++                NANO_WGL_CONTEXT_MINOR_VERSION_ARB, min,
++                NANO_WGL_CONTEXT_PROFILE_MASK_ARB, mask,
++                0,
++            };
++            HGLRC modern = create(win->src.hdc, NULL, attribs);
++            if (modern) {
++                wglMakeCurrent(prevDc, prevCtx);
++                wglDeleteContext(legacy);
++                legacy = modern;
++            } else {
++                wglMakeCurrent(prevDc, prevCtx); // ARB refused — keep the legacy context (zero-regression fallback)
++            }
++        } else {
++            wglMakeCurrent(prevDc, prevCtx);
++        }
++    }
+ 
++    ctx->ctx = legacy;
+     win->src.ctx_native = ctx;
+     win->src.gfxType = RGFW_gfxNativeOpenGL;
+     return RGFW_TRUE;
+@@ -456,6 +505,22 @@ static RGFW_glContext* RGFW_window_createContext_OpenGL(RGFW_window* win, RGFW_g
      return ctx;
  }
  #endif
@@ -9854,7 +9944,7 @@ index ce2471b..945223b 100644
  */
  import "C"
  import (
-@@ -550,6 +569,19 @@ func (r *RGFW) Deinit() error {
+@@ -550,6 +615,19 @@ func (r *RGFW) Deinit() error {
  	return nil
  }
  
@@ -10851,10 +10941,10 @@ index 669862d..793aa6c 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..2ea5ead 100644
+index 17f10fc..624c3f9 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-@@ -1,981 +1,1919 @@
+@@ -1,981 +1,1925 @@
 -package nanoarch
 -
 -import (
@@ -13123,7 +13213,13 @@ index 17f10fc..2ea5ead 100644
 +
 +//export coreGetProcAddress
 +func coreGetProcAddress(sym *C.char) C.retro_proc_address_t {
-+	return (C.retro_proc_address_t)(graphics.RGFWGlProcAddress(C.GoString(sym)))
++	name := C.GoString(sym)
++	p := graphics.RGFWGlProcAddress(name)
++	// [proc] Always-on: name → pointer for every GL function the core resolves (fires only at core
++	// init, a few hundred lines once per load). This is the crash-forensics map: a fault PC inside
++	// the driver names its GL function by nearest preceding [proc] pointer (the Saturn 0x3108 hunt).
++	Nan0.log.Info().Msgf("[proc] %s = %#x", name, uintptr(p))
++	return (C.retro_proc_address_t)(p)
 +}
 +
 +//export coreEnvironment
