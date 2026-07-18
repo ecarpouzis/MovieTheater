@@ -219,7 +219,14 @@ emulator:
           scaleMethod: bilinear2
           options:
             beetle_psx_hw_renderer: "hardware_vk"   # Vulkan renderer (VALUE token verified from the DLL)
-            beetle_psx_hw_internal_resolution: "2x" # 640x480-class hardware upscale (raise per-title later)
+            # 4x internal (Phase 2 default-on raise 2026-07-18, was "2x round-1"). beetle puts internal-res
+            # in max_width; scale:2 defines the encode OUTPUT at base(320x240)x2 while patch-0015 reneg tracks
+            # the SOURCE — so 4x renders ~2x bigger than the encode target and DOWNSAMPLES (bilinear2) = pure
+            # supersample AA on top of more 3D polygon/edge detail, at UNCHANGED encode geometry (no bitrate/VBV
+            # change). The 4070 Ti eats 4x for PSX trivially. SMOKE reads the [video] caps line: if encode
+            # geometry balloons past the 2x sizes (i.e. output tracks the 4x frame instead of supersampling)
+            # or 60fps drops, roll back. ROLLBACK: "2x". (8x is the next step if 4x proves clean + wanted.)
+            beetle_psx_hw_internal_resolution: "4x"
             # super_sampling was TESTED for SotN's death-sprite flash and REVERTED (2026-07-17): Eric confirmed
             # the flash persisted AND it cost sharpness (it downsamples 2x→native). Not the fix. The flash is a
             # beetle-hw semi-transparency artifact (the A/B ladder — internal_res 1x / dither / pgxp / sw
@@ -232,13 +239,19 @@ emulator:
             beetle_psx_hw_last_scanline: "239"
             beetle_psx_hw_initial_scanline_pal: "0"
             beetle_psx_hw_last_scanline_pal: "287"
-            # crop_overscan REVERTED to disabled (2026-07-17). Enabling it did NOT fix the pillarbox (Eric
-            # confirmed bars still present + they CHANGE as SotN switches modes) — the bars are NOT beetle's
-            # overscan border; they are our GPU scale step fitting each varying-width mode (560/800/1120) into
-            # the fixed encode with mode-dependent letterbox/pillarbox (the real bars fix is the scaler, not
-            # here). Reverted to the original known-good. (Flip to "enabled" only if a future overscan case
-            # actually needs it.)
-            beetle_psx_hw_crop_overscan: "disabled"
+            # crop_overscan ENABLED (2026-07-18, coordinator bars verdict). The bars ARE core-baked: beetle
+            # declares a constant AR=1.3333 for every mode because its output frame IS the full PSX raster
+            # INCLUDING the horizontal-blanking overscan border regions a CRT hid — our W8 scanline pins
+            # (crop_overscan:disabled + full 0/239 scanline window) make beetle emit those borders, the client
+            # is object-fit:fill, and our scaler faithfully fills the declared 4:3 with border and all. So the
+            # earlier "GPU scale step / per-mode letterbox" theory (2026-07-17) is DEAD; enabling crop_overscan
+            # crops the horizontal blanking = the side pillars. The 2026-07-17 "didn't fix" trial ran under
+            # hardware_vk and crop_overscan may be renderer-dependent (beetle's GL vs Vulkan rasterizers), so
+            # this is smoked VISUALLY per-renderer (SotN on its new per-title GL + a vk ps1 title). KEEP the
+            # scanline pins — the W8 anti-collapse fix is the PINNING itself, not the specific crop value.
+            # Vertical borders (~8 lines top/bottom from the 0/239 window) may remain — left this round (cropping
+            # them trades content for cleanliness; Eric's taste call later). ROLLBACK: "disabled".
+            beetle_psx_hw_crop_overscan: "enabled"
         # GL 3D cores only — this pool exists for these. isGlAllowed + coreAspectRatio are the Flip
         # contract (without coreAspectRatio the GAME_START av payload is null and the client renders
         # the bottom-left-origin GL frame upside down — the exact n64 lesson). Mirror of the WSL
@@ -688,6 +701,14 @@ emulator:
             # Values: Accurate|Disable Readbacks|Unsynchronized|Disabled.
             # Sharpens ground/road planes at oblique angles, and it HELPS the encoder: less texture
             # shimmer = less high-frequency temporal noise to spend bits on. Values: disabled|2x|4x|8x|16x.
+            # ⚠ DEAD KEY UNDER paraLLEl-GS (Phase-2 finding 2026-07-18, DEAD-keys instrumentation): the Vulkan
+            # GS renderer NEVER queries pcsx2_anisotropic_filtering / pcsx2_blending_accuracy /
+            # pcsx2_upscale_multiplier — the worker log emits "[opt] DEAD keys ... value INERT" for all three
+            # (they belonged to the OLD GSdx OpenGL/Vk-HW renderer; paraLLEl-GS is a separate GS core with its
+            # OWN option set). So this value does NOTHING; a Phase-2 8x->16x raise was tried and is a confirmed
+            # no-op, reverted. PS2's REAL quality levers under pgs are pcsx2_pgs_ssaa ("8x SSAA", maxed) +
+            # pcsx2_pgs_high_res_scanout ("enabled") below — those ARE queried and already at the ceiling.
+            # Left at "8x" (harmless/inert) rather than deleted so the GSdx-renderer rollback path keeps it.
             pcsx2_anisotropic_filtering: "8x"
             # Blending accuracy Basic -> Medium: more correct transparency/blend effects, and it measured
             # free (60fps, 0 freezes, 0 dropped at 1280x896).
@@ -793,6 +814,9 @@ emulator:
           # caches stay on disk harmlessly (filename-prefix keyed); expect a per-game mode-2 ubershader
           # warm-up (~29 t/s for the first minutes) on each title's first Vk boot — accepted.
           # Rollback one-liner: isGlAllowed: true + delete the hwContext line.
+          # A 2026-07-18 agent flip to GL was REVERTED same day: full Vulkan is the standing directive
+          # (Eric). Its stall/latency concerns are handled by dolphin_wait_for_shaders below, not by
+          # abandoning the backend.
           isGlAllowed: false          # Vulkan by default (see hwContext); GL zero-copy arming stays off
           hwContext: "vulkan"         # gc renders on Dolphin-Vk (VKGfx) via the Vulkan-capture path
           coreAspectRatio: true
