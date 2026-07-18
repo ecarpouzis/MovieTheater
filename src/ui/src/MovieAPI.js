@@ -702,6 +702,18 @@ function listArcadeSaves(gameId) {
   return fetch(`/API/Arcade/Games/${gameId}/Saves`).then((r) => (r.ok ? r.json() : [])).catch(() => []);
 }
 
+// Games the signed-in user has recently played (derived from save activity): [{ gameId, title,
+// system, artId, hasBoxArt, lastPlayedUtc, saveCount }], newest first.
+function getArcadeRecentlyPlayed(take = 12) {
+  return fetch(`/API/Arcade/RecentlyPlayed?take=${take}`).then((r) => (r.ok ? r.json() : [])).catch(() => []);
+}
+
+// The signed-in user's saves across EVERY game (the saves vault) — paged/searchable/filterable.
+// params: { search, system, skip, take }. Response: { rows, totalCount, totalSizeBytes, skip, take }.
+function getAllArcadeSaves(params = {}) {
+  return fetch("/API/Arcade/Saves/Mine" + arcadeQuery(params));
+}
+
 // ── Heavy lane (Moonlight-streamed titles, docs/arcade-heavy-lane-plan.md §7) ────────────────────
 // Lane status: who holds the one heavy session + per-app staging state for the heavy cards.
 function getArcadeHeavyStatus() {
@@ -1078,6 +1090,8 @@ const MovieAPI = {
   getArcadeRooms,
   createArcadeRoom,
   listArcadeSaves,
+  getArcadeRecentlyPlayed,
+  getAllArcadeSaves,
   getArcadeCheats,
   getArcadeHeavyStatus,
   stageArcadeHeavy,

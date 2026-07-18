@@ -5,7 +5,9 @@ import { MovieAPI } from "../../MovieAPI";
 import GameCard from "./GameCard";
 import HeavyGameModal from "./HeavyGameModal";
 import LiveRooms from "./LiveRooms";
+import RecentlyPlayed from "./RecentlyPlayed";
 import SavesManager from "./SavesManager";
+import SavesVaultManager from "./SavesVaultManager";
 import ArcadePager from "./ArcadePager";
 import { rememberLobbySearch } from "./arcadeLobbyState";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
@@ -105,6 +107,8 @@ export default function ArcadePage() {
   const [loadingMore, setLoadingMore] = useState(false); // appending the next page
   const [letters, setLetters] = useState(null); // A–Z bucket offsets, for the pager (A–Z sort only)
   const [rooms, setRooms] = useState([]);
+  const [recentGames, setRecentGames] = useState([]); // "Recently played" strip (save-derived history)
+  const [savesVaultOpen, setSavesVaultOpen] = useState(false); // the cross-game "My saves" drawer
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
   const [heavyGame, setHeavyGame] = useState(null); // heavy-lane card → the Play-via-Moonlight modal
@@ -223,6 +227,14 @@ export default function ArcadePage() {
     return () => { alive = false; clearInterval(id); };
   }, []);
 
+  // "Recently played" strip — a fresh fetch on mount is enough: it only changes once a session ends
+  // and harvests a save, and returning here from a room is a route change that remounts this page.
+  useEffect(() => {
+    let alive = true;
+    MovieAPI.getArcadeRecentlyPlayed(12).then((rows) => { if (alive) setRecentGames(Array.isArray(rows) ? rows : []); });
+    return () => { alive = false; };
+  }, []);
+
   // Infinite scroll. The old version listened on `window` and measured `document.body.offsetHeight`,
   // which is wrong on desktop — the page scrolls inside .app-content, so scrollY never moved and the
   // grid only ever grew via the Load more button. The shared hook resolves the real scroll root.
@@ -338,6 +350,7 @@ export default function ArcadePage() {
           <div className="arcade-header__lede">
             <h1 className="arcade-title">Arcade</h1>
             <p className="arcade-subtitle">Pick a game to open a room, then send friends the link to play together.</p>
+            <Button className="arcade-vault-btn" onClick={() => setSavesVaultOpen(true)}>💾 My saves (all games)</Button>
           </div>
 
           {/* Stream quality for rooms YOU start. One encoder per room, so the creator's choice is what
@@ -381,6 +394,13 @@ export default function ArcadePage() {
             <span className="arcade-conn__caption">Applies to rooms you start</span>
           </div>
         </header>
+
+        <RecentlyPlayed
+          games={recentGames}
+          creating={creating}
+          onPlay={(gameId, title) => createRoom(gameId, title)}
+          onManageSaves={(gameId, title) => setManageSaves({ gameId, title })}
+        />
 
         <LiveRooms rooms={rooms} onJoin={joinRoom} />
 
@@ -435,6 +455,9 @@ export default function ArcadePage() {
 
       {manageSaves && (
         <SavesManager game={manageSaves} onClose={() => setManageSaves(null)} onResume={doCreateRoom} />
+      )}
+      {savesVaultOpen && (
+        <SavesVaultManager onClose={() => setSavesVaultOpen(false)} onResume={doCreateRoom} />
       )}
       {heavyGame && (
         <HeavyGameModal

@@ -748,6 +748,107 @@ namespace MovieTheater.Controllers
             return Json(rows);
         }
 
+        /// <summary>Games the signed-in user has actually played recently, derived from their own save
+        /// activity (most-recent ArcadeSave.UpdatedUtc per game). A save is written whenever a session
+        /// ends, so this is real evidence of play whether the user created the room or just joined one —
+        /// ArcadeSession only records the creator, so it can't answer this. Feeds the lobby's "Recently
+        /// played" strip.</summary>
+        [HttpGet("/API/Arcade/RecentlyPlayed")]
+        public async Task<IActionResult> RecentlyPlayed(int take = 12)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            take = Math.Clamp(take, 1, 30);
+
+            var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
+            var recent = await movieDb.ArcadeSaves
+                .Where(s => s.UserId == userId.Value)
+                .GroupBy(s => s.ArcadeGameId)
+                .Select(g => new { ArcadeGameId = g.Key, LastPlayedUtc = g.Max(s => s.UpdatedUtc), SaveCount = g.Count() })
+                .OrderByDescending(x => x.LastPlayedUtc)
+                .Take(take)
+                .ToListAsync();
+            if (recent.Count == 0) return Json(Array.Empty<object>());
+
+            // A game can vanish from the lobby (disabled, or the viewer's age restriction tightened)
+            // without its save rows going away — silently drop those rather than 500 or show a ghost card.
+            var gameIds = recent.Select(r => r.ArcadeGameId).ToList();
+            var games = await movieDb.ArcadeGames
+                .Where(g => gameIds.Contains(g.Id) && g.IsEnabled && g.RatingCeiling <= ageRestriction)
+                .Select(g => new { g.Id, g.Title, g.System, g.BoxArtPath })
+                .ToDictionaryAsync(g => g.Id);
+
+            var result = recent
+                .Where(r => games.ContainsKey(r.ArcadeGameId))
+                .Select(r =>
+                {
+                    var g = games[r.ArcadeGameId];
+                    return new
+                    {
+                        gameId = g.Id,
+                        title = g.Title,
+                        system = g.System,
+                        artId = g.Id,
+                        hasBoxArt = g.BoxArtPath != null,
+                        lastPlayedUtc = r.LastPlayedUtc,
+                        saveCount = r.SaveCount,
+                    };
+                });
+            return Json(result);
+        }
+
+        /// <summary>Every save the signed-in user has, across every game — the "saves vault" pop-out. A
+        /// per-game view already exists at Games/{id}/Saves; this is the cross-game management tool,
+        /// so it's always a bounded, paged, searchable/filterable slice (never "load everything") —
+        /// a player who's touched a few hundred titles can accumulate thousands of save rows.</summary>
+        [HttpGet("/API/Arcade/Saves/Mine")]
+        public async Task<IActionResult> MySaves(string search = null, string system = null, int skip = 0, int take = 50)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            skip = Math.Max(0, skip);
+            take = Math.Clamp(take, 1, 200);
+
+            var q = from s in movieDb.ArcadeSaves
+                    join g in movieDb.ArcadeGames on s.ArcadeGameId equals g.Id
+                    where s.UserId == userId.Value
+                    select new { s, g };
+
+            if (!string.IsNullOrWhiteSpace(system))
+                q = q.Where(x => x.g.System == system);
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                q = q.Where(x => x.g.Title.Contains(term));
+            }
+
+            var totalCount = await q.CountAsync();
+            var totalSizeBytes = totalCount == 0 ? 0L : await q.SumAsync(x => (long)x.s.SizeBytes);
+
+            var rows = await q
+                .OrderByDescending(x => x.s.UpdatedUtc)
+                .Skip(skip).Take(take)
+                .Select(x => new
+                {
+                    id = x.s.Id,
+                    gameId = x.g.Id,
+                    title = x.g.Title,
+                    system = x.g.System,
+                    artId = x.g.Id,
+                    hasBoxArt = x.g.BoxArtPath != null,
+                    kind = x.s.Kind,
+                    slotId = x.s.SlotId,
+                    label = x.s.Label,
+                    sizeBytes = x.s.SizeBytes,
+                    isAutosave = x.s.IsAutosave,
+                    coreName = x.s.CoreName,
+                    updatedUtc = x.s.UpdatedUtc,
+                })
+                .ToListAsync();
+
+            return Json(new { rows, totalCount, totalSizeBytes, skip, take });
+        }
+
         private static readonly HttpClient gatewayClient = new() { Timeout = TimeSpan.FromSeconds(30) };
 
         // Call a secret-gated gateway blob op (the blobs live on Ziggy; the k8s pod can't read them).

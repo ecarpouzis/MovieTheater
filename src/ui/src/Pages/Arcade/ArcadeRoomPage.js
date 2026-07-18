@@ -692,7 +692,7 @@ export default function ArcadeRoomPage() {
                              ...rotatedVideoSize(ar, coreRot) };
         const outerStyle = isFs
           ? { position: "relative", background: "#000", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }
-          : { position: "relative", background: "#000", borderRadius: 8, overflow: "hidden" };
+          : { position: "relative", background: "#000" };
         const innerStyle = isFs
           ? { position: "relative", aspectRatio: ar, width: `min(100%, calc(100vh * ${ar}))`, maxHeight: "100%" }
           : { position: "relative", aspectRatio: ar, width: "100%" };

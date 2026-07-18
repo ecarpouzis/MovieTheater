@@ -73,6 +73,11 @@
   color: var(--text-secondary);
 }
 
+.arcade-vault-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
 /* ── Connection pills (bitrate + error correction) ───────────────────────── */
 .arcade-conn {
   display: flex;
@@ -866,6 +871,70 @@
   font-weight: 700;
   color: #fff;
   background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+}
+
+/* ── Recently played (a "continue watching" strip for the signed-in player) ──── */
+.arcade-recent {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.arcade-recent__card {
+  flex: 0 0 132px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.14s ease;
+}
+.arcade-recent__card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.arcade-recent__art {
+  align-self: center;
+}
+
+.arcade-recent__title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arcade-recent__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.arcade-recent__when {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.arcade-recent__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+.arcade-recent__actions .arcade-btn--join {
+  padding: 5px 12px;
+  font-size: 11px;
 }
 
 /* ── Dropdown popups (pills + version picker) ────────────────────────────── */
