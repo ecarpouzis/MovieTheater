@@ -92,11 +92,12 @@ emulator:
   # thread — and PPSSPP's serialize_size touches live emu state. Worker patch 0030 FIXED exactly that
   # (serialize AND its size probe now run on the core's own thread), so the reason for 0 is stale.
   #
-  # 120s, not 60: a serialize STOPS the emulator for its duration, and the GL cores' states are big
-  # (Dolphin ~122 MB, PCSX2 ~50 MB) — flycast (dc) is documented to hitch on it. 120s halves the hitch
-  # count while still bounding a crash's cost to two minutes. Autosave writes the CONTINUE slot (0); it
+  # A serialize STOPS the emulator for its duration, and the GL cores' states are big (Dolphin
+  # ~122 MB, PCSX2 ~50 MB) — the serialize memcpy IS the hitch (~126ms on gc, ROOT-CAUSED 7/18:
+  # Eric's F-Zero spikes landed exactly on the 120s autosave grid). 300s per Eric's call 7/18:
+  # one hitch per 5 min, crash-loss bound grows to 5 min. Autosave writes the CONTINUE slot (0); it
   # can never touch a player's Save, which lives in the reserved quicksave slot (SaveStore.QuickSlot).
-  autosaveSec: 120
+  autosaveSec: 300
   storage: "D:/ArcadeStorage/saves"    # overridable via CLOUD_GAME_EMULATOR_STORAGE
 
   # (Wedge handling is NOT a tunable and deliberately has no knob here. A room closes when its last
