@@ -274,7 +274,13 @@ namespace MovieTheater.Arcade
             // style Wiimote holds) still don't map and will feel wrong; curate/flag those as reports come in.
             // WiiWare (.zip, NAND/WAD channel installs) is NOT covered by this ingest — different loading
             // model entirely, not staged as a disc.
-            new("wii",        new[] { "wii" },        new[] { ".rvz", ".iso", ".wbfs", ".ciso", ".gcm" },       4),
+            // .elf/.dol: a small number of Wii ROM hacks (BrawlEx-based Brawl mods: Project REX, Smash
+            // Bros Infinite) crash when baked onto a standalone disc — their own file/config loader only
+            // reliably reads from a real SD card. These ship as a loader ELF/DOL instead of a disc image;
+            // the worker's wiiSdLoader seed step (config.worker-gl.yaml) detects a paired asset folder
+            // (D:/ArcadeStorage/wiisd-assets/<CloudRetroGameKey>/{sd.raw, base.<ext>}) and mounts the SD
+            // card + auto-inserts the base disc before boot. Ordinary Wii discs are unaffected.
+            new("wii",        new[] { "wii" },        new[] { ".rvz", ".iso", ".wbfs", ".ciso", ".gcm", ".elf", ".dol" }, 4),
             new("psp",        new[] { "psp" },        new[] { ".iso", ".cso", ".pbp", ".chd" },  1),  // GL; no BIOS; ad-hoc MP unsupported
             new("dc",         new[] { "dc" },         new[] { ".chd", ".gdi", ".cdi", ".cue" },  2),  // GL; dc_boot.bin + dc_flash.bin
             new("naomi",      new[] { "naomi" },      new[] { ".zip", ".chd", ".lst", ".dat" },  2),  // flycast arcade; naomi.zip BIOS
@@ -293,6 +299,20 @@ namespace MovieTheater.Arcade
             new("vb",         new[] { "vb" },         new[] { ".vb", ".vboy" },                  1),
             new("fds",        new[] { "fds" },        new[] { ".fds" },                          2),  // disksys.rom
             new("neogeo",     new[] { "neogeo" },     new[] { ".zip" },                          2),  // fbneo; neogeo.zip BIOS
+
+            // ─── R: systems expansion (2026-07-18): small 8-bit consoles (all pure-software cores,
+            // buildbot, no custom build) + 3DO/CD-i (software, safe) + Saturn (first non-Vulkan 3D core). ───
+            new("vectrex",     new[] { "vectrex" },     new[] { ".bin", ".vec" },        1),  // no BIOS
+            new("intv",        new[] { "intv" },        new[] { ".int", ".rom", ".bin" }, 2),  // exec.bin+grom.bin
+            new("coleco",      new[] { "coleco" },      new[] { ".col", ".cv", ".bin", ".rom" }, 2),  // colecovision.rom
+            new("channelf",    new[] { "channelf" },    new[] { ".bin", ".rom", ".chf" }, 2),  // sl31253/sl31254.bin
+            new("o2em",        new[] { "o2em" },        new[] { ".bin" },                 2),  // o2rom.bin
+            new("arcadia",     new[] { "arcadia" },     new[] { ".bin", ".rom" },         2),  // no BIOS
+            new("supervision", new[] { "supervision" }, new[] { ".bin", ".sv" },          1),  // no BIOS
+            new("pokemini",    new[] { "pokemini" },    new[] { ".min" },                 1),  // no BIOS
+            new("3do",         new[] { "3do" },         new[] { ".cue", ".chd", ".iso" }, 1),  // panafz10.bin/goldstar.bin
+            new("cdi",         new[] { "cdi" },         new[] { ".chd", ".iso", ".cue" }, 1),  // cdimono1.zip; no save-states
+            new("saturn",      new[] { "saturn" },      new[] { ".chd", ".cue", ".ccd", ".iso", ".mds", ".zip", ".m3u" }, 2),  // sega_101.bin+mpr-17933.bin
         };
     }
 }

@@ -144,6 +144,34 @@ emulator:
                                            # and overwrite it on the next seed.
                                            # dc_nvmem.bin is machine state (clock/language), not a
                                            # card: it stays shared on purpose.
+
+  # Wii SD-card + ELF/DOL loader boot (Brawl mods: Project REX, Smash Bros Infinite — 2026-07-18). A
+  # small number of Wii ROM hacks crash when baked onto a standalone disc because their own
+  # file/config loader (BrawlEx, here) only reliably reads from a real SD card. These ship as a
+  # loader ELF/DOL (the ArcadeGame row's RomPath/content) instead of a disc image; before that ELF
+  # boots, Dolphin needs [Core] WiiSDCard/WiiSDCardPath pointed at the mod's own SD card image AND
+  # [Core] DefaultISO pointed at a paired "vanilla"/no-GCT base disc — Dolphin's stock Boot.cpp
+  # (SetDefaultDisc) auto-inserts DefaultISO on any ELF/DOL ("Executable") boot, unmodified upstream
+  # behavior, the same thing `Dolphin.exe -e loader.elf` does for the equivalent LOCAL setup
+  # (Setup-BrawlSDMod.ps1, docker/arcade/../../.. Romhacks/Smash Brothers Brawl Mods/).
+  #
+  # <assetsDir>/<CloudRetroGameKey>/{sd.raw, base.<ext>} — folder name MUST equal the .elf's filename
+  # sans extension (same convention as CloudRetroGameKey / game-overrides.json's romName key). Only
+  # the two files above are read; base.<ext> is looked up by glob so either a base.iso or a
+  # space-saving base.rvz works. Missing folder = ordinary ROM, not an error — every other Wii/GC
+  # title (and any future one) is untouched.
+  #
+  # The worker (not the gateway) does this seed, right alongside the memory-card seed above and for
+  # the same reason: only it knows which ROM is about to load, and Dolphin.ini is shared by every
+  # Wii/GC room this worker ever serves, so a room WITHOUT a matching asset folder must explicitly
+  # disable WiiSDCard rather than silently inherit a previous room's mount. The SD card image itself
+  # is copied fresh into this worker's own systemDir on EVERY boot (never vaulted/harvested — it is
+  # not per-user save data, it's static mod content re-copied from the shared master each time).
+  # base.<ext> is opened READ-ONLY by Dolphin (disc emulation never writes back) so it's referenced
+  # directly from assetsDir, no copy.
+  wiiSdLoader:
+    assetsDir: "D:/ArcadeStorage/wiisd-assets"
+
   libretro:
     saveCompression: false
     cores:
@@ -679,6 +707,38 @@ emulator:
             # Soft-float (PCSX2 #12001) — the only complete AI fix — is interpreter-only and NOT in this
             # core (binary-scanned), so it is off the table. Full rationale in the patch script's header.
 
+        # Sega Saturn via Kronos (2026-07-18). The ONLY 3D core in this file that is NOT on the Vulkan
+        # capture path: Kronos's renderer is OpenGL 4.3 compute-shader, mandatory (the legacy GL and
+        # software renderers were both removed upstream) — there is currently no Vulkan Saturn core on
+        # any libretro fork, so isGlAllowed:true/hwContext unset is correct here, not a rollback state.
+        # Region-mixed BIOS: both sega_101.bin (JP) and mpr-17933.bin (US/EU) staged, plus a copy at
+        # kronos/saturn_bios.bin (the core's own primary lookup path under the BIOS mount).
+        # meshmode/bandingmode ON by default — VDP1 mesh transparency renders wrong (solid instead of a
+        # dither pattern) on most Saturn cores without it; this is a library-wide correctness fix, not
+        # a per-title tweak. addon_cartridge stays "none": a handful of fighting games (X-Men vs. Street
+        # Fighter class) need a specific RAM-cart size to boot/save — that's a per-game override
+        # (ArcadeGameProfile / game-overrides.json), same shape as the PS2 GameDB hack table, not a
+        # global default. STAGE A PILOT FIRST (Panzer Dragoon / NiGHTS / Guardian Heroes are commonly
+        # well-emulated) before trusting the full 2,522-game bulk ingest — Kronos compatibility is
+        # documented as uneven across the tail of the library, and whether kronos_resolution_mode moves
+        # the reported BASE geometry (Dolphin-style) or only an internal upscale (flycast-style, needing
+        # our scale: workaround instead) is UNCONFIRMED — verify with scalecheck.mjs before raising it.
+        saturn:
+          lib: kronos_libretro
+          folder: saturn
+          roms: ["chd", "cue", "ccd", "iso", "mds", "zip", "m3u"]
+          isGlAllowed: true
+          coreAspectRatio: true
+          scale: 2
+          scaleMethod: bilinear2
+          options:
+            kronos_sh2coretype: "kronos"
+            kronos_force_hle_bios: "disabled"
+            kronos_videoformattype: "auto"
+            kronos_meshmode: "enabled"
+            kronos_bandingmode: "enabled"
+            kronos_addon_cartridge: "none"
+
         # GameCube via dolphin_libretro. GL 3D core like psp/dc/ps2: same isGlAllowed + coreAspectRatio
         # Flip contract, usesLibCo thread-affinity, vfr:false (correct game speed), skip_hw_context_destroy
         # teardown hack. No BIOS required — Dolphin HLE-boots the GC IPL. Source ROMs are .gcz (Dolphin's
@@ -863,10 +923,14 @@ emulator:
         # step: RomCache's plain-copy branch handles it, same as a GC .gcz would if left compressed).
         # EFB/render tuning copied VERBATIM from gc — it's literally the same video pipeline (Wii didn't
         # change the EFB). Re-verify independently before trusting these numbers for Wii specifically.
+        # "elf"/"dol": the two BrawlEx-based Brawl mods (Project REX, Smash Bros Infinite) that need
+        # the SD-card + loader-boot method instead of a normal disc — see wiiSdLoader below, whose
+        # per-ROM asset lookup (keyed by CloudRetroGameKey) is what actually makes these bootable;
+        # listing the extensions here only gets them past the library scan/ingest.
         wii:
           lib: dolphin_custom_libretro
           folder: wii
-          roms: ["rvz", "iso", "wbfs", "ciso", "gcm", "m3u"]
+          roms: ["rvz", "iso", "wbfs", "ciso", "gcm", "m3u", "elf", "dol"]
           isGlAllowed: false
           hwContext: "vulkan"
           coreAspectRatio: true
@@ -1132,6 +1196,77 @@ emulator:
           scale: 3   # was 2 -- 304x224 native, matches the mame entry above
           options:
             fbneo-allow-depth-32: "enabled"   # same 16-bit finding as the mame entry above
+
+        # ─── R: systems expansion (2026-07-18) — small 8-bit consoles, all pure-software cores on the
+        # standard libretro buildbot, no custom build. Same safety profile as the rest of this 2D tier. ───
+        vectrex:
+          lib: vecx_libretro
+          folder: vectrex
+          roms: ["bin", "vec"]
+          scale: 4   # 330x410 native, tall/narrow vector display
+        intv:
+          # Needs exec.bin + grom.bin in the BIOS mount.
+          lib: freeintv_libretro
+          folder: intv
+          roms: ["int", "rom", "bin"]
+          scale: 4
+        coleco:
+          # gearcoleco (modern replacement for the old coleco core). Needs colecovision.rom in the BIOS mount.
+          lib: gearcoleco_libretro
+          folder: coleco
+          roms: ["col", "cv", "bin", "rom"]
+          scale: 3
+        channelf:
+          # Needs sl31253.bin + sl31254.bin (PSU I/II) in the BIOS mount.
+          lib: freechaf_libretro
+          folder: channelf
+          roms: ["bin", "rom", "chf"]
+          scale: 4
+        o2em:
+          # Odyssey2/Videopac (base hardware only — Videopac+/G7400's g7400.bin needs an unsupported
+          # rename-as-o2rom.bin workaround, so that ~32-file subset is left uningested). Needs o2rom.bin.
+          lib: o2em_libretro
+          folder: o2em
+          roms: ["bin"]
+          scale: 4
+        arcadia:
+          # Auto-detects ROM variant/clone by CRC32; no BIOS needed.
+          lib: amiarcadia_libretro
+          folder: arcadia
+          roms: ["bin", "rom"]
+          scale: 4
+        supervision:
+          # Watara Supervision; public-domain core, no BIOS needed.
+          lib: potator_libretro
+          folder: supervision
+          roms: ["bin", "sv"]
+          scale: 4
+        pokemini:
+          # BIOS optional (bios.min) — runs fine without it.
+          lib: pokemini_libretro
+          folder: pokemini
+          roms: ["min"]
+          scale: 4
+        3do:
+          # Opera (active 4DO/FreeDO fork) — pure software, no GL scaffolding touched (unlike angrylion,
+          # it never declares HW-render capability, so no nil-deref risk). BIOS auto-selects by disc
+          # region; both US (panafz10.bin) and JP-adjacent (goldstar.bin) staged for a mixed-region set.
+          lib: opera_libretro
+          folder: 3do
+          roms: ["cue", "chd", "iso"]
+          scale: 3
+          options:
+            opera_bios: "panafz10.bin"
+        cdi:
+          # same_cdi (MAME's CD-i driver, stripped to a libretro core) — pure software, safe. Needs
+          # cdimono1.zip both at the BIOS root AND under same_cdi/bios/ (the core's own lookup path).
+          # Lower hit rate than other systems by design: MAME's driver has no DVC/MPEG-FMV emulation,
+          # so FMV-heavy titles (e.g. the Zelda CD-i trilogy) will be degraded/broken regardless of
+          # config — that's upstream, not ours to fix. No save-states/cheats on this core.
+          lib: same_cdi_libretro
+          folder: cdi
+          roms: ["chd", "iso", "cue"]
+          scale: 3
 
 
 encoder:
