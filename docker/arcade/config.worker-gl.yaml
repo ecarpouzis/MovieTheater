@@ -181,13 +181,10 @@ emulator:
           options:
             beetle_psx_hw_renderer: "hardware_vk"   # Vulkan renderer (VALUE token verified from the DLL)
             beetle_psx_hw_internal_resolution: "2x" # 640x480-class hardware upscale (raise per-title later)
-            # SUPER_SAMPLING enabled (2026-07-17) — FLASH FIX for SotN's death-sprite transparency artifact.
-            # Confirmed live (Eric "dog death now" + log: NO geometry event at the kill) that the flash is
-            # beetle-hw rendering PSX semi-transparency WRONG at 2x internal res. Supersampling renders high
-            # then composites/downsamples so transparency is correct. Tradeoff: some sharp-upscale look for
-            # correct blending. ⚠ changes beetle's OUTPUT geometry class (downsamples) — verified on probe it
-            # composes with the Vk zero-copy path. Rollback (flash A/B step 1): "disabled".
-            beetle_psx_hw_super_sampling: "enabled"
+            # super_sampling was TESTED for SotN's death-sprite flash and REVERTED (2026-07-17): Eric confirmed
+            # the flash persisted AND it cost sharpness (it downsamples 2x→native). Not the fix. The flash is a
+            # beetle-hw semi-transparency artifact (the A/B ladder — internal_res 1x / dither / pgxp / sw
+            # renderer — runs off a save-state repro, no default flip until proven). Do NOT re-add blindly.
             beetle_psx_hw_pgxp_mode: "disabled"     # PGXP off round 1 (geometry correction; per-title later)
             beetle_psx_hw_enable_memcard1: "enabled" # memcard 1 via RETRO_MEMORY_SAVE_RAM (.srm)
             # ⚠ SCANLINE WINDOW — pin the FULL range explicitly (see the block header). beetle's unset-option
