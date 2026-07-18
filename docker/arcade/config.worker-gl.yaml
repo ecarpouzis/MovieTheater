@@ -124,6 +124,17 @@ emulator:
   cardVault: "D:/ArcadeStorage/cards"      # <vault>/<userId>/<system>/
   cards:
     gc:  "save:User/GC"                    # Dolphin: <region>/Card A/*.gci
+    # Wii: the WHOLE Dolphin NAND (User/Wii — title saves, SYSCONF, Mii db, shared2, everything),
+    # not just a save subfolder. Checked against Common/NandPaths.cpp + Core/WiiRoot.cpp: a disc
+    # game's save data lives at Wii/title/<hi:08x>/<lo:08x>/data (GetTitleDataPath), sitting inside
+    # Wii/ alongside SYSCONF (shared2/sys/SYSCONF) and the rest — there is no card-only subpath that
+    # excludes the console-wide bits, the way GC's Card A file does. That turns out fine: Dolphin's
+    # Wii NAND is HLE and self-formatting (WiiRoot.cpp — no real IOS/Nintendo NAND dump needed), so
+    # an EMPTY Wii/ boots exactly like a brand-new console and Dolphin recreates SYSCONF etc. on its
+    # own. So "fresh card = new console" (the existing ClearDir branch in seedCards) already does the
+    # right thing here — same as GC's Card A, just a bigger subtree. Side effect: each player also
+    # keeps their own Wii Menu settings/Mii, not only game saves, which is arguably more correct.
+    wii: "save:User/Wii"
     ps2: "system:pcsx2/memcards"           # PCSX2: Mcd001.ps2 / Mcd002.ps2
     psp: "save:PSP/SAVEDATA"               # PPSSPP memstick: ms0:/PSP/SAVEDATA/<TITLEID>. Deliberately
                                            # NOT PSP/SYSTEM (ppsspp.ini + CACHE) or PSP/PPSSPP_STATE.
@@ -330,6 +341,13 @@ emulator:
           # opt-in and inert on ps2/n64 (they never touch a surface). REMOVE this hack if psp ever rolls
           # back to GL (isGlAllowed: true) — it is meaningless on the GL path.
           hacks: [skip_hw_context_destroy, skip_same_thread_save, skip_serialize_size_probe, vk_synthetic_surface]
+          # PPSSPP's per-game shader caches (<ID>.glshadercache / .vkshadercache) are format-tied to the
+          # core build; a core update reading a stale-format cache is undefined. Same stamp/purge
+          # mechanism as gc/wii (docs/arcade-shader-cache-plan.md G4a). Cache lives in the save dir
+          # (NOT per-user-vaulted — the psp card is save:PSP/SAVEDATA only), so the purge can reach it.
+          coreCache:
+            dir: "PSP/SYSTEM/CACHE"
+            purge: ["*.glshadercache", "*.vkshadercache"]
           noSaveStates: true
           # SUPERSAMPLING (patch 0023). MSAA is INERT on this core — libretro's hw_render FBO isn't
           # multisampled, so ppsspp/mupen64plus produce BIT-IDENTICAL frames with it on or off (only
@@ -825,6 +843,66 @@ emulator:
             # "Loaded N cached shaders from Vulkan-*.cache"); a cold first-ever boot per title pays the real
             # compile cost once, then it's cached. Rollback: dolphin_wait_for_shaders: "disabled".
             dolphin_wait_for_shaders: "enabled"
+
+        # Wii — SAME dolphin_custom_libretro binary/worker path as gc above (own core-list entry only
+        # because it needs its own "folder" + Wiimote input options); own roms/wii/ subfolder so a
+        # same-named GC and Wii disc can never collide (patch 0038's lesson). L:\4 - Software\Wii\Disc
+        # Games ships .rvz — Dolphin's own compressed format, read directly (no gcz-style decompress
+        # step: RomCache's plain-copy branch handles it, same as a GC .gcz would if left compressed).
+        # EFB/render tuning copied VERBATIM from gc — it's literally the same video pipeline (Wii didn't
+        # change the EFB). Re-verify independently before trusting these numbers for Wii specifically.
+        wii:
+          lib: dolphin_custom_libretro
+          folder: wii
+          roms: ["rvz", "iso", "wbfs", "ciso", "gcm", "m3u"]
+          isGlAllowed: false
+          hwContext: "vulkan"
+          coreAspectRatio: true
+          usesLibCo: true
+          vfr: false
+          coreCache:
+            dir: "User/Cache"
+            purge: ["Shaders", "*.uidcache"]
+          hacks: [skip_hw_context_destroy, skip_serialize_size_probe, vk_synthetic_surface]
+          scale: 0.6667
+          scaleMethod: bilinear2
+          # Per-port device = Wiimote+Nunchuk (RETRO_DEVICE_WIIMOTE_NC = (3<<8)|RETRO_DEVICE_JOYPAD = 769,
+          # DolphinLibretro/Input.cpp). Chosen over plain WiiMote/Classic/Sideways because it's the widest
+          # real-game default (nunchuk-holding titles + most party games) and is the ONE mode the core
+          # wires IR pointer + swing onto our existing analog-stick input (see options below) rather than
+          # needing real motion data. All 4 ports set — unused ports are simply unconnected in-game, same
+          # convention as gc's 4 seats.
+          hid:
+            0: [769]
+            1: [769]
+            2: [769]
+            3: [769]
+          options:
+            dolphin_renderer: "Hardware"
+            dolphin_cpu_core: "JIT64"
+            dolphin_efb_scale: "3"
+            dolphin_anti_aliasing: "2"
+            dolphin_max_anisotropy: "4"
+            dolphin_main_cpu_thread: "disabled"
+            dolphin_shader_compilation_mode: "2"
+            dolphin_wait_for_shaders: "enabled"
+            # ── Wiimote IR / Swing (DolphinLibretro/Common/Options.cpp) — the reason Wii is ingestable
+            # at all despite no real motion/pointer input existing in cloudRetroClient.js: this core maps
+            # both onto the RetroPad right stick instead of real Wiimote sensors.
+            # "1" = right stick controls pointer, ABSOLUTE (core default). "0" (relative, mouse-like) may
+            # suit some players better for aiming-heavy games — untested, easy per-game override.
+            dolphin_ir_mode: "1"
+            # "None" = pointer always follows the right stick (core default) — no held button needed to
+            # aim, matches "pick up the Wiimote and point" expectation.
+            dolphin_ir_modifier: "None"
+            # Core SHIPS this "Disabled" (swing off) — turned ON here behind L2 so bowling/tennis/baseball-
+            # style swing gestures (hold L2, flick right stick) work at all, without stealing the right
+            # stick from IR aiming when L2 isn't held. UNVERIFIED end-to-end — flag/adjust per game as
+            # reports come in (this whole system is "ingest now, curate later").
+            dolphin_swing_modifier: "L2"
+          # Per-user card = the WHOLE NAND (config `cards.wii` above, "save:User/Wii"), not just a save
+          # subfolder — see the comment there for why that's actually correct rather than a shortcut.
+          # Save-states (autosave slot 0 + the Save/Load quicksave slot) still work independently on top.
 
         # --- ported from docker/arcade/config.yaml (Windows-only migration): the tuned
         # non-GL cores so this pool renders 2D/N64 correctly (scale, N64 framebuffer opts). ---

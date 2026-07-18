@@ -195,11 +195,49 @@ index 84238cb..da28979 100644
    void Swap() override;
    void* GetFuncAddress(const std::string& name) override;
    bool Initialize(const WindowSystemInfo& wsi, bool stereo, bool core) override;
+diff --git a/Source/Core/DolphinLibretro/Vulkan.cpp b/Source/Core/DolphinLibretro/Vulkan.cpp
+index e806fee..14ad6b7 100644
+--- a/Source/Core/DolphinLibretro/Vulkan.cpp
++++ b/Source/Core/DolphinLibretro/Vulkan.cpp
+@@ -380,7 +380,16 @@ static VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(VkQueue queue,
+ #endif
+ 
+   chain.current_index = pPresentInfo->pImageIndices[0];
+-#if 0
++  // MovieTheater dolphin patch #3 (dolphin-present-semaphore.patch): PASS the present wait-semaphores to
++  // set_image. This path shipped #if 0'd (the #else below passed 0, nullptr), which made the whole
++  // gc/Dolphin-Vulkan path deliver FLAT frames: dolphin submits the XFB->backbuffer blit ASYNCHRONOUSLY
++  // on its CommandBufferManager submit thread, then this warped present hands the image to set_image with
++  // NO semaphore, so the frontend imports the CLEARED pre-blit image (= EFB clear color) on every title,
++  // both capture paths. paraLLEl-GS/mupen are immune only because they submit synchronously on the same
++  // queue. The frontend already waits on set_image semaphores (nanoarch_vulkan.c:1252-1260), so passing
++  // the blit-completion semaphore here gates the import correctly. (dolphin-libretro Vk is known-broken
++  // upstream on Windows, so this CREATES correct headless behavior rather than restoring it.)
++#if 1
+   vulkan->set_image(vulkan->handle, &swapchain->images[pPresentInfo->pImageIndices[0]].retro_image,
+                     pPresentInfo->waitSemaphoreCount, pPresentInfo->pWaitSemaphores,
+                     vulkan->queue_index);
 diff --git a/Source/Core/VideoCommon/ShaderCache.cpp b/Source/Core/VideoCommon/ShaderCache.cpp
-index 2627656..7a0f265 100644
+index 2627656..60196b0 100644
 --- a/Source/Core/VideoCommon/ShaderCache.cpp
 +++ b/Source/Core/VideoCommon/ShaderCache.cpp
-@@ -102,8 +102,45 @@ void ShaderCache::Reload()
+@@ -90,6 +90,15 @@ void ShaderCache::Reload()
+   if (g_ActiveConfig.bShaderCache)
+     LoadCaches();
+ 
++  // MT fix: ClosePipelineUIDCache() above closes the UID cache file and upstream never reopens
++  // it, so every AppendGXPipelineUID() after a Reload writes to a closed handle (IsOpen() ==
++  // false -> silent drop). Under libretro a per-game graphics setting applied post-init triggers
++  // a Reload on EVERY boot, so affected games (RMCEA4) never accumulated UIDs ("Read 0 pipeline
++  // UIDs" forever) while no-Reload games (GFZE01) grew normally. Reopen it; duplicate re-reads
++  // are no-ops (AddSerializedGXPipelineUID returns early on existing entries).
++  if (g_ActiveConfig.bShaderCache && m_api_type != APIType::Nothing)
++    LoadPipelineUIDCache();
++
+   // Switch to the precompiling shader configuration while we rebuild.
+   m_async_shader_compiler->ResizeWorkerThreads(g_ActiveConfig.GetShaderPrecompilerThreads());
+ 
+@@ -102,8 +111,45 @@ void ShaderCache::Reload()
    m_async_shader_compiler->ResizeWorkerThreads(g_ActiveConfig.GetShaderCompilerThreads());
  }
  
@@ -245,7 +283,7 @@ index 2627656..7a0f265 100644
    m_async_shader_compiler->RetrieveWorkItems();
  }
  
-@@ -138,16 +175,28 @@ const AbstractPipeline* ShaderCache::GetPipelineForUid(const GXPipelineUid& uid)
+@@ -138,16 +184,28 @@ const AbstractPipeline* ShaderCache::GetPipelineForUid(const GXPipelineUid& uid)
  
  std::optional<const AbstractPipeline*> ShaderCache::GetPipelineForUidAsync(const GXPipelineUid& uid)
  {
@@ -274,7 +312,7 @@ index 2627656..7a0f265 100644
    AppendGXPipelineUID(uid);
    QueuePipelineCompile(uid, COMPILE_PRIORITY_ONDEMAND_PIPELINE);
    return {};
-@@ -294,19 +343,30 @@ void ShaderCache::LoadPipelineCache(T& cache, Common::LinearDiskCache<DiskKeyTyp
+@@ -294,19 +352,30 @@ void ShaderCache::LoadPipelineCache(T& cache, Common::LinearDiskCache<DiskKeyTyp
      {
        KeyType real_uid;
        UnserializePipelineUid(key, real_uid);
@@ -305,7 +343,7 @@ index 2627656..7a0f265 100644
          failed = true;
          return;
        }
-@@ -314,8 +374,12 @@ void ShaderCache::LoadPipelineCache(T& cache, Common::LinearDiskCache<DiskKeyTyp
+@@ -314,8 +383,12 @@ void ShaderCache::LoadPipelineCache(T& cache, Common::LinearDiskCache<DiskKeyTyp
        auto& entry = cache[real_uid];
        entry.first = std::move(pipeline);
        entry.second = false;
@@ -318,7 +356,7 @@ index 2627656..7a0f265 100644
    private:
      ShaderCache* this_ptr;
      T& cache;
-@@ -326,6 +390,13 @@ void ShaderCache::LoadPipelineCache(T& cache, Common::LinearDiskCache<DiskKeyTyp
+@@ -326,6 +399,13 @@ void ShaderCache::LoadPipelineCache(T& cache, Common::LinearDiskCache<DiskKeyTyp
    CacheReader reader(this, cache);
    const u32 count = disk_cache.OpenAndRead(filename, reader);
    INFO_LOG_FMT(VIDEO, "Loaded {} cached pipelines from {}", count, filename);
@@ -332,7 +370,7 @@ index 2627656..7a0f265 100644
  
    // If any of the pipelines in the cache failed to create, it's likely because of a change of
    // driver version, or system configuration. In this case, when the UID cache picks up the pipeline
-@@ -1062,11 +1133,15 @@ void ShaderCache::QueuePipelineCompile(const GXPipelineUid& uid, u32 priority)
+@@ -1062,11 +1142,15 @@ void ShaderCache::QueuePipelineCompile(const GXPipelineUid& uid, u32 priority)
      {
        if (stages_ready)
        {
