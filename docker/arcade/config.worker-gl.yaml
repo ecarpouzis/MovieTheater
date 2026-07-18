@@ -216,10 +216,13 @@ emulator:
         # the bottom-left-origin GL frame upside down — the exact n64 lesson). Mirror of the WSL
         # config's GPU-core block; keep in lockstep with CloudRetroHost.ZoneForSystem's "gl" list.
         psp:
-          # STOCK core is LIVE — and that is a deliberate choice, not a default. Eric's read from real play:
-          # stock feels snappier in general LocoRoco play; the custom core removes a RARE audio crackle but
-          # trades a little of that general responsiveness. Stock wins the everyday case, so it ships; the
-          # custom core is BUILT, staged, and switch-ready for anyone who wants the no-crackle trade.
+          # CUSTOM core is LIVE under Vulkan (W10 P1 A/B, 2026-07-18). Under the Vk renderer the custom
+          # core (real x86-64 JIT + fastmem) HALVED the idle-attract tick on GoW:CoO — steady meanTick
+          # ~1.03 ms / maxTick ~2 ms vs stock 2.4-2.6 ms / 3-11 ms, 60 t/s, zero-copy active, content
+          # verified, clean close. The GL-era "stock feels snappier" verdict predates Vk (renderer win is
+          # GPU-side, custom's is CPU-side — they stack); Eric's remote feel-check is the outstanding gate.
+          # ── ROLLBACK to stock (all THREE lines move together) ──
+          #   lib: ppsspp_libretro   +   ppsspp_cpu_core: "IR JIT"   +   ppsspp_fast_memory: "disabled"
           #
           # ── The custom core (docker/arcade/ppsspp-custom-core.patch + ppsspp-build-core.bat) ──
           # Built the buildbot's way: libretro/Makefile + MSVC, static /MT — NOT CMake, NEVER MinGW. It
@@ -242,10 +245,8 @@ emulator:
           # RATE is still un-quantified — an idle box won't reproduce it and a local test browser contends
           # on Ziggy and fabricates stalls (see the arcade-benchmark-isolation memory).
           #
-          # ── Switch to custom (all THREE lines move together) ──
-          #   lib: ppsspp_custom_libretro   +   ppsspp_cpu_core: "JIT"   +   ppsspp_fast_memory: "enabled"
           # The custom lib NAME pins it against repo.sync nightly overwrites (same trick as dolphin).
-          lib: ppsspp_libretro
+          lib: ppsspp_custom_libretro
           folder: psp
           roms: ["iso", "cso", "pbp", "chd"]
           # ── VULKAN ARM (W3, docs/arcade-vulkan-w3w4w5-spec.md) — PROPOSED, gated ──
@@ -361,11 +362,11 @@ emulator:
           scaleMethod: bilinear2
           options:
             ppsspp_internal_resolution: "1920x1088"
-            # IR JIT — the only SAFE cpu_core on the STOCK lib, because stock has no exception handler, so
-            # fastmem's benign faults become hard 0xc0000005 crashes in retro_run. Software address
-            # translation; stable and fast enough on the 13700K. Move to "JIT" ONLY with the custom lib +
-            # fast_memory: enabled (all three together — see the lib: note above).
-            ppsspp_cpu_core: "IR JIT"
+            # Real x86-64 JIT — safe ONLY on the custom lib (its MachineContext patch installs the fastmem
+            # AV-rescue handler; verify from the worker log: "Installing exception handler"). On the STOCK
+            # lib this must be "IR JIT": stock has no exception handler, so fastmem's benign faults become
+            # hard 0xc0000005 crashes in retro_run (all three lines together — see the lib: note above).
+            ppsspp_cpu_core: "JIT"
             # 16x anisotropic (docs/arcade-quality-plan.md §17). dc/gc/ps2 all ship aniso; psp was the
             # one 3D core without it. Not an AA op — what it retains is texture detail at oblique
             # angles (the dc measurement: mid-frequency edges +7%, hard edges unchanged). Value token
@@ -376,12 +377,12 @@ emulator:
             # Core-author option: "gets rid of some visual artifacts" from unnecessary bilinear on 2D
             # UI/text elements — the PSP renders a lot of native-res 2D that plain filtering smears.
             ppsspp_smart_2d_texture_filtering: "enabled"
-            # DISABLED on stock, and it MUST stay that way: the fastmem AV-rescue handler is compiled out of
-            # the stock nightly (MachineContext.h's empty __LIBRETRO__ branch) and IR JIT does not bypass
+            # ENABLED — safe ONLY on the custom lib, whose patched MachineContext installs the AV-rescue
+            # handler (3/3 fastmem arms ran clean). On the STOCK nightly this MUST be "disabled": the handler
+            # is compiled out (MachineContext.h's empty __LIBRETRO__ branch) and IR JIT does not bypass
             # fastmem, so the first stray guest access is a raw host access violation that kills the worker —
-            # which is why the core's own option text calls "enabled" Unstable. Only the custom lib installs
-            # the handler; enable this ONLY there (all three lines together — see the lib: note above).
-            ppsspp_fast_memory: "disabled"
+            # which is why the core's own option text calls "enabled" Unstable (all three lines together).
+            ppsspp_fast_memory: "enabled"
         dc:
           lib: flycast_custom_libretro
           folder: dc
