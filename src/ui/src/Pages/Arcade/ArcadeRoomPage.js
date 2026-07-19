@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
-import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox, Input, Table, Popover } from "antd";
+import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, PAD, profileFor } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, PAD, effectiveFaceSwap } from "./cloudRetroClient";
 import { DEFAULT_CHORDS } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
@@ -925,36 +925,47 @@ export default function ArcadeRoomPage() {
               optionFilterProp="label"
             />
           </div>
-          {mappingRowsFor(mapSystem || system, mappingPad, customGamepadProfile).map((row, idx) => (
-            <div key={row.physicalLabel} style={{ display: "flex", gap: 12, padding: "4px 0", fontSize: 13, alignItems: "center" }}>
-              <Text type="secondary" style={{ flex: 1 }}>{row.physicalLabel}</Text>
-              <Button
-                type={rebindingButton === idx ? "primary" : "default"}
-                style={{ minWidth: 150, textAlign: "center" }}
-                onClick={() => setRebindingButton(rebindingButton === idx ? null : idx)}
-                size="small"
-              >
-                {rebindingButton === idx ? "Click console button…" : row.consoleLabel}
-              </Button>
-            </div>
-          ))}
-          {rebindingButton !== null && (() => {
-            // Get the console button that was requested (from the system profile)
-            const targetSystem = mapSystem || system;
+          {(() => {
+            // `physicalButtonIndex` on each row is already face-swap-corrected (mappingRowsFor
+            // applies pos^1 for south/east/west/north under swap) — key off THAT, not the array
+            // index, or a swapped pad's rows point at the wrong physical button entirely.
+            const rows = mappingRowsFor(mapSystem || system, mappingPad, customGamepadProfile);
+            const targetRow = rows.find((r) => r.physicalButtonIndex === rebindingButton);
             return (
-              <GamepadRebindCapture
-                physicalButtonIndex={rebindingButton}
-                system={targetSystem}
-                onRebind={(buttonIndex, newBit) => {
-                  const newProfile = { ...customGamepadProfile };
-                  newProfile[buttonIndex] = newBit;
-                  setCustomGamepadProfileState(newProfile);
-                  setCustomGamepadProfile(newProfile, system);
-                  message.success("Button remapped!");
-                  setRebindingButton(null);
-                }}
-                onCancel={() => setRebindingButton(null)}
-              />
+              <>
+                {rows.map((row) => (
+                  <div key={row.physicalLabel} style={{ display: "flex", gap: 12, padding: "4px 0", fontSize: 13, alignItems: "center" }}>
+                    <Text type="secondary" style={{ flex: 1 }}>{row.physicalLabel}</Text>
+                    <Button
+                      type={rebindingButton === row.physicalButtonIndex ? "primary" : "default"}
+                      style={{ minWidth: 150, textAlign: "center" }}
+                      disabled={row.bitName === undefined}
+                      onClick={() => setRebindingButton(rebindingButton === row.physicalButtonIndex ? null : row.physicalButtonIndex)}
+                      size="small"
+                    >
+                      {rebindingButton === row.physicalButtonIndex ? "Click console button…" : row.consoleLabel}
+                    </Button>
+                  </div>
+                ))}
+                {targetRow && (
+                  <GamepadRebindCapture
+                    // The bit this row CURRENTLY sends (default profile + any prior custom
+                    // override + face-swap, all already resolved by mappingRowsFor) — not
+                    // re-derived from the pristine default profile, or a second rebind of the
+                    // same row would silently discard the first one.
+                    targetBit={PAD[targetRow.bitName]}
+                    onRebind={(physicalIndex, newBit) => {
+                      const newProfile = { ...customGamepadProfile };
+                      newProfile[physicalIndex] = newBit;
+                      setCustomGamepadProfileState(newProfile);
+                      setCustomGamepadProfile(newProfile, system);
+                      message.success("Button remapped!");
+                      setRebindingButton(null);
+                    }}
+                    onCancel={() => setRebindingButton(null)}
+                  />
+                )}
+              </>
             );
           })()}
           <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
@@ -1005,7 +1016,7 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function GamepadRebindCapture({ physicalButtonIndex, system, onRebind, onCancel }) {
+function GamepadRebindCapture({ targetBit, onRebind, onCancel }) {
   const [listening, setListening] = useState(true);
   const timeoutRef = useRef(null);
   const prevButtonsRef = useRef(new Set());
@@ -1020,11 +1031,12 @@ function GamepadRebindCapture({ physicalButtonIndex, system, onRebind, onCancel 
         for (let i = 0; i < gp.buttons.length; i++) {
           if (gp.buttons[i].pressed && !prevButtonsRef.current.has(i)) {
             setListening(false);
-            // Get the bit this physical button should map to
-            const profile = profileFor(system);
-            const defaultBit = profile.gamepad[physicalButtonIndex];
-            // Remap: physical button at index i should now map to defaultBit
-            onRebind(i, defaultBit);
+            // readGamepad() looks up gamepad[pi] where pi = swap ? i^1 : i (cloudRetroClient.js)
+            // — store the override under that SAME swap-adjusted key, or a rebind captured on a
+            // swapped pad's face button silently never fires at runtime.
+            const swap = effectiveFaceSwap(gp);
+            const pi = swap && i < 4 ? (i ^ 1) : i;
+            onRebind(pi, targetBit);
             return;
           }
         }
@@ -1045,7 +1057,7 @@ function GamepadRebindCapture({ physicalButtonIndex, system, onRebind, onCancel 
       clearInterval(gamepadHandler);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [listening, physicalButtonIndex, onRebind, onCancel, system]);
+  }, [listening, targetBit, onRebind, onCancel]);
 
   return (
     <div style={{
