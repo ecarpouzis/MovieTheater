@@ -178,8 +178,20 @@ const GC_ON_WII_GAME_KEYS = new Set(["Project REX", "Super Smash Bros Infinite"]
 
 // Resolves the system to use for INPUT purposes (button/stick profile, mapping-tool preview,
 // custom-remap storage) — same as `system` for every game except the two GC_ON_WII_GAME_KEYS above.
-export function effectiveInputSystem(system, gameKey) {
-  return GC_ON_WII_GAME_KEYS.has(gameKey) ? "gc" : system;
+// `controllerScheme` is the room's resolved choice ("gc"/"wiimote"/"" — from descriptor.wsUrl's
+// ctrlscheme param, which Join/ClaimSeat echo onto EVERY player's descriptor, not just the
+// creator's, because it changes what button bits every client must send). "" defaults to "gc"
+// (matches the worker's own hid4rom default when no room override was chosen); "wiimote" opts out.
+export function effectiveInputSystem(system, gameKey, controllerScheme) {
+  if (!GC_ON_WII_GAME_KEYS.has(gameKey)) return system;
+  return controllerScheme === "wiimote" ? system : "gc";
+}
+
+// Small purpose-built export (rather than exposing the generic strFromWsUrl helper below) — the
+// room's resolved Wii controller scheme, read off a descriptor the same way startGame() does.
+// ArcadeRoomPage.js needs this to feed effectiveInputSystem for its mapping/rebind panel and hint.
+export function controllerSchemeFromWsUrl(wsUrl) {
+  return strFromWsUrl(wsUrl, "ctrlscheme");
 }
 
 // ── Local multiplayer: pad ownership across sessions ─────────────────────────────────────────────
@@ -469,9 +481,10 @@ export function createCloudRetroSession(descriptor, opts) {
   const AUDIO_PC = (() => { try { return localStorage.getItem("arcade.audioPC") !== "0"; } catch { return true; } })();
 
   // Input profile for this game's system (button layout + keyboard map + optional right-stick keys).
-  // effectiveInputSystem substitutes "gc" for the two GC_ON_WII_GAME_KEYS ROMs — must match the
-  // worker's hid4rom device choice or this sends bits the core no longer reads.
-  const profile = profileFor(effectiveInputSystem(descriptor.system, descriptor.gameKey));
+  // effectiveInputSystem substitutes "gc" for the two GC_ON_WII_GAME_KEYS ROMs (unless the room
+  // picked "wiimote") — must match the worker's actual device choice or this sends bits the core
+  // no longer reads.
+  const profile = profileFor(effectiveInputSystem(descriptor.system, descriptor.gameKey, strFromWsUrl(descriptor.wsUrl, "ctrlscheme")));
   let keymap = { ...profile.keymap };
   let rstickKeys = profile.rstick ? { ...profile.rstick } : undefined; // key→right-stick direction, or undefined
   let gamepad = { ...profile.gamepad };
@@ -813,6 +826,7 @@ export function createCloudRetroSession(descriptor, opts) {
     const pace = numFromWsUrl(descriptor.wsUrl, "pace");
     const codec = strFromWsUrl(descriptor.wsUrl, "codec");
     const hwctx = strFromWsUrl(descriptor.wsUrl, "hwctx");
+    const ctrlscheme = strFromWsUrl(descriptor.wsUrl, "ctrlscheme");
     if (vbr > 0) p.video_bitrate = vbr;
     if (fec > 0) p.audio_fec = fec;
     // Per-room codec (worker patch 0036): the creator's t=104 selects which encoder.list entry this
@@ -821,6 +835,13 @@ export function createCloudRetroSession(descriptor, opts) {
     // Per-launch GL/Vulkan force (play-button dropdown). Creator-only — it only affects the room's
     // one-time CoreLoad, so unlike codec it never needs to ride a joiner's descriptor.
     if (hwctx) p.hw_context = hwctx;
+    // Per-room Wii controller-scheme override (room-create picker): GameCube vs Wiimote+Nunchuk for
+    // the GC-controller-native BrawlEx mods. Only the CREATOR's t=104 boots the core (joiners never
+    // send GAME_START at all), so only its packet needs this — but unlike hw_context, the room's
+    // chosen scheme also rides EVERY descriptor's wsUrl (creator AND joiners, server-side Join/
+    // ClaimSeat echo it like codec), because it changes what button bits every client must send, not
+    // just how the creator's one-time CoreLoad renders. See effectiveInputSystem's ctrlSchemeFromWsUrl use.
+    if (ctrlscheme) p.controller_scheme = ctrlscheme;
     // In-frame packet pacing window ms (worker patch 0028) — the lobby Network profile's opt-in
     // smoother for Remote/5G rooms. Absent/0 = LAN default, wire-speed bursts.
     if (pace > 0) p.pace = pace;

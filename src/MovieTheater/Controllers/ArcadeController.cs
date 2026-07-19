@@ -254,6 +254,9 @@ namespace MovieTheater.Controllers
                     // Per-launch GL/Vulkan force (play-button dropdown): only 3D systems with a real
                     // render-context choice offer it; see CloudRetroHost.HwToggleSystems.
                     supportsHwToggle = CloudRetroHost.SupportsHwToggle(k.System),
+                    // Wii controller-scheme picker (GameCube vs Wiimote+Nunchuk): only the two
+                    // GC-controller-native BrawlEx mods offer it; see CloudRetroHost.GcOnWiiGameTitles.
+                    supportsControllerScheme = CloudRetroHost.SupportsControllerScheme(k.Title),
                     versions = versions.Select(v => new
                     {
                         id = v.Id, label = v.Label, region = v.Region,
@@ -474,6 +477,12 @@ namespace MovieTheater.Controllers
             /// it wins even over an admin's DB pin. Only meaningful for <see cref="CloudRetroHost.HwToggleSystems"/>;
             /// ignored for every other system and for capture rooms.</summary>
             public string? HwContext { get; set; }
+
+            /// <summary>Wii controller-scheme choice from the room-create picker: "gc" (default,
+            /// matches the worker's hid4rom static config) or "wiimote" to opt a GC-controller-native
+            /// BrawlEx mod back into Wiimote+Nunchuk. null/empty = defer to the worker's default.
+            /// Only meaningful for <see cref="CloudRetroHost.GcOnWiiGameTitles"/>; ignored otherwise.</summary>
+            public string? ControllerScheme { get; set; }
         }
 
         /// <summary>Cheats available for ONE version (ROM) of a game — the card's version dropdown decides
@@ -591,9 +600,17 @@ namespace MovieTheater.Controllers
                 _ => "",
             };
 
+            // Per-room Wii controller-scheme (room-create picker): computed here, before CreateRoom,
+            // because — unlike hwctx/bitrate — it changes what button bits EVERY player's client must
+            // send, not just the creator's one-time CoreLoad, so it has to live in room state for
+            // Join/ClaimSeat to hand to joiners too (mirrors codec's own reason for the same thing).
+            var ctrlScheme = CloudRetroHost.SupportsControllerScheme(game.Title)
+                ? request.ControllerScheme?.Trim().ToLowerInvariant() switch { "wiimote" => "wiimote", "gc" => "gc", _ => "" }
+                : "";
+
             // Register live state with the creator in seat 0. The CloudRetro room isn't created yet — the
             // creator's browser does that (empty room_id) and then calls Bind (§8 steps 2–3).
-            rooms.CreateRoom(roomCode, game.Id, game.MaxPlayers, userId.Value, codec);
+            rooms.CreateRoom(roomCode, game.Id, game.MaxPlayers, userId.Value, codec, ctrlScheme);
 
             string launchKey;
             int discCount;
@@ -671,6 +688,11 @@ namespace MovieTheater.Controllers
                 : "";
             if (hwctx != "" && !isCapture)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&hwctx=" + hwctx };
+
+            // Per-room Wii controller-scheme override (computed above, before CreateRoom, since it also
+            // needs to land in room state for joiners): ride the creator's own descriptor too.
+            if (ctrlScheme != "" && !isCapture)
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&ctrlscheme=" + ctrlScheme };
 
             // Per-room cheats (arcade cheats feature). Resolve the ids the creator ticked against what this
             // exact ROM actually offers — never trust the client's idea of what a cheat is, because a code is
@@ -1218,6 +1240,12 @@ namespace MovieTheater.Controllers
             if (roomCodec != "")
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&codec=" + roomCodec };
 
+            // The room's Wii controller scheme: like codec (and unlike hwctx/bitrate) this changes what
+            // button bits the joiner's OWN client must send, so every joiner echoes the creator's choice.
+            var joinCtrlScheme = rooms.RoomControllerScheme(code);
+            if (joinCtrlScheme != "")
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&ctrlscheme=" + joinCtrlScheme };
+
             return Json(ToJson(descriptor, discCount));
         }
 
@@ -1272,6 +1300,11 @@ namespace MovieTheater.Controllers
             var claimCodec = rooms.RoomVideoCodec(code);
             if (claimCodec != "")
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&codec=" + claimCodec };
+
+            // An input-only extra seat still sends button bits — it needs the room's controller scheme too.
+            var claimCtrlScheme = rooms.RoomControllerScheme(code);
+            if (claimCtrlScheme != "")
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&ctrlscheme=" + claimCtrlScheme };
 
             return Json(ToJson(descriptor, discCount));
         }

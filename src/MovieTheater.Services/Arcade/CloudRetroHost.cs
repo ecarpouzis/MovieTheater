@@ -61,6 +61,27 @@ namespace MovieTheater.Services.Arcade
         public static bool SupportsHwToggle(string? system) =>
             !string.IsNullOrEmpty(system) && HwToggleSystems.Contains(system);
 
+        /// <summary>The GC-controller-native Wii SD-loader BrawlEx mods (like real Super Smash Bros
+        /// Brawl, these are traditionally played with a GameCube controller, not Wiimote+Nunchuk) —
+        /// keyed by title, since each currently has exactly one version/ROM. Must be kept in sync
+        /// with docker/arcade/config.worker-gl.yaml's <c>hid4rom</c> entries AND
+        /// cloudRetroClient.js's <c>GC_ON_WII_GAME_KEYS</c> (the client's input-profile mirror of
+        /// the same list) — a title added to one but not the others either offers a scheme picker
+        /// that does nothing, or applies a scheme the client never sends the right button bits for.
+        /// </summary>
+        public static readonly IReadOnlySet<string> GcOnWiiGameTitles =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Project REX", "Super Smash Bros Infinite",
+            };
+
+        /// <summary>True when a game supports a per-room Wii controller-scheme override (GameCube
+        /// vs Wiimote+Nunchuk) — lets a room creator opt a GC-native BrawlEx mod back into
+        /// Wiimote+Nunchuk for players with real Wii Remotes/Nunchuks instead of a GameCube
+        /// controller/adapter.</summary>
+        public static bool SupportsControllerScheme(string? title) =>
+            !string.IsNullOrEmpty(title) && GcOnWiiGameTitles.Contains(title);
+
         public ArcadeJoinDescriptor BuildJoinDescriptor(
             int userId, ArcadeGameDescriptor game, string roomCode, string cloudRetroRoomId, int playerSlot, bool isCreator)
         {

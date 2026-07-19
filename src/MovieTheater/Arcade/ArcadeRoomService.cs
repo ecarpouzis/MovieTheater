@@ -54,6 +54,11 @@ namespace MovieTheater.Arcade
             /// lost ("" = default), so a post-restart JOINER of a codec-overridden room would get a
             /// mismatched track (video broken for them only) — accepted rare-edge for v1.</summary>
             public string VideoCodec = "";
+            /// <summary>Per-room Wii controller-scheme the creator chose ("gc"/"wiimote"; "" = worker
+            /// default). Unlike hwctx/bitrate this changes what BUTTON BITS every player's client must
+            /// send, not just how the creator's one-time CoreLoad renders — so, like VideoCodec, every
+            /// join descriptor must carry it too, or a joiner sends the wrong scheme's input.</summary>
+            public string ControllerScheme = "";
             public readonly Dictionary<int, int> Seats = new();         // slot -> userId (players only)
             public readonly HashSet<int> Spectators = new();            // userIds watching, no controller
             public readonly Dictionary<int, DateTime> Viewers = new();  // userId -> last seen (players AND spectators)
@@ -82,7 +87,7 @@ namespace MovieTheater.Arcade
         /// the reaper gives them the full TTL to connect and start heartbeating before the room could be
         /// swept as empty. The room starts unbound.
         /// </summary>
-        public void CreateRoom(string roomCode, int gameId, int maxPlayers, int creatorUserId, string videoCodec = "")
+        public void CreateRoom(string roomCode, int gameId, int maxPlayers, int creatorUserId, string videoCodec = "", string controllerScheme = "")
         {
             lock (gate)
             {
@@ -94,6 +99,7 @@ namespace MovieTheater.Arcade
                     CreatorUserId = creatorUserId,
                     CreatedUtc = now,
                     VideoCodec = videoCodec ?? "",
+                    ControllerScheme = controllerScheme ?? "",
                 };
                 state.Seats[0] = creatorUserId;
                 state.Viewers[creatorUserId] = now;
@@ -132,6 +138,17 @@ namespace MovieTheater.Arcade
             lock (gate)
             {
                 return rooms.TryGetValue(roomCode, out var state) ? state.VideoCodec : "";
+            }
+        }
+
+        /// <summary>The room's per-room Wii controller-scheme ("" = worker default / room unknown).
+        /// Joiners' descriptors must carry it too — it changes what button bits every player's client
+        /// sends, not just the creator's one-time CoreLoad.</summary>
+        public string RoomControllerScheme(string roomCode)
+        {
+            lock (gate)
+            {
+                return rooms.TryGetValue(roomCode, out var state) ? state.ControllerScheme : "";
             }
         }
 

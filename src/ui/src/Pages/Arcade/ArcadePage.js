@@ -261,9 +261,11 @@ export default function ArcadePage() {
     sectionRef.current?.scrollIntoView({ block: "start" });
   }, [loadPage]);
 
-  // `cheats` are the ids the creator ticked on the card (arcade cheats feature). They ride every path out
-  // of this modal — Continue, New game, and a snapshot resume all launch the same room.
-  function createRoom(versionId, title, cheats = [], hwContext = "") {
+  // `cheats` are the ids the creator ticked on the card (arcade cheats feature). `controllerScheme`
+  // is the GameCube-vs-Wiimote+Nunchuk picker (only shown for the two GC-native BrawlEx mods). Both
+  // ride every path out of this modal — Continue, New game, and a snapshot resume all launch the
+  // same room.
+  function createRoom(versionId, title, cheats = [], hwContext = "", controllerScheme = "") {
     if (creating || !versionId) return;
     setCreating(versionId);
     // Durable saves (arcade-saves-plan): if this user has a save/snapshots for the game, offer Continue,
@@ -271,15 +273,15 @@ export default function ArcadePage() {
     MovieAPI.listArcadeSaves(versionId)
       .then((saves) => {
         const rows = Array.isArray(saves) ? saves : [];
-        if (rows.length === 0) return doCreateRoom(versionId, { cheats, hwContext });
+        if (rows.length === 0) return doCreateRoom(versionId, { cheats, hwContext, controllerScheme });
         const snaps = rows.filter((s) => s.slotId >= 1 && s.kind === "state")
           .sort((a, b) => a.slotId - b.slotId);
         const modal = Modal.confirm({
           title: "Resume your saved game?",
           okText: "Continue (latest)",
           cancelText: "New game",
-          onOk: () => doCreateRoom(versionId, { cheats, hwContext }),
-          onCancel: () => doCreateRoom(versionId, { newGame: true, cheats, hwContext }),
+          onOk: () => doCreateRoom(versionId, { cheats, hwContext, controllerScheme }),
+          onCancel: () => doCreateRoom(versionId, { newGame: true, cheats, hwContext, controllerScheme }),
           content: (
             <div>
               <div style={{ marginBottom: snaps.length ? 8 : 0 }}>
@@ -293,7 +295,7 @@ export default function ArcadePage() {
                   <div style={{ marginTop: 4, maxHeight: 180, overflowY: "auto" }}>
                     {snaps.map((s) => (
                       <div key={s.slotId} style={{ padding: "2px 0" }}>
-                        <a onClick={() => { modal.destroy(); doCreateRoom(versionId, { seedSlot: s.slotId, cheats, hwContext }); }}>
+                        <a onClick={() => { modal.destroy(); doCreateRoom(versionId, { seedSlot: s.slotId, cheats, hwContext, controllerScheme }); }}>
                           ▶ {s.label || `Snapshot ${s.slotId}`}
                         </a>
                         <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>
@@ -313,7 +315,7 @@ export default function ArcadePage() {
           ),
         });
       })
-      .catch(() => doCreateRoom(versionId, { cheats, hwContext }));
+      .catch(() => doCreateRoom(versionId, { cheats, hwContext, controllerScheme }));
   }
 
   function doCreateRoom(versionId, opts) {

@@ -65,8 +65,12 @@ function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
   // systems that have the choice at all (game.supportsHwToggle, from CloudRetroHost.HwToggleSystems);
   // everything else launches with no override, same as before this feature existed.
   const defaultHwContext = !heavy && game.supportsHwToggle ? "vulkan" : "";
+  // Wii controller-scheme picker (GameCube vs Wiimote+Nunchuk): only the two GC-controller-native
+  // BrawlEx mods offer it (game.supportsControllerScheme, from CloudRetroHost.GcOnWiiGameTitles).
+  // Defaults to "gc" — matches the worker's own hid4rom default when no room override is sent.
+  const [ctrlScheme, setCtrlScheme] = useState("gc");
   const start = (hwContext = defaultHwContext) =>
-    (heavy ? onHeavy?.(game) : onStart(sel, game.title, cheats, hwContext));
+    (heavy ? onHeavy?.(game) : onStart(sel, game.title, cheats, hwContext, game.supportsControllerScheme ? ctrlScheme : ""));
 
   // Is one of this card's popups (version, cheats) open? Both render INSIDE their chip, so they're
   // part of the card's box — and the card is a stacking context of its own (position: relative for the
@@ -106,10 +110,10 @@ function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
         <div className="arcade-card__summary">{game.summary}</div>
 
         <div className="arcade-card__footer">
-          {/* Row 1 — what you're about to launch. Both are dropdowns and both are optional, so the row
-              collapses to nothing on a single-version game with no cheats. Heavy titles have neither
-              (cheats and versions are room-lane concepts). */}
-          {!heavy && (multiVersion || version?.cheatCount > 0) && (
+          {/* Row 1 — what you're about to launch. All are dropdowns and all are optional, so the row
+              collapses to nothing on a single-version game with no cheats and no controller-scheme
+              choice. Heavy titles have none of these (cheats/versions/scheme are room-lane concepts). */}
+          {!heavy && (multiVersion || version?.cheatCount > 0 || game.supportsControllerScheme) && (
             <div className="arcade-card__controls">
               {multiVersion && (
                 <span className="arcade-chip arcade-chip--select" onClick={stop} title={version?.label}>
@@ -123,6 +127,24 @@ function GameCard({ game, onStart, onManageSaves, onHeavy, creating }) {
                     popupClassName="arcade-version-dropdown"
                     dropdownMatchSelectWidth={false}
                     options={game.versions.map((v) => ({ value: v.id, label: v.label }))}
+                  />
+                </span>
+              )}
+              {game.supportsControllerScheme && (
+                <span className="arcade-chip arcade-chip--select" onClick={stop} title="Controller scheme for this Wii title">
+                  <Select
+                    size="small"
+                    bordered={false}
+                    value={ctrlScheme}
+                    onChange={setCtrlScheme}
+                    onDropdownVisibleChange={setMenuOpen}
+                    getPopupContainer={(t) => t.parentElement}
+                    popupClassName="arcade-version-dropdown"
+                    dropdownMatchSelectWidth={false}
+                    options={[
+                      { value: "gc", label: "GameCube controller" },
+                      { value: "wiimote", label: "Wiimote + Nunchuk" },
+                    ]}
                   />
                 </span>
               )}
