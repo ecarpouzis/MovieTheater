@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
-import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
+import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox, Input, Table, Popover } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, PAD, profileFor } from "./cloudRetroClient";
 import { DEFAULT_CHORDS } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
@@ -102,7 +102,17 @@ export default function ArcadeRoomPage() {
   // one from the dropdown to preview it.
   const [mapSystem, setMapSystem] = useState(null);
   const [ignoreStreamed, setIgnoreStreamedState] = useState(getIgnoreStreamedPads());
+  // Gamepad button rebinding: track which button is being remapped (null = not rebinding, or a button index 0-15)
+  const [rebindingButton, setRebindingButton] = useState(null);
+  const [customGamepadProfile, setCustomGamepadProfileState] = useState({});
   const [fatal, setFatal] = useState(null);
+
+  // Load custom gamepad profile when system changes
+  useEffect(() => {
+    if (system) {
+      setCustomGamepadProfileState(getCustomGamepadProfile(system));
+    }
+  }, [system]);
   // Crash-loop detector. A worker that segfaults at core load (a bad ROM — Stuntman Ignition,
   // 2026-07-16) boots the room, dies in under a second, and the shim/refocus recovery just retries
   // forever: the player stares at a black video with no explanation. Deaths that happen this early
@@ -204,6 +214,7 @@ export default function ArcadeRoomPage() {
       descriptorRef.current = descriptor;
       sessionRef.current = createCloudRetroSession(descriptor, {
         videoEl: videoRef.current,
+        customGamepadProfile: customGamepadProfile,
         onStatus: (s) => {
           if (cancelled) return;
           setStatus(s);
@@ -223,7 +234,12 @@ export default function ArcadeRoomPage() {
             }
           }
         },
-        onSeat: (idx) => { if (!cancelled) setYourSlot(idx); },
+        onSeat: (idx) => {
+          if (!cancelled) setYourSlot(idx);
+          // Resync input state when seat assignment changes — the core may have rebound controller ports,
+          // so force current input to resend. Fixes "Wii controls stop after player select" issue.
+          sessionRef.current?.resyncInput?.();
+        },
         onAspect: ({ aspect, rot, flip }) => {
           if (cancelled) return;
           if (aspect != null) setCoreAspect(aspect);
@@ -844,7 +860,7 @@ export default function ArcadeRoomPage() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
           <Text style={{ flex: 1 }}>⌨️ Keyboard &amp; mouse</Text>
-          <Text type="secondary">P{(yourSlot ?? 0) + 1} — you (rebinding coming later)</Text>
+          <Text type="secondary">P{(yourSlot ?? 0) + 1} — you</Text>
         </div>
         {padList.map((p) => (
           <div key={p.index} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
@@ -895,10 +911,10 @@ export default function ArcadeRoomPage() {
         </div>
 
         {/* Button-mapping visualizer: pick any system to see how the detected/primary controller's
-            physical buttons land on that console's native names. */}
+            physical buttons land on that console's native names. Click to rebind. */}
         <div style={{ borderTop: "1px solid rgba(128,128,128,0.25)", marginTop: 12, paddingTop: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-            <Text style={{ flex: 1 }}>Button mapping</Text>
+            <Text style={{ flex: 1 }}>Button mapping & rebinding</Text>
             <Select
               style={{ width: 190 }}
               value={mapSystem || system || undefined}
@@ -909,12 +925,47 @@ export default function ArcadeRoomPage() {
               optionFilterProp="label"
             />
           </div>
-          {mappingRowsFor(mapSystem || system, mappingPad).map((row) => (
-            <div key={row.physicalLabel} style={{ display: "flex", gap: 12, padding: "2px 0", fontSize: 13 }}>
+          {mappingRowsFor(mapSystem || system, mappingPad, customGamepadProfile).map((row, idx) => (
+            <div key={row.physicalLabel} style={{ display: "flex", gap: 12, padding: "4px 0", fontSize: 13, alignItems: "center" }}>
               <Text type="secondary" style={{ flex: 1 }}>{row.physicalLabel}</Text>
-              <Text style={{ flex: 1 }}>{row.consoleLabel}</Text>
+              <Button
+                type={rebindingButton === idx ? "primary" : "default"}
+                style={{ minWidth: 150, textAlign: "center" }}
+                onClick={() => setRebindingButton(rebindingButton === idx ? null : idx)}
+                size="small"
+              >
+                {rebindingButton === idx ? "Click console button…" : row.consoleLabel}
+              </Button>
             </div>
           ))}
+          {rebindingButton !== null && (() => {
+            // Get the console button that was requested (from the system profile)
+            const targetSystem = mapSystem || system;
+            return (
+              <GamepadRebindCapture
+                physicalButtonIndex={rebindingButton}
+                system={targetSystem}
+                onRebind={(buttonIndex, newBit) => {
+                  const newProfile = { ...customGamepadProfile };
+                  newProfile[buttonIndex] = newBit;
+                  setCustomGamepadProfileState(newProfile);
+                  setCustomGamepadProfile(newProfile, system);
+                  message.success("Button remapped!");
+                  setRebindingButton(null);
+                }}
+                onCancel={() => setRebindingButton(null)}
+              />
+            );
+          })()}
+          <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+            <Button size="small" onClick={() => {
+              resetCustomGamepadProfile(system);
+              setCustomGamepadProfileState({});
+              message.info("Reset to default button mapping");
+            }}>
+              Reset button mapping
+            </Button>
+          </div>
           <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
             {arcadeInputHint(mapSystem || system)}
           </Text>
@@ -952,4 +1003,64 @@ export default function ArcadeRoomPage() {
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function GamepadRebindCapture({ physicalButtonIndex, system, onRebind, onCancel }) {
+  const [listening, setListening] = useState(true);
+  const timeoutRef = useRef(null);
+  const prevButtonsRef = useRef(new Set());
+
+  useEffect(() => {
+    if (!listening) return;
+
+    const gamepadHandler = setInterval(() => {
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      for (const gp of gamepads) {
+        if (!gp) continue;
+        for (let i = 0; i < gp.buttons.length; i++) {
+          if (gp.buttons[i].pressed && !prevButtonsRef.current.has(i)) {
+            setListening(false);
+            // Get the bit this physical button should map to
+            const profile = profileFor(system);
+            const defaultBit = profile.gamepad[physicalButtonIndex];
+            // Remap: physical button at index i should now map to defaultBit
+            onRebind(i, defaultBit);
+            return;
+          }
+        }
+        // Update which buttons are currently pressed
+        prevButtonsRef.current = new Set(
+          gp.buttons.map((b, i) => b.pressed ? i : null).filter(i => i !== null)
+        );
+      }
+    }, 50);
+
+    timeoutRef.current = setTimeout(() => {
+      setListening(false);
+      onCancel();
+      message.warning("No button press detected — try again");
+    }, 5000);
+
+    return () => {
+      clearInterval(gamepadHandler);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [listening, physicalButtonIndex, onRebind, onCancel, system]);
+
+  return (
+    <div style={{
+      backgroundColor: "rgba(0,0,0,0.05)",
+      padding: 12,
+      borderRadius: 4,
+      marginTop: 8,
+      marginBottom: 8,
+      border: "2px solid #1890ff"
+    }}>
+      <Text strong style={{ display: "block", marginBottom: 8 }}>Press the button on your controller...</Text>
+      <Text type="secondary" style={{ fontSize: 12 }}>Waiting for input (timeout in 5s)</Text>
+      <div style={{ marginTop: 8 }}>
+        <Button onClick={onCancel} size="small">Cancel</Button>
+      </div>
+    </div>
+  );
 }

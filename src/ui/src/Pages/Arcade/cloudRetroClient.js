@@ -146,12 +146,11 @@ const PROFILES = {
   // dolphin_libretro binds this straight to RetroPad letters (Wiimote A ← RetroPad B, Wiimote B ← A,
   // Nunchuk C ← X, Nunchuk Z ← Y, Wiimote -/+ ← L/R) — the DEFAULT face-button map already lines up
   // (south=primary, same as every other system here), so no override needed there, unlike n64/gc.
-  // The two things that DO need adding: the IR pointer rides the RIGHT STICK (dolphin_ir_mode, core
-  // side — we just need to feed it real stick values, keyboard included) and swing gestures/Nunchuk
-  // shake sit behind L2 (dolphin_swing_modifier: "L2" in config; Nunchuk shake is unconditionally on L2
-  // per the core's own hardcoded binding). UNVERIFIED live yet — this is the "ingest now, curate later"
-  // system; confirm face-button feel and IR responsiveness with the test-roms skill on a menu-heavy
-  // title before trusting it for anything twitchier.
+  // LEFT STICK is the Nunchuk analog (primary movement input for most games); RIGHT STICK is the Wiimote
+  // IR pointer (dolphin_ir_mode, core side). Swing gestures / Nunchuk shake sit behind L2
+  // (dolphin_swing_modifier: "L2"; Nunchuk shake unconditionally on L2 per core's hardcoded binding).
+  // Issue: after player assignment (t=108), input can stop if core/port state diverges. If affected,
+  // try test-roms skill to verify frame-by-frame input or check config.worker-gl.yaml port binding.
   wii: {
     gamepad: DEFAULT_GAMEPAD,
     keymap: {
@@ -159,8 +158,9 @@ const PROFILES = {
       KeyE: PAD.L2, // hold = swing / Nunchuk shake
     },
     // Keyboard drive for the right analog stick = Wiimote IR pointer (dolphin_ir_mode reads it).
+    // LEFT STICK (axes 0/1) is Nunchuk analog — already handled by readGamepad's axis mapping.
     rstick: { up: "KeyI", down: "KeyK", left: "KeyJ", right: "KeyL" },
-    hint: "Gamepad recommended (right stick = Wiimote pointer; hold L2 to swing). Keyboard: arrows = move, Z = A (confirm), X = B, A = Nunchuk Z, S = Nunchuk C, I J K L = pointer, E = swing/shake, Enter = 1, Shift = 2.",
+    hint: "Gamepad recommended (left stick = Nunchuk movement; right stick = Wiimote pointer; hold L2 to swing). Keyboard: arrows = move, Z = A (confirm), X = B, A = Nunchuk Z, S = Nunchuk C, I J K L = pointer, E = swing/shake, Enter = 1, Shift = 2.",
   },
 };
 
@@ -213,6 +213,36 @@ export function setIgnoreStreamedPads(on) {
 // panel's {index,id} row.
 export function isStreamedPad(gp) {
   return ignoreStreamedPads && !!gp && /xinput/i.test(gp.id || "");
+}
+
+// ── Gamepad button rebinding ────────────────────────────────────────────────────────────────
+// Custom gamepad profiles override the system defaults. Maps physical button index -> RetroPad bit.
+// Stored per-system in localStorage.
+let customGamepadProfiles = (() => {
+  try {
+    const stored = localStorage.getItem("arcade.customGamepadProfiles");
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+})();
+
+export function getCustomGamepadProfile(system = "default") {
+  return customGamepadProfiles[system] || {};
+}
+
+export function setCustomGamepadProfile(profile, system = "default") {
+  customGamepadProfiles[system] = profile;
+  try {
+    localStorage.setItem("arcade.customGamepadProfiles", JSON.stringify(customGamepadProfiles));
+  } catch { /* storage disabled */ }
+}
+
+export function resetCustomGamepadProfile(system = "default") {
+  delete customGamepadProfiles[system];
+  try {
+    localStorage.setItem("arcade.customGamepadProfiles", JSON.stringify(customGamepadProfiles));
+  } catch { /* storage disabled */ }
 }
 
 /**
@@ -319,7 +349,7 @@ export function videoTransform(rot, flip) {
 }
 
 export function createCloudRetroSession(descriptor, opts) {
-  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect, onChordAction } = opts || {};
+  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect, onChordAction, customGamepadProfile: customGamepadProfileOverride } = opts || {};
   const status = (s) => onStatus && onStatus(s);
   // Watch-only seat. Trust the explicit flag, but fall back to the slot itself so an older descriptor
   // (or a hand-built one in a test) can't accidentally hand a watcher a controller.
@@ -426,9 +456,20 @@ export function createCloudRetroSession(descriptor, opts) {
 
   // Input profile for this game's system (button layout + keyboard map + optional right-stick keys).
   const profile = profileFor(descriptor.system);
-  const keymap = profile.keymap;
-  const gamepad = profile.gamepad;
-  const rstickKeys = profile.rstick; // key→right-stick direction, or undefined
+  let keymap = { ...profile.keymap };
+  let rstickKeys = profile.rstick ? { ...profile.rstick } : undefined; // key→right-stick direction, or undefined
+  let gamepad = { ...profile.gamepad };
+
+  // Apply custom gamepad button rebindings if provided
+  // customGamepadProfileOverride maps: physicalButtonIndex -> RetroPadBit (user rebindings)
+  if (customGamepadProfileOverride && Object.keys(customGamepadProfileOverride).length > 0) {
+    for (const [buttonIndexStr, newBit] of Object.entries(customGamepadProfileOverride)) {
+      const buttonIndex = parseInt(buttonIndexStr, 10);
+      if (Number.isFinite(buttonIndex)) {
+        gamepad[buttonIndex] = newBit;
+      }
+    }
+  }
 
   // Live input state.
   const keyMask = { value: 0 };
@@ -923,6 +964,12 @@ export function createCloudRetroSession(descriptor, opts) {
       if (pinnedPad >= 0) claimedPadIndexes.add(pinnedPad);
       // Null the dedupe so the next pump resends true state — the old pad's held buttons release
       // on the worker instead of riding this seat forever.
+      last = null;
+    },
+    // Resync input after player assignment changes (t=108). When a new seat index is assigned,
+    // the core may remap its port bindings — force current input state to resend to the new port.
+    // Fixes "Wii controls stop after player select" and similar port-rebinding issues.
+    resyncInput: () => {
       last = null;
     },
     save: asPlayer(() => send(T.GAME_SAVE, {})),

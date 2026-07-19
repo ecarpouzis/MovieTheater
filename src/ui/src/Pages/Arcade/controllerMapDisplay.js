@@ -81,16 +81,21 @@ export const SYSTEM_BUTTON_LABELS = {
  * detected family, or the manual override) so the displayed physical->console mapping matches
  * what will actually happen when that pad is used. `gp` may be null/undefined (no pad connected
  * yet) — face buttons then show the unswapped (Nintendo/PlayStation) default.
+ * `customProfile` optionally overrides button mappings (maps button index -> RetroPad bit).
  */
-export function mappingRowsFor(system, gp) {
+export function mappingRowsFor(system, gp, customProfile = {}) {
   const profile = profileFor(system);
   const labels = SYSTEM_BUTTON_LABELS[(system || "").toLowerCase()] || {};
   const swap = gp ? effectiveFaceSwap(gp) : false;
   return PHYSICAL_LAYOUT.map(({ pos, physicalLabel }) => {
     const effectivePos = swap && pos < 4 ? pos ^ 1 : pos;
-    const bit = profile.gamepad[effectivePos];
+    let bit = profile.gamepad[effectivePos];
+    // Apply custom gamepad profile if it remaps this button
+    if (customProfile && customProfile[effectivePos] !== undefined) {
+      bit = customProfile[effectivePos];
+    }
     const bitName = bit !== undefined ? bitNames()[bit] : undefined;
     const consoleLabel = bitName ? (labels[bitName] || GENERIC_BIT_LABEL[bitName] || bitName) : "—";
-    return { physicalLabel, bitName, consoleLabel };
+    return { physicalLabel, bitName, consoleLabel, physicalButtonIndex: effectivePos };
   });
 }
