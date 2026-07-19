@@ -168,6 +168,20 @@ export function profileFor(system) {
   return PROFILES[(system || "").toLowerCase()] || PROFILES.default;
 }
 
+// Two Wii SD-loader BrawlEx mods are configured worker-side (config.worker-gl.yaml `hid4rom`) to
+// boot as RETRO_DEVICE_GC_ON_WII — real GameCube controllers, like real Brawl — instead of the
+// Wiimote+Nunchuk every other Wii title uses. The client must mirror that with the "gc" RetroPad
+// profile (button + analog-stick semantics) for exactly these two ROM keys, or it keeps sending
+// Wiimote+Nunchuk bits a GC-mode port no longer reads. Keyed by CloudRetroGameKey, not title, to
+// match the worker's own hid4rom lookup (romName = ROM filename sans extension).
+const GC_ON_WII_GAME_KEYS = new Set(["Project REX", "Super Smash Bros Infinite"]);
+
+// Resolves the system to use for INPUT purposes (button/stick profile, mapping-tool preview,
+// custom-remap storage) — same as `system` for every game except the two GC_ON_WII_GAME_KEYS above.
+export function effectiveInputSystem(system, gameKey) {
+  return GC_ON_WII_GAME_KEYS.has(gameKey) ? "gc" : system;
+}
+
 // ── Local multiplayer: pad ownership across sessions ─────────────────────────────────────────────
 // One browser can hold SEVERAL CloudRetro connections (the primary + one input-only session per extra
 // local controller — the wire protocol routes input by connection, so an extra pad needs an extra
@@ -455,7 +469,9 @@ export function createCloudRetroSession(descriptor, opts) {
   const AUDIO_PC = (() => { try { return localStorage.getItem("arcade.audioPC") !== "0"; } catch { return true; } })();
 
   // Input profile for this game's system (button layout + keyboard map + optional right-stick keys).
-  const profile = profileFor(descriptor.system);
+  // effectiveInputSystem substitutes "gc" for the two GC_ON_WII_GAME_KEYS ROMs — must match the
+  // worker's hid4rom device choice or this sends bits the core no longer reads.
+  const profile = profileFor(effectiveInputSystem(descriptor.system, descriptor.gameKey));
   let keymap = { ...profile.keymap };
   let rstickKeys = profile.rstick ? { ...profile.rstick } : undefined; // key→right-stick direction, or undefined
   let gamepad = { ...profile.gamepad };

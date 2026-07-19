@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, PAD, effectiveFaceSwap } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, PAD, effectiveFaceSwap, effectiveInputSystem } from "./cloudRetroClient";
 import { DEFAULT_CHORDS } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
@@ -78,6 +78,7 @@ export default function ArcadeRoomPage() {
   // A watch-only seat: no controller port (slot -1), so no player-only controls and no "You are P0".
   const spectator = yourSlot != null && yourSlot < 0;
   const [system, setSystem] = useState(location.state?.descriptor?.system ?? null);
+  const [gameKey, setGameKey] = useState(location.state?.descriptor?.gameKey ?? null);
   const [players, setPlayers] = useState([]);
   const [spectators, setSpectators] = useState([]);
   const [maxPlayers, setMaxPlayers] = useState(0);
@@ -107,12 +108,15 @@ export default function ArcadeRoomPage() {
   const [customGamepadProfile, setCustomGamepadProfileState] = useState({});
   const [fatal, setFatal] = useState(null);
 
-  // Load custom gamepad profile when system changes
+  // Load custom gamepad profile when system changes. Keyed off the EFFECTIVE input system (the two
+  // GC_ON_WII_GAME_KEYS ROMs use "gc", not "wii") so a rebind made in one of those rooms is stored
+  // under, and reused from, the same key a real GameCube room would use — same underlying device.
   useEffect(() => {
-    if (system) {
-      setCustomGamepadProfileState(getCustomGamepadProfile(system));
+    const effSystem = effectiveInputSystem(system, gameKey);
+    if (effSystem) {
+      setCustomGamepadProfileState(getCustomGamepadProfile(effSystem));
     }
-  }, [system]);
+  }, [system, gameKey]);
   // Crash-loop detector. A worker that segfaults at core load (a bad ROM — Stuntman Ignition,
   // 2026-07-16) boots the room, dies in under a second, and the shim/refocus recovery just retries
   // forever: the player stares at a black video with no explanation. Deaths that happen this early
@@ -197,6 +201,7 @@ export default function ArcadeRoomPage() {
       if (cancelled) return;
       setYourSlot(descriptor.playerSlot);
       setSystem(descriptor.system ?? null);
+      setGameKey(descriptor.gameKey ?? null);
       setDiscCount(descriptor.discCount || 0);
 
       // A JIT game's first play may have to inflate a compressed disc image (a PSP .cso, a GameCube
@@ -847,7 +852,7 @@ export default function ArcadeRoomPage() {
       </div>
 
       <Text type="secondary" style={{ display: "block", marginTop: 16, fontSize: 12 }}>
-        {spectator ? "You're watching this room — the controls belong to the players." : arcadeInputHint(system)}
+        {spectator ? "You're watching this room — the controls belong to the players." : arcadeInputHint(effectiveInputSystem(system, gameKey))}
       </Text>
 
       {/* Controllers panel: this machine's inputs → the seats this machine holds. Remote players see
@@ -917,7 +922,7 @@ export default function ArcadeRoomPage() {
             <Text style={{ flex: 1 }}>Button mapping & rebinding</Text>
             <Select
               style={{ width: 190 }}
-              value={mapSystem || system || undefined}
+              value={mapSystem || effectiveInputSystem(system, gameKey) || undefined}
               placeholder="Choose a system…"
               onChange={(v) => setMapSystem(v)}
               options={MAPPABLE_SYSTEM_OPTIONS}
@@ -929,7 +934,9 @@ export default function ArcadeRoomPage() {
             // `physicalButtonIndex` on each row is already face-swap-corrected (mappingRowsFor
             // applies pos^1 for south/east/west/north under swap) — key off THAT, not the array
             // index, or a swapped pad's rows point at the wrong physical button entirely.
-            const rows = mappingRowsFor(mapSystem || system, mappingPad, customGamepadProfile);
+            // mapSystem is an explicit manual preview choice and wins outright; otherwise default to
+            // this ROM's effective input system ("gc" for the two GC_ON_WII_GAME_KEYS Wii titles).
+            const rows = mappingRowsFor(mapSystem || effectiveInputSystem(system, gameKey), mappingPad, customGamepadProfile);
             const targetRow = rows.find((r) => r.physicalButtonIndex === rebindingButton);
             return (
               <>
@@ -958,7 +965,7 @@ export default function ArcadeRoomPage() {
                       const newProfile = { ...customGamepadProfile };
                       newProfile[physicalIndex] = newBit;
                       setCustomGamepadProfileState(newProfile);
-                      setCustomGamepadProfile(newProfile, system);
+                      setCustomGamepadProfile(newProfile, effectiveInputSystem(system, gameKey));
                       message.success("Button remapped!");
                       setRebindingButton(null);
                     }}
@@ -970,7 +977,7 @@ export default function ArcadeRoomPage() {
           })()}
           <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
             <Button size="small" onClick={() => {
-              resetCustomGamepadProfile(system);
+              resetCustomGamepadProfile(effectiveInputSystem(system, gameKey));
               setCustomGamepadProfileState({});
               message.info("Reset to default button mapping");
             }}>
@@ -978,7 +985,7 @@ export default function ArcadeRoomPage() {
             </Button>
           </div>
           <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
-            {arcadeInputHint(mapSystem || system)}
+            {arcadeInputHint(mapSystem || effectiveInputSystem(system, gameKey))}
           </Text>
         </div>
 

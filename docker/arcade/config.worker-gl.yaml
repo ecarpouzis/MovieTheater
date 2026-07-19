@@ -769,6 +769,12 @@ emulator:
           folder: saturn
           roms: ["chd", "cue", "ccd", "iso", "mds", "zip", "m3u"]
           isGlAllowed: true
+          # THE 0x3108 CRASH FIX (2026-07-18, gdb-proven): every crash was `jmp *0x3108(%rax)` with
+          # rax=0 inside nvoglv64 — NVIDIA's per-thread dispatch stub with NO context current on the
+          # calling thread (0x3108 = glMemoryBarrier's dispatch-slot offset; kronos's first retro_run
+          # GL call). Init ran on the context thread; ticks ran on another. usesLibCo pins core
+          # execution to the context thread — the same reason every other GL 3D core here sets it.
+          usesLibCo: true
           coreAspectRatio: true
           scale: 2
           scaleMethod: bilinear2
@@ -997,6 +1003,27 @@ emulator:
             1: [769]
             2: [769]
             3: [769]
+          # Per-ROM device override (worker patch: nanoarch hid4rom, mirrors options4rom/fps4rom).
+          # The two Wii SD-loader BrawlEx mods are GC-controller-native like real Brawl — Wiimote+
+          # Nunchuk's analog stick either never reaches the game or lands on a control scheme the
+          # mod doesn't read, so the left stick does nothing (reported live 2026-07-19, Project REX).
+          # RETRO_DEVICE_GC_ON_WII = (6<<8)|RETRO_DEVICE_JOYPAD = 1537 (DolphinLibretro/Input.cpp) —
+          # explicitly disconnects the Wiimote on that port and routes input through the SAME
+          # descGC button/analog-stick descriptor as the plain "gc" system, so it rides the already-
+          # proven GameCube input path instead of the untested Nunchuk-analog one. The site must
+          # mirror this with the "gc" RetroPad profile for these two ROM keys (cloudRetroClient.js
+          # GC_ON_WII_GAME_KEYS) or the client sends Wiimote+Nunchuk bits the core no longer reads.
+          hid4rom:
+            "Project REX":
+              0: [1537]
+              1: [1537]
+              2: [1537]
+              3: [1537]
+            "Super Smash Bros Infinite":
+              0: [1537]
+              1: [1537]
+              2: [1537]
+              3: [1537]
           options:
             dolphin_renderer: "Hardware"
             dolphin_cpu_core: "JIT64"
