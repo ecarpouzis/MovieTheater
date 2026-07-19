@@ -62,13 +62,27 @@ namespace MovieTheater.Controllers
             return setting != null && int.TryParse(setting.SettingValue, out var parsed) ? parsed : 100;
         }
 
-        // No explicit choice → default English + non-modded (but a name search spans everything).
+        // No explicit choice → default All Games (region still narrows to English; a name search spans
+        // everything). Variant used to default to "release" (hiding every hack/mod, including our own
+        // curated ones), which is what made the lobby look like it "didn't have" mods/hacks/romhacks —
+        // see ArcadeRomTags for why that filter exists at all and RomhacksSourcePrefix below for the
+        // dedicated curated-folder option.
         private static (string Region, string Variant) NormalizeScope(string region, string variant, bool searching)
         {
             var reg = string.IsNullOrWhiteSpace(region) ? (searching ? "all" : "english") : region.Trim().ToLowerInvariant();
-            var var_ = string.IsNullOrWhiteSpace(variant) ? (searching ? "all" : "release") : variant.Trim().ToLowerInvariant();
+            var var_ = string.IsNullOrWhiteSpace(variant) ? "all" : variant.Trim().ToLowerInvariant();
             return (reg, var_);
         }
+
+        // Our hand-curated romhack/mod pile (L:\4 - Software\Romhacks, sorted per-system — see
+        // arcade-jit-ingest usage) as opposed to the tens of thousands of No-Intro/GoodTools-tagged
+        // hacks/betas/protos/pirates that live throughout the wider catalog and also carry Variant="Hack"
+        // etc. (ArcadeRomTags). The "Romhacks" filter option means "show me OUR pile", not "show me any
+        // ROM with a [Hack] tag anywhere" — hence matching on SourceArchivePath rather than Variant.
+        // The two Wii SD-loader BrawlEx mods (Project REX, Smash Bros Infinite) ship as a loader .elf/.dol
+        // with SourceArchivePath NULL (arcade-wii-sd-loader — not JIT-managed), so they're matched by
+        // extension instead; both currently live under Romhacks\Smash Brothers Brawl Mods\.
+        private const string RomhacksSourcePrefix = @"L:\4 - Software\Romhacks\";
 
         // The match set: rows that make a game QUALIFY for a card. Shared by Games and GameLetters so a
         // letter's offset indexes EXACTLY the list Games pages — the moment the two disagree about what
@@ -90,6 +104,9 @@ namespace MovieTheater.Controllers
                 matchQ = matchQ.Where(g => g.Variant == "Release" || g.Variant == null);
             else if (var_ == "modded")
                 matchQ = matchQ.Where(g => g.Variant != "Release" && g.Variant != null);
+            else if (var_ == "romhacks")
+                matchQ = matchQ.Where(g => (g.SourceArchivePath != null && g.SourceArchivePath.StartsWith(RomhacksSourcePrefix))
+                    || (g.System == "wii" && (g.RomPath.EndsWith(".elf") || g.RomPath.EndsWith(".dol"))));
             else if (var_ != "all")
                 matchQ = matchQ.Where(g => g.Variant == var_ || (g.Variant ?? "").ToLower() == var_);
 
@@ -107,8 +124,9 @@ namespace MovieTheater.Controllers
         // ONE CARD PER GAME (docs/arcade-dedupe-multidisc-plan.md): rows are grouped by (System, Title) into
         // games, each carrying a version dropdown (region/rev/edition/disc/hack), so the same game's many
         // ROMs collapse to a single card. Filters gate CARDS by version existence — a game shows iff it has
-        // ≥1 version matching. Defaults are English + non-modded; region/variant "all" broadens, a specific
-        // value narrows. Grouping is query-time so ingests fold in automatically. Age gate always applies.
+        // ≥1 version matching. Defaults are English + All Games (region narrows, variant "romhacks"/
+        // "release"/"modded" narrow further). Grouping is query-time so ingests fold in automatically.
+        // Age gate always applies.
         //
         // `skip` is an absolute offset into the sorted card list and WINS over `page`: the lobby's pager
         // seeks to a letter bucket, which starts wherever it starts — rounding that down to a page boundary

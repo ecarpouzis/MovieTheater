@@ -21,9 +21,10 @@ const playerOptions = [
 ];
 
 const modOptions = [
-  { value: "release", label: "Official releases" },
-  { value: "all", label: "All (include mods)" },
+  { value: "all", label: "All Games (default)" },
+  { value: "release", label: "Official releases only" },
   { value: "modded", label: "Mods & hacks only" },
+  { value: "romhacks", label: "Our Romhacks (curated)" },
 ];
 
 const sortOptions = [
@@ -78,7 +79,7 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
   const activeSystem = p.get("system") || "";
   const activeRegion = p.get("region") || "english";
   const activePlayers = p.get("players") || "";
-  const activeVariant = p.get("variant") || "release";
+  const activeVariant = p.get("variant") || "all";
   const activeGenre = p.get("genre") || "";
   const activeSort = p.get("sort") || "";
 
@@ -163,7 +164,7 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
         <Select style={{ width: "100%" }} value={activeVariant} onChange={(v) => updateParam("variant", v)}
           options={modOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
 
-        {(activeSystem || activeRegion !== "english" || activePlayers || activeVariant !== "release" || activeGenre || activeSort || p.get("q")) && (
+        {(activeSystem || activeRegion !== "english" || activePlayers || activeVariant !== "all" || activeGenre || activeSort || p.get("q")) && (
           <button type="button" className="arcade-clear-filters" onClick={() => history.push({ pathname: "/arcade" })}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path d="M18 6 6 18M6 6l12 12" />
