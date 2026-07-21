@@ -23,7 +23,7 @@ import { MovieAPI } from "../../MovieAPI";
  *    you picked one, so the two numbers were never visible together and the collapsed chip read as though the
  *    game only had two cheats. It now always reads "N of M", and the open dropdown says so in words.
  */
-export default function CheatPicker({ version, value, onChange, disabled, onOpenChange }) {
+export default function CheatPicker({ version, value, onChange, disabled, onOpenChange, block = false }) {
   const [cheats, setCheats] = useState(null); // null = not fetched yet
   const [loading, setLoading] = useState(false);
   const gameId = version?.id;
@@ -50,6 +50,53 @@ export default function CheatPicker({ version, value, onChange, disabled, onOpen
     }));
 
   const cheatWord = count === 1 ? "cheat" : "cheats";
+
+  // The count-in-words header + Clear, shared by both layouts (chip has no room for it inline; the
+  // block layout keeps it for the same "undo a default-on widescreen patch" reason).
+  const dropdownRender = (menu) => (
+    <div>
+      <div className="arcade-cheat-dropdown__head">
+        <span>
+          <b>{selected}</b> of {count} {cheatWord} on
+        </span>
+        {selected > 0 && (
+          <button
+            type="button"
+            className="arcade-cheat-dropdown__clear"
+            // mousedown, not click: the select blurs on mousedown and would swallow the click.
+            onMouseDown={(e) => { e.preventDefault(); onChange([]); }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+      {menu}
+    </div>
+  );
+
+  // Block layout (the game modal): a full-width select with room to show the picked cheats as tags,
+  // portalled to <body> like any normal select. No chip wrapper, no grid-overlap gymnastics.
+  if (block) {
+    return (
+      <Select
+        className="agm-cheat-select"
+        mode="multiple"
+        disabled={disabled}
+        value={value}
+        onChange={onChange}
+        onDropdownVisibleChange={(open) => { if (open) load(); onOpenChange?.(open); }}
+        loading={loading}
+        options={options}
+        maxTagCount="responsive"
+        placeholder={`⚡ ${count} ${cheatWord} available`}
+        popupClassName="arcade-version-dropdown arcade-cheat-dropdown"
+        optionFilterProp="label"
+        notFoundContent={loading ? "Loading…" : "No cheats for this version."}
+        aria-label={`Cheats — ${selected} of ${count} on`}
+        dropdownRender={dropdownRender}
+      />
+    );
+  }
 
   return (
     <span
@@ -84,26 +131,7 @@ export default function CheatPicker({ version, value, onChange, disabled, onOpen
         aria-label={`Cheats — ${selected} of ${count} on`}
         // A header the chip has no room for: the count in words, plus the way back out. Without a Clear,
         // undoing a default-on cheat (PS2 widescreen) means hunting it down in a list of hundreds.
-        dropdownRender={(menu) => (
-          <div>
-            <div className="arcade-cheat-dropdown__head">
-              <span>
-                <b>{selected}</b> of {count} {cheatWord} on
-              </span>
-              {selected > 0 && (
-                <button
-                  type="button"
-                  className="arcade-cheat-dropdown__clear"
-                  // mousedown, not click: the select blurs on mousedown and would swallow the click.
-                  onMouseDown={(e) => { e.preventDefault(); onChange([]); }}
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            {menu}
-          </div>
-        )}
+        dropdownRender={dropdownRender}
       />
     </span>
   );

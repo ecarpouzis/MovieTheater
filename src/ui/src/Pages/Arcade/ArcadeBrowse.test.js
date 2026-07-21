@@ -2,6 +2,7 @@ import { render, screen, within, cleanup, fireEvent } from "@testing-library/rea
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import GameCard from "./GameCard";
+import GameModal from "./GameModal";
 import GameCover, { coverBox } from "./GameCover";
 import LiveRooms from "./LiveRooms";
 import { getCoverAspect, rememberCoverAspect } from "./coverAspect";
@@ -29,17 +30,17 @@ afterEach(cleanup);
 
 describe("GameCard", () => {
   it("splits genres on ';' as well as ',' — the DB uses both", () => {
-    render(<GameCard game={game({ genres: "Action; Adventure" })} onStart={vi.fn()} creating={0} />);
+    render(<GameCard game={game({ genres: "Action; Adventure" })} onOpen={vi.fn()} />);
     expect(screen.getByText("Action")).toBeTruthy();
     expect(screen.queryByText("Action; Adventure")).toBeNull();
 
     cleanup();
-    render(<GameCard game={game({ genres: "Shooter, Tactical, Adventure" })} onStart={vi.fn()} creating={0} />);
+    render(<GameCard game={game({ genres: "Shooter, Tactical, Adventure" })} onOpen={vi.fn()} />);
     expect(screen.getByText("Shooter")).toBeTruthy();
   });
 
-  it("puts every tag on ONE line now that the version picker moved to the footer", () => {
-    const { container } = render(<GameCard game={game()} onStart={vi.fn()} creating={0} />);
+  it("puts every tag on ONE line", () => {
+    const { container } = render(<GameCard game={game()} onOpen={vi.fn()} />);
     const lines = container.querySelectorAll(".arcade-tags");
     expect(lines).toHaveLength(1);
     expect(within(lines[0]).getByText("Nintendo 64")).toBeTruthy();
@@ -50,107 +51,101 @@ describe("GameCard", () => {
 
   it("keeps the tag line even when a game has no region or genre", () => {
     const bare = game({ genres: null, versions: [{ id: 7, label: "x", region: "Unknown", maxPlayers: 1 }] });
-    const { container } = render(<GameCard game={bare} onStart={vi.fn()} creating={0} />);
+    const { container } = render(<GameCard game={bare} onOpen={vi.fn()} />);
     expect(container.querySelectorAll(".arcade-tags")).toHaveLength(1);
     expect(screen.queryByText("Unknown")).toBeNull();
   });
 
-  it("omits the controls row entirely for a single-version game with no cheats", () => {
-    const { container } = render(<GameCard game={game()} onStart={vi.fn()} creating={0} />);
+  // The card is now a pure display tile: no version picker, no cheats, no Start button, no My saves —
+  // all of that moved to the modal. Clicking anywhere on the card opens it.
+  it("carries no launch controls — they moved to the modal", () => {
+    const { container } = render(<GameCard game={game()} onOpen={vi.fn()} />);
     expect(container.querySelector(".arcade-card__controls")).toBeNull();
+    expect(container.querySelector(".arcade-card__actions")).toBeNull();
+    expect(container.querySelector(".arcade-chip--cheats")).toBeNull();
+    expect(screen.queryByText(/Start room/)).toBeNull();
+    expect(screen.queryByText("My saves")).toBeNull();
   });
 
-  it("renders Start room and My saves as siblings in one actions row", () => {
-    const { container } = render(<GameCard game={game()} onStart={vi.fn()} onManageSaves={vi.fn()} creating={0} />);
-    const actions = container.querySelector(".arcade-card__actions");
-    expect(actions.children).toHaveLength(2);
-    expect(within(actions).getByText(/Start room/)).toBeTruthy();
-    expect(within(actions).getByText("My saves")).toBeTruthy();
+  it("opens the modal with its game when the card is clicked", () => {
+    const onOpen = vi.fn();
+    const g = game();
+    const { container } = render(<GameCard game={g} onOpen={onOpen} />);
+    fireEvent.click(container.querySelector(".arcade-card"));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledWith(g);
   });
 
-  it("starts a room with the selected version id, and doesn't double-fire from the card", () => {
-    const onStart = vi.fn();
-    render(<GameCard game={game()} onStart={onStart} creating={0} />);
-    fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenCalledTimes(1);
-    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", []);
+  it("opens the modal on keyboard activation (Enter), since the card is a button", () => {
+    const onOpen = vi.fn();
+    const { container } = render(<GameCard game={game()} onOpen={onOpen} />);
+    fireEvent.keyDown(container.querySelector(".arcade-card"), { key: "Enter" });
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("opens the saves manager for the selected version, not the card", () => {
-    const onManageSaves = vi.fn();
-    const onStart = vi.fn();
-    render(<GameCard game={game()} onStart={onStart} onManageSaves={onManageSaves} creating={0} />);
-    fireEvent.click(screen.getByText("My saves"));
-    expect(onManageSaves).toHaveBeenCalledWith(7);
-    expect(onStart).not.toHaveBeenCalled();
+  it("shows the rating badge only when the game is rated", () => {
+    const { container, rerender } = render(<GameCard game={game()} onOpen={vi.fn()} />);
+    expect(container.querySelector(".arcade-card__rating").textContent).toContain("95");
+    rerender(<GameCard game={game({ rating: null })} onOpen={vi.fn()} />);
+    expect(container.querySelector(".arcade-card__rating")).toBeNull();
   });
+});
 
-  // ── Cheats (docs/arcade-cheats.md) ──────────────────────────────────────────────────────────────
+describe("GameModal", () => {
   const ps2 = (over = {}) => game({
     key: "ps2|God of War", title: "God of War", system: "ps2", versionCount: 1,
     versions: [{ id: 11, label: "USA", region: "USA", maxPlayers: 1, cheatCount: 2, defaultCheats: ["c500"] }],
     ...over,
   });
 
-  it("shows the cheat picker with a count, and hides it when a version has no cheats", () => {
-    const { container, rerender } = render(<GameCard game={ps2()} onStart={vi.fn()} creating={0} />);
-    expect(container.querySelector(".arcade-chip--cheats")).toBeTruthy();
-    // 1 of the version's 2 cheats is on by default (the widescreen patch).
-    expect(screen.getByText(/1 of 2/)).toBeTruthy();
+  const renderModal = (g, props = {}) =>
+    render(<GameModal game={g} onStart={props.onStart || vi.fn()} onManageSaves={props.onManageSaves || vi.fn()}
+      onClose={vi.fn()} creating={0} />);
 
-    rerender(<GameCard game={game()} onStart={vi.fn()} creating={0} />);
-    expect(container.querySelector(".arcade-chip--cheats")).toBeNull();
+  it("renders the Start room button and the My saves link", () => {
+    renderModal(game());
+    expect(screen.getByText(/Start room/)).toBeTruthy();
+    expect(screen.getByText(/My saves/)).toBeTruthy();
   });
 
-  // The collapsed chip has to answer BOTH questions — how many cheats this version has, and how many are
-  // on. It used to answer only one at a time: the available count as a placeholder, replaced by the
-  // selected count once you picked one, so "⚡ 2 cheats" looked like a game with two cheats.
-  it("shows the AVAILABLE count when no cheat is on", () => {
-    const noDefaults = ps2({
-      versions: [{ id: 11, label: "USA", region: "USA", maxPlayers: 1, cheatCount: 28, defaultCheats: [] }],
-    });
-    const { container } = render(<GameCard game={noDefaults} onStart={vi.fn()} creating={0} />);
-    expect(screen.getByText(/28 cheats/)).toBeTruthy();
-    expect(container.querySelector(".arcade-chip--cheats-on")).toBeNull();
-    expect(container.querySelector(".arcade-chip--cheats").title).toBe("28 cheats available for this version");
+  // A single-version, no-cheat, no-scheme game has nothing to configure, so the controls block is absent.
+  it("omits the controls block for a plain single-version game with no cheats", () => {
+    renderModal(game());
+    expect(document.querySelector(".agm-controls")).toBeNull();
   });
 
-  it("shows selected AND available once a cheat is on, and fills the chip in", () => {
-    const withDefaults = ps2({
-      versions: [{ id: 11, label: "USA", region: "USA", maxPlayers: 1, cheatCount: 28, defaultCheats: ["c1", "c2"] }],
-    });
-    const { container } = render(<GameCard game={withDefaults} onStart={vi.fn()} creating={0} />);
-    expect(screen.getByText(/2 of 28/)).toBeTruthy();
-    expect(container.querySelector(".arcade-chip--cheats-on")).toBeTruthy();
-    expect(container.querySelector(".arcade-chip--cheats").title).toBe("2 of 28 cheats on — click to change");
+  it("starts a room with the selected version id (plus hwContext + controllerScheme slots)", () => {
+    const onStart = vi.fn();
+    renderModal(game(), { onStart });
+    fireEvent.click(screen.getByText(/Start room/));
+    expect(onStart).toHaveBeenCalledTimes(1);
+    // A plain game: no hw toggle ("") and no controller scheme ("").
+    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "");
   });
 
-  // Both popups render inside their chip, so they're part of the card's box — and the card is its own
-  // stacking context (position: relative + a hover transform). If the card doesn't rise, the cards after
-  // it in the grid paint straight over the open list and all you see is a sliver.
-  it("lifts the whole card while a dropdown is open, so later cards can't paint over it", () => {
-    const { container } = render(<GameCard game={ps2()} onStart={vi.fn()} creating={0} />);
-    expect(container.querySelector(".arcade-card--menu-open")).toBeNull();
-
-    fireEvent.mouseDown(container.querySelector(".arcade-chip--cheats .ant-select-selector"));
-    expect(container.querySelector(".arcade-card--menu-open")).toBeTruthy();
+  it("opens the saves manager for the selected version, with its title", () => {
+    const onManageSaves = vi.fn();
+    const onStart = vi.fn();
+    renderModal(game(), { onManageSaves, onStart });
+    fireEvent.click(screen.getByText(/My saves/));
+    expect(onManageSaves).toHaveBeenCalledWith(7, "007 - GoldenEye");
+    expect(onStart).not.toHaveBeenCalled();
   });
 
-  it("singularizes a lone cheat", () => {
-    const one = ps2({
-      versions: [{ id: 11, label: "USA", region: "USA", maxPlayers: 1, cheatCount: 1, defaultCheats: [] }],
-    });
-    const { container } = render(<GameCard game={one} onStart={vi.fn()} creating={0} />);
-    expect(container.querySelector(".arcade-chip--cheats").title).toBe("1 cheat available for this version");
+  it("shows the cheat picker when the version has cheats, and hides it otherwise", () => {
+    const { rerender } = renderModal(ps2());
+    expect(document.querySelector(".agm-cheat-select")).toBeTruthy();
+    rerender(<GameModal game={game()} onStart={vi.fn()} onManageSaves={vi.fn()} onClose={vi.fn()} creating={0} />);
+    expect(document.querySelector(".agm-cheat-select")).toBeNull();
   });
 
-  // The whole point of shipping defaultCheats with the card: a player who never opens the picker still
-  // gets the widescreen patch. If this regresses, PS2 rooms silently launch in 4:3.
+  // The whole point of shipping defaultCheats with the card data: a player who never opens the picker
+  // still gets the widescreen patch. If this regresses, PS2 rooms silently launch in 4:3.
   it("launches with the version's default cheats even though the picker was never opened", () => {
     const onStart = vi.fn();
-    render(<GameCard game={ps2()} onStart={onStart} creating={0} />);
+    renderModal(ps2(), { onStart });
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenCalledWith(11, "God of War", ["c500"]);
+    expect(onStart).toHaveBeenCalledWith(11, "God of War", ["c500"], "", "");
   });
 
   // Cheat ids belong to one ROM. Carrying a selection across a version switch would send a USA code to a
@@ -164,22 +159,32 @@ describe("GameCard", () => {
         { id: 12, label: "Japan", region: "Japan", maxPlayers: 1, cheatCount: 1, defaultCheats: [] },
       ],
     });
-    const { rerender } = render(<GameCard game={twoVersions} onStart={onStart} creating={0} />);
+    const { rerender } = renderModal(twoVersions, { onStart });
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenLastCalledWith(11, "God of War", ["c500"]);
+    expect(onStart).toHaveBeenLastCalledWith(11, "God of War", ["c500"], "", "");
 
-    // Simulate the filter changing the card's default version (the same path that re-keys `sel`).
+    // Simulate a filter changing the default version (same path that re-keys `sel`).
     const jpFirst = { ...twoVersions, versions: [twoVersions.versions[1], twoVersions.versions[0]] };
-    rerender(<GameCard game={jpFirst} onStart={onStart} creating={0} />);
+    rerender(<GameModal game={jpFirst} onStart={onStart} onManageSaves={vi.fn()} onClose={vi.fn()} creating={0} />);
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenLastCalledWith(12, "God of War", []);
+    expect(onStart).toHaveBeenLastCalledWith(12, "God of War", [], "", "");
   });
 
-  it("shows the rating badge only when the game is rated", () => {
-    const { container, rerender } = render(<GameCard game={game()} onStart={vi.fn()} creating={0} />);
-    expect(container.querySelector(".arcade-card__rating").textContent).toContain("95");
-    rerender(<GameCard game={game({ rating: null })} onStart={vi.fn()} creating={0} />);
-    expect(container.querySelector(".arcade-card__rating")).toBeNull();
+  // Vulkan/GL launch picker: the default click forces Vulkan on systems that offer the toggle.
+  it("forces Vulkan on the default start for a hw-toggle system", () => {
+    const onStart = vi.fn();
+    renderModal(game({ supportsHwToggle: true }), { onStart });
+    fireEvent.click(screen.getByText(/Start room/));
+    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "vulkan", "");
+  });
+
+  // The Wii GameCube/Nunchuk picker: only offered for the GC-native BrawlEx mods; defaults to "gc".
+  it("passes the controller scheme for a Wii title that offers one", () => {
+    const onStart = vi.fn();
+    renderModal(game({ supportsControllerScheme: true }), { onStart });
+    expect(document.querySelector(".agm-controls")).toBeTruthy();
+    fireEvent.click(screen.getByText(/Start room/));
+    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "gc");
   });
 });
 

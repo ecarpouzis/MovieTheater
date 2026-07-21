@@ -1,0 +1,150 @@
+import { cloneElement, useEffect, useState } from "react";
+import { Button, Dropdown, Modal, Select } from "antd";
+import GameCover from "./GameCover";
+import CheatPicker from "./CheatPicker";
+import { systemLabel } from "./arcadeSystems";
+import "./GameModal.css";
+
+/**
+ * The full-page game modal (mirrors the movie modal): a card opens this instead of launching inline.
+ * The card is now a pure display tile — everything you DO with a game lives here: pick the ROM
+ * version, toggle cheats, choose a Wii controller scheme, start the room, and manage your saves.
+ *
+ * The launch state (selected version, cheats, controller scheme) used to live on the card; it moved
+ * here wholesale. Cheats are per-ROM, so switching the version resets the cheat selection to that
+ * ROM's defaults — a code id from one dump is meaningless on another.
+ *
+ * Heavy-lane titles never reach this modal — the lobby routes them straight to HeavyGameModal (their
+ * launch is a Moonlight/capture flow, not a room with cheats/versions/schemes).
+ */
+export default function GameModal({ game, onClose, onStart, onManageSaves, creating }) {
+  const genre = game.genres ? game.genres.split(/[;,]/)[0].trim() : null;
+  const firstVersionId = game.versions?.[0]?.id;
+  const [sel, setSel] = useState(firstVersionId);
+  // Filters can change the default version out from under an open modal (rare), so track it.
+  useEffect(() => { setSel(firstVersionId); }, [firstVersionId]);
+
+  const version = game.versions?.find((v) => v.id === sel) || game.versions?.[0];
+  const multiVersion = game.versionCount > 1;
+  const region = version?.region && version.region !== "Unknown" ? version.region : null;
+
+  // Cheats are per-ROM: reset to the selected version's defaults (e.g. the PS2 widescreen patch)
+  // whenever the version changes. Never merged across versions.
+  const [cheats, setCheats] = useState(version?.defaultCheats || []);
+  useEffect(() => { setCheats(version?.defaultCheats || []); }, [version?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Vulkan/GL launch picker: the default forces Vulkan on the systems that have the choice
+  // (game.supportsHwToggle); everything else launches with no override.
+  const defaultHwContext = game.supportsHwToggle ? "vulkan" : "";
+  // Wii controller-scheme picker (GameCube vs Wiimote+Nunchuk): only the GC-controller-native BrawlEx
+  // mods offer it. Defaults to "gc" — matches the worker's own hid4rom default when no override is sent.
+  const [ctrlScheme, setCtrlScheme] = useState("gc");
+
+  const busy = creating === sel;
+  const start = (hwContext = defaultHwContext) =>
+    onStart(sel, game.title, cheats, hwContext, game.supportsControllerScheme ? ctrlScheme : "");
+
+  const hasControls = multiVersion || version?.cheatCount > 0 || game.supportsControllerScheme;
+
+  return (
+    <Modal
+      open
+      onCancel={onClose}
+      footer={null}
+      width={720}
+      // Above the nav bar (z-index 1300) so the modal and its close button render over it.
+      zIndex={1500}
+      wrapClassName="arcade-game-modal"
+    >
+      <div className="agm-body">
+        <div className="agm-art">
+          <GameCover game={game} height={300} maxWidth={230} />
+        </div>
+
+        <div className="agm-info">
+          <h2 className="agm-title">{game.title}</h2>
+
+          <div className="agm-tags">
+            <span className="arcade-chip arcade-chip--system">{systemLabel(game.system)}</span>
+            <span className="arcade-chip">{game.maxPlayers}P</span>
+            {game.year ? <span className="arcade-chip">{game.year}</span> : null}
+            {region && <span className="arcade-chip">{region}</span>}
+            {genre && <span className="arcade-chip arcade-chip--genre" title={genre}>{genre}</span>}
+            {game.rating != null && (
+              <span className="arcade-chip agm-chip-rating" title={game.ratingCount ? `${game.ratingCount.toLocaleString()} votes` : undefined}>
+                ★ {game.rating}
+              </span>
+            )}
+          </div>
+
+          {game.summary && <p className="agm-summary">{game.summary}</p>}
+
+          {hasControls && (
+            <div className="agm-controls">
+              {multiVersion && (
+                <label className="agm-field">
+                  <span className="agm-field__label">Version</span>
+                  <Select
+                    className="agm-select"
+                    value={sel}
+                    onChange={setSel}
+                    popupClassName="arcade-version-dropdown"
+                    options={game.versions.map((v) => ({ value: v.id, label: v.label }))}
+                  />
+                </label>
+              )}
+
+              {game.supportsControllerScheme && (
+                <label className="agm-field">
+                  <span className="agm-field__label">Controller</span>
+                  <Select
+                    className="agm-select"
+                    value={ctrlScheme}
+                    onChange={setCtrlScheme}
+                    popupClassName="arcade-version-dropdown"
+                    options={[
+                      { value: "gc", label: "GameCube controller" },
+                      { value: "wiimote", label: "Wiimote + Nunchuk" },
+                    ]}
+                  />
+                </label>
+              )}
+
+              {version?.cheatCount > 0 && (
+                <label className="agm-field">
+                  <span className="agm-field__label">Cheats</span>
+                  <CheatPicker version={version} value={cheats} onChange={setCheats} disabled={busy} block />
+                </label>
+              )}
+            </div>
+          )}
+
+          <div className="agm-actions">
+            {game.supportsHwToggle ? (
+              <Dropdown.Button
+                type="primary"
+                className="agm-start"
+                loading={busy}
+                onClick={() => start("vulkan")}
+                menu={{ items: [{ key: "gl", label: "Force GL" }], onClick: () => start("gl") }}
+                buttonsRender={([left, right]) => [
+                  cloneElement(left, { className: [left.props.className, "arcade-btn-start"].filter(Boolean).join(" ") }),
+                  cloneElement(right, { className: [right.props.className, "arcade-btn-start", "arcade-btn-start__arrow"].filter(Boolean).join(" ") }),
+                ]}
+              >
+                ▶ Start room
+              </Dropdown.Button>
+            ) : (
+              <Button type="primary" className="arcade-btn-start agm-start" loading={busy} onClick={() => start()}>
+                ▶ Start room
+              </Button>
+            )}
+            <button type="button" className="arcade-link" onClick={() => onManageSaves?.(sel, game.title)}>
+              💾 My saves
+            </button>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}

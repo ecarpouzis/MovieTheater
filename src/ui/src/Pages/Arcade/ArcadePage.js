@@ -3,6 +3,7 @@ import { useHistory, useLocation } from "react-router-dom";
 import { Button, Empty, Modal, Select, Spin, Typography, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import GameCard from "./GameCard";
+import GameModal from "./GameModal";
 import HeavyGameModal from "./HeavyGameModal";
 import LiveRooms from "./LiveRooms";
 import RecentlyPlayed from "./RecentlyPlayed";
@@ -111,6 +112,7 @@ export default function ArcadePage() {
   const [savesVaultOpen, setSavesVaultOpen] = useState(false); // the cross-game "My saves" drawer
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
+  const [modalGame, setModalGame] = useState(null); // the game whose full-page modal is open
   const [heavyGame, setHeavyGame] = useState(null); // heavy-lane card → the Play-via-Moonlight modal
   const [quality, setQuality] = useState(loadQuality); // creator's per-room stream quality (persisted)
   const unconfiguredRef = useRef(false);
@@ -339,6 +341,10 @@ export default function ArcadePage() {
 
   const joinRoom = (roomCode) => history.push(`/arcade/room/${roomCode}`);
 
+  // A card click opens a modal. Heavy-lane titles have their own Moonlight/capture modal; everything
+  // else opens the standard game modal (version/cheats/scheme + Start + My saves all live there now).
+  const openGame = (game) => (game.lane === "heavy" ? setHeavyGame(game) : setModalGame(game));
+
   if (unconfiguredRef.current) {
     return <div style={{ padding: 48 }}><Empty description="The arcade isn't set up on this server yet." /></div>;
   }
@@ -424,9 +430,7 @@ export default function ArcadePage() {
                 {padTop > 0 && <div className="grid-spacer" style={{ height: padTop }} aria-hidden="true" />}
                 <div className="arcade-grid" ref={gridRef}>
                   {visibleGames.map((game) => (
-                    <GameCard key={game.key} game={game} onStart={createRoom} creating={creating}
-                      onHeavy={setHeavyGame}
-                      onManageSaves={(id) => setManageSaves({ gameId: id, title: game.title })} />
+                    <GameCard key={game.key} game={game} onOpen={openGame} />
                   ))}
                 </div>
                 {padBottom > 0 && <div className="grid-spacer" style={{ height: padBottom }} aria-hidden="true" />}
@@ -455,6 +459,21 @@ export default function ArcadePage() {
         </section>
       </div>
 
+      {modalGame && (
+        <GameModal
+          game={modalGame}
+          creating={creating}
+          onClose={() => setModalGame(null)}
+          // Both actions leave the browse tile: close the game modal first so the follow-on surface
+          // (the Continue/New-game confirm, or the saves manager) isn't stranded behind it at a lower
+          // z-index. This restores the exact pre-modal flow those surfaces were built for.
+          onStart={(versionId, title, cheats, hwContext, controllerScheme) => {
+            setModalGame(null);
+            createRoom(versionId, title, cheats, hwContext, controllerScheme);
+          }}
+          onManageSaves={(gameId, title) => { setModalGame(null); setManageSaves({ gameId, title }); }}
+        />
+      )}
       {manageSaves && (
         <SavesManager game={manageSaves} onClose={() => setManageSaves(null)} onResume={doCreateRoom} />
       )}
