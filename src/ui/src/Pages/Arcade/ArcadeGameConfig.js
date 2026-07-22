@@ -1,34 +1,35 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Collapse, Input, Modal, Select, Spin, Tooltip, message } from "antd";
+import { Button, Input, Modal, Select, Spin, Tooltip, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import { systemLabel } from "./arcadeSystems";
 import "./ArcadeGameConfig.css";
 
 /**
- * The per-game emulator/quality config tool (docs/arcade-per-game-config.md), reached from the game
- * modal's ⚙ Configure button. Editor-only. It edits ONE persistent per-game profile (keyed server-side
- * by game identity, not ROM), so what you set here is how the game plays when anyone presses Start —
- * delivered per-room, effective on the next room with no restart.
+ * The per-game emulator config tool (docs/arcade-per-game-config.md), reached from the game modal's ⚙
+ * Configure button. Editor-only. Edits ONE persistent per-game profile (keyed server-side by game
+ * identity, not ROM), so what you set here is how the game plays when anyone presses Start — delivered
+ * per-room, effective on the next room with no restart.
  *
- * The control set is generated from the server's catalog of what each core actually supports (the
- * "quality modifiers" that used to hide in the Cheats dropdown live here now). Every value is the core's
- * EXACT token — libretro silently ignores an unknown one — so the picker only ever offers real tokens,
- * and the Advanced section (raw key/value) is the editor's own-risk escape hatch.
+ * Laid out like a real emulator's settings dialog: a category rail on the left, the selected category's
+ * settings on the right (each with an inline description), and a search that filters across all of them.
+ * The control set + exact value tokens come from the server's per-core catalog (libretro silently ignores
+ * an unknown token, so the picker only offers real ones); Advanced is the raw own-risk escape hatch.
  *
- * We always submit the FULL current value set; the server stores only what differs from the game's
- * default, so "leave it alone" never pins a redundant value and Reset clears the profile entirely.
+ * We submit the FULL current value set; the server stores only what differs from the game default, so
+ * "leave it alone" never pins a redundant value and Reset clears the profile.
  */
-// The config Modal sits at zIndex 1600 (above the game modal). antd Select popups default lower, so
-// without this they open BEHIND the modal and look empty. Keep it above the modal.
+// The config Modal sits at zIndex 1600 (above the game modal); antd Select popups default lower and would
+// open BEHIND it. Keep dropdowns above the modal.
 const DROPDOWN_STYLE = { zIndex: 1700 };
 
-const CATEGORY_ORDER = ["video", "hack", "performance", "system", "audio"];
+const CATEGORY_ORDER = ["video", "hack", "performance", "system", "audio", "other"];
 const CATEGORY_LABEL = {
-  video: "Video & display",
-  hack: "Enhancements — may glitch on some games",
+  video: "Video",
+  hack: "Enhancements",
   performance: "Performance",
   system: "System",
   audio: "Audio",
+  other: "Other",
 };
 
 export default function ArcadeGameConfig({ game, onClose }) {
@@ -41,13 +42,19 @@ export default function ArcadeGameConfig({ game, onClose }) {
   const [renderProfile, setRenderProfile] = useState(null); // graphics profile id
   const [notes, setNotes] = useState("");
   const [advanced, setAdvanced] = useState([]); // [{ key, value }] raw escape-hatch rows
+  const [tab, setTab] = useState("video"); // active rail item: a category, "advanced", or "notes"
+  const [search, setSearch] = useState("");
 
   // Apply a GET /Config payload. keepUserFields (a profile switch) preserves the current notes + advanced
-  // rows (they're cross-core) and only swaps the option list/values for the newly-selected core.
+  // rows (cross-core) and only swaps the option list/values for the newly-selected core.
   const applyConfig = (d, keepUserFields) => {
     setCfg(d);
     setValues((d.options || []).reduce((m, o) => { m[o.key] = o.value; return m; }, {}));
     setRenderProfile(d.renderProfile || null);
+    const cats = CATEGORY_ORDER.filter((c) => (d.options || []).some((o) => o.category === c));
+    const firstCat = cats[0] || "advanced";
+    // Keep the current tab across a profile switch when it's still valid; otherwise land on the first category.
+    setTab((prev) => (keepUserFields && (prev === "advanced" || prev === "notes" || cats.includes(prev)) ? prev : firstCat));
     if (!keepUserFields) {
       setNotes(d.notes || "");
       setAdvanced(Object.entries(d.advanced || {}).map(([key, value]) => ({ key, value })));
@@ -69,8 +76,8 @@ export default function ArcadeGameConfig({ game, onClose }) {
     return () => { alive = false; };
   }, [gameId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Changing the Graphics profile re-fetches THAT profile's core options — PS1 Beetle vs pcsx_rearmed expose
-  // different options. Unsaved edits to the previous profile's options are discarded (notes/advanced are kept).
+  // Changing the Graphics profile re-fetches THAT profile's core options (PS1 Beetle vs pcsx_rearmed expose
+  // different options). Unsaved edits to the previous profile's options are discarded (notes/advanced kept).
   const switchProfile = (id) => {
     setRenderProfile(id);
     setSwitching(true);
@@ -85,6 +92,21 @@ export default function ArcadeGameConfig({ game, onClose }) {
     (cfg?.options || []).forEach((o) => { (byCat[o.category] ||= []).push(o); });
     return CATEGORY_ORDER.filter((c) => byCat[c]?.length).map((c) => ({ category: c, options: byCat[c] }));
   }, [cfg]);
+
+  const navItems = useMemo(() => {
+    const items = grouped.map((g) => ({ key: g.category, label: CATEGORY_LABEL[g.category] || g.category, count: g.options.length }));
+    items.push({ key: "advanced", label: "Advanced", count: advanced.filter((a) => (a.key || "").trim()).length });
+    items.push({ key: "notes", label: "Notes", count: notes ? 1 : 0 });
+    return items;
+  }, [grouped, advanced, notes]);
+
+  const searchResults = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return (cfg?.options || []).filter(
+      (o) => o.label?.toLowerCase().includes(q) || o.key?.toLowerCase().includes(q) || o.note?.toLowerCase().includes(q),
+    );
+  }, [search, cfg]);
 
   const buildBody = () => {
     const coreOptions = { ...values };
@@ -114,20 +136,53 @@ export default function ArcadeGameConfig({ game, onClose }) {
   const save = () => doSave(buildBody(), "Saved — applies the next time this game starts.");
   const reset = () => doSave({ coreOptions: {}, renderProfile: "", notes: "" }, "Reset to defaults.");
 
-  const setAdvRow = (i, patch) =>
-    setAdvanced((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const setAdvRow = (i, patch) => setAdvanced((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   const addAdvRow = () => setAdvanced((rows) => [...rows, { key: "", value: "" }]);
   const removeAdvRow = (i) => setAdvanced((rows) => rows.filter((_, j) => j !== i));
+
+  const goTab = (key) => { setSearch(""); setTab(key); };
+
+  const renderOption = (o) => (
+    <div className="agc-opt" key={o.key}>
+      <div className="agc-opt__row">
+        <div className="agc-opt__label">{o.label}</div>
+        <div className="agc-opt__control">
+          {o.isRange ? (
+            <Input
+              type="number" min={o.rangeMin} max={o.rangeMax}
+              value={values[o.key]}
+              onChange={(e) => setValues((v) => ({ ...v, [o.key]: e.target.value }))}
+            />
+          ) : (
+            <Select
+              value={values[o.key]}
+              onChange={(val) => setValues((v) => ({ ...v, [o.key]: val }))}
+              options={(o.values || []).map((vv) => ({ value: vv.token, label: vv.label }))}
+              popupClassName="arcade-version-dropdown"
+              dropdownStyle={DROPDOWN_STYLE}
+              dropdownMatchSelectWidth={false}
+              showSearch
+              optionFilterProp="label"
+            />
+          )}
+        </div>
+      </div>
+      {o.note && <div className="agc-opt__desc">{o.note}</div>}
+    </div>
+  );
+
+  const activeGroup = grouped.find((g) => g.category === tab);
 
   return (
     <Modal
       open
       onCancel={onClose}
-      width={640}
+      width={800}
       zIndex={1600}
       wrapClassName="arcade-config-modal"
-      title={<span className="agc-title">⚙ Configure — {game.title}</span>}
+      title={<span className="agc-title">⚙ {game.title} <span className="agc-title__sys">— {systemLabel(cfg?.system)}</span></span>}
       footer={[
+        <span key="hint" className="agc-foot-hint">Applies the next time the game starts</span>,
         <Button key="reset" danger onClick={reset} disabled={loading || saving}>Reset to defaults</Button>,
         <Button key="cancel" onClick={onClose} disabled={saving}>Cancel</Button>,
         <Button key="save" type="primary" onClick={save} loading={saving} disabled={loading}>Save</Button>,
@@ -136,95 +191,90 @@ export default function ArcadeGameConfig({ game, onClose }) {
       {loading ? (
         <div className="agc-loading"><Spin /></div>
       ) : (
-        <div className="agc-body">
-          <p className="agc-lede">
-            How <b>{game.title}</b> ({systemLabel(cfg?.system)}) plays for everyone when a room starts.
-            Changes apply to the next room — they don't affect rooms already running.
-          </p>
-
-          {cfg?.profiles?.length > 0 && (
-            <div className="agc-group">
-              <div className="agc-group__title">Graphics</div>
-              <label className="agc-field">
-                <span className="agc-field__label">
+        <div className="agc">
+          <div className="agc-head">
+            {cfg?.profiles?.length > 0 && (
+              <div className="agc-renderer">
+                <span className="agc-renderer__label">
                   Renderer / core
-                  <Tooltip title="What Start Room launches for this game — the core + renderer combination. Options below follow this choice. Vulkan is the default for 3D systems; pick an OpenGL profile to use the GL core/renderer.">
+                  <Tooltip title="What Start Room launches — the core + renderer. The settings below follow this choice. Vulkan is the default for 3D systems; pick an OpenGL profile (or, on PS1, pcsx_rearmed) to use the GL core.">
                     <span className="agc-info">ⓘ</span>
                   </Tooltip>
                 </span>
                 <Select
-                  className="agc-select"
                   value={renderProfile}
                   onChange={switchProfile}
                   loading={switching}
                   options={cfg.profiles.map((p) => ({ value: p.id, label: p.label }))}
                   popupClassName="arcade-version-dropdown"
                   dropdownStyle={DROPDOWN_STYLE}
+                  dropdownMatchSelectWidth={false}
                 />
-              </label>
-            </div>
-          )}
-
-          {grouped.map(({ category, options }) => (
-            <div className="agc-group" key={category}>
-              <div className="agc-group__title">{CATEGORY_LABEL[category] || category}</div>
-              {options.map((o) => (
-                <label className="agc-field" key={o.key}>
-                  <span className="agc-field__label">
-                    {o.label}
-                    {o.note && (
-                      <Tooltip title={o.note}><span className="agc-info">ⓘ</span></Tooltip>
-                    )}
-                  </span>
-                  {o.isRange ? (
-                    <Input
-                      className="agc-select" type="number" min={o.rangeMin} max={o.rangeMax}
-                      value={values[o.key]}
-                      onChange={(e) => setValues((v) => ({ ...v, [o.key]: e.target.value }))}
-                    />
-                  ) : (
-                    <Select
-                      className="agc-select" value={values[o.key]}
-                      onChange={(val) => setValues((v) => ({ ...v, [o.key]: val }))}
-                      options={(o.values || []).map((vv) => ({ value: vv.token, label: vv.label }))}
-                      popupClassName="arcade-version-dropdown"
-                      dropdownStyle={DROPDOWN_STYLE}
-                    />
-                  )}
-                </label>
-              ))}
-            </div>
-          ))}
-
-          <Collapse ghost className="agc-advanced">
-            <Collapse.Panel
-              key="adv"
-              header={`Advanced — raw core options${advanced.length ? ` (${advanced.length})` : ""}`}
-            >
-              <div className="agc-adv-body">
-                <p className="agc-adv-note">
-                  Any libretro core option, by exact key and value. No validation — a wrong key or value
-                  is silently ignored by the emulator. For keys not in the list above.
-                </p>
-                {advanced.map((row, i) => (
-                  <div className="agc-adv-row" key={i}>
-                    <Input placeholder="option_key" value={row.key}
-                      onChange={(e) => setAdvRow(i, { key: e.target.value })} />
-                    <Input placeholder="value" value={row.value}
-                      onChange={(e) => setAdvRow(i, { value: e.target.value })} />
-                    <Button onClick={() => removeAdvRow(i)}>✕</Button>
-                  </div>
-                ))}
-                <Button size="small" onClick={addAdvRow}>+ Add option</Button>
               </div>
-            </Collapse.Panel>
-          </Collapse>
+            )}
+            <Input
+              className="agc-search"
+              allowClear
+              placeholder="Search settings…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
 
-          <div className="agc-group">
-            <div className="agc-group__title">Notes</div>
-            <Input.TextArea rows={2} value={notes} maxLength={500}
-              placeholder="Why this config (optional) — e.g. 'widescreen patch off, breaks the HUD'."
-              onChange={(e) => setNotes(e.target.value)} />
+          <div className="agc-panes">
+            <nav className="agc-rail" aria-label="Setting categories">
+              {navItems.map((it) => (
+                <button
+                  key={it.key}
+                  type="button"
+                  className={`agc-rail__item${!search && tab === it.key ? " is-active" : ""}`}
+                  onClick={() => goTab(it.key)}
+                >
+                  <span className="agc-rail__label">{it.label}</span>
+                  {it.count > 0 && <span className="agc-rail__count">{it.count}</span>}
+                </button>
+              ))}
+            </nav>
+
+            <div className="agc-content">
+              {search ? (
+                searchResults.length ? (
+                  searchResults.map(renderOption)
+                ) : (
+                  <div className="agc-empty">No settings match “{search}”.</div>
+                )
+              ) : tab === "advanced" ? (
+                <div className="agc-adv">
+                  <p className="agc-adv__note">
+                    Any libretro core option, by exact key and value. Not validated — a wrong key or value is
+                    silently ignored by the emulator. Use this for keys not listed in the categories.
+                  </p>
+                  {advanced.map((row, i) => (
+                    <div className="agc-adv__row" key={i}>
+                      <Input placeholder="option_key" value={row.key} onChange={(e) => setAdvRow(i, { key: e.target.value })} />
+                      <Input placeholder="value" value={row.value} onChange={(e) => setAdvRow(i, { value: e.target.value })} />
+                      <Button onClick={() => removeAdvRow(i)}>✕</Button>
+                    </div>
+                  ))}
+                  <Button size="small" onClick={addAdvRow}>+ Add option</Button>
+                </div>
+              ) : tab === "notes" ? (
+                <div className="agc-notes">
+                  <p className="agc-adv__note">A private note on why this game is configured this way. Editors only; never shown to players.</p>
+                  <Input.TextArea
+                    rows={5}
+                    value={notes}
+                    maxLength={500}
+                    placeholder="e.g. 'Widescreen off — it stretches the HUD.'"
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </div>
+              ) : activeGroup ? (
+                activeGroup.options.map(renderOption)
+              ) : (
+                <div className="agc-empty">This core exposes no settings in this category.</div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -1,105 +1,150 @@
-/* Per-game config tool (⚙ Configure) — styled to sit above the game modal, matching the arcade look. */
+/* Per-game emulator config (⚙ Configure) — a settings dialog: category rail + inline-described options. */
 
-.arcade-config-modal .ant-modal-content {
-  border-radius: 12px;
-}
+.arcade-config-modal .ant-modal { top: 40px; }
+.arcade-config-modal .ant-modal-content { border-radius: 12px; }
+.arcade-config-modal .ant-modal-body { padding-top: 16px; }
 
-.agc-title {
-  font-weight: 700;
-}
+.agc-title { font-weight: 700; }
+.agc-title__sys { font-weight: 400; opacity: 0.6; }
 
-.agc-loading {
+.agc-loading { display: flex; justify-content: center; padding: 60px 0; }
+
+/* Footer: keep the "applies next start" hint on the far left, buttons on the right. */
+.arcade-config-modal .ant-modal-footer { display: flex; align-items: center; gap: 8px; }
+.arcade-config-modal .ant-modal-footer .ant-btn { margin: 0; }
+.agc-foot-hint { margin-right: auto; font-size: 12px; opacity: 0.55; }
+
+.agc { display: flex; flex-direction: column; }
+
+/* ── Header: renderer selector + search ─────────────────────────────────────── */
+.agc-head {
   display: flex;
-  justify-content: center;
-  padding: 48px 0;
-}
-
-.agc-body {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  max-height: 68vh;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.agc-lede {
-  margin: 0;
-  font-size: 13px;
-  opacity: 0.8;
-  line-height: 1.5;
-}
-
-.agc-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.agc-group__title {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  opacity: 0.7;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
-  padding-bottom: 4px;
-}
-
-.agc-field {
-  display: grid;
-  grid-template-columns: 1fr minmax(180px, 240px);
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
 }
-
-.agc-field__label {
-  font-size: 13px;
+.agc-renderer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 340px;
+  min-width: 260px;
+}
+.agc-renderer__label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-.agc-info {
-  cursor: help;
-  opacity: 0.55;
   font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.72;
+  white-space: nowrap;
+}
+.agc-renderer .ant-select { flex: 1; min-width: 170px; }
+.agc-search { width: 220px; flex: 0 0 auto; }
+.agc-info { cursor: help; opacity: 0.5; font-size: 12px; }
+
+/* ── Two-pane body ──────────────────────────────────────────────────────────── */
+.agc-panes {
+  display: grid;
+  grid-template-columns: 172px 1fr;
+  border: 1px solid rgba(128, 128, 128, 0.22);
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 360px;
 }
 
-.agc-select {
-  width: 100%;
-}
-
-/* Advanced raw core-option escape hatch */
-.agc-advanced .ant-collapse-header {
-  padding-left: 0 !important;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.agc-adv-body {
+.agc-rail {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  padding: 7px;
+  border-right: 1px solid rgba(128, 128, 128, 0.22);
+  background: rgba(128, 128, 128, 0.05);
+}
+.agc-rail__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--text-primary, inherit);
+  font-size: 13px;
+  padding: 8px 11px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.agc-rail__item:hover { background: rgba(128, 128, 128, 0.12); }
+.agc-rail__item.is-active {
+  background: var(--accent-soft, rgba(24, 144, 255, 0.16));
+  font-weight: 600;
+}
+.agc-rail__count {
+  font-size: 11px;
+  opacity: 0.6;
+  background: rgba(128, 128, 128, 0.16);
+  border-radius: 10px;
+  padding: 0 7px;
+  min-width: 20px;
+  text-align: center;
+}
+.agc-rail__item.is-active .agc-rail__count { opacity: 0.8; }
+
+.agc-content {
+  padding: 12px 16px;
+  max-height: 58vh;
+  overflow-y: auto;
 }
 
-.agc-adv-note {
-  margin: 0 0 4px;
-  font-size: 12px;
-  opacity: 0.7;
-  line-height: 1.45;
+/* ── An option row: label + control, description beneath ────────────────────── */
+.agc-opt {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
 }
-
-.agc-adv-row {
+.agc-opt:last-child { border-bottom: none; }
+.agc-opt__row {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 8px;
+  grid-template-columns: 1fr minmax(150px, 210px);
+  gap: 14px;
+  align-items: center;
+}
+.agc-opt__label { font-size: 13px; line-height: 1.35; }
+.agc-opt__control { justify-self: stretch; }
+.agc-opt__control .ant-select,
+.agc-opt__control .ant-input,
+.agc-opt__control .ant-input-number { width: 100%; }
+.agc-opt__desc {
+  font-size: 11.5px;
+  opacity: 0.6;
+  margin-top: 4px;
+  line-height: 1.5;
+  max-width: 92%;
 }
 
-@media (max-width: 560px) {
-  .agc-field {
-    grid-template-columns: 1fr;
-    align-items: stretch;
-    gap: 4px;
+.agc-empty { opacity: 0.6; font-size: 13px; padding: 24px 4px; }
+
+/* ── Advanced + Notes panes ─────────────────────────────────────────────────── */
+.agc-adv, .agc-notes { display: flex; flex-direction: column; gap: 8px; }
+.agc-adv__note { margin: 0 0 4px; font-size: 12px; opacity: 0.65; line-height: 1.5; }
+.agc-adv__row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
+.agc-adv .ant-btn-sm { align-self: flex-start; }
+
+/* ── Responsive: stack the rail above the content ───────────────────────────── */
+@media (max-width: 640px) {
+  .agc-panes { grid-template-columns: 1fr; }
+  .agc-rail {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.22);
   }
+  .agc-rail__item { white-space: nowrap; }
+  .agc-opt__row { grid-template-columns: 1fr; gap: 6px; }
+  .agc-search { width: 100%; }
 }
