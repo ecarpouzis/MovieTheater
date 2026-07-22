@@ -90,7 +90,11 @@ namespace MovieTheater.Arcade
         /// the ordinary parenthesized "(Disc N)" tag and a free-text trailing "- Disc N" suffix (e.g. the R:
         /// collection's "Baldur's Gate - Disc 1/2/3", which carries no region/parens at all).</summary>
         public static string M3uKey(string cloudRetroGameKey) =>
-            Regex.Replace(cloudRetroGameKey, @"\s*\(Dis[ck]\s*\d+\)|\s*-\s*Dis[ck]\s*\d+\s*$", "", RegexOptions.IgnoreCase).Trim();
+            Regex.Replace(cloudRetroGameKey,
+                // parenthesized "(Disc N)" / "(Disk N)" / "(CD N)" / "(Disque N)"; a trailing "- Disc N";
+                // or a separator-bounded abbreviated "cdN" / "disque N" (see DiscNumber for the bounding).
+                @"\s*\((?:dis[ck]|cd|disque)\s*\d+\)|\s*-\s*Dis[ck]\s*\d+\s*$|[(\[\-_ ](?:cd|disque)\s*\d+(?=$|[)\]\-_ ])",
+                "", RegexOptions.IgnoreCase).Trim();
 
         /// <summary>For a chosen version anchor, how many discs its version has and the .m3u launch key
         /// (null when it's single-disc). Multi-disc = &gt;1 disc row sharing the anchor's version identity.</summary>
@@ -124,9 +128,14 @@ namespace MovieTheater.Arcade
             // Ordinary "(Disc N)" tag, or a free-text trailing "- Disc N" suffix with no parens at all
             // (e.g. "Baldur's Gate - Disc 1/2/3" — an older-style release the R: collection carries as-is).
             var m = Regex.Match(key, @"\(Dis[ck]\s*(\d+)|-\s*Dis[ck]\s*(\d+)\s*$", RegexOptions.IgnoreCase);
-            if (!m.Success) return 0;
-            var g = m.Groups[1].Success ? m.Groups[1] : m.Groups[2];
-            return int.Parse(g.Value);
+            if (m.Success) return int.Parse((m.Groups[1].Success ? m.Groups[1] : m.Groups[2]).Value);
+            // Abbreviated / foreign disc tags the coded Saturn/PCE sets carry — "cdN" / "cd N" / "(CD N)" /
+            // French "disque N" — as a SEPARATOR-BOUNDED token that may sit MID-name before a format or
+            // region suffix ("0691-atlantis-fre-cd1", "... cd1 gdi (e) [ger]", "chisato moritako cd2").
+            // The bounding (a separator/paren before, and end/separator/paren after the digits) is what
+            // keeps "Discworld", "MacDonald", "Sonic CD" (no trailing digit) etc. from ever matching.
+            var cd = Regex.Match(key, @"(?:^|[(\[\-_ ])(?:cd|disque)\s*(\d+)(?:$|[)\]\-_ ])", RegexOptions.IgnoreCase);
+            return cd.Success ? int.Parse(cd.Groups[1].Value) : 0;
         }
 
         // The TOSEC "bare" version token that sits after the title and BEFORE the first (/[ — e.g.

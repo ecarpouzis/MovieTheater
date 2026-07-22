@@ -466,7 +466,11 @@ emulator:
         dc:
           lib: flycast_custom_libretro
           folder: dc
-          roms: ["chd", "gdi", "cdi", "cue"]
+          # "m3u" REQUIRED for multi-disc: the site collapses per-disc rows into one card that launches
+          # "<name>.m3u" (ArcadeVersions.M3uKey) with in-game disc swap (patch 0005). Without the ext here
+          # the scoped lookup (patch 0037) can't find the playlist under this system and falls back to the
+          # global one, where gc/Dolphin owns .m3u — the exact segacd->Dolphin misroute. Single-disc unaffected.
+          roms: ["m3u", "chd", "gdi", "cdi", "cue"]
           # ── VULKAN + zero-copy — LIVE 2026-07-16 (W4). dc renders on flycast-Vk, 60fps/0-freeze,
           #    zero-copy ACTIVE (set_image==zc_tex, 0 drops), VMU seed+harvest cycling, close x5 clean. ──
           # ── VULKAN + PER-PIXEL OIT ARM (W4, docs/arcade-vulkan-w3w4w5-spec.md) — PROPOSED, gated ──
@@ -658,7 +662,7 @@ emulator:
           # ROLLBACK: lib: pcsx2_libretro (stock is untouched and sits right beside it).
           lib: pcsx2_custom_libretro
           folder: ps2
-          roms: ["iso", "cso", "chd", "bin", "mdf", "zso"]
+          roms: ["m3u", "iso", "cso", "chd", "bin", "mdf", "zso"]   # m3u = multi-disc (see dc note)
           isGlAllowed: false   # Vulkan by default (see hwContext); GL zero-copy arming stays off
           # VULKAN BY DEFAULT: every PS2 game renders on paraLLEl-GS via the Vulkan-capture path.
           # Per-game GL escape: set pcsx2_renderer:"OpenGL" in game-overrides.json.
@@ -1248,7 +1252,7 @@ emulator:
         segacd:
           lib: genesis_plus_gx_libretro
           folder: segacd
-          roms: ["cue", "chd", "iso"]
+          roms: ["m3u", "cue", "chd", "iso"]   # m3u = multi-disc (see dc note); fixes segacd->Dolphin misroute
           scale: 3   # was 2 -- 320x224 native, matches gen
 
         # ─── Other 2D cores (each pins its folder so extension collisions can't cross-load) ──────
@@ -1261,7 +1265,7 @@ emulator:
           # mednafen_pce (full) covers TurboGrafx-16 / PC Engine + SuperGrafx + PCE-CD (syscard3.pce).
           lib: mednafen_pce_libretro
           folder: pce
-          roms: ["pce", "sgx", "cue", "chd"]
+          roms: ["m3u", "pce", "sgx", "cue", "chd"]   # m3u = multi-disc (see dc note)
           scale: 3
         ngpc:
           lib: mednafen_ngp_libretro
@@ -1366,7 +1370,7 @@ emulator:
           # region; both US (panafz10.bin) and JP-adjacent (goldstar.bin) staged for a mixed-region set.
           lib: opera_libretro
           folder: 3do
-          roms: ["cue", "chd", "iso"]
+          roms: ["m3u", "cue", "chd", "iso"]   # m3u = multi-disc (see dc note)
           scale: 3
           options:
             opera_bios: "panafz10.bin"
@@ -1401,7 +1405,7 @@ emulator:
           # config — that's upstream, not ours to fix. No save-states/cheats on this core.
           lib: same_cdi_libretro
           folder: cdi
-          roms: ["chd", "iso", "cue"]
+          roms: ["m3u", "chd", "iso", "cue"]   # m3u = multi-disc (see dc note)
           scale: 3
 
 

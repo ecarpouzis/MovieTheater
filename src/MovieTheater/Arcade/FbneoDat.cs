@@ -46,21 +46,30 @@ namespace MovieTheater.Arcade
                 throw new FileNotFoundException($"FBNeo DAT not found: {full}");
 
             var doc = XDocument.Load(full);
-            var version = doc.Root?.Element("header")?.Element("version")?.Value?.Trim() ?? "unknown";
+            // FBNeo ClrMamePro DATs carry <header><version>; a MAME `-listxml` dump carries build="0.xxx"
+            // on the root <mame> instead — accept either so this one loader serves both sources.
+            var version = doc.Root?.Element("header")?.Element("version")?.Value?.Trim()
+                          ?? (string?)doc.Root?.Attribute("build") ?? "unknown";
 
             var entries = new Dictionary<string, Entry>(StringComparer.OrdinalIgnoreCase);
-            foreach (var g in doc.Root!.Elements("game"))
+            // FBNeo uses <game>; MAME `-listxml` uses <machine>. Same attributes/children otherwise.
+            foreach (var g in doc.Root!.Elements().Where(e => e.Name.LocalName is "game" or "machine"))
             {
                 var name = (string?)g.Attribute("name");
                 if (string.IsNullOrWhiteSpace(name)) continue;
                 var desc = g.Element("description")?.Value?.Trim() ?? name;
                 int? year = int.TryParse(g.Element("year")?.Value?.Trim(), out var y) ? y : null;
+                // "Not a playable game": a BIOS set, a MAME device, or an explicitly non-runnable machine.
+                bool notAGame =
+                    string.Equals((string?)g.Attribute("isbios"), "yes", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals((string?)g.Attribute("isdevice"), "yes", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals((string?)g.Attribute("runnable"), "no", StringComparison.OrdinalIgnoreCase);
                 entries[name] = new Entry(
                     Name: name,
                     Description: desc,
                     CloneOf: (string?)g.Attribute("cloneof"),
                     RomOf: (string?)g.Attribute("romof"),
-                    IsBios: string.Equals((string?)g.Attribute("isbios"), "yes", StringComparison.OrdinalIgnoreCase),
+                    IsBios: notAGame,
                     Year: year,
                     Manufacturer: g.Element("manufacturer")?.Value?.Trim());
             }
