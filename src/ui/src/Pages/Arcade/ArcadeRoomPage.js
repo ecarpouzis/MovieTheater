@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
-import { DEFAULT_CHORDS } from "./controllerChords";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
+import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
 import { useWakeLock } from "../../useWakeLock";
@@ -109,6 +109,11 @@ export default function ArcadeRoomPage() {
   // Gamepad button rebinding: track which button is being remapped (null = not rebinding, or a button index 0-15)
   const [rebindingButton, setRebindingButton] = useState(null);
   const [customGamepadProfile, setCustomGamepadProfileState] = useState({});
+  // Quick-action chord binds (hold-to-fire quickSave/quickLoad/reset). Custom combos merged over the
+  // defaults; global (bit-based), unlike the per-system button profile. rebindingChord = the action id
+  // currently capturing a combo, or null.
+  const [customChords, setCustomChordsState] = useState(() => getCustomChords());
+  const [rebindingChord, setRebindingChord] = useState(null);
   // Whether the left analog stick also acts as the d-pad, for THIS room's input system. Default is
   // per-system (off for analog-native consoles so the stick doesn't double-bind with the d-pad —
   // e.g. N64 aim, GC/Wii Smash taunt); a saved override wins. Toggled live from the mapping panel.
@@ -1025,12 +1030,59 @@ export default function ArcadeRoomPage() {
           </Text>
         </div>
 
-        {/* Quick actions: hold-to-fire chords, generated from the shipped defaults so this text
-            can never drift out of sync with what actually fires. Fast-forward isn't listed — no
-            wire/worker support for it yet. */}
-        <Text type="secondary" style={{ display: "block", marginTop: 12, fontSize: 12 }}>
-          Quick actions (hold): {DEFAULT_CHORDS.map((c) => `${c.bits.join("+")} = ${CHORD_ACTION_LABEL[c.action] || c.action}`).join(" · ")}
-        </Text>
+        {/* Quick actions: hold-to-fire chords (quick-save/quick-load/reset), each rebindable to a
+            physical button COMBO. The shim's chord watcher re-reads them live via reloadChords().
+            Fast-forward isn't listed — no wire/worker support for it yet. */}
+        <div style={{ borderTop: "1px solid rgba(128,128,128,0.25)", marginTop: 12, paddingTop: 12 }}>
+          <Text style={{ display: "block", marginBottom: 6 }}>Quick actions (hold a combo)</Text>
+          {(() => {
+            const chordRows = mappingRowsFor(effectiveInputSystem(system, gameKey, controllerScheme), mappingPad, customGamepadProfile);
+            const physToBit = (pi) => chordRows.find((r) => r.physicalButtonIndex === pi)?.bitName;
+            const bitLabel = (bn) => chordRows.find((r) => r.bitName === bn)?.consoleLabel || bn;
+            const chords = resolveChords(customChords);
+            return DEFAULT_CHORDS.map((d) => {
+              const bits = (chords.find((c) => c.action === d.action) || d).bits;
+              const comboLabel = bits.map(bitLabel).join(" + ") || "—";
+              const isRebinding = rebindingChord === d.action;
+              return (
+                <div key={d.action} style={{ marginBottom: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <Text style={{ flex: 1, fontSize: 13 }}>{CHORD_ACTION_LABEL[d.action] || d.action}</Text>
+                    <Text type="secondary" style={{ fontSize: 12, minWidth: 110, textAlign: "right" }}>{comboLabel}</Text>
+                    <Button
+                      size="small"
+                      type={isRebinding ? "primary" : "default"}
+                      onClick={() => setRebindingChord(isRebinding ? null : d.action)}
+                    >
+                      {isRebinding ? "Hold combo…" : "Rebind"}
+                    </Button>
+                  </div>
+                  {isRebinding && (
+                    <ChordRebindCapture
+                      physToBit={physToBit}
+                      bitLabel={bitLabel}
+                      onRebind={(newBits) => {
+                        const next = { ...customChords, [d.action]: newBits };
+                        setCustomChordsState(next);
+                        setCustomChords(next);
+                        sessionRef.current?.reloadChords?.();
+                        message.success(`${CHORD_ACTION_LABEL[d.action] || d.action}: ${newBits.map(bitLabel).join(" + ")}`);
+                        setRebindingChord(null);
+                      }}
+                      onCancel={() => setRebindingChord(null)}
+                    />
+                  )}
+                </div>
+              );
+            });
+          })()}
+          <a
+            style={{ fontSize: 12 }}
+            onClick={() => { resetCustomChords(); setCustomChordsState({}); sessionRef.current?.reloadChords?.(); setRebindingChord(null); }}
+          >
+            Reset quick actions to defaults
+          </a>
+        </div>
         {/* Heavy-lane guard (docs/arcade-heavy-lane-plan.md §6.3): on the PC that hosts Moonlight
             streams, guests' forwarded controllers surface as virtual Xbox 360 (XInput) pads that the
             press-a-button detector would happily seat into THIS room. Enable only on the stream host
@@ -1133,6 +1185,79 @@ function GamepadRebindCapture({ targetBit, onRebind, onCancel }) {
     }}>
       <Text strong style={{ display: "block", marginBottom: 8 }}>Press the button on your controller...</Text>
       <Text type="secondary" style={{ fontSize: 12 }}>Waiting for input (timeout in 5s)</Text>
+      <div style={{ marginTop: 8 }}>
+        <Button onClick={onCancel} size="small">Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+// Capture a physical button COMBO for a quick-action chord. Hold the combo, then release: we track the
+// largest set of RetroPad bits held at once (fresh presses only — buttons already down when capture
+// started are seeded out, same as the single-button rebind) and commit it once everything is released.
+// physToBit converts a (face-swap-corrected) physical index to its RetroPad bit name via the room's
+// current mapping, so the stored chord is bits — exactly what the shim's watcher matches on the mask.
+function ChordRebindCapture({ physToBit, bitLabel, onRebind, onCancel }) {
+  const [held, setHeld] = useState([]);
+  const baseRef = useRef(null);
+  const peakRef = useRef([]);
+
+  useEffect(() => {
+    const key = (gi, i) => gi + ":" + i;
+    const snapshot = () => {
+      const s = new Set();
+      (navigator.getGamepads ? navigator.getGamepads() : []).forEach((gp, gi) => {
+        if (gp) gp.buttons.forEach((b, i) => { if (b.pressed) s.add(key(gi, i)); });
+      });
+      return s;
+    };
+    baseRef.current = snapshot();
+
+    const iv = setInterval(() => {
+      const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+      const now = new Set();
+      const freshBits = new Set();
+      let anyFresh = false;
+      gps.forEach((gp, gi) => {
+        if (!gp) return;
+        const swap = effectiveFaceSwap(gp);
+        for (let i = 0; i < gp.buttons.length; i++) {
+          if (!gp.buttons[i].pressed) continue;
+          const k = key(gi, i);
+          now.add(k);
+          if (baseRef.current.has(k)) continue; // held when capture started — not part of a fresh combo
+          anyFresh = true;
+          const pi = swap && i < 4 ? (i ^ 1) : i;
+          const bn = physToBit(pi);
+          if (bn) freshBits.add(bn);
+        }
+      });
+      // Let a baseline button that's been released count as fresh if pressed again.
+      baseRef.current = new Set([...baseRef.current].filter((k) => now.has(k)));
+      const arr = [...freshBits];
+      setHeld(arr);
+      if (arr.length > peakRef.current.length) peakRef.current = arr;
+      // Commit the peak once the whole combo is released, after at least one bit was captured.
+      if (!anyFresh && peakRef.current.length > 0) {
+        clearInterval(iv);
+        onRebind(peakRef.current.slice(0, 6));
+      }
+    }, 50);
+
+    const to = setTimeout(() => {
+      clearInterval(iv);
+      onCancel();
+      message.warning("No combo detected — try again");
+    }, 8000);
+    return () => { clearInterval(iv); clearTimeout(to); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div style={{ backgroundColor: "rgba(0,0,0,0.05)", padding: 10, borderRadius: 4, marginTop: 6, marginBottom: 6, border: "2px solid #1890ff" }}>
+      <Text strong style={{ display: "block" }}>Hold the button combo, then release…</Text>
+      <Text type="secondary" style={{ fontSize: 12 }}>
+        {held.length > 0 ? `Holding: ${held.map(bitLabel).join(" + ")}` : "Waiting for input (timeout in 8s)"}
+      </Text>
       <div style={{ marginTop: 8 }}>
         <Button onClick={onCancel} size="small">Cancel</Button>
       </div>

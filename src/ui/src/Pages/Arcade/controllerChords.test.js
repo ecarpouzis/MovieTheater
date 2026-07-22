@@ -1,8 +1,35 @@
 import { describe, it, expect } from "vitest";
 import { PAD } from "./cloudRetroClient";
-import { DEFAULT_CHORDS, createChordWatcher } from "./controllerChords";
+import { DEFAULT_CHORDS, createChordWatcher, resolveChords } from "./controllerChords";
 
 const maskOf = (...names) => names.reduce((m, name) => m | (1 << PAD[name]), 0);
+
+describe("resolveChords — custom binds merged over the defaults", () => {
+  it("overrides an action's bits, keeps its default holdMs, and leaves other actions untouched", () => {
+    const r = resolveChords({ quickSave: ["SELECT", "B"] });
+    const save = r.find((c) => c.action === "quickSave");
+    const load = r.find((c) => c.action === "quickLoad");
+    expect(save.bits).toEqual(["SELECT", "B"]);
+    expect(save.holdMs).toBe(DEFAULT_CHORDS.find((c) => c.action === "quickSave").holdMs);
+    expect(load.bits).toEqual(DEFAULT_CHORDS.find((c) => c.action === "quickLoad").bits); // untouched
+  });
+
+  it("falls back to the default when the custom entry is empty, missing, or all-invalid", () => {
+    expect(resolveChords({}).map((c) => c.bits)).toEqual(DEFAULT_CHORDS.map((c) => c.bits));
+    expect(resolveChords({ reset: [] }).find((c) => c.action === "reset").bits)
+      .toEqual(DEFAULT_CHORDS.find((c) => c.action === "reset").bits);
+    expect(resolveChords({ quickSave: ["NOPE", 42] }).find((c) => c.action === "quickSave").bits)
+      .toEqual(DEFAULT_CHORDS.find((c) => c.action === "quickSave").bits);
+  });
+
+  it("a resolved custom chord actually fires through the watcher", () => {
+    const fired = [];
+    const w = createChordWatcher((a) => fired.push(a), resolveChords({ quickSave: ["SELECT", "B"] }));
+    w.poll(maskOf("SELECT", "B"), 0);
+    w.poll(maskOf("SELECT", "B"), 1000);
+    expect(fired).toEqual(["quickSave"]);
+  });
+});
 
 describe("createChordWatcher — basic hold-to-fire semantics", () => {
   it("does not fire before holdMs, fires exactly once at the threshold while held continuously", () => {

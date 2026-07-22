@@ -24,6 +24,22 @@ export const DEFAULT_CHORDS = [
 ];
 
 /**
+ * Merge user-chosen button combos over the shipped defaults. `customBitsByAction` is
+ * { quickSave: ["SELECT","B"], quickLoad: [...], ... } — a set of RetroPad bit NAMES per action, as
+ * captured in the controller tool. A missing/empty/all-invalid entry keeps that action's default (a
+ * chord needs at least one real bit). holdMs is NOT user-editable — the timing stays the default.
+ * Returns the same shape DEFAULT_CHORDS has, ready for createChordWatcher.
+ */
+export function resolveChords(customBitsByAction) {
+  const custom = customBitsByAction || {};
+  return DEFAULT_CHORDS.map((d) => {
+    const raw = custom[d.action];
+    const bits = Array.isArray(raw) ? raw.filter((n) => typeof n === "string" && n in PAD) : null;
+    return bits && bits.length > 0 ? { ...d, bits } : d;
+  });
+}
+
+/**
  * Build a poll(mask, now) function that fires `onFire(action)` once a chord has been held
  * continuously for its holdMs. Chords whose bits are a SUBSET of another currently-satisfied
  * chord are suppressed (a "specificity claim" pass, most-bits-first) so e.g. holding L3+R3+SELECT

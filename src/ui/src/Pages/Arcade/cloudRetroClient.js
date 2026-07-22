@@ -13,7 +13,7 @@
 // sent on change only, no player-index byte. See encodeInput() for the details.
 
 import { effectiveFaceSwap } from "./controllerIdentity";
-import { createChordWatcher } from "./controllerChords";
+import { createChordWatcher, resolveChords } from "./controllerChords";
 
 // Packet types (Appendix A2).
 const T = {
@@ -319,6 +319,31 @@ export function resetCustomGamepadProfile(system = "default") {
   } catch { /* storage disabled */ }
 }
 
+// Custom quick-action CHORD binds. Global (not per-system): a chord is a set of RetroPad bit names
+// (the mapping OUTPUT), so it means the same thing everywhere. Shape: { quickSave: ["SELECT","B"], … };
+// a missing action keeps its shipped default (controllerChords.resolveChords). The room's chord watcher
+// re-reads this via session.reloadChords() after a rebind, so it takes effect live like button remaps.
+let customChordBinds = (() => {
+  try {
+    const stored = localStorage.getItem("arcade.customChords");
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+})();
+
+export function getCustomChords() { return customChordBinds; }
+
+export function setCustomChords(binds) {
+  customChordBinds = binds || {};
+  try { localStorage.setItem("arcade.customChords", JSON.stringify(customChordBinds)); } catch { /* storage disabled */ }
+}
+
+export function resetCustomChords() {
+  customChordBinds = {};
+  try { localStorage.removeItem("arcade.customChords"); } catch { /* storage disabled */ }
+}
+
 // ── Left-stick → D-pad fold (per-system, user-overridable) ───────────────────────────────────
 // Whether the analog LEFT STICK ALSO presses the d-pad bits. Correct ONLY for pure-dpad 2D cores,
 // where stick and d-pad both mean "move" so an analog-only pad can still steer. On an analog-native
@@ -497,7 +522,9 @@ export function createCloudRetroSession(descriptor, opts) {
   // built when a caller passes onChordAction (the primary session; local-player extra sessions
   // don't). No spectator guard needed here: pumpInput's own timer never starts for a spectator
   // (see stopInput/startInput below), so this can never be polled for one.
-  const chordWatcher = onChordAction ? createChordWatcher(onChordAction) : null;
+  // Chord watcher uses the user's custom binds merged over the defaults. `let` so reloadChords() can
+  // rebuild it live when a bind changes in the controller tool (no room restart).
+  let chordWatcher = onChordAction ? createChordWatcher(onChordAction, resolveChords(customChordBinds)) : null;
 
   let ws = null;
   let pc = null;
@@ -1145,6 +1172,9 @@ export function createCloudRetroSession(descriptor, opts) {
     // true state — otherwise a d-pad bit that the fold was adding stays "held" on the worker until the
     // stick next crosses the deadzone.
     setStickFold: (on) => { foldStickToDpad = !!on; last = null; },
+    // Rebuild the chord watcher from the current custom binds (controller tool "Quick actions" rebind),
+    // so a changed chord fires immediately without restarting the room. No-op for non-primary sessions.
+    reloadChords: () => { if (onChordAction) chordWatcher = createChordWatcher(onChordAction, resolveChords(customChordBinds)); },
     save: asPlayer(() => send(T.GAME_SAVE, {})),
     load: asPlayer(() => send(T.GAME_LOAD, {})),
     reset: asPlayer(() => send(T.GAME_RESET, {})),
