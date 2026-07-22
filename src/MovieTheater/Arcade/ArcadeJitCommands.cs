@@ -650,6 +650,20 @@ namespace MovieTheater.Arcade
             }
             return string.Join('-', segments);
         }
+
+        /// <summary>Title-case any ALL-LOWERCASE segment of a name — segments split by " - ", " / ", ": "
+        /// — while leaving already-cased segments untouched. Fixes the FBNeo DAT's lowercase subtitles
+        /// ("Darkstalkers - the night warriors" → "Darkstalkers - The Night Warriors", "1944 - the loop
+        /// master" → "1944 - The Loop Master") WITHOUT re-casing a proper segment or an acronym ("WWF" must
+        /// not become "Wwf"): a segment containing any uppercase letter is assumed intentional and kept.</summary>
+        internal static string NormalizeSegmentCase(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+            var parts = Regex.Split(s, @"(\s[-/]\s|:\s+)");   // keep the separators (odd indices)
+            for (int i = 0; i < parts.Length; i += 2)
+                if (IsAllLower(parts[i])) parts[i] = TitleCase(parts[i].Trim());
+            return string.Join("", parts);
+        }
     }
 
     /// <summary>

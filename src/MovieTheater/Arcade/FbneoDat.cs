@@ -117,7 +117,9 @@ namespace MovieTheater.Arcade
             var desc = byName.TryGetValue(parent, out var pe) ? pe.Description
                      : byName.TryGetValue(shortName, out var e) ? e.Description
                      : shortName;
-            return CleanDescription(desc);
+            // Case-normalize lowercase subtitle segments the DAT carries ("... - the loop master"),
+            // leaving proper/acronym segments alone. Harmless on already-cased MAME descriptions.
+            return ArcadeNaming.NormalizeSegmentCase(CleanDescription(desc));
         }
 
         // Strip trailing parenthetical/bracket qualifier groups from a DAT description so a family's
