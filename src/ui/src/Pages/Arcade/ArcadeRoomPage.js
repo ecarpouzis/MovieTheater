@@ -29,6 +29,12 @@ const LIVE_STATUS = ["playing", "spectating"];
 // straight through rather than going through cloudRetroClient.js's RetroPad remapping, so a
 // mapping table for them would be meaningless.
 const NOT_REMAPPED_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "capture"]);
+
+// Systems with NO emulator save-state: their progress is a virtual memory card, not a serialized
+// machine state. psp + ps2 are noSaveStates cores (config.worker-gl.yaml — a t=106 there returns
+// ErrNoSaveStates); the heavy/capture lanes stream a native app and never touch the CloudRetro save
+// path at all. The first-play pre-warm below must skip them. Keep in step with config.worker-gl.yaml.
+const NO_SAVE_STATE_SYSTEMS = new Set(["psp", "ps2", "switch", "ps3", "ps4", "wiiu", "x360", "capture"]);
 const MAPPABLE_SYSTEM_OPTIONS = Object.keys(SYSTEM_LABEL)
   .filter((s) => !NOT_REMAPPED_SYSTEMS.has(s))
   .map((s) => ({ value: s, label: systemLabel(s) }))
@@ -137,6 +143,10 @@ export default function ArcadeRoomPage() {
   // (sessionStorage survives window.location.reload) and stop with a real message on the second.
   const CRASH_KEY = `arcade-crashloop-${code}`;
   const crashLiveAtRef = useRef(0);
+  // One-shot guard for the first-play save-state pre-warm (Fix B, fired from onStatus when the game first
+  // goes live). Ref, not state — it must survive re-renders without re-triggering, and the onStatus
+  // callback is captured once at mount so it can't read a re-rendered value anyway.
+  const saveStateSeededRef = useRef(false);
   const countCrash = () => {
     const n = (parseInt(sessionStorage.getItem(CRASH_KEY), 10) || 0) + 1;
     sessionStorage.setItem(CRASH_KEY, String(n));
@@ -240,6 +250,21 @@ export default function ArcadeRoomPage() {
           if (LIVE_STATUS.includes(s)) {
             tryPlayVideo();
             if (!crashLiveAtRef.current) crashLiveAtRef.current = Date.now();
+            // Pre-warm the live save-state file the first time the game is actually playing (Fix B): the
+            // room owner fires ONE SAVE (t=106) so the worker writes <roomId>.dat to the mount now, not the
+            // first time someone presses Save. A brand-new game has no seeded .dat, and a cold-boot
+            // retro_serialize can lag the Save button's own flush — establishing it up front makes that
+            // first Save reliably instant. This writes ONLY the machine-owned live/continue file (the same
+            // one autosave rewrites every 120s); it never touches the human-owned quicksave/snapshot slots,
+            // so a returning player's deliberate saves are safe. Owner-only (one writer suffices — the file
+            // is the room's shared state); skipped for noSaveStates + native-lane systems.
+            if (!saveStateSeededRef.current && descriptor.isCreator &&
+                !NO_SAVE_STATE_SYSTEMS.has(String(descriptor.system || "").toLowerCase())) {
+              saveStateSeededRef.current = true;
+              setTimeout(() => {
+                if (!cancelled && LIVE_STATUS.includes(statusRef.current)) sessionRef.current?.save?.();
+              }, 2000);
+            }
             // A session that stays alive past 30s is genuinely playing — forgive earlier stumbles.
             setTimeout(() => {
               if (!cancelled && LIVE_STATUS.includes(statusRef.current)) sessionStorage.removeItem(CRASH_KEY);

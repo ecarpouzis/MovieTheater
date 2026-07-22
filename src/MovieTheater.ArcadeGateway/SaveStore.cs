@@ -285,24 +285,55 @@ public sealed class SaveStore
 
     // ── Snapshots (S3): named save-state slots the user creates from the live game ────────────────────
 
+    /// <summary>How long an in-room Save/Snapshot copy waits for the worker's flushed save-state file to
+    /// appear before giving up. The client fires a SAVE (t=106) just before calling us, but a cold-boot
+    /// <c>retro_serialize</c>+write can lag its fixed pre-wait — and a never-saved game has no seeded
+    /// <c>.dat</c> to fall back on. Polling here, instead of trusting a single glance, is what stops the
+    /// spurious "no live save yet" on the FIRST save of a freshly-booted game; a warm game's <c>.dat</c>
+    /// already exists and returns on the first check with no added latency.</summary>
+    private const int SaveFlushWaitMs = 4000;
+
     /// <summary>Copy the session's CURRENT live state (<c>&lt;sessionId&gt;.dat</c> in the mount) into a
     /// NEW numbered snapshot slot (≥1) with the user's label. The caller should have the client flush a
     /// SAVE (t=106) first so the .dat is current. Returns the new slot's metadata (to mirror into the DB),
-    /// or null if there's no live state yet.</summary>
+    /// or null if no live state lands within <see cref="SaveFlushWaitMs"/>.</summary>
     public Task<SaveMeta?> SnapshotCurrentAsync(
         int userId, int gameId, string system, string sessionId, string? label, CancellationToken ct = default) =>
         SnapshotToSlotAsync(userId, gameId, system, sessionId, NextSnapshotSlot(userId, gameId), label, ct);
 
     /// <summary>Copy the session's live state into a SPECIFIC slot, replacing whatever is there. This is
     /// how the in-room Save button writes the <see cref="QuickSlot"/>: a deliberate save must land in a
-    /// slot the machine never writes.</summary>
+    /// slot the machine never writes. Waits up to <see cref="SaveFlushWaitMs"/> for the client's t=106
+    /// flush to reach disk before concluding there's nothing to copy.</summary>
     public async Task<SaveMeta?> SnapshotToSlotAsync(
         int userId, int gameId, string system, string sessionId, int slot, string? label, CancellationToken ct = default)
     {
         var dat = MountFile(sessionId, ".dat");
-        if (!File.Exists(dat)) return null;
+        if (!await WaitForFileAsync(dat, SaveFlushWaitMs, ct)) return null;
         return await CopyIntoStoreAsync(userId, gameId, system, KindState, slot, label,
             coreName: null, coreVersion: null, src: dat, destName: SlotFile(slot), isAutosave: false, ct);
+    }
+
+    /// <summary>Poll for a mount file to appear, up to <paramref name="timeoutMs"/>, returning true as soon
+    /// as it exists. Bridges the gap between the client's SAVE (t=106) and the worker's write landing on
+    /// disk. When the file only shows up mid-poll it was JUST written, so a short settle lets the worker
+    /// close it before <see cref="CopyIntoStoreAsync"/> reads it (a file already present on the first check
+    /// is the settled warm case and returns immediately).</summary>
+    private static async Task<bool> WaitForFileAsync(string path, int timeoutMs, CancellationToken ct)
+    {
+        const int stepMs = 150;
+        int waited = 0;
+        while (true)
+        {
+            if (File.Exists(path))
+            {
+                if (waited > 0) { try { await Task.Delay(200, ct); } catch { /* copy will retry-or-fail cleanly */ } }
+                return true;
+            }
+            if (waited >= timeoutMs || ct.IsCancellationRequested) return false;
+            try { await Task.Delay(stepMs, ct); } catch { return false; }
+            waited += stepMs;
+        }
     }
 
     /// <summary>Swap a stored slot's bytes into the live mount <c>&lt;sessionId&gt;.dat</c> so an in-room
