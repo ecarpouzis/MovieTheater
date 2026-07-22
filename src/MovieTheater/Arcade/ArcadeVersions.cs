@@ -86,9 +86,11 @@ namespace MovieTheater.Arcade
             $"{(g.Region ?? "").ToLowerInvariant()}|{(g.Variant ?? "").ToLowerInvariant()}|{RevValue(g.CloudRetroGameKey)}|{(Edition(g.CloudRetroGameKey) ?? "").ToLowerInvariant()}";
 
         /// <summary>The CloudRetro launch key of the .m3u playlist for a multi-disc game — the ROM name with
-        /// the "(Disc N)" tag stripped (so the core loads "&lt;name&gt;.m3u" instead of a single disc).</summary>
+        /// the disc tag stripped (so the core loads "&lt;name&gt;.m3u" instead of a single disc). Covers both
+        /// the ordinary parenthesized "(Disc N)" tag and a free-text trailing "- Disc N" suffix (e.g. the R:
+        /// collection's "Baldur's Gate - Disc 1/2/3", which carries no region/parens at all).</summary>
         public static string M3uKey(string cloudRetroGameKey) =>
-            Regex.Replace(cloudRetroGameKey, @"\s*\(Dis[ck]\s*\d+\)", "", RegexOptions.IgnoreCase).Trim();
+            Regex.Replace(cloudRetroGameKey, @"\s*\(Dis[ck]\s*\d+\)|\s*-\s*Dis[ck]\s*\d+\s*$", "", RegexOptions.IgnoreCase).Trim();
 
         /// <summary>For a chosen version anchor, how many discs its version has and the .m3u launch key
         /// (null when it's single-disc). Multi-disc = &gt;1 disc row sharing the anchor's version identity.</summary>
@@ -119,8 +121,12 @@ namespace MovieTheater.Arcade
         public static int DiscNumber(string? key)
         {
             if (key == null) return 0;
-            var m = Regex.Match(key, @"\(Dis[ck]\s*(\d+)", RegexOptions.IgnoreCase);
-            return m.Success ? int.Parse(m.Groups[1].Value) : 0;
+            // Ordinary "(Disc N)" tag, or a free-text trailing "- Disc N" suffix with no parens at all
+            // (e.g. "Baldur's Gate - Disc 1/2/3" — an older-style release the R: collection carries as-is).
+            var m = Regex.Match(key, @"\(Dis[ck]\s*(\d+)|-\s*Dis[ck]\s*(\d+)\s*$", RegexOptions.IgnoreCase);
+            if (!m.Success) return 0;
+            var g = m.Groups[1].Success ? m.Groups[1] : m.Groups[2];
+            return int.Parse(g.Value);
         }
 
         // The TOSEC "bare" version token that sits after the title and BEFORE the first (/[ — e.g.

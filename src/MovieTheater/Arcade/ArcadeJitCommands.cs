@@ -58,6 +58,9 @@ namespace MovieTheater.Arcade
         [CommandOption("recursive", Description = "Also descend into subdirectories (GD-ROM-style dumps: one archive per named game folder, e.g. 'trizeal/gdl-0026.chd'). A matched file one level down uses its PARENT FOLDER name as the game key/title instead of its own arbitrary filename; top-level files keep the existing behavior.")]
         public bool Recursive { get; set; }
 
+        [CommandOption("rom-ext", Description = "Override the extracted ROM extension used for RomPath (e.g. .chd for archives that wrap a CHD rather than the system default .cue). Needed when the archive extension is a wrapper type (.7z) but the ROM inside differs from the system's first extension.")]
+        public string? RomExtOverride { get; set; }
+
         private readonly IDbContextFactory<MovieDb> dbFactory;
 
         public ArcadeJitIngestCommand(MovieTheaterConfiguration config) : base(config)
@@ -81,7 +84,11 @@ namespace MovieTheater.Arcade
             // When the source file IS the ROM the core loads (a bare .z64, a MAME .zip), keep that real
             // extension so the RomPath matches on disk and any pre-staged copy (no duplicate rows); when the
             // source is an archive that unpacks to a different ROM, use the system's nominal extension.
-            var romExt = sys.Extensions.Any(e => e.Equals(ext, StringComparison.OrdinalIgnoreCase)) ? ext : sys.Extensions[0];
+            // --rom-ext overrides the nominal extension for cases where the archive wraps a non-default ROM
+            // (e.g. .7z containing a .chd — the default would be .cue, which would miss the existing rows).
+            var romExt = RomExtOverride != null
+                ? (RomExtOverride.StartsWith('.') ? RomExtOverride : "." + RomExtOverride)
+                : sys.Extensions.Any(e => e.Equals(ext, StringComparison.OrdinalIgnoreCase)) ? ext : sys.Extensions[0];
             var search = Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
             var all = Directory.EnumerateFiles(dir, "*" + ext, search)
                 .Select(p => BuildEntry(p, dir, sys.Code, folder, romExt, sys.MaxPlayers))
@@ -570,10 +577,21 @@ namespace MovieTheater.Arcade
             int cut = t.IndexOfAny(new[] { '(', '[' });
             if (cut > 0) t = t[..cut];
             t = t.Replace('_', ' ').Trim();
+            // A handful of older-style releases carry their disc number as a free-text trailing suffix with
+            // no parens at all ("Baldur's Gate - Disc 1"/"- Disc 2"/"- Disc 3") instead of the ordinary
+            // "(Disc N)" tag the paren-stripping above already handles — without this, each disc keeps a
+            // DIFFERENT Title and never collapses into one card. Mirrors ArcadeVersions.DiscNumber/M3uKey,
+            // which strip the same suffix from CloudRetroGameKey for grouping/launch purposes.
+            t = Regex.Replace(t, @"\s*-\s*Dis[ck]\s*\d+\s*$", "", RegexOptions.IgnoreCase);
             // Strip a trailing TOSEC bare version token ("Sonic Adventure v1.005" → "Sonic Adventure") so
             // revisions of one game share a Title and collapse to one card (the version shows in the
             // dropdown via ArcadeVersions.Revision).
-            return ArcadeVersions.StripTrailingBareVersion(t);
+            t = ArcadeVersions.StripTrailingBareVersion(t);
+            // Some source collections (the R: drive's reclassified PSX/Saturn/CD-i/Sega CD/Naomi dumps)
+            // carry entirely lowercase filenames — title-case ONLY when the whole result is lowercase, so
+            // an already-properly-cased name from a normal No-Intro/Redump source (the overwhelming
+            // majority) is never touched.
+            return IsAllLower(t) ? TitleCase(t) : t;
         }
 
         public static string ArticleInvert(string title)
@@ -582,6 +600,55 @@ namespace MovieTheater.Arcade
                 if (title.StartsWith(article, StringComparison.OrdinalIgnoreCase))
                     return title[article.Length..].TrimEnd() + ", " + article.Trim();
             return title;
+        }
+
+        /// <summary>True if the string has at least one letter and none of them are uppercase — the
+        /// signature of a lowercased-filename source, as opposed to a properly-cased one (which this must
+        /// leave alone) or a title with no letters at all (numbers/punctuation only — nothing to case).</summary>
+        internal static bool IsAllLower(string s) => s.Any(char.IsLetter) && !s.Any(char.IsUpper);
+
+        // Short connector words that stay lowercase mid-title (never at the first or last word).
+        private static readonly HashSet<string> MinorWords = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "a", "an", "and", "as", "at", "but", "by", "for", "from", "in", "into", "nor", "of",
+            "on", "or", "per", "so", "the", "to", "up", "vs", "vs.", "via", "with", "yet",
+        };
+
+        /// <summary>Best-effort title case for an all-lowercase source name: capitalizes each word's first
+        /// letter (minor connector words stay lowercase unless first/last), keeps roman-numeral tokens
+        /// ("ii", "iv") fully upper, and capitalizes each side of a hyphen ("geppy-x" → "Geppy-X"). Can't
+        /// recover deliberately stylized casing (PaRappa, inFAMOUS) since the source has none left to
+        /// recover — plain title case is the reasonable ceiling here.</summary>
+        internal static string TitleCase(string s)
+        {
+            var words = s.Split(' ');
+            for (int i = 0; i < words.Length; i++)
+            {
+                if (words[i].Length == 0) continue;
+                // A lone "-" (title/subtitle separator, e.g. "Base Game - The Subtitle") or a colon starts
+                // a new clause — the word after it is an edge too, same as the very first/last word.
+                bool afterSeparator = i > 0 && (words[i - 1] == "-" || words[i - 1].EndsWith(':'));
+                bool isEdge = i == 0 || i == words.Length - 1 || afterSeparator;
+                words[i] = !isEdge && MinorWords.Contains(words[i])
+                    ? words[i].ToLowerInvariant()
+                    : CapitalizeWord(words[i]);
+            }
+            return string.Join(' ', words);
+        }
+
+        private static string CapitalizeWord(string word)
+        {
+            var segments = word.Split('-');
+            for (int i = 0; i < segments.Length; i++)
+            {
+                var seg = segments[i];
+                segments[i] = Regex.IsMatch(seg, @"^[ivxlcdm]+$", RegexOptions.IgnoreCase)
+                    ? seg.ToUpperInvariant()                                    // whole-segment roman numeral
+                    : seg.Length > 0 && char.IsLetter(seg[0])
+                        ? char.ToUpperInvariant(seg[0]) + seg[1..].ToLowerInvariant()  // only the leading
+                        : seg;                                                  // letter — "70's" stays "70's"
+            }
+            return string.Join('-', segments);
         }
     }
 
