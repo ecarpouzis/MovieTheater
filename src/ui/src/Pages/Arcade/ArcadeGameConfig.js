@@ -18,6 +18,10 @@ import "./ArcadeGameConfig.css";
  * We always submit the FULL current value set; the server stores only what differs from the game's
  * default, so "leave it alone" never pins a redundant value and Reset clears the profile entirely.
  */
+// The config Modal sits at zIndex 1600 (above the game modal). antd Select popups default lower, so
+// without this they open BEHIND the modal and look empty. Keep it above the modal.
+const DROPDOWN_STYLE = { zIndex: 1700 };
+
 const CATEGORY_ORDER = ["video", "hack", "performance", "system", "audio"];
 const CATEGORY_LABEL = {
   video: "Video & display",
@@ -155,6 +159,7 @@ export default function ArcadeGameConfig({ game, onClose }) {
                   loading={switching}
                   options={cfg.profiles.map((p) => ({ value: p.id, label: p.label }))}
                   popupClassName="arcade-version-dropdown"
+                  dropdownStyle={DROPDOWN_STYLE}
                 />
               </label>
             </div>
@@ -183,6 +188,7 @@ export default function ArcadeGameConfig({ game, onClose }) {
                       onChange={(val) => setValues((v) => ({ ...v, [o.key]: val }))}
                       options={(o.values || []).map((vv) => ({ value: vv.token, label: vv.label }))}
                       popupClassName="arcade-version-dropdown"
+                      dropdownStyle={DROPDOWN_STYLE}
                     />
                   )}
                 </label>
