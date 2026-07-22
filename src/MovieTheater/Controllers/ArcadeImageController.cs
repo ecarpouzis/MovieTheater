@@ -83,11 +83,12 @@ namespace MovieTheater.Controllers
             var game = await movieDb.ArcadeGames.FirstOrDefaultAsync(g => g.Id == id);
             if (game == null) return NotFound();
 
-            // A card = one game across its several ROM versions (same System+Title). Box art is shared by the
-            // whole card: any sibling's cached file serves, and a fresh fetch is stored ONCE per card (keyed
-            // by the card's lowest version id) so we don't keep a near-duplicate PNG per region/revision.
+            // A card = one game across its several ROM versions (same System+CollapseKey — the same folded key
+            // the lobby groups on, so cosmetically-different dumps share one card's art too). Box art is shared
+            // by the whole card: any sibling's cached file serves, and a fresh fetch is stored ONCE per card
+            // (keyed by the card's lowest version id) so we don't keep a near-duplicate PNG per region/revision.
             var siblings = await movieDb.ArcadeGames
-                .Where(g => g.System == game.System && g.Title == game.Title)
+                .Where(g => g.System == game.System && g.CollapseKey == game.CollapseKey)
                 .Select(g => new { g.Id, g.BoxArtPath, g.Region, g.CloudRetroGameKey, g.IgdbId, g.Notes })
                 .ToListAsync();
             var cardId = siblings.Count > 0 ? siblings.Min(s => s.Id) : id;

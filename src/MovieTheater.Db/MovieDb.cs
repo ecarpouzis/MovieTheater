@@ -299,6 +299,10 @@ namespace MovieTheater.Db
             modelBuilder.Entity<ArcadeGame>().HasIndex(g => new { g.IsPrimary, g.Variant, g.Region, g.SortTitle });
             // The dedupe CLI groups by (System, Title) to pick each game's primary.
             modelBuilder.Entity<ArcadeGame>().HasIndex(g => new { g.System, g.Title });
+            // The lobby grid groups CARDS by (System, CollapseKey) — the punctuation/article-folded key —
+            // so cosmetically-different dumps of one game collapse into a single card. This index backs both
+            // the grouped paging query and the version fetch that follows it.
+            modelBuilder.Entity<ArcadeGame>().HasIndex(g => new { g.System, g.CollapseKey });
 
             // One per-game profile per normalized identity; the export CLI upserts on this key.
             modelBuilder.Entity<ArcadeGameProfile>()

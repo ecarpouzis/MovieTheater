@@ -129,6 +129,7 @@ namespace MovieTheater.Arcade
                     {
                         g.Title = newTitle;
                         g.SortTitle = newSort;
+                        g.CollapseKey = ArcadeNaming.CollapseKey(newTitle);
                         if (region != ArcadeRomTags.Unknown) g.Region = region;
                         if (variant != ArcadeRomTags.Release) g.Variant = variant;
                         if (g.Year == null && entry.Year is int) g.Year = entry.Year;

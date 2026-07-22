@@ -137,6 +137,7 @@ namespace MovieTheater.Arcade
                         {
                             Title = e.Title,
                             SortTitle = e.SortTitle,
+                            CollapseKey = ArcadeNaming.CollapseKey(e.Title),
                             System = e.System,
                             RomPath = e.RomPath,
                             CloudRetroGameKey = e.GameKey,
@@ -559,7 +560,14 @@ namespace MovieTheater.Arcade
     /// the sort key). Kept here so both ingest commands agree on naming.</summary>
     internal static class ArcadeNaming
     {
-        public static string CleanTitle(string name)
+        public static string CleanTitle(string name) => CleanTitle(name, collapseFixes: true);
+
+        /// <summary>Core title cleaner. <paramref name="collapseFixes"/> gates the normalizations added by
+        /// the cross-dump collapse fix (the free-text/glued disc peel and the article un-inversion) —
+        /// renormalize passes <c>false</c> to reproduce the PREVIOUS algorithm's output, so it can tell an
+        /// auto-named row from a hand-edited one before rewriting. All other callers use the default
+        /// <c>true</c>.</summary>
+        internal static string CleanTitle(string name, bool collapseFixes)
         {
             var t = name;
             // Strip a TRAILING run of tag groups first ("(USA)", "[Hack]", "(Rev 1)" at the very end) —
@@ -583,6 +591,27 @@ namespace MovieTheater.Arcade
             // DIFFERENT Title and never collapses into one card. Mirrors ArcadeVersions.DiscNumber/M3uKey,
             // which strip the same suffix from CloudRetroGameKey for grouping/launch purposes.
             t = Regex.Replace(t, @"\s*-\s*Dis[ck]\s*\d+\s*$", "", RegexOptions.IgnoreCase);
+            // Broader inline-disc peel for the CD collections whose disc token sits at the tail with only a
+            // space or a glued hyphen, OR is left dangling after a trailing catalog/serial tag was stripped
+            // above: "Enemy Zero Disc 3", "Elves2-Cd1", "Azel Panzer Dragoon Rpg Disc 1" (from
+            // "...disc 1 (gs-9076)"). Covers Disc/Disk/CD, "Disc N of M", and either separator. GATED by
+            // peelBareDisc so renormalize can reproduce the previous (pre-fix) titles for its hand-edit
+            // guard. The "Disc N of M" form is an unambiguous multi-disc part and always folds; a plain
+            // trailing "Disc N" folds UNLESS the word before it labels a periodical/compilation
+            // ("Demo/Sampler/Action/Trial/Bonus/Special/Preview/Promo/Cover/Magazine Disc N"), whose numbers
+            // enumerate SEPARATE products (the PS1 magazine demo discs) that must stay distinct cards.
+            if (collapseFixes)
+            {
+                t = Regex.Replace(t, @"[-\s]+Dis[ck]\s*\d+\s+of\s+\d+\s*$", "", RegexOptions.IgnoreCase).Trim();
+                if (!Regex.IsMatch(t, @"\b(?:demo|sampler|action|trial|preview|bonus|special|promo|cover|magazine)[-\s]+(?:cd|dis[ck])\s*\d+\s*$", RegexOptions.IgnoreCase))
+                    t = Regex.Replace(t, @"[-\s]+(?:cd|dis[ck])\s*\d+\s*$", "", RegexOptions.IgnoreCase).Trim();
+                // Un-invert a source that stored the SORT form as its name ("Mansion of Hidden Souls, The"
+                // → "The Mansion of Hidden Souls"). Display Titles are always natural word order; the
+                // ", The" inversion belongs ONLY to SortTitle (ArticleInvert). Without this, a dump named
+                // "…, The" and one named "The …" are two Titles and never collapse into one card.
+                var art = Regex.Match(t, @"^(.+),\s+(the|an?)$", RegexOptions.IgnoreCase);
+                if (art.Success) t = $"{art.Groups[2].Value} {art.Groups[1].Value}".Trim();
+            }
             // Strip a trailing TOSEC bare version token ("Sonic Adventure v1.005" → "Sonic Adventure") so
             // revisions of one game share a Title and collapse to one card (the version shows in the
             // dropdown via ArcadeVersions.Revision).
@@ -600,6 +629,17 @@ namespace MovieTheater.Arcade
                 if (title.StartsWith(article, StringComparison.OrdinalIgnoreCase))
                     return title[article.Length..].TrimEnd() + ", " + article.Trim();
             return title;
+        }
+
+        /// <summary>The lobby's card-grouping key: the punctuation/article-folded normalization of the
+        /// display Title. Reuses <see cref="MovieTheater.Services.LaunchBox.LaunchBoxMetadata.NormalizeTitle"/>
+        /// (drops articles positionally, strips punctuation, folds &amp;→and) so cosmetically-different dumps
+        /// of one game share a key and collapse into one card. Capped to the column width; empty for a title
+        /// with no alphanumerics.</summary>
+        public static string CollapseKey(string? title)
+        {
+            var k = Services.LaunchBox.LaunchBoxMetadata.NormalizeTitle(title);
+            return k.Length <= 200 ? k : k[..200];
         }
 
         /// <summary>True if the string has at least one letter and none of them are uppercase — the
@@ -759,6 +799,7 @@ namespace MovieTheater.Arcade
                         {
                             Title = title,
                             SortTitle = ArcadeNaming.ArticleInvert(title),
+                            CollapseKey = ArcadeNaming.CollapseKey(title),
                             System = "scummvm",
                             RomPath = romPath,
                             CloudRetroGameKey = t.Target,

@@ -80,8 +80,8 @@ namespace MovieTheater.Arcade
             db.Database.SetCommandTimeout(180);
 
             var rows = await db.ArcadeGames.Where(g => g.IsEnabled && (sys == "" || g.System == sys)).ToListAsync();
-            // One card = one (System, Title) group; the anchor is its lowest-id row.
-            var cards = rows.GroupBy(g => new { g.System, g.Title })
+            // One card = one (System, CollapseKey) group; the anchor is its lowest-id row (matches the lobby).
+            var cards = rows.GroupBy(g => new { g.System, g.CollapseKey })
                 .Select(grp => grp.OrderBy(x => x.Id).First())
                 .Where(a => a.Id > AfterId)
                 .OrderBy(a => a.Id)

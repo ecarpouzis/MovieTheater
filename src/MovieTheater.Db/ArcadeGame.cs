@@ -24,6 +24,15 @@ namespace MovieTheater.Db
         [MaxLength(200)]
         public string SortTitle { get; set; } = default!;
 
+        /// <summary>Punctuation/article-folded grouping key (<c>LaunchBoxMetadata.NormalizeTitle</c> of the
+        /// Title) — the lobby groups cards by (System, CollapseKey), NOT exact Title, so different dumps of
+        /// one game whose Titles differ only cosmetically ("Atlantis - The Lost Tales" ⇄ "Atlantis: The
+        /// Lost Tales", "Daytona Usa" ⇄ "Daytonausa", ", The" ⇄ "The …") fold into ONE card. Derived from
+        /// Title at ingest / <c>arcade-renormalize-titles</c>; indexed with System. Empty for a title with
+        /// no alphanumerics (nothing to group on) — such rows fall back to grouping alone.</summary>
+        [MaxLength(200)]
+        public string CollapseKey { get; set; } = "";
+
         /// <summary>'nes','snes','genesis','gb','gbc','gba','n64','ps1','arcade' (§9 matrix).</summary>
         [MaxLength(20)]
         public string System { get; set; } = default!;

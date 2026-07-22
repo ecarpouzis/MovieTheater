@@ -108,6 +108,7 @@ namespace MovieTheater.Arcade
                         {
                             Title = f.Title,
                             SortTitle = f.SortTitle,
+                            CollapseKey = ArcadeNaming.CollapseKey(f.Title),
                             System = f.System,
                             RomPath = f.RomPath,
                             CloudRetroGameKey = f.GameKey,
@@ -192,36 +193,12 @@ namespace MovieTheater.Arcade
 
         // Display title: drop the common No-Intro / GoodTools trailing tags — "(USA)", "[!]", "(Rev 1)" —
         // that clutter a filename. The launch key keeps the raw filename; only the shown Title is tidied.
-        private static string CleanTitle(string name)
-        {
-            var t = name;
-            // Strip a TRAILING run of tag groups first ("(USA)", "[Hack]", "(Rev 1)" at the very end) —
-            // covers the ordinary "Title (Region)" case AND a hack's own "[Hack]" suffix without
-            // touching a subtitle that appears earlier in the name.
-            t = Regex.Replace(t, @"(\s*[\(\[][^\)\]]*[\)\]])+\s*$", "");
-            // ROM hacks conventionally name themselves "Base Game (Region) - Hack Name" — the region
-            // tag sits BEFORE the hack's own subtitle, not at the end (e.g. "Super Mario 64 (USA) -
-            // BAZR"). Cutting at the first tag as below would collapse every hack of the same base game
-            // to one indistinguishable title. If a leading tag is immediately followed by " - <text>",
-            // keep that text (it's the real name, not metadata).
-            var hackName = Regex.Match(t, @"^([^\(\[]+?)\s*[\(\[][^\)\]]*[\)\]]\s*-\s*(.+)$");
-            if (hackName.Success) t = $"{hackName.Groups[1].Value.Trim()} - {hackName.Groups[2].Value.Trim()}";
-            int cut = t.IndexOfAny(new[] { '(', '[' });
-            if (cut > 0) t = t[..cut];
-            t = t.Replace('_', ' ').Trim();
-            // Peel a trailing TOSEC bare version ("Sonic Adventure v1.005" → "Sonic Adventure") so
-            // revisions collapse to one card. Shared helper == the ArcadeNaming copy (no drift).
-            return ArcadeVersions.StripTrailingBareVersion(t);
-        }
+        // Naming is owned by ArcadeNaming (ArcadeJitCommands.cs) — the single source of truth for both the
+        // JIT path and ingest, so the two can never drift (they used to: the disc-peel and title-casing
+        // lived only in the JIT copy). Delegate rather than duplicate.
+        private static string CleanTitle(string name) => ArcadeNaming.CleanTitle(name);
 
-        // Article inversion for the sort key, same spirit as SimpleTitle ("The Legend…" → "Legend…, The").
-        private static string ArticleInvert(string title)
-        {
-            foreach (var article in new[] { "The ", "A ", "An " })
-                if (title.StartsWith(article, StringComparison.OrdinalIgnoreCase))
-                    return title[article.Length..].TrimEnd() + ", " + article.Trim();
-            return title;
-        }
+        private static string ArticleInvert(string title) => ArcadeNaming.ArticleInvert(title);
 
         private static string Append(string? existing, string note) =>
             string.IsNullOrWhiteSpace(existing) ? note : existing + "; " + note;

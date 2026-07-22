@@ -75,7 +75,7 @@ namespace MovieTheater.Arcade
             db.Database.SetCommandTimeout(180);
 
             var rows = await db.ArcadeGames.Where(g => g.IsEnabled && (sys == "" || g.System == sys)).ToListAsync();
-            var cards = rows.GroupBy(g => new { g.System, g.Title })
+            var cards = rows.GroupBy(g => new { g.System, g.CollapseKey })
                 .Select(grp => grp.OrderBy(x => x.Id).ToList())
                 .Where(c => c[0].Id > AfterId)
                 .OrderBy(c => c[0].Id)

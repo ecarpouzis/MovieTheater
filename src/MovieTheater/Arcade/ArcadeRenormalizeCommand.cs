@@ -48,16 +48,14 @@ namespace MovieTheater.Arcade
             dbFactory = GetRequiredService<IDbContextFactory<MovieDb>>();
         }
 
-        // The PRE-FIX title algorithm: cut at the first (/[, underscores→spaces, trim — WITHOUT the bare
-        // version peel. A row whose stored Title equals this was produced by the old code (not hand-edited),
-        // so it's safe to rewrite. Kept local on purpose: it must NOT track future CleanTitle changes.
-        private static string OldCleanTitle(string name)
-        {
-            var t = name;
-            int cut = t.IndexOfAny(new[] { '(', '[' });
-            if (cut > 0) t = t[..cut];
-            return t.Replace('_', ' ').Trim();
-        }
+        // The PRE-FIX title algorithm = the CURRENT CleanTitle with its newest peel switched OFF. A row whose
+        // stored Title equals this was produced by the previous code (not hand-edited), so it's safe to
+        // rewrite to the new form. Using the real cleaner (minus the one new peel) instead of a hand-frozen
+        // reimplementation keeps the guard faithful to what actually named the rows — the old frozen copy
+        // dropped title-casing and the disc peels, so it stopped recognizing its own output and would have
+        // refused to touch exactly the rows this fix targets. peelBareDisc:false is the sole difference
+        // between the previous algorithm and the new one.
+        private static string OldCleanTitle(string name) => ArcadeNaming.CleanTitle(name, collapseFixes: false);
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
@@ -74,7 +72,7 @@ namespace MovieTheater.Arcade
             var batch = await q.OrderBy(g => g.Id).Take(Limit).ToListAsync();
             var remaining = await q.OrderBy(g => g.Id).Skip(batch.Count).CountAsync();
 
-            int examined = 0, updated = 0, skipped = 0, handEdited = 0, samplesShown = 0;
+            int examined = 0, titleUpdated = 0, collapseUpdated = 0, skipped = 0, handEdited = 0, samplesShown = 0;
             int nextCursor = After;
 
             foreach (var g in batch)
@@ -85,30 +83,43 @@ namespace MovieTheater.Arcade
                 var newTitle = ArcadeNaming.CleanTitle(g.CloudRetroGameKey);
                 var newSort = ArcadeNaming.ArticleInvert(newTitle);
 
-                // Already normalized (or the key has no leaked token) → nothing to do.
-                if (g.Title == newTitle && g.SortTitle == newSort) { skipped++; continue; }
+                // Rewrite Title/SortTitle only when they differ from the current algorithm AND the row was
+                // never hand-curated (its stored Title still equals the PREVIOUS algorithm's output).
+                bool wantsTitle = g.Title != newTitle || g.SortTitle != newSort;
+                bool rewriteTitle = wantsTitle && g.Title == OldCleanTitle(g.CloudRetroGameKey);
+                if (wantsTitle && !rewriteTitle) handEdited++;
 
-                // Only rewrite rows the old algorithm produced; anything else was curated by hand.
-                if (g.Title != OldCleanTitle(g.CloudRetroGameKey)) { skipped++; handEdited++; continue; }
+                // CollapseKey is ALWAYS derived from the EFFECTIVE display Title — the rewritten one if we're
+                // rewriting, otherwise whatever the Title is now (including a hand-edited title). This is what
+                // backfills the new grouping column for every row, hand-edited ones included.
+                var effectiveTitle = rewriteTitle ? newTitle : g.Title;
+                var newCollapse = ArcadeNaming.CollapseKey(effectiveTitle);
+                bool rewriteCollapse = g.CollapseKey != newCollapse;
+
+                if (!rewriteTitle && !rewriteCollapse) { skipped++; continue; }
 
                 if (samplesShown < 25)
                 {
-                    w.WriteLine($"  [{g.System}] {g.Id}: \"{g.Title}\" → \"{newTitle}\"");
+                    if (rewriteTitle)
+                        w.WriteLine($"  [{g.System}] {g.Id}: \"{g.Title}\" → \"{newTitle}\"  [key: {newCollapse}]");
+                    else
+                        w.WriteLine($"  [{g.System}] {g.Id}: (title kept \"{g.Title}\")  key: \"{g.CollapseKey}\" → \"{newCollapse}\"");
                     samplesShown++;
                 }
 
                 if (Apply)
                 {
-                    g.Title = newTitle;
-                    g.SortTitle = newSort;
+                    if (rewriteTitle) { g.Title = newTitle; g.SortTitle = newSort; }
+                    g.CollapseKey = newCollapse;
                 }
-                updated++;
+                if (rewriteTitle) titleUpdated++;
+                if (rewriteCollapse) collapseUpdated++;
             }
 
             if (Apply) await db.SaveChangesAsync();
 
             w.WriteLine();
-            w.WriteLine($"{(Apply ? "APPLIED" : "DRY RUN")}: examined={examined} updated={updated} skipped={skipped} (hand-edited-preserved={handEdited}) remaining={remaining}");
+            w.WriteLine($"{(Apply ? "APPLIED" : "DRY RUN")}: examined={examined} titleUpdated={titleUpdated} collapseKeyUpdated={collapseUpdated} skipped={skipped} (hand-edited-titles-preserved={handEdited}) remaining={remaining}");
             if (remaining > 0) w.WriteLine($"More to do: re-run with --after {nextCursor}{(string.IsNullOrEmpty(System) ? "" : $" --system {System}")}{(Apply ? " --apply" : "")}.");
             else w.WriteLine("Done — no rows remaining.");
         }

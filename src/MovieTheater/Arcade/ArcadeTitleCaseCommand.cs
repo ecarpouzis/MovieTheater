@@ -99,6 +99,7 @@ namespace MovieTheater.Arcade
                 {
                     g.Title = newTitle;
                     g.SortTitle = newSort;
+                    g.CollapseKey = ArcadeNaming.CollapseKey(newTitle);
                 }
                 updated++;
             }

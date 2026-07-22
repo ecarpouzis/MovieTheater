@@ -120,7 +120,7 @@ namespace MovieTheater.Arcade
                     var newSort = ArcadeNaming.ArticleInvert(newTitle);
                     if (g.Title != newTitle || g.SortTitle != newSort)
                     {
-                        if (Apply) { g.Title = newTitle; g.SortTitle = newSort; }
+                        if (Apply) { g.Title = newTitle; g.SortTitle = newSort; g.CollapseKey = ArcadeNaming.CollapseKey(newTitle); }
                         titleChanged++;
                         if (egRunnable.Count < 6) egRunnable.Add($"[{g.System}] {key,-14} → \"{newTitle}\"");
                     }

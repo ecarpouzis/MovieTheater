@@ -104,8 +104,8 @@ namespace MovieTheater.Arcade
                 .Where(g => g.IsEnabled && repoSystems.Contains(g.System))
                 .ToListAsync();
 
-            var cards = rows.GroupBy(g => new { g.System, g.Title })
-                .Select(grp => new Card(grp.Key.System, grp.Key.Title, grp.OrderBy(x => x.Id).ToList()))
+            var cards = rows.GroupBy(g => new { g.System, g.CollapseKey })
+                .Select(grp => new Card(grp.Key.System, grp.OrderBy(x => x.Id).First().Title, grp.OrderBy(x => x.Id).ToList()))
                 .Where(c => c.MinId > AfterId)
                 .OrderBy(c => c.MinId)
                 .ToList();
@@ -124,8 +124,8 @@ namespace MovieTheater.Arcade
                 var lines = new List<string> { "system\ttitle\tregions\tproposal1\tcov1\tproposal2\tproposal3\talias" };
                 int rMatched = 0, rInferred = 0, rMissed = 0, rNoIndex = 0;
                 var perSystem = new SortedDictionary<string, (int matched, int inferred, int missed)>();
-                foreach (var card in rows.GroupBy(g => new { g.System, g.Title })
-                             .Select(grp => new Card(grp.Key.System, grp.Key.Title, grp.OrderBy(x => x.Id).ToList()))
+                foreach (var card in rows.GroupBy(g => new { g.System, g.CollapseKey })
+                             .Select(grp => new Card(grp.Key.System, grp.OrderBy(x => x.Id).First().Title, grp.OrderBy(x => x.Id).ToList()))
                              .OrderBy(c => c.System).ThenBy(c => c.Title, StringComparer.OrdinalIgnoreCase))
                 {
                     var idx = IndexFor(card.System);

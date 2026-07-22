@@ -115,18 +115,20 @@ namespace MovieTheater.Controllers
             if (!string.IsNullOrWhiteSpace(genre))
             {
                 var gr = genre.Trim();
-                matchQ = matchQ.Where(g => baseQ.Any(a => a.System == g.System && a.Title == g.Title
+                matchQ = matchQ.Where(g => baseQ.Any(a => a.System == g.System && a.CollapseKey == g.CollapseKey
                     && a.Genres != null && a.Genres.Contains(gr)));
             }
             return matchQ;
         }
 
-        // ONE CARD PER GAME (docs/arcade-dedupe-multidisc-plan.md): rows are grouped by (System, Title) into
-        // games, each carrying a version dropdown (region/rev/edition/disc/hack), so the same game's many
-        // ROMs collapse to a single card. Filters gate CARDS by version existence — a game shows iff it has
-        // ≥1 version matching. Defaults are English + All Games (region narrows, variant "romhacks"/
-        // "release"/"modded" narrow further). Grouping is query-time so ingests fold in automatically.
-        // Age gate always applies.
+        // ONE CARD PER GAME (docs/arcade-dedupe-multidisc-plan.md): rows are grouped by (System, CollapseKey)
+        // — the punctuation/article-folded key — into games, each carrying a version dropdown (region/rev/
+        // edition/disc/hack), so the same game's many ROMs (INCLUDING cosmetically-different dumps like
+        // "Atlantis - The Lost Tales" ⇄ "Atlantis: The Lost Tales") collapse to a single card. The card's
+        // display Title is the alphabetically-first variant in the group. Filters gate CARDS by version
+        // existence — a game shows iff it has ≥1 version matching. Defaults are English + All Games (region
+        // narrows, variant "romhacks"/"release"/"modded" narrow further). Grouping is query-time so ingests
+        // fold in automatically. Age gate always applies.
         //
         // `skip` is an absolute offset into the sorted card list and WINS over `page`: the lobby's pager
         // seeks to a letter bucket, which starts wherever it starts — rounding that down to a page boundary
@@ -153,11 +155,12 @@ namespace MovieTheater.Controllers
             pageSize = Math.Clamp(pageSize, 1, 120);
             int skipRows = Math.Max(0, skip ?? (page - 1) * pageSize);
             // Card-level aggregates for sorting: rating/year live on the anchor, players is the card max.
-            var groupedQ = matchQ.GroupBy(g => new { g.System, g.Title })
+            var groupedQ = matchQ.GroupBy(g => new { g.System, g.CollapseKey })
                 .Select(grp => new
                 {
                     grp.Key.System,
-                    grp.Key.Title,
+                    grp.Key.CollapseKey,
+                    Title = grp.Min(x => x.Title),   // representative display title for the collapsed card
                     Sort = grp.Min(x => x.SortTitle),
                     // Sort on the confidence-weighted score, never the raw one: a 1-vote 100 must not outrank a
                     // 4,000-vote 94 (that's how American Chopper became the top-rated PS2 game). See
@@ -179,14 +182,14 @@ namespace MovieTheater.Controllers
             var pageKeys = await groupedQ
                 .Skip(skipRows).Take(pageSize).ToListAsync();
 
-            // All age-visible versions of the paged games (superset by System/Title IN, trimmed to exact
+            // All age-visible versions of the paged games (superset by System/CollapseKey IN, trimmed to exact
             // page keys in memory) — the dropdown lists every version, not just the ones that matched.
             var pageSystems = pageKeys.Select(k => k.System).Distinct().ToList();
-            var pageTitles = pageKeys.Select(k => k.Title).Distinct().ToList();
-            var versionRows = await baseQ.Where(g => pageSystems.Contains(g.System) && pageTitles.Contains(g.Title)).ToListAsync();
-            var keySet = pageKeys.Select(k => (k.System, k.Title)).ToHashSet();
-            var byGame = versionRows.Where(g => keySet.Contains((g.System, g.Title)))
-                .GroupBy(g => (g.System, g.Title))
+            var pageCollapse = pageKeys.Select(k => k.CollapseKey).Distinct().ToList();
+            var versionRows = await baseQ.Where(g => pageSystems.Contains(g.System) && pageCollapse.Contains(g.CollapseKey)).ToListAsync();
+            var keySet = pageKeys.Select(k => (k.System, k.CollapseKey)).ToHashSet();
+            var byGame = versionRows.Where(g => keySet.Contains((g.System, g.CollapseKey)))
+                .GroupBy(g => (g.System, g.CollapseKey))
                 .ToDictionary(x => x.Key, x => x.ToList());
 
             // Cheat counts for the page's ROMs, one grouped query (not per card). Codes only — the emulator/
@@ -202,7 +205,7 @@ namespace MovieTheater.Controllers
             string specificRegion = reg is "english" or "all" ? null : reg;
             var games = pageKeys.Select(k =>
             {
-                byGame.TryGetValue((k.System, k.Title), out var vs);
+                byGame.TryGetValue((k.System, k.CollapseKey), out var vs);
                 vs ??= new List<ArcadeGame>();
                 // Build launchable versions — multi-disc sets collapse to one entry (DiscCount > 1). The
                 // first is the card's default selection + box-art source; a region filter floats that region up.
@@ -212,11 +215,14 @@ namespace MovieTheater.Controllers
                 // "(Rev A)" default doesn't hide the base "(USA)" box), else the lowest-id row — the canonical
                 // card file the image route writes a fresh fetch to. Filter-independent, so it stays one file.
                 var artRow = vs.FirstOrDefault(g => g.BoxArtPath != null) ?? vs.OrderBy(g => g.Id).FirstOrDefault();
-                // IGDB enrichment is stored on the card's anchor (lowest-id) row, same convention as box art.
-                var meta = vs.OrderBy(g => g.Id).FirstOrDefault();
+                // Enrichment (LaunchBox/IGDB rating + genres/summary/dev/pub) is written to a row's anchor;
+                // across a collapsed card spanning several Titles it may sit on any cross-dump sibling, so
+                // prefer the enriched one (rating present), else fall back to the lowest-id anchor.
+                var meta = vs.Where(g => g.LaunchBoxRating != null || g.RatingScore != null).OrderBy(g => g.Id).FirstOrDefault()
+                           ?? vs.OrderBy(g => g.Id).FirstOrDefault();
                 return new
                 {
-                    key = k.System + "|" + k.Title,
+                    key = k.System + "|" + k.CollapseKey,
                     title = k.Title,
                     system = k.System,
                     artId = artRow?.Id ?? rep?.Id ?? 0,
@@ -301,8 +307,9 @@ namespace MovieTheater.Controllers
             var matchQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, reg, var_);
 
             // The same grouping + the same default ordering Games uses, so index i here is card i there.
-            var sortKeys = await matchQ.GroupBy(g => new { g.System, g.Title })
-                .Select(grp => new { Sort = grp.Min(x => x.SortTitle), grp.Key.Title })
+            // MUST match Games exactly: group by (System, CollapseKey), tie-break on the Min(Title).
+            var sortKeys = await matchQ.GroupBy(g => new { g.System, g.CollapseKey })
+                .Select(grp => new { Sort = grp.Min(x => x.SortTitle), Title = grp.Min(x => x.Title) })
                 .OrderBy(x => x.Sort).ThenBy(x => x.Title)
                 .Select(x => x.Sort)
                 .ToListAsync();
@@ -340,10 +347,10 @@ namespace MovieTheater.Controllers
                 return StatusCode(501, new { message = "The arcade is not configured on this server." });
 
             var q = await AgeVisibleGamesAsync(userId.Value);
-            // Count CARDS, not version rows. The grid groups by (System, Title), so counting rows made the
-            // picker advertise "All systems (24710)" for a catalog that renders 17,291 cards. One DISTINCT
-            // pull (~17k pairs) then grouped in memory.
-            var cardKeys = await q.Select(g => new { g.System, g.Title }).Distinct().ToListAsync();
+            // Count CARDS, not version rows. The grid groups by (System, CollapseKey), so counting rows made
+            // the picker advertise "All systems (24710)" for a catalog that renders far fewer cards. One
+            // DISTINCT pull then grouped in memory.
+            var cardKeys = await q.Select(g => new { g.System, g.CollapseKey }).Distinct().ToListAsync();
             var systems = cardKeys.GroupBy(k => k.System)
                 .Select(x => new { value = x.Key, count = x.Count() }).OrderByDescending(x => x.count).ToList();
             var regions = await q.GroupBy(g => g.Region)
