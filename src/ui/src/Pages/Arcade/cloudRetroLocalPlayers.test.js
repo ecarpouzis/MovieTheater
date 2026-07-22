@@ -129,11 +129,13 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
     s.close();
   });
 
-  it("a pinned session never asks for the aux audio PeerConnection", async () => {
+  it("a pinned session marks itself input-only instead of asking for media", async () => {
     const s = createCloudRetroSession(descriptorFor(), { padIndex: 1 });
     const ws = await driveToGameStart(sockets[0]);
     const init = ws.sent.find((m) => m.t === T.INIT_WEBRTC);
-    expect(init.p.sdp).toBeUndefined();
+    // The init sdp field carries the "input-only" marker (no media tracks, excluded from ABR —
+    // the second-pad quality fix) rather than being left empty.
+    expect(init.p.sdp).toBe("input-only");
     s.close();
   });
 

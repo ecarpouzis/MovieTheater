@@ -241,8 +241,16 @@ namespace MovieTheater.Arcade
 
             // The extraction names the description "desc"; accept "note" too. Blank → no note.
             var note = Str("note", Str("desc", ""));
-            return new CoreOption(key!, Str("label", key!), category, values,
-                Str("default", values.Count > 0 ? values[0].Token : ""),
+
+            // A few extracted entries declare a default that is not one of their own value tokens
+            // (dolphin_log_level "Info" vs tokens "1".."4", …) — an extraction quirk. Coerce to the
+            // first token: an invalid default would flow into the config GET's effective values and
+            // make the PUT reject an UNCHANGED save ("'Info' is not a valid value").
+            var def = Str("default", values.Count > 0 ? values[0].Token : "");
+            if (!isRange && values.Count > 0 && !values.Any(v => string.Equals(v.Token, def, StringComparison.Ordinal)))
+                def = values[0].Token;
+
+            return new CoreOption(key!, Str("label", key!), category, values, def,
                 string.IsNullOrWhiteSpace(note) ? null : note,
                 isRange, Int("rangeMin"), Int("rangeMax"));
         }

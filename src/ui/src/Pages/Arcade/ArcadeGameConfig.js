@@ -22,6 +22,15 @@ import "./ArcadeGameConfig.css";
 // open BEHIND it. Keep dropdowns above the modal.
 const DROPDOWN_STYLE = { zIndex: 1700 };
 
+// Fallback tier list (the server sends the authoritative one in the /Config payload).
+const QUALITY_TIERS = [
+  { id: "max", label: "Max" },
+  { id: "ultra", label: "Ultra" },
+  { id: "high", label: "High" },
+  { id: "medium", label: "Medium" },
+  { id: "low", label: "Low" },
+];
+
 const CATEGORY_ORDER = ["video", "hack", "performance", "system", "audio", "other"];
 const CATEGORY_LABEL = {
   video: "Video",
@@ -44,6 +53,9 @@ export default function ArcadeGameConfig({ game, onClose }) {
   const [advanced, setAdvanced] = useState([]); // [{ key, value }] raw escape-hatch rows
   const [tab, setTab] = useState("video"); // active rail item: a category, "advanced", or "notes"
   const [search, setSearch] = useState("");
+  // The Reset target: which tier's defaults "Reset to defaults" applies for the selected
+  // renderer/core. Not persisted server-side — always opens on Ultra (the live system tuning).
+  const [qualityTier, setQualityTier] = useState("ultra");
 
   // Apply a GET /Config payload. keepUserFields (a profile switch) preserves the current notes + advanced
   // rows (cross-core) and only swaps the option list/values for the newly-selected core.
@@ -134,7 +146,12 @@ export default function ArcadeGameConfig({ game, onClose }) {
   };
 
   const save = () => doSave(buildBody(), "Saved — applies the next time this game starts.");
-  const reset = () => doSave({ coreOptions: {}, renderProfile: "", notes: "" }, "Reset to defaults.");
+  // Reset applies the picked tier's defaults for the CURRENTLY selected renderer/core (the tier
+  // presets are per core/renderer combination, so the renderer choice is kept, not cleared). The
+  // server resolves + stores the preset itself; Ultra stores nothing = the live system defaults.
+  const tiers = cfg?.qualityTiers?.length ? cfg.qualityTiers : QUALITY_TIERS;
+  const tierLabel = tiers.find((t) => t.id === qualityTier)?.label || qualityTier;
+  const reset = () => doSave({ qualityTier, renderProfile, notes: "" }, `Reset to ${tierLabel} defaults.`);
 
   const setAdvRow = (i, patch) => setAdvanced((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   const addAdvRow = () => setAdvanced((rows) => [...rows, { key: "", value: "" }]);
@@ -183,6 +200,21 @@ export default function ArcadeGameConfig({ game, onClose }) {
       title={<span className="agc-title">⚙ {game.title} <span className="agc-title__sys">— {systemLabel(cfg?.system)}</span></span>}
       footer={[
         <span key="hint" className="agc-foot-hint">Applies the next time the game starts</span>,
+        <Tooltip
+          key="tier"
+          title="What Reset resets to. Ultra = the live system defaults. Max may be experimental; High/Medium/Low step quality down for games that run slow."
+        >
+          <Select
+            className="agc-tier"
+            value={qualityTier}
+            onChange={setQualityTier}
+            disabled={loading || saving}
+            options={tiers.map((t) => ({ value: t.id, label: t.label }))}
+            popupClassName="arcade-version-dropdown"
+            dropdownStyle={DROPDOWN_STYLE}
+            dropdownMatchSelectWidth={false}
+          />
+        </Tooltip>,
         <Button key="reset" danger onClick={reset} disabled={loading || saving}>Reset to defaults</Button>,
         <Button key="cancel" onClick={onClose} disabled={saving}>Cancel</Button>,
         <Button key="save" type="primary" onClick={save} loading={saving} disabled={loading}>Save</Button>,

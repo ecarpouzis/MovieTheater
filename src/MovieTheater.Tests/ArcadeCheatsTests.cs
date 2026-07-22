@@ -295,7 +295,9 @@ namespace MovieTheater.Tests
         public void SystemsWithNothingToConfigureReturnAnEmptyCatalog()
         {
             Assert.Empty(ArcadeCoreOptionCatalog.For("nope"));
-            Assert.False(ArcadeCoreOptionCatalog.HasAnything("nes"));  // codes only, no config options / renderer
+            // nes DOES have config options in production (nestopia's extracted set) — this assembly now
+            // embeds the extraction too, so the test sees what the site sees.
+            Assert.True(ArcadeCoreOptionCatalog.HasAnything("nes"));
             Assert.True(ArcadeCoreOptionCatalog.HasAnything("ps2"));
         }
 

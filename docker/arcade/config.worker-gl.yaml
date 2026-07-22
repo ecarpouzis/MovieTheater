@@ -716,10 +716,14 @@ emulator:
             # Auto/Vulkan/D3D would render to a private device the GL capture never sees -> black frame.
             pcsx2_renderer: "paraLLEl-GS"   # Vulkan GS renderer — the default (was OpenGL)
             pcsx2_pgs_high_res_scanout: "enabled"
-            # Phase-2 raise 8x->16x (2026-07-18): the option list goes one step past our old "ceiling".
+            # BACK TO 8x (2026-07-22, the quality-tier review): the Phase-2 raise to 16x was "one step
+            # past our old ceiling" on the heaviest core we run, gated only by an attract-mode smoke —
+            # and slow-ROM reports followed. 8x is the proven ceiling; 16x now lives in the config
+            # tool's MAX quality tier (ArcadeQualityPresets), a deliberate per-game opt-in. This value
+            # is WELDED to ArcadeQualityPresets.UltraLiveSpec — change them together or the test fails.
             # ⚠ PS2 speed regressions present as AUDIO starvation (samples/frame ∝ fps) — smoke gate is
-            # the HEAVIEST title (Stuntman attract), not an average one. ROLLBACK: "8x SSAA (can high-res)".
-            pcsx2_pgs_ssaa: "16x SSAA (can high-res)"
+            # the HEAVIEST title (Stuntman attract), not an average one.
+            pcsx2_pgs_ssaa: "8x SSAA (can high-res)"
             # Force Texture LOD0 (Phase-2 default-on 2026-07-18): per the core's own description, better
             # image quality with issues in "only a small handful of games" — the exact default-on/opt-out
             # shape. Per-title opt-out via game-overrides.json if a title mips wrong. ROLLBACK: delete

@@ -273,6 +273,46 @@ options when you switch. The catalog is keyed by CORE, seeded from the embedded 
 4. **Site:** normal deploy (push to master → CI). 5. **SOTN:** remove its `game-overrides.json` override →
    Beetle-Vulkan default (then reconfigure to pcsx_rearmed via the module if wanted).
 
+## Quality tiers (BUILT 2026-07-22) — the Reset dropdown
+
+Some ROMs push the system and slow down. The config modal's footer has a **quality-tier dropdown**
+(Max / **Ultra** / High / Medium / Low, default Ultra) to the left of "Reset to defaults"; Reset
+applies the selected tier's preset for the game's **currently selected renderer/core** (the renderer
+choice is kept — it's a separate compat axis — which is a deliberate change from the old reset,
+which also cleared the renderer).
+
+- **Source of truth: `ArcadeQualityPresets`** (`src/MovieTheater/Arcade/`), keyed by
+  `(OptionCore, HwContext)` — pcsx2 and mupen64plus_next split per renderer because their Vulkan and
+  GL renderers read different quality keys (paraLLEl-GS ignores `pcsx2_upscale_multiplier`; GLideN64
+  ignores `mupen64plus-parallel-rdp-upscaling`).
+- **Ultra stores nothing, but it is NOT undefined — it is DECLARED.** `ArcadeQualityPresets.
+  UltraLiveSpec` states the quality-lever values Ultra means per core, and a test
+  (`LiveWorkerConfigMatchesTheDeclaredUltraSpec`) parses `config.worker-gl.yaml` and fails on any
+  disagreement. So an Ultra reset can safely store zero overrides (the yaml already delivers the
+  spec), games track future retunes, and a retune can't change what Ultra means silently — it
+  breaks the weld until someone decides "new Ultra" (update both) or "that belongs in another
+  tier". The weld also pins rejected modes (flycast per-pixel alpha) so they can't quietly return.
+  **Max** pushes past live (PS1 8x + 32bpp/no-dither/adaptive-smoothing/PGXP-safe; PS2 pgs deblur +
+  super-sampled textures; Dolphin efb 4 + 8x MSAA + pixel lighting; Kronos 2X — the experimental
+  shelf). High/Medium/Low step internal resolution / SSAA / MSAA down. 2D cores have no presets
+  (their quality is the config-level `scale`, not per-room deliverable); every tier there equals
+  Ultra. The full option sets (81 beetle / 64 pcsx2 / 85 mupen / 75 ppsspp / 89 flycast / 99
+  dolphin / 17 kronos) were swept when choosing these; each preset block's comment records what
+  was considered and REJECTED and why (inert-proven options, pacing-hostile frameskips, guest-side
+  clocks, stability pins, art-style filters) — read those before "adding one more knob".
+- **⚠ Preset values are stored VERBATIM, never baseline-dropped** (`SaveGameConfig`'s tier path).
+  The PUT's normal "drop values equal to default" compares against the CORE's embedded default, but
+  the live default comes from the yaml, and they disagree on exactly the quality levers (beetle
+  internal res: catalog `1x(native)` vs yaml `4x`). A dropped Low value would leave the yaml value
+  in charge and make the tier silently inert — the recurring silent-no-op class.
+- **Every preset token is validated by `ArcadeQualityPresetsTests`** against the embedded
+  core-options catalog (the test assembly now embeds `core-options-catalog.json` too). flycast Max
+  deliberately stays on per-triangle alpha sorting — per-pixel was rejected for menu UI-quad garble
+  (visual breakage, not perf); do not resurrect it via a tier.
+- Wire shape: PUT `/API/Arcade/Game/{id}/Config` with `{qualityTier, renderProfile, notes}`;
+  `coreOptions` is ignored on that path. GET returns `qualityTiers` for the dropdown. The selected
+  tier is NOT persisted — the dropdown is a reset target and always opens on Ultra.
+
 ## Not yet built (follow-ups)
 
 - **Bulk import** of curated community preset lists into `ArcadeGameProfile`.

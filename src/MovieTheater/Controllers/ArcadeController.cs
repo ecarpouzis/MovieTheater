@@ -651,6 +651,9 @@ namespace MovieTheater.Controllers
                 // The graphics profiles (renderer/core choice) for this system + the selected one.
                 profiles = renderProfiles.Select(p => new { id = p.Id, label = p.Label }),
                 renderProfile = selected?.Id,
+                // The quality-tier dropdown next to "Reset to defaults" (ArcadeQualityPresets). The
+                // selection isn't persisted — it's the reset target, defaulting to Ultra client-side.
+                qualityTiers = ArcadeQualityPresets.Tiers.Select(t => new { id = t.Id, label = t.Label }),
                 optionCore = core,
                 notes = savedProfile?.Notes ?? "",
                 options,
@@ -692,9 +695,26 @@ namespace MovieTheater.Controllers
             foreach (var r in defaultOn)
                 if (!string.IsNullOrEmpty(r.OptionKey)) baseline[r.OptionKey!] = r.OptionValue ?? "enabled";
 
+            // A quality-tier reset ("Reset to defaults" with a tier picked): ignore any submitted values
+            // and store the tier's preset for this (core, renderer) VERBATIM. Deliberately NO
+            // baseline-drop here — the baseline above is the CORE's embedded default, but the live
+            // default comes from config.worker-gl.yaml, and the two disagree on exactly the quality
+            // levers (beetle internal res: catalog "1x(native)" vs yaml "4x"). Dropping a preset value
+            // as "equal to default" would leave the yaml value in charge and make the tier silently
+            // inert — the recurring silent-no-op class. Ultra's preset is empty, so an Ultra reset
+            // clears the core's overrides and the game tracks the live yaml tuning.
+            var tier = string.IsNullOrWhiteSpace(request.QualityTier) ? null : request.QualityTier.Trim().ToLowerInvariant();
+            if (tier != null && !ArcadeQualityPresets.IsKnown(tier))
+                return BadRequest(new { message = $"'{request.QualityTier}' is not a quality tier.", key = "qualityTier" });
+
             var keyPattern = new System.Text.RegularExpressions.Regex("^[a-z0-9][a-z0-9_-]{1,59}$");
             var toStore = new Dictionary<string, string>(StringComparer.Ordinal);
-            if (request.CoreOptions != null)
+            if (tier != null)
+            {
+                foreach (var (key, value) in ArcadeQualityPresets.For(core, selected?.HwContext, tier))
+                    toStore[key] = value;
+            }
+            else if (request.CoreOptions != null)
             {
                 if (request.CoreOptions.Count > 60)
                     return BadRequest(new { message = "Too many options." });
@@ -763,6 +783,10 @@ namespace MovieTheater.Controllers
             /// <summary>The graphics render-profile id (see ArcadeRendererProfiles), e.g. "opengl",
             /// "beetle_opengl", "pcsx_rearmed". Null/empty = the system default profile.</summary>
             public string? RenderProfile { get; set; }
+            /// <summary>Set = a "Reset to defaults" with this quality tier picked (ArcadeQualityPresets):
+            /// CoreOptions is ignored and the tier's preset for the selected profile's (core, renderer)
+            /// is stored verbatim. Null = a normal save of the submitted values.</summary>
+            public string? QualityTier { get; set; }
             public string? Notes { get; set; }
         }
 
