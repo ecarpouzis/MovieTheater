@@ -84,11 +84,53 @@ namespace MovieTheater.Arcade
             var remaining = cards.Count - batch.Count;
 
             int matched = 0, missed = 0, skipped = 0, artFetched = 0, seatFlags = 0, lastId = AfterId, sinceSave = 0;
+
+            // Download an IGDB cover, thumbnail it, and point the anchor at the card art file. Shared by the
+            // fresh-enrich path and the "already enriched but still no art" backfill below. Returns true on write.
+            async Task<bool> TryWriteCover(ArcadeGame anchor, string coverImageId)
+            {
+                try
+                {
+                    var bytes = await http.GetByteArrayAsync(IgdbClient.CoverUrl(coverImageId));
+                    var thumb = ArcadeBoxArt.Thumbnail(bytes, ThumbPx);
+                    if (Apply)
+                    {
+                        var rel = $"arcade/{anchor.System}/{anchor.Id}.png";
+                        var dest = Path.Combine(postersRoot!, rel.Replace('/', Path.DirectorySeparatorChar));
+                        Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+                        await File.WriteAllBytesAsync(dest, thumb);
+                        anchor.BoxArtPath = rel;
+                    }
+                    return true;
+                }
+                catch (Exception ex) { w.WriteLine($"    (cover fetch failed: {ex.Message})"); return false; }
+            }
+
             foreach (var versions in batch)
             {
                 var anchor = versions[0];
                 lastId = anchor.Id;
-                if (anchor.IgdbId != null && !Overwrite) { skipped++; continue; }
+                if (anchor.IgdbId != null && !Overwrite)
+                {
+                    // Already enriched — but when we're backfilling art (--art) and the card still has NONE,
+                    // fetch just the cover by the STORED IGDB id (no re-search, metadata untouched). This is
+                    // what fills the saturn/cdi/etc. gaps: those cards were enriched long ago but libretro has
+                    // no box-art repo for them, so they never got a cover until now.
+                    if (Art && postersRoot != null && anchor.IgdbId is long gid && !CardHasArt(versions, anchor, postersRoot))
+                    {
+                        string? coverId = null;
+                        try { coverId = await igdb.CoverImageIdAsync(gid); }
+                        catch (Exception ex) { w.WriteLine($"  ! [{anchor.System}] {anchor.Title} cover lookup: {ex.Message}"); }
+                        if (coverId != null && await TryWriteCover(anchor, coverId))
+                        {
+                            artFetched++;
+                            w.WriteLine($"  = art [{anchor.System}] {anchor.Title} (cover from stored IGDB id)");
+                            if (Apply && ++sinceSave >= 50) { await db.SaveChangesAsync(); sinceSave = 0; }
+                        }
+                        await Task.Delay(260); // we made an IGDB request — stay under 4 req/s
+                    }
+                    skipped++; continue;
+                }
 
                 IgdbClient.IgdbGame? game;
                 try { game = await igdb.ResolveGameAsync(anchor.Title, IgdbClient.PlatformId(anchor.System)); }
@@ -125,21 +167,7 @@ namespace MovieTheater.Arcade
                 bool preferIgdb = string.Equals(anchor.Notes, "boxart-prefer-igdb", StringComparison.Ordinal);
                 if (Art && game.CoverImageId != null && postersRoot != null && (preferIgdb || !CardHasArt(versions, anchor, postersRoot)))
                 {
-                    try
-                    {
-                        var bytes = await http.GetByteArrayAsync(IgdbClient.CoverUrl(game.CoverImageId));
-                        var thumb = ArcadeBoxArt.Thumbnail(bytes, ThumbPx);
-                        if (Apply)
-                        {
-                            var rel = $"arcade/{anchor.System}/{anchor.Id}.png";
-                            var dest = Path.Combine(postersRoot, rel.Replace('/', Path.DirectorySeparatorChar));
-                            Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-                            await File.WriteAllBytesAsync(dest, thumb);
-                            anchor.BoxArtPath = rel;
-                        }
-                        artFetched++;
-                    }
-                    catch (Exception ex) { w.WriteLine($"    (cover fetch failed: {ex.Message})"); }
+                    if (await TryWriteCover(anchor, game.CoverImageId)) artFetched++;
                 }
 
                 // Persist periodically so a multi-hour run is crash-resumable (idempotent skip keys off the
