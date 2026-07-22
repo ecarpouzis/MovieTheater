@@ -857,7 +857,15 @@ export function createCloudRetroSession(descriptor, opts) {
     // video_codec (worker patch 0036): the room's per-room codec, from ?codec= on EVERY member's
     // wsUrl (creator's choice, stored room-side). The peer's TRACK mime is fixed here — before the
     // game start — so it must match the room's one encoder. Absent = worker config default.
-    const init = AUDIO_PC && !inputOnly ? { initiator: false, sdp: "audio-pc" } : { initiator: false };
+    // An input-only local-player session marks the (otherwise unused) init sdp field "input-only" so
+    // the worker negotiates ONLY the input DataChannel — no video/audio tracks. Without it the worker
+    // (the offerer) sends this machine a FULL DUPLICATE of the room's stream (it renders nothing here —
+    // the primary session already plays it) and counts this redundant receiver in the room's worst-peer
+    // ABR pool, dragging the shared encoder's bitrate down for everyone. It never wants the aux audio PC
+    // either (nothing to hear), so the two markers are mutually exclusive.
+    const init = inputOnly
+      ? { initiator: false, sdp: "input-only" }
+      : (AUDIO_PC ? { initiator: false, sdp: "audio-pc" } : { initiator: false });
     const codec = strFromWsUrl(descriptor.wsUrl, "codec");
     if (codec) init.video_codec = codec;
     send(T.INIT_WEBRTC, init);
