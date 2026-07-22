@@ -63,11 +63,12 @@ namespace MovieTheater.Services.Arcade
 
         /// <summary>The GC-controller-native Wii SD-loader BrawlEx mods (like real Super Smash Bros
         /// Brawl, these are traditionally played with a GameCube controller, not Wiimote+Nunchuk) —
-        /// keyed by title, since each currently has exactly one version/ROM. Must be kept in sync
-        /// with docker/arcade/config.worker-gl.yaml's <c>hid4rom</c> entries AND
-        /// cloudRetroClient.js's <c>GC_ON_WII_GAME_KEYS</c> (the client's input-profile mirror of
-        /// the same list) — a title added to one but not the others either offers a scheme picker
-        /// that does nothing, or applies a scheme the client never sends the right button bits for.
+        /// keyed by title, since each currently has exactly one version/ROM. These titles DEFAULT to
+        /// the GameCube scheme (pinned by <c>hid4rom</c> in docker/arcade/config.worker-gl.yaml);
+        /// every other Wii title defaults to Wiimote+Nunchuk. Must be kept in sync with those
+        /// <c>hid4rom</c> entries AND cloudRetroClient.js's <c>GC_ON_WII_GAME_KEYS</c> (the client's
+        /// default-GC mirror of the same list) — a title added to one but not the other defaults to
+        /// the wrong scheme when the room sends no explicit override.
         /// </summary>
         public static readonly IReadOnlySet<string> GcOnWiiGameTitles =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -76,11 +77,23 @@ namespace MovieTheater.Services.Arcade
             };
 
         /// <summary>True when a game supports a per-room Wii controller-scheme override (GameCube
-        /// vs Wiimote+Nunchuk) — lets a room creator opt a GC-native BrawlEx mod back into
-        /// Wiimote+Nunchuk for players with real Wii Remotes/Nunchuks instead of a GameCube
-        /// controller/adapter.</summary>
-        public static bool SupportsControllerScheme(string? title) =>
-            !string.IsNullOrEmpty(title) && GcOnWiiGameTitles.Contains(title);
+        /// vs Wiimote+Nunchuk). Offered on EVERY Wii title — a room creator can play any Wii game
+        /// with a GameCube controller, or opt a GC-native BrawlEx mod back into Wiimote+Nunchuk for
+        /// players with real Wii Remotes/Nunchuks. The worker forces the chosen device at CoreLoad
+        /// (config.worker-gl.yaml <c>hidGc</c> is the "gc" fallback for titles without a hid4rom
+        /// pin); the default is <see cref="DefaultControllerScheme"/>.</summary>
+        public static bool SupportsControllerScheme(string? system) =>
+            string.Equals(system, "wii", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>The scheme a Wii game starts on when the creator doesn't change the picker: the
+        /// GC-controller-native BrawlEx mods (<see cref="GcOnWiiGameTitles"/>) default to
+        /// <c>"gc"</c>, every other Wii title to <c>"wiimote"</c>. Empty for non-Wii games (no
+        /// picker). Fed to the card so the dropdown pre-selects the right entry, and the client sends
+        /// that explicit value on an untouched Start.</summary>
+        public static string DefaultControllerScheme(string? system, string? title) =>
+            !SupportsControllerScheme(system) ? ""
+            : (!string.IsNullOrEmpty(title) && GcOnWiiGameTitles.Contains(title)) ? "gc"
+            : "wiimote";
 
         public ArcadeJoinDescriptor BuildJoinDescriptor(
             int userId, ArcadeGameDescriptor game, string roomCode, string cloudRetroRoomId, int playerSlot, bool isCreator)

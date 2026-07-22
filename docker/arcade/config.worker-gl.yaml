@@ -1071,6 +1071,19 @@ emulator:
               1: [1537]
               2: [1537]
               3: [1537]
+          # System default for the per-room "gc" controller scheme (site room-create picker). The
+          # picker is offered on EVERY Wii title now, not just the two BrawlEx mods above — a creator
+          # can play any Wii game with a GameCube controller. When the chosen ROM has no hid4rom row of
+          # its own, the worker's "gc" case falls back to this mapping: RETRO_DEVICE_GC_ON_WII = 1537 on
+          # all 4 ports (same descGC input path the plain "gc" system uses). The site mirrors it with the
+          # "gc" RetroPad profile whenever the room's scheme is "gc" (cloudRetroClient.js
+          # effectiveInputSystem) — otherwise the client would send Wiimote+Nunchuk bits the core no
+          # longer reads. Default stays Wiimote+Nunchuk (the `hid` block above); "gc" is opt-in per room.
+          hidGc:
+            0: [1537]
+            1: [1537]
+            2: [1537]
+            3: [1537]
           options:
             dolphin_renderer: "Hardware"
             dolphin_cpu_core: "JIT64"

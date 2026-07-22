@@ -217,22 +217,27 @@ export function profileFor(system) {
 }
 
 // Two Wii SD-loader BrawlEx mods are configured worker-side (config.worker-gl.yaml `hid4rom`) to
-// boot as RETRO_DEVICE_GC_ON_WII — real GameCube controllers, like real Brawl — instead of the
-// Wiimote+Nunchuk every other Wii title uses. The client must mirror that with the "gc" RetroPad
-// profile (button + analog-stick semantics) for exactly these two ROM keys, or it keeps sending
-// Wiimote+Nunchuk bits a GC-mode port no longer reads. Keyed by CloudRetroGameKey, not title, to
-// match the worker's own hid4rom lookup (romName = ROM filename sans extension).
+// DEFAULT to RETRO_DEVICE_GC_ON_WII — real GameCube controllers, like real Brawl — instead of the
+// Wiimote+Nunchuk every other Wii title defaults to. This set is now ONLY the default-GC list: the
+// GameCube/Wiimote picker is offered on every Wii title, but when a room sends no explicit scheme
+// (older invite link / absent param) these keys fall back to "gc" and all others to "wiimote".
+// Keyed by CloudRetroGameKey, not title, to match the worker's own hid4rom lookup (romName = ROM
+// filename sans extension).
 const GC_ON_WII_GAME_KEYS = new Set(["Project REX", "Super Smash Bros Infinite"]);
 
 // Resolves the system to use for INPUT purposes (button/stick profile, mapping-tool preview,
-// custom-remap storage) — same as `system` for every game except the two GC_ON_WII_GAME_KEYS above.
-// `controllerScheme` is the room's resolved choice ("gc"/"wiimote"/"" — from descriptor.wsUrl's
-// ctrlscheme param, which Join/ClaimSeat echo onto EVERY player's descriptor, not just the
-// creator's, because it changes what button bits every client must send). "" defaults to "gc"
-// (matches the worker's own hid4rom default when no room override was chosen); "wiimote" opts out.
+// custom-remap storage). For a Wii game the room's controller scheme decides it; every non-Wii
+// system is unaffected. `controllerScheme` is the room's resolved choice ("gc"/"wiimote"/"" — from
+// descriptor.wsUrl's ctrlscheme param, which Join/ClaimSeat echo onto EVERY player's descriptor,
+// not just the creator's, because it changes what button bits every client must send). An explicit
+// "gc" uses the GameCube RetroPad profile for ANY Wii title (matching the worker's hidGc fallback);
+// "wiimote" uses the Wii profile; "" falls back to the per-game default (the BrawlEx mods → gc,
+// everything else → wiimote), so a scheme-less older link still behaves as before.
 export function effectiveInputSystem(system, gameKey, controllerScheme) {
-  if (!GC_ON_WII_GAME_KEYS.has(gameKey)) return system;
-  return controllerScheme === "wiimote" ? system : "gc";
+  if (system !== "wii") return system;
+  if (controllerScheme === "gc") return "gc";
+  if (controllerScheme === "wiimote") return system;
+  return GC_ON_WII_GAME_KEYS.has(gameKey) ? "gc" : system;
 }
 
 // Small purpose-built export (rather than exposing the generic strFromWsUrl helper below) — the

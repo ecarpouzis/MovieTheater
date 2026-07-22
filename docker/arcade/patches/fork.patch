@@ -1433,6 +1433,40 @@ index 0000000..6a94788
 +satisfies and we don't (kronos imports NO wgl functions: single-context, all GL through OUR
 +get_proc_address, so the delta is state/extensions, not context plumbing). Candidate fixes: custom
 +kronos core patch (established pattern) or frontend shim. Saturn rows remain IsEnabled=0.
+diff --git a/cmd/worker/main.go b/cmd/worker/main.go
+index a1b2db4..bc5c032 100644
+--- a/cmd/worker/main.go
++++ b/cmd/worker/main.go
+@@ -1,6 +1,8 @@
+ package main
+ 
+ import (
++	"time"
++
+ 	"github.com/giongto35/cloud-game/v3/pkg/config"
+ 	"github.com/giongto35/cloud-game/v3/pkg/logger"
+ 	"github.com/giongto35/cloud-game/v3/pkg/os"
+@@ -29,6 +31,20 @@ func run() {
+ 	}
+ 	w.Start(done)
+ 	<-done
++	// Shutdown deadman: once a stop has been requested, this process has 45s to be GONE — after
++	// that, hard-terminate. A graceful stop normally completes in under a second, and every known
++	// wedge point inside it is already individually bounded (room close 30s, media destroy 10s),
++	// each ending in its own HardExit. This outer net catches everything else: a hang in a stage
++	// nobody thought to bound, and — the case that actually burned us — the final os-level exit
++	// itself never completing (ExitProcess's DLL-detach walk tangling with a crashed core thread;
++	// see docs/arcade-worker-unkillable-wedge.md). 45s stays under the watchdog's escalation
++	// window so the worker always dies by its own hand, never by an external force-kill against
++	// a process mid-GPU-teardown — the proven zombie trigger.
++	go func() {
++		time.Sleep(45 * time.Second)
++		log.Error().Msg("shutdown deadman: still alive 45s after stop was requested — hard-exiting")
++		os.HardExit(72)
++	}()
+ 	if err := w.Stop(); err != nil {
+ 		log.Error().Err(err).Msg("shutdown fail")
+ 	}
 diff --git a/go.mod b/go.mod
 index 46034dc..19b7a10 100644
 --- a/go.mod
@@ -1738,7 +1772,7 @@ index 0000000..d83f053
 +	}
 +}
 diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
-index baf701e..37bcd21 100644
+index baf701e..f43665c 100644
 --- a/pkg/config/emulator.go
 +++ b/pkg/config/emulator.go
 @@ -17,6 +17,53 @@ type Emulator struct {
@@ -1795,7 +1829,7 @@ index baf701e..37bcd21 100644
  }
  
  type LibretroConfig struct {
-@@ -69,20 +116,68 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
+@@ -69,20 +116,69 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
  		errors.New("core mapping not found for " + runtime.GOOS + ":" + runtime.GOARCH)
  }
  
@@ -1846,6 +1880,7 @@ index baf701e..37bcd21 100644
  	Height          int
  	Hid             map[int][]int
 +	Hid4rom         map[string]map[int][]int // per-ROM port-device override; same shape/precedence as Options4rom/Fps4rom
++	HidGc           map[int][]int            // system default for the per-room "gc" controller scheme when a ROM has no Hid4rom row (Wii: RETRO_DEVICE_GC_ON_WII on every port); lets ANY Wii title be played with a GameCube controller, not just the BrawlEx mods
  	IsGlAllowed     bool
 -	KbMouseSupport  bool
 -	Lib             string
@@ -1867,7 +1902,7 @@ index baf701e..37bcd21 100644
  	Roms            []string
  	SaveStateFs     string
  	Scale           float64
-@@ -128,6 +223,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
+@@ -128,6 +224,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
  	return found
  }
  
@@ -3933,7 +3968,7 @@ index 0000000..2a3570c
 +	}
 +}
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..2e15f42 100644
+index b342b6b..89f6d1e 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,14 @@ import (
@@ -3951,7 +3986,7 @@ index b342b6b..2e15f42 100644
  	"github.com/pion/webrtc/v4"
  	"github.com/pion/webrtc/v4/pkg/media"
  )
-@@ -16,15 +19,71 @@ import (
+@@ -16,15 +19,80 @@ import (
  type Peer struct {
  	api *ApiFactory
  	c   *webrtc.PeerConnection
@@ -3975,6 +4010,15 @@ index b342b6b..2e15f42 100644
  	v *webrtc.TrackLocalStaticSample
  	d *webrtc.DataChannel
  
++	// inputOnly: this peer is a local co-op controller (an extra pad on a machine that already plays
++	// the room's one shared stream through its PRIMARY session). It carries ONLY the input DataChannel:
++	// no video/audio tracks are negotiated (InitMedia skips them), and it is excluded from ABR
++	// (TargetBitrateKbps returns 0). Otherwise the worker would send that machine a full DUPLICATE of
++	// the room's stream AND count a redundant receiver in the worst-peer estimate — dragging the shared
++	// encoder down for everyone (the "second local player halves the quality" bug). Set at NewConnection
++	// from the init sdp marker "input-only" (mirrors the "audio-pc" split-audio marker).
++	inputOnly bool
++
 +	// Temporal SVC (see svc.go). maxLayer is the highest temporal layer THIS peer is fed; frames
 +	// above it are dropped for this peer alone. Written by the ABR loop, read on the media thread.
 +	// svcMaxLayerUncapped = send everything, which is the state until ABR has an opinion.
@@ -4023,7 +4067,7 @@ index b342b6b..2e15f42 100644
  var samplePool sync.Pool
  
  var DefaultOfferAnswerOptions = webrtc.OfferAnswerOptions{ICETricklingSupported: true}
-@@ -45,10 +104,14 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
+@@ -45,23 +113,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
  			Str(logger.DirectionField, "").
  			Str(logger.ClientField, ""),
  	)
@@ -4036,11 +4080,18 @@ index b342b6b..2e15f42 100644
  }
  
 -func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err error) {
-+func (p *Peer) NewConnection(vCodec string, splitAudio bool, signaller func(ice *string)) (err error) {
++func (p *Peer) NewConnection(vCodec string, splitAudio bool, inputOnly bool, signaller func(ice *string)) (err error) {
  	defer func() {
  		if err != nil {
  			err = fmt.Errorf("couldn't create webrtc seesion: %w", err)
-@@ -61,7 +124,7 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+ 		}
+ 	}()
+ 
++	p.inputOnly = inputOnly
++
+ 	if p.c != nil && p.c.ConnectionState() == webrtc.PeerConnectionStateConnected {
+ 		return fmt.Errorf("peer connected already")
+ 	}
  
  	p.log.Debug().Msg("rtc start")
  
@@ -4049,7 +4100,7 @@ index b342b6b..2e15f42 100644
  		return
  	}
  
-@@ -96,6 +159,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -96,6 +170,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.c.OnDataChannel(func(ch *webrtc.DataChannel) { p.log.Debug().Msgf("rtc [chan] [%s] remote", ch.Label()) })
  
@@ -4085,7 +4136,7 @@ index b342b6b..2e15f42 100644
  	aCodec := "opus"
  	if err = p.InitMedia(vCodec, aCodec); err != nil {
  		return
-@@ -143,8 +235,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+@@ -143,8 +246,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
  	return encoded, nil
  }
  
@@ -4127,7 +4178,7 @@ index b342b6b..2e15f42 100644
  		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
  		if err != nil {
  			return err
-@@ -153,6 +278,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -153,6 +289,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  		return p.c.AddICECandidate(candidate)
  	}
  	if sdp != nil {
@@ -4145,7 +4196,7 @@ index b342b6b..2e15f42 100644
  		answer, err := fromJson[webrtc.SessionDescription](*sdp)
  		if err != nil {
  			return err
-@@ -176,6 +312,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -176,6 +323,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
  		mime = webrtc.MimeTypeVP8
  	case "video/vp9":
  		mime = webrtc.MimeTypeVP9
@@ -4159,7 +4210,15 @@ index b342b6b..2e15f42 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -226,12 +369,79 @@ func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
+@@ -221,17 +375,90 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
+ }
+ 
+ func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
++	if p.inputOnly { // no audio track (local co-op controller); p.a is nil — would panic
++		return
++	}
+ 	if err := p.send(dat, dur, p.a.WriteSample); err != nil {
+ 		p.log.Error().Err(err).Send()
  	}
  }
  
@@ -4176,6 +4235,9 @@ index b342b6b..2e15f42 100644
  func (p *Peer) SendVideo(data []byte, dur time.Duration) {
 -	if err := p.send(data, dur, p.v.WriteSample); err != nil {
 -		p.log.Error().Err(err).Send()
++	if p.inputOnly { // no video track (local co-op controller); nothing to send, and no sender goroutine
++		return
++	}
 +	p.startVideoSender()
 +
 +	select {
@@ -4241,7 +4303,7 @@ index b342b6b..2e15f42 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -250,6 +460,22 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -250,6 +477,22 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  }
  
  func (p *Peer) Disconnect() {
@@ -4264,7 +4326,23 @@ index b342b6b..2e15f42 100644
  	if p.c == nil {
  		return
  	}
-@@ -274,20 +500,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -261,6 +504,15 @@ func (p *Peer) Disconnect() {
+ }
+ 
+ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
++	// A local co-op controller renders nothing (its machine already plays the room's stream through
++	// the primary session), so it gets NO video/audio tracks — no m-lines in the offer, so the browser
++	// receives no media and this machine never pulls a second copy of the stream. Its send paths
++	// (SendVideo/SendAudio) short-circuit and it is excluded from ABR. Only the data channel (created
++	// by the caller after this returns) matters for it.
++	if p.inputOnly {
++		return nil
++	}
++
+ 	if p.v, err = newTrack("video", "video", vCodec); err != nil {
+ 		return err
+ 	}
+@@ -274,20 +526,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -4314,7 +4392,7 @@ index b342b6b..2e15f42 100644
  			}
  		}()
  	}
-@@ -313,3 +565,23 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +591,29 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -4327,6 +4405,12 @@ index b342b6b..2e15f42 100644
 +// be as good as the worst receiver can carry.
 +func (p *Peer) TargetBitrateKbps() int {
 +	if p == nil || p.bwe == nil || p.c == nil {
++		return 0
++	}
++	// A local co-op controller receives no video, so its estimator only ever reports the pre-feedback
++	// initial bitrate — a phantom low reading that would pin the whole room's encoder. It is not a
++	// receiver; it holds no opinion about the room's video capacity.
++	if p.inputOnly {
 +		return 0
 +	}
 +	if p.c.ConnectionState() != webrtc.PeerConnectionStateConnected {
@@ -4436,10 +4520,10 @@ index 5b3d3fe..e6ef733 100644
  		}
  	}
 diff --git a/pkg/os/os.go b/pkg/os/os.go
-index 42e8a10..07130b8 100644
+index 42e8a10..36ad1a7 100644
 --- a/pkg/os/os.go
 +++ b/pkg/os/os.go
-@@ -4,12 +4,16 @@ import (
+@@ -4,18 +4,38 @@ import (
  	"bufio"
  	"bytes"
  	"errors"
@@ -4456,7 +4540,29 @@ index 42e8a10..07130b8 100644
  )
  
  const ReadChunk = 1024
-@@ -32,13 +36,39 @@ func MakeDirAll(path string) error {
+ 
+ var ErrNotExist = os.ErrNotExist
+ 
++// HardExit terminates the process RIGHT NOW via TerminateProcess, skipping Go runtime shutdown and
++// — critically — DLL_PROCESS_DETACH notifications. os.Exit runs ExitProcess, which walks every
++// loaded DLL's detach handler under the loader lock and terminates sibling threads on the way; when
++// a core/driver thread is wedged (or actively crashing) inside a GL/Vulkan/NVENC call, that walk can
++// tangle with it and never return, leaving a half-exited process that later resists even an external
++// force-kill (the unkillable-zombie workers of 2026-07-19/21: the core crashed, patch 0041 declared
++// the wedge and called os.Exit(70), an access violation fired in the core's gfx path mid-exit, and
++// the process sat undead until the box was rebooted — see docs/arcade-worker-unkillable-wedge.md in
++// the MovieTheater repo). Same lesson as GstMediaPipe.Destroy's hard exit, promoted to a helper.
++// Only for "this process is already broken — leave NOW, unwind nothing" paths.
++func HardExit(code uint32) {
++	h, _ := syscall.GetCurrentProcess()
++	_ = syscall.TerminateProcess(h, code)
++	select {} // TerminateProcess returns before the process is gone; never run code past this point
++}
++
+ func Exists(path string) bool {
+ 	_, err := os.Stat(path)
+ 	return !errors.Is(err, fs.ErrNotExist)
+@@ -32,13 +52,39 @@ func MakeDirAll(path string) error {
  	return os.MkdirAll(path, os.ModeDir|os.ModePerm)
  }
  
@@ -4498,7 +4604,7 @@ index 42e8a10..07130b8 100644
  	}()
  	return done
  }
-@@ -79,6 +109,13 @@ func CopyFile(from string, to string) (err error) {
+@@ -79,6 +125,13 @@ func CopyFile(from string, to string) (err error) {
  	if err != nil {
  		return err
  	}
@@ -4512,7 +4618,7 @@ index 42e8a10..07130b8 100644
  	return nil
  }
  
-@@ -123,3 +160,246 @@ func StatSize(path string) (int64, error) {
+@@ -123,3 +176,246 @@ func StatSize(path string) (int64, error) {
  func RemoveAll(path string) error {
  	return os.RemoveAll(path)
  }
@@ -7107,10 +7213,10 @@ index f3553b1..a26a9d8 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..d880d95 100644
+index 6974d59..830e98a 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,1371 @@
+@@ -1,578 +1,1372 @@
 -package libretro
 -
 -import (
@@ -7872,6 +7978,7 @@ index 6974d59..d880d95 100644
 +		HasVFR:          conf.VFR,
 +		Hid:             conf.Hid,
 +		Hid4rom:         conf.Hid4rom,
++		HidGc:           conf.HidGc,
 +		IsGlAllowed:     conf.IsGlAllowed,
 +		HwContext:       conf.HwContext,
 +		LibPath:         conf.Lib,
@@ -9867,10 +9974,18 @@ index 0000000..96877c5
 +		budgetPct, len(batch))
 +}
 diff --git a/pkg/worker/caged/libretro/graphics/rgfw.go b/pkg/worker/caged/libretro/graphics/rgfw.go
-index ce2471b..f593ba9 100644
+index ce2471b..00636f7 100644
 --- a/pkg/worker/caged/libretro/graphics/rgfw.go
 +++ b/pkg/worker/caged/libretro/graphics/rgfw.go
-@@ -201,11 +201,21 @@ static RGFW_proc RGFW_getProcAddress_OpenGL(const char* name) {
+@@ -197,15 +197,29 @@ static void RGFW_window_makeCurrentContext_OpenGL(RGFW_window* win) {
+         wglMakeCurrent(win->src.hdc, win->src.ctx_native->ctx);
+ }
+ 
++// Diagnostics (Saturn 0x3108 hunt): what the CALLING thread actually has current, and who's asking.
++static void* RGFW_currentGlContext(void) { return (void*)wglGetCurrentContext(); }
++static unsigned long RGFW_currentThreadId(void) { return GetCurrentThreadId(); }
++
+ static RGFW_proc RGFW_getProcAddress_OpenGL(const char* name) {
      static HMODULE glModule;
      if (!glModule) glModule = LoadLibraryA("opengl32.dll");
      if (glModule) { RGFW_proc p = (RGFW_proc)GetProcAddress(glModule, name); if (p) return p; }
@@ -9894,7 +10009,7 @@ index ce2471b..f593ba9 100644
      if (!win || !win->src.hdc || !ctx) return RGFW_FALSE;
  
      PIXELFORMATDESCRIPTOR pfd = {0};
-@@ -221,9 +231,48 @@ static RGFW_bool RGFW_window_createContextPtr_OpenGL(RGFW_window* win, RGFW_glCo
+@@ -221,9 +235,54 @@ static RGFW_bool RGFW_window_createContextPtr_OpenGL(RGFW_window* win, RGFW_glCo
      int pf = ChoosePixelFormat(win->src.hdc, &pfd);
      if (!pf || !SetPixelFormat(win->src.hdc, pf, &pfd)) return RGFW_FALSE;
  
@@ -9933,19 +10048,45 @@ index ce2471b..f593ba9 100644
 +                wglMakeCurrent(prevDc, prevCtx);
 +                wglDeleteContext(legacy);
 +                legacy = modern;
++                fprintf(stderr, "[wgl] ARB context created: %d.%d %s\n", maj, min,
++                        mask == NANO_WGL_CONTEXT_CORE_PROFILE_BIT_ARB ? "core" : "compat");
 +            } else {
 +                wglMakeCurrent(prevDc, prevCtx); // ARB refused — keep the legacy context (zero-regression fallback)
++                fprintf(stderr, "[wgl] ARB context FAILED (err %lu) — legacy fallback\n", GetLastError());
 +            }
 +        } else {
 +            wglMakeCurrent(prevDc, prevCtx);
++            fprintf(stderr, "[wgl] wglCreateContextAttribsARB unavailable — legacy fallback\n");
 +        }
++    } else {
++        fprintf(stderr, "[wgl] no version/profile hints — legacy context\n");
 +    }
  
 +    ctx->ctx = legacy;
      win->src.ctx_native = ctx;
      win->src.gfxType = RGFW_gfxNativeOpenGL;
      return RGFW_TRUE;
-@@ -456,6 +505,22 @@ static RGFW_glContext* RGFW_window_createContext_OpenGL(RGFW_window* win, RGFW_g
+@@ -242,6 +301,9 @@ static RGFW_glContext* RGFW_window_createContext_OpenGL(RGFW_window* win, RGFW_g
+ // -------------------------------------------------------------------
+ #elif defined(RGFW_MACOS)
+ 
++static void* RGFW_currentGlContext(void) { return (void*)CGLGetCurrentContext(); }
++static unsigned long RGFW_currentThreadId(void) { return (unsigned long)(uintptr_t)pthread_self(); }
++
+ static i32 RGFW_init(const char* name, u8 flags) { (void)name; (void)flags; return 0; }
+ static void RGFW_deinit(void) {}
+ 
+@@ -321,6 +383,9 @@ static RGFW_glContext* RGFW_window_createContext_OpenGL(RGFW_window* win, RGFW_g
+ // -------------------------------------------------------------------
+ #else
+ 
++static void* RGFW_currentGlContext(void) { return (void*)glXGetCurrentContext(); }
++static unsigned long RGFW_currentThreadId(void) { return (unsigned long)(uintptr_t)pthread_self(); }
++
+ static Display* RGFW_nano_display = NULL;
+ static Atom     RGFW_nano_WM_DELETE_WINDOW;
+ 
+@@ -456,6 +521,22 @@ static RGFW_glContext* RGFW_window_createContext_OpenGL(RGFW_window* win, RGFW_g
      return ctx;
  }
  #endif
@@ -9968,7 +10109,7 @@ index ce2471b..f593ba9 100644
  */
  import "C"
  import (
-@@ -550,6 +615,19 @@ func (r *RGFW) Deinit() error {
+@@ -550,6 +631,26 @@ func (r *RGFW) Deinit() error {
  	return nil
  }
  
@@ -9984,6 +10125,13 @@ index ce2471b..f593ba9 100644
 +// UnbindContext makes NO GL context current on this thread. Needed only around gst's wglShareLists —
 +// see rgfw_make_none_current. Always re-Bind afterwards or the core renders into nothing.
 +func (r *RGFW) UnbindContext() { C.rgfw_make_none_current() }
++
++// CurrentContext reports the GL context current on the CALLING OS thread (0 = none) and that
++// thread's id — the Saturn-0x3108 diagnostic: a core GL call on a thread where this returns 0
++// faults in the driver's TLS dispatch stub.
++func CurrentContext() (uintptr, uint64) {
++	return uintptr(C.RGFW_currentGlContext()), uint64(C.RGFW_currentThreadId())
++}
 +
  func (r *RGFW) BindContext() error {
  	if !r.inited {
@@ -10965,10 +11113,10 @@ index 669862d..793aa6c 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..53ecd28 100644
+index 17f10fc..223ef78 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-@@ -1,981 +1,1967 @@
+@@ -1,981 +1,1975 @@
 -package nanoarch
 -
 -import (
@@ -12143,6 +12291,7 @@ index 17f10fc..53ecd28 100644
 +	Hacks           []string
 +	Hid             map[int][]int
 +	Hid4rom         map[string]map[int][]int // per-ROM port-device override, see Nanoarch.hid4rom
++	HidGc           map[int][]int            // system default for the per-room "gc" scheme when a ROM has no Hid4rom row, see the "gc" case in LoadGame
 +	CoreAspectRatio bool
 +	KbMouseSupport  bool
 +	LibExt          string
@@ -12560,8 +12709,11 @@ index 17f10fc..53ecd28 100644
 +	// Per-room creator override (site: room-create controller-scheme picker) wins over the static
 +	// hid4rom default above. "wiimote" opts OUT of a GC-native title's forced GameCube mapping back
 +	// to this system's normal Wiimote+Nunchuk devices — for players with a real Wii Remote+Nunchuk
-+	// instead of a GameCube controller/adapter. "gc" is explicit-default and only matters when this
-+	// ROM has no hid4rom row of its own (then it's a no-op: n.meta.Hid is already what gets used).
++	// instead of a GameCube controller/adapter. "gc" forces the GameCube-controller device: a ROM
++	// with its own hid4rom row uses that, otherwise it falls back to the system default (config.yaml
++	// hidGc — Wii's RETRO_DEVICE_GC_ON_WII on every port). That fallback is what lets ANY Wii title
++	// be played with a GameCube controller from the picker, not just the two BrawlEx mods that pin it
++	// statically. Without the fallback, "gc" was a no-op on every non-BrawlEx Wii game.
 +	switch n.controllerScheme {
 +	case "wiimote":
 +		hid = n.meta.Hid
@@ -12569,6 +12721,10 @@ index 17f10fc..53ecd28 100644
 +	case "gc":
 +		if override, ok := n.hid4rom[romName]; ok {
 +			hid = override
++			n.log.Info().Msgf("[room-override] controller scheme=gc for %q (hid4rom pin)", romName)
++		} else if n.meta.HidGc != nil {
++			hid = n.meta.HidGc
++			n.log.Info().Msgf("[room-override] controller scheme=gc for %q (system hidGc default)", romName)
 +		}
 +	}
 +	for k, v := range hid {
@@ -45803,10 +45959,10 @@ index 2840a0e..c55a441 100644
  	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
  		var out api.Out
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..a695533 100644
+index 6972cc7..9184c5b 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,595 @@
+@@ -1,310 +1,603 @@
 -package worker
 -
 -import (
@@ -46184,7 +46340,15 @@ index 6972cc7..a695533 100644
 +	// Old clients never send it → identical to stock.
 +	splitAudio := !rq.Initiator && rq.Sdp == "audio-pc"
 +
-+	if err = peer.NewConnection(codec, splitAudio, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
++	// A local co-op controller (an extra pad on a machine already playing the room's stream through its
++	// primary session) sets the same init sdp field to "input-only": negotiate ONLY the input
++	// DataChannel — no video/audio tracks — and exclude this peer from ABR. Without it the worker sends
++	// that machine a full duplicate stream and counts a redundant receiver in the worst-peer estimate,
++	// halving quality for the whole room. The two markers are mutually exclusive (the site never asks
++	// for split audio on an input-only session); old clients never send it → identical to stock.
++	inputOnly := !rq.Initiator && rq.Sdp == "input-only"
++
++	if err = peer.NewConnection(codec, splitAudio, inputOnly, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
 +		return api.EmptyPacket
 +	}
 +
@@ -49182,10 +49346,10 @@ index f3e898f..cc81359 100644
 +	}
 +}
 diff --git a/pkg/worker/room/room.go b/pkg/worker/room/room.go
-index 9ff9576..808e5b4 100644
+index 9ff9576..df798f8 100644
 --- a/pkg/worker/room/room.go
 +++ b/pkg/worker/room/room.go
-@@ -1,171 +1,270 @@
+@@ -1,171 +1,274 @@
 -package room
 -
 -import (
@@ -49362,12 +49526,12 @@ index 9ff9576..808e5b4 100644
 +import (
 +	"iter"
 +	"log"
-+	"os"
 +	"sync"
 +	"sync/atomic"
 +	"time"
 +
 +	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
++	xos "github.com/giongto35/cloud-game/v3/pkg/os"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/app"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
 +)
@@ -49555,7 +49719,11 @@ index 9ff9576..808e5b4 100644
 +		// coordinator drops a worker that disconnects, and the runner brings a clean one back in ~4s.
 +		log.Printf("room %v: the core did not finish shutting down after %v — it is wedged. Exiting so "+
 +			"this worker is replaced rather than handed to the next player.", r.id, closeGiveUp)
-+		os.Exit(70) // EX_SOFTWARE — deliberate, distinct from a core's crash code
++		// HardExit, NOT os.Exit: this branch only runs when a core thread is already wedged (often
++		// mid-crash — SM64 Last Impact AV'd in plugin_start_gfx right here), and os.Exit's ExitProcess
++		// tangled with that thread TWICE (2026-07-19, 2026-07-21), each time leaving a half-exited
++		// process that survived force-kill and cost a box reboot.
++		xos.HardExit(70) // EX_SOFTWARE — deliberate, distinct from a core's crash code
 +	}
 +}
 +

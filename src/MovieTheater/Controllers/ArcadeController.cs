@@ -248,9 +248,11 @@ namespace MovieTheater.Controllers
                     // Whether the game modal's ⚙ Configure panel (editor-only) has anything to offer for this
                     // system — catalogued core options and/or a renderer choice. Gates showing the button.
                     configurable = ArcadeCoreOptionCatalog.HasAnything(k.System) || CloudRetroHost.SupportsHwToggle(k.System),
-                    // Wii controller-scheme picker (GameCube vs Wiimote+Nunchuk): only the two
-                    // GC-controller-native BrawlEx mods offer it; see CloudRetroHost.GcOnWiiGameTitles.
-                    supportsControllerScheme = CloudRetroHost.SupportsControllerScheme(k.Title),
+                    // Wii controller-scheme picker (GameCube vs Wiimote+Nunchuk): offered on every Wii
+                    // title now. defaultControllerScheme pre-selects the dropdown — "gc" for the
+                    // GC-native BrawlEx mods, "wiimote" for every other Wii game (empty = no picker).
+                    supportsControllerScheme = CloudRetroHost.SupportsControllerScheme(k.System),
+                    defaultControllerScheme = CloudRetroHost.DefaultControllerScheme(k.System, k.Title),
                     versions = versions.Select(v => new
                     {
                         id = v.Id, label = v.Label, region = v.Region,
@@ -471,10 +473,11 @@ namespace MovieTheater.Controllers
             /// ignored for every other system and for capture rooms.</summary>
             public string? HwContext { get; set; }
 
-            /// <summary>Wii controller-scheme choice from the room-create picker: "gc" (default,
-            /// matches the worker's hid4rom static config) or "wiimote" to opt a GC-controller-native
-            /// BrawlEx mod back into Wiimote+Nunchuk. null/empty = defer to the worker's default.
-            /// Only meaningful for <see cref="CloudRetroHost.GcOnWiiGameTitles"/>; ignored otherwise.</summary>
+            /// <summary>Wii controller-scheme choice from the room-create picker: "gc" (GameCube
+            /// controller — forced via hid4rom pin or the system hidGc fallback) or "wiimote"
+            /// (Wiimote+Nunchuk). null/empty = defer to the worker's config default. Meaningful for
+            /// any Wii title (<see cref="CloudRetroHost.SupportsControllerScheme"/>); ignored
+            /// otherwise.</summary>
             public string? ControllerScheme { get; set; }
         }
 
@@ -849,7 +852,7 @@ namespace MovieTheater.Controllers
             // because — unlike hwctx/bitrate — it changes what button bits EVERY player's client must
             // send, not just the creator's one-time CoreLoad, so it has to live in room state for
             // Join/ClaimSeat to hand to joiners too (mirrors codec's own reason for the same thing).
-            var ctrlScheme = CloudRetroHost.SupportsControllerScheme(game.Title)
+            var ctrlScheme = CloudRetroHost.SupportsControllerScheme(game.System)
                 ? request.ControllerScheme?.Trim().ToLowerInvariant() switch { "wiimote" => "wiimote", "gc" => "gc", _ => "" }
                 : "";
 

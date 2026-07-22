@@ -40,9 +40,10 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
   // profile) or the system default (Vulkan for 3D). The play-button menu still offers a per-launch
   // Force Vulkan / Force GL override.
   const defaultHwContext = "";
-  // Wii controller-scheme picker (GameCube vs Wiimote+Nunchuk): only the GC-controller-native BrawlEx
-  // mods offer it. Defaults to "gc" — matches the worker's own hid4rom default when no override is sent.
-  const [ctrlScheme, setCtrlScheme] = useState("gc");
+  // Wii controller-scheme picker (GameCube vs Wiimote+Nunchuk): offered on every Wii title. The
+  // server hands each game its default (defaultControllerScheme: "gc" for the GC-native BrawlEx
+  // mods, "wiimote" for every other Wii game) so an untouched Start launches on the right scheme.
+  const [ctrlScheme, setCtrlScheme] = useState(game.defaultControllerScheme || "wiimote");
 
   const busy = creating === sel;
   const start = (hwContext = defaultHwContext) =>

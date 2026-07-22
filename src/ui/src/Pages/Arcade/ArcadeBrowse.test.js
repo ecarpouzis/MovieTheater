@@ -180,13 +180,22 @@ describe("GameModal", () => {
     expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "");
   });
 
-  // The Wii GameCube/Nunchuk picker: only offered for the GC-native BrawlEx mods; defaults to "gc".
-  it("passes the controller scheme for a Wii title that offers one", () => {
+  // The Wii GameCube/Nunchuk picker is offered on every Wii title now; the server hands each game its
+  // default via defaultControllerScheme, and an untouched Start launches on it.
+  it("defaults a GC-native Wii title to the GameCube scheme", () => {
     const onStart = vi.fn();
-    renderModal(game({ supportsControllerScheme: true }), { onStart });
+    renderModal(game({ supportsControllerScheme: true, defaultControllerScheme: "gc" }), { onStart });
     expect(document.querySelector(".agm-controls")).toBeTruthy();
     fireEvent.click(screen.getByText(/Start room/));
     expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "gc");
+  });
+
+  it("defaults a normal Wii title to Wiimote+Nunchuk", () => {
+    const onStart = vi.fn();
+    renderModal(game({ supportsControllerScheme: true, defaultControllerScheme: "wiimote" }), { onStart });
+    expect(document.querySelector(".agm-controls")).toBeTruthy();
+    fireEvent.click(screen.getByText(/Start room/));
+    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "wiimote");
   });
 });
 
