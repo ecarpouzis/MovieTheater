@@ -186,9 +186,10 @@ namespace MovieTheater.Arcade
             if (stream == null) return;
 
             using var doc = System.Text.Json.JsonDocument.Parse(stream);
-            // Extraction shape: { "cores": { "flycast": { "options": [ {..} ] }, ... } }. Only quality-relevant
-            // options are folded in (the module isn't a raw dump); renderer-selecting keys are excluded (the
-            // render-profile selector owns them). A core with no entry here simply shows the hand-tuned set.
+            // Extraction shape: { "cores": { "flycast": { "options": [ {..} ] }, ... } }. EVERY core option is
+            // folded in (the tool mirrors what a desktop emulator config exposes — no quality-relevance filter);
+            // only the renderer-selecting keys are excluded, because the render-profile selector owns those. A
+            // core with no entry here simply shows the hand-tuned set.
             if (!doc.RootElement.TryGetProperty("cores", out var cores)
                 || cores.ValueKind != System.Text.Json.JsonValueKind.Object) return;
 
@@ -198,9 +199,6 @@ namespace MovieTheater.Arcade
                     continue;
                 foreach (var o in opts.EnumerateArray())
                 {
-                    // Only quality-relevant options, and never a renderer-selecting key (profile owns those).
-                    if (o.TryGetProperty("qualityRelevant", out var qr) && qr.ValueKind == System.Text.Json.JsonValueKind.False)
-                        continue;
                     var opt = ParseExtracted(o);
                     if (opt != null && !RendererSelectingKeys.Contains(opt.Key)) AddExtracted(core.Name, opt);
                 }
