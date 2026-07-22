@@ -163,6 +163,11 @@ namespace MovieTheater.Services.Arcade
             "capture" => 12000,
             // Real 3D detail, ordered by encoded pixels per frame. All measured live 2026-07-09.
             "gc" => 14000,  // 1280x1056 = 1.35 Mpx; at 5 Mbps it ran ~0.06 bpp
+            // Wii (dolphin_custom_libretro) uses the IDENTICAL efb_scale:3 + our scale:0.6667 combo as gc
+            // (config.worker-gl.yaml) -> same delivered 1280x1056. Missing case here silently fell through
+            // to the 2D 5000 default the whole session (found live, Project REX, 2026-07-22) despite real
+            // 3D detail identical to gc's.
+            "wii" => 14000,
             "ps2" => 12000, // 1280x896  = 1.15 Mpx after the 2x upscale. NOT optional: at the old 6 Mbps
                             // ceiling God of War's jitter buffer sat at ~95 ms with erratic fps; at 12 Mbps
                             // it is 13 ms and a locked 60. Upscale and bitrate ship together or not at all.
