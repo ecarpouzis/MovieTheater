@@ -90,6 +90,13 @@ function WorkerLogPath([int]$port) {
 # just capture. Strip the escapes first, then accept either shape.
 $roomRx = 'New room.*room=(?:"([^"]+)"|(\S+))'
 $ansiRx = "$([char]27)\[[0-9;]*m"
+# Returns @{ Room = <id>; Time = <[datetime] of the line, or $null if unparseable> }.
+# The Time matters: a busy room can only genuinely live on a worker if the CURRENT process on that
+# port wrote the "New room" line — a line older than the process's start time is a GHOST (a stale
+# log tail left by a previous incarnation, echoing a dead coordinator slot). On 2026-07-20/21 the
+# old first-port-match mapping hit exactly that: both GL logs' last room was the same wedged title,
+# the watchdog blamed port 8446 all night (~18 innocent idle workers recycled, one every ~3 min)
+# while the truly wedged worker on 8447 sat untouched for 5.5 h.
 function LastRoomInLog([string]$path) {
     foreach ($f in @($path, "$path.1")) {
         if (-not (Test-Path $f)) { continue }
@@ -98,8 +105,13 @@ function LastRoomInLog([string]$path) {
             Select-String -Pattern $roomRx | Select-Object -Last 1
         if ($m) {
             $g = $m.Matches[0].Groups
-            if ($g[1].Success) { return $g[1].Value }
-            return $g[2].Value
+            $room = if ($g[1].Success) { $g[1].Value } else { $g[2].Value }
+            $t = $null
+            if ($m.Line -match '^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+)') {
+                $parsed = [datetime]::MinValue
+                if ([datetime]::TryParse($Matches[1], [ref]$parsed)) { $t = $parsed }
+            }
+            return @{ Room = $room; Time = $t }
         }
     }
     return $null
@@ -127,13 +139,19 @@ function KillWorker([int]$wpid, [string]$why) {
     # GRACEFUL first: let the worker flush its GS shader cache and tear down GL/NVENC cleanly, so we don't
     # hand the next player a cold cache (periodic in-game audio skips) or strand a kernel thread (zombie).
     # Requires a worker built with the stop-file watch (pkg/os ExpectTermination); older binaries ignore
-    # the sentinel and we fall through to force after the short wait -- still correct, just not graceful.
+    # the sentinel and we fall through to force after the wait -- still correct, just not graceful.
+    #
+    # The wait is 60s, NOT seconds: the worker bounds its own wedged-teardown stages internally (room
+    # close 30s, media destroy 10s, whole-shutdown deadman 45s) and each ends in a self-TerminateProcess.
+    # We must outwait ALL of those so a wedged worker dies by its own hand. The old 8s window force-killed
+    # workers mid-GPU-teardown -- the proven trigger for the UNKILLABLE zombie (2026-07-19 PID 11328,
+    # 2026-07-21 PID 4100; docs/arcade-worker-unkillable-wedge.md). Force-kill is a true last resort.
     $conf = ConfDirForPid $wpid
     if ($conf) {
         Log ("worker PID {0} -- requesting GRACEFUL stop ({1})" -f $wpid, $why)
         $sf = Join-Path $conf ".stop"
         Set-Content -Path $sf -Value (Get-Date -Format o) -Encoding ASCII -ErrorAction SilentlyContinue
-        for ($i = 0; $i -lt 16 -and (Get-Process -Id $wpid -ErrorAction SilentlyContinue); $i++) { Start-Sleep -Milliseconds 500 }
+        for ($i = 0; $i -lt 120 -and (Get-Process -Id $wpid -ErrorAction SilentlyContinue); $i++) { Start-Sleep -Milliseconds 500 }
         Remove-Item $sf -Force -ErrorAction SilentlyContinue
         if (-not (Get-Process -Id $wpid -ErrorAction SilentlyContinue)) {
             Log ("worker PID {0} exited GRACEFULLY -- {1} -- restart loop respawns it" -f $wpid, $why); return
@@ -144,7 +162,8 @@ function KillWorker([int]$wpid, [string]$why) {
     Start-Sleep -Seconds 2
     # VERIFY: a force-kill that does not take means the thread is stuck in the GPU driver (kernel wait).
     if (Get-Process -Id $wpid -ErrorAction SilentlyContinue) {
-        $m = ("WEDGED/UNKILLABLE: worker PID {0} SURVIVED force-kill (kernel-stuck GPU teardown). Holds its " +
+        $m = ("WEDGED/UNKILLABLE: worker PID {0} SURVIVED force-kill (half-exited process pinned by a " +
+              "crashed core/GPU thread -- see docs/arcade-worker-unkillable-wedge.md). Holds its " +
               "ConfDir locked, coordinator slot dead. BOX REBOOT REQUIRED. ({1})") -f $wpid, $why
         Log $m
         $zombies[$wpid] = $true
@@ -204,9 +223,26 @@ while ($true) {
         $wedgedPids = @{}
         if ($status) {
             foreach ($entry in @($status | Where-Object { $_.room })) {
-                # Map the busy room to a worker log by its "New room" line.
-                $port = $WorkerPorts | Where-Object { (LastRoomInLog (WorkerLogPath $_)) -eq $entry.room } | Select-Object -First 1
-                if (-not $port) { Log ("busy room not found in any worker log (skip): {0}" -f $entry.room); continue }
+                # Map the busy room to a worker log by its "New room" line — with a GHOST guard:
+                # a port only qualifies if its log's LAST room is this room AND that line was written
+                # by the current process on the port (line time >= process start). A line that
+                # predates the process is a ghost (stale tail / dead coordinator slot, e.g. a zombie
+                # worker's room) — killing by ghost shoots healthy workers, so ghosts are logged,
+                # never killed. When several ports qualify, the newest line wins.
+                $port = $null; $portTime = $null
+                foreach ($p in $WorkerPorts) {
+                    $last = LastRoomInLog (WorkerLogPath $p)
+                    if (-not $last -or $last.Room -ne $entry.room) { continue }
+                    $owner = (Get-NetUDPEndpoint -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+                    $proc = if ($owner) { $workers | Where-Object { [int]$_.ProcessId -eq [int]$owner } | Select-Object -First 1 } else { $null }
+                    if ($last.Time -and $proc -and $last.Time -lt $proc.CreationDate) {
+                        Log ("ghost room '{0}': port {1} log matches but the line ({2}) predates its current worker PID {3} (started {4}) -- stale coordinator slot; NOT killing" -f `
+                            $entry.room, $p, $last.Time.ToString('o'), [int]$proc.ProcessId, $proc.CreationDate.ToString('o'))
+                        continue
+                    }
+                    if (-not $port -or ($last.Time -and $portTime -and $last.Time -gt $portTime)) { $port = $p; $portTime = $last.Time }
+                }
+                if (-not $port) { Log ("busy room not found in any live worker log (skip): {0}" -f $entry.room); continue }
                 $logPath = WorkerLogPath $port
                 $staleSec = ((Get-Date) - (Get-Item $logPath).LastWriteTime).TotalSeconds
                 if ($staleSec -lt $WedgeStaleSec) { continue }   # room is ticking (pace-diag every 5 s)

@@ -32,12 +32,16 @@
 
 .PARAMETER WorkerId   1-based worker id (port 8445+Id; ConfDir worker-gl / worker-gl-<Id>; log
                       glworker.log / glworker-<Id>.log) -- the register-arcade-glworker-task.ps1 convention.
-.PARAMETER GraceSec   How long to wait for a graceful exit before forcing (default 25).
+.PARAMETER GraceSec   How long to wait for a graceful exit before forcing (default 60).
 .PARAMETER Force      Recycle even if the worker owns a LIVE (ticking) room. Kicks that player.
 #>
 param(
     [Parameter(Mandatory)][int] $WorkerId,
-    [int]    $GraceSec        = 25,
+    # 60s, not seconds: must outwait the worker's own internal wedge bounds (room close 30s, media
+    # destroy 10s, whole-shutdown deadman 45s — each ends in a self-TerminateProcess) so a wedged
+    # worker dies by its own hand. An external force-kill mid-GPU-teardown is the proven trigger for
+    # the UNKILLABLE zombie (docs/arcade-worker-unkillable-wedge.md).
+    [int]    $GraceSec        = 60,
     [switch] $Force,
     [int]    $CoordinatorPort = 8000,
     [int]    $WedgeStaleSec   = 150,
