@@ -368,3 +368,7 @@ CLAUDE.md
 # key dir wherever a run drops it (content root, repo root, a scratch CWD).
 dataprotection-keys/
 /src/MovieTheater.ArcadeGateway/appsettings.Production.json
+
+# Arcade JIT ROM-cache manifest — runtime state written per host (LRU staging map),
+# not source. The docker copy is already ignored above; ignore the repo-root drop too.
+/arcade-romcache.json
