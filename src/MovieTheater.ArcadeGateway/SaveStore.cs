@@ -267,6 +267,22 @@ public sealed class SaveStore
         return seeded;
     }
 
+    /// <summary>Seed ONLY the SAVE_RAM memory card / battery (<c>sram.srm</c>) into the mount — never the
+    /// save-STATE. This is the "New game" path: a new game skips the auto-restored save-state but must NOT
+    /// eject the player's memory card. The card is a distinct persistence layer from a save-state (on real
+    /// hardware, starting a new game never wipes the card), and for card-only titles (PS1 SotN) it IS the
+    /// save. PS1 card 1 and NES/SNES/GBA/N64 battery all ride SAVE_RAM, so this covers them uniformly.
+    /// Erasing the card stays a deliberate action in Manage-my-saves, never a side effect of New game.
+    /// Returns false when the user has no stored card for this game (nothing to seed).</summary>
+    public bool SeedSramOnly(int userId, int gameId, string sessionId)
+    {
+        if (string.IsNullOrEmpty(sessionId)) return false;
+        var sramBlob = StoreFile(userId, gameId, "sram.srm");
+        if (!File.Exists(sramBlob)) return false;
+        CopyGuarded(sramBlob, MountFile(sessionId, ".srm"));
+        return true;
+    }
+
     // ── Snapshots (S3): named save-state slots the user creates from the live game ────────────────────
 
     /// <summary>Copy the session's CURRENT live state (<c>&lt;sessionId&gt;.dat</c> in the mount) into a

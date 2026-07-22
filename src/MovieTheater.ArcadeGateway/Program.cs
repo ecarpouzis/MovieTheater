@@ -242,7 +242,17 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
                 // reads these files at boot, and its close-save rewrites them.
                 saveStore.ClearSession(requestedRoomId);
                 saveStore.ClearCoreSaveDir(requestedRoomId); // PSP/DC/… save-dir tree, if any
-                app.Logger.LogInformation("Arcade save cleared (New game) for user {User} game {Game}", svUser, svGame);
+                // A New game skips the auto-restored save-STATE, but must NOT eject the memory card /
+                // battery: re-seed SAVE_RAM so the player's PS1 card (and NES/SNES/GBA/N64 battery) stays
+                // inserted — exactly as starting a new game on real hardware leaves the card untouched.
+                // ClearSession above removed the mount .srm; this puts the vault copy back. Without it a
+                // New game booted a BLANK card, so card-only titles (SotN) showed "no saved game" and a
+                // subsequent in-game save could overwrite the vault with a near-empty card. The worker-side
+                // cardVault (ps2/gc/wii/dc/psp) is a separate path the worker seeds regardless of ?fresh,
+                // so those systems were already unaffected; only SAVE_RAM needed this.
+                bool keptCard = saveStore.SeedSramOnly(svUser, svGame, requestedRoomId);
+                app.Logger.LogInformation("Arcade save cleared (New game){Card} for user {User} game {Game}",
+                    keptCard ? " +card kept" : "", svUser, svGame);
             }
             else if (!saveStore.MountHasSave(requestedRoomId))
             {
