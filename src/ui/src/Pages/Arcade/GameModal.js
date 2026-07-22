@@ -130,6 +130,9 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
                 className="agm-start"
                 loading={busy}
                 onClick={() => start("")}
+                // The game modal is zIndex 1500; antd's dropdown menu defaults lower and would open
+                // BEHIND it (the "Force GL does nothing" report). Lift it above the modal.
+                overlayStyle={{ zIndex: 1700 }}
                 menu={{
                   items: [
                     { key: "vulkan", label: "Force Vulkan" },
