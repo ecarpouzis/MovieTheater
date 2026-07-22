@@ -1067,26 +1067,46 @@ function GamepadRebindCapture({ targetBit, onRebind, onCancel }) {
   useEffect(() => {
     if (!listening) return;
 
+    // Capture only a FRESH press. Seed the baseline with everything already held the instant rebinding
+    // starts — a resting/half-pulled trigger, a still-held button, or the button used to open this panel
+    // — so it is NOT captured. Without the seed the first tick sees an empty baseline and instantly
+    // "remaps" whatever is already down (the reported bug). Key by (gamepadIndex, buttonIndex) so a
+    // second pad's buttons can't shadow the first's.
+    const key = (gi, i) => gi + ":" + i;
+    const snapshot = () => {
+      const held = new Set();
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      gamepads.forEach((gp, gi) => {
+        if (!gp) return;
+        gp.buttons.forEach((b, i) => { if (b.pressed) held.add(key(gi, i)); });
+      });
+      return held;
+    };
+    prevButtonsRef.current = snapshot();
+
     const gamepadHandler = setInterval(() => {
       const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-      for (const gp of gamepads) {
-        if (!gp) continue;
+      const nowPressed = new Set();
+      let captured = null;
+      gamepads.forEach((gp, gi) => {
+        if (!gp) return;
         for (let i = 0; i < gp.buttons.length; i++) {
-          if (gp.buttons[i].pressed && !prevButtonsRef.current.has(i)) {
-            setListening(false);
+          if (!gp.buttons[i].pressed) continue;
+          nowPressed.add(key(gi, i));
+          // A new press = pressed now, not part of the baseline held when rebinding started.
+          if (captured === null && !prevButtonsRef.current.has(key(gi, i))) {
             // readGamepad() looks up gamepad[pi] where pi = swap ? i^1 : i (cloudRetroClient.js)
             // — store the override under that SAME swap-adjusted key, or a rebind captured on a
             // swapped pad's face button silently never fires at runtime.
             const swap = effectiveFaceSwap(gp);
-            const pi = swap && i < 4 ? (i ^ 1) : i;
-            onRebind(pi, targetBit);
-            return;
+            captured = swap && i < 4 ? (i ^ 1) : i;
           }
         }
-        // Update which buttons are currently pressed
-        prevButtonsRef.current = new Set(
-          gp.buttons.map((b, i) => b.pressed ? i : null).filter(i => i !== null)
-        );
+      });
+      prevButtonsRef.current = nowPressed;
+      if (captured !== null) {
+        setListening(false);
+        onRebind(captured, targetBit);
       }
     }, 50);
 
