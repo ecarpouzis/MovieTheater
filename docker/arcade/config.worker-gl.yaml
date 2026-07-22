@@ -260,7 +260,10 @@ emulator:
             # scanline pins — the W8 anti-collapse fix is the PINNING itself, not the specific crop value.
             # Vertical borders (~8 lines top/bottom from the 0/239 window) may remain — left this round (cropping
             # them trades content for cleanliness; Eric's taste call later). ROLLBACK: "disabled".
-            beetle_psx_hw_crop_overscan: "enabled"
+            # Token is disabled/static/smart (the 2026-07-18 nightly changed it from enabled/disabled — the
+            # old "enabled" was a silently-ignored no-op). "smart" crops the horizontal-blanking overscan
+            # borders dynamically per frame. Per-game config can override this via the config module.
+            beetle_psx_hw_crop_overscan: "smart"
         # ── PS1 ALTERNATE CORE: pcsx_rearmed (the pre-Vulkan "PSX GL" / software core) ──
         # Selectable PER-ROOM via the site's render-profile "core" override (StartGameRequest.Core →
         # HandleGameStart), for PS1 games that want the pre-Vulkan pcsx_rearmed setup instead of the default
