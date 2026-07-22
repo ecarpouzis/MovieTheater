@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import {
   displayAspect, rotatedVideoSize, videoTransform,
   stickFoldFor, setStickFoldOverride, resetStickFoldOverride,
+  keyboardArrowsDriveDpad,
 } from "./cloudRetroClient";
 
 // The numbers below are MEASURED from real rooms (worker log `Libretro System A/V >>> … AR [x]`,
@@ -126,5 +127,34 @@ describe("stickFoldFor", () => {
     expect(stickFoldFor("gc")).toBe(true);
     resetStickFoldOverride("gc");
     expect(stickFoldFor("gc")).toBe(false);
+  });
+});
+
+// The keyboard has ONE directional input (arrows), which always drives the left stick. This decides
+// whether it ALSO presses the d-pad. Unlike the gamepad, arrows can't simply drop the d-pad on every
+// analog console: PS1's many digital-only games read the d-pad, so a keyboard player must keep it.
+describe("keyboardArrowsDriveDpad", () => {
+  it("keeps arrows on the d-pad for 2D + d-pad-movement consoles (fold off)", () => {
+    // 2D cores read the d-pad; PS1/PS2/PSP/DC include digital-only games that need it — dropping it
+    // would leave a keyboard player unable to move at all.
+    for (const sys of ["snes", "nes", "arcade", "ps1", "ps2", "psp", "dc", "unknown-system"]) {
+      expect(keyboardArrowsDriveDpad(sys, false)).toBe(true);
+    }
+  });
+
+  it("makes arrows stick-ONLY on stick-primary consoles whose d-pad is a distinct function", () => {
+    // n64/gc/wii: arrows = the control stick, never the d-pad — or the keyboard reproduces the
+    // Goldeneye view-pan / Smash taunt double-bind.
+    for (const sys of ["n64", "gc", "wii"]) {
+      expect(keyboardArrowsDriveDpad(sys, false)).toBe(false);
+    }
+  });
+
+  it("restores arrows→d-pad on those consoles when the live fold toggle is on", () => {
+    // A keyboard player who actually wants the d-pad on N64/GC/Wii flips "left stick also acts as
+    // D-pad" — the same toggle that governs the gamepad — and arrows drive the d-pad again.
+    for (const sys of ["n64", "gc", "wii"]) {
+      expect(keyboardArrowsDriveDpad(sys, true)).toBe(true);
+    }
   });
 });

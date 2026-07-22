@@ -50,13 +50,19 @@ const DEFAULT_GAMEPAD = {
   12: PAD.UP, 13: PAD.DOWN, 14: PAD.LEFT, 15: PAD.RIGHT,
 };
 
-// Keyboard fallback → RetroPad.
+// Keyboard fallback → RetroPad. The ARROW KEYS are deliberately NOT here: they're the keyboard's
+// LEFT STICK (handled centrally in the input pump so 3D games can steer) and additionally fold into
+// the d-pad per system — see keyboardArrowsDriveDpad. Putting them here would hard-wire arrows→d-pad
+// for every system and reproduce the gamepad double-bind on the keyboard (N64 view-pan, Smash taunt).
 const DEFAULT_KEYMAP = {
-  ArrowUp: PAD.UP, ArrowDown: PAD.DOWN, ArrowLeft: PAD.LEFT, ArrowRight: PAD.RIGHT,
   KeyZ: PAD.B, KeyX: PAD.A, KeyA: PAD.Y, KeyS: PAD.X,
   Enter: PAD.START, ShiftRight: PAD.SELECT, ShiftLeft: PAD.SELECT,
   KeyQ: PAD.L, KeyW: PAD.R,
 };
+
+// The keyboard arrow keys, as left-stick directions. Fixed (not per-profile): every system steers
+// its left stick the same way. Whether they ALSO press the d-pad is decided per system at runtime.
+const ARROW_DIR = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" };
 
 const PROFILES = {
   default: {
@@ -91,6 +97,9 @@ const PROFILES = {
     // stick must NOT also press the d-pad — folding double-binds them (Goldeneye pans the view up
     // while you walk forward, because d-pad-up ≠ stick-up). The real stick rides the frame axes.
     foldStickToDpad: false,
+    // Keyboard: arrows are the CONTROL STICK only, not the d-pad — the same double-bind reaches the
+    // keyboard otherwise (arrows = move AND pan). The d-pad is a rarely-used distinct function here.
+    keyboardArrowsAsStickOnly: true,
     hint: "Gamepad recommended (right stick = C-buttons). Keyboard: arrows = steer/move, X = A (accelerate), Z = B, I J K L = C-buttons, E = Z, Q W = L/R, Enter = Start.",
   },
   // PSP: ppsspp maps PSP Cross ← RetroPad B, Circle ← A, Square ← Y, Triangle ← X — so the DEFAULT
@@ -172,6 +181,8 @@ const PROFILES = {
     // stick must NOT also press the d-pad — folding double-binds them (in Smash the d-pad is TAUNT,
     // so pushing the stick made the character taunt). The real stick rides the frame axes.
     foldStickToDpad: false,
+    // Keyboard: arrows are the CONTROL STICK only — otherwise the keyboard taunts in Smash too.
+    keyboardArrowsAsStickOnly: true,
     hint: "Gamepad recommended (right stick = C-stick; triggers = L/R). Keyboard: arrows = move, X = A (confirm), Z = B, I J K L = C-stick, Q W = L/R triggers, E = Z, Enter = Start.",
   },
   // Wii, per-port device Wiimote+Nunchuk (config.worker-gl.yaml `hid` → RETRO_DEVICE_WIIMOTE_NC).
@@ -195,6 +206,8 @@ const PROFILES = {
     // Analog-native (the Nunchuk stick is the movement input): no d-pad fold, or the stick also
     // presses the Wii d-pad — which is a distinct input (in GC-mode Smash it's the TAUNT).
     foldStickToDpad: false,
+    // Keyboard: arrows are the Nunchuk STICK only, not the Wii d-pad (same taunt double-bind).
+    keyboardArrowsAsStickOnly: true,
     hint: "Gamepad recommended (left stick = Nunchuk movement; right stick = Wiimote pointer; hold L2 to swing). Keyboard: arrows = move, Z = A (confirm), X = B, A = Nunchuk Z, S = Nunchuk C, I J K L = pointer, E = swing/shake, Enter = 1, Shift = 2.",
   },
 };
@@ -347,6 +360,18 @@ export function stickFoldFor(system) {
   const override = getStickFoldOverride(system);
   if (override !== undefined) return !!override;
   return profileFor(system).foldStickToDpad === true;
+}
+
+// Whether the keyboard ARROW keys should ALSO press the d-pad. Arrows always drive the LEFT STICK
+// (so 3D games can steer); this decides the d-pad half. It mirrors the gamepad fold but is NOT the
+// same call, because the keyboard has only one directional input: on a stick-primary console whose
+// d-pad is a distinct function (n64/gc/wii) arrows must be stick-ONLY, or the keyboard reproduces the
+// Goldeneye view-pan / Smash taunt double-bind; but on a d-pad-movement console (2D, and PS1's many
+// digital-only games) arrows MUST keep driving the d-pad or the keyboard can't move at all. The live
+// fold state wins either way — turning "left stick also acts as d-pad" on restores arrows→d-pad.
+export function keyboardArrowsDriveDpad(system, foldStickToDpad) {
+  if (foldStickToDpad) return true;
+  return profileFor(system).keyboardArrowsAsStickOnly !== true;
 }
 
 /**
@@ -585,6 +610,9 @@ export function createCloudRetroSession(descriptor, opts) {
 
   // Live input state.
   const keyMask = { value: 0 };
+  // Left-stick direction held via the ARROW keys. Always drives the left stick; folds into the d-pad
+  // only when keyboardArrowsDriveDpad says so (see pumpInput).
+  const lKeys = { up: false, down: false, left: false, right: false };
   // Right-stick direction held via the keyboard (N64 C-buttons), when the profile maps them.
   const rKeys = { up: false, down: false, left: false, right: false };
   const onKey = (down) => (e) => {
@@ -595,6 +623,8 @@ export function createCloudRetroSession(descriptor, opts) {
       else keyMask.value &= ~(1 << bit);
       return;
     }
+    const ldir = ARROW_DIR[e.code];
+    if (ldir) { e.preventDefault(); lKeys[ldir] = down; return; }
     if (rstickKeys) {
       for (const dir of ["up", "down", "left", "right"]) {
         if (rstickKeys[dir] === e.code) { e.preventDefault(); rKeys[dir] = down; return; }
@@ -683,7 +713,17 @@ export function createCloudRetroSession(descriptor, opts) {
   function pumpInput() {
     if (closed || !dc || dc.readyState !== "open") return;
     const gp = readGamepad();
-    const mask = keyMask.value | gp.mask;
+    let mask = keyMask.value | gp.mask;
+    // Keyboard arrows fold into the d-pad only where that's correct for the system (see
+    // keyboardArrowsDriveDpad): on for 2D + d-pad-movement consoles, OFF for n64/gc/wii so an arrow
+    // key doesn't press the d-pad AND deflect the stick (the keyboard twin of the Goldeneye/Smash
+    // double-bind). The gamepad's own d-pad (buttons 12-15) is unaffected — it rode in via gp.mask.
+    if (keyboardArrowsDriveDpad(inputSystem, foldStickToDpad)) {
+      if (lKeys.up) mask |= (1 << PAD.UP);
+      if (lKeys.down) mask |= (1 << PAD.DOWN);
+      if (lKeys.left) mask |= (1 << PAD.LEFT);
+      if (lKeys.right) mask |= (1 << PAD.RIGHT);
+    }
     // Chord watch must run on EVERY tick a chord's bits are held, not just the first — placed here,
     // before the send-on-change dedupe below returns early once the mask stops changing (a steadily
     // held chord produces an unchanged mask after tick 1, and the dedupe would otherwise starve it
@@ -693,8 +733,8 @@ export function createCloudRetroSession(descriptor, opts) {
     // NOT the d-pad — so without this the keyboard couldn't turn. Full deflection from the arrow keys;
     // a real gamepad stick takes precedence when it's being pushed.
     let ax = gp.axes[0], ay = gp.axes[1];
-    if (!ax) ax = (keyMask.value & (1 << PAD.LEFT)) ? -32767 : (keyMask.value & (1 << PAD.RIGHT)) ? 32767 : 0;
-    if (!ay) ay = (keyMask.value & (1 << PAD.UP)) ? -32767 : (keyMask.value & (1 << PAD.DOWN)) ? 32767 : 0;
+    if (!ax) ax = lKeys.left ? -32767 : lKeys.right ? 32767 : 0;
+    if (!ay) ay = lKeys.up ? -32767 : lKeys.down ? 32767 : 0;
     // Right stick from the keyboard when the profile maps it (N64 C-buttons); the pad stick wins.
     let rx = gp.axes[2], ry = gp.axes[3];
     if (rstickKeys) {
@@ -716,6 +756,7 @@ export function createCloudRetroSession(descriptor, opts) {
   // gamepad index so a pad Chrome re-enumerated while unfocused is re-adopted on its first input.
   const onWindowBlur = () => {
     keyMask.value = 0;
+    lKeys.up = lKeys.down = lKeys.left = lKeys.right = false;
     rKeys.up = rKeys.down = rKeys.left = rKeys.right = false;
     last = null;
   };
