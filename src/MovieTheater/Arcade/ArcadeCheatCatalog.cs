@@ -88,69 +88,13 @@ namespace MovieTheater.Arcade
         public static IEnumerable<string> CodeSystems => ChtFolders.Keys.Where(SupportsCheatCodes);
 
         // ── Curated core-option cheats ──────────────────────────────────────────────────────────────────
-        // The PS2 pair is NOT here: pcsx2_widescreen_hint / pcsx2_nointerlacing_hint only do something for the
-        // ~150 games in the core's own compiled-in patch table, so arcade-cheats-import writes them as per-game
-        // rows (docs/arcade/ps2-core-patches.tsv) and pre-selects widescreen there. Offering them on every PS2
-        // game would be a toggle that silently does nothing on most of the library.
-        //
-        // What's left are options that apply to a whole system. Both are OFF by default and say what they do:
-        // neither is a per-game patch, so neither can be honestly pre-selected.
+        // The system-wide "quality modifier" option cheats (DC/GC widescreen, PS2 ghosting-fix/deblur/
+        // super-sample, PS1 PGXP) used to live here and be synthesized into the cheat picker. They MOVED to
+        // ArcadeCoreOptionCatalog and the game modal's ⚙ Configure panel — the Cheats dropdown is now
+        // codes-only. What remains here is the OptionCheat shape + the PS2 per-game widescreen/no-interlacing
+        // pair, because arcade-cheats-import still writes those as per-game ArcadeCheat "option" rows (only the
+        // ~150 titles the core can patch) and the config tool reads those rows to compute its effective value.
         public sealed record OptionCheat(string Key, string Value, string Name, bool DefaultOn, string? Note);
-
-        private static readonly Dictionary<string, OptionCheat[]> SystemOptions = new(StringComparer.OrdinalIgnoreCase)
-        {
-            // flycast ships a built-in widescreen cheat table keyed by Dreamcast product id. We can't read that
-            // table out of the DLL (it's a binary struct array, unlike PCSX2's, whose entries we recovered from
-            // its log strings), so we can't tell per game whether it will fire — hence off by default and said
-            // plainly, rather than pre-selected on a library where most games would see no change.
-            ["dc"] = new[]
-            {
-                new OptionCheat("reicast_widescreen_cheats", "enabled", "Widescreen (16:9)", false,
-                    "Only affects games flycast ships a widescreen cheat for; harmless otherwise."),
-            },
-            // Dolphin's is a rendering hack, not a per-game patch: it widens the projection for every game and
-            // can reveal un-drawn geometry at the edges. Useful, but never a default.
-            ["gc"] = new[]
-            {
-                new OptionCheat("dolphin_widescreen_hack", "enabled", "Widescreen hack (16:9)", false,
-                    "Stretches the view to 16:9. May show graphical glitches at the screen edges."),
-            },
-            // Upscaling PS2 (global 2x) exposes half-pixel misalignment as ghosting/double-image smear.
-            // LRPS2's GameDB normally auto-fixes that per game (San Andreas gets autoFlush + halfPixelOffset:4
-            // automatically — read straight out of the DLL's embedded 12.8k-entry YAML), but the database has
-            // real GAPS: Vice City and GTA III carry no gsHWFixes at all — in our core's copy AND in current
-            // upstream PCSX2 (verified 2026-07-09 against master GameIndex.yaml; VC's boot log applies zero
-            // fixes where God of War's applies three). Nobody can predict which other titles are gaps, so this
-            // is offered on every PS2 game, off by default — the same honest shape as dc/gc. Value is the
-            // core's exact enum token, read out of the DLL.
-            // Picking it implies the pcsx2_enable_hw_hacks master switch (ImpliedOptionsFor below), which
-            // also turns OFF the GameDB auto-fixes for that room — hence the warning in the note, and why a
-            // per-game DefaultOn row (Source='curated-fix') is ONLY for titles whose GameDB entry has no
-            // gsHWFixes to lose (VC + III today). Default-on for a GameDB-covered title would strictly
-            // regress it (San Andreas would trade autoFlush + HPO for HPO alone).
-            ["ps2"] = new[]
-            {
-                new OptionCheat("pcsx2_half_pixel_offset", "Align to Native", "Fix ghosting / double image", false,
-                    "For games that smear or ghost when upscaled. Replaces this game's automatic per-game fixes — untick if anything looks worse."),
-                // paraLLEl-GS experimental enhancers (value tokens verbatim from libretro_core_options.h in the
-                // LRPS2 source). Both are game-specific wins the core itself labels experimental — the honest
-                // shape is a per-room toggle, not a system default (unlike pgs_disable_mipmaps, whose "small
-                // handful of games" downside made it a default with per-title opt-out).
-                new OptionCheat("pcsx2_pgs_deblur", "enabled", "Sharper picture (deblur)", false,
-                    "Sharpens games that blur their final image with extra blit passes. Experimental — untick if anything renders wrong."),
-                new OptionCheat("pcsx2_pgs_ss_tex", "enabled", "Super-sample textures", false,
-                    "Feeds higher-resolution textures back into rendering. Highly experimental — may glitch; untick if it does."),
-            },
-            // Beetle PSX HW: PGXP in its safe "memory only" mode straightens the PS1's wobbly/warping 3D
-            // geometry. A classic per-game enhancement: most 3D games look dramatically better, a minority
-            // glitch (and "memory + CPU", the aggressive mode, breaks games like SotN — deliberately not
-            // offered). 2D games see no change. Value tokens verified in mednafen_psx_hw_libretro.dll.
-            ["ps1"] = new[]
-            {
-                new OptionCheat("beetle_psx_hw_pgxp_mode", "memory only", "Stable 3D geometry (PGXP)", false,
-                    "Fixes PS1 3D wobble/warping. Most 3D games look better; untick if geometry glitches. No effect on 2D games."),
-            },
-        };
 
         // ── Implied companion options (master switches) ───────────────────────────────────────────────
         // Some option cheats are read by the core only behind a gate option: pcsx2_half_pixel_offset does
@@ -172,10 +116,6 @@ namespace MovieTheater.Arcade
         public static IReadOnlyList<(string Key, string Value)> ImpliedOptionsFor(string optionKey) =>
             Implied.TryGetValue(optionKey, out var i) ? i : Array.Empty<(string, string)>();
 
-        /// <summary>System-wide option cheats, offered on every game of that system.</summary>
-        public static IReadOnlyList<OptionCheat> SystemOptionCheats(string? system) =>
-            system != null && SystemOptions.TryGetValue(system, out var o) ? o : Array.Empty<OptionCheat>();
-
         // ── The PS2 per-game option cheats the import writes (see docs/arcade/ps2-core-patches.tsv) ──────
         // NOTE the widescreen VALUE: libretro silently ignores an unrecognized option value, and this one is
         // NOT the usual "enabled" — the core declares "enabled (16:9)" / "(16:10)" / "(21:9)" / "(32:9)".
@@ -186,11 +126,5 @@ namespace MovieTheater.Arcade
         public static readonly OptionCheat Ps2NoInterlacing = new(
             "pcsx2_nointerlacing_hint", "enabled", "No interlacing (sharper)", false,
             "Removes the interlace shimmer. Can shake the picture in a few games.");
-
-        /// <summary>Whether a cheat can be offered at all for a system — used to decide if the lobby card shows
-        /// a cheat control before any per-game rows are known.</summary>
-        public static bool AnyCheatsPossible(string? system) =>
-            SupportsCheatCodes(system) || SystemOptionCheats(system).Count > 0 ||
-            string.Equals(system, "ps2", StringComparison.OrdinalIgnoreCase);
     }
 }

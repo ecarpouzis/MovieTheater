@@ -62,6 +62,9 @@ const PROFILES = {
   default: {
     gamepad: DEFAULT_GAMEPAD,
     keymap: DEFAULT_KEYMAP,
+    // Pure-dpad 2D core: the left stick FOLDS into the d-pad (see readGamepad) so an analog-only
+    // pad can still steer. Harmless here because stick and d-pad both mean "move" on a 2D game.
+    foldStickToDpad: true,
     hint: "Gamepad recommended. Keyboard: arrows = move, Z X A S = buttons, Q W = L/R, Enter = Start, Shift = Select.",
   },
   // N64: mupen64plus-next maps N64 A ← RetroPad **B** and N64 B ← RetroPad A (verified live in
@@ -84,6 +87,10 @@ const PROFILES = {
     },
     // Keyboard drive for the right analog stick = N64 C-buttons (camera).
     rstick: { up: "KeyI", down: "KeyK", left: "KeyJ", right: "KeyL" },
+    // Analog-native: the N64 reads the control stick and the d-pad as DISTINCT inputs, so the left
+    // stick must NOT also press the d-pad — folding double-binds them (Goldeneye pans the view up
+    // while you walk forward, because d-pad-up ≠ stick-up). The real stick rides the frame axes.
+    foldStickToDpad: false,
     hint: "Gamepad recommended (right stick = C-buttons). Keyboard: arrows = steer/move, X = A (accelerate), Z = B, I J K L = C-buttons, E = Z, Q W = L/R, Enter = Start.",
   },
   // PSP: ppsspp maps PSP Cross ← RetroPad B, Circle ← A, Square ← Y, Triangle ← X — so the DEFAULT
@@ -92,7 +99,23 @@ const PROFILES = {
   psp: {
     gamepad: DEFAULT_GAMEPAD,
     keymap: { ...DEFAULT_KEYMAP },
+    // Analog-native (the PSP nub is the left stick): don't fold it into the d-pad, or nub-and-dpad
+    // games get both inputs at once. The physical d-pad still reaches the PSP d-pad directly.
+    foldStickToDpad: false,
     hint: "Gamepad recommended (left stick = analog nub). Keyboard: arrows = D-pad, Z = Cross, X = Circle, A = Square, S = Triangle, Q W = L/R, Enter = Start, Shift = Select.",
+  },
+  // PS2: pcsx2 maps PS2 Cross ← RetroPad B, Circle ← A, Square ← Y, Triangle ← X — same as ps1, so
+  // the DEFAULT positional map already fits (south → Cross/confirm). It gets its OWN entry (rather
+  // than falling through to `default`) for one reason: the DualShock 2 is analog-native, so the
+  // left stick must NOT fold into the d-pad the way a 2D core's does.
+  ps2: {
+    gamepad: DEFAULT_GAMEPAD,
+    keymap: {
+      ...DEFAULT_KEYMAP,
+      KeyE: PAD.L2, KeyR: PAD.R2, // L2/R2 on E/R so A/S keep Square/Triangle
+    },
+    foldStickToDpad: false,
+    hint: "Gamepad recommended (both sticks work — DualShock). Keyboard: arrows = D-pad/left stick, Z = Cross, X = Circle, A = Square, S = Triangle, Q W = L1/R1, E R = L2/R2, Enter = Start, Shift = Select.",
   },
   // PS1: pcsx_rearmed maps PS Cross ← RetroPad B, Circle ← A, Square ← Y, Triangle ← X — so the DEFAULT
   // positional map is already correct (south → Cross/confirm). With the DualShock pad type (config.yaml),
@@ -104,6 +127,9 @@ const PROFILES = {
       ...DEFAULT_KEYMAP,             // Z=Cross(B), X=Circle(A), A=Square(Y), S=Triangle(X), Q/W=L1/R1
       KeyE: PAD.L2, KeyR: PAD.R2,    // L2/R2 on E/R so A/S KEEP Square/Triangle — SotN's main attack
     },
+    // Analog-native (DualShock): the left stick drives games like Ape Escape and must stay OFF the
+    // d-pad, or those double-bind. The physical d-pad still reaches the PS1 d-pad directly.
+    foldStickToDpad: false,
     hint: "Gamepad recommended (both sticks work — DualShock). Keyboard: arrows = D-pad/left stick, Z = Cross, X = Circle, A = Square, S = Triangle, Q W = L1/R1, E R = L2/R2, Enter = Start, Shift = Select.",
   },
   // Dreamcast: flycast maps DC A ← RetroPad B, B ← A, X ← Y, Y ← X (south → A/confirm, so the default
@@ -115,6 +141,8 @@ const PROFILES = {
       ...DEFAULT_KEYMAP,
       KeyQ: PAD.L2, KeyW: PAD.R2, // DC analog triggers
     },
+    // Analog-native (the DC pad's analog stick is the primary movement input): no d-pad fold.
+    foldStickToDpad: false,
     hint: "Gamepad recommended (left stick = analog; triggers = L/R). Keyboard: arrows = move, Z = A, X = B, A = X, S = Y, Q W = triggers, Enter = Start.",
   },
   // GameCube: dolphin_libretro maps GC buttons to the matching RetroPad letters (GC A ← RetroPad A,
@@ -140,6 +168,10 @@ const PROFILES = {
     },
     // Keyboard drive for the right analog stick = GC C-stick (camera).
     rstick: { up: "KeyI", down: "KeyK", left: "KeyJ", right: "KeyL" },
+    // Analog-native: the GC reads the control stick and the d-pad as DISTINCT inputs, so the left
+    // stick must NOT also press the d-pad — folding double-binds them (in Smash the d-pad is TAUNT,
+    // so pushing the stick made the character taunt). The real stick rides the frame axes.
+    foldStickToDpad: false,
     hint: "Gamepad recommended (right stick = C-stick; triggers = L/R). Keyboard: arrows = move, X = A (confirm), Z = B, I J K L = C-stick, Q W = L/R triggers, E = Z, Enter = Start.",
   },
   // Wii, per-port device Wiimote+Nunchuk (config.worker-gl.yaml `hid` → RETRO_DEVICE_WIIMOTE_NC).
@@ -160,6 +192,9 @@ const PROFILES = {
     // Keyboard drive for the right analog stick = Wiimote IR pointer (dolphin_ir_mode reads it).
     // LEFT STICK (axes 0/1) is Nunchuk analog — already handled by readGamepad's axis mapping.
     rstick: { up: "KeyI", down: "KeyK", left: "KeyJ", right: "KeyL" },
+    // Analog-native (the Nunchuk stick is the movement input): no d-pad fold, or the stick also
+    // presses the Wii d-pad — which is a distinct input (in GC-mode Smash it's the TAUNT).
+    foldStickToDpad: false,
     hint: "Gamepad recommended (left stick = Nunchuk movement; right stick = Wiimote pointer; hold L2 to swing). Keyboard: arrows = move, Z = A (confirm), X = B, A = Nunchuk Z, S = Nunchuk C, I J K L = pointer, E = swing/shake, Enter = 1, Shift = 2.",
   },
 };
@@ -269,6 +304,49 @@ export function resetCustomGamepadProfile(system = "default") {
   try {
     localStorage.setItem("arcade.customGamepadProfiles", JSON.stringify(customGamepadProfiles));
   } catch { /* storage disabled */ }
+}
+
+// ── Left-stick → D-pad fold (per-system, user-overridable) ───────────────────────────────────
+// Whether the analog LEFT STICK ALSO presses the d-pad bits. Correct ONLY for pure-dpad 2D cores,
+// where stick and d-pad both mean "move" so an analog-only pad can still steer. On an analog-native
+// console (n64/gc/wii/ps1/ps2/psp/dc) the machine reads the d-pad and the stick as DISTINCT inputs,
+// so folding DOUBLE-BINDS them — the cause of "N64 Goldeneye pans the view up as I walk forward"
+// (d-pad-up ≠ stick-up) and "Wii/GC Smash taunts when I push the stick" (Smash reads the d-pad as
+// taunt). The default is per-profile (PROFILES[system].foldStickToDpad); a saved user override wins,
+// so the rare edge case (a d-pad-less pad on a 3D game) can flip it back from the mapping panel.
+// Keyed per input-system, same as customGamepadProfiles.
+let customStickFold = (() => {
+  try {
+    const stored = localStorage.getItem("arcade.customStickFold");
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+})();
+
+export function getStickFoldOverride(system = "default") {
+  return customStickFold[(system || "").toLowerCase()]; // true | false | undefined (undefined ⇒ profile default)
+}
+
+export function setStickFoldOverride(on, system = "default") {
+  customStickFold[(system || "").toLowerCase()] = !!on;
+  try {
+    localStorage.setItem("arcade.customStickFold", JSON.stringify(customStickFold));
+  } catch { /* storage disabled */ }
+}
+
+export function resetStickFoldOverride(system = "default") {
+  delete customStickFold[(system || "").toLowerCase()];
+  try {
+    localStorage.setItem("arcade.customStickFold", JSON.stringify(customStickFold));
+  } catch { /* storage disabled */ }
+}
+
+// Effective fold for a system: a saved user override wins, else the profile default.
+export function stickFoldFor(system) {
+  const override = getStickFoldOverride(system);
+  if (override !== undefined) return !!override;
+  return profileFor(system).foldStickToDpad === true;
 }
 
 /**
@@ -484,10 +562,15 @@ export function createCloudRetroSession(descriptor, opts) {
   // effectiveInputSystem substitutes "gc" for the two GC_ON_WII_GAME_KEYS ROMs (unless the room
   // picked "wiimote") — must match the worker's actual device choice or this sends bits the core
   // no longer reads.
-  const profile = profileFor(effectiveInputSystem(descriptor.system, descriptor.gameKey, strFromWsUrl(descriptor.wsUrl, "ctrlscheme")));
+  const inputSystem = effectiveInputSystem(descriptor.system, descriptor.gameKey, strFromWsUrl(descriptor.wsUrl, "ctrlscheme"));
+  const profile = profileFor(inputSystem);
   let keymap = { ...profile.keymap };
   let rstickKeys = profile.rstick ? { ...profile.rstick } : undefined; // key→right-stick direction, or undefined
   let gamepad = { ...profile.gamepad };
+  // Whether the analog left stick also presses the d-pad bits (see the stickFoldFor comment).
+  // Resolved from the profile default + any saved user override; RUNTIME-REASSIGNABLE via setStickFold
+  // (the mapping panel toggles it live, so a fix takes effect without leaving the room).
+  let foldStickToDpad = stickFoldFor(inputSystem);
 
   // Apply custom gamepad button rebindings if provided
   // customGamepadProfileOverride maps: physicalButtonIndex -> RetroPadBit (user rebindings)
@@ -581,13 +664,17 @@ export function createCloudRetroSession(descriptor, opts) {
       const pi = swap && i < 4 ? (i ^ 1) : i;
       if (b.pressed && gamepad[pi] !== undefined) mask |= (1 << gamepad[pi]);
     });
-    // Real analog axes ride the frame (N64 steering wants them); a left-stick→dpad fold is kept
-    // so analog-only pads still drive pure-dpad 2D cores. (Dpad+stick doubling is harmless: cores
-    // map them to different inputs.)
+    // Real analog axes ALWAYS ride the frame (N64/GC/PS steering wants them). The left-stick→d-pad
+    // FOLD, on the other hand, is only correct for pure-dpad 2D cores, where an analog-only pad has
+    // no other way to steer and stick==d-pad anyway. On an analog-native console it double-binds two
+    // DISTINCT inputs (Goldeneye pans up as you walk, GC/Wii Smash taunts) — so it's gated per system
+    // by foldStickToDpad (profile default + user override, toggleable live via setStickFold).
     for (let i = 0; i < 4 && i < gp.axes.length; i++) axes[i] = axisToInt16(gp.axes[i]);
-    const [ax, ay] = gp.axes;
-    if (ax < -0.5) mask |= (1 << PAD.LEFT); else if (ax > 0.5) mask |= (1 << PAD.RIGHT);
-    if (ay < -0.5) mask |= (1 << PAD.UP); else if (ay > 0.5) mask |= (1 << PAD.DOWN);
+    if (foldStickToDpad) {
+      const [ax, ay] = gp.axes;
+      if (ax < -0.5) mask |= (1 << PAD.LEFT); else if (ax > 0.5) mask |= (1 << PAD.RIGHT);
+      if (ay < -0.5) mask |= (1 << PAD.UP); else if (ay > 0.5) mask |= (1 << PAD.DOWN);
+    }
     return { mask, axes };
   }
 
@@ -826,6 +913,7 @@ export function createCloudRetroSession(descriptor, opts) {
     const pace = numFromWsUrl(descriptor.wsUrl, "pace");
     const codec = strFromWsUrl(descriptor.wsUrl, "codec");
     const hwctx = strFromWsUrl(descriptor.wsUrl, "hwctx");
+    const core = strFromWsUrl(descriptor.wsUrl, "core");
     const ctrlscheme = strFromWsUrl(descriptor.wsUrl, "ctrlscheme");
     if (vbr > 0) p.video_bitrate = vbr;
     if (fec > 0) p.audio_fec = fec;
@@ -835,6 +923,9 @@ export function createCloudRetroSession(descriptor, opts) {
     // Per-launch GL/Vulkan force (play-button dropdown). Creator-only — it only affects the room's
     // one-time CoreLoad, so unlike codec it never needs to ride a joiner's descriptor.
     if (hwctx) p.hw_context = hwctx;
+    // Per-room CORE override (arcade render profiles): boot an alternate core-key, e.g. PS1 pcsx_rearmed
+    // instead of the default Beetle. Creator-only, consumed once at CoreLoad — like hw_context.
+    if (core) p.core = core;
     // Per-room Wii controller-scheme override (room-create picker): GameCube vs Wiimote+Nunchuk for
     // the GC-controller-native BrawlEx mods. Only the CREATOR's t=104 boots the core (joiners never
     // send GAME_START at all), so only its packet needs this — but unlike hw_context, the room's
@@ -1009,6 +1100,10 @@ export function createCloudRetroSession(descriptor, opts) {
     resyncInput: () => {
       last = null;
     },
+    // Toggle the left-stick→d-pad fold live (mapping panel). Null the dedupe so the next pump resends
+    // true state — otherwise a d-pad bit that the fold was adding stays "held" on the worker until the
+    // stick next crosses the deadzone.
+    setStickFold: (on) => { foldStickToDpad = !!on; last = null; },
     save: asPlayer(() => send(T.GAME_SAVE, {})),
     load: asPlayer(() => send(T.GAME_LOAD, {})),
     reset: asPlayer(() => send(T.GAME_RESET, {})),

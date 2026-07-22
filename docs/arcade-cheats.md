@@ -1,7 +1,16 @@
 # Arcade cheats
 
-Room creators pick cheats on the lobby card, next to the version dropdown. The cheats apply to that room
+Room creators pick cheats in the game modal, next to the version dropdown. The cheats apply to that room
 only, for its whole life, and nothing about them is shared with other rooms or persisted to a save.
+
+> **⚠ Cheats are now codes-only.** The emulator/quality **OPTION** toggles that used to appear here
+> (DC/GC widescreen, PS2 ghosting-fix/deblur/super-sample, PS1 PGXP, and the PS2 per-game
+> widescreen/no-interlacing) MOVED to the per-game **config tool** (the game modal's ⚙ Configure button →
+> `ArcadeCoreOptionCatalog` + `ArcadeGameProfile`). Those are persistent per-game emulator settings, not
+> per-room memory pokes, and they are applied server-side at Start — see docs/arcade-per-game-config.md.
+> The Cheats dropdown offers only real cheat **codes** now (`Kind="code"`). The `ArcadeCheat`
+> `Kind="option"` rows below still exist (PS2 widescreen data), but they feed the config tool, not the
+> picker.
 
 ## The one thing to understand
 

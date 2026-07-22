@@ -243,19 +243,21 @@ namespace MovieTheater.Tests
             Assert.False(ArcadeCheatCatalog.Ps2NoInterlacing.DefaultOn);
         }
 
-        // We can't tell per game whether flycast/Dolphin/LRPS2 will actually do anything, so none may be
-        // pre-selected — a default-on toggle has to be one we know applies to THAT game.
+        // The system-wide quality toggles moved from the cheat catalog to the per-game config tool's catalog.
+        // Every catalogued option must label itself and carry a DEFAULT that is one of its own value tokens —
+        // libretro silently ignores an unknown token, so a bad default would ship a dead option.
         [Fact]
-        public void SystemWideOptionCheatsAreNeverDefaultOnAndAlwaysExplainThemselves()
+        public void ConfigCatalogOptionsAreWellFormedAndExplainThemselves()
         {
-            foreach (var system in new[] { "dc", "gc", "ps2" })
+            foreach (var system in new[] { "dc", "gc", "ps2", "ps1" })
             {
-                var options = ArcadeCheatCatalog.SystemOptionCheats(system);
+                var options = ArcadeCoreOptionCatalog.For(system);
                 Assert.NotEmpty(options);
                 Assert.All(options, o =>
                 {
-                    Assert.False(o.DefaultOn);
-                    Assert.False(string.IsNullOrWhiteSpace(o.Note));
+                    Assert.False(string.IsNullOrWhiteSpace(o.Label));
+                    // A non-range option's default must be a valid token; a range option validates numerically.
+                    Assert.True(o.IsValidToken(o.Default), $"{system}/{o.Key} default '{o.Default}' is not a valid token");
                 });
             }
         }
@@ -266,9 +268,9 @@ namespace MovieTheater.Tests
         [Fact]
         public void Ps2GhostingFixUsesTheExactEnumTokenAndImpliesTheHwHacksMasterSwitch()
         {
-            var fix = Assert.Single(ArcadeCheatCatalog.SystemOptionCheats("ps2"));
-            Assert.Equal("pcsx2_half_pixel_offset", fix.Key);
-            Assert.Equal("Align to Native", fix.Value);
+            var fix = ArcadeCoreOptionCatalog.Find("pcsx2", "pcsx2_half_pixel_offset");
+            Assert.NotNull(fix);
+            Assert.True(fix!.IsValidToken("Align to Native"));
 
             var implied = Assert.Single(ArcadeCheatCatalog.ImpliedOptionsFor(fix.Key));
             Assert.Equal(("pcsx2_enable_hw_hacks", "enabled"), implied);
@@ -279,13 +281,52 @@ namespace MovieTheater.Tests
             Assert.Empty(ArcadeCheatCatalog.ImpliedOptionsFor("reicast_widescreen_cheats"));
         }
 
+        // The relocated widescreen toggle keeps the core's EXACT enum token (not "enabled").
         [Fact]
-        public void SystemsWithNothingToOfferReturnAnEmptyListAndNoPicker()
+        public void Ps2WidescreenConfigOptionUsesTheExactEnumToken()
         {
-            Assert.Empty(ArcadeCheatCatalog.SystemOptionCheats("n64"));
-            Assert.Empty(ArcadeCheatCatalog.SystemOptionCheats("nope"));
-            Assert.False(ArcadeCheatCatalog.AnyCheatsPossible("naomi"));
-            Assert.True(ArcadeCheatCatalog.AnyCheatsPossible("ps2"));
+            var ws = ArcadeCoreOptionCatalog.Find("pcsx2", "pcsx2_widescreen_hint");
+            Assert.NotNull(ws);
+            Assert.True(ws!.IsValidToken("enabled (16:9)"));
+            Assert.False(ws.IsValidToken("enabled"));
+        }
+
+        [Fact]
+        public void SystemsWithNothingToConfigureReturnAnEmptyCatalog()
+        {
+            Assert.Empty(ArcadeCoreOptionCatalog.For("nope"));
+            Assert.False(ArcadeCoreOptionCatalog.HasAnything("nes"));  // codes only, no config options / renderer
+            Assert.True(ArcadeCoreOptionCatalog.HasAnything("ps2"));
+        }
+
+        // Forcing a renderer must flip the core's OWN renderer option, not just the surface — the exact
+        // tokens matter (libretro ignores an unknown value; a GL surface + paraLLEl-RDP strands N64).
+        [Fact]
+        public void RendererProfilesFlipTheCoresRendererOptionWithExactTokens()
+        {
+            var n64Gl = ArcadeRendererProfiles.Options("n64", "gl");
+            Assert.Equal("gliden64", n64Gl["mupen64plus-rdp-plugin"]);
+            Assert.Equal("hle", n64Gl["mupen64plus-rsp-plugin"]);
+            var n64Vk = ArcadeRendererProfiles.Options("n64", "vulkan");
+            Assert.Equal("parallel", n64Vk["mupen64plus-rdp-plugin"]);
+            Assert.Equal("parallel", n64Vk["mupen64plus-rsp-plugin"]);
+
+            Assert.Equal("OpenGL", ArcadeRendererProfiles.Options("ps2", "gl")["pcsx2_renderer"]);
+            Assert.Equal("paraLLEl-GS", ArcadeRendererProfiles.Options("ps2", "vulkan")["pcsx2_renderer"]);
+            Assert.Equal("hardware_gl", ArcadeRendererProfiles.Options("ps1", "gl")["beetle_psx_hw_renderer"]);
+            Assert.Equal("hardware_vk", ArcadeRendererProfiles.Options("ps1", "vulkan")["beetle_psx_hw_renderer"]);
+        }
+
+        // Surface-only cores (no renderer core-option) carry no injected options — the frontend surface
+        // selects; and an unknown system/renderer is an empty, safe no-op.
+        [Fact]
+        public void SurfaceOnlyAndUnknownSystemsInjectNothing()
+        {
+            Assert.Empty(ArcadeRendererProfiles.Options("psp", "gl"));
+            Assert.Empty(ArcadeRendererProfiles.Options("gc", "vulkan"));
+            Assert.Empty(ArcadeRendererProfiles.Options("dc", "gl"));
+            Assert.Empty(ArcadeRendererProfiles.Options("nope", "gl"));
+            Assert.Empty(ArcadeRendererProfiles.Options("n64", null));
         }
 
         // A raw memory poke per cheat: a long list of conflicting codes reliably wedges a game, and one

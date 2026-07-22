@@ -1,0 +1,5638 @@
+{
+ "_comment": "Extracted per-CORE libretro option catalog for the arcade per-game config module. Loaded (quality-relevant only, renderer-selecting keys excluded) by ArcadeCoreOptionCatalog. Regenerate from each core libretro_core_options.h on Ziggy.",
+ "cores": {
+  "flycast": {
+   "options": [
+    {
+     "key": "reicast_region",
+     "label": "Region",
+     "values": [
+      {
+       "token": "Japan",
+       "label": "Japan"
+      },
+      {
+       "token": "USA",
+       "label": "USA"
+      },
+      {
+       "token": "Europe",
+       "label": "Europe"
+      },
+      {
+       "token": "Default",
+       "label": "Default"
+      }
+     ],
+     "default": "USA",
+     "desc": "",
+     "category": "system"
+    },
+    {
+     "key": "reicast_language",
+     "label": "Language",
+     "values": [
+      {
+       "token": "Japanese",
+       "label": "Japanese"
+      },
+      {
+       "token": "English",
+       "label": "English"
+      },
+      {
+       "token": "German",
+       "label": "German"
+      },
+      {
+       "token": "French",
+       "label": "French"
+      },
+      {
+       "token": "Spanish",
+       "label": "Spanish"
+      },
+      {
+       "token": "Italian",
+       "label": "Italian"
+      },
+      {
+       "token": "Default",
+       "label": "Default"
+      }
+     ],
+     "default": "English",
+     "desc": "Changes the language used by the BIOS and by any games that contain multiple languages.",
+     "category": "system"
+    },
+    {
+     "key": "reicast_internal_resolution",
+     "label": "Internal Resolution",
+     "values": [
+      {
+       "token": "320x240",
+       "label": "320x240 (Half)"
+      },
+      {
+       "token": "640x480",
+       "label": "640x480 (Native)"
+      },
+      {
+       "token": "800x600",
+       "label": "800x600 (x1.25)"
+      },
+      {
+       "token": "960x720",
+       "label": "960x720 (x1.5)"
+      },
+      {
+       "token": "1024x768",
+       "label": "1024x768 (x1.6)"
+      },
+      {
+       "token": "1280x960",
+       "label": "1280x960 (x2)"
+      },
+      {
+       "token": "1440x1080",
+       "label": "1440x1080 (x2.25)"
+      },
+      {
+       "token": "1600x1200",
+       "label": "1600x1200 (x2.5)"
+      },
+      {
+       "token": "1920x1440",
+       "label": "1920x1440 (x3)"
+      },
+      {
+       "token": "2560x1920",
+       "label": "2560x1920 (x4)"
+      },
+      {
+       "token": "2880x2160",
+       "label": "2880x2160 (x4.5)"
+      },
+      {
+       "token": "3200x2400",
+       "label": "3200x2400 (x5)"
+      },
+      {
+       "token": "3840x2880",
+       "label": "3840x2880 (x6)"
+      },
+      {
+       "token": "4480x3360",
+       "label": "4480x3360 (x7)"
+      },
+      {
+       "token": "5120x3840",
+       "label": "5120x3840 (x8)"
+      },
+      {
+       "token": "5760x4320",
+       "label": "5760x4320 (x9)"
+      },
+      {
+       "token": "6400x4800",
+       "label": "6400x4800 (x10)"
+      },
+      {
+       "token": "7040x5280",
+       "label": "7040x5280 (x11)"
+      },
+      {
+       "token": "7680x5760",
+       "label": "7680x5760 (x12)"
+      },
+      {
+       "token": "8320x6240",
+       "label": "8320x6240 (x13)"
+      },
+      {
+       "token": "8960x6720",
+       "label": "8960x6720 (x14)"
+      },
+      {
+       "token": "9600x7200",
+       "label": "9600x7200 (x15)"
+      },
+      {
+       "token": "10240x7680",
+       "label": "10240x7680 (x16)"
+      },
+      {
+       "token": "10880x8160",
+       "label": "10880x8160 (x17)"
+      },
+      {
+       "token": "11520x8640",
+       "label": "11520x8640 (x18)"
+      },
+      {
+       "token": "12160x9120",
+       "label": "12160x9120 (x19)"
+      },
+      {
+       "token": "12800x9600",
+       "label": "12800x9600 (x20)"
+      }
+     ],
+     "default": "640x480",
+     "desc": "Modify rendering resolution.",
+     "category": "video"
+    },
+    {
+     "key": "reicast_broadcast",
+     "label": "Broadcast Standard",
+     "values": [
+      {
+       "token": "NTSC",
+       "label": "NTSC"
+      },
+      {
+       "token": "PAL",
+       "label": "PAL (World)"
+      },
+      {
+       "token": "PAL_N",
+       "label": "PAL-N (Argentina, Paraguay, Uruguay)"
+      },
+      {
+       "token": "PAL_M",
+       "label": "PAL-M (Brazil)"
+      },
+      {
+       "token": "Default",
+       "label": "Default"
+      }
+     ],
+     "default": "NTSC",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "reicast_alpha_sorting",
+     "label": "Alpha Sorting",
+     "values": [
+      {
+       "token": "per-strip (fast, least accurate)",
+       "label": "Per-Strip (fast, least accurate)"
+      },
+      {
+       "token": "per-triangle (normal)",
+       "label": "Per-Triangle (normal)"
+      },
+      {
+       "token": "per-pixel (accurate)",
+       "label": "Per-Pixel (accurate, but slowest)"
+      }
+     ],
+     "default": "per-triangle (normal)",
+     "desc": "Select how the transparent polygons are sorted.",
+     "category": "video"
+    },
+    {
+     "key": "reicast_oit_abuffer_size",
+     "label": "Accumulation Pixel Buffer Size",
+     "values": [
+      {
+       "token": "512MB",
+       "label": "512MB"
+      },
+      {
+       "token": "1GB",
+       "label": "1GB"
+      },
+      {
+       "token": "2GB",
+       "label": "2GB"
+      },
+      {
+       "token": "4GB",
+       "label": "4GB"
+      }
+     ],
+     "default": "512MB",
+     "desc": "Higher values might be required for higher resolutions to output correctly.",
+     "category": "video"
+    },
+    {
+     "key": "reicast_oit_layers",
+     "label": "Maximum Transparent Layers",
+     "values": [
+      {
+       "token": "8",
+       "label": "8"
+      },
+      {
+       "token": "16",
+       "label": "16"
+      },
+      {
+       "token": "32",
+       "label": "32"
+      },
+      {
+       "token": "64",
+       "label": "64"
+      },
+      {
+       "token": "96",
+       "label": "96"
+      },
+      {
+       "token": "128",
+       "label": "128"
+      }
+     ],
+     "default": "32",
+     "desc": "Higher values might be required for complex scenes.",
+     "category": "video"
+    },
+    {
+     "key": "reicast_emulate_framebuffer",
+     "label": "Full framebuffer emulation",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Enable full framebuffer emulation in VRAM. This is useful for games that directly read or write the framebuffer in VRAM. When enabled, Internal Resolution is forced to 640x480 and performance may be severely impacted.",
+     "category": "hack"
+    },
+    {
+     "key": "reicast_enable_rttb",
+     "label": "Enable RTT (Render To Texture) Buffer",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Copy rendered textures back from the GPU to VRAM. This option is normally enabled for games that require it. When enabled, texture rendering upscaling is disabled and performance may be impacted.",
+     "category": "hack"
+    },
+    {
+     "key": "reicast_mipmapping",
+     "label": "Mipmapping",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "enabled",
+     "desc": "When enabled textures will use smaller version of themselves when they appear farther away, it can increase performances and reduce shimmering.",
+     "category": "video"
+    },
+    {
+     "key": "reicast_anisotropic_filtering",
+     "label": "Anisotropic Filtering",
+     "values": [
+      {
+       "token": "off",
+       "label": "disabled"
+      },
+      {
+       "token": "2",
+       "label": "2"
+      },
+      {
+       "token": "4",
+       "label": "4"
+      },
+      {
+       "token": "8",
+       "label": "8"
+      },
+      {
+       "token": "16",
+       "label": "16"
+      }
+     ],
+     "default": "4",
+     "desc": "Enhance the quality of textures on surfaces that are at oblique viewing angles with respect to the camera. Higher values are more demanding on the GPU. Changes to this setting only apply after restarting.",
+     "category": "video"
+    },
+    {
+     "key": "reicast_texture_filtering",
+     "label": "Texture Filtering",
+     "values": [
+      {
+       "token": "0",
+       "label": "Default"
+      },
+      {
+       "token": "1",
+       "label": "Force Nearest-Neighbor"
+      },
+      {
+       "token": "2",
+       "label": "Force Linear"
+      }
+     ],
+     "default": "0",
+     "desc": "The texture filtering mode to use. This can be used to force a certain texture filtering mode on all textures to get a crisper (or smoother) appearance than Default. Values other than Default may cause various rendering issues. Changes to this setting only apply after restarting.",
+     "category": "video"
+    },
+    {
+     "key": "reicast_texupscale",
+     "label": "Texture Upscaling (xBRZ)",
+     "values": [
+      {
+       "token": "1",
+       "label": "disabled"
+      },
+      {
+       "token": "2",
+       "label": "2x"
+      },
+      {
+       "token": "4",
+       "label": "4x"
+      },
+      {
+       "token": "6",
+       "label": "6x"
+      }
+     ],
+     "default": "1",
+     "desc": "Enhance hand-drawn 2D pixel art graphics. Should only be used with 2D pixelated games.",
+     "category": "video"
+    },
+    {
+     "key": "reicast_texupscale_max_filtered_texture_size",
+     "label": "Texture Upscaling Max. Filtered Size",
+     "values": [
+      {
+       "token": "256",
+       "label": "256"
+      },
+      {
+       "token": "512",
+       "label": "512"
+      },
+      {
+       "token": "1024",
+       "label": "1024"
+      }
+     ],
+     "default": "256",
+     "desc": "Select a maximum size value for a texture to be upscaled, if the texture size is higher than the selected value then it will not be upscaled.",
+     "category": "video"
+    },
+    {
+     "key": "reicast_fix_upscale_bleeding_edge",
+     "label": "Fix Upscale Bleeding Edge",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "enabled",
+     "desc": "Helps with texture bleeding case when upscaling. Disabling it can help if pixels are warping when upscaling in 2D games (MVC2, CVS, KOF, etc.)",
+     "category": "hack"
+    },
+    {
+     "key": "reicast_threaded_rendering",
+     "label": "Threaded Rendering",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "enabled",
+     "desc": "Runs the GPU and CPU on different threads. Highly recommended.",
+     "category": "performance"
+    },
+    {
+     "key": "reicast_auto_skip_frame",
+     "label": "Auto Skip Frame",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "some",
+       "label": "Normal"
+      },
+      {
+       "token": "more",
+       "label": "Maximum"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Automatically skip frames when the emulator is running slow. Note: This setting only applies when 'Threaded Rendering' is enabled.",
+     "category": "performance"
+    },
+    {
+     "key": "reicast_frame_skipping",
+     "label": "Frame Skipping",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "1",
+       "label": "1"
+      },
+      {
+       "token": "2",
+       "label": "2"
+      },
+      {
+       "token": "3",
+       "label": "3"
+      },
+      {
+       "token": "4",
+       "label": "4"
+      },
+      {
+       "token": "5",
+       "label": "5"
+      },
+      {
+       "token": "6",
+       "label": "6"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Sets the number of frames to skip between each displayed frame.",
+     "category": "performance"
+    },
+    {
+     "key": "reicast_widescreen_cheats",
+     "label": "Widescreen Cheats (Restart Required)",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Activates cheats that allow certain games to display in widescreen format.",
+     "category": "hack"
+    },
+    {
+     "key": "reicast_widescreen_hack",
+     "label": "Widescreen Hack",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Draw geometry outside of the normal 4:3 aspect ratio. May produce graphical glitches in the revealed areas.",
+     "category": "hack"
+    },
+    {
+     "key": "reicast_sh4clock",
+     "label": "SH4 CPU under/overclock",
+     "values": [],
+     "default": "200",
+     "desc": "Change the SH4 main CPU clock from the default 200 MHz. Underclocking may help slow platforms. Overclocking may increase the frame rate for some games. Use with caution.",
+     "category": "performance"
+    }
+   ]
+  },
+  "dolphin": {
+   "options": [
+    {
+     "key": "dolphin_cpu_core",
+     "label": "CPU Core",
+     "values": [
+      {
+       "token": "0",
+       "label": "Interpreter (slowest)"
+      },
+      {
+       "token": "1",
+       "label": "JIT64 (Recommended)"
+      },
+      {
+       "token": "5",
+       "label": "Cached Interpreter (slower)"
+      }
+     ],
+     "default": "1",
+     "desc": "Select CPU emulation method - JIT provides best performance.",
+     "category": "performance"
+    },
+    {
+     "key": "dolphin_cpu_clock_rate",
+     "label": "CPU Clock Rate",
+     "values": [
+      {
+       "token": "0.05",
+       "label": "5%"
+      },
+      {
+       "token": "0.10",
+       "label": "10%"
+      },
+      {
+       "token": "0.20",
+       "label": "20%"
+      },
+      {
+       "token": "0.30",
+       "label": "30%"
+      },
+      {
+       "token": "0.40",
+       "label": "40%"
+      },
+      {
+       "token": "0.50",
+       "label": "50%"
+      },
+      {
+       "token": "0.60",
+       "label": "60%"
+      },
+      {
+       "token": "0.70",
+       "label": "70%"
+      },
+      {
+       "token": "0.80",
+       "label": "80%"
+      },
+      {
+       "token": "0.90",
+       "label": "90%"
+      },
+      {
+       "token": "1.00",
+       "label": "100% (Default)"
+      },
+      {
+       "token": "1.50",
+       "label": "150%"
+      },
+      {
+       "token": "2.00",
+       "label": "200%"
+      },
+      {
+       "token": "2.50",
+       "label": "250%"
+      },
+      {
+       "token": "3.00",
+       "label": "300%"
+      }
+     ],
+     "default": "1.00",
+     "desc": "Adjust emulated CPU speed.",
+     "category": "performance"
+    },
+    {
+     "key": "dolphin_main_cpu_thread",
+     "label": "Dual Core Mode",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "Disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "Enabled"
+      }
+     ],
+     "default": "enabled",
+     "desc": "Enable dual-core CPU emulation. Requires core RESTART.",
+     "category": "performance"
+    },
+    {
+     "key": "dolphin_language",
+     "label": "System Language",
+     "values": [
+      {
+       "token": "1",
+       "label": "English"
+      },
+      {
+       "token": "0",
+       "label": "Japanese"
+      },
+      {
+       "token": "2",
+       "label": "German"
+      },
+      {
+       "token": "3",
+       "label": "French"
+      },
+      {
+       "token": "4",
+       "label": "Spanish"
+      },
+      {
+       "token": "5",
+       "label": "Italian"
+      },
+      {
+       "token": "6",
+       "label": "Dutch"
+      },
+      {
+       "token": "7",
+       "label": "Simplified Chinese"
+      },
+      {
+       "token": "8",
+       "label": "Traditional Chinese"
+      },
+      {
+       "token": "9",
+       "label": "Korean"
+      }
+     ],
+     "default": "1",
+     "desc": "Set system language.",
+     "category": "system"
+    },
+    {
+     "key": "dolphin_widescreen",
+     "label": "Widescreen (Wii)",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "enabled",
+     "desc": "Enable widescreen for Wii.",
+     "category": "video"
+    },
+    {
+     "key": "dolphin_widescreen_hack",
+     "label": "Widescreen Hack",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Force 16:9 rendering.",
+     "category": "hack"
+    },
+    {
+     "key": "dolphin_aspect_ratio",
+     "label": "Aspect Ratio",
+     "values": [
+      {
+       "token": "0",
+       "label": "Auto"
+      },
+      {
+       "token": "1",
+       "label": "Force Wide"
+      },
+      {
+       "token": "2",
+       "label": "Force Standard"
+      },
+      {
+       "token": "3",
+       "label": "Stretch"
+      },
+      {
+       "token": "4",
+       "label": "Custom"
+      },
+      {
+       "token": "5",
+       "label": "Custom Stretch"
+      },
+      {
+       "token": "6",
+       "label": "Raw"
+      }
+     ],
+     "default": "3",
+     "desc": "Control how the game's image is scaled.",
+     "category": "video"
+    },
+    {
+     "key": "dolphin_efb_scale",
+     "label": "Internal Resolution",
+     "values": [
+      {
+       "token": "1",
+       "label": "1x Native (640x528)"
+      },
+      {
+       "token": "2",
+       "label": "2x Native (1280x1056) for 720p"
+      },
+      {
+       "token": "3",
+       "label": "3x Native (1920x1584) for 1080p"
+      },
+      {
+       "token": "4",
+       "label": "4x Native (2560x2112) for 1440p"
+      },
+      {
+       "token": "5",
+       "label": "5x Native (3200x2640)"
+      },
+      {
+       "token": "6",
+       "label": "6x Native (3840x3168) for 4K"
+      }
+     ],
+     "default": "1",
+     "desc": "Multiply native resolution.",
+     "category": "video"
+    },
+    {
+     "key": "dolphin_anti_aliasing",
+     "label": "Anti-Aliasing",
+     "values": [
+      {
+       "token": "0",
+       "label": "None"
+      },
+      {
+       "token": "1",
+       "label": "2x MSAA"
+      },
+      {
+       "token": "2",
+       "label": "4x MSAA"
+      },
+      {
+       "token": "3",
+       "label": "8x MSAA"
+      },
+      {
+       "token": "4",
+       "label": "2x SSAA"
+      },
+      {
+       "token": "5",
+       "label": "4x SSAA"
+      },
+      {
+       "token": "6",
+       "label": "8x SSAA"
+      }
+     ],
+     "default": "0",
+     "desc": "Reduce jagged edges.",
+     "category": "video"
+    },
+    {
+     "key": "dolphin_texture_cache_accuracy",
+     "label": "Texture Cache Accuracy",
+     "values": [
+      {
+       "token": "128",
+       "label": "Fast"
+      },
+      {
+       "token": "512",
+       "label": "Middle"
+      },
+      {
+       "token": "0",
+       "label": "Safe"
+      }
+     ],
+     "default": "128",
+     "desc": "Texture cache safety level.",
+     "category": "hack"
+    },
+    {
+     "key": "dolphin_pixel_lighting",
+     "label": "Pixel Lighting",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Enable per-pixel lighting calculations instead of per-vertex.",
+     "category": "video"
+    },
+    {
+     "key": "dolphin_force_texture_filtering_mode",
+     "label": "Texture Filtering",
+     "values": [
+      {
+       "token": "0",
+       "label": "Default"
+      },
+      {
+       "token": "1",
+       "label": "Nearest (Sharp)"
+      },
+      {
+       "token": "2",
+       "label": "Linear (Smooth)"
+      }
+     ],
+     "default": "0",
+     "desc": "Override texture filtering.",
+     "category": "video"
+    },
+    {
+     "key": "dolphin_max_anisotropy",
+     "label": "Anisotropic Filtering",
+     "values": [
+      {
+       "token": "0",
+       "label": "1x (Off)"
+      },
+      {
+       "token": "1",
+       "label": "2x"
+      },
+      {
+       "token": "2",
+       "label": "4x"
+      },
+      {
+       "token": "3",
+       "label": "8x"
+      },
+      {
+       "token": "4",
+       "label": "16x"
+      }
+     ],
+     "default": "0",
+     "desc": "Improve texture quality at angles.",
+     "category": "video"
+    },
+    {
+     "key": "dolphin_mipmap_detection",
+     "label": "Arbitrary Mipmap Detection",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Enable detection of arbitrary mipmaps. Improves accuracy in some games but may reduce performance.",
+     "category": "video"
+    }
+   ]
+  },
+  "kronos": {
+   "options": [
+    {
+     "key": "kronos_videoformattype",
+     "label": "Video format",
+     "values": [
+      {
+       "token": "auto",
+       "label": "auto"
+      },
+      {
+       "token": "NTSC",
+       "label": "NTSC"
+      },
+      {
+       "token": "PAL",
+       "label": "PAL"
+      }
+     ],
+     "default": "auto",
+     "desc": "Select a video format for output. Requires a restart.",
+     "category": "video"
+    },
+    {
+     "key": "kronos_skipframe",
+     "label": "Frameskip",
+     "values": [
+      {
+       "token": "0",
+       "label": "No skipping"
+      },
+      {
+       "token": "1",
+       "label": "Skip rendering of 1 frames out of 2"
+      },
+      {
+       "token": "2",
+       "label": "Skip rendering of 2 frames out of 3"
+      },
+      {
+       "token": "3",
+       "label": "Skip rendering of 3 frames out of 4"
+      },
+      {
+       "token": "4",
+       "label": "Skip rendering of 4 frames out of 5"
+      },
+      {
+       "token": "5",
+       "label": "Skip rendering of 5 frames out of 6"
+      }
+     ],
+     "default": "0",
+     "desc": "Skip rendering of X frames out of X+1",
+     "category": "performance"
+    },
+    {
+     "key": "kronos_resolution_mode",
+     "label": "Resolution",
+     "values": [
+      {
+       "token": "original",
+       "label": "original"
+      },
+      {
+       "token": "2X",
+       "label": "2X"
+      },
+      {
+       "token": "4X",
+       "label": "4X"
+      },
+      {
+       "token": "8X",
+       "label": "8X"
+      }
+     ],
+     "default": "original",
+     "desc": "Modify rendering resolution. Requires a restart.",
+     "category": "video"
+    },
+    {
+     "key": "kronos_force_downsampling",
+     "label": "Output to original resolution",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Useful when using resolution higher than your screen's, will also replace meshed transparency by real transparency to avoid moir\u00c3\u00a9 effect",
+     "category": "video"
+    },
+    {
+     "key": "kronos_meshmode",
+     "label": "Improved mesh",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Replace meshed transparency by real transparency.",
+     "category": "video"
+    },
+    {
+     "key": "kronos_bandingmode",
+     "label": "Improved banding",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Apply gouraud shading instead of flat shading, requires OpenGL CS renderer.",
+     "category": "video"
+    },
+    {
+     "key": "kronos_stv_favorite_region",
+     "label": "ST-V Favorite Region",
+     "values": [
+      {
+       "token": "EU",
+       "label": "EU"
+      },
+      {
+       "token": "US",
+       "label": "US"
+      },
+      {
+       "token": "JP",
+       "label": "JP"
+      },
+      {
+       "token": "TW",
+       "label": "TW"
+      }
+     ],
+     "default": "EU",
+     "desc": "Choose favorite bios region for STV.",
+     "category": "system"
+    },
+    {
+     "key": "kronos_language_id",
+     "label": "Bios Language",
+     "values": [
+      {
+       "token": "English",
+       "label": "English"
+      },
+      {
+       "token": "German",
+       "label": "German"
+      },
+      {
+       "token": "French",
+       "label": "French"
+      },
+      {
+       "token": "Spanish",
+       "label": "Spanish"
+      },
+      {
+       "token": "Italian",
+       "label": "Italian"
+      },
+      {
+       "token": "Japanese",
+       "label": "Japanese"
+      }
+     ],
+     "default": "EU",
+     "desc": "Choose your favorite language, will translate some games. Requires a restart. NOTE: source registers default_value as \"EU\", which is not among the enumerated tokens (English/German/French/Spanish/Italian/Japanese).",
+     "category": "system"
+    }
+   ]
+  },
+  "ppsspp": {
+   "options": [
+    {
+     "key": "ppsspp_cpu_core",
+     "label": "CPU Core",
+     "values": [
+      {
+       "token": "JIT",
+       "label": "Dynarec (JIT)"
+      },
+      {
+       "token": "IR JIT",
+       "label": "IR Interpreter"
+      },
+      {
+       "token": "Interpreter",
+       "label": "Interpreter"
+      }
+     ],
+     "default": "JIT",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "ppsspp_locked_cpu_speed",
+     "label": "Locked CPU Speed",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "222MHz",
+       "label": "222MHz"
+      },
+      {
+       "token": "266MHz",
+       "label": "266MHz"
+      },
+      {
+       "token": "333MHz",
+       "label": "333MHz"
+      },
+      {
+       "token": "366MHz",
+       "label": "366MHz"
+      },
+      {
+       "token": "399MHz",
+       "label": "399MHz"
+      },
+      {
+       "token": "432MHz",
+       "label": "432MHz"
+      },
+      {
+       "token": "444MHz",
+       "label": "444MHz"
+      },
+      {
+       "token": "466MHz",
+       "label": "466MHz"
+      },
+      {
+       "token": "499MHz",
+       "label": "499MHz"
+      },
+      {
+       "token": "532MHz",
+       "label": "532MHz"
+      },
+      {
+       "token": "555MHz",
+       "label": "555MHz"
+      },
+      {
+       "token": "566MHz",
+       "label": "566MHz"
+      },
+      {
+       "token": "599MHz",
+       "label": "599MHz"
+      },
+      {
+       "token": "632MHz",
+       "label": "632MHz"
+      },
+      {
+       "token": "666MHz",
+       "label": "666MHz"
+      },
+      {
+       "token": "777MHz",
+       "label": "777MHz"
+      },
+      {
+       "token": "888MHz",
+       "label": "888MHz"
+      },
+      {
+       "token": "999MHz",
+       "label": "999MHz"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "ppsspp_internal_resolution",
+     "label": "Rendering Resolution",
+     "values": [
+      {
+       "token": "480x272",
+       "label": "1x (480x272)"
+      },
+      {
+       "token": "960x544",
+       "label": "2x (960x544)"
+      },
+      {
+       "token": "1440x816",
+       "label": "3x (1440x816)"
+      },
+      {
+       "token": "1920x1088",
+       "label": "4x (1920x1088)"
+      },
+      {
+       "token": "2400x1360",
+       "label": "5x (2400x1360)"
+      },
+      {
+       "token": "2880x1632",
+       "label": "6x (2880x1632)"
+      },
+      {
+       "token": "3360x1904",
+       "label": "7x (3360x1904)"
+      },
+      {
+       "token": "3840x2176",
+       "label": "8x (3840x2176)"
+      },
+      {
+       "token": "4320x2448",
+       "label": "9x (4320x2448)"
+      },
+      {
+       "token": "4800x2720",
+       "label": "10x (4800x2720)"
+      }
+     ],
+     "default": "480x272",
+     "desc": "Core restart required with Vulkan.",
+     "category": "video"
+    },
+    {
+     "key": "ppsspp_mulitsample_level",
+     "label": "MSAA Antialiasing",
+     "values": [
+      {
+       "token": "Disabled",
+       "label": "Disabled"
+      },
+      {
+       "token": "x2",
+       "label": "x2"
+      },
+      {
+       "token": "x4",
+       "label": "x4"
+      },
+      {
+       "token": "x8",
+       "label": "x8"
+      }
+     ],
+     "default": "Disabled",
+     "desc": "Vulkan only. Core restart required.",
+     "category": "video"
+    },
+    {
+     "key": "ppsspp_cropto16x9",
+     "label": "Crop to 16x9",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "enabled",
+     "desc": "Remove one line from top and bottom to get exact 16:9. Core restart required with Vulkan.",
+     "category": "video"
+    },
+    {
+     "key": "ppsspp_frameskip",
+     "label": "Frameskip",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "1",
+       "label": "1"
+      },
+      {
+       "token": "2",
+       "label": "2"
+      },
+      {
+       "token": "3",
+       "label": "3"
+      },
+      {
+       "token": "4",
+       "label": "4"
+      },
+      {
+       "token": "5",
+       "label": "5"
+      },
+      {
+       "token": "6",
+       "label": "6"
+      },
+      {
+       "token": "7",
+       "label": "7"
+      },
+      {
+       "token": "8",
+       "label": "8"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "ppsspp_skip_buffer_effects",
+     "label": "Skip Buffer Effects",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Faster, but nothing may draw in some games.",
+     "category": "hack"
+    },
+    {
+     "key": "ppsspp_skip_gpu_readbacks",
+     "label": "Skip GPU Readbacks",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Some games require GPU readbacks, so be careful.",
+     "category": "hack"
+    },
+    {
+     "key": "ppsspp_lazy_texture_caching",
+     "label": "Lazy Texture Caching (Speedup)",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Faster, but can cause text problems in a few games.",
+     "category": "hack"
+    },
+    {
+     "key": "ppsspp_spline_quality",
+     "label": "Spline/Bezier Curves Quality",
+     "values": [
+      {
+       "token": "Low",
+       "label": "Low"
+      },
+      {
+       "token": "Medium",
+       "label": "Medium"
+      },
+      {
+       "token": "High",
+       "label": "High"
+      }
+     ],
+     "default": "High",
+     "desc": "Only used by some games, controls smoothness of curves.",
+     "category": "hack"
+    },
+    {
+     "key": "ppsspp_lower_resolution_for_effects",
+     "label": "Lower Resolution for Effects",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "Safe",
+       "label": "Safe"
+      },
+      {
+       "token": "Balanced",
+       "label": "Balanced"
+      },
+      {
+       "token": "Aggressive",
+       "label": "Aggressive"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Reduces artifacts.",
+     "category": "hack"
+    },
+    {
+     "key": "ppsspp_hardware_tesselation",
+     "label": "Hardware Tesselation",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Uses hardware to make curves.",
+     "category": "video"
+    },
+    {
+     "key": "ppsspp_texture_scaling_type",
+     "label": "Texture Upscale Type",
+     "values": [
+      {
+       "token": "xbrz",
+       "label": "xBRZ"
+      },
+      {
+       "token": "hybrid",
+       "label": "Hybrid"
+      },
+      {
+       "token": "bicubic",
+       "label": "Bicubic"
+      },
+      {
+       "token": "hybrid_bicubic",
+       "label": "Hybrid + Bicubic"
+      }
+     ],
+     "default": "xbrz",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "ppsspp_texture_scaling_level",
+     "label": "Texture Upscaling Level",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "2x",
+       "label": "2x"
+      },
+      {
+       "token": "3x",
+       "label": "3x"
+      },
+      {
+       "token": "4x",
+       "label": "4x"
+      },
+      {
+       "token": "5x",
+       "label": "5x"
+      }
+     ],
+     "default": "disabled",
+     "desc": "CPU heavy, some scaling may be delayed to avoid stutter.",
+     "category": "video"
+    },
+    {
+     "key": "ppsspp_texture_shader",
+     "label": "Texture Shader",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "2xBRZ",
+       "label": "Tex2xBRZ"
+      },
+      {
+       "token": "4xBRZ",
+       "label": "Tex4xBRZ"
+      },
+      {
+       "token": "MMPX",
+       "label": "TexMMPX"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Vulkan only, overrides 'Texture Scaling Type'.",
+     "category": "video"
+    },
+    {
+     "key": "ppsspp_texture_anisotropic_filtering",
+     "label": "Anisotropic Filtering",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "2x",
+       "label": "2x"
+      },
+      {
+       "token": "4x",
+       "label": "4x"
+      },
+      {
+       "token": "8x",
+       "label": "8x"
+      },
+      {
+       "token": "16x",
+       "label": "16x"
+      }
+     ],
+     "default": "16x",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "ppsspp_texture_filtering",
+     "label": "Texture Filtering",
+     "values": [
+      {
+       "token": "Auto",
+       "label": "Auto"
+      },
+      {
+       "token": "Nearest",
+       "label": "Nearest"
+      },
+      {
+       "token": "Linear",
+       "label": "Linear"
+      },
+      {
+       "token": "Auto max quality",
+       "label": "Auto max quality"
+      }
+     ],
+     "default": "Auto",
+     "desc": "",
+     "category": "video"
+    }
+   ]
+  },
+  "pcsx2": {
+   "options": [
+    {
+     "key": "pcsx2_upscale_multiplier",
+     "label": "Internal Resolution (Restart)",
+     "values": [
+      {
+       "token": "1x Native (PS2)",
+       "label": "1x Native (PS2)"
+      },
+      {
+       "token": "2x Native (~720p)",
+       "label": "2x Native (~720p)"
+      },
+      {
+       "token": "3x Native (~1080p)",
+       "label": "3x Native (~1080p)"
+      },
+      {
+       "token": "4x Native (~1440p/2K)",
+       "label": "4x Native (~1440p/2K)"
+      },
+      {
+       "token": "5x Native (~1800p/3K)",
+       "label": "5x Native (~1800p/3K)"
+      },
+      {
+       "token": "6x Native (~2160p/4K)",
+       "label": "6x Native (~2160p/4K)"
+      },
+      {
+       "token": "7x Native (~2520p)",
+       "label": "7x Native (~2520p)"
+      },
+      {
+       "token": "8x Native (~2880p/5K)",
+       "label": "8x Native (~2880p/5K)"
+      },
+      {
+       "token": "9x Native (~3240p)",
+       "label": "9x Native (~3240p)"
+      },
+      {
+       "token": "10x Native (~3600p/6K)",
+       "label": "10x Native (~3600p/6K)"
+      },
+      {
+       "token": "11x Native (~3960p)",
+       "label": "11x Native (~3960p)"
+      },
+      {
+       "token": "12x Native (~4320p/8K)",
+       "label": "12x Native (~4320p/8K)"
+      },
+      {
+       "token": "13x Native (~5824p)",
+       "label": "13x Native (~5824p)"
+      },
+      {
+       "token": "14x Native (~6272p)",
+       "label": "14x Native (~6272p)"
+      },
+      {
+       "token": "15x Native (~6720p)",
+       "label": "15x Native (~6720p)"
+      },
+      {
+       "token": "16x Native (~7168p)",
+       "label": "16x Native (~7168p)"
+      }
+     ],
+     "default": "1x Native (PS2)",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_pgs_ssaa",
+     "label": "paraLLEl super sampling",
+     "values": [
+      {
+       "token": "Native",
+       "label": "Native"
+      },
+      {
+       "token": "2x SSAA",
+       "label": "2x SSAA"
+      },
+      {
+       "token": "4x SSAA (sparse grid)",
+       "label": "4x SSAA (sparse grid)"
+      },
+      {
+       "token": "4x SSAA (ordered, can high-res)",
+       "label": "4x SSAA (ordered, can high-res)"
+      },
+      {
+       "token": "8x SSAA (can high-res)",
+       "label": "8x SSAA (can high-res)"
+      },
+      {
+       "token": "16x SSAA (can high-res)",
+       "label": "16x SSAA (can high-res)"
+      }
+     ],
+     "default": "Native",
+     "desc": "Apply supersampled anti-aliasing (SSAA). Unlike straight upscaling, supersampling retains a coherent visual look where 3D elements have similar resolution as UI elements. For high-res scanout upscaling to work, you need at least '4x SSAA ordered' (or higher). Setting this to 'Native' disables super sampling.",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_pgs_high_res_scanout",
+     "label": "paraLLEl experimental High-res scanout",
+     "values": [
+      {
+       "token": "enabled",
+       "label": "enabled"
+      },
+      {
+       "token": "disabled",
+       "label": "disabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Allows upscaling with paraLLEl. Doesn't work with every game, some might require patches on top. Requires Supersampling to be set to at least 4x SSAA ordered or higher for it to work.",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_pgs_ss_tex",
+     "label": "paraLLEl experimental SSAA texture",
+     "values": [
+      {
+       "token": "enabled",
+       "label": "enabled"
+      },
+      {
+       "token": "disabled",
+       "label": "disabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Feedback higher resolution textures. May help high-res scanout image quality. Highly experimental and may cause rendering glitches.",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_pgs_deblur",
+     "label": "paraLLEl experimental sharp backbuffer",
+     "values": [
+      {
+       "token": "enabled",
+       "label": "enabled"
+      },
+      {
+       "token": "disabled",
+       "label": "disabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Attempts to workaround games that add extra blit passes before scanning out. May lead to better image quality in certain games which do this.",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_pgs_disable_mipmaps",
+     "label": "Force Texture LOD0",
+     "values": [
+      {
+       "token": "enabled",
+       "label": "enabled"
+      },
+      {
+       "token": "disabled",
+       "label": "disabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Disable this for traditional hardware mipmapping. Enabling this will bypass mipmapping and always use texture LOD0 instead. The result is better image quality. Only a small handful of games have graphics rendering issues with this enabled.",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_deinterlace_mode",
+     "label": "Deinterlacing",
+     "values": [
+      {
+       "token": "Automatic",
+       "label": "Automatic"
+      },
+      {
+       "token": "Off",
+       "label": "Off"
+      },
+      {
+       "token": "Weave TFF",
+       "label": "Weave TFF"
+      },
+      {
+       "token": "Weave BFF",
+       "label": "Weave BFF"
+      },
+      {
+       "token": "Bob TFF",
+       "label": "Bob TFF"
+      },
+      {
+       "token": "Bob BFF",
+       "label": "Bob BFF"
+      },
+      {
+       "token": "Blend TFF",
+       "label": "Blend TFF"
+      },
+      {
+       "token": "Blend BFF",
+       "label": "Blend BFF"
+      },
+      {
+       "token": "Adaptive TFF",
+       "label": "Adaptive TFF"
+      },
+      {
+       "token": "Adaptive BFF",
+       "label": "Adaptive BFF"
+      }
+     ],
+     "default": "Automatic",
+     "desc": "Select a deinterlacing method. Use 'Automatic' if unsure what to pick.",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_nointerlacing_hint",
+     "label": "No interlacing hint (Restart)",
+     "values": [
+      {
+       "token": "enabled",
+       "label": "enabled"
+      },
+      {
+       "token": "disabled",
+       "label": "disabled"
+      }
+     ],
+     "default": "enabled",
+     "desc": "If enabled, will look in the internal database if a patch is available for the game to turn the image into either a non-interlaced, full frame, or progressive scan video signal, and/or a combination of all the above. Image will be more stable and Deinterlacing can be turned off.",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_texture_filtering",
+     "label": "Texture Filtering",
+     "values": [
+      {
+       "token": "Nearest",
+       "label": "Nearest"
+      },
+      {
+       "token": "Bilinear (Forced)",
+       "label": "Bilinear (Forced)"
+      },
+      {
+       "token": "Bilinear (PS2)",
+       "label": "Bilinear (PS2)"
+      },
+      {
+       "token": "Bilinear (Forced excluding sprite)",
+       "label": "Bilinear (Forced excluding sprite)"
+      }
+     ],
+     "default": "Bilinear (PS2)",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_trilinear_filtering",
+     "label": "Trilinear Filtering",
+     "values": [
+      {
+       "token": "Automatic",
+       "label": "Automatic"
+      },
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "Trilinear (PS2)",
+       "label": "Trilinear (PS2)"
+      },
+      {
+       "token": "Trilinear (Forced)",
+       "label": "Trilinear (Forced)"
+      }
+     ],
+     "default": "Automatic",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_anisotropic_filtering",
+     "label": "Anisotropic Filtering",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "2x",
+       "label": "2x"
+      },
+      {
+       "token": "4x",
+       "label": "4x"
+      },
+      {
+       "token": "8x",
+       "label": "8x"
+      },
+      {
+       "token": "16x",
+       "label": "16x"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_blending_accuracy",
+     "label": "Blending Accuracy",
+     "values": [
+      {
+       "token": "Minimum",
+       "label": "Minimum"
+      },
+      {
+       "token": "Basic",
+       "label": "Basic"
+      },
+      {
+       "token": "Medium",
+       "label": "Medium"
+      },
+      {
+       "token": "High",
+       "label": "High"
+      },
+      {
+       "token": "Full",
+       "label": "Full"
+      },
+      {
+       "token": "Maximum",
+       "label": "Maximum"
+      }
+     ],
+     "default": "Basic",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_widescreen_hint",
+     "label": "Widescreen hint (Restart)",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled (16:9)",
+       "label": "enabled (16:9)"
+      },
+      {
+       "token": "enabled (16:10)",
+       "label": "enabled (16:10)"
+      },
+      {
+       "token": "enabled (21:9)",
+       "label": "enabled (21:9)"
+      },
+      {
+       "token": "enabled (32:9)",
+       "label": "enabled (32:9)"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Applies a widescreen patch if a patch for the game can be found inside the internal database.",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_pcrtc_antiblur",
+     "label": "PCRTC Anti-Blur",
+     "values": [
+      {
+       "token": "enabled",
+       "label": "enabled"
+      },
+      {
+       "token": "disabled",
+       "label": "disabled"
+      }
+     ],
+     "default": "enabled",
+     "desc": "Disable this for the most accurate output image. Enabling this will attempt to deblur the image. Most noticeable on software renderer and paraLLEl.",
+     "category": "video"
+    },
+    {
+     "key": "pcsx2_ee_cycle_rate",
+     "label": "EE Cycle Rate",
+     "values": [
+      {
+       "token": "50% (Underclock)",
+       "label": "50% (Underclock)"
+      },
+      {
+       "token": "60% (Underclock)",
+       "label": "60% (Underclock)"
+      },
+      {
+       "token": "75% (Underclock)",
+       "label": "75% (Underclock)"
+      },
+      {
+       "token": "100% (Normal Speed)",
+       "label": "100% (Normal Speed)"
+      },
+      {
+       "token": "130% (Overclock)",
+       "label": "130% (Overclock)"
+      },
+      {
+       "token": "180% (Overclock)",
+       "label": "180% (Overclock)"
+      },
+      {
+       "token": "300% (Overclock)",
+       "label": "300% (Overclock)"
+      }
+     ],
+     "default": "100% (Normal Speed)",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "pcsx2_ee_cycle_skip",
+     "label": "EE Cycle Skipping",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "Mild Underclock",
+       "label": "Mild Underclock"
+      },
+      {
+       "token": "Moderate Underclock",
+       "label": "Moderate Underclock"
+      },
+      {
+       "token": "Maximum Underclock",
+       "label": "Maximum Underclock"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "pcsx2_game_enhancements_hint",
+     "label": "Game Enhancements hint (Restart)",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Applies game-specific enhancements if patches for the game can be found inside the internal database. Examples of enhancements: LOD [Level of Detail] enhancements, better draw distance, ability to skip FMVs, etc.",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_uncapped_framerate_hint",
+     "label": "Uncapped Framerate hint (Restart)",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      },
+      {
+       "token": "60fps PAL-to-NTSC",
+       "label": "60fps PAL-to-NTSC"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Uncaps the framerate if a patch for the game can be found inside the internal database. This can turn a 30fps game into 60fps locked, or stabilize the framerate. You might have to increase EE Cycle Rate in combination with this for a stable locked framerate. 60fps PAL-to-NTSC does what it says if it can find a patch, otherwise it will just try to use the default uncapped framerate patch (50fps for PAL, 60fps for NTSC)",
+     "category": "performance"
+    },
+    {
+     "key": "pcsx2_enable_hw_hacks",
+     "label": "Enable Manual Hardware Renderer Fixes (Not Recommended)",
+     "values": [
+      {
+       "token": "enabled",
+       "label": "enabled"
+      },
+      {
+       "token": "disabled",
+       "label": "disabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "This will disable automatic settings from the database. Unless you know what you are doing it is NOT RECOMMENDED to turn this ON.",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_cpu_sprite_size",
+     "label": "CPU Sprite Render Size",
+     "values": [
+      {
+       "token": "0",
+       "label": "disabled"
+      },
+      {
+       "token": "1",
+       "label": "1 (64 Max Width)"
+      },
+      {
+       "token": "2",
+       "label": "2 (128 Max Width)"
+      },
+      {
+       "token": "3",
+       "label": "3 (192 Max Width)"
+      },
+      {
+       "token": "4",
+       "label": "4 (256 Max Width)"
+      },
+      {
+       "token": "5",
+       "label": "5 (320 Max Width)"
+      },
+      {
+       "token": "6",
+       "label": "6 (384 Max Width)"
+      },
+      {
+       "token": "7",
+       "label": "7 (448 Max Width)"
+      },
+      {
+       "token": "8",
+       "label": "8 (512 Max Width)"
+      },
+      {
+       "token": "9",
+       "label": "9 (576 Max Width)"
+      },
+      {
+       "token": "10",
+       "label": "10 (640 Max Width)"
+      }
+     ],
+     "default": "0",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_cpu_sprite_level",
+     "label": "CPU Sprite Render Level",
+     "values": [
+      {
+       "token": "Sprites Only",
+       "label": "Sprites Only"
+      },
+      {
+       "token": "Sprites/Triangles",
+       "label": "Sprites/Triangles"
+      },
+      {
+       "token": "Blended Sprites/Triangles",
+       "label": "Blended Sprites/Triangles"
+      }
+     ],
+     "default": "Sprites Only",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_software_clut_render",
+     "label": "Software CLUT Render",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "Normal",
+       "label": "Normal"
+      },
+      {
+       "token": "Aggressive",
+       "label": "Aggressive"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_gpu_target_clut",
+     "label": "GPU Target CLUT",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "Exact Match",
+       "label": "Exact Match"
+      },
+      {
+       "token": "Check Inside Target",
+       "label": "Check Inside Target"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_auto_flush",
+     "label": "Auto Flush",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "Sprites Only",
+       "label": "Sprites Only"
+      },
+      {
+       "token": "All Primitives",
+       "label": "All Primitives"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_texture_inside_rt",
+     "label": "Texture Inside RT",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "Inside Target",
+       "label": "Inside Target"
+      },
+      {
+       "token": "Merge Targets",
+       "label": "Merge Targets"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_disable_depth_conversion",
+     "label": "Disabled Depth Conversion",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_framebuffer_conversion",
+     "label": "Framebuffer Conversion",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_disable_partial_invalidation",
+     "label": "Disable Partial Source Invalidation",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_gpu_palette_conversion",
+     "label": "GPU Palette Conversion",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_preload_frame_data",
+     "label": "Preload Frame Data",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_half_pixel_offset",
+     "label": "Half Pixel Offset",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "Normal (Vertex)",
+       "label": "Normal (Vertex)"
+      },
+      {
+       "token": "Special (Texture)",
+       "label": "Special (Texture)"
+      },
+      {
+       "token": "Special (Texture - Aggressive)",
+       "label": "Special (Texture - Aggressive)"
+      },
+      {
+       "token": "Align to Native",
+       "label": "Align to Native"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_native_scaling",
+     "label": "Native Scaling",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "Normal",
+       "label": "Normal"
+      },
+      {
+       "token": "Aggressive",
+       "label": "Aggressive"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_round_sprite",
+     "label": "Round Sprite",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "Half",
+       "label": "Half"
+      },
+      {
+       "token": "Full",
+       "label": "Full"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_align_sprite",
+     "label": "Align Sprite",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_merge_sprite",
+     "label": "Merge Sprite",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_unscaled_palette_draw",
+     "label": "Unscaled Palette Texture Draws",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx2_force_sprite_position",
+     "label": "Force Even Sprite Position",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    }
+   ]
+  },
+  "mgba": {
+   "options": [
+    {
+     "key": "mgba_frameskip",
+     "label": "Frameskip",
+     "values": [
+      {
+       "token": "0",
+       "label": "0"
+      },
+      {
+       "token": "1",
+       "label": "1"
+      },
+      {
+       "token": "2",
+       "label": "2"
+      },
+      {
+       "token": "3",
+       "label": "3"
+      },
+      {
+       "token": "4",
+       "label": "4"
+      },
+      {
+       "token": "5",
+       "label": "5"
+      },
+      {
+       "token": "6",
+       "label": "6"
+      },
+      {
+       "token": "7",
+       "label": "7"
+      },
+      {
+       "token": "8",
+       "label": "8"
+      },
+      {
+       "token": "9",
+       "label": "9"
+      },
+      {
+       "token": "10",
+       "label": "10"
+      }
+     ],
+     "default": "0",
+     "desc": "Skip frames to improve performance at the expense of visual smoothness. The value set here is the number of frames omitted after a frame is rendered - i.e. '0' = 60fps, '1' = 30fps, '2' = 15fps, etc.",
+     "category": "performance"
+    }
+   ]
+  },
+  "mupen64plus_next": {
+   "options": [
+    {
+     "key": "mupen64plus-rdp-plugin",
+     "label": "RDP Plugin",
+     "values": [
+      {
+       "token": "angrylion",
+       "label": "angrylion"
+      },
+      {
+       "token": "parallel",
+       "label": "parallel"
+      },
+      {
+       "token": "gliden64",
+       "label": "gliden64"
+      }
+     ],
+     "default": "gliden64",
+     "desc": "Select the RDP graphics plugin.",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-43screensize",
+     "label": "4:3 Resolution",
+     "values": [
+      {
+       "token": "320x240",
+       "label": "320x240"
+      },
+      {
+       "token": "640x480",
+       "label": "640x480"
+      },
+      {
+       "token": "960x720",
+       "label": "960x720"
+      },
+      {
+       "token": "1280x960",
+       "label": "1280x960"
+      },
+      {
+       "token": "1440x1080",
+       "label": "1440x1080"
+      },
+      {
+       "token": "1600x1200",
+       "label": "1600x1200"
+      },
+      {
+       "token": "1920x1440",
+       "label": "1920x1440"
+      },
+      {
+       "token": "2240x1680",
+       "label": "2240x1680"
+      },
+      {
+       "token": "2560x1920",
+       "label": "2560x1920"
+      },
+      {
+       "token": "2880x2160",
+       "label": "2880x2160"
+      },
+      {
+       "token": "3200x2400",
+       "label": "3200x2400"
+      },
+      {
+       "token": "3520x2640",
+       "label": "3520x2640"
+      },
+      {
+       "token": "3840x2880",
+       "label": "3840x2880"
+      }
+     ],
+     "default": "640x480",
+     "desc": "Internal render resolution for 4:3 aspect (GLideN64).",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-169screensize",
+     "label": "Wide Resolution",
+     "values": [
+      {
+       "token": "640x360",
+       "label": "640x360"
+      },
+      {
+       "token": "960x540",
+       "label": "960x540"
+      },
+      {
+       "token": "1280x720",
+       "label": "1280x720"
+      },
+      {
+       "token": "1706x720",
+       "label": "1706x720"
+      },
+      {
+       "token": "1366x768",
+       "label": "1366x768"
+      },
+      {
+       "token": "1920x810",
+       "label": "1920x810"
+      },
+      {
+       "token": "1920x1080",
+       "label": "1920x1080"
+      },
+      {
+       "token": "2560x1080",
+       "label": "2560x1080"
+      },
+      {
+       "token": "2560x1440",
+       "label": "2560x1440"
+      },
+      {
+       "token": "3414x1440",
+       "label": "3414x1440"
+      },
+      {
+       "token": "3840x2160",
+       "label": "3840x2160"
+      },
+      {
+       "token": "4096x2160",
+       "label": "4096x2160"
+      },
+      {
+       "token": "5120x2160",
+       "label": "5120x2160"
+      },
+      {
+       "token": "7680x3240",
+       "label": "7680x3240"
+      },
+      {
+       "token": "7680x4320",
+       "label": "7680x4320"
+      },
+      {
+       "token": "10240x4320",
+       "label": "10240x4320"
+      }
+     ],
+     "default": "960x540",
+     "desc": "Internal render resolution for 16:9 aspect (GLideN64).",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-aspect",
+     "label": "Aspect Ratio",
+     "values": [
+      {
+       "token": "4:3",
+       "label": "4:3"
+      },
+      {
+       "token": "16:9",
+       "label": "16:9"
+      },
+      {
+       "token": "16:9 adjusted",
+       "label": "16:9 adjusted"
+      }
+     ],
+     "default": "4:3",
+     "desc": "Output aspect ratio.",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-EnableNativeResFactor",
+     "label": "Native Resolution Factor",
+     "values": [
+      {
+       "token": "0",
+       "label": "0"
+      },
+      {
+       "token": "1",
+       "label": "1"
+      },
+      {
+       "token": "2",
+       "label": "2"
+      },
+      {
+       "token": "3",
+       "label": "3"
+      },
+      {
+       "token": "4",
+       "label": "4"
+      },
+      {
+       "token": "5",
+       "label": "5"
+      },
+      {
+       "token": "6",
+       "label": "6"
+      },
+      {
+       "token": "7",
+       "label": "7"
+      },
+      {
+       "token": "8",
+       "label": "8"
+      }
+     ],
+     "default": "0",
+     "desc": "Multiplier of native N64 resolution for upscaling.",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-BilinearMode",
+     "label": "Bilinear filtering mode",
+     "values": [
+      {
+       "token": "3point",
+       "label": "3point"
+      },
+      {
+       "token": "standard",
+       "label": "standard"
+      }
+     ],
+     "default": "standard",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-DitheringPattern",
+     "label": "Dithering",
+     "values": [
+      {
+       "token": "True",
+       "label": "True"
+      },
+      {
+       "token": "False",
+       "label": "False"
+      }
+     ],
+     "default": "False",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "mupen64plus-MultiSampling",
+     "label": "MSAA level",
+     "values": [
+      {
+       "token": "0",
+       "label": "0"
+      },
+      {
+       "token": "2",
+       "label": "2"
+      },
+      {
+       "token": "4",
+       "label": "4"
+      },
+      {
+       "token": "8",
+       "label": "8"
+      },
+      {
+       "token": "16",
+       "label": "16"
+      }
+     ],
+     "default": "0",
+     "desc": "Multisample anti-aliasing level (GLideN64).",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-FXAA",
+     "label": "FXAA",
+     "values": [
+      {
+       "token": "0",
+       "label": "0"
+      },
+      {
+       "token": "1",
+       "label": "1"
+      }
+     ],
+     "default": "0",
+     "desc": "Fast approximate anti-aliasing.",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-EnableNativeResTexrects",
+     "label": "Native res. 2D texrects",
+     "values": [
+      {
+       "token": "Disabled",
+       "label": "Disabled"
+      },
+      {
+       "token": "Unoptimized",
+       "label": "Unoptimized"
+      },
+      {
+       "token": "Optimized",
+       "label": "Optimized"
+      }
+     ],
+     "default": "Disabled",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-txFilterMode",
+     "label": "Texture filter",
+     "values": [
+      {
+       "token": "None",
+       "label": "None"
+      },
+      {
+       "token": "Smooth filtering 1",
+       "label": "Smooth filtering 1"
+      },
+      {
+       "token": "Smooth filtering 2",
+       "label": "Smooth filtering 2"
+      },
+      {
+       "token": "Smooth filtering 3",
+       "label": "Smooth filtering 3"
+      },
+      {
+       "token": "Smooth filtering 4",
+       "label": "Smooth filtering 4"
+      },
+      {
+       "token": "Sharp filtering 1",
+       "label": "Sharp filtering 1"
+      },
+      {
+       "token": "Sharp filtering 2",
+       "label": "Sharp filtering 2"
+      }
+     ],
+     "default": "None",
+     "desc": "Texture smoothing/sharpening filter.",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-txEnhancementMode",
+     "label": "Texture Enhancement",
+     "values": [
+      {
+       "token": "None",
+       "label": "None"
+      },
+      {
+       "token": "As Is",
+       "label": "As Is"
+      },
+      {
+       "token": "X2",
+       "label": "X2"
+      },
+      {
+       "token": "X2SAI",
+       "label": "X2SAI"
+      },
+      {
+       "token": "HQ2X",
+       "label": "HQ2X"
+      },
+      {
+       "token": "HQ2XS",
+       "label": "HQ2XS"
+      },
+      {
+       "token": "LQ2X",
+       "label": "LQ2X"
+      },
+      {
+       "token": "LQ2XS",
+       "label": "LQ2XS"
+      },
+      {
+       "token": "HQ4X",
+       "label": "HQ4X"
+      },
+      {
+       "token": "2xBRZ",
+       "label": "2xBRZ"
+      },
+      {
+       "token": "3xBRZ",
+       "label": "3xBRZ"
+      },
+      {
+       "token": "4xBRZ",
+       "label": "4xBRZ"
+      },
+      {
+       "token": "5xBRZ",
+       "label": "5xBRZ"
+      },
+      {
+       "token": "6xBRZ",
+       "label": "6xBRZ"
+      }
+     ],
+     "default": "None",
+     "desc": "Texture upscaling algorithm.",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-txHiresEnable",
+     "label": "Use High-Res textures",
+     "values": [
+      {
+       "token": "False",
+       "label": "False"
+      },
+      {
+       "token": "True",
+       "label": "True"
+      }
+     ],
+     "default": "False",
+     "desc": "Load high-resolution texture packs.",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-parallel-rdp-vi-aa",
+     "label": "(ParaLLEl-RDP) VI anti-aliasing",
+     "values": [
+      {
+       "token": "True",
+       "label": "True"
+      },
+      {
+       "token": "False",
+       "label": "False"
+      }
+     ],
+     "default": "True",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-parallel-rdp-upscaling",
+     "label": "(ParaLLEl-RDP) Upscaling factor (restart)",
+     "values": [
+      {
+       "token": "1x",
+       "label": "1x"
+      },
+      {
+       "token": "2x",
+       "label": "2x"
+      },
+      {
+       "token": "4x",
+       "label": "4x"
+      },
+      {
+       "token": "8x",
+       "label": "8x"
+      }
+     ],
+     "default": "1x",
+     "desc": "Internal upscaling multiplier for ParaLLEl-RDP.",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-parallel-rdp-super-sampled-read-back",
+     "label": "(ParaLLEl-RDP) SSAA framebuffer effects (restart)",
+     "values": [
+      {
+       "token": "False",
+       "label": "False"
+      },
+      {
+       "token": "True",
+       "label": "True"
+      }
+     ],
+     "default": "False",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-parallel-rdp-downscaling",
+     "label": "(ParaLLEl-RDP) Downsampling factor",
+     "values": [
+      {
+       "token": "disable",
+       "label": "disable"
+      },
+      {
+       "token": "1/2",
+       "label": "1/2"
+      },
+      {
+       "token": "1/4",
+       "label": "1/4"
+      },
+      {
+       "token": "1/8",
+       "label": "1/8"
+      }
+     ],
+     "default": "disable",
+     "desc": "Supersample downscale factor.",
+     "category": "video"
+    },
+    {
+     "key": "mupen64plus-cpucore",
+     "label": "CPU Core",
+     "values": [
+      {
+       "token": "pure_interpreter",
+       "label": "pure_interpreter"
+      },
+      {
+       "token": "cached_interpreter",
+       "label": "cached_interpreter"
+      },
+      {
+       "token": "dynamic_recompiler",
+       "label": "dynamic_recompiler"
+      }
+     ],
+     "default": "dynamic_recompiler",
+     "desc": "CPU emulation core.",
+     "category": "performance"
+    },
+    {
+     "key": "mupen64plus-rsp-plugin",
+     "label": "RSP Plugin",
+     "values": [
+      {
+       "token": "cxd4",
+       "label": "cxd4"
+      },
+      {
+       "token": "parallel",
+       "label": "parallel"
+      },
+      {
+       "token": "hle",
+       "label": "hle"
+      }
+     ],
+     "default": "hle",
+     "desc": "Select the RSP plugin.",
+     "category": "performance"
+    },
+    {
+     "key": "mupen64plus-virefresh",
+     "label": "VI Refresh (Overclock)",
+     "values": [
+      {
+       "token": "Auto",
+       "label": "Auto"
+      },
+      {
+       "token": "1500",
+       "label": "1500"
+      },
+      {
+       "token": "2200",
+       "label": "2200"
+      }
+     ],
+     "default": "Auto",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "mupen64plus-CountPerOpDenomPot",
+     "label": "Count Per Op Divider (Overclock)",
+     "values": [],
+     "default": "0",
+     "desc": "CPU overclock divider (power of two).",
+     "category": "performance"
+    }
+   ]
+  },
+  "pcsx_rearmed": {
+   "options": [
+    {
+     "key": "pcsx_rearmed_region",
+     "label": "Region",
+     "values": [
+      {
+       "token": "auto",
+       "label": "auto"
+      },
+      {
+       "token": "NTSC",
+       "label": "NTSC"
+      },
+      {
+       "token": "PAL",
+       "label": "PAL"
+      }
+     ],
+     "default": "auto",
+     "desc": "Console region.",
+     "category": "system"
+    },
+    {
+     "key": "pcsx_rearmed_drc",
+     "label": "Dynamic Recompiler",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "enabled",
+     "desc": "MIPS dynarec vs interpreter.",
+     "category": "performance"
+    },
+    {
+     "key": "pcsx_rearmed_psxclock",
+     "label": "PSX CPU Clock Speed (%)",
+     "values": [
+      {
+       "token": "auto",
+       "label": "auto"
+      }
+     ],
+     "default": "auto",
+     "desc": "Underclock/overclock the PSX CPU.",
+     "category": "performance"
+    },
+    {
+     "key": "pcsx_rearmed_dithering",
+     "label": "Dithering Pattern",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      },
+      {
+       "token": "force",
+       "label": "force"
+      }
+     ],
+     "default": "enabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx_rearmed_frameskip_type",
+     "label": "Frameskip",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "auto",
+       "label": "auto"
+      },
+      {
+       "token": "auto_threshold",
+       "label": "auto_threshold"
+      },
+      {
+       "token": "fixed_interval",
+       "label": "fixed_interval"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "pcsx_rearmed_frameskip_threshold",
+     "label": "Frameskip Threshold (%)",
+     "values": [],
+     "default": "33",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "pcsx_rearmed_frameskip_interval",
+     "label": "Frameskip Interval",
+     "values": [],
+     "default": "3",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "pcsx_rearmed_frameskip",
+     "label": "Frameskip",
+     "values": [],
+     "default": "",
+     "desc": "Legacy frameskip option present in the deployed binary; not in current upstream header, value tokens not confirmable.",
+     "category": "performance"
+    },
+    {
+     "key": "pcsx_rearmed_scale_hires",
+     "label": "Hi-Res Downscaling",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Downscale hi-res PSX modes to native.",
+     "category": "video"
+    },
+    {
+     "key": "pcsx_rearmed_neon_enhancement_enable",
+     "label": "(GPU) Enhanced Resolution",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "2x internal resolution (NEON GPU).",
+     "category": "video"
+    },
+    {
+     "key": "pcsx_rearmed_neon_enhancement_no_main",
+     "label": "(GPU) Enhanced Resolution Speed Hack",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "pcsx_rearmed_neon_enhancement_tex_adj_v2",
+     "label": "(GPU) Enhanced Resolution Texture Adjustment",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "enabled",
+     "desc": "",
+     "category": "video"
+    }
+   ]
+  },
+  "beetle_psx_hw": {
+   "options": [
+    {
+     "key": "beetle_psx_hw_renderer",
+     "label": "Renderer",
+     "values": [
+      {
+       "token": "hardware",
+       "label": "Hardware Auto"
+      },
+      {
+       "token": "hardware_gl",
+       "label": "Hardware OpenGL"
+      },
+      {
+       "token": "hardware_vk",
+       "label": "Hardware Vulkan"
+      },
+      {
+       "token": "software",
+       "label": "Software"
+      }
+     ],
+     "default": "hardware",
+     "desc": "GPU rendering backend.",
+     "category": "video"
+    },
+    {
+     "key": "beetle_psx_hw_internal_resolution",
+     "label": "Internal GPU Resolution",
+     "values": [
+      {
+       "token": "1x(native)",
+       "label": "1x (native)"
+      },
+      {
+       "token": "2x",
+       "label": "2x"
+      },
+      {
+       "token": "4x",
+       "label": "4x"
+      },
+      {
+       "token": "8x",
+       "label": "8x"
+      },
+      {
+       "token": "16x",
+       "label": "16x"
+      }
+     ],
+     "default": "1x(native)",
+     "desc": "Internal upscaling multiplier.",
+     "category": "video"
+    },
+    {
+     "key": "beetle_psx_hw_depth",
+     "label": "Internal Color Depth",
+     "values": [
+      {
+       "token": "16bpp(native)",
+       "label": "16 bpp (native)"
+      },
+      {
+       "token": "32bpp",
+       "label": "32 bpp"
+      }
+     ],
+     "default": "16bpp(native)",
+     "desc": "Internal color buffer depth.",
+     "category": "video"
+    },
+    {
+     "key": "beetle_psx_hw_dither_mode",
+     "label": "Dithering Pattern",
+     "values": [
+      {
+       "token": "1x(native)",
+       "label": "1x (native)"
+      },
+      {
+       "token": "internal resolution",
+       "label": "Internal Resolution"
+      },
+      {
+       "token": "disabled",
+       "label": "disabled"
+      }
+     ],
+     "default": "1x(native)",
+     "desc": "Ordered dithering scale.",
+     "category": "hack"
+    },
+    {
+     "key": "beetle_psx_hw_filter",
+     "label": "Texture Filtering",
+     "values": [
+      {
+       "token": "nearest",
+       "label": "Nearest"
+      },
+      {
+       "token": "SABR",
+       "label": "SABR"
+      },
+      {
+       "token": "xBR",
+       "label": "xBR"
+      },
+      {
+       "token": "bilinear",
+       "label": "Bilinear"
+      },
+      {
+       "token": "3-point",
+       "label": "3-Point"
+      },
+      {
+       "token": "JINC2",
+       "label": "JINC2"
+      }
+     ],
+     "default": "nearest",
+     "desc": "Texture filtering algorithm.",
+     "category": "video"
+    },
+    {
+     "key": "beetle_psx_hw_adaptive_smoothing",
+     "label": "Adaptive Smoothing",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Smooth 2D elements while keeping 3D sharp.",
+     "category": "video"
+    },
+    {
+     "key": "beetle_psx_hw_super_sampling",
+     "label": "Supersampling (Downsample to Native Resolution)",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Downsample the upscaled image for SSAA.",
+     "category": "video"
+    },
+    {
+     "key": "beetle_psx_hw_msaa",
+     "label": "Multi-Sampled Anti Aliasing",
+     "values": [
+      {
+       "token": "1x",
+       "label": "1x"
+      },
+      {
+       "token": "2x",
+       "label": "2x"
+      },
+      {
+       "token": "4x",
+       "label": "4x"
+      },
+      {
+       "token": "8x",
+       "label": "8x"
+      },
+      {
+       "token": "16x",
+       "label": "16x"
+      }
+     ],
+     "default": "1x",
+     "desc": "MSAA level (Vulkan).",
+     "category": "video"
+    },
+    {
+     "key": "beetle_psx_hw_widescreen_hack",
+     "label": "Widescreen Mode Hack",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Render 3D geometry at a widescreen aspect.",
+     "category": "hack"
+    },
+    {
+     "key": "beetle_psx_hw_widescreen_hack_aspect_ratio",
+     "label": "Widescreen Mode Hack Aspect Ratio",
+     "values": [
+      {
+       "token": "16:9",
+       "label": "16:9"
+      },
+      {
+       "token": "16:10",
+       "label": "16:10"
+      },
+      {
+       "token": "18:9",
+       "label": "18:9"
+      },
+      {
+       "token": "19:9",
+       "label": "19:9"
+      },
+      {
+       "token": "20:9",
+       "label": "20:9"
+      },
+      {
+       "token": "21:9",
+       "label": "21:9"
+      },
+      {
+       "token": "32:9",
+       "label": "32:9"
+      }
+     ],
+     "default": "16:9",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "beetle_psx_hw_aspect_ratio",
+     "label": "Core Aspect Ratio",
+     "values": [
+      {
+       "token": "corrected",
+       "label": "Corrected"
+      },
+      {
+       "token": "uncorrected",
+       "label": "Uncorrected"
+      },
+      {
+       "token": "4:3",
+       "label": "Force 4:3"
+      },
+      {
+       "token": "ntsc",
+       "label": "Force NTSC"
+      },
+      {
+       "token": "16:9",
+       "label": "Force 16:9"
+      }
+     ],
+     "default": "corrected",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "beetle_psx_hw_pgxp_mode",
+     "label": "PGXP Operation Mode",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "memory only",
+       "label": "Memory Only"
+      },
+      {
+       "token": "memory + CPU",
+       "label": "Memory + CPU (Buggy)"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Sub-pixel geometry precision (reduces polygon jitter).",
+     "category": "hack"
+    },
+    {
+     "key": "beetle_psx_hw_pgxp_2d_tol",
+     "label": "PGXP 2D Geometry Tolerance",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "0px",
+       "label": "0px"
+      },
+      {
+       "token": "1px",
+       "label": "1px"
+      },
+      {
+       "token": "2px",
+       "label": "2px"
+      },
+      {
+       "token": "3px",
+       "label": "3px"
+      },
+      {
+       "token": "4px",
+       "label": "4px"
+      },
+      {
+       "token": "5px",
+       "label": "5px"
+      },
+      {
+       "token": "6px",
+       "label": "6px"
+      },
+      {
+       "token": "7px",
+       "label": "7px"
+      },
+      {
+       "token": "8px",
+       "label": "8px"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "beetle_psx_hw_pgxp_nclip",
+     "label": "PGXP Primitive Culling",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "beetle_psx_hw_pgxp_vertex",
+     "label": "PGXP Vertex Cache",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    },
+    {
+     "key": "beetle_psx_hw_pgxp_texture",
+     "label": "PGXP Perspective Correct Texturing",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Perspective-correct texture mapping.",
+     "category": "hack"
+    },
+    {
+     "key": "beetle_psx_hw_cpu_freq_scale",
+     "label": "CPU Frequency Scaling (Overclock)",
+     "values": [],
+     "default": "100%",
+     "desc": "PSX CPU overclock/underclock.",
+     "category": "performance"
+    },
+    {
+     "key": "beetle_psx_hw_gpu_overclock",
+     "label": "GPU Rasterizer Overclock",
+     "values": [
+      {
+       "token": "1x(native)",
+       "label": "1x (native)"
+      },
+      {
+       "token": "2x",
+       "label": "2x"
+      },
+      {
+       "token": "4x",
+       "label": "4x"
+      },
+      {
+       "token": "8x",
+       "label": "8x"
+      },
+      {
+       "token": "16x",
+       "label": "16x"
+      },
+      {
+       "token": "32x",
+       "label": "32x"
+      }
+     ],
+     "default": "1x(native)",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "beetle_psx_hw_gte_overclock",
+     "label": "GTE Overclock",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "enabled",
+       "label": "enabled"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "beetle_psx_hw_cpu_dynarec",
+     "label": "CPU Dynarec",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "Disabled (Beetle Interpreter)"
+      },
+      {
+       "token": "execute",
+       "label": "Max Performance"
+      },
+      {
+       "token": "run_interpreter",
+       "label": "Lightrec Interpreter"
+      }
+     ],
+     "default": "disabled",
+     "desc": "Lightrec dynarec mode.",
+     "category": "performance"
+    },
+    {
+     "key": "beetle_psx_hw_region",
+     "label": "System Region",
+     "values": [
+      {
+       "token": "auto",
+       "label": "Auto"
+      },
+      {
+       "token": "ntsc-j",
+       "label": "NTSC-J (Japan)"
+      },
+      {
+       "token": "ntsc-u",
+       "label": "NTSC-U (North America)"
+      },
+      {
+       "token": "pal",
+       "label": "PAL (Europe)"
+      }
+     ],
+     "default": "auto",
+     "desc": "",
+     "category": "system"
+    }
+   ]
+  },
+  "snes9x": {
+   "options": [
+    {
+     "key": "snes9x_aspect",
+     "label": "Preferred Aspect Ratio",
+     "values": [
+      {
+       "token": "4:3",
+       "label": "4:3"
+      },
+      {
+       "token": "4:3 scaled",
+       "label": "4:3 (Preserved)"
+      },
+      {
+       "token": "uncorrected",
+       "label": "Uncorrected"
+      },
+      {
+       "token": "auto",
+       "label": "Auto"
+      },
+      {
+       "token": "ntsc",
+       "label": "NTSC"
+      },
+      {
+       "token": "pal",
+       "label": "PAL"
+      }
+     ],
+     "default": "4:3",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "snes9x_overscan",
+     "label": "Crop Overscan",
+     "values": [
+      {
+       "token": "enabled",
+       "label": "~8 Pixels"
+      },
+      {
+       "token": "12_pixels",
+       "label": "12 Pixels"
+      },
+      {
+       "token": "16_pixels",
+       "label": "16 Pixels"
+      },
+      {
+       "token": "auto",
+       "label": "Auto (~8 Pixels)"
+      },
+      {
+       "token": "disabled",
+       "label": "disabled"
+      }
+     ],
+     "default": "enabled",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "snes9x_hires_blend",
+     "label": "Hi-Res Blending",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "merge",
+       "label": "Merge"
+      },
+      {
+       "token": "blur",
+       "label": "Blur"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "snes9x_blargg",
+     "label": "Blargg NTSC Filter",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "monochrome",
+       "label": "Monochrome"
+      },
+      {
+       "token": "rf",
+       "label": "RF"
+      },
+      {
+       "token": "composite",
+       "label": "Composite"
+      },
+      {
+       "token": "s-video",
+       "label": "S-Video"
+      },
+      {
+       "token": "rgb",
+       "label": "RGB"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "snes9x_overclock_superfx",
+     "label": "SuperFX Overclocking",
+     "values": [
+      {
+       "token": "50%",
+       "label": "50%"
+      },
+      {
+       "token": "60%",
+       "label": "60%"
+      },
+      {
+       "token": "70%",
+       "label": "70%"
+      },
+      {
+       "token": "80%",
+       "label": "80%"
+      },
+      {
+       "token": "90%",
+       "label": "90%"
+      },
+      {
+       "token": "100%",
+       "label": "100%"
+      },
+      {
+       "token": "150%",
+       "label": "150%"
+      },
+      {
+       "token": "200%",
+       "label": "200%"
+      },
+      {
+       "token": "250%",
+       "label": "250%"
+      },
+      {
+       "token": "300%",
+       "label": "300%"
+      },
+      {
+       "token": "350%",
+       "label": "350%"
+      },
+      {
+       "token": "400%",
+       "label": "400%"
+      },
+      {
+       "token": "450%",
+       "label": "450%"
+      },
+      {
+       "token": "500%",
+       "label": "500%"
+      }
+     ],
+     "default": "100%",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "snes9x_overclock_cycles",
+     "label": "Reduce Slowdown (Hack, Unsafe)",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "light",
+       "label": "Light"
+      },
+      {
+       "token": "compatible",
+       "label": "Compatible"
+      },
+      {
+       "token": "max",
+       "label": "Max"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    }
+   ]
+  },
+  "nestopia": {
+   "options": [
+    {
+     "key": "nestopia_blargg_ntsc_filter",
+     "label": "Blargg NTSC Filter",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "composite",
+       "label": "Composite Video"
+      },
+      {
+       "token": "svideo",
+       "label": "S-Video"
+      },
+      {
+       "token": "rgb",
+       "label": "RGB SCART"
+      },
+      {
+       "token": "monochrome",
+       "label": "Monochrome"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "nestopia_overscan_v_top",
+     "label": "Mask Overscan (Top Vertical)",
+     "values": [
+      {
+       "token": "0",
+       "label": "0"
+      },
+      {
+       "token": "1",
+       "label": "1"
+      },
+      {
+       "token": "2",
+       "label": "2"
+      },
+      {
+       "token": "3",
+       "label": "3"
+      },
+      {
+       "token": "4",
+       "label": "4"
+      },
+      {
+       "token": "5",
+       "label": "5"
+      },
+      {
+       "token": "6",
+       "label": "6"
+      },
+      {
+       "token": "7",
+       "label": "7"
+      },
+      {
+       "token": "8",
+       "label": "8"
+      },
+      {
+       "token": "9",
+       "label": "9"
+      },
+      {
+       "token": "10",
+       "label": "10"
+      },
+      {
+       "token": "11",
+       "label": "11"
+      },
+      {
+       "token": "12",
+       "label": "12"
+      },
+      {
+       "token": "13",
+       "label": "13"
+      },
+      {
+       "token": "14",
+       "label": "14"
+      },
+      {
+       "token": "15",
+       "label": "15"
+      },
+      {
+       "token": "16",
+       "label": "16"
+      },
+      {
+       "token": "17",
+       "label": "17"
+      },
+      {
+       "token": "18",
+       "label": "18"
+      },
+      {
+       "token": "19",
+       "label": "19"
+      },
+      {
+       "token": "20",
+       "label": "20"
+      },
+      {
+       "token": "21",
+       "label": "21"
+      },
+      {
+       "token": "22",
+       "label": "22"
+      },
+      {
+       "token": "23",
+       "label": "23"
+      },
+      {
+       "token": "24",
+       "label": "24"
+      }
+     ],
+     "default": "8",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "nestopia_overscan_v_bottom",
+     "label": "Mask Overscan (Bottom Vertical)",
+     "values": [
+      {
+       "token": "0",
+       "label": "0"
+      },
+      {
+       "token": "1",
+       "label": "1"
+      },
+      {
+       "token": "2",
+       "label": "2"
+      },
+      {
+       "token": "3",
+       "label": "3"
+      },
+      {
+       "token": "4",
+       "label": "4"
+      },
+      {
+       "token": "5",
+       "label": "5"
+      },
+      {
+       "token": "6",
+       "label": "6"
+      },
+      {
+       "token": "7",
+       "label": "7"
+      },
+      {
+       "token": "8",
+       "label": "8"
+      },
+      {
+       "token": "9",
+       "label": "9"
+      },
+      {
+       "token": "10",
+       "label": "10"
+      },
+      {
+       "token": "11",
+       "label": "11"
+      },
+      {
+       "token": "12",
+       "label": "12"
+      },
+      {
+       "token": "13",
+       "label": "13"
+      },
+      {
+       "token": "14",
+       "label": "14"
+      },
+      {
+       "token": "15",
+       "label": "15"
+      },
+      {
+       "token": "16",
+       "label": "16"
+      },
+      {
+       "token": "17",
+       "label": "17"
+      },
+      {
+       "token": "18",
+       "label": "18"
+      },
+      {
+       "token": "19",
+       "label": "19"
+      },
+      {
+       "token": "20",
+       "label": "20"
+      },
+      {
+       "token": "21",
+       "label": "21"
+      },
+      {
+       "token": "22",
+       "label": "22"
+      },
+      {
+       "token": "23",
+       "label": "23"
+      },
+      {
+       "token": "24",
+       "label": "24"
+      }
+     ],
+     "default": "8",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "nestopia_overscan_h_left",
+     "label": "Mask Overscan (Left Horizontal)",
+     "values": [
+      {
+       "token": "0",
+       "label": "0"
+      },
+      {
+       "token": "1",
+       "label": "1"
+      },
+      {
+       "token": "2",
+       "label": "2"
+      },
+      {
+       "token": "3",
+       "label": "3"
+      },
+      {
+       "token": "4",
+       "label": "4"
+      },
+      {
+       "token": "5",
+       "label": "5"
+      },
+      {
+       "token": "6",
+       "label": "6"
+      },
+      {
+       "token": "7",
+       "label": "7"
+      },
+      {
+       "token": "8",
+       "label": "8"
+      },
+      {
+       "token": "9",
+       "label": "9"
+      },
+      {
+       "token": "10",
+       "label": "10"
+      },
+      {
+       "token": "11",
+       "label": "11"
+      },
+      {
+       "token": "12",
+       "label": "12"
+      },
+      {
+       "token": "13",
+       "label": "13"
+      },
+      {
+       "token": "14",
+       "label": "14"
+      },
+      {
+       "token": "15",
+       "label": "15"
+      },
+      {
+       "token": "16",
+       "label": "16"
+      }
+     ],
+     "default": "0",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "nestopia_overscan_h_right",
+     "label": "Mask Overscan (Right Horizontal)",
+     "values": [
+      {
+       "token": "0",
+       "label": "0"
+      },
+      {
+       "token": "1",
+       "label": "1"
+      },
+      {
+       "token": "2",
+       "label": "2"
+      },
+      {
+       "token": "3",
+       "label": "3"
+      },
+      {
+       "token": "4",
+       "label": "4"
+      },
+      {
+       "token": "5",
+       "label": "5"
+      },
+      {
+       "token": "6",
+       "label": "6"
+      },
+      {
+       "token": "7",
+       "label": "7"
+      },
+      {
+       "token": "8",
+       "label": "8"
+      },
+      {
+       "token": "9",
+       "label": "9"
+      },
+      {
+       "token": "10",
+       "label": "10"
+      },
+      {
+       "token": "11",
+       "label": "11"
+      },
+      {
+       "token": "12",
+       "label": "12"
+      },
+      {
+       "token": "13",
+       "label": "13"
+      },
+      {
+       "token": "14",
+       "label": "14"
+      },
+      {
+       "token": "15",
+       "label": "15"
+      },
+      {
+       "token": "16",
+       "label": "16"
+      }
+     ],
+     "default": "0",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "nestopia_overscan_v",
+     "label": "Mask Overscan (Vertical)",
+     "values": [],
+     "default": "",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "nestopia_overscan_h",
+     "label": "Mask Overscan (Horizontal)",
+     "values": [],
+     "default": "",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "nestopia_aspect",
+     "label": "Preferred Aspect Ratio",
+     "values": [
+      {
+       "token": "auto",
+       "label": "Auto"
+      },
+      {
+       "token": "ntsc",
+       "label": "NTSC"
+      },
+      {
+       "token": "pal",
+       "label": "PAL"
+      },
+      {
+       "token": "4:3",
+       "label": "4:3"
+      },
+      {
+       "token": "uncorrected",
+       "label": "Uncorrected"
+      }
+     ],
+     "default": "auto",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "nestopia_overclock",
+     "label": "CPU Speed (Overclock)",
+     "values": [
+      {
+       "token": "1x",
+       "label": "1x"
+      },
+      {
+       "token": "2x",
+       "label": "2x"
+      }
+     ],
+     "default": "1x",
+     "desc": "",
+     "category": "hack"
+    }
+   ]
+  },
+  "genesis_plus_gx": {
+   "options": [
+    {
+     "key": "genesis_plus_gx_aspect_ratio",
+     "label": "Core-Provided Aspect Ratio",
+     "values": [
+      {
+       "token": "auto",
+       "label": "Auto"
+      },
+      {
+       "token": "NTSC PAR",
+       "label": "NTSC PAR"
+      },
+      {
+       "token": "PAL PAR",
+       "label": "PAL PAR"
+      },
+      {
+       "token": "4:3",
+       "label": "4:3"
+      },
+      {
+       "token": "Uncorrected",
+       "label": "Uncorrected"
+      }
+     ],
+     "default": "auto",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "genesis_plus_gx_overscan",
+     "label": "Borders",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "top/bottom",
+       "label": "Top/Bottom"
+      },
+      {
+       "token": "left/right",
+       "label": "Left/Right"
+      },
+      {
+       "token": "full",
+       "label": "Full"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "genesis_plus_gx_blargg_ntsc_filter",
+     "label": "Blargg NTSC Filter",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "monochrome",
+       "label": "Monochrome"
+      },
+      {
+       "token": "composite",
+       "label": "Composite"
+      },
+      {
+       "token": "svideo",
+       "label": "S-Video"
+      },
+      {
+       "token": "rgb",
+       "label": "RGB"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "genesis_plus_gx_render",
+     "label": "Interlaced Mode 2 Output",
+     "values": [
+      {
+       "token": "single field",
+       "label": "Single Field"
+      },
+      {
+       "token": "double field",
+       "label": "Double Field"
+      }
+     ],
+     "default": "single field",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "genesis_plus_gx_overclock",
+     "label": "CPU Speed",
+     "values": [
+      {
+       "token": "100",
+       "label": "100%"
+      },
+      {
+       "token": "125",
+       "label": "125%"
+      },
+      {
+       "token": "150",
+       "label": "150%"
+      },
+      {
+       "token": "175",
+       "label": "175%"
+      },
+      {
+       "token": "200",
+       "label": "200%"
+      },
+      {
+       "token": "225",
+       "label": "225%"
+      },
+      {
+       "token": "250",
+       "label": "250%"
+      },
+      {
+       "token": "275",
+       "label": "275%"
+      },
+      {
+       "token": "300",
+       "label": "300%"
+      },
+      {
+       "token": "325",
+       "label": "325%"
+      },
+      {
+       "token": "350",
+       "label": "350%"
+      },
+      {
+       "token": "375",
+       "label": "375%"
+      },
+      {
+       "token": "400",
+       "label": "400%"
+      },
+      {
+       "token": "425",
+       "label": "425%"
+      },
+      {
+       "token": "450",
+       "label": "450%"
+      },
+      {
+       "token": "475",
+       "label": "475%"
+      },
+      {
+       "token": "500",
+       "label": "500%"
+      }
+     ],
+     "default": "100%",
+     "desc": "",
+     "category": "performance"
+    }
+   ]
+  },
+  "picodrive": {
+   "options": [
+    {
+     "key": "picodrive_aspect",
+     "label": "Core-Provided Aspect Ratio",
+     "values": [
+      {
+       "token": "PAR",
+       "label": "PAR"
+      },
+      {
+       "token": "4/3",
+       "label": "4:3"
+      },
+      {
+       "token": "CRT",
+       "label": "CRT"
+      }
+     ],
+     "default": "PAR",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "picodrive_renderer",
+     "label": "Video Renderer",
+     "values": [
+      {
+       "token": "accurate",
+       "label": "Accurate"
+      },
+      {
+       "token": "good",
+       "label": "Good"
+      },
+      {
+       "token": "fast",
+       "label": "Fast"
+      }
+     ],
+     "default": "accurate",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "picodrive_overclk68k",
+     "label": "68K Overclock",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "+25%",
+       "label": "+25%"
+      },
+      {
+       "token": "+50%",
+       "label": "+50%"
+      },
+      {
+       "token": "+75%",
+       "label": "+75%"
+      },
+      {
+       "token": "+100%",
+       "label": "+100%"
+      },
+      {
+       "token": "+200%",
+       "label": "+200%"
+      },
+      {
+       "token": "+400%",
+       "label": "+400%"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "hack"
+    }
+   ]
+  },
+  "fbneo": {
+   "options": [
+    {
+     "key": "fbneo-resolution",
+     "label": "Resolution",
+     "values": [
+      {
+       "token": "640x480",
+       "label": "640x480"
+      },
+      {
+       "token": "800x600",
+       "label": "800x600"
+      },
+      {
+       "token": "1024x768",
+       "label": "1024x768"
+      },
+      {
+       "token": "1080x810",
+       "label": "1080x810"
+      },
+      {
+       "token": "1280x960",
+       "label": "1280x960"
+      },
+      {
+       "token": "1440x1080",
+       "label": "1440x1080"
+      },
+      {
+       "token": "1600x1200",
+       "label": "1600x1200"
+      },
+      {
+       "token": "1920x1440",
+       "label": "1920x1440"
+      },
+      {
+       "token": "2160x1620",
+       "label": "2160x1620"
+      },
+      {
+       "token": "2880x2160",
+       "label": "2880x2160"
+      }
+     ],
+     "default": "640x480",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "fbneo-fixed-frameskip",
+     "label": "Fixed Frameskip",
+     "values": [
+      {
+       "token": "0",
+       "label": "No skipping"
+      },
+      {
+       "token": "1",
+       "label": "Skip rendering of 1 frames out of 2"
+      },
+      {
+       "token": "2",
+       "label": "Skip rendering of 2 frames out of 3"
+      },
+      {
+       "token": "3",
+       "label": "Skip rendering of 3 frames out of 4"
+      },
+      {
+       "token": "4",
+       "label": "Skip rendering of 4 frames out of 5"
+      },
+      {
+       "token": "5",
+       "label": "Skip rendering of 5 frames out of 6"
+      }
+     ],
+     "default": "0",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "fbneo-frameskip-type",
+     "label": "Frameskip",
+     "values": [
+      {
+       "token": "disabled",
+       "label": "disabled"
+      },
+      {
+       "token": "Fixed",
+       "label": "Fixed"
+      },
+      {
+       "token": "Auto",
+       "label": "Auto"
+      },
+      {
+       "token": "Manual",
+       "label": "Manual"
+      }
+     ],
+     "default": "disabled",
+     "desc": "",
+     "category": "performance"
+    },
+    {
+     "key": "fbneo-cpu-speed-adjust",
+     "label": "CPU clock",
+     "values": [
+      {
+       "token": "25%",
+       "label": "25%"
+      },
+      {
+       "token": "26%",
+       "label": "26%"
+      },
+      {
+       "token": "27%",
+       "label": "27%"
+      },
+      {
+       "token": "28%",
+       "label": "28%"
+      },
+      {
+       "token": "29%",
+       "label": "29%"
+      },
+      {
+       "token": "30%",
+       "label": "30%"
+      },
+      {
+       "token": "31%",
+       "label": "31%"
+      },
+      {
+       "token": "32%",
+       "label": "32%"
+      },
+      {
+       "token": "33%",
+       "label": "33%"
+      },
+      {
+       "token": "34%",
+       "label": "34%"
+      },
+      {
+       "token": "35%",
+       "label": "35%"
+      },
+      {
+       "token": "36%",
+       "label": "36%"
+      },
+      {
+       "token": "37%",
+       "label": "37%"
+      },
+      {
+       "token": "38%",
+       "label": "38%"
+      },
+      {
+       "token": "39%",
+       "label": "39%"
+      },
+      {
+       "token": "40%",
+       "label": "40%"
+      },
+      {
+       "token": "41%",
+       "label": "41%"
+      },
+      {
+       "token": "42%",
+       "label": "42%"
+      },
+      {
+       "token": "43%",
+       "label": "43%"
+      },
+      {
+       "token": "44%",
+       "label": "44%"
+      },
+      {
+       "token": "45%",
+       "label": "45%"
+      },
+      {
+       "token": "46%",
+       "label": "46%"
+      },
+      {
+       "token": "47%",
+       "label": "47%"
+      },
+      {
+       "token": "48%",
+       "label": "48%"
+      },
+      {
+       "token": "49%",
+       "label": "49%"
+      },
+      {
+       "token": "50%",
+       "label": "50%"
+      },
+      {
+       "token": "51%",
+       "label": "51%"
+      },
+      {
+       "token": "52%",
+       "label": "52%"
+      },
+      {
+       "token": "53%",
+       "label": "53%"
+      },
+      {
+       "token": "54%",
+       "label": "54%"
+      },
+      {
+       "token": "55%",
+       "label": "55%"
+      },
+      {
+       "token": "56%",
+       "label": "56%"
+      },
+      {
+       "token": "57%",
+       "label": "57%"
+      },
+      {
+       "token": "58%",
+       "label": "58%"
+      },
+      {
+       "token": "59%",
+       "label": "59%"
+      },
+      {
+       "token": "60%",
+       "label": "60%"
+      },
+      {
+       "token": "61%",
+       "label": "61%"
+      },
+      {
+       "token": "62%",
+       "label": "62%"
+      },
+      {
+       "token": "63%",
+       "label": "63%"
+      },
+      {
+       "token": "64%",
+       "label": "64%"
+      },
+      {
+       "token": "65%",
+       "label": "65%"
+      },
+      {
+       "token": "66%",
+       "label": "66%"
+      },
+      {
+       "token": "67%",
+       "label": "67%"
+      },
+      {
+       "token": "68%",
+       "label": "68%"
+      },
+      {
+       "token": "69%",
+       "label": "69%"
+      },
+      {
+       "token": "70%",
+       "label": "70%"
+      },
+      {
+       "token": "71%",
+       "label": "71%"
+      },
+      {
+       "token": "72%",
+       "label": "72%"
+      },
+      {
+       "token": "73%",
+       "label": "73%"
+      },
+      {
+       "token": "74%",
+       "label": "74%"
+      },
+      {
+       "token": "75%",
+       "label": "75%"
+      },
+      {
+       "token": "76%",
+       "label": "76%"
+      },
+      {
+       "token": "77%",
+       "label": "77%"
+      },
+      {
+       "token": "78%",
+       "label": "78%"
+      },
+      {
+       "token": "79%",
+       "label": "79%"
+      },
+      {
+       "token": "80%",
+       "label": "80%"
+      },
+      {
+       "token": "81%",
+       "label": "81%"
+      },
+      {
+       "token": "82%",
+       "label": "82%"
+      },
+      {
+       "token": "83%",
+       "label": "83%"
+      },
+      {
+       "token": "84%",
+       "label": "84%"
+      },
+      {
+       "token": "85%",
+       "label": "85%"
+      },
+      {
+       "token": "86%",
+       "label": "86%"
+      },
+      {
+       "token": "87%",
+       "label": "87%"
+      },
+      {
+       "token": "88%",
+       "label": "88%"
+      },
+      {
+       "token": "89%",
+       "label": "89%"
+      },
+      {
+       "token": "90%",
+       "label": "90%"
+      },
+      {
+       "token": "91%",
+       "label": "91%"
+      },
+      {
+       "token": "92%",
+       "label": "92%"
+      },
+      {
+       "token": "93%",
+       "label": "93%"
+      },
+      {
+       "token": "94%",
+       "label": "94%"
+      },
+      {
+       "token": "95%",
+       "label": "95%"
+      },
+      {
+       "token": "96%",
+       "label": "96%"
+      },
+      {
+       "token": "97%",
+       "label": "97%"
+      },
+      {
+       "token": "98%",
+       "label": "98%"
+      },
+      {
+       "token": "99%",
+       "label": "99%"
+      },
+      {
+       "token": "100%",
+       "label": "100%"
+      },
+      {
+       "token": "105%",
+       "label": "105%"
+      },
+      {
+       "token": "110%",
+       "label": "110%"
+      },
+      {
+       "token": "115%",
+       "label": "115%"
+      },
+      {
+       "token": "120%",
+       "label": "120%"
+      },
+      {
+       "token": "125%",
+       "label": "125%"
+      },
+      {
+       "token": "130%",
+       "label": "130%"
+      },
+      {
+       "token": "135%",
+       "label": "135%"
+      },
+      {
+       "token": "140%",
+       "label": "140%"
+      },
+      {
+       "token": "145%",
+       "label": "145%"
+      },
+      {
+       "token": "150%",
+       "label": "150%"
+      },
+      {
+       "token": "155%",
+       "label": "155%"
+      },
+      {
+       "token": "160%",
+       "label": "160%"
+      },
+      {
+       "token": "165%",
+       "label": "165%"
+      },
+      {
+       "token": "170%",
+       "label": "170%"
+      },
+      {
+       "token": "175%",
+       "label": "175%"
+      },
+      {
+       "token": "180%",
+       "label": "180%"
+      },
+      {
+       "token": "185%",
+       "label": "185%"
+      },
+      {
+       "token": "190%",
+       "label": "190%"
+      },
+      {
+       "token": "195%",
+       "label": "195%"
+      },
+      {
+       "token": "200%",
+       "label": "200%"
+      },
+      {
+       "token": "210%",
+       "label": "210%"
+      },
+      {
+       "token": "220%",
+       "label": "220%"
+      },
+      {
+       "token": "230%",
+       "label": "230%"
+      },
+      {
+       "token": "240%",
+       "label": "240%"
+      },
+      {
+       "token": "250%",
+       "label": "250%"
+      },
+      {
+       "token": "260%",
+       "label": "260%"
+      },
+      {
+       "token": "270%",
+       "label": "270%"
+      },
+      {
+       "token": "280%",
+       "label": "280%"
+      },
+      {
+       "token": "290%",
+       "label": "290%"
+      },
+      {
+       "token": "300%",
+       "label": "300%"
+      },
+      {
+       "token": "310%",
+       "label": "310%"
+      },
+      {
+       "token": "320%",
+       "label": "320%"
+      },
+      {
+       "token": "330%",
+       "label": "330%"
+      },
+      {
+       "token": "340%",
+       "label": "340%"
+      },
+      {
+       "token": "350%",
+       "label": "350%"
+      },
+      {
+       "token": "360%",
+       "label": "360%"
+      },
+      {
+       "token": "370%",
+       "label": "370%"
+      },
+      {
+       "token": "380%",
+       "label": "380%"
+      },
+      {
+       "token": "390%",
+       "label": "390%"
+      },
+      {
+       "token": "400%",
+       "label": "400%"
+      }
+     ],
+     "default": "100%",
+     "desc": "",
+     "category": "performance"
+    }
+   ]
+  },
+  "dosbox_pure": {
+   "options": [
+    {
+     "key": "dosbox_pure_machine",
+     "label": "Emulated Graphics Chip (restart required)",
+     "values": [
+      {
+       "token": "svga",
+       "label": "SVGA (Super Video Graphics Array) (default)"
+      },
+      {
+       "token": "vga",
+       "label": "VGA (Video Graphics Array)"
+      },
+      {
+       "token": "ega",
+       "label": "EGA (Enhanced Graphics Adapter)"
+      },
+      {
+       "token": "cga",
+       "label": "CGA (Color Graphics Adapter)"
+      },
+      {
+       "token": "tandy",
+       "label": "Tandy (Tandy Graphics Adapter)"
+      },
+      {
+       "token": "hercules",
+       "label": "Hercules (Hercules Graphics Card)"
+      },
+      {
+       "token": "pcjr",
+       "label": "PCjr"
+      }
+     ],
+     "default": "svga",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "dosbox_pure_svga",
+     "label": "SVGA Mode (restart required)",
+     "values": [
+      {
+       "token": "svga_s3",
+       "label": "S3 Trio64 (default)"
+      },
+      {
+       "token": "vesa_nolfb",
+       "label": "S3 Trio64 no-line buffer hack (reduces flickering in some games)"
+      },
+      {
+       "token": "vesa_oldvbe",
+       "label": "S3 Trio64 VESA 1.3"
+      },
+      {
+       "token": "svga_et3000",
+       "label": "Tseng Labs ET3000"
+      },
+      {
+       "token": "svga_et4000",
+       "label": "Tseng Labs ET4000"
+      },
+      {
+       "token": "svga_paradise",
+       "label": "Paradise PVGA1A"
+      }
+     ],
+     "default": "svga_s3",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "dosbox_pure_voodoo",
+     "label": "3dfx Voodoo Emulation",
+     "values": [
+      {
+       "token": "8mb",
+       "label": "Enabled - 8MB memory (default)"
+      },
+      {
+       "token": "12mb",
+       "label": "Enabled - 12MB memory, Dual Texture"
+      },
+      {
+       "token": "4mb",
+       "label": "Enabled - 4MB memory, Low Resolution Only"
+      },
+      {
+       "token": "off",
+       "label": "Disabled"
+      }
+     ],
+     "default": "8mb",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "dosbox_pure_voodoo_scale",
+     "label": "3dfx Voodoo OpenGL Scaling",
+     "values": [
+      {
+       "token": "1",
+       "label": "1x"
+      },
+      {
+       "token": "2",
+       "label": "2x"
+      },
+      {
+       "token": "3",
+       "label": "3x"
+      },
+      {
+       "token": "4",
+       "label": "4x"
+      },
+      {
+       "token": "5",
+       "label": "5x"
+      },
+      {
+       "token": "6",
+       "label": "6x"
+      },
+      {
+       "token": "7",
+       "label": "7x"
+      },
+      {
+       "token": "8",
+       "label": "8x"
+      }
+     ],
+     "default": "1",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "dosbox_pure_aspect_correction",
+     "label": "Aspect Ratio Correction",
+     "values": [
+      {
+       "token": "false",
+       "label": "Off (default)"
+      },
+      {
+       "token": "true",
+       "label": "On (single-scan)"
+      },
+      {
+       "token": "doublescan",
+       "label": "On (double-scan when applicable)"
+      },
+      {
+       "token": "padded",
+       "label": "Padded to 4:3 (single-scan)"
+      },
+      {
+       "token": "padded-doublescan",
+       "label": "Padded to 4:3 (double-scan when applicable)"
+      }
+     ],
+     "default": "false",
+     "desc": "",
+     "category": "video"
+    },
+    {
+     "key": "dosbox_pure_overscan",
+     "label": "Overscan Border Size",
+     "values": [
+      {
+       "token": "0",
+       "label": "Off (default)"
+      },
+      {
+       "token": "1",
+       "label": "Small"
+      },
+      {
+       "token": "2",
+       "label": "Medium"
+      },
+      {
+       "token": "3",
+       "label": "Large"
+      }
+     ],
+     "default": "0",
+     "desc": "",
+     "category": "video"
+    }
+   ]
+  }
+ }
+}

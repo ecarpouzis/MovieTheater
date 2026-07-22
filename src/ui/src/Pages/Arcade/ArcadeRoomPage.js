@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
 import { DEFAULT_CHORDS } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
@@ -109,6 +109,10 @@ export default function ArcadeRoomPage() {
   // Gamepad button rebinding: track which button is being remapped (null = not rebinding, or a button index 0-15)
   const [rebindingButton, setRebindingButton] = useState(null);
   const [customGamepadProfile, setCustomGamepadProfileState] = useState({});
+  // Whether the left analog stick also acts as the d-pad, for THIS room's input system. Default is
+  // per-system (off for analog-native consoles so the stick doesn't double-bind with the d-pad —
+  // e.g. N64 aim, GC/Wii Smash taunt); a saved override wins. Toggled live from the mapping panel.
+  const [stickFold, setStickFoldState] = useState(false);
   const [fatal, setFatal] = useState(null);
 
   // Load custom gamepad profile when system changes. Keyed off the EFFECTIVE input system (the two
@@ -118,6 +122,7 @@ export default function ArcadeRoomPage() {
     const effSystem = effectiveInputSystem(system, gameKey, controllerScheme);
     if (effSystem) {
       setCustomGamepadProfileState(getCustomGamepadProfile(effSystem));
+      setStickFoldState(stickFoldFor(effSystem));
     }
   }, [system, gameKey, controllerScheme]);
   // Crash-loop detector. A worker that segfaults at core load (a bad ROM — Stuntman Ignition,
@@ -981,12 +986,39 @@ export default function ArcadeRoomPage() {
           })()}
           <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
             <Button size="small" onClick={() => {
-              resetCustomGamepadProfile(effectiveInputSystem(system, gameKey, controllerScheme));
+              const effSystem = effectiveInputSystem(system, gameKey, controllerScheme);
+              resetCustomGamepadProfile(effSystem);
               setCustomGamepadProfileState({});
+              // Also drop any left-stick fold override → back to this system's default.
+              resetStickFoldOverride(effSystem);
+              const def = stickFoldFor(effSystem);
+              setStickFoldState(def);
+              sessionRef.current?.setStickFold?.(def);
+              for (const s of localSessionsRef.current.values()) s?.setStickFold?.(def);
               message.info("Reset to default button mapping");
             }}>
               Reset button mapping
             </Button>
+          </div>
+          {/* Left-stick → d-pad fold. OFF by default on analog-native consoles (n64/gc/wii/ps1/ps2/
+              psp/dc) so the analog stick doesn't ALSO press the d-pad — a distinct input there
+              (N64 aim / GC-Wii Smash taunt). Applies live to this room's session(s), no rejoin. */}
+          <div style={{ marginTop: 12 }}>
+            <Tooltip title="When on, pushing the left analog stick also presses the D-pad. Leave OFF for 3D consoles (N64, GameCube, Wii, PlayStation, PSP, Dreamcast) — there the stick and D-pad are separate controls, so folding them makes the stick trigger D-pad actions (aiming in Goldeneye, taunting in Smash). Turn on only for a pad that has a stick but no D-pad.">
+              <Checkbox
+                checked={stickFold}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  const effSystem = effectiveInputSystem(system, gameKey, controllerScheme);
+                  setStickFoldState(on);
+                  setStickFoldOverride(on, effSystem);
+                  sessionRef.current?.setStickFold?.(on);
+                  for (const s of localSessionsRef.current.values()) s?.setStickFold?.(on);
+                }}
+              >
+                Left stick also acts as D-pad
+              </Checkbox>
+            </Tooltip>
           </div>
           <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
             {arcadeInputHint(mapSystem || effectiveInputSystem(system, gameKey, controllerScheme))}

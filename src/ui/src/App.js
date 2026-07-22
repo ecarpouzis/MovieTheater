@@ -131,7 +131,7 @@ function App() {
               <ChannelGuidePage />
             </Route>
             <Route path="/arcade" exact>
-              <ArcadePage />
+              <ArcadePage userData={userData} />
             </Route>
             <Route path="/arcade/room/:code" exact>
               <ArcadeRoomPage />

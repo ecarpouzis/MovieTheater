@@ -261,6 +261,31 @@ emulator:
             # Vertical borders (~8 lines top/bottom from the 0/239 window) may remain — left this round (cropping
             # them trades content for cleanliness; Eric's taste call later). ROLLBACK: "disabled".
             beetle_psx_hw_crop_overscan: "enabled"
+        # ── PS1 ALTERNATE CORE: pcsx_rearmed (the pre-Vulkan "PSX GL" / software core) ──
+        # Selectable PER-ROOM via the site's render-profile "core" override (StartGameRequest.Core →
+        # HandleGameStart), for PS1 games that want the pre-Vulkan pcsx_rearmed setup instead of the default
+        # Beetle (e.g. SotN, whose pillarbox/flashing is a Beetle-Vulkan artifact). This core-key boots ONLY
+        # when a room explicitly requests core "pcsx_rearmed"; the DEFAULT psx core stays Beetle (the `pcsx`
+        # entry above), so nothing changes for a normal PS1 room. Options mirror the documented rollback path
+        # (block header ~line 201) + the WSL GL config. Software-rendered: no hwContext / isGlAllowed (no hw
+        # render context); 2x nearest upscale so H.264 chroma sits at/above native (the 2D-core lesson).
+        # ⚠ SAVE ISOLATION: the SITE keys this core's saves under a distinct namespace from Beetle — a
+        # pcsx_rearmed save-state handed to Beetle (or vice-versa) crash-loops the room (arcade hard rule).
+        pcsx_rearmed:
+          lib: pcsx_rearmed_libretro
+          roms: ["m3u", "cue", "chd"]
+          folder: psx
+          scale: 2
+          scaleMethod: nearest-neighbour
+          options:
+            pcsx_rearmed_drc: enabled
+            pcsx_rearmed_frameskip_type: disabled
+            pcsx_rearmed_pad1type: dualshock
+            pcsx_rearmed_pad2type: dualshock
+            pcsx_rearmed_memcard1: libretro
+            pcsx_rearmed_memcard2: none
+            pcsx_rearmed_neon_enhancement_enable: enabled
+            pcsx_rearmed_neon_enhancement_tex_adj_v2: enabled
         # GL 3D cores only — this pool exists for these. isGlAllowed + coreAspectRatio are the Flip
         # contract (without coreAspectRatio the GAME_START av payload is null and the client renders
         # the bottom-left-origin GL frame upside down — the exact n64 lesson). Mirror of the WSL

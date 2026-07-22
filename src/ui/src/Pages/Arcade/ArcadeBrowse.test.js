@@ -139,29 +139,30 @@ describe("GameModal", () => {
     expect(document.querySelector(".agm-cheat-select")).toBeNull();
   });
 
-  // The whole point of shipping defaultCheats with the card data: a player who never opens the picker
-  // still gets the widescreen patch. If this regresses, PS2 rooms silently launch in 4:3.
-  it("launches with the version's default cheats even though the picker was never opened", () => {
+  // Cheats are codes-only now, with nothing pre-selected: a player who never opens the picker launches
+  // with no cheats. The PS2 widescreen patch is per-game config applied SERVER-side at Start (not shipped
+  // as a card default), so an untouched launch sends an empty cheat list.
+  it("launches with no cheats when the picker was never opened", () => {
     const onStart = vi.fn();
     renderModal(ps2(), { onStart });
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenCalledWith(11, "God of War", ["c500"], "", "");
+    expect(onStart).toHaveBeenCalledWith(11, "God of War", [], "", "");
   });
 
   // Cheat ids belong to one ROM. Carrying a selection across a version switch would send a USA code to a
-  // Japanese dump — a memory poke at the wrong address, not a clean no-op.
-  it("resets the cheat selection to the new version's defaults when the version changes", () => {
+  // Japanese dump — a memory poke at the wrong address. The selection clears on a version change.
+  it("clears the cheat selection when the version changes", () => {
     const onStart = vi.fn();
     const twoVersions = ps2({
       versionCount: 2,
       versions: [
-        { id: 11, label: "USA", region: "USA", maxPlayers: 1, cheatCount: 2, defaultCheats: ["c500"] },
-        { id: 12, label: "Japan", region: "Japan", maxPlayers: 1, cheatCount: 1, defaultCheats: [] },
+        { id: 11, label: "USA", region: "USA", maxPlayers: 1, cheatCount: 2 },
+        { id: 12, label: "Japan", region: "Japan", maxPlayers: 1, cheatCount: 1 },
       ],
     });
     const { rerender } = renderModal(twoVersions, { onStart });
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenLastCalledWith(11, "God of War", ["c500"], "", "");
+    expect(onStart).toHaveBeenLastCalledWith(11, "God of War", [], "", "");
 
     // Simulate a filter changing the default version (same path that re-keys `sel`).
     const jpFirst = { ...twoVersions, versions: [twoVersions.versions[1], twoVersions.versions[0]] };
@@ -170,12 +171,13 @@ describe("GameModal", () => {
     expect(onStart).toHaveBeenLastCalledWith(12, "God of War", [], "", "");
   });
 
-  // Vulkan/GL launch picker: the default click forces Vulkan on systems that offer the toggle.
-  it("forces Vulkan on the default start for a hw-toggle system", () => {
+  // The play button now defaults to "" (auto) so the server applies the game's configured renderer or the
+  // system default; Force Vulkan / Force GL in the menu are the per-launch overrides.
+  it("sends auto renderer on the default start for a hw-toggle system", () => {
     const onStart = vi.fn();
     renderModal(game({ supportsHwToggle: true }), { onStart });
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "vulkan", "");
+    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "");
   });
 
   // The Wii GameCube/Nunchuk picker: only offered for the GC-native BrawlEx mods; defaults to "gc".

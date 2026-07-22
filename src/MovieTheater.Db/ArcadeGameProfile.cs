@@ -51,6 +51,15 @@ namespace MovieTheater.Db
         [MaxLength(10)]
         public string? HwContext { get; set; }
 
+        /// <summary>The chosen render-profile id (see <c>ArcadeRendererProfiles</c>) — the config tool's
+        /// Graphics selection. It expands per-room to the whole graphics stack: the core to boot (an optional
+        /// core-key override, e.g. PS1 <c>pcsx_rearmed</c> vs the default Beetle), the frontend surface, and
+        /// the core's renderer-selecting options. Null = the system's default profile. Supersedes the older
+        /// bare <see cref="HwContext"/> gl/vulkan pin (which still works as a legacy fallback when this is
+        /// null); the two are consistent because a profile carries a HwContext.</summary>
+        [MaxLength(40)]
+        public string? RenderProfile { get; set; }
+
         /// <summary>Free-form provenance/why (e.g. "30fps-locked engine; community list").</summary>
         public string? Notes { get; set; }
     }

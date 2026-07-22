@@ -94,7 +94,7 @@ function saveQuality(q) { try { localStorage.setItem(QUALITY_KEY, JSON.stringify
  * (ArcadeNavContent) as URL params, and this page fetches the matching page and appends more on
  * demand. A "Live rooms" strip shows what friends are playing right now.
  */
-export default function ArcadePage() {
+export default function ArcadePage({ userData }) {
   const history = useHistory();
   const location = useLocation();
 
@@ -463,6 +463,7 @@ export default function ArcadePage() {
         <GameModal
           game={modalGame}
           creating={creating}
+          canEditMovies={userData?.canEditMovies}
           onClose={() => setModalGame(null)}
           // Both actions leave the browse tile: close the game modal first so the follow-on surface
           // (the Continue/New-game confirm, or the saves manager) isn't stranded behind it at a lower

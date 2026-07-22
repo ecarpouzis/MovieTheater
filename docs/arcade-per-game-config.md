@@ -166,13 +166,119 @@ Sources: [flycast core options](https://docs.libretro.com/library/flycast/),
 [ppsspp core options](https://docs.libretro.com/library/ppsspp/),
 [Skies of Arcadia 60Hz/desync patch](https://www.dreamcast-talk.com/forum/viewtopic.php?t=18173).
 
+## The config tool (BUILT) — game modal ⚙ Configure
+
+The editor-gated per-game UI over `ArcadeGameProfile` is now built. It lives on the game modal
+(`src/ui/src/Pages/Arcade/ArcadeGameConfig.js`, opened by the **⚙ Configure** button, shown only when
+`userData.canEditMovies` and the game's `configurable` flag is set) and is the successor to the
+"quality modifier" cheats: those toggles (DC/GC widescreen, PS2 ghosting-fix/deblur/super-sample, PS1
+PGXP, …) MOVED out of the Cheats dropdown (now codes-only) into this tool.
+
+**Delivery is per-room at Start, NOT the manifest.** The k8s pod can't write Ziggy's worker ConfDir, so
+there is no auto-regen; instead the controller reads the profile at `POST /API/Arcade/Room`
+(`ResolveGameConfigAsync`) and injects the game's core options into the room's `CoreOptions` (the
+patch-0027 per-room path) and its renderer into `&hwctx`. A saved change therefore takes effect on the
+**next room** with no CLI and no worker restart. The `arcade-gameconfig-export` manifest still exists and
+reads the same rows (so values can't disagree) — it remains the delivery path for **ForcedFps**, which is
+deliberately NOT exposed in the UI (it isn't per-room-deliverable and audio-pacing made it largely
+obsolete; see §"DC double-speed"). Renderer maps to `ArcadeGameProfile.HwContext` (Auto/Vulkan/GL) and is
+shown only for `CloudRetroHost.SupportsHwToggle` systems; an explicit play-button "Force GL/Vulkan" is a
+per-launch override that still wins over the configured renderer.
+
+**What the tool offers is `ArcadeCoreOptionCatalog`** (`src/MovieTheater/Arcade/`): a per-system list of
+quality-relevant core options, each with the core's EXACT value tokens. It is BOTH the UI's control
+source AND the server's validation allowlist — the `PUT /API/Arcade/Game/{id}/Config` handler rejects an
+unknown value for a known key (a wrong token is a silent no-op) and stores only values that differ from
+the game's effective default (so "reset to default" = drop the key, and PS2 widescreen stays default-on
+via its `ArcadeCheat` row without being restored redundantly). Unknown keys are accepted only via the
+Advanced raw editor (the editor's own risk). Hand-tuned entries (the relocated cheats) are in the C# file;
+the broad per-core set is layered in at startup from the committed, embedded `core-options-catalog.json`
+(generated from each core's `libretro_core_options.h` on Ziggy — regenerate and re-embed after a core
+update).
+
+## Renderer selection (OpenGL vs Vulkan) — the surface is NOT the whole story
+
+`hwctx` (the config tool's Renderer control + the play-button Force GL/Vulkan) selects only the frontend
+**surface**. Each 3D core's actual renderer is a **separate** lever, and for several systems the pre-Vulkan
+OpenGL setup is a genuinely different renderer/plugin (and, for PS1, a different core):
+
+| System | Vulkan (default) | OpenGL | How GL is selected |
+|---|---|---|---|
+| N64 (mupen64plus_next) | paraLLEl-RDP (`mupen64plus-rdp-plugin: parallel`, `-rsp-plugin: parallel`) | **GLideN64** (`gliden64` + `-rsp-plugin: hle`) | core-option (same core) |
+| PS2 (LRPS2) | paraLLEl-GS (`pcsx2_renderer: paraLLEl-GS`) | **OpenGL** (`pcsx2_renderer: OpenGL`) | core-option (same core) |
+| PS1 (Beetle PSX HW) | `beetle_psx_hw_renderer: hardware_vk` | `hardware_gl` | core-option; worker W3 pin also flips it |
+| PS1 (pre-Vulkan) | — | **`pcsx_rearmed`** (a different CORE) | **core-lib swap** (not built — see below) |
+| PSP/DC/GC/Wii/NAOMI/AW | surface Vulkan | surface GL | frontend surface only (no renderer option) |
+
+**Why forcing GL alone broke N64/PS2:** the worker's W3 pin (`PinRendererForHwContext`, overrides.go)
+reconciles surface↔renderer for **Beetle only**. Forcing a GL surface while the core option still said
+`parallel`/`paraLLEl-GS` left the core asking for a Vulkan context on a GL surface → the GL path rejects it
+(`rejected non-GL hw render context type`, nanoarch.go:1476) → `initVideo` fail-soft → **no video**.
+
+**The fix (`ArcadeRendererProfiles`, site-side, no worker change):** when a renderer is explicitly chosen,
+the controller injects the matching renderer-selecting core options as a base beneath the game's saved
+config (an explicit per-game option still wins), delivered per-room (patch-0027 `CoreOptions`, which
+override config **and** the manifest — nanoarch.go "LAST writer wins"). The GL companion settings (GLideN64
+FB opts/res; pcsx2 GL options) already sit inert in `config.worker-gl.yaml` and activate when the renderer
+flips. Surface-only systems (psp/dc/gc/…) carry no injected option — `hwctx` alone selects.
+
+### The SOTN / Beetle finding (confirmed, documented for the future Beetle-Vulkan fix)
+
+Castlevania: SOTN's per-game override was `{"hwContext":"gl"}`. It was believed to be "GL surface pushed at
+Beetle's Vulkan renderer" (a mismatch). **It is not:** the W3 pin rewrites `beetle_psx_hw_renderer`
+`hardware_vk`→`hardware_gl` (logs `[hwctx-pin]`, nanoarch.go:459), so SOTN runs on **Beetle's OpenGL
+hardware renderer** — a clean GL surface + GL renderer, right-side-up, no fallback. That is what works
+around SOTN's pillarbox + texture-blending/flashing, which is a **Beetle Vulkan-renderer artifact**. The
+real future fix is to root-cause that Vulkan artifact; until then Beetle-GL (and eventually pcsx_rearmed)
+are the workarounds. Live-verify which renderer a PS1 room used by grepping the worker log for
+`[hwctx-pin] beetle_psx_hw_renderer=hardware_gl` (GL) vs `hw render context: Vulkan` (Vulkan).
+
+## Render profiles + per-room core swap (BUILT 2026-07-21)
+
+The graphics choice is now a **render profile** per game (`ArcadeRendererProfiles`), stored in
+`ArcadeGameProfile.RenderProfile`. A profile = `{CoreKey?, HwContext, OptionCore, Options}` — the core lib
+to boot (optional override), the surface, which core's option catalog the module shows, and the
+renderer-selecting options. The config module's **Graphics** selector lists the system's profiles; **Start
+Room** launches whatever profile the game is set to; the play-button Force GL/Vulkan is a per-launch
+override that maps to the system's gl/vulkan profile. Uniform across systems:
+
+- N64 → Vulkan (paraLLEl-RDP) / OpenGL (GLideN64); PS2 → Vulkan (paraLLEl-GS) / OpenGL; PSP/DC/GC → surface.
+- **PS1 → Beetle (Vulkan) / Beetle (OpenGL) / pcsx_rearmed (OpenGL)** — the third is a real **core-lib swap**.
+
+**Per-room core override (worker fork + coordinator):** `StartGameRequest`/`GameStartUserRequest` gained a
+`Core` field (relayed in `workerapi.go`, sent by the shim as `&core=`), and `HandleGameStart` overrides
+`game.System` with it AFTER `FindApp` (ROM still resolves by the real system; the whole room then uses the
+alternate core's config coherently). A `pcsx_rearmed` core-key was added to `config.worker-gl.yaml`.
+
+**Save landmine — SOLVED:** save-states are core-specific, so a room on an alternate core mints its saveId
+with `system = roomSystem + "-" + coreKey` (e.g. `ps1-pcsx_rearmed`), giving it a separate save namespace
+from Beetle. Both Beetle renderers share the core (save-states compatible across renderers) so they keep the
+bare `ps1`. This makes seeding crash-safe (a pcsx_rearmed room can never be seeded a Beetle state) and the
+gateway's `ArcadeSaveId.TryParse` handles the `-`-containing system cleanly.
+
+**Options are per (game, core):** the module shows the selected profile's `OptionCore` options; the flat
+`CoreOptionsJson` holds both cores' overrides (keys don't collide), and PUT preserves the other core's saved
+options when you switch. The catalog is keyed by CORE, seeded from the embedded `core-options-catalog.json`
+(185 quality-relevant options across 15 cores, extracted from each core's `libretro_core_options.h`).
+
+### Deploy checklist (this touches the live emulation stack)
+1. **Worker + coordinator:** rebuild from the fork (`D:\Arcade\build\cloud-game-gl`, UCRT64 `go build`),
+   regenerate `docker/arcade/patches/fork.patch` via `scripts/export-arcade-fork.ps1`, drain rooms, stop
+   both worker tasks + the coordinator, swap the binaries (keep `.pre-*` copies), restart. **Both** must be
+   rebuilt — the coordinator silently drops the new `Core` StartGameRequest field otherwise.
+2. **Config:** `diff` then `cp docker/arcade/config.worker-gl.yaml → D:\ArcadeStorage\worker-gl\config.yaml`
+   (adds the `pcsx_rearmed` core-key), restart workers.
+3. **DB:** apply migration `20260722002358_AddArcadeGameRenderProfile` (idempotent SQL; adds `RenderProfile`
+   + `HwContext` only if missing — the shared DB may already have `HwContext`). Read the SQL first.
+4. **Site:** normal deploy (push to master → CI). 5. **SOTN:** remove its `game-overrides.json` override →
+   Beetle-Vulkan default (then reconfigure to pcsx_rearmed via the module if wanted).
+
 ## Not yet built (follow-ups)
 
-- **Admin "Configure" panel** — editor-gated per-game UI over `ArcadeGameProfile` (the same gate as the
-  save-state dropdown), with friendly controls (forced fps, region, widescreen) plus a raw core-options
-  editor. Until then, profiles are seeded via SQL / the CLI.
 - **Bulk import** of curated community preset lists into `ArcadeGameProfile`.
-- **Auto-regen hook** so editing a profile in the admin UI regenerates the manifest for all worker pools.
+- **ForcedFps in the UI** — still SQL/CLI-managed on purpose (see above).
+- **Auto-regen hook** so a profile edit also refreshes the worker manifest (only needed for ForcedFps now
+  that core options ride the per-room path).
 
 ---
 

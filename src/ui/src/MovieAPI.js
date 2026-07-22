@@ -741,6 +741,22 @@ function getArcadeCheats(gameId) {
     .catch(() => []);
 }
 
+// Per-game config tool (editor-only). GET returns { system, hwToggleSupported, renderer, notes,
+// options:[{key,label,category,note,values:[{token,label}],default,value,isRange,rangeMin,rangeMax}],
+// advanced:{key:value} } — each option carries its current effective value. Returns the Response so the
+// caller can distinguish 403 (not an editor). Save takes { coreOptions:{k:v}, renderer, notes }.
+function getArcadeGameConfig(gameId, profile) {
+  const q = profile ? `?profile=${encodeURIComponent(profile)}` : "";
+  return fetch(`/API/Arcade/Game/${gameId}/Config${q}`);
+}
+function saveArcadeGameConfig(gameId, body) {
+  return fetch(`/API/Arcade/Game/${gameId}/Config`, {
+    method: "put",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
 // My Saves management (arcade-saves-plan S3).
 function deleteArcadeSave(id) {
   return fetch(`/API/Arcade/Saves/${id}`, { method: "delete" });
@@ -1093,6 +1109,8 @@ const MovieAPI = {
   getArcadeRecentlyPlayed,
   getAllArcadeSaves,
   getArcadeCheats,
+  getArcadeGameConfig,
+  saveArcadeGameConfig,
   getArcadeHeavyStatus,
   stageArcadeHeavy,
   pairArcadeHeavy,

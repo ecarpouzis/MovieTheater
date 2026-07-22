@@ -2,6 +2,7 @@ import { cloneElement, useEffect, useState } from "react";
 import { Button, Dropdown, Modal, Select } from "antd";
 import GameCover from "./GameCover";
 import CheatPicker from "./CheatPicker";
+import ArcadeGameConfig from "./ArcadeGameConfig";
 import { systemLabel } from "./arcadeSystems";
 import "./GameModal.css";
 
@@ -17,10 +18,11 @@ import "./GameModal.css";
  * Heavy-lane titles never reach this modal — the lobby routes them straight to HeavyGameModal (their
  * launch is a Moonlight/capture flow, not a room with cheats/versions/schemes).
  */
-export default function GameModal({ game, onClose, onStart, onManageSaves, creating }) {
+export default function GameModal({ game, onClose, onStart, onManageSaves, creating, canEditMovies }) {
   const genre = game.genres ? game.genres.split(/[;,]/)[0].trim() : null;
   const firstVersionId = game.versions?.[0]?.id;
   const [sel, setSel] = useState(firstVersionId);
+  const [configOpen, setConfigOpen] = useState(false);
   // Filters can change the default version out from under an open modal (rare), so track it.
   useEffect(() => { setSel(firstVersionId); }, [firstVersionId]);
 
@@ -28,14 +30,16 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
   const multiVersion = game.versionCount > 1;
   const region = version?.region && version.region !== "Unknown" ? version.region : null;
 
-  // Cheats are per-ROM: reset to the selected version's defaults (e.g. the PS2 widescreen patch)
-  // whenever the version changes. Never merged across versions.
-  const [cheats, setCheats] = useState(version?.defaultCheats || []);
-  useEffect(() => { setCheats(version?.defaultCheats || []); }, [version?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Cheats are per-ROM codes now (the quality/emulator OPTIONS moved to ⚙ Configure), and a code from
+  // one dump is meaningless on another — so the selection clears whenever the version changes. Nothing is
+  // pre-selected: PS2 widescreen & friends are per-game config, applied server-side at Start.
+  const [cheats, setCheats] = useState([]);
+  useEffect(() => { setCheats([]); }, [version?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Vulkan/GL launch picker: the default forces Vulkan on the systems that have the choice
-  // (game.supportsHwToggle); everything else launches with no override.
-  const defaultHwContext = game.supportsHwToggle ? "vulkan" : "";
+  // Renderer: send "" so the server applies this game's configured renderer (⚙ Configure → per-game
+  // profile) or the system default (Vulkan for 3D). The play-button menu still offers a per-launch
+  // Force Vulkan / Force GL override.
+  const defaultHwContext = "";
   // Wii controller-scheme picker (GameCube vs Wiimote+Nunchuk): only the GC-controller-native BrawlEx
   // mods offer it. Defaults to "gc" — matches the worker's own hid4rom default when no override is sent.
   const [ctrlScheme, setCtrlScheme] = useState("gc");
@@ -125,8 +129,14 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
                 type="primary"
                 className="agm-start"
                 loading={busy}
-                onClick={() => start("vulkan")}
-                menu={{ items: [{ key: "gl", label: "Force GL" }], onClick: () => start("gl") }}
+                onClick={() => start("")}
+                menu={{
+                  items: [
+                    { key: "vulkan", label: "Force Vulkan" },
+                    { key: "gl", label: "Force GL" },
+                  ],
+                  onClick: ({ key }) => start(key),
+                }}
                 buttonsRender={([left, right]) => [
                   cloneElement(left, { className: [left.props.className, "arcade-btn-start"].filter(Boolean).join(" ") }),
                   cloneElement(right, { className: [right.props.className, "arcade-btn-start", "arcade-btn-start__arrow"].filter(Boolean).join(" ") }),
@@ -142,9 +152,21 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
             <button type="button" className="arcade-link" onClick={() => onManageSaves?.(sel, game.title)}>
               💾 My saves
             </button>
+            {canEditMovies && game.configurable && (
+              <button type="button" className="arcade-link" onClick={() => setConfigOpen(true)}>
+                ⚙ Configure
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {configOpen && (
+        <ArcadeGameConfig
+          game={{ id: sel, title: game.title, system: game.system }}
+          onClose={() => setConfigOpen(false)}
+        />
+      )}
     </Modal>
   );
 }

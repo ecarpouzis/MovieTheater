@@ -1,5 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { displayAspect, rotatedVideoSize, videoTransform } from "./cloudRetroClient";
+import { describe, it, expect, afterEach } from "vitest";
+import {
+  displayAspect, rotatedVideoSize, videoTransform,
+  stickFoldFor, setStickFoldOverride, resetStickFoldOverride,
+} from "./cloudRetroClient";
 
 // The numbers below are MEASURED from real rooms (worker log `Libretro System A/V >>> … AR [x]`,
 // 2026-07-08), not invented. They are the regression fence for the aspect-ratio fix: before it, the
@@ -81,5 +84,47 @@ describe("videoTransform", () => {
 
   it("composes rotate and flip in the order the stock client uses", () => {
     expect(videoTransform(90, true)).toBe("translate(-50%, -50%) rotate(-90deg) scaleY(-1)");
+  });
+});
+
+// The left-stick→d-pad fold. It must be OFF for analog-native consoles: there the console reads the
+// analog stick and the d-pad as DISTINCT inputs, so folding double-binds them — the bug behind
+// "N64 Goldeneye pans the view up as I walk forward" and "GC/Wii Smash taunts when I push the stick".
+// It stays ON for 2D cores, where an analog-only pad has no other way to steer and stick==d-pad.
+describe("stickFoldFor", () => {
+  afterEach(() => {
+    ["default", "n64", "gc", "wii", "ps1", "ps2", "psp", "dc", "snes"].forEach(resetStickFoldOverride);
+  });
+
+  it("folds for pure-dpad 2D cores (an analog-only pad can still steer)", () => {
+    expect(stickFoldFor("snes")).toBe(true);   // default profile
+    expect(stickFoldFor("nes")).toBe(true);
+    expect(stickFoldFor("arcade")).toBe(true);
+    expect(stickFoldFor("unknown-system")).toBe(true); // falls back to the default profile
+  });
+
+  it("does NOT fold for analog-native 3D consoles (no double-bind with the d-pad)", () => {
+    for (const sys of ["n64", "gc", "wii", "ps1", "ps2", "psp", "dc"]) {
+      expect(stickFoldFor(sys)).toBe(false);
+    }
+  });
+
+  it("is case-insensitive on the system key", () => {
+    expect(stickFoldFor("N64")).toBe(false);
+    expect(stickFoldFor("SNES")).toBe(true);
+  });
+
+  it("lets a saved user override win over the profile default (either way)", () => {
+    setStickFoldOverride(true, "n64");   // a d-pad-less pad opts the fold back on
+    expect(stickFoldFor("n64")).toBe(true);
+    setStickFoldOverride(false, "snes"); // and it can be turned off for a 2D core too
+    expect(stickFoldFor("snes")).toBe(false);
+  });
+
+  it("returns to the profile default once the override is cleared", () => {
+    setStickFoldOverride(true, "gc");
+    expect(stickFoldFor("gc")).toBe(true);
+    resetStickFoldOverride("gc");
+    expect(stickFoldFor("gc")).toBe(false);
   });
 });

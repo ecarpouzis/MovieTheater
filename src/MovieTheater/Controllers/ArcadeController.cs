@@ -189,24 +189,15 @@ namespace MovieTheater.Controllers
                 .GroupBy(g => (g.System, g.Title))
                 .ToDictionary(x => x.Key, x => x.ToList());
 
-            // Cheat counts for the page's ROMs, one grouped query (not per card). The card needs only to know
-            // whether to render the picker at all; the list itself is lazy-loaded when it's opened.
+            // Cheat counts for the page's ROMs, one grouped query (not per card). Codes only — the emulator/
+            // quality OPTION cheats moved to the per-game config tool. The card needs only to know whether to
+            // render the picker at all; the list itself is lazy-loaded when it's opened.
             var pageVersionIds = versionRows.Select(g => g.Id).ToList();
             var cheatCounts = await movieDb.ArcadeCheats
-                .Where(c => pageVersionIds.Contains(c.ArcadeGameId))
+                .Where(c => pageVersionIds.Contains(c.ArcadeGameId) && c.Kind == "code")
                 .GroupBy(c => c.ArcadeGameId)
                 .Select(g => new { GameId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.GameId, x => x.Count);
-
-            // Default-on cheats must ship WITH the card, not with the lazy-loaded cheat list: PS2's widescreen
-            // patch is pre-selected, and a player who never opens the picker still expects it applied. Tiny set
-            // (only the ~150 PS2 widescreen rows are DefaultOn today).
-            var defaultCheats = await movieDb.ArcadeCheats
-                .Where(c => pageVersionIds.Contains(c.ArcadeGameId) && c.DefaultOn)
-                .Select(c => new { c.ArcadeGameId, c.Id })
-                .ToListAsync();
-            var defaultsByVersion = defaultCheats.GroupBy(c => c.ArcadeGameId)
-                .ToDictionary(g => g.Key, g => g.Select(c => "c" + c.Id).ToList());
 
             string specificRegion = reg is "english" or "all" ? null : reg;
             var games = pageKeys.Select(k =>
@@ -254,6 +245,9 @@ namespace MovieTheater.Controllers
                     // Per-launch GL/Vulkan force (play-button dropdown): only 3D systems with a real
                     // render-context choice offer it; see CloudRetroHost.HwToggleSystems.
                     supportsHwToggle = CloudRetroHost.SupportsHwToggle(k.System),
+                    // Whether the game modal's ⚙ Configure panel (editor-only) has anything to offer for this
+                    // system — catalogued core options and/or a renderer choice. Gates showing the button.
+                    configurable = ArcadeCoreOptionCatalog.HasAnything(k.System) || CloudRetroHost.SupportsHwToggle(k.System),
                     // Wii controller-scheme picker (GameCube vs Wiimote+Nunchuk): only the two
                     // GC-controller-native BrawlEx mods offer it; see CloudRetroHost.GcOnWiiGameTitles.
                     supportsControllerScheme = CloudRetroHost.SupportsControllerScheme(k.Title),
@@ -261,11 +255,10 @@ namespace MovieTheater.Controllers
                     {
                         id = v.Id, label = v.Label, region = v.Region,
                         variant = v.Variant, year = v.Year, maxPlayers = v.MaxPlayers, discCount = v.DiscCount,
-                        // Stored rows + the system-wide option cheats. Only imported systems get code rows, so
-                        // this is already zero where the core would ignore them (see ArcadeCheatCatalog).
-                        cheatCount = (cheatCounts.TryGetValue(v.Id, out var cc) ? cc : 0)
-                                     + ArcadeCheatCatalog.SystemOptionCheats(k.System).Count,
-                        defaultCheats = defaultsByVersion.TryGetValue(v.Id, out var dc) ? dc : new List<string>(),
+                        // Code cheats only. Already zero on systems whose core ignores retro_cheat_set
+                        // (only imported systems get code rows — see ArcadeCheatCatalog.SupportsCheatCodes).
+                        cheatCount = ArcadeCheatCatalog.SupportsCheatCodes(k.System)
+                            && cheatCounts.TryGetValue(v.Id, out var cc) ? cc : 0,
                     }).ToList(),
                 };
             }).ToList();
@@ -515,34 +508,262 @@ namespace MovieTheater.Controllers
         private sealed record CheatOffer(string Id, string Name, string Kind, bool DefaultOn, string? Note,
             string? OptionKey, string? OptionValue, string? Code);
 
-        /// <summary>The full offer for one ROM: its stored rows (curated option cheats first — they carry
-        /// negative ordinals — then the community codes in upstream order), plus any option cheats that apply
-        /// to the whole system. Code cheats are withheld on systems whose core ignores them, so the picker
-        /// can't show a toggle that provably does nothing.</summary>
+        /// <summary>The cheat offer for one ROM: the community cheat <b>codes</b> in upstream order. Codes are
+        /// withheld entirely on systems whose core ignores <c>retro_cheat_set</c>, so the picker can't show a
+        /// toggle that provably does nothing. Emulator/quality OPTION cheats no longer appear here — they moved
+        /// to the per-game config tool (ArcadeCoreOptionCatalog + the game modal's ⚙ Configure panel).</summary>
         private async Task<List<CheatOffer>> BuildCheatListAsync(ArcadeGame game)
         {
+            if (!ArcadeCheatCatalog.SupportsCheatCodes(game.System)) return new List<CheatOffer>();
+
             var rows = await movieDb.ArcadeCheats
-                .Where(c => c.ArcadeGameId == game.Id)
+                .Where(c => c.ArcadeGameId == game.Id && c.Kind == "code")
                 .OrderBy(c => c.Ordinal)
                 .ToListAsync();
 
-            var offers = new List<CheatOffer>();
-            foreach (var r in rows)
+            return rows.Select(r =>
+                new CheatOffer("c" + r.Id, r.Name, r.Kind, r.DefaultOn, r.Note, r.OptionKey, r.OptionValue, r.Code)).ToList();
+        }
+
+        // ── Per-game config tool (docs/arcade-per-game-config.md) ─────────────────────────────────────
+        // Editor-gated. The source of truth is ArcadeGameProfile, keyed by normalized identity so one row
+        // covers every ROM region/revision. Core options are delivered per-room at Start (ResolveGameConfigAsync
+        // → descriptor.CoreOptions), so a change takes effect on the next room with no worker-manifest regen.
+
+        /// <summary>Normalized game identity used to key <see cref="Db.ArcadeGameProfile"/> — the lowercased
+        /// Title, matching the arcade-gameconfig-export join (<c>g.Title.ToLower()</c>).</summary>
+        private static string TitleKeyOf(ArcadeGame game) => (game.Title ?? "").Trim().ToLowerInvariant();
+
+        /// <summary>Same CanEditMovies gate used elsewhere in this controller (e.g. heavy-lane pairing).</summary>
+        private async Task<bool> IsEditorAsync(int userId)
+        {
+            var s = await movieDb.UserSettings.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.UserID == userId && u.SettingKey == "CanEditMovies");
+            return s?.SettingValue == "true";
+        }
+
+        private static Dictionary<string, string>? ParseOptionsJson(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            try { return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json!); }
+            catch { return null; }
+        }
+
+        /// <summary>The game's saved per-game config as it should reach the emulator for a room: the per-game
+        /// default-on option rows (PS2 widescreen — preserves out-of-the-box widescreen on the ~150 patchable
+        /// titles) overlaid by the editor's saved profile (the config tool wins), plus the master switches
+        /// those options need to actually fire. Returns the game's configured renderer (HwContext) too.</summary>
+        private async Task<(Dictionary<string, string> CoreOptions, string? HwContext, string? RenderProfileId)> ResolveGameConfigAsync(ArcadeGame game)
+        {
+            var opts = new Dictionary<string, string>(StringComparer.Ordinal);
+
+            // (a) per-game default-on option rows (PS2 widescreen).
+            var defaultOn = await movieDb.ArcadeCheats.AsNoTracking()
+                .Where(c => c.ArcadeGameId == game.Id && c.Kind == "option" && c.DefaultOn && c.OptionKey != null)
+                .Select(c => new { c.OptionKey, c.OptionValue })
+                .ToListAsync();
+            foreach (var r in defaultOn)
+                if (!string.IsNullOrEmpty(r.OptionKey)) opts[r.OptionKey!] = r.OptionValue ?? "enabled";
+
+            // (b) saved profile overrides win.
+            var profile = await movieDb.ArcadeGameProfiles.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.System == game.System && p.TitleKey == TitleKeyOf(game));
+            var saved = ParseOptionsJson(profile?.CoreOptionsJson);
+            if (saved != null)
+                foreach (var kv in saved)
+                    if (!string.IsNullOrEmpty(kv.Key)) opts[kv.Key] = kv.Value;
+
+            // (c) master switches the picked options need behind a gate (pcsx2_enable_hw_hacks, …). An explicit
+            // value for a gate key always wins over the implied one.
+            foreach (var key in opts.Keys.ToList())
+                foreach (var (impliedKey, impliedValue) in ArcadeCheatCatalog.ImpliedOptionsFor(key))
+                    if (!opts.ContainsKey(impliedKey)) opts[impliedKey] = impliedValue;
+
+            return (opts, profile?.HwContext, profile?.RenderProfile);
+        }
+
+        /// <summary>Read the per-game config for the ⚙ Configure panel: the system's catalogued options with
+        /// each option's current effective value, the configured renderer, and free-form notes. Editor-only.</summary>
+        [HttpGet("/API/Arcade/Game/{gameId:int}/Config")]
+        public async Task<IActionResult> GetGameConfig(int gameId, [FromQuery] string profile = null)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            if (!await IsEditorAsync(userId.Value))
+                return StatusCode(403, new { message = "Configuring games is editor-only." });
+
+            var game = await movieDb.ArcadeGames.AsNoTracking().FirstOrDefaultAsync(g => g.Id == gameId);
+            if (game == null) return NotFound(new { message = "Game not found." });
+
+            var savedProfile = await movieDb.ArcadeGameProfiles.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.System == game.System && p.TitleKey == TitleKeyOf(game));
+            var saved = ParseOptionsJson(savedProfile?.CoreOptionsJson) ?? new Dictionary<string, string>(StringComparer.Ordinal);
+
+            // Which graphics profile is selected → which CORE's options the module shows (PS1 Beetle vs
+            // pcsx_rearmed have different options). A `?profile=` query previews another profile's core options
+            // before saving; otherwise the saved profile, the legacy HwContext pin, then the default.
+            var renderProfiles = ArcadeRendererProfiles.For(game.System);
+            var selected = (!string.IsNullOrEmpty(profile) ? ArcadeRendererProfiles.Resolve(game.System, profile) : null)
+                           ?? ArcadeRendererProfiles.Resolve(game.System, savedProfile?.RenderProfile)
+                           ?? ArcadeRendererProfiles.ForRenderer(game.System, savedProfile?.HwContext)
+                           ?? ArcadeRendererProfiles.Default(game.System);
+            var core = selected?.OptionCore ?? ArcadeCoreOptionCatalog.CoreForSystem(game.System);
+
+            // Effective value = catalogued default, overlaid by per-game default-on rows (PS2 widescreen),
+            // overlaid by the saved profile — so e.g. a patchable PS2 game shows widescreen ON before any save.
+            var effective = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var o in ArcadeCoreOptionCatalog.ForCore(core)) effective[o.Key] = o.Default;
+            var defaultOn = await movieDb.ArcadeCheats.AsNoTracking()
+                .Where(c => c.ArcadeGameId == game.Id && c.Kind == "option" && c.DefaultOn && c.OptionKey != null)
+                .Select(c => new { c.OptionKey, c.OptionValue }).ToListAsync();
+            foreach (var r in defaultOn)
+                if (!string.IsNullOrEmpty(r.OptionKey)) effective[r.OptionKey!] = r.OptionValue ?? "enabled";
+            foreach (var kv in saved) effective[kv.Key] = kv.Value;
+
+            var options = ArcadeCoreOptionCatalog.ForCore(core).Select(o => new
             {
-                if (r.Kind == "code" && !ArcadeCheatCatalog.SupportsCheatCodes(game.System)) continue;
-                offers.Add(new CheatOffer("c" + r.Id, r.Name, r.Kind, r.DefaultOn, r.Note, r.OptionKey, r.OptionValue, r.Code));
+                key = o.Key,
+                label = o.Label,
+                category = o.Category,
+                note = o.Note,
+                isRange = o.IsRange,
+                rangeMin = o.RangeMin,
+                rangeMax = o.RangeMax,
+                @default = o.Default,
+                values = o.Values.Select(v => new { token = v.Token, label = v.Label }),
+                value = effective.TryGetValue(o.Key, out var ev) ? ev : o.Default,
+            });
+
+            // Advanced/raw escape hatch: saved keys not in ANY of this system's cores' catalogs (hand-entered).
+            var allSystemKeys = renderProfiles.Select(p => p.OptionCore)
+                .Append(core).Where(c => c != null).Distinct()
+                .SelectMany(c => ArcadeCoreOptionCatalog.ForCore(c).Select(o => o.Key))
+                .ToHashSet(StringComparer.Ordinal);
+            var advanced = saved.Where(kv => !allSystemKeys.Contains(kv.Key))
+                .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
+
+            return Json(new
+            {
+                gameId,
+                system = game.System,
+                title = game.Title,
+                hwToggleSupported = CloudRetroHost.SupportsHwToggle(game.System),
+                // The graphics profiles (renderer/core choice) for this system + the selected one.
+                profiles = renderProfiles.Select(p => new { id = p.Id, label = p.Label }),
+                renderProfile = selected?.Id,
+                optionCore = core,
+                notes = savedProfile?.Notes ?? "",
+                options,
+                advanced,
+            });
+        }
+
+        /// <summary>Save the per-game config (upserts ArcadeGameProfile by identity). Known option values are
+        /// validated against the catalog — libretro silently ignores an unknown value token, so a typo would
+        /// be a toggle that does nothing. Only values that differ from the game's effective default are stored,
+        /// keeping the profile minimal (and "reset to default" = drop the key). Editor-only.</summary>
+        [HttpPut("/API/Arcade/Game/{gameId:int}/Config")]
+        public async Task<IActionResult> SaveGameConfig(int gameId, [FromBody] GameConfigRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            if (!await IsEditorAsync(userId.Value))
+                return StatusCode(403, new { message = "Configuring games is editor-only." });
+            if (request == null) return BadRequest(new { message = "Invalid request." });
+
+            var game = await movieDb.ArcadeGames.FirstOrDefaultAsync(g => g.Id == gameId);
+            if (game == null) return NotFound(new { message = "Game not found." });
+
+            // The graphics profile being saved → the CORE whose options this save validates against. A bad
+            // profile id for the system is rejected (never silently ignored → wrong core booted).
+            if (!string.IsNullOrEmpty(request.RenderProfile)
+                && ArcadeRendererProfiles.For(game.System).All(p => p.Id != request.RenderProfile))
+                return BadRequest(new { message = $"'{request.RenderProfile}' is not a graphics profile for {game.System}.", key = "renderProfile" });
+            var selected = ArcadeRendererProfiles.Resolve(game.System, request.RenderProfile);
+            var core = selected?.OptionCore ?? ArcadeCoreOptionCatalog.CoreForSystem(game.System);
+
+            // Baseline = the CORE's catalogued defaults overlaid by per-game default-on rows. A submitted value
+            // equal to baseline is dropped (it's the default), so the stored profile carries only real overrides.
+            var baseline = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var o in ArcadeCoreOptionCatalog.ForCore(core)) baseline[o.Key] = o.Default;
+            var defaultOn = await movieDb.ArcadeCheats.AsNoTracking()
+                .Where(c => c.ArcadeGameId == game.Id && c.Kind == "option" && c.DefaultOn && c.OptionKey != null)
+                .Select(c => new { c.OptionKey, c.OptionValue }).ToListAsync();
+            foreach (var r in defaultOn)
+                if (!string.IsNullOrEmpty(r.OptionKey)) baseline[r.OptionKey!] = r.OptionValue ?? "enabled";
+
+            var keyPattern = new System.Text.RegularExpressions.Regex("^[a-z0-9][a-z0-9_-]{1,59}$");
+            var toStore = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (request.CoreOptions != null)
+            {
+                if (request.CoreOptions.Count > 60)
+                    return BadRequest(new { message = "Too many options." });
+                foreach (var (key, value) in request.CoreOptions)
+                {
+                    if (string.IsNullOrWhiteSpace(key) || value == null) continue;
+                    var opt = ArcadeCoreOptionCatalog.Find(core, key);
+                    if (opt != null)
+                    {
+                        // Known option: value must be one the core accepts, or the room would ship a dead token.
+                        if (!opt.IsValidToken(value))
+                            return BadRequest(new { message = $"'{value}' is not a valid value for {key}.", key });
+                    }
+                    else
+                    {
+                        // Advanced/raw escape hatch: accept an unknown key if it at least looks like a libretro
+                        // option key and the value is bounded. It's the editor's own risk (documented in the UI).
+                        if (!keyPattern.IsMatch(key) || value.Length > 80)
+                            return BadRequest(new { message = $"'{key}' is not a valid option key.", key });
+                    }
+                    // Drop values equal to the game's effective default → keep the profile minimal.
+                    if (baseline.TryGetValue(key, out var bv) && string.Equals(bv, value, StringComparison.Ordinal))
+                        continue;
+                    toStore[key] = value;
+                }
             }
 
-            // System-wide option cheats (Dreamcast/GameCube widescreen) sit above the per-game rows. Skipped
-            // when a stored row already sets the same option key, so a game can override the system default.
-            var haveKeys = offers.Where(o => o.OptionKey != null).Select(o => o.OptionKey!).ToHashSet(StringComparer.Ordinal);
-            int insertAt = 0;
-            foreach (var o in ArcadeCheatCatalog.SystemOptionCheats(game.System))
+            var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+            if (notes is { Length: > 500 }) notes = notes.Substring(0, 500);
+
+            var profile = await movieDb.ArcadeGameProfiles
+                .FirstOrDefaultAsync(p => p.System == game.System && p.TitleKey == TitleKeyOf(game));
+            if (profile == null)
             {
-                if (haveKeys.Contains(o.Key)) continue;
-                offers.Insert(insertAt++, new CheatOffer("s:" + o.Key, o.Name, "option", o.DefaultOn, o.Note, o.Key, o.Value, null));
+                profile = new ArcadeGameProfile { System = game.System, TitleKey = TitleKeyOf(game) };
+                movieDb.ArcadeGameProfiles.Add(profile);
             }
-            return offers;
+
+            // Preserve the OTHER cores' saved options (the module only edits the selected core's set, but the
+            // flat blob may hold another core's overrides from a different profile — don't wipe them on switch).
+            var existing = ParseOptionsJson(profile.CoreOptionsJson) ?? new Dictionary<string, string>(StringComparer.Ordinal);
+            var otherCoreKeys = ArcadeRendererProfiles.For(game.System).Select(p => p.OptionCore).Distinct()
+                .Where(c => c != core)
+                .SelectMany(c => ArcadeCoreOptionCatalog.ForCore(c).Select(o => o.Key))
+                .ToHashSet(StringComparer.Ordinal);
+            var final = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var kv in existing) if (otherCoreKeys.Contains(kv.Key)) final[kv.Key] = kv.Value;
+            foreach (var kv in toStore) final[kv.Key] = kv.Value;
+
+            profile.CoreOptionsJson = final.Count > 0 ? System.Text.Json.JsonSerializer.Serialize(final) : null;
+            profile.RenderProfile = selected?.Id;
+            profile.HwContext = selected?.HwContext;  // keep in sync for the manifest export + legacy fallback
+            profile.Notes = notes;
+            // ForcedFps is deliberately NOT touched here — it stays SQL/CLI-managed (see docs).
+            await movieDb.SaveChangesAsync();
+
+            return await GetGameConfig(gameId);
+        }
+
+        public sealed class GameConfigRequest
+        {
+            /// <summary>Chosen core-option values, key→token, for the selected profile's core. Known keys
+            /// validated against that core's catalog; unknown keys allowed as the advanced escape hatch.
+            /// Values equal to the game default are not stored.</summary>
+            public Dictionary<string, string>? CoreOptions { get; set; }
+            /// <summary>The graphics render-profile id (see ArcadeRendererProfiles), e.g. "opengl",
+            /// "beetle_opengl", "pcsx_rearmed". Null/empty = the system default profile.</summary>
+            public string? RenderProfile { get; set; }
+            public string? Notes { get; set; }
         }
 
         [HttpPost("/API/Arcade/Room")]
@@ -615,6 +836,9 @@ namespace MovieTheater.Controllers
             string launchKey;
             int discCount;
             string roomSystem;
+            string saveSystem;
+            var gameCoreOptions = new Dictionary<string, string>(StringComparer.Ordinal);
+            ArcadeRendererProfiles.RenderProfile? renderProfile = null;
             if (isCapture)
             {
                 // The capture launch key IS the CloudRetroGameKey (== the heavy descriptor id == the
@@ -623,11 +847,47 @@ namespace MovieTheater.Controllers
                 launchKey = game.CloudRetroGameKey!;
                 discCount = 0;
                 roomSystem = "capture";
+                saveSystem = "capture";
             }
             else
             {
                 (launchKey, discCount) = await ResolveLaunchAsync(game);
                 roomSystem = game.System;
+
+                // Resolve the game's saved config + its render profile NOW — the profile's core determines the
+                // SAVE namespace (a different core writes incompatible save-states), so it must be known before
+                // the saveId is minted. Precedence: a per-launch play-button Force GL/Vulkan override wins; else
+                // the game's saved render profile; else the legacy bare HwContext pin; else the system default.
+                var (opts, gameHwContext, savedRenderProfileId) = await ResolveGameConfigAsync(game);
+                gameCoreOptions = opts;
+                if (CloudRetroHost.SupportsHwToggle(game.System))
+                {
+                    renderProfile =
+                        ArcadeRendererProfiles.ForRenderer(game.System, request.HwContext)          // play-button override
+                        ?? (savedRenderProfileId != null
+                                ? ArcadeRendererProfiles.Resolve(game.System, savedRenderProfileId) // saved profile
+                                : null)
+                        ?? ArcadeRendererProfiles.ForRenderer(game.System, gameHwContext)            // legacy HwContext pin
+                        ?? ArcadeRendererProfiles.Default(game.System);                              // system default
+
+                    // Merge the profile's renderer-selecting options as a BASE beneath the saved config
+                    // (an explicit per-game option still wins) — flipping the surface alone strands cores
+                    // that pick their renderer from a core-option (N64 paraLLEl-RDP on a GL surface = no video).
+                    if (renderProfile != null && renderProfile.Options.Count > 0)
+                    {
+                        var merged = new Dictionary<string, string>(renderProfile.Options, StringComparer.Ordinal);
+                        foreach (var kv in gameCoreOptions) merged[kv.Key] = kv.Value;
+                        gameCoreOptions = merged;
+                    }
+                }
+
+                // Saves are per-CORE: an alternate core (PS1 pcsx_rearmed) writes save-states the default core
+                // (Beetle) can't read — namespace them, or the gateway seeds a foreign state every boot and
+                // crash-loops the room (arcade hard rule). Both Beetle renderers share the core, so only a
+                // real core-key swap gets a suffix; the default core keeps the bare system (existing saves).
+                saveSystem = !string.IsNullOrEmpty(renderProfile?.CoreKey)
+                    ? roomSystem + "-" + renderProfile!.CoreKey
+                    : roomSystem;
             }
 
             // Durable, user-scoped saves (docs/arcade-saves-plan.md): instead of an empty room id ("create
@@ -637,7 +897,7 @@ namespace MovieTheater.Controllers
             // save belongs to the user+game, not the room. Slot 0 = the "Continue" slot (multi-slot is S3).
             // Capture rooms encode system="capture" here: HeavyVault owns their saves (the gateway skips the
             // CloudRetro save mount for them), and the worker parses this id for the owner + heavy app id.
-            var saveId = ArcadeSaveId.Mint(userId.Value, game.Id, 0, roomSystem, launchKey);
+            var saveId = ArcadeSaveId.Mint(userId.Value, game.Id, 0, saveSystem, launchKey);
             var descriptor = host.BuildJoinDescriptor(
                 userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, roomSystem),
                 roomCode, cloudRetroRoomId: saveId, playerSlot: 0, isCreator: true);
@@ -677,49 +937,45 @@ namespace MovieTheater.Controllers
             if (codec != "")
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&codec=" + codec };
 
-            // Per-launch GL/Vulkan force (play-button dropdown). Allowlist hard AND re-gate on
-            // SupportsHwToggle server-side — never trust the client to only ever send this for an
-            // eligible system. Unlike codec, this does NOT need to ride Join/ClaimSeat: it only
-            // affects the creator's one-time CoreLoad when the room's core boots; joiners just attach
-            // to the already-running core. Meaningless for capture rooms (a native desktop capture,
-            // not a libretro core).
-            var hwctx = CloudRetroHost.SupportsHwToggle(game.System)
-                ? request.HwContext?.Trim().ToLowerInvariant() switch { "gl" => "gl", "vulkan" => "vulkan", _ => "" }
-                : "";
-            if (hwctx != "" && !isCapture)
-                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&hwctx=" + hwctx };
+            // Apply the resolved render profile to the descriptor (the game's config + play-button choice were
+            // resolved above, before the saveId, because the profile's core sets the save namespace). CoreKey →
+            // &core= (worker StartGameRequest.Core → alternate core lib); HwContext → &hwctx= (surface). These
+            // ride only the creator's one-time CoreLoad, not joiners. Meaningless for capture rooms. The
+            // renderer-selecting options were already merged into gameCoreOptions upstream.
+            if (renderProfile != null && !isCapture)
+            {
+                if (!string.IsNullOrEmpty(renderProfile.CoreKey))
+                    descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&core=" + Uri.EscapeDataString(renderProfile.CoreKey) };
+                if (!string.IsNullOrEmpty(renderProfile.HwContext))
+                    descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&hwctx=" + renderProfile.HwContext };
+            }
 
             // Per-room Wii controller-scheme override (computed above, before CreateRoom, since it also
             // needs to land in room state for joiners): ride the creator's own descriptor too.
             if (ctrlScheme != "" && !isCapture)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&ctrlscheme=" + ctrlScheme };
 
-            // Per-room cheats (arcade cheats feature). Resolve the ids the creator ticked against what this
-            // exact ROM actually offers — never trust the client's idea of what a cheat is, because a code is
-            // a raw memory poke and one aimed at another game's addresses corrupts state rather than failing.
-            if (!isCapture && request.Cheats is { Count: > 0 })
+            // Cheats are now codes-only (the emulator/quality OPTIONS moved to the per-game config tool and
+            // ride gameCoreOptions above). Resolve the code ids the creator ticked against what this exact ROM
+            // actually offers — never trust the client's idea of what a cheat is, because a code is a raw memory
+            // poke and one aimed at another game's addresses corrupts state rather than failing.
+            if (!isCapture)
             {
-                var offered = await BuildCheatListAsync(game);
-                var picked = offered.Where(o => request.Cheats.Contains(o.Id, StringComparer.Ordinal))
-                    .Take(ArcadeCheatCatalog.MaxCheatsPerRoom).ToList();
+                List<string> codes = new();
+                if (request.Cheats is { Count: > 0 })
+                {
+                    var offered = await BuildCheatListAsync(game); // codes only
+                    codes = offered.Where(o => o.Kind == "code" && !string.IsNullOrEmpty(o.Code)
+                                              && request.Cheats.Contains(o.Id, StringComparer.Ordinal))
+                        .Take(ArcadeCheatCatalog.MaxCheatsPerRoom).Select(o => o.Code!).ToList();
+                }
 
-                var coreOptions = picked.Where(o => o.Kind == "option" && o.OptionKey != null)
-                    .GroupBy(o => o.OptionKey!, StringComparer.Ordinal)   // one value per key; first wins
-                    .ToDictionary(g => g.Key, g => g.First().OptionValue ?? "enabled", StringComparer.Ordinal);
-
-                // Master switches: some option cheats are read by the core only behind a gate option
-                // (pcsx2_half_pixel_offset does nothing unless pcsx2_enable_hw_hacks is on). The catalog
-                // owns the mapping; an explicit pick of the gate key wins over the implied value.
-                foreach (var key in coreOptions.Keys.ToList())
-                    foreach (var (impliedKey, impliedValue) in ArcadeCheatCatalog.ImpliedOptionsFor(key))
-                        if (!coreOptions.ContainsKey(impliedKey))
-                            coreOptions[impliedKey] = impliedValue;
-
-                var codes = picked.Where(o => o.Kind == "code" && !string.IsNullOrEmpty(o.Code))
-                    .Select(o => o.Code!).ToList();
-
-                if (coreOptions.Count > 0 || codes.Count > 0)
-                    descriptor = descriptor with { CoreOptions = coreOptions, CheatCodes = codes };
+                if (gameCoreOptions.Count > 0 || codes.Count > 0)
+                    descriptor = descriptor with
+                    {
+                        CoreOptions = gameCoreOptions.Count > 0 ? gameCoreOptions : null,
+                        CheatCodes = codes.Count > 0 ? codes : null,
+                    };
             }
 
             return Json(ToJson(descriptor, discCount));
