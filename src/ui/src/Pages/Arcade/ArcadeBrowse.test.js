@@ -172,7 +172,7 @@ describe("GameModal", () => {
   });
 
   // The play button now defaults to "" (auto) so the server applies the game's configured renderer or the
-  // system default; Force Vulkan / Force GL in the menu are the per-launch overrides.
+  // system default; Force Vulkan / Start GL Core in the menu are the per-launch overrides.
   it("sends auto renderer on the default start for a hw-toggle system", () => {
     const onStart = vi.fn();
     renderModal(game({ supportsHwToggle: true }), { onStart });

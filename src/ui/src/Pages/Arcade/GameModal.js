@@ -133,10 +133,15 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
                 // The game modal is zIndex 1500; antd's dropdown menu defaults lower and would open
                 // BEHIND it (the "Force GL does nothing" report). Lift it above the modal.
                 overlayStyle={{ zIndex: 1700 }}
+                // Portals to body like the version/pill pickers (GameModal.css note), so it never
+                // picked up this app's dark theme — it rendered with no themed background, just
+                // inherited light body text floating over whatever was behind the modal ("popping
+                // under the cards"). Give it a class to theme, same as .arcade-version-dropdown.
+                overlayClassName="agm-start-menu"
                 menu={{
                   items: [
                     { key: "vulkan", label: "Force Vulkan" },
-                    { key: "gl", label: "Force GL" },
+                    { key: "gl", label: "Start GL Core" },
                   ],
                   onClick: ({ key }) => start(key),
                 }}

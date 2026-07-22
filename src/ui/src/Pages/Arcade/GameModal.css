@@ -166,6 +166,25 @@
   border-left: 1px solid rgba(255, 255, 255, 0.28);
 }
 
+/* Force Vulkan / Start GL Core menu: portals to body like the modal itself, so it can't inherit
+   .arcade-game-modal either — same "these portal to body" note as ArcadePage.css's version/pill
+   dropdowns. Without this it fell back to antd's unstyled default: no themed background at all,
+   just body's own (dark-theme, light) inherited text color, so the menu looked like it was
+   rendering behind whatever page content sat under the modal. */
+.agm-start-menu.ant-dropdown {
+  z-index: 1700;
+}
+.agm-start-menu .ant-dropdown-menu {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+}
+.agm-start-menu .ant-dropdown-menu-item {
+  color: var(--text-primary);
+}
+.agm-start-menu .ant-dropdown-menu-item:hover {
+  background: var(--accent-soft);
+}
+
 /* ── Narrow viewports ─────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .agm-body {
