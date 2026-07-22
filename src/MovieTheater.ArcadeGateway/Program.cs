@@ -306,8 +306,17 @@ app.MapPost("/w-snap/{token}", async (HttpContext ctx, string token) =>
     }
     catch { /* no/invalid body → unnamed snapshot */ }
 
-    var meta = await saveStore.SnapshotCurrentAsync(u, g, sys, id,
-        string.IsNullOrWhiteSpace(label) ? null : label!.Trim(), ctx.RequestAborted);
+    SaveMeta? meta;
+    try
+    {
+        meta = await saveStore.SnapshotCurrentAsync(u, g, sys, id,
+            string.IsNullOrWhiteSpace(label) ? null : label!.Trim(), ctx.RequestAborted);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Arcade snapshot failed for user {User} game {Game}", u, g);
+        return Results.Json(new { ok = false, reason = "save file busy — wait a moment, then try again" });
+    }
     if (meta == null) return Results.Json(new { ok = false, reason = "no live save yet — play a moment, then snapshot" });
     await mirrorSave(meta);
     app.Logger.LogInformation("Arcade snapshot slot {Slot} for user {User} game {Game}", meta.SlotId, u, g);
@@ -330,8 +339,17 @@ app.MapPost("/w-quick/{token}", async (HttpContext ctx, string token) =>
         return Results.BadRequest();
 
     var label = $"Quicksave {DateTime.Now:h:mm tt}";
-    var meta = await saveStore.SnapshotToSlotAsync(
-        u, g, sys, id, MovieTheater.ArcadeGateway.SaveStore.QuickSlot, label, ctx.RequestAborted);
+    SaveMeta? meta;
+    try
+    {
+        meta = await saveStore.SnapshotToSlotAsync(
+            u, g, sys, id, MovieTheater.ArcadeGateway.SaveStore.QuickSlot, label, ctx.RequestAborted);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Arcade quicksave failed for user {User} game {Game}", u, g);
+        return Results.Json(new { ok = false, reason = "save file busy — wait a moment, then try again" });
+    }
     if (meta == null) return Results.Json(new { ok = false, reason = "no live save yet — play a moment, then save" });
     await mirrorSave(meta);
     app.Logger.LogInformation("Arcade quicksave for user {User} game {Game}", u, g);
