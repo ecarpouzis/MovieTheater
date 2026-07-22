@@ -5,7 +5,7 @@
     respawn it fresh.
 
 .DESCRIPTION
-    Guards three observed failure modes (a kill is always safe: run-arcade-glworker.ps1's
+    Guards four observed failure modes (a kill is always safe: run-arcade-glworker.ps1's
     restart loop respawns the worker in ~4 s and it re-registers with the coordinator):
 
     A) DISCONNECTED (first seen 2026-07-07, dolphin/GameCube teardown): the worker partially
@@ -35,6 +35,21 @@
        (log name -> WorkerId -> port -> owning PID). Two strikes -> kill.
        /status unavailable (pre-0033 coordinator) -> check C is skipped silently.
 
+    D) IDLE-WEDGE (first seen 2026-07-22, dolphin/Wii boot-hang + a dolphin Vulkan teardown
+       wedge): the worker HANGS while going idle -- a hard hang in core boot, or after a room
+       teardown -- so it never emits another log line. Because the coordinator RELEASED its
+       slot on the game-start timeout, /status marks it FREE, and its coordinator TCP socket
+       stays ESTABLISHED (no FIN). So checks A (socket exists), B (right port) and C (busy)
+       are all BLIND to it -- both GL workers sat wedged-but-"free" for 18 min and every launch
+       died at "malformed WebRTC init/game start response error=timeout" (docs +
+       [[arcade-idle-wedge-escapes-watchdog]]). Detection uses the coordinator's OWN failed-work
+       signal: a fresh `malformed (WebRTC init|game start) response error=timeout` in
+       coordinator.log means SOME worker accepted an assignment and did not respond. Response:
+       recycle every GL worker past grace whose log is silent > WedgeStaleSec (a live room writes
+       pace-diag every 5 s, so busy/booting workers are spared; the wedged one is guaranteed to be
+       in that set; a healthy idle worker swept up here just respawns in ~4 s). Acts once per
+       distinct timeout (tracked), and only on timeouts newer than ~3 cycles to avoid startup noise.
+
     Registered as scheduled task "MovieTheater - Arcade GL Worker Watchdog" (logon trigger,
     same pattern as the worker tasks). Safe to run interactively too.
 #>
@@ -47,7 +62,8 @@ param(
     #  ⚠ The running watchdog TASK must be re-registered to pick up a new port — otherwise it reaps the
     #    new worker as "port drift" (bound a mux port not in this list). See the watchdog task registration.
     [string] $LogDir = "D:\ArcadeStorage\logs",
-    [string] $LogFile = "D:\ArcadeStorage\logs\glworker-watchdog.log"
+    [string] $LogFile = "D:\ArcadeStorage\logs\glworker-watchdog.log",
+    [string] $CoordLog = "D:\ArcadeStorage\logs\coordinator.log"  # check D: coordinator work-timeout signal
 )
 
 # The task runs under a headless conhost: any cmdlet progress rendering (Invoke-RestMethod
@@ -175,6 +191,7 @@ function KillWorker([int]$wpid, [string]$why) {
 Log "watchdog v2 started (coordinator port: $CoordinatorPort, interval: ${IntervalSec}s, worker ports: $($WorkerPorts -join ','), wedge stale: ${WedgeStaleSec}s)"
 $strikes = @{}       # PID -> consecutive no-coordinator-connection strikes (check A)
 $wedgeStrikes = @{}  # PID -> consecutive busy-but-silent strikes (check C)
+$lastActedTimeout = [datetime]::MinValue  # newest coordinator work-timeout already acted on (check D)
 
 while ($true) {
     try {
@@ -260,6 +277,54 @@ while ($true) {
             }
         }
         foreach ($k in @($wedgeStrikes.Keys)) { if (-not $wedgedPids[$k]) { $wedgeStrikes.Remove($k) | Out-Null } }
+
+        # -- D) idle-wedge check (FREE-but-wedged; checks A/B/C blind spot) ------------------
+        # A worker that hangs in boot/teardown while going idle keeps its Established coordinator
+        # socket and its port, and the coordinator releases its slot on the game-start timeout so
+        # /status shows it FREE — invisible to A/B/C. The coordinator's OWN failed-work signal is
+        # the tell: a fresh `malformed (WebRTC init|game start) response error=timeout` means some
+        # worker accepted an assignment and never responded. Recycle every GL worker past grace
+        # whose log is silent > WedgeStaleSec (a live room writes pace-diag every 5 s -> busy/booting
+        # workers are spared; the wedged one is guaranteed in the set; a healthy idle worker swept
+        # up here just respawns in ~4 s). Acts once per distinct timeout; ignores timeouts older
+        # than ~3 cycles so a stale line at startup can't trigger a recycle.
+        $newestTimeout = $null
+        try {
+            foreach ($line in @(Get-Content $CoordLog -Tail 300 -ErrorAction SilentlyContinue)) {
+                if ($line -notmatch 'malformed (?:WebRTC init|game start) response error=timeout') { continue }
+                if ($line -match '^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+)') {
+                    $lt = [datetime]::MinValue
+                    if ([datetime]::TryParse($Matches[1], [ref]$lt)) {
+                        if (-not $newestTimeout -or $lt -gt $newestTimeout) { $newestTimeout = $lt }
+                    }
+                }
+            }
+        } catch { }
+
+        if ($newestTimeout -and $newestTimeout -gt $lastActedTimeout `
+                -and $newestTimeout -ge (Get-Date).AddSeconds(-3 * $IntervalSec)) {
+            $lastActedTimeout = $newestTimeout
+            $acted = $false
+            foreach ($p in $WorkerPorts) {
+                $wpid = (Get-NetUDPEndpoint -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+                if (-not $wpid) { continue }
+                $wpid = [int]$wpid
+                if (-not $livePids[$wpid]) { continue }
+                if ($age[$wpid] -lt $GraceSec) { continue }        # fresh spawn: not this
+                if ($wedgedPids[$wpid]) { continue }               # already handled by check C
+                $logPath = WorkerLogPath $p
+                if (-not (Test-Path $logPath)) { continue }
+                $staleSec = ((Get-Date) - (Get-Item $logPath).LastWriteTime).TotalSeconds
+                if ($staleSec -lt $WedgeStaleSec) { continue }     # actively logging => not wedged
+                Log ("worker PID {0} (port {1}) IDLE-WEDGE: coordinator reported a worker work-timeout at {2} and this worker's log is silent {3:n0}s while marked free -- recycling (checks A/B/C blind spot)" -f `
+                    $wpid, $p, $newestTimeout.ToString('o'), $staleSec)
+                KillWorker $wpid "idle-wedge (coordinator work-timeout + free + silent log)"
+                $acted = $true
+            }
+            if (-not $acted) {
+                Log ("coordinator work-timeout at {0} but no past-grace, log-silent worker to recycle (all busy/booting/fresh) -- noted only" -f $newestTimeout.ToString('o'))
+            }
+        }
 
         # Surface unkillable zombies every cycle -- they do NOT self-clear (only a reboot frees the
         # kernel-stuck thread), so an operator must see them. Clear the entry once the PID is finally gone.
