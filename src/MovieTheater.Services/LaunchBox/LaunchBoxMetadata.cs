@@ -75,6 +75,9 @@ namespace MovieTheater.Services.LaunchBox
             ["NEC TurboGrafx-CD"] = "pce",
             ["Sega Naomi"] = "naomi",
             ["Sammy Atomiswave"] = "atomiswave",
+            ["Sega Saturn"] = "saturn",
+            ["3DO Interactive Multiplayer"] = "3do",
+            ["Philips CD-i"] = "cdi",
         };
 
         private static readonly Regex Parenthetical = new(@"\(.*?\)", RegexOptions.Compiled);
