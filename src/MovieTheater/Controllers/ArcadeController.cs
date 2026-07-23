@@ -1725,7 +1725,7 @@ namespace MovieTheater.Controllers
             // browser holds no controller port. Derived, so the token stays the single source of truth.
             spectator = d.PlayerSlot == ArcadeRoomService.SpectatorSlot,
             gameKey = d.GameKey,
-            iceConfig = d.IceConfig.Select(i => new { urls = i.Urls }).ToList(),
+            iceConfig = d.IceConfig.Select(i => new { urls = i.Urls, username = i.Username, credential = i.Credential }).ToList(),
             isCreator = d.IsCreator,
             system = d.System,
             discCount,

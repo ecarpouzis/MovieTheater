@@ -124,6 +124,21 @@ namespace MovieTheater.Services.Arcade
                 .Select(s => new ArcadeIceServer(s))
                 .ToList();
 
+            // TURN is the last-resort relay for clients that can't reach a worker directly (guest/isolated
+            // SSID, hostile remote network). ICE ranks relay candidates lowest, so direct-capable clients
+            // never use it. An unauthenticated TURN entry is worthless, so require the secret too; when it's
+            // absent we stay STUN-only.
+            var turnUrls = (config.ArcadeTurnUrls ?? new List<string>())
+                .Where(u => !string.IsNullOrWhiteSpace(u))
+                .ToList();
+            if (turnUrls.Count > 0 && !string.IsNullOrEmpty(config.ArcadeTurnSecret))
+            {
+                var nowUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                var cred = ArcadeTurnCredential.Mint(
+                    config.ArcadeTurnSecret!, config.ArcadeTurnCredentialTtlSeconds, userId, nowUnix);
+                ice.AddRange(turnUrls.Select(u => new ArcadeIceServer(u, cred.Username, cred.Password)));
+            }
+
             return new ArcadeJoinDescriptor(roomCode, wsUrl, playerSlot, game.CloudRetroGameKey, ice, isCreator, game.System);
         }
 

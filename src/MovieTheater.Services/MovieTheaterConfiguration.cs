@@ -58,8 +58,31 @@ namespace MovieTheater.Services
         /// <summary>TTL of a minted join token; covers the WS *connect*, not the session length.</summary>
         public int ArcadeJoinTokenTtlSeconds { get; set; }
 
-        /// <summary>STUN servers echoed to the client shim's iceConfig (no TURN in v1).</summary>
+        /// <summary>STUN servers echoed to the client shim's iceConfig.</summary>
         public List<string> ArcadeStunServers { get; set; } = new();
+
+        /// <summary>
+        /// TURN relay URLs echoed to the client shim's iceConfig — the last-resort ICE path (relay
+        /// candidates rank lowest, so LAN/cellular clients that connect directly never touch it). This is
+        /// the ONLY route that works from a guest/isolated SSID or a hostile remote network, where the
+        /// client can reach Ziggy on the public-IP TCP hairpin but not via direct/hairpinned UDP. Use
+        /// <c>turns:</c> over TCP for exactly that reason — a UDP TURN listener would hit the same
+        /// UDP-hairpin wall those clients already fail on. Example:
+        /// <c>["turns:turn.carpouzis.com:5349?transport=tcp"]</c>. Empty = STUN-only. See docs/arcade/turn-relay.md.
+        /// </summary>
+        public List<string> ArcadeTurnUrls { get; set; } = new();
+
+        /// <summary>Shared secret for minting ephemeral TURN credentials (coturn <c>static-auth-secret</c> /
+        /// the TURN REST API scheme). MUST be byte-identical to the TURN server's secret. When empty, no
+        /// credential is minted and <see cref="ArcadeTurnUrls"/> is ignored (an unauthenticated TURN entry
+        /// is useless), so the client falls back to STUN-only.</summary>
+        public string? ArcadeTurnSecret { get; set; }
+
+        /// <summary>TTL (seconds) of a minted TURN credential. It must outlast the longest single session,
+        /// because the TURN allocation is refreshed with the SAME credential for the room's lifetime.
+        /// Default 12h. The credential is low-value — the relay is peer-locked to the arcade worker — so a
+        /// generous window is safe.</summary>
+        public int ArcadeTurnCredentialTtlSeconds { get; set; } = 43200;
 
         /// <summary>
         /// Multi-zone worker routing (roadmap WS-B). OFF by default = the v1 single-pool behavior

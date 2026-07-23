@@ -539,7 +539,11 @@ export function createCloudRetroSession(descriptor, opts) {
   let closed = false;
   const inboundStream = new MediaStream(); // audio + video tracks accumulate here (see ontrack)
   let lastAv = null; // last known video geometry (flip/rotation), re-applied whenever the track attaches
-  let iceServers = (descriptor.iceConfig || []).map((s) => ({ urls: s.urls }));
+  // STUN entries carry only urls; a TURN entry also carries the ephemeral username/credential the site
+  // minted for this join. Passing them through is what enables the last-resort relay path for clients
+  // that can't reach a worker directly (guest/isolated SSID, hostile remote network). Mirrors the INIT
+  // (t=4) ICE-replacement path below, which already keeps username/credential.
+  let iceServers = (descriptor.iceConfig || []).map((s) => ({ urls: s.urls, username: s.username, credential: s.credential }));
 
   // ── Audio de-contention knobs (docs/arcade-audio-nextsteps.md) ──────────────────────────────────
   // The residual audio hitch: on the bundled transport a burst of video RTP head-of-line-blocks the

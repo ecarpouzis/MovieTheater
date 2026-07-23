@@ -70,5 +70,9 @@ namespace MovieTheater.Services.Arcade
         IReadOnlyDictionary<string, string>? CoreOptions = null,
         IReadOnlyList<string>? CheatCodes = null);
 
-    public sealed record ArcadeIceServer(string Urls);
+    /// <summary>One ICE server for the client's RTCPeerConnection. STUN entries carry only
+    /// <paramref name="Urls"/>; a TURN entry additionally carries the ephemeral
+    /// <paramref name="Username"/>/<paramref name="Credential"/> minted per join
+    /// (<see cref="Core.ArcadeTurnCredential"/>).</summary>
+    public sealed record ArcadeIceServer(string Urls, string? Username = null, string? Credential = null);
 }
