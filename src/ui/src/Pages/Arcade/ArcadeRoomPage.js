@@ -81,6 +81,14 @@ export default function ArcadeRoomPage() {
   // statusRef above).
   const yourSlotRef = useRef(yourSlot);
   yourSlotRef.current = yourSlot;
+
+  // The capability token the save/load REST calls use. The descriptor's wsUrl token is minted for the WS
+  // connect and expires after ArcadeJoinTokenTtlSeconds — but the WS stays open past that, while the save
+  // endpoints re-check expiry on every call. On a long session the join token lapses and quicksave starts
+  // failing (as a misleading CORS error). The heartbeat re-mints a fresh token every 12 s; we hold the
+  // latest here so gatewayFor always signs saves with a live token. Falls back to the wsUrl token until the
+  // first beat lands.
+  const saveTokenRef = useRef(null);
   // A watch-only seat: no controller port (slot -1), so no player-only controls and no "You are P0".
   const spectator = yourSlot != null && yourSlot < 0;
   const [system, setSystem] = useState(location.state?.descriptor?.system ?? null);
@@ -345,6 +353,7 @@ export default function ArcadeRoomPage() {
           setSpectators(s.spectators || []);
           if (s.maxPlayers) setMaxPlayers(s.maxPlayers);
           if (s.yourSlot != null) setYourSlot(s.yourSlot);
+          if (s.saveToken) saveTokenRef.current = s.saveToken; // keep the save/load token fresh (never expires mid-session)
         });
       }).catch(() => {});
     };
@@ -591,9 +600,11 @@ export default function ArcadeRoomPage() {
   // The gateway's reserved quicksave slot (SaveStore.QuickSlot) — keep the two in step.
   const QUICK_SLOT = 99;
 
-  // Pull the capability token + gateway origin back out of the descriptor's WS url.
+  // Pull the gateway origin from the descriptor's WS url, and sign with the freshest capability token we
+  // have: the heartbeat-refreshed one (saveTokenRef) if it's arrived, else the original wsUrl token.
   function gatewayFor(d) {
-    const token = (d?.wsUrl?.match(/\/w\/([^/?]+)/) || [])[1];
+    if (!d?.wsUrl) return null;
+    const token = saveTokenRef.current || (d.wsUrl.match(/\/w\/([^/?]+)/) || [])[1];
     return token ? { token, base: d.wsUrl.replace(/^ws/, "http").replace(/\/w\/.*$/, "") } : null;
   }
 
@@ -639,9 +650,9 @@ export default function ArcadeRoomPage() {
     if (!d || !d.wsUrl || snapping) return;
     const label = window.prompt("Name this snapshot (e.g. \"Level 3 boss\"):", "");
     if (label === null) return; // cancelled
-    const token = (d.wsUrl.match(/\/w\/([^/?]+)/) || [])[1];
-    if (!token) { message.error("Can't snapshot this session."); return; }
-    const base = d.wsUrl.replace(/^ws/, "http").replace(/\/w\/.*$/, "");
+    const g = gatewayFor(d);
+    if (!g) { message.error("Can't snapshot this session."); return; }
+    const { token, base } = g;
     setSnapping(true);
     try {
       sessionRef.current?.save?.();                     // flush current state to /saves/<id>.dat
@@ -662,7 +673,8 @@ export default function ArcadeRoomPage() {
   async function loadSnapshot() {
     const d = descriptorRef.current;
     if (!d || !d.wsUrl) return;
-    const token = (d.wsUrl.match(/\/w\/([^/?]+)/) || [])[1];
+    const g = gatewayFor(d);
+    const token = g?.token;
     let gameId = null;
     try {
       const qs = new URLSearchParams(d.wsUrl.slice(d.wsUrl.indexOf("?") + 1));
@@ -675,7 +687,7 @@ export default function ArcadeRoomPage() {
     catch { message.error("Couldn't load your saves."); return; }
     const snaps = (saves || []).filter((s) => s.kind === "state" && s.slotId >= 1).sort((a, b) => a.slotId - b.slotId);
     if (snaps.length === 0) { message.info("No snapshots yet — use 📸 Snapshot to make one."); return; }
-    const base = d.wsUrl.replace(/^ws/, "http").replace(/\/w\/.*$/, "");
+    const base = g.base;
     Modal.info({
       title: "Load a snapshot",
       okText: "Cancel",

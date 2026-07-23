@@ -28,6 +28,17 @@ namespace MovieTheater.Services.Arcade
         /// </summary>
         ArcadeJoinDescriptor BuildJoinDescriptor(
             int userId, ArcadeGameDescriptor game, string roomCode, string cloudRetroRoomId, int playerSlot, bool isCreator);
+
+        /// <summary>
+        /// Mint a FRESH capability token for a live room's control REST — the in-room quicksave / snapshot /
+        /// load endpoints on the gateway. Those endpoints reuse the same signed token the WS join carried, but
+        /// (unlike the WS, which is opened once and then held open past expiry) they re-validate its expiry on
+        /// EVERY call. So on a play session longer than <c>ArcadeJoinTokenTtlSeconds</c> the original token
+        /// lapses and saves start failing — surfacing in the browser as a bogus CORS error, because the gateway
+        /// returned a 500 for the rejected token and a 500 carries no CORS header. The heartbeat re-mints this
+        /// every ~12 s so a present player's save token never goes stale. Returns null when unconfigured.
+        /// </summary>
+        string? MintControlToken(int userId, int gameId, string roomCode, string cloudRetroRoomId, int playerSlot);
     }
 
     /// <summary>The catalog facts the host needs to build a launch descriptor, decoupled from the EF entity.

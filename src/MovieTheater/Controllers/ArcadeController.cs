@@ -1671,6 +1671,18 @@ namespace MovieTheater.Controllers
                 .Select(id => new { name = names.GetValueOrDefault(id) ?? "Someone", you = id == userId.Value })
                 .ToList();
 
+            // Re-mint the room's control token (quicksave/snapshot/load) on every beat. Those gateway
+            // endpoints re-validate the capability's EXPIRY on each call, but the browser reuses the one token
+            // the WS join carried for the whole session — so on a play session longer than the token TTL it
+            // lapses and saves fail (the gateway 500s the rejected token, which the browser then reports as a
+            // spurious CORS error). A present player beats every ~12 s, so a token refreshed here never goes
+            // stale. Bound rooms only (the id must exist to mint against); the client keeps its last good token
+            // if this is ever absent. See IArcadeHost.MintControlToken.
+            string? saveToken = null;
+            var boundRoomId = rooms.BoundRoomId(code);
+            if (status.Bound && boundRoomId != null && status.YourSlot is int seat && rooms.GameId(code) is int gid)
+                saveToken = host.MintControlToken(userId.Value, gid, code, boundRoomId, seat);
+
             return Json(new
             {
                 bound = status.Bound,
@@ -1679,6 +1691,7 @@ namespace MovieTheater.Controllers
                 players,
                 spectators,
                 youAreSpectator = status.YouAreSpectator,
+                saveToken,
             });
         }
 

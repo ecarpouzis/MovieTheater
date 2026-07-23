@@ -376,6 +376,14 @@ namespace MovieTheater.Arcade
                 return rooms.TryGetValue(roomCode, out var state) ? state.CloudRetroRoomId : null;
         }
 
+        /// <summary>The room's ArcadeGame id, or null if the room isn't in the registry. Used to re-mint a
+        /// fresh control token on heartbeat (the token payload carries the game id the gateway checks).</summary>
+        public int? GameId(string roomCode)
+        {
+            lock (gate)
+                return rooms.TryGetValue(roomCode, out var state) ? state.GameId : null;
+        }
+
         /// <summary>
         /// Sweep rooms whose players have all gone quiet (TTL expired) and return their codes so the
         /// hosted reaper can stamp <c>ArcadeSession.EndedUtc</c>. Idempotent: a room is removed here once,

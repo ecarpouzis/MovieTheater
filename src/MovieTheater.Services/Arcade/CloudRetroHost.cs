@@ -127,6 +127,15 @@ namespace MovieTheater.Services.Arcade
             return new ArcadeJoinDescriptor(roomCode, wsUrl, playerSlot, game.CloudRetroGameKey, ice, isCreator, game.System);
         }
 
+        /// <inheritdoc/>
+        public string? MintControlToken(int userId, int gameId, string roomCode, string cloudRetroRoomId, int playerSlot)
+        {
+            if (!IsConfigured) return null;
+            var expires = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + Math.Max(1, config.ArcadeJoinTokenTtlSeconds);
+            return ArcadeCapabilityToken.Mint(config.ArcadeTokenSecret!, new ArcadeCapabilityToken.Payload(
+                userId, gameId, roomCode, cloudRetroRoomId ?? string.Empty, playerSlot, expires));
+        }
+
         /// <summary>
         /// Worker-pool zone for a system (roadmap WS-B). The GL 3D cores (flycast: dc/naomi/atomiswave,
         /// ppsspp: psp) need real desktop OpenGL, which only the Windows-native worker provides — they
