@@ -689,12 +689,18 @@ function getArcadeRooms() {
 }
 
 // Create a room for a game → returns the creator's join descriptor (empty room_id, isCreator).
-function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0, paceMs = 0, cheats = [], videoCodec = "", hwContext = "", controllerScheme = "" } = {}) {
+function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0, paceMs = 0, cheats = [], videoCodec = "", hwContext = "", renderProfile = "", controllerScheme = "" } = {}) {
   return fetch("/API/Arcade/Room", {
     method: "post",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gameId, newGame, seedSlot, videoBitrateKbps, audioFec, paceMs, cheats, videoCodec, hwContext, controllerScheme }),
+    body: JSON.stringify({ gameId, newGame, seedSlot, videoBitrateKbps, audioFec, paceMs, cheats, videoCodec, hwContext, renderProfile, controllerScheme }),
   });
+}
+
+// The render profiles (core-and-renderer combinations) offered per system, for the play-button
+// launch menu: { "n64": [{ id, label, isDefault }], "ps1": [...], ... }. Static; fetched once.
+function getArcadeRenderers() {
+  return fetch("/API/Arcade/Renderers").then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
 }
 
 // The signed-in user's durable saves for a game (arcade-saves-plan) — drives the resume picker.
@@ -1103,6 +1109,7 @@ const MovieAPI = {
   getArcadeGames,
   getArcadeGameLetters,
   getArcadeFilters,
+  getArcadeRenderers,
   getArcadeRooms,
   createArcadeRoom,
   listArcadeSaves,

@@ -372,6 +372,24 @@ namespace MovieTheater.Controllers
             });
         }
 
+        /// <summary>The render profiles (core-and-renderer combinations) offered per system, for the
+        /// play-button dropdown. Static data — a system → [{id,label,isDefault}] map covering only the
+        /// systems that have a choice. The client fetches this once and, per game, looks up its system to
+        /// build the launch menu; the chosen id rides <see cref="CreateRoomRequest.RenderProfile"/>.</summary>
+        [HttpGet("/API/Arcade/Renderers")]
+        public IActionResult Renderers()
+        {
+            if (!host.IsConfigured)
+                return StatusCode(501, new { message = "The arcade is not configured on this server." });
+            var map = ArcadeRendererProfiles.AllSystems
+                .ToDictionary(
+                    sys => sys,
+                    sys => ArcadeRendererProfiles.For(sys)
+                        .Select(p => new { id = p.Id, label = p.Label, isDefault = p.IsDefault })
+                        .ToList());
+            return Json(map);
+        }
+
         private async Task<IQueryable<ArcadeGame>> AgeVisibleGamesAsync(int userId)
         {
             var ageRestriction = await GetAgeRestrictionAsync(userId);
@@ -479,6 +497,16 @@ namespace MovieTheater.Controllers
             /// it wins even over an admin's DB pin. Only meaningful for <see cref="CloudRetroHost.HwToggleSystems"/>;
             /// ignored for every other system and for capture rooms.</summary>
             public string? HwContext { get; set; }
+
+            /// <summary>Per-launch render-PROFILE id from the play-button dropdown (see
+            /// <see cref="ArcadeRendererProfiles"/>), e.g. "vulkan", "opengl", "parallel_n64". This is the
+            /// full core-and-renderer pick — unlike <see cref="HwContext"/> (a bare gl/vulkan surface), a
+            /// profile id can select an ALTERNATE CORE (n64 parallel_n64, ps1 pcsx_rearmed) that shares a
+            /// surface with another profile. When set and valid for the game's system it is the TOP of the
+            /// renderer precedence (above the bare HwContext, the DB-saved profile, and the default);
+            /// an unknown id is ignored (a stale open tab shouldn't fail the launch). Only meaningful for
+            /// systems that offer more than one profile.</summary>
+            public string? RenderProfile { get; set; }
 
             /// <summary>Wii controller-scheme choice from the room-create picker: "gc" (GameCube
             /// controller — forced via hid4rom pin or the system hidGc fallback) or "wiimote"
@@ -890,14 +918,20 @@ namespace MovieTheater.Controllers
 
                 // Resolve the game's saved config + its render profile NOW — the profile's core determines the
                 // SAVE namespace (a different core writes incompatible save-states), so it must be known before
-                // the saveId is minted. Precedence: a per-launch play-button Force GL/Vulkan override wins; else
-                // the game's saved render profile; else the legacy bare HwContext pin; else the system default.
+                // the saveId is minted. Precedence: an explicit per-launch profile pick from the play-button
+                // dropdown wins (it can name an alternate CORE, e.g. parallel_n64, that a bare gl/vulkan can't);
+                // else the bare Force GL/Vulkan override; else the game's saved render profile; else the legacy
+                // bare HwContext pin; else the system default. An unknown/invalid id falls through, never fails.
                 var (opts, gameHwContext, savedRenderProfileId) = await ResolveGameConfigAsync(game);
                 gameCoreOptions = opts;
                 if (CloudRetroHost.SupportsHwToggle(game.System))
                 {
+                    var explicitProfile = !string.IsNullOrEmpty(request.RenderProfile)
+                        ? ArcadeRendererProfiles.For(game.System).FirstOrDefault(p => p.Id == request.RenderProfile)
+                        : null;
                     renderProfile =
-                        ArcadeRendererProfiles.ForRenderer(game.System, request.HwContext)          // play-button override
+                        explicitProfile                                                             // play-button profile pick (may swap core)
+                        ?? ArcadeRendererProfiles.ForRenderer(game.System, request.HwContext)        // bare Force GL/Vulkan
                         ?? (savedRenderProfileId != null
                                 ? ArcadeRendererProfiles.Resolve(game.System, savedRenderProfileId) // saved profile
                                 : null)

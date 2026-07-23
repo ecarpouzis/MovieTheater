@@ -129,6 +129,32 @@ namespace MovieTheater.Arcade
                     "disabled",
                     "Fixes PS1 3D wobble/warping. Most 3D games look better; the aggressive mode breaks some games. No effect on 2D games."),
             },
+
+            // N64 alternate core — parallel_n64 (the compatibility profile; picked via the render-profile
+            // selector, core-key "parallel_n64"). Its renderer (gfxplugin/rspplugin) is owned by the profile
+            // and excluded below; these are the player-facing levers. Tokens verified from
+            // parallel_n64_libretro.dll (2026-07-23). The startup extraction folds in the full option set on
+            // top of these hand-tuned few (and the unit-test assembly, which has no embedded json, sees only
+            // these — so every preset key/token for this core MUST appear here).
+            ["parallel_n64"] = new()
+            {
+                new CoreOption("parallel-n64-screensize", "Internal resolution", Category.Video,
+                    new[] { V("320x240","1x (native, fastest)"), V("640x480","2x"), V("960x720","3x"),
+                            V("1280x960","4x"), V("1440x1080","4.5x"), V("1920x1440","6x (sharpest)") },
+                    "640x480",
+                    "How large the game renders internally before the stream scales it. Higher is sharper but heavier."),
+                new CoreOption("parallel-n64-cpucore", "CPU core", Category.Performance,
+                    new[] { V("pure_interpreter","Pure interpreter (most accurate)"),
+                            V("cached_interpreter","Cached interpreter (balanced)"),
+                            V("dynamic_recompiler","Dynamic recompiler (fastest)") },
+                    "cached_interpreter",
+                    "Accuracy vs speed of the emulated CPU. Cached interpreter is the safe default for romhacks."),
+                new CoreOption("parallel-n64-filtering", "Texture filtering", Category.Video,
+                    new[] { V("automatic","Automatic"), V("N64 3-point","N64 3-point (authentic)"),
+                            V("nearest","Nearest (crisp)"), V("bilinear","Bilinear (smooth)") },
+                    "automatic",
+                    "How textures are smoothed. 3-point matches real N64 hardware."),
+            },
         };
 
         // Which core a system maps to for the config module. Multi-core systems (ps1: Beetle + pcsx_rearmed)
@@ -209,6 +235,9 @@ namespace MovieTheater.Arcade
         private static readonly HashSet<string> RendererSelectingKeys = new(StringComparer.Ordinal)
         {
             "mupen64plus-rdp-plugin", "mupen64plus-rsp-plugin", "pcsx2_renderer", "beetle_psx_hw_renderer",
+            // parallel_n64: gfxplugin/rspplugin ARE the renderer (GLideN64 vs angrylion/parallel) — owned by
+            // the render-profile selector, never shown as a plain option (angrylion would panic CloudRetro).
+            "parallel-n64-gfxplugin", "parallel-n64-rspplugin",
         };
 
         // Per-option JSON shape: { "key","label","category","note","default",

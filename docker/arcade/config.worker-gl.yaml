@@ -1184,6 +1184,43 @@ emulator:
             # In-engine gameplay/menus/training all render correctly; Battle mode has no cinematics.
             mupen64plus-EnableCopyAuxToRDRAM: "True"
 
+        # ── N64 ALTERNATE CORE: parallel_n64 (compatibility) ─────────────────────────────────────
+        # A SECOND N64 core, booted per-room ONLY when the render profile sets core-key "parallel_n64"
+        # (ArcadeRendererProfiles "parallel_n64" → StartGameRequest.Core → HandleGameStart core override).
+        # The DEFAULT n64 core stays mupen64plus_next. Why it exists: some romhacks — proven with
+        # SM64: Last Impact — crash mupen64plus_next's R4300 with `reserved opcode` / `error in ERET`
+        # ~11 s into boot, on EVERY renderer (parallel-RDP AND GLideN64), BOTH cpucores, and with
+        # CountPerOp=1 (all verified read-by-core in the worker logs, 2026-07-22/23). parallel_n64 is a
+        # different mupen fork with its own R4300 that the libretro community runs these hacks on.
+        # RENDERER: GLideN64 on the GL surface — angrylion is BANNED (it hard-panics CloudRetro's GL
+        # scaffolding on isGlAllowed cores, arcade hard rule), and the Vulkan paraLLEl-RDP path is
+        # mupen's job, not this core's. Same GL Flip contract as the other GL 3D cores (isGlAllowed +
+        # coreAspectRatio, or the bottom-left-origin frame renders upside down — the n64 lesson).
+        # ⚠ SAVE ISOLATION: the SITE keys this core's saves under "n64-parallel_n64" (renderProfile.CoreKey),
+        # distinct from mupen's "n64" — a save-state is core-specific and cross-feeding crash-loops the room.
+        parallel_n64:
+          lib: parallel_n64_libretro
+          roms: ["n64", "v64", "z64"]
+          folder: n64
+          isGlAllowed: true
+          coreAspectRatio: true
+          usesLibCo: true
+          vfr: false
+          # 640x480 core base (2x native) → the pipeline scale:2 delivers 1280x960, matching mupen's N64.
+          scale: 2
+          scaleMethod: bilinear2
+          options:
+            # Value tokens verified from parallel_n64_libretro.dll (2026-07-23). gfxplugin values are
+            # gln64|gliden64|rice|glide64|angrylion|parallel — angrylion BANNED (CloudRetro panic).
+            parallel-n64-gfxplugin: "gliden64"
+            parallel-n64-rspplugin: "hle"
+            # cached_interpreter: more accurate than the dynarec (the whole point of this core), still
+            # fast. Tokens: pure_interpreter|cached_interpreter|dynamic_recompiler.
+            parallel-n64-cpucore: "cached_interpreter"
+            # 2x-native base (WxH tokens verified in the DLL). Expansion Pak stays enabled (Last Impact
+            # needs the 8 MB) — disable_expmem defaults False, left unset.
+            parallel-n64-screensize: "640x480"
+
         # 2D cores: stream at 3x with nearest-neighbour (the pipeline's default scaler) instead of
         # native 256x224 — the browser's bilinear stretch of a tiny stream is what read as "fuzzy
         # SNES", and no encoder preset can fix that. 768x672 crisp pixels cost NVENC nothing.

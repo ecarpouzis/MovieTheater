@@ -46,10 +46,16 @@ namespace MovieTheater.Arcade
         {
             ["n64"] = new[]
             {
-                new RenderProfile("vulkan", "Vulkan (paraLLEl-RDP)", null, "vulkan", "mupen64plus_next",
+                new RenderProfile("vulkan", "mupen64plus-next · Vulkan (paraLLEl-RDP)", null, "vulkan", "mupen64plus_next",
                     Opt(("mupen64plus-rdp-plugin", "parallel"), ("mupen64plus-rsp-plugin", "parallel")), true),
-                new RenderProfile("opengl", "OpenGL (GLideN64)", null, "gl", "mupen64plus_next",
+                new RenderProfile("opengl", "mupen64plus-next · OpenGL (GLideN64)", null, "gl", "mupen64plus_next",
                     Opt(("mupen64plus-rdp-plugin", "gliden64"), ("mupen64plus-rsp-plugin", "hle")), false),
+                // A DIFFERENT CORE (not a mupen renderer): parallel_n64's own R4300 runs romhacks that
+                // crash mupen64plus-next (SM64: Last Impact). CoreKey "parallel_n64" → &core= per-room
+                // override; GLideN64 on GL (angrylion banned). OptionCore "parallel_n64" shows its own
+                // option catalog. See config.worker-gl.yaml parallel_n64 block + docs/arcade-per-game-config.md.
+                new RenderProfile("parallel_n64", "parallel_n64 core · OpenGL (compatibility)", "parallel_n64", "gl", "parallel_n64",
+                    None, false),
             },
             ["ps2"] = new[]
             {
@@ -83,6 +89,9 @@ namespace MovieTheater.Arcade
             new RenderProfile("vulkan", "Vulkan", null, "vulkan", optionCore, None, true),
             new RenderProfile("opengl", "OpenGL", null, "gl", optionCore, None, false),
         };
+
+        /// <summary>Every system that offers a render-profile choice (for the play-button dropdown map).</summary>
+        public static IReadOnlyCollection<string> AllSystems => BySystem.Keys;
 
         /// <summary>The render profiles offered for a system (empty if the system has no graphics choice).</summary>
         public static IReadOnlyList<RenderProfile> For(string? system) =>

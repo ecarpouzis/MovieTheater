@@ -18,7 +18,7 @@ import "./GameModal.css";
  * Heavy-lane titles never reach this modal — the lobby routes them straight to HeavyGameModal (their
  * launch is a Moonlight/capture flow, not a room with cheats/versions/schemes).
  */
-export default function GameModal({ game, onClose, onStart, onManageSaves, creating, canEditMovies }) {
+export default function GameModal({ game, onClose, onStart, onManageSaves, creating, canEditMovies, renderers = [] }) {
   const genre = game.genres ? game.genres.split(/[;,]/)[0].trim() : null;
   const firstVersionId = game.versions?.[0]?.id;
   const [sel, setSel] = useState(firstVersionId);
@@ -36,18 +36,34 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
   const [cheats, setCheats] = useState([]);
   useEffect(() => { setCheats([]); }, [version?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Renderer: send "" so the server applies this game's configured renderer (⚙ Configure → per-game
-  // profile) or the system default (Vulkan for 3D). The play-button menu still offers a per-launch
-  // Force Vulkan / Force GL override.
-  const defaultHwContext = "";
+  // Renderer/core: the primary Start button sends nothing (renderProfile="" + hwContext="") so the
+  // server applies this game's configured profile (⚙ Configure) or the system default. The dropdown
+  // enumerates every core-and-renderer COMBINATION this system offers (ArcadeRendererProfiles, fetched
+  // by the lobby) and launches the picked one by profile id — that's how an alternate CORE (n64
+  // parallel_n64, ps1 pcsx_rearmed) is selectable, not just a bare GL/Vulkan surface.
   // Wii controller-scheme picker (GameCube vs Wiimote+Nunchuk): offered on every Wii title. The
   // server hands each game its default (defaultControllerScheme: "gc" for the GC-native BrawlEx
   // mods, "wiimote" for every other Wii game) so an untouched Start launches on the right scheme.
   const [ctrlScheme, setCtrlScheme] = useState(game.defaultControllerScheme || "wiimote");
 
   const busy = creating === sel;
-  const start = (hwContext = defaultHwContext) =>
-    onStart(sel, game.title, cheats, hwContext, game.supportsControllerScheme ? ctrlScheme : "");
+  // renderProfile = a specific ArcadeRendererProfiles id (may swap the core); hwContext = the legacy
+  // bare gl/vulkan fallback (only used if the profile list hasn't loaded). "" for both = server default.
+  const start = (renderProfile = "", hwContext = "") =>
+    onStart(sel, game.title, cheats, hwContext, game.supportsControllerScheme ? ctrlScheme : "", renderProfile);
+
+  // Launch menu: one entry per core-and-renderer combination for this system, the default marked. Falls
+  // back to a bare Force GL/Vulkan pair only if the profile map hasn't arrived yet.
+  const rendererItems = renderers.length > 0
+    ? renderers.map((p) => ({
+        key: `p:${p.id}`,
+        label: p.isDefault ? `${p.label} — default` : p.label,
+        onClick: () => start(p.id),
+      }))
+    : [
+        { key: "vulkan", label: "Force Vulkan", onClick: () => start("", "vulkan") },
+        { key: "gl", label: "Start GL Core", onClick: () => start("", "gl") },
+      ];
 
   const hasControls = multiVersion || version?.cheatCount > 0 || game.supportsControllerScheme;
 
@@ -139,13 +155,7 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
                 // inherited light body text floating over whatever was behind the modal ("popping
                 // under the cards"). Give it a class to theme, same as .arcade-version-dropdown.
                 overlayClassName="agm-start-menu"
-                menu={{
-                  items: [
-                    { key: "vulkan", label: "Force Vulkan" },
-                    { key: "gl", label: "Start GL Core" },
-                  ],
-                  onClick: ({ key }) => start(key),
-                }}
+                menu={{ items: rendererItems }}
                 buttonsRender={([left, right]) => [
                   cloneElement(left, { className: [left.props.className, "arcade-btn-start"].filter(Boolean).join(" ") }),
                   cloneElement(right, { className: [right.props.className, "arcade-btn-start", "arcade-btn-start__arrow"].filter(Boolean).join(" ") }),

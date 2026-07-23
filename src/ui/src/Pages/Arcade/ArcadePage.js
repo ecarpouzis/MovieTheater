@@ -108,6 +108,7 @@ export default function ArcadePage({ userData }) {
   const [loadingMore, setLoadingMore] = useState(false); // appending the next page
   const [letters, setLetters] = useState(null); // A–Z bucket offsets, for the pager (A–Z sort only)
   const [rooms, setRooms] = useState([]);
+  const [renderers, setRenderers] = useState({}); // system → [{id,label,isDefault}] for the launch menu
   const [recentGames, setRecentGames] = useState([]); // "Recently played" strip (save-derived history)
   const [savesVaultOpen, setSavesVaultOpen] = useState(false); // the cross-game "My saves" drawer
   const [creating, setCreating] = useState(0);
@@ -229,6 +230,13 @@ export default function ArcadePage({ userData }) {
     return () => { alive = false; clearInterval(id); };
   }, []);
 
+  // Render-profile map (system → core-and-renderer options for the launch menu). Static data; fetch once.
+  useEffect(() => {
+    let alive = true;
+    MovieAPI.getArcadeRenderers().then((m) => { if (alive) setRenderers(m || {}); });
+    return () => { alive = false; };
+  }, []);
+
   // "Recently played" strip — a fresh fetch on mount is enough: it only changes once a session ends
   // and harvests a save, and returning here from a room is a route change that remounts this page.
   useEffect(() => {
@@ -267,7 +275,7 @@ export default function ArcadePage({ userData }) {
   // is the GameCube-vs-Wiimote+Nunchuk picker (only shown for the two GC-native BrawlEx mods). Both
   // ride every path out of this modal — Continue, New game, and a snapshot resume all launch the
   // same room.
-  function createRoom(versionId, title, cheats = [], hwContext = "", controllerScheme = "") {
+  function createRoom(versionId, title, cheats = [], hwContext = "", controllerScheme = "", renderProfile = "") {
     if (creating || !versionId) return;
     setCreating(versionId);
     // Durable saves (arcade-saves-plan): if this user has a save/snapshots for the game, offer Continue,
@@ -275,15 +283,15 @@ export default function ArcadePage({ userData }) {
     MovieAPI.listArcadeSaves(versionId)
       .then((saves) => {
         const rows = Array.isArray(saves) ? saves : [];
-        if (rows.length === 0) return doCreateRoom(versionId, { cheats, hwContext, controllerScheme });
+        if (rows.length === 0) return doCreateRoom(versionId, { cheats, hwContext, renderProfile, controllerScheme });
         const snaps = rows.filter((s) => s.slotId >= 1 && s.kind === "state")
           .sort((a, b) => a.slotId - b.slotId);
         const modal = Modal.confirm({
           title: "Resume your saved game?",
           okText: "Continue (latest)",
           cancelText: "New game",
-          onOk: () => doCreateRoom(versionId, { cheats, hwContext, controllerScheme }),
-          onCancel: () => doCreateRoom(versionId, { newGame: true, cheats, hwContext, controllerScheme }),
+          onOk: () => doCreateRoom(versionId, { cheats, hwContext, renderProfile, controllerScheme }),
+          onCancel: () => doCreateRoom(versionId, { newGame: true, cheats, hwContext, renderProfile, controllerScheme }),
           content: (
             <div>
               <div style={{ marginBottom: snaps.length ? 8 : 0 }}>
@@ -297,7 +305,7 @@ export default function ArcadePage({ userData }) {
                   <div style={{ marginTop: 4, maxHeight: 180, overflowY: "auto" }}>
                     {snaps.map((s) => (
                       <div key={s.slotId} style={{ padding: "2px 0" }}>
-                        <a onClick={() => { modal.destroy(); doCreateRoom(versionId, { seedSlot: s.slotId, cheats, hwContext, controllerScheme }); }}>
+                        <a onClick={() => { modal.destroy(); doCreateRoom(versionId, { seedSlot: s.slotId, cheats, hwContext, renderProfile, controllerScheme }); }}>
                           ▶ {s.label || `Snapshot ${s.slotId}`}
                         </a>
                         <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>
@@ -317,7 +325,7 @@ export default function ArcadePage({ userData }) {
           ),
         });
       })
-      .catch(() => doCreateRoom(versionId, { cheats, hwContext, controllerScheme }));
+      .catch(() => doCreateRoom(versionId, { cheats, hwContext, renderProfile, controllerScheme }));
   }
 
   function doCreateRoom(versionId, opts) {
@@ -464,13 +472,14 @@ export default function ArcadePage({ userData }) {
           game={modalGame}
           creating={creating}
           canEditMovies={userData?.canEditMovies}
+          renderers={renderers[modalGame.system] || []}
           onClose={() => setModalGame(null)}
           // Both actions leave the browse tile: close the game modal first so the follow-on surface
           // (the Continue/New-game confirm, or the saves manager) isn't stranded behind it at a lower
           // z-index. This restores the exact pre-modal flow those surfaces were built for.
-          onStart={(versionId, title, cheats, hwContext, controllerScheme) => {
+          onStart={(versionId, title, cheats, hwContext, controllerScheme, renderProfile) => {
             setModalGame(null);
-            createRoom(versionId, title, cheats, hwContext, controllerScheme);
+            createRoom(versionId, title, cheats, hwContext, controllerScheme, renderProfile);
           }}
           onManageSaves={(gameId, title) => { setModalGame(null); setManageSaves({ gameId, title }); }}
         />

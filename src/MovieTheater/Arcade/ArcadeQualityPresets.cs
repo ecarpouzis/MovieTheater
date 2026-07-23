@@ -166,6 +166,18 @@ namespace MovieTheater.Arcade
                 ["low"] = Opt(("mupen64plus-43screensize", "320x240")),
             },
 
+            // ── N64 parallel_n64 (compatibility core; GLideN64/GL only, one renderer → keyed null).
+            // Levers = internal resolution (parallel-n64-screensize, 2x-native live default) and, at Low,
+            // the fast dynarec for weak-perf ROMs. Tokens verified in parallel_n64_libretro.dll and
+            // hand-defined in ArcadeCoreOptionCatalog (the test assembly sees only those).
+            [("parallel_n64", null)] = new()
+            {
+                ["max"] = Opt(("parallel-n64-screensize", "1920x1440")),
+                ["high"] = Opt(("parallel-n64-screensize", "1280x960")),
+                ["medium"] = Opt(("parallel-n64-screensize", "640x480")),
+                ["low"] = Opt(("parallel-n64-screensize", "320x240"), ("parallel-n64-cpucore", "dynamic_recompiler")),
+            },
+
             // ── PSP (Vulkan + GL — PPSSPP has no renderer option; same keys either way). Live: internal
             // 2880x1632 (6x). PPSSPP scales its BASE geometry, and psp runs scale 0.5 (supersample), so
             // delivered size halves with the internal res: High = the proven 1920x1088→960x544 config.
