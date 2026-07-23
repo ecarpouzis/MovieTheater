@@ -6352,10 +6352,10 @@ index 0000000..48ec5da
 +}
 diff --git a/pkg/worker/caged/capture/input.go b/pkg/worker/caged/capture/input.go
 new file mode 100644
-index 0000000..ad9454e
+index 0000000..77ef11c
 --- /dev/null
 +++ b/pkg/worker/caged/capture/input.go
-@@ -0,0 +1,190 @@
+@@ -0,0 +1,203 @@
 +package capture
 +
 +import (
@@ -6405,6 +6405,17 @@ index 0000000..ad9454e
 +	return nil
 +}
 +
++// Arcade pads carry a distinctive VID/PID (0x1209 = pid.codes open-use vendor space; 0x4D54 = "MT")
++// instead of the stock Xbox 360 identity, so Steam's controller_blacklist can exclude EXACTLY these
++// virtual pads. Why (2026-07-23): Steam running on the box grabs any X360-identified pad with its
++// Steam Input desktop configuration — the game gets NOTHING while Steam's on-screen keyboard types
++// with the player's stick drift. XInput/SDL identify xusb devices by class, not VID/PID, so games
++// still see a normal Xbox 360 controller.
++const (
++	arcadePadVid = 0x1209
++	arcadePadPid = 0x4D54
++)
++
 +// ensurePadLocked returns (creating if needed) the pad for a seat, or nil when ViGEm is down or the
 +// seat is beyond maxPads. Caller MUST hold p.mu.
 +func (p *padManager) ensurePadLocked(port int) *x360.Gamepad {
@@ -6415,6 +6426,8 @@ index 0000000..ad9454e
 +		return pad
 +	}
 +	pad := x360.NewGamepad(p.client)
++	pad.VendorId = arcadePadVid
++	pad.ProductId = arcadePadPid
 +	pad.Connect()
 +	p.pads[port] = pad
 +	return pad
@@ -6548,10 +6561,10 @@ index 0000000..ad9454e
 +}
 diff --git a/pkg/worker/caged/capture/launch.go b/pkg/worker/caged/capture/launch.go
 new file mode 100644
-index 0000000..bbb11bd
+index 0000000..e04ceec
 --- /dev/null
 +++ b/pkg/worker/caged/capture/launch.go
-@@ -0,0 +1,531 @@
+@@ -0,0 +1,540 @@
 +package capture
 +
 +import (
@@ -6828,7 +6841,16 @@ index 0000000..bbb11bd
 +	// game hidden/unfocused on the virtual display so it can't steal the owner's input, but an SDL game
 +	// (SM64 Plus, yuzu) drops joystick events when it lacks focus unless this hint is set. Harmless to
 +	// non-SDL titles.
-+	cmd.Env = append(os.Environ(), "SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS=1")
++	//
++	// IGNORE_DEVICES_EXCEPT pins SDL games to the arcade's ViGEm pads (arcadePadVid/arcadePadPid).
++	// Without it a game that opens "the first controller" latches one of the REAL pads plugged into
++	// the box (Pro Controller / DualSense / Hori were all attached 2026-07-23) and the room's virtual
++	// pad — enumerated after them — is never consulted: browser input reaches the worker and the pad,
++	// and the game ignores it. (yuzu dodged this only because its streamed input profile pins pads
++	// explicitly.) Real pads keep working everywhere else; this env only shapes THIS game process.
++	cmd.Env = append(os.Environ(),
++		"SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS=1",
++		fmt.Sprintf("SDL_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT=0x%04x/0x%04x", arcadePadVid, arcadePadPid))
 +	cmdLine := `"` + exe + `"`
 +	if strings.TrimSpace(args) != "" {
 +		cmdLine += " " + args
