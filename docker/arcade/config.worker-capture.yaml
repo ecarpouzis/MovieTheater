@@ -50,10 +50,22 @@ emulator:
 # The capture caged mod (heavy browser lane). Only this worker sets enabled: true.
 capture:
   enabled: true
+  # captureMode: how the game is captured.
+  #   window  (DEFAULT) - WGC WINDOW capture via the external ArcadeCaptureHost helper (helperPath).
+  #            The game window is parked fully OFF-SCREEN (borderless, never focused) and captured by
+  #            HWND, so it never appears on the owner's desktop and works in ANY session (console OR
+  #            RDP). Does NOT use SudoVDA / monitor capture; the monitorIndex/virtualDisplay keys below
+  #            are ignored in this mode (kept for the monitor fallback).
+  #   monitor - legacy: capture a physical monitor, optionally isolated on a per-room SudoVDA virtual
+  #            display (virtualDisplay: true). Console-session ONLY (an RDP session can't attach an IDD
+  #            display). Set captureMode: "monitor" to restore this path.
+  captureMode: "window"
+  helperPath: "D:/ArcadeStorage/worker-capture/bin/ArcadeCaptureHost.exe"
   gatewayUrl: "http://localhost:2303"
   secretFile: "D:/ArcadeStorage/heavy/gateway-secret.txt"
   profilesFile: "D:/ArcadeStorage/heavy/profiles/profiles.json"
   monitorIndex: 0          # index into the ENUMERATED PHYSICAL monitors (logged at boot; SudoVDA trap Â§1)
+  virtualDisplay: true     # P4 isolation: per-room HIDDEN SudoVDA display so games never appear on the physical monitors
   width: 1920
   height: 1080
   fps: 60

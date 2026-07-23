@@ -1930,7 +1930,7 @@ index 9e70576..5f5c29f 100644
  
  func (l Library) GetSupportedExtensions() []string { return l.Supported }
 diff --git a/pkg/config/worker.go b/pkg/config/worker.go
-index be5ac42..a27d001 100644
+index be5ac42..4d83afd 100644
 --- a/pkg/config/worker.go
 +++ b/pkg/config/worker.go
 @@ -6,6 +6,7 @@ import (
@@ -1941,7 +1941,7 @@ index be5ac42..a27d001 100644
  	"strings"
  
  	"github.com/giongto35/cloud-game/v3/pkg/os"
-@@ -20,6 +21,69 @@ type WorkerConfig struct {
+@@ -20,6 +21,88 @@ type WorkerConfig struct {
  	Worker    Worker
  	Webrtc    Webrtc
  	Version   Version
@@ -1957,7 +1957,26 @@ index be5ac42..a27d001 100644
 +	SecretFile   string // file holding X-Arcade-Internal-Secret
 +	ProfilesFile string // heavy input profiles.json (same file heavy-launch.ps1 uses)
 +	MonitorIndex int    // index into the ENUMERATED PHYSICAL monitors (logged at boot; SudoVDA trap)
-+	Width        int    // encode input width  (default 1920)
++	// CaptureMode selects HOW the game is captured:
++	//   "window"  — WGC WINDOW capture via the external ArcadeCaptureHost helper (HelperPath). The game
++	//               window is parked fully OFF-SCREEN (borderless, never focused) and captured by HWND,
++	//               so it never appears on the owner's desktop and works in ANY session (console OR RDP).
++	//               This is the default and does NOT use SudoVDA/monitor capture at all.
++	//   "monitor" — the legacy path: capture a physical monitor, optionally isolated on a per-room
++	//               SudoVDA virtual display (VirtualDisplay). Console-session only (RDP can't attach an
++	//               IDD display); kept as a fallback. See sudovda.go.
++	// Empty defaults to "monitor" for back-compat with an un-migrated config.
++	CaptureMode string
++	// HelperPath is the ArcadeCaptureHost.exe used by captureMode "window" (built from
++	// src/ArcadeCaptureHost, deployed beside worker.exe). Required for window mode.
++	HelperPath string
++	// VirtualDisplay (P4 isolation): create a HIDDEN SudoVDA virtual display per room, render+capture
++	// the game there, and destroy it on close — so games played through the site never appear on Ziggy's
++	// physical monitors (the owner uses the box directly). The vdisplay uses Width/Height/Fps below and
++	// Windows parks it off-canvas; OpenRoomDisplay resolves its HMONITOR and overrides MonitorIndex for
++	// the room. Off = the legacy behavior (capture the physical MonitorIndex). See sudovda.go.
++	VirtualDisplay bool
++	Width          int // encode input width  (default 1920)
 +	Height       int    // encode input height (default 1080)
 +	Fps          int    // capture/encode fps  (default 60)
 +	// VideoSource: "d3d12" (what we RUN) | "d3d11" (fallback, no HDR tonemapping).
@@ -2011,7 +2030,7 @@ index be5ac42..a27d001 100644
  }
  
  type Storage struct {
-@@ -86,6 +150,111 @@ type CodecSettings struct {
+@@ -86,6 +169,111 @@ type CodecSettings struct {
  	Caps    string
  }
  
@@ -5660,10 +5679,10 @@ index 85ede12..6d1d955 100644
  
 diff --git a/pkg/worker/caged/capture/capture.go b/pkg/worker/caged/capture/capture.go
 new file mode 100644
-index 0000000..bf4529e
+index 0000000..d350670
 --- /dev/null
 +++ b/pkg/worker/caged/capture/capture.go
-@@ -0,0 +1,519 @@
+@@ -0,0 +1,635 @@
 +// Package capture implements the "capture" caged mod (heavy browser lane, H5): instead of running
 +// a libretro core it launches a native Windows program through the heavy gateway contract, captures
 +// the desktop with GStreamer (Windows Graphics Capture), feeds frames/PCM into the UNCHANGED
@@ -5674,6 +5693,7 @@ index 0000000..bf4529e
 +import (
 +	"crypto/sha256"
 +	"fmt"
++	"io"
 +	"net/http"
 +	"os"
 +	"os/exec"
@@ -5687,6 +5707,7 @@ index 0000000..bf4529e
 +	"github.com/giongto35/cloud-game/v3/pkg/logger"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/app"
 +	"github.com/go-gst/go-gst/gst"
++	"golang.org/x/sys/windows"
 +)
 +
 +// System is the pseudo-core / gameInfo.System value that routes a start to this mod.
@@ -5698,7 +5719,38 @@ index 0000000..bf4529e
 +	http   *http.Client
 +	secret string
 +
-+	hmonitor uint64
++	hmonitor     uint64 // the monitor the pipeline captures — a per-room virtual display when enabled, else physical
++	physHmonitor uint64 // the boot-time physical monitor pick; the fallback when a virtual display can't be made
++
++	// Per-room virtual display (P4 isolation, sudovda.go). vda is opened once at Init; a display is
++	// ADD'd per room in OpenRoomDisplay and REMOVE'd in closeRoomDisplay.
++	vda      *vda
++	vdActive bool
++	vdMon    [16]byte // this room's MonitorGuid (REMOVE key)
++	vdX      int
++	vdY      int
++	vdW      int
++	vdH      int
++	vdStop   chan struct{} // watchdog ping loop
++
++	// Window-capture mode (captureMode: window, wincapture.go). The game window is parked OFF-SCREEN
++	// and the external ArcadeCaptureHost helper WGC-captures it by HWND, publishing BGRA frames into a
++	// shared-memory ring shmReadLoop feeds into the same design-A appsrc ingest.
++	winHwnd     uintptr // atomic: the game's top-level window (for the minimize guard)
++	winX        int
++	winY        int
++	winW        int
++	winH        int
++	winStop     chan struct{}  // stops shmReadLoop / windowGuardLoop
++	helper      *exec.Cmd      // the ArcadeCaptureHost process
++	helperStdin io.WriteCloser // held open; closing it makes the helper exit
++	shm         windows.Handle // shared-memory ring handle (reader side)
++	shmAddr     uintptr        // mapped view base
++	shmEvent    windows.Handle // per-frame signal event
++	shmW        int
++	shmH        int
++	shmStride   int
++	shmPerSlot  int // 8 (seq) + page-aligned pixel capacity, per slot
 +
 +	videoCb func(app.Video)
 +	audioCb func(app.Audio)
@@ -5746,8 +5798,10 @@ index 0000000..bf4529e
 +	prepared bool // true once gwPrepare acquired the heavy lock — only then may Close() gwFinish (W1)
 +}
 +
-+// ZeroCopy reports whether this room streams straight from GPU memory into the encoder (P4).
-+func (a *App) ZeroCopy() bool { return a.conf.ZeroCopy }
++// ZeroCopy reports whether this room streams straight from GPU memory into the encoder (P4). Forced
++// OFF in window mode: those frames arrive over shared memory on the design-A appsrc path, so there is
++// no in-GStreamer monitor-capture chain to hand the media pipe (zeroCopy config is ignored — logged).
++func (a *App) ZeroCopy() bool { return !a.windowMode() && a.conf.ZeroCopy }
 +
 +// SetVideoGate wires the pipeline-level frame gate used in zero-copy mode.
 +func (a *App) SetVideoGate(fn func(drop bool)) { a.videoGate = fn }
@@ -5872,6 +5926,12 @@ index 0000000..bf4529e
 +func (a *App) Init() error {
 +	gst.Init(nil) // idempotent; media package also calls it
 +
++	if a.windowMode() {
++		a.log.Info().Msgf("capture: mode=WINDOW (WGC helper %s) — games captured by HWND off-screen, works in any session", a.conf.HelperPath)
++	} else {
++		a.log.Info().Msg("capture: mode=MONITOR (legacy d3d screen-capture; SudoVDA isolation if virtualDisplay=true)")
++	}
++
 +	a.verifyD3D12Plugin()
 +
 +	if b, err := os.ReadFile(a.conf.SecretFile); err == nil {
@@ -5889,7 +5949,26 @@ index 0000000..bf4529e
 +		a.log.Error().Msg("capture: no monitors enumerated")
 +	} else {
 +		a.hmonitor = h
++		a.physHmonitor = h // fallback if a per-room virtual display can't be created
 +		a.log.Info().Msgf("capture: pinned monitor %s (%dx%d hmonitor=%d) index=%d", chosen.device, chosen.width, chosen.height, h, a.conf.MonitorIndex)
++	}
++
++	// P4 isolation: open the SudoVDA control device so each room can get its own HIDDEN display and
++	// the game never lands on the owner's physical monitors. Best-effort — a failure here just leaves
++	// the lane on the physical-monitor path (OpenRoomDisplay no-ops when vda is nil). Window mode never
++	// touches SudoVDA (it isolates by parking the window off-screen), so skip it there — otherwise the
++	// misleading "rooms will be REFUSED over RDP" warning fires even though window mode captures fine.
++	if !a.windowMode() && a.conf.VirtualDisplay {
++		// SudoVDA (IDD) virtual displays only attach on the console session — warn now if we booted into
++		// an RDP/remote session so a failed vdisplay isn't a mystery (monitors being OFF is fine, RDP isn't).
++		a.logSessionContext()
++		if v, err := openVDA(); err != nil {
++			a.log.Error().Err(err).Msg("capture: SudoVDA open failed — virtual-display isolation OFF (capturing the physical monitor)")
++		} else {
++			a.vda = v
++			v.reapOrphanDisplay() // clear a leftover display/devnode from a crashed prior instance (no ghost pile-up)
++			a.log.Info().Msg("capture: SudoVDA control device open — per-room virtual display enabled")
++		}
 +	}
 +
 +	a.pads = newPadManager(4)
@@ -5935,7 +6014,17 @@ index 0000000..bf4529e
 +
 +	a.stopRepush = make(chan struct{})
 +	a.setCapturing(true) // let this room's frames through
-+	if a.conf.ZeroCopy {
++	if a.windowMode() {
++		// Window mode: the ArcadeCaptureHost helper is already capturing the off-screen game window and
++		// publishing BGRA frames into the shm ring (armed in LoadApp). Read them and push into the SAME
++		// design-A appsrc ingest; the re-push ticker covers a static screen just like the monitor path.
++		if a.conf.ZeroCopy {
++			a.log.Info().Msg("capture: zeroCopy is ignored in window mode (frames arrive over shared memory)")
++		}
++		go a.shmReadLoop()
++		go a.repushLoop()
++		a.log.Info().Msg("capture: video WINDOW mode (WGC helper → shm → appsrc, no readback of the desktop)")
++	} else if a.conf.ZeroCopy {
 +		// P4: the capture element lives in the MEDIA pipeline (already PLAYING), so there is no
 +		// pipeline to build here — and no re-push ticker either: with the framerate on the source
 +		// caps the capture element paces itself over a static screen, which is the only thing the
@@ -5969,6 +6058,9 @@ index 0000000..bf4529e
 +	if a.proc != nil {
 +		a.proc.kill()
 +	}
++	// Remove the room's hidden virtual display AFTER capture is torn down and the game is dead
++	// (capturing a just-removed monitor would error). No-op unless one was created.
++	a.closeRoomDisplay()
 +	if a.swappedExe != "" {
 +		a.restoreInputProfile(a.swappedExe)
 +	}
@@ -6004,6 +6096,14 @@ index 0000000..bf4529e
 +	a.roomId = ""
 +	a.ownerUserId = 0
 +	a.stopRepush = nil
++	// window-mode per-room state (handles are already released by stopWindowCapture in Close)
++	atomic.StoreUintptr(&a.winHwnd, 0)
++	a.winStop = nil
++	a.helper = nil
++	a.helperStdin = nil
++	a.shm = 0
++	a.shmAddr = 0
++	a.shmEvent = 0
 +	a.frameMu.Lock()
 +	a.lastFrame = nil
 +	a.lastStride = 0
@@ -6015,6 +6115,13 @@ index 0000000..bf4529e
 +// Returns an error (fails the room start) on a gateway 409 or a launch failure.
 +func (a *App) LoadApp(heavyAppId, roomId string) error {
 +	a.resetForRoom() // this mod is a process-lifetime singleton serving sequential rooms (W2)
++	// Isolation gate: when a hidden virtual display is configured but the worker is NOT on the console
++	// session (i.e. someone is RDP'd into the box), SudoVDA can't attach a hidden display and we refuse to
++	// fall back to capturing the owner's live desktop. Fail the room cleanly instead of splattering the game
++	// across the owner's screen. (Isolated capture while the owner is on RDP needs WGC window capture.)
++	if !a.windowMode() && a.conf.VirtualDisplay && !isOnConsole() {
++		return fmt.Errorf("capture lane needs the console session for isolation, but the worker is in a remote/RDP session where a hidden display can't attach — start capture rooms when not RDP'd into the box (isolated capture over RDP is planned via window capture)")
++	}
 +	a.roomId = roomId
 +	a.heavyAppId = heavyAppId
 +	if uid, _, _, system, gameKey, ok := parseRoomId(roomId); ok {
@@ -6052,10 +6159,38 @@ index 0000000..bf4529e
 +	a.log.Info().Msgf("capture: launched pid %d", proc.pid)
 +
 +	a.gwAttach(a.heavyAppId, proc.pid)
-+	go focusPid(proc.pid)
++	if a.windowMode() {
++		// Park the window OFF-SCREEN (never focused — the owner keeps working) and start the WGC helper
++		// against its HWND. placeOffScreen discovers the window and stores a.winHwnd; we wait for it, then
++		// arm the helper + shm reader. The minimize guard runs for the room's life.
++		a.winStop = make(chan struct{})
++		go a.placeOffScreen(proc.pid)
++		go a.windowGuardLoop()
++		if hwnd := a.awaitWinHwnd(15 * time.Second); hwnd != 0 {
++			if err := a.startWindowCapture(hwnd); err != nil {
++				a.log.Error().Err(err).Msg("capture(window): helper/shm setup failed — video will be black this room")
++			}
++		} else {
++			a.log.Warn().Msg("capture(window): no game window found in 15s — video will be black this room")
++		}
++	} else {
++		go a.focusPid(proc.pid) // monitor mode: foreground (or place on the vdisplay) the game
++	}
 +	a.routeAudioToSink(proc.pid)
 +	go a.exitWatcher(proc, a.heavyAppId, a.swappedExe)
 +	return nil
++}
++
++// awaitWinHwnd blocks until placeOffScreen has discovered the game window (or the timeout elapses).
++func (a *App) awaitWinHwnd(d time.Duration) uintptr {
++	deadline := time.Now().Add(d)
++	for time.Now().Before(deadline) {
++		if h := atomic.LoadUintptr(&a.winHwnd); h != 0 {
++			return h
++		}
++		time.Sleep(100 * time.Millisecond)
++	}
++	return atomic.LoadUintptr(&a.winHwnd)
 +}
 +
 +// routeAudioToSink moves ONLY this game's audio (by PID) to the configured virtual sink (VB-CABLE)
@@ -6373,10 +6508,10 @@ index 0000000..3c15057
 +}
 diff --git a/pkg/worker/caged/capture/launch.go b/pkg/worker/caged/capture/launch.go
 new file mode 100644
-index 0000000..100c50f
+index 0000000..1c75e1c
 --- /dev/null
 +++ b/pkg/worker/caged/capture/launch.go
-@@ -0,0 +1,389 @@
+@@ -0,0 +1,487 @@
 +package capture
 +
 +import (
@@ -6614,6 +6749,11 @@ index 0000000..100c50f
 +func launchGame(exe, args, workingDir string) (*gameProc, error) {
 +	cmd := exec.Command(exe)
 +	cmd.Dir = workingDir
++	// Deliver gamepad input even while the game window is NOT foreground — the capture lane runs the
++	// game hidden/unfocused on the virtual display so it can't steal the owner's input, but an SDL game
++	// (SM64 Plus, yuzu) drops joystick events when it lacks focus unless this hint is set. Harmless to
++	// non-SDL titles.
++	cmd.Env = append(os.Environ(), "SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS=1")
 +	cmdLine := `"` + exe + `"`
 +	if strings.TrimSpace(args) != "" {
 +		cmdLine += " " + args
@@ -6681,6 +6821,9 @@ index 0000000..100c50f
 +	procIsWindowVisible    = user32.NewProc("IsWindowVisible")
 +	procSetForegroundWin   = user32.NewProc("SetForegroundWindow")
 +	procShowWindow         = user32.NewProc("ShowWindow")
++	procSetWindowLongPtr   = user32.NewProc("SetWindowLongPtrW")
++	procSetWindowPos       = user32.NewProc("SetWindowPos")
++	procGetWindowRect      = user32.NewProc("GetWindowRect")
 +	procBringWindowToTop   = user32.NewProc("BringWindowToTop")
 +	procKeybdEvent         = user32.NewProc("keybd_event")
 +	procPostMessageW       = user32.NewProc("PostMessageW")
@@ -6740,7 +6883,17 @@ index 0000000..100c50f
 +// is exactly our case — the worker isn't the foreground app. Synthesizing an ALT tap first makes
 +// Windows treat this as user-initiated and honor the change (the documented unlock). We also raise
 +// + re-assert a few times because yuzu creates a splash then its real window.
-+func focusPid(pid int) {
++//
++// When a per-room virtual display is active, focusPid delegates to placeOnVDisplay (below) which
++// relocates the game window onto that display so it renders — and is captured — THERE, not on the
++// owner's physical desktop.
++func (a *App) focusPid(pid int) {
++	if a.vdActive {
++		a.placeOnVDisplay(pid)
++		return
++	}
++	// Physical-monitor path (legacy): the game is on the owner's screen, so foreground it so it frames
++	// + receives input. ALT tap unlocks the background-process foreground lock.
 +	deadline := time.Now().Add(20 * time.Second)
 +	asserts := 0
 +	focusTargetPid = pid
@@ -6749,13 +6902,12 @@ index 0000000..100c50f
 +		procEnumWindows.Call(focusEnumWindow, 0)
 +		found := focusFoundHwnd
 +		if found != 0 {
-+			// Unlock the foreground lock with a benign ALT tap, then show + foreground + raise.
 +			procKeybdEvent.Call(vkMenu, 0, 0, 0)
 +			procKeybdEvent.Call(vkMenu, 0, keyeventfKeyUp, 0)
 +			procShowWindow.Call(found, swShow)
 +			procSetForegroundWin.Call(found)
 +			procBringWindowToTop.Call(found)
-+			// Re-assert 3x over ~1.5s: yuzu's window can lose focus to its own late-created child.
++			// Re-assert 3x over ~1.5s: a window can lose focus/position to its own late-created child.
 +			asserts++
 +			if asserts >= 3 {
 +				return
@@ -6766,12 +6918,93 @@ index 0000000..100c50f
 +		time.Sleep(300 * time.Millisecond)
 +	}
 +}
++
++// windowRect returns a window's screen rectangle (left, top, right, bottom).
++func windowRect(hwnd uintptr) (l, t, r, b int32) {
++	var rc win32rect
++	procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&rc)))
++	return rc.left, rc.top, rc.right, rc.bottom
++}
++
++// placeOnVDisplay parks the game window on the hidden per-room virtual display and KEEPS re-asserting
++// the position for a few seconds. This is the load-bearing part: an SDL title (SM64 Plus) re-centers
++// its own window onto its configured `default_monitor` a beat AFTER it first creates the window, which
++// would yank the game back onto the owner's PHYSICAL desktop — leaving the captured vdisplay blank and
++// the stream showing an empty display while audio still plays (the exact "I hear it but don't see it"
++// symptom). A one-shot move loses that race; re-placing until the window STAYS on the vdisplay rect
++// wins it. We never foreground the window — foregrounding a game the owner can't see would steal their
++// keyboard/mouse (the SM64 Plus mouse-trap); the pad still reaches it via
++// SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS (set at launch).
++//
++// It logs where the window is first seen and where it ends up, so a blank capture can be told apart:
++// window confirmed ON the vdisplay rect + still blank ⇒ a WGC-can't-capture-this-display problem, not
++// a placement one.
++func (a *App) placeOnVDisplay(pid int) {
++	target := fmt.Sprintf("@(%d,%d) %dx%d", a.vdX, a.vdY, a.vdW, a.vdH)
++	deadline := time.Now().Add(10 * time.Second)
++	firstSeen := false
++	settledStreak := 0
++	focusTargetPid = pid
++	for time.Now().Before(deadline) {
++		focusFoundHwnd = 0
++		procEnumWindows.Call(focusEnumWindow, 0)
++		found := focusFoundHwnd
++		if found == 0 {
++			time.Sleep(300 * time.Millisecond)
++			continue
++		}
++		l, t, r, b := windowRect(found)
++		if !firstSeen {
++			a.log.Info().Msgf("capture: game window %#x first seen @(%d,%d) %dx%d — relocating onto virtual display %s",
++				found, l, t, r-l, b-t, target)
++			firstSeen = true
++		}
++		onTarget := int(l) == a.vdX && int(t) == a.vdY
++		a.placeBorderlessAt(found, a.vdX, a.vdY, a.vdW, a.vdH)
++		if onTarget {
++			// Two consecutive checks with the window already on the vdisplay ⇒ it has stopped fighting
++			// us. Confirm and stop re-asserting.
++			settledStreak++
++			if settledStreak >= 2 {
++				a.log.Info().Msgf("capture: game window %#x settled on virtual display %s", found, target)
++				return
++			}
++		} else {
++			settledStreak = 0
++		}
++		time.Sleep(400 * time.Millisecond)
++	}
++	a.log.Warn().Msgf("capture: game window never settled on virtual display %s within 10s — "+
++		"the stream may show a blank display (title likely re-homes itself; check its monitor/fullscreen setting)", target)
++}
++
++// placeBorderlessAt strips the game window's chrome and moves+sizes it to the given rect, shown but
++// NOT activated — so the game renders (and is captured) there without ever taking the owner's
++// foreground/mouse/keyboard. Used both for the SudoVDA vdisplay rect (monitor mode) and the
++// off-screen park rect (window mode).
++func (a *App) placeBorderlessAt(hwnd uintptr, x, y, w, h int) {
++	const (
++		gwlStyle        = ^uintptr(15) // GWL_STYLE (-16)
++		wsPopup         = 0x80000000
++		wsVisible       = 0x10000000
++		swShowNoActive  = 4    // SW_SHOWNOACTIVATE
++		swpNoActivate   = 0x10 // SWP_NOACTIVATE
++		swpFrameChanged = 0x20 // SWP_FRAMECHANGED
++		swpShowWindow   = 0x40 // SWP_SHOWWINDOW
++	)
++	procSetWindowLongPtr.Call(hwnd, gwlStyle, uintptr(wsPopup|wsVisible))
++	procShowWindow.Call(hwnd, swShowNoActive)
++	procSetWindowPos.Call(hwnd, 0,
++		uintptr(int32(x)), uintptr(int32(y)),
++		uintptr(int32(w)), uintptr(int32(h)),
++		swpNoActivate|swpFrameChanged|swpShowWindow)
++}
 diff --git a/pkg/worker/caged/capture/monitor.go b/pkg/worker/caged/capture/monitor.go
 new file mode 100644
-index 0000000..6cc9eb1
+index 0000000..ffa2517
 --- /dev/null
 +++ b/pkg/worker/caged/capture/monitor.go
-@@ -0,0 +1,74 @@
+@@ -0,0 +1,77 @@
 +package capture
 +
 +import (
@@ -6783,6 +7016,7 @@ index 0000000..6cc9eb1
 +type monitorInfo struct {
 +	handle  uint64 // HMONITOR — passed verbatim to d3d11screencapturesrc monitor-handle
 +	device  string // \\.\DISPLAYn
++	x, y    int    // virtual-desktop top-left (rcMonitor.left/top) — where to place the game window
 +	width   int
 +	height  int
 +	primary bool
@@ -6819,6 +7053,8 @@ index 0000000..6cc9eb1
 +			out = append(out, monitorInfo{
 +				handle:  uint64(hMonitor),
 +				device:  syscall.UTF16ToString(mi.szDevice[:]),
++				x:       int(mi.rcMonitor.left),
++				y:       int(mi.rcMonitor.top),
 +				width:   int(mi.rcMonitor.right - mi.rcMonitor.left),
 +				height:  int(mi.rcMonitor.bottom - mi.rcMonitor.top),
 +				primary: mi.dwFlags&monitorinfofPrimary != 0,
@@ -6848,10 +7084,10 @@ index 0000000..6cc9eb1
 +}
 diff --git a/pkg/worker/caged/capture/pipeline.go b/pkg/worker/caged/capture/pipeline.go
 new file mode 100644
-index 0000000..dab0715
+index 0000000..eedaea2
 --- /dev/null
 +++ b/pkg/worker/caged/capture/pipeline.go
-@@ -0,0 +1,336 @@
+@@ -0,0 +1,337 @@
 +package capture
 +
 +/*
@@ -7172,6 +7408,7 @@ index 0000000..dab0715
 +// Start() never ran (stopRepush is nil on a failed room start — closing it would panic, which used to
 +// take down the whole worker on any prepare 409 / launch failure, W1).
 +func (a *App) stopPipelines() {
++	a.stopWindowCapture() // window mode: stop the shm reader + kill the helper (no-op in monitor mode)
 +	if a.stopRepush != nil {
 +		select {
 +		case <-a.stopRepush:
@@ -7187,6 +7424,698 @@ index 0000000..dab0715
 +		blockNull(a.audioPipe) // audio IS per-room (PID/CABLE) — fully release it
 +		a.audioPipe = nil
 +	}
++}
+diff --git a/pkg/worker/caged/capture/sudovda.go b/pkg/worker/caged/capture/sudovda.go
+new file mode 100644
+index 0000000..d02f772
+--- /dev/null
++++ b/pkg/worker/caged/capture/sudovda.go
+@@ -0,0 +1,294 @@
++package capture
++
++// SudoVDA control — the P4 virtual-display isolation path. Instead of capturing a PHYSICAL monitor
++// (which puts the game on the owner's desktop), the worker creates a HIDDEN SudoVDA virtual display
++// per room, points the capture pipeline at it, and destroys it on close. SudoVDA is the same indirect
++// display driver Apollo bundles (C:\Program Files\Apollo\drivers\sudovda); it has no CLI, so we speak
++// its IOCTL protocol directly (proven standalone before wiring — see the memory/plan). Protocol from
++// Apollo third-party/sudovda/sudovda-ioctl.h.
++
++import (
++	"encoding/binary"
++	"fmt"
++	"syscall"
++	"time"
++	"unsafe"
++
++	"golang.org/x/sys/windows"
++)
++
++// stableMonitorGUID is a FIXED identity for this worker's virtual display. Using one constant GUID for
++// every room makes Windows REUSE a single monitor devnode (toggling it present/non-present) instead of
++// spawning — and orphaning — a fresh non-present devnode per room, which is what piled up the
++// "Generic Monitor (MTArcadeVD)" ghosts in Device Manager. One capture worker serves one room at a time,
++// so a single shared identity never collides. Pairs with the boot-time reap in App.Init (remove any
++// orphan left by a crashed prior instance) and the always-on remove in closeRoomDisplay.
++var stableMonitorGUID = [16]byte{0x4d, 0x54, 0x41, 0x72, 0x63, 0x61, 0x64, 0x65, 0x56, 0x44, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05}
++
++var (
++	setupapi                             = syscall.NewLazyDLL("setupapi.dll")
++	procSetupDiGetClassDevsW             = setupapi.NewProc("SetupDiGetClassDevsW")
++	procSetupDiEnumDeviceInterfaces      = setupapi.NewProc("SetupDiEnumDeviceInterfaces")
++	procSetupDiGetDeviceInterfaceDetailW = setupapi.NewProc("SetupDiGetDeviceInterfaceDetailW")
++	procSetupDiDestroyDeviceInfoList     = setupapi.NewProc("SetupDiDestroyDeviceInfoList")
++)
++
++// SudoVDA control-device interface GUID {e5bcc234-1e0c-418a-a0d4-ef8b7501414d}.
++var sudovdaInterfaceGUID = windows.GUID{
++	Data1: 0xe5bcc234, Data2: 0x1e0c, Data3: 0x418a,
++	Data4: [8]byte{0xa0, 0xd4, 0xef, 0x8b, 0x75, 0x01, 0x41, 0x4d},
++}
++
++const (
++	digcfPresent         = 0x02
++	digcfDeviceInterface = 0x10
++
++	// CTL_CODE(FILE_DEVICE_UNKNOWN=0x22, fn, METHOD_BUFFERED=0, FILE_ANY_ACCESS=0).
++	ioctlAddVirtualDisplay    = 0x00222000 // fn 0x800
++	ioctlRemoveVirtualDisplay = 0x00222004 // fn 0x801
++	ioctlDriverPing           = 0x00222220 // fn 0x888
++)
++
++type spDeviceInterfaceData struct {
++	cbSize             uint32
++	interfaceClassGUID windows.GUID
++	flags              uint32
++	reserved           uintptr
++}
++
++// vddAddParams mirrors VIRTUAL_DISPLAY_ADD_PARAMS (56 bytes: 3×u32 + GUID(16) + 2×CHAR[14]). The Go
++// layout matches the C struct exactly (byte arrays are 1-aligned, so no padding creeps in).
++type vddAddParams struct {
++	width        uint32
++	height       uint32
++	refresh      uint32
++	monitorGUID  [16]byte
++	deviceName   [14]byte
++	serialNumber [14]byte
++}
++
++// vda is an open handle to the SudoVDA control device. One is opened at Init and reused for the
++// worker's life; displays are ADD/REMOVE'd per room against it.
++type vda struct{ h windows.Handle }
++
++// openVDA enumerates the SudoVDA control interface and opens it. NON-elevated works: the driver's INF
++// grants Everyone GRGW. Returns an error the caller degrades on (fall back to the physical monitor).
++func openVDA() (*vda, error) {
++	set, _, err := procSetupDiGetClassDevsW.Call(
++		uintptr(unsafe.Pointer(&sudovdaInterfaceGUID)), 0, 0,
++		uintptr(digcfPresent|digcfDeviceInterface))
++	if set == 0 || set == ^uintptr(0) { // INVALID_HANDLE_VALUE
++		return nil, fmt.Errorf("SetupDiGetClassDevs: %v", err)
++	}
++	defer procSetupDiDestroyDeviceInfoList.Call(set)
++
++	var did spDeviceInterfaceData
++	did.cbSize = uint32(unsafe.Sizeof(did))
++	if r, _, e := procSetupDiEnumDeviceInterfaces.Call(set, 0,
++		uintptr(unsafe.Pointer(&sudovdaInterfaceGUID)), 0, uintptr(unsafe.Pointer(&did))); r == 0 {
++		return nil, fmt.Errorf("SudoVDA interface absent (driver not installed?): %v", e)
++	}
++
++	var reqSize uint32
++	procSetupDiGetDeviceInterfaceDetailW.Call(set, uintptr(unsafe.Pointer(&did)), 0, 0,
++		uintptr(unsafe.Pointer(&reqSize)), 0)
++	if reqSize == 0 {
++		return nil, fmt.Errorf("SetupDiGetDeviceInterfaceDetail size query returned 0")
++	}
++	buf := make([]byte, reqSize)
++	// SP_DEVICE_INTERFACE_DETAIL_DATA_W: cbSize field = 8 on 64-bit; DevicePath (WCHAR) begins at
++	// byte offset 4 (right after the DWORD cbSize).
++	binary.LittleEndian.PutUint32(buf[0:], 8)
++	if r, _, e := procSetupDiGetDeviceInterfaceDetailW.Call(set, uintptr(unsafe.Pointer(&did)),
++		uintptr(unsafe.Pointer(&buf[0])), uintptr(reqSize), 0, 0); r == 0 {
++		return nil, fmt.Errorf("SetupDiGetDeviceInterfaceDetail: %v", e)
++	}
++	path := windows.UTF16PtrToString((*uint16)(unsafe.Pointer(&buf[4])))
++	pathPtr, err := windows.UTF16PtrFromString(path)
++	if err != nil {
++		return nil, fmt.Errorf("device path %q: %w", path, err)
++	}
++	h, err := windows.CreateFile(pathPtr,
++		windows.GENERIC_READ|windows.GENERIC_WRITE,
++		windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE, nil,
++		windows.OPEN_EXISTING, 0, 0)
++	if err != nil {
++		return nil, fmt.Errorf("open SudoVDA device: %w", err)
++	}
++	return &vda{h: h}, nil
++}
++
++func (v *vda) closeDev() {
++	if v != nil && v.h != 0 {
++		windows.CloseHandle(v.h)
++		v.h = 0
++	}
++}
++
++// add creates a virtual display at w×h@fps, identified by mon (used later to remove it).
++func (v *vda) add(w, h, fps uint32, mon [16]byte) error {
++	p := vddAddParams{width: w, height: h, refresh: fps, monitorGUID: mon}
++	copy(p.deviceName[:], "MTArcadeVD")
++	copy(p.serialNumber[:], "MTA0001")
++	var out [12]byte // VIRTUAL_DISPLAY_ADD_OUT { LUID AdapterLuid; UINT TargetId } — unused here
++	var ret uint32
++	if err := windows.DeviceIoControl(v.h, ioctlAddVirtualDisplay,
++		(*byte)(unsafe.Pointer(&p)), uint32(unsafe.Sizeof(p)),
++		&out[0], uint32(len(out)), &ret, nil); err != nil {
++		return fmt.Errorf("IOCTL_ADD_VIRTUAL_DISPLAY: %w", err)
++	}
++	return nil
++}
++
++// ping resets the driver watchdog so the display isn't auto-reaped. Errors are ignored (the display
++// staying alive is what matters; a lost ping just risks one reap the next tick re-covers).
++func (v *vda) ping() {
++	var out [8]byte
++	var ret uint32
++	_ = windows.DeviceIoControl(v.h, ioctlDriverPing, nil, 0, &out[0], uint32(len(out)), &ret, nil)
++}
++
++func (v *vda) remove(mon [16]byte) error {
++	var ret uint32
++	return windows.DeviceIoControl(v.h, ioctlRemoveVirtualDisplay,
++		&mon[0], uint32(len(mon)), nil, 0, &ret, nil)
++}
++
++// ── Per-room lifecycle ──────────────────────────────────────────────────────────────────────────
++
++// isOnConsole reports whether the worker's session is the physical console session. SudoVDA is an
++// indirect display driver (IDD): its virtual displays only ATTACH in the console session, alongside the
++// real GPU displays (monitors may be POWERED OFF — headless is fine; it's an RDP session that isn't).
++// In an RDP/remote session the ADD 'succeeds' but no monitor ever surfaces, so there we skip the vdisplay
++// and just capture the session's own display instead. Recomputed live per room since RDP can connect or
++// disconnect while the worker runs.
++func isOnConsole() bool {
++	var mySess uint32
++	_ = windows.ProcessIdToSessionId(windows.GetCurrentProcessId(), &mySess)
++	return mySess == windows.WTSGetActiveConsoleSessionId()
++}
++
++// logSessionContext records which session the worker booted into and what that means for the vdisplay.
++func (a *App) logSessionContext() {
++	var mySess uint32
++	_ = windows.ProcessIdToSessionId(windows.GetCurrentProcessId(), &mySess)
++	consoleSess := windows.WTSGetActiveConsoleSessionId()
++	if mySess == consoleSess {
++		a.log.Info().Msgf("capture: on the console session %d — the hidden virtual display is available (monitors may be OFF; that's fine)", mySess)
++		return
++	}
++	a.log.Warn().Msgf("capture: on a remote/RDP session (worker session=%d, console session=%d) — the hidden "+
++		"virtual display can't attach here, so capture rooms will be REFUSED (no desktop capture). Start capture "+
++		"rooms when not RDP'd into the box; isolated capture over RDP is planned via WGC window capture.", mySess, consoleSess)
++}
++
++// reapOrphanDisplay best-effort removes a leftover virtual display from a crashed prior worker instance
++// (same stable GUID). Harmless no-op when none exists; keeps at most one MTArcadeVD devnode around.
++func (v *vda) reapOrphanDisplay() { _ = v.remove(stableMonitorGUID) }
++
++// OpenRoomDisplay creates the room's hidden virtual display and repoints a.hmonitor at it, so both
++// pipeline paths (zero-copy VideoSrcChain and design-A startVideoPipeline) capture it. Called by the
++// coordinator's capture branch BEFORE VideoSrcChain — that is the load-bearing ordering: VideoSrcChain
++// bakes monitor-handle into the media pipe before LoadApp runs, so this must run first. Any failure
++// degrades gracefully to the physical monitor (a.hmonitor unchanged) rather than failing the room.
++func (a *App) OpenRoomDisplay() {
++	if !a.conf.VirtualDisplay || a.vda == nil {
++		return
++	}
++	// The physical/live handle was cached at BOOT; the display topology may have changed since (an RDP
++	// connect/disconnect, a monitor sleeping, a resolution change all invalidate the old HMONITOR and make
++	// d3d12 capture fail with "Failed to prepare capture object"). Re-pick it now so we always capture a
++	// currently-valid display, whether that ends up being the vdisplay or this session's own display.
++	a.refreshPhysMonitor()
++	// Over RDP the virtual display can't attach, and we must NOT fall back to capturing the session's own
++	// desktop — that would splatter the game across the owner's working screen. Skip the vdisplay here (so
++	// there's zero SudoVDA add/remove churn and zero ghost devnodes on RDP); LoadApp refuses the room
++	// outright when not on the console. Isolated capture over RDP needs WGC window capture (planned).
++	if !isOnConsole() {
++		a.log.Warn().Msg("capture: remote/RDP session — isolated capture unavailable here; the room will be refused (no desktop capture)")
++		return
++	}
++	mon := stableMonitorGUID
++	before := map[string]bool{}
++	for _, m := range enumMonitors() {
++		before[m.device] = true
++	}
++	if err := a.vda.add(uint32(a.width()), uint32(a.height()), uint32(a.fps()), mon); err != nil {
++		a.log.Error().Err(err).Msg("capture: virtual-display ADD failed — capturing the physical monitor instead")
++		return
++	}
++	// Windows surfaces the new monitor a beat after ADD; find it by diffing the device set.
++	var found *monitorInfo
++	deadline := time.Now().Add(5 * time.Second)
++	for found == nil && time.Now().Before(deadline) {
++		time.Sleep(150 * time.Millisecond)
++		for _, m := range enumMonitors() {
++			if !before[m.device] {
++				mm := m
++				found = &mm
++				break
++			}
++		}
++	}
++	if found == nil {
++		a.log.Error().Msg("capture: virtual display ADD'd but no new monitor appeared — reverting to physical")
++		_ = a.vda.remove(mon)
++		return
++	}
++	a.vdMon = mon
++	a.vdActive = true
++	a.vdX, a.vdY, a.vdW, a.vdH = found.x, found.y, found.width, found.height
++	a.hmonitor = found.handle
++	a.vdStop = make(chan struct{})
++	go a.vdPingLoop(a.vdStop)
++	a.log.Info().Msgf("capture: virtual display %s %dx%d @(%d,%d) hmonitor=%d — game hidden from the physical desktop",
++		found.device, found.width, found.height, found.x, found.y, found.handle)
++}
++
++// closeRoomDisplay stops the watchdog ping and removes the room's virtual display, restoring the
++// physical-monitor handle as the fallback for a room where the vdisplay fails to create. Idempotent.
++func (a *App) closeRoomDisplay() {
++	if !a.vdActive {
++		return
++	}
++	a.vdActive = false
++	if a.vdStop != nil {
++		close(a.vdStop)
++		a.vdStop = nil
++	}
++	if a.vda != nil {
++		if err := a.vda.remove(a.vdMon); err != nil {
++			a.log.Warn().Err(err).Msg("capture: virtual-display REMOVE failed (driver watchdog will reap it)")
++		}
++	}
++	a.hmonitor = a.physHmonitor
++}
++
++// refreshPhysMonitor re-enumerates displays and re-selects the configured physical monitor, updating the
++// fallback handle (and, since vdActive is still false when this runs, the live capture handle too). Called
++// at room start so a topology change since boot can't leave the fallback pointing at a dead HMONITOR.
++func (a *App) refreshPhysMonitor() {
++	mons := enumMonitors()
++	if h, chosen, ok := pickMonitor(mons, a.conf.MonitorIndex); ok {
++		a.physHmonitor = h
++		if !a.vdActive {
++			a.hmonitor = h
++		}
++		a.log.Info().Msgf("capture: physical fallback monitor refreshed → %s (%dx%d hmonitor=%d)", chosen.device, chosen.width, chosen.height, h)
++	}
++}
++
++func (a *App) vdPingLoop(stop chan struct{}) {
++	t := time.NewTicker(time.Second)
++	defer t.Stop()
++	for {
++		select {
++		case <-stop:
++			return
++		case <-t.C:
++			if a.vda != nil {
++				a.vda.ping()
++			}
++		}
++	}
++}
+diff --git a/pkg/worker/caged/capture/wincapture.go b/pkg/worker/caged/capture/wincapture.go
+new file mode 100644
+index 0000000..dbb1112
+--- /dev/null
++++ b/pkg/worker/caged/capture/wincapture.go
+@@ -0,0 +1,386 @@
++package capture
++
++// Window-capture mode (captureMode: window). Instead of screen-capturing a monitor (the SudoVDA/
++// d3d12screencapturesrc path), the worker launches the game, parks its window fully OFF-SCREEN
++// (borderless, never focused), and spawns the external ArcadeCaptureHost helper to WGC-capture that
++// window BY HWND. The helper publishes packed BGRA frames into a shared-memory ring this file reads
++// and feeds into the SAME design-A appsrc ingest (cacheAndPush → videoCb), so ABR / per-room codec /
++// keyframes / the re-push ticker / black-on-exit all reuse unchanged.
++//
++// Why a separate helper: WGC won't compile in our mingw/ucrt64 GStreamer toolchain (WinRT/WRL headers
++// don't emit the __FITypedEventHandler typedefs mingw needs — hard wall). .NET 10 has first-class WGC
++// projections, so the capture lives in a tiny .NET process (src/ArcadeCaptureHost). A WGC/D3D crash
++// there stays out of the worker. Window capture works in ANY session (console OR RDP) because it grabs
++// the window's DWM visual, which composits even off-screen (frames only stop while MINIMIZED — hence
++// the minimize guard). The IPC protocol is defined identically here and in SharedFrameRing.cs.
++//
++// The shared-memory ring header (little-endian; x64):
++//   0  u32 magic='MTWC'  4 u32 version  8 u32 width  12 u32 height  16 u32 stride  20 u32 slotCount
++//   24 u32 slotSize  28 u32 generation  32 i32 latestSlot  40 u64 frameSeq  48 u64 qpc
++// then slotCount slots of (8-byte seq + slotSize pixels) at 64 + i*(8+slotSize).
++
++import (
++	"bufio"
++	"fmt"
++	"io"
++	"os"
++	"os/exec"
++	"strconv"
++	"sync/atomic"
++	"time"
++	"unsafe"
++
++	"golang.org/x/sys/windows"
++)
++
++const (
++	shmMagic       = 0x4357544D // 'M','T','W','C' as a LE u32
++	shmHeaderSize  = 64
++	offMagic       = 0
++	offWidth       = 8
++	offHeight      = 12
++	offStride      = 16
++	offSlotSize    = 24
++	offGeneration  = 28
++	offLatestSlot  = 32
++	offFrameSeq    = 40
++	fileMapReadCap = 0x0004 // FILE_MAP_READ
++)
++
++var (
++	kernel32           = windows.NewLazySystemDLL("kernel32.dll")
++	procOpenFileMapW   = kernel32.NewProc("OpenFileMappingW")
++	procGetSystemMetr = user32.NewProc("GetSystemMetrics")
++	procIsIconic      = user32.NewProc("IsIconic")
++)
++
++const (
++	smXVirtualScreen  = 76
++	smYVirtualScreen  = 77
++	smCXVirtualScreen = 78
++	swShowNoActivate  = 4 // SW_SHOWNOACTIVATE
++	swRestore         = 9 // SW_RESTORE
++)
++
++// windowMode reports whether this room captures a window (vs a monitor). Default = window; a config
++// that explicitly sets captureMode:"monitor" gets the legacy SudoVDA/monitor path.
++func (a *App) windowMode() bool {
++	switch a.conf.CaptureMode {
++	case "monitor":
++		return false
++	case "window", "":
++		return a.conf.HelperPath != "" || a.conf.CaptureMode == "window"
++	default:
++		return false
++	}
++}
++
++func ld32(addr uintptr) uint32 { return atomic.LoadUint32((*uint32)(unsafe.Pointer(addr))) }
++func ld64(addr uintptr) uint64 { return atomic.LoadUint64((*uint64)(unsafe.Pointer(addr))) }
++
++// startWindowCapture launches the helper for hwnd, opens its shared-memory ring, and records handles.
++// Returns an error only on a hard failure the caller can't recover (helper won't exec / ring never
++// appears); a slow-to-ready helper is tolerated (frames start when they start; repush holds meanwhile).
++func (a *App) startWindowCapture(hwnd uintptr) error {
++	if a.conf.HelperPath == "" {
++		return fmt.Errorf("captureMode window but no helperPath configured")
++	}
++	if _, err := os.Stat(a.conf.HelperPath); err != nil {
++		return fmt.Errorf("helper not found at %s: %w", a.conf.HelperPath, err)
++	}
++	shm := fmt.Sprintf("mtwc-%d-%d", os.Getpid(), time.Now().UnixNano())
++	evt := shm + "-evt"
++
++	cmd := exec.Command(a.conf.HelperPath,
++		"--hwnd", strconv.FormatUint(uint64(hwnd), 10),
++		"--shm", shm, "--event", evt,
++		"--width", strconv.Itoa(a.width()),
++		"--height", strconv.Itoa(a.height()),
++		"--fps", strconv.Itoa(a.fps()))
++	stdin, err := cmd.StdinPipe() // HELD OPEN — closing it makes the helper exit (its stdin watcher)
++	if err != nil {
++		return fmt.Errorf("helper stdin pipe: %w", err)
++	}
++	stdout, err := cmd.StdoutPipe()
++	if err != nil {
++		return fmt.Errorf("helper stdout pipe: %w", err)
++	}
++	if err := cmd.Start(); err != nil {
++		return fmt.Errorf("helper start: %w", err)
++	}
++	a.helper = cmd
++	a.helperStdin = stdin
++	a.log.Info().Msgf("capture(window): helper pid %d hwnd=%#x shm=%s", cmd.Process.Pid, hwnd, shm)
++
++	ready := make(chan struct{}, 1)
++	go a.helperStdoutLoop(stdout, ready)
++	select {
++	case <-ready:
++	case <-time.After(8 * time.Second):
++		a.log.Warn().Msg("capture(window): helper not ready in 8s — continuing (video black until it recovers)")
++	}
++
++	if err := a.openShm(shm, evt); err != nil {
++		return fmt.Errorf("open capture shm: %w", err)
++	}
++	return nil
++}
++
++// helperStdoutLoop forwards the helper's JSON status lines into the worker log and signals `ready` on
++// the first "ready" event (once, non-blocking).
++func (a *App) helperStdoutLoop(r io.ReadCloser, ready chan<- struct{}) {
++	sc := bufio.NewScanner(r)
++	sc.Buffer(make([]byte, 0, 8192), 1<<20)
++	for sc.Scan() {
++		line := sc.Text()
++		if line == "" {
++			continue
++		}
++		a.log.Info().Msgf("capture(window) helper: %s", line)
++		if len(line) > 16 && line[:16] == `{"event":"ready"` {
++			select {
++			case ready <- struct{}{}:
++			default:
++			}
++		}
++	}
++}
++
++// openShm opens the helper's shared-memory ring + frame event and reads the fixed header.
++func (a *App) openShm(shm, evt string) error {
++	shmP, err := windows.UTF16PtrFromString(shm)
++	if err != nil {
++		return err
++	}
++	evtP, _ := windows.UTF16PtrFromString(evt)
++
++	var mh windows.Handle
++	for i := 0; i < 100; i++ { // the ring is created by the helper a beat after it starts
++		r, _, e := procOpenFileMapW.Call(uintptr(fileMapReadCap), 0, uintptr(unsafe.Pointer(shmP)))
++		if r != 0 {
++			mh = windows.Handle(r)
++			break
++		}
++		if i == 99 {
++			return fmt.Errorf("OpenFileMapping(%s): %v", shm, e)
++		}
++		time.Sleep(50 * time.Millisecond)
++	}
++	addr, err := windows.MapViewOfFile(mh, fileMapReadCap, 0, 0, 0)
++	if err != nil {
++		windows.CloseHandle(mh)
++		return fmt.Errorf("MapViewOfFile: %w", err)
++	}
++	if m := ld32(addr + offMagic); m != shmMagic {
++		windows.UnmapViewOfFile(addr)
++		windows.CloseHandle(mh)
++		return fmt.Errorf("bad shm magic 0x%08x", m)
++	}
++	eh, eerr := windows.OpenEvent(windows.SYNCHRONIZE, false, evtP)
++	if eerr != nil {
++		a.log.Warn().Err(eerr).Msg("capture(window): frame event unavailable — reader will poll")
++		eh = 0
++	}
++	a.shm = mh
++	a.shmAddr = addr
++	a.shmEvent = eh
++	a.shmW = int(ld32(addr + offWidth))
++	a.shmH = int(ld32(addr + offHeight))
++	a.shmStride = int(ld32(addr + offStride))
++	slotSize := int(ld32(addr + offSlotSize))
++	a.shmPerSlot = 8 + slotSize
++	a.log.Info().Msgf("capture(window): shm open %dx%d stride=%d slotSize=%d", a.shmW, a.shmH, a.shmStride, slotSize)
++	return nil
++}
++
++// shmReadLoop is the design-A frame source for window mode: it waits on the helper's frame event, reads
++// the latest slot under the seqlock, and hands the packed BGRA frame to cacheAndPush (→ videoCb, the
++// exact same ingest the monitor path uses). Dropped intermediate frames are fine (live stream); a
++// static screen is covered by the re-push ticker started alongside it.
++func (a *App) shmReadLoop() {
++	base := a.shmAddr
++	if base == 0 {
++		a.log.Error().Msg("capture(window): shmReadLoop with no mapping — no video")
++		return
++	}
++	stride := a.shmStride
++	h := a.shmH
++	perSlot := a.shmPerSlot
++	pixBytes := stride * h
++	scratch := make([]byte, pixBytes)
++	dur := time.Second / time.Duration(a.fps())
++	var lastSeq uint64
++	gen := ld32(base + offGeneration)
++
++	for {
++		select {
++		case <-a.winStop:
++			return
++		default:
++		}
++		if a.shmEvent != 0 {
++			windows.WaitForSingleObject(a.shmEvent, 500) // auto-reset; wake on a new frame or timeout
++		} else {
++			time.Sleep(8 * time.Millisecond)
++		}
++		select {
++		case <-a.winStop:
++			return
++		default:
++		}
++		fseq := ld64(base + offFrameSeq)
++		if fseq == lastSeq {
++			continue // no new frame — repushLoop keeps the last one alive
++		}
++		lastSeq = fseq
++		if g := ld32(base + offGeneration); g != gen {
++			gen = g
++			// Dims are normalized to the ring's fixed geometry by the helper, so downstream caps never
++			// change; log for observability (a real content-size change under an off-screen window).
++			a.log.Info().Msgf("capture(window): helper generation -> %d", g)
++		}
++		slot := int32(ld32(base + offLatestSlot))
++		if slot < 0 {
++			continue
++		}
++		seqOff := base + uintptr(shmHeaderSize+int(slot)*perSlot)
++		pixOff := seqOff + 8
++		ok := false
++		for attempt := 0; attempt < 5; attempt++ {
++			s1 := ld64(seqOff)
++			if s1&1 != 0 {
++				continue // writer mid-write; retry
++			}
++			src := unsafe.Slice((*byte)(unsafe.Pointer(pixOff)), pixBytes)
++			copy(scratch, src)
++			if ld64(seqOff) == s1 {
++				ok = true
++				break
++			}
++		}
++		if !ok {
++			continue // torn on every attempt — skip this frame
++		}
++		a.cacheAndPush(scratch, stride, dur)
++	}
++}
++
++// ── off-screen placement + minimize guard (window mode) ──────────────────────────────────────────
++
++// offScreenRect computes a rect fully outside the virtual desktop, sized to the capture geometry.
++// Recomputed per room because RDP connect/disconnect changes the desktop geometry.
++func (a *App) offScreenRect() (x, y, w, h int) {
++	vx, _, _ := procGetSystemMetr.Call(smXVirtualScreen)
++	vcx, _, _ := procGetSystemMetr.Call(smCXVirtualScreen)
++	x = int(int32(vx)) + int(int32(vcx)) + 1000 // 1000px past the right edge of everything
++	y = 0
++	return x, y, a.width(), a.height()
++}
++
++// placeOffScreen parks the game window off-screen (borderless, NEVER focused) and re-asserts until it
++// stays put for two consecutive checks — winning the SM64-Plus re-home race the same way placeOnVDisplay
++// does, but WITHOUT stealing the owner's foreground/keyboard/mouse (the whole point of window mode is
++// that the owner keeps working). The pad still reaches the unfocused window via
++// SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS (set at launch). Records the HWND for the minimize guard.
++func (a *App) placeOffScreen(pid int) {
++	x, y, w, h := a.offScreenRect()
++	a.winX, a.winY, a.winW, a.winH = x, y, w, h
++	target := fmt.Sprintf("@(%d,%d) %dx%d", x, y, w, h)
++	deadline := time.Now().Add(10 * time.Second)
++	firstSeen := false
++	settledStreak := 0
++	focusTargetPid = pid
++	for time.Now().Before(deadline) {
++		focusFoundHwnd = 0
++		procEnumWindows.Call(focusEnumWindow, 0)
++		found := focusFoundHwnd
++		if found == 0 {
++			time.Sleep(300 * time.Millisecond)
++			continue
++		}
++		atomic.StoreUintptr(&a.winHwnd, found)
++		l, t, r, b := windowRect(found)
++		if !firstSeen {
++			a.log.Info().Msgf("capture(window): game window %#x first seen @(%d,%d) %dx%d — parking off-screen %s",
++				found, l, t, r-l, b-t, target)
++			firstSeen = true
++		}
++		onTarget := int(l) == x && int(t) == y
++		a.placeBorderlessAt(found, x, y, w, h)
++		if onTarget {
++			settledStreak++
++			if settledStreak >= 2 {
++				a.log.Info().Msgf("capture(window): game window %#x settled off-screen %s", found, target)
++				return
++			}
++		} else {
++			settledStreak = 0
++		}
++		time.Sleep(400 * time.Millisecond)
++	}
++	a.log.Warn().Msgf("capture(window): game window never settled off-screen %s within 10s "+
++		"(title likely re-homes itself); the minimize/placement guard will keep asserting it", target)
++}
++
++// windowGuardLoop keeps the game window OFF-SCREEN and NOT minimized for the room's life. WGC stops
++// delivering frames while a window is minimized, so if the game (or anything) minimizes it we restore
++// it SHOWNOACTIVATE (no focus steal) and re-park it off-screen. Cheap 1 Hz poll; stops on winStop.
++func (a *App) windowGuardLoop() {
++	t := time.NewTicker(time.Second)
++	defer t.Stop()
++	for {
++		select {
++		case <-a.winStop:
++			return
++		case <-t.C:
++			hwnd := atomic.LoadUintptr(&a.winHwnd)
++			if hwnd == 0 {
++				continue
++			}
++			if r, _, _ := procIsIconic.Call(hwnd); r != 0 {
++				a.log.Info().Msgf("capture(window): window %#x was minimized — restoring off-screen (WGC needs it un-minimized)", hwnd)
++				procShowWindow.Call(hwnd, swShowNoActivate)
++				a.placeBorderlessAt(hwnd, a.winX, a.winY, a.winW, a.winH)
++			}
++		}
++	}
++}
++
++// stopWindowCapture tears down the shm reader, the helper (close stdin then terminate), and unmaps the
++// ring. Idempotent; safe when window mode was never started.
++func (a *App) stopWindowCapture() {
++	if a.winStop != nil {
++		select {
++		case <-a.winStop:
++		default:
++			close(a.winStop)
++		}
++	}
++	if a.helperStdin != nil {
++		a.helperStdin.Close() // signals the helper to exit
++		a.helperStdin = nil
++	}
++	if a.helper != nil && a.helper.Process != nil {
++		done := make(chan struct{})
++		go func() { a.helper.Wait(); close(done) }()
++		select {
++		case <-done:
++		case <-time.After(2 * time.Second):
++			_ = a.helper.Process.Kill()
++		}
++		a.helper = nil
++	}
++	if a.shmAddr != 0 {
++		windows.UnmapViewOfFile(a.shmAddr)
++		a.shmAddr = 0
++	}
++	if a.shm != 0 {
++		windows.CloseHandle(a.shm)
++		a.shm = 0
++	}
++	if a.shmEvent != 0 {
++		windows.CloseHandle(a.shmEvent)
++		a.shmEvent = 0
++	}
++	atomic.StoreUintptr(&a.winHwnd, 0)
 +}
 diff --git a/pkg/worker/caged/libretro/caged.go b/pkg/worker/caged/libretro/caged.go
 index f3553b1..a26a9d8 100644
@@ -45959,10 +46888,10 @@ index 2840a0e..c55a441 100644
  	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
  		var out api.Out
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..9184c5b 100644
+index 6972cc7..c1d620f 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,603 @@
+@@ -1,310 +1,607 @@
 -package worker
 -
 -import (
@@ -46502,6 +47431,10 @@ index 6972cc7..9184c5b 100644
 +				w.router.SetRoom(nil)
 +				return api.EmptyPacket
 +			}
++			// P4 virtual-display isolation: create the room's HIDDEN display and repoint the capture
++			// monitor at it BEFORE VideoSrcChain — that call bakes monitor-handle into the media pipe,
++			// and it runs before LoadApp, so the display must exist first. No-op unless enabled.
++			capApp.OpenRoomDisplay()
 +			// P4 zero-copy: hand the media pipe the capture chain to use INSTEAD of its appsrc, so the
 +			// frame goes capture → GPU convert → NVENC without ever touching system memory. The encoder
 +			// stays where it was, so ABR (SetVideoBitrate), the per-room codec (encConf, applied above)

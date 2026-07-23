@@ -1015,3 +1015,115 @@ test card landing FIRST (it is the instrument every other item is judged with). 
 stays out of scope. The OBU finding above means item 1 is closed; the pace/AR drift means items 4 and 5c are
 closed. Hygiene reads (§12.2-B VB-Audio registry, §12.2-D default render device) need admin/driver-restart
 and are flagged for Eric, not automated. Router UDP 8448 forward for off-LAN peers remains Eric's action.
+
+---
+
+# 2026-07-23 — WGC WINDOW CAPTURE MODE (isolated capture that works over RDP)
+
+The capture lane can now capture the GAME'S WINDOW (by HWND) instead of a monitor. This removes the
+SudoVDA / console-session / autologin dependency for the "owner works over RDP while a friend plays"
+case, and is the DEFAULT (`captureMode: window` in config.worker-capture.yaml). The monitor path
+(`captureMode: monitor` + `virtualDisplay`) is kept verbatim as a config fallback.
+
+## Why window capture (the road here)
+
+Monitor capture forces a display: SudoVDA (an indirect display driver) attaches its hidden per-room
+display only on the **console** session, so an RDP login — which REPLACES the console's display stack —
+breaks it (the ADD "succeeds" but no monitor ever surfaces). WGC also captures a single WINDOW
+(`IGraphicsCaptureItemInterop::CreateForWindow`), grabbing the window's DWM visual, which composits even
+**off-screen or occluded** (frames only stop while MINIMIZED). Park the game window off-screen and
+capture it by HWND and the game never appears on the owner's desktop, in ANY session.
+
+The blocker was the toolchain, not the API: GStreamer 1.28.4's `d3d12screencapturesrc` implements window
+capture, but the whole WGC feature set is behind `HAVE_WGC` and **won't compile under mingw/ucrt64**
+(WinRT/WRL headers don't emit the `__FITypedEventHandler` typedefs the MSVC SDK does — 28 errors,
+confirmed against the official MSYS2 build too; MSYS2 disables `d3d12-wgc` for this reason). Our entire
+GStreamer/Go/cgo stack is mingw, and an MSVC-built plugin won't link into it.
+
+## Architecture — a standalone .NET helper + shared-memory ring, into design-A appsrc
+
+`.NET 10` has first-class WinRT projections for WGC, so the capture lives in a tiny separate process,
+`src/ArcadeCaptureHost` (NOT in MovieTheater.sln, NOT built by CI — Windows/Ziggy-only, deployed by file
+copy beside worker.exe). A WGC/D3D crash there stays out of the worker (history: the stock plugin's
+cursor bug abort()ed the whole worker, read by players as "the arcade is full").
+
+Flow: the off-screen game window is captured by WGC `CreateForWindow` in ArcadeCaptureHost (own D3D11
+device, `Direct3D11CaptureFramePool.CreateFreeThreaded`, B8G8R8A8, 2 buffers). Each FrameArrived does
+CopyResource to a staging texture, Map, and packs rows into a shared-memory ring. The worker's
+`shmReadLoop` (OpenFileMapping / MapViewOfFile / OpenEvent + seqlock) reads the latest frame and calls
+`cacheAndPush` — the SAME design-A appsrc path monitor capture uses — so ABR, per-room codec, keyframes,
+the re-push ticker, and black-on-exit all reuse unchanged.
+
+The helper is spawned per room with the game's HWND + generated shm/event names; the worker holds its
+stdin open (closing it makes the helper exit — it dies with the worker) and parses one JSON status line
+per stdout line (`ready` / `resize` / `recover` / `error` / `stopped`).
+
+### Shared-memory IPC protocol (identical in SharedFrameRing.cs and wincapture.go, little-endian x64)
+
+Header (64 bytes): `magic 'MTWC'` u32, `version=1` u32, `width` u32, `height` u32, `stride` (=width*4)
+u32, `slotCount=3` u32, `slotSize` (page-aligned pixel capacity) u32, `generation` u32, `latestSlot`
+i32, `frameSeq` u64, `qpc` u64. Then 3 slots of (8-byte seq + slotSize pixels) at `64 + i*(8+slotSize)`.
+The writer round-robins into a slot that is NOT latestSlot, marks its seq odd (seqlock) while copying,
+even when done, then publishes latestSlot / frameSeq / qpc and sets the event. The reader takes
+latestSlot, copies under the seqlock, and retries on a torn read. The helper always normalizes output to
+the configured width x height (clamp + zero-fill), because the worker builds a fixed-geometry pipeline.
+
+## Worker behavior in window mode (pkg/worker/caged/capture/wincapture.go)
+
+- Launch the game as before (job object, graceful WM_CLOSE kill, audio PID to VB-CABLE routing — unchanged).
+- Park the window fully OFF-SCREEN (a rect past `SM_XVIRTUALSCREEN + SM_CXVIRTUALSCREEN`, recomputed per
+  room because RDP changes geometry), borderless, with a persistent re-assert that wins the SM64-Plus
+  re-home race (`placeOffScreen`) — and NEVER focus it (the owner keeps typing; the pad still reaches an
+  unfocused SDL window via `SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS=1`, set at launch).
+- Minimize guard (`windowGuardLoop`, 1 Hz): WGC stops delivering while minimized, so restore
+  SHOWNOACTIVATE + re-park.
+- `ZeroCopy()` is forced off (frames arrive over shm, not an in-GStreamer chain; zeroCopy config is
+  ignored + logged). The SudoVDA open and the RDP console-refusal gate are skipped in window mode.
+- Room close kills the helper (close stdin, then terminate) before the game kill. Black-frame-on-exit
+  privacy holds: on game death the helper stops producing, `setCapturing(false)` drops frames, and
+  `pushBlackFrames` pins black — window mode never captures the desktop to begin with.
+
+## Mode matrix
+
+| aspect | `captureMode: window` (default) | `captureMode: monitor` (fallback) |
+|---|---|---|
+| what is captured | the game window, by HWND, parked off-screen | a physical monitor (optionally a per-room SudoVDA vdisplay) |
+| works over RDP | YES | NO (IDD displays attach on the console session only) |
+| isolation from owner's desktop | window is off-screen, never focused | game on a hidden vdisplay (console) / refuses over RDP |
+| capture path | ArcadeCaptureHost helper, shm, design-A appsrc | d3d12/d3d11 screencapturesrc (zero-copy or design-A) |
+| SudoVDA / autologin needed | no | vdisplay needs the console session |
+
+## Deploy
+
+`src/ArcadeCaptureHost/build.ps1` publishes a self-contained single-file win-x64 exe; copy it to
+`D:\ArcadeStorage\worker-capture\bin\ArcadeCaptureHost.exe`. Worker deploy is the usual capture-lane
+dance (stop watchdog + task 3, back up worker.exe, swap, restart, then restart the watchdog). Config
+deploy = byte-exact copy of `docker/arcade/config.worker-capture.yaml` to the live `config.yaml` (diff
+first — hard rule).
+
+## Verified live 2026-07-23 (RDP session)
+
+P0 standalone: off-screen notepad and off-screen SM64 Plus both captured non-black frames; frames stop
+on minimize and resume on restore. P2 live room: SM64 Plus streamed to the browser (AV1 1080p, 0
+freezes) with the game window settled off-screen @(3560,0) and absent from the owner's desktop; both
+retro workers stayed healthy. **fps under RDP is ~32** because the Microsoft Remote Display Adapter for
+the RDP session runs at 32 Hz and WGC delivery is bounded by DWM's composition (present) rate = the
+display refresh; on the physical console session (120 Hz monitors) the game vsyncs to 60 and capture
+delivers 60. Game vsync on/off cannot exceed the compositor rate for WGC delivery, so this is an
+RDP-display artifact, not a lane limit.
+
+## Known caveats / follow-ups
+
+- **~1s desktop flash at launch**: the game window is created on the visible desktop (e.g. @(317,154))
+  and only parked off-screen a beat later when `placeOffScreen` first sees it. Under RDP the owner sees
+  a brief game-window flash before it vanishes. Future: create the window hidden/off-screen from the
+  start (SDL hint / CBT hook) — untested, risks WGC not compositing a never-shown window.
+- **GPU shared-texture stage 2 (future)**: today the helper reads back BGRA to system memory and the
+  worker re-uploads for NVENC (the design-A cost). A D3D11 shared handle + shared fence from the helper,
+  wrapped as GstD3D12 in the worker, would restore zero-copy across the process boundary. Documented,
+  not built.
+- **Per-title background-input**: SDL titles need `SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS=1` (set). Other
+  emulators (yuzu) may need their own "input while unfocused" setting in profiles.json / per-title ini.
+- **HDR**: window-capturing an SDR game window sidesteps the desktop-HDR tonemap problem (no monitor HDR
+  in play). If the desktop is ever in HDR mode, revisit — the helper captures the window's SDR visual,
+  so this is expected to be a non-issue.
