@@ -38,6 +38,7 @@ namespace MovieTheater.Services.Arcade
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
                 "switch-kirby-forgotten-land",
+                "pc-sm64-plus",
             };
 
         /// <summary>True when a heavy title's key is capture-enabled (has a browser capture stub).</summary>
