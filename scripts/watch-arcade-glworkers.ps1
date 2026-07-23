@@ -50,6 +50,19 @@
        in that set; a healthy idle worker swept up here just respawns in ~4 s). Acts once per
        distinct timeout (tracked), and only on timeouts newer than ~3 cycles to avoid startup noise.
 
+    E) STALE CONFIG (first seen 2026-07-23): workers read config.yaml ONLY at startup, so a config
+       deploy/edit is silently INERT on every already-running worker until someone recycles it BY
+       HAND. Both GL workers ran a 5-min-stale config whose default n64 core was still the OLD core,
+       so a no-core-override room booted the WRONG core and its render-profile options reconciled
+       DEAD ([[config.yaml is dead; diff before deploy]] is about deploying the file; this is about
+       making the running worker actually load it). Detection: a worker whose ConfDir config.yaml
+       LastWriteTime is AFTER the worker's process start. Response: gracefully recycle it (runner
+       respawns on the current config) — but ONLY when it is FREE (not hosting a coordinator-known
+       room, same busy->port map as check C), past grace, and not already handled by C/D; at most
+       ONE per cycle so the pool is never drained (a busy worker is picked up once it goes free).
+       This makes config deploys self-applying. (Capture worker excluded: its ConfDir isn't on the
+       worker-gl/-N convention, so ConfDirForPid can't find its config and check E skips it.)
+
     Registered as scheduled task "MovieTheater - Arcade GL Worker Watchdog" (logon trigger,
     same pattern as the worker tasks). Safe to run interactively too.
 #>
@@ -323,6 +336,49 @@ while ($true) {
             }
             if (-not $acted) {
                 Log ("coordinator work-timeout at {0} but no past-grace, log-silent worker to recycle (all busy/booting/fresh) -- noted only" -f $newestTimeout.ToString('o'))
+            }
+        }
+
+        # -- E) STALE-CONFIG check (self-applying config deploys) ----------------------------
+        # Workers read config.yaml ONLY at startup; a deploy/edit is inert on a running worker until
+        # it is recycled. When a worker's ConfDir config.yaml was written AFTER the worker started,
+        # gracefully recycle it so the runner reloads the new config -- but ONLY when it is FREE (not
+        # hosting a coordinator-known room; same busy->port map + ghost guard as check C), past grace,
+        # and not already being recycled by C/D. At most ONE per cycle so the pool is never drained
+        # (a busy worker is recycled once it goes free on a later cycle). Graceful path flushes the
+        # shader cache like any recycle. See the .DESCRIPTION E) note (the 2026-07-23 stale-core trap).
+        if ($status) {
+            $busyPorts = @{}
+            foreach ($entry in @($status | Where-Object { $_.room })) {
+                foreach ($p in $WorkerPorts) {
+                    $last = LastRoomInLog (WorkerLogPath $p)
+                    if (-not $last -or $last.Room -ne $entry.room) { continue }
+                    $owner = (Get-NetUDPEndpoint -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+                    $proc  = if ($owner) { $workers | Where-Object { [int]$_.ProcessId -eq [int]$owner } | Select-Object -First 1 } else { $null }
+                    if ($last.Time -and $proc -and $last.Time -lt $proc.CreationDate) { continue }  # ghost tail; not really busy here
+                    $busyPorts[$p] = $true
+                }
+            }
+            foreach ($p in $WorkerPorts) {
+                if ($busyPorts[$p]) { continue }                                    # hosting a live room
+                $owner = (Get-NetUDPEndpoint -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+                if (-not $owner) { continue }
+                $wpid = [int]$owner
+                if (-not $livePids[$wpid]) { continue }
+                if ($age[$wpid] -lt $GraceSec) { continue }                         # fresh spawn already read the current config
+                if ($wedgedPids[$wpid]) { continue }                                # C is handling it
+                $conf = ConfDirForPid $wpid
+                if (-not $conf) { continue }
+                $cfgPath = Join-Path $conf "config.yaml"
+                if (-not (Test-Path $cfgPath)) { continue }                         # e.g. capture worker's ConfDir differs; skip
+                $cfgTime   = (Get-Item $cfgPath).LastWriteTime
+                $startedAt = ($workers | Where-Object { [int]$_.ProcessId -eq $wpid } | Select-Object -First 1).CreationDate
+                if ($startedAt -and $cfgTime -gt $startedAt) {
+                    Log ("worker PID {0} (port {1}) STALE CONFIG: {2} written {3:o} but worker started {4:o} -- graceful recycle so it reloads the current config (free, past grace)" -f `
+                        $wpid, $p, $cfgPath, $cfgTime, $startedAt)
+                    KillWorker $wpid "stale config (config.yaml newer than worker start)"
+                    break   # one per cycle: never drain the pool
+                }
             }
         }
 
