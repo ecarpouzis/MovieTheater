@@ -40,10 +40,21 @@ namespace ArcadeCaptureHost
 
         private readonly IntPtr _hwnd;
         private readonly int _fps;
-        private readonly Action<IntPtr, int, int, int> _onFrame; // (rowPtr, rowPitch, width, height)
+        private readonly Action<IntPtr, int, int, int> _onFrame; // (rowPtr, rowPitch, width, height) — v1 readback
         private readonly Action<string> _onStatus;               // json status line (already serialized)
         private readonly Action<string> _onClosed;               // reason
         private readonly Action<string> _onError;                // detail
+
+        // Capture lane v2 (texshare): when _texShare, each WGC frame is GPU-copied into a keyed-mutex
+        // shared texture ring (SharedTextureRing) instead of read back to system memory. _ring != null
+        // once it is created (in Start); creation failure falls back to the v1 _onFrame readback path.
+        private readonly bool _texShare;
+        private readonly string _shmName, _eventName;
+        private SharedTextureRing _ring;
+        public bool TexShareActive => _ring != null;
+        public long[] TexHandles => _ring?.Handles;
+        public long TexLuid => _ring?.Luid ?? 0;
+        public int TexCount => _ring?.Count ?? 0;
 
         private ID3D11Device _d3dDevice;
         private ID3D11DeviceContext _d3dContext;
@@ -70,7 +81,8 @@ namespace ArcadeCaptureHost
 
         public WindowCapture(IntPtr hwnd, int fps, int targetWidth, int targetHeight,
             Action<IntPtr, int, int, int> onFrame,
-            Action<string> onStatus, Action<string> onClosed, Action<string> onError)
+            Action<string> onStatus, Action<string> onClosed, Action<string> onError,
+            bool texShare = false, string shmName = null, string eventName = null)
         {
             _hwnd = hwnd;
             _fps = fps;
@@ -80,6 +92,9 @@ namespace ArcadeCaptureHost
             _onStatus = onStatus;
             _onClosed = onClosed;
             _onError = onError;
+            _texShare = texShare;
+            _shmName = shmName;
+            _eventName = eventName;
         }
 
         public SizeInt32 Start()
@@ -105,6 +120,24 @@ namespace ArcadeCaptureHost
 
             _session = _pool.CreateCaptureSession(_item);
             TryConfigureSession(_session);
+
+            // Capture lane v2: create the keyed-mutex shared-texture ring on THIS device (so the WGC
+            // frame can be GPU-copied into it) at the fixed ring geometry. Any failure falls back to the
+            // v1 readback path (_ring stays null); the helper then does NOT advertise texShare and the
+            // worker runs v1.
+            if (_texShare)
+            {
+                try
+                {
+                    _ring = new SharedTextureRing(_d3dDevice, _d3dContext, _shmName, _eventName, _targetW, _targetH, 4);
+                }
+                catch (Exception ex)
+                {
+                    _ring = null;
+                    _onError("texshare ring create failed: " + ex.Message + " — falling back to v1 readback");
+                }
+            }
+
             _session.StartCapture();
             return size;
         }
@@ -198,19 +231,32 @@ namespace ArcadeCaptureHost
                     }
                 }
 
-                int outW = scaled ? _targetW : (int)desc.Width;
-                int outH = scaled ? _targetH : (int)desc.Height;
-                EnsureStaging(outW, outH);
-                _d3dContext.CopyResource(_staging, scaled ? _scaler.Output : surfaceTexture);
-                var map = _d3dContext.Map(_staging, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
-                try
+                if (_ring != null)
                 {
-                    _onFrame(map.DataPointer, (int)map.RowPitch, outW, outH);
+                    // Capture lane v2: GPU-copy the frame (scaler output, or the WGC surface) into the
+                    // shared-texture ring under its keyed mutex — NO readback, NO system-memory frame.
+                    var srcTex = scaled ? _scaler.Output : surfaceTexture;
+                    int sw = scaled ? _targetW : (int)desc.Width;
+                    int sh = scaled ? _targetH : (int)desc.Height;
+                    _ring.Publish(srcTex, sw, sh);
                     Interlocked.Increment(ref _frames);
                 }
-                finally
+                else
                 {
-                    _d3dContext.Unmap(_staging, 0);
+                    int outW = scaled ? _targetW : (int)desc.Width;
+                    int outH = scaled ? _targetH : (int)desc.Height;
+                    EnsureStaging(outW, outH);
+                    _d3dContext.CopyResource(_staging, scaled ? _scaler.Output : surfaceTexture);
+                    var map = _d3dContext.Map(_staging, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
+                    try
+                    {
+                        _onFrame(map.DataPointer, (int)map.RowPitch, outW, outH);
+                        Interlocked.Increment(ref _frames);
+                    }
+                    finally
+                    {
+                        _d3dContext.Unmap(_staging, 0);
+                    }
                 }
             }
             catch (Exception ex)
@@ -262,6 +308,7 @@ namespace ArcadeCaptureHost
             try { _session?.Dispose(); } catch { }
             try { if (_pool != null) _pool.FrameArrived -= OnFrameArrived; } catch { }
             try { _pool?.Dispose(); } catch { }
+            try { _ring?.Dispose(); } catch { }
             try { _scaler?.Dispose(); } catch { }
             try { _staging?.Dispose(); } catch { }
             try { _d3dContext?.Dispose(); } catch { }

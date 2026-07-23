@@ -1930,7 +1930,7 @@ index 9e70576..5f5c29f 100644
  
  func (l Library) GetSupportedExtensions() []string { return l.Supported }
 diff --git a/pkg/config/worker.go b/pkg/config/worker.go
-index be5ac42..fe5ab6d 100644
+index be5ac42..0321825 100644
 --- a/pkg/config/worker.go
 +++ b/pkg/config/worker.go
 @@ -6,6 +6,7 @@ import (
@@ -1941,7 +1941,7 @@ index be5ac42..fe5ab6d 100644
  	"strings"
  
  	"github.com/giongto35/cloud-game/v3/pkg/os"
-@@ -20,6 +21,96 @@ type WorkerConfig struct {
+@@ -20,6 +21,107 @@ type WorkerConfig struct {
  	Worker    Worker
  	Webrtc    Webrtc
  	Version   Version
@@ -2026,6 +2026,17 @@ index be5ac42..fe5ab6d 100644
 +	// ~75-150ms of audio latency (plan §12). Point AudioCaptureDevice at the CABLE Input render id.
 +	AudioCaptureLoopback bool
 +	SoundVolumeView      string // path to SoundVolumeView.exe (bundled beside worker.exe)
++	// WindowZeroCopy (capture lane v2, WINDOW mode): share the game frame as a keyed-mutex D3D11
++	// texture across the helper→worker boundary instead of reading it back to system memory and
++	// re-uploading for NVENC (v1). The worker asks the ArcadeCaptureHost helper for `--texshare`, opens
++	// the helper's shared textures by NT-handle duplication, GPU-copies each into a pooled D3D11 buffer,
++	// and pushes it as D3D11Memory straight into nvautogpu*enc. Measured v1 readback ~9.2 ms vs ~3 ms.
++	//
++	// *bool so absence = the default of ENABLED (nil → true; project policy: quality levers default ON
++	// with opt-out). Set false to force v1. ANY failure (helper can't make textures, worker can't open
++	// the gst d3d11 device / dup the handles, caps don't negotiate) falls back to v1 automatically for
++	// that room. Only applies to window mode; monitor mode uses ZeroCopy below.
++	WindowZeroCopy *bool
 +	// ZeroCopy (P4): keep captured frames in GPU memory all the way into NVENC instead of reading
 +	// them back to system memory to hand to Go, which then uploaded them to the GPU again for the
 +	// encoder. Measured on this box (same encoder, only the readback varying): the round trip costs
@@ -2038,7 +2049,7 @@ index be5ac42..fe5ab6d 100644
  }
  
  type Storage struct {
-@@ -86,6 +177,111 @@ type CodecSettings struct {
+@@ -86,6 +188,111 @@ type CodecSettings struct {
  	Caps    string
  }
  
@@ -5687,10 +5698,10 @@ index 85ede12..6d1d955 100644
  
 diff --git a/pkg/worker/caged/capture/capture.go b/pkg/worker/caged/capture/capture.go
 new file mode 100644
-index 0000000..48ec5da
+index 0000000..6d19440
 --- /dev/null
 +++ b/pkg/worker/caged/capture/capture.go
-@@ -0,0 +1,659 @@
+@@ -0,0 +1,701 @@
 +// Package capture implements the "capture" caged mod (heavy browser lane, H5): instead of running
 +// a libretro core it launches a native Windows program through the heavy gateway contract, captures
 +// the desktop with GStreamer (Windows Graphics Capture), feeds frames/PCM into the UNCHANGED
@@ -5760,6 +5771,20 @@ index 0000000..48ec5da
 +	shmH        int
 +	shmStride   int
 +	shmPerSlot  int // 8 (seq) + page-aligned pixel capacity, per slot
++
++	// Window ZERO-COPY (v2): the helper shares the frame as keyed-mutex D3D11 textures instead of a
++	// pixel readback; the shm ring carries only slot/seq (CONTROL channel). d11Sink is the media pipe's
++	// D3D11 hooks (wired by coordinatorhandlers BEFORE LoadApp). winZC is true once v2 is fully armed for
++	// this room; any setup failure falls back to v1 and leaves winZC=false.
++	d11Sink     d11Sink
++	winZC       bool
++	texLuid     int64
++	helperPid   int
++	texHandles  []uint64
++	lastSlot    int32 // atomic: last pushed slot (re-push target)
++	d11Black    atomic.Bool
++	d11Mu       sync.Mutex // serializes d3d11 push (read loop / re-push / black) — keyframe counters
++	d11LastPush time.Time  // guarded by d11Mu
 +
 +	videoCb func(app.Video)
 +	audioCb func(app.Audio)
@@ -6036,15 +6061,22 @@ index 0000000..48ec5da
 +	a.stopRepush = make(chan struct{})
 +	a.setCapturing(true) // let this room's frames through
 +	if a.windowMode() {
-+		// Window mode: the ArcadeCaptureHost helper is already capturing the off-screen game window and
-+		// publishing BGRA frames into the shm ring (armed in LoadApp). Read them and push into the SAME
-+		// design-A appsrc ingest; the re-push ticker covers a static screen just like the monitor path.
++		// Window mode: the ArcadeCaptureHost helper is already capturing the off-screen game window
++		// (armed in LoadApp). v2 (winZC): the helper shares GPU textures, the worker GPU-copies them
++		// into nvautogpu*enc — no readback, no re-upload. v1: BGRA pixels arrive over the shm ring and
++		// feed the SAME design-A appsrc ingest. Either way the re-push ticker covers a static screen.
 +		if a.conf.ZeroCopy {
-+			a.log.Info().Msg("capture: zeroCopy is ignored in window mode (frames arrive over shared memory)")
++			a.log.Info().Msg("capture: monitor zeroCopy is ignored in window mode (see windowZeroCopy)")
 +		}
-+		go a.shmReadLoop()
-+		go a.repushLoop()
-+		a.log.Info().Msg("capture: video WINDOW mode (WGC helper → shm → appsrc, no readback of the desktop)")
++		if a.winZC {
++			go a.d3d11ReadLoop()
++			go a.repushLoopD3D11()
++			a.log.Info().Msg("capture: video WINDOW mode v2 (D3D11 shared textures → nvautogpu, no readback)")
++		} else {
++			go a.shmReadLoop()
++			go a.repushLoop()
++			a.log.Info().Msg("capture: video WINDOW mode v1 (WGC helper → shm → appsrc, no readback of the desktop)")
++		}
 +	} else if a.conf.ZeroCopy {
 +		// P4: the capture element lives in the MEDIA pipeline (already PLAYING), so there is no
 +		// pipeline to build here — and no re-push ticker either: with the framerate on the source
@@ -6075,7 +6107,16 @@ index 0000000..48ec5da
 +	prepared := a.prepared
 +	a.mu.Unlock()
 +
-+	a.stopPipelines() // nil-guards stopRepush when Start() never ran (W1)
++	a.stopPipelines() // nil-guards stopRepush when Start() never ran (W1); kills the helper (window mode)
++	// v2: release the media pipe's D3D11 device + pool + the helper's shared textures AFTER the helper
++	// is dead and the read loops are signaled to stop. Held under d11Mu so it can't overlap an in-flight
++	// push; once deinited the C push funcs no-op (they nil-guard the device/pool), so a late read-loop
++	// push is harmless. Must run whenever we opened the sink, even on a failed start (guarded inside).
++	if a.d11Sink != nil {
++		a.d11Mu.Lock()
++		a.d11Sink.DeinitD3D11ZeroCopy()
++		a.d11Mu.Unlock()
++	}
 +	if a.proc != nil {
 +		a.proc.kill()
 +	}
@@ -6125,6 +6166,14 @@ index 0000000..48ec5da
 +	a.shm = 0
 +	a.shmAddr = 0
 +	a.shmEvent = 0
++	// window zero-copy (v2) per-room state — the shared textures/device are released in Close via the
++	// sink; d11Sink itself is wired per-room BEFORE LoadApp (don't clear it here).
++	a.winZC = false
++	a.texLuid = 0
++	a.helperPid = 0
++	a.texHandles = nil
++	atomic.StoreInt32(&a.lastSlot, 0)
++	a.d11Black.Store(false)
 +	a.frameMu.Lock()
 +	a.lastFrame = nil
 +	a.lastStride = 0
@@ -6286,8 +6335,12 @@ index 0000000..48ec5da
 +	a.gwFinish(appId)
 +}
 +
-+// pushBlackFrames replaces the last-frame cache with black so viewers see black, not the desktop.
++// pushBlackFrames pins a black frame so viewers see black, not the desktop (game-exit privacy).
 +func (a *App) pushBlackFrames() {
++	if a.winZC && a.d11Sink != nil {
++		a.d11PushBlack() // v2: a cleared pool buffer; the re-push ticker keeps it pinned
++		return
++	}
 +	a.frameMu.Lock()
 +	n := a.width() * a.height() * 4
 +	if cap(a.lastFrame) < n {
@@ -6349,6 +6402,194 @@ index 0000000..48ec5da
 +		return
 +	}
 +	return u, g, s, parts[3], gameKey, true
++}
+diff --git a/pkg/worker/caged/capture/d3d11window.go b/pkg/worker/caged/capture/d3d11window.go
+new file mode 100644
+index 0000000..8af80b1
+--- /dev/null
++++ b/pkg/worker/caged/capture/d3d11window.go
+@@ -0,0 +1,182 @@
++package capture
++
++// Window ZERO-COPY (capture lane v2). In v1 the ArcadeCaptureHost helper reads each WGC frame back to
++// system memory and memcpys it through a shared-memory PIXEL ring; the worker re-uploads it for NVENC.
++// v2 removes that round trip: the helper shares the frame as keyed-mutex D3D11 TEXTURES (published as
++// NT-handle values + its pid + adapter LUID in the ready JSON), the shm ring becomes a slot/seq CONTROL
++// channel, and the media pipe GPU-copies the shared texture into a pooled D3D11 buffer that goes
++// straight into nvautogpu*enc (media/d3d11zerocopy.go). No readback, no re-upload (~9.2 ms → ~3 ms).
++//
++// Transport is NT-handle DUPLICATION, not open-by-name (by-name is process-local on this box — proven
++// 2026-07-23). Any failure at any stage falls back to v1 automatically (see startWindowCapture).
++
++import (
++	"encoding/json"
++	"sync/atomic"
++	"time"
++
++	"golang.org/x/sys/windows"
++)
++
++// d11Sink is the media pipe's D3D11 zero-copy surface (implemented by *media.GstMediaPipe). The
++// coordinator wires it onto the capture app BEFORE LoadApp; the app drives it during startWindowCapture
++// (so the gst device + pool exist before m.Init builds the appsrc-D3D11 pipeline).
++type d11Sink interface {
++	InitD3D11ZeroCopy(luid int64, w, h int) error
++	OpenD3D11Shared(helperPid int, handles []uint64) error
++	PushD3D11Slot(slot, w, h int, durNs uint64)
++	PushD3D11Black(w, h int, durNs uint64)
++	DeinitD3D11ZeroCopy()
++	SetD3D11ZeroCopy(on bool)
++}
++
++// SetD3D11Sink wires the media pipe's D3D11 hooks. Called by the coordinator's capture branch before
++// LoadApp; nil (retro/monitor rooms, or an un-wired build) keeps window capture on v1.
++func (a *App) SetD3D11Sink(s d11Sink) { a.d11Sink = s }
++
++// windowZeroCopyEnabled reports the config knob (default TRUE — *bool nil means the key was absent;
++// project policy: quality levers default ON with opt-out).
++func (a *App) windowZeroCopyEnabled() bool {
++	return a.conf.WindowZeroCopy == nil || *a.conf.WindowZeroCopy
++}
++
++// readyInfo is the helper's `ready` status line. The texShare fields are present only when the helper
++// was asked for --texshare AND created the shared textures; absence ⇒ the worker runs v1.
++type readyInfo struct {
++	Event      string   `json:"event"`
++	Width      int      `json:"width"`
++	Height     int      `json:"height"`
++	Fps        int      `json:"fps"`
++	TexShare   bool     `json:"texShare"`
++	TexCount   int      `json:"texCount"`
++	Luid       int64    `json:"luid"`
++	Pid        int      `json:"pid"`
++	TexHandles []uint64 `json:"texHandles"`
++}
++
++// parseReady parses a helper `ready` JSON line; nil on malformed input (caller falls back to v1).
++func parseReady(line string) *readyInfo {
++	var ri readyInfo
++	if err := json.Unmarshal([]byte(line), &ri); err != nil {
++		return nil
++	}
++	return &ri
++}
++
++// armWindowZeroCopy opens the helper's shared textures on the media pipe's gst d3d11 device and flips
++// the pipe into D3D11 appsrc mode. Returns false on any failure (caller respawns the helper in v1).
++func (a *App) armWindowZeroCopy(ri *readyInfo) bool {
++	if ri == nil || len(ri.TexHandles) == 0 || ri.Pid == 0 {
++		a.log.Warn().Msg("capture(window): texShare advertised but pid/handles missing — v1 fallback")
++		return false
++	}
++	if err := a.d11Sink.InitD3D11ZeroCopy(ri.Luid, a.width(), a.height()); err != nil {
++		a.log.Error().Err(err).Msg("capture(window): d3d11 device/pool init failed")
++		return false
++	}
++	if err := a.d11Sink.OpenD3D11Shared(ri.Pid, ri.TexHandles); err != nil {
++		a.log.Error().Err(err).Msg("capture(window): opening helper shared textures failed")
++		return false
++	}
++	a.texLuid = ri.Luid
++	a.helperPid = ri.Pid
++	a.texHandles = ri.TexHandles
++	a.winZC = true
++	a.d11Sink.SetD3D11ZeroCopy(true) // media builds the appsrc-D3D11 → nvautogpu pipeline at m.Init
++	return true
++}
++
++func (a *App) d11DurNs() uint64 { return uint64(time.Second / time.Duration(a.fps())) }
++
++// d11PushSlot copies shared texture[slot] into a pool buffer and pushes it (serialized under d11Mu so
++// the media pipe's forced-keyframe counters stay single-threaded across the read loop and re-push).
++func (a *App) d11PushSlot(slot int) {
++	a.d11Mu.Lock()
++	a.d11Black.Store(false)
++	atomic.StoreInt32(&a.lastSlot, int32(slot))
++	a.d11LastPush = time.Now()
++	a.d11Sink.PushD3D11Slot(slot, a.width(), a.height(), a.d11DurNs())
++	a.d11Mu.Unlock()
++	a.frameMu.Lock()
++	a.frames++ // heartbeat counter (same lock v1 uses, so the tick read stays consistent)
++	a.frameMu.Unlock()
++}
++
++// d11PushBlack pins a cleared pool buffer (game-exit privacy). The re-push ticker keeps it up.
++func (a *App) d11PushBlack() {
++	a.d11Mu.Lock()
++	a.d11Black.Store(true)
++	a.d11LastPush = time.Now()
++	a.d11Sink.PushD3D11Black(a.width(), a.height(), a.d11DurNs())
++	a.d11Mu.Unlock()
++}
++
++// d3d11ReadLoop is the v2 frame source: it waits on the helper's frame event, reads the published slot
++// index from the shm CONTROL header (no pixels), and pushes that shared-texture slot into the encoder.
++// Dropped intermediate frames are fine (live stream); a static screen is covered by repushLoopD3D11.
++func (a *App) d3d11ReadLoop() {
++	base := a.shmAddr
++	if base == 0 {
++		a.log.Error().Msg("capture(window): d3d11ReadLoop with no control mapping — no video")
++		return
++	}
++	var lastSeq uint64
++	for {
++		select {
++		case <-a.winStop:
++			return
++		default:
++		}
++		if a.shmEvent != 0 {
++			windows.WaitForSingleObject(a.shmEvent, 500)
++		} else {
++			time.Sleep(8 * time.Millisecond)
++		}
++		select {
++		case <-a.winStop:
++			return
++		default:
++		}
++		fseq := ld64(base + offFrameSeq)
++		if fseq == lastSeq {
++			continue // no new frame — repushLoopD3D11 keeps the last one alive
++		}
++		lastSeq = fseq
++		if !a.capturing.Load() {
++			continue // between rooms / after game exit — never push live desktop/game frames
++		}
++		slot := int32(ld32(base + offLatestSlot))
++		if slot < 0 {
++			continue
++		}
++		a.d11PushSlot(int(slot))
++	}
++}
++
++// repushLoopD3D11 re-pushes the last slot (or black) when the helper goes quiet (WGC delivers only on
++// screen change; a static screen would starve the encoder and leave joiners nothing to decode). 2 Hz;
++// re-push only when >500 ms since the last push (matches the v1 ticker).
++func (a *App) repushLoopD3D11() {
++	t := time.NewTicker(250 * time.Millisecond)
++	defer t.Stop()
++	for {
++		select {
++		case <-a.stopRepush:
++			return
++		case <-t.C:
++			a.d11Mu.Lock()
++			idle := time.Since(a.d11LastPush) > 500*time.Millisecond
++			black := a.d11Black.Load()
++			slot := int(atomic.LoadInt32(&a.lastSlot))
++			a.d11Mu.Unlock()
++			if !idle {
++				continue
++			}
++			if black {
++				a.d11PushBlack()
++			} else if a.capturing.Load() {
++				a.d11PushSlot(slot)
++			}
++		}
++	}
 +}
 diff --git a/pkg/worker/caged/capture/input.go b/pkg/worker/caged/capture/input.go
 new file mode 100644
@@ -7891,10 +8132,10 @@ index 0000000..2cfe5e4
 +}
 diff --git a/pkg/worker/caged/capture/wincapture.go b/pkg/worker/caged/capture/wincapture.go
 new file mode 100644
-index 0000000..d67d8f9
+index 0000000..61ab4e2
 --- /dev/null
 +++ b/pkg/worker/caged/capture/wincapture.go
-@@ -0,0 +1,452 @@
+@@ -0,0 +1,521 @@
 +package capture
 +
 +// Window-capture mode (captureMode: window). Instead of screen-capturing a monitor (the SudoVDA/
@@ -8041,9 +8282,11 @@ index 0000000..d67d8f9
 +	_ = os.WriteFile(path, []byte(strconv.FormatUint(uint64(mySessionId()), 10)), 0644)
 +}
 +
-+// startWindowCapture launches the helper for hwnd, opens its shared-memory ring, and records handles.
-+// Returns an error only on a hard failure the caller can't recover (helper won't exec / ring never
-+// appears); a slow-to-ready helper is tolerated (frames start when they start; repush holds meanwhile).
++// startWindowCapture launches the helper for hwnd and arms the frame path — v2 (D3D11 shared-texture
++// zero-copy) when windowZeroCopy is enabled AND the helper advertises texShare AND the worker can open
++// the shared textures; otherwise v1 (the shm pixel ring). Every v2 failure falls back to v1 for this
++// room (respawning the helper without --texshare when it had already entered texshare mode). Returns an
++// error only on a hard failure the caller can't recover (helper won't exec / ring never appears).
 +func (a *App) startWindowCapture(hwnd uintptr) error {
 +	if a.conf.HelperPath == "" {
 +		return fmt.Errorf("captureMode window but no helperPath configured")
@@ -8051,36 +8294,34 @@ index 0000000..d67d8f9
 +	if _, err := os.Stat(a.conf.HelperPath); err != nil {
 +		return fmt.Errorf("helper not found at %s: %w", a.conf.HelperPath, err)
 +	}
-+	shm := fmt.Sprintf("mtwc-%d-%d", os.Getpid(), time.Now().UnixNano())
-+	evt := shm + "-evt"
 +
-+	cmd := exec.Command(a.conf.HelperPath,
-+		"--hwnd", strconv.FormatUint(uint64(hwnd), 10),
-+		"--shm", shm, "--event", evt,
-+		"--width", strconv.Itoa(a.width()),
-+		"--height", strconv.Itoa(a.height()),
-+		"--fps", strconv.Itoa(a.fps()))
-+	stdin, err := cmd.StdinPipe() // HELD OPEN — closing it makes the helper exit (its stdin watcher)
++	wantTS := a.windowZeroCopyEnabled() && a.d11Sink != nil
++	shm, evt := a.newShmNames()
++	ri, err := a.spawnHelper(hwnd, shm, evt, wantTS)
 +	if err != nil {
-+		return fmt.Errorf("helper stdin pipe: %w", err)
++		return err
 +	}
-+	stdout, err := cmd.StdoutPipe()
-+	if err != nil {
-+		return fmt.Errorf("helper stdout pipe: %w", err)
-+	}
-+	if err := cmd.Start(); err != nil {
-+		return fmt.Errorf("helper start: %w", err)
-+	}
-+	a.helper = cmd
-+	a.helperStdin = stdin
-+	a.log.Info().Msgf("capture(window): helper pid %d hwnd=%#x shm=%s", cmd.Process.Pid, hwnd, shm)
 +
-+	ready := make(chan struct{}, 1)
-+	go a.helperStdoutLoop(stdout, ready)
-+	select {
-+	case <-ready:
-+	case <-time.After(8 * time.Second):
-+		a.log.Warn().Msg("capture(window): helper not ready in 8s — continuing (video black until it recovers)")
++	if wantTS && ri != nil && ri.TexShare {
++		if a.armWindowZeroCopy(ri) {
++			a.log.Info().Msgf("capture(window): v2 armed — %d shared textures, luid=%d helperPid=%d", len(a.texHandles), a.texLuid, a.helperPid)
++			if err := a.openShm(shm, evt); err != nil { // CONTROL channel (slot/seq), not pixels
++				a.log.Error().Err(err).Msg("capture(window): v2 control shm open failed — falling back to v1")
++			} else {
++				return nil
++			}
++		}
++		// v2 could not be armed but the helper is in texshare mode (publishing no pixels) → respawn v1.
++		a.log.Warn().Msg("capture(window): D3D11 zero-copy setup failed — respawning helper in v1 (shm readback) mode")
++		if a.d11Sink != nil {
++			a.d11Sink.DeinitD3D11ZeroCopy()
++		}
++		a.winZC = false
++		a.killHelperOnly()
++		shm, evt = a.newShmNames()
++		if _, err := a.spawnHelper(hwnd, shm, evt, false); err != nil {
++			return err
++		}
 +	}
 +
 +	if err := a.openShm(shm, evt); err != nil {
@@ -8089,20 +8330,89 @@ index 0000000..d67d8f9
 +	return nil
 +}
 +
-+// helperStdoutLoop forwards the helper's JSON status lines into the worker log and signals `ready` on
-+// the first "ready" event (once, non-blocking).
-+func (a *App) helperStdoutLoop(r io.ReadCloser, ready chan<- struct{}) {
++// newShmNames mints a fresh shared-memory + event name pair.
++func (a *App) newShmNames() (shm, evt string) {
++	shm = fmt.Sprintf("mtwc-%d-%d", os.Getpid(), time.Now().UnixNano())
++	return shm, shm + "-evt"
++}
++
++// spawnHelper starts ArcadeCaptureHost for hwnd, waits for its `ready` line, and returns the parsed
++// ready info (nil on timeout — a slow helper is tolerated for v1; v2 needs the info and falls back if
++// it is missing). texshare adds --texshare so the helper shares GPU textures instead of pixels.
++func (a *App) spawnHelper(hwnd uintptr, shm, evt string, texshare bool) (*readyInfo, error) {
++	args := []string{
++		"--hwnd", strconv.FormatUint(uint64(hwnd), 10),
++		"--shm", shm, "--event", evt,
++		"--width", strconv.Itoa(a.width()),
++		"--height", strconv.Itoa(a.height()),
++		"--fps", strconv.Itoa(a.fps()),
++	}
++	if texshare {
++		args = append(args, "--texshare")
++	}
++	cmd := exec.Command(a.conf.HelperPath, args...)
++	stdin, err := cmd.StdinPipe() // HELD OPEN — closing it makes the helper exit (its stdin watcher)
++	if err != nil {
++		return nil, fmt.Errorf("helper stdin pipe: %w", err)
++	}
++	stdout, err := cmd.StdoutPipe()
++	if err != nil {
++		return nil, fmt.Errorf("helper stdout pipe: %w", err)
++	}
++	if err := cmd.Start(); err != nil {
++		return nil, fmt.Errorf("helper start: %w", err)
++	}
++	a.helper = cmd
++	a.helperStdin = stdin
++	a.log.Info().Msgf("capture(window): helper pid %d hwnd=%#x shm=%s texshare=%v", cmd.Process.Pid, hwnd, shm, texshare)
++
++	ready := make(chan *readyInfo, 1)
++	go a.helperStdoutLoop(stdout, ready)
++	select {
++	case ri := <-ready:
++		return ri, nil
++	case <-time.After(8 * time.Second):
++		a.log.Warn().Msg("capture(window): helper not ready in 8s — continuing (video black until it recovers)")
++		return nil, nil
++	}
++}
++
++// killHelperOnly kills just the helper process (close stdin, then terminate) WITHOUT touching winStop /
++// the shm mapping — used to respawn the helper in a different mode (v2→v1 fallback) mid-setup.
++func (a *App) killHelperOnly() {
++	if a.helperStdin != nil {
++		a.helperStdin.Close()
++		a.helperStdin = nil
++	}
++	if a.helper != nil && a.helper.Process != nil {
++		done := make(chan struct{})
++		go func() { a.helper.Wait(); close(done) }()
++		select {
++		case <-done:
++		case <-time.After(2 * time.Second):
++			_ = a.helper.Process.Kill()
++		}
++		a.helper = nil
++	}
++}
++
++// helperStdoutLoop forwards the helper's JSON status lines into the worker log and delivers the parsed
++// first `ready` line on the channel (once, non-blocking).
++func (a *App) helperStdoutLoop(r io.ReadCloser, ready chan<- *readyInfo) {
 +	sc := bufio.NewScanner(r)
 +	sc.Buffer(make([]byte, 0, 8192), 1<<20)
++	sent := false
 +	for sc.Scan() {
 +		line := sc.Text()
 +		if line == "" {
 +			continue
 +		}
 +		a.log.Info().Msgf("capture(window) helper: %s", line)
-+		if len(line) > 16 && line[:16] == `{"event":"ready"` {
++		if !sent && strings.Contains(line, `"event":"ready"`) {
++			ri := parseReady(line)
++			sent = true
 +			select {
-+			case ready <- struct{}{}:
++			case ready <- ri:
 +			default:
 +			}
 +		}
@@ -47118,10 +47428,10 @@ index 2840a0e..c55a441 100644
  	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
  		var out api.Out
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..c1d620f 100644
+index 6972cc7..bbc31d5 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,607 @@
+@@ -1,310 +1,613 @@
 -package worker
 -
 -import (
@@ -47675,6 +47985,12 @@ index 6972cc7..c1d620f 100644
 +				m.VideoSrcChain = capApp.VideoSrcChain(encConf.Video.Colorimetry)
 +				capApp.SetVideoGate(m.SetVideoValveDrop)
 +			}
++			// Capture lane v2 (WINDOW mode D3D11 zero-copy): hand the app the media pipe's D3D11 hooks
++			// BEFORE LoadApp. If windowZeroCopy is on and the helper supports texShare, LoadApp arms the
++			// gst d3d11 device+pool, opens the helper's shared textures, and calls m.SetD3D11ZeroCopy(true)
++			// — all before the media finalize's m.Init() builds the appsrc-D3D11 → nvautogpu pipeline. Any
++			// failure falls back to v1 (m.D3D11ZeroCopy stays false → design-A appsrc). No-op in monitor mode.
++			capApp.SetD3D11Sink(m)
 +			r.SetApp(capApp)
 +			if err := capApp.LoadApp(gameName, uid); err != nil {
 +				c.log.Error().Err(err).Msg("capture prepare/launch failed")
@@ -48039,6 +48355,320 @@ index 6972cc7..c1d620f 100644
 +	}
 +	return string(b), nil
 +}
+diff --git a/pkg/worker/media/d3d11zerocopy.go b/pkg/worker/media/d3d11zerocopy.go
+new file mode 100644
+index 0000000..d76fe6d
+--- /dev/null
++++ b/pkg/worker/media/d3d11zerocopy.go
+@@ -0,0 +1,308 @@
++package media
++
++// D3D11 cross-process zero-copy for the capture lane's WINDOW mode (capture lane v2).
++//
++// v1 window mode: the ArcadeCaptureHost helper WGC-captures the game window, reads the frame back to
++// system memory (~6 ms Map), memcpys it through a shared-memory pixel ring, and the worker re-uploads
++// it to the GPU for NVENC. This file removes that round trip: the helper keeps the frame on the GPU in
++// a keyed-mutex SHARED texture; the worker opens that texture (by NT-handle duplication — see below),
++// GPU-copies it into a pooled D3D11 texture, and pushes it as D3D11Memory straight into nvautogpu*enc.
++//
++// TRANSPORT = NT-handle DUPLICATION, not open-by-name. Proven on Ziggy 2026-07-23:
++// CreateSharedHandle(name)+OpenSharedResourceByName is PROCESS-LOCAL on this Win11/NVIDIA box
++// (in-process self-reopen works; cross-process E_INVALIDARG for bare/Global\/Local\ names alike). So
++// the helper publishes its pid + the raw NT-handle values + its adapter LUID in the ready JSON, and the
++// worker OpenProcess(PROCESS_DUP_HANDLE)+DuplicateHandle+OpenSharedResource1's them into itself.
++//
++// The GstD3D11Device MUST be opened for the helper's adapter LUID (gst_d3d11_device_new(0,0) can land on
++// the Intel iGPU and cross-adapter opens fail). Verified: the LUID-opened gst device lands on the same
++// NVIDIA 4070 Ti as the helper.
++//
++// The keyed mutex gives GPU-level producer/consumer ordering: the helper's next AcquireSync on a slot
++// blocks (on the GPU) until our CopyResource out of it has completed, so releasing the mutex right after
++// the copy CALL (before the async encode) is safe — this is the pool copy that "decouples encoder buffer
++// lifetime from the shared ring" (never hold the mutex across an async encode).
++//
++// One capture worker = one room, and the capture mod is a process-lifetime singleton, so the D3D11 state
++// is file-static globals (same shape glzerocopy.go uses). d11_deinit clears it between rooms.
++
++/*
++#define GST_USE_UNSTABLE_API
++#define COBJMACROS
++#cgo pkg-config: gstreamer-1.0 gstreamer-video-1.0 gstreamer-app-1.0 gstreamer-d3d11-1.0
++#cgo LDFLAGS: -ldxguid -luuid
++#include <windows.h>
++#include <d3d11_1.h>
++#include <dxgi1_2.h>
++#include <gst/gst.h>
++#include <gst/app/gstappsrc.h>
++#include <gst/video/video.h>
++#include <gst/d3d11/gstd3d11.h>
++#include <stdio.h>
++
++#define D11_MAX_SLOTS 8
++
++static GstD3D11Device        *d11_dev      = NULL;
++static ID3D11Device1         *d11_dev1     = NULL;   // for OpenSharedResource1
++static ID3D11DeviceContext   *d11_ctx      = NULL;   // the gst device's immediate context (locked on use)
++static GstD3D11PoolAllocator *d11_pool     = NULL;
++static ID3D11Texture2D       *d11_shared[D11_MAX_SLOTS];
++static IDXGIKeyedMutex       *d11_km[D11_MAX_SLOTS];
++static int                    d11_nshared  = 0;
++static int                    d11_w = 0, d11_h = 0;
++static char                   d11_err[512] = {0};
++
++static const char *d11_last_error(void) { return d11_err; }
++
++// d11_init opens a GstD3D11Device for the helper's adapter LUID and a pooled BGRA allocator at the
++// encode geometry. Returns 1 on success.
++static int d11_init(long long luid, int w, int h) {
++	if (d11_dev) return 1;
++	d11_w = w; d11_h = h;
++
++	d11_dev = luid != 0
++		? gst_d3d11_device_new_for_adapter_luid((gint64) luid, 0)
++		: gst_d3d11_device_new(0, 0);
++	if (!d11_dev) { g_snprintf(d11_err, sizeof(d11_err), "gst_d3d11_device_new_for_adapter_luid(%lld) failed", luid); return 0; }
++
++	ID3D11Device *dev = gst_d3d11_device_get_device_handle(d11_dev);
++	d11_ctx = gst_d3d11_device_get_device_context_handle(d11_dev);
++	if (!dev || !d11_ctx) { g_snprintf(d11_err, sizeof(d11_err), "gst device/context handle NULL"); return 0; }
++
++	HRESULT hr = ID3D11Device_QueryInterface(dev, &IID_ID3D11Device1, (void**) &d11_dev1);
++	if (FAILED(hr)) { g_snprintf(d11_err, sizeof(d11_err), "QI ID3D11Device1 hr=0x%08lX", (unsigned long) hr); return 0; }
++
++	// A pooled allocator of BGRA WxH textures usable as an encoder input AND a render target (black clear).
++	GstVideoInfo info;
++	gst_video_info_set_format(&info, GST_VIDEO_FORMAT_BGRA, w, h);
++	GstD3D11AllocationParams *params = gst_d3d11_allocation_params_new(
++		d11_dev, &info, GST_D3D11_ALLOCATION_FLAG_DEFAULT,
++		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET, 0);
++	if (!params) { g_snprintf(d11_err, sizeof(d11_err), "alloc params NULL"); return 0; }
++	D3D11_TEXTURE2D_DESC desc; memset(&desc, 0, sizeof(desc));
++	desc.Width = w; desc.Height = h; desc.MipLevels = 1; desc.ArraySize = 1;
++	desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM; desc.SampleDesc.Count = 1;
++	desc.Usage = D3D11_USAGE_DEFAULT;
++	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
++	d11_pool = gst_d3d11_pool_allocator_new(d11_dev, &desc);
++	gst_d3d11_allocation_params_free(params);
++	if (!d11_pool) { g_snprintf(d11_err, sizeof(d11_err), "pool allocator NULL"); return 0; }
++	if (!gst_d3d11_allocator_set_active(GST_D3D11_ALLOCATOR(d11_pool), TRUE)) {
++		g_snprintf(d11_err, sizeof(d11_err), "pool set_active failed"); return 0;
++	}
++	return 1;
++}
++
++// d11_open duplicates the helper's shared NT handles into this process and opens them as textures with
++// their keyed mutexes. Returns the number opened (== count on full success), or -1 on a hard failure.
++static int d11_open(int helperPid, unsigned long long *handles, int count) {
++	if (!d11_dev1) { g_snprintf(d11_err, sizeof(d11_err), "d11_open before d11_init"); return -1; }
++	if (count > D11_MAX_SLOTS) count = D11_MAX_SLOTS;
++	HANDLE proc = OpenProcess(PROCESS_DUP_HANDLE, FALSE, (DWORD) helperPid);
++	if (!proc) { g_snprintf(d11_err, sizeof(d11_err), "OpenProcess(pid=%d) GLE=%lu", helperPid, GetLastError()); return -1; }
++	int n = 0;
++	for (int i = 0; i < count; i++) {
++		HANDLE localH = NULL;
++		if (!DuplicateHandle(proc, (HANDLE)(uintptr_t) handles[i], GetCurrentProcess(), &localH, 0, FALSE, DUPLICATE_SAME_ACCESS)) {
++			g_snprintf(d11_err, sizeof(d11_err), "DuplicateHandle[%d] GLE=%lu", i, GetLastError());
++			break;
++		}
++		ID3D11Texture2D *tex = NULL;
++		HRESULT hr = ID3D11Device1_OpenSharedResource1(d11_dev1, localH, &IID_ID3D11Texture2D, (void**) &tex);
++		if (FAILED(hr)) { g_snprintf(d11_err, sizeof(d11_err), "OpenSharedResource1[%d] hr=0x%08lX", i, (unsigned long) hr); break; }
++		IDXGIKeyedMutex *km = NULL;
++		hr = ID3D11Texture2D_QueryInterface(tex, &IID_IDXGIKeyedMutex, (void**) &km);
++		if (FAILED(hr)) { ID3D11Texture2D_Release(tex); g_snprintf(d11_err, sizeof(d11_err), "QI KeyedMutex[%d] hr=0x%08lX", i, (unsigned long) hr); break; }
++		d11_shared[i] = tex; d11_km[i] = km; n++;
++	}
++	CloseHandle(proc);
++	d11_nshared = n;
++	return n;
++}
++
++// d11_acquire_pool_tex acquires a pooled memory + its ID3D11Texture2D. *out_mem must be put in a buffer.
++static ID3D11Texture2D *d11_acquire_pool_tex(GstMemory **out_mem) {
++	GstMemory *mem = NULL;
++	if (gst_d3d11_pool_allocator_acquire_memory(d11_pool, &mem) != GST_FLOW_OK || !mem) return NULL;
++	ID3D11Resource *res = gst_d3d11_memory_get_resource_handle((GstD3D11Memory*) mem);
++	*out_mem = mem;
++	return (ID3D11Texture2D*) res;
++}
++
++static void d11_push_buffer(GstAppSrc *src, GstMemory *mem, int w, int h, unsigned long long durNs) {
++	GstBuffer *buf = gst_buffer_new();
++	gst_buffer_append_memory(buf, mem);
++	gst_buffer_add_video_meta(buf, GST_VIDEO_FRAME_FLAG_NONE, GST_VIDEO_FORMAT_BGRA, w, h);
++	GST_BUFFER_DURATION(buf) = durNs;
++	gst_app_src_push_buffer(src, buf); // takes ownership of buf (+ the mem returns to the pool on unref)
++}
++
++// d11_push copies shared slot -> a pooled buffer under the slot's keyed mutex, then pushes the pool
++// buffer (mutex already released — never held across the async encode). Returns 1 on push, 0 on skip.
++static int d11_push(GstAppSrc *src, int slot, unsigned long long durNs) {
++	if (!src || !d11_pool || slot < 0 || slot >= d11_nshared || !d11_shared[slot]) return 0;
++	GstMemory *mem = NULL;
++	ID3D11Texture2D *poolTex = d11_acquire_pool_tex(&mem);
++	if (!poolTex) return 0;
++
++	// Acquire OUTSIDE the device lock: AcquireSync can block on the helper, and we must not stall the
++	// encoder (same device) while it does. Finite timeout so a stuck helper skips a frame, not wedges.
++	HRESULT hr = IDXGIKeyedMutex_AcquireSync(d11_km[slot], 0, 1000);
++	if (hr != S_OK) { gst_memory_unref(mem); return 0; }
++
++	gst_d3d11_device_lock(d11_dev);
++	ID3D11DeviceContext_CopyResource(d11_ctx, (ID3D11Resource*) poolTex, (ID3D11Resource*) d11_shared[slot]);
++	gst_d3d11_device_unlock(d11_dev);
++
++	IDXGIKeyedMutex_ReleaseSync(d11_km[slot], 0);
++	d11_push_buffer(src, mem, d11_w, d11_h, durNs);
++	return 1;
++}
++
++// d11_push_black pushes a cleared pool buffer (game-exit privacy / between-room blank).
++static int d11_push_black(GstAppSrc *src, unsigned long long durNs) {
++	if (!src || !d11_pool) return 0;
++	GstMemory *mem = NULL;
++	ID3D11Texture2D *poolTex = d11_acquire_pool_tex(&mem);
++	if (!poolTex) return 0;
++	ID3D11RenderTargetView *rtv = gst_d3d11_memory_get_render_target_view((GstD3D11Memory*) mem, 0);
++	gst_d3d11_device_lock(d11_dev);
++	if (rtv) { FLOAT black[4] = {0,0,0,1}; ID3D11DeviceContext_ClearRenderTargetView(d11_ctx, rtv, black); }
++	gst_d3d11_device_unlock(d11_dev);
++	d11_push_buffer(src, mem, d11_w, d11_h, durNs);
++	return 1;
++}
++
++// d11_set_context hands the pipeline our GstD3D11Device so its d3d11/nvautogpu elements use OUR device
++// (the one our pool buffers live on) instead of creating their own. Mirrors glzerocopy's zc_set_context.
++static void d11_set_context(GstElement *pipeline) {
++	if (!d11_dev || !pipeline) return;
++	GstContext *ctx = gst_d3d11_context_new(d11_dev);
++	gst_element_set_context(pipeline, ctx);
++	gst_context_unref(ctx);
++}
++
++// d11_read_slot_sample copies shared slot -> a staging texture and reads 4 quadrant-centre BGRA pixels
++// (out = 16 bytes). DIAGNOSTIC ONLY (cmd/capture-texcheck): proves the real open+keyed-mutex+copy path
++// returns real content, never called in the live pipeline. Returns 0 on success.
++static int d11_read_slot_sample(int slot, unsigned char *out, char *err, int errlen) {
++	if (!d11_dev || slot < 0 || slot >= d11_nshared || !d11_shared[slot]) { g_snprintf(err, errlen, "no slot %d", slot); return 1; }
++	ID3D11Device *dev = gst_d3d11_device_get_device_handle(d11_dev);
++	D3D11_TEXTURE2D_DESC sd; memset(&sd, 0, sizeof(sd));
++	sd.Width = d11_w; sd.Height = d11_h; sd.MipLevels = 1; sd.ArraySize = 1;
++	sd.Format = DXGI_FORMAT_B8G8R8A8_UNORM; sd.SampleDesc.Count = 1;
++	sd.Usage = D3D11_USAGE_STAGING; sd.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
++	ID3D11Texture2D *st = NULL;
++	if (FAILED(ID3D11Device_CreateTexture2D(dev, &sd, NULL, &st))) { g_snprintf(err, errlen, "staging create failed"); return 2; }
++	if (IDXGIKeyedMutex_AcquireSync(d11_km[slot], 0, 1000) != S_OK) { ID3D11Texture2D_Release(st); g_snprintf(err, errlen, "AcquireSync timeout"); return 3; }
++	gst_d3d11_device_lock(d11_dev);
++	ID3D11DeviceContext_CopyResource(d11_ctx, (ID3D11Resource*) st, (ID3D11Resource*) d11_shared[slot]);
++	D3D11_MAPPED_SUBRESOURCE map;
++	HRESULT hr = ID3D11DeviceContext_Map(d11_ctx, (ID3D11Resource*) st, 0, D3D11_MAP_READ, 0, &map);
++	if (SUCCEEDED(hr)) {
++		int cx[4] = { d11_w/4, 3*d11_w/4, d11_w/4, 3*d11_w/4 };
++		int cy[4] = { d11_h/4, d11_h/4, 3*d11_h/4, 3*d11_h/4 };
++		for (int i = 0; i < 4; i++) {
++			unsigned char *px = (unsigned char*) map.pData + (size_t) cy[i]*map.RowPitch + (size_t) cx[i]*4;
++			out[i*4+0]=px[0]; out[i*4+1]=px[1]; out[i*4+2]=px[2]; out[i*4+3]=px[3];
++		}
++		ID3D11DeviceContext_Unmap(d11_ctx, (ID3D11Resource*) st, 0);
++	}
++	gst_d3d11_device_unlock(d11_dev);
++	IDXGIKeyedMutex_ReleaseSync(d11_km[slot], 0);
++	ID3D11Texture2D_Release(st);
++	if (FAILED(hr)) { g_snprintf(err, errlen, "Map hr=0x%08lX", (unsigned long) hr); return 4; }
++	return 0;
++}
++
++static void d11_deinit(void) {
++	for (int i = 0; i < D11_MAX_SLOTS; i++) {
++		if (d11_km[i])     { IDXGIKeyedMutex_Release(d11_km[i]); d11_km[i] = NULL; }
++		if (d11_shared[i]) { ID3D11Texture2D_Release(d11_shared[i]); d11_shared[i] = NULL; }
++	}
++	d11_nshared = 0;
++	if (d11_pool) { gst_d3d11_allocator_set_active(GST_D3D11_ALLOCATOR(d11_pool), FALSE); gst_object_unref(d11_pool); d11_pool = NULL; }
++	if (d11_dev1) { ID3D11Device1_Release(d11_dev1); d11_dev1 = NULL; }
++	d11_ctx = NULL;
++	if (d11_dev)  { gst_object_unref(d11_dev); d11_dev = NULL; }
++}
++*/
++import "C"
++
++import (
++	"fmt"
++	"unsafe"
++
++	"github.com/go-gst/go-gst/gst"
++)
++
++// InitD3D11ZeroCopy opens a GstD3D11Device on the helper's adapter LUID and a pooled BGRA allocator at
++// the encode geometry. Called before the media pipeline is built (so d11_set_context can run at build).
++func (g *GstMediaPipe) InitD3D11ZeroCopy(luid int64, w, h int) error {
++	if C.d11_init(C.longlong(luid), C.int(w), C.int(h)) == 0 {
++		return fmt.Errorf("d3d11 zero-copy init: %s", C.GoString(C.d11_last_error()))
++	}
++	return nil
++}
++
++// OpenD3D11Shared duplicates the helper's shared NT handles into this process and opens them.
++func (g *GstMediaPipe) OpenD3D11Shared(helperPid int, handles []uint64) error {
++	if len(handles) == 0 {
++		return fmt.Errorf("d3d11 zero-copy: no shared handles")
++	}
++	n := C.d11_open(C.int(helperPid), (*C.ulonglong)(unsafe.Pointer(&handles[0])), C.int(len(handles)))
++	if int(n) != len(handles) {
++		return fmt.Errorf("d3d11 zero-copy open (%d/%d): %s", int(n), len(handles), C.GoString(C.d11_last_error()))
++	}
++	return nil
++}
++
++// PushD3D11Slot copies shared texture[slot] into a pooled buffer under its keyed mutex and pushes it.
++// The capture app pushes here directly (not via ProcessVideo), so this owns the forced-keyframe clock —
++// same policy as the appsrc path, driven off the input frame like ProcessVideo does. The capture app
++// serializes its slot/black/re-push calls (frameMu), so the non-atomic keyframe counters stay safe.
++func (g *GstMediaPipe) PushD3D11Slot(slot, w, h int, durNs uint64) {
++	if g.v == nil || g.v.source == nil {
++		return
++	}
++	g.maybeForceKeyframe(g.v)
++	C.d11_push(g.v.src(), C.int(slot), C.ulonglong(durNs))
++}
++
++// PushD3D11Black pushes a cleared pool buffer (game-exit privacy / between-room blank).
++func (g *GstMediaPipe) PushD3D11Black(w, h int, durNs uint64) {
++	if g.v == nil || g.v.source == nil {
++		return
++	}
++	C.d11_push_black(g.v.src(), C.ulonglong(durNs))
++}
++
++// DeinitD3D11ZeroCopy releases the shared textures, the pool and the gst device.
++func (g *GstMediaPipe) DeinitD3D11ZeroCopy() { C.d11_deinit() }
++
++// ReadD3D11SlotSample reads 4 quadrant-centre BGRA pixels of shared slot (TL,TR,BL,BR). DIAGNOSTIC
++// ONLY (cmd/capture-texcheck) — proves the real open+keyed-mutex+copy path returns real content.
++func (g *GstMediaPipe) ReadD3D11SlotSample(slot int) ([4][4]byte, error) {
++	var out [16]C.uchar
++	errBuf := make([]C.char, 256)
++	if rc := C.d11_read_slot_sample(C.int(slot), &out[0], &errBuf[0], C.int(len(errBuf))); rc != 0 {
++		return [4][4]byte{}, fmt.Errorf("read slot %d: %s", slot, C.GoString(&errBuf[0]))
++	}
++	var px [4][4]byte
++	for i := 0; i < 4; i++ {
++		px[i] = [4]byte{byte(out[i*4]), byte(out[i*4+1]), byte(out[i*4+2]), byte(out[i*4+3])}
++	}
++	return px, nil
++}
++
++// SetD3D11ZeroCopy toggles the build-time flag (the appsrc carries D3D11Memory BGRA into nvautogpu*enc).
++func (g *GstMediaPipe) SetD3D11ZeroCopy(on bool) { g.D3D11ZeroCopy = on }
++
++// attachD3D11Context gives a pipeline our GstD3D11Device before it goes PLAYING (cgo preambles are
++// per-file, so this wrapper is what lets gstreamer.go reach d11_set_context).
++func attachD3D11Context(p *gst.Pipeline) {
++	if p == nil {
++		return
++	}
++	C.d11_set_context((*C.GstElement)(unsafe.Pointer(p.Instance())))
++}
 diff --git a/pkg/worker/media/glzerocopy.go b/pkg/worker/media/glzerocopy.go
 new file mode 100644
 index 0000000..be84e8e
@@ -48349,10 +48979,10 @@ index 0000000..be84e8e
 +	C.zc_push(g.v.src(), C.uint(texID), C.int(w), C.int(h), C.ulonglong(durNs))
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..94789ec 100644
+index 4a6171f..f342a19 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,1034 @@
+@@ -1,579 +1,1073 @@
 -package media
 -
 -import (
@@ -49166,6 +49796,12 @@ index 4a6171f..94789ec 100644
 +	// encoder reads them straight out of VRAM. See glzerocopy.go. Off => the readback path, unchanged.
 +	GLZeroCopy bool
 +
++	// D3D11ZeroCopy (capture lane v2, WINDOW mode): the appsrc carries cross-process D3D11 shared-texture
++	// frames (BGRA D3D11Memory) the ArcadeCaptureHost helper produced, GPU-copied into a pool buffer, and
++	// the nvautogpu*enc reads them straight out of VRAM. See d3d11zerocopy.go. Off => the v1 shm readback
++	// path (design-A appsrc + system-memory frames), unchanged. Mutually exclusive with GLZeroCopy/srcChain.
++	D3D11ZeroCopy bool
++
 +	// destroyed guards destroySync: with GL zero-copy the pipeline is torn down from the core's own
 +	// teardown AND again from Room.Close(). Guarded by mu.
 +	destroyed bool
@@ -49360,7 +49996,7 @@ index 4a6171f..94789ec 100644
 +		w, h = h, w
 +	}
 +	g.v, err = buildVideoPipeline(w, h, sw, sh, g.pixFmt, g.ScaleMethod, g.MaxThreads, g.conf,
-+		g.log, g.VideoFPS, g.VideoVFR, g.VideoSrcChain, g.GLZeroCopy)
++		g.log, g.VideoFPS, g.VideoVFR, g.VideoSrcChain, g.GLZeroCopy, g.D3D11ZeroCopy)
 +	if err != nil {
 +		return
 +	}
@@ -49680,7 +50316,7 @@ index 4a6171f..94789ec 100644
 +
 +func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod string,
 +	maxThreads int, conf config.Encoder, log *logger.Logger, fps float64, vfr bool,
-+	srcChain string, glZeroCopy bool) (*pipe, error) {
++	srcChain string, glZeroCopy bool, d3d11ZeroCopy bool) (*pipe, error) {
 +	format := cmp.Or(pixFmtToGst[pixFmt], "RGBA")
 +	kfi := cmp.Or(conf.Video.KeyframeInterval, 120)
 +	opts, codec := conf.VideoSettings()
@@ -49692,9 +50328,10 @@ index 4a6171f..94789ec 100644
 +	// hands the encoder NV12 in D3D12Memory (which nvh264enc/nvav1enc accept directly), and putting a
 +	// videoconvert there would drag the frame back to system memory — exactly what P4 removes.
 +	conv := "videoconvert n-threads=2 ! "
-+	if zeroCopy || glZeroCopy {
-+		// A videoconvert here would drag the frame back to system memory — exactly what both zero-copy
-+		// paths exist to avoid. NVENC takes GLMemory/D3D12Memory RGBA/NV12 on its sink directly.
++	if zeroCopy || glZeroCopy || d3d11ZeroCopy {
++		// A videoconvert here would drag the frame back to system memory — exactly what the zero-copy
++		// paths exist to avoid. NVENC takes GL/D3D12/D3D11 memory NV12 on its sink directly (the D3D11
++		// path already did the BGRA->NV12 GPU convert in its own head below).
 +		conv = ""
 +	}
 +
@@ -49732,6 +50369,24 @@ index 4a6171f..94789ec 100644
 +		build.write("! queue name=video_q max-size-buffers=1 ")
 +		build.writef("! capsfilter name=video_caps caps=\"video/x-raw(memory:GLMemory),format=RGBA,width=%d,height=%d\" ", scaledW, scaledH)
 +		build.write("! ")
++	} else if d3d11ZeroCopy {
++		// CAPTURE LANE v2 (window mode) D3D11 ZERO-COPY head. The appsrc carries BGRA D3D11Memory frames
++		// the worker GPU-copied out of the helper's keyed-mutex SHARED textures (d3d11zerocopy.go) — no
++		// system-memory frame, no re-upload. d3d11convert does the BGRA->NV12 + colorimetry ON THE GPU (a
++		// videoconvert here would drag it back to system memory, the whole round trip v2 removes), and the
++		// nvautogpu*enc reads the NV12 D3D11Memory straight out of VRAM. framerate on the source caps so a
++		// static screen doesn't starve negotiation (the re-push ticker keeps frames flowing regardless).
++		build.write("appsrc name=video_src is-live=true ")
++		var fn, fd C.gint
++		C.doubleToFraction(C.gdouble(fps), &fn, &fd)
++		build.writef(`caps="video/x-raw(memory:D3D11Memory),format=BGRA,width=%d,height=%d,framerate=%d/%d" `, w, h, int(fn), int(fd))
++		build.write("! d3d11convert name=video_scale ")
++		build.write("! queue name=video_q max-size-buffers=1 ")
++		build.writef("! capsfilter name=video_caps caps=\"video/x-raw(memory:D3D11Memory),format=NV12,width=%d,height=%d", scaledW, scaledH)
++		if conf.Video.Colorimetry != "" {
++			build.writef(",colorimetry=%s", conf.Video.Colorimetry)
++		}
++		build.write("\" ! ")
 +	} else {
 +		build.write("appsrc name=video_src is-live=true ")
 +		var fn, fd C.gint
@@ -49757,12 +50412,20 @@ index 4a6171f..94789ec 100644
 +	// bridges the shared I420 capsfilter to whatever the encoder actually takes (NVENC on WSL
 +	// probes NV12-only — the I420 caps won't link directly); it's passthrough when formats match.
 +	case "h264":
-+		build.writef("%s%s name=video_enc ", conv, cmp.Or(opts.Encoder, "x264enc"))
++		enc := cmp.Or(opts.Encoder, "x264enc")
++		if d3d11ZeroCopy {
++			enc = "nvautogpuh264enc" // takes D3D11Memory on its sink (stock nvh264enc takes CUDA/D3D12/GL)
++		}
++		build.writef("%s%s name=video_enc ", conv, enc)
 +	// av1 (patch 0024): nvav1enc emits an obu-stream. Pion's AV1 payloader wants TEMPORAL-UNIT aligned
 +	// OBUs, so av1parse is not optional — without alignment=tu the receiver sees fragments of a TU and
 +	// renders nothing. Same shape as the h264 case: element + tuning come from encoder.list.
 +	case "av1":
-+		build.writef("%s%s name=video_enc ", conv, cmp.Or(opts.Encoder, "nvav1enc"))
++		enc := cmp.Or(opts.Encoder, "nvav1enc")
++		if d3d11ZeroCopy {
++			enc = "nvautogpuav1enc" // takes D3D11Memory on its sink; same param set (verified gst-launch)
++		}
++		build.writef("%s%s name=video_enc ", conv, enc)
 +	case "vp8", "vp9":
 +		encoder := cmp.Or(opts.Encoder, fmt.Sprintf("vp%cenc", codec[len(codec)-1]))
 +		threads := cmp.Or(conf.Video.Threads, cpuCores)
@@ -49794,6 +50457,12 @@ index 4a6171f..94789ec 100644
 +		// GL elements would create their own, isolated context — and the texture ids we push would be
 +		// meaningless in it (garbage frames, not an error).
 +		attachGLContext(pipeline)
++	}
++	if d3d11ZeroCopy {
++		// Hand the pipeline OUR GstD3D11Device (the one our pool buffers live on) BEFORE PLAYING, so
++		// d3d11convert + nvautogpu*enc use it instead of creating their own device (a different device
++		// couldn't read our shared-pool textures). See d3d11zerocopy.go d11_set_context.
++		attachD3D11Context(pipeline)
 +	}
 +	sinkEl, err := pipeline.GetElementByName("video_sink")
 +	if err != nil {
@@ -49967,7 +50636,7 @@ index 4a6171f..94789ec 100644
 +
 +// VideoBitrate is the ABR target currently applied (kbps), or 0 if ABR never set one.
 diff --git a/pkg/worker/media/gstreamer_test.go b/pkg/worker/media/gstreamer_test.go
-index f3e898f..cc81359 100644
+index f3e898f..f18e810 100644
 --- a/pkg/worker/media/gstreamer_test.go
 +++ b/pkg/worker/media/gstreamer_test.go
 @@ -1,253 +1,284 @@
@@ -50335,7 +51004,7 @@ index f3e898f..cc81359 100644
 +)
 +
 +func TestBuildVideoPipeline(t *testing.T) {
-+	p, err := buildVideoPipeline(640, 480, 640, 480, pixFmtBGRx, "bilinear2", 0, testVideoCodec, testLog, 0, false, "", false)
++	p, err := buildVideoPipeline(640, 480, 640, 480, pixFmtBGRx, "bilinear2", 0, testVideoCodec, testLog, 0, false, "", false, false)
 +	if err != nil {
 +		t.Fatal(err)
 +	}
@@ -50354,7 +51023,7 @@ index f3e898f..cc81359 100644
 +	// see capture.App.VideoSrcChain). The head's job here is only to prove the wiring.
 +	chain := "videotestsrc name=video_src is-live=true ! video/x-raw,framerate=60/1 " +
 +		"! valve name=video_valve drop=true ! videoconvert ! video/x-raw,format=I420,width=640,height=480"
-+	p, err := buildVideoPipeline(640, 480, 640, 480, pixFmtBGRx, "", 0, testFullCodec, testLog, 60, false, chain, false)
++	p, err := buildVideoPipeline(640, 480, 640, 480, pixFmtBGRx, "", 0, testFullCodec, testLog, 60, false, chain, false, false)
 +	if err != nil {
 +		t.Fatal(err)
 +	}

@@ -51,6 +51,10 @@ namespace ArcadeCaptureHost
             // stdin watcher: EOF (worker died / closed the pipe) → shut down. Skipped with --ignore-stdin
             // for standalone testing (no parent holding the pipe open).
             bool ignoreStdin = args.ContainsKey("ignore-stdin");
+            // Capture lane v2: share the frame as keyed-mutex GPU textures instead of a pixel readback.
+            // The worker passes --texshare only when windowZeroCopy is on; an old worker never does, so we
+            // stay on v1. If ring creation fails we fall back to v1 and do NOT advertise texShare.
+            bool texShare = args.ContainsKey("texshare");
             var stdinThread = new Thread(() =>
             {
                 try
@@ -101,19 +105,32 @@ namespace ArcadeCaptureHost
                         cap = new WindowCapture(hwnd, fps, width, height, onFrame,
                             onStatus: Emit,
                             onClosed: reason => recover.Signal(reason),
-                            onError: detail => Emit($"{{\"event\":\"error\",\"detail\":\"{Escape(detail)}\"}}"));
+                            onError: detail => Emit($"{{\"event\":\"error\",\"detail\":\"{Escape(detail)}\"}}"),
+                            texShare: texShare, shmName: shmName, eventName: eventName);
 
                         var size = cap.Start();
                         int rw = width > 0 ? width : size.Width;
                         int rh = height > 0 ? height : size.Height;
                         if (rw <= 0 || rh <= 0) { rw = 1920; rh = 1080; }
 
-                        if (ring == null)
+                        if (cap.TexShareActive)
                         {
-                            localRing = new SharedFrameRing(shmName, eventName, rw, rh);
-                            Volatile.Write(ref ring, localRing);
+                            // v2: the frame ring is GPU SHARED TEXTURES (owned by cap). Publish pid + the
+                            // raw NT-handle values + the adapter LUID so the worker duplicates+opens them.
+                            string handlesJson = string.Join(",",
+                                Array.ConvertAll(cap.TexHandles, h => h.ToString(CultureInfo.InvariantCulture)));
+                            Emit($"{{\"event\":\"ready\",\"width\":{rw},\"height\":{rh},\"itemWidth\":{size.Width},\"itemHeight\":{size.Height},\"fps\":{fps}," +
+                                 $"\"texShare\":true,\"texCount\":{cap.TexCount},\"luid\":{cap.TexLuid},\"pid\":{Environment.ProcessId},\"texHandles\":[{handlesJson}]}}");
                         }
-                        Emit($"{{\"event\":\"ready\",\"width\":{ring.Width},\"height\":{ring.Height},\"itemWidth\":{size.Width},\"itemHeight\":{size.Height},\"fps\":{fps}}}");
+                        else
+                        {
+                            if (ring == null)
+                            {
+                                localRing = new SharedFrameRing(shmName, eventName, rw, rh);
+                                Volatile.Write(ref ring, localRing);
+                            }
+                            Emit($"{{\"event\":\"ready\",\"width\":{ring.Width},\"height\":{ring.Height},\"itemWidth\":{size.Width},\"itemHeight\":{size.Height},\"fps\":{fps}}}");
+                        }
                         attempt = 0;
 
                         // Run until a recover/stop reason. Log a periodic heartbeat with frame count + minimize state.

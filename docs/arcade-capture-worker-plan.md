@@ -1123,9 +1123,10 @@ RDP-display artifact, not a lane limit.
   the helper→worker boundary removes that round trip. **The cross-process GPU path is now PROVEN on
   Ziggy (2026-07-23) — see the "CAPTURE LANE V2" section at the end of this doc.** The one design
   correction the proof forced: the transport is NT-handle **duplication**, NOT open-by-name (by-name
-  `CreateSharedHandle`/`OpenSharedResourceByName` is process-local on this box). The live pipeline
-  wiring (helper texshare ring + worker `d3d11zerocopy.go` + nvautogpu encoder) is specced but NOT yet
-  built/deployed; v1 (the shm readback path above) remains the shipping default.
+  `CreateSharedHandle`/`OpenSharedResourceByName` is process-local on this box). The full pipeline
+  (helper texShare ring + worker `d3d11zerocopy.go` + nvautogpu encoder) is now **BUILT and verified
+  standalone, STAGED not deployed** (see the "CAPTURE LANE V2" section); v1 (the shm readback path
+  above) remains the shipping default until the deploy swap + live-room A/B.
 - **Per-title background-input**: SDL titles need `SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS=1` (set). Other
   emulators (yuzu) may need their own "input while unfocused" setting in profiles.json / per-title ini.
 - **HDR**: window-capturing an SDR game window sidesteps the desktop-HDR tonemap problem (no monitor HDR
@@ -1140,9 +1141,12 @@ Goal: restore zero-copy in WINDOW capture mode by sharing a GPU texture across t
 process boundary, replacing v1's CPU-readback + shm-pixel-copy chain (helper `Map`/readback ~6 ms +
 two system-memory memcpys + a worker-side re-upload for NVENC).
 
-**Status: the cross-process GPU shared-texture MECHANISM is PROVEN end-to-end on Ziggy. The live
-pipeline wiring is specced and de-risked but NOT built/deployed. v1 remains the shipping default and
-is untouched.** This section is written so the remaining wiring needs no re-derivation.
+**Status (2026-07-23): BUILT + verified standalone, STAGED (not deployed). v1 remains the shipping
+default and is fully intact behind automatic fallback.** The cross-process GPU shared-texture path is
+proven end-to-end THROUGH PRODUCTION CODE (real helper `--texshare` + real worker media code open the
+shared textures cross-process and read back exact window content). Both sides build clean, `go vet`
+clean, fork.patch re-applies to pristine `13852a7` and compiles. What remains is the live-room A/B (a
+running WebRTC room), which needs Eric / the test-roms harness. See the ledger at the end.
 
 ## The load-bearing finding (this OVERTURNS the agreed design's transport)
 
@@ -1247,15 +1251,50 @@ lifetime from the shared ring so the keyed mutex is never held across the async 
 | cgo COM (OpenSharedResource1 / IDXGIKeyedMutex) links in ucrt64 | ✅ verified (proof builds) |
 | Cross-process keyed-mutex texture copy returns correct pixels | ✅ verified (4-quadrant proof PASS) |
 | Transport = handle-dup (NOT by-name) | ✅ verified (by-name is process-local here) |
-| Helper texshare ring + worker d3d11zerocopy.go + 3rd pipeline mode | ⛔ NOT built |
-| Latency tracer A/B (target ~3 ms vs v1 ~9.2 ms) | ⛔ pending (needs the built pipeline) |
-| Automatic fallback + windowZeroCopy knob | ⛔ NOT built |
-| Live-room test (real site / test-roms) | ⛔ pending (needs Eric / harness) |
+| Helper texShare ring (`SharedTextureRing.cs`) + `WindowCapture`/`Program` `--texshare` | ✅ built + helper build clean |
+| Worker `d3d11zerocopy.go` + `d3d11window.go` + gstreamer.go 3rd mode + wiring | ✅ built + `go vet` clean |
+| nvautogpu{av1,h264}enc encode-half negotiates + runs (real config params) | ✅ verified (gst-launch) |
+| Real-code cross-process open + readback (real helper + real worker media) | ✅ PASS (exact window colour 255,144,30,255 BGRA) |
+| Automatic fallback + `windowZeroCopy` knob | ✅ bogus-handle → OpenD3D11Shared errors (verified); config gate + helper-respawn wired |
+| fork.patch re-applies to pristine `13852a7` + compiles | ✅ export-arcade-fork.ps1 passed |
+| GST latency tracer (pre-encoder GPU convert) | ✅ v2 d3d11convert **0.023 ms** vs v1-shaped download+convert **1.21 ms** (+ ~6 ms helper Map readback removed) |
+| Live-room A/B (real site / test-roms; glass-to-glass) | ⛔ pending (needs Eric / harness) |
+| Deploy (worker.exe + ArcadeCaptureHost.exe swap) | ⛔ STAGED, not deployed (see below) |
 
-Proof harness (throwaway, session scratchpad, not committed): a C#/Vortice `texwriter` (creates the
-keyed-mutex shared texture, publishes pid+luid+handle) and a Go/cgo `texreader` (GstD3D11Device +
-handle-dup open + keyed-mutex readback + quadrant verify). Reproduce the transport from the recipe
-above; the `texreader` cgo is the drop-in prototype for `d3d11zerocopy.go`.
+### Built design (as shipped to the fork)
+
+- **Transport**: NT-handle DUPLICATION. Helper `ready` JSON gained `texShare,texCount,luid,pid,texHandles[]`.
+  Worker: `OpenProcess(PROCESS_DUP_HANDLE)+DuplicateHandle+OpenSharedResource1`, GstD3D11Device opened
+  for the helper's LUID.
+- **Helper** (`src/ArcadeCaptureHost`): `SharedTextureRing.cs` (ring of 4 keyed-mutex NT-handle BGRA
+  textures + the shm header/event reused as a slot/seq CONTROL channel, slotSize=0). `WindowCapture`
+  gains a `--texshare` path: per frame it acquires the next slot's keyed mutex and GPU-copies the WGC
+  frame (or the `VideoScaler` output for the 300%-DPI case) into the slot texture — no readback.
+  `Program` emits the texShare ready line. Any ring-creation failure → v1 readback (helper does not
+  advertise texShare). v1 path fully intact; a `--no-texshare`-equivalent is "the worker doesn't pass
+  --texshare" (windowZeroCopy:false or old worker).
+- **Worker**: `media/d3d11zerocopy.go` — GstD3D11Device-for-LUID + `GstD3D11PoolAllocator`; per frame
+  acquire the shared slot's keyed mutex, `CopyResource` into a pool buffer, RELEASE the mutex, push the
+  pool buffer (mutex never held across the async encode — the keyed mutex gives GPU-level ordering so
+  this is safe). `gstreamer.go` 3rd pipeline mode: `appsrc(D3D11Memory,BGRA) ! d3d11convert !
+  NV12(D3D11Memory, limited-range colorimetry) ! nvautogpu{av1,h264}enc` (device context attached like
+  GL zero-copy). ABR/SVC/keyframes work on nvautogpu* (bitrate + temporal-layers verified present +
+  live). `caged/capture/d3d11window.go` — texShare parse, v2 arming with per-room automatic fallback,
+  D3D11 read/re-push loops + black-on-exit (cleared pool buffer). `config.Capture.WindowZeroCopy *bool`
+  (nil/true = ON). No `config.worker-capture.yaml` change needed (absent key = ON by default).
+
+### Deployed vs staged
+
+Nothing was deployed — the live capture lane (worker task 3, the live `ArcadeCaptureHost.exe`) is
+untouched and still runs v1. Both binaries are STAGED (fork pushed; worker.exe + published helper in a
+staging dir). The final swap (stop watchdog + task 3, back up + swap `worker.exe` and
+`ArcadeCaptureHost.exe`, restart) is left for a controlled window per the "drain live rooms before
+restarting a worker" rule. On deploy, window rooms get v2 automatically (windowZeroCopy defaults ON);
+any failure falls back to v1 per room.
+
+Session proof harness (throwaway, scratchpad, not committed): C#/Vortice `texwriter` + Go/cgo
+`texreader` proved the raw transport; `cmd/capture-texcheck` (deleted before the fork commit, like
+`cmd/capture-probe`) drove the real helper + real worker media code for the readback PASS above.
 
 ## Auto-reattach to the console when nobody is attached (2026-07-23)
 
