@@ -303,7 +303,15 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
 app.MapPost("/w-snap/{token}", async (HttpContext ctx, string token) =>
 {
     if (saveStore == null) return Results.NotFound();
-    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null) return Results.Forbid();
+    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null)
+        // NOT Results.Forbid(): this gateway registers no authentication scheme, so ForbidAsync throws and
+        // the endpoint 500s — and a 500 from an unhandled exception carries no Access-Control-Allow-Origin,
+        // so the browser reports an expired/invalid token as a bogus "blocked by CORS policy" error (the WS
+        // is CORS-exempt, so the room plays on while every save beside it appears to fail on CORS). Return a
+        // plain 403 that flows through the CORS middleware so the client can READ it and show a real message.
+        // The heartbeat now re-mints the token every ~12 s, so a present player shouldn't reach this at all.
+        return Results.Json(new { ok = false, reason = "This room pass expired — rejoin the room to keep saving." },
+            statusCode: StatusCodes.Status403Forbidden);
     var id = p.CloudRetroRoomId ?? "";
     if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out var sys, out _) || u != p.UserId || g != p.GameId)
         return Results.BadRequest();
@@ -340,7 +348,15 @@ app.MapPost("/w-snap/{token}", async (HttpContext ctx, string token) =>
 app.MapPost("/w-quick/{token}", async (HttpContext ctx, string token) =>
 {
     if (saveStore == null) return Results.NotFound();
-    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null) return Results.Forbid();
+    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null)
+        // NOT Results.Forbid(): this gateway registers no authentication scheme, so ForbidAsync throws and
+        // the endpoint 500s — and a 500 from an unhandled exception carries no Access-Control-Allow-Origin,
+        // so the browser reports an expired/invalid token as a bogus "blocked by CORS policy" error (the WS
+        // is CORS-exempt, so the room plays on while every save beside it appears to fail on CORS). Return a
+        // plain 403 that flows through the CORS middleware so the client can READ it and show a real message.
+        // The heartbeat now re-mints the token every ~12 s, so a present player shouldn't reach this at all.
+        return Results.Json(new { ok = false, reason = "This room pass expired — rejoin the room to keep saving." },
+            statusCode: StatusCodes.Status403Forbidden);
     var id = p.CloudRetroRoomId ?? "";
     // NOT owner-only, unlike /w-snap: Save acts on the room's one shared emulator, and every player has
     // been able to press it (t=106) since the buttons existed. The token already proves membership of
@@ -371,7 +387,15 @@ app.MapPost("/w-quick/{token}", async (HttpContext ctx, string token) =>
 app.MapPost("/w-load/{token}", async (HttpContext ctx, string token) =>
 {
     if (saveStore == null) return Results.NotFound();
-    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null) return Results.Forbid();
+    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null)
+        // NOT Results.Forbid(): this gateway registers no authentication scheme, so ForbidAsync throws and
+        // the endpoint 500s — and a 500 from an unhandled exception carries no Access-Control-Allow-Origin,
+        // so the browser reports an expired/invalid token as a bogus "blocked by CORS policy" error (the WS
+        // is CORS-exempt, so the room plays on while every save beside it appears to fail on CORS). Return a
+        // plain 403 that flows through the CORS middleware so the client can READ it and show a real message.
+        // The heartbeat now re-mints the token every ~12 s, so a present player shouldn't reach this at all.
+        return Results.Json(new { ok = false, reason = "This room pass expired — rejoin the room to keep saving." },
+            statusCode: StatusCodes.Status403Forbidden);
     var id = p.CloudRetroRoomId ?? "";
     // Any player of this room may load (see /w-quick) — the emulator, and so the state, is shared.
     if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out _, out _) || g != p.GameId)
