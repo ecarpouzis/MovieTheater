@@ -58,15 +58,24 @@ namespace ArcadeCaptureHost
         private long _frames;
         private int _disposed;
 
+        // Ring geometry the frames must come out at. When the capture item's physical size differs
+        // (DPI-virtualized window on a scaled display — the console TV runs 300%), frames are
+        // GPU-downscaled to this size instead of letting the ring crop the top-left corner.
+        private int _targetW, _targetH;
+        private VideoScaler _scaler;
+        private bool _scalerBroken;
+
         public long Frames => Volatile.Read(ref _frames);
         public uint Generation => _generation;
 
-        public WindowCapture(IntPtr hwnd, int fps,
+        public WindowCapture(IntPtr hwnd, int fps, int targetWidth, int targetHeight,
             Action<IntPtr, int, int, int> onFrame,
             Action<string> onStatus, Action<string> onClosed, Action<string> onError)
         {
             _hwnd = hwnd;
             _fps = fps;
+            _targetW = targetWidth;
+            _targetH = targetHeight;
             _onFrame = onFrame;
             _onStatus = onStatus;
             _onClosed = onClosed;
@@ -87,6 +96,9 @@ namespace ArcadeCaptureHost
 
             var size = _item.Size;
             _lastContentSize = size;
+            // No explicit ring geometry (standalone/testing): lock the ring to the first item size so
+            // later mid-room resizes still come out at a fixed geometry.
+            if (_targetW <= 0 || _targetH <= 0) { _targetW = size.Width; _targetH = size.Height; }
             _pool = Direct3D11CaptureFramePool.CreateFreeThreaded(
                 _rtDevice, DirectXPixelFormat.B8G8R8A8UIntNormalized, 2, size);
             _pool.FrameArrived += OnFrameArrived;
@@ -160,13 +172,40 @@ namespace ArcadeCaptureHost
 
                 using var surfaceTexture = GetTextureFromSurface(frame.Surface);
                 var desc = surfaceTexture.Description;
-                EnsureStaging((int)desc.Width, (int)desc.Height);
 
-                _d3dContext.CopyResource(_staging, surfaceTexture);
+                // A frame bigger/smaller than the ring (DPI-virtualized window) is GPU-downscaled to
+                // ring size; a raw copy would let the ring keep only the top-left corner (the console
+                // 300%-scaling black screen, 2026-07-23). On any scaler failure fall back to that crop
+                // so a room still shows SOMETHING while the error is visible in the log.
+                bool scaled = false;
+                if (((int)desc.Width != _targetW || (int)desc.Height != _targetH) && !_scalerBroken)
+                {
+                    try
+                    {
+                        _scaler ??= new VideoScaler(_d3dDevice, _d3dContext);
+                        if (_scaler.Ensure((int)desc.Width, (int)desc.Height, _targetW, _targetH))
+                            _onStatus($"{{\"event\":\"scale\",\"srcWidth\":{desc.Width},\"srcHeight\":{desc.Height},\"dstWidth\":{_targetW},\"dstHeight\":{_targetH}}}");
+                        _scaler.Process(surfaceTexture);
+                        scaled = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        uint shr = (uint)ex.HResult;
+                        if (shr == 0x887A0005 /*DEVICE_REMOVED*/ || shr == 0x887A0006 /*DEVICE_HUNG*/)
+                            throw; // outer handler recovers the whole capture
+                        _scalerBroken = true;
+                        _onError("scaler: " + ex.Message + " — falling back to top-left crop");
+                    }
+                }
+
+                int outW = scaled ? _targetW : (int)desc.Width;
+                int outH = scaled ? _targetH : (int)desc.Height;
+                EnsureStaging(outW, outH);
+                _d3dContext.CopyResource(_staging, scaled ? _scaler.Output : surfaceTexture);
                 var map = _d3dContext.Map(_staging, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
                 try
                 {
-                    _onFrame(map.DataPointer, (int)map.RowPitch, (int)desc.Width, (int)desc.Height);
+                    _onFrame(map.DataPointer, (int)map.RowPitch, outW, outH);
                     Interlocked.Increment(ref _frames);
                 }
                 finally
@@ -223,6 +262,7 @@ namespace ArcadeCaptureHost
             try { _session?.Dispose(); } catch { }
             try { if (_pool != null) _pool.FrameArrived -= OnFrameArrived; } catch { }
             try { _pool?.Dispose(); } catch { }
+            try { _scaler?.Dispose(); } catch { }
             try { _staging?.Dispose(); } catch { }
             try { _d3dContext?.Dispose(); } catch { }
             try { _d3dDevice?.Dispose(); } catch { }

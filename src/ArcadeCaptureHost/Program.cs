@@ -98,7 +98,7 @@ namespace ArcadeCaptureHost
                             QueryPerformanceCounter(out long qpc);
                             unsafe { r.Publish((byte*)ptr, pitch, cw, ch, qpc); }
                         };
-                        cap = new WindowCapture(hwnd, fps, onFrame,
+                        cap = new WindowCapture(hwnd, fps, width, height, onFrame,
                             onStatus: Emit,
                             onClosed: reason => recover.Signal(reason),
                             onError: detail => Emit($"{{\"event\":\"error\",\"detail\":\"{Escape(detail)}\"}}"));
