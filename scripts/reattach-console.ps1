@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Reattach the arcade capture session to the PHYSICAL CONSOLE (tscon /dest:console).
 

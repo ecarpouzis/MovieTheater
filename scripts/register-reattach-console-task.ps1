@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Register the on-demand elevated task "MovieTheater - Reattach Console" that reattaches the arcade
     capture session to the physical console. RUN THIS ONCE, ELEVATED (as admin).
