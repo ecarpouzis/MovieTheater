@@ -5687,10 +5687,10 @@ index 85ede12..6d1d955 100644
  
 diff --git a/pkg/worker/caged/capture/capture.go b/pkg/worker/caged/capture/capture.go
 new file mode 100644
-index 0000000..e503f9b
+index 0000000..48ec5da
 --- /dev/null
 +++ b/pkg/worker/caged/capture/capture.go
-@@ -0,0 +1,647 @@
+@@ -0,0 +1,659 @@
 +// Package capture implements the "capture" caged mod (heavy browser lane, H5): instead of running
 +// a libretro core it launches a native Windows program through the heavy gateway contract, captures
 +// the desktop with GStreamer (Windows Graphics Capture), feeds frames/PCM into the UNCHANGED
@@ -5934,6 +5934,18 @@ index 0000000..e503f9b
 +
 +func (a *App) Init() error {
 +	gst.Init(nil) // idempotent; media package also calls it
++
++	// Make THIS process per-monitor-DPI-aware (process-wide, capture worker only — GL workers never
++	// construct this App). Without it every USER32 coordinate the worker passes is 96-DPI virtualized:
++	// parking the game at "1920x1080" next to the 300%-scaled console TV had Windows translate OUR
++	// OWN SetWindowPos into a physical 5760x3240 window, and the (already per-monitor-aware) game kept
++	// its 1920x1080 viewport in the bottom-left of it — the corner-render Eric saw. Aware worker ⇒
++	// physical pixels everywhere ⇒ the park rect means what it says on any monitor scale.
++	if setProcessDpiAwarenessV2() {
++		a.log.Info().Msg("capture: process is per-monitor DPI aware (window placement in physical pixels)")
++	} else {
++		a.log.Warn().Msg("capture: SetProcessDpiAwarenessContext failed — window placement will be DPI-virtualized on scaled displays")
++	}
 +
 +	if a.windowMode() {
 +		a.log.Info().Msgf("capture: mode=WINDOW (WGC helper %s) — games captured by HWND off-screen, works in any session; reattachConsole=%v", a.conf.HelperPath, a.reattachEnabled())
@@ -6536,10 +6548,10 @@ index 0000000..ad9454e
 +}
 diff --git a/pkg/worker/caged/capture/launch.go b/pkg/worker/caged/capture/launch.go
 new file mode 100644
-index 0000000..1457064
+index 0000000..bbb11bd
 --- /dev/null
 +++ b/pkg/worker/caged/capture/launch.go
-@@ -0,0 +1,522 @@
+@@ -0,0 +1,531 @@
 +package capture
 +
 +import (
@@ -6890,9 +6902,18 @@ index 0000000..1457064
 +	procBringWindowToTop   = user32.NewProc("BringWindowToTop")
 +	procKeybdEvent         = user32.NewProc("keybd_event")
 +	procPostMessageW       = user32.NewProc("PostMessageW")
++	procSetDpiAwareness    = user32.NewProc("SetProcessDpiAwarenessContext")
 +)
 +
 +const wmClose = 0x0010
++
++// setProcessDpiAwarenessV2 opts this process into per-monitor-v2 DPI awareness so USER32 window
++// coordinates are PHYSICAL pixels (see the Init call site for why the capture worker needs this).
++// DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 is the pseudo-handle -4.
++func setProcessDpiAwarenessV2() bool {
++	r, _, _ := procSetDpiAwareness.Call(^uintptr(3)) // two's-complement -4
++	return r != 0
++}
 +
 +// postClose enum state — the callback is created ONCE at package init (same NewCallback-slot-leak
 +// reason as focusEnumWindow, W3). One room closes at a time ⇒ no lock needed.
