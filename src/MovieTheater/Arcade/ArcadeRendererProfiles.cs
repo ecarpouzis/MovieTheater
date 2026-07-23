@@ -48,8 +48,20 @@ namespace MovieTheater.Arcade
             {
                 new RenderProfile("vulkan", "mupen64plus-next · Vulkan (paraLLEl-RDP)", null, "vulkan", "mupen64plus_next",
                     Opt(("mupen64plus-rdp-plugin", "parallel"), ("mupen64plus-rsp-plugin", "parallel")), true),
+                // GLideN64 (GL) fallback for the default core. The mixed-case FB options ride THIS path,
+                // not config.yaml — the config loader lowercases YAML keys and libretro keys are
+                // case-sensitive, so config copies are silently dead (the "DEAD keys" reconcile). Delivered
+                // here they apply case-preserved (t=104 room-options). CopyAuxToRDRAM=True renders aux-buffer
+                // content (fixes blank cutscene/intro planes, e.g. Bomberman); NativeResTexrects=Optimized
+                // keeps HUD/text sharp when upscaled. These were previously inert in config.
                 new RenderProfile("opengl", "mupen64plus-next · OpenGL (GLideN64)", null, "gl", "mupen64plus_next",
-                    Opt(("mupen64plus-rdp-plugin", "gliden64"), ("mupen64plus-rsp-plugin", "hle")), false),
+                    Opt(("mupen64plus-rdp-plugin", "gliden64"), ("mupen64plus-rsp-plugin", "hle"),
+                        ("mupen64plus-EnableCopyColorToRDRAM", "Async"),
+                        ("mupen64plus-EnableCopyDepthToRDRAM", "Software"),
+                        ("mupen64plus-EnableLegacyBlending", "False"),
+                        ("mupen64plus-EnableCopyAuxToRDRAM", "True"),
+                        ("mupen64plus-EnableNativeResTexrects", "Optimized"),
+                        ("mupen64plus-BilinearMode", "3point")), false),
                 // A DIFFERENT CORE (not a mupen renderer): parallel_n64's own R4300 runs romhacks that crash
                 // mupen64plus-next (SM64: Last Impact). CoreKey "parallel_n64" → &core= per-room override.
                 // Two renderers, same as mupen: Vulkan (paraLLEl-RDP, the primary/best) and GL (GLideN64,
@@ -57,8 +69,21 @@ namespace MovieTheater.Arcade
                 // both share the "n64-parallel_n64" save namespace (same core). See config.worker-gl.yaml.
                 new RenderProfile("parallel_n64", "parallel_n64 core · Vulkan (paraLLEl-RDP)", "parallel_n64", "vulkan", "parallel_n64",
                     Opt(("parallel-n64-gfxplugin", "parallel"), ("parallel-n64-rspplugin", "parallel")), false),
+                // GLideN64 (GL) fallback. The FB options are mixed-case libretro keys and MUST ride this
+                // render-profile path (t=104 room-options), NOT config.yaml — the config loader lowercases
+                // YAML keys and libretro option keys are case-sensitive, so they'd be silently ignored there
+                // (the DEAD-keys reconcile). This is mupen's proven GL framebuffer set: CopyAuxToRDRAM=True
+                // renders aux-color-buffer content (blank cutscene/intro planes otherwise) and
+                // NativeResTexrects=Optimized keeps HUD/text sharp when upscaled. Tokens from
+                // parallel_n64's libretro_core_options.h.
                 new RenderProfile("parallel_n64_gl", "parallel_n64 core · OpenGL (GLideN64)", "parallel_n64", "gl", "parallel_n64",
-                    Opt(("parallel-n64-gfxplugin", "gliden64"), ("parallel-n64-rspplugin", "hle")), false),
+                    Opt(("parallel-n64-gfxplugin", "gliden64"), ("parallel-n64-rspplugin", "hle"),
+                        ("parallel-n64-gliden64-EnableFBEmulation", "True"),
+                        ("parallel-n64-gliden64-EnableCopyColorToRDRAM", "Async"),
+                        ("parallel-n64-gliden64-EnableCopyDepthToRDRAM", "Software"),
+                        ("parallel-n64-gliden64-EnableLegacyBlending", "False"),
+                        ("parallel-n64-gliden64-EnableCopyAuxToRDRAM", "True"),
+                        ("parallel-n64-gliden64-EnableNativeResTexrects", "Optimized")), false),
             },
             ["ps2"] = new[]
             {

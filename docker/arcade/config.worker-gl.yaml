@@ -1159,6 +1159,12 @@ emulator:
             # for any future raw-frame A/B (F-Zero GX is NOT deterministic; see the gc note).
             # (It did NOT break framebuffer effects: Bomberman 64's flat-blue story cinematic renders
             # identically with MSAA 0 and 4 — that is the pre-existing gliden64 limit, not a regression.)
+            # ⚠ The CamelCase mupen64plus-Enable*/MultiSampling/BilinearMode keys below are INERT here:
+            # CloudRetro's config loader (pkg/config/loader.go keysToLower) lowercases every YAML key and
+            # libretro option keys are case-SENSITIVE, so these arrive as `...enable...` and the core ignores
+            # them (worker "DEAD keys" reconcile). They are kept for documentation of intent; the ones that
+            # matter are delivered case-preserved via the n64 "opengl" RENDER PROFILE (ArcadeRendererProfiles.cs)
+            # — that path (t=104 room-options) is authoritative. Only lowercase keys work from config.
             mupen64plus-MultiSampling: "0"
             # REQUIRED once you upscale: gliden64 draws N64 2D "texrects" (HUDs, sprites, text) at the
             # upscaled resolution by default, which seams and blurs them. Optimized renders them at native
@@ -1233,21 +1239,14 @@ emulator:
             # 2x-native base (WxH tokens verified in the DLL). Expansion Pak stays enabled (Last Impact
             # needs the 8 MB) — disable_expmem defaults False, left unset.
             parallel-n64-screensize: "640x480"
-            # GLideN64 framebuffer options — INERT on the Vulkan (parallel-RDP) default; active only on the
-            # "parallel_n64_gl" profile (gfxplugin=gliden64). Mirrors mupen64plus_next's proven GL set so the
-            # GL fallback renders framebuffer content instead of black. Tokens + defaults from parallel_n64's
-            # libretro_core_options.h. FBEmulation/CopyColor/CopyDepth/LegacyBlending already match the
-            # desktop defaults (set explicitly so they can't drift); the two that DIFFER and matter:
-            #   - EnableCopyAuxToRDRAM True  (default False): renders aux-color-buffer content — the exact
-            #     option mupen needed for cutscene/intro planes that otherwise show blank (Bomberman intro).
-            #   - EnableNativeResTexrects Optimized (default Disabled): draws HUD/text 2D texrects at native
-            #     res so they don't seam/blur when upscaled.
-            parallel-n64-gliden64-EnableFBEmulation: "True"
-            parallel-n64-gliden64-EnableCopyColorToRDRAM: "Async"
-            parallel-n64-gliden64-EnableCopyDepthToRDRAM: "Software"
-            parallel-n64-gliden64-EnableLegacyBlending: "False"
-            parallel-n64-gliden64-EnableCopyAuxToRDRAM: "True"
-            parallel-n64-gliden64-EnableNativeResTexrects: "Optimized"
+            # ⚠ GLideN64 framebuffer options are NOT set here on purpose: CloudRetro's config loader
+            # (pkg/config/loader.go keysToLower) LOWERCASES every YAML key, and libretro option keys are
+            # case-SENSITIVE — so a mixed-case key like `...-EnableFBEmulation` in config.yaml arrives as
+            # `...-enablefbemulation` and the core silently ignores it (shows up in the worker's "DEAD keys"
+            # reconcile line). Only naturally-lowercase keys (gfxplugin, rspplugin, screensize, cpucore)
+            # survive config. The mixed-case FB options are delivered instead via the "parallel_n64_gl"
+            # RENDER PROFILE (ArcadeRendererProfiles.cs), whose options ride the room-options runtime path
+            # (t=104 → SetRoomCheats), which preserves case. See that profile for the actual FB values.
 
         # 2D cores: stream at 3x with nearest-neighbour (the pipeline's default scaler) instead of
         # native 256x224 — the browser's bilinear stretch of a tiny stream is what read as "fuzzy
