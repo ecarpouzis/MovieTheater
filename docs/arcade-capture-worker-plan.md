@@ -1118,15 +1118,144 @@ RDP-display artifact, not a lane limit.
   and only parked off-screen a beat later when `placeOffScreen` first sees it. Under RDP the owner sees
   a brief game-window flash before it vanishes. Future: create the window hidden/off-screen from the
   start (SDL hint / CBT hook) — untested, risks WGC not compositing a never-shown window.
-- **GPU shared-texture stage 2 (future)**: today the helper reads back BGRA to system memory and the
-  worker re-uploads for NVENC (the design-A cost). A D3D11 shared handle + shared fence from the helper,
-  wrapped as GstD3D12 in the worker, would restore zero-copy across the process boundary. Documented,
-  not built.
+- **GPU shared-texture stage 2 (capture lane v2)**: today the helper reads back BGRA to system memory
+  and the worker re-uploads for NVENC (the design-A cost). Sharing a D3D11 keyed-mutex texture across
+  the helper→worker boundary removes that round trip. **The cross-process GPU path is now PROVEN on
+  Ziggy (2026-07-23) — see the "CAPTURE LANE V2" section at the end of this doc.** The one design
+  correction the proof forced: the transport is NT-handle **duplication**, NOT open-by-name (by-name
+  `CreateSharedHandle`/`OpenSharedResourceByName` is process-local on this box). The live pipeline
+  wiring (helper texshare ring + worker `d3d11zerocopy.go` + nvautogpu encoder) is specced but NOT yet
+  built/deployed; v1 (the shm readback path above) remains the shipping default.
 - **Per-title background-input**: SDL titles need `SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS=1` (set). Other
   emulators (yuzu) may need their own "input while unfocused" setting in profiles.json / per-title ini.
 - **HDR**: window-capturing an SDR game window sidesteps the desktop-HDR tonemap problem (no monitor HDR
   in play). If the desktop is ever in HDR mode, revisit — the helper captures the window's SDR visual,
   so this is expected to be a non-issue.
+
+---
+
+# 2026-07-23 — CAPTURE LANE V2: cross-process GPU shared texture (window mode zero-copy)
+
+Goal: restore zero-copy in WINDOW capture mode by sharing a GPU texture across the helper→worker
+process boundary, replacing v1's CPU-readback + shm-pixel-copy chain (helper `Map`/readback ~6 ms +
+two system-memory memcpys + a worker-side re-upload for NVENC).
+
+**Status: the cross-process GPU shared-texture MECHANISM is PROVEN end-to-end on Ziggy. The live
+pipeline wiring is specced and de-risked but NOT built/deployed. v1 remains the shipping default and
+is untouched.** This section is written so the remaining wiring needs no re-derivation.
+
+## The load-bearing finding (this OVERTURNS the agreed design's transport)
+
+The agreed design said the worker would open the helper's shared texture **BY NAME**
+(`IDXGIResource1::CreateSharedHandle(name)` in the helper, `ID3D11Device1::OpenSharedResourceByName`
+in the worker) to avoid a handle-duplication dance. **That does not work cross-process on this
+Win11 / NVIDIA 576.x box.** Verified with a standalone writer+reader (2026-07-23):
+
+- The helper CAN reopen its own named handle **in-process** (2nd device, same adapter → OK).
+- NO reader process can open it: `OpenSharedResourceByName` returns **E_INVALIDARG (0x80070057)** for
+  a bare name AND for `Global\`/`Local\`/`Session\1\` prefixes (tested with the helper CREATING each
+  prefixed name too — not just the reader varying the open name). Same failure on a plain same-adapter
+  D3D11 device AND on a `GstD3D11Device`, so it is NOT a gst issue — the DXGI named-handle namespace is
+  process-local here.
+
+**Correct transport = NT-handle DUPLICATION** (the fallback the design itself anticipated). This is
+proven to work and returns correct pixels:
+
+1. Helper creates the texture with `MiscFlags = SharedNTHandle | SharedKeyedMutex`, then
+   `IDXGIResource1.CreateSharedHandle(null, Read|Write, name:null)` → an NT `HANDLE` valid in the
+   helper process. Helper keeps the handle open (the object lives only while a handle is open) and
+   publishes: its **pid**, the **raw handle value**, and its **adapter LUID**.
+2. Worker: `OpenProcess(PROCESS_DUP_HANDLE, false, helperPid)` →
+   `DuplicateHandle(helperProc, helperHandleValue, self, &localH, 0, false, DUPLICATE_SAME_ACCESS)` →
+   `ID3D11Device1::OpenSharedResource1(localH, IID_ID3D11Texture2D, &tex)`. Worker → helper is a
+   sibling/parent relationship in the same session, so `PROCESS_DUP_HANDLE` is granted.
+
+The worker's `GstD3D11Device` MUST be created for the helper's adapter (`gst_d3d11_device_new_for_
+adapter_luid(luid, 0)`) — `gst_d3d11_device_new(0,0)` can land on the Intel iGPU and cross-adapter
+opens fail. (Verified: the gst device lands on `NVIDIA GeForce RTX 4070 Ti, luid=30804071`, matching
+the helper.) So the helper's ready JSON must advertise the LUID.
+
+## What the proof validated (all green — no walls)
+
+- **Public `gstreamer-d3d11-1.0` API IS in the UCRT64 GStreamer 1.28.4** (`pkg-config --exists` → yes;
+  headers `gstd3d11device.h`/`gstd3d11memory.h`/`gstd3d11bufferpool.h` present). No patched-plugin
+  route needed. Use `gst_d3d11_device_new_for_adapter_luid`, `gst_d3d11_device_get_device_handle`,
+  `gst_d3d11_device_get_device_context_handle`, `gst_d3d11_device_lock/unlock`,
+  `gst_d3d11_pool_allocator_new` + `_acquire_memory`, `gst_d3d11_memory_get_resource_handle`.
+  ⚠ define `GST_USE_UNSTABLE_API` (the header is `#pragma message`-noisy otherwise).
+- **cgo COM works in mingw/ucrt64**: `#define COBJMACROS` + `<d3d11_1.h>`/`<dxgi1_2.h>`, link
+  `-ldxguid -luuid` for the IIDs. `ID3D11Device1_OpenSharedResource1`, `IDXGIKeyedMutex_AcquireSync/
+  ReleaseSync/Release`, `ID3D11DeviceContext_CopyResource` all resolve. (The exact ~90-line cgo
+  `proof_read()` is the prototype for `d3d11zerocopy.go`.)
+- **Encoder**: `nvautogpuav1enc` AND `nvautogpuh264enc` exist and accept
+  `video/x-raw(memory:D3D11Memory)` in **BGRA** directly (also NV12/RGBA/…). So push BGRA D3D11Memory
+  straight into the nvautogpu encoder — no `d3d11convert` needed unless colorimetry demands it.
+- **ABR / SVC survive the encoder swap**: `nvautogpuav1enc.bitrate` is "changeable in PLAYING" (kbit/s,
+  same units as `nvav1enc`) and it exposes `temporal-layers` (1–3). So `Encoder.WithOverrides` /
+  `setEncoderParam(...,"bitrate",...)` and `SetTemporalLayers` work unchanged against `video_enc`.
+- **Keyed-mutex cross-process copy returns correct pixels**: 256×256 4-quadrant texture written by the
+  C#/Vortice helper device, opened via handle-dup on the worker's `GstD3D11Device`, keyed-mutex
+  acquired (key 0), `CopyResource` into a staging texture, read back — **all four quadrants match**.
+
+## Protocol additions (helper → worker), building on the existing shm CONTROL channel
+
+Keep the existing `mtwc-*` shm ring header + frame event as the CONTROL channel; in v2 it carries a
+**slot index + seq** instead of pixels (skip the readback + pixel memcpy). Add to the helper's `ready`
+JSON line: `"texShare":true, "texCount":4, "luid":<int64>, "pid":<int>, "texHandles":[<u64>,…]`
+(one raw NT-handle value per ring texture). Worker parses these; ABSENT ⇒ run v1 silently
+(mixed-version tolerance: new worker + old helper). New helper + old worker ⇒ worker never opens the
+handles, nothing leaks (helper closes them on exit).
+
+Per-frame publish (helper): acquire keyed mutex key 0 on the round-robin slot texture, GPU-copy the
+WGC surface into it (or `VideoScaler` blits straight into the slot texture for the 300%-DPI console
+case — the slot texture is a render target), release key 0, then write slot/seq into the shm header
+and set the event. Worker read loop: wait event → read slot/seq → keyed-mutex acquire → **CopyResource
+the shared slot texture into a buffer from a `GstD3D11BufferPool`** on the gst device → release keyed
+mutex → push that buffer. The pool copy is deliberate (design §2): it decouples encoder buffer
+lifetime from the shared ring so the keyed mutex is never held across the async encode.
+
+## Live-pipeline wiring that REMAINS (not built)
+
+1. Helper: `SharedTextureRing.cs` (keyed-mutex NT-handle BGRA texture ring + control publish) + a
+   `--texshare` flag in `Program.cs`; `WindowCapture` copies each WGC frame into the current slot
+   texture (GPU) / `VideoScaler` renders into it. Opt-in; v1 shm path stays default.
+2. Worker: `pkg/worker/media/d3d11zerocopy.go` (new, modeled on `glzerocopy.go`; the proof's
+   `proof_read` is the validated core) — GstD3D11Device-for-luid, handle-dup open, GstD3D11BufferPool,
+   per-frame acquire/copy/release/push. `wincapture.go` parses `texShare` and runs a D3D11 push loop
+   instead of `shmReadLoop`.
+3. `gstreamer.go` THIRD pipeline mode (closest to the GLZeroCopy shape): `appsrc name=video_src
+   caps="video/x-raw(memory:D3D11Memory),format=BGRA,width=W,height=H,framerate=…"` → (optional
+   `d3d11convert` for limited-range colorimetry, stays on GPU) → `nvautogpu{av1,h264}enc name=video_enc`
+   (the room codec's nvautogpu variant) → existing `video_q2 ! appsink`. Reuse `pullVideo`'s zero-copy
+   keyframe clock (`maybeForceKeyframe` via upstream `GstForceKeyUnit`) and the 500 ms re-push guard
+   (keep a ref to the last pushed `GstBuffer`; re-push it, or a dedicated re-push pool texture).
+4. `capture.go`: `windowMode() && texShare && windowZeroCopy` ⇒ `ZeroCopy()`-equivalent for the new
+   mode; wire `SetVideoValveDrop` as the blank gate (no Go frame path to gate).
+5. `coordinatorhandlers.go`: build the D3D11 head (analogous to the existing `capApp.ZeroCopy()`
+   branch) — set the appsrc-D3D11 mode + hand the app the pool push fn.
+6. `config.Capture.WindowZeroCopy *bool` (nil/true = ON per the default-on policy; false = force v1).
+7. **Fallback is mandatory + automatic**: any failure (helper can't make textures / can't publish
+   texShare, worker can't open the gst d3d11 device or dup the handles, caps don't negotiate) ⇒ log
+   loudly + fall back to v1 shm readback for that room.
+
+## Verified vs pending ledger
+
+| Item | Status |
+|---|---|
+| gstreamer-d3d11-1.0 public API in UCRT64 | ✅ verified (present, 1.28.4) |
+| nvautogpu{av1,h264}enc take D3D11Memory BGRA + live bitrate/temporal-layers | ✅ verified (gst-inspect) |
+| cgo COM (OpenSharedResource1 / IDXGIKeyedMutex) links in ucrt64 | ✅ verified (proof builds) |
+| Cross-process keyed-mutex texture copy returns correct pixels | ✅ verified (4-quadrant proof PASS) |
+| Transport = handle-dup (NOT by-name) | ✅ verified (by-name is process-local here) |
+| Helper texshare ring + worker d3d11zerocopy.go + 3rd pipeline mode | ⛔ NOT built |
+| Latency tracer A/B (target ~3 ms vs v1 ~9.2 ms) | ⛔ pending (needs the built pipeline) |
+| Automatic fallback + windowZeroCopy knob | ⛔ NOT built |
+| Live-room test (real site / test-roms) | ⛔ pending (needs Eric / harness) |
+
+Proof harness (throwaway, session scratchpad, not committed): a C#/Vortice `texwriter` (creates the
+keyed-mutex shared texture, publishes pid+luid+handle) and a Go/cgo `texreader` (GstD3D11Device +
+handle-dup open + keyed-mutex readback + quadrant verify). Reproduce the transport from the recipe
+above; the `texreader` cgo is the drop-in prototype for `d3d11zerocopy.go`.
 
 ## Auto-reattach to the console when nobody is attached (2026-07-23)
 
