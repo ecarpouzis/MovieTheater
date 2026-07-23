@@ -19,10 +19,17 @@
 # It had drifted badly once: the repo copy lost the ps2/gc/2D core blocks that existed only on the
 # worker box, so a redeploy would have silently reverted live tuning. Reconciled 2026-07-08.
 #
-#   Deploy:  cp docker/arcade/config.worker-gl.yaml D:/ArcadeStorage/worker-gl/config.yaml
-#            AND  D:/ArcadeStorage/worker-gl-2/config.yaml   ← BOTH. Every ConfDir gets every file.
-#            then recycle each worker with scripts/recycle-arcade-glworker.ps1 -WorkerId N (the runner
-#            loop respawns in ~4s). Workers read config ONLY at startup.
+#   Deploy:  scripts/deploy-arcade-glworker-config.ps1   ← ONE command does it all.
+#            It diffs repo-vs-live, byte-copies this file into BOTH ConfDirs (worker-gl, worker-gl-2),
+#            and GRACEFULLY recycles each worker whose running process is on a now-stale config so the
+#            change takes effect immediately (the runner respawns in ~4s). -DryRun shows the diff only;
+#            -Force also recycles a worker hosting a live room. Workers read config ONLY at startup, so
+#            the recycle is what makes a deploy actually take — a bare cp is inert until then. (Belt AND
+#            braces: watch-arcade-glworkers.ps1 check E ALSO auto-recycles a stale worker within a cycle
+#            or two, so even a manual cp eventually self-applies; the deploy script just makes it instant.)
+#            ⚠ Manual fallback (byte-exact copy — never Get-Content|Set-Content, it re-encodes → mojibake):
+#            Copy-Item docker/arcade/config.worker-gl.yaml D:/ArcadeStorage/worker-gl/config.yaml (and
+#            worker-gl-2), then scripts/recycle-arcade-glworker.ps1 -WorkerId N.
 #            ⚠ Do NOT `Stop-Process worker -Force` to recycle. A force-kill of a GL/NVENC worker can
 #            strand a kernel-stuck GPU-teardown thread → an UNKILLABLE zombie holding this ConfDir
 #            locked (the PID-7948 class, 2026-07-15). The recycle script stops it GRACEFULLY (stop-file
