@@ -1930,7 +1930,7 @@ index 9e70576..5f5c29f 100644
  
  func (l Library) GetSupportedExtensions() []string { return l.Supported }
 diff --git a/pkg/config/worker.go b/pkg/config/worker.go
-index be5ac42..4d83afd 100644
+index be5ac42..fe5ab6d 100644
 --- a/pkg/config/worker.go
 +++ b/pkg/config/worker.go
 @@ -6,6 +6,7 @@ import (
@@ -1941,7 +1941,7 @@ index be5ac42..4d83afd 100644
  	"strings"
  
  	"github.com/giongto35/cloud-game/v3/pkg/os"
-@@ -20,6 +21,88 @@ type WorkerConfig struct {
+@@ -20,6 +21,96 @@ type WorkerConfig struct {
  	Worker    Worker
  	Webrtc    Webrtc
  	Version   Version
@@ -1970,6 +1970,14 @@ index be5ac42..4d83afd 100644
 +	// HelperPath is the ArcadeCaptureHost.exe used by captureMode "window" (built from
 +	// src/ArcadeCaptureHost, deployed beside worker.exe). Required for window mode.
 +	HelperPath string
++	// ReattachConsole (window mode): when a capture room starts and the worker's session is in the
++	// RDP-DISCONNECTED state (owner detached, leaving a stalled ~32Hz DWM), automatically reattach the
++	// session to the physical console (tscon /dest:console) so the game runs on the real high-refresh
++	// displays and capture is full-rate. NEVER fires while the session is Active (that would kick a
++	// live RDP owner to the console mid-work). Needs the one-time-registered elevated task
++	// "MovieTheater - Reattach Console" (register-reattach-console-task.ps1); degrades gracefully if
++	// absent. *bool so absence = the safe default of ENABLED (nil → true). Set false to disable.
++	ReattachConsole *bool
 +	// VirtualDisplay (P4 isolation): create a HIDDEN SudoVDA virtual display per room, render+capture
 +	// the game there, and destroy it on close — so games played through the site never appear on Ziggy's
 +	// physical monitors (the owner uses the box directly). The vdisplay uses Width/Height/Fps below and
@@ -2030,7 +2038,7 @@ index be5ac42..4d83afd 100644
  }
  
  type Storage struct {
-@@ -86,6 +169,111 @@ type CodecSettings struct {
+@@ -86,6 +177,111 @@ type CodecSettings struct {
  	Caps    string
  }
  
@@ -5679,10 +5687,10 @@ index 85ede12..6d1d955 100644
  
 diff --git a/pkg/worker/caged/capture/capture.go b/pkg/worker/caged/capture/capture.go
 new file mode 100644
-index 0000000..d350670
+index 0000000..0c336eb
 --- /dev/null
 +++ b/pkg/worker/caged/capture/capture.go
-@@ -0,0 +1,635 @@
+@@ -0,0 +1,640 @@
 +// Package capture implements the "capture" caged mod (heavy browser lane, H5): instead of running
 +// a libretro core it launches a native Windows program through the heavy gateway contract, captures
 +// the desktop with GStreamer (Windows Graphics Capture), feeds frames/PCM into the UNCHANGED
@@ -5927,7 +5935,7 @@ index 0000000..d350670
 +	gst.Init(nil) // idempotent; media package also calls it
 +
 +	if a.windowMode() {
-+		a.log.Info().Msgf("capture: mode=WINDOW (WGC helper %s) — games captured by HWND off-screen, works in any session", a.conf.HelperPath)
++		a.log.Info().Msgf("capture: mode=WINDOW (WGC helper %s) — games captured by HWND off-screen, works in any session; reattachConsole=%v", a.conf.HelperPath, a.reattachEnabled())
 +	} else {
 +		a.log.Info().Msg("capture: mode=MONITOR (legacy d3d screen-capture; SudoVDA isolation if virtualDisplay=true)")
 +	}
@@ -6122,6 +6130,11 @@ index 0000000..d350670
 +	if !a.windowMode() && a.conf.VirtualDisplay && !isOnConsole() {
 +		return fmt.Errorf("capture lane needs the console session for isolation, but the worker is in a remote/RDP session where a hidden display can't attach — start capture rooms when not RDP'd into the box (isolated capture over RDP is planned via window capture)")
 +	}
++	// Window mode: if the owner's RDP session is DISCONNECTED, reattach it to the physical console
++	// BEFORE launching the game — so the game window is created on the real high-refresh displays and
++	// capture runs at 60fps instead of the stalled/32Hz disconnected-DWM rate. No-op unless window
++	// mode + disconnected + enabled; never disrupts an Active (attached) session.
++	a.maybeReattachConsole()
 +	a.roomId = roomId
 +	a.heavyAppId = heavyAppId
 +	if uid, _, _, system, gameKey, ok := parseRoomId(roomId); ok {
@@ -7427,10 +7440,10 @@ index 0000000..eedaea2
 +}
 diff --git a/pkg/worker/caged/capture/sudovda.go b/pkg/worker/caged/capture/sudovda.go
 new file mode 100644
-index 0000000..d02f772
+index 0000000..2cfe5e4
 --- /dev/null
 +++ b/pkg/worker/caged/capture/sudovda.go
-@@ -0,0 +1,294 @@
+@@ -0,0 +1,352 @@
 +package capture
 +
 +// SudoVDA control — the P4 virtual-display isolation path. Instead of capturing a PHYSICAL monitor
@@ -7601,6 +7614,64 @@ index 0000000..d02f772
 +	return mySess == windows.WTSGetActiveConsoleSessionId()
 +}
 +
++// mySessionId returns the worker's own Windows session id.
++func mySessionId() uint32 {
++	var s uint32
++	_ = windows.ProcessIdToSessionId(windows.GetCurrentProcessId(), &s)
++	return s
++}
++
++var (
++	wtsapi32                        = windows.NewLazySystemDLL("wtsapi32.dll")
++	procWTSQuerySessionInformationW = wtsapi32.NewProc("WTSQuerySessionInformationW")
++	procWTSFreeMemory               = wtsapi32.NewProc("WTSFreeMemory")
++)
++
++// WTS_CONNECTSTATE_CLASS values we care about.
++const (
++	wtsConnectStateClass = 8 // WTSConnectState info class
++	wtsActive            = 0 // WTSActive — someone is attached (console or live RDP)
++	wtsConnected         = 1
++	wtsDisconnected      = 4 // WTSDisconnected — session exists but nothing is attached (RDP detached)
++	wtsIdle              = 5
++)
++
++// sessionConnectState returns the worker session's WTS connect state and whether the query succeeded.
++// This distinguishes an ACTIVE session (owner attached — never disrupt) from a DISCONNECTED one (RDP
++// detached → safe to reattach to the console). Complements isOnConsole (which only tells console vs not).
++func sessionConnectState() (uint32, bool) {
++	var pbuf uintptr
++	var bytesRet uint32
++	r, _, _ := procWTSQuerySessionInformationW.Call(
++		0, // WTS_CURRENT_SERVER_HANDLE
++		uintptr(mySessionId()),
++		uintptr(wtsConnectStateClass),
++		uintptr(unsafe.Pointer(&pbuf)),
++		uintptr(unsafe.Pointer(&bytesRet)))
++	if r == 0 || pbuf == 0 {
++		return 0, false
++	}
++	state := *(*uint32)(unsafe.Pointer(pbuf))
++	procWTSFreeMemory.Call(pbuf)
++	return state, true
++}
++
++// wtsStateName renders a WTS connect state for logs.
++func wtsStateName(s uint32) string {
++	switch s {
++	case wtsActive:
++		return "Active"
++	case wtsConnected:
++		return "Connected"
++	case wtsDisconnected:
++		return "Disconnected"
++	case wtsIdle:
++		return "Idle"
++	default:
++		return fmt.Sprintf("state-%d", s)
++	}
++}
++
 +// logSessionContext records which session the worker booted into and what that means for the vdisplay.
 +func (a *App) logSessionContext() {
 +	var mySess uint32
@@ -7727,10 +7798,10 @@ index 0000000..d02f772
 +}
 diff --git a/pkg/worker/caged/capture/wincapture.go b/pkg/worker/caged/capture/wincapture.go
 new file mode 100644
-index 0000000..dbb1112
+index 0000000..d67d8f9
 --- /dev/null
 +++ b/pkg/worker/caged/capture/wincapture.go
-@@ -0,0 +1,386 @@
+@@ -0,0 +1,452 @@
 +package capture
 +
 +// Window-capture mode (captureMode: window). Instead of screen-capturing a monitor (the SudoVDA/
@@ -7758,7 +7829,9 @@ index 0000000..dbb1112
 +	"io"
 +	"os"
 +	"os/exec"
++	"path/filepath"
 +	"strconv"
++	"strings"
 +	"sync/atomic"
 +	"time"
 +	"unsafe"
@@ -7810,6 +7883,70 @@ index 0000000..dbb1112
 +
 +func ld32(addr uintptr) uint32 { return atomic.LoadUint32((*uint32)(unsafe.Pointer(addr))) }
 +func ld64(addr uintptr) uint64 { return atomic.LoadUint64((*uint64)(unsafe.Pointer(addr))) }
++
++// reattachTaskName is the on-demand elevated task that runs tscon /dest:console. Registered ONCE by
++// Eric (scripts/register-reattach-console-task.ps1) as SYSTEM/Highest with an ACL that lets the
++// non-elevated worker start it; the worker only triggers it (schtasks /Run).
++const reattachTaskName = "MovieTheater - Reattach Console"
++
++// reattachEnabled reports the config knob (default TRUE — *bool nil means the key was absent).
++func (a *App) reattachEnabled() bool {
++	return a.conf.ReattachConsole == nil || *a.conf.ReattachConsole
++}
++
++// maybeReattachConsole runs at capture-room start (window mode, before the game launches). If the
++// worker's session is RDP-DISCONNECTED, it reattaches the session to the physical console so the game
++// creates its window on the real high-refresh displays and capture runs at full rate (60fps) instead
++// of the stalled/32Hz disconnected-DWM rate. It NEVER fires while the session is Active — tscon then
++// would forcibly kick a live RDP owner to the console mid-work (a hard "no"). Everything degrades
++// gracefully: query fails / task missing / still disconnected after the poll → log loudly and return
++// so the room proceeds anyway (a reduced-rate or stalled room still beats no room).
++func (a *App) maybeReattachConsole() {
++	if !a.windowMode() || !a.reattachEnabled() {
++		return
++	}
++	state, ok := sessionConnectState()
++	if !ok {
++		a.log.Warn().Msg("capture(window): could not query session connect state — skipping console reattach")
++		return
++	}
++	a.log.Info().Msgf("capture(window): session %d connect state = %s (console=%v)", mySessionId(), wtsStateName(state), isOnConsole())
++	if state == wtsActive {
++		return // owner attached (console or live RDP) — NEVER disrupt; Active-RDP rooms stay reduced-rate by design
++	}
++	if state != wtsDisconnected {
++		return // Connected/Idle/etc — don't touch a session we don't understand
++	}
++
++	a.log.Warn().Msgf("capture(window): session %d is DISCONNECTED (RDP detached) — reattaching to the console for full-rate capture", mySessionId())
++	a.writeReattachSentinel() // hand the SYSTEM task the exact session id (robust vs auto-detect)
++	if out, err := exec.Command("schtasks", "/Run", "/TN", reattachTaskName).CombinedOutput(); err != nil {
++		a.log.Error().Err(err).Msgf("capture(window): could not start %q (%s) — register it ONCE elevated via "+
++			"scripts/register-reattach-console-task.ps1. Continuing the room at reduced/stalled rate.",
++			reattachTaskName, strings.TrimSpace(string(out)))
++		return
++	}
++	// The console switch + display topology need a beat to settle; poll for Active-on-console.
++	deadline := time.Now().Add(10 * time.Second)
++	for time.Now().Before(deadline) {
++		time.Sleep(500 * time.Millisecond)
++		if st, ok := sessionConnectState(); ok && st == wtsActive && isOnConsole() {
++			a.log.Info().Msg("capture(window): session reattached to the console (Active) — full-rate capture available")
++			return
++		}
++	}
++	a.log.Warn().Msg("capture(window): session still not on the console after 10s — proceeding with the room anyway (reduced rate or stalled DWM)")
++}
++
++// writeReattachSentinel writes the worker's session id next to the helper/reattach script (bin dir), so
++// the SYSTEM task's reattach-console.ps1 tscons the EXACT right session rather than guessing.
++func (a *App) writeReattachSentinel() {
++	if a.conf.HelperPath == "" {
++		return
++	}
++	path := filepath.Join(filepath.Dir(a.conf.HelperPath), ".reattach-session")
++	_ = os.WriteFile(path, []byte(strconv.FormatUint(uint64(mySessionId()), 10)), 0644)
++}
 +
 +// startWindowCapture launches the helper for hwnd, opens its shared-memory ring, and records handles.
 +// Returns an error only on a hard failure the caller can't recover (helper won't exec / ring never

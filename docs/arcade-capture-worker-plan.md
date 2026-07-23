@@ -1127,3 +1127,47 @@ RDP-display artifact, not a lane limit.
 - **HDR**: window-capturing an SDR game window sidesteps the desktop-HDR tonemap problem (no monitor HDR
   in play). If the desktop is ever in HDR mode, revisit — the helper captures the window's SDR visual,
   so this is expected to be a non-issue.
+
+## Auto-reattach to the console when nobody is attached (2026-07-23)
+
+Window capture over RDP runs at the RDP display's refresh (~32Hz), and after an RDP *disconnect* the
+session can sit in a stalled disconnected-DWM state rather than reattaching to the console. So when a
+capture room starts and the worker's session is **DISCONNECTED**, the worker now reattaches the session
+to the physical console (`tscon <id> /dest:console`) BEFORE launching the game — restoring the real
+high-refresh GPU displays so capture is full-rate (60fps). A friend who starts a game while nobody is
+attached gets full performance automatically.
+
+**Hard guard — Active is never touched.** The trigger fires ONLY when the worker's own session is
+`WTSDisconnected` (queried via `WTSQuerySessionInformation(WTSConnectState)` on the worker's session id).
+It NEVER fires while the session is `WTSActive` — tscon then would forcibly kick a live RDP owner to the
+console mid-work. Active-RDP rooms therefore stay at the reduced (~32Hz) rate by design.
+
+**Elevation split** (tscon needs SeTcbPrivilege; the worker task is non-elevated):
+- `scripts/reattach-console.ps1` (deployed to `D:\ArcadeStorage\worker-capture\bin`) does the tscon,
+  run as SYSTEM. It resolves the target session from the worker's `.reattach-session` sentinel (written
+  beside it), falling back to auto-detecting the single Disconnected session, and re-guards against
+  moving an Active session.
+- `scripts/register-reattach-console-task.ps1` — Eric runs this ONCE, elevated. It registers the
+  on-demand task **"MovieTheater - Reattach Console"** as SYSTEM / RunLevel Highest via the
+  `Schedule.Service` COM API, with an SDDL (`D:(A;;GRGX;;;AU)(A;;GA;;;BA)(A;;GA;;;SY)`) granting
+  Authenticated Users read+run so the non-elevated worker can start it.
+- The worker triggers it with `schtasks /Run /TN "MovieTheater - Reattach Console"`, then polls its own
+  session state for up to 10s for Active-on-console before proceeding.
+
+**Graceful everywhere.** Session query fails / task not registered / still disconnected after 10s → the
+worker logs loudly and starts the room anyway (a reduced-rate or stalled room beats no room). Config
+knob `reattachConsole` (Capture, `*bool`, default true — absence of the key means enabled) in
+config.worker-capture.yaml; set false to disable.
+
+**One-time elevated setup (Eric):**
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File "F:\Work\MovieTheater\scripts\register-reattach-console-task.ps1"
+```
+(run from an elevated/admin PowerShell). Then: disconnect RDP, start a capture room from a second
+device, and the worker log should show `session N connect state = Disconnected` → `reattaching to the
+console` → `reattached to the console (Active) — full-rate capture available`, with capture at 60fps.
+
+Tested as far as non-elevated + owner-attached allows (2026-07-23): the worker correctly logs the
+session state at room start and, while Eric is RDP-**Active**, does NOT attempt tscon (verified live —
+the safety guard holds); `schtasks /Run` on the unregistered task fails gracefully (worker logs +
+continues). The Disconnected→tscon→60fps path is Eric's to verify once the elevated task is registered.

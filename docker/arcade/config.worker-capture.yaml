@@ -61,6 +61,13 @@ capture:
   #            display). Set captureMode: "monitor" to restore this path.
   captureMode: "window"
   helperPath: "D:/ArcadeStorage/worker-capture/bin/ArcadeCaptureHost.exe"
+  # reattachConsole (window mode): when a room starts and the worker's session is RDP-DISCONNECTED
+  # (owner detached → stalled/32Hz DWM), auto-reattach the session to the physical console
+  # (tscon /dest:console) so the game runs on the real high-refresh displays and capture is full-rate
+  # 60fps. NEVER fires while the session is Active (would kick a live RDP owner to the console). Needs
+  # the one-time elevated task "MovieTheater - Reattach Console" (scripts/register-reattach-console-task.ps1,
+  # run once as admin); degrades gracefully (logs + continues) if the task is absent. Default true.
+  reattachConsole: true
   gatewayUrl: "http://localhost:2303"
   secretFile: "D:/ArcadeStorage/heavy/gateway-secret.txt"
   profilesFile: "D:/ArcadeStorage/heavy/profiles/profiles.json"
