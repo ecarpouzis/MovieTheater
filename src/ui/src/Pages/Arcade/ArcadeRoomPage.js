@@ -106,6 +106,9 @@ export default function ArcadeRoomPage() {
   const [addingLocal, setAddingLocal] = useState(false);
   const localSessionsRef = useRef(new Map()); // slot -> session
   const addingLocalRef = useRef(false);
+  // Auto-bind back-off: set briefly after a failed silent claim (a full-room race) so the detector
+  // doesn't re-attempt a controller that's active but has nowhere to sit.
+  const autoBindCooldownRef = useRef(0);
   // Controllers panel: which pad the PRIMARY seat is pinned to (null = fluid, adopt any unclaimed
   // pad — the pre-panel behavior), whether the panel is open, and the detected pad list.
   const [primaryPad, setPrimaryPad] = useState(null);
@@ -479,11 +482,15 @@ export default function ArcadeRoomPage() {
   // Claim an extra seat and open an input-only CloudRetro session pinned to `padIndex`. The room's
   // one video/audio stream already plays through the primary session — the extra connection carries
   // nothing but that pad's input. Used by both the "press a button" quick-add and the Controllers panel.
-  async function openLocalSession(padIndex) {
+  async function openLocalSession(padIndex, { silent = false } = {}) {
     const res = await MovieAPI.claimArcadeSeat(code);
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      message.warning(body.message || "Couldn't add a local player.");
+      // Auto-binding (silent) probes for a free seat and can legitimately race a full room — it backs
+      // off on a null return instead of nagging every tick. A hand-driven add still explains itself.
+      if (!silent) {
+        const body = await res.json().catch(() => ({}));
+        message.warning(body.message || "Couldn't add a local player.");
+      }
       return null;
     }
     const descriptor = await res.json();
@@ -543,6 +550,57 @@ export default function ArcadeRoomPage() {
     setLocalPlayers((lp) => lp.filter((p) => p.slot !== slot));
     MovieAPI.releaseArcadeSeat(code, slot);
   }
+
+  // ── Auto-bind controllers to seats ─────────────────────────────────────────────────────────────
+  // The primary seat's fluid pad adoption already lets the FIRST controller to send input drive P1.
+  // This watches for ADDITIONAL controllers and gives each its own seat automatically (P2, P3, …) up
+  // to the game's player count — the console-native "second player presses a button to drop in" — so
+  // two controllers no longer both fight over P1, and nobody has to open the Controllers panel first.
+  // A pad is adopted only once it actually SENDS INPUT (findNewPad requires a pressed button), so a
+  // spare controller left plugged in (e.g. a seat being held for a remote friend) is never grabbed.
+  // The Controllers panel stays the way to reassign a pad or hand it back on a reconnect.
+  useEffect(() => {
+    if (spectator || !LIVE_STATUS.includes(status)) return;
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled || addingLocalRef.current || Date.now() < autoBindCooldownRef.current) return;
+      // Best-effort free-seat gate (the server is the real authority — a lost race is handled below).
+      // players.length is the whole room's filled seats from the last heartbeat; heldLocally counts MY
+      // seats right now, before that beat catches up to a just-claimed local one. The larger is a safe
+      // floor, so we never over-claim into a full room.
+      const heldLocally = 1 + localSessionsRef.current.size;
+      const filled = Math.max(players.length, heldLocally);
+      if (maxPlayers !== 0 && filled >= maxPlayers) return;
+      // The pad P1 is actively driving (its pin, or the pad it adopted in the last 10 s), excluded so
+      // the detector only ever grabs a DIFFERENT controller. Local seats' pads are already excluded by
+      // findNewPad (they're in the shim's claimed-pad registry), as are streamed pads when guarded.
+      const primaryPadIdx = sessionRef.current?.getActivePadIndex?.() ?? -1;
+      const candidate = findNewPad(primaryPadIdx >= 0 ? [primaryPadIdx] : []);
+      if (candidate < 0) return;
+      addingLocalRef.current = true;
+      // Hold the primary's fluid adoption for the claim so its 16 ms poll can't snatch the new pad first
+      // (which would then hide it from the detector — the same reason the manual add holds it).
+      sessionRef.current?.setAdoptionHeld?.(true);
+      try {
+        // The first extra player is where a fluid primary stops helping and starts hurting: with two
+        // controllers it flip-flops P1 between them (the "both pads drive player 1" report). Pin P1 to
+        // the pad it's using so the assignment is stable from here on. Only when P1 actually holds a pad
+        // — a keyboard-only host keeps its keyboard primary and the controller simply becomes P2.
+        if (primaryPadIdx >= 0 && primaryPad === null) {
+          sessionRef.current?.setPad?.(primaryPadIdx);
+          setPrimaryPad(primaryPadIdx);
+        }
+        const slot = await openLocalSession(candidate, { silent: true });
+        if (slot == null) autoBindCooldownRef.current = Date.now() + 5000; // lost a full-room race — back off
+      } finally {
+        sessionRef.current?.setAdoptionHeld?.(false);
+        addingLocalRef.current = false;
+      }
+    };
+    const id = setInterval(tick, 300);
+    return () => { cancelled = true; clearInterval(id); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, spectator, maxPlayers, players.length, primaryPad]);
 
   // ── Controllers panel: assign this machine's inputs to the seats this machine holds ────────────
   // The Gamepad API is per-machine, so each browser assigns only ITS OWN controllers; remote players
@@ -851,7 +909,7 @@ export default function ArcadeRoomPage() {
           ))}
           {!spectator && LIVE_STATUS.includes(status)
             && (maxPlayers === 0 || players.length < maxPlayers) && (
-            <Tooltip title="Play together on this machine: another controller gets its own seat. You'll be asked to press a button on the new controller.">
+            <Tooltip title="Extra controllers on this machine join as their own players automatically — just press a button on one. Use this only to force-add a controller that wasn't picked up.">
               <Button size="small" loading={addingLocal} onClick={addLocalPlayer}>
                 {addingLocal ? "Press a button on the new controller…" : "➕ Local player"}
               </Button>
