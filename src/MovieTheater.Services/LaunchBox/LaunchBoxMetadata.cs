@@ -366,6 +366,108 @@ namespace MovieTheater.Services.LaunchBox
             return index;
         }
 
+        /// <summary>
+        /// Stream Metadata.xml into a <see cref="LaunchBoxNameIndex"/> — every game's canonical NAME (not
+        /// just its rating), for the <c>arcade-launchbox-rename</c> pass. Deliberately NOT gated on votes
+        /// (an unrated game still has a correct name to snap a mangled card onto), but the rated flag + vote
+        /// count are retained so the rename report can say whether a fix will also yield stars, and so a
+        /// key collision prefers the better-voted title.
+        ///
+        /// <para>Same streaming shape and the same two alias safety rules as <see cref="BuildIndex"/> — see
+        /// the loop-shape note there. Aliases augment the exact map only; the fuzzy pool is primaries.</para>
+        /// </summary>
+        public static LaunchBoxNameIndex BuildNameIndex(string zipPath, Action<string>? log = null)
+        {
+            var idx = new LaunchBoxNameIndex();
+            var byId = new Dictionary<string, (string Sys, LbGame G)>();
+            var aliasRows = new List<(string DbId, string Key)>();
+
+            using var zip = ZipFile.OpenRead(zipPath);
+            var meta = zip.GetEntry("Metadata.xml")
+                ?? throw new InvalidOperationException("Metadata.xml not found in the LaunchBox dump.");
+
+            using var stream = meta.Open();
+            using var reader = XmlReader.Create(stream, new XmlReaderSettings { IgnoreWhitespace = true, IgnoreComments = true });
+
+            int games = 0, kept = 0;
+            reader.MoveToContent();
+            // Same loop shape as BuildIndex — only advance when we did NOT consume a node.
+            while (!reader.EOF)
+            {
+                if (reader.NodeType != XmlNodeType.Element) { reader.Read(); continue; }
+
+                if (reader.Name == "GameAlternateName")
+                {
+                    var alt = (XElement)XNode.ReadFrom(reader);
+                    var altId = alt.Element("DatabaseID")?.Value;
+                    var ak = NormalizeTitle(alt.Element("AlternateName")?.Value);
+                    if (altId != null && ak.Length >= 4 && !ak.All(char.IsDigit))
+                        aliasRows.Add((altId, ak));
+                    continue;
+                }
+
+                if (reader.Name != "Game") { reader.Read(); continue; }
+                games++;
+
+                var el = (XElement)XNode.ReadFrom(reader);
+
+                string? dbId = el.Element("DatabaseID")?.Value;
+                string? platform = el.Element("Platform")?.Value;
+                string? name = el.Element("Name")?.Value;
+                if (platform == null || name == null) continue;
+                if (!PlatformToSystem.TryGetValue(platform, out var sys)) continue;
+
+                var key = NormalizeTitle(name);
+                if (key.Length == 0) continue;
+
+                double.TryParse(el.Element("CommunityRating")?.Value, NumberStyles.Float,
+                                CultureInfo.InvariantCulture, out var stars);
+                int.TryParse(el.Element("CommunityRatingCount")?.Value, NumberStyles.Integer,
+                             CultureInfo.InvariantCulture, out var votes);
+                kept++;
+
+                var g = new LbGame
+                {
+                    Name = name.Trim(),
+                    Key = key,
+                    Tokens = LaunchBoxNameIndex.Tokenize(name),
+                    Votes = votes,
+                    Rated = stars > 0 && votes > 0,
+                };
+
+                // Exact: primaries win; on a key collision keep the better-voted title.
+                if (!idx.Exact.TryGetValue((sys, key), out var prior) || votes > prior.Votes)
+                    idx.Exact[(sys, key)] = g;
+                if (!idx.BySystem.TryGetValue(sys, out var list)) idx.BySystem[sys] = list = new List<LbGame>();
+                list.Add(g);
+                if (dbId != null) byId[dbId] = (sys, g);
+            }
+            int primaries = idx.Exact.Count;
+
+            // Alias pass: resolve to the game's system, drop names a real game already owns and ambiguous ones.
+            var claims = new Dictionary<(string, string), HashSet<string>>();
+            foreach (var (dbId, ak) in aliasRows)
+            {
+                if (!byId.TryGetValue(dbId, out var e)) continue;
+                var k = (e.Sys, ak);
+                if (idx.Exact.ContainsKey(k)) continue;       // a real name owns this key
+                if (!claims.TryGetValue(k, out var set)) claims[k] = set = new HashSet<string>();
+                set.Add(dbId);
+            }
+            int aliases = 0, ambiguous = 0;
+            foreach (var (k, dbIds) in claims)
+            {
+                if (dbIds.Count != 1) { ambiguous++; continue; }
+                idx.Exact[k] = byId[dbIds.First()].G;         // alias key → canonical game (exact only, not fuzzy)
+                aliases++;
+            }
+
+            log?.Invoke($"Parsed {games:N0} games; indexed {primaries:N0} primary names + {aliases:N0} safe aliases "
+                      + $"= {idx.Exact.Count:N0} exact keys across {idx.BySystem.Count} systems "
+                      + $"({ambiguous:N0} ambiguous aliases dropped, from {kept:N0} in-scope games).");
+            return idx;
+        }
+
         private static string? Trim(string? s, int max)
         {
             if (string.IsNullOrWhiteSpace(s)) return null;
