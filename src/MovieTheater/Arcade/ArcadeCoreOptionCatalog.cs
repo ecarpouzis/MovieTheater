@@ -154,6 +154,12 @@ namespace MovieTheater.Arcade
                             V("nearest","Nearest (crisp)"), V("bilinear","Bilinear (smooth)") },
                     "automatic",
                     "How textures are smoothed. 3-point matches real N64 hardware."),
+                // paraLLEl-RDP (Vulkan renderer) supersampling — the fidelity lever on the Vulkan profile,
+                // like mupen's parallel-rdp-upscaling. Inert on the GLideN64 (GL) profile. Tokens verified.
+                new CoreOption("parallel-n64-parallel-rdp-upscaling", "Supersampling (Vulkan)", Category.Video,
+                    new[] { V("1x","Off (native)"), V("2x","2x"), V("4x","4x"), V("8x","8x (sharpest)") },
+                    "8x",
+                    "Renders at a multiple of native then downsamples — anti-aliasing on the paraLLEl-RDP (Vulkan) renderer."),
             },
         };
 

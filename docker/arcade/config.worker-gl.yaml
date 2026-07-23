@@ -1202,18 +1202,26 @@ emulator:
           lib: parallel_n64_libretro
           roms: ["n64", "v64", "z64"]
           folder: n64
-          isGlAllowed: true
+          # VULKAN (paraLLEl-RDP) BY DEFAULT — same high-fidelity LLE renderer mupen runs, paired here with
+          # parallel_n64's compatibility R4300. Mirrors the mupen64plus_next n64 block (isGlAllowed:false +
+          # hwContext:vulkan); the "parallel_n64_gl" render profile forces GLideN64 on the GL surface as the
+          # fallback. angrylion is BANNED either way (it hard-panics CloudRetro's GL scaffolding).
+          isGlAllowed: false
+          hwContext: "vulkan"
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
-          # 640x480 core base (2x native) → the pipeline scale:2 delivers 1280x960, matching mupen's N64.
+          # 640x480 core base (2x native) → the pipeline scale:2 delivers 1280x960, matching mupen's N64;
+          # parallel-rdp-upscaling supersamples ON TOP of that (deeper SSAA, delivery size unchanged).
           scale: 2
           scaleMethod: bilinear2
           options:
             # Value tokens verified from parallel_n64_libretro.dll (2026-07-23). gfxplugin values are
-            # gln64|gliden64|rice|glide64|angrylion|parallel — angrylion BANNED (CloudRetro panic).
-            parallel-n64-gfxplugin: "gliden64"
-            parallel-n64-rspplugin: "hle"
+            # gln64|gliden64|rice|glide64|angrylion|parallel — "parallel" = paraLLEl-RDP (Vulkan compute),
+            # angrylion BANNED (CloudRetro panic). rspplugin "parallel" = paraLLEl-RSP (LLE accuracy pair).
+            parallel-n64-gfxplugin: "parallel"
+            parallel-n64-rspplugin: "parallel"
+            parallel-n64-parallel-rdp-upscaling: "8x"
             # cached_interpreter: more accurate than the dynarec (the whole point of this core), still
             # fast. Tokens: pure_interpreter|cached_interpreter|dynamic_recompiler.
             parallel-n64-cpucore: "cached_interpreter"

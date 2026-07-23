@@ -166,11 +166,19 @@ namespace MovieTheater.Arcade
                 ["low"] = Opt(("mupen64plus-43screensize", "320x240")),
             },
 
-            // ── N64 parallel_n64 (compatibility core; GLideN64/GL only, one renderer → keyed null).
-            // Levers = internal resolution (parallel-n64-screensize, 2x-native live default) and, at Low,
-            // the fast dynarec for weak-perf ROMs. Tokens verified in parallel_n64_libretro.dll and
-            // hand-defined in ArcadeCoreOptionCatalog (the test assembly sees only those).
-            [("parallel_n64", null)] = new()
+            // ── N64 parallel_n64 (compatibility core). Two renderers, split like mupen: Vulkan paraLLEl-RDP
+            // uses the supersampling lever; GLideN64/GL uses the internal-resolution (screensize) lever —
+            // the other key is inert on the wrong renderer (the silent-no-op class). Tokens verified in
+            // parallel_n64_libretro.dll and hand-defined in ArcadeCoreOptionCatalog (the test assembly sees
+            // only those). Low also drops to the fast dynarec for weak-perf ROMs.
+            [("parallel_n64", "vulkan")] = new()
+            {
+                ["max"] = Opt(("parallel-n64-parallel-rdp-upscaling", "8x")),
+                ["high"] = Opt(("parallel-n64-parallel-rdp-upscaling", "4x")),
+                ["medium"] = Opt(("parallel-n64-parallel-rdp-upscaling", "2x")),
+                ["low"] = Opt(("parallel-n64-parallel-rdp-upscaling", "1x"), ("parallel-n64-cpucore", "dynamic_recompiler")),
+            },
+            [("parallel_n64", "gl")] = new()
             {
                 ["max"] = Opt(("parallel-n64-screensize", "1920x1440")),
                 ["high"] = Opt(("parallel-n64-screensize", "1280x960")),

@@ -50,12 +50,15 @@ namespace MovieTheater.Arcade
                     Opt(("mupen64plus-rdp-plugin", "parallel"), ("mupen64plus-rsp-plugin", "parallel")), true),
                 new RenderProfile("opengl", "mupen64plus-next · OpenGL (GLideN64)", null, "gl", "mupen64plus_next",
                     Opt(("mupen64plus-rdp-plugin", "gliden64"), ("mupen64plus-rsp-plugin", "hle")), false),
-                // A DIFFERENT CORE (not a mupen renderer): parallel_n64's own R4300 runs romhacks that
-                // crash mupen64plus-next (SM64: Last Impact). CoreKey "parallel_n64" → &core= per-room
-                // override; GLideN64 on GL (angrylion banned). OptionCore "parallel_n64" shows its own
-                // option catalog. See config.worker-gl.yaml parallel_n64 block + docs/arcade-per-game-config.md.
-                new RenderProfile("parallel_n64", "parallel_n64 core · OpenGL (compatibility)", "parallel_n64", "gl", "parallel_n64",
-                    None, false),
+                // A DIFFERENT CORE (not a mupen renderer): parallel_n64's own R4300 runs romhacks that crash
+                // mupen64plus-next (SM64: Last Impact). CoreKey "parallel_n64" → &core= per-room override.
+                // Two renderers, same as mupen: Vulkan (paraLLEl-RDP, the primary/best) and GL (GLideN64,
+                // fallback) — angrylion is banned. The profile's Options flip gfxplugin/rspplugin + surface;
+                // both share the "n64-parallel_n64" save namespace (same core). See config.worker-gl.yaml.
+                new RenderProfile("parallel_n64", "parallel_n64 core · Vulkan (paraLLEl-RDP)", "parallel_n64", "vulkan", "parallel_n64",
+                    Opt(("parallel-n64-gfxplugin", "parallel"), ("parallel-n64-rspplugin", "parallel")), false),
+                new RenderProfile("parallel_n64_gl", "parallel_n64 core · OpenGL (GLideN64)", "parallel_n64", "gl", "parallel_n64",
+                    Opt(("parallel-n64-gfxplugin", "gliden64"), ("parallel-n64-rspplugin", "hle")), false),
             },
             ["ps2"] = new[]
             {
