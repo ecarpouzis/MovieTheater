@@ -1222,9 +1222,14 @@ emulator:
             parallel-n64-gfxplugin: "parallel"
             parallel-n64-rspplugin: "parallel"
             parallel-n64-parallel-rdp-upscaling: "8x"
-            # cached_interpreter: more accurate than the dynarec (the whole point of this core), still
-            # fast. Tokens: pure_interpreter|cached_interpreter|dynamic_recompiler.
-            parallel-n64-cpucore: "cached_interpreter"
+            # dynamic_recompiler = parallel_n64's native Hacktarux JIT (its default). Chosen over the
+            # interpreters because on the shared mupen R4300 fault that SM64: Last Impact triggers
+            # (reserved-opcode / error-in-ERET ~11s in), the interpreters WEDGE the worker (core never
+            # finishes teardown → the unkillable-worker class), while the dynarec faults ONCE then
+            # recovers/restarts the R4300 without wedging. Neither actually runs Last Impact (both cores
+            # are mupen forks that share the fault), but the dynarec fails SAFELY — so it is the correct
+            # default. Tokens: pure_interpreter|cached_interpreter|dynamic_recompiler.
+            parallel-n64-cpucore: "dynamic_recompiler"
             # 2x-native base (WxH tokens verified in the DLL). Expansion Pak stays enabled (Last Impact
             # needs the 8 MB) — disable_expmem defaults False, left unset.
             parallel-n64-screensize: "640x480"
