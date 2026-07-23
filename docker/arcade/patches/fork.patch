@@ -5687,10 +5687,10 @@ index 85ede12..6d1d955 100644
  
 diff --git a/pkg/worker/caged/capture/capture.go b/pkg/worker/caged/capture/capture.go
 new file mode 100644
-index 0000000..0c336eb
+index 0000000..e503f9b
 --- /dev/null
 +++ b/pkg/worker/caged/capture/capture.go
-@@ -0,0 +1,640 @@
+@@ -0,0 +1,647 @@
 +// Package capture implements the "capture" caged mod (heavy browser lane, H5): instead of running
 +// a libretro core it launches a native Windows program through the heavy gateway contract, captures
 +// the desktop with GStreamer (Windows Graphics Capture), feeds frames/PCM into the UNCHANGED
@@ -5705,6 +5705,7 @@ index 0000000..0c336eb
 +	"net/http"
 +	"os"
 +	"os/exec"
++	"path/filepath"
 +	"strconv"
 +	"strings"
 +	"sync"
@@ -6160,6 +6161,12 @@ index 0000000..0c336eb
 +	a.swappedExe = a.applyStreamedInputProfile(prep.Exe)
 +	a.pads.ensurePad(0) // yuzu binds Player 1 at boot
 +
++	if v, derr := setDpiCompatLayer(prep.Exe); derr != nil {
++		a.log.Warn().Err(derr).Msg("capture: DPI compat layer not set (window may be DPI-virtualized on scaled displays)")
++	} else {
++		a.log.Info().Msgf("capture: DPI compat layer %q for %s", v, filepath.Base(prep.Exe))
++	}
++
 +	proc, err := launchGame(prep.Exe, prep.Args, prep.WorkingDir)
 +	if err != nil {
 +		a.restoreInputProfile(prep.Exe)
@@ -6303,7 +6310,7 @@ index 0000000..0c336eb
 +			a.frameMu.Lock()
 +			f := a.frames
 +			a.frameMu.Unlock()
-+			a.log.Info().Msgf("capture tick: frames=%d raw=%d capturing=%v pads=%d", f, atomic.LoadUint64(&a.rawFrames), a.capturing.Load(), a.pads.count())
++			a.log.Info().Msgf("capture tick: frames=%d raw=%d capturing=%v pads=%d inpkts=%d", f, atomic.LoadUint64(&a.rawFrames), a.capturing.Load(), a.pads.count(), a.pads.packetCount())
 +		}
 +	}
 +}
@@ -6333,16 +6340,17 @@ index 0000000..0c336eb
 +}
 diff --git a/pkg/worker/caged/capture/input.go b/pkg/worker/caged/capture/input.go
 new file mode 100644
-index 0000000..3c15057
+index 0000000..ad9454e
 --- /dev/null
 +++ b/pkg/worker/caged/capture/input.go
-@@ -0,0 +1,182 @@
+@@ -0,0 +1,190 @@
 +package capture
 +
 +import (
 +	"encoding/binary"
 +	"fmt"
 +	"sync"
++	"sync/atomic"
 +
 +	vigem "github.com/openstadia/go-vigem"
 +	x360 "github.com/openstadia/go-vigem/x360"
@@ -6360,6 +6368,7 @@ index 0000000..3c15057
 +	pads    map[int]*x360.Gamepad
 +	maxPads int
 +	ok      bool
++	packets uint64 // diag: RetroPad packets applied to a pad (heartbeat shows input is ARRIVING)
 +}
 +
 +func newPadManager(maxPads int) *padManager {
@@ -6428,6 +6437,11 @@ index 0000000..3c15057
 +	return len(p.pads)
 +}
 +
++// packetCount returns how many input packets have been applied (for the heartbeat log).
++func (p *padManager) packetCount() uint64 {
++	return atomic.LoadUint64(&p.packets)
++}
++
 +
 +// RetroPad button bit -> XUSB button. Index is the RetroPad bit (see the plan's §4.5 table and
 +// pkg/worker/caged/libretro/nanoarch/input.go). Bits 12/13 (L2/R2) and analog triggers handled
@@ -6474,6 +6488,7 @@ index 0000000..3c15057
 +	if pad == nil {
 +		return
 +	}
++	atomic.AddUint64(&p.packets, 1)
 +	btn := binary.LittleEndian.Uint16(data[0:2])
 +	var lx, ly, rx, ry int16
 +	if len(data) >= 10 {
@@ -6521,10 +6536,10 @@ index 0000000..3c15057
 +}
 diff --git a/pkg/worker/caged/capture/launch.go b/pkg/worker/caged/capture/launch.go
 new file mode 100644
-index 0000000..1c75e1c
+index 0000000..1457064
 --- /dev/null
 +++ b/pkg/worker/caged/capture/launch.go
-@@ -0,0 +1,487 @@
+@@ -0,0 +1,522 @@
 +package capture
 +
 +import (
@@ -6543,6 +6558,7 @@ index 0000000..1c75e1c
 +	"unsafe"
 +
 +	"golang.org/x/sys/windows"
++	"golang.org/x/sys/windows/registry"
 +)
 +
 +// ── Gateway heavy contract (reused verbatim from heavy-launch.ps1) ──────────────────────────────
@@ -6746,6 +6762,40 @@ index 0000000..1c75e1c
 +	}
 +	a.log.Info().Msgf("capture: input profile swapped to streamed bindings for %s", filepath.Base(exePath))
 +	return exePath
++}
++
++// setDpiCompatLayer marks exe system-DPI-aware via the per-user AppCompatFlags layer (same
++// mechanism as Explorer's Compatibility → "Override high DPI scaling behavior: System"). Why
++// (2026-07-23, SM64 Plus on the 300%-scaled console TV): a DPI-unaware game gets DWM-virtualized —
++// its "1920x1080" window is physically scale× larger, the GL driver sizes the framebuffer to the
++// PHYSICAL client area while the game's glViewport uses the logical size it believes, and GL's
++// bottom-left origin leaves the image in the bottom-left corner of a mostly-black surface (WGC
++// captures physical pixels; the stream showed the corner). The layer pins the window to physical
++// 1920x1080 on ANY monitor scale. Merges into existing layer tokens; caller logs the outcome —
++// a failure only means DPI-scaled capture, never a failed room.
++func setDpiCompatLayer(exe string) (string, error) {
++	k, _, err := registry.CreateKey(registry.CURRENT_USER,
++		`Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers`,
++		registry.QUERY_VALUE|registry.SET_VALUE)
++	if err != nil {
++		return "", err
++	}
++	defer k.Close()
++	cur, _, gerr := k.GetStringValue(exe)
++	if gerr != nil {
++		cur = ""
++	}
++	if strings.Contains(cur, "HIGHDPIAWARE") {
++		return cur, nil
++	}
++	val := "~ HIGHDPIAWARE"
++	if strings.TrimSpace(cur) != "" {
++		val = cur + " HIGHDPIAWARE"
++	}
++	if err := k.SetStringValue(exe, val); err != nil {
++		return "", err
++	}
++	return val, nil
 +}
 +
 +// ── Process launch under a kill-on-close Job Object ─────────────────────────────────────────────
