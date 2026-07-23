@@ -1233,6 +1233,21 @@ emulator:
             # 2x-native base (WxH tokens verified in the DLL). Expansion Pak stays enabled (Last Impact
             # needs the 8 MB) — disable_expmem defaults False, left unset.
             parallel-n64-screensize: "640x480"
+            # GLideN64 framebuffer options — INERT on the Vulkan (parallel-RDP) default; active only on the
+            # "parallel_n64_gl" profile (gfxplugin=gliden64). Mirrors mupen64plus_next's proven GL set so the
+            # GL fallback renders framebuffer content instead of black. Tokens + defaults from parallel_n64's
+            # libretro_core_options.h. FBEmulation/CopyColor/CopyDepth/LegacyBlending already match the
+            # desktop defaults (set explicitly so they can't drift); the two that DIFFER and matter:
+            #   - EnableCopyAuxToRDRAM True  (default False): renders aux-color-buffer content — the exact
+            #     option mupen needed for cutscene/intro planes that otherwise show blank (Bomberman intro).
+            #   - EnableNativeResTexrects Optimized (default Disabled): draws HUD/text 2D texrects at native
+            #     res so they don't seam/blur when upscaled.
+            parallel-n64-gliden64-EnableFBEmulation: "True"
+            parallel-n64-gliden64-EnableCopyColorToRDRAM: "Async"
+            parallel-n64-gliden64-EnableCopyDepthToRDRAM: "Software"
+            parallel-n64-gliden64-EnableLegacyBlending: "False"
+            parallel-n64-gliden64-EnableCopyAuxToRDRAM: "True"
+            parallel-n64-gliden64-EnableNativeResTexrects: "Optimized"
 
         # 2D cores: stream at 3x with nearest-neighbour (the pipeline's default scaler) instead of
         # native 256x224 — the browser's bilinear stretch of a tiny stream is what read as "fuzzy
