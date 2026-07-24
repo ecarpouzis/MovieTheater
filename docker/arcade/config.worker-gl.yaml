@@ -1496,6 +1496,142 @@ emulator:
           roms: ["m3u", "chd", "iso", "cue"]   # m3u = multi-disc (see dc note)
           scale: 3
 
+        # ─── Nintendo DS via melonDS DS (W10, 2026-07-23) ───────────────────────────────────────
+        # melondsds_libretro — the MAINTAINED melonDS DS rewrite (NOT legacy melonds_libretro, which is
+        # kept beside it as a rollback). Booted SOFTWARE-rendered first to prove the path without the GL
+        # Flip contract; the OpenGL renderer (internal 3D upscale like ppsspp) is a deliberate follow-up.
+        #
+        # ENCODE GEOMETRY: melonds' base geometry IS the COMPOSITED layout (top-bottom = 256x384), so DS
+        # behaves like a 2D core for the encoder — scale>=2 for H.264/AV1 chroma correctness (the 2D-core
+        # lesson), nearest-neighbour (pixel art + 2D UI). scale:2 -> 512x768 PORTRAIT encode; the client
+        # letterboxes it. No coreAspectRatio (software core; the encoded frame's own dims carry the aspect,
+        # exactly like snes/nes/gba).
+        #
+        # ⚠ OPTION KEYS ARE `melonds_` (NOT `melonds_ds_`) and VALUE tokens are lowercase-hyphenated — BOTH
+        # extracted from melondsds_libretro.dll strings, NOT the docs. The docs' `melonds_ds_` prefix would
+        # be one of libretro's SILENTLY-IGNORED unknown keys (the recurring "values not labels" trap).
+        #
+        # SAVES: melonds exposes RETRO_MEMORY_SAVE_RAM (.sav) -> standard .srm harvest class (like nes/snes/
+        # gba/n64/ps1), so DS saves ride the EXISTING save vault with no new machinery. (Verified in the DLL.)
+        #
+        # BIOS: builtin FreeBIOS + direct boot needs NO real BIOS for retail carts (removes a boot-path risk
+        # from enablement). The real DS BIOS (bios7.bin/bios9.bin/firmware.bin, copied from C:\Network Share\
+        # bios) IS staged under each worker's libretro/system/melonDS DS/ so sysfile_mode can flip to native
+        # later. DSi mode (needs a NAND dump) is out of scope.
+        #
+        # POINTER/TOUCH (W10 deliverable): melonds_touch_mode:touch reads RETRO_DEVICE_POINTER (absolute) and
+        # the CORE maps it through the active screen layout to bottom-screen touch coords itself (cursor.cpp
+        # layout.TransformPointerInput, bounds-checked to NDS_SCREEN_SIZE 256x192). So the site's pointer
+        # mechanism only has to deliver a letterbox-corrected FULL-FRAME normalized coord — it never needs to
+        # know the DS layout. The pointer wire mechanism is W10 Phase C (not yet built; a pad works today).
+        #
+        # LAYOUT PINNED to ONE top-bottom layout (number_of_screen_layouts:1) so encode geometry is STABLE:
+        # no R2-cycle to a different-sized layout mid-room (which would force an encode caps-reneg). The
+        # dual-screen layout will be exposed per-game via the ⚙ Configure tool (W10 Phase C).
+        nds:
+          lib: melondsds_libretro
+          folder: nds
+          roms: ["nds"]
+          scale: 2
+          scaleMethod: nearest-neighbour
+          # coreAspectRatio: HELD BACK until w10-ds-arcade is deployed — do NOT enable before then.
+          # melonDS reports the right aspect ("[geom] base 256x384 max 1030x576 AR=0.6667") and turning
+          # this on does fix the 2x horizontal stretch server-side (measured 1.332 -> 0.667, no site
+          # deploy). BUT prod's ArcadeRoomPage has neither the `nds` FALLBACK_AR entry nor the
+          # `portrait` branch (both live only on w10-ds-arcade), so it styles every stream
+          # width:100% + aspectRatio. Handing it a PORTRAIT ratio makes the element ~1461px tall on a
+          # 974px-wide stage: correct proportions, but it overflows the page and the player has to
+          # scroll — worse than the stretch it fixes. Once the branch ships (it sizes portrait by
+          # HEIGHT, min(74vh,760px)), uncomment this: core-reported AR beats a client-side constant.
+          # coreAspectRatio: true
+          options:
+            melonds_render_mode: "software"
+            melonds_touch_mode: "touch"
+            melonds_console_mode: "ds"
+            melonds_boot_mode: "direct"
+            melonds_sysfile_mode: "builtin"
+            melonds_screen_layout1: "top-bottom"
+            melonds_number_of_screen_layouts: "1"
+            # Cursor shown only WHILE TOUCHING. The player's OS mouse cursor is the aim indicator (so the
+            # shim streams pointer only while pressed — no hover flood), and the DS overlay then just gives
+            # touch feedback at the contact point. "always" would leave a stale cursor parked at the last
+            # touch when the mouse is idle/off the video. (Was "always" during W10 bring-up.)
+            melonds_show_cursor: "touching"
+
+        # ─── Nintendo 3DS via citra_libretro — VULKAN RENDERER (W10, 2026-07-23) ────────────────────────
+        # The GL path is a dead end here: the DEPLOYED citra_libretro.dll (Lime3DS/PabloMK7 lineage, built
+        # 2026-07-23) requested a GL 3.3 CORE context and then null-called (0xC0000005 rip=0) into its own
+        # glad loader for a GL 4.x entry point right after GL init — the classic "core needs 4.3+ compute,
+        # got a 3.3 context" fault (Saturn Kronos crash class). BUT the same DLL ships a FULL Vulkan
+        # renderer (video_core/renderer_vulkan: vk_instance/vk_swapchain/RasterizerVulkan) AND a software
+        # one, and — DLL string audit — has NO renderer core-option (`graphics_api` is an internal Settings
+        # field, not a citra_* option, sitting beside physical_device/use_gles/renderer_debug). So, exactly
+        # like flycast/dolphin/ppsspp, citra picks its renderer from the FRONTEND's preferred HW context:
+        # GET_PREFERRED_HW_RENDER answers VULKAN when hwContext:"vulkan" (nanoarch.go), and citra then runs
+        # renderer_vulkan on our proven Vulkan-capture plumbing (vkm2) — no worker rebuild, the Vk frontend
+        # is already live (it runs ps2/psp/dc/ps1). Same recipe as those: isGlAllowed:false + hwContext:
+        # vulkan + usesLibCo + skip_hw_context_destroy. ROMs are DECRYPTED No-Intro .3ds (NCCH NoCrypto),
+        # no aes_keys.txt needed. First boot runs with NO options (citra defaults every setting → valid
+        # geometry); the prior GL attempt PANICKED on bad option value tokens — re-add citra_layout_option/
+        # citra_resolution_factor/touchscreen only with tokens extracted from the DLL, AFTER it boots.
+        # Touch (bottom screen) rides the existing pointer mechanism (citra polls RETRO_DEVICE_POINTER) —
+        # add "3ds" to POINTER_SYSTEMS once video is proven. 2 ingested rows: 68835/68836.
+        3ds:
+          # CUSTOM CORE (2026-07-24): citra_custom_libretro.dll = libretro/citra + a 2-line MovieTheater
+          # patch (docker/arcade/citra-build-core.bat) that un-comments the citra_graphics_api option +
+          # FetchVariable — stock HARDCODES graphicsApi="OpenGL" so it always asked for OPENGL_CORE (which
+          # our WGL can't host → GL3.3-ctx null-call 0xC0000005). With the patch + citra_graphics_api:Vulkan
+          # below, citra runs its renderer_vulkan on our vkm2 Vulkan-capture path. The custom NAME pins it
+          # vs libretro.cores.repo.sync (same trick as dolphin_custom/pcsx2_custom). ROLLBACK: lib:
+          # citra_libretro (stock sits beside it). ⚠ re-run the build script after any citra core update.
+          lib: citra_custom_libretro
+          folder: 3ds
+          roms: ["3ds", "cci", "cxi", "cia", "app"]
+          # GL, and NOT by preference — TOUCH ONLY EXISTS ON THE GL PATH. citra builds its
+          # MouseTracker in EmuWindow_LibRetro::CreateContext() behind `if (useOpenGL)`, and that
+          # tracker is what feeds TouchPressed/TouchMoved; under Vulkan it is never constructed, so
+          # the 3DS bottom screen is untouchable. It cannot simply be constructed anyway: its ctor
+          # COMPILES GL SHADERS for the cursor overlay, so Vulkan touch needs input state split from
+          # that overlay — a real citra refactor, not a flag.
+          # Both renderers were A/B'd live on MK7 and draw an identical picture, and GL zero-copy is
+          # armed here ("GL zero-copy armed for 3ds (no glReadPixels)"), so choosing GL costs nothing.
+          # GL depends on the custom core asking for a 4.3 context (stock asked 3.3 while citra's own
+          # gl_driver demands 4.3 and nothing checks IsSuitable() — that was the rip=0x0 crash).
+          # The old "3DS is black" was NEVER a renderer bug: it was the MSVC handler-table miscompile
+          # (citra-build-core.bat /vmg + service.h), which killed the guest under EITHER renderer.
+          # ROLLBACK to Vulkan (renders fine, but NO touch): isGlAllowed: false + hwContext: "vulkan"
+          # + citra_graphics_api: "Vulkan".
+          isGlAllowed: true
+          coreAspectRatio: true
+          usesLibCo: true             # retro_run + context_reset on one cothread (the Vulkan-capture path)
+          vfr: false
+          # scale 2 (2026-07-24): was 1, i.e. we shipped the raw 400x480 stacked frame. Every other
+          # quality-tuned system upscales >=2 server-side because 4:2:0 halves CHROMA resolution --
+          # a nearest 2x costs few bits (flat NxN blocks) but keeps colour detail at native. nds
+          # already did this; 3ds was the odd one out. Pairs with "3ds" => 6000 in
+          # CloudRetroHost.DefaultVideoBitrateKbps -- ship them together, like ps2's upscale+bitrate.
+          scale: 2
+          # Vulkan teardown hack (proven on ps2/psp/dc): skip the core's context_destroy so a Vk room close
+          # can't deadlock/crash the single-thread model. Remove only if citra's Vk teardown proves clean.
+          # vk_synthetic_surface (added 2026-07-24): citra_libretro carries its OWN swapchain
+          # (src/citra_libretro/vulkan/vk_swapchain.cpp) and stashes the frontend surface
+          # (emu_window->vkSurface = surface) in vk_create_device, so a VK_NULL_HANDLE there is the same
+          # trap PPSSPP hit on 2026-07-16 — it access-violates once the presentation path touches it.
+          hacks: [skip_hw_context_destroy, vk_synthetic_surface]
+          options:
+            # Deterministic renderer select (custom-core option; token from the DLL's own value list).
+            # This is the ONLY option for first boot — citra defaults everything else (valid geometry);
+            # the prior GL attempt PANICKED on bad layout/resolution tokens, so add those later, from the DLL.
+            citra_graphics_api: "OpenGL"
+            # Stylus/touch (2026-07-24). citra's MouseTracker reads RETRO_DEVICE_ID_POINTER_PRESSED only
+            # when THIS option is on, and it ships "disabled" — so the pointer packets the client already
+            # sends (the melonDS mechanism, unchanged) moved the cursor but never tapped. citra does the
+            # same full-frame->layout transform melonDS does: it maps the normalized pointer into the
+            # frame, clamps to the bottomScreen rect and subtracts its origin, so the client stays
+            # layout-agnostic and "3ds" just joins POINTER_SYSTEMS. Tokens taken from the DLL's own
+            # values[] list ("disabled|enabled") — bad tokens PANIC this core.
+            citra_touch_touchscreen: "enabled"
+
 
 encoder:
   # Same NVENC H.264 + Opus-FEC path as the WSL stack (docker/arcade/config.yaml). nvcodec here comes

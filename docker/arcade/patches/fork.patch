@@ -2162,7 +2162,7 @@ index be5ac42..0321825 100644
  var workerConfigPath string
  
 diff --git a/pkg/coordinator/coordinator.go b/pkg/coordinator/coordinator.go
-index ffc5c7d..85afeb9 100644
+index ffc5c7d..7a33a81 100644
 --- a/pkg/coordinator/coordinator.go
 +++ b/pkg/coordinator/coordinator.go
 @@ -26,6 +26,10 @@ func New(conf config.CoordinatorConfig, log *logger.Logger) (*Coordinator, error
@@ -2176,6 +2176,144 @@ index ffc5c7d..85afeb9 100644
  		return mux
  	})
  	if err != nil {
+@@ -39,6 +43,8 @@ func New(conf config.CoordinatorConfig, log *logger.Logger) (*Coordinator, error
+ }
+ 
+ func (c *Coordinator) Start() {
++	// MovieTheater: begin deregistering dead/wedged workers (zombie-worker fix — see health.go).
++	c.hub.startHealthMonitor()
+ 	for _, s := range c.services {
+ 		if s != nil {
+ 			s.Run()
+diff --git a/pkg/coordinator/health.go b/pkg/coordinator/health.go
+new file mode 100644
+index 0000000..5646d4c
+--- /dev/null
++++ b/pkg/coordinator/health.go
+@@ -0,0 +1,123 @@
++package coordinator
++
++import (
++	"net/http"
++	"time"
++
++	"github.com/giongto35/cloud-game/v3/pkg/com"
++)
++
++// Worker idle/liveness health-check (MovieTheater).
++//
++// THE ZOMBIE-WORKER FIX. A worker is normally removed from the hub only when its coordinator WS
++// connection closes (handleWorkerConnection's deferred RemoveDisconnect). But a worker that crashes
++// into a wedged, unkillable 1-thread process — the observed failure after an idle/teardown core crash
++// or the citra GL-load crash — keeps its half-open TCP socket, so that disconnect NEVER fires. The dead
++// worker then lingers in the registry, keeps being handed rooms by findWorkerFor / find1stFreeWorker,
++// and every room routed to it hangs at "Negotiating" while the whole main zone reads as "the arcade is
++// full". Recovery previously required a coordinator restart or a full box reboot.
++//
++// This monitor makes that a self-healing capacity blip instead of an outage: it periodically GETs each
++// worker's own HTTP /echo endpoint (Worker.PingServer, already advertised in the handshake). A live
++// worker answers /echo from its HTTP goroutine regardless of what the emulator thread is doing — so a
++// genuinely SLOW room (a cold PS2 boot, a shader cache) still passes and is NEVER dropped. A process
++// that is actually dead cannot answer at all; after maxFails consecutive failures it is deregistered
++// (Disconnect + Remove), including one that still claims a RoomId, because that room is already lost
++// with the process. We do NOT try to kill the wedged process (proven futile — it needs a reboot); we
++// just stop routing rooms to it, which is what turns the outage into a blip.
++const (
++	healthCheckInterval = 15 * time.Second
++	healthCheckTimeout  = 4 * time.Second
++	healthCheckMaxFails = 4 // ~60s unresponsive before deregister — rides out transient blips
++)
++
++type workerHealthMonitor struct {
++	hub      *Hub
++	interval time.Duration
++	timeout  time.Duration
++	maxFails int
++	client   *http.Client
++	fails    map[com.Uid]int
++}
++
++// startHealthMonitor launches the background worker-liveness loop. Call once, from the real
++// coordinator's Start() (never from NewHub, which unit tests use with unreachable fake workers).
++func (h *Hub) startHealthMonitor() {
++	m := &workerHealthMonitor{
++		hub:      h,
++		interval: healthCheckInterval,
++		timeout:  healthCheckTimeout,
++		maxFails: healthCheckMaxFails,
++		client:   &http.Client{Timeout: healthCheckTimeout},
++		fails:    map[com.Uid]int{},
++	}
++	go m.run()
++	h.log.Info().Msgf("worker health monitor started (every %v, drop after %d misses)", m.interval, m.maxFails)
++}
++
++func (m *workerHealthMonitor) run() {
++	t := time.NewTicker(m.interval)
++	defer t.Stop()
++	for range t.C {
++		m.tick()
++	}
++}
++
++func (m *workerHealthMonitor) tick() {
++	// Snapshot under the map's RLock FIRST: NetMap.Values holds an RLock for the whole range, so
++	// calling RemoveDisconnect (a write) inside the range would deadlock. Ping + remove happen after.
++	var snapshot []*Worker
++	for w := range m.hub.workers.Values() {
++		snapshot = append(snapshot, w)
++	}
++
++	seen := make(map[com.Uid]struct{}, len(snapshot))
++	for _, w := range snapshot {
++		id := w.Id()
++		seen[id] = struct{}{}
++		if m.alive(w) {
++			if m.fails[id] > 0 {
++				m.hub.log.Info().Msgf("worker %v health recovered after %d misses", id, m.fails[id])
++				delete(m.fails, id)
++			}
++			continue
++		}
++		m.fails[id]++
++		n := m.fails[id]
++		m.hub.log.Warn().Msgf("worker %v missed health check %d/%d (room=%q free=%v ping=%v)",
++			id, n, m.maxFails, w.RoomId, w.HasSlot(), w.PingServer)
++		if n >= m.maxFails {
++			m.hub.log.Error().Msgf("worker %v unresponsive x%d — deregistering dead worker (room=%q); "+
++				"the process is wedged and needs an external restart/reboot, but it will no longer receive rooms",
++				id, n, w.RoomId)
++			m.hub.workers.RemoveDisconnect(w)
++			delete(m.fails, id)
++		}
++	}
++
++	// Forget counters for workers that left the registry on their own (clean disconnect).
++	for id := range m.fails {
++		if _, ok := seen[id]; !ok {
++			delete(m.fails, id)
++		}
++	}
++}
++
++// alive reports whether the worker answers its own HTTP /echo. A transport error (connect refused/reset,
++// timeout) means the process is not serving — i.e. dead/wedged. An empty PingServer can't be checked, so
++// it is treated as alive (never punish a worker we simply can't probe).
++func (m *workerHealthMonitor) alive(w *Worker) bool {
++	if w.PingServer == "" {
++		return true
++	}
++	req, err := http.NewRequest(http.MethodGet, w.PingServer, nil)
++	if err != nil {
++		return true // malformed URL is our problem, not the worker's — don't deregister over it
++	}
++	resp, err := m.client.Do(req)
++	if err != nil {
++		return false
++	}
++	_ = resp.Body.Close()
++	return resp.StatusCode == http.StatusOK
++}
 diff --git a/pkg/coordinator/hub.go b/pkg/coordinator/hub.go
 index ac04d15..a0c5ad9 100644
 --- a/pkg/coordinator/hub.go
@@ -3396,10 +3534,10 @@ index 53c3a2d..e5db5d0 100644
  			zerolog.TimestampFieldName,
  			"pid",
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
-index 99e02b8..89bcf26 100644
+index 99e02b8..515f52d 100644
 --- a/pkg/network/webrtc/factory.go
 +++ b/pkg/network/webrtc/factory.go
-@@ -3,19 +3,40 @@ package webrtc
+@@ -3,19 +3,45 @@ package webrtc
  import (
  	"fmt"
  	"net"
@@ -3431,6 +3569,11 @@ index 99e02b8..89bcf26 100644
  	api  *webrtc.API
  	conf webrtc.Configuration
 +
++	// udpConn is the single-port UDP socket (nil in multi-port mode). Retained so the worker's wedge
++	// sentinel / any HardExit path can Close() it and release the router-forwarded port immediately,
++	// before a raw process terminate that would otherwise leave the port held by a kernel-stuck husk.
++	udpConn *net.UDPConn
++
 +	// The cc interceptor builds one estimator per PeerConnection, synchronously inside
 +	// api.NewPeerConnection (cc.InterceptorFactory.NewInterceptor calls addPeerConnection before it
 +	// returns). We therefore serialise peer creation and drain the channel first, so the estimator a
@@ -3440,7 +3583,7 @@ index 99e02b8..89bcf26 100644
  }
  
  type ModApiFun func(m *webrtc.MediaEngine, i *interceptor.Registry, s *webrtc.SettingEngine)
-@@ -27,6 +48,48 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -27,6 +53,48 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	i := &interceptor.Registry{}
  
@@ -3489,7 +3632,15 @@ index 99e02b8..89bcf26 100644
  	if conf.DisableDefaultInterceptors {
  		sender, err := report.NewSenderInterceptor()
  		if err != nil {
-@@ -56,9 +119,27 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -49,6 +117,7 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 	if conf.IceLite {
+ 		s.SetLite(conf.IceLite)
+ 	}
++	var udpConn *net.UDPConn // single-port socket, retained on the factory for handle release on a wedge-exit
+ 	if conf.HasPortRange() {
+ 		if err = s.SetEphemeralUDPPortRange(conf.IcePorts.Min, conf.IcePorts.Max); err != nil {
+ 			return
+@@ -56,21 +125,75 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	if conf.HasSinglePort() {
  		var l any
@@ -3520,7 +3671,10 @@ index 99e02b8..89bcf26 100644
  		}
  		udp, ok := l.(*net.UDPConn)
  		if !ok {
-@@ -68,9 +149,44 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 			err = fmt.Errorf("use of not a UDP socket")
+ 			return
+ 		}
++		udpConn = udp
  		s.SetICEUDPMux(webrtc.NewICEUDPMux(customLogger, udp))
  		log.Info().Msgf("The single port mode is active for %s", udp.LocalAddr())
  	}
@@ -3567,7 +3721,7 @@ index 99e02b8..89bcf26 100644
  	}
  
  	s.SetICEMulticastDNSMode(ice.MulticastDNSModeDisabled)
-@@ -90,23 +206,103 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -90,23 +213,114 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  		mod(m, i, &s)
  	}
  
@@ -3608,10 +3762,21 @@ index 99e02b8..89bcf26 100644
 -		conf: c,
 +		api:     webrtc.NewAPI(webrtc.WithMediaEngine(m), webrtc.WithInterceptorRegistry(i), webrtc.WithSettingEngine(s)),
 +		conf:    c,
++		udpConn: udpConn,
 +		bweChan: bweChan,
  	}, err
  }
  
++// Close releases the single-port UDP socket (and thus the router-forwarded port). Called from a wedge
++// self-exit BEFORE the process terminates so a fresh worker can rebind the port immediately, even if a
++// kernel-stuck thread later leaves this process as a husk. No-op in multi-port mode or if called twice.
++func (a *ApiFactory) Close() error {
++	if a == nil || a.udpConn == nil {
++		return nil
++	}
++	return a.udpConn.Close()
++}
++
  func (a *ApiFactory) NewPeer() (*webrtc.PeerConnection, error) {
 -	return a.api.NewPeerConnection(a.conf)
 +	pc, _, err := a.newPeer()
@@ -4558,10 +4723,10 @@ index 5b3d3fe..e6ef733 100644
  		}
  	}
 diff --git a/pkg/os/os.go b/pkg/os/os.go
-index 42e8a10..36ad1a7 100644
+index 42e8a10..52df4d2 100644
 --- a/pkg/os/os.go
 +++ b/pkg/os/os.go
-@@ -4,18 +4,38 @@ import (
+@@ -4,18 +4,56 @@ import (
  	"bufio"
  	"bytes"
  	"errors"
@@ -4573,6 +4738,7 @@ index 42e8a10..36ad1a7 100644
  	"os/user"
 +	"path/filepath"
 +	"strings"
++	"sync/atomic"
  	"syscall"
 +	"time"
  )
@@ -4581,6 +4747,18 @@ index 42e8a10..36ad1a7 100644
  
  var ErrNotExist = os.ErrNotExist
  
++// beforeHardExit runs (best-effort, once) immediately before TerminateProcess on EVERY HardExit path.
++// A raw process termination does NOT free the process's OS handles if a kernel-stuck thread pins the
++// husk (the unkillable-zombie shape) — so a wedge-exit would leave the router-forwarded UDP mux port
++// and the HTTP listener held until a reboot, blocking a fresh worker from rebinding. Closing those
++// socket handles here (user-mode, fast) releases the ports at the kernel level right now, independent
++// of whether the process later fully exits. Set once by the worker at startup (SetBeforeHardExit); it
++// MUST be fast and never block (it runs on the exiting goroutine). No-op if unset (e.g. the coordinator).
++var beforeHardExit atomic.Pointer[func()]
++
++// SetBeforeHardExit registers the pre-terminate handle-release hook. Call once, early, from the worker.
++func SetBeforeHardExit(fn func()) { beforeHardExit.Store(&fn) }
++
 +// HardExit terminates the process RIGHT NOW via TerminateProcess, skipping Go runtime shutdown and
 +// — critically — DLL_PROCESS_DETACH notifications. os.Exit runs ExitProcess, which walks every
 +// loaded DLL's detach handler under the loader lock and terminates sibling threads on the way; when
@@ -4592,6 +4770,11 @@ index 42e8a10..36ad1a7 100644
 +// the MovieTheater repo). Same lesson as GstMediaPipe.Destroy's hard exit, promoted to a helper.
 +// Only for "this process is already broken — leave NOW, unwind nothing" paths.
 +func HardExit(code uint32) {
++	// Release OS handles (UDP mux + HTTP listener) BEFORE the raw terminate, so a fresh worker can
++	// rebind the router-forwarded port immediately even if this process lingers as a kernel-stuck husk.
++	if p := beforeHardExit.Load(); p != nil && *p != nil {
++		(*p)()
++	}
 +	h, _ := syscall.GetCurrentProcess()
 +	_ = syscall.TerminateProcess(h, code)
 +	select {} // TerminateProcess returns before the process is gone; never run code past this point
@@ -4600,7 +4783,7 @@ index 42e8a10..36ad1a7 100644
  func Exists(path string) bool {
  	_, err := os.Stat(path)
  	return !errors.Is(err, fs.ErrNotExist)
-@@ -32,13 +52,39 @@ func MakeDirAll(path string) error {
+@@ -32,13 +70,39 @@ func MakeDirAll(path string) error {
  	return os.MkdirAll(path, os.ModeDir|os.ModePerm)
  }
  
@@ -4642,7 +4825,7 @@ index 42e8a10..36ad1a7 100644
  	}()
  	return done
  }
-@@ -79,6 +125,13 @@ func CopyFile(from string, to string) (err error) {
+@@ -79,6 +143,13 @@ func CopyFile(from string, to string) (err error) {
  	if err != nil {
  		return err
  	}
@@ -4656,7 +4839,7 @@ index 42e8a10..36ad1a7 100644
  	return nil
  }
  
-@@ -123,3 +176,246 @@ func StatSize(path string) (int64, error) {
+@@ -123,3 +194,246 @@ func StatSize(path string) (int64, error) {
  func RemoveAll(path string) error {
  	return os.RemoveAll(path)
  }
@@ -10637,10 +10820,10 @@ index 6974d59..830e98a 100644
 +	}
 +}
 diff --git a/pkg/worker/caged/libretro/graphics/opengl.go b/pkg/worker/caged/libretro/graphics/opengl.go
-index 0c9d773..41a9805 100644
+index 0c9d773..241031f 100644
 --- a/pkg/worker/caged/libretro/graphics/opengl.go
 +++ b/pkg/worker/caged/libretro/graphics/opengl.go
-@@ -1,335 +1,379 @@
+@@ -1,335 +1,387 @@
 -package graphics
 -
 -/*
@@ -11329,6 +11512,14 @@ index 0c9d773..41a9805 100644
 +func finish() { C.gl_finish((C.GPFLUSH)(gpFinish)) }
 +
 +func SetBuffer(size int) {
++	// W10: citra_libretro fires RETRO_ENVIRONMENT_SET_GEOMETRY DURING retro_load_game with a max size of
++	// 0 (before it has set the pixel format), so geometryChange computes bufS=0 and calls us with 0 — a
++	// 0-length slice then panics at &buf[0] (index out of range), killing the worker at load. A 0-size GL
++	// buffer is never valid; ignore it and keep the last good buffer (the real size arrives with the first
++	// valid geometry / video_cb). Guards every SetBuffer caller, not just citra.
++	if size <= 0 {
++		return
++	}
 +	buf = make([]byte, size)
 +	bufPtr = unsafe.Pointer(&buf[0])
 +}
@@ -11846,6 +12037,98 @@ index 0000000..b8fd32e
 +	b, _ := json.MarshalIndent(meta, "", "  ")
 +	_ = os.WriteFile(base+".json", b, 0o644)
 +}
+diff --git a/pkg/worker/caged/libretro/nanoarch/input.go b/pkg/worker/caged/libretro/nanoarch/input.go
+index ed31bf2..0160823 100644
+--- a/pkg/worker/caged/libretro/nanoarch/input.go
++++ b/pkg/worker/caged/libretro/nanoarch/input.go
+@@ -2,6 +2,8 @@ package nanoarch
+ 
+ import (
+ 	"encoding/binary"
++	"fmt"
++	"os"
+ 	"sync/atomic"
+ )
+ 
+@@ -15,6 +17,7 @@ void input_cache_set_port(unsigned port, uint32_t buttons,
+ void input_cache_set_keyboard_key(unsigned id, uint8_t pressed);
+ void input_cache_set_keyboard_bulk(const uint8_t *keys, size_t count);
+ void input_cache_set_mouse(int16_t dx, int16_t dy, uint8_t buttons);
++void input_cache_set_pointer(int16_t x, int16_t y, uint8_t pressed);
+ void input_cache_clear(void);
+ */
+ import "C"
+@@ -172,3 +175,70 @@ func (ms *MouseState) Buttons() (l, r, m bool) {
+ func (ms *MouseState) SyncToCache() {
+ 	C.input_cache_set_mouse(C.int16_t(ms.dx.Swap(0)), C.int16_t(ms.dy.Swap(0)), C.uint8_t(ms.buttons.Load()))
+ }
++
++// Pointer packet wire format (W10 stylus/touch), on the SAME "data" channel as the RetroPad frame,
++// length-discriminated: the pad frame is 10 or 14 bytes, this is a fixed 8 with a magic tag.
++//
++//	[tag:1=0xF0][ver:1][x:2 LE][y:2 LE][pressed:1][flags:1]
++//
++// x/y are FULL-FRAMEBUFFER normalized (-0x7fff..0x7fff), LITTLE-ENDIAN (matches the pad channel's
++// SetInput; the keyboard channel's big-endian does NOT apply here). The core (melonDS DS) maps these
++// through the active screen layout to the DS touch panel, so nothing here knows the layout.
++const (
++	PointerTag       = 0xF0
++	PointerPacketVer = 0x01
++	PointerPacketLen = 8
++)
++
++// PointerState is the ABSOLUTE touch pointer (RETRO_DEVICE_POINTER). Port-0 only (DS touch = player 1).
++// Unlike MouseState (relative, consumed each sync) the value is absolute and PERSISTS across reads.
++type PointerState struct {
++	x, y    atomic.Int32
++	pressed atomic.Int32
++}
++
++func (ps *PointerState) Set(data []byte) {
++	if len(data) != PointerPacketLen || data[0] != PointerTag {
++		return
++	}
++	ps.x.Store(int32(int16(binary.LittleEndian.Uint16(data[2:4]))))
++	ps.y.Store(int32(int16(binary.LittleEndian.Uint16(data[4:6]))))
++	var p int32
++	if data[6] != 0 {
++		p = 1
++	}
++	ps.pressed.Store(p)
++}
++
++// SyncToCache pushes the absolute pointer to the C cache (NOT consumed). When the diagnostic env is set
++// it injects a constant pressed coordinate instead — see pointerTest below.
++func (ps *PointerState) SyncToCache() {
++	if pointerTestOn {
++		C.input_cache_set_pointer(C.int16_t(pointerTestX), C.int16_t(pointerTestY), 1)
++		return
++	}
++	var pressed C.uint8_t
++	if ps.pressed.Load() != 0 {
++		pressed = 1
++	}
++	C.input_cache_set_pointer(C.int16_t(ps.x.Load()), C.int16_t(ps.y.Load()), pressed)
++}
++
++// pointerTest*: DIAGNOSTIC ONLY (W10 worker->core proof). Set CLOUD_GAME_POINTER_TEST="x,y" (decimal
++// int16, full-frame normalized) to force a constant PRESSED pointer, bypassing the client shim — it
++// proves the RETRO_DEVICE_POINTER read path end-to-end without any browser input. OFF by default, so no
++// debug coordinate ships in the live path (same env-diagnostic pattern as CLOUD_GAME_FRAME_DUMP_DIR).
++var (
++	pointerTestOn        bool
++	pointerTestX         int16
++	pointerTestY         int16
++)
++
++func init() {
++	if s := os.Getenv("CLOUD_GAME_POINTER_TEST"); s != "" {
++		var x, y int
++		if n, _ := fmt.Sscanf(s, "%d,%d", &x, &y); n == 2 {
++			pointerTestOn, pointerTestX, pointerTestY = true, int16(x), int16(y)
++		}
++	}
++}
 diff --git a/pkg/worker/caged/libretro/nanoarch/libretro_vulkan.h b/pkg/worker/caged/libretro/nanoarch/libretro_vulkan.h
 new file mode 100644
 index 0000000..dbd35c1
@@ -12347,7 +12630,7 @@ index 0000000..dbd35c1
 +
 +#endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.c b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
-index 669862d..793aa6c 100644
+index 669862d..4bc57d8 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.c
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
 @@ -10,11 +10,12 @@
@@ -12394,7 +12677,35 @@ index 669862d..793aa6c 100644
  // Input State Cache
  
  #define INPUT_MAX_PORTS 4
-@@ -124,6 +140,14 @@ bool bridge_retro_load_game(void *f, struct retro_game_info *gi) {
+@@ -41,6 +57,13 @@ typedef struct {
+     int16_t mouse_x;
+     int16_t mouse_y;
+     uint8_t mouse_buttons;
++    // ABSOLUTE pointer (RETRO_DEVICE_POINTER) — W10 stylus/touch. Full-framebuffer normalized coords
++    // (-0x7fff..0x7fff); the CORE (melonDS DS) maps these through the active screen layout to the DS
++    // touch panel itself, so the worker is layout-agnostic. Port-0 only (DS touch = player 1). Unlike
++    // mouse_x/y (relative delta, reset on read), these are absolute and PERSIST across reads.
++    int16_t pointer_x;
++    int16_t pointer_y;
++    uint8_t pointer_pressed;
+ } input_cache_t;
+ 
+ static input_cache_t input_cache = {0};
+@@ -74,6 +97,13 @@ void input_cache_set_mouse(int16_t dx, int16_t dy, uint8_t buttons) {
+     input_cache.mouse_buttons = buttons;
+ }
+ 
++// Absolute pointer update (W10). x/y are full-frame normalized (-0x7fff..0x7fff); pressed 0/1.
++void input_cache_set_pointer(int16_t x, int16_t y, uint8_t pressed) {
++    input_cache.pointer_x = x;
++    input_cache.pointer_y = y;
++    input_cache.pointer_pressed = pressed;
++}
++
+ void input_cache_clear(void) {
+     memset(&input_cache, 0, sizeof(input_cache));
+ }
+@@ -124,6 +154,14 @@ bool bridge_retro_load_game(void *f, struct retro_game_info *gi) {
      return ((bool (*)(struct retro_game_info *)) f)(gi);
  }
  
@@ -12409,9 +12720,16 @@ index 669862d..793aa6c 100644
  size_t bridge_retro_get_memory_size(void *f, unsigned id) {
      return ((size_t (*)(unsigned)) f)(id);
  }
-@@ -166,7 +190,12 @@ bool core_environment_cgo(unsigned cmd, void *data) {
-           return false;
-           break;
+@@ -162,11 +200,16 @@ bool core_environment_cgo(unsigned cmd, void *data) {
+ 
+     switch (cmd)
+     {
+-        case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
+-          return false;
+-          break;
++        // RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE is now answered in Go (coreEnvironment) as a ONE-SHOT
++        // "options changed" flag — stock's hardcoded `return false` here meant update-flag-gated cores
++        // (melonDS DS) never read their options (W10). Delegating lets Go own the flag next to n.options.
          case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
 -          return false;
 +          /* Answer, never refuse: bit0=video, bit1=audio — we always want both. ScummVM gates ALL
@@ -12423,7 +12741,7 @@ index 669862d..793aa6c 100644
            break;
          case RETRO_ENVIRONMENT_GET_CLEAR_ALL_THREAD_WAITS_CB:
            *(retro_environment_t *)data = clear_all_thread_waits_cb;
-@@ -206,6 +235,11 @@ int16_t core_input_state_cgo(unsigned port, unsigned device, unsigned index, uns
+@@ -206,6 +249,11 @@ int16_t core_input_state_cgo(unsigned port, unsigned device, unsigned index, uns
  
      switch (device) {
          case RETRO_DEVICE_JOYPAD:
@@ -12435,7 +12753,34 @@ index 669862d..793aa6c 100644
              return (int16_t)((input_cache.buttons[port] >> id) & 1);
  
          case RETRO_DEVICE_ANALOG:
-@@ -304,6 +338,29 @@ void deinit_video_cgo() {
+@@ -265,6 +313,26 @@ int16_t core_input_state_cgo(unsigned port, unsigned device, unsigned index, uns
+                     return (input_cache.mouse_buttons & 0x04) ? 1 : 0;
+             }
+             break;
++
++        case RETRO_DEVICE_POINTER: {
++            // W10 stylus/touch. ABSOLUTE, full-frame normalized (-0x7fff..0x7fff) — the core maps to the
++            // DS touch panel via the active layout. Single global (port-0) state; melonDS polls port 0.
++            // One-shot proof: log the first time the core reads POINTER while a press is active — proves
++            // the core polls RETRO_DEVICE_POINTER AND the value round-trips (env-injected or client-sent).
++            static int ptr_logged = 0;
++            if (!ptr_logged && input_cache.pointer_pressed) {
++                ptr_logged = 1;
++                core_log_cgo(RETRO_LOG_INFO, "[ptr] core read POINTER pressed: x=%d y=%d\n",
++                             input_cache.pointer_x, input_cache.pointer_y);
++            }
++            switch (id) {
++                case RETRO_DEVICE_ID_POINTER_X:       return input_cache.pointer_x;
++                case RETRO_DEVICE_ID_POINTER_Y:       return input_cache.pointer_y;
++                case RETRO_DEVICE_ID_POINTER_PRESSED: return input_cache.pointer_pressed ? 1 : 0;
++                case RETRO_DEVICE_ID_POINTER_COUNT:   return input_cache.pointer_pressed ? 1 : 0;
++            }
++            break;
++        }
+     }
+ 
+     return 0;
+@@ -304,6 +372,29 @@ void deinit_video_cgo() {
      deinitVideo();
  }
  
@@ -12465,7 +12810,7 @@ index 669862d..793aa6c 100644
  typedef struct {
     pthread_mutex_t m;
     pthread_cond_t cond;
-@@ -341,7 +398,10 @@ void *run_loop(void *unused) {
+@@ -341,7 +432,10 @@ void *run_loop(void *unused) {
          switch (call.type) {
              case CALL_SERIALIZE:
              case CALL_UNSERIALIZE:
@@ -12477,7 +12822,7 @@ index 669862d..793aa6c 100644
                break;
              default:
                  ((void (*)(void)) call.fn)();
-@@ -367,7 +427,20 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -367,7 +461,20 @@ void *same_thread_with_args(void *f, int type, ...) {
          mutex_init(&run_mutex);
          mutex_init(&done_mutex);
          mutex_lock(&done_mutex);
@@ -12499,7 +12844,7 @@ index 669862d..793aa6c 100644
          mutex_wait(&done_mutex);
          mutex_unlock(&done_mutex);
      }
-@@ -377,21 +450,17 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -377,21 +484,17 @@ void *same_thread_with_args(void *f, int type, ...) {
      call.type = type;
      call.fn = f;
  
@@ -12529,7 +12874,7 @@ index 669862d..793aa6c 100644
      }
      mutex_signal(&run_mutex);
      mutex_unlock(&run_mutex);
-@@ -400,10 +469,49 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -400,10 +503,49 @@ void *same_thread_with_args(void *f, int type, ...) {
      return call.result;
  }
  
@@ -12582,10 +12927,10 @@ index 669862d..793aa6c 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..223ef78 100644
+index 17f10fc..efc47e4 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-@@ -1,981 +1,1975 @@
+@@ -1,981 +1,2009 @@
 -package nanoarch
 -
 -import (
@@ -13609,6 +13954,7 @@ index 17f10fc..223ef78 100644
 +
 +	keyboard KeyboardState
 +	mouse    MouseState
++	pointer  PointerState // W10: absolute touch pointer (RETRO_DEVICE_POINTER), port-0 only
 +	retropad InputState
 +
 +	pendingDisk atomic.Int32 // patch 0005: queued disc index+1 (0 = none), applied on the emulator thread in Run
@@ -13623,6 +13969,14 @@ index 17f10fc..223ef78 100644
 +	// collapse / silently-ignored key" class — a key we PROVIDE but the core NEVER queries is dead
 +	// (misnamed / wrong prefix), so its value is inert. Reset per room in CoreLoad.
 +	optQueried    map[string]bool
++	// optUpdate (W10 melonDS DS fix): the one-shot RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE flag. Stock
++	// nanoarch hardcoded GET_VARIABLE_UPDATE -> false ALWAYS, so a core that reads its options only when
++	// the frontend SIGNALS an update (RetroArch sets updated=true once after options are set at load) —
++	// melonDS DS does exactly this — NEVER read a single option (all keys DEAD, values inert). RetroArch's
++	// contract: return true (supported) with *data = the "options changed since last query" flag, then
++	// clear it. So we set this true when options are loaded (CoreLoad) and return it ONCE, false after —
++	// harmless to unconditional-read cores (they re-read the same values once on frame 1). Core thread only.
++	optUpdate     bool
 +	options4rom   map[string]map[string]string
 +	fps4rom       map[string]float64
 +	// hid4rom is a per-ROM controller-port-device override (config.yaml hid4rom), same shape/
@@ -13906,9 +14260,11 @@ index 17f10fc..223ef78 100644
 +	n.keyboardCb = nil
 +	n.keyboard = KeyboardState{}
 +	n.mouse = MouseState{}
++	n.pointer = PointerState{} // W10: fresh per-room touch pointer
 +
 +	n.options = maps.Clone(meta.Options)
 +	n.optQueried = map[string]bool{} // D: fresh per-room option-read tracker
++	n.optUpdate = true               // W10: signal "options changed" ONCE so update-flag-gated cores (melonDS DS) read them
 +	n.options4rom = meta.Options4rom
 +	n.fps4rom = meta.Fps4rom
 +	n.hid4rom = meta.Hid4rom
@@ -14268,6 +14624,7 @@ index 17f10fc..223ef78 100644
 +		n.keyboard.SyncToCache()
 +	}
 +	n.mouse.SyncToCache()
++	n.pointer.SyncToCache()
 +}
 +
 +func (n *Nanoarch) Run() {
@@ -14329,7 +14686,20 @@ index 17f10fc..223ef78 100644
 +}
 +func (n *Nanoarch) SkipBootRestore() bool               { return n.hackSkipBootRestore }
 +func (n *Nanoarch) IsStopped() bool                     { return n.Stopped.Load() }
-+func (n *Nanoarch) InputRetropad(port int, data []byte) { n.retropad.SetInput(port, data) }
++func (n *Nanoarch) InputRetropad(port int, data []byte) {
++	// The "data" channel carries BOTH the RetroPad frame (10/14 bytes) AND — W10 — the touch pointer
++	// packet (fixed 8 bytes, magic tag). Length+tag discriminate them so the hot pad path is untouched.
++	// Pointer is PORT-0 ONLY: the DS touch panel is player 1's, and an input-only 2nd-pad session (its own
++	// connection at port>0) must never move the player's stylus. Defense-in-depth — the client shim also
++	// gates pointer sends to the primary, pointer-capable session.
++	if len(data) == PointerPacketLen && data[0] == PointerTag {
++		if port == 0 {
++			n.pointer.Set(data)
++		}
++		return
++	}
++	n.retropad.SetInput(port, data)
++}
 +
 +// RequestDisk queues a multi-disc swap to image index i; applied on the emulator thread in Run (patch 0005).
 +func (n *Nanoarch) RequestDisk(i int) {
@@ -14988,6 +15358,15 @@ index 17f10fc..223ef78 100644
 +			return true
 +		}
 +		return false
++	case C.RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
++		// One-shot: true once after options load (RetroArch semantics), false after. Update-flag-gated
++		// cores (melonDS DS) read their options only when this fires; stock's C hardcode of false left
++		// every such option DEAD/inert (W10). Harmless to unconditional-read cores (one extra re-read).
++		if data != nil {
++			*(*C.bool)(data) = C.bool(Nan0.optUpdate)
++		}
++		Nan0.optUpdate = false
++		return true
 +	case C.RETRO_ENVIRONMENT_GET_VARIABLE:
 +		if Nan0.options == nil {
 +			return false
@@ -47428,10 +47807,10 @@ index 2840a0e..c55a441 100644
  	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
  		var out api.Out
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..bbc31d5 100644
+index 6972cc7..42e3c0c 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,613 @@
+@@ -1,310 +1,619 @@
 -package worker
 -
 -import (
@@ -48187,8 +48566,14 @@ index 6972cc7..bbc31d5 100644
 +			})
 +
 +			w.log.Info().Msgf("Starting the game: %v", gameName)
-+			if err := app.Load(game, w.conf.Library.BasePath); err != nil {
-+				c.log.Error().Err(err).Msgf("couldn't load the game %v", game)
++			// Arm the wedge sentinel around the core load ONLY (app.Load is where a core
++			// crashes/hangs — the citra GL-load 0xC0000005). exit() runs on any return; if Load never
++			// returns (wedged), the sentinel trips at coreLoadDeadline, frees the port, and hard-exits.
++			w.sentinel.enter(phaseCoreLoad, coreLoadDeadline)
++			loadErr := app.Load(game, w.conf.Library.BasePath)
++			w.sentinel.exit()
++			if loadErr != nil {
++				c.log.Error().Err(loadErr).Msgf("couldn't load the game %v", game)
 +				r.Close()
 +				w.router.SetRoom(nil)
 +				return api.EmptyPacket
@@ -51627,19 +52012,136 @@ index 9ff9576..df798f8 100644
 +func NewGameSession(id string, s Session) *GameSession {
 +	return &GameSession{AppSession: AppSession{uid: SessionKey(id), Session: s}}
 +}
+diff --git a/pkg/worker/sentinel.go b/pkg/worker/sentinel.go
+new file mode 100644
+index 0000000..85249f5
+--- /dev/null
++++ b/pkg/worker/sentinel.go
+@@ -0,0 +1,110 @@
++package worker
++
++import (
++	"sync/atomic"
++	"time"
++
++	"github.com/giongto35/cloud-game/v3/pkg/logger"
++	xos "github.com/giongto35/cloud-game/v3/pkg/os"
++)
++
++type wedgePhase int32
++
++const (
++	phaseIdle wedgePhase = iota
++	phaseCoreLoad
++)
++
++func (p wedgePhase) String() string {
++	switch p {
++	case phaseCoreLoad:
++		return "core-load/room-start"
++	default:
++		return "idle"
++	}
++}
++
++// coreLoadDeadline bounds how long a room's core load / start may run before the sentinel concludes the
++// worker is wedged. Chosen well ABOVE every documented legit worst case so it can NEVER fire on a
++// slow-but-real path: the coordinator already bounds a StartGame call at GameStartTimeout = 60s, and the
++// slowest legit boot ever observed was the Wii SD-loader forced-cold at ~18s. 150s is 2.5x the
++// coordinator bound and ~8x the worst real boot; only a genuinely hung or crashed core stays in the load
++// phase that long. (Teardown is NOT given a second deadline here: room.Close already bounds itself at
++// closeGiveUp = 30s ending in its own HardExit, which now releases ports via the pkg/os hook.)
++const coreLoadDeadline = 150 * time.Second
++
++// wedgeSentinel self-destructs the worker if a known wedge-prone PHASE (core load / room start) runs
++// past its deadline. It is the in-process complement to the coordinator's worker health-check: the
++// sentinel is FAST self-cleanup at the source (the worker frees its own port + deregisters and exits the
++// instant it knows it is stuck), while the health-check is the BACKSTOP for the case the sentinel
++// goroutine is itself a casualty of the crash.
++//
++// Why this exists: a core that crashes/hangs during load (the citra GL-load 0xC0000005, 2026-07-23)
++// leaves the worker process wedged with NO stop requested and NO room-close underway — the two windows
++// the existing bounds (shutdown deadman fires only after a requested stop; room.Close bounds only
++// teardown) do NOT cover. The wedged husk keeps holding its router-forwarded UDP port, so a fresh worker
++// cannot rebind until a reboot. The sentinel closes that gap.
++//
++// SAFETY: the sentinel is armed ONLY around phase transitions (enter/exit bracket the synchronous
++// app.Load call, exit deferred so any return clears it) and is idle during a live session, so it can
++// never fire on gameplay. On trip it hard-exits; the pkg/os HardExit hook (SetBeforeHardExit, wired in
++// worker.New) releases the UDP mux + HTTP listener and deregisters from the coordinator FIRST, so the
++// freed port is rebindable immediately even if a kernel-stuck thread leaves this process a husk.
++type wedgeSentinel struct {
++	phase    atomic.Int32
++	since    atomic.Int64 // unix-nanos the current phase began
++	deadline atomic.Int64 // nanos allowed for the current phase
++	tripped  atomic.Bool
++	log      *logger.Logger
++}
++
++func newWedgeSentinel(log *logger.Logger) *wedgeSentinel {
++	return &wedgeSentinel{log: log}
++}
++
++// enter marks the start of a wedge-prone phase. ALWAYS pair with a deferred exit() so a normal or error
++// return clears the phase; only a genuine hang (the call never returns) leaves it set for the watcher.
++func (s *wedgeSentinel) enter(p wedgePhase, deadline time.Duration) {
++	if s == nil {
++		return
++	}
++	s.deadline.Store(int64(deadline))
++	s.since.Store(time.Now().UnixNano())
++	s.phase.Store(int32(p))
++}
++
++func (s *wedgeSentinel) exit() {
++	if s == nil {
++		return
++	}
++	s.phase.Store(int32(phaseIdle))
++}
++
++// run is the watcher loop; start it once in a goroutine at worker startup.
++func (s *wedgeSentinel) run() {
++	t := time.NewTicker(5 * time.Second)
++	defer t.Stop()
++	for range t.C {
++		p := wedgePhase(s.phase.Load())
++		if p == phaseIdle {
++			continue
++		}
++		elapsed := time.Duration(time.Now().UnixNano() - s.since.Load())
++		if elapsed < time.Duration(s.deadline.Load()) {
++			continue
++		}
++		s.trip(p, elapsed)
++		return
++	}
++}
++
++func (s *wedgeSentinel) trip(p wedgePhase, elapsed time.Duration) {
++	if !s.tripped.CompareAndSwap(false, true) {
++		return
++	}
++	// Log the wedge FIRST so the reason is captured regardless of what the exit path does next.
++	s.log.Error().Msgf("WEDGE SENTINEL TRIPPED: phase %q stuck %v (deadline %v exceeded) -- self-cleaning "+
++		"(HardExit hook releases UDP mux + HTTP listener + deregisters) then hard-exiting so a fresh worker "+
++		"rebinds this port immediately", p, elapsed.Round(time.Second), time.Duration(s.deadline.Load()))
++	xos.HardExit(74) // distinct code: sentinel-tripped wedge (70=teardown wedge, 72=shutdown deadman)
++}
 diff --git a/pkg/worker/worker.go b/pkg/worker/worker.go
-index 856cdfa..fd43f05 100644
+index 856cdfa..a67112c 100644
 --- a/pkg/worker/worker.go
 +++ b/pkg/worker/worker.go
-@@ -10,6 +10,7 @@ import (
+@@ -10,6 +10,8 @@ import (
  	"github.com/giongto35/cloud-game/v3/pkg/monitoring"
  	"github.com/giongto35/cloud-game/v3/pkg/network"
  	"github.com/giongto35/cloud-game/v3/pkg/network/httpx"
 +	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
++	xos "github.com/giongto35/cloud-game/v3/pkg/os"
  	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
  	"github.com/giongto35/cloud-game/v3/pkg/worker/cloud"
  	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
-@@ -17,6 +18,7 @@ import (
+@@ -17,6 +19,7 @@ import (
  
  type Worker struct {
  	address  string
@@ -51647,7 +52149,15 @@ index 856cdfa..fd43f05 100644
  	conf     config.WorkerConfig
  	cord     *coordinator
  	lib      games.GameLibrary
-@@ -36,6 +38,13 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+@@ -24,6 +27,7 @@ type Worker struct {
+ 	log      *logger.Logger
+ 	mana     *caged.Manager
+ 	router   *room.GameRouter
++	sentinel *wedgeSentinel
+ 	services [2]interface {
+ 		Run()
+ 		Stop() error
+@@ -36,6 +40,13 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
  	if err := manager.Load(caged.Libretro, conf); err != nil {
  		return nil, fmt.Errorf("couldn't cage libretro: %v", err)
  	}
@@ -51661,10 +52171,13 @@ index 856cdfa..fd43f05 100644
  
  	library := games.NewLib(conf.Library, conf.Emulator, log)
  	library.Scan()
-@@ -49,6 +58,18 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+@@ -47,7 +58,20 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+ 		log:      log,
+ 		mana:     manager,
  		router:   room.NewGameRouter(),
- 	}
- 
++		sentinel: newWedgeSentinel(log),
++	}
++
 +	// ONE WebRTC ApiFactory (and thus ONE single-port UDP mux) per process, created at boot (patch
 +	// 0034). It used to be created inside HandleRequests, i.e. once per COORDINATOR CONNECTION: a
 +	// coordinator reconnect then bound a second mux while the first stayed open, the strict/rolling
@@ -51674,9 +52187,41 @@ index 856cdfa..fd43f05 100644
 +	apiFactory, err := webrtc.NewApiFactory(conf.Webrtc, log, nil)
 +	if err != nil {
 +		return nil, fmt.Errorf("webrtc api init fail: %w", err)
-+	}
+ 	}
 +	worker.api = apiFactory
-+
+ 
  	h, err := httpx.NewServer(
  		conf.Worker.GetAddr(),
- 		func(s *httpx.Server) httpx.Handler {
+@@ -77,12 +101,32 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+ 	}
+ 	worker.storage = st
+ 
++	// Husk-safe hard exit: on ANY HardExit (wedge sentinel, room-teardown bound, shutdown deadman) free
++	// the router-forwarded UDP port + HTTP listener FIRST, then deregister from the coordinator — so a
++	// fresh worker can rebind the port immediately even if a kernel-stuck thread leaves this one a husk.
++	// All fast, non-blocking (Server.Close, mux Close, WS disconnect); the coordinator connection is read
++	// dynamically because it is (re)created in Start after a reconnect.
++	xos.SetBeforeHardExit(func() {
++		if worker.api != nil {
++			_ = worker.api.Close()
++		}
++		if worker.services[0] != nil {
++			_ = worker.services[0].Stop()
++		}
++		if worker.cord != nil {
++			worker.cord.Disconnect()
++		}
++	})
++
+ 	return worker, nil
+ }
+ 
+ func (w *Worker) Reset() { w.router.Reset() }
+ 
+ func (w *Worker) Start(done chan struct{}) {
++	// Watch for a wedged core-load phase and self-destruct (freeing the port) if one hangs — see sentinel.go.
++	go w.sentinel.run()
++
+ 	for _, s := range w.services {
+ 		if s != nil {
+ 			s.Run()

@@ -436,6 +436,32 @@ function encodeInput(mask, axes) {
   return frame;
 }
 
+// Systems whose core consumes RETRO_DEVICE_POINTER (touch/stylus). The core maps a full-frame
+// normalized pointer through its screen layout to the touch panel itself (melonDS DS), so the client
+// stays layout-agnostic — it only delivers where in the video frame the pointer is. Extensible.
+// 3ds joins unchanged (2026-07-24): citra's MouseTracker does the same full-frame->layout transform
+// melonDS does (normalized pointer -> frame pixels -> clamped into the bottomScreen rect), so nothing
+// client-side is 3DS-specific. Needs citra_touch_touchscreen:"enabled" in config.worker-gl.yaml —
+// without it citra ignores POINTER_PRESSED and taps never register.
+const POINTER_SYSTEMS = new Set(["nds", "3ds"]);
+export function systemUsesPointer(system) { return POINTER_SYSTEMS.has(String(system || "").toLowerCase()); }
+
+// Pointer wire packet (W10 stylus/touch) — rides the SAME "data" channel as the pad frame, length+tag
+// discriminated (pad = 10-byte Int16Array; this = fixed 8 bytes, magic tag 0xF0). x/y are FULL-FRAME
+// normalized (-32767..32767), LITTLE-ENDIAN to match the pad channel. Matches the worker's PointerState.
+//   [tag:1=0xF0][ver:1=1][x:i16 LE][y:i16 LE][pressed:1][flags:1]
+export function encodePointer(x, y, pressed) {
+  const buf = new ArrayBuffer(8);
+  const dv = new DataView(buf);
+  dv.setUint8(0, 0xf0);
+  dv.setUint8(1, 0x01);
+  dv.setInt16(2, x, true);
+  dv.setInt16(4, y, true);
+  dv.setUint8(6, pressed ? 1 : 0);
+  dv.setUint8(7, 0);
+  return buf;
+}
+
 // Gamepad float (-1..1) → int16, with a small deadzone so idle stick drift doesn't spam frames.
 function axisToInt16(v) {
   if (!v || Math.abs(v) < 0.08) return 0;
@@ -1139,6 +1165,7 @@ export function createCloudRetroSession(descriptor, opts) {
     closed = true;
     status("closed");
     stopInput();
+    detachPointer();
     if (pinnedPad >= 0) claimedPadIndexes.delete(pinnedPad);
     try { send(T.GAME_QUIT, { room_id: roomIdFromWsUrl(descriptor.wsUrl) }); } catch { /* */ }
     try { dc && dc.close(); } catch { /* */ }
@@ -1148,6 +1175,110 @@ export function createCloudRetroSession(descriptor, opts) {
     try { ws && ws.close(); } catch { /* */ }
     if (videoEl) videoEl.srcObject = null;
   }
+
+  // ── Touch pointer (W10 stylus/touch) ───────────────────────────────────────────────────────────
+  // PRIMARY session only, pointer-capable systems only (nds). Seat-claim = NO: this is an extra input
+  // MODALITY on the session that already owns seat 0 + the video, not a new seat — so it never runs the
+  // pad-autobind/claim path. Input-only 2nd-pad sessions and spectators never attach (and the worker
+  // ignores port>0 pointer anyway — defense in depth). The player's OS mouse cursor is the aim
+  // indicator, so we stream moves only while PRESSED (a drag) plus immediate down/up edges — no hover
+  // flood on the channel that also carries pad input. Rides the primary's own `dc`.
+  const pointerEnabled = !spectator && !inputOnly && !!videoEl && systemUsesPointer(descriptor.system);
+  let ptrPressed = false;
+  let ptrLastSent = null; // {x,y,pressed} — dedupe identical packets
+  let ptrPending = null;  // coord awaiting the rAF flush (drag coalescing)
+  let ptrRaf = 0;
+  let ptrCaptureId = null;
+
+  function ptrMap(ev) {
+    const rect = videoEl.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return null;
+    // objectFit:fill maps the FULL video frame linearly onto the element rect, so a fraction across the
+    // rect IS the same fraction across the frame — independent of the box's aspect. getBoundingClientRect
+    // is post-CSS-transform, so for an axis-aligned (un-rotated) video this needs no further correction.
+    let fx = (ev.clientX - rect.left) / rect.width;
+    let fy = (ev.clientY - rect.top) / rect.height;
+    fx = Math.max(0, Math.min(1, fx));
+    fy = Math.max(0, Math.min(1, fy));
+    // Undo the room's videoTransform: scaleY(-1) flips Y. For nds (software core) there is no flip/rotate
+    // (lastAv is null — no `av` payload), so this is identity. Defensive for a future pointer-capable GL
+    // core; no current pointer system rotates, so rotation is intentionally not undone here.
+    if (lastAv && lastAv.flip) fy = 1 - fy;
+    const x = Math.max(-32767, Math.min(32767, Math.round((fx * 2 - 1) * 32767)));
+    const y = Math.max(-32767, Math.min(32767, Math.round((fy * 2 - 1) * 32767)));
+    return { x, y };
+  }
+  function ptrSend(x, y, pressed) {
+    if (!dc || dc.readyState !== "open") return;
+    if (ptrLastSent && ptrLastSent.x === x && ptrLastSent.y === y && ptrLastSent.pressed === pressed) return;
+    ptrLastSent = { x, y, pressed };
+    try { dc.send(encodePointer(x, y, pressed)); } catch { /* channel closing */ }
+  }
+  function ptrFlush() {
+    ptrRaf = 0;
+    if (ptrPending && ptrPressed) ptrSend(ptrPending.x, ptrPending.y, 1);
+    ptrPending = null;
+  }
+  function onPtrDown(ev) {
+    if (ev.pointerType === "mouse" && ev.button !== 0) return; // left button drives the stylus
+    const p = ptrMap(ev);
+    if (!p) return;
+    ptrPressed = true;
+    ptrCaptureId = ev.pointerId;
+    // Capture keeps move/up flowing even when the cursor leaves the video mid-drag, so a release OUTSIDE
+    // the element still fires onPtrUp (the "pointer left mid-press" case) — the touch never sticks.
+    try { videoEl.setPointerCapture(ev.pointerId); } catch { /* unsupported */ }
+    ptrPending = null;
+    ptrSend(p.x, p.y, 1); // immediate down edge
+    ev.preventDefault();
+  }
+  function onPtrMove(ev) {
+    if (!ptrPressed) return; // OS cursor handles hover; only a drag is streamed
+    const p = ptrMap(ev);
+    if (!p) return;
+    ptrPending = p; // coalesce to at most one send per animation frame
+    if (!ptrRaf && typeof requestAnimationFrame === "function") ptrRaf = requestAnimationFrame(ptrFlush);
+    ev.preventDefault();
+  }
+  function onPtrUp(ev) {
+    if (!ptrPressed) return;
+    const p = ptrMap(ev) || ptrLastSent;
+    ptrPressed = false;
+    if (ptrRaf && typeof cancelAnimationFrame === "function") { cancelAnimationFrame(ptrRaf); }
+    ptrRaf = 0;
+    ptrPending = null;
+    if (p) ptrSend(p.x, p.y, 0); // immediate up edge — release the touch
+    try { if (ptrCaptureId != null) videoEl.releasePointerCapture(ptrCaptureId); } catch { /* */ }
+    ptrCaptureId = null;
+  }
+  function onPtrCancel() {
+    if (!ptrPressed && !ptrPending) return; // never leave a touch stuck pressed
+    ptrPressed = false;
+    if (ptrRaf && typeof cancelAnimationFrame === "function") { cancelAnimationFrame(ptrRaf); }
+    ptrRaf = 0;
+    ptrPending = null;
+    if (ptrLastSent) ptrSend(ptrLastSent.x, ptrLastSent.y, 0);
+    try { if (ptrCaptureId != null) videoEl.releasePointerCapture(ptrCaptureId); } catch { /* */ }
+    ptrCaptureId = null;
+  }
+  function attachPointer() {
+    if (!pointerEnabled) return;
+    videoEl.addEventListener("pointerdown", onPtrDown);
+    videoEl.addEventListener("pointermove", onPtrMove);
+    videoEl.addEventListener("pointerup", onPtrUp);
+    videoEl.addEventListener("pointercancel", onPtrCancel);
+    // Touch devices: stop the browser turning a stylus drag into a scroll/zoom on the video surface.
+    try { videoEl.style.touchAction = "none"; } catch { /* */ }
+  }
+  function detachPointer() {
+    if (!pointerEnabled) return;
+    videoEl.removeEventListener("pointerdown", onPtrDown);
+    videoEl.removeEventListener("pointermove", onPtrMove);
+    videoEl.removeEventListener("pointerup", onPtrUp);
+    videoEl.removeEventListener("pointercancel", onPtrCancel);
+    if (ptrRaf && typeof cancelAnimationFrame === "function") { cancelAnimationFrame(ptrRaf); ptrRaf = 0; }
+  }
+  attachPointer();
 
   connect();
 

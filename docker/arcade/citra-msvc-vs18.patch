@@ -1,0 +1,482 @@
+# MovieTheater citra_custom_libretro patches (VS18/MSVC 14.51 on Ziggy, 2026-07-24).
+# Apply to a fresh recursive clone of github.com/libretro/citra, then run citra-build-core.bat.
+# TWO scopes: the main repo (src/...) AND the cryptopp submodule (externals/cryptopp).
+#
+# THE LOAD-BEARING ONE is src/CMakeLists.txt's /vmg plus the non-constexpr FunctionInfo in
+# src/core/hle/service/service.h: without BOTH, MSVC miscompiles every HLE service handler table
+# and games boot to a black screen with a 3DS fatal error. See citra-build-core.bat for the story.
+# =============================== MAIN REPO (src/) ===============================
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index f1cceb1..6507270 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -51,6 +51,17 @@ if (MSVC)
+         /Zc:throwingNew
+         /GT
+ 
++        # MovieTheater: /vmg is LOAD-BEARING on MSVC, not a tuning knob. ServiceFramework<Self>::
++        # RegisterHandlers hands a `const FunctionInfo*` (holding a HandlerFnP<Self>) to
++        # RegisterHandlersBase(const FunctionInfoBase*), which walks it with FunctionInfoBase stride.
++        # MSVC sizes a pointer-to-member by the class's inheritance model, so HandlerFnP<SRV> is wider
++        # than HandlerFnP<ServiceFrameworkBase>, the layouts disagree, and the walk reads garbage
++        # command ids -- srv: registered 14 handlers and the flat_map ended up holding 7 junk keys
++        # (0x0000..0x0004, 0x7ffe, 0x9a54cef8), so GetServiceHandle (0x0005) missed and the guest
++        # fatal-errored on APT:U with a black screen. Every HLE service is affected, not just srv:.
++        # GCC (the libretro buildbot) has one fixed member-pointer size, which is why upstream is fine.
++        /vmg
++
+         # Some flags for more deterministic builds, to aid caching.
+         /experimental:deterministic
+         /d1trimfile:"${CMAKE_SOURCE_DIR}"
+@@ -63,23 +74,26 @@ if (MSVC)
+         # Warnings
+         /W3
+ 
+-        /we4062 # Enumerator 'identifier' in a switch of enum 'enumeration' is not handled
+-        /we4189 # 'identifier': local variable is initialized but not referenced
+-        /we4265 # 'class': class has virtual functions, but destructor is not virtual
+-        /we4388 # 'expression': signed/unsigned mismatch
+-        /we4389 # 'operator': signed/unsigned mismatch
+-        /we4456 # Declaration of 'identifier' hides previous local declaration
+-        /we4457 # Declaration of 'identifier' hides function parameter
+-        # /we4458 TODO: Enable me # Declaration of 'identifier' hides class member
+-        /we4459 # Declaration of 'identifier' hides global declaration
+-        /we4505 # 'function': unreferenced local function has been removed
+-        /we4547 # 'operator': operator before comma has no effect; expected operator with side-effect
+-        /we4549 # 'operator1': operator before comma has no effect; did you intend 'operator2'?
+-        /we4555 # Expression has no effect; expected expression with side-effect
+-        /we4826 # Conversion from 'type1' to 'type2' is sign-extended. This may cause unexpected runtime behavior.
+-        /we5038 # data member 'member1' will be initialized after data member 'member2'
+-        /we5233 # explicit lambda capture 'identifier' is not used
+-        /we5245 # 'function': unreferenced function with internal linkage has been removed
++        # MovieTheater: these were /we (warning-AS-ERROR) but VS18/MSVC 14.51 flags things the
++        # GCC-11 buildbot / older MSVC did not (signed/unsigned, shadowing, unref vars) across citra's
++        # own code, which is not warning-clean on this future compiler. Demoted to /wd (disable) so the
++        # custom core BUILDS; these are code-quality lints, not correctness for our use.
++        /wd4062 # Enumerator 'identifier' in a switch of enum 'enumeration' is not handled
++        /wd4189 # 'identifier': local variable is initialized but not referenced
++        /wd4265 # 'class': class has virtual functions, but destructor is not virtual
++        /wd4388 # 'expression': signed/unsigned mismatch
++        /wd4389 # 'operator': signed/unsigned mismatch
++        /wd4456 # Declaration of 'identifier' hides previous local declaration
++        /wd4457 # Declaration of 'identifier' hides function parameter
++        /wd4459 # Declaration of 'identifier' hides global declaration
++        /wd4505 # 'function': unreferenced local function has been removed
++        /wd4547 # 'operator': operator before comma has no effect; expected operator with side-effect
++        /wd4549 # 'operator1': operator before comma has no effect; did you intend 'operator2'?
++        /wd4555 # Expression has no effect; expected expression with side-effect
++        /wd4826 # Conversion from 'type1' to 'type2' is sign-extended. This may cause unexpected runtime behavior.
++        /wd5038 # data member 'member1' will be initialized after data member 'member2'
++        /wd5233 # explicit lambda capture 'identifier' is not used
++        /wd5245 # 'function': unreferenced function with internal linkage has been removed
+ 
+         /wd4100 # 'identifier': unreferenced formal parameter
+         /wd4324 # 'struct_name': structure was padded due to __declspec(align())
+diff --git a/src/audio_core/libretro_sink.h b/src/audio_core/libretro_sink.h
+index 27454ea..e9eeeef 100644
+--- a/src/audio_core/libretro_sink.h
++++ b/src/audio_core/libretro_sink.h
+@@ -6,6 +6,8 @@
+ 
+ #include <cstddef>
+ #include <memory>
++#include <string>
++#include <vector>
+ #include "audio_core/sink.h"
+ #include "libretro.h"
+ 
+diff --git a/src/citra_libretro/citra_libretro.cpp b/src/citra_libretro/citra_libretro.cpp
+index d9bd3ff..6c00ae6 100644
+--- a/src/citra_libretro/citra_libretro.cpp
++++ b/src/citra_libretro/citra_libretro.cpp
+@@ -129,7 +129,7 @@ void LibRetro::OnConfigureEnvironment() {
+     }
+ 
+     retro_variable values[] = {
+-        //{"citra_graphics_api", "Graphics API; Auto|Vulkan|OpenGL"},
++        {"citra_graphics_api", "Graphics API (restart); Auto|Vulkan|OpenGL"},
+         {"citra_use_cpu_jit", "Enable CPU JIT; enabled|disabled"},
+         {"citra_cpu_scale", cpuScale.c_str()},
+         {"citra_use_shader_jit", "Enable shader JIT; enabled|disabled"},
+@@ -252,7 +252,7 @@ void UpdateSettings() {
+         Settings::values.cpu_clock_percentage = scale;
+     }
+ 
+-    auto graphicsApi = std::string("OpenGL");//LibRetro::FetchVariable("citra_graphics_api", "Auto");
++    auto graphicsApi = LibRetro::FetchVariable("citra_graphics_api", "Auto");
+     if (graphicsApi == "Auto") {
+         Settings::values.graphics_api = LibRetro::GetPrefferedHWRenderer();
+     } else if (graphicsApi == "Vulkan") {
+@@ -487,7 +487,12 @@ void UpdateSettings() {
+  */
+ void retro_run() {
+     // Check to see if we actually have any config updates to process.
+-    if (LibRetro::HasUpdatedConfig()) {
++    // MovieTheater TEMP DIAGNOSTIC: CITRA_MT_NO_LIVE_OPTS=1 suppresses the mid-run re-read.
++    // Our frontend sets GET_VARIABLE_UPDATE true once shortly after load (the one-shot optUpdate flag
++    // added for melonDS), which makes UpdateSettings — and with it SetUserPath — re-run ~1.2 s into
++    // the guest boot, 170 ms before a fresh guest process fails to get APT:U and ERR:f throws.
++    static const bool mt_no_live_opts = std::getenv("CITRA_MT_NO_LIVE_OPTS") != nullptr;
++    if (!mt_no_live_opts && LibRetro::HasUpdatedConfig()) {
+         UpdateSettings();
+     }
+ 
+@@ -636,6 +641,13 @@ static bool vk_create_device(
+     VULKAN_HPP_DEFAULT_DISPATCHER.init(get_instance_proc_addr);
+     VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
+ 
++    // MovieTheater: the v1 create_device contract obliges us to enable every extension the frontend
++    // asks for. Stock citra dropped these on the floor, so a frontend capturing via exported memory
++    // (VK_KHR_external_memory_win32 / external_semaphore_win32) got a device that cannot export —
++    // vkGetMemoryWin32HandleKHR resolved NULL and the room produced no video. Must run BEFORE the
++    // RendererVulkan ctor, which is what builds the device.
++    Vulkan::SetExtraDeviceExtensions(required_device_extensions, num_required_device_extensions);
++
+     VideoCore::g_renderer = std::make_unique<Vulkan::RendererVulkan>(
+         Core::System::GetInstance(),
+         *emu_instance->emu_window,
+@@ -697,8 +709,14 @@ bool retro_load_game(const struct retro_game_info* info) {
+             emu_instance->hw_render.version_major = 3;
+             emu_instance->hw_render.version_minor = 2;
+ #else
++            // MovieTheater: stock asked libretro for a 3.3 CORE context, but citra's own GL driver
++            // requires 4.3 (gl_driver.cpp: is_suitable = GLAD_GL_VERSION_4_3 || GLAD_GL_ES_VERSION_3_1)
++            // and NOTHING ever checks IsSuitable(). On a frontend that honours the requested version
++            // literally — ours does, via WGL_ARB_create_context — glad leaves every 4.x entry point
++            // NULL and the first one citra calls after GL init access-violates at rip=0x0. Ask for the
++            // version the renderer actually needs.
+             emu_instance->hw_render.context_type = RETRO_HW_CONTEXT_OPENGL_CORE;
+-            emu_instance->hw_render.version_major = 3;
++            emu_instance->hw_render.version_major = 4;
+             emu_instance->hw_render.version_minor = 3;
+ #endif
+         }
+diff --git a/src/citra_libretro/environment.cpp b/src/citra_libretro/environment.cpp
+index d431e95..82b0fbb 100644
+--- a/src/citra_libretro/environment.cpp
++++ b/src/citra_libretro/environment.cpp
+@@ -211,7 +211,22 @@ void retro_get_system_av_info(struct retro_system_av_info* info) {
+     info->timing.sample_rate = AudioCore::native_sample_rate;
+     info->geometry.base_width = 400;
+     info->geometry.base_height = 480;
+-    info->geometry.max_width = 400 * 10;
+-    info->geometry.max_height = 480 * 10;
+-    info->geometry.aspect_ratio = 0;
++    // MovieTheater: stock reported max = base * 10 (the highest citra_resolution_factor), but citra
++    // only ever renders at the CURRENT factor — we run 1x. The frontend sizes its synthetic
++    // VkSurfaceKHR from max geometry, citra sizes its swapchain images from that surface, and the
++    // frontend then reads back only base_width x base_height (video_cb geometry, the libretro
++    // contract — there is no extent side-channel in interface v5). With max = 10x that meant
++    // capturing the top-left 1% of a 4000x4800 image: a static black margin, i.e. a perfectly
++    // constant BLACK stream while every flow counter looked healthy.
++    // ⚠ COUPLED: if citra_resolution_factor is ever raised above 1, raise these to match, or the
++    // capture crops again.
++    info->geometry.max_width = 400;
++    info->geometry.max_height = 480;
++    // MovieTheater: stock reported 0 ("frontend, work it out"). Our client honours the core's
++    // declared aspect (coreAspectRatio: true) and falls back to 4:3 when it is 0, which stretched
++    // the stacked 3DS screens ~1.6x horizontally (displayed 1.332 instead of 0.833). The default
++    // layout is the 400x240 top screen above the 320x240 bottom screen in a 400x480 frame, so the
++    // correct display aspect is simply base_width/base_height.
++    info->geometry.aspect_ratio = static_cast<float>(info->geometry.base_width) /
++                                  static_cast<float>(info->geometry.base_height);
+ }
+diff --git a/src/core/hle/service/service.cpp b/src/core/hle/service/service.cpp
+index 1e4c071..c258ed8 100644
+--- a/src/core/hle/service/service.cpp
++++ b/src/core/hle/service/service.cpp
+@@ -141,11 +141,23 @@ void ServiceFrameworkBase::InstallAsNamedPort(Kernel::KernelSystem& kernel) {
+ }
+ 
+ void ServiceFrameworkBase::RegisterHandlersBase(const FunctionInfoBase* functions, std::size_t n) {
+-    handlers.reserve(handlers.size() + n);
++    const std::size_t before = handlers.size();
++    handlers.reserve(before + n);
+     for (std::size_t i = 0; i < n; ++i) {
+         // Usually this array is sorted by id already, so hint to insert at the end
+         handlers.emplace_hint(handlers.cend(), functions[i].command_id, functions[i]);
+     }
++    // MovieTheater guard: this table is the entire HLE dispatch surface, and MSVC has silently
++    // dropped entries here before (constexpr FunctionInfo + a null handler miscompiled; see
++    // service.h). A handler count that does not match the table means services are half-registered
++    // and the guest WILL fatal-error on boot with a black screen — say so loudly once, at startup,
++    // instead of leaving it to be rediscovered from a 3DS error code.
++    if (handlers.size() != before + n) {
++        LOG_CRITICAL(Service,
++                     "{}: registered {} of {} handlers (duplicate/garbage command ids) — the "
++                     "handler table was miscompiled; HLE dispatch is broken for this service.",
++                     service_name, handlers.size() - before, n);
++    }
+ }
+ 
+ void ServiceFrameworkBase::ReportUnimplementedFunction(u32* cmd_buf, const FunctionInfoBase* info) {
+diff --git a/src/core/hle/service/service.h b/src/core/hle/service/service.h
+index 0b4b3ec..914e0bd 100644
+--- a/src/core/hle/service/service.h
++++ b/src/core/hle/service/service.h
+@@ -131,7 +131,19 @@ protected:
+          *     the request
+          * @param name human-friendly name for the request. Used mostly for logging purposes.
+          */
++        // MovieTheater: NOT constexpr on MSVC. Constant-initialising this array miscompiles as soon
++        // as an entry has a null handler: cl emits the first few elements correctly and then zeros
++        // the rest (srv:'s 14-entry table read back as
++        // [0x0001 0x0002 0x0003 0x0004 0x0000 x9 0xffffffff], so GetServiceHandle(0x0005) vanished
++        // and the guest fatal-errored on APT:U -> black screen). Every service table here contains
++        // nullptr entries, so this silently broke the whole HLE service layer. Forcing dynamic
++        // initialisation makes cl emit real stores. GCC/clang are unaffected; keep constexpr there
++        // so upstream behaviour and any constant-folding they do is preserved.
++#ifdef _MSC_VER
++        FunctionInfo(u32 command_id, HandlerFnP<Self> handler_callback, const char* name)
++#else
+         constexpr FunctionInfo(u32 command_id, HandlerFnP<Self> handler_callback, const char* name)
++#endif
+             : FunctionInfoBase{
+                   command_id,
+                   // Type-erase member function pointer by casting it down to the base class.
+@@ -157,6 +169,13 @@ protected:
+      * overload in order to avoid needing to specify the array size.
+      */
+     void RegisterHandlers(const FunctionInfo* functions, std::size_t n) {
++        // MovieTheater: RegisterHandlersBase walks this array with FunctionInfoBase stride, so the
++        // derived type MUST have identical layout or every command id it reads is garbage.
++        static_assert(sizeof(FunctionInfo) == sizeof(FunctionInfoBase),
++                      "FunctionInfo/FunctionInfoBase layout mismatch: RegisterHandlersBase would "
++                      "walk the handler table with the wrong stride (MSVC member-pointer size).");
++        static_assert(alignof(FunctionInfo) == alignof(FunctionInfoBase),
++                      "FunctionInfo/FunctionInfoBase alignment mismatch.");
+         RegisterHandlersBase(functions, n);
+     }
+ 
+diff --git a/src/video_core/renderer_vulkan/renderer_vulkan.cpp b/src/video_core/renderer_vulkan/renderer_vulkan.cpp
+index bef7ebe..6584070 100644
+--- a/src/video_core/renderer_vulkan/renderer_vulkan.cpp
++++ b/src/video_core/renderer_vulkan/renderer_vulkan.cpp
+@@ -2,6 +2,7 @@
+ // Licensed under GPLv2 or any later version
+ // Refer to the license.txt file included.
+ 
++#include <cstdlib>
+ #include "common/assert.h"
+ #include "common/logging/log.h"
+ #include "common/memory_detect.h"
+@@ -200,7 +201,12 @@ void RendererVulkan::PrepareDraw(Frame* frame, const Layout::FramebufferLayout&
+         cmdbuf.setViewport(0, viewport);
+         cmdbuf.setScissor(0, scissor);
+ 
+-        const vk::ClearValue clear{.color = clear_color};
++        // MovieTheater TEMP DIAGNOSTIC: CITRA_MT_GREEN_CLEAR=1 makes the present renderpass clear to
++        // green. Green on the client => the renderpass DOES run and the frame image is reachable, so
++        // the screen quads are what draw nothing (empty/unsampled screen textures).
++        static const bool mt_green = std::getenv("CITRA_MT_GREEN_CLEAR") != nullptr;
++        const vk::ClearColorValue mt_green_color{std::array<float, 4>{0.0f, 1.0f, 0.0f, 1.0f}};
++        const vk::ClearValue clear{.color = mt_green ? mt_green_color : clear_color};
+         const vk::PipelineLayout layout{*present_pipeline_layout};
+         const vk::RenderPassBeginInfo renderpass_begin_info = {
+             .renderPass = renderpass,
+@@ -258,7 +264,13 @@ void RendererVulkan::LoadFBToScreenInfo(const GPU::Regs::FramebufferConfig& fram
+     ASSERT(pixel_stride * bpp == framebuffer.stride);
+     ASSERT(pixel_stride % 4 == 0);
+ 
+-    if (!rasterizer->AccelerateDisplay(framebuffer, framebuffer_addr, static_cast<u32>(pixel_stride),
++    // MovieTheater TEMP DIAGNOSTIC: CITRA_MT_NO_ACCEL_DISPLAY=1 skips the accelerated path so the
++    // screen texture is filled by the CPU upload from emulated VRAM instead of aliasing a rasterizer
++    // surface. Game visible under this => the accelerated-display surface handoff (view/layout) is
++    // the black-screen bug; still black => the emulated framebuffer itself is empty.
++    static const bool mt_no_accel = std::getenv("CITRA_MT_NO_ACCEL_DISPLAY") != nullptr;
++    if (mt_no_accel ||
++        !rasterizer->AccelerateDisplay(framebuffer, framebuffer_addr, static_cast<u32>(pixel_stride),
+                                       screen_info)) {
+         // Reset the screen info's display texture to its own permanent texture
+         screen_info.image_view = screen_info.texture.image_view;
+diff --git a/src/video_core/renderer_vulkan/vk_instance.cpp b/src/video_core/renderer_vulkan/vk_instance.cpp
+index a38a04b..e93bfd2 100644
+--- a/src/video_core/renderer_vulkan/vk_instance.cpp
++++ b/src/video_core/renderer_vulkan/vk_instance.cpp
+@@ -2,7 +2,10 @@
+ // Licensed under GPLv2 or any later version
+ // Refer to the license.txt file included.
+ 
++#include <algorithm>
+ #include <span>
++#include <string>
++#include <vector>
+ #include <boost/container/static_vector.hpp>
+ 
+ #include "common/assert.h"
+@@ -23,6 +26,12 @@ namespace Vulkan {
+ 
+ namespace {
+ 
++/// MovieTheater: names handed to us by the libretro frontend's required_device_extensions.
++/// std::string (not const char*) because the frontend's array is only valid for the duration of
++/// the create_device call, while CreateDevice() reads these later; the strings are also what keep
++/// the pointers pushed into enabled_extensions alive until vkCreateDevice consumes them.
++std::vector<std::string> g_extra_device_extensions;
++
+ vk::Format MakeFormat(VideoCore::PixelFormat format) {
+     switch (format) {
+     case VideoCore::PixelFormat::RGBA8:
+@@ -135,6 +144,15 @@ std::string GetReadableVersion(u32 version) {
+ 
+ } // Anonymous namespace
+ 
++void SetExtraDeviceExtensions(const char* const* names, unsigned count) {
++    g_extra_device_extensions.clear();
++    for (unsigned i = 0; i < count; i++) {
++        if (names && names[i]) {
++            g_extra_device_extensions.emplace_back(names[i]);
++        }
++    }
++}
++
+ Instance::Instance(Core::TelemetrySession& telemetry, VkInstance vk_instance_, VkPhysicalDevice gpu)
+     : instance{vk_instance_}, physical_device{gpu},
+       properties{physical_device.getProperties()},
+@@ -435,7 +453,10 @@ bool Instance::CreateDevice() {
+         return false;
+     }
+ 
+-    boost::container::static_vector<const char*, 13> enabled_extensions;
++    // MovieTheater: capacity was exactly 13 for the 13 add_extension calls below — leave headroom
++    // for the frontend's required_device_extensions appended after them (overflowing a
++    // static_vector is UB, not a reallocation).
++    boost::container::static_vector<const char*, 24> enabled_extensions;
+     const auto add_extension = [&](std::string_view extension, bool blacklist = false,
+                                    std::string_view reason = "") -> bool {
+         const auto result =
+@@ -488,6 +509,23 @@ bool Instance::CreateDevice() {
+         add_extension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME, is_moltenvk,
+                       "the PerVertexKHR attribute is not supported by MoltenVK");
+ 
++    // MovieTheater: honor the libretro frontend's required_device_extensions (v1 create_device
++    // contract). Appended LAST so a name we already enabled is not duplicated (vkCreateDevice
++    // rejects a duplicate name with VK_ERROR_EXTENSION_NOT_PRESENT on some drivers), and skipped
++    // when the physical device does not advertise it — add_extension already logs that case and
++    // the frontend degrades to its readback path rather than failing the room.
++    for (const std::string& name : g_extra_device_extensions) {
++        const bool already_enabled =
++            std::find_if(enabled_extensions.begin(), enabled_extensions.end(),
++                         [&](const char* enabled) { return name == enabled; }) !=
++            enabled_extensions.end();
++        if (already_enabled) {
++            continue;
++        }
++        LOG_INFO(Render_Vulkan, "Frontend-required extension: {}", name);
++        add_extension(name);
++    }
++
+     const auto family_properties = physical_device.getQueueFamilyProperties();
+     if (family_properties.empty()) {
+         LOG_CRITICAL(Render_Vulkan, "Physical device reported no queues.");
+diff --git a/src/video_core/renderer_vulkan/vk_instance.h b/src/video_core/renderer_vulkan/vk_instance.h
+index 0d5559c..e54dd04 100644
+--- a/src/video_core/renderer_vulkan/vk_instance.h
++++ b/src/video_core/renderer_vulkan/vk_instance.h
+@@ -26,6 +26,14 @@ VK_DEFINE_HANDLE(VmaAllocator)
+ 
+ namespace Vulkan {
+ 
++/// MovieTheater: extra device extensions the libretro frontend REQUIRES of the device we create.
++/// The libretro v1 create_device contract (libretro_vulkan.h) obliges the core to enable every name
++/// in required_device_extensions; stock citra silently drops them, so a frontend doing exported-
++/// memory zero-copy capture finds vkGetMemoryWin32HandleKHR/vkGetSemaphoreWin32HandleKHR unresolved
++/// and the room produces no video. Call this BEFORE constructing Instance; CreateDevice() appends
++/// whatever the physical device actually supports.
++void SetExtraDeviceExtensions(const char* const* names, unsigned count);
++
+ struct FormatTraits {
+     bool transfer_support = false;
+     bool blit_support = false;
+diff --git a/src/video_core/renderer_vulkan/vk_platform.cpp b/src/video_core/renderer_vulkan/vk_platform.cpp
+index 9bb6514..fc51e03 100644
+--- a/src/video_core/renderer_vulkan/vk_platform.cpp
++++ b/src/video_core/renderer_vulkan/vk_platform.cpp
+@@ -5,7 +5,7 @@
+ // Include the vulkan platform specific header
+ #if defined(ANDROID)
+ #define VK_USE_PLATFORM_ANDROID_KHR
+-#elif defined(WIN32)
++#elif defined(WIN32) || defined(_WIN32)
+ #define VK_USE_PLATFORM_WIN32_KHR
+ #elif defined(__APPLE__)
+ #define VK_USE_PLATFORM_METAL_EXT
+diff --git a/src/video_core/renderer_vulkan/vk_present_window.cpp b/src/video_core/renderer_vulkan/vk_present_window.cpp
+index 5d3c0ae..60b63fe 100644
+--- a/src/video_core/renderer_vulkan/vk_present_window.cpp
++++ b/src/video_core/renderer_vulkan/vk_present_window.cpp
+@@ -1,3 +1,4 @@
++#include <cstdlib>
+ // Copyright 2023 Citra Emulator Project
+ // Licensed under GPLv2 or any later version
+ // Refer to the license.txt file included.
+@@ -420,7 +421,14 @@ void PresentWindow::CopyToSwapchain(Frame* frame) {
+         .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+         .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
+         .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+-        .newLayout = vk::ImageLayout::ePresentSrcKHR,
++        // MovieTheater: this "swapchain" is LibRetro::Vulkan::Swapchain — nothing is ever presented to
++        // a real VkSwapchainKHR; the image is handed to the frontend by set_image, which declares it as
++        // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL (citra_libretro/vulkan/vk_swapchain.cpp). Leaving it
++        // in ePresentSrcKHR broke that contract: the frontend's copy barriers with
++        // oldLayout=SHADER_READ_ONLY_OPTIMAL, so the driver is free to discard the contents — on NVIDIA
++        // that yielded a byte-identical BLACK frame every frame while every flow counter (set_image /
++        // zc_tex / fps) looked perfect. Transition to the layout we actually advertise.
++        .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+         .image = swapchain_image,
+@@ -448,6 +456,25 @@ void PresentWindow::CopyToSwapchain(Frame* frame) {
+                          MakeImageCopy(frame->width, frame->height, extent.width, extent.height));
+     }
+ 
++    // ===== MovieTheater TEMP DIAGNOSTIC (remove before shipping) =====
++    // Overwrite whatever the blit produced with solid magenta. This bisects the black-frame bug:
++    // magenta on the client  => set_image handoff + zero-copy capture + encode are all correct, and
++    //                           the fault is upstream (citra never rendered into frame->image).
++    // still black on client   => the fault is in the handoff/capture of this very image.
++    if (std::getenv("CITRA_MT_CLEAR_TEST")) {
++        const vk::ClearColorValue magenta{std::array<float, 4>{1.0f, 0.0f, 1.0f, 1.0f}};
++        const vk::ImageSubresourceRange range{
++            .aspectMask = vk::ImageAspectFlagBits::eColor,
++            .baseMipLevel = 0,
++            .levelCount = 1,
++            .baseArrayLayer = 0,
++            .layerCount = 1,
++        };
++        cmdbuf.clearColorImage(swapchain_image, vk::ImageLayout::eTransferDstOptimal, magenta,
++                               range);
++    }
++    // ===== end TEMP DIAGNOSTIC =====
++
+     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
+                            vk::PipelineStageFlagBits::eAllCommands,
+                            vk::DependencyFlagBits::eByRegion, {}, {}, post_barrier);
+
+# ===================== SUBMODULE: externals/cryptopp ============================
+diff --git a/integer.cpp b/integer.cpp
+index bf95ac7..bbf04dd 100644
+--- a/integer.cpp
++++ b/integer.cpp
+@@ -3056,7 +3056,7 @@ Integer::Integer(const byte *encodedInteger, size_t byteCount, Signedness s, Byt
+ 	else
+ 	{
+ 		SecByteBlock block(byteCount);
+-#if (CRYPTOPP_MSC_VERSION >= 1500)
++#if 0 // MovieTheater: VS18/MSVC 14.51 removed stdext checked-array iterators; use the portable path
+ 		std::reverse_copy(encodedInteger, encodedInteger+byteCount,
+ 			stdext::make_checked_array_iterator(block.begin(), block.size()));
+ #else
+diff --git a/zdeflate.cpp b/zdeflate.cpp
+index b3514b5..531c11d 100644
+--- a/zdeflate.cpp
++++ b/zdeflate.cpp
+@@ -418,7 +418,7 @@ unsigned int Deflator::LongestMatch(unsigned int &bestMatch) const
+ #else
+ 				std::mismatch
+ #endif
+-#if CRYPTOPP_MSC_VERSION >= 1600
++#if 0 // MovieTheater: VS18/MSVC 14.51 removed stdext unchecked-array iterators; use the portable path
+ 				(stdext::make_unchecked_array_iterator(scan)+3, stdext::make_unchecked_array_iterator(scanEnd), stdext::make_unchecked_array_iterator(match)+3).first - stdext::make_unchecked_array_iterator(scan));
+ #else
+ 				(scan+3, scanEnd, match+3).first - scan);
