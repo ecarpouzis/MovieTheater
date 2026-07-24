@@ -70,6 +70,8 @@ namespace MovieTheater.Services.LaunchBox
             ["SNK Neo Geo Pocket Color"] = "ngpc",
             ["WonderSwan Color"] = "wsc",
             ["Nintendo Famicom Disk System"] = "fds",
+            ["Nintendo DS"] = "nds",
+            ["Nintendo 3DS"] = "3ds",
             ["SNK Neo Geo AES"] = "neogeo",
             ["Sega SG-1000"] = "sg1000",
             ["NEC TurboGrafx-CD"] = "pce",

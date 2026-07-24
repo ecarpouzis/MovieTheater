@@ -34,6 +34,8 @@ namespace MovieTheater.Arcade
             ["gbc"] = "Nintendo - Game Boy Color",
             ["gba"] = "Nintendo - Game Boy Advance",
             ["n64"] = "Nintendo - Nintendo 64",
+            ["nds"] = "Nintendo - Nintendo DS",
+            ["3ds"] = "Nintendo - Nintendo 3DS",
             ["gc"] = "Nintendo - GameCube",
             ["wii"] = "Nintendo - Wii",
             ["ps1"] = "Sony - PlayStation",
