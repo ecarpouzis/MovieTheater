@@ -260,6 +260,32 @@ namespace MovieTheater.Arcade
             {
                 ["max"] = Opt(("kronos_resolution_mode", "2X")),
             },
+
+            // ── Nintendo DS — melonDS DS (OpenGL renderer). Live Ultra = 4x internal (opengl_resolution
+            // is an integer 1–8, welded below). The DS's native panels are tiny (256x192 each), so it
+            // upscales cheaply — Max goes all the way to 8x. Steps: 1(native)-2-3-[4 Ultra]-8. render_mode
+            // and touch_mode are load-bearing (OpenGL + touch); they are NOT tier levers, so no tier moves
+            // them and they stay on the yaml default for every tier.
+            [("melondsds", null)] = new()
+            {
+                ["max"]    = Opt(("melonds_opengl_resolution", "8")),
+                ["high"]   = Opt(("melonds_opengl_resolution", "3")),
+                ["medium"] = Opt(("melonds_opengl_resolution", "2")),
+                ["low"]    = Opt(("melonds_opengl_resolution", "1")),
+            },
+
+            // ── Nintendo 3DS — citra (custom core; GL for touch, Vulkan A/B'd). Live Ultra = 2x internal
+            // (citra_resolution_factor, welded below). Max jumps to 4x. There is nothing between native
+            // and 2x, so High/Medium/Low all coincide at 1x (Native) — same shape as beetle_psx_hw, where
+            // the only rung below Ultra is native. graphics_api/touch settings are load-bearing (touch
+            // input) and are never tier levers.
+            [("citra", null)] = new()
+            {
+                ["max"]    = Opt(("citra_resolution_factor", "4x")),
+                ["high"]   = Opt(("citra_resolution_factor", "1x (Native)")),
+                ["medium"] = Opt(("citra_resolution_factor", "1x (Native)")),
+                ["low"]    = Opt(("citra_resolution_factor", "1x (Native)")),
+            },
         };
 
         // ── The DECLARED Ultra ────────────────────────────────────────────────────────────────────────
@@ -309,6 +335,10 @@ namespace MovieTheater.Arcade
                 ["kronos"] = Opt(
                     ("kronos_meshmode", "enabled"),                     // VDP1 mesh transparency correctness
                     ("kronos_bandingmode", "enabled")),
+                ["melondsds"] = Opt(
+                    ("melonds_opengl_resolution", "4")),                // 4x internal (integer 1–8)
+                ["citra"] = Opt(
+                    ("citra_resolution_factor", "2x")),                 // 2x internal
             };
 
         private static readonly IReadOnlyDictionary<string, string> Empty =
