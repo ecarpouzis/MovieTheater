@@ -12927,10 +12927,10 @@ index 669862d..4bc57d8 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..efc47e4 100644
+index 17f10fc..2bcef96 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-@@ -1,981 +1,2009 @@
+@@ -1,981 +1,2048 @@
 -package nanoarch
 -
 -import (
@@ -14479,13 +14479,28 @@ index 17f10fc..efc47e4 100644
 +	n.Stopped.Store(false)
 +
 +	if n.Video.gl.enabled {
++		// FAIL-SOFT (mirrors the Vulkan branch below): a GL-armed core can decline to render via GL and
++		// never accept SET_HW_RENDER — e.g. melonDS DS in software mode on an isGlAllowed room, or a
++		// core that only reads its renderer option after we've committed the GL path. Nan0.Video.hw is
++		// then nil (reset per-room above) and dereferencing .context_reset here took the WHOLE worker
++		// down (nil deref at LoadGame, addr=0x8) — a core config that arms GL but the core doesn't use
++		// must not crash the box. initVideo() already no-ops its HW work when hw==nil (fail-soft there),
++		// so run it for the GL-context setup and only skip context_reset.
 +		if n.LibCo {
 +			C.same_thread(C.init_video_cgo)
-+			C.same_thread(unsafe.Pointer(Nan0.Video.hw.context_reset))
++			if Nan0.Video.hw == nil {
++				n.log.Error().Msg("LoadGame: no hw render callback for GL (SET_HW_RENDER was never accepted — core didn't use GL) — skipping context_reset (fail-soft, room shows no video)")
++			} else {
++				C.same_thread(unsafe.Pointer(Nan0.Video.hw.context_reset))
++			}
 +		} else {
 +			runtime.LockOSThread()
 +			initVideo()
-+			C.bridge_context_reset(Nan0.Video.hw.context_reset)
++			if Nan0.Video.hw == nil {
++				n.log.Error().Msg("LoadGame: no hw render callback for GL (SET_HW_RENDER was never accepted — core didn't use GL) — skipping context_reset (fail-soft, room shows no video)")
++			} else {
++				C.bridge_context_reset(Nan0.Video.hw.context_reset)
++			}
 +			runtime.UnlockOSThread()
 +		}
 +	} else if n.Video.vk.enabled {
@@ -15358,6 +15373,30 @@ index 17f10fc..efc47e4 100644
 +			return true
 +		}
 +		return false
++	case C.RETRO_ENVIRONMENT_SET_VARIABLES,
++		C.RETRO_ENVIRONMENT_SET_CORE_OPTIONS,
++		C.RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL,
++		C.RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2,
++		C.RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL:
++		// ACKNOWLEDGE the core's option DEFINITIONS (W10, melonDS DS OpenGL fix). We source values from
++		// the room config (GET_VARIABLE below), not from the core's defaults, so we don't parse the
++		// definition struct — but we MUST return true. Some cores' libretro-common options helper only
++		// treats options as "registered" when one of these SET interfaces succeeds; until then it uses
++		// its COMPILED defaults and never GET_VARIABLEs. melonDS DS is exactly this: with all of these
++		// refused it logged "Failed to set core option definitions, functionality will be limited" and
++		// read melonds_render_mode from its default (software), IGNORING our render_mode:opengl and so
++		// never calling SET_HW_RENDER (→ GL-armed room, no video). Returning true lets its helper
++		// register, then (with optUpdate below) re-read render_mode via GET_VARIABLE and see "opengl".
++		// Harmless to cores that already GET_VARIABLE unconditionally. We do NOT store the definitions;
++		// an option we don't configure still GET_VARIABLE-misses and the core keeps its own default,
++		// exactly as before.
++		return true
++	case C.RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY,
++		C.RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK:
++		// Option VISIBILITY hints for a settings UI we don't have — acknowledge as a no-op. Refusing
++		// them made a core log a scary "functionality limited" and (for melonDS) contributed to the
++		// options helper giving up; a plain true is the correct headless answer.
++		return true
 +	case C.RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
 +		// One-shot: true once after options load (RetroArch semantics), false after. Update-flag-gated
 +		// cores (melonDS DS) read their options only when this fires; stock's C hardcode of false left
