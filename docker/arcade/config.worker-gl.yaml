@@ -1534,15 +1534,16 @@ emulator:
           roms: ["nds"]
           scale: 2
           scaleMethod: nearest-neighbour
-          # coreAspectRatio: HELD BACK until w10-ds-arcade is deployed — do NOT enable before then.
+          # coreAspectRatio: NOT NEEDED — leave it off. (Superseded 2026-07-24, after the deploy.)
           # melonDS reports the right aspect ("[geom] base 256x384 max 1030x576 AR=0.6667") and turning
           # this on does fix the 2x horizontal stretch server-side (measured 1.332 -> 0.667, no site
           # deploy). BUT prod's ArcadeRoomPage has neither the `nds` FALLBACK_AR entry nor the
           # `portrait` branch (both live only on w10-ds-arcade), so it styles every stream
           # width:100% + aspectRatio. Handing it a PORTRAIT ratio makes the element ~1461px tall on a
           # 974px-wide stage: correct proportions, but it overflows the page and the player has to
-          # scroll — worse than the stretch it fixes. Once the branch ships (it sizes portrait by
-          # HEIGHT, min(74vh,760px)), uncomment this: core-reported AR beats a client-side constant.
+          # scroll. That branch is now LIVE, and its client-side FALLBACK_AR (nds: 256/384) plus the
+          # portrait sizing already give the correct ratio: DS measured 0.667 on real prod, down from
+          # 1.332. Turning this on would only re-derive the same number from the core, so it stays off.
           # coreAspectRatio: true
           options:
             melonds_render_mode: "software"
