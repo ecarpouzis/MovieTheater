@@ -1496,6 +1496,58 @@ emulator:
           roms: ["m3u", "chd", "iso", "cue"]   # m3u = multi-disc (see dc note)
           scale: 3
 
+        # ─── Nintendo DS via melonDS DS (W10, 2026-07-23) ───────────────────────────────────────
+        # melondsds_libretro — the MAINTAINED melonDS DS rewrite (NOT legacy melonds_libretro, which is
+        # kept beside it as a rollback). Booted SOFTWARE-rendered first to prove the path without the GL
+        # Flip contract; the OpenGL renderer (internal 3D upscale like ppsspp) is a deliberate follow-up.
+        #
+        # ENCODE GEOMETRY: melonds' base geometry IS the COMPOSITED layout (top-bottom = 256x384), so DS
+        # behaves like a 2D core for the encoder — scale>=2 for H.264/AV1 chroma correctness (the 2D-core
+        # lesson), nearest-neighbour (pixel art + 2D UI). scale:2 -> 512x768 PORTRAIT encode; the client
+        # letterboxes it. No coreAspectRatio (software core; the encoded frame's own dims carry the aspect,
+        # exactly like snes/nes/gba).
+        #
+        # ⚠ OPTION KEYS ARE `melonds_` (NOT `melonds_ds_`) and VALUE tokens are lowercase-hyphenated — BOTH
+        # extracted from melondsds_libretro.dll strings, NOT the docs. The docs' `melonds_ds_` prefix would
+        # be one of libretro's SILENTLY-IGNORED unknown keys (the recurring "values not labels" trap).
+        #
+        # SAVES: melonds exposes RETRO_MEMORY_SAVE_RAM (.sav) -> standard .srm harvest class (like nes/snes/
+        # gba/n64/ps1), so DS saves ride the EXISTING save vault with no new machinery. (Verified in the DLL.)
+        #
+        # BIOS: builtin FreeBIOS + direct boot needs NO real BIOS for retail carts (removes a boot-path risk
+        # from enablement). The real DS BIOS (bios7.bin/bios9.bin/firmware.bin, copied from C:\Network Share\
+        # bios) IS staged under each worker's libretro/system/melonDS DS/ so sysfile_mode can flip to native
+        # later. DSi mode (needs a NAND dump) is out of scope.
+        #
+        # POINTER/TOUCH (W10 deliverable): melonds_touch_mode:touch reads RETRO_DEVICE_POINTER (absolute) and
+        # the CORE maps it through the active screen layout to bottom-screen touch coords itself (cursor.cpp
+        # layout.TransformPointerInput, bounds-checked to NDS_SCREEN_SIZE 256x192). So the site's pointer
+        # mechanism only has to deliver a letterbox-corrected FULL-FRAME normalized coord — it never needs to
+        # know the DS layout. The pointer wire mechanism is W10 Phase C (not yet built; a pad works today).
+        #
+        # LAYOUT PINNED to ONE top-bottom layout (number_of_screen_layouts:1) so encode geometry is STABLE:
+        # no R2-cycle to a different-sized layout mid-room (which would force an encode caps-reneg). The
+        # dual-screen layout will be exposed per-game via the ⚙ Configure tool (W10 Phase C).
+        nds:
+          lib: melondsds_libretro
+          folder: nds
+          roms: ["nds"]
+          scale: 2
+          scaleMethod: nearest-neighbour
+          options:
+            melonds_render_mode: "software"
+            melonds_touch_mode: "touch"
+            melonds_console_mode: "ds"
+            melonds_boot_mode: "direct"
+            melonds_sysfile_mode: "builtin"
+            melonds_screen_layout1: "top-bottom"
+            melonds_number_of_screen_layouts: "1"
+            # Cursor shown only WHILE TOUCHING. The player's OS mouse cursor is the aim indicator (so the
+            # shim streams pointer only while pressed — no hover flood), and the DS overlay then just gives
+            # touch feedback at the contact point. "always" would leave a stale cursor parked at the last
+            # touch when the mouse is idle/off the video. (Was "always" during W10 bring-up.)
+            melonds_show_cursor: "touching"
+
 
 encoder:
   # Same NVENC H.264 + Opus-FEC path as the WSL stack (docker/arcade/config.yaml). nvcodec here comes

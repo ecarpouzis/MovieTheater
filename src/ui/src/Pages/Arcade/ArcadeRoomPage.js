@@ -856,6 +856,7 @@ export default function ArcadeRoomPage() {
           ngpc: 160 / 152,           // ~1.05 — was rendered at 1.33
           lynx: 160 / 102,
           vb: 384 / 224,
+          nds: 256 / 384,            // W10: top-bottom dual-screen composite (two 256x192 stacked) = 2:3 PORTRAIT
           capture: 16 / 9,           // browser capture lane — 1080p desktop; never fall back to 4:3 (R3)
         };
         const ar = coreAspect || FALLBACK_AR[system] || 4 / 3;
@@ -871,9 +872,14 @@ export default function ArcadeRoomPage() {
         const outerStyle = isFs
           ? { position: "relative", background: "#000", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }
           : { position: "relative", background: "#000" };
+        // Portrait content (ar < 1, e.g. the DS top-bottom composite) would blow up vertically at
+        // width:100% in the landscape page, so size it by HEIGHT and center it (letterboxed left/right).
+        const portrait = ar < 1;
         const innerStyle = isFs
-          ? { position: "relative", aspectRatio: ar, width: `min(100%, calc(100vh * ${ar}))`, maxHeight: "100%" }
-          : { position: "relative", aspectRatio: ar, width: "100%" };
+          ? { position: "relative", aspectRatio: ar, width: `min(100%, calc(100vh * ${ar}))`, maxHeight: "100%", margin: "0 auto" }
+          : portrait
+            ? { position: "relative", aspectRatio: ar, height: "min(74vh, 760px)", maxWidth: "100%", margin: "0 auto" }
+            : { position: "relative", aspectRatio: ar, width: "100%" };
         return (
           <div ref={playerRef} style={outerStyle}>
             <div style={innerStyle}>

@@ -3,7 +3,47 @@ import {
   displayAspect, rotatedVideoSize, videoTransform,
   stickFoldFor, setStickFoldOverride, resetStickFoldOverride,
   keyboardArrowsDriveDpad,
+  encodePointer, systemUsesPointer,
 } from "./cloudRetroClient";
+
+// W10 touch pointer wire format. This is the CONTRACT with the worker (nanoarch PointerState.Set):
+// an 8-byte packet [tag:1=0xF0][ver:1=1][x:i16 LE][y:i16 LE][pressed:1][flags:1], length+tag
+// discriminated from the 10-byte pad Int16Array on the SAME data channel. If any of these change,
+// the worker silently stops recognizing touches (it falls through to SetInput).
+describe("encodePointer (W10 stylus wire format)", () => {
+  const bytes = (buf) => Array.from(new Uint8Array(buf));
+  it("is exactly 8 bytes with tag 0xF0 and version 1 (the worker's discriminator)", () => {
+    const b = bytes(encodePointer(0, 0, 0));
+    expect(b.length).toBe(8);        // NOT 10/14 (the pad frame) — length is half the discriminator
+    expect(b[0]).toBe(0xf0);         // tag — the other half
+    expect(b[1]).toBe(0x01);         // version
+  });
+  it("packs x/y as LITTLE-ENDIAN int16 (matches the pad channel, not the big-endian keyboard channel)", () => {
+    const dv = new DataView(encodePointer(0x1234, -0x0002, 1));
+    expect(dv.getInt16(2, true)).toBe(0x1234);
+    expect(dv.getInt16(4, true)).toBe(-2);
+    expect(dv.getUint8(6)).toBe(1);  // pressed
+    expect(dv.getUint8(7)).toBe(0);  // flags reserved
+  });
+  it("normalizes pressed to 0/1 and carries full-frame extremes", () => {
+    expect(new DataView(encodePointer(32767, -32767, 5)).getUint8(6)).toBe(1);
+    expect(new DataView(encodePointer(0, 0, 0)).getUint8(6)).toBe(0);
+    const dv = new DataView(encodePointer(32767, -32767, 1));
+    expect(dv.getInt16(2, true)).toBe(32767);   // right/bottom edge of the frame
+    expect(dv.getInt16(4, true)).toBe(-32767);  // left/top edge
+  });
+});
+
+describe("systemUsesPointer (capability gate)", () => {
+  it("is on for nds and case-insensitive", () => {
+    expect(systemUsesPointer("nds")).toBe(true);
+    expect(systemUsesPointer("NDS")).toBe(true);
+  });
+  it("is off for non-pointer systems and junk (no hover flood / no pointer on a pad-only room)", () => {
+    for (const s of ["snes", "n64", "ps1", "gba", "gc", "", null, undefined])
+      expect(systemUsesPointer(s)).toBe(false);
+  });
+});
 
 // The numbers below are MEASURED from real rooms (worker log `Libretro System A/V >>> … AR [x]`,
 // 2026-07-08), not invented. They are the regression fence for the aspect-ratio fix: before it, the
