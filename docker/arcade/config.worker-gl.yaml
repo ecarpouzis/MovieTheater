@@ -1534,6 +1534,16 @@ emulator:
           roms: ["nds"]
           scale: 2
           scaleMethod: nearest-neighbour
+          # coreAspectRatio: HELD BACK until w10-ds-arcade is deployed — do NOT enable before then.
+          # melonDS reports the right aspect ("[geom] base 256x384 max 1030x576 AR=0.6667") and turning
+          # this on does fix the 2x horizontal stretch server-side (measured 1.332 -> 0.667, no site
+          # deploy). BUT prod's ArcadeRoomPage has neither the `nds` FALLBACK_AR entry nor the
+          # `portrait` branch (both live only on w10-ds-arcade), so it styles every stream
+          # width:100% + aspectRatio. Handing it a PORTRAIT ratio makes the element ~1461px tall on a
+          # 974px-wide stage: correct proportions, but it overflows the page and the player has to
+          # scroll — worse than the stretch it fixes. Once the branch ships (it sizes portrait by
+          # HEIGHT, min(74vh,760px)), uncomment this: core-reported AR beats a client-side constant.
+          # coreAspectRatio: true
           options:
             melonds_render_mode: "software"
             melonds_touch_mode: "touch"
@@ -1577,13 +1587,25 @@ emulator:
           lib: citra_custom_libretro
           folder: 3ds
           roms: ["3ds", "cci", "cxi", "cia", "app"]
-          isGlAllowed: false          # Vulkan by default (see hwContext); GL zero-copy arming stays off
-          hwContext: "vulkan"         # frontend answers GET_PREFERRED_HW_RENDER=VULKAN; with graphics_api
-                                      # Auto that alone would select Vk, but we pin it explicitly below
+          # VULKAN (2026-07-24). BOTH renderers now work and were A/B'd live on MK7 with identical
+          # picture; Vulkan wins because it rides the proven vkm2 zero-copy capture path.
+          # The long-standing "3DS is black" was NEVER a renderer bug — it was the MSVC handler-table
+          # miscompile (see citra-build-core.bat /vmg + service.h), which broke HLE dispatch and made
+          # the guest fatal-error on APT:U under EITHER renderer.
+          # ROLLBACK to GL (also verified good): isGlAllowed: true + drop hwContext +
+          # citra_graphics_api: "OpenGL". GL needs the core's 4.3-context request (was 3.3, which left
+          # glad's 4.x pointers NULL — the old rip=0x0 crash); that fix is already in the custom core.
+          isGlAllowed: false
+          hwContext: "vulkan"
           coreAspectRatio: true
           usesLibCo: true             # retro_run + context_reset on one cothread (the Vulkan-capture path)
           vfr: false
-          scale: 1
+          # scale 2 (2026-07-24): was 1, i.e. we shipped the raw 400x480 stacked frame. Every other
+          # quality-tuned system upscales >=2 server-side because 4:2:0 halves CHROMA resolution --
+          # a nearest 2x costs few bits (flat NxN blocks) but keeps colour detail at native. nds
+          # already did this; 3ds was the odd one out. Pairs with "3ds" => 6000 in
+          # CloudRetroHost.DefaultVideoBitrateKbps -- ship them together, like ps2's upscale+bitrate.
+          scale: 2
           # Vulkan teardown hack (proven on ps2/psp/dc): skip the core's context_destroy so a Vk room close
           # can't deadlock/crash the single-thread model. Remove only if citra's Vk teardown proves clean.
           # vk_synthetic_surface (added 2026-07-24): citra_libretro carries its OWN swapchain

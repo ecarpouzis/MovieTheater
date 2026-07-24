@@ -32,7 +32,19 @@ set "CMAKE=C:\Users\Atoramos\AppData\Roaming\Python\Python313\site-packages\cmak
 set "PATH=%PATH%;C:\Users\Atoramos\AppData\Roaming\Python\Python313\Scripts"
 cd /d D:\Arcade\build\citra
 if not "%1"=="buildonly" (
-  "%CMAKE%" -S . -B bld -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DENABLE_LIBRETRO=ON -DENABLE_QT=OFF -DENABLE_SDL2=OFF -DUSE_DISCORD_PRESENCE=OFF -DCITRA_WARNINGS_AS_ERRORS=OFF
+  rem /vmg IS LOAD-BEARING, NOT AN OPTIMISATION — without it every HLE service in the emulator is
+  rem silently half-broken and games die on boot with a 3DS fatal error (black screen).
+  rem Why: ServiceFramework<Self>::RegisterHandlers passes a `const FunctionInfo*` (which holds a
+  rem HandlerFnP<Self>) to RegisterHandlersBase(const FunctionInfoBase*), which walks it with
+  rem FunctionInfoBase stride. Under MSVC a pointer-to-member's SIZE depends on the class's
+  rem inheritance model, so HandlerFnP<SRV> is wider than HandlerFnP<ServiceFrameworkBase>, the two
+  rem structs differ in size, and the walk reads garbage command ids (srv: registered 14 handlers and
+  rem the flat_map ended up with 7 junk keys - 0x0000..0x0004, 0x7ffe, 0x9a54cef8 - so
+  rem GetServiceHandle(0x0005) missed and the guest fatal-errored on APT:U). The libretro buildbot
+  rem never hits this because GCC's Itanium ABI gives every member pointer one fixed size.
+  rem /vmg forces the most-general (uniform) representation, making the two layouts agree.
+  rem MUST be applied to EVERY TU - it is an ABI flag - hence CMAKE_CXX_FLAGS, not a per-target option.
+  "%CMAKE%" -S . -B bld -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_CXX_FLAGS="/vmg" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DENABLE_LIBRETRO=ON -DENABLE_QT=OFF -DENABLE_SDL2=OFF -DUSE_DISCORD_PRESENCE=OFF -DCITRA_WARNINGS_AS_ERRORS=OFF
   if errorlevel 1 exit /b 1
 )
 "%CMAKE%" --build bld --target citra_libretro --parallel 14

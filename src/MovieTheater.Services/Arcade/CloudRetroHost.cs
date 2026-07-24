@@ -220,6 +220,18 @@ namespace MovieTheater.Services.Arcade
             // (2026-07-09): REAL detail is the pre-doubling half of that (the encode is its nearest 2x,
             // cheap bits), so ~0.3-0.5 Mpx of true 3D — 6000 covers it with margin.
             "ps1" => 6000,
+            // 3DS (citra) is a REAL 3D core, so it must not sit on the 2D default the way wii did.
+            // Delivered 800x960 = 0.77 Mpx after our nearest 2x `scale:` of the 400x480 stacked frame,
+            // but the TRUE detail is the pre-upscale 400x480 = 0.19 Mpx — less than ps1's 0.3-0.5 Mpx,
+            // so it earns ps1's number, not psp's. Measured live 2026-07-24: peers estimated ~7.3 Mbps
+            // while the room was pinned at the 5000 default, i.e. real unused headroom.
+            "3ds" => 6000,
+            // DS (melonDS) delivers 512x768 after a nearest 2x of the 256x384 stacked frame; true
+            // detail is only 0.098 Mpx and most of it is 2D, so 5000 is genuinely generous here
+            // (~0.13 bpp on delivered pixels). Listed EXPLICITLY rather than left to fall through:
+            // the wii bug (2026-07-22) was a real 3D core silently inheriting the 2D default, and an
+            // intentional 5000 and an accidental 5000 should not look the same in this switch.
+            "nds" => 5000,
             // Everything 2D: nearest-upscaled flat blocks. 5 Mbps is already generous.
             _ => 5000,
         };
