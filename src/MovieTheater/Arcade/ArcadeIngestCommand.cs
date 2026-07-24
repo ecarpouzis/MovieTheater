@@ -291,6 +291,7 @@ namespace MovieTheater.Arcade
             new("cdi",         new[] { "cdi" },         new[] { ".chd", ".iso", ".cue" }, 1),  // cdimono1.zip; no save-states
             new("saturn",      new[] { "saturn" },      new[] { ".chd", ".cue", ".ccd", ".iso", ".mds", ".zip", ".m3u" }, 2),  // sega_101.bin+mpr-17933.bin
             new("nds",         new[] { "nds" },         new[] { ".nds" },                 1),  // W10: melonDS DS; builtin FreeBIOS (real DS BIOS staged); libretro MP unsupported -> 1p
+            new("3ds",         new[] { "3ds" },         new[] { ".3ds", ".cci", ".cxi", ".cia", ".app" }, 1),  // W10 Phase E: citra; DECRYPTED dumps (no aes_keys)
             // ScummVM (2026-07-18): the "ROM" is a tiny generated .scummvm hook file (data/arcade/
             // scummvm-hooks/<target>.scummvm) naming a target in the deployed scummvm.ini; the real game
             // data — a whole directory of loose files, not a single cartridge — rides SourceCompanionPath

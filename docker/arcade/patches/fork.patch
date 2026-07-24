@@ -10637,10 +10637,10 @@ index 6974d59..830e98a 100644
 +	}
 +}
 diff --git a/pkg/worker/caged/libretro/graphics/opengl.go b/pkg/worker/caged/libretro/graphics/opengl.go
-index 0c9d773..41a9805 100644
+index 0c9d773..241031f 100644
 --- a/pkg/worker/caged/libretro/graphics/opengl.go
 +++ b/pkg/worker/caged/libretro/graphics/opengl.go
-@@ -1,335 +1,379 @@
+@@ -1,335 +1,387 @@
 -package graphics
 -
 -/*
@@ -11329,6 +11329,14 @@ index 0c9d773..41a9805 100644
 +func finish() { C.gl_finish((C.GPFLUSH)(gpFinish)) }
 +
 +func SetBuffer(size int) {
++	// W10: citra_libretro fires RETRO_ENVIRONMENT_SET_GEOMETRY DURING retro_load_game with a max size of
++	// 0 (before it has set the pixel format), so geometryChange computes bufS=0 and calls us with 0 — a
++	// 0-length slice then panics at &buf[0] (index out of range), killing the worker at load. A 0-size GL
++	// buffer is never valid; ignore it and keep the last good buffer (the real size arrives with the first
++	// valid geometry / video_cb). Guards every SetBuffer caller, not just citra.
++	if size <= 0 {
++		return
++	}
 +	buf = make([]byte, size)
 +	bufPtr = unsafe.Pointer(&buf[0])
 +}

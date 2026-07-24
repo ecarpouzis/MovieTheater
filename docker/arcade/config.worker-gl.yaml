@@ -1548,6 +1548,35 @@ emulator:
             # touch when the mouse is idle/off the video. (Was "always" during W10 bring-up.)
             melonds_show_cursor: "touching"
 
+        # ─── Nintendo 3DS via citra_libretro — NO-GO (W10 Phase E, 2026-07-23). Kept as a record; the two
+        #     ingested 3ds ArcadeGame rows are IsEnabled=0 so nothing can launch this entry. ────────────
+        # ENCRYPTION IS NOT THE BLOCKER: the R: dumps are DECRYPTED No-Intro .3ds (NCCH NoCrypto flag SET,
+        # crypto method 0x00 — verified on 50 Classic Games / Mario Kart 7 / Pokemon Alpha Sapphire and the
+        # loose Captain Toad .cci), so no aes_keys.txt is needed. citra is UNSTABLE on CloudRetro's WGL/GL
+        # stack (matches the documented "citra fragile" verdict):
+        #   1. Wrong option VALUE tokens ("Default Top-Bottom" / resolution "1") were REJECTED by citra's
+        #      UpdateSettings; with no valid geometry it called SetBuffer(0) and the worker PANICKED
+        #      (index out of range [0]). FIXED fleet-wide by graphics.SetBuffer's size<=0 guard (opengl.go).
+        #   2. With options stripped, citra initialized its GL renderer (GL_VERSION 3.3.0 NVIDIA, GL_RENDERER
+        #      4070 Ti) and then ACCESS-VIOLATED (0xC0000005, rip=0x0 — call through a null fn ptr) right
+        #      after GL init, BOTH with usesLibCo true AND false. That is a deep citra GL-context/threading
+        #      incompatibility, a multi-day worker-patch effort — beyond the allowed-to-fail day cap.
+        # DOCUMENTED FALLBACK if 3DS is ever wanted: run Citra STANDALONE and capture its window via the
+        # capture lane (docs/arcade-capture-worker-plan.md), like the other heavy titles — NOT this core.
+        # If revisiting citra_libretro: extract layout/resolution tokens from the DLL's UpdateSettings
+        # compares (not display labels), stage a 3DS shared font (sysdata), and get a gdb backtrace of the
+        # 0xC0000005 (arcade skill's gdb runbook). The pointer mechanism WOULD extend here (citra polls
+        # RETRO_DEVICE_POINTER) once it boots. To re-enable for testing: re-stage ROMs + set IsEnabled=1.
+        3ds:
+          lib: citra_libretro
+          folder: 3ds
+          roms: ["3ds", "cci", "cxi", "cia", "app"]
+          isGlAllowed: true
+          coreAspectRatio: true
+          usesLibCo: false   # neither true nor false survived GL init (0xC0000005); left at last-tested value
+          vfr: false
+          scale: 1
+
 
 encoder:
   # Same NVENC H.264 + Opus-FEC path as the WSL stack (docker/arcade/config.yaml). nvcodec here comes
