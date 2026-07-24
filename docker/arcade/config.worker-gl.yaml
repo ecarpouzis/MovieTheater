@@ -1606,12 +1606,12 @@ emulator:
           coreAspectRatio: true
           usesLibCo: true             # retro_run + context_reset on one cothread (the Vulkan-capture path)
           vfr: false
-          # scale 2 (2026-07-24): was 1, i.e. we shipped the raw 400x480 stacked frame. Every other
-          # quality-tuned system upscales >=2 server-side because 4:2:0 halves CHROMA resolution --
-          # a nearest 2x costs few bits (flat NxN blocks) but keeps colour detail at native. nds
-          # already did this; 3ds was the odd one out. Pairs with "3ds" => 6000 in
-          # CloudRetroHost.DefaultVideoBitrateKbps -- ship them together, like ps2's upscale+bitrate.
-          scale: 2
+          # scale 1 (2026-07-24): citra now renders the stacked frame at 800x960 NATIVELY via
+          # citra_resolution_factor:2x below (real 2x internal detail), so a server-side nearest 2x
+          # would DOUBLE it again to 1600x1920 for no benefit. scale 1 keeps the encode at 800x960 --
+          # same size as the old scale:2-of-400x480, but real rendered detail instead of a stretch.
+          # Pairs with "3ds" => 6000 in CloudRetroHost.DefaultVideoBitrateKbps (800x960 @ 6 Mbps).
+          scale: 1
           # Vulkan teardown hack (proven on ps2/psp/dc): skip the core's context_destroy so a Vk room close
           # can't deadlock/crash the single-thread model. Remove only if citra's Vk teardown proves clean.
           # vk_synthetic_surface (added 2026-07-24): citra_libretro carries its OWN swapchain
@@ -1632,6 +1632,15 @@ emulator:
             # layout-agnostic and "3ds" just joins POINTER_SYSTEMS. Tokens taken from the DLL's own
             # values[] list ("disabled|enabled") — bad tokens PANIC this core.
             citra_touch_touchscreen: "enabled"
+            # Internal-res upscale (2026-07-24): renders the 3D at 2x native — the real quality lever
+            # every other 3D system already has (n64/gc/ps2/psp). Token from the DLL's values[]
+            # ("1x (Native)|2x|...|10x"); a bad token PANICS this core. The custom core's
+            # retro_get_system_av_info scales base+max by this factor so the GL hw FBO is allocated
+            # 800x960 (it is sized ONCE from av_info max and never grows) — a mismatched max clips the
+            # render to BLACK. Validated live on MK7 + 50 Classic (sharp text/3D, touch lands, 59.8
+            # ticks/s on the 4070Ti). ⚠ raising this re-derives the FBO size from the core, no config
+            # coupling — but bumping it also grows the encode, so re-tune scale/bitrate together.
+            citra_resolution_factor: "2x"
 
 
 encoder:

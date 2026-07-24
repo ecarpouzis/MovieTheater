@@ -5,7 +5,6 @@
 # THE LOAD-BEARING ONE is src/CMakeLists.txt's /vmg plus the non-constexpr FunctionInfo in
 # src/core/hle/service/service.h: without BOTH, MSVC miscompiles every HLE service handler table
 # and games boot to a black screen with a 3DS fatal error. See citra-build-core.bat for the story.
-# =============================== MAIN REPO (src/) ===============================
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
 index f1cceb1..6507270 100644
 --- a/src/CMakeLists.txt
@@ -152,34 +151,53 @@ index d9bd3ff..6c00ae6 100644
  #endif
          }
 diff --git a/src/citra_libretro/environment.cpp b/src/citra_libretro/environment.cpp
-index d431e95..82b0fbb 100644
+index d431e95..e2107ef 100644
 --- a/src/citra_libretro/environment.cpp
 +++ b/src/citra_libretro/environment.cpp
-@@ -211,7 +211,22 @@ void retro_get_system_av_info(struct retro_system_av_info* info) {
+@@ -2,10 +2,12 @@
+ // Licensed under GPLv2 or any later version
+ // Refer to the license.txt file included.
+ 
++#include <algorithm>
+ #include <cstring>
+ 
+ #include "audio_core/audio_types.h"
+ #include "audio_core/libretro_sink.h"
++#include "common/settings.h"
+ #include "common/scm_rev.h"
+ #include "environment.h"
+ 
+@@ -209,9 +211,26 @@ void retro_get_system_av_info(struct retro_system_av_info* info) {
+     // These are placeholders until we get control.
+     info->timing.fps = 60.0;
      info->timing.sample_rate = AudioCore::native_sample_rate;
-     info->geometry.base_width = 400;
-     info->geometry.base_height = 480;
+-    info->geometry.base_width = 400;
+-    info->geometry.base_height = 480;
 -    info->geometry.max_width = 400 * 10;
 -    info->geometry.max_height = 480 * 10;
 -    info->geometry.aspect_ratio = 0;
-+    // MovieTheater: stock reported max = base * 10 (the highest citra_resolution_factor), but citra
-+    // only ever renders at the CURRENT factor — we run 1x. The frontend sizes its synthetic
-+    // VkSurfaceKHR from max geometry, citra sizes its swapchain images from that surface, and the
-+    // frontend then reads back only base_width x base_height (video_cb geometry, the libretro
-+    // contract — there is no extent side-channel in interface v5). With max = 10x that meant
-+    // capturing the top-left 1% of a 4000x4800 image: a static black margin, i.e. a perfectly
-+    // constant BLACK stream while every flow counter looked healthy.
-+    // ⚠ COUPLED: if citra_resolution_factor is ever raised above 1, raise these to match, or the
-+    // capture crops again.
-+    info->geometry.max_width = 400;
-+    info->geometry.max_height = 480;
-+    // MovieTheater: stock reported 0 ("frontend, work it out"). Our client honours the core's
-+    // declared aspect (coreAspectRatio: true) and falls back to 4:3 when it is 0, which stretched
-+    // the stacked 3DS screens ~1.6x horizontally (displayed 1.332 instead of 0.833). The default
-+    // layout is the 400x240 top screen above the 320x240 bottom screen in a 400x480 frame, so the
-+    // correct display aspect is simply base_width/base_height.
-+    info->geometry.aspect_ratio = static_cast<float>(info->geometry.base_width) /
-+                                  static_cast<float>(info->geometry.base_height);
++
++    // MovieTheater: base AND max track citra_resolution_factor. At factor N the DEFAULT top-bottom
++    // layout renders/presents 400N x 480N (UpdateLayout in libretro_window.cpp: baseX =
++    // kScreenTopWidth * scaling, baseY = (kScreenTopHeight + kScreenBottomHeight) * scaling), and
++    // video_cb reports that size every frame.
++    //   * WHY base = max, not base < max: the frontend's GL hw-render FBO is allocated ONCE from
++    //     max_width/max_height and never grows (SetBuffer only resizes the CPU readback buffer), so a
++    //     max smaller than the render clips it to black — which is exactly what a hardcoded 400x480
++    //     did to a 2x render. It must be >= the largest frame citra will draw.
++    //   * WHY NOT the old max = base*10: on the VULKAN path the synthetic surface is sized from max
++    //     while the capture reads back at base, so max >> base captured only the top-left corner (the
++    //     black-stream bug). max == the real render size keeps BOTH paths correct.
++    // So max = base = the current factor's exact output. UpdateSettings() runs during
++    // retro_load_game, before the frontend calls this, so resolution_factor is already applied.
++    const unsigned factor = std::max(1u, static_cast<unsigned>(Settings::values.resolution_factor.GetValue()));
++    info->geometry.base_width = 400 * factor;
++    info->geometry.base_height = 480 * factor;
++    info->geometry.max_width = 400 * factor;
++    info->geometry.max_height = 480 * factor;
++    // Aspect is factor-invariant (400/480 = 0.833). Stock reported 0, and our client falls back to
++    // 4:3 on a 0, which stretched the stacked screens ~1.6x horizontally (1.332 vs 0.833).
++    info->geometry.aspect_ratio = 400.0f / 480.0f;
  }
 diff --git a/src/core/hle/service/service.cpp b/src/core/hle/service/service.cpp
 index 1e4c071..c258ed8 100644
