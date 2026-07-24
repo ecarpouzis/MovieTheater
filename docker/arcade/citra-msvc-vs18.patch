@@ -1,0 +1,127 @@
+# MovieTheater citra_custom_libretro build patches (VS18/MSVC 14.51 on Ziggy, 2026-07-24).
+# Apply to a fresh recursive clone of github.com/libretro/citra, then run citra-build-core.bat.
+# TWO scopes: the main repo (src/...) AND the cryptopp submodule (externals/cryptopp).
+# =============================== MAIN REPO (src/) ===============================
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index f1cceb1..0160d53 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -63,23 +63,26 @@ if (MSVC)
+         # Warnings
+         /W3
+ 
+-        /we4062 # Enumerator 'identifier' in a switch of enum 'enumeration' is not handled
+-        /we4189 # 'identifier': local variable is initialized but not referenced
+-        /we4265 # 'class': class has virtual functions, but destructor is not virtual
+-        /we4388 # 'expression': signed/unsigned mismatch
+-        /we4389 # 'operator': signed/unsigned mismatch
+-        /we4456 # Declaration of 'identifier' hides previous local declaration
+-        /we4457 # Declaration of 'identifier' hides function parameter
+-        # /we4458 TODO: Enable me # Declaration of 'identifier' hides class member
+-        /we4459 # Declaration of 'identifier' hides global declaration
+-        /we4505 # 'function': unreferenced local function has been removed
+-        /we4547 # 'operator': operator before comma has no effect; expected operator with side-effect
+-        /we4549 # 'operator1': operator before comma has no effect; did you intend 'operator2'?
+-        /we4555 # Expression has no effect; expected expression with side-effect
+-        /we4826 # Conversion from 'type1' to 'type2' is sign-extended. This may cause unexpected runtime behavior.
+-        /we5038 # data member 'member1' will be initialized after data member 'member2'
+-        /we5233 # explicit lambda capture 'identifier' is not used
+-        /we5245 # 'function': unreferenced function with internal linkage has been removed
++        # MovieTheater: these were /we (warning-AS-ERROR) but VS18/MSVC 14.51 flags things the
++        # GCC-11 buildbot / older MSVC did not (signed/unsigned, shadowing, unref vars) across citra's
++        # own code, which is not warning-clean on this future compiler. Demoted to /wd (disable) so the
++        # custom core BUILDS; these are code-quality lints, not correctness for our use.
++        /wd4062 # Enumerator 'identifier' in a switch of enum 'enumeration' is not handled
++        /wd4189 # 'identifier': local variable is initialized but not referenced
++        /wd4265 # 'class': class has virtual functions, but destructor is not virtual
++        /wd4388 # 'expression': signed/unsigned mismatch
++        /wd4389 # 'operator': signed/unsigned mismatch
++        /wd4456 # Declaration of 'identifier' hides previous local declaration
++        /wd4457 # Declaration of 'identifier' hides function parameter
++        /wd4459 # Declaration of 'identifier' hides global declaration
++        /wd4505 # 'function': unreferenced local function has been removed
++        /wd4547 # 'operator': operator before comma has no effect; expected operator with side-effect
++        /wd4549 # 'operator1': operator before comma has no effect; did you intend 'operator2'?
++        /wd4555 # Expression has no effect; expected expression with side-effect
++        /wd4826 # Conversion from 'type1' to 'type2' is sign-extended. This may cause unexpected runtime behavior.
++        /wd5038 # data member 'member1' will be initialized after data member 'member2'
++        /wd5233 # explicit lambda capture 'identifier' is not used
++        /wd5245 # 'function': unreferenced function with internal linkage has been removed
+ 
+         /wd4100 # 'identifier': unreferenced formal parameter
+         /wd4324 # 'struct_name': structure was padded due to __declspec(align())
+diff --git a/src/audio_core/libretro_sink.h b/src/audio_core/libretro_sink.h
+index 27454ea..e9eeeef 100644
+--- a/src/audio_core/libretro_sink.h
++++ b/src/audio_core/libretro_sink.h
+@@ -6,6 +6,8 @@
+ 
+ #include <cstddef>
+ #include <memory>
++#include <string>
++#include <vector>
+ #include "audio_core/sink.h"
+ #include "libretro.h"
+ 
+diff --git a/src/citra_libretro/citra_libretro.cpp b/src/citra_libretro/citra_libretro.cpp
+index d9bd3ff..4c05f9c 100644
+--- a/src/citra_libretro/citra_libretro.cpp
++++ b/src/citra_libretro/citra_libretro.cpp
+@@ -129,7 +129,7 @@ void LibRetro::OnConfigureEnvironment() {
+     }
+ 
+     retro_variable values[] = {
+-        //{"citra_graphics_api", "Graphics API; Auto|Vulkan|OpenGL"},
++        {"citra_graphics_api", "Graphics API (restart); Auto|Vulkan|OpenGL"},
+         {"citra_use_cpu_jit", "Enable CPU JIT; enabled|disabled"},
+         {"citra_cpu_scale", cpuScale.c_str()},
+         {"citra_use_shader_jit", "Enable shader JIT; enabled|disabled"},
+@@ -252,7 +252,7 @@ void UpdateSettings() {
+         Settings::values.cpu_clock_percentage = scale;
+     }
+ 
+-    auto graphicsApi = std::string("OpenGL");//LibRetro::FetchVariable("citra_graphics_api", "Auto");
++    auto graphicsApi = LibRetro::FetchVariable("citra_graphics_api", "Auto");
+     if (graphicsApi == "Auto") {
+         Settings::values.graphics_api = LibRetro::GetPrefferedHWRenderer();
+     } else if (graphicsApi == "Vulkan") {
+diff --git a/src/video_core/renderer_vulkan/vk_platform.cpp b/src/video_core/renderer_vulkan/vk_platform.cpp
+index 9bb6514..fc51e03 100644
+--- a/src/video_core/renderer_vulkan/vk_platform.cpp
++++ b/src/video_core/renderer_vulkan/vk_platform.cpp
+@@ -5,7 +5,7 @@
+ // Include the vulkan platform specific header
+ #if defined(ANDROID)
+ #define VK_USE_PLATFORM_ANDROID_KHR
+-#elif defined(WIN32)
++#elif defined(WIN32) || defined(_WIN32)
+ #define VK_USE_PLATFORM_WIN32_KHR
+ #elif defined(__APPLE__)
+ #define VK_USE_PLATFORM_METAL_EXT
+# ===================== SUBMODULE: externals/cryptopp ============================
+diff --git a/integer.cpp b/integer.cpp
+index bf95ac7..bbf04dd 100644
+--- a/integer.cpp
++++ b/integer.cpp
+@@ -3056,7 +3056,7 @@ Integer::Integer(const byte *encodedInteger, size_t byteCount, Signedness s, Byt
+ 	else
+ 	{
+ 		SecByteBlock block(byteCount);
+-#if (CRYPTOPP_MSC_VERSION >= 1500)
++#if 0 // MovieTheater: VS18/MSVC 14.51 removed stdext checked-array iterators; use the portable path
+ 		std::reverse_copy(encodedInteger, encodedInteger+byteCount,
+ 			stdext::make_checked_array_iterator(block.begin(), block.size()));
+ #else
+diff --git a/zdeflate.cpp b/zdeflate.cpp
+index b3514b5..531c11d 100644
+--- a/zdeflate.cpp
++++ b/zdeflate.cpp
+@@ -418,7 +418,7 @@ unsigned int Deflator::LongestMatch(unsigned int &bestMatch) const
+ #else
+ 				std::mismatch
+ #endif
+-#if CRYPTOPP_MSC_VERSION >= 1600
++#if 0 // MovieTheater: VS18/MSVC 14.51 removed stdext unchecked-array iterators; use the portable path
+ 				(stdext::make_unchecked_array_iterator(scan)+3, stdext::make_unchecked_array_iterator(scanEnd), stdext::make_unchecked_array_iterator(match)+3).first - stdext::make_unchecked_array_iterator(scan));
+ #else
+ 				(scan+3, scanEnd, match+3).first - scan);

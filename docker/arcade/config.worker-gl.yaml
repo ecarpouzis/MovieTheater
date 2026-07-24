@@ -1548,34 +1548,50 @@ emulator:
             # touch when the mouse is idle/off the video. (Was "always" during W10 bring-up.)
             melonds_show_cursor: "touching"
 
-        # ─── Nintendo 3DS via citra_libretro — NO-GO (W10 Phase E, 2026-07-23). Kept as a record; the two
-        #     ingested 3ds ArcadeGame rows are IsEnabled=0 so nothing can launch this entry. ────────────
-        # ENCRYPTION IS NOT THE BLOCKER: the R: dumps are DECRYPTED No-Intro .3ds (NCCH NoCrypto flag SET,
-        # crypto method 0x00 — verified on 50 Classic Games / Mario Kart 7 / Pokemon Alpha Sapphire and the
-        # loose Captain Toad .cci), so no aes_keys.txt is needed. citra is UNSTABLE on CloudRetro's WGL/GL
-        # stack (matches the documented "citra fragile" verdict):
-        #   1. Wrong option VALUE tokens ("Default Top-Bottom" / resolution "1") were REJECTED by citra's
-        #      UpdateSettings; with no valid geometry it called SetBuffer(0) and the worker PANICKED
-        #      (index out of range [0]). FIXED fleet-wide by graphics.SetBuffer's size<=0 guard (opengl.go).
-        #   2. With options stripped, citra initialized its GL renderer (GL_VERSION 3.3.0 NVIDIA, GL_RENDERER
-        #      4070 Ti) and then ACCESS-VIOLATED (0xC0000005, rip=0x0 — call through a null fn ptr) right
-        #      after GL init, BOTH with usesLibCo true AND false. That is a deep citra GL-context/threading
-        #      incompatibility, a multi-day worker-patch effort — beyond the allowed-to-fail day cap.
-        # DOCUMENTED FALLBACK if 3DS is ever wanted: run Citra STANDALONE and capture its window via the
-        # capture lane (docs/arcade-capture-worker-plan.md), like the other heavy titles — NOT this core.
-        # If revisiting citra_libretro: extract layout/resolution tokens from the DLL's UpdateSettings
-        # compares (not display labels), stage a 3DS shared font (sysdata), and get a gdb backtrace of the
-        # 0xC0000005 (arcade skill's gdb runbook). The pointer mechanism WOULD extend here (citra polls
-        # RETRO_DEVICE_POINTER) once it boots. To re-enable for testing: re-stage ROMs + set IsEnabled=1.
+        # ─── Nintendo 3DS via citra_libretro — VULKAN RENDERER (W10, 2026-07-23) ────────────────────────
+        # The GL path is a dead end here: the DEPLOYED citra_libretro.dll (Lime3DS/PabloMK7 lineage, built
+        # 2026-07-23) requested a GL 3.3 CORE context and then null-called (0xC0000005 rip=0) into its own
+        # glad loader for a GL 4.x entry point right after GL init — the classic "core needs 4.3+ compute,
+        # got a 3.3 context" fault (Saturn Kronos crash class). BUT the same DLL ships a FULL Vulkan
+        # renderer (video_core/renderer_vulkan: vk_instance/vk_swapchain/RasterizerVulkan) AND a software
+        # one, and — DLL string audit — has NO renderer core-option (`graphics_api` is an internal Settings
+        # field, not a citra_* option, sitting beside physical_device/use_gles/renderer_debug). So, exactly
+        # like flycast/dolphin/ppsspp, citra picks its renderer from the FRONTEND's preferred HW context:
+        # GET_PREFERRED_HW_RENDER answers VULKAN when hwContext:"vulkan" (nanoarch.go), and citra then runs
+        # renderer_vulkan on our proven Vulkan-capture plumbing (vkm2) — no worker rebuild, the Vk frontend
+        # is already live (it runs ps2/psp/dc/ps1). Same recipe as those: isGlAllowed:false + hwContext:
+        # vulkan + usesLibCo + skip_hw_context_destroy. ROMs are DECRYPTED No-Intro .3ds (NCCH NoCrypto),
+        # no aes_keys.txt needed. First boot runs with NO options (citra defaults every setting → valid
+        # geometry); the prior GL attempt PANICKED on bad option value tokens — re-add citra_layout_option/
+        # citra_resolution_factor/touchscreen only with tokens extracted from the DLL, AFTER it boots.
+        # Touch (bottom screen) rides the existing pointer mechanism (citra polls RETRO_DEVICE_POINTER) —
+        # add "3ds" to POINTER_SYSTEMS once video is proven. 2 ingested rows: 68835/68836.
         3ds:
-          lib: citra_libretro
+          # CUSTOM CORE (2026-07-24): citra_custom_libretro.dll = libretro/citra + a 2-line MovieTheater
+          # patch (docker/arcade/citra-build-core.bat) that un-comments the citra_graphics_api option +
+          # FetchVariable — stock HARDCODES graphicsApi="OpenGL" so it always asked for OPENGL_CORE (which
+          # our WGL can't host → GL3.3-ctx null-call 0xC0000005). With the patch + citra_graphics_api:Vulkan
+          # below, citra runs its renderer_vulkan on our vkm2 Vulkan-capture path. The custom NAME pins it
+          # vs libretro.cores.repo.sync (same trick as dolphin_custom/pcsx2_custom). ROLLBACK: lib:
+          # citra_libretro (stock sits beside it). ⚠ re-run the build script after any citra core update.
+          lib: citra_custom_libretro
           folder: 3ds
           roms: ["3ds", "cci", "cxi", "cia", "app"]
-          isGlAllowed: true
+          isGlAllowed: false          # Vulkan by default (see hwContext); GL zero-copy arming stays off
+          hwContext: "vulkan"         # frontend answers GET_PREFERRED_HW_RENDER=VULKAN; with graphics_api
+                                      # Auto that alone would select Vk, but we pin it explicitly below
           coreAspectRatio: true
-          usesLibCo: false   # neither true nor false survived GL init (0xC0000005); left at last-tested value
+          usesLibCo: true             # retro_run + context_reset on one cothread (the Vulkan-capture path)
           vfr: false
           scale: 1
+          # Vulkan teardown hack (proven on ps2/psp/dc): skip the core's context_destroy so a Vk room close
+          # can't deadlock/crash the single-thread model. Remove only if citra's Vk teardown proves clean.
+          hacks: [skip_hw_context_destroy]
+          options:
+            # Deterministic renderer select (custom-core option; token from the DLL's own value list).
+            # This is the ONLY option for first boot — citra defaults everything else (valid geometry);
+            # the prior GL attempt PANICKED on bad layout/resolution tokens, so add those later, from the DLL.
+            citra_graphics_api: "Vulkan"
 
 
 encoder:
