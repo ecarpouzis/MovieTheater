@@ -87,6 +87,35 @@ namespace MovieTheater.Arcade
                     "Only affects games flycast ships a widescreen cheat for; harmless otherwise."),
             },
 
+            // Nintendo DS — melonDS DS (melonds_ prefix). ONLY the internal-resolution lever is exposed:
+            // render_mode is deliberately NOT here (opengl is load-bearing — the software renderer can't
+            // upscale AND the stylus/touch path is wired for the GL frame; changing it would break both).
+            // Default 4 matches config.worker-gl.yaml. Integer range 1..8 (the core's own bounds); a bad
+            // token silently no-ops in libretro, so the range guard is the validation.
+            ["melondsds"] = new()
+            {
+                new CoreOption("melonds_opengl_resolution", "Internal resolution (upscale)", Category.Video,
+                    Array.Empty<OptionValue>(), "4",
+                    "1 = native (256x192/screen), up to 8x. Higher = sharper 3D, bigger stream. Default 4x.",
+                    IsRange: true, RangeMin: 1, RangeMax: 8),
+            },
+
+            // Nintendo 3DS — citra (citra_ prefix). Same policy: expose only the resolution factor;
+            // citra_graphics_api stays pinned to OpenGL (touch needs the GL MouseTracker) and is NOT here.
+            // Tokens are citra's EXACT value list ("1x (Native)", "2x", …) — an enum, not a plain int.
+            // Default "2x" matches config.worker-gl.yaml.
+            ["citra"] = new()
+            {
+                new CoreOption("citra_resolution_factor", "Internal resolution (upscale)", Category.Video,
+                    new[]
+                    {
+                        V("1x (Native)", "1x (Native)"), V("2x", "2x"), V("3x", "3x"), V("4x", "4x"),
+                        V("5x", "5x"), V("6x", "6x"), V("7x", "7x"), V("8x", "8x"), V("9x", "9x"),
+                        V("10x", "10x"),
+                    }, "2x",
+                    "Renders the 3D at N× the 3DS's native resolution. Higher = sharper, bigger stream. Default 2x."),
+            },
+
             // GameCube — dolphin.
             ["dolphin"] = new()
             {
@@ -176,6 +205,7 @@ namespace MovieTheater.Arcade
             ["genesis"] = "genesis_plus_gx", ["sms"] = "genesis_plus_gx", ["gg"] = "genesis_plus_gx", ["segacd"] = "genesis_plus_gx",
             ["sega32x"] = "picodrive", ["gb"] = "mgba", ["gbc"] = "mgba", ["gba"] = "mgba",
             ["arcade"] = "fbneo", ["neogeo"] = "fbneo", ["saturn"] = "kronos", ["dos"] = "dosbox_pure",
+            ["nds"] = "melondsds", ["3ds"] = "citra",
         };
 
         /// <summary>The core a system's config maps to by default (null if the system isn't mapped).</summary>

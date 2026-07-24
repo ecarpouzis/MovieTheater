@@ -226,12 +226,13 @@ namespace MovieTheater.Services.Arcade
             // so it earns ps1's number, not psp's. Measured live 2026-07-24: peers estimated ~7.3 Mbps
             // while the room was pinned at the 5000 default, i.e. real unused headroom.
             "3ds" => 6000,
-            // DS (melonDS) delivers 512x768 after a nearest 2x of the 256x384 stacked frame; true
-            // detail is only 0.098 Mpx and most of it is 2D, so 5000 is genuinely generous here
-            // (~0.13 bpp on delivered pixels). Listed EXPLICITLY rather than left to fall through:
-            // the wii bug (2026-07-22) was a real 3D core silently inheriting the 2D default, and an
-            // intentional 5000 and an accidental 5000 should not look the same in this switch.
-            "nds" => 5000,
+            // DS (melonDS) now renders its 3D at 4x native via the OpenGL renderer (2026-07-24), so it
+            // delivers a 1024x1536 stacked frame = 1.57 Mpx of REAL detail (was 512x768 nearest-stretch
+            // at 5000). That is more encoded pixels than ps2 (1.15 Mpx), but DS 3D is simple flat-shaded
+            // low-poly that compresses well, so 8000 (~0.08 bpp) is ample. Config pairs opengl_resolution
+            // with this — drop both together for less bandwidth. Was the wii-bug class before it earned
+            // this: a real 3D core must not sit on the 2D default.
+            "nds" => 8000,
             // Everything 2D: nearest-upscaled flat blocks. 5 Mbps is already generous.
             _ => 5000,
         };

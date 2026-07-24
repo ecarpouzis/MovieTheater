@@ -1532,21 +1532,31 @@ emulator:
           lib: melondsds_libretro
           folder: nds
           roms: ["nds"]
-          scale: 2
+          # OPENGL upscaling (2026-07-24). melonDS renders the 3D at 4x native via its OpenGL renderer
+          # (melonds_render_mode:opengl + melonds_opengl_resolution:4 below) → the frame arrives at
+          # 1024x1536 already, so scale:1 (no server nearest-stretch). Real detail, not a blur.
+          # STOCK melondsds_libretro.dll — NO custom core build (the from-source build with symbols was
+          # only used to DIAGNOSE the crash; the actual fixes are worker-side + these three flags).
+          isGlAllowed: true      # GL hw-render path (melonDS's OpenGL renderer wants a GL context)
+          coreAspectRatio: true  # GL cores must send their AR or the client can't orient/letterbox
+          # usesLibCo IS LOAD-BEARING for the OpenGL renderer, NOT a perf knob. Without it the worker
+          # makes the GL context current on the LoadGame thread, UNLOCKS it, then runs retro_run on
+          # another thread — so melonDS's GLCompositor::RenderFrame issues glBindFramebuffer with NO
+          # current context and the NVIDIA driver access-violates (gdb on a from-source build pinned it
+          # to GPU_OpenGL.cpp:242). LibCo keeps context_reset + retro_run on ONE cothread where the
+          # context stays current. It also incidentally fixed the JIT fastmem crash, so fastmem stays
+          # ENABLED (default). (melonDS has NO Vulkan renderer — Software/OpenGL/GL-Compute only — so
+          # unlike 3ds this is OpenGL-only; there is no Vulkan path to mirror.)
+          usesLibCo: true
+          scale: 1
           scaleMethod: nearest-neighbour
-          # coreAspectRatio: NOT NEEDED — leave it off. (Superseded 2026-07-24, after the deploy.)
-          # melonDS reports the right aspect ("[geom] base 256x384 max 1030x576 AR=0.6667") and turning
-          # this on does fix the 2x horizontal stretch server-side (measured 1.332 -> 0.667, no site
-          # deploy). BUT prod's ArcadeRoomPage has neither the `nds` FALLBACK_AR entry nor the
-          # `portrait` branch (both live only on w10-ds-arcade), so it styles every stream
-          # width:100% + aspectRatio. Handing it a PORTRAIT ratio makes the element ~1461px tall on a
-          # 974px-wide stage: correct proportions, but it overflows the page and the player has to
-          # scroll. That branch is now LIVE, and its client-side FALLBACK_AR (nds: 256/384) plus the
-          # portrait sizing already give the correct ratio: DS measured 0.667 on real prod, down from
-          # 1.332. Turning this on would only re-derive the same number from the core, so it stays off.
-          # coreAspectRatio: true
           options:
-            melonds_render_mode: "software"
+            melonds_render_mode: "opengl"
+            # 4x internal (256x192 → 1024x768 per screen; stacked frame 1024x1536). The 4070 Ti renders
+            # DS at 4x for free (60.0 ticks/s). Pairs with "nds" => 8000 in
+            # CloudRetroHost.DefaultVideoBitrateKbps for the larger portrait encode. Lower for less
+            # bandwidth (a bad token PANICS the core — values 1..8).
+            melonds_opengl_resolution: "4"
             melonds_touch_mode: "touch"
             melonds_console_mode: "ds"
             melonds_boot_mode: "direct"
