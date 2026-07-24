@@ -1587,16 +1587,21 @@ emulator:
           lib: citra_custom_libretro
           folder: 3ds
           roms: ["3ds", "cci", "cxi", "cia", "app"]
-          # VULKAN (2026-07-24). BOTH renderers now work and were A/B'd live on MK7 with identical
-          # picture; Vulkan wins because it rides the proven vkm2 zero-copy capture path.
-          # The long-standing "3DS is black" was NEVER a renderer bug — it was the MSVC handler-table
-          # miscompile (see citra-build-core.bat /vmg + service.h), which broke HLE dispatch and made
-          # the guest fatal-error on APT:U under EITHER renderer.
-          # ROLLBACK to GL (also verified good): isGlAllowed: true + drop hwContext +
-          # citra_graphics_api: "OpenGL". GL needs the core's 4.3-context request (was 3.3, which left
-          # glad's 4.x pointers NULL — the old rip=0x0 crash); that fix is already in the custom core.
-          isGlAllowed: false
-          hwContext: "vulkan"
+          # GL, and NOT by preference — TOUCH ONLY EXISTS ON THE GL PATH. citra builds its
+          # MouseTracker in EmuWindow_LibRetro::CreateContext() behind `if (useOpenGL)`, and that
+          # tracker is what feeds TouchPressed/TouchMoved; under Vulkan it is never constructed, so
+          # the 3DS bottom screen is untouchable. It cannot simply be constructed anyway: its ctor
+          # COMPILES GL SHADERS for the cursor overlay, so Vulkan touch needs input state split from
+          # that overlay — a real citra refactor, not a flag.
+          # Both renderers were A/B'd live on MK7 and draw an identical picture, and GL zero-copy is
+          # armed here ("GL zero-copy armed for 3ds (no glReadPixels)"), so choosing GL costs nothing.
+          # GL depends on the custom core asking for a 4.3 context (stock asked 3.3 while citra's own
+          # gl_driver demands 4.3 and nothing checks IsSuitable() — that was the rip=0x0 crash).
+          # The old "3DS is black" was NEVER a renderer bug: it was the MSVC handler-table miscompile
+          # (citra-build-core.bat /vmg + service.h), which killed the guest under EITHER renderer.
+          # ROLLBACK to Vulkan (renders fine, but NO touch): isGlAllowed: false + hwContext: "vulkan"
+          # + citra_graphics_api: "Vulkan".
+          isGlAllowed: true
           coreAspectRatio: true
           usesLibCo: true             # retro_run + context_reset on one cothread (the Vulkan-capture path)
           vfr: false
@@ -1617,7 +1622,15 @@ emulator:
             # Deterministic renderer select (custom-core option; token from the DLL's own value list).
             # This is the ONLY option for first boot — citra defaults everything else (valid geometry);
             # the prior GL attempt PANICKED on bad layout/resolution tokens, so add those later, from the DLL.
-            citra_graphics_api: "Vulkan"
+            citra_graphics_api: "OpenGL"
+            # Stylus/touch (2026-07-24). citra's MouseTracker reads RETRO_DEVICE_ID_POINTER_PRESSED only
+            # when THIS option is on, and it ships "disabled" — so the pointer packets the client already
+            # sends (the melonDS mechanism, unchanged) moved the cursor but never tapped. citra does the
+            # same full-frame->layout transform melonDS does: it maps the normalized pointer into the
+            # frame, clamps to the bottomScreen rect and subtracts its origin, so the client stays
+            # layout-agnostic and "3ds" just joins POINTER_SYSTEMS. Tokens taken from the DLL's own
+            # values[] list ("disabled|enabled") — bad tokens PANIC this core.
+            citra_touch_touchscreen: "enabled"
 
 
 encoder:

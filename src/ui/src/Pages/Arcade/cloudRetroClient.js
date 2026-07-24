@@ -439,7 +439,11 @@ function encodeInput(mask, axes) {
 // Systems whose core consumes RETRO_DEVICE_POINTER (touch/stylus). The core maps a full-frame
 // normalized pointer through its screen layout to the touch panel itself (melonDS DS), so the client
 // stays layout-agnostic — it only delivers where in the video frame the pointer is. Extensible.
-const POINTER_SYSTEMS = new Set(["nds"]);
+// 3ds joins unchanged (2026-07-24): citra's MouseTracker does the same full-frame->layout transform
+// melonDS does (normalized pointer -> frame pixels -> clamped into the bottomScreen rect), so nothing
+// client-side is 3DS-specific. Needs citra_touch_touchscreen:"enabled" in config.worker-gl.yaml —
+// without it citra ignores POINTER_PRESSED and taps never register.
+const POINTER_SYSTEMS = new Set(["nds", "3ds"]);
 export function systemUsesPointer(system) { return POINTER_SYSTEMS.has(String(system || "").toLowerCase()); }
 
 // Pointer wire packet (W10 stylus/touch) — rides the SAME "data" channel as the pad frame, length+tag

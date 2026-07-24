@@ -76,7 +76,11 @@ param(
     #    new worker as "port drift" (bound a mux port not in this list). See the watchdog task registration.
     [string] $LogDir = "D:\ArcadeStorage\logs",
     [string] $LogFile = "D:\ArcadeStorage\logs\glworker-watchdog.log",
-    [string] $CoordLog = "D:\ArcadeStorage\logs\coordinator.log"  # check D: coordinator work-timeout signal
+    [string] $CoordLog = "D:\ArcadeStorage\logs\coordinator.log",  # check D: coordinator work-timeout signal
+    # Husk accounting: how many lingering husks before we advise a reboot. Small on purpose -- husks
+    # cost ~0.7-0.9 GB of COMMIT and ~1700 handles each (measured 2026-07-24), so a couple is already
+    # worth clearing at the next convenient moment even though none of them costs any CPU.
+    [int]    $HuskAdviseThreshold = 2
 )
 
 # The task runs under a headless conhost: any cmdlet progress rendering (Invoke-RestMethod
@@ -201,7 +205,78 @@ function KillWorker([int]$wpid, [string]$why) {
     }
 }
 
-Log "watchdog v2 started (coordinator port: $CoordinatorPort, interval: ${IntervalSec}s, worker ports: $($WorkerPorts -join ','), wedge stale: ${WedgeStaleSec}s)"
+# ---- Husk accounting ---------------------------------------------------------------------------
+# A HUSK is a worker process that has already died in every sense that matters -- its last thread is
+# parked forever in a kernel-mode GPU-driver teardown -- but that Windows will not reap. It is NOT the
+# same population as $zombies: $zombies only holds PIDs THIS watchdog force-killed and watched survive.
+# A husk can also be left behind by the worker's own sentinel HardExit or by a core crash, i.e. by a
+# path the watchdog never touched, so nothing was counting them and they accumulated unnoticed.
+#
+# Signature (measured 2026-07-24): process name 'worker', thread count 1 (a healthy worker runs ~14-21),
+# 0 CPU forever because that one thread is never scheduled, tiny working set (0.2-7 MB) -- but ~0.7-0.9 GB
+# of COMMIT CHARGE and ~1700 handles each. Commit is the real cost: enough husks and the box starts
+# refusing allocations while Task Manager still shows plenty of "free" RAM.
+#
+# We only report. Killing is proven futile (that is what makes it a husk), and a reboot is an operator
+# decision -- so the output is an advisory, not an action.
+$huskSeen = @{}          # PID -> $true, so we log each husk's arrival once instead of every 30s
+$huskLastAdvise = [datetime]::MinValue
+
+function HuskScan {
+    $now = Get-Date
+    $husks = @()
+    foreach ($p in @(Get-Process -Name worker -ErrorAction SilentlyContinue)) {
+        try {
+            # Guard against a worker caught mid-startup: a booting process can momentarily show few
+            # threads, and reaping-adjacent alarms about a healthy worker are worse than a late one.
+            if ($p.Threads.Count -gt 1) { continue }
+            if (($now - $p.StartTime).TotalSeconds -lt 120) { continue }
+            $husks += $p
+        } catch { continue }   # process exited between enumeration and inspection
+    }
+
+    foreach ($p in $husks) {
+        if ($huskSeen[$p.Id]) { continue }
+        $huskSeen[$p.Id] = $true
+        # PageFileUsage (commit) is the number that actually matters; WorkingSet looks harmlessly small.
+        # It is reported in KILOBYTES, so GB = /1MB. (Dividing by 1KB gives MB -- that mislabel read as
+        # "830 GB per husk" in testing, which would have sent someone hunting a nonexistent leak.)
+        $commitGb = 0; $handles = 0
+        try {
+            $ci = Get-CimInstance Win32_Process -Filter ("ProcessId={0}" -f $p.Id) -ErrorAction SilentlyContinue
+            if ($ci) { $commitGb = [math]::Round($ci.PageFileUsage / 1MB, 2); $handles = $ci.HandleCount }
+        } catch { }
+        Log ("HUSK: worker PID {0} is a 1-thread husk (started {1}) -- 0 CPU, but ~{2} GB commit and {3} handles. Cannot be killed; only a reboot frees it." `
+             -f $p.Id, $p.StartTime.ToString('s'), $commitGb, $handles)
+    }
+    foreach ($k in @($huskSeen.Keys)) { if ($husks.Id -notcontains $k) { $huskSeen.Remove($k) | Out-Null } }
+
+    if ($husks.Count -ge $HuskAdviseThreshold) {
+        # Re-state periodically rather than every cycle: this is a "when convenient" nudge, and a line
+        # every 30s would train the reader to scroll past it.
+        if (($now - $huskLastAdvise).TotalMinutes -ge 10) {
+            $script:huskLastAdvise = $now
+            $totalGb = 0
+            foreach ($p in $husks) {
+                try {
+                    $ci = Get-CimInstance Win32_Process -Filter ("ProcessId={0}" -f $p.Id) -ErrorAction SilentlyContinue
+                    if ($ci) { $totalGb += $ci.PageFileUsage / 1MB }
+                } catch { }
+            }
+            Log ("REBOOT ADVISED WHEN CONVENIENT: {0} wedged worker husks lingering (PIDs {1}) holding ~{2} GB of commit. Nothing is broken right now -- they just never go away on their own." `
+                 -f $husks.Count, (($husks.Id | Sort-Object) -join ','), [math]::Round($totalGb, 2))
+        }
+        Set-Content -Path (Join-Path $LogDir "HUSKS-reboot-advised.flag") `
+            -Value ("{0}  {1} husks: {2}" -f (Get-Date -Format o), $husks.Count, (($husks.Id | Sort-Object) -join ',')) `
+            -Encoding UTF8 -ErrorAction SilentlyContinue
+    } else {
+        # Cleared by a reboot (or by the husks finally being reaped) -- drop the flag so it never
+        # advises a reboot that already happened.
+        Remove-Item (Join-Path $LogDir "HUSKS-reboot-advised.flag") -Force -ErrorAction SilentlyContinue
+    }
+}
+
+Log "watchdog v2 started (coordinator port: $CoordinatorPort, interval: ${IntervalSec}s, worker ports: $($WorkerPorts -join ','), wedge stale: ${WedgeStaleSec}s, husk advise at: $HuskAdviseThreshold)"
 $strikes = @{}       # PID -> consecutive no-coordinator-connection strikes (check A)
 $wedgeStrikes = @{}  # PID -> consecutive busy-but-silent strikes (check C)
 $lastActedTimeout = [datetime]::MinValue  # newest coordinator work-timeout already acted on (check D)
@@ -388,6 +463,9 @@ while ($true) {
             if ($livePids[$zp]) { Log ("REMINDER: worker PID {0} still WEDGED/unkillable -- BOX REBOOT REQUIRED" -f $zp) }
             else { $zombies.Remove($zp) | Out-Null }
         }
+
+        # Count husks the watchdog never killed itself (sentinel HardExit, core crash) -- see HuskScan.
+        HuskScan
 
         # Tidy strike entries for PIDs that no longer exist.
         foreach ($k in @($strikes.Keys)) { if (-not $livePids[$k]) { $strikes.Remove($k) | Out-Null } }
