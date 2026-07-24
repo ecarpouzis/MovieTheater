@@ -1600,7 +1600,9 @@ emulator:
           # gl_driver demands 4.3 and nothing checks IsSuitable() — that was the rip=0x0 crash).
           # The old "3DS is black" was NEVER a renderer bug: it was the MSVC handler-table miscompile
           # (citra-build-core.bat /vmg + service.h), which killed the guest under EITHER renderer.
-          # ROLLBACK to Vulkan (renders fine, but NO touch): isGlAllowed: false + hwContext: "vulkan"
+          # ROLLBACK to Vulkan (renders fine + upscales at 2x, but NO touch — validated 2026-07-24:
+          # synthetic surface sizes 800x960 from the factor-scaled av_info max, no crop):
+          #   isGlAllowed: false + hwContext: "vulkan"
           # + citra_graphics_api: "Vulkan".
           isGlAllowed: true
           coreAspectRatio: true
