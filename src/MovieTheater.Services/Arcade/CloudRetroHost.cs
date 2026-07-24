@@ -226,6 +226,13 @@ namespace MovieTheater.Services.Arcade
             // so it earns ps1's number, not psp's. Measured live 2026-07-24: peers estimated ~7.3 Mbps
             // while the room was pinned at the 5000 default, i.e. real unused headroom.
             "3ds" => 6000,
+            // Saturn (kronos) is a REAL GL 3D core — the ONLY GL 3D core in config.worker-gl.yaml not on
+            // the Vulkan capture path — so it must not sit on the 2D default the way wii did (2,522 enabled
+            // games). Kronos renders at native (kronos_resolution_mode is unset, so no confirmed base-geometry
+            // upscale) and our scale:2 nearest-doubles it; the TRUE 3D detail is therefore the pre-double
+            // native frame (~0.07-0.16 Mpx for the 320x224 3D modes), squarely in ps1's range — so it earns
+            // ps1's number. A generous ceiling costs a thin uplink nothing: ABR (patch 0021) walks it down.
+            "saturn" => 6000,
             // DS (melonDS) now renders its 3D at 4x native via the OpenGL renderer (2026-07-24), so it
             // delivers a 1024x1536 stacked frame = 1.57 Mpx of REAL detail (was 512x768 nearest-stretch
             // at 5000). That is more encoded pixels than ps2 (1.15 Mpx), but DS 3D is simple flat-shaded

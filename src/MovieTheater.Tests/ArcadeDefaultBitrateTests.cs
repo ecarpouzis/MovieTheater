@@ -26,6 +26,10 @@ namespace MovieTheater.Tests
         [InlineData("naomi", 11000)]      // same flycast pipeline as dc — must not fall to the 2D default
         [InlineData("atomiswave", 11000)] // when their catalogs get enabled
         [InlineData("ps1", 6000)]
+        [InlineData("saturn", 6000)] // real GL 3D core (kronos) — must not fall to the 2D default
+        [InlineData("3ds", 6000)]
+        [InlineData("nds", 8000)]
+        [InlineData("wii", 14000)]
         [InlineData("arcade", 5000)]
         [InlineData("snes", 5000)]
         [InlineData("genesis", 5000)]
