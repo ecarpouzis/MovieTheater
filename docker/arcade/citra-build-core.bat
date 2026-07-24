@@ -1,12 +1,24 @@
 @echo off
 rem Builds citra_custom_libretro.dll from D:\Arcade\build\citra (github.com/libretro/citra) with the
-rem MovieTheater graphics-api patch: TWO lines in src/citra_libretro/citra_libretro.cpp are un-commented
-rem   - retro_variable values[]:  {"citra_graphics_api","Graphics API (restart); Auto|Vulkan|OpenGL"}
-rem   - UpdateSettings():          auto graphicsApi = LibRetro::FetchVariable("citra_graphics_api","Auto");
-rem Stock hardcodes graphicsApi="OpenGL" so citra ALWAYS requests RETRO_HW_CONTEXT_OPENGL_CORE (which our
-rem WGL stack cannot host - GL 3.3 ctx then null-calls a GL 4.x fn, 0xC0000005). With the patch, "Auto"
-rem honors the frontend GET_PREFERRED_HW_RENDER (our worker answers VULKAN when hwContext:"vulkan"), so
-rem citra runs renderer_vulkan on our proven vkm2 Vulkan-capture path. Config sets citra_graphics_api:"Vulkan".
+rem MovieTheater patch set in docker\arcade\citra-msvc-vs18.patch. Four functional changes on top of
+rem the MSVC build fixes (all verified live 2026-07-24 on MK7):
+rem  1. citra_graphics_api option un-commented (values[] + UpdateSettings FetchVariable). Stock
+rem     hardcodes graphicsApi="OpenGL" so citra ALWAYS requests RETRO_HW_CONTEXT_OPENGL_CORE (which our
+rem     WGL stack cannot host - GL 3.3 ctx then null-calls a GL 4.x fn, 0xC0000005). With the patch,
+rem     "Auto" honors GET_PREFERRED_HW_RENDER (our worker answers VULKAN when hwContext:"vulkan"), so
+rem     citra runs renderer_vulkan on our vkm2 Vulkan-capture path. Config sets citra_graphics_api:"Vulkan".
+rem  2. vk_create_device now forwards the frontend's required_device_extensions into
+rem     Vulkan::Instance::CreateDevice (new SetExtraDeviceExtensions). Stock DROPPED them, so the device
+rem     had no VK_KHR_external_memory_win32/_semaphore_win32 and our zero-copy capture could not export
+rem     (vkGetMemoryWin32HandleKHR == NULL). NOTE: enabled_extensions static_vector 13 -> 24.
+rem  3. vk_present_window post-barrier ends in eShaderReadOnlyOptimal, not ePresentSrcKHR - the libretro
+rem     "swapchain" is a set_image handoff that ADVERTISES SHADER_READ_ONLY_OPTIMAL; the mismatch let the
+rem     driver discard contents.
+rem  4. retro_get_system_av_info max geometry = base (400x480) instead of base*10. The frontend sizes its
+rem     synthetic VkSurfaceKHR from max and then reads back only base, so 10x meant capturing the
+rem     top-left 1%. COUPLED: raise both if citra_resolution_factor ever goes above 1x.
+rem Also present (env-gated, OFF by default) are three black-screen diagnostics: CITRA_MT_CLEAR_TEST,
+rem CITRA_MT_GREEN_CLEAR, CITRA_MT_NO_ACCEL_DISPLAY - see the memory note for what each one proves.
 rem Deploy KEEPS the custom name citra_custom_libretro.dll (pins vs libretro.cores.repo.sync overwrite).
 rem Toolchain = MSVC (dolphin/lrps2 pattern); citra builds all externals from source (no prebuilt .libs),
 rem /MD runtime (VCRUNTIME140 present on Ziggy). QT off (not installed); SDL2 off (libretro uses own window).

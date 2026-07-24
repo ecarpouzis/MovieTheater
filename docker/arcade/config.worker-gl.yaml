@@ -1586,7 +1586,11 @@ emulator:
           scale: 1
           # Vulkan teardown hack (proven on ps2/psp/dc): skip the core's context_destroy so a Vk room close
           # can't deadlock/crash the single-thread model. Remove only if citra's Vk teardown proves clean.
-          hacks: [skip_hw_context_destroy]
+          # vk_synthetic_surface (added 2026-07-24): citra_libretro carries its OWN swapchain
+          # (src/citra_libretro/vulkan/vk_swapchain.cpp) and stashes the frontend surface
+          # (emu_window->vkSurface = surface) in vk_create_device, so a VK_NULL_HANDLE there is the same
+          # trap PPSSPP hit on 2026-07-16 — it access-violates once the presentation path touches it.
+          hacks: [skip_hw_context_destroy, vk_synthetic_surface]
           options:
             # Deterministic renderer select (custom-core option; token from the DLL's own value list).
             # This is the ONLY option for first boot — citra defaults everything else (valid geometry);

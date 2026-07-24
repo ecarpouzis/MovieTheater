@@ -2162,7 +2162,7 @@ index be5ac42..0321825 100644
  var workerConfigPath string
  
 diff --git a/pkg/coordinator/coordinator.go b/pkg/coordinator/coordinator.go
-index ffc5c7d..85afeb9 100644
+index ffc5c7d..7a33a81 100644
 --- a/pkg/coordinator/coordinator.go
 +++ b/pkg/coordinator/coordinator.go
 @@ -26,6 +26,10 @@ func New(conf config.CoordinatorConfig, log *logger.Logger) (*Coordinator, error
@@ -2176,6 +2176,144 @@ index ffc5c7d..85afeb9 100644
  		return mux
  	})
  	if err != nil {
+@@ -39,6 +43,8 @@ func New(conf config.CoordinatorConfig, log *logger.Logger) (*Coordinator, error
+ }
+ 
+ func (c *Coordinator) Start() {
++	// MovieTheater: begin deregistering dead/wedged workers (zombie-worker fix — see health.go).
++	c.hub.startHealthMonitor()
+ 	for _, s := range c.services {
+ 		if s != nil {
+ 			s.Run()
+diff --git a/pkg/coordinator/health.go b/pkg/coordinator/health.go
+new file mode 100644
+index 0000000..5646d4c
+--- /dev/null
++++ b/pkg/coordinator/health.go
+@@ -0,0 +1,123 @@
++package coordinator
++
++import (
++	"net/http"
++	"time"
++
++	"github.com/giongto35/cloud-game/v3/pkg/com"
++)
++
++// Worker idle/liveness health-check (MovieTheater).
++//
++// THE ZOMBIE-WORKER FIX. A worker is normally removed from the hub only when its coordinator WS
++// connection closes (handleWorkerConnection's deferred RemoveDisconnect). But a worker that crashes
++// into a wedged, unkillable 1-thread process — the observed failure after an idle/teardown core crash
++// or the citra GL-load crash — keeps its half-open TCP socket, so that disconnect NEVER fires. The dead
++// worker then lingers in the registry, keeps being handed rooms by findWorkerFor / find1stFreeWorker,
++// and every room routed to it hangs at "Negotiating" while the whole main zone reads as "the arcade is
++// full". Recovery previously required a coordinator restart or a full box reboot.
++//
++// This monitor makes that a self-healing capacity blip instead of an outage: it periodically GETs each
++// worker's own HTTP /echo endpoint (Worker.PingServer, already advertised in the handshake). A live
++// worker answers /echo from its HTTP goroutine regardless of what the emulator thread is doing — so a
++// genuinely SLOW room (a cold PS2 boot, a shader cache) still passes and is NEVER dropped. A process
++// that is actually dead cannot answer at all; after maxFails consecutive failures it is deregistered
++// (Disconnect + Remove), including one that still claims a RoomId, because that room is already lost
++// with the process. We do NOT try to kill the wedged process (proven futile — it needs a reboot); we
++// just stop routing rooms to it, which is what turns the outage into a blip.
++const (
++	healthCheckInterval = 15 * time.Second
++	healthCheckTimeout  = 4 * time.Second
++	healthCheckMaxFails = 4 // ~60s unresponsive before deregister — rides out transient blips
++)
++
++type workerHealthMonitor struct {
++	hub      *Hub
++	interval time.Duration
++	timeout  time.Duration
++	maxFails int
++	client   *http.Client
++	fails    map[com.Uid]int
++}
++
++// startHealthMonitor launches the background worker-liveness loop. Call once, from the real
++// coordinator's Start() (never from NewHub, which unit tests use with unreachable fake workers).
++func (h *Hub) startHealthMonitor() {
++	m := &workerHealthMonitor{
++		hub:      h,
++		interval: healthCheckInterval,
++		timeout:  healthCheckTimeout,
++		maxFails: healthCheckMaxFails,
++		client:   &http.Client{Timeout: healthCheckTimeout},
++		fails:    map[com.Uid]int{},
++	}
++	go m.run()
++	h.log.Info().Msgf("worker health monitor started (every %v, drop after %d misses)", m.interval, m.maxFails)
++}
++
++func (m *workerHealthMonitor) run() {
++	t := time.NewTicker(m.interval)
++	defer t.Stop()
++	for range t.C {
++		m.tick()
++	}
++}
++
++func (m *workerHealthMonitor) tick() {
++	// Snapshot under the map's RLock FIRST: NetMap.Values holds an RLock for the whole range, so
++	// calling RemoveDisconnect (a write) inside the range would deadlock. Ping + remove happen after.
++	var snapshot []*Worker
++	for w := range m.hub.workers.Values() {
++		snapshot = append(snapshot, w)
++	}
++
++	seen := make(map[com.Uid]struct{}, len(snapshot))
++	for _, w := range snapshot {
++		id := w.Id()
++		seen[id] = struct{}{}
++		if m.alive(w) {
++			if m.fails[id] > 0 {
++				m.hub.log.Info().Msgf("worker %v health recovered after %d misses", id, m.fails[id])
++				delete(m.fails, id)
++			}
++			continue
++		}
++		m.fails[id]++
++		n := m.fails[id]
++		m.hub.log.Warn().Msgf("worker %v missed health check %d/%d (room=%q free=%v ping=%v)",
++			id, n, m.maxFails, w.RoomId, w.HasSlot(), w.PingServer)
++		if n >= m.maxFails {
++			m.hub.log.Error().Msgf("worker %v unresponsive x%d — deregistering dead worker (room=%q); "+
++				"the process is wedged and needs an external restart/reboot, but it will no longer receive rooms",
++				id, n, w.RoomId)
++			m.hub.workers.RemoveDisconnect(w)
++			delete(m.fails, id)
++		}
++	}
++
++	// Forget counters for workers that left the registry on their own (clean disconnect).
++	for id := range m.fails {
++		if _, ok := seen[id]; !ok {
++			delete(m.fails, id)
++		}
++	}
++}
++
++// alive reports whether the worker answers its own HTTP /echo. A transport error (connect refused/reset,
++// timeout) means the process is not serving — i.e. dead/wedged. An empty PingServer can't be checked, so
++// it is treated as alive (never punish a worker we simply can't probe).
++func (m *workerHealthMonitor) alive(w *Worker) bool {
++	if w.PingServer == "" {
++		return true
++	}
++	req, err := http.NewRequest(http.MethodGet, w.PingServer, nil)
++	if err != nil {
++		return true // malformed URL is our problem, not the worker's — don't deregister over it
++	}
++	resp, err := m.client.Do(req)
++	if err != nil {
++		return false
++	}
++	_ = resp.Body.Close()
++	return resp.StatusCode == http.StatusOK
++}
 diff --git a/pkg/coordinator/hub.go b/pkg/coordinator/hub.go
 index ac04d15..a0c5ad9 100644
 --- a/pkg/coordinator/hub.go
@@ -3396,10 +3534,10 @@ index 53c3a2d..e5db5d0 100644
  			zerolog.TimestampFieldName,
  			"pid",
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
-index 99e02b8..89bcf26 100644
+index 99e02b8..515f52d 100644
 --- a/pkg/network/webrtc/factory.go
 +++ b/pkg/network/webrtc/factory.go
-@@ -3,19 +3,40 @@ package webrtc
+@@ -3,19 +3,45 @@ package webrtc
  import (
  	"fmt"
  	"net"
@@ -3431,6 +3569,11 @@ index 99e02b8..89bcf26 100644
  	api  *webrtc.API
  	conf webrtc.Configuration
 +
++	// udpConn is the single-port UDP socket (nil in multi-port mode). Retained so the worker's wedge
++	// sentinel / any HardExit path can Close() it and release the router-forwarded port immediately,
++	// before a raw process terminate that would otherwise leave the port held by a kernel-stuck husk.
++	udpConn *net.UDPConn
++
 +	// The cc interceptor builds one estimator per PeerConnection, synchronously inside
 +	// api.NewPeerConnection (cc.InterceptorFactory.NewInterceptor calls addPeerConnection before it
 +	// returns). We therefore serialise peer creation and drain the channel first, so the estimator a
@@ -3440,7 +3583,7 @@ index 99e02b8..89bcf26 100644
  }
  
  type ModApiFun func(m *webrtc.MediaEngine, i *interceptor.Registry, s *webrtc.SettingEngine)
-@@ -27,6 +48,48 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -27,6 +53,48 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	i := &interceptor.Registry{}
  
@@ -3489,7 +3632,15 @@ index 99e02b8..89bcf26 100644
  	if conf.DisableDefaultInterceptors {
  		sender, err := report.NewSenderInterceptor()
  		if err != nil {
-@@ -56,9 +119,27 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -49,6 +117,7 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 	if conf.IceLite {
+ 		s.SetLite(conf.IceLite)
+ 	}
++	var udpConn *net.UDPConn // single-port socket, retained on the factory for handle release on a wedge-exit
+ 	if conf.HasPortRange() {
+ 		if err = s.SetEphemeralUDPPortRange(conf.IcePorts.Min, conf.IcePorts.Max); err != nil {
+ 			return
+@@ -56,21 +125,75 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	if conf.HasSinglePort() {
  		var l any
@@ -3520,7 +3671,10 @@ index 99e02b8..89bcf26 100644
  		}
  		udp, ok := l.(*net.UDPConn)
  		if !ok {
-@@ -68,9 +149,44 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 			err = fmt.Errorf("use of not a UDP socket")
+ 			return
+ 		}
++		udpConn = udp
  		s.SetICEUDPMux(webrtc.NewICEUDPMux(customLogger, udp))
  		log.Info().Msgf("The single port mode is active for %s", udp.LocalAddr())
  	}
@@ -3567,7 +3721,7 @@ index 99e02b8..89bcf26 100644
  	}
  
  	s.SetICEMulticastDNSMode(ice.MulticastDNSModeDisabled)
-@@ -90,23 +206,103 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -90,23 +213,114 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  		mod(m, i, &s)
  	}
  
@@ -3608,10 +3762,21 @@ index 99e02b8..89bcf26 100644
 -		conf: c,
 +		api:     webrtc.NewAPI(webrtc.WithMediaEngine(m), webrtc.WithInterceptorRegistry(i), webrtc.WithSettingEngine(s)),
 +		conf:    c,
++		udpConn: udpConn,
 +		bweChan: bweChan,
  	}, err
  }
  
++// Close releases the single-port UDP socket (and thus the router-forwarded port). Called from a wedge
++// self-exit BEFORE the process terminates so a fresh worker can rebind the port immediately, even if a
++// kernel-stuck thread later leaves this process as a husk. No-op in multi-port mode or if called twice.
++func (a *ApiFactory) Close() error {
++	if a == nil || a.udpConn == nil {
++		return nil
++	}
++	return a.udpConn.Close()
++}
++
  func (a *ApiFactory) NewPeer() (*webrtc.PeerConnection, error) {
 -	return a.api.NewPeerConnection(a.conf)
 +	pc, _, err := a.newPeer()
@@ -4558,10 +4723,10 @@ index 5b3d3fe..e6ef733 100644
  		}
  	}
 diff --git a/pkg/os/os.go b/pkg/os/os.go
-index 42e8a10..36ad1a7 100644
+index 42e8a10..52df4d2 100644
 --- a/pkg/os/os.go
 +++ b/pkg/os/os.go
-@@ -4,18 +4,38 @@ import (
+@@ -4,18 +4,56 @@ import (
  	"bufio"
  	"bytes"
  	"errors"
@@ -4573,6 +4738,7 @@ index 42e8a10..36ad1a7 100644
  	"os/user"
 +	"path/filepath"
 +	"strings"
++	"sync/atomic"
  	"syscall"
 +	"time"
  )
@@ -4581,6 +4747,18 @@ index 42e8a10..36ad1a7 100644
  
  var ErrNotExist = os.ErrNotExist
  
++// beforeHardExit runs (best-effort, once) immediately before TerminateProcess on EVERY HardExit path.
++// A raw process termination does NOT free the process's OS handles if a kernel-stuck thread pins the
++// husk (the unkillable-zombie shape) — so a wedge-exit would leave the router-forwarded UDP mux port
++// and the HTTP listener held until a reboot, blocking a fresh worker from rebinding. Closing those
++// socket handles here (user-mode, fast) releases the ports at the kernel level right now, independent
++// of whether the process later fully exits. Set once by the worker at startup (SetBeforeHardExit); it
++// MUST be fast and never block (it runs on the exiting goroutine). No-op if unset (e.g. the coordinator).
++var beforeHardExit atomic.Pointer[func()]
++
++// SetBeforeHardExit registers the pre-terminate handle-release hook. Call once, early, from the worker.
++func SetBeforeHardExit(fn func()) { beforeHardExit.Store(&fn) }
++
 +// HardExit terminates the process RIGHT NOW via TerminateProcess, skipping Go runtime shutdown and
 +// — critically — DLL_PROCESS_DETACH notifications. os.Exit runs ExitProcess, which walks every
 +// loaded DLL's detach handler under the loader lock and terminates sibling threads on the way; when
@@ -4592,6 +4770,11 @@ index 42e8a10..36ad1a7 100644
 +// the MovieTheater repo). Same lesson as GstMediaPipe.Destroy's hard exit, promoted to a helper.
 +// Only for "this process is already broken — leave NOW, unwind nothing" paths.
 +func HardExit(code uint32) {
++	// Release OS handles (UDP mux + HTTP listener) BEFORE the raw terminate, so a fresh worker can
++	// rebind the router-forwarded port immediately even if this process lingers as a kernel-stuck husk.
++	if p := beforeHardExit.Load(); p != nil && *p != nil {
++		(*p)()
++	}
 +	h, _ := syscall.GetCurrentProcess()
 +	_ = syscall.TerminateProcess(h, code)
 +	select {} // TerminateProcess returns before the process is gone; never run code past this point
@@ -4600,7 +4783,7 @@ index 42e8a10..36ad1a7 100644
  func Exists(path string) bool {
  	_, err := os.Stat(path)
  	return !errors.Is(err, fs.ErrNotExist)
-@@ -32,13 +52,39 @@ func MakeDirAll(path string) error {
+@@ -32,13 +70,39 @@ func MakeDirAll(path string) error {
  	return os.MkdirAll(path, os.ModeDir|os.ModePerm)
  }
  
@@ -4642,7 +4825,7 @@ index 42e8a10..36ad1a7 100644
  	}()
  	return done
  }
-@@ -79,6 +125,13 @@ func CopyFile(from string, to string) (err error) {
+@@ -79,6 +143,13 @@ func CopyFile(from string, to string) (err error) {
  	if err != nil {
  		return err
  	}
@@ -4656,7 +4839,7 @@ index 42e8a10..36ad1a7 100644
  	return nil
  }
  
-@@ -123,3 +176,246 @@ func StatSize(path string) (int64, error) {
+@@ -123,3 +194,246 @@ func StatSize(path string) (int64, error) {
  func RemoveAll(path string) error {
  	return os.RemoveAll(path)
  }
@@ -47624,10 +47807,10 @@ index 2840a0e..c55a441 100644
  	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
  		var out api.Out
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..bbc31d5 100644
+index 6972cc7..42e3c0c 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,613 @@
+@@ -1,310 +1,619 @@
 -package worker
 -
 -import (
@@ -48383,8 +48566,14 @@ index 6972cc7..bbc31d5 100644
 +			})
 +
 +			w.log.Info().Msgf("Starting the game: %v", gameName)
-+			if err := app.Load(game, w.conf.Library.BasePath); err != nil {
-+				c.log.Error().Err(err).Msgf("couldn't load the game %v", game)
++			// Arm the wedge sentinel around the core load ONLY (app.Load is where a core
++			// crashes/hangs — the citra GL-load 0xC0000005). exit() runs on any return; if Load never
++			// returns (wedged), the sentinel trips at coreLoadDeadline, frees the port, and hard-exits.
++			w.sentinel.enter(phaseCoreLoad, coreLoadDeadline)
++			loadErr := app.Load(game, w.conf.Library.BasePath)
++			w.sentinel.exit()
++			if loadErr != nil {
++				c.log.Error().Err(loadErr).Msgf("couldn't load the game %v", game)
 +				r.Close()
 +				w.router.SetRoom(nil)
 +				return api.EmptyPacket
@@ -51823,19 +52012,136 @@ index 9ff9576..df798f8 100644
 +func NewGameSession(id string, s Session) *GameSession {
 +	return &GameSession{AppSession: AppSession{uid: SessionKey(id), Session: s}}
 +}
+diff --git a/pkg/worker/sentinel.go b/pkg/worker/sentinel.go
+new file mode 100644
+index 0000000..85249f5
+--- /dev/null
++++ b/pkg/worker/sentinel.go
+@@ -0,0 +1,110 @@
++package worker
++
++import (
++	"sync/atomic"
++	"time"
++
++	"github.com/giongto35/cloud-game/v3/pkg/logger"
++	xos "github.com/giongto35/cloud-game/v3/pkg/os"
++)
++
++type wedgePhase int32
++
++const (
++	phaseIdle wedgePhase = iota
++	phaseCoreLoad
++)
++
++func (p wedgePhase) String() string {
++	switch p {
++	case phaseCoreLoad:
++		return "core-load/room-start"
++	default:
++		return "idle"
++	}
++}
++
++// coreLoadDeadline bounds how long a room's core load / start may run before the sentinel concludes the
++// worker is wedged. Chosen well ABOVE every documented legit worst case so it can NEVER fire on a
++// slow-but-real path: the coordinator already bounds a StartGame call at GameStartTimeout = 60s, and the
++// slowest legit boot ever observed was the Wii SD-loader forced-cold at ~18s. 150s is 2.5x the
++// coordinator bound and ~8x the worst real boot; only a genuinely hung or crashed core stays in the load
++// phase that long. (Teardown is NOT given a second deadline here: room.Close already bounds itself at
++// closeGiveUp = 30s ending in its own HardExit, which now releases ports via the pkg/os hook.)
++const coreLoadDeadline = 150 * time.Second
++
++// wedgeSentinel self-destructs the worker if a known wedge-prone PHASE (core load / room start) runs
++// past its deadline. It is the in-process complement to the coordinator's worker health-check: the
++// sentinel is FAST self-cleanup at the source (the worker frees its own port + deregisters and exits the
++// instant it knows it is stuck), while the health-check is the BACKSTOP for the case the sentinel
++// goroutine is itself a casualty of the crash.
++//
++// Why this exists: a core that crashes/hangs during load (the citra GL-load 0xC0000005, 2026-07-23)
++// leaves the worker process wedged with NO stop requested and NO room-close underway — the two windows
++// the existing bounds (shutdown deadman fires only after a requested stop; room.Close bounds only
++// teardown) do NOT cover. The wedged husk keeps holding its router-forwarded UDP port, so a fresh worker
++// cannot rebind until a reboot. The sentinel closes that gap.
++//
++// SAFETY: the sentinel is armed ONLY around phase transitions (enter/exit bracket the synchronous
++// app.Load call, exit deferred so any return clears it) and is idle during a live session, so it can
++// never fire on gameplay. On trip it hard-exits; the pkg/os HardExit hook (SetBeforeHardExit, wired in
++// worker.New) releases the UDP mux + HTTP listener and deregisters from the coordinator FIRST, so the
++// freed port is rebindable immediately even if a kernel-stuck thread leaves this process a husk.
++type wedgeSentinel struct {
++	phase    atomic.Int32
++	since    atomic.Int64 // unix-nanos the current phase began
++	deadline atomic.Int64 // nanos allowed for the current phase
++	tripped  atomic.Bool
++	log      *logger.Logger
++}
++
++func newWedgeSentinel(log *logger.Logger) *wedgeSentinel {
++	return &wedgeSentinel{log: log}
++}
++
++// enter marks the start of a wedge-prone phase. ALWAYS pair with a deferred exit() so a normal or error
++// return clears the phase; only a genuine hang (the call never returns) leaves it set for the watcher.
++func (s *wedgeSentinel) enter(p wedgePhase, deadline time.Duration) {
++	if s == nil {
++		return
++	}
++	s.deadline.Store(int64(deadline))
++	s.since.Store(time.Now().UnixNano())
++	s.phase.Store(int32(p))
++}
++
++func (s *wedgeSentinel) exit() {
++	if s == nil {
++		return
++	}
++	s.phase.Store(int32(phaseIdle))
++}
++
++// run is the watcher loop; start it once in a goroutine at worker startup.
++func (s *wedgeSentinel) run() {
++	t := time.NewTicker(5 * time.Second)
++	defer t.Stop()
++	for range t.C {
++		p := wedgePhase(s.phase.Load())
++		if p == phaseIdle {
++			continue
++		}
++		elapsed := time.Duration(time.Now().UnixNano() - s.since.Load())
++		if elapsed < time.Duration(s.deadline.Load()) {
++			continue
++		}
++		s.trip(p, elapsed)
++		return
++	}
++}
++
++func (s *wedgeSentinel) trip(p wedgePhase, elapsed time.Duration) {
++	if !s.tripped.CompareAndSwap(false, true) {
++		return
++	}
++	// Log the wedge FIRST so the reason is captured regardless of what the exit path does next.
++	s.log.Error().Msgf("WEDGE SENTINEL TRIPPED: phase %q stuck %v (deadline %v exceeded) -- self-cleaning "+
++		"(HardExit hook releases UDP mux + HTTP listener + deregisters) then hard-exiting so a fresh worker "+
++		"rebinds this port immediately", p, elapsed.Round(time.Second), time.Duration(s.deadline.Load()))
++	xos.HardExit(74) // distinct code: sentinel-tripped wedge (70=teardown wedge, 72=shutdown deadman)
++}
 diff --git a/pkg/worker/worker.go b/pkg/worker/worker.go
-index 856cdfa..fd43f05 100644
+index 856cdfa..a67112c 100644
 --- a/pkg/worker/worker.go
 +++ b/pkg/worker/worker.go
-@@ -10,6 +10,7 @@ import (
+@@ -10,6 +10,8 @@ import (
  	"github.com/giongto35/cloud-game/v3/pkg/monitoring"
  	"github.com/giongto35/cloud-game/v3/pkg/network"
  	"github.com/giongto35/cloud-game/v3/pkg/network/httpx"
 +	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
++	xos "github.com/giongto35/cloud-game/v3/pkg/os"
  	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
  	"github.com/giongto35/cloud-game/v3/pkg/worker/cloud"
  	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
-@@ -17,6 +18,7 @@ import (
+@@ -17,6 +19,7 @@ import (
  
  type Worker struct {
  	address  string
@@ -51843,7 +52149,15 @@ index 856cdfa..fd43f05 100644
  	conf     config.WorkerConfig
  	cord     *coordinator
  	lib      games.GameLibrary
-@@ -36,6 +38,13 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+@@ -24,6 +27,7 @@ type Worker struct {
+ 	log      *logger.Logger
+ 	mana     *caged.Manager
+ 	router   *room.GameRouter
++	sentinel *wedgeSentinel
+ 	services [2]interface {
+ 		Run()
+ 		Stop() error
+@@ -36,6 +40,13 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
  	if err := manager.Load(caged.Libretro, conf); err != nil {
  		return nil, fmt.Errorf("couldn't cage libretro: %v", err)
  	}
@@ -51857,10 +52171,13 @@ index 856cdfa..fd43f05 100644
  
  	library := games.NewLib(conf.Library, conf.Emulator, log)
  	library.Scan()
-@@ -49,6 +58,18 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+@@ -47,7 +58,20 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+ 		log:      log,
+ 		mana:     manager,
  		router:   room.NewGameRouter(),
- 	}
- 
++		sentinel: newWedgeSentinel(log),
++	}
++
 +	// ONE WebRTC ApiFactory (and thus ONE single-port UDP mux) per process, created at boot (patch
 +	// 0034). It used to be created inside HandleRequests, i.e. once per COORDINATOR CONNECTION: a
 +	// coordinator reconnect then bound a second mux while the first stayed open, the strict/rolling
@@ -51870,9 +52187,41 @@ index 856cdfa..fd43f05 100644
 +	apiFactory, err := webrtc.NewApiFactory(conf.Webrtc, log, nil)
 +	if err != nil {
 +		return nil, fmt.Errorf("webrtc api init fail: %w", err)
-+	}
+ 	}
 +	worker.api = apiFactory
-+
+ 
  	h, err := httpx.NewServer(
  		conf.Worker.GetAddr(),
- 		func(s *httpx.Server) httpx.Handler {
+@@ -77,12 +101,32 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+ 	}
+ 	worker.storage = st
+ 
++	// Husk-safe hard exit: on ANY HardExit (wedge sentinel, room-teardown bound, shutdown deadman) free
++	// the router-forwarded UDP port + HTTP listener FIRST, then deregister from the coordinator — so a
++	// fresh worker can rebind the port immediately even if a kernel-stuck thread leaves this one a husk.
++	// All fast, non-blocking (Server.Close, mux Close, WS disconnect); the coordinator connection is read
++	// dynamically because it is (re)created in Start after a reconnect.
++	xos.SetBeforeHardExit(func() {
++		if worker.api != nil {
++			_ = worker.api.Close()
++		}
++		if worker.services[0] != nil {
++			_ = worker.services[0].Stop()
++		}
++		if worker.cord != nil {
++			worker.cord.Disconnect()
++		}
++	})
++
+ 	return worker, nil
+ }
+ 
+ func (w *Worker) Reset() { w.router.Reset() }
+ 
+ func (w *Worker) Start(done chan struct{}) {
++	// Watch for a wedged core-load phase and self-destruct (freeing the port) if one hangs — see sentinel.go.
++	go w.sentinel.run()
++
+ 	for _, s := range w.services {
+ 		if s != nil {
+ 			s.Run()
