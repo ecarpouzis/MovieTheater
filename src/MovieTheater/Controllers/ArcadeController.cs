@@ -620,6 +620,31 @@ namespace MovieTheater.Controllers
             return (opts, profile?.HwContext, profile?.RenderProfile);
         }
 
+        /// <summary>The game's effective option baseline BEFORE saved overrides, for the ⚙ Configure panel:
+        /// the CORE's catalogued factory defaults, overlaid by the live system tuning (UltraLiveSpec — what
+        /// the game ACTUALLY runs at on Ultra), overlaid by per-game default-on rows (PS2 widescreen).
+        ///
+        /// <para>The UltraLiveSpec overlay is the whole point: the core's embedded default disagrees with the
+        /// live config.worker-gl.yaml on exactly the quality levers (beetle internal res: factory "1x(native)"
+        /// vs live "4x"), so without it the panel shows a value the game isn't running. Every UltraLiveSpec
+        /// token is a valid catalog value (ArcadeQualityPresetsTests), so it lands on a real dropdown option.</para>
+        ///
+        /// <para>GET renders this (plus saved) as each control's selected value; PUT drops a submitted value
+        /// equal to it. Both callers MUST use this helper — if the shown baseline and the drop baseline drift,
+        /// a left-alone quality lever round-trips into a stored override and stops tracking the yaml.</para></summary>
+        private static Dictionary<string, string> BuildEffectiveBaseline(
+            string? core, IEnumerable<(string? OptionKey, string? OptionValue)> defaultOnRows)
+        {
+            var baseline = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (core == null) return baseline;
+            foreach (var o in ArcadeCoreOptionCatalog.ForCore(core)) baseline[o.Key] = o.Default;
+            if (ArcadeQualityPresets.UltraLiveSpec.TryGetValue(core, out var ultra))
+                foreach (var kv in ultra) baseline[kv.Key] = kv.Value;   // live system tuning wins over factory default
+            foreach (var (key, value) in defaultOnRows)                  // per-game default-on wins over system tuning
+                if (!string.IsNullOrEmpty(key)) baseline[key] = value ?? "enabled";
+            return baseline;
+        }
+
         /// <summary>Read the per-game config for the ⚙ Configure panel: the system's catalogued options with
         /// each option's current effective value, the configured renderer, and free-form notes. Editor-only.</summary>
         [HttpGet("/API/Arcade/Game/{gameId:int}/Config")]
@@ -647,15 +672,14 @@ namespace MovieTheater.Controllers
                            ?? ArcadeRendererProfiles.Default(game.System);
             var core = selected?.OptionCore ?? ArcadeCoreOptionCatalog.CoreForSystem(game.System);
 
-            // Effective value = catalogued default, overlaid by per-game default-on rows (PS2 widescreen),
-            // overlaid by the saved profile — so e.g. a patchable PS2 game shows widescreen ON before any save.
-            var effective = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var o in ArcadeCoreOptionCatalog.ForCore(core)) effective[o.Key] = o.Default;
+            // Effective value = the game's baseline (catalogued default → live system tuning → per-game
+            // default-on rows; see BuildEffectiveBaseline) overlaid by the saved profile — so a quality
+            // lever shows its LIVE Ultra value (e.g. beetle 4x, not the core's factory 1x) before any save,
+            // and a patchable PS2 game shows widescreen ON.
             var defaultOn = await movieDb.ArcadeCheats.AsNoTracking()
                 .Where(c => c.ArcadeGameId == game.Id && c.Kind == "option" && c.DefaultOn && c.OptionKey != null)
                 .Select(c => new { c.OptionKey, c.OptionValue }).ToListAsync();
-            foreach (var r in defaultOn)
-                if (!string.IsNullOrEmpty(r.OptionKey)) effective[r.OptionKey!] = r.OptionValue ?? "enabled";
+            var effective = BuildEffectiveBaseline(core, defaultOn.Select(r => (r.OptionKey, r.OptionValue)));
             foreach (var kv in saved) effective[kv.Key] = kv.Value;
 
             var options = ArcadeCoreOptionCatalog.ForCore(core).Select(o => new
@@ -723,15 +747,15 @@ namespace MovieTheater.Controllers
             var selected = ArcadeRendererProfiles.Resolve(game.System, request.RenderProfile);
             var core = selected?.OptionCore ?? ArcadeCoreOptionCatalog.CoreForSystem(game.System);
 
-            // Baseline = the CORE's catalogued defaults overlaid by per-game default-on rows. A submitted value
-            // equal to baseline is dropped (it's the default), so the stored profile carries only real overrides.
-            var baseline = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var o in ArcadeCoreOptionCatalog.ForCore(core)) baseline[o.Key] = o.Default;
+            // Baseline = the game's effective default (catalogued default → live system tuning → per-game
+            // default-on rows; the SAME helper GET renders from). A submitted value equal to baseline is
+            // dropped, so the stored profile carries only real overrides — and a left-alone quality lever
+            // (now shown at its live value, e.g. beetle 4x) is NOT frozen in, keeping the game tracking the
+            // yaml. Must match GET's effective baseline exactly, or a shown value round-trips into an override.
             var defaultOn = await movieDb.ArcadeCheats.AsNoTracking()
                 .Where(c => c.ArcadeGameId == game.Id && c.Kind == "option" && c.DefaultOn && c.OptionKey != null)
                 .Select(c => new { c.OptionKey, c.OptionValue }).ToListAsync();
-            foreach (var r in defaultOn)
-                if (!string.IsNullOrEmpty(r.OptionKey)) baseline[r.OptionKey!] = r.OptionValue ?? "enabled";
+            var baseline = BuildEffectiveBaseline(core, defaultOn.Select(r => (r.OptionKey, r.OptionValue)));
 
             // A quality-tier reset ("Reset to defaults" with a tier picked): ignore any submitted values
             // and store the tier's preset for this (core, renderer) VERBATIM. Deliberately NO
