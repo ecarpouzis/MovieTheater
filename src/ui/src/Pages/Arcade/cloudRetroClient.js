@@ -446,6 +446,17 @@ function encodeInput(mask, axes) {
 const POINTER_SYSTEMS = new Set(["nds", "3ds"]);
 export function systemUsesPointer(system) { return POINTER_SYSTEMS.has(String(system || "").toLowerCase()); }
 
+// Pointer cores map the libretro pointer through their OWN screen layout in DISPLAY (top-down) space,
+// INDEPENDENT of the GL framebuffer flip — that is the RETRO_DEVICE_POINTER convention (coords are in
+// the space the frame is PRESENTED in, not the raw GL buffer). Since 2026-07-24 both nds (melonDS
+// OpenGL) and 3ds (citra GL) render via GL, so their rooms send av.flip and the video is displayed
+// scaleY(-1) — but undoing that flip on the POINTER double-inverts Y and every tap lands vertically
+// mirrored (confirmed live on Phoenix Wright New Game AND Mario Kart 7 OK, 2026-07-24). So no current
+// pointer core wants the flip undone; the set is kept (== POINTER_SYSTEMS today) to document WHY and to
+// leave room for a hypothetical future core that genuinely hit-tests in raw-framebuffer space.
+const POINTER_DISPLAY_SPACE_SYSTEMS = new Set(["nds", "3ds"]);
+export function pointerIgnoresFrameFlip(system) { return POINTER_DISPLAY_SPACE_SYSTEMS.has(String(system || "").toLowerCase()); }
+
 // Pointer wire packet (W10 stylus/touch) — rides the SAME "data" channel as the pad frame, length+tag
 // discriminated (pad = 10-byte Int16Array; this = fixed 8 bytes, magic tag 0xF0). x/y are FULL-FRAME
 // normalized (-32767..32767), LITTLE-ENDIAN to match the pad channel. Matches the worker's PointerState.
@@ -1200,10 +1211,12 @@ export function createCloudRetroSession(descriptor, opts) {
     let fy = (ev.clientY - rect.top) / rect.height;
     fx = Math.max(0, Math.min(1, fx));
     fy = Math.max(0, Math.min(1, fy));
-    // Undo the room's videoTransform: scaleY(-1) flips Y. For nds (software core) there is no flip/rotate
-    // (lastAv is null — no `av` payload), so this is identity. Defensive for a future pointer-capable GL
-    // core; no current pointer system rotates, so rotation is intentionally not undone here.
-    if (lastAv && lastAv.flip) fy = 1 - fy;
+    // Undo the room's videoTransform: scaleY(-1) flips Y, so a GL-flipped room needs the pointer's Y
+    // un-flipped to match the RAW framebuffer the core hit-tests in (citra/3ds). EXCEPT cores that map
+    // the pointer in display/logical space regardless of the GL flip (melonDS DS) — undoing it there
+    // double-inverts and taps land vertically mirrored. No current pointer system rotates, so rotation
+    // is intentionally not undone here.
+    if (lastAv && lastAv.flip && !pointerIgnoresFrameFlip(descriptor.system)) fy = 1 - fy;
     const x = Math.max(-32767, Math.min(32767, Math.round((fx * 2 - 1) * 32767)));
     const y = Math.max(-32767, Math.min(32767, Math.round((fy * 2 - 1) * 32767)));
     return { x, y };
