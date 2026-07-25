@@ -162,6 +162,20 @@ emulator:
     # StreetPass + the handful of games that save there) is NOT covered — a single-path card can't express
     # "sdmc + extdata but not shaders". Revisit if a game's real progress proves to live in extdata.
     3ds: "save:Citra/sdmc"
+    # naomi + atomiswave (flycast/reicast, 2026-07-24): these arcade boards have no VMU — flycast writes
+    # per-game NVRAM/EEPROM as loose files in the SHARED save/reicast/ dir (<rom>.nvmem/.nvmem2/.eeprom;
+    # verified: crzytaxi/ikaruga = naomi, mslug6 = atomiswave). NOT SAVE_RAM, so the .srm harvest missed
+    # them entirely. A `*` GLOB (not a whole-dir spec) is REQUIRED because naomi AND atomiswave share this
+    # one dir: a glob card gets a system-scoped `.owner-<system>` stamp, and each seed clears+restores only
+    # the (user, system) set — so switching systems swaps the dir safely and the two never cross-vault.
+    # dc does NOT use this dir (its saves are the system:dc VMUs above), so reicast/ is naomi+atomiswave only.
+    naomi:      "save:reicast/*"
+    atomiswave: "save:reicast/*"
+    # segacd (genesis_plus_gx, 2026-07-24): the Sega CD INTERNAL backup RAM is a per-region console-wide file
+    # scd_<region>.brm in the save root (verified: scd_U.brm + scd_J.brm), shared across all Sega CD games
+    # like the real console's internal BRAM — written as a FILE, not SAVE_RAM, so it wasn't vaulted. Glob so
+    # it's a fileset with a system-scoped owner; cart-RAM saves (if any) still ride the normal .srm path.
+    segacd:     "save:scd_*.brm"
 
   # Wii SD-card + ELF/DOL loader boot (Brawl mods: Project REX, Smash Bros Infinite — 2026-07-18). A
   # small number of Wii ROM hacks crash when baked onto a standalone disc because their own
