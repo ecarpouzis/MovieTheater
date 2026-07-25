@@ -57,6 +57,11 @@ namespace MovieTheater.Arcade
             ["lynx"] = "Atari - Lynx",
             ["vb"] = "Nintendo - Virtual Boy",
             ["fds"] = "Nintendo - Family Computer Disk System",
+            // ScummVM has its own thumbnail repo (1,324 boxes), named from the ScummVM game DB's
+            // descriptions ("Dig, The", "Freddi Fish 3_ The Case of the Stolen Conch Shell", with the
+            // usual '_' substitution and a "(DOS_English)" style tag). Our ingest titles come from the
+            // SAME database, so the title/token match lands ~95% of cards with no extra machinery.
+            ["scummvm"] = "ScummVM",
         };
 
         public static bool HasRepo(string system) => ThumbRepo.ContainsKey(system);
@@ -102,7 +107,10 @@ namespace MovieTheater.Arcade
             if (alias != null) ordered.Add(alias);
 
             // 1. Exact ROM names — a precise hit for No-Intro/Redump-named systems (snes, nes, gba, …).
-            foreach (var k in keyList) ordered.Add(LibretroName(k));
+            //    Skipped for ScummVM, whose "ROM" key is a ScummVM TARGET ("dig-de", "sword25-fr"), never a
+            //    dump name — every such candidate is a guaranteed 404 in front of the index hit.
+            if (!string.Equals(system, "scummvm", StringComparison.Ordinal))
+                foreach (var k in keyList) ordered.Add(LibretroName(k));
 
             // 2. Index match — resolves drift the exact name can't (SMS/GG region+language tags, Dreamcast
             //    TOSEC names, "007 - GoldenEye" ⇄ "GoldenEye 007").
@@ -155,12 +163,62 @@ namespace MovieTheater.Arcade
             var repo = ThumbRepo[system].Replace(' ', '_');
             foreach (var name in names)
             {
-                // Repos use underscores for spaces (Nintendo_-_Nintendo_64); the FILENAME keeps spaces (encoded).
-                var url = $"https://raw.githubusercontent.com/libretro-thumbnails/{repo}/master/Named_Boxarts/{Uri.EscapeDataString(name)}.png";
-                var png = await TryDownloadPng(http, url);
+                var png = await TryDownloadArt(http, repo, name);
                 if (png != null) return png;
             }
             return null;
+        }
+
+        // Max symlink hops to follow. Targets can chain ("X (German)" -> "X (DOS)" -> "X"), but a cycle or a
+        // pathological chain must not turn one card into unbounded requests.
+        private const int MaxSymlinkHops = 3;
+
+        /// <summary>One candidate filename, FOLLOWING libretro-thumbnails' symlinks. A large share of these
+        /// repos' <c>Named_Boxarts</c> entries are git symlinks that dedupe every language/platform variant of
+        /// a game onto one image (ScummVM: 403 of 1,324). raw.githubusercontent serves such an entry as 200
+        /// with its TARGET FILENAME in plain text — not a PNG — so the old "no PNG magic = miss" check made
+        /// matched cards come up blank anyway. A target must be a bare SIBLING filename (no path separators),
+        /// so following it can never leave <c>Named_Boxarts</c>.</summary>
+        private static async Task<byte[]?> TryDownloadArt(HttpClient http, string repo, string name)
+        {
+            for (int hop = 0; hop <= MaxSymlinkHops; hop++)
+            {
+                // Repos use underscores for spaces (Nintendo_-_Nintendo_64); the FILENAME keeps spaces (encoded).
+                var url = $"https://raw.githubusercontent.com/libretro-thumbnails/{repo}/master/Named_Boxarts/{Uri.EscapeDataString(name)}.png";
+                var bytes = await TryDownloadBytes(http, url);
+                if (bytes == null) return null;
+                if (IsPng(bytes)) return bytes;
+                var target = SymlinkTarget(bytes);
+                if (target == null) return null;      // not art and not a symlink (a 404 page, say)
+                name = target;
+            }
+            return null;
+        }
+
+        // The symlink's target as a candidate name (".png" trimmed, matching BuildCandidates' convention), or
+        // null if the body isn't a plain sibling-filename symlink.
+        internal static string? SymlinkTarget(byte[] body)
+        {
+            if (body.Length == 0 || body.Length > 512) return null;
+            var text = System.Text.Encoding.UTF8.GetString(body).Trim();
+            if (!text.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) return null;
+            if (text.Length <= 4 || text.IndexOfAny(new[] { '/', '\\' }) >= 0) return null;
+            if (text.Any(char.IsControl)) return null;
+            return text.Substring(0, text.Length - 4);
+        }
+
+        private static bool IsPng(byte[] b) =>
+            b.Length >= 8 && b[0] == 0x89 && b[1] == 0x50 && b[2] == 0x4E && b[3] == 0x47;
+
+        private static async Task<byte[]?> TryDownloadBytes(HttpClient http, string url)
+        {
+            try
+            {
+                using var resp = await http.GetAsync(url);
+                if (!resp.IsSuccessStatusCode) return null;
+                return await resp.Content.ReadAsByteArrayAsync();
+            }
+            catch { return null; }
         }
 
         // libretro-thumbnails replaces these characters in the ROM name with '_': & * / : ` < > ? \ | "
@@ -170,21 +228,6 @@ namespace MovieTheater.Arcade
             for (int i = 0; i < chars.Length; i++)
                 if ("&*/:`<>?\\|\"".IndexOf(chars[i]) >= 0) chars[i] = '_';
             return new string(chars);
-        }
-
-        // A hit is a real PNG (200 + PNG magic), so a repo's 404 HTML page is never mistaken for art.
-        private static async Task<byte[]?> TryDownloadPng(HttpClient http, string url)
-        {
-            try
-            {
-                using var resp = await http.GetAsync(url);
-                if (!resp.IsSuccessStatusCode) return null;
-                var bytes = await resp.Content.ReadAsByteArrayAsync();
-                if (bytes.Length < 8 || bytes[0] != 0x89 || bytes[1] != 0x50 || bytes[2] != 0x4E || bytes[3] != 0x47)
-                    return null;
-                return bytes;
-            }
-            catch { return null; }
         }
 
         // Downscale so ~49k games stay small: full art (~300-500 KB) → a ~220px thumbnail (~12-20 KB).

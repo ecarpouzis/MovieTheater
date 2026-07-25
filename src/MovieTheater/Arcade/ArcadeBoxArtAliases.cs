@@ -145,6 +145,20 @@ namespace MovieTheater.Arcade
             ["nds|marioandluigipartnersintime"] = "Mario _ Luigi - Partners in Time (USA)",
             ["nds|sonicandsegaallstarsracing"] = "Sonic _ SEGA All-Stars Racing (USA) (En,Fr,Es)",
             ["nds|thelegendarystafy"] = "Legendary Starfy, The (USA)",
+            // ScummVM (2026-07-25). The repo is named from the same ScummVM game DB we ingest from, so
+            // only a handful of cards drift: a numbered-vs-spelled entry ("1st Grade"), a series-number
+            // our title adds that the box doesn't ("Freddi Fish 1:" vs "Freddi Fish and the…"), two
+            // Crazy Nick's titles the repo files under a shorter/plural name, and the four Simon puzzle
+            // minigames, which shipped in ONE box (the Puzzle Pack) — without this the reverse-contiguous
+            // rule hands them the base "Simon the Sorcerer" cover, i.e. the wrong game.
+            ["scummvm|bigthinkersfirstgrade"] = "Big Thinkers 1st Grade",
+            ["scummvm|crazynickssoftwarepicksleisuresuitlarryscasino"] = "Crazy Nick's Picks_ Leisure Suit Larry's Casino",
+            ["scummvm|crazynickssoftwarepicksrobinhoodsgameofskillandchance"] = "Crazy Nick's Software Picks_ Robin Hood's Games of Skill and Chance",
+            ["scummvm|freddifish1thecaseofthemissingkelpseeds"] = "Freddi Fish and the Case of the Missing Kelp Seeds",
+            ["scummvm|simonthesorcererspuzzlepackdemoninmypocket"] = "Simon the Sorcerer Puzzle Pack",
+            ["scummvm|simonthesorcererspuzzlepackjumble"] = "Simon the Sorcerer Puzzle Pack",
+            ["scummvm|simonthesorcererspuzzlepacknopatience"] = "Simon the Sorcerer Puzzle Pack",
+            ["scummvm|simonthesorcererspuzzlepackswampyadventures"] = "Simon the Sorcerer Puzzle Pack",
         };
 
         /// <summary>The aliased libretro filename for a card, or null.</summary>
