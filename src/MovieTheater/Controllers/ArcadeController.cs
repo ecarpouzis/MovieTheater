@@ -55,12 +55,13 @@ namespace MovieTheater.Controllers
             return claim != null && int.TryParse(claim.Value, out var id) ? id : null;
         }
 
-        private async Task<int> GetAgeRestrictionAsync(int userId)
-        {
-            var setting = await movieDb.UserSettings
-                .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == userId);
-            return setting != null && int.TryParse(setting.SettingValue, out var parsed) ? parsed : 100;
-        }
+        // Arcade games are intentionally NOT age-gated — site policy is to age-gate MOVIES and CHANNELS,
+        // not games (those keep their own GetAgeRestrictionAsync in ChannelController/WatchpartyController).
+        // Returning "no ceiling" makes every per-title `RatingCeiling <= / > ageRestriction` check in this
+        // controller inert, so all enabled games are visible AND launchable to every user. Kept as one
+        // documented chokepoint rather than deleting the scattered checks: the policy is visible in one
+        // place and reverses in one line. RatingCeiling still lives on the row for a future gate if wanted.
+        private Task<int> GetAgeRestrictionAsync(int userId) => Task.FromResult(int.MaxValue);
 
         // No explicit choice → default All Games (region still narrows to English; a name search spans
         // everything). Variant used to default to "release" (hiding every hack/mod, including our own
@@ -148,7 +149,7 @@ namespace MovieTheater.Controllers
             bool searching = !string.IsNullOrWhiteSpace(search);
             var (reg, var_) = NormalizeScope(region, variant, searching);
 
-            var baseQ = await AgeVisibleGamesAsync(userId.Value);
+            var baseQ = await VisibleGamesAsync(userId.Value);
             var matchQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, reg, var_);
 
             page = Math.Max(1, page);
@@ -182,12 +183,38 @@ namespace MovieTheater.Controllers
             var pageKeys = await groupedQ
                 .Skip(skipRows).Take(pageSize).ToListAsync();
 
-            // All age-visible versions of the paged games (superset by System/CollapseKey IN, trimmed to exact
+            string specificRegion = reg is "english" or "all" ? null : reg;
+            var games = await BuildGameCardsAsync(
+                baseQ,
+                pageKeys.Select(k => (k.System, k.CollapseKey, k.Title)).ToList(),
+                specificRegion);
+
+            return Json(new { games, totalCount, page, pageSize, skip = skipRows });
+        }
+
+        /// <summary>
+        /// The card projection, shared by the lobby grid and the "Recently played" strip. Given card keys
+        /// (System, CollapseKey) it loads every age-visible version of those cards plus their cheat counts
+        /// and returns the card DTO the UI reads. It is shared deliberately: BOTH surfaces open the same
+        /// game modal on click, and the modal needs the full payload (versions, cheats, renderer/scheme
+        /// support) — a strip that shipped a thinner card would open a modal that can't launch.
+        ///
+        /// A key's Title may be null, meaning "derive it from the loaded rows". The lobby passes the
+        /// grouped Min(Title) it computed under its FILTERS (a region filter can exclude the
+        /// alphabetically-first row, and the card should then show a title it still has); the recent strip
+        /// is unfiltered and lets this derive it.
+        /// </summary>
+        private async Task<List<object>> BuildGameCardsAsync(
+            IQueryable<ArcadeGame> baseQ,
+            IReadOnlyList<(string System, string CollapseKey, string Title)> keys,
+            string specificRegion)
+        {
+            // All age-visible versions of the requested games (superset by System/CollapseKey IN, trimmed to exact
             // page keys in memory) — the dropdown lists every version, not just the ones that matched.
-            var pageSystems = pageKeys.Select(k => k.System).Distinct().ToList();
-            var pageCollapse = pageKeys.Select(k => k.CollapseKey).Distinct().ToList();
+            var pageSystems = keys.Select(k => k.System).Distinct().ToList();
+            var pageCollapse = keys.Select(k => k.CollapseKey).Distinct().ToList();
             var versionRows = await baseQ.Where(g => pageSystems.Contains(g.System) && pageCollapse.Contains(g.CollapseKey)).ToListAsync();
-            var keySet = pageKeys.Select(k => (k.System, k.CollapseKey)).ToHashSet();
+            var keySet = keys.Select(k => (k.System, k.CollapseKey)).ToHashSet();
             var byGame = versionRows.Where(g => keySet.Contains((g.System, g.CollapseKey)))
                 .GroupBy(g => (g.System, g.CollapseKey))
                 .ToDictionary(x => x.Key, x => x.ToList());
@@ -202,11 +229,13 @@ namespace MovieTheater.Controllers
                 .Select(g => new { GameId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.GameId, x => x.Count);
 
-            string specificRegion = reg is "english" or "all" ? null : reg;
-            var games = pageKeys.Select(k =>
+            return keys.Select(k =>
             {
                 byGame.TryGetValue((k.System, k.CollapseKey), out var vs);
                 vs ??= new List<ArcadeGame>();
+                // Null Title = derive it (see the doc comment): the same Min(Title) the grid groups by,
+                // taken over every version the card actually has.
+                var title = k.Title ?? (vs.Count > 0 ? vs.Min(g => g.Title) : null);
                 // Build launchable versions — multi-disc sets collapse to one entry (DiscCount > 1). The
                 // first is the card's default selection + box-art source; a region filter floats that region up.
                 var versions = ArcadeVersions.Build(vs, specificRegion);
@@ -220,10 +249,10 @@ namespace MovieTheater.Controllers
                 // prefer the enriched one (rating present), else fall back to the lowest-id anchor.
                 var meta = vs.Where(g => g.LaunchBoxRating != null || g.RatingScore != null).OrderBy(g => g.Id).FirstOrDefault()
                            ?? vs.OrderBy(g => g.Id).FirstOrDefault();
-                return new
+                return (object)new
                 {
                     key = k.System + "|" + k.CollapseKey,
-                    title = k.Title,
+                    title,
                     system = k.System,
                     artId = artRow?.Id ?? rep?.Id ?? 0,
                     hasBoxArt = vs.Any(g => g.BoxArtPath != null),
@@ -258,7 +287,7 @@ namespace MovieTheater.Controllers
                     // title now. defaultControllerScheme pre-selects the dropdown — "gc" for the
                     // GC-native BrawlEx mods, "wiimote" for every other Wii game (empty = no picker).
                     supportsControllerScheme = CloudRetroHost.SupportsControllerScheme(k.System),
-                    defaultControllerScheme = CloudRetroHost.DefaultControllerScheme(k.System, k.Title),
+                    defaultControllerScheme = CloudRetroHost.DefaultControllerScheme(k.System, title),
                     versions = versions.Select(v => new
                     {
                         id = v.Id, label = v.Label, region = v.Region,
@@ -270,8 +299,6 @@ namespace MovieTheater.Controllers
                     }).ToList(),
                 };
             }).ToList();
-
-            return Json(new { games, totalCount, page, pageSize, skip = skipRows });
         }
 
         // The A–Z bucket a card sorts into. Anything not starting A–Z (numbers, punctuation) is "#".
@@ -303,7 +330,7 @@ namespace MovieTheater.Controllers
             bool searching = !string.IsNullOrWhiteSpace(search);
             var (reg, var_) = NormalizeScope(region, variant, searching);
 
-            var baseQ = await AgeVisibleGamesAsync(userId.Value);
+            var baseQ = await VisibleGamesAsync(userId.Value);
             var matchQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, reg, var_);
 
             // The same grouping + the same default ordering Games uses, so index i here is card i there.
@@ -346,7 +373,7 @@ namespace MovieTheater.Controllers
             if (!host.IsConfigured)
                 return StatusCode(501, new { message = "The arcade is not configured on this server." });
 
-            var q = await AgeVisibleGamesAsync(userId.Value);
+            var q = await VisibleGamesAsync(userId.Value);
             // Count CARDS, not version rows. The grid groups by (System, CollapseKey), so counting rows made
             // the picker advertise "All systems (24710)" for a catalog that renders far fewer cards. One
             // DISTINCT pull then grouped in memory.
@@ -390,11 +417,11 @@ namespace MovieTheater.Controllers
             return Json(map);
         }
 
-        private async Task<IQueryable<ArcadeGame>> AgeVisibleGamesAsync(int userId)
-        {
-            var ageRestriction = await GetAgeRestrictionAsync(userId);
-            return movieDb.ArcadeGames.Where(g => g.IsEnabled && g.RatingCeiling <= ageRestriction);
-        }
+        // Enabled arcade games. (Formerly also age-filtered; arcade is no longer age-gated — see
+        // GetAgeRestrictionAsync.) Shared by Games/Filters/GameLetters so all three page EXACTLY the same
+        // match set — the moment they disagree about what matches, a letter jump lands on the wrong card.
+        private Task<IQueryable<ArcadeGame>> VisibleGamesAsync(int userId)
+            => Task.FromResult(movieDb.ArcadeGames.Where(g => g.IsEnabled));
 
         [HttpGet("/API/Arcade/Rooms")]
         public async Task<IActionResult> Rooms()
@@ -1140,7 +1167,12 @@ namespace MovieTheater.Controllers
         /// activity (most-recent ArcadeSave.UpdatedUtc per game). A save is written whenever a session
         /// ends, so this is real evidence of play whether the user created the room or just joined one —
         /// ArcadeSession only records the creator, so it can't answer this. Feeds the lobby's "Recently
-        /// played" strip.</summary>
+        /// played" strip.
+        ///
+        /// Each row is { game, lastPlayedUtc, saveCount, playedVersionId }, where `game` is the SAME full
+        /// card the grid renders — the strip's tiles open the same game modal, so they must carry the same
+        /// payload. `playedVersionId` is the ROM row the save belongs to: saves are keyed per row, so the
+        /// modal opens on that version or its Continue prompt would look at the wrong one.</summary>
         [HttpGet("/API/Arcade/RecentlyPlayed")]
         public async Task<IActionResult> RecentlyPlayed(int take = 12)
         {
@@ -1148,40 +1180,50 @@ namespace MovieTheater.Controllers
             if (userId == null) return Unauthorized();
             take = Math.Clamp(take, 1, 30);
 
-            var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
+            // Over-fetch save rows: several ROWS of one game (a region swap, a re-dump) collapse onto ONE
+            // card, so N rows can yield fewer than N cards. 3× is plenty and still a bounded query.
             var recent = await movieDb.ArcadeSaves
                 .Where(s => s.UserId == userId.Value)
                 .GroupBy(s => s.ArcadeGameId)
                 .Select(g => new { ArcadeGameId = g.Key, LastPlayedUtc = g.Max(s => s.UpdatedUtc), SaveCount = g.Count() })
                 .OrderByDescending(x => x.LastPlayedUtc)
-                .Take(take)
+                .Take(take * 3)
                 .ToListAsync();
             if (recent.Count == 0) return Json(Array.Empty<object>());
 
-            // A game can vanish from the lobby (disabled, or the viewer's age restriction tightened)
-            // without its save rows going away — silently drop those rather than 500 or show a ghost card.
+            // A game can vanish from the lobby (disabled) without its save rows going away — silently drop
+            // those rather than 500 or show a ghost card.
+            var baseQ = await VisibleGamesAsync(userId.Value);
             var gameIds = recent.Select(r => r.ArcadeGameId).ToList();
-            var games = await movieDb.ArcadeGames
-                .Where(g => gameIds.Contains(g.Id) && g.IsEnabled && g.RatingCeiling <= ageRestriction)
-                .Select(g => new { g.Id, g.Title, g.System, g.BoxArtPath })
+            var played = await baseQ.Where(g => gameIds.Contains(g.Id))
+                .Select(g => new { g.Id, g.System, g.CollapseKey })
                 .ToDictionaryAsync(g => g.Id);
 
-            var result = recent
-                .Where(r => games.ContainsKey(r.ArcadeGameId))
-                .Select(r =>
+            // Collapse the played ROWS onto their CARDS, newest first. `recent` is already newest-first, so
+            // the first row of a card fixes both its position and the version the modal should open on;
+            // later rows of the same card only add to its save count.
+            var order = new List<(string System, string CollapseKey)>();
+            var byCard = new Dictionary<(string System, string CollapseKey), (DateTime LastPlayedUtc, int SaveCount, int PlayedVersionId)>();
+            foreach (var r in recent)
+            {
+                if (!played.TryGetValue(r.ArcadeGameId, out var g)) continue;
+                var key = (g.System, g.CollapseKey);
+                if (byCard.TryGetValue(key, out var cur))
+                    byCard[key] = (cur.LastPlayedUtc, cur.SaveCount + r.SaveCount, cur.PlayedVersionId);
+                else if (order.Count < take)
                 {
-                    var g = games[r.ArcadeGameId];
-                    return new
-                    {
-                        gameId = g.Id,
-                        title = g.Title,
-                        system = g.System,
-                        artId = g.Id,
-                        hasBoxArt = g.BoxArtPath != null,
-                        lastPlayedUtc = r.LastPlayedUtc,
-                        saveCount = r.SaveCount,
-                    };
-                });
+                    order.Add(key);
+                    byCard[key] = (r.LastPlayedUtc, r.SaveCount, r.ArcadeGameId);
+                }
+            }
+            if (order.Count == 0) return Json(Array.Empty<object>());
+
+            var cards = await BuildGameCardsAsync(baseQ, order.Select(k => (k.System, k.CollapseKey, (string)null)).ToList(), null);
+            var result = cards.Select((game, i) =>
+            {
+                var m = byCard[order[i]];
+                return new { game, lastPlayedUtc = m.LastPlayedUtc, saveCount = m.SaveCount, playedVersionId = m.PlayedVersionId };
+            });
             return Json(result);
         }
 
