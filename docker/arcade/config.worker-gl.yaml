@@ -1500,6 +1500,15 @@ emulator:
           folder: scummvm
           roms: ["scummvm"]
           scale: 3
+          # no_options_update_flag (patch 0046): do NOT raise the one-shot GET_VARIABLE_UPDATE
+          # "options changed" flag for this core. ScummVM answers that flag inside retro_run by walking
+          # its options/GUI path on tick 1 — before its engine and graphics manager exist — and
+          # access-violates at [NULL+8]. EVERY ScummVM game has died that way since the flag started
+          # firing (e52e927, 2026-07-23): Myst was just the first launch after it, and Day of the
+          # Tentacle, verified good on 07-18, crashes identically. Stock nanoarch hardcoded this flag
+          # to false, which is what all 376 targets were verified on. Cores that need it (melonDS DS,
+          # citra) are unaffected — they keep the flag.
+          hacks: [no_options_update_flag]
           options:
             # FORCE the software surface path (2026-07-18 root-cause). The core's default OpenGL
             # graphics mode sends RETRO_HW_FRAME_BUFFER_VALID frames; on this software-armed room

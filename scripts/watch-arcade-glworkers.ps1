@@ -73,6 +73,19 @@
        Disabled = deliberate, never overridden), two consecutive cycles so a normal recycle isn't
        mistaken for it. Response: Start-ScheduledTask. See [[arcade-runner-death-orphans-worker]].
 
+    G) CRASHED-BUT-NOT-EXITED (first seen 2026-07-24, ScummVM/Myst): a core access-violates inside
+       cgo, the Go runtime prints its fault + goroutine dump to the log -- and then the process does
+       NOT exit, because a thread is stuck somewhere in the dead core. `cmd /c` in the runner never
+       returns, so the `while ($true)` restart loop is BLOCKED: no "glworker EXITED" line, no respawn.
+       Worker 1 sat like that for 11.5 h (00:06 -> 11:45) after one Myst launch; the coordinator said
+       "no free workers" and every later launch failed. Checks A-F are all blind: the process exists,
+       still owns its port (F sees a listener), and keeps its coordinator socket (A sees it connected).
+       Detection: a Go fatal-crash marker in the worker's log AFTER that log's most recent
+       "[runner] starting glworker" line, plus a log silent > WedgeStaleSec (an exited-and-respawned
+       worker writes a newer "starting" line, so a normal crash self-clears and is never touched).
+       Response: FORCE kill, no graceful wait -- the sentinel watcher died with the runtime, so the
+       .stop file cannot be honoured and the 60 s wait is pure downtime.
+
     Registered as scheduled task "MovieTheater - Arcade GL Worker Watchdog" (logon trigger,
     same pattern as the worker tasks). Safe to run interactively too.
 #>
@@ -185,7 +198,26 @@ function ConfDirForPid([int]$wpid) {
 # (b) do not thrash them with useless kills.
 $zombies = @{}
 
-function KillWorker([int]$wpid, [string]$why) {
+# Did the CURRENT incarnation of this worker die of a Go fatal crash without exiting? True when a
+# crash marker appears in the log AFTER the newest "[runner] starting glworker" line. The runner
+# appends every incarnation to the same file, so ordering -- not mere presence -- is what identifies
+# a crash belonging to the process running right now: once it exits and the runner respawns, a newer
+# "starting" line lands after the dump and this goes false again on its own. (Check G.)
+$crashRx = 'Exception 0x[0-9a-fA-F]{8}|signal arrived during external code execution|^fatal error: '
+function CrashedAfterStart([string]$path) {
+    if (-not (Test-Path $path)) { return $false }
+    # A goroutine dump is thousands of lines; 20000 covers a dump plus the boot lines around it.
+    $tail = @(Get-Content $path -Tail 20000 -ErrorAction SilentlyContinue)
+    if (-not $tail) { return $false }
+    $startIdx = -1; $crashIdx = -1
+    for ($i = 0; $i -lt $tail.Count; $i++) {
+        if ($tail[$i] -match '\[runner\] starting glworker') { $startIdx = $i }
+        elseif ($tail[$i] -match $crashRx)                   { $crashIdx = $i }
+    }
+    return ($crashIdx -ge 0 -and $crashIdx -gt $startIdx)
+}
+
+function KillWorker([int]$wpid, [string]$why, [bool]$SkipGraceful = $false) {
     if ($zombies[$wpid]) { return }   # known unkillable; surfaced in the main loop, don't thrash it
     # GRACEFUL first: let the worker flush its GS shader cache and tear down GL/NVENC cleanly, so we don't
     # hand the next player a cold cache (periodic in-game audio skips) or strand a kernel thread (zombie).
@@ -197,7 +229,10 @@ function KillWorker([int]$wpid, [string]$why) {
     # We must outwait ALL of those so a wedged worker dies by its own hand. The old 8s window force-killed
     # workers mid-GPU-teardown -- the proven trigger for the UNKILLABLE zombie (2026-07-19 PID 11328,
     # 2026-07-21 PID 4100; docs/arcade-worker-unkillable-wedge.md). Force-kill is a true last resort.
-    $conf = ConfDirForPid $wpid
+    # SkipGraceful: the process is already dead in every way that matters (its Go runtime printed a
+    # fatal crash), so nothing is left to read the .stop sentinel -- waiting 60 s only extends the
+    # outage. Straight to force.
+    $conf = if ($SkipGraceful) { $null } else { ConfDirForPid $wpid }
     if ($conf) {
         Log ("worker PID {0} -- requesting GRACEFUL stop ({1})" -f $wpid, $why)
         $sf = Join-Path $conf ".stop"
@@ -474,6 +509,30 @@ while ($true) {
                     break   # one per cycle: never drain the pool
                 }
             }
+        }
+
+        # -- G) crashed-but-not-exited check -------------------------------------------------
+        # A core AV inside cgo kills the Go runtime but can leave a thread stuck in the dead core, so
+        # the process never exits and the runner's `cmd /c` never returns -- its restart loop is
+        # blocked and the worker slot is gone until someone notices (11.5 h, Myst/ScummVM 2026-07-24).
+        # The process still holds its port and coordinator socket, so A/B/C/D/F cannot see it. Force
+        # kill: that unblocks the runner, which logs "glworker EXITED" and respawns in ~4 s.
+        foreach ($p in $WorkerPorts) {
+            $owner = (Get-NetUDPEndpoint -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+            if (-not $owner) { continue }
+            $wpid = [int]$owner
+            if (-not $livePids[$wpid]) { continue }
+            if ($age[$wpid] -lt $GraceSec) { continue }
+            $logPath = WorkerLogPath $p
+            if (-not (Test-Path $logPath)) { continue }
+            # Silent log first (cheap) -- a crashed-and-respawned worker is logging normally, and the
+            # 20000-line scan below is not something to run every cycle for every healthy worker.
+            $staleSec = ((Get-Date) - (Get-Item $logPath).LastWriteTime).TotalSeconds
+            if ($staleSec -lt $WedgeStaleSec) { continue }
+            if (-not (CrashedAfterStart $logPath)) { continue }
+            Log ("worker PID {0} (port {1}) CRASHED-BUT-ALIVE: a Go fatal crash follows the newest runner start and the log has been silent {2:n0}s -- the runner is blocked on a process that will never exit; force-killing to unblock it" -f `
+                $wpid, $p, $staleSec)
+            KillWorker $wpid "crashed but did not exit (core fault; runner blocked)" $true
         }
 
         # -- F) absent-runner check ----------------------------------------------------------
