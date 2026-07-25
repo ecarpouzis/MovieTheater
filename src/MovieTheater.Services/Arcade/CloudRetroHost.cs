@@ -39,6 +39,8 @@ namespace MovieTheater.Services.Arcade
             {
                 "switch-kirby-forgotten-land",
                 "pc-sm64-plus",
+                "ps3-trash-panic",
+                "ps4-bloodborne",
             };
 
         /// <summary>True when a heavy title's key is capture-enabled (has a browser capture stub).</summary>
