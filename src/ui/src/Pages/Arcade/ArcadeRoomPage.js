@@ -705,6 +705,34 @@ export default function ArcadeRoomPage() {
     return token ? { token, base: d.wsUrl.replace(/^ws/, "http").replace(/\/w\/.*$/, "") } : null;
   }
 
+  // One heartbeat, just to pull a freshly-minted control token. The 12 s beat already does this; this
+  // exists so a REJECTED save can ask for a new capability on the spot.
+  async function refreshSaveToken() {
+    try {
+      const r = await MovieAPI.arcadeHeartbeat(code);
+      if (!r || !r.ok) return null;
+      const s = await r.json();
+      if (s.saveToken) saveTokenRef.current = s.saveToken;
+      return s.saveToken || null;
+    } catch { return null; }
+  }
+
+  // POST a gateway control call, re-minting the capability once if the gateway rejects it. A 403 here
+  // is the recoverable case — the token is stale, not the session — and saving is too important to
+  // surface that to the player when one heartbeat can fix it. Anything else passes straight through.
+  async function gatewayPost(path, body) {
+    const g = gatewayFor(descriptorRef.current);
+    if (!g) return null;
+    const send = (token) => fetch(`${g.base}${path}/${token}`,
+      body === undefined
+        ? { method: "post" }
+        : { method: "post", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const res = await send(g.token);
+    if (res.status !== 403) return res;
+    const fresh = await refreshSaveToken();
+    return fresh ? send(fresh) : res;
+  }
+
   // Save = QUICKSAVE. Flush the live state (t=106), then have the gateway copy it into the quicksave
   // slot. Save must NOT be left in slot 0: that slot belongs to save-on-quit (and, once it's on,
   // autosave), so leaving the room would re-serialize whatever state you were in over your deliberate
@@ -716,8 +744,8 @@ export default function ArcadeRoomPage() {
     try {
       sessionRef.current?.save?.();                     // flush current state to /saves/<id>.dat
       await new Promise((r) => setTimeout(r, 1300));    // let it land before the gateway copies it
-      const res = await fetch(`${g.base}/w-quick/${g.token}`, { method: "post" });
-      const j = await res.json().catch(() => null);
+      const res = await gatewayPost("/w-quick");
+      const j = await res?.json().catch(() => null);
       if (j && j.ok) message.success(j.label ? `Saved — ${j.label}` : "Saved");
       else message.warning((j && j.reason) || "Couldn't save — play a moment, then try again.");
     } catch { message.error("Couldn't save."); }
@@ -730,10 +758,8 @@ export default function ArcadeRoomPage() {
     const g = gatewayFor(descriptorRef.current);
     if (!g) { message.error("Can't load this session."); return; }
     try {
-      const res = await fetch(`${g.base}/w-load/${g.token}`, {
-        method: "post", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: QUICK_SLOT }),
-      });
-      const j = await res.json().catch(() => null);
+      const res = await gatewayPost("/w-load", { slot: QUICK_SLOT });
+      const j = await res?.json().catch(() => null);
       if (!j || !j.ok) { message.warning("No quicksave yet — press Save first."); return; }
       sessionRef.current?.load?.();
       message.info("Loading your quicksave…");
@@ -749,15 +775,12 @@ export default function ArcadeRoomPage() {
     if (label === null) return; // cancelled
     const g = gatewayFor(d);
     if (!g) { message.error("Can't snapshot this session."); return; }
-    const { token, base } = g;
     setSnapping(true);
     try {
       sessionRef.current?.save?.();                     // flush current state to /saves/<id>.dat
       await new Promise((r) => setTimeout(r, 1300));     // let the save write before the gateway copies it
-      const res = await fetch(`${base}/w-snap/${token}`, {
-        method: "post", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label: label.trim() }),
-      });
-      const j = await res.json().catch(() => null);
+      const res = await gatewayPost("/w-snap", { label: label.trim() });
+      const j = await res?.json().catch(() => null);
       if (j && j.ok) message.success(`Snapshot saved${j.label ? `: ${j.label}` : ` (slot ${j.slot})`}`);
       else message.warning((j && j.reason) || "Couldn't save the snapshot — play a moment, then try again.");
     } catch { message.error("Couldn't save the snapshot."); }
@@ -784,7 +807,6 @@ export default function ArcadeRoomPage() {
     catch { message.error("Couldn't load your saves."); return; }
     const snaps = (saves || []).filter((s) => s.kind === "state" && s.slotId >= 1).sort((a, b) => a.slotId - b.slotId);
     if (snaps.length === 0) { message.info("No snapshots yet — use 📸 Snapshot to make one."); return; }
-    const base = g.base;
     Modal.info({
       title: "Load a snapshot",
       okText: "Cancel",
@@ -795,10 +817,10 @@ export default function ArcadeRoomPage() {
               <a onClick={async () => {
                 Modal.destroyAll();
                 try {
-                  const r = await fetch(`${base}/w-load/${token}`, {
-                    method: "post", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: s.slotId }),
-                  });
-                  const j = await r.json().catch(() => null);
+                  // gatewayPost, not the token captured when this list was built: the picker can sit open
+                  // for minutes, which is exactly long enough for that capability to lapse.
+                  const r = await gatewayPost("/w-load", { slot: s.slotId });
+                  const j = await r?.json().catch(() => null);
                   if (j && j.ok) {
                     await new Promise((res) => setTimeout(res, 250)); // let the file land before the core re-reads it
                     sessionRef.current?.load?.();

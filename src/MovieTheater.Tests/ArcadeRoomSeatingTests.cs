@@ -223,6 +223,82 @@ namespace MovieTheater.Tests
             Assert.Equal(extra.PlayerSlot, friend.PlayerSlot);
         }
 
+        // ── A player who never left gets their seat back ──────────────────────────────────────────
+        // Losing a seat while still playing is what broke SAVING for a whole session: the heartbeat
+        // mints the gateway control token off the seat, so a seatless-but-playing user's page fell back
+        // to its join token and every quicksave came back "This room pass expired". A prune (frozen tab
+        // past the TTL) and the pagehide beacon both land the room in exactly this state — and on a
+        // phone the beacon fires just for switching apps, after which bfcache restores the page and it
+        // keeps heartbeating. Both call RemoveUser, so Leave-then-beat is the same state a prune leaves.
+
+        [Fact]
+        public void A_player_who_kept_heartbeating_gets_their_seat_back()
+        {
+            var rooms = BoundRoom("AAA", maxPlayers: 2);
+            rooms.TryJoin("AAA", Friend);                       // Friend = slot 1, and keeps the room alive
+            rooms.Leave("AAA", Host);                           // pagehide beacon / TTL prune drops the host
+
+            var status = rooms.Heartbeat("AAA", Host)!;
+
+            Assert.Equal(0, status.YourSlot);                   // their OWN port back — the shim still drives it
+            Assert.False(status.YouAreSpectator);
+            Assert.Equal(new[] { Host, Friend }, status.PlayerUserIds);
+        }
+
+        [Fact]
+        public void A_returning_player_whose_port_was_taken_gets_another_one()
+        {
+            var rooms = BoundRoom("AAA", maxPlayers: 3);
+            rooms.TryJoin("AAA", Friend);                       // slot 1, and keeps the room alive
+            rooms.Leave("AAA", Host);                           // frees slot 0
+            rooms.TryJoin("AAA", Third);                        // Third takes it
+
+            var status = rooms.Heartbeat("AAA", Host)!;
+
+            Assert.Equal(2, status.YourSlot);                   // the next free port, never Third's
+            Assert.Equal(0, rooms.Heartbeat("AAA", Third)!.YourSlot);
+        }
+
+        [Fact]
+        public void A_returning_player_stays_a_viewer_when_the_room_filled_up()
+        {
+            var rooms = BoundRoom("AAA", maxPlayers: 1);
+            rooms.TryJoin("AAA", Friend);                       // watch seat — keeps the room alive
+            rooms.Leave("AAA", Host);
+            rooms.TryJoin("AAA", Third);                        // Third takes the only player port
+
+            var status = rooms.Heartbeat("AAA", Host)!;
+
+            Assert.Null(status.YourSlot);                       // nothing to give them; never evict Third
+            Assert.Equal(new[] { Third }, status.PlayerUserIds);
+        }
+
+        [Fact]
+        public void A_stranger_who_only_heartbeats_is_never_seated()
+        {
+            // The re-seat is keyed on a seat this user actually held HERE, so Join — and its age gate —
+            // stays the only way into a room.
+            var rooms = BoundRoom("AAA", maxPlayers: 4);
+
+            var status = rooms.Heartbeat("AAA", Fourth)!;
+
+            Assert.Null(status.YourSlot);
+            Assert.Equal(new[] { Host }, status.PlayerUserIds);
+        }
+
+        [Fact]
+        public void A_returning_spectator_is_not_promoted_to_a_player()
+        {
+            var rooms = BoundRoom("AAA", maxPlayers: 1);
+            rooms.TryJoin("AAA", Friend);                       // watch seat
+            rooms.Leave("AAA", Host);                           // frees the only player port
+
+            var status = rooms.Heartbeat("AAA", Friend)!;
+
+            Assert.True(status.YouAreSpectator);
+            Assert.Null(status.YourSlot);                       // their page never opened an input pump
+        }
+
         [Fact]
         public void Leaving_frees_every_seat_the_user_held()
         {

@@ -62,6 +62,11 @@ namespace MovieTheater.Arcade
             public readonly Dictionary<int, int> Seats = new();         // slot -> userId (players only)
             public readonly HashSet<int> Spectators = new();            // userIds watching, no controller
             public readonly Dictionary<int, DateTime> Viewers = new();  // userId -> last seen (players AND spectators)
+            /// <summary>userId → the primary slot they held when presence bookkeeping dropped them
+            /// (<see cref="RemoveUser"/>). A later heartbeat from that user is proof they never really
+            /// left, and <see cref="ReseatReturningPlayer"/> hands exactly that port back. Only ever
+            /// written for someone who WAS seated here, so it can't become a way into the room.</summary>
+            public readonly Dictionary<int, int> RecentSeats = new();
             public DateTime CreatedUtc;
             /// <summary>Last time this room's liveness was written to ArcadeSession.LastSeenUtc. Throttles
             /// that UPDATE to one per <see cref="HeartbeatPersistEvery"/> instead of one per heartbeat.</summary>
@@ -292,6 +297,7 @@ namespace MovieTheater.Arcade
                 Prune(roomCode, state, now);
                 if (!rooms.ContainsKey(roomCode))
                     return null; // pruning emptied and removed it
+                ReseatReturningPlayer(state, userId);
                 return StatusFor(state, userId);
             }
         }
@@ -397,6 +403,41 @@ namespace MovieTheater.Arcade
 
         // ── helpers (all under gate) ──
 
+        /// <summary>
+        /// Give a beating player their seat back after presence bookkeeping took it away.
+        ///
+        /// Two ordinary things drop a player who never left: the TTL prune (a tab frozen past 90 s —
+        /// and note ANY other user's lobby poll prunes, via Snapshot/LiveRoomCount), and the pagehide
+        /// beacon, which on a phone fires for something as mundane as switching apps — Chrome then
+        /// restores the page from bfcache and it keeps heartbeating. Neither re-seated them: the beat
+        /// re-registered a VIEWER with no slot while their WebRTC session, which CloudRetro tracks per
+        /// connection and never revisits, kept playing perfectly.
+        ///
+        /// The visible cost was SAVING. The heartbeat mints the gateway's control token only for a
+        /// player the registry can see a seat for, so a seatless-but-playing user's room page fell back
+        /// to the join token it was handed at connect — and once that passed ArcadeJoinTokenTtlSeconds,
+        /// every quicksave came back "This room pass expired" for the rest of the session, on a room
+        /// that was otherwise completely healthy.
+        ///
+        /// Restores only someone RecentSeats says held a seat in THIS room, so a stranger who learned a
+        /// room code and heartbeated it still gets nothing — a real Join, with its age gate, remains
+        /// the only way in. Prefers their original port: the browser shim told CloudRetro which one to
+        /// drive at t=108 and never revisits that either.
+        /// </summary>
+        private void ReseatReturningPlayer(RoomState state, int userId)
+        {
+            if (state.Seats.ContainsValue(userId) || state.Spectators.Contains(userId)) return;
+            if (!state.RecentSeats.TryGetValue(userId, out var previous)) return;
+
+            var free = previous < state.MaxPlayers && !state.Seats.ContainsKey(previous)
+                ? previous               // their own port is still open — take it back
+                : LowestFreeSlot(state); // someone else took it while they were away
+            if (free < 0) return;        // room genuinely full now; they stay a viewer (and still get a save token)
+
+            state.Seats[free] = userId;
+            state.RecentSeats.Remove(userId);
+        }
+
         private int LowestFreeSlot(RoomState state)
         {
             for (int s = 0; s < state.MaxPlayers; s++)
@@ -409,6 +450,11 @@ namespace MovieTheater.Arcade
         {
             state.Viewers.Remove(userId);
             state.Spectators.Remove(userId);
+            // Remember the primary seat before letting go of it. Both callers — the TTL prune and the
+            // pagehide/Leave beacon — routinely fire for a player who is still very much in the room
+            // (see ReseatReturningPlayer), and this is the only record of which port was theirs.
+            if (state.Seats.TryGetValue2(userId, out var primarySlot))
+                state.RecentSeats[userId] = primarySlot;
             // ALL their seats, not just the first hit — a local-multiplayer host holds several, and
             // leaving/pruning must free every controller port they were occupying.
             foreach (var slot in state.Seats.Where(kv => kv.Value == userId).Select(kv => kv.Key).ToList())

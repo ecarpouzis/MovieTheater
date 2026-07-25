@@ -1814,10 +1814,22 @@ namespace MovieTheater.Controllers
             // spurious CORS error). A present player beats every ~12 s, so a token refreshed here never goes
             // stale. Bound rooms only (the id must exist to mint against); the client keeps its last good token
             // if this is ever absent. See IArcadeHost.MintControlToken.
+            //
+            // NOT gated on holding a seat. That gate is what made a lost seat break saving for a whole
+            // session: a player pruned or beaconed out of the registry (a frozen tab, a phone switching
+            // apps) keeps playing — CloudRetro tracks their connection, not our roster — but stopped
+            // being handed a fresh capability, so the page fell back to its join token and every
+            // quicksave 403'd "This room pass expired". ArcadeRoomService now re-seats them, and this is
+            // the second line of defence: presence bookkeeping must never be what decides whether a
+            // player can save. Spectators stay excluded (they have no business writing the room's state);
+            // the gateway re-checks room id + game id on every call regardless.
             string? saveToken = null;
             var boundRoomId = rooms.BoundRoomId(code);
-            if (status.Bound && boundRoomId != null && status.YourSlot is int seat && rooms.GameId(code) is int gid)
-                saveToken = host.MintControlToken(userId.Value, gid, code, boundRoomId, seat);
+            if (status.Bound && boundRoomId != null && !status.YouAreSpectator && rooms.GameId(code) is int gid)
+                // The slot is informational in a control token — the save endpoints authorize on the room
+                // id and game id, not the port — so a momentarily seatless player signs with "no port".
+                saveToken = host.MintControlToken(
+                    userId.Value, gid, code, boundRoomId, status.YourSlot ?? ArcadeRoomService.SpectatorSlot);
 
             return Json(new
             {
