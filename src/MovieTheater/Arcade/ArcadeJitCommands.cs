@@ -61,6 +61,12 @@ namespace MovieTheater.Arcade
         [CommandOption("rom-ext", Description = "Override the extracted ROM extension used for RomPath (e.g. .chd for archives that wrap a CHD rather than the system default .cue). Needed when the archive extension is a wrapper type (.7z) but the ROM inside differs from the system's first extension.")]
         public string? RomExtOverride { get; set; }
 
+        [CommandOption("strip-numeric-prefix", Description = "Drop a leading catalog number (\"0001 - Title\") when deriving Title/SortTitle. For Advanscene-numbered sets (the L: NDS collection). OPT-IN — a global strip would eat real titles like \"1943 - The Battle of Midway\".")]
+        public bool StripNumericPrefix { get; set; }
+
+        [CommandOption("no-bad-dump-tag", Description = "Don't let a GoodTools [b]/[o] bracket set Variant=BadDump. For sets whose [b] is unreliable (the L: NDS collection tags 1,047 of 6,600, including sole-US releases that are byte-identical to the dumps already in service).")]
+        public bool NoBadDumpTag { get; set; }
+
         private readonly IDbContextFactory<MovieDb> dbFactory;
 
         public ArcadeJitIngestCommand(MovieTheaterConfiguration config) : base(config)
@@ -91,7 +97,7 @@ namespace MovieTheater.Arcade
                 : sys.Extensions.Any(e => e.Equals(ext, StringComparison.OrdinalIgnoreCase)) ? ext : sys.Extensions[0];
             var search = Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
             var all = Directory.EnumerateFiles(dir, "*" + ext, search)
-                .Select(p => BuildEntry(p, dir, sys.Code, folder, romExt, sys.MaxPlayers))
+                .Select(p => BuildEntry(p, dir, sys.Code, folder, romExt, sys.MaxPlayers, StripNumericPrefix))
                 .OrderBy(e => e.ArchiveName, StringComparer.Ordinal)
                 .ToList();
             if (all.Count == 0)
@@ -132,7 +138,7 @@ namespace MovieTheater.Arcade
                 {
                     if (Apply)
                     {
-                        var (region, variant) = ArcadeRomTags.Parse(e.GameKey);
+                        var (region, variant) = ArcadeRomTags.Parse(e.GameKey, badDumpTag: !NoBadDumpTag);
                         db.ArcadeGames.Add(new ArcadeGame
                         {
                             Title = e.Title,
@@ -170,7 +176,7 @@ namespace MovieTheater.Arcade
             }
         }
 
-        private static JitEntry BuildEntry(string archivePath, string rootDir, string system, string folder, string romExt, byte maxPlayers)
+        private static JitEntry BuildEntry(string archivePath, string rootDir, string system, string folder, string romExt, byte maxPlayers, bool stripNumericPrefix = false)
         {
             // GD-ROM/disc-style dumps: a file one level below the archives root sits in a folder named
             // after the game, with an arbitrary internal filename (e.g. "trizeal/gdl-0026.chd" — the
@@ -180,6 +186,12 @@ namespace MovieTheater.Arcade
             var name = string.Equals(Path.GetFullPath(parentDir), Path.GetFullPath(rootDir), StringComparison.OrdinalIgnoreCase)
                 ? Path.GetFileNameWithoutExtension(archivePath)          // "Air Combat (USA)" / "Super Mario World (USA)"
                 : Path.GetFileName(parentDir);                           // "trizeal" (the containing game folder)
+            // The catalog number is stripped for DISPLAY only — GameKey and RomPath keep the verbatim
+            // filename, because that is what the archive contains and what CloudRetro's library scan
+            // matches on. Without this the number rides into Title and thence CollapseKey, so every
+            // regional dump of one game stays its own lobby card (6,600 cards instead of 4,816).
+            var titleSource = stripNumericPrefix ? ArcadeNaming.StripCatalogNumber(name) : name;
+            var title = ArcadeNaming.CleanTitle(titleSource);
             return new JitEntry(
                 Archive: Path.GetFullPath(archivePath),
                 ArchiveName: Path.GetFileName(archivePath),
@@ -187,8 +199,8 @@ namespace MovieTheater.Arcade
                 Folder: folder,
                 GameKey: name,                                          // == the launch-ROM base name inside the archive
                 RomPath: $"{folder}/{name}{romExt}",                    // nominal extracted, CloudRetro-visible path
-                Title: ArcadeNaming.CleanTitle(name),
-                SortTitle: ArcadeNaming.ArticleInvert(ArcadeNaming.CleanTitle(name)),
+                Title: title,
+                SortTitle: ArcadeNaming.ArticleInvert(title),
                 MaxPlayers: maxPlayers);
         }
 
@@ -517,6 +529,12 @@ namespace MovieTheater.Arcade
         [CommandOption("retag", Description = "Overwrite existing Region/Variant (default: fill only empty ones).")]
         public bool Retag { get; set; }
 
+        [CommandOption("system", 's', Description = "Only process this system's rows (nds, ps1, …). Default: all systems.")]
+        public string? System { get; set; }
+
+        [CommandOption("no-bad-dump-tag", Description = "Don't let a GoodTools [b]/[o] bracket set Variant=BadDump — see arcade-jit-ingest. Pair with --system so a set whose [b] is unreliable doesn't clear the tag on collections where it is meaningful.")]
+        public bool NoBadDumpTag { get; set; }
+
         private readonly IDbContextFactory<MovieDb> dbFactory;
 
         public ArcadeTagBackfillCommand(MovieTheaterConfiguration config) : base(config)
@@ -529,15 +547,16 @@ namespace MovieTheater.Arcade
             var w = console.Output;
             await using var db = await dbFactory.CreateDbContextAsync();
 
-            var batch = await db.ArcadeGames.Where(g => g.Id > After)
-                .OrderBy(g => g.Id).Take(Math.Max(1, Limit)).ToListAsync();
+            var scoped = db.ArcadeGames.Where(g => g.Id > After);
+            if (!string.IsNullOrWhiteSpace(System)) scoped = scoped.Where(g => g.System == System);
+            var batch = await scoped.OrderBy(g => g.Id).Take(Math.Max(1, Limit)).ToListAsync();
 
             int changed = 0;
             var regions = new Dictionary<string, int>();
             var variants = new Dictionary<string, int>();
             foreach (var g in batch)
             {
-                var (region, variant) = ArcadeRomTags.Parse(g.CloudRetroGameKey);
+                var (region, variant) = ArcadeRomTags.Parse(g.CloudRetroGameKey, badDumpTag: !NoBadDumpTag);
                 if ((Retag || string.IsNullOrEmpty(g.Region)) && g.Region != region) { if (Apply) g.Region = region; changed++; }
                 if ((Retag || string.IsNullOrEmpty(g.Variant)) && g.Variant != variant) { if (Apply) g.Variant = variant; }
                 regions[region] = regions.GetValueOrDefault(region) + 1;
@@ -546,7 +565,10 @@ namespace MovieTheater.Arcade
             if (Apply) await db.SaveChangesAsync();
 
             var nextCursor = batch.Count > 0 ? batch[^1].Id : After;
-            var remaining = await db.ArcadeGames.CountAsync(g => g.Id > nextCursor);
+            var remaining = await db.ArcadeGames
+                .Where(g => g.Id > nextCursor)
+                .Where(g => string.IsNullOrWhiteSpace(System) || g.System == System)
+                .CountAsync();
 
             w.WriteLine("regions: " + string.Join(", ", regions.OrderByDescending(k => k.Value).Select(k => $"{k.Key}:{k.Value}")));
             w.WriteLine("variants: " + string.Join(", ", variants.OrderByDescending(k => k.Value).Select(k => $"{k.Key}:{k.Value}")));
@@ -561,6 +583,15 @@ namespace MovieTheater.Arcade
     internal static class ArcadeNaming
     {
         public static string CleanTitle(string name) => CleanTitle(name, collapseFixes: true);
+
+        /// <summary>Drops a leading catalog/release number from an Advanscene-style set name
+        /// ("0001 - Electroplankton (JP)" → "Electroplankton (JP)"). <b>Opt-in per ingest</b>, never
+        /// applied globally: plenty of real titles open with a 4-digit number and a dash
+        /// ("1943 - The Battle of Midway", "1944 - The Loop Master" on fbneo), and an unconditional
+        /// strip would silently rename them to their subtitle. Only the display Title is derived from
+        /// the stripped form — GameKey/RomPath stay verbatim so they still match the archive on disk.</summary>
+        public static string StripCatalogNumber(string name) =>
+            Regex.Replace(name, @"^\d{3,5}\s*-\s*", "");
 
         /// <summary>Core title cleaner. <paramref name="collapseFixes"/> gates the normalizations added by
         /// the cross-dump collapse fix (the free-text/glued disc peel and the article un-inversion) —

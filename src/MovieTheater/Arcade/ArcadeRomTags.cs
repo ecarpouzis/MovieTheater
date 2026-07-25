@@ -24,10 +24,17 @@ namespace MovieTheater.Arcade
         public const string Release = "Release";
         public const string Unknown = "Unknown";
 
-        public static (string Region, string Variant) Parse(string? cloudRetroGameKey)
+        /// <param name="badDumpTag">Whether a GoodTools <c>[b]</c>/<c>[o]</c> bracket marks the dump as
+        /// <c>BadDump</c>. Defaults to true (the GoodTools meaning). Set false for a collection whose
+        /// <c>[b]</c> is unreliable — the L: Advanscene NDS set carries it on 1,047 of 6,600 files,
+        /// including sole-US releases of major games, and sampled <c>[b]</c> ROMs are byte-identical to
+        /// the dumps already running on the arcade. Mistagging them BadDump would drop them out of the
+        /// "official releases only" filter and demote them in <c>ArcadeVersions.Rank</c>, so a card whose
+        /// only US dump is <c>[b]</c> would open on a foreign-language version instead.</param>
+        public static (string Region, string Variant) Parse(string? cloudRetroGameKey, bool badDumpTag = true)
         {
             var tags = ExtractTags(cloudRetroGameKey);
-            return (RegionOf(tags), VariantOf(tags, cloudRetroGameKey));
+            return (RegionOf(tags), VariantOf(tags, cloudRetroGameKey, badDumpTag));
         }
 
         // Pull the comma-split contents of every (...) and [...] group, e.g.
@@ -58,6 +65,12 @@ namespace MovieTheater.Arcade
             ["Japan"] = "Japan", ["JP"] = "Japan",
             ["World"] = "World",
             ["Korea"] = "Asia", ["China"] = "Asia", ["Taiwan"] = "Asia", ["Hong Kong"] = "Asia", ["Asia"] = "Asia",
+            // Advanscene two-letter codes (the L: NDS set): KS = Korea, AU = Australia. The other
+            // two-letter codes it uses (DE/FR/IT/ES/NL/NO/DK) are LANGUAGE SKUs of a European release,
+            // not separate regions — deliberately left unmapped so they stay Unknown rather than
+            // masquerading as the English (EU) dump. They still fold into the parent card via
+            // CollapseKey, appearing as version-dropdown entries.
+            ["KS"] = "Asia", ["AU"] = "Europe",
             ["Brazil"] = "Other", ["Mexico"] = "Other",
         };
 
@@ -83,7 +96,7 @@ namespace MovieTheater.Arcade
             ("Homebrew", "Unlicensed"), ("Program", "Unlicensed"),
         };
 
-        private static string VariantOf(List<string> tags, string? key)
+        private static string VariantOf(List<string> tags, string? key, bool badDumpTag = true)
         {
             foreach (var (mk, variant) in VariantMarkers)
                 if (tags.Any(t => t.StartsWith(mk, StringComparison.OrdinalIgnoreCase)))
@@ -101,7 +114,7 @@ namespace MovieTheater.Arcade
                 if (Regex.IsMatch(key, @"\[f[0-9]*\]", RegexOptions.IgnoreCase)) return "Hack";  // [f]/[f1] fixed
                 if (Regex.IsMatch(key, @"\[cr[\s\]]", RegexOptions.IgnoreCase)) return "Hack";   // [cr] cracked
                 if (Regex.IsMatch(key, @"\[p[0-9]*\]", RegexOptions.IgnoreCase)) return "Pirate";
-                if (Regex.IsMatch(key, @"\[[bo][0-9]*\]", RegexOptions.IgnoreCase)) return "BadDump";
+                if (badDumpTag && Regex.IsMatch(key, @"\[[bo][0-9]*\]", RegexOptions.IgnoreCase)) return "BadDump";
             }
             return Release;
         }

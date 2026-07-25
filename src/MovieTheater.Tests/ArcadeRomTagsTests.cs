@@ -15,6 +15,11 @@ namespace MovieTheater.Tests
         [InlineData("Something (Korea)", "Asia")]
         [InlineData("007 - GoldenEye (1997)(Nintendo)(US)[tr de]", "USA")]  // TOSEC (US) token
         [InlineData("No Region Tag", "Unknown")]
+        // Advanscene two-letter codes (the L: NDS set).
+        [InlineData("2333 - Kung Fu Panda (US)", "USA")]
+        [InlineData("2646 - Kung Fu Panda (IT)", "Unknown")]     // language SKU, deliberately NOT Europe
+        [InlineData("3909 - Ragnarok DS (KS)", "Asia")]          // KS = Korea
+        [InlineData("Some Game (AU)", "Europe")]                 // AU = Australia, PAL
         public void Region_IsBucketed(string key, string expected)
             => Assert.Equal(expected, ArcadeRomTags.Parse(key).Region);
 
@@ -42,5 +47,21 @@ namespace MovieTheater.Tests
         [InlineData("Game (Unl)", "Unlicensed")]
         public void Variant_IsClassified(string key, string expected)
             => Assert.Equal(expected, ArcadeRomTags.Parse(key).Variant);
+
+        // --no-bad-dump-tag: for a collection whose [b] is unreliable (the L: Advanscene NDS set),
+        // the bracket must not demote the dump — but every OTHER marker still classifies normally.
+        [Theory]
+        [InlineData("3504 - Avalon Code [b] (US)", "Release")]
+        [InlineData("5356 - 9 Hours, 9 Persons, 9 Doors [b] (US)", "Release")]
+        [InlineData("Some Game (USA) [o]", "Release")]
+        [InlineData("Some Game (USA) [h1]", "Hack")]     // unaffected
+        [InlineData("Some Game (USA) [p]", "Pirate")]    // unaffected
+        [InlineData("Star Fox 2 (Beta)", "Beta")]        // unaffected
+        public void Variant_BadDumpTagCanBeDisabled(string key, string expected)
+            => Assert.Equal(expected, ArcadeRomTags.Parse(key, badDumpTag: false).Variant);
+
+        [Fact]
+        public void Variant_BadDumpTagOnByDefault()
+            => Assert.Equal("BadDump", ArcadeRomTags.Parse("Some Game (USA) [b]").Variant);
     }
 }
