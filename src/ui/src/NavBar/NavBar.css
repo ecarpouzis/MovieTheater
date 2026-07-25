@@ -124,9 +124,17 @@
   inset: 0;
   z-index: 1200;
   background: rgba(0, 0, 0, 0.45);
+  /* The overlay is a dead surface: a drag on it must not pan the page behind it. */
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
-/* Drop-down panel (mobile) */
+/* Drop-down panel (mobile).
+   It fills the viewport below the top bar (`height`) rather than only sizing to its content, and
+   `max-height` stays purely as the open/close animation. Content-sized, the panel ended short of the
+   bottom of the screen, so a touch below it — or a flick anywhere in it once it had no overflow of
+   its own — scrolled the PAGE behind instead of the drawer. `overscroll-behavior: contain` stops that
+   scroll chaining at the panel's edges. */
 .navbar-dropdown {
   position: fixed;
   top: 48px;
@@ -134,10 +142,22 @@
   right: 0;
   z-index: 1250;
   background: var(--sidebar-bg);
+  height: calc(100vh - 48px);
+  height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   max-height: 0;
   transition: max-height 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Sections keep their natural height inside the flex column — without this a tall nav (Arcade's
+   filters) would compress its own children instead of scrolling. */
+.navbar-dropdown > * {
+  flex: 0 0 auto;
 }
 
 .navbar-dropdown--open {
@@ -235,7 +255,7 @@
 }
 
 /* Rail footer — theme row, then Log Out. margin-top:auto pins it to the bottom of the flex sider
-   (in the mobile drawer it just renders last, which is the same visual result). */
+   and, since the mobile drawer is a full-height flex column too, to the bottom of that as well. */
 .navbar-footer {
   margin-top: auto;
   border-top: 1px solid var(--sidebar-border);
