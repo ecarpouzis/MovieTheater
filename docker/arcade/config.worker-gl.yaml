@@ -152,6 +152,16 @@ emulator:
                                            # and overwrite it on the next seed.
                                            # dc_nvmem.bin is machine state (clock/language), not a
                                            # card: it stays shared on purpose.
+    # 3ds (citra, 2026-07-24): citra writes game saves as a DIRECTORY tree, not SAVE_RAM (.srm) the way
+    # melonDS/nds does — so 3DS is the one carded core whose save is a dir. This is the virtual SD card:
+    # retail game saves land at Citra/sdmc/Nintendo 3DS/<id>/<id>/title/<hi>/<lo>/data/... (Mario Kart 7's
+    # systemN.dat verified there). One "SD card" per user holding all their 3DS saves, mirroring a real
+    # console. sdmc ONLY, deliberately NOT the whole Citra/ user dir: that also holds `shaders/` (the GL/Vk
+    # shader disk cache — regenerable, it CHURNS as you play so a whole-dir card would balloon the per-user
+    # blob and reformat it on every fresh seed) and `cheats/`. KNOWN GAP: nand/extdata (Mii, Play Coins,
+    # StreetPass + the handful of games that save there) is NOT covered — a single-path card can't express
+    # "sdmc + extdata but not shaders". Revisit if a game's real progress proves to live in extdata.
+    3ds: "save:Citra/sdmc"
 
   # Wii SD-card + ELF/DOL loader boot (Brawl mods: Project REX, Smash Bros Infinite — 2026-07-18). A
   # small number of Wii ROM hacks crash when baked onto a standalone disc because their own
