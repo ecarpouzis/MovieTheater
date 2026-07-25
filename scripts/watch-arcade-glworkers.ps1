@@ -63,6 +63,16 @@
        This makes config deploys self-applying. (Capture worker excluded: its ConfDir isn't on the
        worker-gl/-N convention, so ConfDirForPid can't find its config and check E skips it.)
 
+    F) ABSENT RUNNER (first seen 2026-07-25): every check above recycles a worker and trusts the
+       runner's `while ($true)` loop to respawn it -- but nothing watched the RUNNER. When that
+       PowerShell dies, its worker.exe keeps serving rooms ORPHANED and looks perfectly healthy;
+       the moment it stops, the zone vanishes from the coordinator and NOTHING rebuilds it (the
+       worker tasks are logon-triggered, and were registered with RestartCount 0). The capture
+       worker sat orphaned ~13.7 h this way. Detection: a configured port with no UDP listener
+       whose scheduled task is in state Ready (Running = the loop is alive and respawns in ~4 s;
+       Disabled = deliberate, never overridden), two consecutive cycles so a normal recycle isn't
+       mistaken for it. Response: Start-ScheduledTask. See [[arcade-runner-death-orphans-worker]].
+
     Registered as scheduled task "MovieTheater - Arcade GL Worker Watchdog" (logon trigger,
     same pattern as the worker tasks). Safe to run interactively too.
 #>
@@ -103,6 +113,14 @@ function Log([string]$msg) {
 
 # Worker N (port 8445+N) logs to glworker.log (N=1) / glworker-N.log (N>1) -- the
 # register-arcade-glworker-task.ps1 convention.
+function WorkerTaskName([int]$port) {
+    # Same port->id->name convention register-arcade-glworker-task.ps1 uses: worker 1 keeps the
+    # historical unsuffixed name, 2+ get a numeric suffix.
+    $id = $port - 8445
+    if ($id -le 1) { return "MovieTheater - Arcade GL Worker" }
+    return ("MovieTheater - Arcade GL Worker {0}" -f $id)
+}
+
 function WorkerLogPath([int]$port) {
     $id = $port - 8445
     if ($id -le 1) { return (Join-Path $LogDir "glworker.log") }
@@ -279,6 +297,7 @@ function HuskScan {
 Log "watchdog v2 started (coordinator port: $CoordinatorPort, interval: ${IntervalSec}s, worker ports: $($WorkerPorts -join ','), wedge stale: ${WedgeStaleSec}s, husk advise at: $HuskAdviseThreshold)"
 $strikes = @{}       # PID -> consecutive no-coordinator-connection strikes (check A)
 $wedgeStrikes = @{}  # PID -> consecutive busy-but-silent strikes (check C)
+$absentStrikes = @{} # port -> consecutive "no listener AND no runner" strikes (check F)
 $lastActedTimeout = [datetime]::MinValue  # newest coordinator work-timeout already acted on (check D)
 
 while ($true) {
@@ -454,6 +473,38 @@ while ($true) {
                     KillWorker $wpid "stale config (config.yaml newer than worker start)"
                     break   # one per cycle: never drain the pool
                 }
+            }
+        }
+
+        # -- F) absent-runner check ----------------------------------------------------------
+        # Every check above assumes a worker EXISTS to be recycled, and every recycle assumes the
+        # runner's `while ($true)` loop will respawn it. Nothing watched the runner itself: when that
+        # PowerShell dies, its worker.exe keeps serving rooms ORPHANED and looks perfectly healthy --
+        # until it stops, and then the zone silently disappears from the coordinator with nothing left
+        # to rebuild it. Observed 2026-07-25: the capture worker (8448) had been orphaned ~13.7 h.
+        #
+        # The task STATE is what disambiguates, so this never races a live runner: task Running means
+        # the loop is up and will respawn within ~4s on its own -- leave it alone. Only a port with no
+        # listener AND a task sitting in Ready has genuinely lost its supervisor. Disabled is somebody's
+        # deliberate choice and is never overridden. Two consecutive cycles required so a normal
+        # recycle (KillWorker -> 4s respawn) is never mistaken for an absent runner.
+        foreach ($p in $WorkerPorts) {
+            $owner = (Get-NetUDPEndpoint -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+            if ($owner) { $absentStrikes.Remove($p) | Out-Null; continue }
+            $taskName = WorkerTaskName $p
+            $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+            if (-not $task) { continue }                                            # worker not registered on this box
+            if ($task.State -ne 'Ready') { $absentStrikes.Remove($p) | Out-Null; continue }  # Running = healthy, Disabled = deliberate
+            $absentStrikes[$p] = [int]$absentStrikes[$p] + 1
+            Log ("worker port {0}: no listener and task '{1}' is Ready -- runner is GONE (strike {2})" -f $p, $taskName, $absentStrikes[$p])
+            if ($absentStrikes[$p] -ge 2) {
+                try {
+                    Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
+                    Log ("  started '{0}' -- worker port {1} should re-register with the coordinator shortly" -f $taskName, $p)
+                } catch {
+                    Log ("  Start-ScheduledTask '{0}' FAILED: {1}" -f $taskName, $_.Exception.Message)
+                }
+                $absentStrikes.Remove($p) | Out-Null
             }
         }
 

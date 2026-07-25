@@ -81,12 +81,21 @@ $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\conhost.exe
                "-File `"$RunScript`" -SinglePort $SinglePort -LogFile `"$LogFile`"$extra")
 
 $trigger  = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+# RestartCount/RestartInterval supervise the RUNNER -- not the worker. run-arcade-glworker.ps1 already
+# restarts a crashed worker.exe in its own `while ($true)` loop, but nothing watched that script: with a
+# logon-only trigger and RestartCount 0, a runner that died was never coming back, and its worker.exe
+# went on serving rooms ORPHANED. That looks perfectly healthy right up until the process stops, at which
+# point the zone vanishes from the coordinator with nothing left to rebuild it. Observed 2026-07-25: the
+# capture worker had been orphaned for ~13.7 h. The task only counts a restart when the runner exits
+# non-zero, which is the only way that infinite loop ever terminates.
 $settings = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit  (New-TimeSpan -Seconds 0) `
     -StartWhenAvailable `
     -MultipleInstances   IgnoreNew `
     -AllowStartIfOnBatteries `
-    -DontStopIfGoingOnBatteries
+    -DontStopIfGoingOnBatteries `
+    -RestartCount        999 `
+    -RestartInterval     (New-TimeSpan -Minutes 1)
 
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
