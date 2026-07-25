@@ -31,9 +31,12 @@ const QUALITY_TIERS = [
   { id: "low", label: "Low" },
 ];
 
-const CATEGORY_ORDER = ["video", "hack", "performance", "system", "audio", "other"];
+// "input" = how the pad drives the game (ScummVM's cursor feel). It leads the rail for the systems that
+// have it: on a point-and-click there is no video lever at all, so Controls IS the settings dialog.
+const CATEGORY_ORDER = ["video", "input", "hack", "performance", "system", "audio", "other"];
 const CATEGORY_LABEL = {
   video: "Video",
+  input: "Controls",
   hack: "Enhancements",
   performance: "Performance",
   system: "System",

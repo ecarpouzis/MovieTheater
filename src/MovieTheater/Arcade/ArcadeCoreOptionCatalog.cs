@@ -44,6 +44,7 @@ namespace MovieTheater.Arcade
             public const string Hack = "hack";             // rendering / compat hacks (edge-case, can glitch)
             public const string System = "system";         // region / broadcast / bootmode
             public const string Audio = "audio";
+            public const string Input = "input";           // cursor / stick feel — how the pad drives the game
         }
 
         /// <summary>One configurable core option.</summary>
@@ -190,6 +191,69 @@ namespace MovieTheater.Arcade
                     "8x",
                     "Renders at a multiple of native then downsamples — anti-aliasing on the paraLLEl-RDP (Vulkan) renderer."),
             },
+
+            // ── ScummVM. Point-and-click games driven by a GAMEPAD, so the only settings worth a
+            // player's time are how the cursor feels — there is no resolution/upscale lever at all
+            // (software 2D renderer; sharpness is the config-level `scale`, not per-room deliverable).
+            // Tokens + defaults verified against the DEPLOYED scummvm_libretro.dll's own option table
+            // (660e13b0-2026.2.1git), not just the upstream header.
+            //
+            // ⚠ DELIBERATELY NOT EXPOSED:
+            //  • scummvm_video_hw_acceleration — load-bearing system default. It MUST stay "disabled":
+            //    the core's OpenGL mode sends RETRO_HW_FRAME_BUFFER_VALID on a software-armed room with
+            //    no GL context behind it, which crashed the worker (2026-07-18). Not a taste knob.
+            //  • scummvm_pointer_device — plumbing, not feel: "retropad" removes mouse control outright,
+            //    and which device our browser client drives is a system-level decision. Its core default
+            //    is also platform-conditional, so a catalog default here would be a guess — and a wrong
+            //    catalog default silently turns "left alone" into a stored override.
+            //  • scummvm_samplerate — we run the room at 48 kHz; a per-game mismatch is an audio-drift
+            //    bug waiting to happen, not a setting.
+            //  • scummvm_gui_h_res / gui_aspect_ratio — the ScummVM launcher's own GUI, which players
+            //    never see (we autoload the target straight from the .scummvm hook).
+            //  • scummvm_mapper_* — button mapping belongs to the site's input layer, not per game.
+            ["scummvm"] = new()
+            {
+                new CoreOption("scummvm_gamepad_cursor_speed", "Cursor speed (stick / D-pad)", Category.Input,
+                    new[] { V("0.25","0.25x (slowest)"), V("0.5","0.5x"), V("0.75","0.75x"), V("1.0","1x (default)"),
+                            V("1.5","1.5x"), V("2.0","2x"), V("2.5","2.5x"), V("3.0","3x (fastest)") },
+                    "1.0",
+                    "How fast the stick moves the mouse cursor. 1x suits 320x200 games; the core recommends 2x " +
+                    "for 640x480 ones (Myst, Grim Fandango, the later CD talkies)."),
+                new CoreOption("scummvm_gamepad_cursor_acceleration_time", "Cursor acceleration", Category.Input,
+                    new[] { V("off","Off (instant full speed)"), V("0.1","0.1 s"), V("0.2","0.2 s (default)"),
+                            V("0.3","0.3 s"), V("0.4","0.4 s"), V("0.5","0.5 s"), V("0.6","0.6 s"),
+                            V("0.7","0.7 s"), V("0.8","0.8 s"), V("0.9","0.9 s"), V("1.0","1.0 s (slowest ramp)") },
+                    "0.2",
+                    "How long the cursor takes to reach full speed. Off is twitchier; a longer ramp makes " +
+                    "small pixel-hunting movements easier."),
+                new CoreOption("scummvm_analog_response", "Stick response curve", Category.Input,
+                    new[] { V("linear","Linear"), V("quadratic","Quadratic (fine control near centre)") },
+                    "linear",
+                    "Quadratic gives slow, precise movement for small stick deflections and full speed at the edge."),
+                new CoreOption("scummvm_analog_deadzone", "Stick deadzone", Category.Input,
+                    new[] { V("0","0%"), V("5","5%"), V("10","10%"), V("15","15% (default)"),
+                            V("20","20%"), V("25","25%"), V("30","30%") },
+                    "15",
+                    "Ignore stick movement below this much deflection. Raise it if the cursor drifts on its own."),
+                new CoreOption("scummvm_mouse_speed", "Mouse speed", Category.Input,
+                    new[] { V("0.05","0.05x"), V("0.1","0.1x"), V("0.15","0.15x"), V("0.2","0.2x"), V("0.25","0.25x"),
+                            V("0.3","0.3x"), V("0.35","0.35x"), V("0.4","0.4x"), V("0.45","0.45x"), V("0.5","0.5x"),
+                            V("0.6","0.6x"), V("0.7","0.7x"), V("0.8","0.8x"), V("0.9","0.9x"), V("1.0","1x (default)"),
+                            V("1.25","1.25x"), V("1.5","1.5x"), V("1.75","1.75x"), V("2.0","2x"), V("2.5","2.5x"),
+                            V("3.0","3x") },
+                    "1.0",
+                    "Cursor speed for a real mouse (as opposed to the stick)."),
+                new CoreOption("scummvm_mouse_fine_control_speed_reduction", "Fine-control slowdown", Category.Input,
+                    new[] { V("2","50% speed"), V("4","25% speed (default)"), V("10","10% speed") },
+                    "4",
+                    "How far the cursor slows while the fine-control button is held, for exact clicks on small hotspots."),
+                new CoreOption("scummvm_framerate", "Frame rate cap", Category.Performance,
+                    new[] { V("disabled","Uncapped (default)"), V("60 Hz","60 Hz"), V("50 Hz","50 Hz"),
+                            V("30 Hz","30 Hz"), V("25 Hz","25 Hz") },
+                    "disabled",
+                    "Upper limit on the core's frame rate. The stream runs at 60, so a cap only helps if a " +
+                    "game's own timing misbehaves uncapped."),
+            },
         };
 
         // Which core a system maps to for the config module. Multi-core systems (ps1: Beetle + pcsx_rearmed)
@@ -206,6 +270,7 @@ namespace MovieTheater.Arcade
             ["sega32x"] = "picodrive", ["gb"] = "mgba", ["gbc"] = "mgba", ["gba"] = "mgba",
             ["arcade"] = "fbneo", ["neogeo"] = "fbneo", ["saturn"] = "kronos", ["dos"] = "dosbox_pure",
             ["nds"] = "melondsds", ["3ds"] = "citra",
+            ["scummvm"] = "scummvm",
         };
 
         /// <summary>The core a system's config maps to by default (null if the system isn't mapped).</summary>
