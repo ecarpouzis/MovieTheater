@@ -42,6 +42,14 @@ public sealed class RomCacheOptions
     /// <summary>Disk cap for extracted JIT ROMs. Default 30 GB.</summary>
     public long MaxBytes { get; set; } = 30L * 1024 * 1024 * 1024;
 
+    /// <summary>Proactively evict a staged game this many days after it was last booted, regardless of
+    /// cache pressure — keeps the cache lean so a first-play rarely has to evict several GB before it can
+    /// extract. 0 disables time-based eviction (size cap only). Default 7.</summary>
+    public int StaleEvictionDays { get; set; } = 7;
+
+    /// <summary>How often the stale-eviction sweep runs, in minutes. Default 60.</summary>
+    public int StaleSweepIntervalMinutes { get; set; } = 60;
+
     /// <summary>7-Zip executable. Default the standard Windows install; falls back to "7z" on PATH.</summary>
     public string SevenZipPath { get; set; } = @"C:\Program Files\7-Zip\7z.exe";
 
@@ -54,7 +62,7 @@ public sealed class RomCacheOptions
     public bool Enabled => !string.IsNullOrWhiteSpace(ManifestPath) && !string.IsNullOrWhiteSpace(RomsDir);
 }
 
-public sealed class RomCache
+public sealed class RomCache : IDisposable
 {
     // Exts = the system's candidate ROM extensions (e.g. [".cue",".chd"] for PS1, [".sfc",".smc"] for
     // SNES, [".md",".gen",".smd",".bin"] for Genesis). A JIT archive holds one launch ROM whose base
@@ -76,8 +84,9 @@ public sealed class RomCache
     {
         public required List<string> Files;   // absolute dest paths we extracted
         public long Bytes;
-        public long LastUsed;                 // monotonic LRU tick
+        public long LastUsed;                 // monotonic LRU tick (size-cap eviction order)
         public int Pins;                      // live connections referencing this game
+        public DateTime LastBootUtc;          // wall-clock last boot (time-based eviction); persisted as the ROM mtime
     }
 
     private readonly RomCacheOptions opt;
@@ -92,6 +101,7 @@ public sealed class RomCache
     private readonly SemaphoreSlim extractSem;
     private long clock;
     private DateTime manifestMtime;
+    private readonly Timer? staleTimer;
 
     public RomCache(RomCacheOptions options, ILogger logger)
     {
@@ -102,7 +112,22 @@ public sealed class RomCache
         extractSem = new SemaphoreSlim(Math.Max(1, opt.MaxParallelExtractions));
         LoadManifest();
         ReconcileFromDisk();
+
+        // Time-based eviction: a background sweep drops games not booted in StaleEvictionDays, so the cache
+        // stays lean instead of sitting pinned at the size cap and forcing a multi-GB eviction on every
+        // cold first-play. Runs off a timer thread; all state work is under `gate`. 0 days = disabled.
+        if (opt.StaleEvictionDays > 0)
+        {
+            var period = TimeSpan.FromMinutes(Math.Max(1, opt.StaleSweepIntervalMinutes));
+            staleTimer = new Timer(_ =>
+            {
+                try { SweepStale(); }
+                catch (Exception ex) { log.LogWarning(ex, "RomCache stale-eviction sweep failed"); }
+            }, null, TimeSpan.FromMinutes(5), period); // first sweep 5 min after boot, then every period
+        }
     }
+
+    public void Dispose() => staleTimer?.Dispose();
 
     /// <summary>Manifest games, for logging/diagnostics.</summary>
     public int CatalogCount { get { lock (gate) return byId.Count; } }
@@ -256,7 +281,11 @@ public sealed class RomCache
     {
         lock (gate)
         {
-            if (materialized.TryGetValue(gameId, out var s)) { s.Pins++; s.LastUsed = ++clock; }
+            if (materialized.TryGetValue(gameId, out var s))
+            {
+                s.Pins++; s.LastUsed = ++clock; s.LastBootUtc = DateTime.UtcNow;
+                if (byId.TryGetValue(gameId, out var g)) TouchRomMtime(g); // persist last-boot across restarts
+            }
         }
     }
 
@@ -283,9 +312,39 @@ public sealed class RomCache
     {
         lock (gate)
         {
-            if (materialized.TryGetValue(gameId, out var s)) s.LastUsed = ++clock;
-            else RecordMaterializedLocked(gameId, g);
+            if (materialized.TryGetValue(gameId, out var s)) { s.LastUsed = ++clock; s.LastBootUtc = DateTime.UtcNow; TouchRomMtime(g); }
+            else RecordMaterializedLocked(gameId, g, DateTime.UtcNow);
         }
+    }
+
+    // Persist a game's last-boot time as the mtime of its primary ROM on disk, so a gateway restart can
+    // recover it (ReconcileFromDisk reads it back). Best-effort: a metadata write on a file a worker holds
+    // open for read is fine on Windows, but if it ever fails the in-memory LastBootUtc still governs this
+    // gateway lifetime. NB: 7z x PRESERVES the archive's stored (2005-era) date on extraction, which is
+    // exactly why last-boot cannot be inferred from mtime unless we stamp it here on every boot.
+    private void TouchRomMtime(ManifestGame g)
+    {
+        foreach (var e in ExtsOf(g))
+        {
+            var p = RomDest(g, e);
+            if (File.Exists(p)) { try { File.SetLastWriteTimeUtc(p, DateTime.UtcNow); } catch { /* best effort */ } return; }
+        }
+    }
+
+    // Seed LastBootUtc on (re)start from the ROM's mtime (which we stamp on every boot). Trust it only when
+    // recent enough to be a real boot stamp; a game extracted BEFORE this feature — or by 7z, which keeps the
+    // archive's 2005 date — would otherwise read as ancient and be swept on the first pass, nuking a warm
+    // cache on startup. Anything older than the stale cutoff gets a fresh window instead.
+    private DateTime ReconcileBootTime(ManifestGame g)
+    {
+        var mtime = DateTime.UtcNow;
+        foreach (var e in ExtsOf(g))
+        {
+            var p = RomDest(g, e);
+            if (File.Exists(p)) { try { mtime = File.GetLastWriteTimeUtc(p); } catch { /* keep now */ } break; }
+        }
+        var cutoff = DateTime.UtcNow - TimeSpan.FromDays(Math.Max(1, opt.StaleEvictionDays));
+        return mtime < cutoff ? DateTime.UtcNow : mtime;
     }
 
     private static readonly string[] DefaultExts = { ".cue" };
@@ -697,15 +756,16 @@ public sealed class RomCache
 
     private void RecordMaterialized(int gameId, ManifestGame g)
     {
-        lock (gate) RecordMaterializedLocked(gameId, g);
+        // A fresh extraction IS a boot — stamp now (and persist it as the ROM's mtime; 7z left it at 2005).
+        lock (gate) { RecordMaterializedLocked(gameId, g, DateTime.UtcNow); TouchRomMtime(g); }
     }
 
-    private void RecordMaterializedLocked(int gameId, ManifestGame g)
+    private void RecordMaterializedLocked(int gameId, ManifestGame g, DateTime lastBootUtc)
     {
         var files = ExtractedFilesOnDisk(g);
         long bytes = 0;
         foreach (var f in files) { try { bytes += new FileInfo(f).Length; } catch { /* raced */ } }
-        materialized[gameId] = new GameState { Files = files, Bytes = bytes, LastUsed = ++clock, Pins = 0 };
+        materialized[gameId] = new GameState { Files = files, Bytes = bytes, LastUsed = ++clock, Pins = 0, LastBootUtc = lastBootUtc };
     }
 
     // The set of files this game owns on disk. We derive it from the archive listing so it's exact and
@@ -783,20 +843,7 @@ public sealed class RomCache
             foreach (var kv in materialized.Where(k => k.Value.Pins == 0).OrderBy(k => k.Value.LastUsed).ToList())
             {
                 if (total <= opt.MaxBytes) break;
-                var (gameId, s) = (kv.Key, kv.Value);
-                long freed = DeleteFiles(s.Files);
-                // A companion's own subfolder is now an empty shell (its files are in s.Files above, already
-                // gone) — remove the shell too, or every evicted companion game leaks one empty directory
-                // forever instead of the clean "nothing here" a fresh materialize expects.
-                if (byId.TryGetValue(gameId, out var g) && g.CompanionPath is not null)
-                {
-                    var companionDir = CompanionDest(g);
-                    if (IsUnderRoot(companionDir) && Directory.Exists(companionDir))
-                    { try { Directory.Delete(companionDir, recursive: true); } catch { /* best effort */ } }
-                }
-                materialized.Remove(gameId);
-                total -= s.Bytes;
-                log.LogInformation("RomCache evicted game {GameId} (freed ~{MB} MB)", gameId, freed / (1024 * 1024));
+                total -= EvictOneLocked(kv.Key, kv.Value, "over cap");
             }
 
             var stillOver = materialized.Values.Sum(s => s.Bytes);
@@ -804,6 +851,44 @@ public sealed class RomCache
                 log.LogWarning("RomCache over cap ({Have} > {Cap}) but remaining games are pinned (in use).",
                     stillOver, opt.MaxBytes);
         }
+    }
+
+    // Time-based eviction: drop every game not booted within StaleEvictionDays, regardless of cache
+    // pressure. Same guards as the size-cap path — pinned (in-session) games are never touched, and only
+    // files under the ROM mount that we extracted are deleted. Runs on the timer thread; takes `gate`.
+    private void SweepStale()
+    {
+        if (opt.StaleEvictionDays <= 0) return;
+        MaybeReloadManifest();
+        var cutoff = DateTime.UtcNow - TimeSpan.FromDays(opt.StaleEvictionDays);
+        lock (gate)
+        {
+            var stale = materialized.Where(k => k.Value.Pins == 0 && k.Value.LastBootUtc < cutoff).ToList();
+            long freed = 0;
+            foreach (var kv in stale) freed += EvictOneLocked(kv.Key, kv.Value, $"cold >{opt.StaleEvictionDays}d");
+            if (stale.Count > 0)
+                log.LogInformation("RomCache stale sweep: evicted {N} game(s) not booted in {Days}d (freed ~{MB} MB)",
+                    stale.Count, opt.StaleEvictionDays, freed / (1024 * 1024));
+        }
+    }
+
+    // Evict one game: delete its extracted files (guarded), drop its now-empty companion shell, and forget
+    // it. Caller holds `gate`. Returns bytes freed (accounted from the pre-delete GameState, so the size-cap
+    // loop can decrement without re-summing). Shared by the size-cap and time-based eviction paths.
+    private long EvictOneLocked(int gameId, GameState s, string reason)
+    {
+        long freed = DeleteFiles(s.Files);
+        // A companion's own subfolder is now an empty shell (its files are in s.Files above, already gone) —
+        // remove the shell too, or every evicted companion game leaks one empty directory forever.
+        if (byId.TryGetValue(gameId, out var g) && g.CompanionPath is not null)
+        {
+            var companionDir = CompanionDest(g);
+            if (IsUnderRoot(companionDir) && Directory.Exists(companionDir))
+            { try { Directory.Delete(companionDir, recursive: true); } catch { /* best effort */ } }
+        }
+        materialized.Remove(gameId);
+        log.LogInformation("RomCache evicted game {GameId} ({Reason}, freed ~{MB} MB)", gameId, reason, freed / (1024 * 1024));
+        return s.Bytes;
     }
 
     // Guarded delete: each path is re-verified to live under the ROM mount before removal; the source
@@ -843,7 +928,7 @@ public sealed class RomCache
             foreach (var (id, g) in byId)
             {
                 if (materialized.ContainsKey(id) || !IsPresent(g)) continue;
-                RecordMaterializedLocked(id, g);
+                RecordMaterializedLocked(id, g, ReconcileBootTime(g));
             }
         }
     }
