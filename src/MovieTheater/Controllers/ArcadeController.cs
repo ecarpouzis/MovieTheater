@@ -68,12 +68,15 @@ namespace MovieTheater.Controllers
         // curated ones), which is what made the lobby look like it "didn't have" mods/hacks/romhacks —
         // see ArcadeRomTags for why that filter exists at all and RomhacksSourcePrefix below for the
         // dedicated curated-folder option.
-        private static (string Region, string Variant) NormalizeScope(string region, string variant, bool searching)
-        {
-            var reg = string.IsNullOrWhiteSpace(region) ? (searching ? "all" : "english") : region.Trim().ToLowerInvariant();
-            var var_ = string.IsNullOrWhiteSpace(variant) ? "all" : variant.Trim().ToLowerInvariant();
-            return (reg, var_);
-        }
+        private static string NormalizeVariant(string variant) =>
+            string.IsNullOrWhiteSpace(variant) ? "all" : variant.Trim().ToLowerInvariant();
+
+        // The KNOWN regions the user has switched OFF (comma-separated). Empty (the default) hides nothing, so
+        // every card shows. The UI only ever offers regions we positively know, so Unknown/NULL never appear here.
+        private static List<string> ParseHideRegions(string hideRegions) =>
+            string.IsNullOrWhiteSpace(hideRegions)
+                ? new List<string>()
+                : hideRegions.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
         // Our hand-curated romhack/mod pile (L:\4 - Software\Romhacks, sorted per-system — see
         // arcade-jit-ingest usage) as opposed to the tens of thousands of No-Intro/GoodTools-tagged
@@ -89,17 +92,20 @@ namespace MovieTheater.Controllers
         // letter's offset indexes EXACTLY the list Games pages — the moment the two disagree about what
         // matches, every letter jump lands on the wrong card.
         private static IQueryable<ArcadeGame> ApplyCardFilters(
-            IQueryable<ArcadeGame> baseQ, string system, int? maxPlayers, string genre, string search, string reg, string var_)
+            IQueryable<ArcadeGame> baseQ, string system, int? maxPlayers, string genre, string search, List<string> hideRegions, string var_)
         {
             var matchQ = baseQ;
             if (!string.IsNullOrWhiteSpace(system)) matchQ = matchQ.Where(g => g.System == system);
             if (maxPlayers is int mp && mp > 1) matchQ = matchQ.Where(g => g.MaxPlayers >= mp);
             if (!string.IsNullOrWhiteSpace(search)) { var s = search.Trim(); matchQ = matchQ.Where(g => g.Title.Contains(s)); }
 
-            if (reg == "english")
-                matchQ = matchQ.Where(g => g.Region == null || (g.Region != "Japan" && g.Region != "Asia" && g.Region != "Other"));
-            else if (reg != "all")
-                matchQ = matchQ.Where(g => g.Region == reg || (g.Region ?? "").ToLower() == reg);
+            // Region is a DESELECT filter (default = nothing hidden = show everything). hideRegions carries the
+            // KNOWN regions the user switched OFF; a version survives unless its region is one of them, and a
+            // card shows iff ≥1 version survives — so a card drops only when EVERY version is a known, hidden
+            // region. Unknown/NULL are never hidden (you can only hide what we positively know), which also keeps
+            // the big "Unknown" bucket always visible.
+            if (hideRegions != null && hideRegions.Count > 0)
+                matchQ = matchQ.Where(g => g.Region == null || !hideRegions.Contains(g.Region));
 
             if (var_ == "release")
                 matchQ = matchQ.Where(g => g.Variant == "Release" || g.Variant == null);
@@ -136,7 +142,7 @@ namespace MovieTheater.Controllers
         // would land the user in the tail of the previous letter.
         [HttpGet("/API/Arcade/Games")]
         public async Task<IActionResult> Games(
-            string system = null, string region = null, int? maxPlayers = null,
+            string system = null, string hideRegions = null, int? maxPlayers = null,
             string variant = null, string genre = null, string sort = null, string search = null,
             int page = 1, int pageSize = 60, int? skip = null)
         {
@@ -146,11 +152,11 @@ namespace MovieTheater.Controllers
             if (!host.IsConfigured)
                 return StatusCode(501, new { message = "The arcade is not configured on this server." });
 
-            bool searching = !string.IsNullOrWhiteSpace(search);
-            var (reg, var_) = NormalizeScope(region, variant, searching);
+            var var_ = NormalizeVariant(variant);
+            var hidden = ParseHideRegions(hideRegions);
 
             var baseQ = await VisibleGamesAsync(userId.Value);
-            var matchQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, reg, var_);
+            var matchQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, hidden, var_);
 
             page = Math.Max(1, page);
             pageSize = Math.Clamp(pageSize, 1, 120);
@@ -183,11 +189,12 @@ namespace MovieTheater.Controllers
             var pageKeys = await groupedQ
                 .Skip(skipRows).Take(pageSize).ToListAsync();
 
-            string specificRegion = reg is "english" or "all" ? null : reg;
+            // Deselect region model: cards are hidden wholesale, not narrowed to one region, so there is no
+            // single "specific region" to pin the displayed version/art to — pass null (card's own default).
             var games = await BuildGameCardsAsync(
                 baseQ,
                 pageKeys.Select(k => (k.System, k.CollapseKey, k.Title)).ToList(),
-                specificRegion);
+                null);
 
             return Json(new { games, totalCount, page, pageSize, skip = skipRows });
         }
@@ -318,7 +325,7 @@ namespace MovieTheater.Controllers
         // contiguous and the pager shows page numbers instead, so it never calls this.
         [HttpGet("/API/Arcade/GameLetters")]
         public async Task<IActionResult> GameLetters(
-            string system = null, string region = null, int? maxPlayers = null,
+            string system = null, string hideRegions = null, int? maxPlayers = null,
             string variant = null, string genre = null, string search = null)
         {
             var userId = GetCurrentUserId();
@@ -327,11 +334,11 @@ namespace MovieTheater.Controllers
             if (!host.IsConfigured)
                 return StatusCode(501, new { message = "The arcade is not configured on this server." });
 
-            bool searching = !string.IsNullOrWhiteSpace(search);
-            var (reg, var_) = NormalizeScope(region, variant, searching);
+            var var_ = NormalizeVariant(variant);
+            var hidden = ParseHideRegions(hideRegions);
 
             var baseQ = await VisibleGamesAsync(userId.Value);
-            var matchQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, reg, var_);
+            var matchQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, hidden, var_);
 
             // The same grouping + the same default ordering Games uses, so index i here is card i there.
             // MUST match Games exactly: group by (System, CollapseKey), tie-break on the Min(Title).
@@ -362,10 +369,16 @@ namespace MovieTheater.Controllers
             return Json(new { total = sortKeys.Count, letters });
         }
 
-        // Facets for the lobby filter controls: the systems / regions / variants actually present in the
-        // viewer's age-visible catalog, each with a count, plus how many are multiplayer.
+        // Facets for the lobby filter controls. Each facet is FACETED: it counts what WOULD be visible if the
+        // user chose that value, so it excludes its OWN dimension but honors every OTHER active filter —
+        // including the default English region. That's why an all-Japan system (fds, wsc) no longer shows a
+        // count under the default English scope: selecting it would render an empty grid (the facet and the
+        // grid used to disagree because the facet ignored region entirely), so it isn't offered until the
+        // region is widened to All. The client refetches this whenever a facet-affecting param changes.
         [HttpGet("/API/Arcade/Filters")]
-        public async Task<IActionResult> Filters()
+        public async Task<IActionResult> Filters(
+            string system = null, string hideRegions = null, int? maxPlayers = null,
+            string variant = null, string genre = null, string search = null)
         {
             var userId = GetCurrentUserId();
             if (userId == null)
@@ -373,28 +386,45 @@ namespace MovieTheater.Controllers
             if (!host.IsConfigured)
                 return StatusCode(501, new { message = "The arcade is not configured on this server." });
 
-            var q = await VisibleGamesAsync(userId.Value);
-            // Count CARDS, not version rows. The grid groups by (System, CollapseKey), so counting rows made
-            // the picker advertise "All systems (24710)" for a catalog that renders far fewer cards. One
-            // DISTINCT pull then grouped in memory.
-            var cardKeys = await q.Select(g => new { g.System, g.CollapseKey }).Distinct().ToListAsync();
-            var systems = cardKeys.GroupBy(k => k.System)
+            var var_ = NormalizeVariant(variant);
+            var hidden = ParseHideRegions(hideRegions);
+            var baseQ = await VisibleGamesAsync(userId.Value);
+
+            // Systems facet: everything EXCEPT the system filter (so you can still switch systems). Count CARDS,
+            // not version rows — the grid groups by (System, CollapseKey). "All systems (total)" is this same
+            // scope with no system chosen, so total is exactly this key count.
+            var systemsQ = ApplyCardFilters(baseQ, null, maxPlayers, genre, search, hidden, var_);
+            var systemKeys = await systemsQ.Select(g => new { g.System, g.CollapseKey }).Distinct().ToListAsync();
+            var systems = systemKeys.GroupBy(k => k.System)
                 .Select(x => new { value = x.Key, count = x.Count() }).OrderByDescending(x => x.count).ToList();
-            var regions = await q.GroupBy(g => g.Region)
-                .Select(x => new { value = x.Key ?? "Unknown", count = x.Count() }).OrderByDescending(x => x.count).ToListAsync();
-            var variants = await q.GroupBy(g => g.Variant)
+
+            // Regions facet: hide NOTHING (empty set) so the dropdown always lists every known region with its
+            // full count, regardless of what's currently switched off. Unknown/NULL are dropped — they're never
+            // a deselect option (you can only hide regions we positively know).
+            var regionsQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, new List<string>(), var_);
+            var regions = await regionsQ.Where(g => g.Region != null && g.Region != "Unknown").GroupBy(g => g.Region)
+                .Select(x => new { value = x.Key, count = x.Count() }).OrderByDescending(x => x.count).ToListAsync();
+
+            // Variants facet: everything EXCEPT variant (var_="all").
+            var variantsQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, hidden, "all");
+            var variants = await variantsQ.GroupBy(g => g.Variant)
                 .Select(x => new { value = x.Key ?? "Release", count = x.Count() }).OrderByDescending(x => x.count).ToListAsync();
-            // Genre facet: genres are comma-joined on the card anchor, so split + count in memory.
-            var genreStrings = await q.Where(g => g.Genres != null).Select(g => g.Genres).ToListAsync();
+
+            // Genres facet: everything EXCEPT genre. Genres are comma-joined on the anchor, so split + count in memory.
+            var genresQ = ApplyCardFilters(baseQ, system, maxPlayers, null, search, hidden, var_);
+            var genreStrings = await genresQ.Where(g => g.Genres != null).Select(g => g.Genres).ToListAsync();
             var genres = genreStrings
                 .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 .GroupBy(x => x)
                 .Select(x => new { value = x.Key, count = x.Count() })
                 .OrderByDescending(x => x.count).Take(40).ToList();
+
+            // Multiplayer count: the current scope EXCEPT the players filter (its own dimension).
+            var playersQ = ApplyCardFilters(baseQ, system, null, genre, search, hidden, var_);
             return Json(new
             {
-                total = cardKeys.Count,
-                multiplayer = await q.CountAsync(g => g.MaxPlayers >= 2),
+                total = systemKeys.Count,
+                multiplayer = await playersQ.CountAsync(g => g.MaxPlayers >= 2),
                 systems, regions, variants, genres,
             });
         }

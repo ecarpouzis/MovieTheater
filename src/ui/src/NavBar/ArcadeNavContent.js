@@ -55,14 +55,28 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
   const searchRef = useRef(null);
   const getPopup = (t) => t.parentElement;
 
+  // Facets are FACETED against the current scope (so e.g. a Japan-only system isn't offered under the
+  // default English region), so refetch whenever a facet-affecting param changes — but NOT on sort/skip,
+  // which don't change what's available. facetKey is the stable join of just those params.
+  const facetKey = ["system", "hideRegions", "players", "variant", "genre", "q"]
+    .map((k) => new URLSearchParams(location.search).get(k) || "").join("|");
   useEffect(() => {
     let alive = true;
-    MovieAPI.getArcadeFilters()
+    const cur = new URLSearchParams(location.search);
+    MovieAPI.getArcadeFilters({
+      system: cur.get("system") || "",
+      hideRegions: cur.get("hideRegions") || "",
+      maxPlayers: cur.get("players") || "",
+      variant: cur.get("variant") || "",
+      genre: cur.get("genre") || "",
+      search: cur.get("q") || "",
+    })
       .then((r) => (r.ok ? r.json() : null))
       .then((f) => { if (alive) setFacets(f); })
       .catch(() => {});
     return () => { alive = false; };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facetKey]);
 
   function updateParam(key, value) {
     const params = new URLSearchParams(location.search);
@@ -77,7 +91,6 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
   useEffect(() => { setQuery(activeQuery); }, [activeQuery]);
 
   const activeSystem = p.get("system") || "";
-  const activeRegion = p.get("region") || "english";
   const activePlayers = p.get("players") || "";
   const activeVariant = p.get("variant") || "all";
   const activeGenre = p.get("genre") || "";
@@ -87,11 +100,17 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
     { value: "", label: facets ? `All systems (${facets.total})` : "All systems" },
     ...((facets?.systems || []).map((s) => ({ value: s.value, label: `${systemLabel(s.value)} (${s.count})` }))),
   ];
-  const regionOptions = [
-    { value: "english", label: "English (default)" },
-    { value: "all", label: "All regions" },
-    ...((facets?.regions || []).map((r) => ({ value: r.value, label: `${r.value} (${r.count})` }))),
-  ];
+  // Region is a DESELECT multi-select: every KNOWN region (the server omits Unknown/NULL) starts selected,
+  // and turning one OFF hides cards whose versions are ALL from switched-off regions. The URL carries only
+  // the OFF set (hideRegions); empty = everything shown. Unknown-region cards are never hidden.
+  const knownRegions = (facets?.regions || []).map((r) => r.value);
+  const hiddenRegions = (p.get("hideRegions") || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const selectedRegions = knownRegions.filter((r) => !hiddenRegions.includes(r));
+  const regionOptions = (facets?.regions || []).map((r) => ({ value: r.value, label: `${r.value} (${r.count})` }));
+  const onRegionChange = (selected) => {
+    const nowHidden = knownRegions.filter((r) => !selected.includes(r));
+    updateParam("hideRegions", nowHidden.length ? nowHidden.join(",") : "");
+  };
   const genreOptions = [
     { value: "", label: "All genres" },
     ...((facets?.genres || []).map((g) => ({ value: g.value, label: `${g.value} (${g.count})` }))),
@@ -147,9 +166,10 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
         <Select style={{ width: "100%" }} value={activeSystem} onChange={(v) => updateParam("system", v)}
           options={systemOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
 
-        <span style={inputLabelStyle}>Region</span>
-        <Select style={{ width: "100%" }} value={activeRegion} onChange={(v) => updateParam("region", v)}
-          options={regionOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
+        <span style={inputLabelStyle}>Region <span style={{ opacity: 0.6, fontWeight: 400 }}>— deselect to hide</span></span>
+        <Select mode="multiple" allowClear style={{ width: "100%" }} value={selectedRegions}
+          onChange={onRegionChange} options={regionOptions} placeholder="All regions" maxTagCount="responsive"
+          popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
 
         <span style={inputLabelStyle}>Players</span>
         <Select style={{ width: "100%" }} value={activePlayers} onChange={(v) => updateParam("players", v)}

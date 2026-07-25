@@ -18,13 +18,19 @@ import "./GameModal.css";
  * Heavy-lane titles never reach this modal — the lobby routes them straight to HeavyGameModal (their
  * launch is a Moonlight/capture flow, not a room with cheats/versions/schemes).
  */
-export default function GameModal({ game, onClose, onStart, onManageSaves, creating, canEditMovies, renderers = [] }) {
+export default function GameModal({ game, onClose, onStart, onManageSaves, creating, canEditMovies, renderers = [], initialVersionId = null }) {
   const genre = game.genres ? game.genres.split(/[;,]/)[0].trim() : null;
-  const firstVersionId = game.versions?.[0]?.id;
-  const [sel, setSel] = useState(firstVersionId);
+  // `initialVersionId` is the "Recently played" strip's hand-off: saves live on the ROM row, so a tile
+  // opened from there must land on the version whose save it advertised, not on the card's default.
+  // Only honoured if that row is actually one of this card's versions (a disc-2 save collapses into the
+  // disc-1 anchor entry, so it won't be), otherwise the default stands.
+  const defaultVersionId = game.versions?.some((v) => v.id === initialVersionId)
+    ? initialVersionId
+    : game.versions?.[0]?.id;
+  const [sel, setSel] = useState(defaultVersionId);
   const [configOpen, setConfigOpen] = useState(false);
   // Filters can change the default version out from under an open modal (rare), so track it.
-  useEffect(() => { setSel(firstVersionId); }, [firstVersionId]);
+  useEffect(() => { setSel(defaultVersionId); }, [defaultVersionId]);
 
   const version = game.versions?.find((v) => v.id === sel) || game.versions?.[0];
   const multiVersion = game.versionCount > 1;

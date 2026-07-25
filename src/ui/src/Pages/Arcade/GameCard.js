@@ -15,7 +15,9 @@ const ART_STYLE = { flex: `0 0 ${ART_W}px`, width: ART_W, height: COVER_H };
 
 /**
  * One card per game (docs/arcade-dedupe-multidisc-plan.md): box art at its natural aspect on the
- * left, the title/tags/summary in a column to its right. The card is a pure display tile — clicking
+ * left, and to its right a column of title / tags / summary closing on a year · studio foot line — the
+ * foot and the 4-line summary are what now fill the room the launch controls used to take up, so the
+ * details column runs the full height of the art. The card is a pure display tile — clicking
  * it anywhere opens the full-page game modal (GameModal), which is where you pick the ROM version,
  * toggle cheats, choose a controller scheme, start the room, and manage saves. Those launch controls
  * used to be crammed into the card footer; they moved to the modal so the card can stay light.
@@ -31,6 +33,10 @@ function GameCard({ game, onOpen }) {
   const genre = game.genres ? game.genres.split(/[;,]/)[0].trim() : null;
   const version = game.versions?.[0];
   const region = version?.region && version.region !== "Unknown" ? version.region : null;
+  // The bottom line: year + studio, the two facts a box art shopper actually scans for. It sits in the
+  // space the launch controls used to occupy, so the details column reaches the bottom of the art
+  // instead of leaving ~90px of empty card under the summary.
+  const credit = [game.year, game.developer || game.publisher].filter(Boolean).join(" · ");
 
   return (
     <div className="arcade-card" onClick={() => onOpen?.(game)} role="button" tabIndex={0}
@@ -44,6 +50,8 @@ function GameCard({ game, onOpen }) {
 
       <div className="arcade-card__art" style={ART_STYLE}>
         <GameCover game={game} height={COVER_H} maxWidth={ART_W} />
+        {/* Hover affordance: the card's only action is "open me". Decorative — the card is the button. */}
+        <span className="arcade-card__play" aria-hidden="true">▶</span>
       </div>
 
       <div className="arcade-card__body">
@@ -59,6 +67,17 @@ function GameCard({ game, onOpen }) {
         </div>
 
         <div className="arcade-card__summary">{game.summary}</div>
+
+        {/* Pinned to the bottom of the details column so it lines up across a grid row. Both halves are
+            optional; the row itself always renders so the columns stay flat. */}
+        <div className="arcade-card__foot">
+          <span className="arcade-card__credit" title={credit || undefined}>{credit}</span>
+          {game.versionCount > 1 && (
+            <span className="arcade-card__versions" title="Pick the region / revision / disc in the game window">
+              {game.versionCount} versions
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

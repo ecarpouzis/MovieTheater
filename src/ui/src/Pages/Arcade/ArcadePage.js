@@ -110,6 +110,7 @@ export default function ArcadePage({ userData }) {
   const [rooms, setRooms] = useState([]);
   const [renderers, setRenderers] = useState({}); // system → [{id,label,isDefault}] for the launch menu
   const [recentGames, setRecentGames] = useState([]); // "Recently played" strip (save-derived history)
+  const [modalVersionId, setModalVersionId] = useState(null); // pre-selected version (a recent tile's save)
   const [savesVaultOpen, setSavesVaultOpen] = useState(false); // the cross-game "My saves" drawer
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
@@ -135,7 +136,7 @@ export default function ArcadePage({ userData }) {
     const p = new URLSearchParams(location.search);
     return {
       system: p.get("system") || "",
-      region: p.get("region") || "",
+      hideRegions: p.get("hideRegions") || "",
       maxPlayers: p.get("players") || "",
       variant: p.get("variant") || "",
       genre: p.get("genre") || "",
@@ -351,13 +352,19 @@ export default function ArcadePage({ userData }) {
 
   // A card click opens a modal. Heavy-lane titles have their own Moonlight/capture modal; everything
   // else opens the standard game modal (version/cheats/scheme + Start + My saves all live there now).
-  const openGame = (game) => (game.lane === "heavy" ? setHeavyGame(game) : setModalGame(game));
+  // `versionId` is optional and comes from the "Recently played" strip: saves are per ROM row, so a
+  // recent tile opens the modal on the version whose save it is advertising.
+  const openGame = (game, versionId = null) => {
+    if (game.lane === "heavy") { setHeavyGame(game); return; }
+    setModalVersionId(versionId);
+    setModalGame(game);
+  };
 
   if (unconfiguredRef.current) {
     return <div style={{ padding: 48 }}><Empty description="The arcade isn't set up on this server yet." /></div>;
   }
 
-  const anyFilter = filters.system || filters.region || filters.maxPlayers || filters.variant || filters.genre || filters.search;
+  const anyFilter = filters.system || filters.hideRegions || filters.maxPlayers || filters.variant || filters.genre || filters.search;
 
   return (
     <div className="arcade-page">
@@ -411,12 +418,7 @@ export default function ArcadePage({ userData }) {
           </div>
         </header>
 
-        <RecentlyPlayed
-          games={recentGames}
-          creating={creating}
-          onPlay={(gameId, title) => createRoom(gameId, title)}
-          onManageSaves={(gameId, title) => setManageSaves({ gameId, title })}
-        />
+        <RecentlyPlayed rows={recentGames} onOpen={openGame} />
 
         <LiveRooms rooms={rooms} onJoin={joinRoom} />
 
@@ -473,6 +475,7 @@ export default function ArcadePage({ userData }) {
           creating={creating}
           canEditMovies={userData?.canEditMovies}
           renderers={renderers[modalGame.system] || []}
+          initialVersionId={modalVersionId}
           onClose={() => setModalGame(null)}
           // Both actions leave the browse tile: close the game modal first so the follow-on surface
           // (the Continue/New-game confirm, or the saves manager) isn't stranded behind it at a lower

@@ -679,9 +679,17 @@ function getArcadeGameLetters(params = {}) {
   return fetch("/API/Arcade/GameLetters" + arcadeQuery(filters));
 }
 
-// Facets for the lobby filter controls: { total, multiplayer, systems[], regions[], variants[] } (each { value, count }).
-function getArcadeFilters() {
-  return fetch("/API/Arcade/Filters");
+// Facets for the lobby filter controls: { total, multiplayer, systems[], regions[], variants[] } (each
+// { value, count }). Faceted — pass the CURRENT filter scope (system, region, maxPlayers, variant, genre,
+// search) so each dropdown reflects what the grid would actually show; e.g. a Japan-only system isn't
+// offered under the default English region. Sort/paging are irrelevant to facets and stripped.
+function getArcadeFilters(params = {}) {
+  const filters = { ...params };
+  delete filters.sort;
+  delete filters.page;
+  delete filters.pageSize;
+  delete filters.skip;
+  return fetch("/API/Arcade/Filters" + arcadeQuery(filters));
 }
 
 function getArcadeRooms() {
@@ -708,8 +716,9 @@ function listArcadeSaves(gameId) {
   return fetch(`/API/Arcade/Games/${gameId}/Saves`).then((r) => (r.ok ? r.json() : [])).catch(() => []);
 }
 
-// Games the signed-in user has recently played (derived from save activity): [{ gameId, title,
-// system, artId, hasBoxArt, lastPlayedUtc, saveCount }], newest first.
+// Games the signed-in user has recently played (derived from save activity), newest first:
+// [{ game, lastPlayedUtc, saveCount, playedVersionId }]. `game` is the SAME full card payload
+// /API/Arcade/Games returns, because a recent tile opens the same game modal as a grid card.
 function getArcadeRecentlyPlayed(take = 12) {
   return fetch(`/API/Arcade/RecentlyPlayed?take=${take}`).then((r) => (r.ok ? r.json() : [])).catch(() => []);
 }

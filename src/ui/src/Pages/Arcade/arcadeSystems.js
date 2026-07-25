@@ -2,12 +2,15 @@
 // browse page and the navbar filter panel, which used to keep divergent copies of the same map.
 export const SYSTEM_LABEL = {
   nes: "NES", snes: "SNES", genesis: "Genesis", gb: "Game Boy", gbc: "Game Boy Color",
-  gba: "Game Boy Advance", n64: "Nintendo 64", gc: "GameCube", wii: "Wii", ps1: "PlayStation", arcade: "Arcade",
-  psp: "PSP", dc: "Dreamcast", naomi: "Naomi", atomiswave: "Atomiswave",
+  gba: "Game Boy Advance", n64: "Nintendo 64", gc: "GameCube", wii: "Wii", ps1: "PlayStation", ps2: "PlayStation 2", arcade: "Arcade",
+  psp: "PSP", dc: "Dreamcast", naomi: "Naomi", atomiswave: "Atomiswave", saturn: "Saturn",
   sms: "Master System", gg: "Game Gear", sg1000: "SG-1000", segacd: "Sega CD",
   sega32x: "32X", pce: "TurboGrafx-16", ngpc: "Neo Geo Pocket", wsc: "WonderSwan Color",
   a2600: "Atari 2600", a7800: "Atari 7800", lynx: "Atari Lynx", vb: "Virtual Boy",
-  fds: "Famicom Disk System", neogeo: "Neo Geo",
+  fds: "Famicom Disk System", neogeo: "Neo Geo", "3do": "3DO",
+  cdi: "CD-i", coleco: "ColecoVision", intv: "Intellivision", vectrex: "Vectrex",
+  o2em: "Odyssey²", channelf: "Channel F", arcadia: "Arcadia 2001",
+  pokemini: "Pokémon Mini", supervision: "Supervision", scummvm: "ScummVM",
   nds: "Nintendo DS", "3ds": "Nintendo 3DS",
   // Heavy lane (Moonlight-streamed, docs/arcade-heavy-lane-plan.md §7.1).
   switch: "Switch", ps3: "PlayStation 3", ps4: "PlayStation 4", wiiu: "Wii U", x360: "Xbox 360",

@@ -146,8 +146,16 @@
   filter: brightness(1.12);
 }
 
-/* Vulkan/GL split button: same re-flatten-the-two-halves trick as the card. */
+/* Vulkan/GL split button: the two halves re-flattened so the pair reads as one pill.
+   The width rules are load-bearing. antd 4.24's Dropdown.Button renders a Space.Compact with the
+   `block` modifier, and `.ant-space-compact-block` is `display:flex; width:100%` — so this wrapper
+   stretched across the entire actions row, and the pill radius + glow we hang on it painted as an
+   empty pill trailing off to the right of the caret (while shoving My saves / Configure to the far
+   edge). It has to be sized by its two buttons, not by the row. */
 .arcade-game-modal .ant-dropdown-button.agm-start {
+  display: inline-flex;
+  width: auto;
+  flex: 0 0 auto;
   box-shadow: var(--accent-glow);
   border-radius: 9px;
 }

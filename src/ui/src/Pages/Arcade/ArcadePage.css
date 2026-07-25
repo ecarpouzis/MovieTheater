@@ -373,18 +373,62 @@
   }
 }
 
-/* A card with an open version/cheats popup paints above every other card.
-   The popup renders INSIDE its chip (getPopupContainer), so it's part of the card's box — and the card
-   is its own stacking context (position: relative, and a transform on hover), so no z-index on the chip
-   can lift the list out of the card. Without this, the cards that follow in the grid paint straight over
-   the open dropdown and you see a sliver of it. It's the CARD that has to rise. */
-.arcade-card--menu-open,
-.arcade-card--menu-open:hover {
-  z-index: 20;
+/* The card is a button (role=button, tabIndex=0), so keyboard focus has to be visible on it. */
+.arcade-card:focus-visible,
+.arcade-recent__card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
+
 @media (prefers-reduced-motion: reduce) {
   .arcade-card { transition: none; }
   .arcade-card:hover { transform: none; }
+}
+
+/* Hover affordance on the art of any clickable tile (grid card + recently-played tile). The tile's one
+   action is "open the game window", which a silent clickable rectangle doesn't say. Decorative and
+   never a click target of its own — the tile itself is the button. */
+.arcade-card__play,
+.arcade-recent__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  padding-left: 3px; /* optically centres the ▶ glyph in the circle */
+  font-size: 14px;
+  color: #fff;
+  background: var(--accent-solid);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+.arcade-recent__play {
+  width: 34px;
+  height: 34px;
+  font-size: 12px;
+}
+@media (hover: hover) {
+  .arcade-card:hover .arcade-card__play,
+  .arcade-recent__card:hover .arcade-recent__play {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+.arcade-card:focus-visible .arcade-card__play,
+.arcade-recent__card:focus-visible .arcade-recent__play {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .arcade-card__play,
+  .arcade-recent__play { transition: none; }
 }
 
 /* The art column: the SAME fixed box on every card (GameCard's ART_W × COVER_H — see the reasoning
@@ -405,6 +449,8 @@
   align-items: center;
   justify-content: center;
   max-width: 100%;
+  /* Containing block for the hover play badge, which centres over the art. */
+  position: relative;
 }
 
 .arcade-card__rating {
@@ -423,14 +469,10 @@
   white-space: nowrap;
 }
 
-/* The details column. Everything in it is clamped or fixed-height (2-line title, one tag line, 2-line
-   summary, a footer of two fixed rows), so it tops out around 165px — under the art's 180px, and that
-   is what lets the art set a uniform card height for the whole grid. Add an unclamped row here and
-   cards start varying in height again, so anything new needs a bound.
-
-   Deliberately NOT `overflow: hidden`: the version/cheats dropdowns render into their chip in the
-   footer (getPopupContainer), and clipping this column is what once reduced an open dropdown to a
-   sliver — the same bug the note on .arcade-chip--select describes. */
+/* The details column. Everything in it is clamped or fixed-height (2-line title, one tag line, 4-line
+   summary, a one-line foot), so it tops out around 155px — under the art's 180px, and that is what lets
+   the art set a uniform card height for the whole grid. Add an unclamped row here and cards start
+   varying in height again, so anything new needs a bound. */
 .arcade-card__body {
   flex: 1;
   min-width: 0;
@@ -632,49 +674,49 @@
   font-weight: 600;
 }
 
+/* FOUR lines now that the launch controls have moved to the modal — the summary is what fills the space
+   they left, instead of the card ending in ~90px of nothing. Two lines stay RESERVED so a card whose
+   game has no summary doesn't pull its foot row up out of line with its neighbours. */
 .arcade-card__summary {
   font-size: 11.5px;
   line-height: 1.4;
   color: var(--text-secondary);
-  /* Two-line clamp, with the height reserved so a summary-less game doesn't shrink its card. */
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 2.8em;
 }
 
-/* The card's bottom block: an optional controls row (version, cheats) directly above the actions row.
-   margin-top:auto pins it to the bottom of the body, so cards with a 1-line title and cards with a
-   2-line one still align their Start buttons across a grid row. */
-.arcade-card__footer {
+/* The card's bottom line: year · studio on the left, the version count on the right. margin-top:auto
+   pins it to the bottom of the details column, so it sits on the same baseline across a grid row
+   whatever each card's title/summary did above it. */
+.arcade-card__foot {
   margin-top: auto;
   display: flex;
-  flex-direction: column;
-  gap: 7px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 15px;
+  /* The hairline turns the slack under a short summary into structure: the card reads as art + details
+     + a footer band, instead of a paragraph that trailed off with empty card beneath it. */
+  padding-top: 8px;
+  border-top: 1px solid var(--card-border);
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--text-muted);
 }
-
-/* Version + cheats. Both are chips, both may be absent; the row is only rendered when one exists. */
-.arcade-card__controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.arcade-card__credit {
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-/* Start room + My saves are ALWAYS side-by-side on one line, with My saves pushed to the far edge so it
-   sits in the same place on every card instead of floating wherever the button ended. */
-.arcade-card__actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: nowrap;
-}
-.arcade-card__actions > * {
+/* A hint that this card holds several ROMs and the choice is one click away, in the modal. */
+.arcade-card__versions {
   flex: none;
-}
-.arcade-card__actions .arcade-link {
-  margin-left: auto;
+  font-weight: 600;
+  color: var(--accent-link);
 }
 
 /* ── Buttons + links ─────────────────────────────────────────────────────── */
@@ -707,29 +749,8 @@
   filter: brightness(1.12);
 }
 
-/* Play-button dropdown (Vulkan/GL launch picker): Dropdown.Button splits "Start room" into two
-   real buttons (tagged .arcade-btn-start via buttonsRender in GameCard.js — className on
-   Dropdown.Button itself only reaches the outer wrapper, never the buttons). Each inherits the
-   full pill radius/shadow from the rule above; re-flatten per-side here so the pair reads as one
-   continuous pill instead of two separately-rounded buttons glued together. */
-.arcade-page .ant-dropdown-button.arcade-dropdown-start .ant-btn.arcade-btn-start {
-  box-shadow: none;
-  border-radius: 0;
-}
-.arcade-page .ant-dropdown-button.arcade-dropdown-start .ant-btn.arcade-btn-start:first-child {
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
-}
-.arcade-page .ant-dropdown-button.arcade-dropdown-start .ant-btn.arcade-btn-start__arrow {
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
-  padding: 8px 10px;
-  border-left: 1px solid rgba(255, 255, 255, 0.28);
-}
-.arcade-page .ant-dropdown-button.arcade-dropdown-start {
-  box-shadow: var(--accent-glow);
-  border-radius: 8px;
-}
+/* (The Vulkan/GL split launch button used to live on the card; it moved to the modal with the rest of
+   the launch controls, so its styling lives in GameModal.css now.) */
 
 .arcade-btn--join {
   border-radius: 9px;
@@ -873,43 +894,67 @@
   background: linear-gradient(135deg, var(--accent), var(--accent-deep));
 }
 
-/* ── Recently played (a "continue watching" strip for the signed-in player) ──── */
+/* ── Recently played (a "continue watching" strip for the signed-in player) ────
+   A shelf of poster tiles, each a pure display tile like the grid card: the whole tile opens the game
+   modal. It used to carry a Continue button and a My-saves link, which duplicated the modal and made
+   one tile two targets — both are gone, and the tile is that much shorter and denser for it. */
 .arcade-recent {
   display: flex;
   gap: 14px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  /* Room for the hover lift and the focus ring, which would otherwise clip against the scroll box. */
+  padding: 3px 3px 10px;
+  scroll-snap-type: x proximity;
 }
 
 .arcade-recent__card {
-  flex: 0 0 132px;
+  flex: 0 0 140px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
+  gap: 8px;
+  padding: 10px 10px 11px;
   border-radius: 12px;
   background: var(--card-surface);
   border: 1px solid var(--card-border);
   box-shadow: var(--card-shadow);
   cursor: pointer;
-  transition: transform 0.14s ease, border-color 0.14s ease;
+  scroll-snap-align: start;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
 }
-.arcade-recent__card:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
+@media (hover: hover) {
+  .arcade-recent__card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-hover);
+    border-color: var(--accent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arcade-recent__card { transition: none; }
+  .arcade-recent__card:hover { transform: none; }
 }
 
+/* Fixed-height art box: the cover centres in it at its own true aspect (GameCover), so a landscape
+   cartridge box and a portrait jewel case still produce tiles of exactly the same height. Also the
+   containing block for the hover play badge. */
 .arcade-recent__art {
-  align-self: center;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* Two lines, with both reserved: a shelf of 1- and 2-line titles otherwise ends up with its meta rows
+   at different heights. Clamped rather than ellipsized on one line — most arcade titles are long. */
 .arcade-recent__title {
   font-size: 12.5px;
   font-weight: 700;
+  line-height: 1.25;
   color: var(--text-primary);
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  min-height: 2.5em;
 }
 
 .arcade-recent__meta {
@@ -917,24 +962,22 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  min-width: 0;
+}
+/* The system chip gives way first — "when" is the whole point of this strip. */
+.arcade-recent__meta .arcade-chip--system {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  line-height: 16px;
 }
 
 .arcade-recent__when {
+  flex: none;
   font-size: 10.5px;
   color: var(--text-muted);
   white-space: nowrap;
-}
-
-.arcade-recent__actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 2px;
-}
-.arcade-recent__actions .arcade-btn--join {
-  padding: 5px 12px;
-  font-size: 11px;
 }
 
 /* ── Dropdown popups (pills + version picker) ────────────────────────────── */

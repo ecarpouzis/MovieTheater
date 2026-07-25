@@ -5,6 +5,7 @@ import GameCard from "./GameCard";
 import GameModal from "./GameModal";
 import GameCover, { coverBox } from "./GameCover";
 import LiveRooms from "./LiveRooms";
+import RecentlyPlayed from "./RecentlyPlayed";
 import { getCoverAspect, rememberCoverAspect } from "./coverAspect";
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -83,6 +84,20 @@ describe("GameCard", () => {
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
+  // The space the launch controls left is filled by the summary and a year · studio foot line, so the
+  // details column reaches the bottom of the art instead of trailing off under a 2-line summary.
+  it("closes the card with year · studio, and flags a multi-version card", () => {
+    const { container, rerender } = render(
+      <GameCard game={game({ year: 1997, developer: "Rare", versionCount: 3 })} onOpen={vi.fn()} />);
+    expect(container.querySelector(".arcade-card__credit").textContent).toBe("1997 · Rare");
+    expect(container.querySelector(".arcade-card__versions").textContent).toContain("3 versions");
+
+    // Publisher stands in when there's no developer; a single-version card says nothing about versions.
+    rerender(<GameCard game={game({ year: null, developer: null, publisher: "Nintendo" })} onOpen={vi.fn()} />);
+    expect(container.querySelector(".arcade-card__credit").textContent).toBe("Nintendo");
+    expect(container.querySelector(".arcade-card__versions")).toBeNull();
+  });
+
   it("shows the rating badge only when the game is rated", () => {
     const { container, rerender } = render(<GameCard game={game()} onOpen={vi.fn()} />);
     expect(container.querySelector(".arcade-card__rating").textContent).toContain("95");
@@ -100,7 +115,25 @@ describe("GameModal", () => {
 
   const renderModal = (g, props = {}) =>
     render(<GameModal game={g} onStart={props.onStart || vi.fn()} onManageSaves={props.onManageSaves || vi.fn()}
-      onClose={vi.fn()} creating={0} />);
+      onClose={vi.fn()} creating={0} initialVersionId={props.initialVersionId} />);
+
+  // A "Recently played" tile hands over the version its save belongs to; the modal opens on that one
+  // instead of the card default. An id that isn't one of this card's versions is ignored.
+  it("honours the version a recently-played tile opened it on", () => {
+    const onStart = vi.fn();
+    const twoVersions = game({
+      versionCount: 2,
+      versions: [{ id: 7, label: "USA", region: "USA" }, { id: 9, label: "Japan", region: "Japan" }],
+    });
+    renderModal(twoVersions, { onStart, initialVersionId: 9 });
+    fireEvent.click(screen.getByText(/Start room/));
+    expect(onStart).toHaveBeenCalledWith(9, "007 - GoldenEye", [], "", "", "");
+
+    cleanup();
+    renderModal(twoVersions, { onStart, initialVersionId: 12345 });
+    fireEvent.click(screen.getByText(/Start room/));
+    expect(onStart).toHaveBeenLastCalledWith(7, "007 - GoldenEye", [], "", "", "");
+  });
 
   it("renders the Start room button and the My saves link", () => {
     renderModal(game());
@@ -196,6 +229,48 @@ describe("GameModal", () => {
     expect(document.querySelector(".agm-controls")).toBeTruthy();
     fireEvent.click(screen.getByText(/Start room/));
     expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "wiimote", "");
+  });
+});
+
+describe("RecentlyPlayed", () => {
+  const row = (over = {}) => ({
+    game: game({ key: "n64|GoldenEye", versions: [{ id: 7, label: "USA" }, { id: 8, label: "Japan" }] }),
+    lastPlayedUtc: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
+    saveCount: 2,
+    playedVersionId: 8,
+    ...over,
+  });
+
+  it("renders nothing when the player has no history", () => {
+    const { container } = render(<RecentlyPlayed rows={[]} onOpen={vi.fn()} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  // The tile is a pure display tile now, exactly like a grid card: Continue and My saves duplicated the
+  // modal (and skipped its version/cheat/renderer choices), so they're gone.
+  it("carries no Continue or My saves button", () => {
+    const { container } = render(<RecentlyPlayed rows={[row()]} onOpen={vi.fn()} />);
+    expect(container.querySelector("button")).toBeNull();
+    expect(screen.queryByText(/Continue/)).toBeNull();
+    expect(screen.queryByText(/My saves/)).toBeNull();
+    expect(screen.getByText("3h ago")).toBeTruthy();
+  });
+
+  // Saves are keyed on the ROM row, so the tile hands the modal the version whose save it advertised —
+  // otherwise Start would look for a save on the card's default version and find none.
+  it("opens the game modal on the version the save belongs to", () => {
+    const onOpen = vi.fn();
+    const r = row();
+    const { container } = render(<RecentlyPlayed rows={[r]} onOpen={onOpen} />);
+    fireEvent.click(container.querySelector(".arcade-recent__card"));
+    expect(onOpen).toHaveBeenCalledWith(r.game, 8);
+  });
+
+  it("opens on keyboard activation, since the tile is a button", () => {
+    const onOpen = vi.fn();
+    const { container } = render(<RecentlyPlayed rows={[row()]} onOpen={onOpen} />);
+    fireEvent.keyDown(container.querySelector(".arcade-recent__card"), { key: "Enter" });
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 });
 
