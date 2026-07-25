@@ -8,6 +8,7 @@ export const SYSTEM_LABEL = {
   sega32x: "32X", pce: "TurboGrafx-16", ngpc: "Neo Geo Pocket", wsc: "WonderSwan Color",
   a2600: "Atari 2600", a7800: "Atari 7800", lynx: "Atari Lynx", vb: "Virtual Boy",
   fds: "Famicom Disk System", neogeo: "Neo Geo",
+  nds: "Nintendo DS", "3ds": "Nintendo 3DS",
   // Heavy lane (Moonlight-streamed, docs/arcade-heavy-lane-plan.md §7.1).
   switch: "Switch", ps3: "PlayStation 3", ps4: "PlayStation 4", wiiu: "Wii U", x360: "Xbox 360",
   // Capture lane (H5): a browser room for a heavy title shows system "capture" in its descriptor.
@@ -22,7 +23,7 @@ export const systemLabel = (s) => SYSTEM_LABEL[s] || (s ? s.toUpperCase() : "");
 export const ART_SYSTEMS = new Set([
   "nes", "snes", "genesis", "gb", "gbc", "gba", "n64", "gc", "wii", "ps1", "ps2",
   "psp", "dc", "sms", "gg", "sg1000", "segacd", "sega32x", "pce", "ngpc", "wsc",
-  "a2600", "a7800", "lynx", "vb", "fds",
+  "a2600", "a7800", "lynx", "vb", "fds", "nds", "3ds",
   // arcade/neogeo now resolve real titles → art via libretro (neogeo) or IGDB cover (arcade).
   "arcade", "neogeo",
 ]);

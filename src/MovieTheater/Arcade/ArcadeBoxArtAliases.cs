@@ -133,6 +133,18 @@ namespace MovieTheater.Arcade
             ["n64|1080teneightysnowboarding"] = "1080 Snowboarding (Japan, USA) (En,Ja)",
             ["n64|kobebryantsnbacourtside"] = "Kobe Bryant in NBA Courtside (USA)",
             ["n64|quake64"] = "Quake (USA)",
+            // Nintendo DS (2026-07-24 full-collection ingest). The source set is a hand-cleaned collection
+            // with no region tags, so several cards carry the FRENCH release title while libretro-thumbnails
+            // only files the English one — the alias points them at the USA cover of the same game. The rest
+            // are ampersand/word spellings ("and" vs "&") and an English retitle (Stafy -> Starfy).
+            ["nds|4in1monopolyboggleyahtzeeandbattleship"] = "4 Game Fun Pack - Monopoly + Boggle + Yahtzee + Battleship (USA)",
+            ["nds|aliceaupaysdesmerveilles"] = "Alice in Wonderland (USA) (En,Fr,Es) (NDSi Enhanced)",
+            ["nds|harvestmoonlarchipeldusoleil"] = "Harvest Moon DS - Sunshine Islands (USA)",
+            ["nds|lessims3"] = "Sims 3, The (USA) (En,Fr,Es) (NDSi Enhanced)",
+            ["nds|mariosonicauxjeuxolympiquesdhiver"] = "Mario _ Sonic at the Olympic Winter Games (USA)",
+            ["nds|marioandluigipartnersintime"] = "Mario _ Luigi - Partners in Time (USA)",
+            ["nds|sonicandsegaallstarsracing"] = "Sonic _ SEGA All-Stars Racing (USA) (En,Fr,Es)",
+            ["nds|thelegendarystafy"] = "Legendary Starfy, The (USA)",
         };
 
         /// <summary>The aliased libretro filename for a card, or null.</summary>
