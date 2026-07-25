@@ -139,17 +139,28 @@ namespace MovieTheater.Arcade
 
                 if (Apply)
                 {
+                    // The IGDB identity + score ARE IGDB's own fields, so they track this match verbatim.
                     anchor.IgdbId = game.Id;
                     anchor.RatingScore = game.TotalRating;
                     anchor.RatingCount = game.TotalRatingCount;
-                    anchor.Genres = game.Genres;
-                    anchor.Themes = game.Themes;
-                    anchor.GameModes = game.GameModes;
-                    anchor.Summary = game.Summary;
-                    anchor.Developer = game.Developer;
-                    anchor.Publisher = game.Publisher;
-                    anchor.OfflineMaxPlayers = game.OfflineMaxPlayers;
-                    anchor.EsrbRating = game.EsrbRating;
+
+                    // The DESCRIPTIVE fields are SHARED with arcade-launchbox, which fills them only where
+                    // they're null ("IGDB's curated values win where they exist"). Assigning unconditionally
+                    // therefore ERASES a good LaunchBox value whenever IGDB matched a game but carries no
+                    // summary/genres of its own — which is exactly what happened on the 2026-07-25 nds run:
+                    // a match with a blank summary wiped ~90 cards' LaunchBox blurbs. Only overwrite when
+                    // IGDB actually has something. (Year was already guarded this way.)
+                    static string? Keep(string? incoming, string? existing) =>
+                        string.IsNullOrWhiteSpace(incoming) ? existing : incoming;
+
+                    anchor.Genres = Keep(game.Genres, anchor.Genres);
+                    anchor.Themes = Keep(game.Themes, anchor.Themes);
+                    anchor.GameModes = Keep(game.GameModes, anchor.GameModes);
+                    anchor.Summary = Keep(game.Summary, anchor.Summary);
+                    anchor.Developer = Keep(game.Developer, anchor.Developer);
+                    anchor.Publisher = Keep(game.Publisher, anchor.Publisher);
+                    anchor.EsrbRating = Keep(game.EsrbRating, anchor.EsrbRating);
+                    anchor.OfflineMaxPlayers = game.OfflineMaxPlayers ?? anchor.OfflineMaxPlayers;
                     if (anchor.Year == null && game.FirstReleaseYear is int y) anchor.Year = y;
                 }
                 matched++;
