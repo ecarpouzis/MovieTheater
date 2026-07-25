@@ -7,6 +7,7 @@ import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
 import { useWakeLock } from "../../useWakeLock";
+import "./ArcadeRoomPage.css";
 
 const { Title, Text } = Typography;
 
@@ -167,6 +168,9 @@ export default function ArcadeRoomPage() {
   const [discCount, setDiscCount] = useState(location.state?.descriptor?.discCount ?? 0);
   const [disc, setDisc] = useState(0);
   const [isFs, setIsFs] = useState(false);
+  // Whether the fullscreen overlay controls (the exit ✕) are currently shown — see the auto-hide
+  // effect below. Irrelevant while windowed.
+  const [fsUiVisible, setFsUiVisible] = useState(true);
   // The core's OWN display aspect, reported via the GAME_START `av` payload (and any later t=150).
   // null until it arrives / when the core doesn't specify one — then the per-system table below wins.
   const [coreAspect, setCoreAspect] = useState(null);
@@ -458,6 +462,32 @@ export default function ArcadeRoomPage() {
     };
   }, []);
 
+  // Fullscreen exit affordance. Once the player is fullscreen the room's whole button bar is off
+  // screen, and a phone has no Esc key — Android's back gesture works but is invisible, so a touch
+  // player had no way OUT they could see. Show a ✕ in the corner, fading it out after a few seconds
+  // of no input so it isn't parked over the game, and bringing it back on the next touch/move.
+  useEffect(() => {
+    if (!isFs) return;
+    const el = playerRef.current;
+    if (!el) return;
+    let timer;
+    const reveal = () => {
+      setFsUiVisible(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => setFsUiVisible(false), 3000);
+    };
+    reveal();
+    el.addEventListener("pointermove", reveal);
+    el.addEventListener("pointerdown", reveal);
+    el.addEventListener("touchstart", reveal, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      el.removeEventListener("pointermove", reveal);
+      el.removeEventListener("pointerdown", reveal);
+      el.removeEventListener("touchstart", reveal);
+    };
+  }, [isFs]);
+
   function tryPlayVideo() {
     const v = videoRef.current;
     if (!v) return;
@@ -466,8 +496,17 @@ export default function ArcadeRoomPage() {
 
   function goFullscreen() {
     const el = playerRef.current || videoRef.current;
-    const req = el && (el.requestFullscreen || el.webkitRequestFullscreen || el.webkitEnterFullscreen);
-    req?.call(el);
+    const req = el && (el.requestFullscreen || el.webkitRequestFullscreen);
+    if (req) { req.call(el); return; }
+    // iOS Safari can't fullscreen an arbitrary element — only the <video>, through its own native
+    // player. That player carries a Done button (and never fires fullscreenchange), so our overlay
+    // isn't involved there; without this fallback the button simply did nothing on an iPhone.
+    videoRef.current?.webkitEnterFullscreen?.();
+  }
+
+  function exitFullscreen() {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    exit?.call(document);
   }
 
   function copyInvite() {
@@ -803,9 +842,9 @@ export default function ArcadeRoomPage() {
   const mappingPad = padList.find((p) => p.index === primaryPad) || padList[0] || null;
 
   return (
-    <div className="arcade-room-page" style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 24px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-        <Space>
+    <div className="arcade-room-page">
+      <div className="arcade-room-page__topbar">
+        <Space wrap>
           <Button onClick={() => history.push(lobbyPath())}>← Arcade</Button>
           {/* While the gateway inflates a compressed disc image, say THAT — not "Connecting…", which is
               a lie the player can only respond to by giving up (and giving up used to cancel the work). */}
@@ -825,7 +864,7 @@ export default function ArcadeRoomPage() {
             </Space>
           )}
         </Space>
-        <Space>
+        <Space wrap>
           <Text type="secondary">Room {code}</Text>
           <Button onClick={copyInvite}>Copy invite link</Button>
         </Space>
@@ -898,12 +937,25 @@ export default function ArcadeRoomPage() {
                 </button>
               )}
             </div>
+            {/* Sits on the OUTER (fullscreen) box, not the aspect box, so it stays in the corner of
+                the screen rather than of a letterboxed 4:3 picture. */}
+            {isFs && (
+              <button
+                className="arcade-room-page__exit-fs"
+                onClick={exitFullscreen}
+                aria-label="Exit fullscreen"
+                title="Exit fullscreen"
+                style={{ opacity: fsUiVisible ? 1 : 0, pointerEvents: fsUiVisible ? "auto" : "none" }}
+              >
+                ✕
+              </button>
+            )}
           </div>
         );
       })()}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, flexWrap: "wrap", gap: 8 }}>
-        <Space wrap>
+      <div className="arcade-room-page__controls">
+        <Space wrap className="arcade-room-page__roster">
           <Text strong>Players:</Text>
           {players.length === 0
             ? <Text type="secondary">just you</Text>
@@ -933,7 +985,7 @@ export default function ArcadeRoomPage() {
             </>
           )}
         </Space>
-        <Space>
+        <Space wrap className="arcade-room-page__actions">
           {/* Save / Load / Snapshot act on the room's one shared emulator, so they belong to the players.
               The shim refuses them for a spectator anyway; hiding them keeps the UI honest.
               (PS2 was briefly excluded when Save hard-crashed the worker; worker patch 0030 fixed the

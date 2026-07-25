@@ -1,0 +1,115 @@
+/* ============================================================================
+   The /arcade/room/:code player page — layout only (its typography colours live
+   in theme.css under .arcade-room-page).
+
+   Desktop keeps the two-cluster bars it always had. The phone breakpoint is
+   where this file earns its keep: the action cluster was a single NON-wrapping
+   antd Space, so on a narrow screen 📸 Snapshot / 📂 Load snapshot / ⛶ Fullscreen /
+   End ran off the right edge of the page with no way to scroll to them.
+   ============================================================================ */
+
+.arcade-room-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 24px;
+}
+
+.arcade-room-page__topbar,
+.arcade-room-page__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.arcade-room-page__topbar {
+  margin-bottom: 12px;
+}
+
+.arcade-room-page__controls {
+  margin-top: 12px;
+}
+
+/* The fullscreen exit ✕. In fullscreen the room's button bar is off screen and a phone has no Esc
+   key, so this is the only VISIBLE way back out. Its opacity is driven from React (auto-hides after
+   a few seconds of no input); the safe-area insets keep it clear of a notch / rounded corner. */
+.arcade-room-page__exit-fs {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  right: calc(12px + env(safe-area-inset-right, 0px));
+  z-index: 5;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.arcade-room-page__exit-fs:hover,
+.arcade-room-page__exit-fs:focus-visible {
+  background: rgba(0, 0, 0, 0.75);
+  border-color: #fff;
+  outline: none;
+}
+
+@media (max-width: 768px) {
+  .arcade-room-page {
+    /* The player already eats most of a phone screen — give the frame back its edges. */
+    padding: 10px 12px 24px;
+  }
+
+  /* Stack the clusters rather than pushing them to opposite ends of a row that isn't
+     wide enough for either of them. */
+  .arcade-room-page__topbar,
+  .arcade-room-page__controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .arcade-room-page__roster.ant-space,
+  .arcade-room-page__actions.ant-space {
+    width: 100%;
+  }
+
+  /* antd's Space is an inline-flex row. As a GRID its items become equal-width cells, so
+     the action list grows in rows instead of in width — every button stays on screen and
+     gets a thumb-sized target. (The column/row-gap antd sets inline on the container
+     applies to a grid unchanged, so the spacing still matches the desktop cluster.)
+     Two columns divides evenly for every combination the page renders: owner 6 buttons →
+     3 rows, player 4 → 2, spectator 2 → 1. */
+  .arcade-room-page__actions.ant-space {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .arcade-room-page__actions .ant-space-item {
+    min-width: 0;
+  }
+
+  .arcade-room-page__actions .ant-btn {
+    width: 100%;
+    height: 40px;
+    padding: 0 8px;
+    font-size: 13.5px;
+  }
+
+  /* The roster's own chips + small buttons keep wrapping; just don't let a long controller
+     name or player tag push the row wider than the screen. */
+  .arcade-room-page__roster .ant-tag {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
