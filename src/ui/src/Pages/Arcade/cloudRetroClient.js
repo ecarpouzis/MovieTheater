@@ -1229,7 +1229,9 @@ export function createCloudRetroSession(descriptor, opts) {
   }
   function ptrFlush() {
     ptrRaf = 0;
-    if (ptrPending && ptrPressed) ptrSend(ptrPending.x, ptrPending.y, 1);
+    // Send with the CURRENT press state: 1 while dragging (stylus down), 0 while hovering — the hover
+    // position is what makes the core's touch cursor (Citra render_touchscreen) track the mouse.
+    if (ptrPending) ptrSend(ptrPending.x, ptrPending.y, ptrPressed ? 1 : 0);
     ptrPending = null;
   }
   function onPtrDown(ev) {
@@ -1246,12 +1248,16 @@ export function createCloudRetroSession(descriptor, opts) {
     ev.preventDefault();
   }
   function onPtrMove(ev) {
-    if (!ptrPressed) return; // OS cursor handles hover; only a drag is streamed
+    // Stream the position for BOTH a pressed drag (stylus down) and an unpressed hover. Hover sends
+    // pressed=0, which never taps but moves the core's touch cursor (Citra render_touchscreen crosshair)
+    // so you can SEE where the stylus is before tapping — some 3DS UIs are unusable without a visible
+    // pointer. Naturally gated to "mouse over the video" (pointermove only fires over videoEl); coalesced
+    // to one send per animation frame; identical positions are de-duped in ptrSend.
     const p = ptrMap(ev);
     if (!p) return;
-    ptrPending = p; // coalesce to at most one send per animation frame
+    ptrPending = p;
     if (!ptrRaf && typeof requestAnimationFrame === "function") ptrRaf = requestAnimationFrame(ptrFlush);
-    ev.preventDefault();
+    if (ptrPressed) ev.preventDefault(); // only a drag suppresses default; leave hover/scroll alone
   }
   function onPtrUp(ev) {
     if (!ptrPressed) return;

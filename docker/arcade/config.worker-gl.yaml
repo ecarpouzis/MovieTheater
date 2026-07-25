@@ -1677,6 +1677,12 @@ emulator:
             # layout-agnostic and "3ds" just joins POINTER_SYSTEMS. Tokens taken from the DLL's own
             # values[] list ("disabled|enabled") — bad tokens PANIC this core.
             citra_touch_touchscreen: "enabled"
+            # Draw the stylus cursor (2026-07-25). MouseTracker::Render early-returns unless THIS is on,
+            # and it ships "disabled" — so the touch WORKED but there was no on-screen crosshair, and with
+            # hover positions now streamed by the client (pressed=0), the crosshair tracks the mouse so you
+            # can SEE where the stylus is before tapping. Token from the DLL's values[] ("disabled|enabled")
+            # — a bad token PANICS this core. mouse_touchscreen ships "enabled" already (position tracking).
+            citra_render_touchscreen: "enabled"
             # Internal-res upscale (2026-07-24): renders the 3D at 2x native — the real quality lever
             # every other 3D system already has (n64/gc/ps2/psp). Token from the DLL's values[]
             # ("1x (Native)|2x|...|10x"); a bad token PANICS this core. The custom core's
@@ -1686,6 +1692,20 @@ emulator:
             # ticks/s on the 4070Ti). ⚠ raising this re-derives the FBO size from the core, no config
             # coupling — but bumping it also grows the encode, so re-tune scale/bitrate together.
             citra_resolution_factor: "2x"
+            # Custom texture packs (2026-07-25). Lets a game load replacement textures from
+            # <ConfDir>/libretro/legacy_save/Citra/load/textures/<TITLEID:016X>/ (citra_libretro sets
+            # its UserDir to <libretro save dir>/Citra/, so LoadDir is per-worker — install a pack on
+            # EVERY GL worker or it applies on some rooms and not others). Token from the DLL's own
+            # values[] ("disabled|enabled"); a bad token PANICS this core. Costs nothing for the ~120
+            # 3DS titles with no pack: CustomTexManager just creates an empty dir and finds no files.
+            # ⚠ DO NOT add a pack.json unless the pack was authored for it. FindCustomTextures falls
+            # back to use_new_hash=false + skip_mipmap=true ONLY when ReadConfig finds no pack.json,
+            # and that legacy pair is exactly what pre-2023 packs (the ones people actually have) were
+            # dumped against. Writing a pack.json flips use_new_hash to whatever it says — get that
+            # wrong and every lookup misses SILENTLY, the usual libretro failure mode.
+            # First pack: Monster Hunter XX (0004000000197100), the HD UI set that ships with the
+            # Complete English Patch. See memory 3ds-bake-update-cia-into-3ds.
+            citra_custom_textures: "enabled"
 
 
 encoder:
