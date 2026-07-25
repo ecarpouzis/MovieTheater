@@ -50,8 +50,6 @@ function GameCard({ game, onOpen }) {
 
       <div className="arcade-card__art" style={ART_STYLE}>
         <GameCover game={game} height={COVER_H} maxWidth={ART_W} />
-        {/* Hover affordance: the card's only action is "open me". Decorative — the card is the button. */}
-        <span className="arcade-card__play" aria-hidden="true">▶</span>
       </div>
 
       <div className="arcade-card__body">

@@ -1249,11 +1249,17 @@ namespace MovieTheater.Controllers
             if (order.Count == 0) return Json(Array.Empty<object>());
 
             var cards = await BuildGameCardsAsync(baseQ, order.Select(k => (k.System, k.CollapseKey, (string)null)).ToList(), null);
-            var result = cards.Select((game, i) =>
+            // Pair each card with its metadata by POSITION — safe because BuildGameCardsAsync projects
+            // `keys.Select(...)`, so it returns exactly one non-null card per key, in order. That is the
+            // contract this relies on, so state it and enforce it rather than trusting it silently: a row
+            // shipped without a `game` is not a missing tile on the client, it's a blank arcade page.
+            var result = new List<object>(cards.Count);
+            for (var i = 0; i < cards.Count && i < order.Count; i++)
             {
+                if (cards[i] is null) continue;
                 var m = byCard[order[i]];
-                return new { game, lastPlayedUtc = m.LastPlayedUtc, saveCount = m.SaveCount, playedVersionId = m.PlayedVersionId };
-            });
+                result.Add(new { game = cards[i], lastPlayedUtc = m.LastPlayedUtc, saveCount = m.SaveCount, playedVersionId = m.PlayedVersionId });
+            }
             return Json(result);
         }
 

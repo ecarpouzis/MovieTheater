@@ -42,9 +42,6 @@ function RecentCard({ row, onOpen }) {
     >
       <div className="arcade-recent__art" style={ART_STYLE}>
         <GameCover game={game} height={ART_H} maxWidth={ART_W} />
-        {/* Hover affordance — the tile's only action is "open me", so say so rather than leaving a
-            silent clickable rectangle. Decorative: the whole tile is the button. */}
-        <span className="arcade-recent__play" aria-hidden="true">▶</span>
       </div>
       <div className="arcade-recent__title" title={game.title}>{game.title}</div>
       <div className="arcade-recent__meta">
@@ -62,15 +59,21 @@ function RecentCard({ row, onOpen }) {
  * Rows are { game, lastPlayedUtc, saveCount, playedVersionId }, where `game` is the same full card
  * payload the grid gets — that's what lets a tile open the standard game modal. */
 function RecentlyPlayed({ rows, onOpen }) {
-  if (!rows || rows.length === 0) return null;
+  // Drop rows without a card before rendering. This strip is one section of the lobby, but it renders
+  // INSIDE the page component, so an exception here white-screens the whole arcade — grid and all —
+  // not just the shelf. `key={r.game.key}` on a row whose `game` is missing throws exactly that
+  // ("Cannot read properties of undefined (reading 'key')"), so a single malformed row costs the user
+  // the entire page. A missing card is never worth more than a missing tile.
+  const safe = (rows || []).filter((r) => r?.game?.key);
+  if (safe.length === 0) return null;
   return (
     <section className="arcade-section">
       <div className="arcade-section__head">
         <h2 className="arcade-section__title">Recently played</h2>
-        <span className="arcade-section__count">{rows.length} title{rows.length === 1 ? "" : "s"}</span>
+        <span className="arcade-section__count">{safe.length} title{safe.length === 1 ? "" : "s"}</span>
       </div>
       <div className="arcade-recent">
-        {rows.map((r) => (
+        {safe.map((r) => (
           <RecentCard key={r.game.key} row={r} onOpen={onOpen} />
         ))}
       </div>

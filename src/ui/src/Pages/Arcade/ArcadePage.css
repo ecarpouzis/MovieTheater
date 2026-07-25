@@ -385,52 +385,6 @@
   .arcade-card:hover { transform: none; }
 }
 
-/* Hover affordance on the art of any clickable tile (grid card + recently-played tile). The tile's one
-   action is "open the game window", which a silent clickable rectangle doesn't say. Decorative and
-   never a click target of its own — the tile itself is the button. */
-.arcade-card__play,
-.arcade-recent__play {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  padding-left: 3px; /* optically centres the ▶ glyph in the circle */
-  font-size: 14px;
-  color: #fff;
-  background: var(--accent-solid);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.14s ease, transform 0.14s ease;
-}
-.arcade-recent__play {
-  width: 34px;
-  height: 34px;
-  font-size: 12px;
-}
-@media (hover: hover) {
-  .arcade-card:hover .arcade-card__play,
-  .arcade-recent__card:hover .arcade-recent__play {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-.arcade-card:focus-visible .arcade-card__play,
-.arcade-recent__card:focus-visible .arcade-recent__play {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-}
-@media (prefers-reduced-motion: reduce) {
-  .arcade-card__play,
-  .arcade-recent__play { transition: none; }
-}
-
 /* The art column: the SAME fixed box on every card (GameCard's ART_W × COVER_H — see the reasoning
    there). Fixed width, so the details column beside it is the same width on every card whatever shape
    the box art turned out to be. Fixed height, taller than the details column can ever be, so the art
@@ -449,8 +403,6 @@
   align-items: center;
   justify-content: center;
   max-width: 100%;
-  /* Containing block for the hover play badge, which centres over the art. */
-  position: relative;
 }
 
 .arcade-card__rating {
@@ -934,10 +886,8 @@
 }
 
 /* Fixed-height art box: the cover centres in it at its own true aspect (GameCover), so a landscape
-   cartridge box and a portrait jewel case still produce tiles of exactly the same height. Also the
-   containing block for the hover play badge. */
+   cartridge box and a portrait jewel case still produce tiles of exactly the same height. */
 .arcade-recent__art {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;

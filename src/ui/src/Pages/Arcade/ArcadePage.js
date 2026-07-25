@@ -264,7 +264,10 @@ export default function ArcadePage({ userData }) {
   const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart } = useGridWindow(games?.length || 0, {
     resetKey: `${filterKey}:${startIndex}`,
   });
-  const visibleGames = useMemo(() => (games || []).slice(start, end), [games, start, end]);
+  // `.filter(Boolean)` guards the render, not the data: the grid maps to `key={game.key}`, so ONE
+  // empty slot anywhere in the loaded list throws and takes the entire arcade page down with it —
+  // a blank screen instead of a missing tile. Cheap insurance on a list this page can't render without.
+  const visibleGames = useMemo(() => (games || []).slice(start, end).filter(Boolean), [games, start, end]);
 
   // Seek the grid to an absolute catalog offset (a letter bucket or a page boundary).
   const jumpTo = useCallback((offset) => {
