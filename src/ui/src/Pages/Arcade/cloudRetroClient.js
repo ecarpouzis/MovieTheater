@@ -1135,8 +1135,17 @@ export function createCloudRetroSession(descriptor, opts) {
     switch (data.t) {
       case T.INIT:
         // ICE config + game list arrive here (there is no HTTP game-list API).
-        if (data.p && Array.isArray(data.p.ice) && data.p.ice.length)
-          iceServers = data.p.ice.map((s) => ({ urls: s.urls, username: s.username, credential: s.credential }));
+        // UNION, never replace. The coordinator sends its own (STUN) list, but the TURN relay + its
+        // per-join minted credential ride the SITE's descriptor — and setupPeer() runs below, AFTER
+        // this assignment, so a wholesale replace meant the RTCPeerConnection never saw the relay at
+        // all. That silently disabled TURN for every client since it shipped: LAN clients never
+        // noticed (host candidates work), while guest-isolated/remote clients — the only ones the
+        // relay exists for — stalled at negotiating with no relay candidate to gather.
+        if (data.p && Array.isArray(data.p.ice) && data.p.ice.length) {
+          const fromCoordinator = data.p.ice.map((s) => ({ urls: s.urls, username: s.username, credential: s.credential }));
+          const seen = new Set(fromCoordinator.map((s) => s.urls));
+          iceServers = fromCoordinator.concat(iceServers.filter((s) => !seen.has(s.urls)));
+        }
         setupPeer();
         break;
       case T.INIT_WEBRTC:
