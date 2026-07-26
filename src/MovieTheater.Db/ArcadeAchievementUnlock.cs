@@ -54,6 +54,16 @@ namespace MovieTheater.Db
         /// on RA, so they're distinct rows here too (see the unique index in <c>MovieDb</c>).</summary>
         public bool Hardcore { get; set; }
 
+        /// <summary>Run-legitimacy taints sampled by the worker when the achievement fired, so the friends
+        /// board / profile can show WHY a run wasn't a clean one. <see cref="Cheat"/> = cheat codes were
+        /// active for the room; <see cref="Savescum"/> = a save-STATE was loaded mid-run (cleared by a hard
+        /// reset); <see cref="Timeplay"/> = fast-forward/rewind was used. A run is "legit" when
+        /// <see cref="Hardcore"/> is set and none of these are — the UI shows a trophy then, else a why-icon.
+        /// (Timeplay is plumbed end-to-end but always false today: no speed control is exposed in the stack.)</summary>
+        public bool Cheat { get; set; }
+        public bool Savescum { get; set; }
+        public bool Timeplay { get; set; }
+
         public DateTime UnlockedUtc { get; set; }
     }
 }

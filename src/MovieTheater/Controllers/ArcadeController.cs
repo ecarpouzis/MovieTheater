@@ -1078,6 +1078,92 @@ namespace MovieTheater.Controllers
             return Json(new { linked = raUser != null && raToken != null, raUser });
         }
 
+        /// <summary>PULL a user's real RetroAchievements profile (points, rank, recent unlocks) via the RA
+        /// Web API, to show their genuine RA activity on the site alongside our friends-board mirror
+        /// (arcade-ra-sync-plan.md, the "pull" half of RA sync). Read-only and keyed by the SITE service
+        /// account's Web API key (public data — no per-user token needed), so it's safe for any signed-in
+        /// user to view any user's. Resolves the target's linked RA username from their settings; returns
+        /// {configured, linked, ...}. Degrades cleanly: not-configured (no site Web API key) and not-linked
+        /// (the target never linked) are both 200s with the flag false, never an error — the UI just hides.</summary>
+        [HttpGet("/API/Arcade/RetroAchievements/Profile")]
+        public async Task<IActionResult> RetroAchievementsProfile(int? userId = null)
+        {
+            var me = GetCurrentUserId();
+            if (me == null) return Unauthorized();
+            var targetUserId = userId ?? me.Value;
+
+            var webUser = config.ArcadeRaWebApiUser;
+            var webKey = config.ArcadeRaWebApiKey;
+            if (string.IsNullOrWhiteSpace(webUser) || string.IsNullOrWhiteSpace(webKey))
+                return Json(new { configured = false, linked = false });
+
+            // The target's linked RA username (public identity — the token isn't needed for a Web API pull).
+            var raUser = await movieDb.UserSettings.AsNoTracking()
+                .Where(s => s.UserID == targetUserId && s.SettingKey == RaUserSettingKey)
+                .Select(s => s.SettingValue).FirstOrDefaultAsync();
+            if (string.IsNullOrWhiteSpace(raUser))
+                return Json(new { configured = true, linked = false });
+
+            try
+            {
+                // API_GetUserSummary returns score + rank + recent achievements in one call. z/y = the site
+                // Web API account/key; u = the target user. A UA is harmless here (dorequest needs it; the
+                // /API/ surface doesn't 403 without one, but we set it for parity).
+                var url = $"https://retroachievements.org/API/API_GetUserSummary.php?u={Uri.EscapeDataString(raUser)}" +
+                          $"&g=5&a=10&z={Uri.EscapeDataString(webUser)}&y={Uri.EscapeDataString(webKey)}";
+                using var reqMsg = new HttpRequestMessage(HttpMethod.Get, url);
+                reqMsg.Headers.TryAddWithoutValidation("User-Agent", "MovieTheaterArcade/1.0");
+                using var resp = await raClient.SendAsync(reqMsg);
+                if (!resp.IsSuccessStatusCode)
+                    return Json(new { configured = true, linked = true, raUser, available = false });
+
+                using var doc = System.Text.Json.JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+                var root = doc.RootElement;
+                string? Str(string k) => root.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString() : null;
+                long Num(string k) => root.TryGetProperty(k, out var v) && v.TryGetInt64(out var n) ? n : 0;
+
+                // RecentAchievements is an object keyed by gameId → { achId → {...} }; flatten the newest few.
+                var recent = new List<object>();
+                if (root.TryGetProperty("RecentAchievements", out var games) && games.ValueKind == System.Text.Json.JsonValueKind.Object)
+                {
+                    foreach (var game in games.EnumerateObject())
+                        if (game.Value.ValueKind == System.Text.Json.JsonValueKind.Object)
+                            foreach (var ach in game.Value.EnumerateObject())
+                            {
+                                var a = ach.Value;
+                                recent.Add(new
+                                {
+                                    id = a.TryGetProperty("ID", out var id) ? id.ToString() : ach.Name,
+                                    title = a.TryGetProperty("Title", out var t) ? t.GetString() : null,
+                                    points = a.TryGetProperty("Points", out var p) && p.TryGetInt32(out var pv) ? pv : 0,
+                                    hardcore = a.TryGetProperty("HardcoreMode", out var h) && (h.ToString() == "1"),
+                                    dateAwarded = a.TryGetProperty("DateAwarded", out var d) ? d.GetString() : null,
+                                    raUrl = a.TryGetProperty("ID", out var id2) ? "https://retroachievements.org/achievement/" + id2 : null,
+                                });
+                            }
+                }
+
+                return Json(new
+                {
+                    configured = true,
+                    linked = true,
+                    available = true,
+                    raUser,
+                    totalPoints = Num("TotalPoints"),
+                    totalSoftcorePoints = Num("TotalSoftcorePoints"),
+                    rank = Num("Rank"),
+                    memberSince = Str("MemberSince"),
+                    profileUrl = "https://retroachievements.org/user/" + Uri.EscapeDataString(raUser),
+                    recent,
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Arcade RA profile pull failed for user {UserId}.", targetUserId);
+                return Json(new { configured = true, linked = true, raUser, available = false });
+            }
+        }
+
         /// <summary>Unlink the signed-in user's RA account (drops both stored rows).</summary>
         [HttpDelete("/API/Arcade/RetroAchievements/Link")]
         public async Task<IActionResult> UnlinkRetroAchievements()
@@ -1471,6 +1557,11 @@ namespace MovieTheater.Controllers
             public string? Title { get; set; }
             public int Points { get; set; }
             public bool Hardcore { get; set; }
+            /// <summary>Run-legitimacy taints the worker sampled at unlock: cheat codes active, a save-STATE
+            /// was loaded mid-run, or fast-forward/rewind was used. Drive the friends board / profile why-icon.</summary>
+            public bool Cheat { get; set; }
+            public bool Savescum { get; set; }
+            public bool Timeplay { get; set; }
             public DateTime? UnlockedUtc { get; set; }
         }
 
@@ -1501,6 +1592,9 @@ namespace MovieTheater.Controllers
                     Title = req.Title,
                     Points = req.Points,
                     Hardcore = req.Hardcore,
+                    Cheat = req.Cheat,
+                    Savescum = req.Savescum,
+                    Timeplay = req.Timeplay,
                     UnlockedUtc = req.UnlockedUtc ?? nowUtc,
                 });
             }
@@ -1527,6 +1621,11 @@ namespace MovieTheater.Controllers
             public long Value { get; set; }
             public string? Format { get; set; }
             public bool Hardcore { get; set; }
+            /// <summary>Run-legitimacy taints for this submission (see <see cref="AchievementUnlockedRequest"/>).
+            /// Kept in step with the recorded best — a new best overwrites the stored taints.</summary>
+            public bool Cheat { get; set; }
+            public bool Savescum { get; set; }
+            public bool Timeplay { get; set; }
             public DateTime? AchievedUtc { get; set; }
         }
 
@@ -1560,6 +1659,9 @@ namespace MovieTheater.Controllers
                     Value = req.Value,
                     Format = format,
                     Hardcore = req.Hardcore,
+                    Cheat = req.Cheat,
+                    Savescum = req.Savescum,
+                    Timeplay = req.Timeplay,
                     AchievedUtc = req.AchievedUtc ?? nowUtc,
                     UpdatedUtc = nowUtc,
                 });
@@ -1577,6 +1679,11 @@ namespace MovieTheater.Controllers
                 {
                     row.Value = req.Value;
                     row.Hardcore = req.Hardcore;
+                    // Taints belong to the recorded best — advance them with it (a cleaner but slower run
+                    // doesn't scrub the taint off the faster save-scummed one that still holds the top slot).
+                    row.Cheat = req.Cheat;
+                    row.Savescum = req.Savescum;
+                    row.Timeplay = req.Timeplay;
                     row.AchievedUtc = req.AchievedUtc ?? nowUtc;
                 }
             }
@@ -1612,7 +1719,7 @@ namespace MovieTheater.Controllers
             var entries = await (from e in movieDb.ArcadeLeaderboardEntries.AsNoTracking()
                                  join u in movieDb.Users on e.UserId equals u.UserID
                                  where e.ArcadeGameId != null && versionIds.Contains(e.ArcadeGameId.Value)
-                                 select new { e.RaLeaderboardId, e.Title, e.Format, e.Value, e.Hardcore, e.AchievedUtc, e.UserId, u.Username })
+                                 select new { e.RaLeaderboardId, e.Title, e.Format, e.Value, e.Hardcore, e.Cheat, e.Savescum, e.Timeplay, e.AchievedUtc, e.UserId, u.Username })
                                 .ToListAsync();
 
             var boards = entries
@@ -1628,6 +1735,12 @@ namespace MovieTheater.Controllers
                             username = x.Username,
                             value = x.Value,
                             hardcore = x.Hardcore,
+                            // Run-legitimacy taints for the why-icon. `legit` = a clean hardcore run (badge);
+                            // otherwise the client shows the specific reason(s) it wasn't.
+                            cheat = x.Cheat,
+                            savescum = x.Savescum,
+                            timeplay = x.Timeplay,
+                            legit = x.Hardcore && !x.Cheat && !x.Savescum && !x.Timeplay,
                             achievedUtc = x.AchievedUtc,
                             you = x.UserId == userId.Value,
                         }).ToList();
@@ -1674,6 +1787,10 @@ namespace MovieTheater.Controllers
                     a.Title,
                     a.Points,
                     a.Hardcore,
+                    a.Cheat,
+                    a.Savescum,
+                    a.Timeplay,
+                    legit = a.Hardcore && !a.Cheat && !a.Savescum && !a.Timeplay,
                     a.UnlockedUtc,
                     raUrl = "https://retroachievements.org/achievement/" + a.RaAchievementId,
                 })
