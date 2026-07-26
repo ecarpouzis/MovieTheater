@@ -9041,7 +9041,7 @@ index f3553b1..fc3929a 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..d926aa0 100644
+index 6974d59..ec15c6b 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
 @@ -1,8 +1,10 @@
@@ -9257,7 +9257,7 @@ index 6974d59..d926aa0 100644
  	// The main loop of Libretro
  
  	targetFrameTimeNs := int64(float64(time.Second) / f.nano.VideoFramerate())
-@@ -328,80 +433,808 @@ func (f *Frontend) Start() {
+@@ -328,80 +433,813 @@ func (f *Frontend) Start() {
  	// how many frames will be considered not normal
  	const lateFramesThreshold = 3
  
@@ -9662,7 +9662,12 @@ index 6974d59..d926aa0 100644
 +		return
 +	}
 +	f.ra.SetMemory(sysRAM, uintptr(sysSize), saveRAM, uintptr(saveSize), f.nano.MemoryMap())
-+	f.log.Info().Msgf("RetroAchievements: session started (hardcore=%v, memmap=%v)", f.raHard, f.nano.MemoryMap() != nil)
++	// Build the memory region map NOW, before the game load. rc_client probes every achievement address
++	// through our read callback during load — if the regions aren't registered yet it disables the whole
++	// set as "Invalid address". (This, not the memory-map, was why Genesis/N64 never fired.)
++	memOK := f.ra.InitMemory()
++	f.log.Info().Msgf("RetroAchievements: session started (hardcore=%v, memmap=%v, systemRAM=0x%X, saveRAM=0x%X, regions=%v)",
++		f.raHard, f.nano.MemoryMap() != nil, sysSize, saveSize, memOK)
 +}
 +
 +// stopCheevos tears the client down on the emulator goroutine (after the frame loop stops).
@@ -10103,7 +10108,7 @@ index 6974d59..d926aa0 100644
  func (f *Frontend) FrameSize() (int, int)         { return f.nano.BaseWidth(), f.nano.BaseHeight() }
  func (f *Frontend) HasSave() bool                 { return os.Exists(f.HashPath()) }
  func (f *Frontend) HashPath() string              { return f.storage.GetSavePath() }
-@@ -419,9 +1252,16 @@ func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
+@@ -419,9 +1257,16 @@ func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
  func (f *Frontend) SetSessionId(name string)      { f.storage.SetMainSaveName(name) }
  func (f *Frontend) SetDataCb(cb func([]byte))     { f.onData = cb }
  func (f *Frontend) SetVideoCb(ff func(app.Video)) { f.onVideo = ff }
@@ -10123,7 +10128,7 @@ index 6974d59..d926aa0 100644
  
  func (f *Frontend) Input(port int, device byte, data []byte) {
  	switch Device(device) {
-@@ -434,6 +1274,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
+@@ -434,6 +1279,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
  	}
  }
  
@@ -10133,7 +10138,7 @@ index 6974d59..d926aa0 100644
  func (f *Frontend) ViewportCalc() (nw int, nh int) {
  	w, h := f.FrameSize()
  	nw, nh = w, h
-@@ -478,6 +1321,9 @@ func (f *Frontend) Close() {
+@@ -478,6 +1326,9 @@ func (f *Frontend) Close() {
  
  // Save writes the current state to the filesystem.
  func (f *Frontend) Save() error {
@@ -10143,7 +10148,7 @@ index 6974d59..d926aa0 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -501,6 +1347,9 @@ func (f *Frontend) Save() error {
+@@ -501,6 +1352,9 @@ func (f *Frontend) Save() error {
  
  // Load restores the state from the filesystem.
  func (f *Frontend) Load() error {
@@ -10153,7 +10158,7 @@ index 6974d59..d926aa0 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -537,6 +1386,13 @@ func (f *Frontend) autosave(periodSec int) {
+@@ -537,6 +1391,13 @@ func (f *Frontend) autosave(periodSec int) {
  			if f.nano.IsStopped() {
  				return
  			}
@@ -45933,10 +45938,10 @@ index 0000000..6506f53
 +#endif /* CHEEVOS_BRIDGE_H */
 diff --git a/pkg/worker/cheevos/cheevos.go b/pkg/worker/cheevos/cheevos.go
 new file mode 100644
-index 0000000..8bb5d16
+index 0000000..5fdb28a
 --- /dev/null
 +++ b/pkg/worker/cheevos/cheevos.go
-@@ -0,0 +1,443 @@
+@@ -0,0 +1,456 @@
 +// Package cheevos embeds the RetroAchievements runtime (rcheevos' rc_client) into the libretro worker.
 +// rc_client hashes the loaded ROM, logs the player in with their OWN connect token, evaluates
 +// achievement + leaderboard triggers each emulated frame against core RAM, and submits unlocks/runs to
@@ -46088,6 +46093,19 @@ index 0000000..8bb5d16
 +	}
 +	c.memoryMap = memoryMap
 +	C.cheevos_set_memory(systemRAM, C.size_t(systemSize), saveRAM, C.size_t(saveSize))
++}
++
++// InitMemory builds the rc_libretro address→region map from the console layout + the core RAM/map
++// registered by SetMemory. This MUST run before the game load, not after: rc_client validates every
++// achievement/leaderboard address during load by probing it through our read callback (see
++// rc_client_validate_addresses). If the regions aren't registered yet, every probe reads 0 and rcheevos
++// disables the whole set as "Invalid address" — which is exactly what happened when we only built the
++// regions in the load-done callback. Returns false if no valid region was mapped. Emu goroutine only.
++func (c *Client) InitMemory() bool {
++	if c == nil {
++		return false
++	}
++	return C.cheevos_init_memory(C.uint32_t(c.consoleID), (*C.struct_retro_memory_map)(c.memoryMap)) != 0
 +}
 +
 +// DoFrame advances the runtime one frame. On the first call it kicks the login→load sequence; every
