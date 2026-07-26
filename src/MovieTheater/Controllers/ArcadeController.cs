@@ -35,6 +35,12 @@ namespace MovieTheater.Controllers
         private const string CodeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
         private const int CodeLength = 6;
 
+        /// <summary>How long after the reaper closed a room a heartbeat from someone still in it may
+        /// reopen the row (see the Heartbeat endpoint). Sized to a long play session: the whole point is
+        /// that the player never left, and their beat is better evidence of liveness than our own
+        /// bookkeeping, which is what got the room closed in the first place.</summary>
+        private static readonly TimeSpan RoomRevivalWindow = TimeSpan.FromHours(6);
+
         private readonly MovieDb movieDb;
         private readonly IArcadeHost host;
         private readonly ArcadeRoomService rooms;
@@ -2215,6 +2221,33 @@ namespace MovieTheater.Controllers
                     .Where(s => s.RoomCode == code && s.EndedUtc == null && s.CloudRetroRoomId != null)
                     .OrderByDescending(s => s.CreatedUtc)
                     .FirstOrDefaultAsync();
+
+                // Nothing live under that code, but a browser is still beating it — so ALSO look at rooms
+                // the reaper recently closed. A closed row used to be a one-way door: the reaper needs only
+                // a five-minute gap in durable heartbeats to stamp EndedUtc (a deploy rolling the pod is
+                // enough), and from that moment this endpoint 404'd forever for a player who never left.
+                // The room kept streaming — CloudRetro tracks their WebRTC connection, not our roster — but
+                // no fresh control token was ever minted again, so every quicksave came back "This room
+                // pass expired" for the rest of the night (2026-07-26, Mario BAZR; the third repeat of this
+                // family of bug). A live beat is proof the room outlived its obituary: take it back.
+                if (session == null)
+                {
+                    var revivable = DateTime.UtcNow - RoomRevivalWindow;
+                    session = await movieDb.ArcadeSessions
+                        .Where(s => s.RoomCode == code && s.CloudRetroRoomId != null && s.EndedUtc >= revivable)
+                        .OrderByDescending(s => s.CreatedUtc)
+                        .FirstOrDefaultAsync();
+                    if (session != null)
+                    {
+                        var closedAt = session.EndedUtc;
+                        session.EndedUtc = null;
+                        await movieDb.SaveChangesAsync();
+                        logger.LogInformation(
+                            "Arcade room {Code} reopened: user {User} is still in a room closed at {Ended:u}",
+                            code, userId.Value, closedAt);
+                    }
+                }
+
                 var game = session == null ? null
                     : await movieDb.ArcadeGames.FirstOrDefaultAsync(g => g.Id == session.ArcadeGameId);
                 if (session == null || game == null)

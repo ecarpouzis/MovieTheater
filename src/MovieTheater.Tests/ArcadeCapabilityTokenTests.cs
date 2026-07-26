@@ -76,6 +76,43 @@ namespace MovieTheater.Tests
             Assert.False(ArcadeCapabilityToken.TryValidate(Secret, token, out _));
         }
 
+        // ── Control-token grace ───────────────────────────────────────────────────────────────────
+        // The in-room control calls (quicksave/snapshot/load) validate with a grace, because their real
+        // bound is the LIVE ROOM the token names, not a clock. Without it the browser's one token lapsed
+        // mid-session and saving died — four times, most recently 2026-07-26 (Mario BAZR), each time on a
+        // room that was otherwise streaming perfectly. The WS connect keeps the strict check.
+
+        [Fact]
+        public void Grace_Accepts_RecentlyExpired()
+        {
+            var token = ArcadeCapabilityToken.Mint(Secret, Join(AnHourAgo()));
+            Assert.True(ArcadeCapabilityToken.TryValidate(Secret, token, TimeSpan.FromHours(12), out var p));
+            Assert.Equal(42, p!.UserId);
+        }
+
+        [Fact]
+        public void Grace_Still_Rejects_LongExpired()
+        {
+            var token = ArcadeCapabilityToken.Mint(Secret, Join(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 13 * 3600));
+            Assert.False(ArcadeCapabilityToken.TryValidate(Secret, token, TimeSpan.FromHours(12), out var p));
+            Assert.Null(p);
+        }
+
+        [Fact]
+        public void Grace_Never_Excuses_A_BadSignature()
+        {
+            var token = ArcadeCapabilityToken.Mint(Secret, Join(AnHourAgo()));
+            Assert.False(ArcadeCapabilityToken.TryValidate("other-secret", token, TimeSpan.FromHours(12), out _));
+        }
+
+        [Fact]
+        public void NoGrace_Overload_Is_Unchanged()
+        {
+            var token = ArcadeCapabilityToken.Mint(Secret, Join(AnHourAgo()));
+            Assert.False(ArcadeCapabilityToken.TryValidate(Secret, token, out _));
+            Assert.False(ArcadeCapabilityToken.TryValidate(Secret, token, TimeSpan.Zero, out _));
+        }
+
         [Theory]
         [InlineData("")]
         [InlineData("no-dot-here")]

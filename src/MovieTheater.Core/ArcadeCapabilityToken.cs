@@ -46,7 +46,24 @@ namespace MovieTheater.Core
         }
 
         /// <summary>Validates signature and expiry. Returns false (payload null) on any defect.</summary>
-        public static bool TryValidate(string secret, string token, out Payload? payload)
+        public static bool TryValidate(string secret, string token, out Payload? payload) =>
+            TryValidate(secret, token, TimeSpan.Zero, out payload);
+
+        /// <summary>
+        /// Validates signature and expiry, allowing the token to be <paramref name="expiryGrace"/> past
+        /// its stamped expiry.
+        ///
+        /// The grace exists for capabilities whose real bound is not a clock but a LIVE ROOM: the in-room
+        /// control calls (quicksave / snapshot / load) name one ephemeral CloudRetro room id, which stops
+        /// existing when the room does. A 5-minute TTL on those buys nothing an attacker couldn't have had
+        /// while the room was open, and it has broken saving repeatedly — the page holds one token for a
+        /// multi-hour session, and every path that refreshes it (presence bookkeeping, the heartbeat, the
+        /// site pod itself) is something that can fail while the game keeps playing perfectly.
+        ///
+        /// The WS connect and the ROM fetch keep the strict check (grace zero): those are the tickets that
+        /// let someone INTO a room, and there the clock is the point.
+        /// </summary>
+        public static bool TryValidate(string secret, string token, TimeSpan expiryGrace, out Payload? payload)
         {
             payload = null;
             if (string.IsNullOrEmpty(token))
@@ -90,7 +107,8 @@ namespace MovieTheater.Core
                 return false;
             }
 
-            if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() > expires)
+            var graceSeconds = (long)Math.Max(0, expiryGrace.TotalSeconds);
+            if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() > expires + graceSeconds)
                 return false;
 
             payload = new Payload(userId, gameId, parts[2], cloudRetroRoomId, playerSlot, expires);

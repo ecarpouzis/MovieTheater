@@ -31,6 +31,20 @@ string secret = config["ArcadeTokenSecret"]
 string coordinatorBase = (config["CoordinatorBaseUrl"] ?? "http://localhost:8000").TrimEnd('/');
 string siteOrigin = config["SiteOrigin"] ?? "https://your-movie-site.example";
 
+// How far past its stamped expiry an in-room CONTROL capability (/w-quick, /w-snap, /w-load) is still
+// honoured. The WS connect and the ROM fetch stay strict — see ArcadeCapabilityToken.TryValidate.
+//
+// A control token names ONE ephemeral CloudRetro room id. That room's own lifetime is the real bound on
+// the capability: when it ends, the token authorizes nothing (the id is gone, and /w-quick's parse+match
+// rejects any other). Expiring it on a clock protects nothing an attacker couldn't already have had
+// while the room was open — and it has now broken SAVING four separate times, because the browser holds
+// one token for a multi-hour session while every path that refreshes it is something that can fail
+// silently mid-game: presence bookkeeping losing a seat, the reaper closing the room's row under a live
+// player, a deploy rolling the site pod, an auth cookie lapsing. WebRTC notices none of those — the game
+// plays on perfectly and only the save button dies, which is the worst possible thing to be fragile.
+// Saving must depend on the room being ALIVE, not on the rest of the control plane being healthy.
+var controlTokenGrace = TimeSpan.FromHours(12);
+
 // CORS for the browser-called REST endpoints (rom-status, w-quick/w-snap/w-load…). The site and the
 // gateway are DIFFERENT origins (theater.* → arcade.*), and without these headers the browser split
 // the API in half invisibly: a bare POST (w-quick — a CORS "simple request") was still SENT and
@@ -236,7 +250,16 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
         saveStore.SetCompetitive(requestedRoomId, competitive);
         // Resume-from-snapshot: ?seedslot=N seeds a chosen snapshot slot's bytes into the (slot-0) room,
         // so the player continues FROM snapshot N. Defaults to the id's slot (0 = the auto Continue slot).
-        int seedSlot = int.TryParse(context.Request.Query["seedslot"].ToString(), out var ss) ? ss : svSlot;
+        bool seedSlotAsked = int.TryParse(context.Request.Query["seedslot"].ToString(), out var ss);
+        int seedSlot = seedSlotAsked ? ss : svSlot;
+        // "Resume THIS save" is an explicit choice by the player, and it has to beat the don't-stomp guard
+        // below — which it did not, so picking ANY snapshot silently booted the leftover mount state
+        // instead, i.e. every save in the vault loaded "the exact same spot" (2026-07-26, Mario BAZR).
+        // The mount keeps a room's .dat/.srm after the room ends (the deterministic id reuses the same
+        // filenames), so MountHasSave is TRUE on every replay of a game once it has been played once —
+        // which made the whole vault unloadable for that game, not just occasionally wrong. Safe now
+        // because the harvest-on-reconnect above has already vaulted whatever the mount was holding.
+        bool chosenSeed = seedSlotAsked && ss > 0;
         try
         {
             if (newGame || competitive)
@@ -261,14 +284,21 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
                 app.Logger.LogInformation("Arcade save cleared ({Reason}){Card} for user {User} game {Game}",
                     competitive ? "competitive" : "New game", keptCard ? " +card kept" : "", svUser, svGame);
             }
-            else if (!saveStore.MountHasSave(requestedRoomId))
+            else if (chosenSeed || !saveStore.MountHasSave(requestedRoomId))
             {
-                // Mount files present = the room is live (or just harvested above) — don't stomp them.
-                bool seeded = saveStore.SeedSession(svUser, svGame, requestedRoomId, seedSlot);
+                // Without a chosen slot: mount files present = the room is live (or was just harvested
+                // above) — don't stomp them, since a harvest that failed would otherwise cost the player
+                // newer state than the vault holds. With one: see chosenSeed.
+                // svSystem carries the CORE ("n64-parallel_n64" vs "n64"), and a save-state only restores on
+                // the core that wrote it — so the seed is withheld on a mismatch instead of overwriting the
+                // mount with a blob this core can't read.
+                bool seeded = saveStore.SeedSession(svUser, svGame, requestedRoomId, seedSlot, svSystem, out var wrongCore);
                 // Save-dir cores (PSP memstick / DC-Naomi VMU / DOS) don't ride SAVE_RAM — restore their tree too.
                 bool seededCore = saveStore.SeedCoreSaveDir(svUser, svGame, requestedRoomId);
-                app.Logger.LogInformation("Arcade save {Action}{Core} for user {User} game {Game} slot {Slot}",
-                    seeded ? "seeded" : "none (fresh)", seededCore ? "+coredir" : "", svUser, svGame, seedSlot);
+                app.Logger.LogInformation("Arcade save {Action}{Core} for user {User} game {Game} slot {Slot}{Chosen}",
+                    wrongCore ? "state withheld (saved on another core)" : seeded ? "seeded" : "none (fresh)",
+                    seededCore ? "+coredir" : "", svUser, svGame, seedSlot,
+                    chosenSeed ? " (chosen resume)" : "");
             }
         }
         catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade save seed/clear failed for {Id}", requestedRoomId); }
@@ -310,14 +340,14 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
 app.MapPost("/w-snap/{token}", async (HttpContext ctx, string token) =>
 {
     if (saveStore == null) return Results.NotFound();
-    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null)
+    if (!ArcadeCapabilityToken.TryValidate(secret, token, controlTokenGrace, out var p) || p is null)
         // NOT Results.Forbid(): this gateway registers no authentication scheme, so ForbidAsync throws and
         // the endpoint 500s — and a 500 from an unhandled exception carries no Access-Control-Allow-Origin,
-        // so the browser reports an expired/invalid token as a bogus "blocked by CORS policy" error (the WS
-        // is CORS-exempt, so the room plays on while every save beside it appears to fail on CORS). Return a
+        // so the browser reports a rejected token as a bogus "blocked by CORS policy" error (the WS is
+        // CORS-exempt, so the room plays on while every save beside it appears to fail on CORS). Return a
         // plain 403 that flows through the CORS middleware so the client can READ it and show a real message.
-        // The heartbeat now re-mints the token every ~12 s, so a present player shouldn't reach this at all.
-        return Results.Json(new { ok = false, reason = "This room pass expired — rejoin the room to keep saving." },
+        // With controlTokenGrace this is now reachable only by a forged/ancient token, not by a long session.
+        return Results.Json(new { ok = false, reason = "This room pass isn't valid — reload the room page to keep saving." },
             statusCode: StatusCodes.Status403Forbidden);
     var id = p.CloudRetroRoomId ?? "";
     if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out var sys, out _) || u != p.UserId || g != p.GameId)
@@ -355,14 +385,9 @@ app.MapPost("/w-snap/{token}", async (HttpContext ctx, string token) =>
 app.MapPost("/w-quick/{token}", async (HttpContext ctx, string token) =>
 {
     if (saveStore == null) return Results.NotFound();
-    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null)
-        // NOT Results.Forbid(): this gateway registers no authentication scheme, so ForbidAsync throws and
-        // the endpoint 500s — and a 500 from an unhandled exception carries no Access-Control-Allow-Origin,
-        // so the browser reports an expired/invalid token as a bogus "blocked by CORS policy" error (the WS
-        // is CORS-exempt, so the room plays on while every save beside it appears to fail on CORS). Return a
-        // plain 403 that flows through the CORS middleware so the client can READ it and show a real message.
-        // The heartbeat now re-mints the token every ~12 s, so a present player shouldn't reach this at all.
-        return Results.Json(new { ok = false, reason = "This room pass expired — rejoin the room to keep saving." },
+    if (!ArcadeCapabilityToken.TryValidate(secret, token, controlTokenGrace, out var p) || p is null)
+        // See /w-snap for why this is a hand-rolled 403 rather than Results.Forbid().
+        return Results.Json(new { ok = false, reason = "This room pass isn't valid — reload the room page to keep saving." },
             statusCode: StatusCodes.Status403Forbidden);
     var id = p.CloudRetroRoomId ?? "";
     // NOT owner-only, unlike /w-snap: Save acts on the room's one shared emulator, and every player has
@@ -394,14 +419,9 @@ app.MapPost("/w-quick/{token}", async (HttpContext ctx, string token) =>
 app.MapPost("/w-load/{token}", async (HttpContext ctx, string token) =>
 {
     if (saveStore == null) return Results.NotFound();
-    if (!ArcadeCapabilityToken.TryValidate(secret, token, out var p) || p is null)
-        // NOT Results.Forbid(): this gateway registers no authentication scheme, so ForbidAsync throws and
-        // the endpoint 500s — and a 500 from an unhandled exception carries no Access-Control-Allow-Origin,
-        // so the browser reports an expired/invalid token as a bogus "blocked by CORS policy" error (the WS
-        // is CORS-exempt, so the room plays on while every save beside it appears to fail on CORS). Return a
-        // plain 403 that flows through the CORS middleware so the client can READ it and show a real message.
-        // The heartbeat now re-mints the token every ~12 s, so a present player shouldn't reach this at all.
-        return Results.Json(new { ok = false, reason = "This room pass expired — rejoin the room to keep saving." },
+    if (!ArcadeCapabilityToken.TryValidate(secret, token, controlTokenGrace, out var p) || p is null)
+        // See /w-snap for why this is a hand-rolled 403 rather than Results.Forbid().
+        return Results.Json(new { ok = false, reason = "This room pass isn't valid — reload the room page to keep saving." },
             statusCode: StatusCodes.Status403Forbidden);
     var id = p.CloudRetroRoomId ?? "";
     // Any player of this room may load (see /w-quick) — the emulator, and so the state, is shared.

@@ -276,13 +276,45 @@ public sealed class SaveStore
     /// <c>.srm</c>) so CloudRetro auto-restores it when the game boots. Returns false if the slot has no
     /// stored blob (caller then boots fresh).
     /// </summary>
-    public bool SeedSession(int userId, int gameId, string sessionId, int slotId)
+    public bool SeedSession(int userId, int gameId, string sessionId, int slotId) =>
+        SeedSession(userId, gameId, sessionId, slotId, requireSystem: null, out _);
+
+    /// <inheritdoc cref="SeedSession(int,int,string,int)"/>
+    /// <param name="requireSystem">The room's system string from its id (e.g. "n64-parallel_n64"). When
+    /// given, a stored STATE captured on a DIFFERENT system is not seeded — a save-state is a dump of one
+    /// core's memory, so feeding a parallel_n64 state to the stock n64 core (or vice versa) restores
+    /// garbage or nothing at all, and doing it silently overwrites a perfectly good mount. The vault is
+    /// keyed by (user, game) but a state's compatibility is keyed by CORE, and the two do not line up:
+    /// slots are shared across every core the game has ever been played on. The <c>.srm</c> is seeded
+    /// either way — a battery/memory card is the GAME's data and reads the same on any core.</param>
+    /// <param name="stateSkipped">True when a state blob existed but was withheld for the reason above,
+    /// so the caller can say so in the log rather than looking like it simply found nothing.</param>
+    public bool SeedSession(int userId, int gameId, string sessionId, int slotId, string? requireSystem, out bool stateSkipped)
     {
+        stateSkipped = false;
         if (string.IsNullOrEmpty(sessionId)) return false;
         bool seeded = false;
 
         var stateBlob = StoreFile(userId, gameId, SlotFile(slotId));
-        if (File.Exists(stateBlob)) { CopyGuarded(stateBlob, MountFile(sessionId, ".dat")); seeded = true; }
+        if (File.Exists(stateBlob))
+        {
+            var storedSystem = ReadSidecar(SidecarPath(stateBlob))?.System;
+            // Only withhold on a KNOWN mismatch: a sidecar-less or blank-system blob predates this and is
+            // seeded as before.
+            if (!string.IsNullOrEmpty(requireSystem) && !string.IsNullOrEmpty(storedSystem)
+                && !string.Equals(storedSystem, requireSystem, StringComparison.Ordinal))
+            {
+                stateSkipped = true;
+                log.LogWarning(
+                    "SaveStore not seeding slot {Slot} for user {User} game {Game}: it was saved on {Stored} but this room runs {Room}.",
+                    slotId, userId, gameId, storedSystem, requireSystem);
+            }
+            else
+            {
+                CopyGuarded(stateBlob, MountFile(sessionId, ".dat"));
+                seeded = true;
+            }
+        }
 
         var sramBlob = StoreFile(userId, gameId, "sram.srm");
         if (File.Exists(sramBlob)) { CopyGuarded(sramBlob, MountFile(sessionId, ".srm")); seeded = true; }

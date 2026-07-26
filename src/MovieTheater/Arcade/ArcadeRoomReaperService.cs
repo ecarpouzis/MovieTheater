@@ -65,6 +65,18 @@ namespace MovieTheater.Arcade
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // When THIS process started. Pass 2 judges a row by how long it has gone unheartbeated, but a
+            // row cannot be blamed for silence during a window when there was nobody here to hear it: a
+            // deploy takes the pod (and with it every /Heartbeat endpoint) away for a minute or two, and
+            // the browsers keep playing throughout — CloudRetro tracks their WebRTC connection, not us.
+            // Reaping on a stamp written before we existed closed rooms out from under live players, and
+            // that close is a ONE-WAY DOOR: the Heartbeat rehydrate path only accepts a row with a null
+            // EndedUtc, so the room could never come back, no fresh save token was ever minted again, and
+            // quicksave 403'd for the rest of the night on a session that was otherwise perfect
+            // (2026-07-26, Mario BAZR — third repeat of this class of bug). So: give every row a full
+            // StaleAfter window after startup to prove itself. A genuine corpse is closed one tick later.
+            var startedUtc = DateTime.UtcNow;
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -92,26 +104,30 @@ namespace MovieTheater.Arcade
                     // the column existed (and for a room abandoned before its first beat), so CreatedUtc is
                     // the floor: an unheartbeated row is judged from its birth.
                     var cutoff = now - StaleAfter;
-                    var stale = await db.ArcadeSessions
-                        .Where(s => s.EndedUtc == null
-                                    && (s.LastSeenUtc ?? s.CreatedUtc) < cutoff
-                                    && !live.Contains(s.RoomCode))
-                        .OrderBy(s => s.CreatedUtc)
-                        .Take(ReconcileBatch)
-                        .ToListAsync(stoppingToken);
-                    if (stale.Count > 0)
+                    // …but never judge a row on silence from before this pod existed (see startedUtc).
+                    if (startedUtc <= cutoff)
                     {
-                        foreach (var s in stale)
-                            s.EndedUtc = now;
-                        await db.SaveChangesAsync(stoppingToken);
+                        var stale = await db.ArcadeSessions
+                            .Where(s => s.EndedUtc == null
+                                        && (s.LastSeenUtc ?? s.CreatedUtc) < cutoff
+                                        && !live.Contains(s.RoomCode))
+                            .OrderBy(s => s.CreatedUtc)
+                            .Take(ReconcileBatch)
+                            .ToListAsync(stoppingToken);
+                        if (stale.Count > 0)
+                        {
+                            foreach (var s in stale)
+                                s.EndedUtc = now;
+                            await db.SaveChangesAsync(stoppingToken);
 
-                        var remaining = await db.ArcadeSessions
-                            .CountAsync(s => s.EndedUtc == null
-                                             && (s.LastSeenUtc ?? s.CreatedUtc) < cutoff
-                                             && !live.Contains(s.RoomCode), stoppingToken);
-                        logger.LogInformation(
-                            "Arcade reaper reconciled {Closed} stale room row(s) (no heartbeat for {Stale}); {Remaining} still to close.",
-                            stale.Count, StaleAfter, remaining);
+                            var remaining = await db.ArcadeSessions
+                                .CountAsync(s => s.EndedUtc == null
+                                                 && (s.LastSeenUtc ?? s.CreatedUtc) < cutoff
+                                                 && !live.Contains(s.RoomCode), stoppingToken);
+                            logger.LogInformation(
+                                "Arcade reaper reconciled {Closed} stale room row(s) (no heartbeat for {Stale}); {Remaining} still to close.",
+                                stale.Count, StaleAfter, remaining);
+                        }
                     }
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
