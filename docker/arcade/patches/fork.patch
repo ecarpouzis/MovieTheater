@@ -45908,10 +45908,10 @@ index 0000000..9e1a31e
 +#endif /* CHEEVOS_BRIDGE_H */
 diff --git a/pkg/worker/cheevos/cheevos.go b/pkg/worker/cheevos/cheevos.go
 new file mode 100644
-index 0000000..9f1e169
+index 0000000..614ddc5
 --- /dev/null
 +++ b/pkg/worker/cheevos/cheevos.go
-@@ -0,0 +1,424 @@
+@@ -0,0 +1,431 @@
 +// Package cheevos embeds the RetroAchievements runtime (rcheevos' rc_client) into the libretro worker.
 +// rc_client hashes the loaded ROM, logs the player in with their OWN connect token, evaluates
 +// achievement + leaderboard triggers each emulated frame against core RAM, and submits unlocks/runs to
@@ -45941,6 +45941,10 @@ index 0000000..9f1e169
 +	"time"
 +	"unsafe"
 +)
++
++// raUserAgent identifies us to RetroAchievements. Their dorequest API rejects requests with a missing
++// or generic User-Agent (403), so this must be sent on every RA HTTP call. Format: "Client/Version".
++const raUserAgent = "MovieTheaterArcade/1.0"
 +
 +// Achievement is one unlocked RetroAchievements achievement (the mirror + toast payload).
 +type Achievement struct {
@@ -46143,6 +46147,9 @@ index 0000000..9f1e169
 +	if err != nil {
 +		return 0, nil
 +	}
++	// RetroAchievements' dorequest API 403s any request without an identifying User-Agent (Go's default
++	// "Go-http-client/1.1" is rejected) — so every RA call MUST set one, or login + game-data fetch fail.
++	req.Header.Set("User-Agent", raUserAgent)
 +	resp, err := c.httpc.Do(req)
 +	if err != nil {
 +		return 0, nil

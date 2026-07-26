@@ -33,7 +33,9 @@ finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
 Write-Host "logging in to RetroAchievements as '$Username'..."
 $body = @{ u = $Username; p = $password }
 try {
-    $resp = Invoke-RestMethod -Method Post -Uri "https://retroachievements.org/dorequest.php?r=login2" -Body $body
+    # RA's dorequest API 403s requests without an identifying User-Agent (a browser sends one; a bare
+    # Invoke-RestMethod does not). Same UA the worker sends. Format: "Client/Version".
+    $resp = Invoke-RestMethod -Method Post -Uri "https://retroachievements.org/dorequest.php?r=login2" -Body $body -UserAgent "MovieTheaterArcade/1.0"
 } catch {
     throw "RA login request failed: $($_.Exception.Message)"
 }
