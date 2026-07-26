@@ -142,6 +142,7 @@ export default function ArcadePage({ userData }) {
       genre: p.get("genre") || "",
       sort: p.get("sort") || "",
       search: p.get("q") || "",
+      ra: p.get("ra") || "",
     };
   }, [location.search]);
   const filterKey = JSON.stringify(filters);
@@ -373,7 +374,7 @@ export default function ArcadePage({ userData }) {
     return <div style={{ padding: 48 }}><Empty description="The arcade isn't set up on this server yet." /></div>;
   }
 
-  const anyFilter = filters.system || filters.hideRegions || filters.maxPlayers || filters.variant || filters.genre || filters.search;
+  const anyFilter = filters.system || filters.hideRegions || filters.maxPlayers || filters.variant || filters.genre || filters.search || filters.ra;
 
   return (
     <div className="arcade-page">

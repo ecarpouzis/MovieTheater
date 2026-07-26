@@ -58,7 +58,7 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
   // Facets are FACETED against the current scope (so e.g. a Japan-only system isn't offered under the
   // default English region), so refetch whenever a facet-affecting param changes — but NOT on sort/skip,
   // which don't change what's available. facetKey is the stable join of just those params.
-  const facetKey = ["system", "hideRegions", "players", "variant", "genre", "q"]
+  const facetKey = ["system", "hideRegions", "players", "variant", "genre", "q", "ra"]
     .map((k) => new URLSearchParams(location.search).get(k) || "").join("|");
   useEffect(() => {
     let alive = true;
@@ -70,6 +70,7 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
       variant: cur.get("variant") || "",
       genre: cur.get("genre") || "",
       search: cur.get("q") || "",
+      ra: cur.get("ra") || "",
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((f) => { if (alive) setFacets(f); })
@@ -94,7 +95,17 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
   const activePlayers = p.get("players") || "";
   const activeVariant = p.get("variant") || "all";
   const activeGenre = p.get("genre") || "";
+  const activeRa = p.get("ra") || "";
   const activeSort = p.get("sort") || "";
+
+  // RetroAchievements filter: find games that track achievements / have high-score or speedrun boards.
+  // Counts are faceted (they exclude the RA filter itself), so each label shows how many games qualify.
+  const raOptions = [
+    { value: "", label: "Any RA support" },
+    { value: "achievements", label: `🏆 Achievements${facets?.ra ? ` (${facets.ra.achievements})` : ""}` },
+    { value: "highscores", label: `🥇 High scores${facets?.ra ? ` (${facets.ra.highScores})` : ""}` },
+    { value: "speedruns", label: `⏱️ Speedruns${facets?.ra ? ` (${facets.ra.speedruns})` : ""}` },
+  ];
 
   const systemOptions = [
     { value: "", label: facets ? `All systems (${facets.total})` : "All systems" },
@@ -184,9 +195,13 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
         <Select style={{ width: "100%" }} value={activeVariant} onChange={(v) => updateParam("variant", v)}
           options={modOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
 
+        <span style={inputLabelStyle}>RetroAchievements</span>
+        <Select style={{ width: "100%" }} value={activeRa} onChange={(v) => updateParam("ra", v)}
+          options={raOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
+
         {/* Region counts as an active filter when any region has been switched OFF — under the deselect
             model "everything selected" IS the default (there is no activeRegion any more). */}
-        {(activeSystem || hiddenRegions.length > 0 || activePlayers || activeVariant !== "all" || activeGenre || activeSort || p.get("q")) && (
+        {(activeSystem || hiddenRegions.length > 0 || activePlayers || activeVariant !== "all" || activeGenre || activeRa || activeSort || p.get("q")) && (
           <button type="button" className="arcade-clear-filters" onClick={() => history.push({ pathname: "/arcade" })}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path d="M18 6 6 18M6 6l12 12" />
