@@ -5499,10 +5499,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..a8188ab
+index 0000000..958cd80
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,296 @@
+@@ -0,0 +1,336 @@
 +package worker
 +
 +import (
@@ -5581,6 +5581,19 @@ index 0000000..a8188ab
 +	// each followed by a 15%/tick climb straight back into the next one.
 +	abrStarveTicks = 2  // confirm a starve like everything else before letting it cap the room
 +	abrMaxCutPct   = 70 // and never cut below this % of current in one tick — staircase, not cliff
++
++	// CONGESTION MEMORY — the ceiling is a PERMISSION, not a target. Without memory the healthy
++	// branch probes +15%/tick toward the ceiling forever, relearning nothing: measured (older tablet,
++	// h264, ceiling 16000) the room starved at 3260/3398/3574/3788 — the SAME wall, four visits in
++	// eight seconds — because each cut was followed by a full-speed climb straight back into it. So a
++	// high ceiling made the experience WORSE than a low one, which inverts what the quality picker
++	// promises. Remember the rate that provoked a confirmed cut; approach it in abrMinStepKbps creeps
++	// instead of 15% leaps (a 250 kbps overshoot starves gently and reconfirms; a 500+ leap starves
++	// hard); and only forget the wall after abrCongClearTicks consecutive healthy ticks AT or ABOVE
++	// it — proof the link opened up, at which point full-speed probing resumes (the same session's
++	// wall really did vanish at 16:52:20, and the room then deserved its clean ramp to 16000).
++	abrCongProbePct   = 90 // within this % of the remembered wall, probe additively, not multiplicatively
++	abrCongClearTicks = 3  // healthy ticks at/above the wall before it is forgotten
 +)
 +
 +// layerShare[n][l] = the percentage of the encoder's bitrate a peer receives when it is fed temporal
@@ -5678,6 +5691,9 @@ index 0000000..a8188ab
 +		layerDown := map[svcPeer]int{}
 +		// Consecutive STARVED ticks per peer — same idea as layerDown, for the room-cap path.
 +		starveHold := map[svcPeer]int{}
++		// Congestion memory (see the const block): the last rate that provoked a confirmed cut
++		// (0 = none seen), and how many consecutive healthy ticks we have spent at/above it.
++		congKbps, congClear := 0, 0
 +		for range t.C {
 +			if r.Closed() {
 +				log.Debug().Msg("abr: room closed")
@@ -5763,7 +5779,26 @@ index 0000000..a8188ab
 +				}
 +			case worstServable > 0 && worstServable*100 >= cur*abrHealthyPct && cur < ceilKbps:
 +				lowTicks = 0
-+				next = cur + max(abrMinStepKbps, cur*abrRampPct/100) // healthy: probe upward
++				step := max(abrMinStepKbps, cur*abrRampPct/100) // healthy: probe upward
++				if congKbps > 0 {
++					// Holding at/above the remembered wall and still healthy: count toward forgetting
++					// it. Enough proof and probing goes back to full speed.
++					if cur >= congKbps {
++						congClear++
++						if congClear >= abrCongClearTicks {
++							congKbps, congClear = 0, 0
++						}
++					} else {
++						congClear = 0
++					}
++					// Approaching (or passing) a wall we still remember: creep, don't leap. An
++					// abrMinStepKbps overshoot starves gently and reconfirms the wall; a 15% leap
++					// re-creates the crash we remember.
++					if congKbps > 0 && cur+step >= congKbps*abrCongProbePct/100 {
++						step = abrMinStepKbps
++					}
++				}
++				next = cur + step
 +			default:
 +				lowTicks = 0
 +			}
@@ -5782,12 +5817,17 @@ index 0000000..a8188ab
 +			if next == cur || abs(next-cur) < abrMinStepKbps {
 +				continue
 +			}
++			// Any confirmed cut marks where it hurt: the rate we are leaving was too high for the
++			// link. Both the backoff and starve-cap paths funnel through here.
++			if next < cur {
++				congKbps, congClear = cur, 0
++			}
 +			if err := m.SetVideoBitrate(next); err != nil {
 +				log.Warn().Err(err).Msgf("abr: failed to set %d kbps", next)
 +				continue
 +			}
-+			log.Info().Msgf("abr: %d -> %d kbps (servable %d, starved-cap %d, ceiling %d, peers %d)",
-+				cur, next, worstServable, roomCap, ceilKbps, peers)
++			log.Info().Msgf("abr: %d -> %d kbps (servable %d, starved-cap %d, ceiling %d, peers %d, cong %d)",
++				cur, next, worstServable, roomCap, ceilKbps, peers, congKbps)
 +			cur = next
 +		}
 +	}()
