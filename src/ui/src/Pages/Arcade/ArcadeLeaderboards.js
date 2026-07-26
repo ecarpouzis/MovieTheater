@@ -1,6 +1,39 @@
 import { useEffect, useState } from "react";
-import { Spin, Tag } from "antd";
+import { Spin, Tag, Tooltip } from "antd";
 import { MovieAPI } from "../../MovieAPI";
+
+// Run-legitimacy markers for a board/achievement entry. A clean hardcore run gets the trophy; anything
+// tainted shows a why-icon per reason (a save-scummed record can still hold the top slot, so we say WHY
+// rather than hide it). `legit` is derived server-side (hardcore && no taint). Reused by the room toast.
+export const LEGIT_REASONS = [
+  { key: "cheat", icon: "🔧", label: "Cheat codes were enabled" },
+  { key: "savescum", icon: "💾", label: "A save state was loaded mid-run" },
+  { key: "timeplay", icon: "⏩", label: "Fast-forward / rewind was used" },
+];
+
+export function LegitTags({ entry }) {
+  if (!entry) return null;
+  const reasons = LEGIT_REASONS.filter((r) => entry[r.key]);
+  if (reasons.length > 0) {
+    return (
+      <>
+        {reasons.map((r) => (
+          <Tooltip key={r.key} title={r.label}>
+            <Tag color="gold" className="agm-lb__why">{r.icon}</Tag>
+          </Tooltip>
+        ))}
+      </>
+    );
+  }
+  if (entry.legit || entry.hardcore) {
+    return (
+      <Tooltip title={entry.legit ? "Legit hardcore run — no cheats, save-scumming, or fast-forward" : "Hardcore (competitive) run"}>
+        <Tag color="volcano" className="agm-lb__hc">{entry.legit ? "🏆 HC" : "HC"}</Tag>
+      </Tooltip>
+    );
+  }
+  return null;
+}
 
 // Format a leaderboard value for display by its RA format token. Time boards come in as frames/ms/etc.;
 // score boards are plain numbers. Mirrors RetroAchievements' own display conventions closely enough to read.
@@ -70,7 +103,7 @@ export default function ArcadeLeaderboards({ gameId }) {
                 <span className="agm-lb__rank">{e.rank}</span>
                 <span className="agm-lb__user">{e.username}{e.you ? " (you)" : ""}</span>
                 <span className="agm-lb__value">{formatValue(e.value, b.format)}</span>
-                {e.hardcore && <Tag color="volcano" className="agm-lb__hc">HC</Tag>}
+                <LegitTags entry={e} />
               </li>
             ))}
           </ol>

@@ -95,6 +95,14 @@ namespace MovieTheater.Services
         /// </summary>
         public bool ArcadeZoningEnabled { get; set; }
 
+        /// <summary>RetroAchievements Web API credentials (the site service account's — retroachievements.org
+        /// → Settings → Web API Key). Used ONLY for read-only PULLs of a linked user's public RA profile /
+        /// recent unlocks to show on the site (arcade-ra-sync-plan.md). Distinct from the worker's connect
+        /// token (which drives the in-room scoring engine). Empty = the pull endpoint degrades to
+        /// "not configured", like every other arcade feature gates on its config.</summary>
+        public string? ArcadeRaWebApiUser { get; set; }
+        public string? ArcadeRaWebApiKey { get; set; }
+
         public string? ImdbApiKey { get; set; }
 
         public string? TmdbApiKey { get; set; }

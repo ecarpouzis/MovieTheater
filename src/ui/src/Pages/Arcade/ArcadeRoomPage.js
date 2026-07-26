@@ -333,10 +333,13 @@ export default function ArcadeRoomPage() {
         onAchievement: (a) => {
           if (cancelled || !a) return;
           // Live RetroAchievements unlock (worker push). Cosmetic only — RA + the server mirror hold the
-          // real record. Show the room the pop; a hardcore unlock gets a trophy, softcore a medal.
+          // real record. Show the room the pop; a clean hardcore unlock gets a trophy, softcore a medal.
+          // A tainted run (cheats / save-scum / fast-forward) appends the why-icon so the room sees it wasn't legit.
           const pts = a.points ? ` · ${a.points} pts` : "";
+          const taint = `${a.cheat ? " 🔧" : ""}${a.savescum ? " 💾" : ""}${a.timeplay ? " ⏩" : ""}`;
+          const badge = a.hardcore && !a.cheat && !a.savescum && !a.timeplay ? "🏆" : "🎖️";
           message.success({
-            content: `${a.hardcore ? "🏆" : "🎖️"} Achievement unlocked: ${a.title || "Unknown"}${pts}`,
+            content: `${badge} Achievement unlocked: ${a.title || "Unknown"}${pts}${taint}`,
             duration: 5,
           });
         },

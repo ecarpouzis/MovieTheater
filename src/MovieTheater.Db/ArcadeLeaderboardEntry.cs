@@ -57,6 +57,15 @@ namespace MovieTheater.Db
         /// leaderboards themselves are hardcore-only, but we record it for display parity with unlocks.</summary>
         public bool Hardcore { get; set; }
 
+        /// <summary>Run-legitimacy taints for the BEST result (kept in step with <see cref="Value"/> — a new
+        /// best overwrites them). <see cref="Cheat"/> = cheat codes active; <see cref="Savescum"/> = a
+        /// save-STATE was loaded mid-run; <see cref="Timeplay"/> = fast-forward/rewind used. The board shows a
+        /// hardcore badge only for a legit run (Hardcore &amp;&amp; none set) and a why-icon otherwise. See the
+        /// matching fields on <see cref="ArcadeAchievementUnlock"/>.</summary>
+        public bool Cheat { get; set; }
+        public bool Savescum { get; set; }
+        public bool Timeplay { get; set; }
+
         public DateTime AchievedUtc { get; set; }
 
         public DateTime UpdatedUtc { get; set; }
