@@ -391,6 +391,15 @@ public sealed class SaveStore
         }
     }
 
+    /// <summary>The system+core a stored STATE slot was captured on ("n64-parallel_n64"), or null when the
+    /// slot has no blob/sidecar. Callers use it to refuse a cross-core restore — see SeedSession's
+    /// requireSystem for why a state is only ever valid on the core that wrote it.</summary>
+    public string? StateSystem(int userId, int gameId, int slotId)
+    {
+        var blob = StoreFile(userId, gameId, SlotFile(slotId));
+        return File.Exists(blob) ? ReadSidecar(SidecarPath(blob))?.System : null;
+    }
+
     /// <summary>Swap a stored slot's bytes into the live mount <c>&lt;sessionId&gt;.dat</c> so an in-room
     /// LOAD (t=107) restores it without restarting the room. Returns false if the slot has no blob.</summary>
     public bool LoadSlotToMount(int userId, int gameId, string sessionId, int slot)

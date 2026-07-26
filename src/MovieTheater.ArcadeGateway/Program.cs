@@ -425,10 +425,19 @@ app.MapPost("/w-load/{token}", async (HttpContext ctx, string token) =>
             statusCode: StatusCodes.Status403Forbidden);
     var id = p.CloudRetroRoomId ?? "";
     // Any player of this room may load (see /w-quick) — the emulator, and so the state, is shared.
-    if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out _, out _) || g != p.GameId)
+    if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out var lsys, out _) || g != p.GameId)
         return Results.BadRequest();
     int slot = 0;
     try { var b = await ctx.Request.ReadFromJsonAsync<Dictionary<string, int>>(ctx.RequestAborted); b?.TryGetValue("slot", out slot); } catch { }
+
+    // A state restores only on the core that wrote it, and this load goes straight into the LIVE room —
+    // handing the running core another core's memory dump is how you hard-wedge a session someone is
+    // playing. The room-create path re-launches on the save's own core; here there is no relaunch, so
+    // say why instead. (Nothing to do about it in-room: the fix is to resume it from the lobby.)
+    var savedOn = saveStore.StateSystem(u, g, slot);
+    if (!string.IsNullOrEmpty(savedOn) && !string.Equals(savedOn, lsys, StringComparison.Ordinal))
+        return Results.Json(new { ok = false, reason = "That save was made on a different core — resume it from the game's page and it'll launch the right one." });
+
     return Results.Json(new { ok = saveStore.LoadSlotToMount(u, g, id, slot) });
 });
 

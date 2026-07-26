@@ -41,6 +41,18 @@ namespace MovieTheater.Controllers
         /// bookkeeping, which is what got the room closed in the first place.</summary>
         private static readonly TimeSpan RoomRevivalWindow = TimeSpan.FromHours(6);
 
+        /// <summary>The core-key a stored save's namespace implies: <c>""</c> for the system's default core
+        /// ("n64"), the suffix for an alternate one ("n64-parallel_n64" → "parallel_n64"), or null when
+        /// there's nothing to go on (no row, or a system string we don't recognise — then the caller leaves
+        /// the launch alone rather than guessing). Mirrors how saveSystem is minted below.</summary>
+        private static string? SaveCoreKey(string system, string? saveSystem)
+        {
+            if (string.IsNullOrEmpty(saveSystem) || string.IsNullOrEmpty(system)) return null;
+            if (string.Equals(saveSystem, system, StringComparison.Ordinal)) return string.Empty;
+            var prefix = system + "-";
+            return saveSystem.StartsWith(prefix, StringComparison.Ordinal) ? saveSystem[prefix.Length..] : null;
+        }
+
         private readonly MovieDb movieDb;
         private readonly IArcadeHost host;
         private readonly ArcadeRoomService rooms;
@@ -1206,6 +1218,41 @@ namespace MovieTheater.Controllers
                                 : null)
                         ?? ArcadeRendererProfiles.ForRenderer(game.System, gameHwContext)            // legacy HwContext pin
                         ?? ArcadeRendererProfiles.Default(game.System);                              // system default
+
+                    // Resuming a save CHOOSES THE CORE for you. A save-state is a dump of one core's
+                    // memory, so a slot written by parallel_n64 restores nothing on stock mupen — and the
+                    // player has no way to know which core they were on weeks later, nor should they have
+                    // to: they clicked "Resume THIS save". Before this, the launch used whatever profile
+                    // the play button carried, minted a room in the OTHER core's save namespace, and the
+                    // pick quietly did nothing (2026-07-26, Mario BAZR: three saves, all "the same spot").
+                    // This overrides even an explicit dropdown pick, because the two are one click in the
+                    // UI and a resume onto the wrong core is never what was meant.
+                    if (request.SeedSlot > 0)
+                    {
+                        var savedOn = await movieDb.ArcadeSaves
+                            .Where(s => s.UserId == userId.Value && s.ArcadeGameId == game.Id
+                                        && s.Kind == "state" && s.SlotId == request.SeedSlot)
+                            .Select(s => s.System)
+                            .FirstOrDefaultAsync();
+                        var needCore = SaveCoreKey(roomSystem, savedOn);
+                        if (needCore != null && !string.Equals(needCore, renderProfile?.CoreKey ?? "", StringComparison.Ordinal))
+                        {
+                            var match = ArcadeRendererProfiles.For(game.System)
+                                .Where(p => string.Equals(p.CoreKey ?? "", needCore, StringComparison.Ordinal))
+                                // Keep the surface they'd otherwise have got when that core offers it, so
+                                // switching cores doesn't also silently downgrade the renderer.
+                                .OrderByDescending(p => p.HwContext == renderProfile?.HwContext)
+                                .ThenByDescending(p => p.IsDefault)
+                                .FirstOrDefault();
+                            if (match != null)
+                            {
+                                logger.LogInformation(
+                                    "Arcade resume slot {Slot} for game {Game}: launching {Profile} — that save was written on {SavedOn}",
+                                    request.SeedSlot, game.Id, match.Id, savedOn);
+                                renderProfile = match;
+                            }
+                        }
+                    }
 
                     // Merge the profile's renderer-selecting options as a BASE beneath the saved config
                     // (an explicit per-game option still wins) — flipping the surface alone strands cores
