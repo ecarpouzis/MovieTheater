@@ -5499,10 +5499,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..b860fdc
+index 0000000..a8188ab
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,269 @@
+@@ -0,0 +1,296 @@
 +package worker
 +
 +import (
@@ -5569,6 +5569,18 @@ index 0000000..b860fdc
 +	// ...and a drop must persist. One bad tick is noise (we send unpaced, so GCC misreads microbursts);
 +	// two in a row is a link.
 +	abrLayerDownTicks = 2
++
++	// STARVE PATH hysteresis + cut clamp. A starved peer caps the room IMMEDIATELY — it got none of
++	// the two-tick confirmation the backoff (lowTicks) and layer (abrLayerDownTicks) paths get, even
++	// though it is fed by the same noisy signal and the comment above says why that signal lies.
++	// With a temporal ladder the cap is est/baseShare (~3.5x est), which absorbs the noise. WITHOUT
++	// one — H.264 gets layers==1, because the SVC path is AV1-only (svc.go av1TemporalID) — baseShare
++	// is 100% and the cap IS the peer's raw estimate. So the codec we tell tablet users to pick is
++	// exactly the codec that turns one misread microburst into a cliff. Measured on an older tablet
++	// (h264, ceiling 16000): 11370 -> 1964 kbps in ONE tick, and 46 starve events in one session,
++	// each followed by a 15%/tick climb straight back into the next one.
++	abrStarveTicks = 2  // confirm a starve like everything else before letting it cap the room
++	abrMaxCutPct   = 70 // and never cut below this % of current in one tick — staircase, not cliff
 +)
 +
 +// layerShare[n][l] = the percentage of the encoder's bitrate a peer receives when it is fed temporal
@@ -5664,6 +5676,8 @@ index 0000000..b860fdc
 +		// Consecutive over-budget ticks per peer, for temporal-layer DROPS only (see below). Lives in
 +		// this goroutine, so no locking; peers that leave the room simply stop being iterated.
 +		layerDown := map[svcPeer]int{}
++		// Consecutive STARVED ticks per peer — same idea as layerDown, for the room-cap path.
++		starveHold := map[svcPeer]int{}
 +		for range t.C {
 +			if r.Closed() {
 +				log.Debug().Msg("abr: room closed")
@@ -5712,6 +5726,12 @@ index 0000000..b860fdc
 +				}
 +
 +				if starved {
++					// Confirm it first: one starved tick is the same microburst noise the layer/backoff
++					// paths already refuse to act on, and with layers==1 acting on it costs the room 6x.
++					starveHold[p]++
++					if starveHold[p] < abrStarveTicks {
++						continue
++					}
 +					// Even the base layer is too much for this link. Lower the room only to what BASE
 +					// needs — not to this peer's raw estimate. Everyone else keeps the layers above.
 +					need := est * 100 / layerShare[layers][0]
@@ -5720,6 +5740,7 @@ index 0000000..b860fdc
 +					}
 +					continue
 +				}
++				delete(starveHold, p) // served this tick; forget the bad one
 +				// This peer is served at `layer`, so it receives only a fraction of what we send.
 +				// Judge its health against THAT, not against the full room bitrate: scale its estimate
 +				// back up into room terms so one comparison works for every peer.
@@ -5749,6 +5770,12 @@ index 0000000..b860fdc
 +			// A starved peer's base-layer requirement is a hard ceiling on the room.
 +			if roomCap > 0 {
 +				next = min(next, roomCap)
++			}
++			// Descend by steps, never off a cliff: successive ticks compound (3 ticks reach ~34% of
++			// where we started), so real congestion is still met quickly, while a single bad reading
++			// costs one 30% rung instead of the whole room. The floor still applies underneath.
++			if next < cur {
++				next = max(next, cur*abrMaxCutPct/100)
 +			}
 +			next = min(max(next, floor), ceilKbps)
 +
