@@ -126,7 +126,19 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
                     value={sel}
                     onChange={setSel}
                     popupClassName="arcade-version-dropdown"
-                    options={game.versions.map((v) => ({ value: v.id, label: v.label }))}
+                    optionLabelProp="label"
+                    options={game.versions.map((v) => ({
+                      value: v.id,
+                      // 🏆 flags a version whose dump RetroAchievements recognizes — the one where
+                      // achievements/scores actually fire (these also sort first, see ArcadeVersions.Rank).
+                      label: v.raSupported ? (
+                        <span>
+                          {v.label} <span className="agm-ra-mark" title="RetroAchievements supported on this version">🏆</span>
+                        </span>
+                      ) : (
+                        v.label
+                      ),
+                    }))}
                   />
                 </label>
               )}

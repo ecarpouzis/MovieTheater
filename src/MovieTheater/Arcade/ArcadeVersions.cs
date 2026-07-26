@@ -59,7 +59,7 @@ namespace MovieTheater.Arcade
 
         /// <summary>A launchable version of a game. DiscCount &gt; 1 = a multi-disc set that plays via an
         /// .m3u with in-game disc swapping (patch 0005); the Id is the disc-1 anchor row.</summary>
-        public record VersionEntry(int Id, string Label, string? Region, string? Variant, int? Year, byte MaxPlayers, int DiscCount);
+        public record VersionEntry(int Id, string Label, string? Region, string? Variant, int? Year, byte MaxPlayers, int DiscCount, bool RaSupported);
 
         /// <summary>Turn a game's rows into launchable versions, collapsing a multi-disc set (same region/rev,
         /// different disc numbers) into ONE entry (DiscCount = number of discs). preferRegion floats to the
@@ -74,8 +74,11 @@ namespace MovieTheater.Arcade
                 int discs = ordered.Count(g => DiscNumber(g.CloudRetroGameKey) > 0);
                 int discCount = discs > 1 ? discs : (DiscNumber(anchor.CloudRetroGameKey) > 0 ? 1 : 0);
                 var label = LabelCore(anchor, includeDisc: discs <= 1); // multi-disc → drop the "Disc N"
+                // RA support is per-ROM (does our dump match an RA-recognized hash). A version answers with
+                // its anchor row — if ANY disc/row of the collapsed version is RA-recognized, mark it supported.
+                var raSupported = ordered.Any(g => g.RaSupported);
                 built.Add((anchor, new VersionEntry(anchor.Id, label, anchor.Region, anchor.Variant, anchor.Year,
-                    ordered.Max(g => g.MaxPlayers), discCount)));
+                    ordered.Max(g => g.MaxPlayers), discCount, raSupported)));
             }
             return built
                 .OrderBy(x => preferRegion != null && !string.Equals(x.anchor.Region, preferRegion, StringComparison.OrdinalIgnoreCase) ? 1 : 0)

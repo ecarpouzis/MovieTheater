@@ -874,6 +874,16 @@ export function createCloudRetroSession(descriptor, opts) {
     dc = pc.createDataChannel("data", { negotiated: true, id: 0, ordered: false, maxRetransmits: 0 });
     dc.binaryType = "arraybuffer";
     dc.onopen = () => { status("connected"); startInput(); };
+    // The worker PUSHES async control/UI packets to us over this same negotiated channel (room.Send →
+    // the peer data channel): e.g. an achievement unlock (t=160) or a mid-game video-geometry change.
+    // They're the same JSON envelope the signaling WS carries, just arriving here as an ArrayBuffer, so
+    // decode to text and route through the shared handler. Input is browser→worker only; this direction
+    // is worker→browser control, so anything that isn't our JSON simply fails handle()'s JSON.parse guard.
+    dc.onmessage = (e) => {
+      const d = e.data;
+      if (typeof d === "string") { handle(d); return; }
+      try { handle(new TextDecoder("utf-8").decode(d)); } catch { /* not a text control packet */ }
+    };
     // A negotiated channel cannot reopen, and pumpInput's readyState guard just returns — so without
     // this the death of the input channel is INVISIBLE: media keeps flowing (audio even rides its own
     // aux PC), the status stays "playing", and the player is stuck in a room they can't control

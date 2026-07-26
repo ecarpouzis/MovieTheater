@@ -336,6 +336,9 @@ namespace MovieTheater.Controllers
                     {
                         id = v.Id, label = v.Label, region = v.Region,
                         variant = v.Variant, year = v.Year, maxPlayers = v.MaxPlayers, discCount = v.DiscCount,
+                        // Per-version RA support: our dump matches an RA-recognized hash, so achievements/scores
+                        // actually fire on THIS version. Drives the 🏆 marker in the modal's version dropdown.
+                        raSupported = v.RaSupported,
                         // Code cheats only. Already zero on systems whose core ignores retro_cheat_set
                         // (only imported systems get code rows — see ArcadeCheatCatalog.SupportsCheatCodes).
                         cheatCount = ArcadeCheatCatalog.SupportsCheatCodes(k.System)
