@@ -206,6 +206,11 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
                 ▶ Start room
               </Button>
             )}
+          </div>
+
+          {/* Utility links live on their own wrapping row so they never crowd — or overflow past —
+              the Start pill (the modal's info column is only ~420px on a 720px modal). */}
+          <div className="agm-links">
             <button type="button" className="arcade-link" onClick={() => onManageSaves?.(sel, game.title)}>
               💾 My saves
             </button>

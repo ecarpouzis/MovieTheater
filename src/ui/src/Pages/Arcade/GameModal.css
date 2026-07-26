@@ -9,8 +9,19 @@
 .arcade-game-modal .ant-modal-content {
   background: var(--card-surface);
   border: 1px solid var(--card-border);
-  border-radius: 16px;
+  border-radius: 18px;
+  /* Clip the body to the rounded corners, and lift the panel off the (masked) lobby with a real
+     drop shadow so it reads as a focused surface rather than a flat sheet. */
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(18, 8, 38, 0.34);
   color: var(--text-primary);
+}
+.arcade-game-modal .ant-modal-body {
+  padding: 28px 30px 30px;
+}
+.arcade-game-modal .ant-modal-close {
+  top: 8px;
+  inset-inline-end: 8px;
 }
 .arcade-game-modal .ant-modal-close-x {
   color: var(--text-muted);
@@ -18,7 +29,7 @@
 
 .agm-body {
   display: flex;
-  gap: 22px;
+  gap: 26px;
   align-items: flex-start;
 }
 
@@ -28,22 +39,32 @@
   align-items: flex-start;
   justify-content: center;
 }
+/* The box art is the hero of a game detail — give it presence beyond the small grid tile: a deeper
+   corner radius and real elevation in light, a soft neon-purple halo in dark (the arcade signature). */
+.agm-art .arcade-cover {
+  border-radius: 12px;
+  box-shadow: var(--art-shadow), 0 12px 30px rgba(20, 8, 40, 0.22);
+}
+:root[data-theme="dark"] .arcade-game-modal .agm-art .arcade-cover {
+  border-color: rgba(164, 78, 224, 0.32);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 30px rgba(164, 78, 224, 0.24);
+}
 
 .agm-info {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .agm-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
   color: var(--text-title);
   /* Leave room for the modal's close button in the top-right corner. */
   padding-right: 28px;
@@ -54,6 +75,14 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+/* Detail-context chips carry a touch more weight than the tiny grid tags they reuse — this is the
+   one place a game gets a full page, so its metadata should be comfortably legible. */
+.agm-tags .arcade-chip {
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 5px;
+  line-height: 1.5;
+}
 /* The tag chips reuse .arcade-chip from ArcadePage.css (tokens resolve via <html>). */
 .agm-chip-rating {
   border-color: var(--rating-chip-border);
@@ -63,9 +92,11 @@
 
 .agm-summary {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 13.5px;
+  line-height: 1.55;
   color: var(--text-secondary);
+  /* Cap the measure so long summaries stay readable instead of running the full panel width. */
+  max-width: 60ch;
 }
 
 /* ── The launch controls (moved off the card) ─────────────────────────────── */
@@ -96,14 +127,29 @@
   max-width: 340px;
 }
 
-/* ── Actions row: Start (pill) + My saves link ────────────────────────────── */
+/* ── Actions: the Start pill is the primary CTA and owns its own row ───────── */
 .agm-actions {
   display: flex;
   align-items: center;
-  gap: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-top: 6px;
 }
-.agm-actions .arcade-link {
+
+/* Utility links (My saves / Leaderboards / Achievements / Configure) wrap onto a tidy row of
+   their own beneath the pill. They used to share .agm-actions with the Start button on a single
+   `white-space: nowrap` line — five items in a ~420px info column overflowed the panel's right
+   edge (Configure spilled onto the dark lobby behind the modal). Wrapping keeps them contained. */
+.agm-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--card-border);
+}
+.agm-links .arcade-link {
   background: none;
   border: none;
   padding: 0;
@@ -113,7 +159,7 @@
   color: var(--accent-link);
   cursor: pointer;
 }
-.agm-actions .arcade-link:hover {
+.agm-links .arcade-link:hover {
   filter: brightness(1.12);
   text-decoration: underline;
 }
@@ -127,9 +173,9 @@
   gap: 5px;
   border: none;
   border-radius: 9px;
-  padding: 10px 22px;
+  padding: 11px 26px;
   height: auto;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
@@ -221,10 +267,21 @@
   }
 }
 
-/* Competitive toggle + leaderboards (RetroAchievements feature). */
+/* Competitive toggle + leaderboards (RetroAchievements feature). It's a genuine mode switch — no
+   save-states, no cheats, RA hardcore — so it wears a bordered row that lights up neon-purple the
+   moment it's armed, making the state change legible rather than a lone checkbox lost in the stack. */
 .agm-competitive {
   display: block;
-  margin: 4px 0 10px;
+  margin: 4px 0 6px;
+  padding: 10px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.agm-competitive:has(.ant-checkbox-checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: var(--accent-glow);
 }
 .agm-boards {
   margin-top: 14px;
