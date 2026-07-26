@@ -334,9 +334,12 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
 });
 
 // In-room "Save snapshot" (arcade-saves-plan S3): copy the live save into a NEW numbered slot with a
-// label. The client flushes a SAVE (t=106) first, then POSTs here with its capability token. Only the
-// OWNER may snapshot — a guest's token userId won't match the creator's id (the save belongs to the
-// creator's world). Best-effort DB mirror so the slot shows in the resume/My-Saves lists.
+// label. The client flushes a SAVE (t=106) first, then POSTs here with its capability token. The slot is
+// written into the CALLER's vault (p.UserId), not the room owner's: the emulator world is shared, but
+// every player's saves are their own — a guest snapshotting a co-op session keeps their own copy and can
+// resume it solo later, and the owner's slots are never written by someone else's click. (The room id
+// still names the OWNER's mount — that's the shared world being copied, and that part is correct.)
+// Best-effort DB mirror so the slot shows in the resume/My-Saves lists.
 app.MapPost("/w-snap/{token}", async (HttpContext ctx, string token) =>
 {
     if (saveStore == null) return Results.NotFound();
@@ -350,7 +353,7 @@ app.MapPost("/w-snap/{token}", async (HttpContext ctx, string token) =>
         return Results.Json(new { ok = false, reason = "This room pass isn't valid — reload the room page to keep saving." },
             statusCode: StatusCodes.Status403Forbidden);
     var id = p.CloudRetroRoomId ?? "";
-    if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out var sys, out _) || u != p.UserId || g != p.GameId)
+    if (!ArcadeSaveId.TryParse(id, out _, out var g, out _, out var sys, out _) || g != p.GameId)
         return Results.BadRequest();
 
     string? label = null;
@@ -364,24 +367,24 @@ app.MapPost("/w-snap/{token}", async (HttpContext ctx, string token) =>
     SaveMeta? meta;
     try
     {
-        meta = await saveStore.SnapshotCurrentAsync(u, g, sys, id,
+        meta = await saveStore.SnapshotCurrentAsync(p.UserId, g, sys, id,
             string.IsNullOrWhiteSpace(label) ? null : label!.Trim(), ctx.RequestAborted);
     }
     catch (Exception ex)
     {
-        app.Logger.LogWarning(ex, "Arcade snapshot failed for user {User} game {Game}", u, g);
+        app.Logger.LogWarning(ex, "Arcade snapshot failed for user {User} game {Game}", p.UserId, g);
         return Results.Json(new { ok = false, reason = "save file busy — wait a moment, then try again" });
     }
     if (meta == null) return Results.Json(new { ok = false, reason = "no live save yet — play a moment, then snapshot" });
     await mirrorSave(meta);
-    app.Logger.LogInformation("Arcade snapshot slot {Slot} for user {User} game {Game}", meta.SlotId, u, g);
+    app.Logger.LogInformation("Arcade snapshot slot {Slot} for user {User} game {Game}", meta.SlotId, p.UserId, g);
     return Results.Json(new { ok = true, slot = meta.SlotId, label = meta.Label });
 });
 
 // In-room "Save" = QUICKSAVE: copy the live save into the reserved quicksave slot, replacing the last
 // one. Same flush-then-copy path as /w-snap, but a fixed slot and an auto label, so pressing Save is
 // one click. It deliberately does NOT write slot 0: that slot belongs to autosave/save-on-quit, which
-// would overwrite a player's save on the way out of the room (SaveStore.QuickSlot). Owner-only.
+// would overwrite a player's save on the way out of the room (SaveStore.QuickSlot).
 app.MapPost("/w-quick/{token}", async (HttpContext ctx, string token) =>
 {
     if (saveStore == null) return Results.NotFound();
@@ -390,10 +393,12 @@ app.MapPost("/w-quick/{token}", async (HttpContext ctx, string token) =>
         return Results.Json(new { ok = false, reason = "This room pass isn't valid — reload the room page to keep saving." },
             statusCode: StatusCodes.Status403Forbidden);
     var id = p.CloudRetroRoomId ?? "";
-    // NOT owner-only, unlike /w-snap: Save acts on the room's one shared emulator, and every player has
-    // been able to press it (t=106) since the buttons existed. The token already proves membership of
-    // THIS room, and the state written is the room's world — which is the owner's save either way.
-    if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out var sys, out _) || g != p.GameId)
+    // Every seated player may quicksave (the shared world is what's being copied), but the slot lands in
+    // the CALLER's vault (p.UserId), not the room owner's — matching the button's own promise ("keeps
+    // YOUR place") and the site's per-user save lists. It used to land in the owner's slot 99, which let
+    // any (even ex-) player of a room overwrite the owner's deliberate quicksave; keying the write to the
+    // token's holder makes that impossible by construction — a token can only ever write its own vault.
+    if (!ArcadeSaveId.TryParse(id, out _, out var g, out _, out var sys, out _) || g != p.GameId)
         return Results.BadRequest();
 
     var label = $"Quicksave {DateTime.Now:h:mm tt}";
@@ -401,16 +406,16 @@ app.MapPost("/w-quick/{token}", async (HttpContext ctx, string token) =>
     try
     {
         meta = await saveStore.SnapshotToSlotAsync(
-            u, g, sys, id, MovieTheater.ArcadeGateway.SaveStore.QuickSlot, label, ctx.RequestAborted);
+            p.UserId, g, sys, id, MovieTheater.ArcadeGateway.SaveStore.QuickSlot, label, ctx.RequestAborted);
     }
     catch (Exception ex)
     {
-        app.Logger.LogWarning(ex, "Arcade quicksave failed for user {User} game {Game}", u, g);
+        app.Logger.LogWarning(ex, "Arcade quicksave failed for user {User} game {Game}", p.UserId, g);
         return Results.Json(new { ok = false, reason = "save file busy — wait a moment, then try again" });
     }
     if (meta == null) return Results.Json(new { ok = false, reason = "no live save yet — play a moment, then save" });
     await mirrorSave(meta);
-    app.Logger.LogInformation("Arcade quicksave for user {User} game {Game}", u, g);
+    app.Logger.LogInformation("Arcade quicksave for user {User} game {Game}", p.UserId, g);
     return Results.Json(new { ok = true, slot = meta.SlotId, label = meta.Label });
 });
 
@@ -424,8 +429,11 @@ app.MapPost("/w-load/{token}", async (HttpContext ctx, string token) =>
         return Results.Json(new { ok = false, reason = "This room pass isn't valid — reload the room page to keep saving." },
             statusCode: StatusCodes.Status403Forbidden);
     var id = p.CloudRetroRoomId ?? "";
-    // Any player of this room may load (see /w-quick) — the emulator, and so the state, is shared.
-    if (!ArcadeSaveId.TryParse(id, out var u, out var g, out _, out var lsys, out _) || g != p.GameId)
+    // Any player of this room may load — the emulator, and so the world, is shared. But the slot is read
+    // from the CALLER's vault (p.UserId), mirroring /w-quick: Load restores YOUR quicksave/snapshot, and
+    // the in-room picker lists the caller's saves (ListSaves is caller-scoped), so vault and list finally
+    // agree for guests — they used to see their own list and load the owner's slots.
+    if (!ArcadeSaveId.TryParse(id, out _, out var g, out _, out var lsys, out _) || g != p.GameId)
         return Results.BadRequest();
     int slot = 0;
     try { var b = await ctx.Request.ReadFromJsonAsync<Dictionary<string, int>>(ctx.RequestAborted); b?.TryGetValue("slot", out slot); } catch { }
@@ -434,11 +442,11 @@ app.MapPost("/w-load/{token}", async (HttpContext ctx, string token) =>
     // handing the running core another core's memory dump is how you hard-wedge a session someone is
     // playing. The room-create path re-launches on the save's own core; here there is no relaunch, so
     // say why instead. (Nothing to do about it in-room: the fix is to resume it from the lobby.)
-    var savedOn = saveStore.StateSystem(u, g, slot);
+    var savedOn = saveStore.StateSystem(p.UserId, g, slot);
     if (!string.IsNullOrEmpty(savedOn) && !string.Equals(savedOn, lsys, StringComparison.Ordinal))
         return Results.Json(new { ok = false, reason = "That save was made on a different core — resume it from the game's page and it'll launch the right one." });
 
-    return Results.Json(new { ok = saveStore.LoadSlotToMount(u, g, id, slot) });
+    return Results.Json(new { ok = saveStore.LoadSlotToMount(p.UserId, g, id, slot) });
 });
 
 // Internal, secret-gated blob ops the SITE calls for My-Saves management + import/export (the k8s pod

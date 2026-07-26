@@ -788,7 +788,9 @@ export default function ArcadeRoomPage() {
   }
 
   // Save a NAMED snapshot (arcade-saves-plan S3): flush the live state, then ask the gateway to copy it
-  // into a new numbered slot you can resume later. Owner-only (the gateway rejects a guest's token).
+  // into a new numbered slot you can resume later. Saves land in the CALLER's vault (the gateway keys
+  // every save/load off the token's user, not the room's owner); the buttons are UI-gated to the owner
+  // (yourSlot === 0) as a design choice, not a server rule.
   async function saveSnapshot() {
     const d = descriptorRef.current;
     if (!d || !d.wsUrl || snapping) return;
@@ -809,8 +811,9 @@ export default function ArcadeRoomPage() {
   }
 
   // Load a saved snapshot LIVE (no room restart): the gateway copies the chosen slot's .dat/.srm over the
-  // running session's files, then we tell the core to reload state (shim t=107). Owner-only. gameId is
-  // parsed out of the deterministic room id (sv-<user>-<gameId>-<slot>-<system>___<key>).
+  // running session's files, then we tell the core to reload state (shim t=107). The list below and the
+  // gateway's read are BOTH caller-scoped (your saves, your vault), so what you see is what loads. gameId
+  // is parsed out of the deterministic room id (sv-<user>-<gameId>-<slot>-<system>___<key>).
   async function loadSnapshot() {
     const d = descriptorRef.current;
     if (!d || !d.wsUrl) return;
@@ -1029,8 +1032,9 @@ export default function ArcadeRoomPage() {
           )}
         </Space>
         <Space wrap className="arcade-room-page__actions">
-          {/* Save / Load / Snapshot act on the room's one shared emulator, so they belong to the players.
-              The shim refuses them for a spectator anyway; hiding them keeps the UI honest.
+          {/* Save / Load / Snapshot copy the room's one shared emulator state, but each into the CLICKING
+              player's own vault — a guest's quicksave is theirs to resume solo later and never touches
+              the owner's slots. The shim refuses them for a spectator anyway; hiding them keeps the UI honest.
               (PS2 was briefly excluded when Save hard-crashed the worker; worker patch 0030 fixed the
               real faults — serialize_size off the core's thread + a garbage size argument on every
               LibCo serialize — and the buttons returned with it.) */}
