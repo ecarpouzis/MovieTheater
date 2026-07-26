@@ -227,12 +227,19 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
 
         var fresh = context.Request.Query["fresh"].ToString();
         bool newGame = fresh == "1" || string.Equals(fresh, "true", StringComparison.OrdinalIgnoreCase);
+        // Competitive room (?competitive=1): boot WITHOUT auto-restoring the save-state (so a run starts
+        // clean and RA hardcore stays valid), exactly like a New game — clear the mount state, keep the
+        // battery/card. Also MARK the session so harvest never vaults its state over the casual Continue.
+        // Set/clear unconditionally: a later CASUAL boot of the same deterministic id clears the mark.
+        var competitiveQ = context.Request.Query["competitive"].ToString();
+        bool competitive = competitiveQ == "1" || string.Equals(competitiveQ, "true", StringComparison.OrdinalIgnoreCase);
+        saveStore.SetCompetitive(requestedRoomId, competitive);
         // Resume-from-snapshot: ?seedslot=N seeds a chosen snapshot slot's bytes into the (slot-0) room,
         // so the player continues FROM snapshot N. Defaults to the id's slot (0 = the auto Continue slot).
         int seedSlot = int.TryParse(context.Request.Query["seedslot"].ToString(), out var ss) ? ss : svSlot;
         try
         {
-            if (newGame)
+            if (newGame || competitive)
             {
                 // The clear must be UNCONDITIONAL. It used to sit behind the !MountHasSave guard below,
                 // which inverted it: the one time "New game" has stale mount files to remove is exactly
@@ -251,8 +258,8 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
                 // cardVault (ps2/gc/wii/dc/psp) is a separate path the worker seeds regardless of ?fresh,
                 // so those systems were already unaffected; only SAVE_RAM needed this.
                 bool keptCard = saveStore.SeedSramOnly(svUser, svGame, requestedRoomId);
-                app.Logger.LogInformation("Arcade save cleared (New game){Card} for user {User} game {Game}",
-                    keptCard ? " +card kept" : "", svUser, svGame);
+                app.Logger.LogInformation("Arcade save cleared ({Reason}){Card} for user {User} game {Game}",
+                    competitive ? "competitive" : "New game", keptCard ? " +card kept" : "", svUser, svGame);
             }
             else if (!saveStore.MountHasSave(requestedRoomId))
             {

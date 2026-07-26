@@ -9,6 +9,7 @@ import LiveRooms from "./LiveRooms";
 import RecentlyPlayed from "./RecentlyPlayed";
 import SavesManager from "./SavesManager";
 import SavesVaultManager from "./SavesVaultManager";
+import RetroAchievementsPanel from "./RetroAchievementsPanel";
 import ArcadePager from "./ArcadePager";
 import { rememberLobbySearch } from "./arcadeLobbyState";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
@@ -112,6 +113,7 @@ export default function ArcadePage({ userData }) {
   const [recentGames, setRecentGames] = useState([]); // "Recently played" strip (save-derived history)
   const [modalVersionId, setModalVersionId] = useState(null); // pre-selected version (a recent tile's save)
   const [savesVaultOpen, setSavesVaultOpen] = useState(false); // the cross-game "My saves" drawer
+  const [raPanelOpen, setRaPanelOpen] = useState(false); // RetroAchievements account link panel
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
   const [modalGame, setModalGame] = useState(null); // the game whose full-page modal is open
@@ -279,9 +281,15 @@ export default function ArcadePage({ userData }) {
   // is the GameCube-vs-Wiimote+Nunchuk picker (only shown for the two GC-native BrawlEx mods). Both
   // ride every path out of this modal — Continue, New game, and a snapshot resume all launch the
   // same room.
-  function createRoom(versionId, title, cheats = [], hwContext = "", controllerScheme = "", renderProfile = "") {
+  function createRoom(versionId, title, cheats = [], hwContext = "", controllerScheme = "", renderProfile = "", competitive = false) {
     if (creating || !versionId) return;
     setCreating(versionId);
+    // A competitive room never resumes a save-state (that's the whole point), so skip the Continue/New-game
+    // prompt entirely and boot straight in. Cheats are dropped server-side too.
+    if (competitive) {
+      doCreateRoom(versionId, { competitive: true, hwContext, renderProfile, controllerScheme });
+      return;
+    }
     // Durable saves (arcade-saves-plan): if this user has a save/snapshots for the game, offer Continue,
     // any named snapshot, or New game.
     MovieAPI.listArcadeSaves(versionId)
@@ -377,6 +385,7 @@ export default function ArcadePage({ userData }) {
             <h1 className="arcade-title">Arcade</h1>
             <p className="arcade-subtitle">Pick a game to open a room, then send friends the link to play together.</p>
             <Button className="arcade-vault-btn" onClick={() => setSavesVaultOpen(true)}>💾 My saves (all games)</Button>
+            <Button className="arcade-vault-btn" onClick={() => setRaPanelOpen(true)}>🏆 RetroAchievements</Button>
           </div>
 
           {/* Stream quality for rooms YOU start. One encoder per room, so the creator's choice is what
@@ -483,9 +492,9 @@ export default function ArcadePage({ userData }) {
           // Both actions leave the browse tile: close the game modal first so the follow-on surface
           // (the Continue/New-game confirm, or the saves manager) isn't stranded behind it at a lower
           // z-index. This restores the exact pre-modal flow those surfaces were built for.
-          onStart={(versionId, title, cheats, hwContext, controllerScheme, renderProfile) => {
+          onStart={(versionId, title, cheats, hwContext, controllerScheme, renderProfile, competitive) => {
             setModalGame(null);
-            createRoom(versionId, title, cheats, hwContext, controllerScheme, renderProfile);
+            createRoom(versionId, title, cheats, hwContext, controllerScheme, renderProfile, competitive);
           }}
           onManageSaves={(gameId, title) => { setModalGame(null); setManageSaves({ gameId, title }); }}
         />
@@ -496,6 +505,7 @@ export default function ArcadePage({ userData }) {
       {savesVaultOpen && (
         <SavesVaultManager onClose={() => setSavesVaultOpen(false)} onResume={doCreateRoom} />
       )}
+      <RetroAchievementsPanel open={raPanelOpen} onClose={() => setRaPanelOpen(false)} />
       {heavyGame && (
         <HeavyGameModal
           game={heavyGame}

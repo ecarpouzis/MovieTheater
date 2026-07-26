@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -39,14 +40,16 @@ namespace MovieTheater.Controllers
         private readonly ArcadeRoomService rooms;
         private readonly ILogger<ArcadeController> logger;
         private readonly MovieTheaterConfiguration config;
+        private readonly IDataProtectionProvider dataProtection;
 
-        public ArcadeController(MovieDb movieDb, IArcadeHost host, ArcadeRoomService rooms, ILogger<ArcadeController> logger, MovieTheaterConfiguration config)
+        public ArcadeController(MovieDb movieDb, IArcadeHost host, ArcadeRoomService rooms, ILogger<ArcadeController> logger, MovieTheaterConfiguration config, IDataProtectionProvider dataProtection)
         {
             this.movieDb = movieDb;
             this.host = host;
             this.rooms = rooms;
             this.logger = logger;
             this.config = config;
+            this.dataProtection = dataProtection;
         }
 
         private int? GetCurrentUserId()
@@ -517,6 +520,13 @@ namespace MovieTheater.Controllers
             /// gateway clears the mount). Default false = resume/Continue.</summary>
             public bool NewGame { get; set; }
 
+            /// <summary>True = a COMPETITIVE room: no save-state loading, no cheats, and (once supported) no
+            /// rewind, so leaderboard times/scores are legit — and, when the creator has a linked
+            /// RetroAchievements account, rcheevos runs in HARDCORE mode. Independent of RA: a creator with no
+            /// RA link can still run a competitive room (our own boards stay legit). Ignored for capture/heavy
+            /// (native) rooms, where none of these levers apply.</summary>
+            public bool Competitive { get; set; }
+
             /// <summary>Resume from a specific snapshot slot (≥1) instead of the Continue slot 0. 0 = Continue.</summary>
             public int SeedSlot { get; set; }
 
@@ -909,6 +919,140 @@ namespace MovieTheater.Controllers
             public string? Notes { get; set; }
         }
 
+        // ── RetroAchievements account linking (docs plan Phase 2) ────────────────────────────────────
+        // Each user links their OWN retroachievements.org account (RA ToS: one account per human). We store
+        // the username plus RA's persistent CONNECT TOKEN (returned from a one-time username+password login —
+        // NOT the password) in UserSettings, the token encrypted at rest with Data Protection. When such a
+        // user CREATES a room, the token is decrypted and passed on the join descriptor so the worker logs
+        // rcheevos in under their account. Joiners never carry creds — a room is one emulator, so RA runs
+        // under the creator's account (that's the multiplayer-attribution decision).
+
+        private const string RaUserSettingKey = "RetroAchievementsUser";
+        private const string RaTokenSettingKey = "RetroAchievementsTokenProtected";
+
+        // A dedicated protector purpose string so these ciphertexts can never be cross-used with the auth
+        // cookie's or any other feature's protected payloads.
+        private IDataProtector RaProtector() => dataProtection.CreateProtector("arcade.ra");
+
+        private static readonly HttpClient raClient = new() { Timeout = TimeSpan.FromSeconds(15) };
+
+        /// <summary>The signed-in user's linked RA username + decrypted connect token, or (null, null) when
+        /// they haven't linked (or the stored ciphertext no longer decrypts — treated as unlinked, never
+        /// thrown). Used by <see cref="CreateRoom"/> to seed the worker's rcheevos login. The token is never
+        /// logged and never leaves the server except on the creator's own room descriptor.</summary>
+        private async Task<(string? RaUser, string? RaToken)> LoadRaCredentialsAsync(int userId)
+        {
+            var rows = await movieDb.UserSettings.AsNoTracking()
+                .Where(s => s.UserID == userId && (s.SettingKey == RaUserSettingKey || s.SettingKey == RaTokenSettingKey))
+                .ToListAsync();
+            var raUser = rows.FirstOrDefault(r => r.SettingKey == RaUserSettingKey)?.SettingValue;
+            var protectedToken = rows.FirstOrDefault(r => r.SettingKey == RaTokenSettingKey)?.SettingValue;
+            if (string.IsNullOrEmpty(raUser) || string.IsNullOrEmpty(protectedToken))
+                return (null, null);
+            try { return (raUser, RaProtector().Unprotect(protectedToken)); }
+            catch (System.Security.Cryptography.CryptographicException)
+            {
+                // Key ring rotated past this ciphertext, or corruption — surface as "not linked" so the user
+                // simply re-links, rather than 500ing every room create.
+                logger.LogWarning("Arcade RA token for user {UserId} failed to decrypt; treating as unlinked.", userId);
+                return (null, null);
+            }
+        }
+
+        public sealed class RaLinkRequest
+        {
+            public string? Username { get; set; }
+            public string? Password { get; set; }
+        }
+
+        /// <summary>Link (or re-link) the signed-in user's RetroAchievements account. Performs RA's one-time
+        /// username+password login to obtain the persistent connect token, stores the username + the
+        /// DP-encrypted token, and DISCARDS the password. Returns {linked, raUser}. The password is used only
+        /// for this single server-to-RA call — it is never stored or logged.</summary>
+        [HttpPost("/API/Arcade/RetroAchievements/Link")]
+        public async Task<IActionResult> LinkRetroAchievements([FromBody] RaLinkRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            if (request == null || string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
+                return BadRequest(new { message = "RetroAchievements username and password are required." });
+
+            var raUser = request.Username.Trim();
+
+            // RA's dorequest login2: returns { Success, Token, ... }. The Token is the durable credential we
+            // keep; the password never touches our storage. Post as form data (RA expects urlencoded).
+            string? token;
+            try
+            {
+                using var content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("u", raUser),
+                    new KeyValuePair<string, string>("p", request.Password),
+                });
+                using var resp = await raClient.PostAsync("https://retroachievements.org/dorequest.php?r=login2", content);
+                if (!resp.IsSuccessStatusCode)
+                    return StatusCode(502, new { message = "Couldn't reach RetroAchievements. Try again." });
+                using var doc = System.Text.Json.JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+                var root = doc.RootElement;
+                var success = root.TryGetProperty("Success", out var s) && s.ValueKind == System.Text.Json.JsonValueKind.True;
+                token = success && root.TryGetProperty("Token", out var t) ? t.GetString() : null;
+                if (!success || string.IsNullOrEmpty(token))
+                    return BadRequest(new { message = "RetroAchievements rejected those credentials." });
+                // RA echoes the canonical-cased username; prefer it so display matches their site.
+                if (root.TryGetProperty("User", out var u) && u.GetString() is { Length: > 0 } canon)
+                    raUser = canon;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Arcade RA login failed for user {UserId}.", userId); // never logs credentials
+                return StatusCode(502, new { message = "Couldn't reach RetroAchievements. Try again." });
+            }
+
+            await UpsertUserSettingAsync(userId.Value, RaUserSettingKey, raUser);
+            await UpsertUserSettingAsync(userId.Value, RaTokenSettingKey, RaProtector().Protect(token!));
+            await movieDb.SaveChangesAsync();
+
+            return Json(new { linked = true, raUser });
+        }
+
+        /// <summary>Whether the signed-in user has RA linked, and under what username — for the settings UI.</summary>
+        [HttpGet("/API/Arcade/RetroAchievements/Status")]
+        public async Task<IActionResult> RetroAchievementsStatus()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var (raUser, raToken) = await LoadRaCredentialsAsync(userId.Value);
+            return Json(new { linked = raUser != null && raToken != null, raUser });
+        }
+
+        /// <summary>Unlink the signed-in user's RA account (drops both stored rows).</summary>
+        [HttpDelete("/API/Arcade/RetroAchievements/Link")]
+        public async Task<IActionResult> UnlinkRetroAchievements()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var rows = await movieDb.UserSettings
+                .Where(s => s.UserID == userId.Value && (s.SettingKey == RaUserSettingKey || s.SettingKey == RaTokenSettingKey))
+                .ToListAsync();
+            if (rows.Count > 0)
+            {
+                movieDb.UserSettings.RemoveRange(rows);
+                await movieDb.SaveChangesAsync();
+            }
+            return Json(new { linked = false });
+        }
+
+        // Find-or-add a single UserSettings row (the inline upsert pattern used across the controllers). The
+        // caller batches the SaveChangesAsync so multiple upserts commit together.
+        private async Task UpsertUserSettingAsync(int userId, string key, string value)
+        {
+            var row = await movieDb.UserSettings.FirstOrDefaultAsync(s => s.UserID == userId && s.SettingKey == key);
+            if (row == null)
+                movieDb.UserSettings.Add(new UserSettings { UserID = userId, SettingKey = key, SettingValue = value });
+            else
+                row.SettingValue = value;
+        }
+
         [HttpPost("/API/Arcade/Room")]
         public async Task<IActionResult> CreateRoom([FromBody] CreateRoomRequest request)
         {
@@ -945,11 +1089,17 @@ namespace MovieTheater.Controllers
 
             var roomCode = NewRoomCode();
 
+            // Competitive mode is inert for capture/heavy (native) rooms — the save-state/cheat/hardcore
+            // levers all live on the retro (CloudRetro) path. Persist the creator's intent on the durable
+            // session row so joiners (and a post-restart rehydrate) can read how the room runs from the DB.
+            var competitive = request.Competitive && !isCapture;
+
             var session = new ArcadeSession
             {
                 ArcadeGameId = game.Id,
                 RoomCode = roomCode,
                 CreatedByUserId = userId.Value,
+                IsCompetitive = competitive,
                 CreatedUtc = DateTime.UtcNow,
             };
             movieDb.ArcadeSessions.Add(session);
@@ -1051,9 +1201,18 @@ namespace MovieTheater.Controllers
                 userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, roomSystem),
                 roomCode, cloudRetroRoomId: saveId, playerSlot: 0, isCreator: true);
 
+            // Competitive room: signal the gateway (via ?competitive=1) NOT to seed a save-state at boot,
+            // so the run isn't resumed from an earlier state — that's what keeps a leaderboard time/score
+            // legit and RA hardcore valid. Deliberately NOT ?fresh=1 (which CLEARS the mount and would nuke
+            // the player's battery/SRAM + provoke a harvest clobber): competitive means "don't LOAD a state",
+            // not "wipe my saves". The gateway/worker (Phase 1) honor this flag for both the boot seed and
+            // the harvest (a competitive run must not overwrite the casual Continue save). A competitive room
+            // ignores NewGame/SeedSlot — there is nothing to resume.
+            if (competitive)
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&competitive=1" };
             // "New game": tell the gateway (via ?fresh=1 on the WS URL) to clear the mount so the game
             // boots clean instead of resuming the saved slot. Safe unsigned — it only clears the owner's own save.
-            if (request.NewGame)
+            else if (request.NewGame)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fresh=1" };
             // Resume-from-snapshot: seed a chosen snapshot slot's bytes into the room (arcade-saves-plan S3).
             else if (request.SeedSlot > 0)
@@ -1110,8 +1269,9 @@ namespace MovieTheater.Controllers
             // poke and one aimed at another game's addresses corrupts state rather than failing.
             if (!isCapture)
             {
+                // Competitive rooms take NO cheats — a memory poke would void a legit run (and RA hardcore).
                 List<string> codes = new();
-                if (request.Cheats is { Count: > 0 })
+                if (!competitive && request.Cheats is { Count: > 0 })
                 {
                     var offered = await BuildCheatListAsync(game); // codes only
                     codes = offered.Where(o => o.Kind == "code" && !string.IsNullOrEmpty(o.Code)
@@ -1125,9 +1285,18 @@ namespace MovieTheater.Controllers
                         CoreOptions = gameCoreOptions.Count > 0 ? gameCoreOptions : null,
                         CheatCodes = codes.Count > 0 ? codes : null,
                     };
+
+                // RetroAchievements: if the creator has linked RA, the worker logs rcheevos in under their
+                // account so this room's play earns achievements/leaderboard runs (softcore in a normal room,
+                // HARDCORE in a competitive one). Loaded here, on the creator's own path only — a room is one
+                // emulator, so RA is the creator's (the multiplayer-attribution decision). Non-capture only:
+                // rcheevos attaches to a libretro core, which the native/heavy lane doesn't run.
+                var (raUser, raToken) = await LoadRaCredentialsAsync(userId.Value);
+                if (raUser != null && raToken != null)
+                    descriptor = descriptor with { RaUser = raUser, RaToken = raToken, Hardcore = competitive };
             }
 
-            return Json(ToJson(descriptor, discCount));
+            return Json(ToJson(descriptor, discCount, competitive));
         }
 
         // ── Durable saves (docs/arcade-saves-plan.md) ────────────────────────────────────────────────
@@ -1177,6 +1346,255 @@ namespace MovieTheater.Controllers
             // 204 (not 200) so the gateway can tell a real success from the SPA fallback's 200 that an
             // unmatched /API route returns during a deploy window — see the gateway's mirror callback.
             return NoContent();
+        }
+
+        // ── RetroAchievements mirror (docs plan Phase 4) ─────────────────────────────────────────────
+        // rcheevos in the worker is the SOURCE OF TRUTH — it submits unlocks/leaderboard runs to
+        // retroachievements.org under the player's OWN account. These callbacks are how the worker (via the
+        // gateway, secret-gated, exactly like SaveHarvested) MIRRORS those events into our DB for site UI:
+        // the in-room toast, the profile "My Achievements" list, and the friends-only leaderboards. The pod
+        // can't read Ziggy's disk or talk to RA, so it needs this push.
+
+        /// <summary>Time formats where LOWER is better (speedrun boards). Everything else (SCORE/VALUE/…) is
+        /// higher-is-better. Used to decide whether a new leaderboard result beats the stored best.</summary>
+        private static bool LowerIsBetter(string? format) => format?.ToUpperInvariant() switch
+        {
+            "TIME" or "FRAMES" or "MILLISECS" or "CENTISECS" or "TIMESECS" or "MINUTES" or "SECS_AS_MINS" => true,
+            _ => false,
+        };
+
+        // Resolve the site user for an RA event. The gateway forwards the room creator's UserId from the join
+        // token (authoritative — that's who the emulator/RA session belongs to); fall back to matching the RA
+        // username against who linked it. Returns null if neither resolves (event is dropped, never 500s).
+        private async Task<int?> ResolveRaUserIdAsync(int userIdFromToken, string? raUser)
+        {
+            if (userIdFromToken > 0) return userIdFromToken;
+            if (string.IsNullOrWhiteSpace(raUser)) return null;
+            var row = await movieDb.UserSettings.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.SettingKey == RaUserSettingKey && s.SettingValue == raUser);
+            return row?.UserID;
+        }
+
+        public sealed class AchievementUnlockedRequest
+        {
+            /// <summary>Room creator's site user id from the join token (authoritative owner of the RA session).</summary>
+            public int UserId { get; set; }
+            public string? RaUser { get; set; }
+            public int? ArcadeGameId { get; set; }
+            public string? RaGameHash { get; set; }
+            public long RaAchievementId { get; set; }
+            public string? Title { get; set; }
+            public int Points { get; set; }
+            public bool Hardcore { get; set; }
+            public DateTime? UnlockedUtc { get; set; }
+        }
+
+        /// <summary>Mirror one RetroAchievements unlock into our DB (idempotent on (user, achievement,
+        /// hardcore)). Secret-gated server-to-server, like <see cref="SaveHarvested"/>.</summary>
+        [AllowAnonymous]
+        [HttpPost("/API/Arcade/Internal/AchievementUnlocked")]
+        public async Task<IActionResult> AchievementUnlocked([FromBody] AchievementUnlockedRequest req)
+        {
+            if (!IsInternalCallerAuthorized()) return Unauthorized();
+            if (req == null || req.RaAchievementId <= 0) return BadRequest();
+
+            var userId = await ResolveRaUserIdAsync(req.UserId, req.RaUser);
+            if (userId == null) return NoContent(); // unknown player — nothing to attribute, don't error the worker
+
+            var nowUtc = DateTime.UtcNow;
+            var row = await movieDb.ArcadeAchievementUnlocks.FirstOrDefaultAsync(a =>
+                a.UserId == userId.Value && a.RaAchievementId == req.RaAchievementId && a.Hardcore == req.Hardcore);
+            if (row == null)
+            {
+                movieDb.ArcadeAchievementUnlocks.Add(new ArcadeAchievementUnlock
+                {
+                    UserId = userId.Value,
+                    RaUser = req.RaUser ?? "",
+                    ArcadeGameId = req.ArcadeGameId,
+                    RaGameHash = req.RaGameHash,
+                    RaAchievementId = req.RaAchievementId,
+                    Title = req.Title,
+                    Points = req.Points,
+                    Hardcore = req.Hardcore,
+                    UnlockedUtc = req.UnlockedUtc ?? nowUtc,
+                });
+            }
+            else
+            {
+                // Re-harvest (e.g. gateway retry): refresh mutable display fields, keep the earliest unlock.
+                row.Title = req.Title ?? row.Title;
+                row.Points = req.Points;
+                if (req.ArcadeGameId != null) row.ArcadeGameId = req.ArcadeGameId;
+                if (!string.IsNullOrEmpty(req.RaGameHash)) row.RaGameHash = req.RaGameHash;
+            }
+            await movieDb.SaveChangesAsync();
+            return NoContent();
+        }
+
+        public sealed class LeaderboardSubmittedRequest
+        {
+            public int UserId { get; set; }
+            public string? RaUser { get; set; }
+            public int? ArcadeGameId { get; set; }
+            public string? RaGameHash { get; set; }
+            public long RaLeaderboardId { get; set; }
+            public string? Title { get; set; }
+            public long Value { get; set; }
+            public string? Format { get; set; }
+            public bool Hardcore { get; set; }
+            public DateTime? AchievedUtc { get; set; }
+        }
+
+        /// <summary>Mirror one RetroAchievements leaderboard submission, keeping only the user's BEST per board
+        /// (by <see cref="LeaderboardSubmittedRequest.Format"/> — lower for time boards, higher for score).
+        /// A worse later attempt is ignored. Secret-gated server-to-server.</summary>
+        [AllowAnonymous]
+        [HttpPost("/API/Arcade/Internal/LeaderboardSubmitted")]
+        public async Task<IActionResult> LeaderboardSubmitted([FromBody] LeaderboardSubmittedRequest req)
+        {
+            if (!IsInternalCallerAuthorized()) return Unauthorized();
+            if (req == null || req.RaLeaderboardId <= 0) return BadRequest();
+
+            var userId = await ResolveRaUserIdAsync(req.UserId, req.RaUser);
+            if (userId == null) return NoContent();
+
+            var nowUtc = DateTime.UtcNow;
+            var format = string.IsNullOrWhiteSpace(req.Format) ? "SCORE" : req.Format!.Trim().ToUpperInvariant();
+            var row = await movieDb.ArcadeLeaderboardEntries.FirstOrDefaultAsync(e =>
+                e.UserId == userId.Value && e.RaLeaderboardId == req.RaLeaderboardId);
+            if (row == null)
+            {
+                movieDb.ArcadeLeaderboardEntries.Add(new ArcadeLeaderboardEntry
+                {
+                    UserId = userId.Value,
+                    RaUser = req.RaUser ?? "",
+                    ArcadeGameId = req.ArcadeGameId,
+                    RaGameHash = req.RaGameHash,
+                    RaLeaderboardId = req.RaLeaderboardId,
+                    Title = req.Title,
+                    Value = req.Value,
+                    Format = format,
+                    Hardcore = req.Hardcore,
+                    AchievedUtc = req.AchievedUtc ?? nowUtc,
+                    UpdatedUtc = nowUtc,
+                });
+            }
+            else
+            {
+                var better = LowerIsBetter(format) ? req.Value < row.Value : req.Value > row.Value;
+                // Always refresh identity/display fields; only advance the recorded best on an improvement.
+                if (req.ArcadeGameId != null) row.ArcadeGameId = req.ArcadeGameId;
+                if (!string.IsNullOrEmpty(req.RaGameHash)) row.RaGameHash = req.RaGameHash;
+                if (!string.IsNullOrEmpty(req.Title)) row.Title = req.Title;
+                row.Format = format;
+                row.UpdatedUtc = nowUtc;
+                if (better)
+                {
+                    row.Value = req.Value;
+                    row.Hardcore = req.Hardcore;
+                    row.AchievedUtc = req.AchievedUtc ?? nowUtc;
+                }
+            }
+            await movieDb.SaveChangesAsync();
+            return NoContent();
+        }
+
+        // Shared arcade secret gate for the server-to-server callbacks (same header SaveHarvested checks).
+        private bool IsInternalCallerAuthorized()
+        {
+            var secret = config.ArcadeTokenSecret;
+            return !string.IsNullOrEmpty(secret) &&
+                string.Equals(Request.Headers["X-Arcade-Internal-Secret"].ToString(), secret, StringComparison.Ordinal);
+        }
+
+        /// <summary>The friends-only leaderboards for a game card: our mirrored best-per-user rows across every
+        /// ROM version of the card, grouped by RA leaderboard, ranked by format, with each entrant's site
+        /// username. Each board links out to the global RA board. Empty when nothing's been posted yet.</summary>
+        [HttpGet("/API/Arcade/Game/{gameId:int}/Leaderboards")]
+        public async Task<IActionResult> GameLeaderboards(int gameId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var game = await movieDb.ArcadeGames.AsNoTracking().FirstOrDefaultAsync(g => g.Id == gameId);
+            if (game == null) return NotFound(new { message = "Game not found." });
+
+            // Span the whole collapsed card (all region/rev versions), so a board isn't split across dumps.
+            var versionIds = await movieDb.ArcadeGames.AsNoTracking()
+                .Where(g => g.System == game.System && g.CollapseKey == game.CollapseKey)
+                .Select(g => g.Id).ToListAsync();
+
+            var entries = await (from e in movieDb.ArcadeLeaderboardEntries.AsNoTracking()
+                                 join u in movieDb.Users on e.UserId equals u.UserID
+                                 where e.ArcadeGameId != null && versionIds.Contains(e.ArcadeGameId.Value)
+                                 select new { e.RaLeaderboardId, e.Title, e.Format, e.Value, e.Hardcore, e.AchievedUtc, e.UserId, u.Username })
+                                .ToListAsync();
+
+            var boards = entries
+                .GroupBy(x => x.RaLeaderboardId)
+                .Select(grp =>
+                {
+                    var format = grp.Select(x => x.Format).FirstOrDefault() ?? "SCORE";
+                    var ranked = (LowerIsBetter(format) ? grp.OrderBy(x => x.Value) : grp.OrderByDescending(x => x.Value))
+                        .Select((x, i) => new
+                        {
+                            rank = i + 1,
+                            userId = x.UserId,
+                            username = x.Username,
+                            value = x.Value,
+                            hardcore = x.Hardcore,
+                            achievedUtc = x.AchievedUtc,
+                            you = x.UserId == userId.Value,
+                        }).ToList();
+                    return new
+                    {
+                        leaderboardId = grp.Key,
+                        title = grp.Select(x => x.Title).FirstOrDefault(t => !string.IsNullOrEmpty(t)),
+                        format,
+                        raUrl = $"https://retroachievements.org/leaderboardinfo.php?i={grp.Key}",
+                        entries = ranked,
+                    };
+                })
+                .OrderBy(b => b.title)
+                .ToList();
+
+            return Json(new { gameId, system = game.System, boards });
+        }
+
+        /// <summary>A user's mirrored RA achievement unlocks, newest first, paged (a heavy player accrues
+        /// thousands — always a bounded slice, like MySaves). Any signed-in user can view any user's list;
+        /// this is a communal site. Feeds the profile "achievements" view.</summary>
+        [HttpGet("/API/Arcade/Users/{targetUserId:int}/Achievements")]
+        public async Task<IActionResult> UserAchievements(int targetUserId, int skip = 0, int take = 50)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            skip = Math.Max(0, skip);
+            take = Math.Clamp(take, 1, 200);
+
+            var q = from a in movieDb.ArcadeAchievementUnlocks.AsNoTracking()
+                    where a.UserId == targetUserId
+                    select a;
+
+            var totalCount = await q.CountAsync();
+            var totalPoints = totalCount == 0 ? 0 : await q.SumAsync(a => a.Points);
+            var rows = await q
+                .OrderByDescending(a => a.UnlockedUtc)
+                .Skip(skip).Take(take)
+                .Select(a => new
+                {
+                    a.Id,
+                    gameId = a.ArcadeGameId,
+                    a.RaAchievementId,
+                    a.Title,
+                    a.Points,
+                    a.Hardcore,
+                    a.UnlockedUtc,
+                    raUrl = "https://retroachievements.org/achievement/" + a.RaAchievementId,
+                })
+                .ToListAsync();
+
+            return Json(new { userId = targetUserId, totalCount, totalPoints, skip, take, rows });
         }
 
         /// <summary>The signed-in user's saves for a game — the source for the resume picker / "My Saves".</summary>
@@ -1672,7 +2090,7 @@ namespace MovieTheater.Controllers
             if (joinCtrlScheme != "")
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&ctrlscheme=" + joinCtrlScheme };
 
-            return Json(ToJson(descriptor, discCount));
+            return Json(ToJson(descriptor, discCount, session.IsCompetitive));
         }
 
         /// <summary>
@@ -1732,7 +2150,7 @@ namespace MovieTheater.Controllers
             if (claimCtrlScheme != "")
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&ctrlscheme=" + claimCtrlScheme };
 
-            return Json(ToJson(descriptor, discCount));
+            return Json(ToJson(descriptor, discCount, session.IsCompetitive));
         }
 
         public class ReleaseSeatRequest { public int Slot { get; set; } }
@@ -1864,11 +2282,15 @@ namespace MovieTheater.Controllers
             return (m3uKey ?? game.CloudRetroGameKey, discCount);
         }
 
-        private static object ToJson(ArcadeJoinDescriptor d, int discCount = 0) => new
+        private static object ToJson(ArcadeJoinDescriptor d, int discCount = 0, bool competitive = false) => new
         {
             roomCode = d.RoomCode,
             wsUrl = d.WsUrl,
             playerSlot = d.PlayerSlot,
+            // How the room runs — sourced from the durable ArcadeSession for joiners (restart-safe), so
+            // every member's room page can hide Save/Load and show the competitive badge, not just the
+            // creator's. Omitted (false) for an ordinary room.
+            competitive,
             // Watch-only seat (playerSlot -1): the shim skips t=108 and never opens its input pump, so this
             // browser holds no controller port. Derived, so the token stays the single source of truth.
             spectator = d.PlayerSlot == ArcadeRoomService.SpectatorSlot,
@@ -1881,6 +2303,13 @@ namespace MovieTheater.Controllers
             // cheats sends the same packet it always did.
             coreOptions = d.CoreOptions is { Count: > 0 } ? d.CoreOptions : null,
             cheats = d.CheatCodes is { Count: > 0 } ? d.CheatCodes : null,
+            // RetroAchievements creds ride the descriptor body like cheats (a token is sensitive, never a
+            // query param) and are CREATOR-ONLY — only the creator's t=104 boots the emulator that rcheevos
+            // attaches to. Omitted entirely when the creator hasn't linked RA, so a non-RA room's packet is
+            // byte-identical to before the feature. `hardcore` only travels alongside a real RA session.
+            raUser = d.IsCreator && !string.IsNullOrEmpty(d.RaUser) ? d.RaUser : null,
+            raToken = d.IsCreator && !string.IsNullOrEmpty(d.RaToken) ? d.RaToken : null,
+            hardcore = d.IsCreator && !string.IsNullOrEmpty(d.RaUser) && d.Hardcore ? true : (bool?)null,
         };
 
         // A short, URL-safe invite code, regenerated on the rare collision with a live room.

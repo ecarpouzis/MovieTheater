@@ -29,6 +29,9 @@ const T = {
   NO_FREE_SLOTS: 112,
   GAME_RESET: 113,
   APP_VIDEO_CHANGE: 150,
+  // RetroAchievements unlock, pushed by the worker (Phase 1) when rcheevos fires an achievement so the room
+  // can toast it live. Carries { id, title, description?, points, hardcore }. Inbound only.
+  ACHIEVEMENT_UNLOCK: 160,
 };
 
 // Button → bit positions, CONFIRMED against CloudRetro's JOYPAD_KEYS order (web/js/input/keys.js):
@@ -545,7 +548,7 @@ export function videoTransform(rot, flip) {
 }
 
 export function createCloudRetroSession(descriptor, opts) {
-  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect, onChordAction, customGamepadProfile: customGamepadProfileOverride } = opts || {};
+  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect, onChordAction, onAchievement, customGamepadProfile: customGamepadProfileOverride } = opts || {};
   const status = (s) => onStatus && onStatus(s);
   // Watch-only seat. Trust the explicit flag, but fall back to the slot itself so an older descriptor
   // (or a hand-built one in a test) can't accidentally hand a watcher a controller.
@@ -1064,6 +1067,15 @@ export function createCloudRetroSession(descriptor, opts) {
     // room, so a joiner's descriptor carries neither.
     if (descriptor.coreOptions && Object.keys(descriptor.coreOptions).length > 0) p.core_options = descriptor.coreOptions;
     if (Array.isArray(descriptor.cheats) && descriptor.cheats.length > 0) p.cheats = descriptor.cheats;
+    // RetroAchievements: the worker logs rcheevos in under the creator's linked account and (if hardcore)
+    // runs in hardcore mode. Creator-only and only present when the creator linked RA — the backend omits
+    // these from a joiner's / non-RA descriptor, so p carries them only for a real RA room. The token is
+    // the user's own RA connect token (never their password); it rides the body like cheats, not the URL.
+    if (descriptor.raUser && descriptor.raToken) {
+      p.ra_user = descriptor.raUser;
+      p.ra_token = descriptor.raToken;
+      if (descriptor.hardcore) p.hardcore = true;
+    }
     send(T.GAME_START, p);
   }
 
@@ -1142,6 +1154,11 @@ export function createCloudRetroSession(descriptor, opts) {
       case T.APP_VIDEO_CHANGE:
         // Geometry/flip/rotation update (GL cores flip; some cores rotate).
         applyVideoTransform(data.p || {});
+        break;
+      case T.ACHIEVEMENT_UNLOCK:
+        // rcheevos unlocked an achievement (worker push) — hand it up for a live toast. Purely cosmetic;
+        // the authoritative record is RetroAchievements + the server mirror callback, never this packet.
+        onAchievement && onAchievement(data.p || {});
         break;
       default:
         // t=3 latency, 2xx internal — ignored in v1.

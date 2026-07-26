@@ -1,8 +1,9 @@
 import { cloneElement, useEffect, useState } from "react";
-import { Button, Dropdown, Modal, Select } from "antd";
+import { Button, Checkbox, Dropdown, Modal, Select, Tooltip } from "antd";
 import GameCover from "./GameCover";
 import CheatPicker from "./CheatPicker";
 import ArcadeGameConfig from "./ArcadeGameConfig";
+import ArcadeLeaderboards from "./ArcadeLeaderboards";
 import { systemLabel } from "./arcadeSystems";
 import "./GameModal.css";
 
@@ -29,6 +30,7 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
     : game.versions?.[0]?.id;
   const [sel, setSel] = useState(defaultVersionId);
   const [configOpen, setConfigOpen] = useState(false);
+  const [boardsOpen, setBoardsOpen] = useState(false);
   // Filters can change the default version out from under an open modal (rare), so track it.
   useEffect(() => { setSel(defaultVersionId); }, [defaultVersionId]);
 
@@ -52,11 +54,16 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
   // mods, "wiimote" for every other Wii game) so an untouched Start launches on the right scheme.
   const [ctrlScheme, setCtrlScheme] = useState(game.defaultControllerScheme || "wiimote");
 
+  // Competitive room: no save-state loading, no cheats, RA hardcore (for linked players). Off by default.
+  const [competitive, setCompetitive] = useState(false);
+
   const busy = creating === sel;
   // renderProfile = a specific ArcadeRendererProfiles id (may swap the core); hwContext = the legacy
   // bare gl/vulkan fallback (only used if the profile list hasn't loaded). "" for both = server default.
+  // A competitive room takes no cheats (the server drops them too) — send an empty list so the UI matches.
   const start = (renderProfile = "", hwContext = "") =>
-    onStart(sel, game.title, cheats, hwContext, game.supportsControllerScheme ? ctrlScheme : "", renderProfile);
+    onStart(sel, game.title, competitive ? [] : cheats, hwContext,
+      game.supportsControllerScheme ? ctrlScheme : "", renderProfile, competitive);
 
   // Launch menu: one entry per core-and-renderer combination for this system, the default marked. Falls
   // back to a bare Force GL/Vulkan pair only if the profile map hasn't arrived yet.
@@ -140,11 +147,19 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
               {version?.cheatCount > 0 && (
                 <label className="agm-field">
                   <span className="agm-field__label">Cheats</span>
-                  <CheatPicker version={version} value={cheats} onChange={setCheats} disabled={busy} block />
+                  <CheatPicker version={version} value={cheats} onChange={setCheats} disabled={busy || competitive} block />
                 </label>
               )}
             </div>
           )}
+
+          <label className="agm-competitive">
+            <Checkbox checked={competitive} disabled={busy} onChange={(e) => setCompetitive(e.target.checked)}>
+              <Tooltip title="No save-state loading, no cheats — so leaderboard times and scores are legit. If you've linked RetroAchievements, the room runs in hardcore mode and your unlocks/runs count.">
+                🏁 Competitive room
+              </Tooltip>
+            </Checkbox>
+          </label>
 
           <div className="agm-actions">
             {game.supportsHwToggle ? (
@@ -177,12 +192,21 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
             <button type="button" className="arcade-link" onClick={() => onManageSaves?.(sel, game.title)}>
               💾 My saves
             </button>
+            <button type="button" className="arcade-link" onClick={() => setBoardsOpen((o) => !o)}>
+              🏆 Leaderboards
+            </button>
             {canEditMovies && game.configurable && (
               <button type="button" className="arcade-link" onClick={() => setConfigOpen(true)}>
                 ⚙ Configure
               </button>
             )}
           </div>
+
+          {boardsOpen && (
+            <div className="agm-boards">
+              <ArcadeLeaderboards gameId={sel} />
+            </div>
+          )}
         </div>
       </div>
 

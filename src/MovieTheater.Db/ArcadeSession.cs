@@ -36,6 +36,13 @@ namespace MovieTheater.Db
 
         public int CreatedByUserId { get; set; }
 
+        /// <summary>True when the creator opened this as a COMPETITIVE room: save-state loading, cheats,
+        /// and (once supported) rewind are disabled so leaderboard times/scores are legit, and — when the
+        /// creator has a linked RetroAchievements account — the room runs RA in hardcore mode. Durable
+        /// record of how the room ran; the live enforcement lives in <c>ArcadeRoomService</c> room state
+        /// and on the join descriptor (like codec / controller scheme).</summary>
+        public bool IsCompetitive { get; set; }
+
         public DateTime CreatedUtc { get; set; }
 
         /// <summary>Stamped when the room ends (all seats aged out, or the creator ended it). Null = live.</summary>

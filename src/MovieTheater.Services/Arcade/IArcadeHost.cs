@@ -59,6 +59,16 @@ namespace MovieTheater.Services.Arcade
     /// <param name="CheatCodes">Per-room cheat codes for <c>retro_cheat_set</c>. These ride the descriptor
     /// rather than the WS URL (as <c>?vbr</c>/<c>?fec</c> do) because a code list is far too long for a query
     /// string. They are not security-sensitive — the creator is choosing cheats for their own room.</param>
+    /// <param name="RaUser">The room creator's linked RetroAchievements username, when they have one. The
+    /// worker logs rcheevos into RA under this account (a room runs one emulator, so RA is the creator's).
+    /// Null/empty = RA off for this room — byte-identical <c>t=104</c> to before the feature. Creator-only
+    /// (like <see cref="CoreOptions"/>): only the creator's GAME_START boots the emulator.</param>
+    /// <param name="RaToken">The creator's RetroAchievements CONNECT token (not their password), decrypted
+    /// from storage just before the descriptor is built. Rides the descriptor body — the user's own token
+    /// for their own session, over the tokened gateway WS, same trust path the save/cheat descriptor uses.
+    /// Never logged. Null when the creator hasn't linked RA.</param>
+    /// <param name="Hardcore">True to run rcheevos in HARDCORE mode — set for a competitive room with a
+    /// linked creator. Hardcore is what makes RA count the unlocks/leaderboard runs as legit.</param>
     public sealed record ArcadeJoinDescriptor(
         string RoomCode,
         string WsUrl,
@@ -68,7 +78,10 @@ namespace MovieTheater.Services.Arcade
         bool IsCreator,
         string System,
         IReadOnlyDictionary<string, string>? CoreOptions = null,
-        IReadOnlyList<string>? CheatCodes = null);
+        IReadOnlyList<string>? CheatCodes = null,
+        string? RaUser = null,
+        string? RaToken = null,
+        bool Hardcore = false);
 
     /// <summary>One ICE server for the client's RTCPeerConnection. STUN entries carry only
     /// <paramref name="Urls"/>; a TURN entry additionally carries the ephemeral

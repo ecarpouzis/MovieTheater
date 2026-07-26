@@ -697,12 +697,38 @@ function getArcadeRooms() {
 }
 
 // Create a room for a game → returns the creator's join descriptor (empty room_id, isCreator).
-function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0, paceMs = 0, cheats = [], videoCodec = "", hwContext = "", renderProfile = "", controllerScheme = "" } = {}) {
+function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0, paceMs = 0, cheats = [], videoCodec = "", hwContext = "", renderProfile = "", controllerScheme = "", competitive = false } = {}) {
   return fetch("/API/Arcade/Room", {
     method: "post",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gameId, newGame, seedSlot, videoBitrateKbps, audioFec, paceMs, cheats, videoCodec, hwContext, renderProfile, controllerScheme }),
+    body: JSON.stringify({ gameId, newGame, seedSlot, videoBitrateKbps, audioFec, paceMs, cheats, videoCodec, hwContext, renderProfile, controllerScheme, competitive }),
   });
+}
+
+// ── RetroAchievements account link + boards ──────────────────────────────────────────────────────
+// Each user links their OWN retroachievements.org account (RA ToS). Status drives the settings panel.
+function getRetroAchievementsStatus() {
+  return fetch("/API/Arcade/RetroAchievements/Status").then((r) => (r.ok ? r.json() : { linked: false })).catch(() => ({ linked: false }));
+}
+function linkRetroAchievements(username, password) {
+  return fetch("/API/Arcade/RetroAchievements/Link", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+}
+function unlinkRetroAchievements() {
+  return fetch("/API/Arcade/RetroAchievements/Link", { method: "delete" });
+}
+// Friends-only leaderboards for a game card (our mirror of RA submissions), grouped by RA board.
+function getArcadeLeaderboards(gameId) {
+  return fetch(`/API/Arcade/Game/${gameId}/Leaderboards`).then((r) => (r.ok ? r.json() : { boards: [] })).catch(() => ({ boards: [] }));
+}
+// A user's mirrored RA achievement unlocks, paged newest-first.
+function getArcadeUserAchievements(userId, params = {}) {
+  return fetch(`/API/Arcade/Users/${userId}/Achievements` + arcadeQuery(params))
+    .then((r) => (r.ok ? r.json() : { rows: [], totalCount: 0, totalPoints: 0 }))
+    .catch(() => ({ rows: [], totalCount: 0, totalPoints: 0 }));
 }
 
 // The render profiles (core-and-renderer combinations) offered per system, for the play-button
@@ -1121,6 +1147,11 @@ const MovieAPI = {
   getArcadeRenderers,
   getArcadeRooms,
   createArcadeRoom,
+  getRetroAchievementsStatus,
+  linkRetroAchievements,
+  unlinkRetroAchievements,
+  getArcadeLeaderboards,
+  getArcadeUserAchievements,
   listArcadeSaves,
   getArcadeRecentlyPlayed,
   getAllArcadeSaves,

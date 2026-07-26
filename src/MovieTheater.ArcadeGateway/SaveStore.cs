@@ -101,6 +101,26 @@ public sealed class SaveStore
     private readonly string savesMount;
     private readonly Func<DateTime> now;
 
+    /// <summary>Session ids currently running as COMPETITIVE rooms. A competitive run must NOT vault its
+    /// save-STATE over the player's casual "Continue" slot (that would let the run overwrite — and later
+    /// resume from — their real progress, defeating the whole point and RA hardcore). So harvest skips the
+    /// <c>.dat</c> for these sessions and keeps only the <c>.srm</c> (battery/card, legit progress). The
+    /// mark is set/cleared at boot from <c>?competitive=1</c> (a casual boot of the same deterministic id
+    /// clears it), and read from the background sweep thread — hence concurrent.</summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> competitiveSessions = new(StringComparer.Ordinal);
+
+    /// <summary>Mark (or unmark) a session as a competitive room. Called at boot from the connect handler.</summary>
+    public void SetCompetitive(string sessionId, bool competitive)
+    {
+        if (string.IsNullOrEmpty(sessionId)) return;
+        if (competitive) competitiveSessions[sessionId] = true;
+        else competitiveSessions.TryRemove(sessionId, out _);
+    }
+
+    /// <summary>Whether a session is currently a competitive room (harvest skips its save-state).</summary>
+    public bool IsCompetitive(string sessionId) =>
+        !string.IsNullOrEmpty(sessionId) && competitiveSessions.ContainsKey(sessionId);
+
     public SaveStore(SaveStoreOptions options, ILogger logger, Func<DateTime>? clock = null)
     {
         opt = options;
@@ -133,8 +153,11 @@ public sealed class SaveStore
             if (m != null) results.Add(m);
         }
 
+        // A competitive room's save-STATE is never vaulted — it must not overwrite the casual Continue
+        // slot (that would let a competitive run clobber, and later be resumed as, the player's real
+        // progress). Only its .srm (battery/card) is kept. See competitiveSessions.
         var dat = MountFile(sessionId, ".dat");
-        if (File.Exists(dat) && IsSettled(dat))
+        if (File.Exists(dat) && IsSettled(dat) && !IsCompetitive(sessionId))
         {
             var m = await CopyIntoStoreAsync(userId, gameId, system, KindState, ContinueSlot, label: null,
                 coreName: null, coreVersion: null, src: dat, destName: SlotFile(ContinueSlot), isAutosave, ct);

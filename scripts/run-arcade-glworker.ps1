@@ -99,6 +99,18 @@ $env:CLOUD_GAME_EMULATOR_STORAGE                  = "D:\ArcadeStorage\saves"
 $StopFile = Join-Path $ConfDir ".stop"
 $env:CLOUD_GAME_STOP_FILE                         = $StopFile
 
+# RetroAchievements MIRROR (arcade RA feature): the worker POSTs achievement/leaderboard events to the
+# site's secret-gated internal callbacks so the friends board + profile get a durable copy. rcheevos
+# itself submits to retroachievements.org under the player's OWN account — this is only OUR copy.
+# The mirror URL is the public site (not secret); the SECRET is the shared ArcadeTokenSecret, read from
+# a LOCAL file so it is NEVER committed to the repo (only the path is here). Absent file => mirror off
+# (RA + the in-room toast still work). CLOUD_GAME_* env overrides the yaml (verified via loader).
+$env:CLOUD_GAME_RETROACHIEVEMENTS_MIRRORURL       = "https://theater.carpouzis.com"
+$raSecretFile = "D:\ArcadeStorage\secrets\arcade-token-secret.txt"
+if (Test-Path $raSecretFile) {
+    $env:CLOUD_GAME_RETROACHIEVEMENTS_SECRET      = (Get-Content -Raw $raSecretFile).Trim()
+}
+
 New-Item -ItemType Directory -Force (Split-Path $LogFile) | Out-Null
 
 # Run FROM the ConfDir: the worker resolves emulator.localPath ("./libretro" → the system/BIOS junction

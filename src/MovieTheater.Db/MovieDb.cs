@@ -340,6 +340,31 @@ namespace MovieTheater.Db
             modelBuilder.Entity<HeavyClient>()
                 .HasIndex(c => c.ClientName)
                 .IsUnique();
+
+            // RetroAchievements mirror (the RA-backed achievements/leaderboards feature). Source of truth is
+            // retroachievements.org (rcheevos submits under each player's own account); these are our copy for
+            // site UI + friends boards, harvested via the secret-gated internal callbacks.
+            // Softcore and hardcore unlocks are distinct on RA, so the dedupe key includes Hardcore — a
+            // re-harvest of the same unlock updates in place instead of duplicating.
+            modelBuilder.Entity<ArcadeAchievementUnlock>()
+                .HasIndex(a => new { a.UserId, a.RaAchievementId, a.Hardcore })
+                .IsUnique();
+            modelBuilder.Entity<ArcadeAchievementUnlock>()
+                .HasOne(a => a.ArcadeGame)
+                .WithMany()
+                .HasForeignKey(a => a.ArcadeGameId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // One BEST row per (user, RA leaderboard) — the harvest keeps the better of the two by Format,
+            // so the friends board ranks straight off these rows.
+            modelBuilder.Entity<ArcadeLeaderboardEntry>()
+                .HasIndex(e => new { e.UserId, e.RaLeaderboardId })
+                .IsUnique();
+            modelBuilder.Entity<ArcadeLeaderboardEntry>()
+                .HasOne(e => e.ArcadeGame)
+                .WithMany()
+                .HasForeignKey(e => e.ArcadeGameId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
 
         public DbSet<Movie> Movies { get; set; }
@@ -380,6 +405,8 @@ namespace MovieTheater.Db
         public DbSet<ArcadeSave> ArcadeSaves { get; set; }
         public DbSet<ArcadeCheat> ArcadeCheats { get; set; }
         public DbSet<ArcadeGameProfile> ArcadeGameProfiles { get; set; }
+        public DbSet<ArcadeAchievementUnlock> ArcadeAchievementUnlocks { get; set; }
+        public DbSet<ArcadeLeaderboardEntry> ArcadeLeaderboardEntries { get; set; }
         public DbSet<HeavyClient> HeavyClients { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)

@@ -97,6 +97,10 @@ export default function ArcadeRoomPage() {
   // The room's resolved Wii controller scheme ("gc"/"wiimote"/"") — rides every descriptor's wsUrl
   // (creator AND joiners, server-side), since it changes what button bits everyone's client sends.
   const [controllerScheme, setControllerScheme] = useState(controllerSchemeFromWsUrl(location.state?.descriptor?.wsUrl));
+  // Competitive room: no save-state load, no cheats (enforced server-side), and RA hardcore. Comes off the
+  // descriptor for every member (server sources it from the durable ArcadeSession). Drives hiding the
+  // Save/Load/Snapshot controls + showing the badge — the honest-UI half of "no save-scumming".
+  const [competitive, setCompetitive] = useState(!!location.state?.descriptor?.competitive);
   const [players, setPlayers] = useState([]);
   const [spectators, setSpectators] = useState([]);
   const [maxPlayers, setMaxPlayers] = useState(0);
@@ -241,6 +245,7 @@ export default function ArcadeRoomPage() {
       setSystem(descriptor.system ?? null);
       setGameKey(descriptor.gameKey ?? null);
       setControllerScheme(controllerSchemeFromWsUrl(descriptor.wsUrl));
+      setCompetitive(!!descriptor.competitive);
       setDiscCount(descriptor.discCount || 0);
 
       // A JIT game's first play may have to inflate a compressed disc image (a PSP .cso, a GameCube
@@ -324,6 +329,16 @@ export default function ArcadeRoomPage() {
             sessionRef.current?.reset?.();
             message.success("Game reset");
           }
+        },
+        onAchievement: (a) => {
+          if (cancelled || !a) return;
+          // Live RetroAchievements unlock (worker push). Cosmetic only — RA + the server mirror hold the
+          // real record. Show the room the pop; a hardcore unlock gets a trophy, softcore a medal.
+          const pts = a.points ? ` · ${a.points} pts` : "";
+          message.success({
+            content: `${a.hardcore ? "🏆" : "🎖️"} Achievement unlocked: ${a.title || "Unknown"}${pts}`,
+            duration: 5,
+          });
         },
       });
     }, 0);
@@ -1013,7 +1028,15 @@ export default function ArcadeRoomPage() {
               (PS2 was briefly excluded when Save hard-crashed the worker; worker patch 0030 fixed the
               real faults — serialize_size off the core's thread + a garbage size argument on every
               LibCo serialize — and the buttons returned with it.) */}
-          {!spectator && (
+          {/* Competitive rooms hide every save-state control: loading an earlier state (or a snapshot) is
+              exactly the save-scumming that would void a leaderboard run / RA hardcore, so the buttons are
+              gone, not just server-refused. A badge tells the room why. */}
+          {competitive && (
+            <Tooltip title="Competitive room — save-state loading and cheats are off so times and scores are legit. Runs count on RetroAchievements hardcore for players who've linked their account.">
+              <Tag color="volcano">🏁 Competitive — no saves / cheats</Tag>
+            </Tooltip>
+          )}
+          {!competitive && !spectator && (
             <>
               <Tooltip title="Quicksave — keeps your place until you press Save again. Leaving the room never overwrites it.">
                 <Button loading={snapping} onClick={quickSave}>Save</Button>
@@ -1023,12 +1046,12 @@ export default function ArcadeRoomPage() {
               </Tooltip>
             </>
           )}
-          {yourSlot === 0 && (
+          {!competitive && yourSlot === 0 && (
             <Tooltip title="Save a named snapshot you can resume later">
               <Button loading={snapping} onClick={saveSnapshot}>📸 Snapshot</Button>
             </Tooltip>
           )}
-          {yourSlot === 0 && (
+          {!competitive && yourSlot === 0 && (
             <Tooltip title="Load a saved snapshot without leaving the room">
               <Button onClick={loadSnapshot}>📂 Load snapshot</Button>
             </Tooltip>

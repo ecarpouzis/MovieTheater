@@ -127,12 +127,12 @@ describe("GameModal", () => {
     });
     renderModal(twoVersions, { onStart, initialVersionId: 9 });
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenCalledWith(9, "007 - GoldenEye", [], "", "", "");
+    expect(onStart).toHaveBeenCalledWith(9, "007 - GoldenEye", [], "", "", "", false);
 
     cleanup();
     renderModal(twoVersions, { onStart, initialVersionId: 12345 });
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenLastCalledWith(7, "007 - GoldenEye", [], "", "", "");
+    expect(onStart).toHaveBeenLastCalledWith(7, "007 - GoldenEye", [], "", "", "", false);
   });
 
   it("renders the Start room button and the My saves link", () => {
@@ -153,7 +153,7 @@ describe("GameModal", () => {
     fireEvent.click(screen.getByText(/Start room/));
     expect(onStart).toHaveBeenCalledTimes(1);
     // A plain game: no hw toggle ("") and no controller scheme ("").
-    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "", "");
+    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "", "", false);
   });
 
   it("opens the saves manager for the selected version, with its title", () => {
@@ -179,7 +179,7 @@ describe("GameModal", () => {
     const onStart = vi.fn();
     renderModal(ps2(), { onStart });
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenCalledWith(11, "God of War", [], "", "", "");
+    expect(onStart).toHaveBeenCalledWith(11, "God of War", [], "", "", "", false);
   });
 
   // Cheat ids belong to one ROM. Carrying a selection across a version switch would send a USA code to a
@@ -195,13 +195,13 @@ describe("GameModal", () => {
     });
     const { rerender } = renderModal(twoVersions, { onStart });
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenLastCalledWith(11, "God of War", [], "", "", "");
+    expect(onStart).toHaveBeenLastCalledWith(11, "God of War", [], "", "", "", false);
 
     // Simulate a filter changing the default version (same path that re-keys `sel`).
     const jpFirst = { ...twoVersions, versions: [twoVersions.versions[1], twoVersions.versions[0]] };
     rerender(<GameModal game={jpFirst} onStart={onStart} onManageSaves={vi.fn()} onClose={vi.fn()} creating={0} />);
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenLastCalledWith(12, "God of War", [], "", "", "");
+    expect(onStart).toHaveBeenLastCalledWith(12, "God of War", [], "", "", "", false);
   });
 
   // The play button now defaults to "" (auto) so the server applies the game's configured renderer or the
@@ -210,7 +210,7 @@ describe("GameModal", () => {
     const onStart = vi.fn();
     renderModal(game({ supportsHwToggle: true }), { onStart });
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "", "");
+    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "", "", false);
   });
 
   // The Wii GameCube/Nunchuk picker is offered on every Wii title now; the server hands each game its
@@ -220,7 +220,7 @@ describe("GameModal", () => {
     renderModal(game({ supportsControllerScheme: true, defaultControllerScheme: "gc" }), { onStart });
     expect(document.querySelector(".agm-controls")).toBeTruthy();
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "gc", "");
+    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "gc", "", false);
   });
 
   it("defaults a normal Wii title to Wiimote+Nunchuk", () => {
@@ -228,7 +228,7 @@ describe("GameModal", () => {
     renderModal(game({ supportsControllerScheme: true, defaultControllerScheme: "wiimote" }), { onStart });
     expect(document.querySelector(".agm-controls")).toBeTruthy();
     fireEvent.click(screen.getByText(/Start room/));
-    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "wiimote", "");
+    expect(onStart).toHaveBeenCalledWith(7, "007 - GoldenEye", [], "", "wiimote", "", false);
   });
 });
 
