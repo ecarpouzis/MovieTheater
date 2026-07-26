@@ -159,6 +159,22 @@ namespace MovieTheater.Db
         [MaxLength(20)]
         public string? Lane { get; set; }
 
+        // ─── RetroAchievements support flags (arcade-ra-enrich; nullable/false = not yet checked or none).
+        // Drive the card/version icons: 🏆 achievements, 🥇 high-score leaderboards, ⏱ speedrun (time)
+        // leaderboards. Matched by normalized Title against RA's per-console game list, so they are
+        // GAME-level (all versions of a title share them). RA is the definitions source; the actual
+        // achievements/scores/times are recorded locally (see ArcadeAchievementUnlock/ArcadeLeaderboardEntry).
+        /// <summary>The matched RetroAchievements game id (the enrich key; null = unmatched/unchecked).</summary>
+        public int? RaGameId { get; set; }
+        /// <summary>Number of core RA achievements for the matched game (0/null = none → no 🏆 icon).</summary>
+        public int? RaAchievementCount { get; set; }
+        /// <summary>True if the matched game has any SCORE/VALUE-format RA leaderboard (high scores → 🥇).</summary>
+        public bool RaHasScoreLeaderboard { get; set; }
+        /// <summary>True if the matched game has any TIME-format RA leaderboard (speedruns → ⏱).</summary>
+        public bool RaHasTimeLeaderboard { get; set; }
+        /// <summary>When arcade-ra-enrich last resolved this row — the refresh/resume cursor.</summary>
+        public System.DateTime? RaCheckedUtc { get; set; }
+
         public bool IsEnabled { get; set; } = true;
 
         /// <summary>The single canonical row of its (System, Title) group for the lobby's default lens —

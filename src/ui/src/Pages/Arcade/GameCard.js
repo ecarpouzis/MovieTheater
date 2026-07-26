@@ -62,6 +62,9 @@ function GameCard({ game, onOpen }) {
           {heavy && <span className="arcade-chip arcade-chip--genre" title="Streams to your device via Moonlight — couch play, not in-browser">Moonlight</span>}
           {region && <span className="arcade-chip">{region}</span>}
           {genre && <span className="arcade-chip arcade-chip--genre" title={genre}>{genre}</span>}
+          {game.raAchievements && <span className="arcade-chip arcade-chip--ra" title="Tracks RetroAchievements">🏆</span>}
+          {game.raHighScores && <span className="arcade-chip arcade-chip--ra" title="Has a high-score leaderboard">🥇</span>}
+          {game.raSpeedruns && <span className="arcade-chip arcade-chip--ra" title="Has a speedrun (time) leaderboard">⏱️</span>}
         </div>
 
         <div className="arcade-card__summary">{game.summary}</div>

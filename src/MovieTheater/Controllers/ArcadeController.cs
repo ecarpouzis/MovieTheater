@@ -281,6 +281,11 @@ namespace MovieTheater.Controllers
                     publisher = meta?.Publisher,
                     gameModes = meta?.GameModes,
                     esrb = meta?.EsrbRating,
+                    // RetroAchievements support badges (arcade-ra-enrich): set on every version of a card,
+                    // so any version answers. 🏆 achievements, 🥇 high-score boards, ⏱ speedrun (time) boards.
+                    raAchievements = vs.Any(g => (g.RaAchievementCount ?? 0) > 0),
+                    raHighScores = vs.Any(g => g.RaHasScoreLeaderboard),
+                    raSpeedruns = vs.Any(g => g.RaHasTimeLeaderboard),
                     // 'heavy' = Moonlight-streamed (plan §7.1): the card's action becomes
                     // Prepare/Play-via-Moonlight instead of creating a CloudRetro room.
                     lane = vs.Select(g => g.Lane).FirstOrDefault(l => l != null),

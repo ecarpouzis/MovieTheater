@@ -109,6 +109,9 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
                 ★ {game.rating}
               </span>
             )}
+            {game.raAchievements && <span className="arcade-chip arcade-chip--ra" title="Tracks RetroAchievements">🏆 Achievements</span>}
+            {game.raHighScores && <span className="arcade-chip arcade-chip--ra" title="Has a high-score leaderboard">🥇 High scores</span>}
+            {game.raSpeedruns && <span className="arcade-chip arcade-chip--ra" title="Has a speedrun (time) leaderboard">⏱️ Speedruns</span>}
           </div>
 
           {game.summary && <p className="agm-summary">{game.summary}</p>}
