@@ -5499,10 +5499,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..958cd80
+index 0000000..9c2fdd2
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,336 @@
+@@ -0,0 +1,356 @@
 +package worker
 +
 +import (
@@ -5594,6 +5594,17 @@ index 0000000..958cd80
 +	// wall really did vanish at 16:52:20, and the room then deserved its clean ramp to 16000).
 +	abrCongProbePct   = 90 // within this % of the remembered wall, probe additively, not multiplicatively
 +	abrCongClearTicks = 3  // healthy ticks at/above the wall before it is forgotten
++
++	// PROBE HOLD. Memory alone made collisions with the wall GENTLE but not RARE: the live trace
++	// (tablet, ceiling 16000, wall ~10 Mbps) settled into starve -> small cut -> creep back -> starve
++	// every 5-6 seconds, indefinitely. Each starve is two confirmed congested ticks — a small hitch on
++	// a schedule. So after a cut lands while a wall is remembered (the wall was just re-confirmed),
++	// stop PROBING INTO it for this many ticks: sit at the settled rate, which is stable by
++	// construction (it is where the last cut left us, below the wall). Recovery from a deep cut is
++	// unaffected — the hold gates only the additive creep inside the probe zone; below the zone the
++	// normal ramp still runs. Net effect: collision cadence drops from every ~5s to every ~15s+, and
++	// between tests the bitrate is flat, which is precisely when the stream feels smooth.
++	abrCongHoldTicks = 12
 +)
 +
 +// layerShare[n][l] = the percentage of the encoder's bitrate a peer receives when it is fed temporal
@@ -5692,8 +5703,9 @@ index 0000000..958cd80
 +		// Consecutive STARVED ticks per peer — same idea as layerDown, for the room-cap path.
 +		starveHold := map[svcPeer]int{}
 +		// Congestion memory (see the const block): the last rate that provoked a confirmed cut
-+		// (0 = none seen), and how many consecutive healthy ticks we have spent at/above it.
-+		congKbps, congClear := 0, 0
++		// (0 = none seen), how many consecutive healthy ticks we have spent at/above it, and how many
++		// ticks remain of the post-cut probe hold.
++		congKbps, congClear, congHold := 0, 0, 0
 +		for range t.C {
 +			if r.Closed() {
 +				log.Debug().Msg("abr: room closed")
@@ -5795,7 +5807,14 @@ index 0000000..958cd80
 +					// abrMinStepKbps overshoot starves gently and reconfirms the wall; a 15% leap
 +					// re-creates the crash we remember.
 +					if congKbps > 0 && cur+step >= congKbps*abrCongProbePct/100 {
-+						step = abrMinStepKbps
++						// Fresh off a cut that confirmed this wall: don't probe into it at all yet.
++						// Hold the settled rate — flat bitrate is exactly what plays smoothly.
++						if congHold > 0 {
++							congHold--
++							step = 0
++						} else {
++							step = abrMinStepKbps
++						}
 +					}
 +				}
 +				next = cur + step
@@ -5818,9 +5837,10 @@ index 0000000..958cd80
 +				continue
 +			}
 +			// Any confirmed cut marks where it hurt: the rate we are leaving was too high for the
-+			// link. Both the backoff and starve-cap paths funnel through here.
++			// link. Both the backoff and starve-cap paths funnel through here. The hold starts now —
++			// the wall was just (re)confirmed, so probing into it again immediately is pointless.
 +			if next < cur {
-+				congKbps, congClear = cur, 0
++				congKbps, congClear, congHold = cur, 0, abrCongHoldTicks
 +			}
 +			if err := m.SetVideoBitrate(next); err != nil {
 +				log.Warn().Err(err).Msgf("abr: failed to set %d kbps", next)
