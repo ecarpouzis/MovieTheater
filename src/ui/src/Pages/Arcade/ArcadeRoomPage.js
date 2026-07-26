@@ -7,6 +7,7 @@ import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
 import { useWakeLock } from "../../useWakeLock";
+import AchievementToaster from "./AchievementToast";
 import "./ArcadeRoomPage.css";
 
 const { Title, Text } = Typography;
@@ -101,6 +102,11 @@ export default function ArcadeRoomPage() {
   // descriptor for every member (server sources it from the durable ArcadeSession). Drives hiding the
   // Save/Load/Snapshot controls + showing the badge — the honest-UI half of "no save-scumming".
   const [competitive, setCompetitive] = useState(!!location.state?.descriptor?.competitive);
+  // Steam-style achievement pops (bottom-right, badge art). The worker's t=160 unlock packet carries no
+  // badge, so we preload the game's badge map (achId → colour badge URL) once and look it up per pop.
+  const [achToasts, setAchToasts] = useState([]);
+  const achToastKeyRef = useRef(0);
+  const achBadgeRef = useRef({});
   const [players, setPlayers] = useState([]);
   const [spectators, setSpectators] = useState([]);
   const [maxPlayers, setMaxPlayers] = useState(0);
@@ -333,15 +339,22 @@ export default function ArcadeRoomPage() {
         onAchievement: (a) => {
           if (cancelled || !a) return;
           // Live RetroAchievements unlock (worker push). Cosmetic only — RA + the server mirror hold the
-          // real record. Show the room the pop; a clean hardcore unlock gets a trophy, softcore a medal.
-          // A tainted run (cheats / save-scum / fast-forward) appends the why-icon so the room sees it wasn't legit.
-          const pts = a.points ? ` · ${a.points} pts` : "";
-          const taint = `${a.cheat ? " 🔧" : ""}${a.savescum ? " 💾" : ""}${a.timeplay ? " ⏩" : ""}`;
-          const badge = a.hardcore && !a.cheat && !a.savescum && !a.timeplay ? "🏆" : "🎖️";
-          message.success({
-            content: `${badge} Achievement unlocked: ${a.title || "Unknown"}${pts}${taint}`,
-            duration: 5,
-          });
+          // real record. Show a Steam-style pop in the corner with the badge art (looked up from the
+          // preloaded map); a tainted run carries its why-icon so the room sees it wasn't legit.
+          const key = ++achToastKeyRef.current;
+          setAchToasts((list) => [
+            ...list.slice(-3), // cap how many stack at once
+            {
+              key,
+              badgeUrl: achBadgeRef.current[String(a.id)] || null,
+              title: a.title,
+              points: a.points,
+              hardcore: a.hardcore,
+              cheat: a.cheat,
+              savescum: a.savescum,
+              timeplay: a.timeplay,
+            },
+          ]);
         },
       });
     }, 0);
@@ -466,6 +479,31 @@ export default function ArcadeRoomPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Preload the game's achievement badge art (achId → colour badge URL) so unlock pops can show it — the
+  // worker's t=160 carries no badge. gameId is parsed out of the deterministic room id, and the endpoint
+  // is DB-cached server-side so this is cheap. Failure just means pops fall back to an emoji.
+  useEffect(() => {
+    const d = descriptorRef.current;
+    if (!d?.wsUrl) return;
+    let gameId = null;
+    try {
+      const qs = new URLSearchParams(d.wsUrl.slice(d.wsUrl.indexOf("?") + 1));
+      const m = decodeURIComponent(qs.get("room_id") || "").match(/^sv-\d+-(\d+)-/);
+      if (m) gameId = parseInt(m[1], 10);
+    } catch { /* ignore */ }
+    if (!gameId) return;
+    let cancelled = false;
+    MovieAPI.getArcadeGameAchievements(gameId).then((res) => {
+      if (cancelled || !res || !Array.isArray(res.achievements)) return;
+      const map = {};
+      for (const a of res.achievements) if (a.badgeUrl) map[String(a.id)] = a.badgeUrl;
+      achBadgeRef.current = map;
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const removeAchToast = (key) => setAchToasts((list) => list.filter((t) => t.key !== key));
 
   // Track fullscreen so we can re-letterbox to the DISPLAY aspect: in fullscreen the UA drops the
   // wrapper's CSS aspectRatio and stretches it to the monitor (16:9), so a 4:3 game would smear wide.
@@ -892,6 +930,13 @@ export default function ArcadeRoomPage() {
 
   return (
     <div className="arcade-room-page">
+      {/* Achievement pops portal to the current fullscreen element so they show over the game (isFs drives
+          the re-render that re-targets the portal when fullscreen toggles); else to body. */}
+      <AchievementToaster
+        toasts={achToasts}
+        onExpire={removeAchToast}
+        container={(typeof document !== "undefined" && (document.fullscreenElement || document.webkitFullscreenElement || document.body)) || null}
+      />
       <div className="arcade-room-page__topbar">
         <Space wrap>
           <Button onClick={() => history.push(lobbyPath())}>← Arcade</Button>

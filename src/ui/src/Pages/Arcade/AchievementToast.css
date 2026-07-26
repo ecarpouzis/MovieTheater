@@ -1,0 +1,90 @@
+/* Steam-style achievement toaster: bottom-right, stacked, slide-in. Deliberately self-contained (fixed
+   colours, not theme vars) so it reads the same over any game and in fullscreen. pointer-events on the
+   container are off so a pop never eats a click meant for the game; the cards themselves re-enable it. */
+.ach-toaster {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2147483000; /* above the fullscreen video + overlay controls */
+  display: flex;
+  flex-direction: column-reverse; /* newest nearest the corner, older stack upward */
+  gap: 10px;
+  pointer-events: none;
+  max-width: min(360px, 90vw);
+}
+
+.ach-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 10px 10px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1b2838 0%, #16202d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
+  color: #e6edf3;
+  pointer-events: auto;
+  animation: ach-slide-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+.ach-toast--legit {
+  border-color: rgba(224, 168, 0, 0.55);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(224, 168, 0, 0.25);
+}
+
+.ach-toast__badge {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ach-toast__badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ach-toast__badge-fallback { font-size: 30px; }
+
+.ach-toast__body { min-width: 0; }
+.ach-toast__head {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8f98a0;
+  font-weight: 700;
+  margin-bottom: 1px;
+}
+.ach-toast--legit .ach-toast__head { color: #e0a800; }
+.ach-toast__title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ach-toast__meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #a7b0b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ach-toast__pts { color: #6cc04a; font-weight: 600; }
+.ach-toast__taint { cursor: default; }
+
+@keyframes ach-slide-in {
+  from { transform: translateX(24px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ach-toast { animation: none; }
+}

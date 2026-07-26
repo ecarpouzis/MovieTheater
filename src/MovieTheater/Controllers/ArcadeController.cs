@@ -2025,7 +2025,9 @@ namespace MovieTheater.Controllers
                         title = a.TryGetProperty("Title", out var t) ? t.GetString() : null,
                         description = a.TryGetProperty("Description", out var d) ? d.GetString() : null,
                         points,
-                        badgeUrl = RaBadgeUrl(a.TryGetProperty("BadgeName", out var b) ? b.GetString() : null, locked: mine == null),
+                        // Always the COLOURED badge; the grid greys locked ones via CSS, and the in-room
+                        // unlock toast reuses this map to show the real art when an achievement fires.
+                        badgeUrl = RaBadgeUrl(a.TryGetProperty("BadgeName", out var b) ? b.GetString() : null),
                         earned = mine != null,
                         earnedHardcore = mine?.Hardcore ?? false,
                         earnedUtc = mine?.UnlockedUtc,
