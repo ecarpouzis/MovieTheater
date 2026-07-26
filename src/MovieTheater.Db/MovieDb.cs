@@ -365,6 +365,12 @@ namespace MovieTheater.Db
                 .WithMany()
                 .HasForeignKey(e => e.ArcadeGameId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // One row per RA Web API request path — the durable RA response cache (fetch once for the whole
+            // friend group, survive restarts). Unique on the key so an upsert can't duplicate.
+            modelBuilder.Entity<ArcadeRaApiCache>()
+                .HasIndex(c => c.CacheKey)
+                .IsUnique();
         }
 
         public DbSet<Movie> Movies { get; set; }
@@ -407,6 +413,7 @@ namespace MovieTheater.Db
         public DbSet<ArcadeGameProfile> ArcadeGameProfiles { get; set; }
         public DbSet<ArcadeAchievementUnlock> ArcadeAchievementUnlocks { get; set; }
         public DbSet<ArcadeLeaderboardEntry> ArcadeLeaderboardEntries { get; set; }
+        public DbSet<ArcadeRaApiCache> ArcadeRaApiCaches { get; set; }
         public DbSet<HeavyClient> HeavyClients { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)

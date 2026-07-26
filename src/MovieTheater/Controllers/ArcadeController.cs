@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,6 +13,8 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MovieTheater.Arcade;
 using MovieTheater.Core;
@@ -59,8 +62,10 @@ namespace MovieTheater.Controllers
         private readonly ILogger<ArcadeController> logger;
         private readonly MovieTheaterConfiguration config;
         private readonly IDataProtectionProvider dataProtection;
+        private readonly IMemoryCache cache;
+        private readonly IServiceScopeFactory scopeFactory;
 
-        public ArcadeController(MovieDb movieDb, IArcadeHost host, ArcadeRoomService rooms, ILogger<ArcadeController> logger, MovieTheaterConfiguration config, IDataProtectionProvider dataProtection)
+        public ArcadeController(MovieDb movieDb, IArcadeHost host, ArcadeRoomService rooms, ILogger<ArcadeController> logger, MovieTheaterConfiguration config, IDataProtectionProvider dataProtection, IMemoryCache cache, IServiceScopeFactory scopeFactory)
         {
             this.movieDb = movieDb;
             this.host = host;
@@ -68,6 +73,8 @@ namespace MovieTheater.Controllers
             this.logger = logger;
             this.config = config;
             this.dataProtection = dataProtection;
+            this.cache = cache;
+            this.scopeFactory = scopeFactory;
         }
 
         private int? GetCurrentUserId()
@@ -991,18 +998,101 @@ namespace MovieTheater.Controllers
 
         private const string RaMediaBase = "https://media.retroachievements.org";
 
-        /// <summary>GET a RetroAchievements Web API endpoint (the <c>/API/API_*.php</c> surface), keyed by the
-        /// SITE service account's Web API credentials (<c>ArcadeRaWebApiUser/Key</c>). Appends <c>z</c>/<c>y</c>
-        /// auth, sends the required User-Agent (dorequest 403s without one; harmless on /API), and returns the
-        /// parsed root element (caller owns the returned <see cref="System.Text.Json.JsonDocument"/> — dispose
-        /// it). Returns null when RA Web API isn't configured or the call fails — every caller degrades to a
-        /// graceful "unavailable", never a 500.</summary>
-        private async Task<System.Text.Json.JsonDocument?> RaWebApiGetAsync(string apiFileAndQuery)
+        // RetroAchievements Web API response cache. RA is a community-run service that asks consumers to be
+        // gentle, so we fetch a given piece of RA data once for the WHOLE friend group. Two tiers:
+        //   • DB (ArcadeRaApiCache) — the durable, restart- and replica-shared cache, and the stale-fallback
+        //     when RA is unreachable. Max age per caller (definitions ~static → weeks; board lists → days).
+        //   • memory — a short layer over the DB to coalesce bursts + skip a DB round-trip within a minute.
+        // A user's live profile is memory-only (volatile + per-user; not worth a DB row every few minutes).
+        internal static readonly TimeSpan RaDbDefs = TimeSpan.FromDays(14);      // API_GetGameExtended (achievement set)
+        internal static readonly TimeSpan RaDbBoards = TimeSpan.FromDays(2);      // API_GetGameLeaderboards (board list + top entry)
+        internal static readonly TimeSpan RaTtlUser = TimeSpan.FromMinutes(10);   // API_GetUserSummary (memory-only)
+        private static readonly TimeSpan RaMemTtl = TimeSpan.FromMinutes(1);      // burst layer over the DB cache
+        private static readonly TimeSpan RaNegativeTtl = TimeSpan.FromSeconds(60); // short cache on failure so an RA outage can't storm
+
+        // In-flight single-flight coalescing (NOT in the sized memory cache): concurrent misses of the same
+        // key await ONE fetch — so both the RA call AND the DB upsert happen once per key, no duplicate-key race.
+        private static readonly ConcurrentDictionary<string, Task<string?>> RaInflight = new();
+
+        /// <summary>GET a RetroAchievements Web API endpoint (the <c>/API/API_*.php</c> surface), served from the
+        /// DB cache when fresh, else fetched once (coalesced) and persisted, with the last good copy handed back
+        /// if RA is down. <paramref name="dbMaxAge"/> null = memory-only (volatile data). Appends the SITE
+        /// account's <c>z</c>/<c>y</c> auth + User-Agent at fetch time only (the key never contains the key).
+        /// Returns the parsed document (caller disposes it), or null — every caller degrades gracefully.</summary>
+        private async Task<System.Text.Json.JsonDocument?> RaWebApiGetAsync(string apiFileAndQuery, TimeSpan memTtl, TimeSpan? dbMaxAge)
+        {
+            var raw = await RaWebApiRawAsync(apiFileAndQuery, memTtl, dbMaxAge);
+            if (raw == null) return null;
+            try { return System.Text.Json.JsonDocument.Parse(raw); }
+            catch { return null; }
+        }
+
+        private async Task<string?> RaWebApiRawAsync(string apiFileAndQuery, TimeSpan memTtl, TimeSpan? dbMaxAge)
+        {
+            if (!RaWebApiConfigured) return null;
+            var cacheKey = "ra:" + apiFileAndQuery;
+            if (cache.TryGetValue(cacheKey, out string? cached)) return cached; // hot hit (a null = negative-cached failure)
+
+            var task = RaInflight.GetOrAdd(cacheKey, _ => RaFetchAndCacheAsync(cacheKey, apiFileAndQuery, memTtl, dbMaxAge));
+            try { return await task; }
+            finally { RaInflight.TryRemove(new KeyValuePair<string, Task<string?>>(cacheKey, task)); }
+        }
+
+        private async Task<string?> RaFetchAndCacheAsync(string cacheKey, string apiFileAndQuery, TimeSpan memTtl, TimeSpan? dbMaxAge)
+        {
+            if (cache.TryGetValue(cacheKey, out string? cached)) return cached; // filled between the miss and here
+
+            string? payload;
+            if (dbMaxAge == null)
+            {
+                // Memory-only (volatile per-user data): no DB row.
+                payload = await RaFetchStringAsync(apiFileAndQuery);
+            }
+            else
+            {
+                // A FRESH DbContext — this task is shared across concurrent requests, so it must not touch the
+                // request-scoped movieDb (disposed when its request ends).
+                using var scope = scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<MovieDb>();
+                var row = await db.ArcadeRaApiCaches.FirstOrDefaultAsync(c => c.CacheKey == cacheKey);
+                var now = DateTime.UtcNow;
+                if (row != null && row.FetchedUtc >= now - dbMaxAge.Value)
+                {
+                    payload = row.Payload; // DB hit (fresh) — no RA call
+                }
+                else
+                {
+                    var raw = await RaFetchStringAsync(apiFileAndQuery);
+                    if (raw != null)
+                    {
+                        if (row == null) db.ArcadeRaApiCaches.Add(new ArcadeRaApiCache { CacheKey = cacheKey, Payload = raw, FetchedUtc = now });
+                        else { row.Payload = raw; row.FetchedUtc = now; }
+                        try { await db.SaveChangesAsync(); }
+                        catch (DbUpdateException) { /* lost an insert race on the unique key — the other writer's row stands */ }
+                        payload = raw;
+                    }
+                    else
+                    {
+                        payload = row?.Payload; // STALE-ON-ERROR: serve the last good copy rather than nothing
+                    }
+                }
+            }
+
+            // The memory cache is size-limited, so every entry must declare a Size (≈ payload bytes). A failure
+            // (no payload at all) is negative-cached briefly so opens during an RA hiccup don't hammer it.
+            cache.Set(cacheKey, payload, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = payload != null ? memTtl : RaNegativeTtl,
+                Size = payload?.Length ?? 64,
+            });
+            return payload;
+        }
+
+        private async Task<string?> RaFetchStringAsync(string apiFileAndQuery)
         {
             var user = config.ArcadeRaWebApiUser;
             var key = config.ArcadeRaWebApiKey;
-            if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(key))
-                return null;
+            if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(key)) return null;
             try
             {
                 var sep = apiFileAndQuery.Contains('?') ? "&" : "?";
@@ -1011,7 +1101,7 @@ namespace MovieTheater.Controllers
                 req.Headers.TryAddWithoutValidation("User-Agent", "MovieTheaterArcade/1.0");
                 using var resp = await raClient.SendAsync(req);
                 if (!resp.IsSuccessStatusCode) return null;
-                return System.Text.Json.JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+                return await resp.Content.ReadAsStringAsync();
             }
             catch (Exception ex)
             {
@@ -1146,18 +1236,11 @@ namespace MovieTheater.Controllers
 
             try
             {
-                // API_GetUserSummary returns score + rank + recent achievements in one call. z/y = the site
-                // Web API account/key; u = the target user. A UA is harmless here (dorequest needs it; the
-                // /API/ surface doesn't 403 without one, but we set it for parity).
-                var url = $"https://retroachievements.org/API/API_GetUserSummary.php?u={Uri.EscapeDataString(raUser)}" +
-                          $"&g=5&a=10&z={Uri.EscapeDataString(webUser)}&y={Uri.EscapeDataString(webKey)}";
-                using var reqMsg = new HttpRequestMessage(HttpMethod.Get, url);
-                reqMsg.Headers.TryAddWithoutValidation("User-Agent", "MovieTheaterArcade/1.0");
-                using var resp = await raClient.SendAsync(reqMsg);
-                if (!resp.IsSuccessStatusCode)
+                // API_GetUserSummary returns score + rank + recent achievements in one call. Memory-only
+                // cache (10 min): a profile is volatile + per-user, so it isn't worth a DB row.
+                using var doc = await RaWebApiGetAsync($"API_GetUserSummary.php?u={Uri.EscapeDataString(raUser)}&g=5&a=10", RaTtlUser, null);
+                if (doc == null)
                     return Json(new { configured = true, linked = true, raUser, available = false });
-
-                using var doc = System.Text.Json.JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
                 var root = doc.RootElement;
                 string? Str(string k) => root.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString() : null;
                 long Num(string k) => root.TryGetProperty(k, out var v) && v.TryGetInt64(out var n) ? n : 0;
@@ -1796,7 +1879,7 @@ namespace MovieTheater.Controllers
             var raMeta = new Dictionary<long, (string title, string desc, string format, string? topUser, string? topScore)>();
             if (raGameId != null)
             {
-                using var doc = await RaWebApiGetAsync($"API_GetGameLeaderboards.php?i={raGameId}&c=500");
+                using var doc = await RaWebApiGetAsync($"API_GetGameLeaderboards.php?i={raGameId}&c=500", RaMemTtl, RaDbBoards);
                 if (doc != null && doc.RootElement.TryGetProperty("Results", out var results)
                     && results.ValueKind == System.Text.Json.JsonValueKind.Array)
                 {
@@ -1917,7 +2000,7 @@ namespace MovieTheater.Controllers
             var earnedById = earned.GroupBy(a => a.RaAchievementId)
                 .ToDictionary(g => g.Key, g => g.OrderBy(a => a.UnlockedUtc).First());
 
-            using var doc = await RaWebApiGetAsync($"API_GetGameExtended.php?i={raGameId}");
+            using var doc = await RaWebApiGetAsync($"API_GetGameExtended.php?i={raGameId}", RaMemTtl, RaDbDefs);
             if (doc == null)
                 return Json(new { gameId, raGameId, configured = RaWebApiConfigured, available = false, achievements = Array.Empty<object>() });
 
