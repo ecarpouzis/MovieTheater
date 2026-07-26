@@ -989,6 +989,46 @@ namespace MovieTheater.Controllers
 
         private static readonly HttpClient raClient = new() { Timeout = TimeSpan.FromSeconds(15) };
 
+        private const string RaMediaBase = "https://media.retroachievements.org";
+
+        /// <summary>GET a RetroAchievements Web API endpoint (the <c>/API/API_*.php</c> surface), keyed by the
+        /// SITE service account's Web API credentials (<c>ArcadeRaWebApiUser/Key</c>). Appends <c>z</c>/<c>y</c>
+        /// auth, sends the required User-Agent (dorequest 403s without one; harmless on /API), and returns the
+        /// parsed root element (caller owns the returned <see cref="System.Text.Json.JsonDocument"/> — dispose
+        /// it). Returns null when RA Web API isn't configured or the call fails — every caller degrades to a
+        /// graceful "unavailable", never a 500.</summary>
+        private async Task<System.Text.Json.JsonDocument?> RaWebApiGetAsync(string apiFileAndQuery)
+        {
+            var user = config.ArcadeRaWebApiUser;
+            var key = config.ArcadeRaWebApiKey;
+            if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(key))
+                return null;
+            try
+            {
+                var sep = apiFileAndQuery.Contains('?') ? "&" : "?";
+                var url = $"https://retroachievements.org/API/{apiFileAndQuery}{sep}z={Uri.EscapeDataString(user)}&y={Uri.EscapeDataString(key)}";
+                using var req = new HttpRequestMessage(HttpMethod.Get, url);
+                req.Headers.TryAddWithoutValidation("User-Agent", "MovieTheaterArcade/1.0");
+                using var resp = await raClient.SendAsync(req);
+                if (!resp.IsSuccessStatusCode) return null;
+                return System.Text.Json.JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Arcade RA Web API GET failed: {Path}", apiFileAndQuery);
+                return null;
+            }
+        }
+
+        // RA badge/image URL builders. A locked (un-earned) achievement uses the same badge id + "_lock".
+        private static string? RaBadgeUrl(string? badgeName, bool locked = false) =>
+            string.IsNullOrWhiteSpace(badgeName) ? null : $"{RaMediaBase}/Badge/{badgeName}{(locked ? "_lock" : "")}.png";
+        private static string? RaImageUrl(string? path) =>
+            string.IsNullOrWhiteSpace(path) ? null : RaMediaBase + path;
+
+        private bool RaWebApiConfigured =>
+            !string.IsNullOrWhiteSpace(config.ArcadeRaWebApiUser) && !string.IsNullOrWhiteSpace(config.ArcadeRaWebApiKey);
+
         /// <summary>The signed-in user's linked RA username + decrypted connect token, or (null, null) when
         /// they haven't linked (or the stored ciphertext no longer decrypts — treated as unlinked, never
         /// thrown). Used by <see cref="CreateRoom"/> to seed the worker's rcheevos login. The token is never
@@ -1712,9 +1752,11 @@ namespace MovieTheater.Controllers
             if (game == null) return NotFound(new { message = "Game not found." });
 
             // Span the whole collapsed card (all region/rev versions), so a board isn't split across dumps.
-            var versionIds = await movieDb.ArcadeGames.AsNoTracking()
+            var versions = await movieDb.ArcadeGames.AsNoTracking()
                 .Where(g => g.System == game.System && g.CollapseKey == game.CollapseKey)
-                .Select(g => g.Id).ToListAsync();
+                .Select(g => new { g.Id, g.RaGameId }).ToListAsync();
+            var versionIds = versions.Select(v => v.Id).ToList();
+            var raGameId = versions.Select(v => v.RaGameId).FirstOrDefault(r => r != null && r > 0);
 
             var entries = await (from e in movieDb.ArcadeLeaderboardEntries.AsNoTracking()
                                  join u in movieDb.Users on e.UserId equals u.UserID
@@ -1722,9 +1764,10 @@ namespace MovieTheater.Controllers
                                  select new { e.RaLeaderboardId, e.Title, e.Format, e.Value, e.Hardcore, e.Cheat, e.Savescum, e.Timeplay, e.AchievedUtc, e.UserId, u.Username })
                                 .ToListAsync();
 
-            var boards = entries
+            // Our friends' best entries, grouped + ranked per RA leaderboard (the mirror).
+            var friendBoards = entries
                 .GroupBy(x => x.RaLeaderboardId)
-                .Select(grp =>
+                .ToDictionary(grp => grp.Key, grp =>
                 {
                     var format = grp.Select(x => x.Format).FirstOrDefault() ?? "SCORE";
                     var ranked = (LowerIsBetter(format) ? grp.OrderBy(x => x.Value) : grp.OrderByDescending(x => x.Value))
@@ -1735,8 +1778,7 @@ namespace MovieTheater.Controllers
                             username = x.Username,
                             value = x.Value,
                             hardcore = x.Hardcore,
-                            // Run-legitimacy taints for the why-icon. `legit` = a clean hardcore run (badge);
-                            // otherwise the client shows the specific reason(s) it wasn't.
+                            // Run-legitimacy taints for the why-icon. `legit` = a clean hardcore run (badge).
                             cheat = x.Cheat,
                             savescum = x.Savescum,
                             timeplay = x.Timeplay,
@@ -1744,19 +1786,65 @@ namespace MovieTheater.Controllers
                             achievedUtc = x.AchievedUtc,
                             you = x.UserId == userId.Value,
                         }).ToList();
-                    return new
-                    {
-                        leaderboardId = grp.Key,
-                        title = grp.Select(x => x.Title).FirstOrDefault(t => !string.IsNullOrEmpty(t)),
-                        format,
-                        raUrl = $"https://retroachievements.org/leaderboardinfo.php?i={grp.Key}",
-                        entries = ranked,
-                    };
-                })
-                .OrderBy(b => b.title)
-                .ToList();
+                    return new { format, title = grp.Select(x => x.Title).FirstOrDefault(t => !string.IsNullOrEmpty(t)), ranked };
+                });
 
-            return Json(new { gameId, system = game.System, boards });
+            // Every board RA defines for this game — so a user sees ALL boards (per-level times, score, any%,
+            // etc.), even ones no friend has posted to yet. Kept in RA's order. Best-effort: if RA is
+            // unreachable/unconfigured we just show the boards friends have entries on.
+            var raOrder = new List<long>();
+            var raMeta = new Dictionary<long, (string title, string desc, string format, string? topUser, string? topScore)>();
+            if (raGameId != null)
+            {
+                using var doc = await RaWebApiGetAsync($"API_GetGameLeaderboards.php?i={raGameId}&c=500");
+                if (doc != null && doc.RootElement.TryGetProperty("Results", out var results)
+                    && results.ValueKind == System.Text.Json.JsonValueKind.Array)
+                {
+                    foreach (var r in results.EnumerateArray())
+                    {
+                        if (!(r.TryGetProperty("ID", out var idv) && idv.TryGetInt64(out var id)) || id <= 0) continue;
+                        string S(string k) => r.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString()! : "";
+                        // RA's global #1 for this board — a reference line so friends can see the world record.
+                        string? topUser = null, topScore = null;
+                        if (r.TryGetProperty("TopEntry", out var te) && te.ValueKind == System.Text.Json.JsonValueKind.Object)
+                        {
+                            topUser = te.TryGetProperty("User", out var tu) ? tu.GetString() : null;
+                            topScore = te.TryGetProperty("FormattedScore", out var fs) ? fs.GetString()
+                                : (te.TryGetProperty("Score", out var sc) ? sc.ToString() : null);
+                        }
+                        if (!raMeta.ContainsKey(id)) { raOrder.Add(id); raMeta[id] = (S("Title"), S("Description"), S("Format"), topUser, topScore); }
+                    }
+                }
+            }
+
+            // FRIENDS FIRST — this is a site between friends, so boards our friends have posted to lead;
+            // RA's own boards (no friend entry yet) come last, purely as a reference for what RA scores look
+            // like. OrderBy is stable, so RA's board order is preserved within each group.
+            var boardIds = raOrder.Concat(friendBoards.Keys.Where(k => !raMeta.ContainsKey(k))).ToList();
+            var boards = boardIds.Select(id =>
+            {
+                var hasFriends = friendBoards.TryGetValue(id, out var fb);
+                var hasMeta = raMeta.TryGetValue(id, out var meta);
+                var title = (hasFriends ? fb!.title : null) ?? (hasMeta ? meta.title : null);
+                var format = (hasFriends ? fb!.format : null) ?? (hasMeta && !string.IsNullOrEmpty(meta.format) ? meta.format : "SCORE");
+                var hasEntries = hasFriends && fb!.ranked.Count > 0;
+                return new
+                {
+                    leaderboardId = id,
+                    title = string.IsNullOrEmpty(title) ? $"Leaderboard {id}" : title,
+                    description = hasMeta ? meta.desc : null,
+                    format,
+                    hasEntries,
+                    raTopUser = hasMeta ? meta.topUser : null,
+                    raTopScore = hasMeta ? meta.topScore : null,
+                    raUrl = $"https://retroachievements.org/leaderboardinfo.php?i={id}",
+                    entries = hasFriends ? (object)fb!.ranked : Array.Empty<object>(),
+                };
+            })
+            .OrderByDescending(b => b.hasEntries)
+            .ToList();
+
+            return Json(new { gameId, system = game.System, raGameId, boards });
         }
 
         /// <summary>A user's mirrored RA achievement unlocks, newest first, paged (a heavy player accrues
@@ -1797,6 +1885,154 @@ namespace MovieTheater.Controllers
                 .ToListAsync();
 
             return Json(new { userId = targetUserId, totalCount, totalPoints, skip, take, rows });
+        }
+
+        /// <summary>Every achievement that EXISTS for a game (from RetroAchievements), with the signed-in
+        /// user's earned state overlaid from our own arcade mirror — so a card's modal can show the full set,
+        /// earned ones lit with their badge, the rest greyed (locked badge). Spans the collapsed card's
+        /// versions to find the RA game id and to match earned unlocks. Degrades to {configured:false} (no RA
+        /// Web API key) or {available:false} (RA unreachable / game has no RA set) without erroring.</summary>
+        [HttpGet("/API/Arcade/Game/{gameId:int}/Achievements")]
+        public async Task<IActionResult> GameAchievements(int gameId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var game = await movieDb.ArcadeGames.AsNoTracking().FirstOrDefaultAsync(g => g.Id == gameId);
+            if (game == null) return NotFound(new { message = "Game not found." });
+
+            var versions = await movieDb.ArcadeGames.AsNoTracking()
+                .Where(g => g.System == game.System && g.CollapseKey == game.CollapseKey)
+                .Select(g => new { g.Id, g.RaGameId }).ToListAsync();
+            var versionIds = versions.Select(v => v.Id).ToList();
+            var raGameId = versions.Select(v => v.RaGameId).FirstOrDefault(r => r != null && r > 0);
+
+            if (raGameId == null)
+                return Json(new { gameId, raGameId = (int?)null, configured = RaWebApiConfigured, available = false, achievements = Array.Empty<object>() });
+
+            // What THIS user earned in our arcade (mirror), keyed by RA achievement id — the earned overlay.
+            var earned = await movieDb.ArcadeAchievementUnlocks.AsNoTracking()
+                .Where(a => a.UserId == userId.Value && a.ArcadeGameId != null && versionIds.Contains(a.ArcadeGameId.Value))
+                .ToListAsync();
+            var earnedById = earned.GroupBy(a => a.RaAchievementId)
+                .ToDictionary(g => g.Key, g => g.OrderBy(a => a.UnlockedUtc).First());
+
+            using var doc = await RaWebApiGetAsync($"API_GetGameExtended.php?i={raGameId}");
+            if (doc == null)
+                return Json(new { gameId, raGameId, configured = RaWebApiConfigured, available = false, achievements = Array.Empty<object>() });
+
+            var root = doc.RootElement;
+            var items = new List<(int order, object obj)>();
+            int earnedInSet = 0, pointsEarned = 0, pointsTotal = 0;
+            if (root.TryGetProperty("Achievements", out var achs) && achs.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                foreach (var ap in achs.EnumerateObject())
+                {
+                    var a = ap.Value;
+                    long id = a.TryGetProperty("ID", out var idv) && idv.TryGetInt64(out var idl) ? idl
+                        : (long.TryParse(ap.Name, out var pn) ? pn : 0);
+                    var points = a.TryGetProperty("Points", out var pv) && pv.TryGetInt32(out var pvv) ? pvv : 0;
+                    var order = a.TryGetProperty("DisplayOrder", out var ov) && ov.TryGetInt32(out var ovv) ? ovv : 0;
+                    var mine = earnedById.TryGetValue(id, out var m) ? m : null;
+                    pointsTotal += points;
+                    if (mine != null) { earnedInSet++; pointsEarned += points; }
+                    items.Add((order, new
+                    {
+                        id,
+                        title = a.TryGetProperty("Title", out var t) ? t.GetString() : null,
+                        description = a.TryGetProperty("Description", out var d) ? d.GetString() : null,
+                        points,
+                        badgeUrl = RaBadgeUrl(a.TryGetProperty("BadgeName", out var b) ? b.GetString() : null, locked: mine == null),
+                        earned = mine != null,
+                        earnedHardcore = mine?.Hardcore ?? false,
+                        earnedUtc = mine?.UnlockedUtc,
+                        cheat = mine?.Cheat ?? false,
+                        savescum = mine?.Savescum ?? false,
+                        timeplay = mine?.Timeplay ?? false,
+                        legit = mine != null && mine.Hardcore && !mine.Cheat && !mine.Savescum && !mine.Timeplay,
+                        raUrl = "https://retroachievements.org/achievement/" + id,
+                    }));
+                }
+            }
+
+            return Json(new
+            {
+                gameId,
+                raGameId,
+                configured = true,
+                available = true,
+                title = root.TryGetProperty("Title", out var gt) ? gt.GetString() : game.Title,
+                imageIcon = RaImageUrl(root.TryGetProperty("ImageIcon", out var ii) ? ii.GetString() : null),
+                raUrl = "https://retroachievements.org/game/" + raGameId,
+                numAchievements = items.Count,
+                earnedCount = earnedInSet,
+                pointsEarned,
+                pointsTotal,
+                achievements = items.OrderBy(x => x.order).Select(x => x.obj).ToList(),
+            });
+        }
+
+        /// <summary>The trophy-room summary for a user: the games they've earned achievements in (from our
+        /// arcade mirror), collapsed across region/rev versions, with per-game counts + points + how many were
+        /// legit hardcore, newest activity first. Drives the trophy-room grid; each tile drills into the game's
+        /// full achievement set (<see cref="GameAchievements"/>). Any signed-in user can view any user's —
+        /// communal site.</summary>
+        [HttpGet("/API/Arcade/Users/{targetUserId:int}/Trophies")]
+        public async Task<IActionResult> UserTrophies(int targetUserId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var rows = await (from a in movieDb.ArcadeAchievementUnlocks.AsNoTracking()
+                              where a.UserId == targetUserId && a.ArcadeGameId != null
+                              join g in movieDb.ArcadeGames on a.ArcadeGameId equals g.Id
+                              select new
+                              {
+                                  a.ArcadeGameId,
+                                  g.System,
+                                  g.CollapseKey,
+                                  g.Title,
+                                  a.Points,
+                                  a.Hardcore,
+                                  a.Cheat,
+                                  a.Savescum,
+                                  a.Timeplay,
+                                  a.UnlockedUtc,
+                              }).ToListAsync();
+
+            var games = rows
+                .GroupBy(x => new { x.System, x.CollapseKey })
+                .Select(grp => new
+                {
+                    gameId = grp.OrderByDescending(x => x.UnlockedUtc).Select(x => x.ArcadeGameId).First(),
+                    title = grp.Select(x => x.Title).First(),
+                    system = grp.Key.System,
+                    earnedCount = grp.Count(),
+                    points = grp.Sum(x => x.Points),
+                    hardcoreCount = grp.Count(x => x.Hardcore),
+                    legitCount = grp.Count(x => x.Hardcore && !x.Cheat && !x.Savescum && !x.Timeplay),
+                    lastUnlockedUtc = grp.Max(x => x.UnlockedUtc),
+                })
+                .OrderByDescending(g => g.lastUnlockedUtc)
+                .ToList();
+
+            return Json(new
+            {
+                userId = targetUserId,
+                totalPoints = rows.Sum(x => x.Points),
+                totalEarned = rows.Count,
+                gameCount = games.Count,
+                games,
+            });
+        }
+
+        /// <summary>The signed-in user's own trophy room (self-scoped via the auth cookie, so the client
+        /// needs no user id — the app runs on username). Delegates to <see cref="UserTrophies"/>.</summary>
+        [HttpGet("/API/Arcade/Trophies/Mine")]
+        public Task<IActionResult> MyTrophies()
+        {
+            var userId = GetCurrentUserId();
+            return userId == null ? Task.FromResult<IActionResult>(Unauthorized()) : UserTrophies(userId.Value);
         }
 
         /// <summary>The signed-in user's saves for a game — the source for the resume picker / "My Saves".</summary>

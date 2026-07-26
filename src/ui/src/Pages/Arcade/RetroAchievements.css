@@ -1,0 +1,76 @@
+/* RetroAchievements hub (account + trophy room) and the per-game achievement grid. Theme-aware via the
+   arcade CSS variables so it reads correctly in both light and dark. */
+
+.ra-modal .ant-modal-body { padding-top: 8px; }
+.ra-modal__section-h {
+  margin: 18px 0 10px;
+  font-family: var(--font-display, inherit);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-title, var(--text-primary));
+  border-top: 1px solid var(--card-border);
+  padding-top: 14px;
+}
+
+/* ── Account ─────────────────────────────────────────────────────────── */
+.ra-acct--loading { display: flex; justify-content: center; padding: 16px; }
+.ra-acct__blurb { color: var(--text-secondary); font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+.ra-acct__form { display: flex; gap: 8px; flex-wrap: wrap; }
+.ra-acct__form .ant-input, .ra-acct__form .ant-input-password { flex: 1 1 180px; }
+.ra-acct__linked {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 12px; border: 1px solid var(--card-border); border-radius: 8px;
+  background: var(--card-surface); color: var(--text-primary);
+}
+.ra-acct__profile { margin-top: 12px; }
+.ra-acct__nums { display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap; }
+.ra-acct__num { display: flex; flex-direction: column; }
+.ra-acct__num strong { font-size: 22px; color: var(--accent, var(--text-primary)); line-height: 1.1; }
+.ra-acct__num span { font-size: 12px; color: var(--text-muted); }
+.ra-acct__link, .ra-acct__recent a, .agm-ach__ra, .agm-lb__ra { color: var(--accent-link, var(--accent)); }
+.ra-acct__recent { margin-top: 12px; }
+.ra-acct__recent-h { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+.ra-acct__recent ul { list-style: none; margin: 0; padding: 0; }
+.ra-acct__recent li { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 13px; }
+.ra-acct__recent-pts { color: var(--text-muted); white-space: nowrap; }
+.ra-acct__note { margin-top: 10px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Trophy room ─────────────────────────────────────────────────────── */
+.ra-trophy--loading, .ra-trophy--empty { display: flex; justify-content: center; padding: 20px; }
+.ra-trophy__totals { display: flex; gap: 24px; margin-bottom: 14px; }
+.ra-trophy__total { display: flex; flex-direction: column; }
+.ra-trophy__total strong { font-size: 20px; color: var(--accent, var(--text-primary)); line-height: 1.1; }
+.ra-trophy__total span { font-size: 12px; color: var(--text-muted); }
+.ra-trophy__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.ra-trophy__tile {
+  text-align: left; cursor: pointer; border: 1px solid var(--card-border); border-radius: 10px;
+  background: var(--card-surface); color: var(--text-primary); padding: 10px 12px; transition: border-color .15s, box-shadow .15s;
+}
+.ra-trophy__tile:hover { border-color: var(--accent, var(--card-border)); box-shadow: var(--card-shadow-hover, 0 2px 10px rgba(0,0,0,.15)); }
+.ra-trophy__tile-title { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ra-trophy__tile-sys { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin: 2px 0 6px; }
+.ra-trophy__tile-stats { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-secondary); flex-wrap: wrap; }
+.ra-trophy__tile-stats .ant-tag { margin: 0; }
+.ra-trophy__back {
+  background: none; border: none; cursor: pointer; color: var(--accent-link, var(--accent)); font-size: 13px; padding: 0 0 8px;
+}
+.ra-trophy__game-title { font-weight: 700; font-size: 16px; color: var(--text-title, var(--text-primary)); margin-bottom: 8px; }
+
+/* ── Per-game achievement grid (also used inside the game modal) ──────── */
+.agm-ach--loading, .agm-ach--empty { display: flex; justify-content: center; padding: 16px; }
+.agm-ach__head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.agm-ach__stat { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+.agm-ach__pts { color: var(--text-muted); }
+.agm-ach__bar { flex: 1; margin: 0 !important; }
+.agm-ach__ra { white-space: nowrap; font-size: 12px; }
+.agm-ach__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 8px; }
+.agm-ach__cell { position: relative; display: block; aspect-ratio: 1; border-radius: 8px; overflow: hidden; }
+.agm-ach__badge { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 8px; }
+.agm-ach__badge--none { display: flex; align-items: center; justify-content: center; font-size: 24px; background: var(--chip-neutral-bg); }
+.agm-ach__cell--locked { opacity: .55; filter: grayscale(.5); }
+.agm-ach__cell--earned { box-shadow: 0 0 0 2px var(--accent-solid, #e0a800); }
+.agm-ach__cell--earned:hover { transform: scale(1.06); transition: transform .1s; }
+.agm-ach__why { position: absolute; top: 1px; right: 1px; transform: scale(.72); transform-origin: top right; }
+.agm-ach__why .ant-tag { margin: 0; padding: 0 3px; line-height: 16px; }
+.agm-ach__tip-title { font-weight: 700; margin-bottom: 2px; }
+.agm-ach__tip-when { margin-top: 3px; opacity: .8; font-size: 11px; }

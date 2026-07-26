@@ -730,6 +730,34 @@ function getArcadeUserAchievements(userId, params = {}) {
     .then((r) => (r.ok ? r.json() : { rows: [], totalCount: 0, totalPoints: 0 }))
     .catch(() => ({ rows: [], totalCount: 0, totalPoints: 0 }));
 }
+// A user's real RA profile pulled from retroachievements.org (points, rank, recent). Omit userId for self.
+// { configured, linked, available, raUser, totalPoints, rank, recent:[...] }.
+function getRetroAchievementsProfile(userId) {
+  const q = userId ? `?userId=${userId}` : "";
+  return fetch(`/API/Arcade/RetroAchievements/Profile${q}`)
+    .then((r) => (r.ok ? r.json() : { configured: false, linked: false }))
+    .catch(() => ({ configured: false, linked: false }));
+}
+// Every achievement that EXISTS for a game (RA), with the signed-in user's earned overlay + badges.
+// { configured, available, raGameId, title, imageIcon, achievements:[{ id,title,description,points,badgeUrl,earned,earnedHardcore,earnedUtc,legit,... }], earnedCount, pointsEarned, pointsTotal }.
+function getArcadeGameAchievements(gameId) {
+  return fetch(`/API/Arcade/Game/${gameId}/Achievements`)
+    .then((r) => (r.ok ? r.json() : { available: false, achievements: [] }))
+    .catch(() => ({ available: false, achievements: [] }));
+}
+// The trophy-room summary: games the user has earned achievements in, collapsed across versions.
+// { userId, totalPoints, totalEarned, gameCount, games:[{ gameId,title,system,earnedCount,points,hardcoreCount,legitCount,lastUnlockedUtc }] }.
+function getArcadeUserTrophies(userId) {
+  return fetch(`/API/Arcade/Users/${userId}/Trophies`)
+    .then((r) => (r.ok ? r.json() : { games: [], totalPoints: 0, totalEarned: 0, gameCount: 0 }))
+    .catch(() => ({ games: [], totalPoints: 0, totalEarned: 0, gameCount: 0 }));
+}
+// The signed-in user's OWN trophy room (self-scoped via the auth cookie — no user id needed).
+function getMyArcadeTrophies() {
+  return fetch(`/API/Arcade/Trophies/Mine`)
+    .then((r) => (r.ok ? r.json() : { games: [], totalPoints: 0, totalEarned: 0, gameCount: 0 }))
+    .catch(() => ({ games: [], totalPoints: 0, totalEarned: 0, gameCount: 0 }));
+}
 
 // The render profiles (core-and-renderer combinations) offered per system, for the play-button
 // launch menu: { "n64": [{ id, label, isDefault }], "ps1": [...], ... }. Static; fetched once.
@@ -1150,8 +1178,12 @@ const MovieAPI = {
   getRetroAchievementsStatus,
   linkRetroAchievements,
   unlinkRetroAchievements,
+  getRetroAchievementsProfile,
   getArcadeLeaderboards,
   getArcadeUserAchievements,
+  getArcadeGameAchievements,
+  getArcadeUserTrophies,
+  getMyArcadeTrophies,
   listArcadeSaves,
   getArcadeRecentlyPlayed,
   getAllArcadeSaves,

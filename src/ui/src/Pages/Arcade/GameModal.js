@@ -4,6 +4,7 @@ import GameCover from "./GameCover";
 import CheatPicker from "./CheatPicker";
 import ArcadeGameConfig from "./ArcadeGameConfig";
 import ArcadeLeaderboards from "./ArcadeLeaderboards";
+import ArcadeAchievements from "./ArcadeAchievements";
 import { systemLabel } from "./arcadeSystems";
 import "./GameModal.css";
 
@@ -31,6 +32,7 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
   const [sel, setSel] = useState(defaultVersionId);
   const [configOpen, setConfigOpen] = useState(false);
   const [boardsOpen, setBoardsOpen] = useState(false);
+  const [achOpen, setAchOpen] = useState(false);
   // Filters can change the default version out from under an open modal (rare), so track it.
   useEffect(() => { setSel(defaultVersionId); }, [defaultVersionId]);
 
@@ -210,6 +212,11 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
             <button type="button" className="arcade-link" onClick={() => setBoardsOpen((o) => !o)}>
               🏆 Leaderboards
             </button>
+            {game.raAchievements && (
+              <button type="button" className="arcade-link" onClick={() => setAchOpen((o) => !o)}>
+                🎖️ Achievements
+              </button>
+            )}
             {canEditMovies && game.configurable && (
               <button type="button" className="arcade-link" onClick={() => setConfigOpen(true)}>
                 ⚙ Configure
@@ -220,6 +227,12 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
           {boardsOpen && (
             <div className="agm-boards">
               <ArcadeLeaderboards gameId={sel} />
+            </div>
+          )}
+
+          {achOpen && (
+            <div className="agm-boards">
+              <ArcadeAchievements gameId={sel} />
             </div>
           )}
         </div>

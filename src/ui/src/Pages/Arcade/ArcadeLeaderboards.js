@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Spin, Tag, Tooltip } from "antd";
+import { Spin, Tag, Tooltip, Collapse } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 
 // Run-legitimacy markers for a board/achievement entry. A clean hardcore run gets the trophy; anything
@@ -81,17 +81,23 @@ export default function ArcadeLeaderboards({ gameId }) {
   }, [gameId]);
 
   if (loading) return <div className="agm-lb agm-lb--loading"><Spin size="small" /></div>;
-  if (boards.length === 0) {
+
+  // Friends first — this is a site between friends. Boards our friends have runs on lead; RA's own boards
+  // (no friend run yet) are tucked into a secondary section purely as a reference for what RA tracks.
+  const friendBoards = boards.filter((b) => b.hasEntries);
+  const raOnly = boards.filter((b) => !b.hasEntries);
+
+  if (friendBoards.length === 0 && raOnly.length === 0) {
     return (
       <div className="agm-lb agm-lb--empty">
-        No leaderboard runs yet. Play a competitive room with RetroAchievements linked to set the first.
+        No leaderboard runs yet. Play a competitive room to set the first friend score.
       </div>
     );
   }
 
   return (
     <div className="agm-lb">
-      {boards.map((b) => (
+      {friendBoards.map((b) => (
         <div key={b.leaderboardId} className="agm-lb__board">
           <div className="agm-lb__board-title">
             {b.title || `Leaderboard ${b.leaderboardId}`}
@@ -107,8 +113,34 @@ export default function ArcadeLeaderboards({ gameId }) {
               </li>
             ))}
           </ol>
+          {b.raTopScore && (
+            <div className="agm-lb__ra-ref" title="The world-record entry on RetroAchievements">
+              🌍 RA best: <strong>{b.raTopScore}</strong>{b.raTopUser ? ` — ${b.raTopUser}` : ""}
+            </div>
+          )}
         </div>
       ))}
+
+      {friendBoards.length === 0 && (
+        <div className="agm-lb__hint">No friend runs yet — here's what RetroAchievements tracks for this game.</div>
+      )}
+
+      {raOnly.length > 0 && (
+        <Collapse ghost className="agm-lb__ra-boards" defaultActiveKey={friendBoards.length === 0 ? ["ra"] : []}>
+          <Collapse.Panel key="ra" header={`Other RA boards (${raOnly.length}) — no friend runs yet`}>
+            {raOnly.map((b) => (
+              <div key={b.leaderboardId} className="agm-lb__ra-board">
+                <a className="agm-lb__ra-board-title" href={b.raUrl} target="_blank" rel="noreferrer">
+                  {b.title || `Leaderboard ${b.leaderboardId}`} ↗
+                </a>
+                {b.raTopScore && (
+                  <span className="agm-lb__ra-ref">🌍 {b.raTopScore}{b.raTopUser ? ` — ${b.raTopUser}` : ""}</span>
+                )}
+              </div>
+            ))}
+          </Collapse.Panel>
+        </Collapse>
+      )}
     </div>
   );
 }
