@@ -471,9 +471,15 @@ export default function ArcadeRoomPage() {
     const onFsChange = () => setIsFs(!!(document.fullscreenElement || document.webkitFullscreenElement));
     document.addEventListener("fullscreenchange", onFsChange);
     document.addEventListener("webkitfullscreenchange", onFsChange);
+    // Toasts (achievement pops, Save/Load, etc.) render into document.body by default — which is NOT
+    // visible when the player is fullscreened (only the fullscreen element + its descendants paint). Mount
+    // messages into the current fullscreen element when there is one, so an achievement toast shows over
+    // the game in fullscreen; falls back to body otherwise. Re-applied on every message via the closure.
+    message.config({ top: 24, getContainer: () => document.fullscreenElement || document.webkitFullscreenElement || document.body });
     return () => {
       document.removeEventListener("fullscreenchange", onFsChange);
       document.removeEventListener("webkitfullscreenchange", onFsChange);
+      message.config({ getContainer: () => document.body }); // restore app default on leave
     };
   }, []);
 

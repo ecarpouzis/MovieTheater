@@ -45908,10 +45908,10 @@ index 0000000..9e1a31e
 +#endif /* CHEEVOS_BRIDGE_H */
 diff --git a/pkg/worker/cheevos/cheevos.go b/pkg/worker/cheevos/cheevos.go
 new file mode 100644
-index 0000000..614ddc5
+index 0000000..f96eaed
 --- /dev/null
 +++ b/pkg/worker/cheevos/cheevos.go
-@@ -0,0 +1,431 @@
+@@ -0,0 +1,438 @@
 +// Package cheevos embeds the RetroAchievements runtime (rcheevos' rc_client) into the libretro worker.
 +// rc_client hashes the loaded ROM, logs the player in with their OWN connect token, evaluates
 +// achievement + leaderboard triggers each emulated frame against core RAM, and submits unlocks/runs to
@@ -46307,6 +46307,13 @@ index 0000000..614ddc5
 +func goAchievementUnlocked(key C.uintptr_t, id C.uint32_t, title, desc *C.char, points C.uint32_t) {
 +	c := lookup(uintptr(key))
 +	if c == nil || c.handlers.OnAchievement == nil {
++		return
++	}
++	// Skip RA's 0-point WARNING pseudo-achievements ("Warning: Unknown Emulator" — our client isn't a
++	// registered RA emulator; "Unsupported Game Version" — a romhack/unmatched hash). RA serves these as
++	// achievement-triggered events on an unsupported session; real core achievements always carry points.
++	// Filtering here keeps them out of both the in-room toast and the site DB mirror.
++	if points == 0 {
 +		return
 +	}
 +	c.handlers.OnAchievement(Achievement{

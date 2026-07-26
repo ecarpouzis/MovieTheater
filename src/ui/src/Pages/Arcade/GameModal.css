@@ -182,6 +182,12 @@
 .agm-start-menu.ant-dropdown {
   z-index: 1700;
 }
+/* Version + cheat Select dropdowns (both use .arcade-version-dropdown). The version one portals to
+   document.body, so at antd's default z-index (~1050) it renders BEHIND this modal (z-index 1500) —
+   the "pop-under" report. Lift the dropdown above the modal (and the start menu) so it's usable. */
+.arcade-version-dropdown.ant-select-dropdown {
+  z-index: 1701 !important;
+}
 .agm-start-menu .ant-dropdown-menu {
   background: var(--card-surface);
   border: 1px solid var(--card-border);
