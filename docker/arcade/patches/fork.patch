@@ -9041,7 +9041,7 @@ index f3553b1..fc3929a 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..cbd9803 100644
+index 6974d59..d926aa0 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
 @@ -1,8 +1,10 @@
@@ -9661,8 +9661,8 @@ index 6974d59..cbd9803 100644
 +	if f.ra == nil {
 +		return
 +	}
-+	f.ra.SetMemory(sysRAM, uintptr(sysSize), saveRAM, uintptr(saveSize))
-+	f.log.Info().Msgf("RetroAchievements: session started (hardcore=%v)", f.raHard)
++	f.ra.SetMemory(sysRAM, uintptr(sysSize), saveRAM, uintptr(saveSize), f.nano.MemoryMap())
++	f.log.Info().Msgf("RetroAchievements: session started (hardcore=%v, memmap=%v)", f.raHard, f.nano.MemoryMap() != nil)
 +}
 +
 +// stopCheevos tears the client down on the emulator goroutine (after the frame loop stops).
@@ -12275,7 +12275,7 @@ index 669862d..4bc57d8 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..63afe9a 100644
+index 17f10fc..d354c02 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 @@ -4,9 +4,11 @@ import (
@@ -12369,7 +12369,7 @@ index 17f10fc..63afe9a 100644
  		av  C.struct_retro_system_av_info
  		i   C.struct_retro_system_info
  		api C.unsigned
-@@ -63,16 +111,52 @@ type Nanoarch struct {
+@@ -63,16 +111,56 @@ type Nanoarch struct {
  			enabled bool
  			autoCtx bool
  		}
@@ -12410,6 +12410,10 @@ index 17f10fc..63afe9a 100644
 -	limiter                  func(func())
 -	log                      *logger.Logger
 +	hackSkipBootRestore      bool
++	// The core's address-space descriptors (const struct retro_memory_map*) from SET_MEMORY_MAPS, if it
++	// provides them. RetroAchievements uses these to map RA addresses to core RAM precisely. Nil = the
++	// core set none (RA falls back to the SYSTEM_RAM mapping). Valid for the loaded session.
++	memoryMap unsafe.Pointer
 +	// MovieTheater patch 0016: skip the informational retro_serialize_size probe right after load.
 +	// Dolphin defers its whole video/emu init to context_reset + first retro_run (its EmuThread spawns
 +	// there), so serialize_size at load walks the save-state chain into a NULL g_vertex_manager →
@@ -12426,7 +12430,7 @@ index 17f10fc..63afe9a 100644
  
  	audioBuffCb    *C.struct_retro_audio_buffer_status_callback
  	lastFrameDelta float64 // most recent frame delta (ns)
-@@ -87,22 +171,36 @@ type Handlers struct {
+@@ -87,22 +175,36 @@ type Handlers struct {
  }
  
  type FrameInfo struct {
@@ -12466,7 +12470,7 @@ index 17f10fc..63afe9a 100644
  	CoreAspectRatio bool
  	KbMouseSupport  bool
  	LibExt          string
-@@ -162,6 +260,14 @@ func (n *Nanoarch) Close()                           { n.Stopped.Store(true); n.
+@@ -162,6 +264,14 @@ func (n *Nanoarch) Close()                           { n.Stopped.Store(true); n.
  func (n *Nanoarch) SetLogger(log *logger.Logger)     { n.log = log }
  func (n *Nanoarch) SetVideoDebounce(t time.Duration) { n.limiter = NewLimit(t) }
  func (n *Nanoarch) SaveDir() string                  { return C.GoString(n.cSaveDirectory) }
@@ -12481,7 +12485,7 @@ index 17f10fc..63afe9a 100644
  func (n *Nanoarch) SetSaveDirSuffix(sx string) {
  	dir := C.GoString(n.cSaveDirectory) + "/" + sx
  	err := os.CheckCreateDir(dir)
-@@ -184,29 +290,78 @@ func (n *Nanoarch) DeleteSaveDir() error {
+@@ -184,29 +294,78 @@ func (n *Nanoarch) DeleteSaveDir() error {
  
  func (n *Nanoarch) CoreLoad(meta Metadata) {
  	var err error
@@ -12562,7 +12566,7 @@ index 17f10fc..63afe9a 100644
  
  	corePath := meta.LibPath + meta.LibExt
  	coreLib, err = open(corePath)
-@@ -228,6 +383,8 @@ func (n *Nanoarch) CoreLoad(meta Metadata) {
+@@ -228,6 +387,8 @@ func (n *Nanoarch) CoreLoad(meta Metadata) {
  	retroReset = coreLib.load("retro_reset")
  	retroRun = coreLib.load("retro_run")
  	retroLoadGame = coreLib.load("retro_load_game")
@@ -12571,7 +12575,7 @@ index 17f10fc..63afe9a 100644
  	retroUnloadGame = coreLib.load("retro_unload_game")
  	retroSerializeSize = coreLib.load("retro_serialize_size")
  	retroSerialize = coreLib.load("retro_serialize")
-@@ -284,9 +441,10 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -284,9 +445,10 @@ func (n *Nanoarch) LoadGame(path string) error {
  
  	n.log.Debug().Msgf("ROM - big: %v, size: %v", big, byteCountBinary(int64(game.size)))
  
@@ -12584,7 +12588,7 @@ index 17f10fc..63afe9a 100644
  		if _, ok := n.options4rom[romName]; ok {
  			for k, v := range n.options4rom[romName] {
  				n.options[k] = v
-@@ -295,10 +453,64 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -295,10 +457,64 @@ func (n *Nanoarch) LoadGame(path string) error {
  		}
  	}
  
@@ -12649,7 +12653,7 @@ index 17f10fc..63afe9a 100644
  	var av C.struct_retro_system_av_info
  	C.bridge_retro_get_system_av_info(retroGetSystemAVInfo, &av)
  	n.log.Info().Msgf("System A/V >>> %vx%v (%vx%v), [%vfps], AR [%v], audio [%vHz]",
-@@ -306,13 +518,52 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -306,13 +522,52 @@ func (n *Nanoarch) LoadGame(path string) error {
  		av.geometry.max_width, av.geometry.max_height,
  		av.timing.fps, av.geometry.aspect_ratio, av.timing.sample_rate,
  	)
@@ -12704,7 +12708,7 @@ index 17f10fc..63afe9a 100644
  
  	Nan0.tickTime = time.Duration(float64(time.Second) / float64(n.sys.av.timing.fps))
  	if n.vfr {
-@@ -322,15 +573,55 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -322,15 +577,55 @@ func (n *Nanoarch) LoadGame(path string) error {
  	n.Stopped.Store(false)
  
  	if n.Video.gl.enabled {
@@ -12762,7 +12766,7 @@ index 17f10fc..63afe9a 100644
  	}
  
  	// set default controller types on all ports
-@@ -339,8 +630,38 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -339,8 +634,38 @@ func (n *Nanoarch) LoadGame(path string) error {
  		C.bridge_retro_set_controller_port_device(retroSetControllerPortDevice, C.uint(i), C.RETRO_DEVICE_JOYPAD)
  	}
  
@@ -12803,7 +12807,7 @@ index 17f10fc..63afe9a 100644
  		for _, device := range v {
  			C.bridge_retro_set_controller_port_device(retroSetControllerPortDevice, C.uint(k), C.unsigned(device))
  			n.log.Debug().Msgf("set custom port-device: %v:%v", k, device)
-@@ -361,6 +682,9 @@ func (n *Nanoarch) Shutdown() {
+@@ -361,6 +686,9 @@ func (n *Nanoarch) Shutdown() {
  			if n.Video.gl.enabled {
  				C.same_thread(C.deinit_video_cgo)
  			}
@@ -12813,7 +12817,7 @@ index 17f10fc..63afe9a 100644
  			C.same_thread(C.same_thread_stop)
  		})
  	} else {
-@@ -381,6 +705,9 @@ func (n *Nanoarch) Shutdown() {
+@@ -381,6 +709,9 @@ func (n *Nanoarch) Shutdown() {
  				runtime.UnlockOSThread()
  			})
  		}
@@ -12823,7 +12827,7 @@ index 17f10fc..63afe9a 100644
  	}
  
  	setRotation(0)
-@@ -406,11 +733,33 @@ func (n *Nanoarch) syncInputToCache() {
+@@ -406,11 +737,33 @@ func (n *Nanoarch) syncInputToCache() {
  		n.keyboard.SyncToCache()
  	}
  	n.mouse.SyncToCache()
@@ -12857,7 +12861,7 @@ index 17f10fc..63afe9a 100644
  	if n.LibCo {
  		C.same_thread(retroRun)
  	} else {
-@@ -427,10 +776,46 @@ func (n *Nanoarch) Run() {
+@@ -427,10 +780,46 @@ func (n *Nanoarch) Run() {
  	}
  }
  
@@ -12908,7 +12912,7 @@ index 17f10fc..63afe9a 100644
  func (n *Nanoarch) InputKeyboard(_ int, data []byte) {
  	if n.keyboardCb == nil {
  		return
-@@ -512,13 +897,34 @@ const (
+@@ -512,13 +901,34 @@ const (
  )
  
  // SaveState returns emulator internal state.
@@ -12945,7 +12949,7 @@ index 17f10fc..63afe9a 100644
  	} else {
  		rez = bool(C.bridge_retro_serialize(retroSerialize, unsafe.Pointer(&data[0]), size))
  	}
-@@ -536,11 +942,37 @@ func RestoreSaveState(st State) error {
+@@ -536,11 +946,37 @@ func RestoreSaveState(st State) error {
  		return errors.New("empty load state")
  	}
  
@@ -12984,7 +12988,7 @@ index 17f10fc..63afe9a 100644
  	} else {
  		rez = bool(C.bridge_retro_unserialize(retroUnserialize, unsafe.Pointer(&st[0]), size))
  	}
-@@ -581,6 +1013,20 @@ func memoryData(id C.uint) unsafe.Pointer {
+@@ -581,6 +1017,24 @@ func memoryData(id C.uint) unsafe.Pointer {
  	return C.bridge_retro_get_memory_data(retroGetMemoryData, id)
  }
  
@@ -13002,10 +13006,14 @@ index 17f10fc..63afe9a 100644
 +	return memoryData(C.uint(id)), memorySize(C.uint(id))
 +}
 +
++// MemoryMap returns the core's retro_memory_map pointer captured from SET_MEMORY_MAPS (nil if the core
++// set none). RetroAchievements passes it to rc_libretro so RA addresses map to core RAM precisely.
++func (n *Nanoarch) MemoryMap() unsafe.Pointer { return n.memoryMap }
++
  // ptSaveRam return SRAM memory pointer if core supports it or nil.
  func ptSaveRAM() *mem {
  	ptr, size := memoryData(C.RETRO_MEMORY_SAVE_RAM), memorySize(C.RETRO_MEMORY_SAVE_RAM)
-@@ -613,6 +1059,8 @@ var (
+@@ -613,6 +1067,8 @@ var (
  	retroGetSystemInfo           unsafe.Pointer
  	retroInit                    unsafe.Pointer
  	retroLoadGame                unsafe.Pointer
@@ -13014,7 +13022,7 @@ index 17f10fc..63afe9a 100644
  	retroReset                   unsafe.Pointer
  	retroRun                     unsafe.Pointer
  	retroSetAudioSample          unsafe.Pointer
-@@ -630,11 +1078,71 @@ var (
+@@ -630,11 +1086,71 @@ var (
  	retroUnserialize             unsafe.Pointer
  )
  
@@ -13086,7 +13094,7 @@ index 17f10fc..63afe9a 100644
  
  	// some frames can be rendered slower or faster than internal 1/fps core tick
  	// so track actual frame render time for proper RTP packet timestamps
-@@ -668,10 +1176,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -668,10 +1184,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	bytes := packed * height
  
  	var data_ []byte
@@ -13151,7 +13159,7 @@ index 17f10fc..63afe9a 100644
  		// if Libretro renders frame with OpenGL context
  		data_ = graphics.ReadFramebuffer(bytes, width, height)
  	}
-@@ -680,7 +1242,104 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -680,7 +1250,104 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	// also we have an option of xN output frame magnification
  	// so, it may be rescaled
  
@@ -13257,7 +13265,7 @@ index 17f10fc..63afe9a 100644
  }
  
  //export coreAudioSampleBatch
-@@ -688,6 +1347,7 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+@@ -688,6 +1355,7 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
  	if Nan0.Stopped.Load() {
  		return frames
  	}
@@ -13265,7 +13273,7 @@ index 17f10fc..63afe9a 100644
  	Nan0.Handlers.OnAudio(data, int(frames)<<1)
  
  	// Audio buffer status for the core (e.g. mGBA frameskip).
-@@ -739,7 +1399,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
+@@ -739,7 +1407,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
  
  //export coreGetProcAddress
  func coreGetProcAddress(sym *C.char) C.retro_proc_address_t {
@@ -13280,7 +13288,18 @@ index 17f10fc..63afe9a 100644
  }
  
  //export coreEnvironment
-@@ -751,6 +1417,20 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -748,9 +1422,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+ 	// see core_environment_cgo
+ 
+ 	switch cmd {
++	case C.RETRO_ENVIRONMENT_SET_MEMORY_MAPS:
++		// The core's address-space descriptors (const struct retro_memory_map*, valid for the session).
++		// RetroAchievements needs these to map RA addresses to core RAM precisely — without them the
++		// SYSTEM_RAM-only fallback leaves high work-RAM addresses (e.g. Genesis 0xFFxx, where Sonic keeps
++		// its ring/score counters) unmapped, and rcheevos disables every achievement that reads them.
++		Nan0.memoryMap = data
++		Nan0.log.Info().Msg("retro_set_memory_maps (captured for RetroAchievements)")
++		return true
  	case C.RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
  		Nan0.log.Debug().Msgf("retro_set_system_av_info")
  		av := *(*C.struct_retro_system_av_info)(data)
@@ -13301,7 +13320,7 @@ index 17f10fc..63afe9a 100644
  		if isGeometryDifferent(av.geometry) {
  			geometryChange(av.geometry)
  		}
-@@ -788,6 +1468,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -788,6 +1484,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	case C.RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
  		*(**C.char)(data) = Nan0.cSaveDirectory
  		return true
@@ -13314,7 +13333,7 @@ index 17f10fc..63afe9a 100644
  	case C.RETRO_ENVIRONMENT_SET_MESSAGE:
  		// only with the Libretro debug mode
  		if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -797,12 +1483,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -797,12 +1499,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -13363,7 +13382,7 @@ index 17f10fc..63afe9a 100644
  		if v, ok := Nan0.options[key]; ok {
  			// make Go strings null-terminated copies ;_;
  			Nan0.options[key] = v + "\x00"
-@@ -816,14 +1538,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -816,14 +1554,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -13458,7 +13477,7 @@ index 17f10fc..63afe9a 100644
  	case C.RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
  		if Nan0.log.GetLevel() > logger.DebugLevel {
  			return false
-@@ -851,7 +1652,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -851,7 +1668,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		return true
  	case C.RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
  		Nan0.log.Debug().Msgf("Keyboard event callback was set")
@@ -13478,7 +13497,7 @@ index 17f10fc..63afe9a 100644
  		return true
  	case C.RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK:
  		if data == nil {
-@@ -869,11 +1681,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -869,11 +1697,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		Nan0.log.Info().Uint("latency_ms", uint(latency)).Msg("audio latency requested")
  		return true
  	}
@@ -13510,7 +13529,7 @@ index 17f10fc..63afe9a 100644
  	var context graphics.Context
  	switch Nan0.Video.hw.context_type {
  	case C.RETRO_HW_CONTEXT_NONE:
-@@ -911,6 +1743,25 @@ func initVideo() {
+@@ -911,6 +1759,25 @@ func initVideo() {
  		if err != nil {
  			panic(err)
  		}
@@ -13536,7 +13555,7 @@ index 17f10fc..63afe9a 100644
  	})
  
  	if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -918,12 +1769,31 @@ func initVideo() {
+@@ -918,12 +1785,31 @@ func initVideo() {
  	}
  }
  
@@ -13568,11 +13587,12 @@ index 17f10fc..63afe9a 100644
  		if err := Nan0.glCtx.Deinit(); err != nil {
  			Nan0.log.Error().Err(err).Msg("deinit fail")
  		}
-@@ -932,9 +1802,225 @@ func deinitVideo() {
+@@ -932,9 +1818,227 @@ func deinitVideo() {
  	Nan0.Video.gl.autoCtx = false
  	Nan0.hackSkipHwContextDestroy = false
  	Nan0.hackSkipSameThreadSave = false
 +	Nan0.hackSkipBootRestore = false
++	Nan0.memoryMap = nil // clear the captured map so the next game starts fresh (Nan0 is a singleton)
 +	Nan0.hackSkipSerializeSizeProbe = false
 +	Nan0.hackVkSyntheticSurface = false
  	thread.SwitchGraphics(false)
@@ -13787,6 +13807,7 @@ index 17f10fc..63afe9a 100644
 +	Nan0.hackSkipHwContextDestroy = false
 +	Nan0.hackSkipSameThreadSave = false
 +	Nan0.hackSkipBootRestore = false
++	Nan0.memoryMap = nil // clear the captured map so the next game starts fresh (Nan0 is a singleton)
 +	Nan0.hackSkipSerializeSizeProbe = false
 +	Nan0.hackVkSyntheticSurface = false
 +}
@@ -13794,7 +13815,7 @@ index 17f10fc..63afe9a 100644
  type limit struct {
  	d  time.Duration
  	t  *time.Timer
-@@ -958,6 +2044,11 @@ func (d *limit) push(f func()) {
+@@ -958,6 +2062,11 @@ func (d *limit) push(f func()) {
  func geometryChange(geom C.struct_retro_game_geometry) {
  	Nan0.limiter(func() {
  		old := Nan0.sys.av.geometry
@@ -45667,10 +45688,10 @@ index eb84d6e..be09f97 100644
  	})
 diff --git a/pkg/worker/cheevos/bridge.c b/pkg/worker/cheevos/bridge.c
 new file mode 100644
-index 0000000..497b4b0
+index 0000000..f50c8d5
 --- /dev/null
 +++ b/pkg/worker/cheevos/bridge.c
-@@ -0,0 +1,167 @@
+@@ -0,0 +1,168 @@
 +/* bridge.c — see bridge.h. Adapts rcheevos' rc_client to the worker: memory reads come from the
 + * loaded core's RAM via rc_libretro's console mapping; server calls and events cross into Go. */
 +#include "bridge.h"
@@ -45816,10 +45837,11 @@ index 0000000..497b4b0
 +  g_save_ram_size = save_ram_size;
 +}
 +
-+int cheevos_init_memory(uint32_t console_id) {
++int cheevos_init_memory(uint32_t console_id, const struct retro_memory_map *mmap) {
 +  rc_libretro_memory_destroy(&g_regions);
-+  /* mmap == NULL: use the console layout over SYSTEM_RAM/SAVE_RAM (the classic, no-core-memory-map path). */
-+  return rc_libretro_memory_init(&g_regions, NULL, cheevos_core_memory_info, console_id);
++  /* Prefer the core's memory map when present (maps RA addresses precisely); NULL falls back to the
++   * console layout over SYSTEM_RAM/SAVE_RAM. */
++  return rc_libretro_memory_init(&g_regions, mmap, cheevos_core_memory_info, console_id);
 +}
 +
 +void cheevos_hash_init(void) {
@@ -45840,10 +45862,10 @@ index 0000000..497b4b0
 +}
 diff --git a/pkg/worker/cheevos/bridge.h b/pkg/worker/cheevos/bridge.h
 new file mode 100644
-index 0000000..9e1a31e
+index 0000000..6506f53
 --- /dev/null
 +++ b/pkg/worker/cheevos/bridge.h
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,65 @@
 +/* bridge.h — the C surface the Go cheevos package calls, and the glue that adapts rcheevos'
 + * rc_client to our worker. rc_client is the RetroAchievements runtime: it hashes the loaded ROM,
 + * logs the player in with their own connect token, evaluates achievement/leaderboard triggers each
@@ -45883,9 +45905,12 @@ index 0000000..9e1a31e
 +void cheevos_set_memory(void *system_ram, size_t system_ram_size, void *save_ram, size_t save_ram_size);
 +
 +/* Build the RetroAchievements address->region mapping for a console. Returns non-zero if any valid
-+ * region was found. Uses the classic (no core memory-map) path — the console layout laid over
-+ * SYSTEM_RAM/SAVE_RAM, which is what RetroArch does for the cartridge + PS1 systems we target. */
-+int cheevos_init_memory(uint32_t console_id);
++ * region was found. When the core provided a memory map (mmap != NULL, from SET_MEMORY_MAPS) rc_libretro
++ * maps RA addresses through it precisely; otherwise it falls back to the console layout over
++ * SYSTEM_RAM/SAVE_RAM. The map is REQUIRED for systems whose RA addresses aren't a flat SYSTEM_RAM
++ * offset (e.g. Genesis high work-RAM), or their achievements get disabled as "invalid address". */
++struct retro_memory_map; /* forward decl — only ever used by pointer here */
++int cheevos_init_memory(uint32_t console_id, const struct retro_memory_map *mmap);
 +
 +/* Install rcheevos' default file + CD readers so ROM/disc hashing works from a path. Call once. */
 +void cheevos_hash_init(void);
@@ -45908,10 +45933,10 @@ index 0000000..9e1a31e
 +#endif /* CHEEVOS_BRIDGE_H */
 diff --git a/pkg/worker/cheevos/cheevos.go b/pkg/worker/cheevos/cheevos.go
 new file mode 100644
-index 0000000..f96eaed
+index 0000000..8bb5d16
 --- /dev/null
 +++ b/pkg/worker/cheevos/cheevos.go
-@@ -0,0 +1,438 @@
+@@ -0,0 +1,443 @@
 +// Package cheevos embeds the RetroAchievements runtime (rcheevos' rc_client) into the libretro worker.
 +// rc_client hashes the loaded ROM, logs the player in with their OWN connect token, evaluates
 +// achievement + leaderboard triggers each emulated frame against core RAM, and submits unlocks/runs to
@@ -45988,6 +46013,7 @@ index 0000000..f96eaed
 +	key       uintptr        // == ptr, the registry key the C callbacks pass back
 +	hardcore  bool
 +	consoleID uint32
++	memoryMap unsafe.Pointer // const struct retro_memory_map* from SET_MEMORY_MAPS; nil = core set none
 +	romPath   string
 +	user      string
 +	token     string
@@ -46052,11 +46078,15 @@ index 0000000..f96eaed
 +}
 +
 +// SetMemory registers the core's RAM regions for the trigger reader. Call after the game has loaded
-+// (retro_get_memory_data pointers are valid then) and before the first DoFrame.
-+func (c *Client) SetMemory(systemRAM unsafe.Pointer, systemSize uintptr, saveRAM unsafe.Pointer, saveSize uintptr) {
++// (retro_get_memory_data pointers are valid then) and before the first DoFrame. memoryMap is the core's
++// retro_memory_map from SET_MEMORY_MAPS (nil if the core set none) — RA uses it to resolve addresses
++// that aren't a flat SYSTEM_RAM offset (e.g. Genesis high work-RAM); without it those triggers get
++// disabled as "invalid address".
++func (c *Client) SetMemory(systemRAM unsafe.Pointer, systemSize uintptr, saveRAM unsafe.Pointer, saveSize uintptr, memoryMap unsafe.Pointer) {
 +	if c == nil {
 +		return
 +	}
++	c.memoryMap = memoryMap
 +	C.cheevos_set_memory(systemRAM, C.size_t(systemSize), saveRAM, C.size_t(saveSize))
 +}
 +
@@ -46296,7 +46326,7 @@ index 0000000..f96eaed
 +		c.state("RetroAchievements: game not tracked (" + C.GoString(errmsg) + ")")
 +		return
 +	}
-+	if C.cheevos_init_memory(C.uint32_t(c.consoleID)) == 0 {
++	if C.cheevos_init_memory(C.uint32_t(c.consoleID), (*C.struct_retro_memory_map)(c.memoryMap)) == 0 {
 +		c.state("RetroAchievements: no memory regions for this core — achievements will not fire")
 +		return
 +	}
