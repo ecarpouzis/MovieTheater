@@ -107,6 +107,19 @@ namespace MovieTheater.Arcade
         }
         private sealed class RaLbResult { [JsonPropertyName("Format")] public string? Format { get; set; } }
         private sealed class RaLbResponse { [JsonPropertyName("Results")] public List<RaLbResult>? Results { get; set; } }
+        private sealed class RaHash { [JsonPropertyName("Name")] public string? Name { get; set; } }
+        private sealed class RaHashesResponse { [JsonPropertyName("Results")] public List<RaHash>? Results { get; set; } }
+
+        // Reduce a dump name to a comparable key: drop the extension, lowercase, keep only alphanumerics.
+        // "Sonic The Hedgehog (USA, Europe).md" and our "Sonic the Hedgehog (USA, Europe)" collapse to the
+        // same key; a hack like "… (GameCube Edition)" collapses to a different one — that's the discriminator.
+        private static string NormalizeDump(string? name)
+        {
+            if (string.IsNullOrEmpty(name)) return "";
+            var dot = name.LastIndexOf('.');
+            if (dot > 0 && name.Length - dot <= 5) name = name[..dot]; // strip a short file extension
+            return new string(name.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+        }
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
@@ -137,6 +150,7 @@ namespace MovieTheater.Arcade
             // Per-console RA game map (normalized title -> game), fetched once. Per-game leaderboard formats cached.
             var consoleMaps = new Dictionary<int, Dictionary<string, RaListGame>>();
             var lbCache = new Dictionary<int, (bool score, bool time)>();
+            var hashCache = new Dictionary<int, HashSet<string>>(); // gameId -> normalized supported dump names
             int withAch = 0, withScore = 0, withTime = 0, noMatch = 0, skippedSys = 0, lastId = AfterId, sinceSave = 0;
 
             async Task<Dictionary<string, RaListGame>?> ConsoleMap(int consoleId)
@@ -182,6 +196,29 @@ namespace MovieTheater.Arcade
                 return result;
             }
 
+            // The set of ROM-dump names RA actually supports for a game (normalized), so we can flag WHICH of
+            // our versions is the recognized dump vs a hack/unmatched region in the same card.
+            async Task<HashSet<string>> SupportedDumps(int gameId)
+            {
+                if (hashCache.TryGetValue(gameId, out var cached)) return cached;
+                var set = new HashSet<string>(StringComparer.Ordinal);
+                try
+                {
+                    var json = await http.GetStringAsync(
+                        $"https://retroachievements.org/API/API_GetGameHashes.php?i={gameId}&z={Uri.EscapeDataString(ApiUser)}&y={Uri.EscapeDataString(key)}");
+                    var resp = JsonSerializer.Deserialize<RaHashesResponse>(json);
+                    foreach (var h in resp?.Results ?? new())
+                    {
+                        var n = NormalizeDump(h.Name);
+                        if (n.Length > 0) set.Add(n);
+                    }
+                    await Task.Delay(300); // gentle on the RA API
+                }
+                catch (Exception ex) { w.WriteLine($"  ! hashes for RA game {gameId} failed: {ex.Message}"); }
+                hashCache[gameId] = set;
+                return set;
+            }
+
             var now = DateTime.UtcNow;
             foreach (var card in batch)
             {
@@ -204,12 +241,15 @@ namespace MovieTheater.Arcade
 
                 bool score = false, time = false;
                 if (raGame.NumLeaderboards > 0) (score, time) = await LbFormats(raGame.Id);
+                var dumps = await SupportedDumps(raGame.Id); // the exact ROM dumps RA recognizes
                 foreach (var r in card)
                 {
                     r.RaGameId = raGame.Id;
                     r.RaAchievementCount = raGame.NumAchievements;
                     r.RaHasScoreLeaderboard = score;
                     r.RaHasTimeLeaderboard = time;
+                    // Per-version: is THIS dump one RA supports? Floats it to the top of the dropdown (Rank).
+                    r.RaSupported = dumps.Contains(NormalizeDump(r.CloudRetroGameKey));
                     r.RaCheckedUtc = now;
                 }
                 if (raGame.NumAchievements > 0) withAch++;

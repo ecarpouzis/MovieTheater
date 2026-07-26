@@ -14,10 +14,12 @@ namespace MovieTheater.Arcade
     /// </summary>
     public static class ArcadeVersions
     {
-        /// <summary>Ascending sort key — the smallest is the default-selected version. Prefers official
-        /// over modified, English regions, disc 1, and the highest revision.</summary>
-        public static (int, int, int, int, int) Rank(ArcadeGame g) =>
+        /// <summary>Ascending sort key — the smallest is the default-selected version. The RA-recognized
+        /// dump wins first (so an untagged hack like a "GameCube Edition" can't lead a card RA supports),
+        /// then official over modified, English regions, disc 1, and the highest revision.</summary>
+        public static (int, int, int, int, int, int) Rank(ArcadeGame g) =>
         (
+            g.RaSupported ? 0 : 1,                                     // RA-supported dump leads (per-version)
             string.Equals(g.Variant, "Release", StringComparison.OrdinalIgnoreCase) || g.Variant == null ? 0 : 1,
             RegionRank(g.Region),
             DiscNumber(g.CloudRetroGameKey) is int d and > 0 ? d : 0, // Disc 1 before Disc 2; non-disc = 0

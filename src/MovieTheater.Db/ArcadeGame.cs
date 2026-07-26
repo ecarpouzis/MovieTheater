@@ -172,6 +172,11 @@ namespace MovieTheater.Db
         public bool RaHasScoreLeaderboard { get; set; }
         /// <summary>True if the matched game has any TIME-format RA leaderboard (speedruns → ⏱).</summary>
         public bool RaHasTimeLeaderboard { get; set; }
+        /// <summary>PER-VERSION: true if THIS exact dump's name matches one of RA's supported ROM hashes
+        /// for the game (arcade-ra-enrich, API_GetGameHashes). Unlike the flags above (game-level), this
+        /// distinguishes the RA-recognized dump from hacks/bad-dumps/unmatched regions in the same card,
+        /// so <c>ArcadeVersions.Rank</c> floats the supported version to the top of the dropdown.</summary>
+        public bool RaSupported { get; set; }
         /// <summary>When arcade-ra-enrich last resolved this row — the refresh/resume cursor.</summary>
         public System.DateTime? RaCheckedUtc { get; set; }
 
