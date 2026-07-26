@@ -42,13 +42,10 @@ public sealed class RomCacheOptions
     /// <summary>Disk cap for extracted JIT ROMs. Default 30 GB.</summary>
     public long MaxBytes { get; set; } = 30L * 1024 * 1024 * 1024;
 
-    /// <summary>Proactively evict a staged game this many days after it was last booted, regardless of
-    /// cache pressure — keeps the cache lean so a first-play rarely has to evict several GB before it can
-    /// extract. 0 disables time-based eviction (size cap only). Default 7.</summary>
+    /// <summary>Proactively evict a staged game this many days after it was last booted — checked whenever a
+    /// game is launched (not on a timer), so the cache stays lean without any idle background work. 0
+    /// disables time-based eviction (size cap only). Default 7.</summary>
     public int StaleEvictionDays { get; set; } = 7;
-
-    /// <summary>How often the stale-eviction sweep runs, in minutes. Default 60.</summary>
-    public int StaleSweepIntervalMinutes { get; set; } = 60;
 
     /// <summary>7-Zip executable. Default the standard Windows install; falls back to "7z" on PATH.</summary>
     public string SevenZipPath { get; set; } = @"C:\Program Files\7-Zip\7z.exe";
@@ -62,7 +59,7 @@ public sealed class RomCacheOptions
     public bool Enabled => !string.IsNullOrWhiteSpace(ManifestPath) && !string.IsNullOrWhiteSpace(RomsDir);
 }
 
-public sealed class RomCache : IDisposable
+public sealed class RomCache
 {
     // Exts = the system's candidate ROM extensions (e.g. [".cue",".chd"] for PS1, [".sfc",".smc"] for
     // SNES, [".md",".gen",".smd",".bin"] for Genesis). A JIT archive holds one launch ROM whose base
@@ -101,7 +98,8 @@ public sealed class RomCache : IDisposable
     private readonly SemaphoreSlim extractSem;
     private long clock;
     private DateTime manifestMtime;
-    private readonly Timer? staleTimer;
+    private int staleSweepGuard;      // 0/1: never two stale sweeps at once
+    private long lastStaleSweepTicks; // UtcNow.Ticks of the last sweep — a 1-min anti-spam floor
 
     public RomCache(RomCacheOptions options, ILogger logger)
     {
@@ -112,22 +110,9 @@ public sealed class RomCache : IDisposable
         extractSem = new SemaphoreSlim(Math.Max(1, opt.MaxParallelExtractions));
         LoadManifest();
         ReconcileFromDisk();
-
-        // Time-based eviction: a background sweep drops games not booted in StaleEvictionDays, so the cache
-        // stays lean instead of sitting pinned at the size cap and forcing a multi-GB eviction on every
-        // cold first-play. Runs off a timer thread; all state work is under `gate`. 0 days = disabled.
-        if (opt.StaleEvictionDays > 0)
-        {
-            var period = TimeSpan.FromMinutes(Math.Max(1, opt.StaleSweepIntervalMinutes));
-            staleTimer = new Timer(_ =>
-            {
-                try { SweepStale(); }
-                catch (Exception ex) { log.LogWarning(ex, "RomCache stale-eviction sweep failed"); }
-            }, null, TimeSpan.FromMinutes(5), period); // first sweep 5 min after boot, then every period
-        }
+        // Time-based eviction is ACTIVITY-TRIGGERED (KickStaleSweep, fired on each JIT launch), not a timer —
+        // nothing runs while the arcade is idle. The sweep's disk deletes happen off the room's critical path.
     }
-
-    public void Dispose() => staleTimer?.Dispose();
 
     /// <summary>Manifest games, for logging/diagnostics.</summary>
     public int CatalogCount { get { lock (gate) return byId.Count; } }
@@ -153,6 +138,8 @@ public sealed class RomCache : IDisposable
         ManifestGame? g;
         lock (gate) { byId.TryGetValue(gameId, out g); }
         if (g is null) return; // directly-staged (non-JIT) game — nothing to do
+
+        KickStaleSweep(); // a game is being launched — opportunistically drop long-cold ones (off critical path)
 
         var gameLock = LockFor(gameId);
         await gameLock.WaitAsync(ct);
@@ -853,23 +840,72 @@ public sealed class RomCache : IDisposable
         }
     }
 
-    // Time-based eviction: drop every game not booted within StaleEvictionDays, regardless of cache
-    // pressure. Same guards as the size-cap path — pinned (in-session) games are never touched, and only
-    // files under the ROM mount that we extracted are deleted. Runs on the timer thread; takes `gate`.
-    private void SweepStale()
+    // Fire a time-based sweep off the back of a launch (never a timer, so an idle Ziggy does nothing).
+    // Fully detached from the room: it runs on a background task and its disk deletes never touch the
+    // gate lock the live launch is using. Debounced — never two at once, and at most once a minute, so a
+    // reconnect burst can't spin it.
+    private void KickStaleSweep()
+    {
+        if (opt.StaleEvictionDays <= 0) return;
+        if (DateTime.UtcNow.Ticks - Interlocked.Read(ref lastStaleSweepTicks) < TimeSpan.FromMinutes(1).Ticks) return;
+        if (Interlocked.CompareExchange(ref staleSweepGuard, 1, 0) != 0) return; // one at a time
+        Interlocked.Exchange(ref lastStaleSweepTicks, DateTime.UtcNow.Ticks);
+        _ = Task.Run(async () =>
+        {
+            try { await SweepStaleAsync(); }
+            catch (Exception ex) { log.LogWarning(ex, "RomCache stale-eviction sweep failed"); }
+            finally { Volatile.Write(ref staleSweepGuard, 0); }
+        });
+    }
+
+    // Time-based eviction: drop games not booted within StaleEvictionDays, regardless of cache pressure —
+    // UNLIKE the size cap, this doesn't free space for the current extraction, so the disk delete runs OUTSIDE
+    // the gate lock (async to the room). Safety: the gate lock is held only to pick candidates and to remove a
+    // game from the index; the actual delete for each game holds that game's OWN lock (LockFor) — the same lock
+    // EnsureMaterializedAsync takes — so a re-launch of a just-evicted game blocks until its files are gone and
+    // then cleanly re-extracts, never reading a half-deleted ROM. Pinned (in-session) games are never touched.
+    private async Task SweepStaleAsync()
     {
         if (opt.StaleEvictionDays <= 0) return;
         MaybeReloadManifest();
         var cutoff = DateTime.UtcNow - TimeSpan.FromDays(opt.StaleEvictionDays);
+
+        List<int> candidates;
         lock (gate)
+            candidates = materialized.Where(k => k.Value.Pins == 0 && k.Value.LastBootUtc < cutoff).Select(k => k.Key).ToList();
+        if (candidates.Count == 0) return;
+
+        int evicted = 0; long freed = 0;
+        foreach (var id in candidates)
         {
-            var stale = materialized.Where(k => k.Value.Pins == 0 && k.Value.LastBootUtc < cutoff).ToList();
-            long freed = 0;
-            foreach (var kv in stale) freed += EvictOneLocked(kv.Key, kv.Value, $"cold >{opt.StaleEvictionDays}d");
-            if (stale.Count > 0)
-                log.LogInformation("RomCache stale sweep: evicted {N} game(s) not booted in {Days}d (freed ~{MB} MB)",
-                    stale.Count, opt.StaleEvictionDays, freed / (1024 * 1024));
+            var gl = LockFor(id);
+            await gl.WaitAsync();
+            try
+            {
+                List<string> files; string? companionDir = null;
+                lock (gate)
+                {
+                    // Re-check under this game's lock: a launch since we listed candidates may have pinned or
+                    // refreshed it (LastBootUtc bumped). Only evict if it is still idle and still cold.
+                    if (!materialized.TryGetValue(id, out var s) || s.Pins > 0 || s.LastBootUtc >= cutoff) continue;
+                    files = s.Files;
+                    if (byId.TryGetValue(id, out var g) && g.CompanionPath is not null)
+                    {
+                        var cd = CompanionDest(g);
+                        if (IsUnderRoot(cd)) companionDir = cd;
+                    }
+                    materialized.Remove(id); // out of the index now; disk cleanup follows, unlocked from `gate`
+                }
+                freed += DeleteFiles(files);
+                if (companionDir is not null && Directory.Exists(companionDir))
+                { try { Directory.Delete(companionDir, recursive: true); } catch { /* best effort */ } }
+                evicted++;
+                log.LogInformation("RomCache evicted game {GameId} (cold >{Days}d)", id, opt.StaleEvictionDays);
+            }
+            finally { gl.Release(); }
         }
+        if (evicted > 0)
+            log.LogInformation("RomCache stale sweep: evicted {N} cold game(s) (freed ~{MB} MB)", evicted, freed / (1024 * 1024));
     }
 
     // Evict one game: delete its extracted files (guarded), drop its now-empty companion shell, and forget
