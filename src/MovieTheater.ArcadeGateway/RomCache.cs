@@ -110,6 +110,8 @@ public sealed class RomCache
         extractSem = new SemaphoreSlim(Math.Max(1, opt.MaxParallelExtractions));
         LoadManifest();
         ReconcileFromDisk();
+        log.LogInformation("RomCache: size cap {CapGiB} GiB, stale-evict after {Days}d, roms={Roms}",
+            opt.MaxBytes / (1024L * 1024 * 1024), opt.StaleEvictionDays, romsRoot);
         // Time-based eviction is ACTIVITY-TRIGGERED (KickStaleSweep, fired on each JIT launch), not a timer —
         // nothing runs while the arcade is idle. The sweep's disk deletes happen off the room's critical path.
     }
