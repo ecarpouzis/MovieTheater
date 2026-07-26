@@ -43,22 +43,22 @@
 /* ── Header row ──────────────────────────────────────────────────────────── */
 .arcade-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 12px 20px;
   flex-wrap: wrap;
 }
 
 .arcade-header__lede {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .arcade-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 38px;
+  font-size: 32px;
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -73,28 +73,27 @@
   color: var(--text-secondary);
 }
 
-.arcade-vault-btn {
-  align-self: flex-start;
-  margin-top: 4px;
-}
-
-/* ── Connection pills (bitrate + error correction) ───────────────────────── */
-.arcade-conn {
+/* ── Toolbar: saves / trophies / quality ─────────────────────────────────── */
+.arcade-toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 7px;
-  align-items: flex-end;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.arcade-tool-btn {
+  margin: 0;
+}
+/* Desktop shows the quality pills inline, so the ⚙ toggle is unnecessary there. */
+.arcade-options-toggle {
+  display: none;
 }
 
-.arcade-conn__pills {
+/* ── Room-quality pills (bitrate / network / codec) ──────────────────────── */
+.arcade-conn {
   display: flex;
   gap: 9px;
   flex-wrap: wrap;
-}
-
-.arcade-conn__caption {
-  font-size: 11px;
-  color: var(--text-muted);
+  align-items: center;
 }
 
 .arcade-pill {
@@ -988,13 +987,53 @@
     gap: 20px;
   }
   .arcade-title {
-    font-size: 30px;
+    font-size: 28px;
   }
   .arcade-conn {
     align-items: flex-start;
   }
   .arcade-room__right {
     gap: 12px;
+  }
+}
+
+/* Phones: strip the header to the essentials — the nav bar already reads "Arcade", so the big title +
+   blurb are just filler here. The quality pills (set once, rarely touched) collapse behind ⚙ Quality so
+   the games sit near the top. */
+@media (max-width: 640px) {
+  .arcade-page__inner {
+    padding: 14px 14px 28px;
+    gap: 14px;
+  }
+  .arcade-header {
+    gap: 10px;
+  }
+  .arcade-title {
+    font-size: 21px;
+  }
+  .arcade-subtitle {
+    display: none;
+  }
+  .arcade-toolbar {
+    width: 100%;
+  }
+  .arcade-tool-btn {
+    flex: 1 1 auto;
+  }
+  .arcade-options-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .arcade-conn {
+    width: 100%;
+    margin-top: 2px;
+  }
+  .arcade-conn:not(.arcade-conn--open) {
+    display: none;
+  }
+  .arcade-conn .arcade-pill {
+    flex: 1 1 auto;
   }
 }
 

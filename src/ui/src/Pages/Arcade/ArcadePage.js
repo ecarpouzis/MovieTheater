@@ -114,6 +114,7 @@ export default function ArcadePage({ userData }) {
   const [modalVersionId, setModalVersionId] = useState(null); // pre-selected version (a recent tile's save)
   const [savesVaultOpen, setSavesVaultOpen] = useState(false); // the cross-game "My saves" drawer
   const [raOpen, setRaOpen] = useState(false); // the RetroAchievements hub (account + trophy room)
+  const [optionsOpen, setOptionsOpen] = useState(false); // mobile: reveal the room-quality pills (desktop always shows them)
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
   const [modalGame, setModalGame] = useState(null); // the game whose full-page modal is open
@@ -385,14 +386,23 @@ export default function ArcadePage({ userData }) {
           <div className="arcade-header__lede">
             <h1 className="arcade-title">Arcade</h1>
             <p className="arcade-subtitle">Pick a game to open a room, then send friends the link to play together.</p>
-            <Button className="arcade-vault-btn" onClick={() => setSavesVaultOpen(true)}>💾 My saves (all games)</Button>
-            <Button className="arcade-vault-btn" onClick={() => setRaOpen(true)}>🏆 RetroAchievements</Button>
           </div>
 
-          {/* Stream quality for rooms YOU start. One encoder per room, so the creator's choice is what
-              everyone in the room gets. Lower bitrate = smoother audio + less upstream. */}
-          <div className="arcade-conn">
-            <div className="arcade-conn__pills">
+          {/* Compact toolbar: the two things you open (saves, trophies) + a ⚙ that reveals the room-quality
+              controls. On mobile the pills collapse behind ⚙ so the games sit near the top; on desktop
+              they're always shown and ⚙ is hidden. Quality applies only to rooms YOU start (one encoder
+              per room = the creator's pick is what everyone gets). */}
+          <div className="arcade-toolbar">
+            <Button className="arcade-tool-btn" onClick={() => setSavesVaultOpen(true)}>💾 Saves</Button>
+            <Button className="arcade-tool-btn" onClick={() => setRaOpen(true)}>🏆 Trophies</Button>
+            <Button
+              className={"arcade-tool-btn arcade-options-toggle" + (optionsOpen ? " is-open" : "")}
+              aria-expanded={optionsOpen}
+              onClick={() => setOptionsOpen((o) => !o)}
+            >
+              ⚙ Quality
+            </Button>
+            <div className={"arcade-conn" + (optionsOpen ? " arcade-conn--open" : "")}>
               <div className="arcade-pill">
                 <span className="arcade-dot-ok" />
                 <Select
@@ -427,7 +437,6 @@ export default function ArcadePage({ userData }) {
                 </Select>
               </div>
             </div>
-            <span className="arcade-conn__caption">Applies to rooms you start</span>
           </div>
         </header>
 
