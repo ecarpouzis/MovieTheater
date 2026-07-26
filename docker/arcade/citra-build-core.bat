@@ -17,6 +17,18 @@ rem     driver discard contents.
 rem  4. retro_get_system_av_info max geometry = base (400x480) instead of base*10. The frontend sizes its
 rem     synthetic VkSurfaceKHR from max and then reads back only base, so 10x meant capturing the
 rem     top-left 1%. COUPLED: raise both if citra_resolution_factor ever goes above 1x.
+rem  5. (2026-07-26) AppLoader_NCCH::Load falls back to a LOOSE update title at
+rem     <UserDir>/load/updates/<TITLEID:016X>.app when none is installed in sdmc. Stock looks ONLY in
+rem     sdmc/Nintendo 3DS/<id0>/<id1>/title/0004000e/<lo>/content/00000000.app - but in the arcade that
+rem     whole sdmc tree IS the per-user memory card (cards: 3ds: "save:Citra/sdmc"), which the worker
+rem     ClearDir/ReplaceTree's at EVERY room start, so an update installed there is wiped per room and
+rem     leaks into whichever user's vault harvested it. load/ is per-worker static (it already holds
+rem     load/textures/<TITLEID>/), so an update parked there survives. Either title id is accepted as
+rem     the filename (base program id OR the 0004000E update id). This is what makes translation
+rem     patches work: a game with an update reads ORIGINAL files on SelfNCCH path 0 (ReadRomFS ->
+rem     base_ncch, ALWAYS) and PATCHED files on path 5 (ReadUpdateRomFS) - so the two RomFS can NEVER
+rem     be merged into one .3ds; doing that puts patched files on path 0 and the update's code
+rem     fatal-errors 0xE0E046BC (FS/InvalidArgument) ~2.4s into boot. Live: MHXX English Patch v3.1.
 rem Also present (env-gated, OFF by default) are three black-screen diagnostics: CITRA_MT_CLEAR_TEST,
 rem CITRA_MT_GREEN_CLEAR, CITRA_MT_NO_ACCEL_DISPLAY - see the memory note for what each one proves.
 rem Deploy KEEPS the custom name citra_custom_libretro.dll (pins vs libretro.cores.repo.sync overwrite).

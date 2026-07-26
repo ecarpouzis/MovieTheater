@@ -1705,6 +1705,17 @@ emulator:
             # wrong and every lookup misses SILENTLY, the usual libretro failure mode.
             # First pack: Monster Hunter XX (0004000000197100), the HD UI set that ships with the
             # Complete English Patch. See memory 3ds-bake-update-cia-into-3ds.
+            #
+            # ⚠ PER-WORKER STATIC ASSETS live under <ConfDir>/libretro/legacy_save/Citra/load/ and are
+            # NOT in the repo, NOT in the per-user card, and NOT recreated if a ConfDir is rebuilt —
+            # re-copy them by hand onto every GL worker. Currently:
+            #   load/textures/0004000000197100/     MHXX HD UI pack (429 files, from FinalPatchV3HD-UI.zip)
+            #   load/updates/0004000000197100.app   MHXX English Patch v3.1 Crossplay update title
+            # The updates/ path only works because of change 5 in citra-build-core.bat (stock citra
+            # looks for updates ONLY inside sdmc/, which is the per-user card and gets wiped per room).
+            # Source of the .app = the NCCH content of MHXXFinalPatchV3.1(Crossplay).cia; a copy is
+            # kept at D:\ArcadeStorage\_deploy-backup\. The ROM stays the STOCK Japanese dump — the
+            # patch CANNOT be baked into the .3ds (see the build script comment for why).
             citra_custom_textures: "enabled"
 
 
