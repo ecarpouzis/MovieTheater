@@ -5499,10 +5499,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..8d095a2
+index 0000000..b860fdc
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,256 @@
+@@ -0,0 +1,269 @@
 +package worker
 +
 +import (
@@ -5543,6 +5543,16 @@ index 0000000..8d095a2
 +
 +	abrFloorKbps = 1500 // below this the picture is worse than a stall; give up adapting
 +	abrStartKbps = 6000 // conservative opener; a healthy LAN reaches a 14 Mbps ceiling in ~7 ticks
++	// ...but 6000 is only an OPENER for the high-ceiling 3D systems it was tuned against (gc 14000,
++	// ps2 12000, n64 11000). Clamped by min() to a 2D room's 5000 ceiling it became a COLD START AT
++	// FULL RATE: 5 Mbps plus the first keyframe hit a wireless client before any estimate exists, the
++	// queue overruns, GCC craters (measured: 7335 -> 560 kbps five seconds into a genesis room), and
++	// the 15%/tick ramp spends ~10s climbing back. Proven by the control case the same evening — the
++	// one room with a 16000 ceiling opened at 6000 (37%) and had ZERO collapses and zero layer changes
++	// while every room that opened AT its ceiling collapsed inside 10s. Never open above this fraction
++	// of the ceiling: a 5000 room now opens at 3000 and reaches full rate in ~4 ticks, burst-free, and
++	// nothing changes for the 3D systems (0.6*14000 = 8400, still above the 6000 opener).
++	abrStartCeilPct = 60
 +
 +	abrRampPct    = 15 // healthy: raise the target by this much per tick
 +	abrHealthyPct = 95 // estimate >= 95% of what that peer RECEIVES => its link is keeping up
@@ -5625,7 +5635,10 @@ index 0000000..8d095a2
 +		return
 +	}
 +	floor := min(abrFloorKbps, ceilKbps)
-+	cur := min(max(abrStartKbps, floor), ceilKbps)
++	// Open at the SMALLER of the fixed opener and a fraction of this room's ceiling, so a low-ceiling
++	// (2D) room ramps into its rate instead of starting at it. Never below the floor.
++	cur := min(abrStartKbps, ceilKbps*abrStartCeilPct/100)
++	cur = min(max(cur, floor), ceilKbps)
 +
 +	if err := m.SetVideoBitrate(cur); err != nil {
 +		log.Warn().Err(err).Msg("abr: encoder rejected the initial bitrate; ABR disabled for this room")
@@ -9001,7 +9014,7 @@ index 0000000..6dd8a84
 +	atomic.StoreUintptr(&a.winHwnd, 0)
 +}
 diff --git a/pkg/worker/caged/libretro/caged.go b/pkg/worker/caged/libretro/caged.go
-index f3553b1..fc3929a 100644
+index f3553b1..155b361 100644
 --- a/pkg/worker/caged/libretro/caged.go
 +++ b/pkg/worker/caged/libretro/caged.go
 @@ -5,6 +5,7 @@ import (
@@ -9012,7 +9025,7 @@ index f3553b1..fc3929a 100644
  	"github.com/giongto35/cloud-game/v3/pkg/worker/cloud"
  )
  
-@@ -54,6 +55,19 @@ func (c *Caged) ReloadFrontend() {
+@@ -54,6 +55,26 @@ func (c *Caged) ReloadFrontend() {
  // VideoChangeCb adds a callback when video params are changed by the app.
  func (c *Caged) VideoChangeCb(fn func()) { c.base.SetVideoChangeCb(fn) }
  
@@ -9023,16 +9036,23 @@ index f3553b1..fc3929a 100644
 +	c.base.SetRoomCheats(opts, codes)
 +}
 +
-+// SetRetroAchievements stages this room's RetroAchievements session (creator's account + hardcore).
-+// Call it BEFORE Load, like SetRoomCheats. See Frontend.SetRetroAchievements.
-+func (c *Caged) SetRetroAchievements(user, token, system string, hardcore bool, h cheevos.Handlers) {
-+	c.base.SetRetroAchievements(user, token, system, hardcore, h)
++// SetRetroAchievements stages this room's RetroAchievements session (creator's account + hardcore +
++// whether cheats were staged). Call it BEFORE Load, like SetRoomCheats. See Frontend.SetRetroAchievements.
++func (c *Caged) SetRetroAchievements(user, token, system string, hardcore, cheats bool, h cheevos.Handlers) {
++	c.base.SetRetroAchievements(user, token, system, hardcore, cheats, h)
 +}
++
++// NotifySaveStateLoaded / NotifyFastForward / NotifyReset forward run-legitimacy events to the RA
++// client so the friends board / achievements can flag a save-scummed / cheated / time-manipulated run.
++// Routed to the base frontend (where the RA client lives), not the decorated Emulator.
++func (c *Caged) NotifySaveStateLoaded() { c.base.NotifySaveStateLoaded() }
++func (c *Caged) NotifyFastForward(on bool) { c.base.NotifyFastForward(on) }
++func (c *Caged) NotifyReset()           { c.base.NotifyReset() }
 +
  func (c *Caged) Load(game games.GameMetadata, path string) error {
  	if c.Emulator == nil {
  		return nil
-@@ -94,6 +108,7 @@ func (c *Caged) AudioSampleRate() int             { return c.Emulator.AudioSampl
+@@ -94,6 +115,7 @@ func (c *Caged) AudioSampleRate() int             { return c.Emulator.AudioSampl
  func (c *Caged) ViewportSize() (int, int)         { return c.base.ViewportSize() }
  func (c *Caged) Scale() (float64, string)         { return c.Emulator.Scale() }
  func (c *Caged) Input(p int, d byte, data []byte) { c.base.Input(p, d, data) }
@@ -9041,7 +9061,7 @@ index f3553b1..fc3929a 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..ec15c6b 100644
+index 6974d59..edb029b 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
 @@ -1,8 +1,10 @@
@@ -9063,7 +9083,7 @@ index 6974d59..ec15c6b 100644
  )
  
  type Emulator interface {
-@@ -82,12 +85,29 @@ type Frontend struct {
+@@ -82,12 +85,30 @@ type Frontend struct {
  	mu  sync.Mutex
  	mui sync.Mutex
  
@@ -9076,6 +9096,7 @@ index 6974d59..ec15c6b 100644
 +	raToken   string
 +	raSystem  string
 +	raHard    bool
++	raCheats  bool // room staged cheat codes → seeds the run's Cheat legitimacy taint
 +	raHandler cheevos.Handlers
 +	gamePath  string // the ROM/disc path last loaded — RetroAchievements hashes it to identify the game
 +
@@ -9093,7 +9114,7 @@ index 6974d59..ec15c6b 100644
  type Device byte
  
  const (
-@@ -173,10 +193,14 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -173,10 +194,14 @@ func (f *Frontend) LoadCore(emu string) {
  		Hacks:           conf.Hacks,
  		HasVFR:          conf.VFR,
  		Hid:             conf.Hid,
@@ -9108,7 +9129,7 @@ index 6974d59..ec15c6b 100644
  		UsesLibCo:       conf.UsesLibCo,
  		CoreAspectRatio: conf.CoreAspectRatio,
  		KbMouseSupport:  conf.KbMouseSupport,
-@@ -184,15 +208,38 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -184,15 +209,38 @@ func (f *Frontend) LoadCore(emu string) {
  	}
  	f.mu.Lock()
  	f.SaveStateFs = conf.SaveStateFs
@@ -9149,7 +9170,7 @@ index 6974d59..ec15c6b 100644
  	}
  	f.storage.SetNonBlocking(conf.NonBlockingSave)
  	f.scale = scale
-@@ -224,7 +271,17 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
+@@ -224,7 +272,17 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
  	if fr == nil {
  		fr = new(app.Video)
  	}
@@ -9167,7 +9188,7 @@ index 6974d59..ec15c6b 100644
  	fr.Frame.W = int(fi.W)
  	fr.Frame.H = int(fi.H)
  	fr.Frame.Stride = int(fi.Stride)
-@@ -237,9 +294,18 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
+@@ -237,9 +295,18 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
  }
  
  func (f *Frontend) handleDup() {
@@ -9188,7 +9209,7 @@ index 6974d59..ec15c6b 100644
  }
  
  func (f *Frontend) Shutdown() {
-@@ -292,8 +358,19 @@ func (f *Frontend) Start() {
+@@ -292,8 +359,19 @@ func (f *Frontend) Start() {
  	f.nano.LastFrameTime = time.Now()
  
  	defer func() {
@@ -9210,7 +9231,7 @@ index 6974d59..ec15c6b 100644
  			f.log.Debug().Msg("save on quit")
  			if err := f.Save(); err != nil {
  				f.log.Error().Err(err).Msg("save on quit failed")
-@@ -301,10 +378,33 @@ func (f *Frontend) Start() {
+@@ -301,10 +379,33 @@ func (f *Frontend) Start() {
  		}
  		f.mui.Unlock()
  		f.Shutdown()
@@ -9245,7 +9266,7 @@ index 6974d59..ec15c6b 100644
  		// advance 1 frame for Mupen, DOSBox save states
  		// loading will work if autostart is selected for DOSBox apps
  		f.Tick()
-@@ -318,6 +418,11 @@ func (f *Frontend) Start() {
+@@ -318,6 +419,11 @@ func (f *Frontend) Start() {
  		go f.autosave(f.conf.AutosaveSec)
  	}
  
@@ -9257,7 +9278,7 @@ index 6974d59..ec15c6b 100644
  	// The main loop of Libretro
  
  	targetFrameTimeNs := int64(float64(time.Second) / f.nano.VideoFramerate())
-@@ -328,80 +433,813 @@ func (f *Frontend) Start() {
+@@ -328,80 +434,821 @@ func (f *Frontend) Start() {
  	// how many frames will be considered not normal
  	const lateFramesThreshold = 3
  
@@ -9640,9 +9661,17 @@ index 6974d59..ec15c6b 100644
 +// SetRetroAchievements stages this room's RetroAchievements session — the creator's linked account and
 +// whether it runs hardcore (a competitive room). Call BEFORE Load, like SetRoomCheats; the live client
 +// is created in Start() once the core's memory exists. Empty user/token = RA off (the common case).
-+func (f *Frontend) SetRetroAchievements(user, token, system string, hardcore bool, h cheevos.Handlers) {
-+	f.raUser, f.raToken, f.raSystem, f.raHard, f.raHandler = user, token, system, hardcore, h
++func (f *Frontend) SetRetroAchievements(user, token, system string, hardcore, cheats bool, h cheevos.Handlers) {
++	f.raUser, f.raToken, f.raSystem, f.raHard, f.raCheats, f.raHandler = user, token, system, hardcore, cheats, h
 +}
++
++// NotifySaveStateLoaded / NotifyFastForward / NotifyReset forward run-legitimacy events to the RA
++// client so leaderboard/achievement submissions this run carry the right taint. Called from the
++// coordinator's command goroutine (HandleLoadGame/HandleResetGame); no-op when RA is off. They only
++// flip atomics on the client — never an rc_client call — so they're safe off the emulator goroutine.
++func (f *Frontend) NotifySaveStateLoaded() { f.ra.NotifySaveStateLoaded() }
++func (f *Frontend) NotifyFastForward(on bool) { f.ra.NotifyFastForward(on) }
++func (f *Frontend) NotifyReset()           { f.ra.NotifyReset() }
 +
 +// startCheevos brings up the RetroAchievements client after the game has loaded (its memory is valid),
 +// on the emulator goroutine. No-op when RA is off for the room or the core exposes no SYSTEM_RAM.
@@ -9657,7 +9686,7 @@ index 6974d59..ec15c6b 100644
 +	}
 +	saveRAM, saveSize := f.nano.MemoryRegion(uint(nanoarch.RetroMemorySaveRAM))
 +
-+	f.ra = cheevos.New(f.raUser, f.raToken, f.raHard, cheevos.ConsoleID(f.raSystem), f.gamePath, f.raHandler)
++	f.ra = cheevos.New(f.raUser, f.raToken, f.raHard, f.raCheats, cheevos.ConsoleID(f.raSystem), f.gamePath, f.raHandler)
 +	if f.ra == nil {
 +		return
 +	}
@@ -10108,7 +10137,7 @@ index 6974d59..ec15c6b 100644
  func (f *Frontend) FrameSize() (int, int)         { return f.nano.BaseWidth(), f.nano.BaseHeight() }
  func (f *Frontend) HasSave() bool                 { return os.Exists(f.HashPath()) }
  func (f *Frontend) HashPath() string              { return f.storage.GetSavePath() }
-@@ -419,9 +1257,16 @@ func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
+@@ -419,9 +1266,16 @@ func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
  func (f *Frontend) SetSessionId(name string)      { f.storage.SetMainSaveName(name) }
  func (f *Frontend) SetDataCb(cb func([]byte))     { f.onData = cb }
  func (f *Frontend) SetVideoCb(ff func(app.Video)) { f.onVideo = ff }
@@ -10128,7 +10157,7 @@ index 6974d59..ec15c6b 100644
  
  func (f *Frontend) Input(port int, device byte, data []byte) {
  	switch Device(device) {
-@@ -434,6 +1279,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
+@@ -434,6 +1288,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
  	}
  }
  
@@ -10138,7 +10167,7 @@ index 6974d59..ec15c6b 100644
  func (f *Frontend) ViewportCalc() (nw int, nh int) {
  	w, h := f.FrameSize()
  	nw, nh = w, h
-@@ -478,6 +1326,9 @@ func (f *Frontend) Close() {
+@@ -478,6 +1335,9 @@ func (f *Frontend) Close() {
  
  // Save writes the current state to the filesystem.
  func (f *Frontend) Save() error {
@@ -10148,7 +10177,7 @@ index 6974d59..ec15c6b 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -501,6 +1352,9 @@ func (f *Frontend) Save() error {
+@@ -501,6 +1361,9 @@ func (f *Frontend) Save() error {
  
  // Load restores the state from the filesystem.
  func (f *Frontend) Load() error {
@@ -10158,7 +10187,7 @@ index 6974d59..ec15c6b 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -537,6 +1391,13 @@ func (f *Frontend) autosave(periodSec int) {
+@@ -537,6 +1400,13 @@ func (f *Frontend) autosave(periodSec int) {
  			if f.nano.IsStopped() {
  				return
  			}
@@ -45938,10 +45967,10 @@ index 0000000..6506f53
 +#endif /* CHEEVOS_BRIDGE_H */
 diff --git a/pkg/worker/cheevos/cheevos.go b/pkg/worker/cheevos/cheevos.go
 new file mode 100644
-index 0000000..5fdb28a
+index 0000000..32afd0f
 --- /dev/null
 +++ b/pkg/worker/cheevos/cheevos.go
-@@ -0,0 +1,456 @@
+@@ -0,0 +1,532 @@
 +// Package cheevos embeds the RetroAchievements runtime (rcheevos' rc_client) into the libretro worker.
 +// rc_client hashes the loaded ROM, logs the player in with their OWN connect token, evaluates
 +// achievement + leaderboard triggers each emulated frame against core RAM, and submits unlocks/runs to
@@ -45968,6 +45997,7 @@ index 0000000..5fdb28a
 +	"strconv"
 +	"strings"
 +	"sync"
++	"sync/atomic"
 +	"time"
 +	"unsafe"
 +)
@@ -45977,17 +46007,26 @@ index 0000000..5fdb28a
 +const raUserAgent = "MovieTheaterArcade/1.0"
 +
 +// Achievement is one unlocked RetroAchievements achievement (the mirror + toast payload).
++//
++// Hardcore is the room's COMPETITIVE flag (our own legit-run tag), unchanged from before. Cheat /
++// Savescum / Timeplay are the per-event RUN-LEGITIMACY taints sampled at unlock time — they say WHY a
++// run wasn't a clean one (cheat codes active, a save-STATE was loaded mid-run, or fast-forward/rewind
++// was used). The site derives "legit" as Hardcore && !Cheat && !Savescum && !Timeplay and shows a
++// why-icon for each taint. See LegitState.
 +type Achievement struct {
 +	ID          uint32
 +	Title       string
 +	Description string
 +	Points      uint32
 +	Hardcore    bool
++	Cheat       bool
++	Savescum    bool
++	Timeplay    bool
 +}
 +
 +// Leaderboard is one submitted leaderboard run. Format is normalized to a token the site understands
 +// (SCORE / VALUE — higher is better; CENTISECS — a time board, lower is better), and RawValue is the
-+// numeric compared for ranking.
++// numeric compared for ranking. Cheat/Savescum/Timeplay mirror Achievement's run-legitimacy taints.
 +type Leaderboard struct {
 +	ID            uint32
 +	Title         string
@@ -45995,6 +46034,21 @@ index 0000000..5fdb28a
 +	RawValue      int64
 +	LowerIsBetter bool
 +	Hardcore      bool
++	Cheat         bool
++	Savescum      bool
++	Timeplay      bool
++}
++
++// LegitState is the run-legitimacy taint sampled when an event fires. Cheat is room-static (cheat codes
++// were staged at room create); Savescum flips when a save-STATE is loaded mid-run and clears on a hard
++// reset (mirrors RA's own "loading a state drops you out of hardcore until reset" rule); Timeplay flips
++// when fast-forward/rewind is used. All three read on the emulator goroutine at event time but are
++// written from the coordinator's command goroutine (HandleLoadGame / HandleResetGame), so they are
++// atomics — never call into rc_client from those setters, only flip a flag.
++type LegitState struct {
++	cheat    atomic.Bool
++	savescum atomic.Bool
++	timeplay atomic.Bool
 +}
 +
 +// Handlers receive events on the emulator goroutine. Keep them cheap or hand off (the mirror POSTs
@@ -46025,6 +46079,7 @@ index 0000000..5fdb28a
 +	handlers  Handlers
 +	httpc     *http.Client
 +	respCh    chan serverResp
++	legit     LegitState // per-run taint (cheat/savescum/timeplay), sampled on each event
 +	started   bool
 +	closed    bool
 +	mu        sync.Mutex
@@ -46051,7 +46106,11 @@ index 0000000..5fdb28a
 +// (RA only activates leaderboards in hardcore; since we never submit, this is what makes scores/times
 +// record in EVERY room). `competitive` is our OWN legit-run tag (no save-scumming) — it rides the
 +// mirrored events, decoupled from rc_client's always-on hardcore.
-+func New(user, token string, competitive bool, consoleID uint32, romPath string, h Handlers) *Client {
++//
++// `cheats` is true when the room staged cheat codes (known at room create); it seeds the per-run Cheat
++// taint so every event this session reports it (competitive rooms take no cheats, so this is a
++// casual-room signal). See LegitState for savescum/timeplay, flipped at runtime.
++func New(user, token string, competitive, cheats bool, consoleID uint32, romPath string, h Handlers) *Client {
 +	if user == "" || token == "" {
 +		return nil
 +	}
@@ -46073,6 +46132,7 @@ index 0000000..5fdb28a
 +		httpc:     &http.Client{Timeout: 20 * time.Second},
 +		respCh:    make(chan serverResp, 64),
 +	}
++	c.legit.cheat.Store(cheats)
 +	regMu.Lock()
 +	reg[c.key] = c
 +	regMu.Unlock()
@@ -46080,6 +46140,43 @@ index 0000000..5fdb28a
 +	C.cheevos_set_spectator(ptr, 1)
 +	C.cheevos_set_hardcore(ptr, 1)
 +	return c
++}
++
++// NotifySaveStateLoaded marks the run as save-scummed — a save-STATE was restored mid-session (the
++// player pressed Load), so every subsequent unlock/leaderboard this session carries the Savescum taint
++// until a hard reset. Cheap flag flip; safe to call from the coordinator command goroutine.
++func (c *Client) NotifySaveStateLoaded() {
++	if c == nil {
++		return
++	}
++	c.legit.savescum.Store(true)
++	c.state("RetroAchievements: save-state loaded — run tagged save-scummed until reset")
++}
++
++// NotifyFastForward marks the run as time-manipulated when fast-forward (or rewind) is engaged. Sticky
++// until a hard reset, like Savescum. NOTE: no fast-forward/rewind control is exposed in this arcade
++// stack today, so nothing calls this yet and Timeplay is always false in practice — it's the hook for
++// when speed control lands, so the taint model + the wire/DB/UI are already complete.
++func (c *Client) NotifyFastForward(on bool) {
++	if c == nil || !on {
++		return
++	}
++	c.legit.timeplay.Store(true)
++}
++
++// NotifyReset clears the mid-run taints (savescum/timeplay) on a hard reset — RA restores hardcore
++// eligibility on a reset, so a clean run started after a reset is legit again. The Cheat taint stays:
++// cheat codes are staged for the whole room and a reset does not remove them.
++func (c *Client) NotifyReset() {
++	if c == nil {
++		return
++	}
++	c.legit.savescum.Store(false)
++	c.legit.timeplay.Store(false)
++}
++
++func (c *Client) legitSnapshot() (cheat, savescum, timeplay bool) {
++	return c.legit.cheat.Load(), c.legit.savescum.Load(), c.legit.timeplay.Load()
 +}
 +
 +// SetMemory registers the core's RAM regions for the trigger reader. Call after the game has loaded
@@ -46364,12 +46461,16 @@ index 0000000..5fdb28a
 +	if points == 0 {
 +		return
 +	}
++	cheat, savescum, timeplay := c.legitSnapshot()
 +	c.handlers.OnAchievement(Achievement{
 +		ID:          uint32(id),
 +		Title:       C.GoString(title),
 +		Description: C.GoString(desc),
 +		Points:      uint32(points),
 +		Hardcore:    c.hardcore,
++		Cheat:       cheat,
++		Savescum:    savescum,
++		Timeplay:    timeplay,
 +	})
 +}
 +
@@ -46380,6 +46481,7 @@ index 0000000..5fdb28a
 +		return
 +	}
 +	token, raw := parseLeaderboardValue(int(format), C.GoString(value))
++	cheat, savescum, timeplay := c.legitSnapshot()
 +	c.handlers.OnLeaderboard(Leaderboard{
 +		ID:            uint32(id),
 +		Title:         C.GoString(title),
@@ -46387,6 +46489,9 @@ index 0000000..5fdb28a
 +		RawValue:      raw,
 +		LowerIsBetter: lowerIsBetter != 0,
 +		Hardcore:      c.hardcore,
++		Cheat:         cheat,
++		Savescum:      savescum,
++		Timeplay:      timeplay,
 +	})
 +}
 +
@@ -84067,10 +84172,10 @@ index 2840a0e..c55a441 100644
  	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
  		var out api.Out
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..c636b76 100644
+index 6972cc7..0d0f0e5 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,635 @@
+@@ -1,310 +1,648 @@
 -package worker
 -
 -import (
@@ -84665,7 +84770,10 @@ index 6972cc7..c636b76 100644
 +			if raCfg.SiteUser != "" && raCfg.SiteToken != "" {
 +				mirror := raMirrorConfig{baseURL: raCfg.MirrorURL, secret: raCfg.Secret}
 +				handlers := buildCheevosHandlers(mirror, w.log, r.Send, uid, game.System, raCfg.SiteUser)
-+				app.SetRetroAchievements(raCfg.SiteUser, raCfg.SiteToken, game.System, rq.Hardcore, handlers)
++				// Seed the per-run Cheat legitimacy taint from whether this room staged cheat codes (codes-only
++				// now; core options are quality settings, not cheats). Competitive rooms take no cheats, so this
++				// is only ever true for a casual room — every event then reports the Cheat why-icon.
++				app.SetRetroAchievements(raCfg.SiteUser, raCfg.SiteToken, game.System, rq.Hardcore, len(rq.Cheats) > 0, handlers)
 +				w.log.Info().Msgf("RetroAchievements: engine active for room %q (competitive=%v)", uid, rq.Hardcore)
 +			}
 +
@@ -84954,7 +85062,11 @@ index 6972cc7..c636b76 100644
 +
 +func (c *coordinator) HandleResetGame(rq api.ResetGameRequest, w *Worker) api.Out {
 +	if r := w.router.FindRoom(rq.Rid); r != nil {
-+		room.WithEmulator(r.App()).Reset()
++		emu := room.WithEmulator(r.App())
++		emu.Reset()
++		// A hard reset restores RA hardcore eligibility (RA's own rule), so clear the mid-run save-scum /
++		// time-manipulation taints — a clean run started after this is legit again.
++		emu.NotifyReset()
 +		return api.OkPacket
 +	}
 +	return api.ErrPacket
@@ -84977,10 +85089,16 @@ index 6972cc7..c636b76 100644
 +	if r == nil {
 +		return api.ErrPacket
 +	}
-+	if err := room.WithEmulator(r.App()).RestoreGameState(); err != nil {
++	emu := room.WithEmulator(r.App())
++	if err := emu.RestoreGameState(); err != nil {
 +		c.log.Error().Err(err).Msg("cannot load game state")
 +		return api.ErrPacket
 +	}
++	// The player loaded a save-STATE mid-run — tag every subsequent RA unlock/leaderboard this session as
++	// save-scummed (until a reset). This is the explicit Load press, NOT the gateway's boot-time seed
++	// (which restores through Frontend.Load directly and never hits this handler), so it can't false-taint
++	// a fresh Continue.
++	emu.NotifySaveStateLoaded()
 +	return api.OkPacket
 +}
 +
@@ -87840,10 +87958,10 @@ index f3e898f..f18e810 100644
 +}
 diff --git a/pkg/worker/racheevos.go b/pkg/worker/racheevos.go
 new file mode 100644
-index 0000000..c102eac
+index 0000000..913a603
 --- /dev/null
 +++ b/pkg/worker/racheevos.go
-@@ -0,0 +1,141 @@
+@@ -0,0 +1,152 @@
 +package worker
 +
 +// RetroAchievements wiring between the embedded rcheevos runtime (pkg/worker/cheevos) and the outside
@@ -87902,6 +88020,7 @@ index 0000000..c102eac
 +				T: uint8(api.AchievementUnlock),
 +				Payload: achievementToast{
 +					ID: a.ID, Title: a.Title, Description: a.Description, Points: a.Points, Hardcore: a.Hardcore,
++					Cheat: a.Cheat, Savescum: a.Savescum, Timeplay: a.Timeplay,
 +				},
 +			}); err == nil {
 +				send(data)
@@ -87929,6 +88048,10 @@ index 0000000..c102eac
 +	Description string `json:"description,omitempty"`
 +	Points      uint32 `json:"points"`
 +	Hardcore    bool   `json:"hardcore"`
++	// Run-legitimacy taints for the toast's why-icon (a save-scummed unlock shows differently).
++	Cheat    bool `json:"cheat,omitempty"`
++	Savescum bool `json:"savescum,omitempty"`
++	Timeplay bool `json:"timeplay,omitempty"`
 +}
 +
 +// raMirrorConfig captures the site mirror endpoint + secret (from worker config).
@@ -87970,6 +88093,9 @@ index 0000000..c102eac
 +		"title":           a.Title,
 +		"points":          a.Points,
 +		"hardcore":        a.Hardcore,
++		"cheat":           a.Cheat,
++		"savescum":        a.Savescum,
++		"timeplay":        a.Timeplay,
 +	})
 +}
 +
@@ -87983,6 +88109,9 @@ index 0000000..c102eac
 +		"value":           l.RawValue,
 +		"format":          l.Format,
 +		"hardcore":        l.Hardcore,
++		"cheat":           l.Cheat,
++		"savescum":        l.Savescum,
++		"timeplay":        l.Timeplay,
 +	})
 +}
 diff --git a/pkg/worker/room/room.go b/pkg/worker/room/room.go
