@@ -110,6 +110,17 @@ $raSecretFile = "D:\ArcadeStorage\secrets\arcade-token-secret.txt"
 if (Test-Path $raSecretFile) {
     $env:CLOUD_GAME_RETROACHIEVEMENTS_SECRET      = (Get-Content -Raw $raSecretFile).Trim()
 }
+# The SITE service RA account (the scoring engine — spectator mode, never earns). Two lines: username,
+# then its connect token. Minted by scripts/mint-arcade-ra-site-account.ps1; never in the repo. Absent =
+# RA engine off (no achievements/scores/times recorded).
+$raSiteFile = "D:\ArcadeStorage\secrets\arcade-ra-site-account.txt"
+if (Test-Path $raSiteFile) {
+    $raSiteLines = @(Get-Content $raSiteFile | Where-Object { $_.Trim() -ne "" })
+    if ($raSiteLines.Count -ge 2) {
+        $env:CLOUD_GAME_RETROACHIEVEMENTS_SITEUSER  = $raSiteLines[0].Trim()
+        $env:CLOUD_GAME_RETROACHIEVEMENTS_SITETOKEN = $raSiteLines[1].Trim()
+    }
+}
 
 New-Item -ItemType Directory -Force (Split-Path $LogFile) | Out-Null
 

@@ -2003,10 +2003,10 @@ index 9e70576..5f5c29f 100644
  
  func (l Library) GetSupportedExtensions() []string { return l.Supported }
 diff --git a/pkg/config/worker.go b/pkg/config/worker.go
-index be5ac42..35dd1f6 100644
+index be5ac42..d984f67 100644
 --- a/pkg/config/worker.go
 +++ b/pkg/config/worker.go
-@@ -6,20 +6,135 @@ import (
+@@ -6,20 +6,142 @@ import (
  	"net"
  	"net/url"
  	"path/filepath"
@@ -2047,6 +2047,13 @@ index be5ac42..35dd1f6 100644
 +	MirrorURL string
 +	// The shared arcade secret, sent as X-Arcade-Internal-Secret — MUST equal the site's ArcadeTokenSecret.
 +	Secret string
++	// SiteUser + SiteToken are the SINGLE service RA account the worker uses as the scoring ENGINE for
++	// EVERY room: it fetches each game's achievement/leaderboard definitions and evaluates them locally.
++	// Run in SPECTATOR mode (never submits to RA — the account never "earns"), so one shared account
++	// powers the whole friend group's achievements/scores/times, attributed to the room host in OUR DB.
++	// No player needs their own RA account. Empty SiteUser = RA off entirely (no engine).
++	SiteUser  string
++	SiteToken string // the service account's connect token (from a one-time login), NOT a password
 +}
 +
 +// Capture configures the desktop-capture caged mod (heavy browser lane, H5). Only the capture
@@ -2150,7 +2157,7 @@ index be5ac42..35dd1f6 100644
  }
  
  type Storage struct {
-@@ -86,6 +201,111 @@ type CodecSettings struct {
+@@ -86,6 +208,111 @@ type CodecSettings struct {
  	Caps    string
  }
  
@@ -45660,10 +45667,10 @@ index eb84d6e..be09f97 100644
  	})
 diff --git a/pkg/worker/cheevos/bridge.c b/pkg/worker/cheevos/bridge.c
 new file mode 100644
-index 0000000..70f0df9
+index 0000000..497b4b0
 --- /dev/null
 +++ b/pkg/worker/cheevos/bridge.c
-@@ -0,0 +1,163 @@
+@@ -0,0 +1,167 @@
 +/* bridge.c — see bridge.h. Adapts rcheevos' rc_client to the worker: memory reads come from the
 + * loaded core's RAM via rc_libretro's console mapping; server calls and events cross into Go. */
 +#include "bridge.h"
@@ -45798,6 +45805,10 @@ index 0000000..70f0df9
 +  rc_client_set_hardcore_enabled(client, enabled);
 +}
 +
++void cheevos_set_spectator(rc_client_t *client, int enabled) {
++  rc_client_set_spectator_mode_enabled(client, enabled);
++}
++
 +void cheevos_set_memory(void *system_ram, size_t system_ram_size, void *save_ram, size_t save_ram_size) {
 +  g_system_ram = (uint8_t *)system_ram;
 +  g_system_ram_size = system_ram_size;
@@ -45829,10 +45840,10 @@ index 0000000..70f0df9
 +}
 diff --git a/pkg/worker/cheevos/bridge.h b/pkg/worker/cheevos/bridge.h
 new file mode 100644
-index 0000000..fa16044
+index 0000000..9e1a31e
 --- /dev/null
 +++ b/pkg/worker/cheevos/bridge.h
-@@ -0,0 +1,55 @@
+@@ -0,0 +1,62 @@
 +/* bridge.h — the C surface the Go cheevos package calls, and the glue that adapts rcheevos'
 + * rc_client to our worker. rc_client is the RetroAchievements runtime: it hashes the loaded ROM,
 + * logs the player in with their own connect token, evaluates achievement/leaderboard triggers each
@@ -45857,8 +45868,15 @@ index 0000000..fa16044
 +rc_client_t *cheevos_create(void);
 +void cheevos_destroy(rc_client_t *client);
 +
-+/* Hardcore = competitive. Must be set before load; enabling it mid-session resets the runtime. */
++/* Hardcore = competitive. Must be set before load; enabling it mid-session resets the runtime. We run
++ * the site engine hardcore-ON always (so leaderboards activate in every room); it is decoupled from our
++ * OWN "competitive" tag, which lives on the mirrored event, not here. */
 +void cheevos_set_hardcore(rc_client_t *client, int enabled);
++
++/* Spectator mode: evaluate achievements/leaderboards locally and RAISE the events, but NEVER submit to
++ * retroachievements.org. This is what lets ONE site service account power the whole friend group's
++ * scores/times/achievements without earning anything on RA. Set before load. */
++void cheevos_set_spectator(rc_client_t *client, int enabled);
 +
 +/* Register the emulator's memory regions for the read handler. Call after the core has loaded its game
 + * (retro_get_memory_data pointers are valid then) and BEFORE cheevos_init_memory. */
@@ -45890,10 +45908,10 @@ index 0000000..fa16044
 +#endif /* CHEEVOS_BRIDGE_H */
 diff --git a/pkg/worker/cheevos/cheevos.go b/pkg/worker/cheevos/cheevos.go
 new file mode 100644
-index 0000000..27f5596
+index 0000000..9f1e169
 --- /dev/null
 +++ b/pkg/worker/cheevos/cheevos.go
-@@ -0,0 +1,417 @@
+@@ -0,0 +1,424 @@
 +// Package cheevos embeds the RetroAchievements runtime (rcheevos' rc_client) into the libretro worker.
 +// rc_client hashes the loaded ROM, logs the player in with their OWN connect token, evaluates
 +// achievement + leaderboard triggers each emulated frame against core RAM, and submits unlocks/runs to
@@ -45990,10 +46008,15 @@ index 0000000..27f5596
 +	return reg[key]
 +}
 +
-+// New creates a session. Returns nil if the creator has no RA credentials (RA simply off for the room)
-+// or rc_client can't be created. Call SetMemory once the core has loaded its game, then DoFrame each
-+// frame and Close on teardown — all on the emulator goroutine.
-+func New(user, token string, hardcore bool, consoleID uint32, romPath string, h Handlers) *Client {
++// New creates a session driven by the SITE service account. Returns nil if no account is configured
++// (RA off) or rc_client can't be created. Call SetMemory once the core has loaded its game, then
++// DoFrame each frame and Close on teardown — all on the emulator goroutine.
++//
++// The engine runs in SPECTATOR mode (evaluate + raise events, never submit to RA) and HARDCORE-on
++// (RA only activates leaderboards in hardcore; since we never submit, this is what makes scores/times
++// record in EVERY room). `competitive` is our OWN legit-run tag (no save-scumming) — it rides the
++// mirrored events, decoupled from rc_client's always-on hardcore.
++func New(user, token string, competitive bool, consoleID uint32, romPath string, h Handlers) *Client {
 +	if user == "" || token == "" {
 +		return nil
 +	}
@@ -46006,7 +46029,7 @@ index 0000000..27f5596
 +	c := &Client{
 +		ptr:       unsafe.Pointer(ptr),
 +		key:       uintptr(unsafe.Pointer(ptr)),
-+		hardcore:  hardcore,
++		hardcore:  competitive, // the value REPORTED on events (our legit tag), not rc_client's mode
 +		consoleID: consoleID,
 +		romPath:   romPath,
 +		user:      user,
@@ -46018,7 +46041,9 @@ index 0000000..27f5596
 +	regMu.Lock()
 +	reg[c.key] = c
 +	regMu.Unlock()
-+	C.cheevos_set_hardcore(ptr, boolToC(hardcore))
++	// Never submit to RA; always activate leaderboards. Both set before load.
++	C.cheevos_set_spectator(ptr, 1)
++	C.cheevos_set_hardcore(ptr, 1)
 +	return c
 +}
 +
@@ -83980,10 +84005,10 @@ index 2840a0e..c55a441 100644
  	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
  		var out api.Out
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..92881f2 100644
+index 6972cc7..c636b76 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,634 @@
+@@ -1,310 +1,635 @@
 -package worker
 -
 -import (
@@ -84566,19 +84591,20 @@ index 6972cc7..92881f2 100644
 +				w.log.Info().Msgf("Per-room cheats: %d core option(s), %d code(s)", len(rq.CoreOptions), len(rq.Cheats))
 +			}
 +
-+			// RetroAchievements (arcade RA feature): when the room CREATOR linked their RA account, the site
-+			// forwards their username + connect token + hardcore flag on t=104. Stage the session BEFORE Load
-+			// (like cheats) — the live rc_client is created in Start() once memory exists, then ticked each
-+			// frame. Empty creds = RA off (the common case). rcheevos submits to retroachievements.org under
-+			// the creator's own account; the handlers below only push the toast + mirror the events to the site.
-+			if rq.RaUser != "" && rq.RaToken != "" {
-+				mirror := raMirrorConfig{
-+					baseURL: w.conf.RetroAchievements.MirrorURL,
-+					secret:  w.conf.RetroAchievements.Secret,
-+				}
-+				handlers := buildCheevosHandlers(mirror, w.log, r.Send, uid, game.System, rq.RaUser)
-+				app.SetRetroAchievements(rq.RaUser, rq.RaToken, game.System, rq.Hardcore, handlers)
-+				w.log.Info().Msgf("RetroAchievements: staged for %q (hardcore=%v)", rq.RaUser, rq.Hardcore)
++			// RetroAchievements (arcade RA feature): the worker runs a SINGLE site service account as the
++			// scoring engine for EVERY room (config RetroAchievements.SiteUser/SiteToken), in spectator mode
++			// (never submits to RA) + hardcore-on (so leaderboards fire in every room). It fetches each
++			// game's achievement/leaderboard definitions and evaluates them against RAM locally; the handlers
++			// push the in-room toast and mirror unlocks/scores/times to the site, attributed to the ROOM HOST
++			// (parsed from the deterministic room id `uid`). No player needs their own RA account.
++			// rq.Hardcore carries the room's COMPETITIVE flag — our own legit-run tag on the mirrored events,
++			// NOT rc_client's (always-on) hardcore mode. Stage BEFORE Load, like cheats.
++			raCfg := w.conf.RetroAchievements
++			if raCfg.SiteUser != "" && raCfg.SiteToken != "" {
++				mirror := raMirrorConfig{baseURL: raCfg.MirrorURL, secret: raCfg.Secret}
++				handlers := buildCheevosHandlers(mirror, w.log, r.Send, uid, game.System, raCfg.SiteUser)
++				app.SetRetroAchievements(raCfg.SiteUser, raCfg.SiteToken, game.System, rq.Hardcore, handlers)
++				w.log.Info().Msgf("RetroAchievements: engine active for room %q (competitive=%v)", uid, rq.Hardcore)
 +			}
 +
 +			// Per-room Wii controller-scheme override (site: creator's room-create choice) for the

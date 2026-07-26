@@ -9,7 +9,6 @@ import LiveRooms from "./LiveRooms";
 import RecentlyPlayed from "./RecentlyPlayed";
 import SavesManager from "./SavesManager";
 import SavesVaultManager from "./SavesVaultManager";
-import RetroAchievementsPanel from "./RetroAchievementsPanel";
 import ArcadePager from "./ArcadePager";
 import { rememberLobbySearch } from "./arcadeLobbyState";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
@@ -113,7 +112,6 @@ export default function ArcadePage({ userData }) {
   const [recentGames, setRecentGames] = useState([]); // "Recently played" strip (save-derived history)
   const [modalVersionId, setModalVersionId] = useState(null); // pre-selected version (a recent tile's save)
   const [savesVaultOpen, setSavesVaultOpen] = useState(false); // the cross-game "My saves" drawer
-  const [raPanelOpen, setRaPanelOpen] = useState(false); // RetroAchievements account link panel
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
   const [modalGame, setModalGame] = useState(null); // the game whose full-page modal is open
@@ -385,7 +383,6 @@ export default function ArcadePage({ userData }) {
             <h1 className="arcade-title">Arcade</h1>
             <p className="arcade-subtitle">Pick a game to open a room, then send friends the link to play together.</p>
             <Button className="arcade-vault-btn" onClick={() => setSavesVaultOpen(true)}>💾 My saves (all games)</Button>
-            <Button className="arcade-vault-btn" onClick={() => setRaPanelOpen(true)}>🏆 RetroAchievements</Button>
           </div>
 
           {/* Stream quality for rooms YOU start. One encoder per room, so the creator's choice is what
@@ -505,7 +502,6 @@ export default function ArcadePage({ userData }) {
       {savesVaultOpen && (
         <SavesVaultManager onClose={() => setSavesVaultOpen(false)} onResume={doCreateRoom} />
       )}
-      <RetroAchievementsPanel open={raPanelOpen} onClose={() => setRaPanelOpen(false)} />
       {heavyGame && (
         <HeavyGameModal
           game={heavyGame}

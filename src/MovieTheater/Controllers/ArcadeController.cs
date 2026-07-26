@@ -1286,14 +1286,11 @@ namespace MovieTheater.Controllers
                         CheatCodes = codes.Count > 0 ? codes : null,
                     };
 
-                // RetroAchievements: if the creator has linked RA, the worker logs rcheevos in under their
-                // account so this room's play earns achievements/leaderboard runs (softcore in a normal room,
-                // HARDCORE in a competitive one). Loaded here, on the creator's own path only — a room is one
-                // emulator, so RA is the creator's (the multiplayer-attribution decision). Non-capture only:
-                // rcheevos attaches to a libretro core, which the native/heavy lane doesn't run.
-                var (raUser, raToken) = await LoadRaCredentialsAsync(userId.Value);
-                if (raUser != null && raToken != null)
-                    descriptor = descriptor with { RaUser = raUser, RaToken = raToken, Hardcore = competitive };
+                // RetroAchievements: the worker runs a single SITE service account as the scoring engine
+                // (spectator mode — never earns), so NO per-user creds are sent here. All the room needs to
+                // tell the worker is whether it's a COMPETITIVE (legit) run — that rides the descriptor's
+                // `competitive` flag to t=104, and the worker mirrors achievements/scores/times to the site
+                // attributed to the room host. Achievements/leaderboards are recorded for every room.
             }
 
             return Json(ToJson(descriptor, discCount, competitive));
@@ -2303,13 +2300,9 @@ namespace MovieTheater.Controllers
             // cheats sends the same packet it always did.
             coreOptions = d.CoreOptions is { Count: > 0 } ? d.CoreOptions : null,
             cheats = d.CheatCodes is { Count: > 0 } ? d.CheatCodes : null,
-            // RetroAchievements creds ride the descriptor body like cheats (a token is sensitive, never a
-            // query param) and are CREATOR-ONLY — only the creator's t=104 boots the emulator that rcheevos
-            // attaches to. Omitted entirely when the creator hasn't linked RA, so a non-RA room's packet is
-            // byte-identical to before the feature. `hardcore` only travels alongside a real RA session.
-            raUser = d.IsCreator && !string.IsNullOrEmpty(d.RaUser) ? d.RaUser : null,
-            raToken = d.IsCreator && !string.IsNullOrEmpty(d.RaToken) ? d.RaToken : null,
-            hardcore = d.IsCreator && !string.IsNullOrEmpty(d.RaUser) && d.Hardcore ? true : (bool?)null,
+            // No per-user RA creds ride the wire any more — the worker runs a single SITE service account
+            // as the scoring engine (spectator mode). The room only tells the worker whether it's a
+            // COMPETITIVE (legit) run, and that travels on `competitive` above; the shim maps it to t=104.
         };
 
         // A short, URL-safe invite code, regenerated on the rare collision with a live room.

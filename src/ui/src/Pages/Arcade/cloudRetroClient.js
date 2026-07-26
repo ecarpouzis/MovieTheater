@@ -1067,15 +1067,10 @@ export function createCloudRetroSession(descriptor, opts) {
     // room, so a joiner's descriptor carries neither.
     if (descriptor.coreOptions && Object.keys(descriptor.coreOptions).length > 0) p.core_options = descriptor.coreOptions;
     if (Array.isArray(descriptor.cheats) && descriptor.cheats.length > 0) p.cheats = descriptor.cheats;
-    // RetroAchievements: the worker logs rcheevos in under the creator's linked account and (if hardcore)
-    // runs in hardcore mode. Creator-only and only present when the creator linked RA — the backend omits
-    // these from a joiner's / non-RA descriptor, so p carries them only for a real RA room. The token is
-    // the user's own RA connect token (never their password); it rides the body like cheats, not the URL.
-    if (descriptor.raUser && descriptor.raToken) {
-      p.ra_user = descriptor.raUser;
-      p.ra_token = descriptor.raToken;
-      if (descriptor.hardcore) p.hardcore = true;
-    }
+    // RetroAchievements: the worker runs a single SITE service account as the scoring engine (spectator
+    // mode), so no per-user creds ride here. All the creator's t=104 needs to carry is whether this is a
+    // COMPETITIVE (legit) run — the worker tags mirrored achievements/scores/times with it.
+    if (descriptor.competitive) p.hardcore = true;
     send(T.GAME_START, p);
   }
 
