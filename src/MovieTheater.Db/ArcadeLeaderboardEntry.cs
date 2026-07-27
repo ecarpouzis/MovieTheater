@@ -53,18 +53,24 @@ namespace MovieTheater.Db
         [MaxLength(20)]
         public string Format { get; set; } = "SCORE";
 
-        /// <summary>Whether the best result was set in hardcore (competitive) mode. Informational — RA
-        /// leaderboards themselves are hardcore-only, but we record it for display parity with unlocks.</summary>
-        public bool Hardcore { get; set; }
+        /// <summary>Whether the room had the COMPETITIVE guardrail armed when this best was set. Provenance
+        /// only — <see cref="Clean"/> is what decides legitimacy. See
+        /// <see cref="ArcadeAchievementUnlock.Competitive"/>.</summary>
+        public bool Competitive { get; set; }
 
         /// <summary>Run-legitimacy taints for the BEST result (kept in step with <see cref="Value"/> — a new
         /// best overwrites them). <see cref="Cheat"/> = cheat codes active; <see cref="Savescum"/> = a
-        /// save-STATE was loaded mid-run; <see cref="Timeplay"/> = fast-forward/rewind used. The board shows a
-        /// hardcore badge only for a legit run (Hardcore &amp;&amp; none set) and a why-icon otherwise. See the
-        /// matching fields on <see cref="ArcadeAchievementUnlock"/>.</summary>
+        /// save-STATE was restored (mid-run Load or seeded at boot); <see cref="Timeplay"/> =
+        /// fast-forward/rewind used. See the matching fields on <see cref="ArcadeAchievementUnlock"/>.</summary>
         public bool Cheat { get; set; }
         public bool Savescum { get; set; }
         public bool Timeplay { get; set; }
+
+        /// <summary>OBSERVED cleanliness of the recorded best: no cheat, no save-scum, no time manipulation.
+        /// A PERSISTED COMPUTED column derived from the three taints — see
+        /// <see cref="ArcadeAchievementUnlock.Clean"/> for why it is computed rather than stored. The board
+        /// shows the trophy on this, and a why-icon for each taint otherwise. Read-only in EF.</summary>
+        public bool Clean { get; private set; }
 
         public DateTime AchievedUtc { get; set; }
 

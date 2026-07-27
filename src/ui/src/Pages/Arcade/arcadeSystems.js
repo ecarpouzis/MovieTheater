@@ -33,3 +33,23 @@ export const ART_SYSTEMS = new Set([
 
 /** True when a card should attempt /ArcadeImage rather than going straight to its placeholder. */
 export const canHaveArt = (game) => Boolean(game?.hasBoxArt) || ART_SYSTEMS.has(game?.system);
+
+// Heavy/capture lane: a native app streamed by Moonlight, with no libretro core and no CloudRetro
+// save path at all (docs/arcade-heavy-lane-plan.md §7.1).
+export const HEAVY_LANE_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "capture"]);
+
+// Systems with NO emulator save-state: their progress is a virtual memory card, not a serialized
+// machine state. psp + ps2 are noSaveStates cores (config.worker-gl.yaml — a t=106 there returns
+// ErrNoSaveStates). Keep in step with that file.
+//
+// These have no state to continue from or quickload, so the launch modal collapses to Clean Start
+// alone for them — and, happily, they can never be save-scummed either: their card is the game's own
+// save system, which is legitimate on real hardware.
+export const NO_SAVE_STATE_SYSTEMS = new Set(["psp", "ps2", ...HEAVY_LANE_SYSTEMS]);
+
+/** True when a system can offer Continue / Quickload at all (i.e. it has emulator save-states). */
+export const hasSaveStates = (system) => !NO_SAVE_STATE_SYSTEMS.has(String(system || "").toLowerCase());
+
+// The fixed quicksave slot (SaveStore.QuickSlot). Deliberately NOT slot 0 — that belongs to the
+// autosave / save-on-quit "Continue" state, so pressing Save can never overwrite it.
+export const QUICK_SLOT = 99;

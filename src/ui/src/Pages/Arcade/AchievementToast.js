@@ -19,7 +19,9 @@ function Toast({ toast, onExpire }) {
     return () => clearTimeout(id);
   }, []);
 
-  const legit = toast.hardcore && !toast.cheat && !toast.savescum && !toast.timeplay;
+  // Legitimacy is OBSERVED: clean until something dirties the run. The room's competitive mode is a
+  // guardrail, not a qualifier — a casual room earns the trophy pop too.
+  const legit = !toast.cheat && !toast.savescum && !toast.timeplay;
   const taints = [
     toast.cheat && { icon: "🔧", label: "Cheats were enabled" },
     toast.savescum && { icon: "💾", label: "A save state was loaded" },

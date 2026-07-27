@@ -344,10 +344,27 @@ namespace MovieTheater.Db
             // RetroAchievements mirror (the RA-backed achievements/leaderboards feature). Source of truth is
             // retroachievements.org (rcheevos submits under each player's own account); these are our copy for
             // site UI + friends boards, harvested via the secret-gated internal callbacks.
-            // Softcore and hardcore unlocks are distinct on RA, so the dedupe key includes Hardcore — a
-            // re-harvest of the same unlock updates in place instead of duplicating.
+            // Run legitimacy is OBSERVED, not asserted: `Clean` is a PERSISTED COMPUTED column over the three
+            // taints, so the database itself derives it and no callback or backfill can ever record a "clean"
+            // run the taints contradict. (The old `Hardcore` column asserted the room's competitive MODE and
+            // was ANDed into legitimacy, which meant a perfectly clean casual run counted for nothing and a
+            // competitive room's boot-seeded state counted for everything. Room mode is now kept purely as
+            // provenance in `Competitive`.)
             modelBuilder.Entity<ArcadeAchievementUnlock>()
-                .HasIndex(a => new { a.UserId, a.RaAchievementId, a.Hardcore })
+                .Property(a => a.Clean)
+                .HasComputedColumnSql(
+                    "CASE WHEN [Cheat] = 0 AND [Savescum] = 0 AND [Timeplay] = 0 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END",
+                    stored: true);
+            modelBuilder.Entity<ArcadeLeaderboardEntry>()
+                .Property(e => e.Clean)
+                .HasComputedColumnSql(
+                    "CASE WHEN [Cheat] = 0 AND [Savescum] = 0 AND [Timeplay] = 0 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END",
+                    stored: true);
+
+            // The dedupe key includes Clean: a re-harvest of the same unlock updates in place, but earning it
+            // CLEANLY after a dirty unlock is a genuine first and gets its own row.
+            modelBuilder.Entity<ArcadeAchievementUnlock>()
+                .HasIndex(a => new { a.UserId, a.RaAchievementId, a.Clean })
                 .IsUnique();
             modelBuilder.Entity<ArcadeAchievementUnlock>()
                 .HasOne(a => a.ArcadeGame)

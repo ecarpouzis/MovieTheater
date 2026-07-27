@@ -9575,7 +9575,7 @@ index f3553b1..df14005 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..22bef5e 100644
+index 6974d59..e40dd3c 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
 @@ -1,8 +1,10 @@
@@ -9597,7 +9597,7 @@ index 6974d59..22bef5e 100644
  )
  
  type Emulator interface {
-@@ -82,12 +85,54 @@ type Frontend struct {
+@@ -82,12 +85,64 @@ type Frontend struct {
  	mu  sync.Mutex
  	mui sync.Mutex
  
@@ -9611,6 +9611,16 @@ index 6974d59..22bef5e 100644
 +	raSystem  string
 +	raHard    bool
 +	raCheats  bool // room staged cheat codes → seeds the run's Cheat legitimacy taint
++	// raSeededState: this room BOOTED from a restored save-state (the gateway's Continue/?seedslot seed,
++	// or a leftover mount .dat), so the run is save-scummed from frame 0. Set in Start() from the same
++	// HasSave() condition the restore branches use, and applied in startCheevos() once the client exists.
++	//
++	// Without this, only the explicit in-room Load press tainted a run — and every boot-time restore
++	// (which is how you resume ANY game) laundered a save-scum into a "clean" run. That mattered little
++	// while legitimacy also required a competitive room; it is the whole ballgame now that a run is legit
++	// until something dirties it. A hard reset still clears it, exactly like a mid-run Load: RA restores
++	// hardcore eligibility on reset, so a clean run started after one is legit again.
++	raSeededState bool
 +	raHandler cheevos.Handlers
 +	gamePath  string // the ROM/disc path last loaded — RetroAchievements hashes it to identify the game
 +
@@ -9652,7 +9662,7 @@ index 6974d59..22bef5e 100644
  type Device byte
  
  const (
-@@ -173,10 +218,14 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -173,10 +228,14 @@ func (f *Frontend) LoadCore(emu string) {
  		Hacks:           conf.Hacks,
  		HasVFR:          conf.VFR,
  		Hid:             conf.Hid,
@@ -9667,7 +9677,7 @@ index 6974d59..22bef5e 100644
  		UsesLibCo:       conf.UsesLibCo,
  		CoreAspectRatio: conf.CoreAspectRatio,
  		KbMouseSupport:  conf.KbMouseSupport,
-@@ -184,15 +233,59 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -184,15 +243,59 @@ func (f *Frontend) LoadCore(emu string) {
  	}
  	f.mu.Lock()
  	f.SaveStateFs = conf.SaveStateFs
@@ -9729,7 +9739,7 @@ index 6974d59..22bef5e 100644
  	}
  	f.storage.SetNonBlocking(conf.NonBlockingSave)
  	f.scale = scale
-@@ -203,6 +296,13 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -203,6 +306,13 @@ func (f *Frontend) LoadCore(emu string) {
  }
  
  func (f *Frontend) handleAudio(audio unsafe.Pointer, samples int) {
@@ -9743,7 +9753,7 @@ index 6974d59..22bef5e 100644
  	fr, _ := audioPool.Get().(*app.Audio)
  	if fr == nil {
  		fr = new(app.Audio)
-@@ -220,11 +320,37 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
+@@ -220,11 +330,37 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
  		return
  	}
  
@@ -9781,7 +9791,7 @@ index 6974d59..22bef5e 100644
  	fr.Frame.W = int(fi.W)
  	fr.Frame.H = int(fi.H)
  	fr.Frame.Stride = int(fi.Stride)
-@@ -237,9 +363,18 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
+@@ -237,9 +373,18 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
  }
  
  func (f *Frontend) handleDup() {
@@ -9802,7 +9812,7 @@ index 6974d59..22bef5e 100644
  }
  
  func (f *Frontend) Shutdown() {
-@@ -292,8 +427,19 @@ func (f *Frontend) Start() {
+@@ -292,8 +437,19 @@ func (f *Frontend) Start() {
  	f.nano.LastFrameTime = time.Now()
  
  	defer func() {
@@ -9824,7 +9834,7 @@ index 6974d59..22bef5e 100644
  			f.log.Debug().Msg("save on quit")
  			if err := f.Save(); err != nil {
  				f.log.Error().Err(err).Msg("save on quit failed")
-@@ -301,10 +447,33 @@ func (f *Frontend) Start() {
+@@ -301,10 +457,39 @@ func (f *Frontend) Start() {
  		}
  		f.mui.Unlock()
  		f.Shutdown()
@@ -9841,6 +9851,12 @@ index 6974d59..22bef5e 100644
 +	// loop on the deterministic save id). But an in-session Load a few seconds in round-trips
 +	// cleanly (verified live 2026-07-09). So heavy GL cores restore INTO A WARM VM: the same code
 +	// path as a user pressing Load ~5s after boot, which is exactly what this schedules.
++	// Run legitimacy: a boot-time restore is a save-scum just like a mid-run Load, so record it BEFORE
++	// startCheevos() below reads it. This mirrors the union of the two restore branches that follow —
++	// keep it in step with them. (The deferred branch restores 5s in, but the run is compromised the
++	// moment we commit to restoring, so tainting at boot is both correct and simpler.)
++	f.raSeededState = f.HasSave() && (f.nano.SkipBootRestore() || !f.NoSaveStates)
++
 +	if f.HasSave() && f.nano.SkipBootRestore() {
 +		go func() {
 +			select {
@@ -9859,7 +9875,7 @@ index 6974d59..22bef5e 100644
  		// advance 1 frame for Mupen, DOSBox save states
  		// loading will work if autostart is selected for DOSBox apps
  		f.Tick()
-@@ -318,6 +487,11 @@ func (f *Frontend) Start() {
+@@ -318,6 +503,11 @@ func (f *Frontend) Start() {
  		go f.autosave(f.conf.AutosaveSec)
  	}
  
@@ -9871,7 +9887,7 @@ index 6974d59..22bef5e 100644
  	// The main loop of Libretro
  
  	targetFrameTimeNs := int64(float64(time.Second) / f.nano.VideoFramerate())
-@@ -328,66 +502,454 @@ func (f *Frontend) Start() {
+@@ -328,66 +518,460 @@ func (f *Frontend) Start() {
  	// how many frames will be considered not normal
  	const lateFramesThreshold = 3
  
@@ -10345,13 +10361,19 @@ index 6974d59..22bef5e 100644
 +	if f.ra == nil {
 +		return
 +	}
++	// A room that booted from a restored save-state starts save-scummed. Reuses the mid-run Load taint:
++	// same meaning, same stickiness, same clear-on-hard-reset. Battery/SRAM and memory-card seeding are
++	// deliberately NOT tainted — those are the game's own save system and legitimate on real hardware.
++	if f.raSeededState {
++		f.ra.NotifySaveStateLoaded()
++	}
 +	f.ra.SetMemory(sysRAM, uintptr(sysSize), saveRAM, uintptr(saveSize), f.nano.MemoryMap())
 +	// Build the memory region map NOW, before the game load. rc_client probes every achievement address
 +	// through our read callback during load — if the regions aren't registered yet it disables the whole
 +	// set as "Invalid address". (This, not the memory-map, was why Genesis/N64 never fired.)
 +	memOK := f.ra.InitMemory()
-+	f.log.Info().Msgf("RetroAchievements: session started (hardcore=%v, memmap=%v, systemRAM=0x%X, saveRAM=0x%X, regions=%v)",
-+		f.raHard, f.nano.MemoryMap() != nil, sysSize, saveSize, memOK)
++	f.log.Info().Msgf("RetroAchievements: session started (hardcore=%v, seededState=%v, memmap=%v, systemRAM=0x%X, saveRAM=0x%X, regions=%v)",
++		f.raHard, f.raSeededState, f.nano.MemoryMap() != nil, sysSize, saveSize, memOK)
 +}
 +
 +// stopCheevos tears the client down on the emulator goroutine (after the frame loop stops).
@@ -10362,7 +10384,7 @@ index 6974d59..22bef5e 100644
  	}
  }
  
-@@ -395,13 +957,428 @@ func (f *Frontend) LoadGame(path string) error {
+@@ -395,13 +979,428 @@ func (f *Frontend) LoadGame(path string) error {
  	if f.UniqueSaveDir {
  		f.copyFsMaybe(path)
  	}
@@ -10792,7 +10814,7 @@ index 6974d59..22bef5e 100644
  func (f *Frontend) FrameSize() (int, int)         { return f.nano.BaseWidth(), f.nano.BaseHeight() }
  func (f *Frontend) HasSave() bool                 { return os.Exists(f.HashPath()) }
  func (f *Frontend) HashPath() string              { return f.storage.GetSavePath() }
-@@ -419,9 +1396,16 @@ func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
+@@ -419,9 +1418,16 @@ func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
  func (f *Frontend) SetSessionId(name string)      { f.storage.SetMainSaveName(name) }
  func (f *Frontend) SetDataCb(cb func([]byte))     { f.onData = cb }
  func (f *Frontend) SetVideoCb(ff func(app.Video)) { f.onVideo = ff }
@@ -10812,7 +10834,7 @@ index 6974d59..22bef5e 100644
  
  func (f *Frontend) Input(port int, device byte, data []byte) {
  	switch Device(device) {
-@@ -434,6 +1418,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
+@@ -434,6 +1440,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
  	}
  }
  
@@ -10822,7 +10844,7 @@ index 6974d59..22bef5e 100644
  func (f *Frontend) ViewportCalc() (nw int, nh int) {
  	w, h := f.FrameSize()
  	nw, nh = w, h
-@@ -478,6 +1465,9 @@ func (f *Frontend) Close() {
+@@ -478,6 +1487,9 @@ func (f *Frontend) Close() {
  
  // Save writes the current state to the filesystem.
  func (f *Frontend) Save() error {
@@ -10832,7 +10854,7 @@ index 6974d59..22bef5e 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -501,6 +1491,9 @@ func (f *Frontend) Save() error {
+@@ -501,6 +1513,9 @@ func (f *Frontend) Save() error {
  
  // Load restores the state from the filesystem.
  func (f *Frontend) Load() error {
@@ -10842,7 +10864,7 @@ index 6974d59..22bef5e 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -522,6 +1515,88 @@ func (f *Frontend) Load() error {
+@@ -522,6 +1537,88 @@ func (f *Frontend) Load() error {
  	return nil
  }
  
@@ -10931,7 +10953,7 @@ index 6974d59..22bef5e 100644
  func (f *Frontend) IsSupported() error {
  	return graphics.RGFWTryInit()
  }
-@@ -537,6 +1612,13 @@ func (f *Frontend) autosave(periodSec int) {
+@@ -537,6 +1634,13 @@ func (f *Frontend) autosave(periodSec int) {
  			if f.nano.IsStopped() {
  				return
  			}

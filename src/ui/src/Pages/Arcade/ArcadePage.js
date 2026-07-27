@@ -12,6 +12,7 @@ import SavesVaultManager from "./SavesVaultManager";
 import RetroAchievementsModal from "./RetroAchievementsModal";
 import ArcadePager from "./ArcadePager";
 import { rememberLobbySearch } from "./arcadeLobbyState";
+import { hasSaveStates, QUICK_SLOT } from "./arcadeSystems";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 import useGridWindow from "../../hooks/useGridWindow";
 import "./ArcadePage.css";
@@ -283,7 +284,7 @@ export default function ArcadePage({ userData }) {
   // is the GameCube-vs-Wiimote+Nunchuk picker (only shown for the two GC-native BrawlEx mods). Both
   // ride every path out of this modal — Continue, New game, and a snapshot resume all launch the
   // same room.
-  function createRoom(versionId, title, cheats = [], hwContext = "", controllerScheme = "", renderProfile = "", competitive = false) {
+  function createRoom(versionId, title, cheats = [], hwContext = "", controllerScheme = "", renderProfile = "", competitive = false, system = "") {
     if (creating || !versionId) return;
     setCreating(versionId);
     // A competitive room never resumes a save-state (that's the whole point), so skip the Continue/New-game
@@ -292,44 +293,80 @@ export default function ArcadePage({ userData }) {
       doCreateRoom(versionId, { competitive: true, hwContext, renderProfile, controllerScheme });
       return;
     }
-    // Durable saves (arcade-saves-plan): if this user has a save/snapshots for the game, offer Continue,
-    // any named snapshot, or New game.
+    // Systems with no emulator save-state (psp/ps2 noSaveStates, heavy/capture lanes) have nothing to
+    // continue FROM: their progress is the memory card, which every boot seeds regardless. Offering
+    // Continue/Quickload there would be dead UI, so they always boot clean.
+    if (!hasSaveStates(system)) {
+      doCreateRoom(versionId, { newGame: true, cheats, hwContext, renderProfile, controllerScheme });
+      return;
+    }
+    // Durable saves (arcade-saves-plan): offer the three ways to start. The split is RUN LEGITIMACY,
+    // not convenience — see docs/arcade-clean-start-plan.md. Restoring a save-STATE (Continue, a
+    // quickload, or a named snapshot) is save-scumming by RA's own rule and taints the run from frame
+    // 0; a clean boot does not. Your battery / memory card is NOT a save-state and is kept either way,
+    // so "Clean Start" on a game with in-game saves still lets you load from the game's own menu.
     MovieAPI.listArcadeSaves(versionId)
       .then((saves) => {
         const rows = Array.isArray(saves) ? saves : [];
-        if (rows.length === 0) return doCreateRoom(versionId, { cheats, hwContext, renderProfile, controllerScheme });
-        const snaps = rows.filter((s) => s.slotId >= 1 && s.kind === "state")
+        if (rows.length === 0) return doCreateRoom(versionId, { newGame: true, cheats, hwContext, renderProfile, controllerScheme });
+        const states = rows.filter((s) => s.kind === "state");
+        const hasContinue = states.some((s) => s.slotId === 0);
+        const quick = states.find((s) => s.slotId === QUICK_SLOT);
+        const snaps = states.filter((s) => s.slotId >= 1 && s.slotId !== QUICK_SLOT)
           .sort((a, b) => a.slotId - b.slotId);
+        // Nothing restorable → no choice to present.
+        if (!hasContinue && !quick && snaps.length === 0) {
+          return doCreateRoom(versionId, { newGame: true, cheats, hwContext, renderProfile, controllerScheme });
+        }
+        const start = (opts) => doCreateRoom(versionId, { ...opts, cheats, hwContext, renderProfile, controllerScheme });
+        const when = (s) => (s?.updatedUtc ? new Date(s.updatedUtc).toLocaleString() : "");
         const modal = Modal.confirm({
-          title: "Resume your saved game?",
-          okText: "Continue (latest)",
-          cancelText: "New game",
-          onOk: () => doCreateRoom(versionId, { cheats, hwContext, renderProfile, controllerScheme }),
-          onCancel: () => doCreateRoom(versionId, { newGame: true, cheats, hwContext, renderProfile, controllerScheme }),
+          title: "How do you want to start?",
+          icon: null,
+          width: 520,
+          okText: "🏁 Clean Start",
+          cancelText: "Cancel",
+          onOk: () => start({ newGame: true }),
+          onCancel: () => setCreating(0),
           content: (
-            <div>
-              <div style={{ marginBottom: snaps.length ? 8 : 0 }}>
-                <b>Continue</b> picks up where you left off — it's saved for you automatically each time
-                you leave, so it's always the most recent moment, whatever that was. Your own saves are
-                listed below and are never overwritten automatically.
+            <div className="arcade-start-choice">
+              <div style={{ marginBottom: 10 }}>
+                <b>🏁 Clean Start</b> — boot fresh, no save-state. Your memory card / battery stays in,
+                so you can still load from the game's own menu. <b>Only a clean start can set a legit
+                score, time, or achievement.</b>
               </div>
-              {snaps.length > 0 && (
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12 }}>Or resume a save you made:</Text>
-                  <div style={{ marginTop: 4, maxHeight: 180, overflowY: "auto" }}>
-                    {snaps.map((s) => (
-                      <div key={s.slotId} style={{ padding: "2px 0" }}>
-                        <a onClick={() => { modal.destroy(); doCreateRoom(versionId, { seedSlot: s.slotId, cheats, hwContext, renderProfile, controllerScheme }); }}>
-                          ▶ {s.label || `Snapshot ${s.slotId}`}
-                        </a>
-                        <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>
-                          {s.updatedUtc ? new Date(s.updatedUtc).toLocaleDateString() : ""}
-                        </Text>
-                      </div>
-                    ))}
-                  </div>
+              <div style={{ borderTop: "1px solid rgba(128,128,128,.25)", paddingTop: 10 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Or pick up a save-state — these count as save-scumming, so the run won't be legit:
+                </Text>
+                <div style={{ marginTop: 6, maxHeight: 200, overflowY: "auto" }}>
+                  {hasContinue && (
+                    <div style={{ padding: "3px 0" }}>
+                      <a onClick={() => { modal.destroy(); start({}); }}>▶ Continue Auto-Save</a>
+                      <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>
+                        where you left off — saved automatically each time you leave
+                        {when(states.find((s) => s.slotId === 0)) ? ` · ${when(states.find((s) => s.slotId === 0))}` : ""}
+                      </Text>
+                    </div>
+                  )}
+                  {quick && (
+                    <div style={{ padding: "3px 0" }}>
+                      <a onClick={() => { modal.destroy(); start({ seedSlot: QUICK_SLOT }); }}>▶ Quickload</a>
+                      <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>
+                        your quicksave{when(quick) ? ` · ${when(quick)}` : ""}
+                      </Text>
+                    </div>
+                  )}
+                  {snaps.map((s) => (
+                    <div key={s.slotId} style={{ padding: "3px 0" }}>
+                      <a onClick={() => { modal.destroy(); start({ seedSlot: s.slotId }); }}>
+                        ▶ {s.label || `Snapshot ${s.slotId}`}
+                      </a>
+                      <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>{when(s)}</Text>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
               <div style={{ marginTop: 10 }}>
                 <a onClick={() => { modal.destroy(); setCreating(0); setManageSaves({ gameId: versionId, title }); }}>
                   ⚙ Manage my saves…
@@ -339,7 +376,7 @@ export default function ArcadePage({ userData }) {
           ),
         });
       })
-      .catch(() => doCreateRoom(versionId, { cheats, hwContext, renderProfile, controllerScheme }));
+      .catch(() => doCreateRoom(versionId, { newGame: true, cheats, hwContext, renderProfile, controllerScheme }));
   }
 
   function doCreateRoom(versionId, opts) {
@@ -503,8 +540,11 @@ export default function ArcadePage({ userData }) {
           // (the Continue/New-game confirm, or the saves manager) isn't stranded behind it at a lower
           // z-index. This restores the exact pre-modal flow those surfaces were built for.
           onStart={(versionId, title, cheats, hwContext, controllerScheme, renderProfile, competitive) => {
+            // Grab the system BEFORE clearing the modal — the start-choice prompt needs it to know
+            // whether this core even has save-states to offer (psp/ps2 don't).
+            const sys = modalGame?.system;
             setModalGame(null);
-            createRoom(versionId, title, cheats, hwContext, controllerScheme, renderProfile, competitive);
+            createRoom(versionId, title, cheats, hwContext, controllerScheme, renderProfile, competitive, sys);
           }}
           onManageSaves={(gameId, title) => { setModalGame(null); setManageSaves({ gameId, title }); }}
         />

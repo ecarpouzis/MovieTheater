@@ -73,7 +73,7 @@ export default function ArcadeAchievements({ gameId }) {
                 : <span className="agm-ach__badge agm-ach__badge--none">🎖️</span>}
               {a.earned && (
                 <span className="agm-ach__why">
-                  <LegitTags entry={{ hardcore: a.earnedHardcore, cheat: a.cheat, savescum: a.savescum, timeplay: a.timeplay, legit: a.legit }} />
+                  <LegitTags entry={{ competitive: a.earnedCompetitive, cheat: a.cheat, savescum: a.savescum, timeplay: a.timeplay, legit: a.legit }} />
                 </span>
               )}
             </a>

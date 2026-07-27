@@ -4,7 +4,7 @@ import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkb
 import { MovieAPI } from "../../MovieAPI";
 import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
 import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
-import { SYSTEM_LABEL, systemLabel } from "./arcadeSystems";
+import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, QUICK_SLOT } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
 import { useWakeLock } from "../../useWakeLock";
 import AchievementToaster from "./AchievementToast";
@@ -32,17 +32,14 @@ const LIVE_STATUS = ["playing", "spectating"];
 // mapping table for them would be meaningless.
 const NOT_REMAPPED_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "capture"]);
 
-// Systems with NO emulator save-state: their progress is a virtual memory card, not a serialized
-// machine state. psp + ps2 are noSaveStates cores (config.worker-gl.yaml — a t=106 there returns
-// ErrNoSaveStates); the heavy/capture lanes stream a native app and never touch the CloudRetro save
-// path at all. The first-play pre-warm below must skip them. Keep in step with config.worker-gl.yaml.
-const NO_SAVE_STATE_SYSTEMS = new Set(["psp", "ps2", "switch", "ps3", "ps4", "wiiu", "x360", "capture"]);
+// NO_SAVE_STATE_SYSTEMS / HEAVY_LANE_SYSTEMS / QUICK_SLOT live in arcadeSystems.js — the launch modal
+// needs the same three facts to decide which start options a system can even offer, and two divergent
+// copies of "which cores have save-states" is exactly the drift that breaks a save path silently.
 
 // Time controls (fork t=114/115). Fast-forward is pacing-only, so every libretro-lane system has
 // it; the heavy/capture lanes stream a native app with no retro_run to pace. Rewind additionally
 // needs the worker's in-memory savestate ring, armed per core with `rewind: true` in
 // config.worker-gl.yaml — this set mirrors that file (the serialize-cheap 2D tier), keep in step.
-const HEAVY_LANE_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "capture"]);
 const REWIND_SYSTEMS = new Set([
   "nes", "snes", "genesis", "gb", "gbc", "gba", "sms", "gg", "sg1000", "segacd", "sega32x",
   "pce", "ngpc", "wsc", "a2600", "a7800", "lynx", "vb", "fds", "neogeo", "arcade",
@@ -523,8 +520,9 @@ export default function ArcadeRoomPage() {
   const pushAchievementToast = (a) => {
     if (!achEarnedReadyRef.current) { achPendingRef.current.push(a); return; }
     const id = String(a.id);
-    // Same legitimacy test the toast itself renders on (see AchievementToast).
-    const incomingLegit = !!a.hardcore && !a.cheat && !a.savescum && !a.timeplay;
+    // Same legitimacy test the toast itself renders on (see AchievementToast): OBSERVED cleanliness, not
+    // the room's mode.
+    const incomingLegit = !a.cheat && !a.savescum && !a.timeplay;
     const prior = achEarnedRef.current.get(id);
     // Already have it at the same or better legitimacy → not news. Also dedupes a repeat packet within
     // this session, since every pop records itself here.
@@ -840,9 +838,6 @@ export default function ArcadeRoomPage() {
       setLocalPlayers((lp) => lp.map((p) => (p.slot === slot ? { ...p, padIndex } : p)));
     }
   }
-
-  // The gateway's reserved quicksave slot (SaveStore.QuickSlot) — keep the two in step.
-  const QUICK_SLOT = 99;
 
   // Pull the gateway origin from the descriptor's WS url, and sign with the freshest capability token we
   // have: the heartbeat-refreshed one (saveTokenRef) if it's arrived, else the original wsUrl token.

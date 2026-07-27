@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Spin, Tag, Tooltip, Collapse } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 
-// Run-legitimacy markers for a board/achievement entry. A clean hardcore run gets the trophy; anything
-// tainted shows a why-icon per reason (a save-scummed record can still hold the top slot, so we say WHY
-// rather than hide it). `legit` is derived server-side (hardcore && no taint). Reused by the room toast.
+// Run-legitimacy markers for a board/achievement entry. A CLEAN run gets the trophy; anything tainted
+// shows a why-icon per reason (a save-scummed record can still hold the top slot, so we say WHY rather
+// than hide it). `legit` is OBSERVED, derived server-side from the taints alone (ArcadeAchievementUnlock
+// .Clean, a computed column) — a casual room earns the trophy too, right up until something dirties the
+// run. `competitive` is only which mode the room was in. Reused by the room toast.
 export const LEGIT_REASONS = [
   { key: "cheat", icon: "🔧", label: "Cheat codes were enabled" },
   { key: "savescum", icon: "💾", label: "A save state was loaded mid-run" },
@@ -25,10 +27,12 @@ export function LegitTags({ entry }) {
       </>
     );
   }
-  if (entry.legit || entry.hardcore) {
+  if (entry.legit) {
     return (
-      <Tooltip title={entry.legit ? "Legit hardcore run — no cheats, save-scumming, or fast-forward" : "Hardcore (competitive) run"}>
-        <Tag color="volcano" className="agm-lb__hc">{entry.legit ? "🏆 HC" : "HC"}</Tag>
+      <Tooltip title={entry.competitive
+        ? "Clean run, competitive room — no cheats, save-scumming, or fast-forward"
+        : "Clean run — no cheats, save-scumming, or fast-forward"}>
+        <Tag color="volcano" className="agm-lb__hc">{entry.competitive ? "🏆 🏁" : "🏆"}</Tag>
       </Tooltip>
     );
   }

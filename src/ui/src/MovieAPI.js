@@ -739,14 +739,15 @@ function getRetroAchievementsProfile(userId) {
     .catch(() => ({ configured: false, linked: false }));
 }
 // Every achievement that EXISTS for a game (RA), with the signed-in user's earned overlay + badges.
-// { configured, available, raGameId, title, imageIcon, achievements:[{ id,title,description,points,badgeUrl,earned,earnedHardcore,earnedUtc,legit,... }], earnedCount, pointsEarned, pointsTotal }.
+// { configured, available, raGameId, title, imageIcon, achievements:[{ id,title,description,points,badgeUrl,earned,earnedCompetitive,earnedUtc,legit,... }], earnedCount, pointsEarned, pointsTotal }.
+// `legit` = OBSERVED clean (no cheat/savescum/timeplay); `earnedCompetitive` = room mode, provenance only.
 function getArcadeGameAchievements(gameId) {
   return fetch(`/API/Arcade/Game/${gameId}/Achievements`)
     .then((r) => (r.ok ? r.json() : { available: false, achievements: [] }))
     .catch(() => ({ available: false, achievements: [] }));
 }
 // The trophy-room summary: games the user has earned achievements in, collapsed across versions.
-// { userId, totalPoints, totalEarned, gameCount, games:[{ gameId,title,system,earnedCount,points,hardcoreCount,legitCount,lastUnlockedUtc }] }.
+// { userId, totalPoints, totalEarned, gameCount, games:[{ gameId,title,system,earnedCount,points,competitiveCount,legitCount,lastUnlockedUtc }] }.
 function getArcadeUserTrophies(userId) {
   return fetch(`/API/Arcade/Users/${userId}/Trophies`)
     .then((r) => (r.ok ? r.json() : { games: [], totalPoints: 0, totalEarned: 0, gameCount: 0 }))

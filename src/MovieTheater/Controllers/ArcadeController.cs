@@ -1701,8 +1701,12 @@ namespace MovieTheater.Controllers
             if (userId == null) return NoContent(); // unknown player — nothing to attribute, don't error the worker
 
             var nowUtc = DateTime.UtcNow;
+            // Dedupe on OBSERVED cleanliness, not the room mode: a re-harvest of the same unlock at the same
+            // legitimacy updates in place, but earning it cleanly after a dirty unlock is a genuine first and
+            // gets its own row. Clean is a computed column, so we mirror its definition to find the match.
+            var incomingClean = !req.Cheat && !req.Savescum && !req.Timeplay;
             var row = await movieDb.ArcadeAchievementUnlocks.FirstOrDefaultAsync(a =>
-                a.UserId == userId.Value && a.RaAchievementId == req.RaAchievementId && a.Hardcore == req.Hardcore);
+                a.UserId == userId.Value && a.RaAchievementId == req.RaAchievementId && a.Clean == incomingClean);
             if (row == null)
             {
                 movieDb.ArcadeAchievementUnlocks.Add(new ArcadeAchievementUnlock
@@ -1714,7 +1718,9 @@ namespace MovieTheater.Controllers
                     RaAchievementId = req.RaAchievementId,
                     Title = req.Title,
                     Points = req.Points,
-                    Hardcore = req.Hardcore,
+                    // The wire still calls the room mode `hardcore` (t=104 / worker mirror); we store it as
+                    // provenance only. Clean is computed by the DB from the taints below.
+                    Competitive = req.Hardcore,
                     Cheat = req.Cheat,
                     Savescum = req.Savescum,
                     Timeplay = req.Timeplay,
@@ -1781,7 +1787,7 @@ namespace MovieTheater.Controllers
                     Title = req.Title,
                     Value = req.Value,
                     Format = format,
-                    Hardcore = req.Hardcore,
+                    Competitive = req.Hardcore,
                     Cheat = req.Cheat,
                     Savescum = req.Savescum,
                     Timeplay = req.Timeplay,
@@ -1801,7 +1807,7 @@ namespace MovieTheater.Controllers
                 if (better)
                 {
                     row.Value = req.Value;
-                    row.Hardcore = req.Hardcore;
+                    row.Competitive = req.Hardcore;
                     // Taints belong to the recorded best — advance them with it (a cleaner but slower run
                     // doesn't scrub the taint off the faster save-scummed one that still holds the top slot).
                     row.Cheat = req.Cheat;
@@ -1844,7 +1850,7 @@ namespace MovieTheater.Controllers
             var entries = await (from e in movieDb.ArcadeLeaderboardEntries.AsNoTracking()
                                  join u in movieDb.Users on e.UserId equals u.UserID
                                  where e.ArcadeGameId != null && versionIds.Contains(e.ArcadeGameId.Value)
-                                 select new { e.RaLeaderboardId, e.Title, e.Format, e.Value, e.Hardcore, e.Cheat, e.Savescum, e.Timeplay, e.AchievedUtc, e.UserId, u.Username })
+                                 select new { e.RaLeaderboardId, e.Title, e.Format, e.Value, e.Competitive, e.Clean, e.Cheat, e.Savescum, e.Timeplay, e.AchievedUtc, e.UserId, u.Username })
                                 .ToListAsync();
 
             // Our friends' best entries, grouped + ranked per RA leaderboard (the mirror).
@@ -1860,12 +1866,13 @@ namespace MovieTheater.Controllers
                             userId = x.UserId,
                             username = x.Username,
                             value = x.Value,
-                            hardcore = x.Hardcore,
-                            // Run-legitimacy taints for the why-icon. `legit` = a clean hardcore run (badge).
+                            competitive = x.Competitive,
+                            // Run-legitimacy taints for the why-icon. `legit` = OBSERVED clean (badge): no
+                            // cheat, no save-scum, no time manipulation — independent of the room's mode.
                             cheat = x.Cheat,
                             savescum = x.Savescum,
                             timeplay = x.Timeplay,
-                            legit = x.Hardcore && !x.Cheat && !x.Savescum && !x.Timeplay,
+                            legit = x.Clean,
                             achievedUtc = x.AchievedUtc,
                             you = x.UserId == userId.Value,
                         }).ToList();
@@ -1957,11 +1964,11 @@ namespace MovieTheater.Controllers
                     a.RaAchievementId,
                     a.Title,
                     a.Points,
-                    a.Hardcore,
+                    a.Competitive,
                     a.Cheat,
                     a.Savescum,
                     a.Timeplay,
-                    legit = a.Hardcore && !a.Cheat && !a.Savescum && !a.Timeplay,
+                    legit = a.Clean,
                     a.UnlockedUtc,
                     raUrl = "https://retroachievements.org/achievement/" + a.RaAchievementId,
                 })
@@ -2029,12 +2036,12 @@ namespace MovieTheater.Controllers
                         // unlock toast reuses this map to show the real art when an achievement fires.
                         badgeUrl = RaBadgeUrl(a.TryGetProperty("BadgeName", out var b) ? b.GetString() : null),
                         earned = mine != null,
-                        earnedHardcore = mine?.Hardcore ?? false,
+                        earnedCompetitive = mine?.Competitive ?? false,
                         earnedUtc = mine?.UnlockedUtc,
                         cheat = mine?.Cheat ?? false,
                         savescum = mine?.Savescum ?? false,
                         timeplay = mine?.Timeplay ?? false,
-                        legit = mine != null && mine.Hardcore && !mine.Cheat && !mine.Savescum && !mine.Timeplay,
+                        legit = mine != null && mine.Clean,
                         raUrl = "https://retroachievements.org/achievement/" + id,
                     }));
                 }
@@ -2078,7 +2085,8 @@ namespace MovieTheater.Controllers
                                   g.CollapseKey,
                                   g.Title,
                                   a.Points,
-                                  a.Hardcore,
+                                  a.Competitive,
+                                  a.Clean,
                                   a.Cheat,
                                   a.Savescum,
                                   a.Timeplay,
@@ -2094,8 +2102,8 @@ namespace MovieTheater.Controllers
                     system = grp.Key.System,
                     earnedCount = grp.Count(),
                     points = grp.Sum(x => x.Points),
-                    hardcoreCount = grp.Count(x => x.Hardcore),
-                    legitCount = grp.Count(x => x.Hardcore && !x.Cheat && !x.Savescum && !x.Timeplay),
+                    competitiveCount = grp.Count(x => x.Competitive),
+                    legitCount = grp.Count(x => x.Clean),
                     lastUnlockedUtc = grp.Max(x => x.UnlockedUtc),
                 })
                 .OrderByDescending(g => g.lastUnlockedUtc)

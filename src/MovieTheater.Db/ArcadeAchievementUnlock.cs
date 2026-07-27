@@ -50,19 +50,31 @@ namespace MovieTheater.Db
 
         public int Points { get; set; }
 
-        /// <summary>True = earned in hardcore (competitive) mode. Softcore and hardcore unlocks are distinct
-        /// on RA, so they're distinct rows here too (see the unique index in <c>MovieDb</c>).</summary>
-        public bool Hardcore { get; set; }
+        /// <summary>Whether the room had the COMPETITIVE guardrail armed (no state seed, no cheats, save/load
+        /// and time controls hidden). Provenance only — it is NOT what makes a run legitimate. This is the
+        /// room mode the player opted into; <see cref="Clean"/> is what actually happened. Rides the wire as
+        /// <c>hardcore</c> on t=104 / the mirror callback, which is why the two names differ.</summary>
+        public bool Competitive { get; set; }
 
         /// <summary>Run-legitimacy taints sampled by the worker when the achievement fired, so the friends
         /// board / profile can show WHY a run wasn't a clean one. <see cref="Cheat"/> = cheat codes were
-        /// active for the room; <see cref="Savescum"/> = a save-STATE was loaded mid-run (cleared by a hard
-        /// reset); <see cref="Timeplay"/> = fast-forward/rewind was used. A run is "legit" when
-        /// <see cref="Hardcore"/> is set and none of these are — the UI shows a trophy then, else a why-icon.
-        /// (Timeplay is plumbed end-to-end but always false today: no speed control is exposed in the stack.)</summary>
+        /// active for the room; <see cref="Savescum"/> = a save-STATE was restored (mid-run Load, or seeded
+        /// at boot — cleared by a hard reset); <see cref="Timeplay"/> = fast-forward/rewind was used.</summary>
         public bool Cheat { get; set; }
         public bool Savescum { get; set; }
         public bool Timeplay { get; set; }
+
+        /// <summary>OBSERVED cleanliness: no cheat, no save-scum, no time manipulation. This — not the room
+        /// mode — is what makes a run legitimate, so a casual room produces legit results right up until
+        /// something dirties it, and the competitive toggle is only a guardrail against dirtying it.
+        ///
+        /// <para>A PERSISTED COMPUTED column (see <c>MovieDb</c>), deliberately: legitimacy is derived from
+        /// the taints by the database itself, so no callback, backfill, or future code path can assert a
+        /// clean run that the taints contradict. Read-only in EF — set the taints, not this.</para>
+        ///
+        /// <para>Part of the mirror's dedupe key: re-earning an achievement CLEANLY after a dirty unlock is a
+        /// genuine first and gets its own row (see the unique index in <c>MovieDb</c>).</para></summary>
+        public bool Clean { get; private set; }
 
         public DateTime UnlockedUtc { get; set; }
     }
