@@ -38,6 +38,9 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
 
   const version = game.versions?.find((v) => v.id === sel) || game.versions?.[0];
   const multiVersion = game.versionCount > 1;
+  // Leaderboard entries only ever populate from an RA leaderboard submission (see ArcadeLeaderboards.js) —
+  // a game with no RA score/time board can never get one, competitive room or not.
+  const hasLeaderboards = !!(game.raHighScores || game.raSpeedruns);
   const region = version?.region && version.region !== "Unknown" ? version.region : null;
 
   // Cheats are per-ROM codes now (the quality/emulator OPTIONS moved to ⚙ Configure), and a code from
@@ -172,7 +175,9 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
 
           <label className="agm-competitive">
             <Checkbox checked={competitive} disabled={busy} onChange={(e) => setCompetitive(e.target.checked)}>
-              <Tooltip title="No save-state loading, no cheats — so leaderboard times and scores are legit. If you've linked RetroAchievements, the room runs in hardcore mode and your unlocks/runs count.">
+              <Tooltip title={hasLeaderboards
+                ? "No save-state loading, no cheats — so leaderboard times and scores are legit. If you've linked RetroAchievements, the room runs in hardcore mode and your unlocks/runs count."
+                : "No save-state loading, no cheats." + (game.raAchievements ? " If you've linked RetroAchievements, the room runs in hardcore mode and your unlocks count." : " This game has no RetroAchievements leaderboard, so there's nothing for this room to score — it just plays clean.")}>
                 🏁 Competitive room
               </Tooltip>
             </Checkbox>
@@ -214,9 +219,11 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
             <button type="button" className="arcade-link" onClick={() => onManageSaves?.(sel, game.title)}>
               💾 My saves
             </button>
-            <button type="button" className="arcade-link" onClick={() => setBoardsOpen((o) => !o)}>
-              🏆 Leaderboards
-            </button>
+            {hasLeaderboards && (
+              <button type="button" className="arcade-link" onClick={() => setBoardsOpen((o) => !o)}>
+                🏆 Leaderboards
+              </button>
+            )}
             {game.raAchievements && (
               <button type="button" className="arcade-link" onClick={() => setAchOpen((o) => !o)}>
                 🎖️ Achievements
