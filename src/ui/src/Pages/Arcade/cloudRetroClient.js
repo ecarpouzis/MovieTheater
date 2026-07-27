@@ -81,8 +81,9 @@ const PROFILES = {
     foldStickToDpad: true,
     hint: "Gamepad recommended. Keyboard: arrows = move, Z X A S = buttons, Q W = L/R, Enter = Start, Shift = Select.",
   },
-  // ScummVM: the one system here that is primarily a MOUSE game (it joins POINTER_SYSTEMS, so the real
-  // cursor is streamed) AND the one core that embeds its own GUI, reachable via the Global Main Menu
+  // ScummVM: the one system here that is primarily a MOUSE game (it joins MOUSE_SYSTEMS, so the real
+  // cursor is streamed via RETRO_DEVICE_MOUSE relative deltas — see that set's comment for why POINTER
+  // doesn't work here) AND the one core that embeds its own GUI, reachable via the Global Main Menu
   // bound to L3/R3 in config.worker-gl.yaml (scummvm_mapper_l3/r3 -> RETROK_F5/F7).
   //
   // The default keymap has NOTHING on L3/R3 — no keyboard key reaches them — so that menu was pressable
@@ -470,15 +471,31 @@ function encodeInput(mask, axes) {
 // melonDS does (normalized pointer -> frame pixels -> clamped into the bottomScreen rect), so nothing
 // client-side is 3DS-specific. Needs citra_touch_touchscreen:"enabled" in config.worker-gl.yaml —
 // without it citra ignores POINTER_PRESSED and taps never register.
-// scummvm joins unchanged too (2026-07-27) and is the first NON-touch member: a point-and-click
-// adventure is a mouse game, and the hover-with-pressed=0 stream added for the 3DS stylus cursor is
-// exactly what it needs — the ScummVM cursor tracks the real mouse, and a click is the down/up edge.
-// Before this, scummvm was gamepad-only (left stick nudges the cursor) and a player's mouse was never
-// sent at all. Needs scummvm_pointer_device:"pointer" in config.worker-gl.yaml — the core's default is
-// PLATFORM-CONDITIONAL, so it is pinned there rather than assumed. That value is "RetroPad + Pointer",
-// additive: the stick cursor keeps working for pad players.
-const POINTER_SYSTEMS = new Set(["nds", "3ds", "scummvm"]);
+// scummvm does NOT belong here (tried 2026-07-27, corrected same day) — see MOUSE_SYSTEMS below for why
+// a mouse game needs RETRO_DEVICE_MOUSE instead of RETRO_DEVICE_POINTER.
+const POINTER_SYSTEMS = new Set(["nds", "3ds"]);
 export function systemUsesPointer(system) { return POINTER_SYSTEMS.has(String(system || "").toLowerCase()); }
+
+// scummvm (2026-07-27, corrected same day): NOT a POINTER_SYSTEMS member — RETRO_DEVICE_POINTER was the
+// wrong device for it. Verified against the core's own source (backends/platform/libretro/src/
+// libretro-os-inputs.cpp): the ScummVM cursor only moves on a PRESSED transition or while held, because
+// RETRO_DEVICE_POINTER models a touchscreen (no touch = no valid position, by design) — melonDS/citra
+// happen to read X/Y regardless of pressed for their own crosshair rendering, ScummVM does not, so our
+// hover-with-pressed=0 packets were received and silently never applied. A real desktop mouse cursor
+// needs RETRO_DEVICE_MOUSE (relative deltas), which ScummVM applies unconditionally every poll — that's
+// MOUSE_SYSTEMS below, a completely separate wire path (stock CloudRetro's own worker-opened "mouse"
+// DataChannel, never wired into this shim before now).
+const MOUSE_SYSTEMS = new Set(["scummvm"]);
+export function systemUsesMouse(system) { return MOUSE_SYSTEMS.has(String(system || "").toLowerCase()); }
+
+// The core reads RETRO_DEVICE_MOUSE deltas in ITS OWN unscaled coordinate space (clamped to
+// getScreenWidth()/Height() — the real internal game resolution), but config.worker-gl.yaml's scummvm
+// entry sets `scale: 3` (server-side nearest-neighbour upscale before encode — see the 2D-crispness
+// note elsewhere in that file). So the encoded video's intrinsic pixel size (videoEl.videoWidth/Height)
+// is 3x the core's actual coordinate space; a delta computed straight off the video element would be 3x
+// too large. Divide it back out. MUST be kept in step with that config's scummvm `scale` value (same
+// client/config parity requirement as REWIND_SYSTEMS vs config `rewind: true`).
+const SCUMMVM_VIDEO_SCALE = 3;
 
 // Pointer cores map the libretro pointer through their OWN screen layout in DISPLAY (top-down) space,
 // INDEPENDENT of the GL framebuffer flip — that is the RETRO_DEVICE_POINTER convention (coords are in
@@ -488,11 +505,7 @@ export function systemUsesPointer(system) { return POINTER_SYSTEMS.has(String(sy
 // mirrored (confirmed live on Phoenix Wright New Game AND Mario Kart 7 OK, 2026-07-24). So no current
 // pointer core wants the flip undone; the set is kept (== POINTER_SYSTEMS today) to document WHY and to
 // leave room for a hypothetical future core that genuinely hit-tests in raw-framebuffer space.
-// scummvm is a SOFTWARE core, so its rooms never send av.flip and this is inert for it today. It is
-// listed anyway, deliberately: the core ships scummvm_video_hw_acceleration, and if that were ever
-// turned on the rooms WOULD flip — at which point being absent here would silently invert every click
-// vertically. ScummVM hit-tests its own 2D display space, so it belongs on this side of the fence.
-const POINTER_DISPLAY_SPACE_SYSTEMS = new Set(["nds", "3ds", "scummvm"]);
+const POINTER_DISPLAY_SPACE_SYSTEMS = new Set(["nds", "3ds"]);
 export function pointerIgnoresFrameFlip(system) { return POINTER_DISPLAY_SPACE_SYSTEMS.has(String(system || "").toLowerCase()); }
 
 // Pointer wire packet (W10 stylus/touch) — rides the SAME "data" channel as the pad frame, length+tag
@@ -508,6 +521,31 @@ export function encodePointer(x, y, pressed) {
   dv.setInt16(4, y, true);
   dv.setUint8(6, pressed ? 1 : 0);
   dv.setUint8(7, 0);
+  return buf;
+}
+
+// Relative-mouse wire packets (RETRO_DEVICE_MOUSE), on the worker's own dedicated "mouse" DataChannel —
+// this is STOCK CloudRetro's own protocol (pkg/worker/coordinatorhandlers.go `s.Channel("mouse", ...)`
+// → InputMouse → MouseState.ShiftPos/SetButtons), never previously wired into this shim. Format matches
+// nanoarch.go's InputMouse exactly: a 1-byte type tag, then type-specific payload, BIG-ENDIAN (this
+// channel does NOT follow the pad/pointer channel's little-endian convention).
+//   Move:   [0x00][dx:i16 BE][dy:i16 BE]
+//   Button: [0x01][mask:u8]  (bit0=left, bit1=right, bit2=middle — only left is used today)
+const MouseMoveTag = 0x00;
+const MouseButtonTag = 0x01;
+export function encodeMouseMove(dx, dy) {
+  const buf = new ArrayBuffer(5);
+  const dv = new DataView(buf);
+  dv.setUint8(0, MouseMoveTag);
+  dv.setInt16(1, dx, false);
+  dv.setInt16(3, dy, false);
+  return buf;
+}
+export function encodeMouseButtons(mask) {
+  const buf = new ArrayBuffer(2);
+  const dv = new DataView(buf);
+  dv.setUint8(0, MouseButtonTag);
+  dv.setUint8(1, mask);
   return buf;
 }
 
@@ -610,6 +648,7 @@ export function createCloudRetroSession(descriptor, opts) {
   let pc = null;
   let dc = null;
   let discDc = null; // patch 0005: worker-created "disc" channel; the browser sends a target disc index
+  let mouseDc = null; // stock CloudRetro's worker-created "mouse" channel (RETRO_DEVICE_MOUSE relative deltas)
   let inputTimer = null;
   let closed = false;
   const inboundStream = new MediaStream(); // audio + video tracks accumulate here (see ontrack)
@@ -930,11 +969,15 @@ export function createCloudRetroSession(descriptor, opts) {
     dc.onclose = () => { if (!closed && !spectator) { stopInput(); status("input-lost"); } };
 
     // The worker opens side channels non-negotiated (keyboard/mouse/disc); we receive them here. The
-    // "disc" channel carries a 1-byte target image index for multi-disc games (patch 0005).
+    // "disc" channel carries a 1-byte target image index for multi-disc games (patch 0005). The "mouse"
+    // channel (stock CloudRetro) carries RETRO_DEVICE_MOUSE relative deltas — see MOUSE_SYSTEMS.
     pc.ondatachannel = (ev) => {
       if (ev.channel && ev.channel.label === "disc") {
         discDc = ev.channel;
         discDc.binaryType = "arraybuffer";
+      } else if (ev.channel && ev.channel.label === "mouse") {
+        mouseDc = ev.channel;
+        mouseDc.binaryType = "arraybuffer";
       }
     };
 
@@ -1246,10 +1289,12 @@ export function createCloudRetroSession(descriptor, opts) {
     status("closed");
     stopInput();
     detachPointer();
+    detachMouse();
     if (pinnedPad >= 0) claimedPadIndexes.delete(pinnedPad);
     try { send(T.GAME_QUIT, { room_id: roomIdFromWsUrl(descriptor.wsUrl) }); } catch { /* */ }
     try { dc && dc.close(); } catch { /* */ }
     try { discDc && discDc.close(); } catch { /* */ }
+    try { mouseDc && mouseDc.close(); } catch { /* */ }
     try { pc && pc.close(); } catch { /* */ }
     try { apc && apc.close(); } catch { /* */ }
     try { ws && ws.close(); } catch { /* */ }
@@ -1367,6 +1412,87 @@ export function createCloudRetroSession(descriptor, opts) {
     if (ptrRaf && typeof cancelAnimationFrame === "function") { cancelAnimationFrame(ptrRaf); ptrRaf = 0; }
   }
   attachPointer();
+
+  // ── Relative mouse (RETRO_DEVICE_MOUSE — ScummVM) ──────────────────────────────────────────────
+  // PRIMARY session only, mouse-capable systems only (scummvm). Same non-seat rationale as the pointer
+  // block above. Unlike the pointer path this streams every hover move unconditionally (deltas, not an
+  // absolute position) — that's the whole fix: ScummVM's own cursor-follow code applies
+  // RETRO_DEVICE_MOUSE deltas on every poll regardless of button state, unlike its POINTER handling.
+  const mouseEnabled = !spectator && !inputOnly && !!videoEl && systemUsesMouse(descriptor.system);
+  let msePendingDx = 0, msePendingDy = 0;
+  let mseRaf = 0;
+  let mseLastMask = 0;
+
+  // CSS-px → core-px scale for this frame: the video element's rect vs its DECODED intrinsic size
+  // (== the core's encoded BASE geometry per the "encode size = core base geometry" verdict), corrected
+  // for the server-side scale:3 upscale (SCUMMVM_VIDEO_SCALE) so the delta lands in the core's own
+  // unscaled coordinate space (see that constant's comment).
+  function mseScale() {
+    const rect = videoEl.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return null;
+    if (!videoEl.videoWidth || !videoEl.videoHeight) return null; // no frame decoded yet
+    return {
+      sx: (videoEl.videoWidth / SCUMMVM_VIDEO_SCALE) / rect.width,
+      sy: (videoEl.videoHeight / SCUMMVM_VIDEO_SCALE) / rect.height,
+    };
+  }
+  function mseSendButtons(mask) {
+    if (!mouseDc || mouseDc.readyState !== "open") return;
+    if (mask === mseLastMask) return;
+    mseLastMask = mask;
+    try { mouseDc.send(encodeMouseButtons(mask)); } catch { /* channel closing */ }
+  }
+  function mseFlush() {
+    mseRaf = 0;
+    if (!msePendingDx && !msePendingDy) return;
+    const dx = Math.max(-32767, Math.min(32767, Math.round(msePendingDx)));
+    const dy = Math.max(-32767, Math.min(32767, Math.round(msePendingDy)));
+    msePendingDx = 0;
+    msePendingDy = 0;
+    if (!mouseDc || mouseDc.readyState !== "open") return;
+    try { mouseDc.send(encodeMouseMove(dx, dy)); } catch { /* channel closing */ }
+  }
+  function onMseDown(ev) {
+    if (ev.button !== 0) return; // left click only — right/middle unused by ScummVM's UI
+    mseSendButtons(mseLastMask | 0x01);
+    ev.preventDefault();
+  }
+  function onMseMove(ev) {
+    // ev.movementX/Y are page CSS-px deltas since the last event, independent of absolute position —
+    // exactly what a relative device wants, and unlike the pointer path this fires (and is sent) on
+    // every hover move, not just while pressed. Accumulate across a frame and flush once on rAF; the
+    // scale is recomputed each move since the video's decoded size isn't known until the first frame.
+    const scale = mseScale();
+    if (!scale) return;
+    msePendingDx += (ev.movementX || 0) * scale.sx;
+    msePendingDy += (ev.movementY || 0) * scale.sy;
+    if (!mseRaf && typeof requestAnimationFrame === "function") mseRaf = requestAnimationFrame(mseFlush);
+  }
+  function onMseUp(ev) {
+    if (ev.button !== 0) return;
+    mseSendButtons(mseLastMask & ~0x01);
+  }
+  function onMseLeave() {
+    // Don't leave a click stuck down if the real cursor wanders off the video mid-press.
+    if (mseLastMask) mseSendButtons(0);
+  }
+  function attachMouse() {
+    if (!mouseEnabled) return;
+    videoEl.addEventListener("mousedown", onMseDown);
+    videoEl.addEventListener("mousemove", onMseMove);
+    videoEl.addEventListener("mouseup", onMseUp);
+    videoEl.addEventListener("mouseleave", onMseLeave);
+    videoEl.addEventListener("contextmenu", (e) => e.preventDefault());
+  }
+  function detachMouse() {
+    if (!mouseEnabled) return;
+    videoEl.removeEventListener("mousedown", onMseDown);
+    videoEl.removeEventListener("mousemove", onMseMove);
+    videoEl.removeEventListener("mouseup", onMseUp);
+    videoEl.removeEventListener("mouseleave", onMseLeave);
+    if (mseRaf && typeof cancelAnimationFrame === "function") { cancelAnimationFrame(mseRaf); mseRaf = 0; }
+  }
+  attachMouse();
 
   connect();
 

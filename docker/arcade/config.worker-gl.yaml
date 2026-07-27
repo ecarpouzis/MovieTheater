@@ -1594,17 +1594,24 @@ emulator:
             # GET_AUDIO_VIDEO_ENABLE (nanoarch.c) — ScummVM reads a refusal as "produce nothing"
             # and ticked forever with video_cb never called.
             scummvm_video_hw_acceleration: "disabled"
-            # MOUSE (2026-07-27). These are point-and-click games and the room now streams the player's
-            # real mouse: the client sends RETRO_DEVICE_POINTER (POINTER_SYSTEMS in cloudRetroClient.js),
-            # hovering with pressed=0 so the ScummVM cursor tracks the mouse, and a click is the down/up
-            # edge. Before this, scummvm was gamepad-only and a mouse did nothing at all.
+            # MOUSE (2026-07-27, corrected same day). These are point-and-click games and the room streams
+            # the player's real mouse. First attempt used "pointer" (RETRO_DEVICE_POINTER, hover with
+            # pressed=0) by analogy with the 3DS/NDS stylus work — WRONG for this core: verified against
+            # ScummVM's own source (backends/platform/libretro/src/libretro-os-inputs.cpp), its cursor only
+            # moves on a PRESSED transition or while held, because POINTER models a touchscreen (no touch =
+            # no valid position, by design). Hover packets landed and were silently never applied — the
+            # cursor never tracked the mouse. citra/melonDS happen to read POINTER x/y regardless of
+            # pressed for their own crosshair rendering; ScummVM does not.
             #
-            # "pointer" = the core's "RetroPad + Pointer" — ADDITIVE, so the stick-driven cursor keeps
-            # working for pad players; it does not take anything away. ("retropad" would remove mouse
-            # control outright, "mouse" wants RETRO_DEVICE_MOUSE relative deltas, which we do not send.)
-            # Pinned explicitly because the core's own default for this option is PLATFORM-CONDITIONAL —
-            # leaving it unset means guessing what our build does.
-            scummvm_pointer_device: "pointer"
+            # "mouse" = RETRO_DEVICE_MOUSE relative deltas, which ScummVM DOES apply unconditionally every
+            # poll (its mouse-speed code path has no pressed gate at all) — that's what makes hover work.
+            # cloudRetroClient.js now sends deltas over CloudRetro's own pre-existing (never-before-wired)
+            # "mouse" DataChannel (MOUSE_SYSTEMS). Only the raw tokens "mouse"/"pointer" exist for this
+            # option (confirmed from the deployed core's own option strings) — no separate "retropad-only"
+            # value; the RetroPad stick-driven cursor is a SEPARATE always-on code path in the core, not
+            # gated by this option, so switching to "mouse" does not remove it. Pinned explicitly because
+            # the core's own default for this option is PLATFORM-CONDITIONAL.
+            scummvm_pointer_device: "mouse"
             # ScummVM's own Global Main Menu (save/load, engine options, quit) on a stick-click. This is
             # the one core in the arcade where an in-core menu even exists: libretro cores normally have
             # no UI of their own (RetroArch draws the options screen, and CloudRetro has no menu layer —

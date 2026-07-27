@@ -4,6 +4,7 @@ import {
   stickFoldFor, setStickFoldOverride, resetStickFoldOverride,
   keyboardArrowsDriveDpad,
   encodePointer, systemUsesPointer,
+  encodeMouseMove, encodeMouseButtons, systemUsesMouse,
 } from "./cloudRetroClient";
 
 // W10 touch pointer wire format. This is the CONTRACT with the worker (nanoarch PointerState.Set):
@@ -42,16 +43,49 @@ describe("systemUsesPointer (capability gate)", () => {
   it("is on for the touch/stylus consoles", () => {
     expect(systemUsesPointer("3ds")).toBe(true);
   });
-  it("is on for scummvm — a mouse game, not a touch one", () => {
-    // The first non-touch member (2026-07-27). Point-and-click adventures were gamepad-only before
-    // this and a player's mouse was never sent. Pairs with scummvm_pointer_device:"pointer" in
-    // config.worker-gl.yaml — without that core option the packets arrive and the core ignores them.
-    expect(systemUsesPointer("scummvm")).toBe(true);
-    expect(systemUsesPointer("ScummVM")).toBe(true);
+  it("is off for scummvm — it's a MOUSE_SYSTEMS member instead, not POINTER_SYSTEMS", () => {
+    // 2026-07-27, corrected same day: RETRO_DEVICE_POINTER's hover-with-pressed=0 works for the touch
+    // consoles (citra/melonDS read x/y regardless of pressed) but NOT for ScummVM's own libretro port,
+    // which only moves its cursor on a pressed transition/hold (verified against the core's own
+    // source). A mouse game needs RETRO_DEVICE_MOUSE (see systemUsesMouse below), not POINTER.
+    expect(systemUsesPointer("scummvm")).toBe(false);
   });
   it("is off for non-pointer systems and junk (no hover flood / no pointer on a pad-only room)", () => {
-    for (const s of ["snes", "n64", "ps1", "gba", "gc", "", null, undefined])
+    for (const s of ["snes", "n64", "ps1", "gba", "gc", "scummvm", "", null, undefined])
       expect(systemUsesPointer(s)).toBe(false);
+  });
+});
+
+describe("systemUsesMouse (capability gate)", () => {
+  it("is on for scummvm — a mouse game, not a touch one", () => {
+    // Point-and-click adventures were gamepad-only before this and a player's mouse was never sent.
+    // Pairs with scummvm_pointer_device:"mouse" in config.worker-gl.yaml — without that core option
+    // the packets arrive on the worker's "mouse" DataChannel and the core ignores them (it's polling
+    // RETRO_DEVICE_POINTER instead).
+    expect(systemUsesMouse("scummvm")).toBe(true);
+    expect(systemUsesMouse("ScummVM")).toBe(true);
+  });
+  it("is off for touch/pad systems and junk", () => {
+    for (const s of ["nds", "3ds", "snes", "n64", "", null, undefined])
+      expect(systemUsesMouse(s)).toBe(false);
+  });
+});
+
+// Relative-mouse wire format (stock CloudRetro's "mouse" DataChannel — nanoarch InputMouse). BIG-ENDIAN,
+// unlike the pointer/pad channel's little-endian — mixing these up is a silent no-op on the worker side.
+describe("encodeMouseMove / encodeMouseButtons (RETRO_DEVICE_MOUSE wire format)", () => {
+  it("move packet is 5 bytes: [0x00][dx:i16 BE][dy:i16 BE]", () => {
+    const dv = new DataView(encodeMouseMove(0x0102, -5));
+    expect(dv.byteLength).toBe(5);
+    expect(dv.getUint8(0)).toBe(0x00);
+    expect(dv.getInt16(1, false)).toBe(0x0102);
+    expect(dv.getInt16(3, false)).toBe(-5);
+  });
+  it("button packet is 2 bytes: [0x01][mask]", () => {
+    const dv = new DataView(encodeMouseButtons(0x01));
+    expect(dv.byteLength).toBe(2);
+    expect(dv.getUint8(0)).toBe(0x01);
+    expect(dv.getUint8(1)).toBe(0x01);
   });
 });
 
