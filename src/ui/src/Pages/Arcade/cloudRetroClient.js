@@ -95,7 +95,7 @@ const PROFILES = {
     keymap: { ...DEFAULT_KEYMAP, KeyM: PAD.L3, KeyN: PAD.R3 },
     // Same as default: a 2D core where stick and d-pad both mean "move the cursor".
     foldStickToDpad: true,
-    hint: "Mouse recommended — click the picture to capture the pointer, then point and click as normal; press Esc to release it. M = ScummVM menu (save/load, options). Keyboard: arrows move the cursor, Q W = left/right click, Enter = Start.",
+    hint: "Mouse recommended — point and click straight on the picture. M = ScummVM menu (save/load, options). Keyboard: arrows move the cursor, Q W = left/right click, Enter = Start.",
   },
   // N64: mupen64plus-next maps N64 A ← RetroPad **B** and N64 B ← RetroPad A (verified live in
   // Bomberman 64's menus: PAD.B confirms, PAD.A backs out — the earlier assumption here was
@@ -1421,15 +1421,50 @@ export function createCloudRetroSession(descriptor, opts) {
   }
   attachPointer();
 
-  // ── Relative mouse (RETRO_DEVICE_MOUSE — ScummVM) ──────────────────────────────────────────────
+  // ── Mouse (RETRO_DEVICE_MOUSE — ScummVM): ABSOLUTE positioning over a relative device ───────────
   // PRIMARY session only, mouse-capable systems only (scummvm). Same non-seat rationale as the pointer
-  // block above. Unlike the pointer path this streams every hover move unconditionally (deltas, not an
-  // absolute position) — that's the whole fix: ScummVM's own cursor-follow code applies
-  // RETRO_DEVICE_MOUSE deltas on every poll regardless of button state, unlike its POINTER handling.
+  // block above. ScummVM applies RETRO_DEVICE_MOUSE deltas on every poll regardless of button state,
+  // which is what makes hover work at all (its POINTER handling does not — see MOUSE_SYSTEMS).
+  //
+  // WHY THIS IS NOT A SIMPLE DELTA FORWARDER ANY MORE. Streaming raw movement deltas gives you a
+  // cursor that is near the pointer rather than under it, and every source of error is PERMANENT
+  // because nothing ever re-establishes agreement:
+  //   * the two cursors start wherever they each happen to be, already offset;
+  //   * ScummVM multiplies by its own scummvm_mouse_speed;
+  //   * the real pointer stops at the window edge while the game cursor still has room;
+  //   * pointer lock (tried first, now removed) changes movementX into RAW DEVICE units with no OS
+  //     acceleration or DPI scaling, so a gain calibrated in CSS pixels is simply wrong under it.
+  // Eric's report of both symptoms in turn — "some large offset", then "sensitivity is way off, it's
+  // clear the cursor isn't my hardware mouse" — is that list, one item at a time.
+  //
+  // So instead of forwarding what the mouse DID, we send whatever delta moves the cursor to where the
+  // pointer IS: keep a model of ScummVM's cursor, and each move send (target - model). The model is
+  // re-derived from an ABSOLUTE clientX/clientY every single event, so any error survives exactly one
+  // mouse move instead of forever, and OS pointer acceleration stops mattering entirely — the cursor
+  // is wherever your hardware pointer is, because that is the quantity being solved for.
+  //
+  // Three things have to hold for the model to stay true, and all three are now guaranteed:
+  //   1. no lost messages — the "mouse" channel was on the unreliable default (a dropped delta was an
+  //      unrecoverable shift); the worker now opens it ordered+reliable.
+  //   2. a known multiplier — config.worker-gl.yaml pins scummvm_mouse_speed, and MOUSE_SPEED below
+  //      MUST equal it. ScummVM's own source is `deltaAcc = (float)x * mouse_speed` with no screen
+  //      ratios of any kind (libretro-os-inputs.cpp), so inverting it is exact.
+  //   3. a known origin — see mseCalibrate.
   const mouseEnabled = !spectator && !inputOnly && !!videoEl && systemUsesMouse(descriptor.system);
-  let msePendingDx = 0, msePendingDy = 0;
   let mseRaf = 0;
   let mseLastMask = 0;
+  // Our belief about where ScummVM's cursor is, in the core's own pixels. null = unknown, which forces
+  // a calibration before the next move is trusted.
+  let mseModelX = null, mseModelY = null;
+  let mseTargetX = 0, mseTargetY = 0, msePending = false;
+  let mseCalibratingUntil = 0;
+
+  // MUST equal config.worker-gl.yaml's scummvm_mouse_speed. 1.25 rather than the more obvious 1.0
+  // because 1.25 is a token this core's own option table PROVABLY contains (extracted from the shipped
+  // DLL: 0.05 0.15 0.35 0.45 1.25 1.75 ...) and libretro silently ignores an unknown option VALUE — a
+  // wrong token would leave the core on its own default and skew every delta with nothing logged. It
+  // is also exactly representable in binary floating point, so inverting it introduces no error.
+  const MOUSE_SPEED = 1.25;
 
   // CSS-px → core-px gain: how many of the CORE's own coordinate units one pixel of real mouse travel
   // should be worth, so the ScummVM cursor keeps pace with the physical pointer instead of drifting at
@@ -1444,13 +1479,45 @@ export function createCloudRetroSession(descriptor, opts) {
   // and changing the server-side `scale` can never silently skew the cursor.
   //
   // The videoWidth/SCUMMVM_VIDEO_SCALE fallback is only for a room where that payload never arrived.
-  function mseScale() {
+  // Where the pointer is, expressed in the core's own pixel grid — the target the cursor must reach.
+  // Clamped exactly the way ScummVM clamps (0 .. screen-1) so that a pointer parked outside the
+  // picture and the core's own limit agree on where "the edge" is.
+  function mseTargetFor(ev) {
     const rect = videoEl.getBoundingClientRect();
     if (!rect || rect.width <= 0 || rect.height <= 0) return null;
     if (!videoEl.videoWidth || !videoEl.videoHeight) return null; // no frame decoded yet
     const coreW = lastAv && lastAv.w > 0 ? lastAv.w : videoEl.videoWidth / SCUMMVM_VIDEO_SCALE;
     const coreH = lastAv && lastAv.h > 0 ? lastAv.h : videoEl.videoHeight / SCUMMVM_VIDEO_SCALE;
-    return { sx: coreW / rect.width, sy: coreH / rect.height };
+    const clamp = (v, hi) => Math.max(0, Math.min(hi - 1, v));
+    return {
+      x: clamp(((ev.clientX - rect.left) / rect.width) * coreW, coreW),
+      y: clamp(((ev.clientY - rect.top) / rect.height) * coreH, coreH),
+      w: coreW, h: coreH,
+    };
+  }
+
+  // Establish the origin. Nothing reports ScummVM's cursor position back to us, so the only way to
+  // KNOW it is to drive it somewhere it cannot go: a delta far larger than the screen clamps against
+  // the top-left, which is a fixed point regardless of where the cursor was or what mouse_speed is.
+  //
+  // It has to be a message of its own with a gap after it. MouseState.ShiftPos ACCUMULATES into an
+  // atomic that the emulator drains once per frame, so a slam and a correction sent in the same frame
+  // would be summed and the clamp — the entire point — would never happen. mseCalibratingUntil holds
+  // off the correction for a few frames; the very next move then lands the cursor exactly, because
+  // every move is absolute.
+  function mseCalibrate(t) {
+    const slam = Math.ceil((Math.max(t.w, t.h) * 2) / MOUSE_SPEED);
+    mseWrite(-slam, -slam);
+    mseModelX = 0;
+    mseModelY = 0;
+    mseCalibratingUntil = (typeof performance !== "undefined" ? performance.now() : Date.now()) + 60;
+  }
+  function mseWrite(dx, dy) {
+    if (!mouseDc || mouseDc.readyState !== "open") return;
+    const cx = Math.max(-32767, Math.min(32767, Math.round(dx)));
+    const cy = Math.max(-32767, Math.min(32767, Math.round(dy)));
+    if (!cx && !cy) return;
+    try { mouseDc.send(encodeMouseMove(cx, cy)); } catch { /* channel closing */ }
   }
   function mseSendButtons(mask) {
     if (!mouseDc || mouseDc.readyState !== "open") return;
@@ -1458,69 +1525,66 @@ export function createCloudRetroSession(descriptor, opts) {
     mseLastMask = mask;
     try { mouseDc.send(encodeMouseButtons(mask)); } catch { /* channel closing */ }
   }
+  // One send per animation frame, carrying the CURRENT target — coalescing is free here precisely
+  // because the payload is a position rather than a movement: intermediate samples are not information
+  // we lose, they are steps toward the same answer.
   function mseFlush() {
     mseRaf = 0;
-    if (!msePendingDx && !msePendingDy) return;
-    const dx = Math.max(-32767, Math.min(32767, Math.round(msePendingDx)));
-    const dy = Math.max(-32767, Math.min(32767, Math.round(msePendingDy)));
-    msePendingDx = 0;
-    msePendingDy = 0;
-    if (!mouseDc || mouseDc.readyState !== "open") return;
-    try { mouseDc.send(encodeMouseMove(dx, dy)); } catch { /* channel closing */ }
-  }
-  // ── Pointer lock ────────────────────────────────────────────────────────────────────────────────
-  // RETRO_DEVICE_MOUSE is RELATIVE, so the game's cursor and the player's real pointer are two
-  // independent positions with nothing tying them together. They begin misaligned (ScummVM puts its
-  // cursor wherever it likes; your pointer is wherever you left it) and then drift further apart for
-  // three reasons that cannot all be engineered away:
-  //   * a lost delta is unrecoverable (mitigated worker-side now — the "mouse" channel was on the
-  //     unreliable default and is now ordered/reliable — but never zero),
-  //   * ScummVM applies its own scummvm_mouse_speed multiplier on top of ours,
-  //   * the real pointer stops at the window edge while the game cursor still has room, and vice versa.
-  // Chasing exact agreement between two cursors is the wrong fix. Pointer lock removes the SECOND
-  // CURSOR: the OS pointer is hidden and uncapped, so there is only ScummVM's cursor on screen,
-  // nothing to be "offset" from, and no edge to run out of. It is also how the game feels natively.
-  //
-  // Engaged by clicking the video (which a point-and-click player does anyway) and released with Esc,
-  // which the browser wires up and announces itself. If the request is denied — an unfocused document,
-  // a browser that refuses it, an iframe without allow="pointer-lock" — everything below still works
-  // exactly as before, just with the old two-cursor behaviour.
-  const mseLocked = () => typeof document !== "undefined" && document.pointerLockElement === videoEl;
-  function mseRequestLock() {
-    if (!mouseEnabled || mseLocked() || !videoEl.requestPointerLock) return;
-    // Chrome returns a promise here and rejects it if the document isn't focused; unhandled, that
-    // surfaces as a console error on an otherwise fine room.
-    try { Promise.resolve(videoEl.requestPointerLock()).catch(() => {}); } catch { /* older API */ }
+    if (!msePending) return;
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    if (now < mseCalibratingUntil) {                // let the slam clamp before correcting off it
+      mseRaf = typeof requestAnimationFrame === "function" ? requestAnimationFrame(mseFlush) : 0;
+      return;
+    }
+    msePending = false;
+    if (mseModelX == null) return;
+    // Wire units are what the CORE will multiply by mouse_speed, so divide it out here. The model then
+    // advances by what the core will ACTUALLY do with the rounded integer we sent (not by what we
+    // wanted), so rounding can never accumulate — and the next event recomputes the target absolutely
+    // anyway, which is the real guarantee.
+    const wx = Math.round((mseTargetX - mseModelX) / MOUSE_SPEED);
+    const wy = Math.round((mseTargetY - mseModelY) / MOUSE_SPEED);
+    if (!wx && !wy) return;
+    mseWrite(wx, wy);
+    mseModelX += wx * MOUSE_SPEED;
+    mseModelY += wy * MOUSE_SPEED;
   }
   function onMseDown(ev) {
     if (ev.button !== 0) return; // left click only — right/middle unused by ScummVM's UI
-    mseRequestLock();
+    // Aim before firing. A click is the one moment where being a pixel out is the difference between
+    // opening the door and walking into it, and pointer-down carries its own absolute coordinates.
+    onMseMove(ev);
+    mseFlush();
     mseSendButtons(mseLastMask | 0x01);
     ev.preventDefault();
   }
   function onMseMove(ev) {
-    // ev.movementX/Y are page CSS-px deltas since the last event, independent of absolute position —
-    // exactly what a relative device wants, and unlike the pointer path this fires (and is sent) on
-    // every hover move, not just while pressed. Accumulate across a frame and flush once on rAF; the
-    // scale is recomputed each move since the video's decoded size isn't known until the first frame.
-    const scale = mseScale();
-    if (!scale) return;
-    msePendingDx += (ev.movementX || 0) * scale.sx;
-    msePendingDy += (ev.movementY || 0) * scale.sy;
+    // ABSOLUTE, from clientX/clientY — never ev.movementX. The delta is computed in mseFlush as
+    // (target - model), so OS pointer acceleration, DPI scaling and any missed event are all
+    // irrelevant: whatever happened in between, the answer is still "put the cursor here".
+    const t = mseTargetFor(ev);
+    if (!t) return;
+    mseTargetX = t.x;
+    mseTargetY = t.y;
+    msePending = true;
+    if (mseModelX == null) mseCalibrate(t);
     if (!mseRaf && typeof requestAnimationFrame === "function") mseRaf = requestAnimationFrame(mseFlush);
   }
   function onMseUp(ev) {
     if (ev.button !== 0) return;
     mseSendButtons(mseLastMask & ~0x01);
   }
-  function onMseLeave() {
-    // Don't leave a click stuck down if the real cursor wanders off the video mid-press. Moot while
-    // locked (the pointer cannot leave), which is fine — this is the unlocked fallback's guard.
-    if (mseLastMask) mseSendButtons(0);
+  function onMseEnter() {
+    // Re-establish the origin on every entry. The model can only be wrong if something moved the
+    // cursor that we did not — a game warping it itself, or a room resumed after the pointer spent
+    // time elsewhere — and entering the picture is both the moment that is most likely to have
+    // happened and the last moment before it would be visible.
+    mseModelX = null;
+    mseModelY = null;
   }
-  function onMseLockChange() {
-    // Esc (or any other release) mid-press would otherwise strand the button down in the game.
-    if (!mseLocked() && mseLastMask) mseSendButtons(0);
+  function onMseLeave() {
+    // Don't leave a click stuck down if the pointer wanders off the video mid-press.
+    if (mseLastMask) mseSendButtons(0);
   }
   function onMseContextMenu(e) { e.preventDefault(); }
   function attachMouse() {
@@ -1528,21 +1592,18 @@ export function createCloudRetroSession(descriptor, opts) {
     videoEl.addEventListener("mousedown", onMseDown);
     videoEl.addEventListener("mousemove", onMseMove);
     videoEl.addEventListener("mouseup", onMseUp);
+    videoEl.addEventListener("mouseenter", onMseEnter);
     videoEl.addEventListener("mouseleave", onMseLeave);
     videoEl.addEventListener("contextmenu", onMseContextMenu);
-    document.addEventListener("pointerlockchange", onMseLockChange);
   }
   function detachMouse() {
     if (!mouseEnabled) return;
     videoEl.removeEventListener("mousedown", onMseDown);
     videoEl.removeEventListener("mousemove", onMseMove);
     videoEl.removeEventListener("mouseup", onMseUp);
+    videoEl.removeEventListener("mouseenter", onMseEnter);
     videoEl.removeEventListener("mouseleave", onMseLeave);
     videoEl.removeEventListener("contextmenu", onMseContextMenu);
-    document.removeEventListener("pointerlockchange", onMseLockChange);
-    // Leaving a room must not leave the page holding the pointer — the player would find the room's
-    // own buttons unclickable with no cursor to click them with.
-    if (mseLocked() && document.exitPointerLock) { try { document.exitPointerLock(); } catch { /* */ } }
     if (mseRaf && typeof cancelAnimationFrame === "function") { cancelAnimationFrame(mseRaf); mseRaf = 0; }
   }
   attachMouse();

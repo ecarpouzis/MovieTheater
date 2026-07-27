@@ -1662,6 +1662,19 @@ emulator:
             # gated by this option, so switching to "mouse" does not remove it. Pinned explicitly because
             # the core's own default for this option is PLATFORM-CONDITIONAL.
             scummvm_pointer_device: "mouse"
+            # ⚠ MUST equal MOUSE_SPEED in cloudRetroClient.js. The shim drives the cursor to an ABSOLUTE
+            # position over this relative device — it keeps a model of where the cursor is and sends
+            # (target - model) — which means it has to invert whatever the core multiplies by. ScummVM's
+            # own source is `deltaAcc = (float)x * mouse_speed`, a bare multiplier with no screen ratios
+            # of any kind (backends/platform/libretro/src/libretro-os-inputs.cpp), so inverting a KNOWN
+            # value is exact. Leaving it unpinned is what made the cursor feel like someone else's mouse:
+            # the core's default is not documented anywhere and we were multiplying by it blind.
+            # 1.25 rather than 1.0 for one reason: 1.25 is a token this exact DLL's option table
+            # PROVABLY contains (extracted: 0.05 0.15 0.35 0.45 1.25 1.75 ...), and libretro silently
+            # ignores an unknown option VALUE — pinning "1.0" on a build whose table lacks it would look
+            # applied, log nothing, and quietly leave the core on its default. It is also exactly
+            # representable in binary floating point, so the client's division introduces no error.
+            scummvm_mouse_speed: "1.25"
             # ScummVM's own Global Main Menu (save/load, engine options, quit) on a stick-click. This is
             # the one core in the arcade where an in-core menu even exists: libretro cores normally have
             # no UI of their own (RetroArch draws the options screen, and CloudRetro has no menu layer —

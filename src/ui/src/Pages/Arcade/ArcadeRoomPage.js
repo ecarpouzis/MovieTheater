@@ -2,7 +2,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
 import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, QUICK_SLOT, hasSaveStates } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
@@ -1086,8 +1086,13 @@ export default function ArcadeRoomPage() {
         //   height = boxW = boxH * ar  →  calc(100% * ar)   (100% of height = boxH)
         // cloudRetroClient prepends translate(-50%,-50%) so it rotates about the box centre.
         // Without this, 1942 (rot=90) rendered upright but overflowed the 3:4 box and left dead space.
+        // Hide the OS arrow on a mouse system: the shim drives the core's cursor to the pointer's
+        // ABSOLUTE position, so the game already draws a cursor exactly where the real one would be,
+        // and showing both just stacks two arrows on the same pixel. Every other system keeps it —
+        // there is no in-game cursor there for it to duplicate.
         const videoStyle = { position: "absolute", top: "50%", left: "50%", objectFit: "fill",
                              display: "block", transform: videoTransform(coreRot, coreFlip),
+                             ...(systemUsesMouse(system) ? { cursor: "none" } : null),
                              ...rotatedVideoSize(ar, coreRot) };
         const outerStyle = isFs
           ? { position: "relative", background: "#000", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }
