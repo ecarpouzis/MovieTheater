@@ -285,10 +285,10 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
   // Chord/hold-to-fire bindings (controllerChords.js) ride the SAME pumpInput poll this whole file
   // exercises — this proves onChordAction actually fires through a real tick, not just in the
   // chord-watcher's own isolated unit tests.
-  it("onChordAction fires once the default quick-save chord (L3+R3) is held past its threshold", async () => {
-    // Physical pad indices 10/11 are DEFAULT_GAMEPAD's L3/R3 (see cloudRetroClient.js) — held
+  it("onChordAction fires once the default quick-save chord (Select+R3) is held past its threshold", async () => {
+    // Physical pad indices 8/11 are DEFAULT_GAMEPAD's SELECT/R3 (see cloudRetroClient.js) — held
     // continuously from the start of the session.
-    setPads(pad(0, [10, 11]));
+    setPads(pad(0, [8, 11]));
     const fired = [];
     const s = createCloudRetroSession(descriptorFor({ playerSlot: 0 }), {
       videoEl: null,

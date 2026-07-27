@@ -28,6 +28,11 @@ const T = {
   SET_PLAYER_INDEX: 108,
   NO_FREE_SLOTS: 112,
   GAME_RESET: 113,
+  // Hold-to-engage time controls (fork t=114/115): {active:true} on chord press, false on release.
+  // The worker releases both on ANY player's disconnect, so a tab closed mid-hold can't wedge the
+  // room at 4x.
+  GAME_FAST_FORWARD: 114,
+  GAME_REWIND: 115,
   APP_VIDEO_CHANGE: 150,
   // RetroAchievements unlock, pushed by the worker (Phase 1) when rcheevos fires an achievement so the room
   // can toast it live. Carries { id, title, description?, points, hardcore }. Inbound only.
@@ -807,8 +812,11 @@ export function createCloudRetroSession(descriptor, opts) {
     // Chord watch must run on EVERY tick a chord's bits are held, not just the first — placed here,
     // before the send-on-change dedupe below returns early once the mask stops changing (a steadily
     // held chord produces an unchanged mask after tick 1, and the dedupe would otherwise starve it
-    // of the ticks it needs to reach its hold duration).
-    if (chordWatcher) chordWatcher.poll(mask, Date.now());
+    // of the ticks it needs to reach its hold duration). The poll's return is the mask of currently
+    // ENGAGED chords — stripped from the frame so a held fast-forward/rewind (or a fired quick-save)
+    // stops pressing its buttons in the game (Select alone opens a menu in half the SNES library).
+    // The dedupe below compares the STRIPPED mask, so engage/release edges still resend correctly.
+    if (chordWatcher) mask &= ~chordWatcher.poll(mask, Date.now());
     // Keyboard arrows also drive the LEFT ANALOG STICK. N64 (and most 3D) games steer with the stick,
     // NOT the d-pad — so without this the keyboard couldn't turn. Full deflection from the arrow keys;
     // a real gamepad stick takes precedence when it's being pushed.
@@ -1379,7 +1387,14 @@ export function createCloudRetroSession(descriptor, opts) {
     reloadChords: () => { if (onChordAction) chordWatcher = createChordWatcher(onChordAction, resolveChords(customChordBinds)); },
     save: asPlayer(() => send(T.GAME_SAVE, {})),
     load: asPlayer(() => send(T.GAME_LOAD, {})),
-    reset: asPlayer(() => send(T.GAME_RESET, {})),
+    // room_id is REQUIRED on reset/fast-forward/rewind: the coordinator's user handlers guard
+    // these with `rq.Rid == worker.RoomId` (unlike save/load, which ignore Rid). Reset used to
+    // send {} — which that guard silently no-op'd; carrying the id is the fix.
+    reset: asPlayer(() => send(T.GAME_RESET, { room_id: roomIdFromWsUrl(descriptor.wsUrl) })),
+    // Hold-to-engage time controls. The chord watcher calls these with true on engage and false
+    // on release; the on-screen buttons use pointerdown/up the same way.
+    fastForward: asPlayer((on) => send(T.GAME_FAST_FORWARD, { active: !!on, room_id: roomIdFromWsUrl(descriptor.wsUrl) })),
+    rewind: asPlayer((on) => send(T.GAME_REWIND, { active: !!on, room_id: roomIdFromWsUrl(descriptor.wsUrl) })),
     // Multi-disc: ask the emulator to swap to disc image `index` (patch 0005). No-op until the "disc"
     // channel is open / for single-disc games.
     swapDisc: asPlayer((index) => {

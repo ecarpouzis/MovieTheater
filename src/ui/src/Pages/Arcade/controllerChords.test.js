@@ -22,6 +22,12 @@ describe("resolveChords — custom binds merged over the defaults", () => {
       .toEqual(DEFAULT_CHORDS.find((c) => c.action === "quickSave").bits);
   });
 
+  it("a rebound hold-type chord keeps its hold semantics", () => {
+    const rw = resolveChords({ rewind: ["L3", "B"] }).find((c) => c.action === "rewind");
+    expect(rw.bits).toEqual(["L3", "B"]);
+    expect(rw.hold).toBe(true);
+  });
+
   it("a resolved custom chord actually fires through the watcher", () => {
     const fired = [];
     const w = createChordWatcher((a) => fired.push(a), resolveChords({ quickSave: ["SELECT", "B"] }));
@@ -71,56 +77,96 @@ describe("createChordWatcher — basic hold-to-fire semantics", () => {
     w.poll(mask, 100);
     expect(fired).toEqual(["test"]);
   });
+
+  it("reports a fired chord's bits so the input pump can strip them from the wire", () => {
+    const w = createChordWatcher(() => {}, [{ action: "test", bits: ["L3", "R3"], holdMs: 100 }]);
+    const mask = maskOf("L3", "R3", "UP");
+    expect(w.poll(mask, 0)).toBe(0);        // not fired yet — bits still belong to the game
+    expect(w.poll(mask, 100)).toBe(maskOf("L3", "R3")); // fired — strip the chord, keep UP
+    expect(w.poll(1 << PAD.UP, 150)).toBe(0); // released — nothing stripped
+  });
 });
 
-describe("createChordWatcher — DEFAULT_CHORDS subset-collision (quickSave ⊂ quickLoad)", () => {
-  it("holding exactly quickSave's bits fires only quickSave", () => {
-    const fired = [];
-    const w = createChordWatcher((a) => fired.push(a));
-    const mask = maskOf("L3", "R3");
+describe("createChordWatcher — hold-type chords (rewind/fast-forward)", () => {
+  const holdChord = [{ action: "held", bits: ["SELECT", "Y"], holdMs: 150, hold: true }];
+
+  it("engages after holdMs and releases the moment the combo breaks", () => {
+    const events = [];
+    const w = createChordWatcher((a, on) => events.push([a, on]), holdChord);
+    const mask = maskOf("SELECT", "Y");
     w.poll(mask, 0);
-    w.poll(mask, 600);
-    w.poll(mask, 900);
-    expect(fired).toEqual(["quickSave"]);
+    w.poll(mask, 100);
+    expect(events).toEqual([]);
+    w.poll(mask, 150);
+    expect(events).toEqual([["held", true]]);
+    w.poll(mask, 500); // still held — engaged once, no repeats
+    expect(events).toEqual([["held", true]]);
+    w.poll(1 << PAD.SELECT, 600); // Y released — combo broken
+    expect(events).toEqual([["held", true], ["held", false]]);
   });
 
-  it("holding quickLoad's full bit set fires only quickLoad — quickSave's clock never starts", () => {
-    const fired = [];
-    const w = createChordWatcher((a) => fired.push(a));
-    const mask = maskOf("L3", "R3", "SELECT"); // a strict superset of quickSave's bits
+  it("can re-engage after a release", () => {
+    const events = [];
+    const w = createChordWatcher((a, on) => events.push([a, on]), holdChord);
+    const mask = maskOf("SELECT", "Y");
     w.poll(mask, 0);
-    w.poll(mask, 600); // quickLoad's own threshold
-    expect(fired).toEqual(["quickLoad"]);
-    w.poll(mask, 900);
-    expect(fired).toEqual(["quickLoad"]); // quickSave never fires, even though its bits are held
+    w.poll(mask, 150);
+    w.poll(0, 200);
+    w.poll(mask, 300);
+    w.poll(mask, 450);
+    expect(events).toEqual([["held", true], ["held", false], ["held", true]]);
   });
 
-  it("adding SELECT mid-hold resets quickSave's progress and lets quickLoad start fresh from that moment", () => {
-    const fired = [];
-    const w = createChordWatcher((a) => fired.push(a));
-    const justSave = maskOf("L3", "R3");
-    const withLoad = maskOf("L3", "R3", "SELECT");
-
-    w.poll(justSave, 0);   // quickSave starts building
-    w.poll(justSave, 300); // 300ms in, not yet at its 600ms threshold
-    expect(fired).toEqual([]);
-
-    w.poll(withLoad, 300); // SELECT added — quickLoad claims L3/R3, quickSave is suppressed+reset
-    w.poll(withLoad, 900); // 300 + 600 = quickLoad's threshold from THIS moment
-    expect(fired).toEqual(["quickLoad"]);
-    // quickSave must NOT fire from its original start (0 + 600 = 600, long past) — suppression
-    // voided that progress entirely.
-    w.poll(withLoad, 1000);
-    expect(fired).toEqual(["quickLoad"]);
-
-    w.poll(justSave, 900);  // SELECT released — quickLoad re-arms, quickSave resumes unsuppressed
-    w.poll(justSave, 1499); // one tick before a FRESH 600ms from 900 elapses
-    expect(fired).toEqual(["quickLoad"]);
-    w.poll(justSave, 1500); // 900 + 600 — quickSave fires only now, proving its clock truly restarted
-    expect(fired).toEqual(["quickLoad", "quickSave"]);
+  it("an engaged hold chord reports its bits for stripping only while engaged", () => {
+    const w = createChordWatcher(() => {}, holdChord);
+    const mask = maskOf("SELECT", "Y", "UP");
+    expect(w.poll(mask, 0)).toBe(0);
+    expect(w.poll(mask, 150)).toBe(maskOf("SELECT", "Y"));
+    expect(w.poll(1 << PAD.UP, 200)).toBe(0);
   });
 
-  it("DEFAULT_CHORDS exports the three actions this pass ships (fast-forward intentionally absent)", () => {
-    expect(DEFAULT_CHORDS.map((c) => c.action).sort()).toEqual(["quickLoad", "quickSave", "reset"]);
+  it("suppression by a bigger satisfied chord releases an engaged hold chord", () => {
+    const events = [];
+    const w = createChordWatcher((a, on) => events.push([a, on]), [
+      ...holdChord,
+      { action: "bigger", bits: ["SELECT", "Y", "START"], holdMs: 300 },
+    ]);
+    const small = maskOf("SELECT", "Y");
+    w.poll(small, 0);
+    w.poll(small, 150);
+    expect(events).toEqual([["held", true]]);
+    w.poll(maskOf("SELECT", "Y", "START"), 200); // bigger chord claims the bits
+    expect(events).toEqual([["held", true], ["held", false]]);
+  });
+});
+
+describe("DEFAULT_CHORDS — the shipped bindings", () => {
+  it("ships the five actions with the agreed combos", () => {
+    const byAction = Object.fromEntries(DEFAULT_CHORDS.map((c) => [c.action, c]));
+    expect(byAction.quickLoad.bits).toEqual(["SELECT", "L3"]);
+    expect(byAction.quickSave.bits).toEqual(["SELECT", "R3"]);
+    expect(byAction.rewind.bits).toEqual(["SELECT", "Y"]); // west face
+    expect(byAction.fastForward.bits).toEqual(["SELECT", "A"]); // east face
+    expect(byAction.reset.bits).toEqual(["SELECT", "START", "L2", "R2"]);
+    expect(byAction.rewind.hold).toBe(true);
+    expect(byAction.fastForward.hold).toBe(true);
+    expect(byAction.quickSave.hold).toBeUndefined();
+  });
+
+  it("each default combo fires only its own action", () => {
+    for (const [bits, want] of [
+      [["SELECT", "R3"], ["quickSave"]],
+      [["SELECT", "L3"], ["quickLoad"]],
+      [["SELECT", "Y"], ["rewind"]],
+      [["SELECT", "A"], ["fastForward"]],
+      [["SELECT", "START", "L2", "R2"], ["reset"]],
+    ]) {
+      const fired = [];
+      const w = createChordWatcher((a) => fired.push(a));
+      const mask = maskOf(...bits);
+      w.poll(mask, 0);
+      w.poll(mask, 2000);
+      expect(fired).toEqual(want);
+    }
   });
 });

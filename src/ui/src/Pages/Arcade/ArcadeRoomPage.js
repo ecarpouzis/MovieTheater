@@ -37,6 +37,17 @@ const NOT_REMAPPED_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "c
 // ErrNoSaveStates); the heavy/capture lanes stream a native app and never touch the CloudRetro save
 // path at all. The first-play pre-warm below must skip them. Keep in step with config.worker-gl.yaml.
 const NO_SAVE_STATE_SYSTEMS = new Set(["psp", "ps2", "switch", "ps3", "ps4", "wiiu", "x360", "capture"]);
+
+// Time controls (fork t=114/115). Fast-forward is pacing-only, so every libretro-lane system has
+// it; the heavy/capture lanes stream a native app with no retro_run to pace. Rewind additionally
+// needs the worker's in-memory savestate ring, armed per core with `rewind: true` in
+// config.worker-gl.yaml — this set mirrors that file (the serialize-cheap 2D tier), keep in step.
+const HEAVY_LANE_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "capture"]);
+const REWIND_SYSTEMS = new Set([
+  "nes", "snes", "genesis", "gb", "gbc", "gba", "sms", "gg", "sg1000", "segacd", "sega32x",
+  "pce", "ngpc", "wsc", "a2600", "a7800", "lynx", "vb", "fds", "neogeo", "arcade",
+  "vectrex", "intv", "coleco", "channelf", "o2em", "arcadia", "supervision", "pokemini", "3do",
+]);
 const MAPPABLE_SYSTEM_OPTIONS = Object.keys(SYSTEM_LABEL)
   .filter((s) => !NOT_REMAPPED_SYSTEMS.has(s))
   .map((s) => ({ value: s, label: systemLabel(s) }))
@@ -44,7 +55,13 @@ const MAPPABLE_SYSTEM_OPTIONS = Object.keys(SYSTEM_LABEL)
 
 // Friendly names for the chord-bindable actions, used to render the "Quick actions" caption from
 // DEFAULT_CHORDS itself so it can't drift out of sync with what's actually bound.
-const CHORD_ACTION_LABEL = { quickSave: "Quick-save", quickLoad: "Quick-load", reset: "Reset (owner only)" };
+const CHORD_ACTION_LABEL = {
+  quickSave: "Quick-save",
+  quickLoad: "Quick-load",
+  rewind: "Rewind (hold)",
+  fastForward: "Fast-forward (hold)",
+  reset: "Reset (owner only)",
+};
 
 /**
  * The /arcade/room/:code player (docs/arcade-plan.md §7–§8). Two ways in: the creator arrives with a
@@ -83,6 +100,9 @@ export default function ArcadeRoomPage() {
   // statusRef above).
   const yourSlotRef = useRef(yourSlot);
   yourSlotRef.current = yourSlot;
+  // Same stale-closure idiom for the chord handler's competitive gate: an invitee's descriptor
+  // (and with it `competitive`) resolves AFTER the session-open effect captured its callbacks.
+  const competitiveRef = useRef(!!location.state?.descriptor?.competitive);
 
   // The capability token the save/load REST calls use. The descriptor's wsUrl token is minted for the WS
   // connect and expires after ArcadeJoinTokenTtlSeconds — but the WS stays open past that, while the save
@@ -265,6 +285,7 @@ export default function ArcadeRoomPage() {
       setGameKey(descriptor.gameKey ?? null);
       setControllerScheme(controllerSchemeFromWsUrl(descriptor.wsUrl));
       setCompetitive(!!descriptor.competitive);
+      competitiveRef.current = !!descriptor.competitive;
       setDiscCount(descriptor.discCount || 0);
 
       // A JIT game's first play may have to inflate a compressed disc image (a PSP .cso, a GameCube
@@ -334,8 +355,27 @@ export default function ArcadeRoomPage() {
           if (descriptor.isCreator) MovieAPI.bindArcadeRoom(code, roomId).catch(() => {});
         },
         onError: (err) => { if (!cancelled) message.error(err.message || "Connection problem."); },
-        onChordAction: (action) => {
+        onChordAction: (action, engaged = true) => {
           if (cancelled) return;
+          const sys = String(descriptor.system || "").toLowerCase();
+          // Hold-type chords: engaged=true on press, false on release — both must reach the wire.
+          // Competitive rooms block both (rewind IS save-scumming; fast-forward is the time
+          // manipulation the leaderboards exist to keep out), mirroring the hidden save buttons.
+          if (action === "fastForward" || action === "rewind") {
+            const supported = action === "fastForward" ? !HEAVY_LANE_SYSTEMS.has(sys) : REWIND_SYSTEMS.has(sys);
+            if (competitiveRef.current || !supported) {
+              if (engaged) {
+                message.info(competitiveRef.current
+                  ? "Competitive room — time controls are off."
+                  : `${action === "rewind" ? "Rewind" : "Fast-forward"} isn't available for this system.`);
+              }
+              return;
+            }
+            if (action === "fastForward") sessionRef.current?.fastForward?.(engaged);
+            else sessionRef.current?.rewind?.(engaged);
+            return;
+          }
+          if (!engaged) return; // one-shot chords act on engage only
           // quickSave/quickLoad already report their own success/failure via message.* — no need
           // to add a second toast on top of theirs.
           if (action === "quickSave") { quickSave(); return; }
@@ -1141,13 +1181,41 @@ export default function ArcadeRoomPage() {
           )}
           {!competitive && !spectator && (
             <>
-              <Tooltip title="Quicksave — keeps your place until you press Save again. Leaving the room never overwrites it.">
+              <Tooltip title="Quicksave — keeps your place until you press Save again. Leaving the room never overwrites it. (Pad: hold Select + R3)">
                 <Button loading={snapping} onClick={quickSave}>Save</Button>
               </Tooltip>
-              <Tooltip title="Reload your quicksave">
+              <Tooltip title="Reload your quicksave (Pad: hold Select + L3)">
                 <Button onClick={quickLoad}>Load</Button>
               </Tooltip>
             </>
+          )}
+          {/* Hold-to-engage time controls (fork t=114/115): the buttons mirror the pad chords
+              (Select + West = rewind, Select + East = fast-forward). Hidden in competitive rooms —
+              rewind is save-scumming and fast-forward is exactly the time manipulation the
+              leaderboards keep out — and on systems whose core can't do them. */}
+          {!competitive && !spectator && REWIND_SYSTEMS.has(String(system || "").toLowerCase()) && (
+            <Tooltip title="Hold to rewind — or hold Select + the West face button on your pad">
+              <Button
+                onPointerDown={() => sessionRef.current?.rewind?.(true)}
+                onPointerUp={() => sessionRef.current?.rewind?.(false)}
+                onPointerLeave={() => sessionRef.current?.rewind?.(false)}
+                onPointerCancel={() => sessionRef.current?.rewind?.(false)}
+              >
+                ⏪ Rewind
+              </Button>
+            </Tooltip>
+          )}
+          {!competitive && !spectator && !HEAVY_LANE_SYSTEMS.has(String(system || "").toLowerCase()) && (
+            <Tooltip title="Hold to fast-forward (4x) — or hold Select + the East face button on your pad">
+              <Button
+                onPointerDown={() => sessionRef.current?.fastForward?.(true)}
+                onPointerUp={() => sessionRef.current?.fastForward?.(false)}
+                onPointerLeave={() => sessionRef.current?.fastForward?.(false)}
+                onPointerCancel={() => sessionRef.current?.fastForward?.(false)}
+              >
+                ⏩ Fast-forward
+              </Button>
+            </Tooltip>
           )}
           {!competitive && yourSlot === 0 && (
             <Tooltip title="Save a named snapshot you can resume later">
@@ -1365,9 +1433,9 @@ export default function ArcadeRoomPage() {
           </Text>
         </div>
 
-        {/* Quick actions: hold-to-fire chords (quick-save/quick-load/reset), each rebindable to a
-            physical button COMBO. The shim's chord watcher re-reads them live via reloadChords().
-            Fast-forward isn't listed — no wire/worker support for it yet. */}
+        {/* Quick actions: hold-to-fire chords (quick-save/quick-load/rewind/fast-forward/reset),
+            each rebindable to a physical button COMBO. The shim's chord watcher re-reads them live
+            via reloadChords(). Rewind/fast-forward are hold-type: engaged while the combo is held. */}
         <div style={{ borderTop: "1px solid rgba(128,128,128,0.25)", marginTop: 12, paddingTop: 12 }}>
           <Text style={{ display: "block", marginBottom: 6 }}>Quick actions (hold a combo)</Text>
           {(() => {

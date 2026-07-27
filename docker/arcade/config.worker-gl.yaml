@@ -1283,12 +1283,21 @@ emulator:
         # native 256x224 — the browser's bilinear stretch of a tiny stream is what read as "fuzzy
         # SNES", and no encoder preset can fix that. 768x672 crisp pixels cost NVENC nothing.
         # (These merge INTO the default core entries per-key — lib/roms/etc. survive.)
+        # rewind (2026-07-26): arms the worker's in-memory savestate ring (snapshot every 6 frames,
+        # 512 MB cap — code defaults) so a held Select+West chord walks time backward. Opt-in per
+        # core, ONLY on this 2D software tier: serialize here is sub-ms and reliable. The worker
+        # additionally hard-refuses rewind on usesLibCo/noSaveStates cores (psx/psp/ps2/gc/...),
+        # so a stray flag on those would be a no-op with a warning, and a core whose serialize
+        # fails 3x in a row drops rewind for that session on its own.
         snes:
           scale: 3
+          rewind: true
         nes:
           scale: 3
+          rewind: true
         gba:
           scale: 3
+          rewind: true
         # Game Boy / Game Boy Color via mgba (same lib as GBA). The stock config only exposes gba+gbc
         # roms under the `gba` folder; the JIT catalog files per system (gb/, gbc/), so give each its own
         # core+folder. mgba plays all three. scale:3 for the same crispness rationale as the other 2D cores.
@@ -1297,11 +1306,13 @@ emulator:
           folder: gb
           roms: ["gb"]
           scale: 3
+          rewind: true
         gbc:
           lib: mgba_libretro
           folder: gbc
           roms: ["gbc"]
           scale: 3
+          rewind: true
 
         gen:
           # lib name verified live 2026-07-03 (Sonic 2 streams).
@@ -1309,6 +1320,7 @@ emulator:
           roms: ["md", "gen", "smd", "bin"]
           folder: genesis
           scale: 3   # 320x224 native -> 960x672 nearest (was 2; 3x matches snes/nes, costs NVENC nothing)
+          rewind: true
 
         # ARCADE (fbneo). The site's `arcade` system ingests into roms/mame and launches through the
         # core key `mame` (ArcadeIngestCommand.cs:242) -- the STOCK CloudRetro entry, which we had never
@@ -1324,6 +1336,7 @@ emulator:
           roms: ["zip"]
           scale: 3              # 304x224 -> 912x672
           scaleMethod: nearest-neighbour
+          rewind: true          # fbneo serialize is solid on the mainstream boards; flaky drivers self-disable
           options:
             # 32-bit color (docs/arcade-quality-plan.md §17). A raw video_cb dump proved fbneo was
             # emitting RGB565 (bpp=2, pixFmtCode=2): 5-6 bit channels = banding on gradients before
@@ -1351,21 +1364,25 @@ emulator:
           folder: sms
           roms: ["sms"]
           scale: 3
+          rewind: true
         gg:
           lib: genesis_plus_gx_libretro
           folder: gg
           roms: ["gg"]
           scale: 4   # 160x144 native — needs more upscale than the console cores
+          rewind: true
         sg1000:
           lib: genesis_plus_gx_libretro
           folder: sg1000
           roms: ["sg"]
           scale: 3
+          rewind: true
         segacd:
           lib: genesis_plus_gx_libretro
           folder: segacd
           roms: ["m3u", "cue", "chd", "iso"]   # m3u = multi-disc (see dc note); fixes segacd->Dolphin misroute
           scale: 3   # was 2 -- 320x224 native, matches gen
+          rewind: true
 
         # ─── Other 2D cores (each pins its folder so extension collisions can't cross-load) ──────
         sega32x:
@@ -1373,49 +1390,58 @@ emulator:
           folder: sega32x
           roms: ["32x", "bin"]
           scale: 3   # was 2 -- 320x224 native, matches gen
+          rewind: true
         pce:
           # mednafen_pce (full) covers TurboGrafx-16 / PC Engine + SuperGrafx + PCE-CD (syscard3.pce).
           lib: mednafen_pce_libretro
           folder: pce
           roms: ["m3u", "pce", "sgx", "cue", "chd"]   # m3u = multi-disc (see dc note)
           scale: 3
+          rewind: true
         ngpc:
           lib: mednafen_ngp_libretro
           folder: ngpc
           roms: ["ngp", "ngc"]
           scale: 4
+          rewind: true
         wsc:
           lib: mednafen_wswan_libretro
           folder: wsc
           roms: ["ws", "wsc", "pc2"]
           scale: 4
+          rewind: true
         a2600:
           lib: stella_libretro
           folder: a2600
           roms: ["a26", "bin"]
           scale: 3
+          rewind: true
         a7800:
           lib: prosystem_libretro
           folder: a7800
           roms: ["a78"]
           scale: 3
+          rewind: true
         lynx:
           # mednafen_lynx needs lynxboot.img in the BIOS mount.
           lib: mednafen_lynx_libretro
           folder: lynx
           roms: ["lnx"]
           scale: 4
+          rewind: true
         vb:
           lib: mednafen_vb_libretro
           folder: vb
           roms: ["vb", "vboy"]
           scale: 3
+          rewind: true
         fds:
           # Famicom Disk System via nestopia; needs disksys.rom in the BIOS mount.
           lib: nestopia_libretro
           folder: fds
           roms: ["fds"]
           scale: 3
+          rewind: true
         neogeo:
           # Neo Geo AES/MVS romsets via fbneo (the arcade core); needs neogeo.zip in the BIOS mount.
           # Finicky (parent romset grind) — stage last.
@@ -1423,6 +1449,7 @@ emulator:
           folder: neogeo
           roms: ["zip"]
           scale: 3   # was 2 -- 304x224 native, matches the mame entry above
+          rewind: true
           options:
             fbneo-allow-depth-32: "enabled"   # same 16-bit finding as the mame entry above
 
@@ -1433,24 +1460,28 @@ emulator:
           folder: vectrex
           roms: ["bin", "vec"]
           scale: 4   # 330x410 native, tall/narrow vector display
+          rewind: true
         intv:
           # Needs exec.bin + grom.bin in the BIOS mount.
           lib: freeintv_libretro
           folder: intv
           roms: ["int", "rom", "bin"]
           scale: 4
+          rewind: true
         coleco:
           # gearcoleco (modern replacement for the old coleco core). Needs colecovision.rom in the BIOS mount.
           lib: gearcoleco_libretro
           folder: coleco
           roms: ["col", "cv", "bin", "rom"]
           scale: 3
+          rewind: true
         channelf:
           # Needs sl31253.bin + sl31254.bin (PSU I/II) in the BIOS mount.
           lib: freechaf_libretro
           folder: channelf
           roms: ["bin", "rom", "chf"]
           scale: 4
+          rewind: true
         o2em:
           # Odyssey2/Videopac (base hardware only — Videopac+/G7400's g7400.bin needs an unsupported
           # rename-as-o2rom.bin workaround, so that ~32-file subset is left uningested). Needs o2rom.bin.
@@ -1458,24 +1489,28 @@ emulator:
           folder: o2em
           roms: ["bin"]
           scale: 4
+          rewind: true
         arcadia:
           # Auto-detects ROM variant/clone by CRC32; no BIOS needed.
           lib: amiarcadia_libretro
           folder: arcadia
           roms: ["bin", "rom"]
           scale: 4
+          rewind: true
         supervision:
           # Watara Supervision; public-domain core, no BIOS needed.
           lib: potator_libretro
           folder: supervision
           roms: ["bin", "sv"]
           scale: 4
+          rewind: true
         pokemini:
           # BIOS optional (bios.min) — runs fine without it.
           lib: pokemini_libretro
           folder: pokemini
           roms: ["min"]
           scale: 4
+          rewind: true
         3do:
           # Opera (active 4DO/FreeDO fork) — pure software, no GL scaffolding touched (unlike angrylion,
           # it never declares HW-render capability, so no nil-deref risk). BIOS auto-selects by disc
@@ -1484,6 +1519,7 @@ emulator:
           folder: 3do
           roms: ["m3u", "cue", "chd", "iso"]   # m3u = multi-disc (see dc note)
           scale: 3
+          rewind: true   # opera serializes fine; states are a few MB so the 512 MB ring just holds less history
           options:
             opera_bios: "panafz10.bin"
         scummvm:

@@ -1520,10 +1520,10 @@ index a206751..d9ec08f 100644
  github.com/philhofer/fwd v1.2.0/go.mod h1:RqIHx9QI14HlwKwm98g9Re5prTQ6LdeRQn+gXJFxsJM=
  github.com/pion/datachannel v1.6.2 h1:7EXQ8TH3vTouBUdRWYbcX2edSx9Yj6k5zl5P+qyxEPc=
 diff --git a/pkg/api/api.go b/pkg/api/api.go
-index 89d0628..82c1f73 100644
+index 89d0628..fb1eb58 100644
 --- a/pkg/api/api.go
 +++ b/pkg/api/api.go
-@@ -67,25 +67,26 @@ func (o *Out) GetPayload() any         { return o.Payload }
+@@ -67,25 +67,28 @@ func (o *Out) GetPayload() any         { return o.Payload }
  // 15x - webrtc data exchange codes
  // 2xx - worker codes
  const (
@@ -1559,6 +1559,8 @@ index 89d0628..82c1f73 100644
 +	GetWorkerList     PT = 111
 +	ErrNoFreeSlots    PT = 112
 +	ResetGame         PT = 113
++	FastForwardGame   PT = 114 // browser <-> worker: hold-to-fast-forward toggle {active}
++	RewindGame        PT = 115 // browser <-> worker: hold-to-rewind toggle {active}
 +	RegisterRoom      PT = 201
 +	CloseRoom         PT = 202
 +	TerminateSession  PT = 204
@@ -1569,7 +1571,18 @@ index 89d0628..82c1f73 100644
  )
  
  func (p PT) String() string {
-@@ -124,6 +125,8 @@ func (p PT) String() string {
+@@ -116,6 +119,10 @@ func (p PT) String() string {
+ 		return "NoFreeSlots"
+ 	case ResetGame:
+ 		return "ResetGame"
++	case FastForwardGame:
++		return "FastForwardGame"
++	case RewindGame:
++		return "RewindGame"
+ 	case RegisterRoom:
+ 		return "RegisterRoom"
+ 	case CloseRoom:
+@@ -124,6 +131,8 @@ func (p PT) String() string {
  		return "TerminateSession"
  	case AppVideoChange:
  		return "AppVideoChange"
@@ -1642,10 +1655,30 @@ index e487b93..d71083a 100644
  	}
  )
 diff --git a/pkg/api/worker.go b/pkg/api/worker.go
-index d8c7324..56585d4 100644
+index d8c7324..e270185 100644
 --- a/pkg/api/worker.go
 +++ b/pkg/api/worker.go
-@@ -19,6 +19,34 @@ type (
+@@ -9,6 +9,19 @@ type (
+ 	GameQuitRequest      StatefulRoom
+ 	LoadGameRequest      StatefulRoom
+ 	LoadGameResponse     string
++	// FastForwardGameRequest / RewindGameRequest toggle time manipulation on the room's emulator
++	// (t=114 / t=115). Hold-to-engage from the browser: {active:true} on chord press, {active:false}
++	// on release. Same shape browser->coordinator and coordinator->worker.
++	FastForwardGameRequest struct {
++		StatefulRoom
++		Active bool `json:"active"`
++	}
++	FastForwardGameResponse string
++	RewindGameRequest       struct {
++		StatefulRoom
++		Active bool `json:"active"`
++	}
++	RewindGameResponse string
+ 	ResetGameRequest     StatefulRoom
+ 	ResetGameResponse    string
+ 	SaveGameRequest      StatefulRoom
+@@ -19,6 +32,34 @@ type (
  		RecordUser  string
  		Game        string `json:"game"`
  		PlayerIndex int    `json:"player_index"`
@@ -1680,7 +1713,7 @@ index d8c7324..56585d4 100644
  	}
  	GameInfo struct {
  		Alias  string `json:"alias"`
-@@ -51,6 +79,9 @@ type (
+@@ -51,6 +92,9 @@ type (
  		Id        string `json:"id"`
  		Initiator bool   `json:"initiator"`
  		Sdp       string `json:"sdp,omitempty"`
@@ -1845,7 +1878,7 @@ index 0000000..d83f053
 +	}
 +}
 diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
-index baf701e..f43665c 100644
+index baf701e..36fa838 100644
 --- a/pkg/config/emulator.go
 +++ b/pkg/config/emulator.go
 @@ -17,6 +17,53 @@ type Emulator struct {
@@ -1902,7 +1935,7 @@ index baf701e..f43665c 100644
  }
  
  type LibretroConfig struct {
-@@ -69,20 +116,69 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
+@@ -69,20 +116,82 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
  		errors.New("core mapping not found for " + runtime.GOOS + ":" + runtime.GOARCH)
  }
  
@@ -1969,13 +2002,26 @@ index baf701e..f43665c 100644
 +	// (boots, then stops producing frames). Its progress is the memstick card, which the vault carries.
 +	NoSaveStates    bool
  	NonBlockingSave bool
++	// Rewind arms the in-memory savestate ring for this core: while a room is live the worker
++	// snapshots the machine state every RewindStepFrames frames (emulator goroutine, between
++	// ticks), and a held rewind (t=115) walks back through those snapshots at real-time speed.
++	// Opt-in per core, and only sane for cores whose retro_serialize is cheap, reliable and
++	// non-LibCo (the frontend refuses it otherwise): the 2D consoles/handhelds, in practice.
++	// Cost when armed: one serialize per step (~0.1-0.5 ms on 2D cores) + up to RewindMB of RAM.
++	Rewind bool
++	// RewindStepFrames is the snapshot cadence in frames (default 6 ≈ 100 ms at 60 fps — the
++	// rewind "granularity"). Lower = smoother backward motion, more CPU + RAM per second kept.
++	RewindStepFrames int
++	// RewindMB caps the ring's total memory (default 512). When full the oldest snapshot falls
++	// off — the cap decides how far back a player can rewind, scaled by the core's state size.
++	RewindMB int
  	Options         map[string]string
  	Options4rom     map[string]map[string]string // <(^_^)>
 +	Fps4rom         map[string]float64           // per-ROM forced framerate override (arcade per-game config)
  	Roms            []string
  	SaveStateFs     string
  	Scale           float64
-@@ -128,6 +224,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
+@@ -128,6 +237,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
  	return found
  }
  
@@ -3143,8 +3189,23 @@ index ac04d15..a0c5ad9 100644
 +
 +	return nil
 +}
+diff --git a/pkg/coordinator/user.go b/pkg/coordinator/user.go
+index 923aeff..9d5209d 100644
+--- a/pkg/coordinator/user.go
++++ b/pkg/coordinator/user.go
+@@ -62,6 +62,10 @@ func (u *User) HandleRequests(info HasServerInfo, conf config.CoordinatorConfig)
+ 			err = api.Do(x, u.HandleChangePlayer)
+ 		case api.ResetGame:
+ 			err = api.Do(x, u.HandleResetGame)
++		case api.FastForwardGame:
++			err = api.Do(x, u.HandleFastForwardGame)
++		case api.RewindGame:
++			err = api.Do(x, u.HandleRewindGame)
+ 		case api.RecordGame:
+ 			if !conf.Recording.Enabled {
+ 				return api.ErrForbidden
 diff --git a/pkg/coordinator/userhandlers.go b/pkg/coordinator/userhandlers.go
-index 51e805c..2bf4439 100644
+index 51e805c..e7f6017 100644
 --- a/pkg/coordinator/userhandlers.go
 +++ b/pkg/coordinator/userhandlers.go
 @@ -13,7 +13,7 @@ func (u *User) HandleInitWebrtcStream(rq api.InitUserWebrtcStreamRequest) {
@@ -3213,8 +3274,32 @@ index 51e805c..2bf4439 100644
  		return
  	}
  	u.log.Info().Str("id", startGameResp.Rid).Msg("Received room response from worker")
+@@ -107,6 +140,23 @@ func (u *User) HandleResetGame(rq api.ResetGameRequest) {
+ 	u.w.ResetGame(u.Id().String())
+ }
+ 
++// HandleFastForwardGame / HandleRewindGame relay the hold-to-engage time controls (t=114/115).
++// Same room guard as reset: the packet must name the live room, so a stale tab can't poke a
++// room its worker has since moved past. Fire-and-forget — state toggles have no useful reply.
++func (u *User) HandleFastForwardGame(rq api.FastForwardGameRequest) {
++	if rq.Rid != u.w.RoomId {
++		return
++	}
++	u.w.FastForwardGame(u.Id().String(), rq.Active)
++}
++
++func (u *User) HandleRewindGame(rq api.RewindGameRequest) {
++	if rq.Rid != u.w.RoomId {
++		return
++	}
++	u.w.RewindGame(u.Id().String(), rq.Active)
++}
++
+ func (u *User) HandleSaveGame() error {
+ 	resp, err := u.w.SaveGame(u.Id().String())
+ 	if err != nil {
 diff --git a/pkg/coordinator/workerapi.go b/pkg/coordinator/workerapi.go
-index dbceaed..7a58178 100644
+index dbceaed..569ff80 100644
 --- a/pkg/coordinator/workerapi.go
 +++ b/pkg/coordinator/workerapi.go
 @@ -1,10 +1,28 @@
@@ -3285,6 +3370,27 @@ index dbceaed..7a58178 100644
  }
  
  func (w *Worker) QuitGame(id string) {
+@@ -50,6 +88,20 @@ func (w *Worker) ResetGame(id string) {
+ 	w.Notify(api.ResetGame, api.ResetGameRequest{Id: id, Rid: w.RoomId})
+ }
+ 
++func (w *Worker) FastForwardGame(id string, active bool) {
++	w.Notify(api.FastForwardGame, api.FastForwardGameRequest{
++		StatefulRoom: api.StatefulRoom{Id: id, Rid: w.RoomId},
++		Active:       active,
++	})
++}
++
++func (w *Worker) RewindGame(id string, active bool) {
++	w.Notify(api.RewindGame, api.RewindGameRequest{
++		StatefulRoom: api.StatefulRoom{Id: id, Rid: w.RoomId},
++		Active:       active,
++	})
++}
++
+ func (w *Worker) RecordGame(id string, rec bool, recUser string) (*api.RecordGameResponse, error) {
+ 	return api.UnwrapChecked[api.RecordGameResponse](
+ 		w.Send(api.RecordGame, api.RecordGameRequest{
 diff --git a/pkg/games/launcher.go b/pkg/games/launcher.go
 index 8850ea7..13b2220 100644
 --- a/pkg/games/launcher.go
@@ -9417,7 +9523,7 @@ index 0000000..6dd8a84
 +	atomic.StoreUintptr(&a.winHwnd, 0)
 +}
 diff --git a/pkg/worker/caged/libretro/caged.go b/pkg/worker/caged/libretro/caged.go
-index f3553b1..155b361 100644
+index f3553b1..df14005 100644
 --- a/pkg/worker/caged/libretro/caged.go
 +++ b/pkg/worker/caged/libretro/caged.go
 @@ -5,6 +5,7 @@ import (
@@ -9428,7 +9534,7 @@ index f3553b1..155b361 100644
  	"github.com/giongto35/cloud-game/v3/pkg/worker/cloud"
  )
  
-@@ -54,6 +55,26 @@ func (c *Caged) ReloadFrontend() {
+@@ -54,6 +55,31 @@ func (c *Caged) ReloadFrontend() {
  // VideoChangeCb adds a callback when video params are changed by the app.
  func (c *Caged) VideoChangeCb(fn func()) { c.base.SetVideoChangeCb(fn) }
  
@@ -9452,10 +9558,15 @@ index f3553b1..155b361 100644
 +func (c *Caged) NotifyFastForward(on bool) { c.base.NotifyFastForward(on) }
 +func (c *Caged) NotifyReset()           { c.base.NotifyReset() }
 +
++// SetFastForward / SetRewind route the time controls (t=114/115) to the root frontend, past any
++// recording/cloud decorators — the pacing loop and the rewind ring both live there.
++func (c *Caged) SetFastForward(on bool) { c.base.SetFastForward(on) }
++func (c *Caged) SetRewind(on bool)      { c.base.SetRewind(on) }
++
  func (c *Caged) Load(game games.GameMetadata, path string) error {
  	if c.Emulator == nil {
  		return nil
-@@ -94,6 +115,7 @@ func (c *Caged) AudioSampleRate() int             { return c.Emulator.AudioSampl
+@@ -94,6 +120,7 @@ func (c *Caged) AudioSampleRate() int             { return c.Emulator.AudioSampl
  func (c *Caged) ViewportSize() (int, int)         { return c.base.ViewportSize() }
  func (c *Caged) Scale() (float64, string)         { return c.Emulator.Scale() }
  func (c *Caged) Input(p int, d byte, data []byte) { c.base.Input(p, d, data) }
@@ -9464,7 +9575,7 @@ index f3553b1..155b361 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..edb029b 100644
+index 6974d59..22bef5e 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
 @@ -1,8 +1,10 @@
@@ -9486,7 +9597,7 @@ index 6974d59..edb029b 100644
  )
  
  type Emulator interface {
-@@ -82,12 +85,30 @@ type Frontend struct {
+@@ -82,12 +85,54 @@ type Frontend struct {
  	mu  sync.Mutex
  	mui sync.Mutex
  
@@ -9509,15 +9620,39 @@ index 6974d59..edb029b 100644
  	SaveStateFs       string
 +	NoSaveStates      bool // this core cannot be serialized; its memory card is the progress (0041)
 +	AudioMaster       bool // the audio clock paces this core, even above its fps floor (0043)
++
++	// ── Fast-forward / rewind (t=114/115) ────────────────────────────────────────────────────
++	// ffOn/rwOn are written from the coordinator's command goroutine (SetFastForward/SetRewind)
++	// and read by the emulator loop and the AV callbacks; rewindArmed flips off permanently if
++	// serialize keeps failing mid-session. Everything below those is owned by the emulator
++	// goroutine exclusively — the ring is never touched from anywhere else.
++	ffOn        atomic.Bool
++	rwOn        atomic.Bool
++	rewindArmed atomic.Bool
++
++	rewindStepFrames int      // snapshot cadence in frames (config RewindStepFrames, default 6)
++	rewindMaxBytes   int      // ring memory cap (config RewindMB, default 512 MB)
++	rewindSnaps      [][]byte // the ring, oldest first
++	rewindBytes      int      // current ring payload size
++	rewindHold       []byte   // last popped state — held (re-restored) when the ring runs dry
++	rewindPopNow     bool     // engage edge: pop immediately, don't wait for a step boundary
++	rewindTicks      uint64   // loop tick counter driving both capture and pop cadence
++	rewindFails      int      // consecutive serialize failures (3 = disable for the session)
++	ffLastVideoNs    int64    // last frame pushed downstream while fast-forwarding (throttle)
  }
  
++// ffRatio is the fast-forward speed multiplier: the pacing floor shrinks to 1/ffRatio of a
++// frame while engaged. 2D cores hit it exactly; heavy cores run as fast as retro_run allows
++// and land wherever they land — the ratio is a ceiling on pacing, not a promise.
++const ffRatio = 4
++
 +// ErrNoSaveStates is returned instead of serializing a core that cannot survive it.
 +var ErrNoSaveStates = errors.New("this system has no save states; its progress is kept on the memory card")
 +
  type Device byte
  
  const (
-@@ -173,10 +194,14 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -173,10 +218,14 @@ func (f *Frontend) LoadCore(emu string) {
  		Hacks:           conf.Hacks,
  		HasVFR:          conf.VFR,
  		Hid:             conf.Hid,
@@ -9532,7 +9667,7 @@ index 6974d59..edb029b 100644
  		UsesLibCo:       conf.UsesLibCo,
  		CoreAspectRatio: conf.CoreAspectRatio,
  		KbMouseSupport:  conf.KbMouseSupport,
-@@ -184,15 +209,38 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -184,15 +233,59 @@ func (f *Frontend) LoadCore(emu string) {
  	}
  	f.mu.Lock()
  	f.SaveStateFs = conf.SaveStateFs
@@ -9543,6 +9678,27 @@ index 6974d59..edb029b 100644
 +	}
 +	if conf.NoSaveStates {
 +		f.log.Info().Msgf("%v: save-states are off for this core; progress lives on the memory card", emu)
++	}
++	// Rewind is opt-in per core and hard-gated to cores that can serialize cheaply and safely:
++	// NoSaveStates cores obviously can't, and LibCo cores route serialize through the cothread
++	// trampoline — a per-step cost and crash surface the ring must never sit on (PSP wedges, mupen
++	// is flaky). The config asking for it anyway gets a loud no, not a quiet one.
++	if conf.Rewind && (conf.NoSaveStates || conf.UsesLibCo) {
++		f.log.Warn().Msgf("%v: rewind is configured but this core can't support it (noSaveStates=%v, usesLibCo=%v) — off",
++			emu, conf.NoSaveStates, conf.UsesLibCo)
++	}
++	if armed := conf.Rewind && !conf.NoSaveStates && !conf.UsesLibCo; armed {
++		f.rewindStepFrames = conf.RewindStepFrames
++		if f.rewindStepFrames <= 0 {
++			f.rewindStepFrames = 6 // ~100 ms granularity at 60 fps
++		}
++		mb := conf.RewindMB
++		if mb <= 0 {
++			mb = 512
++		}
++		f.rewindMaxBytes = mb << 20
++		f.rewindArmed.Store(true)
++		f.log.Info().Msgf("%v: rewind armed (step %v frames, cap %v MB)", emu, f.rewindStepFrames, mb)
 +	}
  	if conf.UniqueSaveDir {
  		f.UniqueSaveDir = true
@@ -9573,7 +9729,41 @@ index 6974d59..edb029b 100644
  	}
  	f.storage.SetNonBlocking(conf.NonBlockingSave)
  	f.scale = scale
-@@ -224,7 +272,17 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
+@@ -203,6 +296,13 @@ func (f *Frontend) LoadCore(emu string) {
+ }
+ 
+ func (f *Frontend) handleAudio(audio unsafe.Pointer, samples int) {
++	// Time warp (fast-forward/rewind) drops audio entirely: a 4x-fast core produces 4x the samples,
++	// which would pile into the Opus pipeline's buffer and come out as chipmunk sound followed by a
++	// permanent multi-second audio lag after release. Silence while engaged is the correct sound —
++	// the pacer pins the audio epoch meanwhile, so release resumes debt-free (see the warp branch).
++	if f.ffOn.Load() || f.rwOn.Load() {
++		return
++	}
+ 	fr, _ := audioPool.Get().(*app.Audio)
+ 	if fr == nil {
+ 		fr = new(app.Audio)
+@@ -220,11 +320,37 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
+ 		return
+ 	}
+ 
++	// Fast-forward: the core renders up to ffRatio× the frames, but the encoder must keep seeing
++	// ~native fps — every skipped frame here is pure savings (NVENC load, bitrate, client decode)
++	// and the player can't perceive frames that would exceed their display anyway. Same-goroutine
++	// state: video_cb fires inside retro_run, on the emulator loop's thread.
++	if f.ffOn.Load() {
++		minGap := int64(0)
++		if fps := f.nano.VideoFramerate(); fps > 0 {
++			minGap = int64(float64(time.Second) / fps * 0.9)
++		}
++		if now := os.Nanotime(); now-f.ffLastVideoNs < minGap {
++			return
++		} else {
++			f.ffLastVideoNs = now
++		}
++	}
++
+ 	fr, _ := videoPool.Get().(*app.Video)
  	if fr == nil {
  		fr = new(app.Video)
  	}
@@ -9591,7 +9781,7 @@ index 6974d59..edb029b 100644
  	fr.Frame.W = int(fi.W)
  	fr.Frame.H = int(fi.H)
  	fr.Frame.Stride = int(fi.Stride)
-@@ -237,9 +295,18 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
+@@ -237,9 +363,18 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
  }
  
  func (f *Frontend) handleDup() {
@@ -9599,7 +9789,7 @@ index 6974d59..edb029b 100644
 -		f.onVideo(*lastFrame)
 +	if lastFrame == nil {
 +		return
- 	}
++	}
 +	// DUP-PIN (gc "wrong frame at idle"): lastFrame.Frame.Tex is a BORROWED zero-copy slot texture, not an
 +	// owned copy. GStreamer frees the slot after encode and a later frame can re-blit new content into the
 +	// same texture id — so re-pushing a stale borrowed slot encodes the wrong frame. If this is a zc frame
@@ -9607,12 +9797,12 @@ index 6974d59..edb029b 100644
 +	// (the encoder just repeats its last frame). Readback frames (Serial 0) own their pixels — always safe.
 +	if lastFrame.Frame.Serial != 0 && !f.nano.ZcTexCurrent(lastFrame.Frame.Tex, lastFrame.Frame.Serial) {
 +		return
-+	}
+ 	}
 +	f.onVideo(*lastFrame)
  }
  
  func (f *Frontend) Shutdown() {
-@@ -292,8 +359,19 @@ func (f *Frontend) Start() {
+@@ -292,8 +427,19 @@ func (f *Frontend) Start() {
  	f.nano.LastFrameTime = time.Now()
  
  	defer func() {
@@ -9634,7 +9824,7 @@ index 6974d59..edb029b 100644
  			f.log.Debug().Msg("save on quit")
  			if err := f.Save(); err != nil {
  				f.log.Error().Err(err).Msg("save on quit failed")
-@@ -301,10 +379,33 @@ func (f *Frontend) Start() {
+@@ -301,10 +447,33 @@ func (f *Frontend) Start() {
  		}
  		f.mui.Unlock()
  		f.Shutdown()
@@ -9669,7 +9859,7 @@ index 6974d59..edb029b 100644
  		// advance 1 frame for Mupen, DOSBox save states
  		// loading will work if autostart is selected for DOSBox apps
  		f.Tick()
-@@ -318,6 +419,11 @@ func (f *Frontend) Start() {
+@@ -318,6 +487,11 @@ func (f *Frontend) Start() {
  		go f.autosave(f.conf.AutosaveSec)
  	}
  
@@ -9681,7 +9871,7 @@ index 6974d59..edb029b 100644
  	// The main loop of Libretro
  
  	targetFrameTimeNs := int64(float64(time.Second) / f.nano.VideoFramerate())
-@@ -328,80 +434,821 @@ func (f *Frontend) Start() {
+@@ -328,66 +502,454 @@ func (f *Frontend) Start() {
  	// how many frames will be considered not normal
  	const lateFramesThreshold = 3
  
@@ -9756,15 +9946,51 @@ index 6974d59..edb029b 100644
 +	var diagNoSleep int64
 +	var diagForgiven int64
 +	var diagMaxDeficitNs int64
++
++	// prevRw edge-detects rewind engage so the first pop happens NOW, not up to a step later —
++	// a held rewind that visibly does nothing for 100 ms feels broken.
++	prevRw := false
  
  	for {
  		select {
  		case <-f.done:
  			return
  		default:
++			// ── Time warp state (fast-forward / rewind, t=114/115) ────────────────────────
++			ff := f.ffOn.Load()
++			rw := f.rwOn.Load() && f.rewindArmed.Load() && !ff // FF wins when both are held
++			if rw && !prevRw {
++				f.rewindPopNow = true
++			}
++			prevRw = rw
++			f.rewindTicks++
++			if rw {
++				f.rewindStep()
++			}
++
 +			tick0 := os.Nanotime()
  			f.Tick()
 +			tickDur := os.Nanotime() - tick0
++
++			// Record the ring OUTSIDE any warp: never while rewinding (we'd re-record what we
++			// just walked back over), and not during FF (a serialize per step is exactly the
++			// cost the 4x tick rate has no room for). An FF'd span is thus absent from the
++			// ring — rewinding across it jumps straight over, which is acceptable.
++			if f.rewindArmed.Load() && !rw && !ff && f.rewindTicks%uint64(f.rewindStepFrames) == 0 {
++				f.rewindCapture()
++			}
+ 
+-			now := os.Nanotime()
+-			elapsed := now - lastFrameStart
+-			sleepTimeNs := targetFrameTimeNs - elapsed
+-			deadline := lastFrameStart + targetFrameTimeNs
+-
+-			if sleepTimeNs > 0 {
+-				// SLEEP
+-				// if we have plenty of time, sleep to save CPU and
+-				// wake up slightly before the target time
+-				if sleepTimeNs > spinThresholdNs {
+-					time.Sleep(time.Duration(sleepTimeNs - spinThresholdNs))
 +			audioDelta := f.nano.TakeAudioFrames()
 +			audioFrames += audioDelta
 +			diagTicks++
@@ -9794,18 +10020,7 @@ index 6974d59..edb029b 100644
 +				diagSumTickNs, diagNoSleep, diagForgiven, diagMaxDeficitNs = 0, 0, 0, 0
 +				diagAudioBase = audioFrames
 +			}
- 
--			now := os.Nanotime()
--			elapsed := now - lastFrameStart
--			sleepTimeNs := targetFrameTimeNs - elapsed
--			deadline := lastFrameStart + targetFrameTimeNs
--
--			if sleepTimeNs > 0 {
--				// SLEEP
--				// if we have plenty of time, sleep to save CPU and
--				// wake up slightly before the target time
--				if sleepTimeNs > spinThresholdNs {
--					time.Sleep(time.Duration(sleepTimeNs - spinThresholdNs))
++
 +			// Track mid-run fps changes (SET_SYSTEM_AV_INFO) so the floor follows the core's fps.
 +			if fps := f.nano.VideoFramerate(); fps > 0 {
 +				if nt := int64(float64(time.Second) / fps); nt != targetFrameTimeNs {
@@ -9819,6 +10034,46 @@ index 6974d59..edb029b 100644
 -				// SpinBatch batches the time check to reduce
 -				// overhead while keeping sub-us precision.
 -				for {
+-					for range batch - 1 {
++			// ── Time-warp pacing ──────────────────────────────────────────────────────────
++			// While fast-forwarding or rewinding the audio clock is moot (handleAudio drops
++			// every sample), so pacing falls back to a pure frame-time floor: 1/ffRatio of a
++			// frame per tick when fast-forwarding, one real frame per tick when rewinding.
++			// The audio epoch is re-pinned to "no debt" every warped tick, so the instant the
++			// player lets go the normal pacer resumes with a clean clock — no sprint, no
++			// forgiveness hole, no repayment.
++			if ff || rw {
++				now := os.Nanotime()
++				audioEpoch = now - int64(float64(audioFrames)/sr*1e9)
++				step := targetFrameTimeNs
++				if ff {
++					step /= ffRatio
++				}
++				deadline := floorNext
++				// A stall (or the moment of engage, when floorNext is a full audio deadline
++				// away) must not trigger a catch-up sprint — warp pacing is relative to now.
++				if deadline < now-step*lateFramesThreshold || deadline > now+step*lateFramesThreshold {
++					deadline = now
++				}
++				if sleepNs := deadline - now; sleepNs > 0 {
++					if sleepNs > spinThresholdNs {
++						time.Sleep(time.Duration(sleepNs - spinThresholdNs))
+ 					}
+-					if os.Nanotime() >= deadline {
+-						break
++					for os.Nanotime() < deadline {
++						for range batch - 1 {
++						}
++					}
++					f.skipVideo = false
++				} else {
++					diagNoSleep++
++					f.skipVideo = true
++				}
++				floorNext = deadline + step
++				continue
++			}
++
 +			// Audio deadline: when real-time SHOULD be, given the audio produced so far.
 +			audioDeadline := audioEpoch + int64(float64(audioFrames)/sr*1e9)
 +			// Floor: never run faster than the core fps (covers silence + no-audio cores).
@@ -9886,11 +10141,8 @@ index 6974d59..edb029b 100644
 +					time.Sleep(time.Duration(sleepNs - spinThresholdNs))
 +				}
 +				for os.Nanotime() < deadline {
- 					for range batch - 1 {
++					for range batch - 1 {
  					}
--					if os.Nanotime() >= deadline {
--						break
--					}
  				}
  				f.skipVideo = false
  			} else {
@@ -10013,8 +10265,8 @@ index 6974d59..edb029b 100644
 +				continue
  			}
 +			removed++
- 		}
- 	}
++		}
++	}
 +	f.log.Info().Msgf("core cache purged: %d entr(ies), ~%v freed, now owned by build %v",
 +		removed, byteCount(freed), id)
 +
@@ -10032,7 +10284,7 @@ index 6974d59..edb029b 100644
 +	_ = filepath.WalkDir(root, func(_ string, d fs.DirEntry, err error) error {
 +		if err != nil || d.IsDir() {
 +			return nil
-+		}
+ 		}
 +		if fi, err := d.Info(); err == nil {
 +			total += fi.Size()
 +		}
@@ -10107,10 +10359,10 @@ index 6974d59..edb029b 100644
 +	if f.ra != nil {
 +		f.ra.Close()
 +		f.ra = nil
-+	}
+ 	}
  }
  
- func (f *Frontend) LoadGame(path string) error {
+@@ -395,13 +957,428 @@ func (f *Frontend) LoadGame(path string) error {
  	if f.UniqueSaveDir {
  		f.copyFsMaybe(path)
  	}
@@ -10540,7 +10792,7 @@ index 6974d59..edb029b 100644
  func (f *Frontend) FrameSize() (int, int)         { return f.nano.BaseWidth(), f.nano.BaseHeight() }
  func (f *Frontend) HasSave() bool                 { return os.Exists(f.HashPath()) }
  func (f *Frontend) HashPath() string              { return f.storage.GetSavePath() }
-@@ -419,9 +1266,16 @@ func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
+@@ -419,9 +1396,16 @@ func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
  func (f *Frontend) SetSessionId(name string)      { f.storage.SetMainSaveName(name) }
  func (f *Frontend) SetDataCb(cb func([]byte))     { f.onData = cb }
  func (f *Frontend) SetVideoCb(ff func(app.Video)) { f.onVideo = ff }
@@ -10560,7 +10812,7 @@ index 6974d59..edb029b 100644
  
  func (f *Frontend) Input(port int, device byte, data []byte) {
  	switch Device(device) {
-@@ -434,6 +1288,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
+@@ -434,6 +1418,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
  	}
  }
  
@@ -10570,7 +10822,7 @@ index 6974d59..edb029b 100644
  func (f *Frontend) ViewportCalc() (nw int, nh int) {
  	w, h := f.FrameSize()
  	nw, nh = w, h
-@@ -478,6 +1335,9 @@ func (f *Frontend) Close() {
+@@ -478,6 +1465,9 @@ func (f *Frontend) Close() {
  
  // Save writes the current state to the filesystem.
  func (f *Frontend) Save() error {
@@ -10580,7 +10832,7 @@ index 6974d59..edb029b 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -501,6 +1361,9 @@ func (f *Frontend) Save() error {
+@@ -501,6 +1491,9 @@ func (f *Frontend) Save() error {
  
  // Load restores the state from the filesystem.
  func (f *Frontend) Load() error {
@@ -10590,7 +10842,96 @@ index 6974d59..edb029b 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -537,6 +1400,13 @@ func (f *Frontend) autosave(periodSec int) {
+@@ -522,6 +1515,88 @@ func (f *Frontend) Load() error {
+ 	return nil
+ }
+ 
++// ── Fast-forward / rewind (t=114/115) ────────────────────────────────────────────────────────────
++
++// SetFastForward engages/releases fast-forward. Safe on every core — it only changes pacing
++// (and mutes/thins the AV callbacks); nothing is serialized. Called off the coordinator's
++// command goroutine; the emulator loop reads the flag each tick.
++func (f *Frontend) SetFastForward(on bool) {
++	if f.ffOn.Swap(on) != on {
++		f.log.Info().Msgf("fast-forward %v", map[bool]string{true: "engaged", false: "released"}[on])
++	}
++}
++
++// SetRewind engages/releases rewind. No-op on cores without an armed rewind ring (config
++// Rewind flag + the serialize-safety gate in LoadCore) — the browser gates its UI by system,
++// but the wire is not to be trusted with a serialize on a core that can't take one.
++func (f *Frontend) SetRewind(on bool) {
++	if on && !f.rewindArmed.Load() {
++		return
++	}
++	if f.rwOn.Swap(on) != on {
++		f.log.Info().Msgf("rewind %v", map[bool]string{true: "engaged", false: "released"}[on])
++	}
++}
++
++// rewindStep walks the ring backward: on each step boundary (and immediately on engage) it pops
++// the newest snapshot and restores it, then the loop's normal Tick replays forward from there —
++// net motion one step back per step of real time, the standard frontend rewind shape. When the
++// ring runs dry the last popped state is re-restored, freezing the game at the oldest recorded
++// moment for as long as the player holds rewind. Emulator goroutine only.
++func (f *Frontend) rewindStep() {
++	if !f.rewindPopNow && f.rewindTicks%uint64(f.rewindStepFrames) != 0 {
++		return
++	}
++	f.rewindPopNow = false
++	st := f.rewindHold
++	if n := len(f.rewindSnaps); n > 0 {
++		st = f.rewindSnaps[n-1]
++		f.rewindSnaps[n-1] = nil
++		f.rewindSnaps = f.rewindSnaps[:n-1]
++		f.rewindBytes -= len(st)
++		f.rewindHold = st
++	}
++	if st == nil {
++		return // nothing recorded yet this session
++	}
++	f.mu.Lock()
++	err := nanoarch.RestoreSaveState(st)
++	f.mu.Unlock()
++	if err != nil {
++		f.log.Warn().Err(err).Msg("rewind: restore failed; skipping a step")
++	}
++}
++
++// rewindCapture appends the current state to the ring and evicts the oldest past the memory
++// cap. A core that keeps failing to serialize (3 in a row) loses rewind for the session — a
++// per-step error would otherwise log sixty times a minute for nothing. Emulator goroutine only.
++func (f *Frontend) rewindCapture() {
++	f.mu.Lock()
++	st, err := nanoarch.SaveState()
++	f.mu.Unlock()
++	if err != nil {
++		f.rewindFails++
++		if f.rewindFails >= 3 {
++			f.rewindArmed.Store(false)
++			f.log.Warn().Err(err).Msg("rewind: serialize keeps failing — rewind disabled for this session")
++		}
++		return
++	}
++	f.rewindFails = 0
++	f.rewindSnaps = append(f.rewindSnaps, st)
++	f.rewindBytes += len(st)
++	for f.rewindBytes > f.rewindMaxBytes && len(f.rewindSnaps) > 1 {
++		f.rewindBytes -= len(f.rewindSnaps[0])
++		f.rewindSnaps[0] = nil
++		f.rewindSnaps = f.rewindSnaps[1:]
++	}
++	// The [1:] reslices above leak backing-array headroom as the window slides; re-pack when the
++	// dead prefix dwarfs the live payload so a long session's header array can't creep unbounded.
++	if cap(f.rewindSnaps) > 2*len(f.rewindSnaps)+1024 {
++		f.rewindSnaps = append(make([][]byte, 0, len(f.rewindSnaps)+64), f.rewindSnaps...)
++	}
++}
++
+ func (f *Frontend) IsSupported() error {
+ 	return graphics.RGFWTryInit()
+ }
+@@ -537,6 +1612,13 @@ func (f *Frontend) autosave(periodSec int) {
  			if f.nano.IsStopped() {
  				return
  			}
@@ -84549,7 +84890,7 @@ index 0000000..3ec6735
 +/* auto-generated TU wrapper: compiles rcheevos/src/rhash/md5.c as its own translation unit (avoids amalgamation symbol collisions) */
 +#include "rcheevos/src/rhash/md5.c"
 diff --git a/pkg/worker/coordinator.go b/pkg/worker/coordinator.go
-index 2840a0e..c55a441 100644
+index 2840a0e..aa70436 100644
 --- a/pkg/worker/coordinator.go
 +++ b/pkg/worker/coordinator.go
 @@ -7,7 +7,6 @@ import (
@@ -84574,11 +84915,22 @@ index 2840a0e..c55a441 100644
  
  	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
  		var out api.Out
+@@ -92,6 +90,10 @@ func (c *coordinator) HandleRequests(w *Worker) chan struct{} {
+ 			err = api.Do(x, func(d api.GameQuitRequest) { c.HandleQuitGame(d, w) })
+ 		case api.ResetGame:
+ 			err = api.Do(x, func(d api.ResetGameRequest) { c.HandleResetGame(d, w) })
++		case api.FastForwardGame:
++			err = api.Do(x, func(d api.FastForwardGameRequest) { c.HandleFastForwardGame(d, w) })
++		case api.RewindGame:
++			err = api.Do(x, func(d api.RewindGameRequest) { c.HandleRewindGame(d, w) })
+ 		default:
+ 			c.log.Warn().Msgf("unhandled packet type %v", x.T)
+ 		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..21b2be7 100644
+index 6972cc7..97a7759 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,657 @@
+@@ -1,310 +1,700 @@
 -package worker
 -
 -import (
@@ -84903,6 +85255,7 @@ index 6972cc7..21b2be7 100644
 +	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/capture"
++	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/nanoarch"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
@@ -85463,12 +85816,27 @@ index 6972cc7..21b2be7 100644
 +		w.router.Remove(user)
 +		user.Disconnect()
 +	}
++	releaseTimeWarp(w)
 +}
 +
 +// HandleQuitGame handles cases when a user manually exits the game.
 +func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
 +	if user := w.router.FindUser(rq.Id); user != nil {
 +		w.router.Remove(user)
++	}
++	releaseTimeWarp(w)
++}
++
++// releaseTimeWarp drops fast-forward/rewind whenever ANY player departs. The engage/release
++// pair rides a held chord in the departing player's browser — a tab closed mid-hold never
++// sends the release, and a room stuck at 4x forever is far worse than surviving players
++// having to re-hold their chord after someone leaves.
++func releaseTimeWarp(w *Worker) {
++	if r := w.router.Room(); r != nil {
++		if emu, ok := r.App().(*libretro.Caged); ok {
++			emu.SetFastForward(false)
++			emu.SetRewind(false)
++		}
 +	}
 +}
 +
@@ -85482,6 +85850,33 @@ index 6972cc7..21b2be7 100644
 +		return api.OkPacket
 +	}
 +	return api.ErrPacket
++}
++
++// HandleFastForwardGame / HandleRewindGame toggle the room's time manipulation (t=114/115).
++// Checked cast, unlike the save/reset handlers above: a capture-lane room's App is a
++// *capture.App, not a *libretro.Caged, and a stray packet there must no-op, not panic the
++// worker. Both taint the RetroAchievements run as time-manipulated (RA's own hardcore rule);
++// the taint is sticky until a hard reset, so engage-only is enough.
++func (c *coordinator) HandleFastForwardGame(rq api.FastForwardGameRequest, w *Worker) {
++	r := w.router.FindRoom(rq.Rid)
++	if r == nil {
++		return
++	}
++	if emu, ok := r.App().(*libretro.Caged); ok {
++		emu.SetFastForward(rq.Active)
++		emu.NotifyFastForward(rq.Active)
++	}
++}
++
++func (c *coordinator) HandleRewindGame(rq api.RewindGameRequest, w *Worker) {
++	r := w.router.FindRoom(rq.Rid)
++	if r == nil {
++		return
++	}
++	if emu, ok := r.App().(*libretro.Caged); ok {
++		emu.SetRewind(rq.Active)
++		emu.NotifyFastForward(rq.Active) // rewind is time manipulation too
++	}
 +}
 +
 +func (c *coordinator) HandleSaveGame(rq api.SaveGameRequest, w *Worker) api.Out {
