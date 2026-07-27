@@ -1604,6 +1604,18 @@ emulator:
           # never owed — it would just hold this core permanently above its fps floor. The two settings
           # are mutually exclusive and the worker refuses the combination out loud.
           audioSilenceFill: true
+          # ⚠ RELATED BUT SEPARATE, and the one that actually cost a player something: scummvm.ini's
+          # global [scummvm] section had `music_driver=null` + `opl_driver=null`. `null` is not "unset",
+          # it is ScummVM's real "No music" DEVICE — so every MIDI-scored game (iMUSE/AdLib/GM/MT-32)
+          # threw its score away. Found 2026-07-27 from "music missing at the beginning" of Day of the
+          # Tentacle. Now `adlib` + `nuked` in data/arcade/scummvm-deploy.ini (⚠ data/ is GITIGNORED, so
+          # that file is NOT in this repo — this comment is the tracked record of the setting; the live
+          # copies are <ConfDir>/libretro/system/scummvm.ini on both workers, with .pre-musicdriver.bak
+          # beside them). audioSilenceFill above does NOT fix or mask this: it cannot invent music the
+          # core never produced. It is what made it VISIBLE — silence/s showed DoTT quiet ~80% of the
+          # time while Monkey Island CD, whose music is digital redbook audio through the MIXER rather
+          # than the MIDI device, sat at a clean 48000/s and was never affected. That contrast is the
+          # reason this hid for so long: it is invisible on every digitally-scored game in the catalog.
           # ⚠ REQUIRED by scummvm_pointer_device: "mouse" below — and the reason the first attempt at
           # relative-mouse support shipped DEAD (2026-07-27). RETRO_DEVICE_MOUSE deltas ride a dedicated
           # "mouse" DataChannel, and the worker only OPENS that channel (and the "keyboard" one) when the
