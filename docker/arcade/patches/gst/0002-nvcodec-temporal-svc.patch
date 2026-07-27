@@ -162,7 +162,78 @@
    av1_config->numFwdRefs = NV_ENC_NUM_REF_FRAMES_AUTOSELECT;
 --- a/sys/nvcodec/gstnvh264encoder.cpp
 +++ b/sys/nvcodec/gstnvh264encoder.cpp
-@@ -1628,6 +1628,11 @@
+@@ -89,6 +89,7 @@
+ 
+   /* encoding config */
+   PROP_GOP_SIZE,
++  PROP_TEMPORAL_LAYERS,
+   PROP_B_FRAMES,
+ 
+   /* rate-control params */
+@@ -137,6 +138,7 @@
+ #define DEFAULT_MULTI_PASS        GST_NV_ENCODER_MULTI_PASS_DEFAULT
+ #define DEFAULT_WEIGHTED_PRED     FALSE
+ #define DEFAULT_GOP_SIZE          75
++#define DEFAULT_TEMPORAL_LAYERS   1
+ #define DEFAULT_B_FRAMES          0
+ #define DEFAULT_RATE_CONTROL      GST_NV_ENCODER_RC_MODE_DEFAULT
+ #define DEFAULT_QP                -1
+@@ -183,6 +185,7 @@
+   gboolean weighted_pred;
+ 
+   gint gop_size;
++  guint temporal_layers;
+   guint bframes;
+ 
+   GstNvEncoderRCMode rc_mode;
+@@ -387,6 +390,18 @@
+       g_param_spec_int ("gop-size", "GOP size",
+           "Number of frames between intra frames (-1 = infinite)",
+           -1, G_MAXINT, DEFAULT_GOP_SIZE, param_flags));
++  /* Range is 1-2, NOT the hardware's 4 (AD104 reports NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS=4 for
++   * H.264), on purpose. A 2-layer pyramid's TL1 frames are NON-REFERENCE (nal_ref_idc==0), so a
++   * sender can drop them and what is left is byte-for-byte a legal 30fps stream — no frame_num
++   * gaps, nothing decoder-dependent. At 3+ layers the middle layers ARE references: dropping them
++   * leaves frame_num holes, and our sender identifies droppable frames BY nal_ref_idc, so it could
++   * not even see the difference. Two layers is also what Chrome's own H.264 temporal path ships. */
++  g_object_class_install_property (object_class, PROP_TEMPORAL_LAYERS,
++      g_param_spec_uint ("temporal-layers", "Temporal Layers",
++          "Number of temporal SVC layers (1 = off, 2 = hierarchical-P with non-reference "
++          "odd frames). Frames above the base are not referenced by it, so a sender may drop "
++          "them per-receiver to halve the frame rate without breaking the reference chain",
++          1, 2, DEFAULT_TEMPORAL_LAYERS, param_flags));
+   if (dev_caps->max_bframes > 0) {
+     /**
+      * GstNvD3D11H264Enc:bframes:
+@@ -703,6 +718,7 @@
+   self->multipass = DEFAULT_MULTI_PASS;
+   self->weighted_pred = DEFAULT_WEIGHTED_PRED;
+   self->gop_size = DEFAULT_GOP_SIZE;
++  self->temporal_layers = DEFAULT_TEMPORAL_LAYERS;
+   self->bframes = DEFAULT_B_FRAMES;
+   self->rc_mode = DEFAULT_RATE_CONTROL;
+   self->qp_const = DEFAULT_QP;
+@@ -927,6 +943,9 @@
+     case PROP_GOP_SIZE:
+       update_int (self, &self->gop_size, value, UPDATE_INIT_PARAM);
+       break;
++    case PROP_TEMPORAL_LAYERS:
++      update_uint (self, &self->temporal_layers, value, UPDATE_INIT_PARAM);
++      break;
+     case PROP_B_FRAMES:
+       update_uint (self, &self->bframes, value, UPDATE_INIT_PARAM);
+       break;
+@@ -1063,6 +1082,9 @@
+     case PROP_GOP_SIZE:
+       g_value_set_int (value, self->gop_size);
+       break;
++    case PROP_TEMPORAL_LAYERS:
++      g_value_set_uint (value, self->temporal_layers);
++      break;
+     case PROP_B_FRAMES:
+       g_value_set_uint (value, self->bframes);
+       break;
+@@ -1628,6 +1650,55 @@
    h264_config->chromaFormatIDC = 1;
    if (selected_profile == NV_ENC_H264_PROFILE_HIGH_444_GUID)
      h264_config->chromaFormatIDC = 3;
@@ -171,6 +242,50 @@
 +   * only ever encodes 8-bit. */
 +  h264_config->inputBitDepth = NV_ENC_BIT_DEPTH_8;
 +  h264_config->outputBitDepth = NV_ENC_BIT_DEPTH_8;
++
++  /* Temporal SVC — the H.264 analog of the nvav1enc hunk above, and the reason it exists: the
++   * lobby's codec picker sends WEAK clients (tablets that cannot software-decode AV1) here, which
++   * are exactly the peers a temporal ladder is for. NVENC codes every second frame as a
++   * NON-REFERENCE picture, so the SENDER can drop those per-receiver — one peer takes 30fps while
++   * the room keeps 60, instead of ABR pulling the room's single encode down to the worst link.
++   *
++   * hierarchicalPFrames is the switch; numTemporalLayers is only the count. MEASURED (AD104,
++   * 300 frames, byte-stream/au, one AU per file):
++   *   numTemporalLayers=2 alone .............. 300/300 frames nal_ref_idc>0, 236574 bytes
++   *                                            — byte-identical to temporal-layers=1. INERT.
++   *   + hierarchicalPFrames=1 ................ strict alternation idc=3,0,3,0,... 150/150,
++   *                                            188780 bytes.
++   *
++   * We deliberately do NOT set enableTemporalSVC. It produces a BYTE-IDENTICAL bitstream (188780,
++   * same per-frame sizes) and costs two things: it demands maxNumRefFrames>=4 (init fails with
++   * NV_ENC_ERR_INVALID_PARAM "Number of reference frames are lesser than minimum required" at 1,
++   * 2 and 3 — a bigger DPB for the decoder, bought for nothing), and it prepends an Annex-G SVC
++   * PREFIX NAL (type 14) to every slice: +8..9 bytes/frame of a NAL type that has no business in
++   * a stream we negotiate to Firefox's OpenH264 as Constrained Baseline. disableSVCPrefixNalu
++   * suppresses them, but the cleanest way not to emit a construct is not to ask for it.
++   *
++   * The ladder therefore needs NOTHING on the wire: no Dependency Descriptor, no SVC extension,
++   * no SEI. Layer 1 is simply "the P frames with nal_ref_idc==0", which is also how the sender
++   * recognises them, and dropping them leaves a stream indistinguishable from a 30fps encode.
++   *
++   * Caps on this GPU (queried directly): H.264 SUPPORT_TEMPORAL_SVC=1,
++   * NUM_MAX_TEMPORAL_LAYERS=4, SUPPORT_HIERARCHICAL_PFRAMES=1.
++   *
++   * B-frames are incompatible by construction: hierarchical P IS the reordering scheme, and
++   * bframes>0 would also flip profile auto-selection off Constrained Baseline (see the block
++   * below). Refuse loudly rather than silently produce a pyramid the sender cannot read. */
++  if (self->temporal_layers > 1) {
++    if (config->frameIntervalP > 1) {
++      GST_WARNING_OBJECT (self,
++          "temporal-layers=%u ignored: incompatible with bframes=%u",
++          self->temporal_layers, self->bframes);
++    } else {
++      h264_config->hierarchicalPFrames = 1;
++      h264_config->numTemporalLayers = self->temporal_layers;
++      h264_config->maxTemporalLayers = self->temporal_layers;
++    }
++  }
++
    h264_config->idrPeriod = config->gopLength;
    h264_config->outputAUD = self->aud;
    if (self->repeat_sequence_header) {

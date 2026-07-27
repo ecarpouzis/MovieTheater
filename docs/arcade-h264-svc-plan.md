@@ -118,3 +118,149 @@ Do not improvise an alternative encoder path without checking in.
 - If a verify step fails, roll back (binary/DLL/config backups) before investigating at leisure.
 - Judge results from `D:\ArcadeStorage\logs\glworker*.log` and harness stats — never from
   headless-Chrome smoothness impressions (arcade skill rule).
+
+---
+
+## Results — 2026-07-26 (shipped)
+
+Shipped end to end: gst patch extended, DLL rebuilt + installed, fork commit `800dcac` pushed to
+`github/movietheater-fork`, both worker configs carry `temporal-layers=2`, binaries deployed.
+Every number below is measured on Ziggy (AD104 / RTX 4070 Ti, driver NVENC 13.1, GStreamer 1.28.4).
+
+### P0 — discovery
+
+**Caps (queried directly against nvEncodeAPI, no DLL involved):**
+
+| cap | H.264 | AV1 |
+|---|---|---|
+| `SUPPORT_TEMPORAL_SVC` | 1 | 1 |
+| `NUM_MAX_TEMPORAL_LAYERS` | **4** | 3 |
+| `SUPPORT_HIERARCHICAL_PFRAMES` | 1 | 0 |
+
+So the hardware was never the constraint — as with AV1, only the plumbing was.
+
+**Mechanism — `hierarchicalPFrames`, NOT `enableTemporalSVC`.** Both were prototyped and the
+resulting bitstreams are BYTE-IDENTICAL (188,780 bytes, same per-frame sizes, same pattern).
+`enableTemporalSVC` costs two things and buys nothing:
+
+- it *requires* `maxNumRefFrames >= 4`. Init fails with `NV_ENC_ERR_INVALID_PARAM` and the driver
+  string *"Number of reference frames are lesser than minimum required for temporal / heirarchical
+  coding"* at 1, 2 and 3 refs. That is a larger DPB for every decoder, for no bits saved.
+- it prepends an **Annex-G SVC prefix NAL (type 14)** to every slice (+8..9 bytes/frame). It can be
+  suppressed with `disableSVCPrefixNalu=1` (verified: 0 type-14 NALs after), but the cleanest way
+  not to emit an Annex-G construct into a Constrained Baseline stream is not to ask for it.
+
+Also measured: `numTemporalLayers=2` **alone is inert** — 300/300 frames `nal_ref_idc>0`, output
+byte-identical to `temporal-layers=1`. `hierarchicalPFrames` is the switch; `numTemporalLayers` is
+only the count. 3 layers initializes fine on this GPU but is deliberately unreachable (see below).
+
+**NAL pattern (300 frames, `byte-stream, alignment=au`, one AU per file via `multifilesink`):**
+
+```
+temporal-layers=1:  AUD+P ... 300 AUs, ALL nal_ref_idc=3, 0 non-ref     236,574 bytes
+temporal-layers=2:  AUD+P ... 300 AUs, strict alternation               188,780 bytes
+                    layer pattern 0101010101010101...  (150 base / 150 TL1)
+                    AU composition: 297x "AUD+P", 3x "AUD+SPS+PPS+IDR"
+                    NO type-14 prefix NALs, no SEI, nothing else new
+```
+
+Cleanly separable, and separable by the ONE field the sender can read cheaply: base frames carry
+`nal_ref_idc=3`, TL1 frames carry `nal_ref_idc=0`. Golden AU prefixes are checked into the fork as
+`goldenIDR` / `goldenTL0` / `goldenTL1` in `pkg/network/webrtc/svc_test.go`.
+
+**layerShare — 80, not the 53 the plan assumed.** Base-layer byte fraction by configuration:
+
+| configuration | base share |
+|---|---|
+| 640x480 ball @5000 | 66.3% |
+| 1280x1056 ball @8000 | 66.2% |
+| 1280x1056 smpte @4000 | 81.6% |
+| 1280x1056 ball @1500 | 82.2% |
+| 640x480 snow @5000 | 82.8% |
+
+The ~82% cluster is every case where CBR actually **binds**; 66% only appears when the content is
+too cheap to spend the target rate. A ladder only ever operates in the binding regime, so the
+per-codec entry is `layerShare["h264"][2] = {80, 100}` — just under the binding cluster, and
+pessimistic-by-design (a too-high share cuts the room deeper and drops a layer sooner than needed,
+which is the safe direction; a too-low share would leave a starved peer believed served).
+
+**Consequence, stated plainly: H.264's ladder is REAL but SHALLOW.** A base-only H.264 peer still
+costs ~80% of the room versus AV1's ~28%. The starve cap improves from `est` to only
+`est/0.80 = 1.25x`, not the 1.9x the plan projected off the AV1 share. The win that survives is the
+*first* response to congestion being "30 fps for that peer" instead of "fewer bits for everyone".
+
+### P1 — gst patch
+
+`0002-nvcodec-temporal-svc.patch` now carries a `gstnvh264encoder.cpp` section (the old bit-depth
+hunk is folded into it). Property `temporal-layers`, **range-capped at 1-2**, default 1. The cap is
+the enforcement point for the plan's load-bearing decision: at 3+ layers the middle layer is a
+reference frame, `nal_ref_idc` stops separating the layers, and the sender — which identifies
+droppable frames *by* `nal_ref_idc` — could not even see the difference. Config wiring also refuses
+to engage when `bframes > 0` (logs a warning instead of silently building an unreadable pyramid).
+
+Verified against the INSTALLED DLL, not the prototype:
+
+- `nvh264enc` and `nvautogpuh264enc` (the d3d11 zero-copy element) both expose `temporal-layers`;
+  `nvav1enc` keeps `temporal-layers` + `intra-refresh-period` + `intra-refresh-count`.
+- `temporal-layers=1` output is **byte-identical** to the pre-change baseline (236,574 bytes, 300
+  reference frames) — the property really does default OFF.
+- `temporal-layers=2` reproduces the pattern above, byte-identical to the prototype build.
+
+Backups: `libgstnvcodec.dll.pre-h264svc.bak` (the previous PATCHED build — the important one) beside
+the older `.pre-intrarefresh.bak` (stock).
+
+> WARNING — build-script gotchas, unchanged by this work: `build-gst-nvcodec-patched.ps1` needs
+> **`patch.exe`** on PATH (`C:\Program Files\Git\usr\bin`), and `D:\msys64\usr\bin` must NOT come
+> before System32 (msys `tar` fails the `-C D:\...` extract and the script throws "extract failed").
+> Its running-worker guard also trips on the CAPTURE worker, which is never to be stopped; the
+> install was therefore done by hand after the build, with the same verification the script does.
+
+### P2 — fork (`800dcac`)
+
+- `svc.go`: `h264TemporalID` (Annex B walk to the first VCL NAL, answer from `nal_ref_idc`;
+  unparseable => 0 = "send it"), `SetVideoCodec`/`VideoCodec` plus a `temporalID(codec, frame)`
+  dispatch, and `CLOUD_GAME_SVC_FORCE_LAYER` (read once at startup).
+- `webrtc.go` `videoSender()`: dispatches by the room's codec instead of calling `av1TemporalID`
+  unconditionally, and applies the force-layer override.
+- `gstreamer.go`: `Codec()` — read from the same `VideoSettings()` lookup that selects the element,
+  so the tagger can never disagree with the bitstream.
+- `coordinatorhandlers.go`: sets codec and layers together; WARNs loudly when the force override is
+  on (a knob that silently halves everyone's frame rate must announce itself).
+- `abr.go`: `layerShare` is now `[codec][layers][l]`; `pickLayer` takes the share slice. An unknown
+  codec/layer combination means no ladder, exactly as before SVC existed.
+- Tests: golden H.264 AUs, 3-byte start codes, parameter-set runs, garbage inputs, cross-codec
+  dispatch, and an H.264-specific `pickLayer` case.
+
+### P3 — live verification (genesis, 960x672, theater.carpouzis.com, harness `arcade-diag`)
+
+| check | result |
+|---|---|
+| h264 room logs the ladder | `Temporal SVC: 2 layers, h264` / `abr: start 3000 kbps (floor 1500, ceiling 5000, h264 temporal layers 2, base share 80%)` |
+| h264 room quality | **60 fps**, 0 freezes, 0 dropped, 0 nack, 0 pli, decode 0.3-0.5 ms |
+| ABR assigns a layer | `abr: peer layer 7 -> 1 (estimate 7354 kbps, room sends 3000)` |
+| **base layer alone is decodable** (`CLOUD_GAME_SVC_FORCE_LAYER=0`) | **exactly 30 fps**, 0 freezes, 0 nack, 0 pli, decode 0.3-0.6 ms; presentation-interval histogram **437 of 449 in the 33 ms bucket** — an evenly paced 30 fps stream, not a stuttering 60 |
+| AV1 regression | `Temporal SVC: 3 layers, av1`, base share 28%, 60 fps, 0 freezes — unchanged |
+
+### What is NOT proven
+
+- **The real thing: a congested tablet.** Everything above ran on a healthy LAN, so no peer was ever
+  *forced* down a layer by congestion — the drop path was proven with the diagnostic override, not
+  by a bad link. That test is Eric's. What to look for in `D:\ArcadeStorage\logs\glworker*.log`:
+  `abr: peer layer 1 -> 0` lines (now possible in h264 rooms, previously impossible), and
+  starve/cut lines becoming rarer and shallower than the 2026-07-26 session's `11370 -> 1964`.
+- **Per-peer independence in an h264 room.** The force knob is room-wide, so "one peer at 30 while
+  another keeps 60" was not demonstrated. The mechanism is per-peer by construction (each Peer owns
+  its own `TrackLocalStaticSample` and its own `maxLayer`) and is already proven for AV1, but it has
+  not been observed for h264.
+- **Long-run quality of the layered encode.** The 20-25 s harness runs show no artifacts, but nobody
+  has played a full session on a layered h264 stream. Non-reference frames are coded cheaper by
+  construction, so a discerning eye may find every other frame slightly softer.
+
+### Rollback (in increasing order of severity)
+
+1. **Config only** — drop `temporal-layers=2` from the h264 `params:` in
+   `D:\ArcadeStorage\worker-gl\config.yaml` and `worker-gl-2\config.yaml` (dated `.pre-h264svc-*`
+   backups sit beside them) and recycle. The worker then reads 1 layer and never drops a frame; the
+   DLL and binary are unchanged and AV1 is untouched.
+2. **Binary** — `bin/worker.pre-h264svc.exe` -> `bin/worker.exe`.
+3. **DLL** — `libgstnvcodec.dll.pre-h264svc.bak` -> `libgstnvcodec.dll` (workers stopped).

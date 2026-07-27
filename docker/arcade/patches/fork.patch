@@ -4098,13 +4098,18 @@ index 0000000..4b247b7
 +}
 diff --git a/pkg/network/webrtc/svc.go b/pkg/network/webrtc/svc.go
 new file mode 100644
-index 0000000..de4d34a
+index 0000000..00d5848
 --- /dev/null
 +++ b/pkg/network/webrtc/svc.go
-@@ -0,0 +1,87 @@
+@@ -0,0 +1,201 @@
 +package webrtc
 +
-+import "sync/atomic"
++import (
++	"os"
++	"strconv"
++	"strings"
++	"sync/atomic"
++)
 +
 +// Temporal SVC (arcade). The room's ONE encoder emits a hierarchical-P pyramid: layer 0 (the base)
 +// references only itself, so frames in the upper layers can be discarded by the SENDER without
@@ -4123,6 +4128,10 @@ index 0000000..de4d34a
 +//
 +// so a base-layer-only peer costs ~28% of the room's bitrate: the room may run ~3.5x that peer's
 +// estimate and still serve it.
++//
++// H.264 (2026-07-26) joins the same machinery with a DIFFERENT bitstream tell and a much shallower
++// ladder — see h264TemporalID and layerShare in pkg/worker/abr.go. Everything above still holds:
++// the drop is still "skip WriteSample for this peer", the browser still learns nothing.
 +
 +// svcLayers is how many temporal layers the encoder is CURRENTLY producing (0/1 = not layered).
 +// Process-global for the same reason SetPacing and OnKeyframeRequest are: one worker = one room, and
@@ -4135,6 +4144,111 @@ index 0000000..de4d34a
 +
 +// TemporalLayers reports the encoder's layer count (0/1 = SVC off).
 +func TemporalLayers() int { return int(svcLayers.Load()) }
++
++// svcCodec is the codec the room's encoder is CURRENTLY producing, lower-cased. Process-global for
++// exactly the same reason as svcLayers, and set from the same place — the layer count and the
++// bitstream syntax that carries it must be decided together or the tagger reads the wrong bytes.
++//
++// We dispatch on this rather than sniffing each frame: an AV1 temporal unit and an H.264 access unit
++// are both "a byte slice starting with a header", and a heuristic that guessed wrong would silently
++// drop the wrong frames — the failure mode is a peer's video quietly disintegrating, with nothing in
++// the log. The worker already knows the answer for certain.
++var svcCodec atomic.Value // string
++
++// SetVideoCodec records the codec of the stream the send path is about to carry. Called when the
++// media pipe is built, alongside SetTemporalLayers.
++func SetVideoCodec(c string) { svcCodec.Store(strings.ToLower(c)) }
++
++// VideoCodec reports the codec the send path believes it is carrying ("" = unknown).
++func VideoCodec() string { c, _ := svcCodec.Load().(string); return c }
++
++// temporalID returns which temporal layer a coded frame belongs to (0 = base = never dropped).
++// Unknown codec => 0: an un-taggable stream is one we send whole, never one we thin at random.
++func temporalID(codec string, frame []byte) int {
++	switch codec {
++	case "av1":
++		return av1TemporalID(frame)
++	case "h264":
++		return h264TemporalID(frame)
++	}
++	return 0
++}
++
++// svcForceLayer caps EVERY peer at a layer, overriding ABR, when CLOUD_GAME_SVC_FORCE_LAYER is set
++// (-1 = unset = off). Purely diagnostic, and it exists because the thing this whole file claims —
++// "the base layer alone is a complete, decodable stream" — is otherwise only provable by finding a
++// genuinely congested client. With this, one env var on the worker proves it in a healthy room:
++// force 0, and the browser must show a clean 30 fps with zero decode errors.
++//
++// Read once at startup: a room's frames go through this on the hot path, and a knob that only ever
++// changes between worker restarts has no business being re-read 60 times a second.
++var svcForceLayer = func() int32 {
++	v, ok := os.LookupEnv("CLOUD_GAME_SVC_FORCE_LAYER")
++	if !ok {
++		return -1
++	}
++	n, err := strconv.Atoi(v)
++	if err != nil || n < 0 {
++		return -1
++	}
++	return int32(n)
++}()
++
++// ForcedLayer reports the diagnostic override (-1 = off). Exported so the worker can SAY it is on:
++// a knob that silently halves every player's frame rate must never be discoverable only by staring
++// at fps, and env vars outlive the session that set them.
++func ForcedLayer() int { return int(svcForceLayer) }
++
++// h264TemporalID reads which temporal layer an H.264 access unit belongs to.
++//
++// There is no temporal_id field to read: our encoder builds the 2-layer pyramid with NVENC's
++// hierarchicalPFrames, which codes every second frame as a NON-REFERENCE picture and signals it the
++// only way H.264 has — nal_ref_idc == 0 in the slice NAL header. That is not a workaround, it is the
++// property that makes the frame droppable in the first place: nothing references it, so removing it
++// leaves a stream that is byte-for-byte a legal 30 fps encode. No SVC prefix NALs (type 14) are
++// emitted; see docker/arcade/patches/gst/0002-nvcodec-temporal-svc.patch for why we chose the
++// mechanism that cannot produce them.
++//
++// The caps are byte-stream/au, so the input is one Annex B access unit: [AUD] [SPS PPS]? [SEI]?
++// [slice]. We walk start codes to the first VCL NAL (type 1 non-IDR, type 5 IDR) — a handful of
++// bytes in practice — and answer from its nal_ref_idc.
++//
++// Returns 0 (base layer = never dropped) for anything unparseable and for every non-layered stream:
++// with temporal-layers=1 NVENC emits no non-reference frames at all (verified: 0 of 300). A parse
++// failure therefore degrades to "send it", never to "silently drop the room's video".
++func h264TemporalID(frame []byte) int {
++	for i := 0; i+2 < len(frame); i++ {
++		if frame[i] != 0 || frame[i+1] != 0 {
++			continue
++		}
++		// 00 00 01 or 00 00 00 01. Emulation prevention (00 00 03) guarantees this sequence cannot
++		// occur inside a NAL payload, so a match is always a real start code.
++		j := i + 2
++		if frame[j] == 0 {
++			j++
++		}
++		if j >= len(frame) || frame[j] != 1 {
++			continue
++		}
++		j++
++		if j >= len(frame) {
++			return 0
++		}
++		h := frame[j]
++		if h&0x80 != 0 {
++			return 0 // forbidden_zero_bit set: this is not a NAL header, so we are not parsing H.264
++		}
++		switch h & 0x1F {
++		case 1, 5: // coded slice, non-IDR / IDR — the picture, and what carries the layer
++			if (h>>5)&3 == 0 { // nal_ref_idc == 0: nothing will ever reference this frame
++				return 1
++			}
++			return 0
++		}
++		i = j // parameter sets, SEI, AUD: keep walking to the slice
++	}
++	return 0
++}
 +
 +// av1TemporalID reads temporal_id out of an AV1 temporal unit's OBU extension header.
 +//
@@ -4191,10 +4305,10 @@ index 0000000..de4d34a
 +}
 diff --git a/pkg/network/webrtc/svc_test.go b/pkg/network/webrtc/svc_test.go
 new file mode 100644
-index 0000000..2a3570c
+index 0000000..7182664
 --- /dev/null
 +++ b/pkg/network/webrtc/svc_test.go
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,165 @@
 +package webrtc
 +
 +import "testing"
@@ -4283,8 +4397,85 @@ index 0000000..2a3570c
 +		t.Fatalf("base-layer frame parsed as tid %d; it would be dropped for a capped peer", tid)
 +	}
 +}
++
++// GOLDEN access-unit prefixes, captured verbatim from nvh264enc with the arcade's own encoder params
++// (preset=p6 tune=ultra-low-latency rc-mode=cbr gop-size=120 repeat-sequence-header=true
++// temporal-layers=2), 300 frames dumped one AU per file. Only the leading bytes are kept: the parser
++// stops at the first VCL NAL header, and a hand-written slice would not prove the AU LAYOUT — which
++// is the part that broke naive parsers (an AUD comes first, so "read byte 4" answers 9 forever).
++var (
++	// AUD(9) SPS(7) ... — the IDR that opens the stream. nal_ref_idc=3.
++	goldenIDR = []byte{0x00, 0x00, 0x00, 0x01, 0x09, 0x10, 0x00, 0x00, 0x00, 0x01,
++		0x67, 0x42, 0xc0, 0x1f, 0x95, 0xa8, 0x28, 0x0f, 0x6c, 0x05}
++	// AUD(9) then slice header 0x01 = nal_ref_idc 0, type 1: the droppable half of the pyramid.
++	goldenTL1 = []byte{0x00, 0x00, 0x00, 0x01, 0x09, 0x30, 0x00, 0x00, 0x00, 0x01,
++		0x01, 0xe0, 0x20, 0x5f, 0x80, 0x21, 0xc1, 0x3e, 0x27, 0x82}
++	// AUD(9) then 0x61 = nal_ref_idc 3, type 1: a reference P frame, the base layer.
++	goldenTL0 = []byte{0x00, 0x00, 0x00, 0x01, 0x09, 0x30, 0x00, 0x00, 0x00, 0x01,
++		0x61, 0xe0, 0x20, 0x10, 0xf0, 0x04, 0x38, 0x27, 0xc4, 0xf0}
++)
++
++func TestH264TemporalID(t *testing.T) {
++	tests := []struct {
++		name string
++		in   []byte
++		want int
++	}{
++		{"golden IDR", goldenIDR, 0},
++		{"golden base P (nal_ref_idc=3)", goldenTL0, 0},
++		{"golden TL1 P (nal_ref_idc=0)", goldenTL1, 1},
++
++		// 3-byte start codes are legal Annex B too; nvh264enc happens to emit 4-byte ones, but the
++		// parser must not depend on that.
++		{"3-byte start codes", []byte{0x00, 0x00, 0x01, 0x09, 0x30, 0x00, 0x00, 0x01, 0x01, 0xe0}, 1},
++
++		// An SPS/PPS/SEI run ahead of the slice must be walked over, not answered from.
++		{"parameter sets before a non-ref slice", []byte{
++			0x00, 0x00, 0x00, 0x01, 0x09, 0x30,
++			0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0xc0, 0x1f,
++			0x00, 0x00, 0x00, 0x01, 0x68, 0xce, 0x3c, 0x80,
++			0x00, 0x00, 0x00, 0x01, 0x06, 0x05, 0x01, 0x80,
++			0x00, 0x00, 0x00, 0x01, 0x01, 0xe0, 0x20, 0x5f}, 1},
++
++		// Garbage must read as base layer: dropping is the dangerous direction. Anything that returned
++		// 1 here would silently thin a stream we cannot actually parse.
++		{"empty", []byte{}, 0},
++		{"no start code at all", []byte{0xde, 0xad, 0xbe, 0xef}, 0},
++		{"truncated after start code", []byte{0x00, 0x00, 0x00, 0x01}, 0},
++		{"forbidden_zero_bit set", []byte{0x00, 0x00, 0x00, 0x01, 0x81, 0x00}, 0},
++		{"non-VCL only (AUD, no slice)", []byte{0x00, 0x00, 0x00, 0x01, 0x09, 0x30}, 0},
++	}
++
++	for _, tc := range tests {
++		t.Run(tc.name, func(t *testing.T) {
++			if got := h264TemporalID(tc.in); got != tc.want {
++				t.Errorf("h264TemporalID() = %d, want %d", got, tc.want)
++			}
++		})
++	}
++}
++
++// The codec dispatch must never cross the wires: an H.264 AU fed to the AV1 parser (or an unknown
++// codec) has to answer 0, because 0 is the only answer that cannot destroy a stream.
++func TestTemporalIDDispatch(t *testing.T) {
++	body := make([]byte, 64)
++	av1TL2 := append(obu(obuTD, 0, false, nil), obu(obuFrame, 2, true, body)...)
++
++	if got := temporalID("h264", goldenTL1); got != 1 {
++		t.Errorf(`temporalID("h264", TL1) = %d, want 1`, got)
++	}
++	if got := temporalID("av1", av1TL2); got != 2 {
++		t.Errorf(`temporalID("av1", tid=2) = %d, want 2`, got)
++	}
++	if got := temporalID("", goldenTL1); got != 0 {
++		t.Errorf(`temporalID("", TL1) = %d, want 0 (unknown codec must send everything)`, got)
++	}
++	if got := temporalID("vp8", av1TL2); got != 0 {
++		t.Errorf(`temporalID("vp8", ...) = %d, want 0`, got)
++	}
++}
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..89f6d1e 100644
+index b342b6b..6b6d3cd 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,14 @@ import (
@@ -4526,7 +4717,7 @@ index b342b6b..89f6d1e 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -221,17 +375,90 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
+@@ -221,17 +375,94 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
  }
  
  func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
@@ -4592,7 +4783,11 @@ index b342b6b..89f6d1e 100644
 +			}
 +			dur := f.dur
 +			if svcLayers.Load() > 1 {
-+				if int32(av1TemporalID(f.data)) > p.maxLayer.Load() {
++				maxL := p.maxLayer.Load()
++				if svcForceLayer >= 0 && svcForceLayer < maxL {
++					maxL = svcForceLayer // diagnostic override (see svc.go)
++				}
++				if int32(temporalID(VideoCodec(), f.data)) > maxL {
 +					p.pendingNanos.Add(int64(dur)) // this peer is capped below this layer
 +					continue
 +				}
@@ -4619,7 +4814,7 @@ index b342b6b..89f6d1e 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -250,6 +477,22 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -250,6 +481,22 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  }
  
  func (p *Peer) Disconnect() {
@@ -4642,7 +4837,7 @@ index b342b6b..89f6d1e 100644
  	if p.c == nil {
  		return
  	}
-@@ -261,6 +504,15 @@ func (p *Peer) Disconnect() {
+@@ -261,6 +508,15 @@ func (p *Peer) Disconnect() {
  }
  
  func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
@@ -4658,7 +4853,7 @@ index b342b6b..89f6d1e 100644
  	if p.v, err = newTrack("video", "video", vCodec); err != nil {
  		return err
  	}
-@@ -274,20 +526,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +530,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -4708,7 +4903,7 @@ index b342b6b..89f6d1e 100644
  			}
  		}()
  	}
-@@ -313,3 +591,29 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +595,29 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -5499,10 +5694,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..9c2fdd2
+index 0000000..bdba174
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,356 @@
+@@ -0,0 +1,405 @@
 +package worker
 +
 +import (
@@ -5534,10 +5729,14 @@ index 0000000..9c2fdd2
 +//
 +//  1. The room bitrate follows the peers we can actually SERVE at their assigned layer. A peer that
 +//     has been dropped to base layer no longer vetoes the room's quality, because the bits it
-+//     receives are already only ~28% of what we send.
++//     receives are already only ~28% of what we send (AV1, 3 layers).
 +//  2. A peer drags the room down only when even the BASE layer will not fit down its link. Then we do
 +//     lower the room — but only to what base layer needs (estimate / baseShare), which is ~3.5x
 +//     higher than the old "drop the room to the worst estimate" behaviour.
++//
++// How much of that a room actually gets depends on the CODEC — see layerShare below. AV1 has the
++// deep ladder; H.264's 2-layer hierarchical P shaves only ~20%, so there the win is mostly (1): the
++// first answer to a weak peer is 30 fps for it, not fewer bits for everyone.
 +const (
 +	abrTick = time.Second
 +
@@ -5573,12 +5772,13 @@ index 0000000..9c2fdd2
 +	// STARVE PATH hysteresis + cut clamp. A starved peer caps the room IMMEDIATELY — it got none of
 +	// the two-tick confirmation the backoff (lowTicks) and layer (abrLayerDownTicks) paths get, even
 +	// though it is fed by the same noisy signal and the comment above says why that signal lies.
-+	// With a temporal ladder the cap is est/baseShare (~3.5x est), which absorbs the noise. WITHOUT
-+	// one — H.264 gets layers==1, because the SVC path is AV1-only (svc.go av1TemporalID) — baseShare
-+	// is 100% and the cap IS the peer's raw estimate. So the codec we tell tablet users to pick is
-+	// exactly the codec that turns one misread microburst into a cliff. Measured on an older tablet
-+	// (h264, ceiling 16000): 11370 -> 1964 kbps in ONE tick, and 46 starve events in one session,
-+	// each followed by a 15%/tick climb straight back into the next one.
++	// With a temporal ladder the cap is est/baseShare, which absorbs the noise. WITHOUT one baseShare
++	// is 100% and the cap IS the peer's raw estimate — and H.264 had no ladder at all until 2026-07-26
++	// (the tagger was AV1-only), so the codec we tell tablet users to pick was exactly the codec that
++	// turned one misread microburst into a cliff. Measured on an older tablet (h264, ceiling 16000):
++	// 11370 -> 1964 kbps in ONE tick, and 46 starve events in one session, each followed by a 15%/tick
++	// climb straight back into the next one. H.264 now gets 2 layers (baseShare 80% => a 1.25x cap),
++	// which is a far shallower cushion than AV1's 3.5x — so these two guards stay load-bearing there.
 +	abrStarveTicks = 2  // confirm a starve like everything else before letting it cap the room
 +	abrMaxCutPct   = 70 // and never cut below this % of current in one tick — staircase, not cliff
 +
@@ -5607,15 +5807,57 @@ index 0000000..9c2fdd2
 +	abrCongHoldTicks = 12
 +)
 +
-+// layerShare[n][l] = the percentage of the encoder's bitrate a peer receives when it is fed temporal
-+// layers 0..l of an n-layer stream. Measured off nvav1enc (see svc.go). These shift with content, so
-+// they are used only to CHOOSE a layer and are re-checked every tick against the peer's real
-+// estimate — an over-optimistic share costs one extra tick of backoff, not a broken stream.
-+var layerShare = map[int][]int{
-+	1: {100},
-+	2: {53, 100},
-+	3: {28, 54, 100},
++// layerShare[codec][n][l] = the percentage of the encoder's bitrate a peer receives when it is fed
++// temporal layers 0..l of an n-layer stream. These shift with content, so they are used only to
++// CHOOSE a layer and are re-checked every tick against the peer's real estimate — an over-optimistic
++// share costs one extra tick of backoff, not a broken stream.
++//
++// PER CODEC, because the two encoders build very different ladders out of the same idea. Measured
++// the same way for both (300 frames, one access unit per file, sum the bytes of the frames a
++// base-only peer would still receive):
++//
++//	nvav1enc, 640x480 ball @5000: 3 layers -> 28 / 54 / 100    2 layers -> 53 / 100
++//	nvh264enc, hierarchical P:    2 layers -> 66..83 / 100     (no 3-layer entry — see below)
++//
++// H.264's spread is the interesting part. Base share by configuration:
++//
++//	640x480  ball  @5000 ... 66.3%   (CBR target not binding — content too cheap to spend it)
++//	1280x1056 ball @8000 ... 66.2%
++//	1280x1056 smpte@4000 ... 81.6%
++//	1280x1056 ball @1500 ... 82.2%   <- a struggling room
++//	640x480  snow  @5000 ... 82.8%
++//
++// The ~82% cluster is every case where CBR actually binds, which is precisely the regime a ladder
++// operates in: nobody drops a layer in a room with bits to spare. So 80 — just under that cluster,
++// far under the cheap-content 66 — is the honest number, and being slightly PESSIMISTIC about the
++// saving is the safe direction (it cuts the room a little deeper and drops a layer a little sooner
++// than strictly needed, rather than believing a peer is served when it is not).
++//
++// Consequence worth stating plainly: an H.264 base-only peer still costs ~80% of the room, not the
++// ~28% an AV1 one does. The ladder is real but SHALLOW — it buys a ~1.25x starve cap and, far more
++// importantly, makes the FIRST response to congestion "30 fps for that peer" instead of "fewer bits
++// for everyone". It is not a substitute for AV1's ladder.
++//
++// No 3-layer H.264 entry, deliberately: at 3 layers the middle layer is a REFERENCE frame, so the
++// nal_ref_idc tell that h264TemporalID reads no longer separates the layers, and dropping them would
++// punch frame_num holes into a stream we negotiate as Constrained Baseline. The encoder property is
++// range-capped at 2 for the same reason.
++var layerShare = map[string]map[int][]int{
++	"av1": {
++		1: {100},
++		2: {53, 100},
++		3: {28, 54, 100},
++	},
++	"h264": {
++		1: {100},
++		2: {80, 100},
++	},
 +}
++
++// shares returns the per-layer bitrate shares for a codec's n-layer stream, or nil if we have no
++// measurements for that combination — in which case ABR runs the room exactly as it did before SVC
++// existed. Never guess a share: the whole loop below trusts these numbers.
++func shares(codec string, layers int) []int { return layerShare[codec][layers] }
 +
 +// svcPeer is the slice of *webrtc.Peer that ABR needs. An interface so this package does not depend
 +// on the concrete session type (and a peer without an estimator is simply skipped).
@@ -5633,12 +5875,11 @@ index 0000000..9c2fdd2
 +// outright; coming back UP needs the higher layer to fit with 20% headroom. Without that gap a peer
 +// parked near a boundary oscillates 60->30->60 fps every second, which looks worse than just staying
 +// at 30.
-+func pickLayer(layers, current, sendKbps, estKbps int) (layer int, starved bool) {
-+	share := layerShare[layers]
++func pickLayer(share []int, current, sendKbps, estKbps int) (layer int, starved bool) {
 +	if share == nil || estKbps <= 0 {
 +		return current, false
 +	}
-+	for l := layers - 1; l >= 0; l-- {
++	for l := len(share) - 1; l >= 0; l-- {
 +		need := sendKbps * share[l] / 100
 +		switch {
 +		case l > current:
@@ -5680,12 +5921,16 @@ index 0000000..9c2fdd2
 +		log.Warn().Err(err).Msg("abr: encoder rejected the initial bitrate; ABR disabled for this room")
 +		return
 +	}
++	codec := m.Codec()
 +	layers := webrtc.TemporalLayers()
-+	if layers < 1 || layerShare[layers] == nil {
-+		layers = 1 // not layered (or a layer count we have no shares for): behave exactly as before
++	share := shares(codec, layers)
++	if layers < 1 || share == nil {
++		// Not layered, or a codec/layer-count combination we have no measurements for: behave exactly
++		// as before SVC existed. Never invent a share — the loop below divides by it.
++		layers, share = 1, []int{100}
 +	}
-+	log.Info().Msgf("abr: start %d kbps (floor %d, ceiling %d, temporal layers %d)",
-+		cur, floor, ceilKbps, layers)
++	log.Info().Msgf("abr: start %d kbps (floor %d, ceiling %d, %s temporal layers %d, base share %d%%)",
++		cur, floor, ceilKbps, codec, layers, share[0])
 +
 +	go func() {
 +		t := time.NewTicker(abrTick)
@@ -5731,7 +5976,7 @@ index 0000000..9c2fdd2
 +				peers++
 +
 +				now := p.MaxTemporalLayer()
-+				layer, starved := pickLayer(layers, now, cur, est)
++				layer, starved := pickLayer(share, now, cur, est)
 +				if layers > 1 && layer != now {
 +					// A DROP must persist for abrLayerDownTicks before we act on it. We send unpaced on
 +					// purpose, so every encoded frame leaves as a microburst and GCC occasionally reads
@@ -5762,7 +6007,7 @@ index 0000000..9c2fdd2
 +					}
 +					// Even the base layer is too much for this link. Lower the room only to what BASE
 +					// needs — not to this peer's raw estimate. Everyone else keeps the layers above.
-+					need := est * 100 / layerShare[layers][0]
++					need := est * 100 / share[0]
 +					if roomCap == 0 || need < roomCap {
 +						roomCap = need
 +					}
@@ -5772,8 +6017,7 @@ index 0000000..9c2fdd2
 +				// This peer is served at `layer`, so it receives only a fraction of what we send.
 +				// Judge its health against THAT, not against the full room bitrate: scale its estimate
 +				// back up into room terms so one comparison works for every peer.
-+				share := layerShare[layers][layer]
-+				effective := est * 100 / max(share, 1)
++				effective := est * 100 / max(share[layer], 1)
 +				if worstServable == 0 || effective < worstServable {
 +					worstServable = effective
 +				}
@@ -5861,17 +6105,18 @@ index 0000000..9c2fdd2
 +}
 diff --git a/pkg/worker/abr_test.go b/pkg/worker/abr_test.go
 new file mode 100644
-index 0000000..03dffe0
+index 0000000..a78e01a
 --- /dev/null
 +++ b/pkg/worker/abr_test.go
-@@ -0,0 +1,73 @@
+@@ -0,0 +1,106 @@
 +package worker
 +
 +import "testing"
 +
-+// 3-layer shares: base 28% / +mid 54% / full 100% of the room bitrate.
++// 3-layer AV1 shares: base 28% / +mid 54% / full 100% of the room bitrate.
 +func TestPickLayer(t *testing.T) {
-+	const layers, send = 3, 10000 // room sends 10 Mbps
++	const send = 10000 // room sends 10 Mbps
++	share := shares("av1", 3)
 +
 +	tests := []struct {
 +		name        string
@@ -5911,7 +6156,7 @@ index 0000000..03dffe0
 +
 +	for _, tc := range tests {
 +		t.Run(tc.name, func(t *testing.T) {
-+			layer, starved := pickLayer(layers, tc.current, send, tc.est)
++			layer, starved := pickLayer(share, tc.current, send, tc.est)
 +			if layer != tc.wantLayer || starved != tc.wantStarved {
 +				t.Errorf("pickLayer(cur=%d, est=%d) = (layer %d, starved %v), want (layer %d, starved %v)",
 +					tc.current, tc.est, layer, starved, tc.wantLayer, tc.wantStarved)
@@ -5922,7 +6167,7 @@ index 0000000..03dffe0
 +
 +// With SVC off, no peer may ever be capped below the only layer that exists.
 +func TestPickLayerSVCOff(t *testing.T) {
-+	layer, starved := pickLayer(1, 0, 10000, 500) // 1 layer, hopeless estimate
++	layer, starved := pickLayer(shares("av1", 1), 0, 10000, 500) // 1 layer, hopeless estimate
 +	if layer != 0 {
 +		t.Errorf("layer = %d, want 0 (the only layer)", layer)
 +	}
@@ -5931,11 +6176,43 @@ index 0000000..03dffe0
 +	}
 +}
 +
-+// An unknown layer count must not panic or silently cap peers.
++// An unknown codec/layer-count combination must not panic or silently cap peers.
 +func TestPickLayerUnknownLayerCount(t *testing.T) {
-+	layer, starved := pickLayer(99, 2, 10000, 100)
++	layer, starved := pickLayer(shares("av1", 99), 2, 10000, 100)
 +	if layer != 2 || starved {
 +		t.Errorf("unknown layer count should hold current layer, got (%d, %v)", layer, starved)
++	}
++	if s := shares("vp8", 2); s != nil {
++		t.Errorf("shares for an unmeasured codec = %v, want nil (ABR must fall back to no ladder)", s)
++	}
++}
++
++// H.264's ladder is real but SHALLOW: base is 80% of the room, not 28%. The thresholds must still
++// behave, and a peer must not be declared starved while 80% of the stream still fits.
++func TestPickLayerH264(t *testing.T) {
++	share := shares("h264", 2)
++	if share == nil {
++		t.Fatal("no 2-layer share for h264 — SVC would silently stay off in every h264 room")
++	}
++	const send = 10000
++
++	// 8400 is over budget for the full stream (the dead band starts at 85% of 10000) but carries the
++	// 8000 base fine. Note how narrow that window is with an 80% base share — dropping a layer buys
++	// this peer only 400 kbps of margin, which is the whole story of the H.264 ladder.
++	if layer, starved := pickLayer(share, 1, send, 8400); layer != 0 || starved {
++		t.Errorf("weak peer = (layer %d, starved %v), want (0, false)", layer, starved)
++	}
++	// Under the base layer's 8000 there is nothing left to shed: the ROOM has to come down.
++	if layer, starved := pickLayer(share, 0, send, 5000); layer != 0 || !starved {
++		t.Errorf("very weak peer = (layer %d, starved %v), want (0, true)", layer, starved)
++	}
++	// Climbing back to 60fps needs 25% headroom over the full rate, exactly as it does for AV1 —
++	// a shallow ladder is no excuse for flapping the frame rate.
++	if layer, _ := pickLayer(share, 0, send, 11000); layer != 0 {
++		t.Errorf("climbed to layer %d without headroom, want to hold 0", layer)
++	}
++	if layer, _ := pickLayer(share, 0, send, 12500); layer != 1 {
++		t.Errorf("layer = %d with headroom, want 1", layer)
 +	}
 +}
 diff --git a/pkg/worker/caged/app/app.go b/pkg/worker/caged/app/app.go
@@ -84259,10 +84536,10 @@ index 2840a0e..c55a441 100644
  	return c.ProcessPackets(func(x api.In[com.Uid]) (err error) {
  		var out api.Out
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..0d0f0e5 100644
+index 6972cc7..21b2be7 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,648 @@
+@@ -1,310 +1,657 @@
 -package worker
 -
 -import (
@@ -84785,10 +85062,19 @@ index 6972cc7..0d0f0e5 100644
 +		// can drop upper layers per-peer. Set unconditionally, like SetPacing above — a non-layered
 +		// room must never inherit the previous room's layer count and start dropping frames that were
 +		// never produced. One worker hosts one room.
++		// The CODEC goes with it, and from the same object: the layer count says how many layers exist,
++		// the codec says which bitstream syntax marks them (AV1 OBU extension header vs H.264
++		// nal_ref_idc). Set both or the tagger parses one format as the other.
 +		layers := m.TemporalLayers()
++		webrtc.SetVideoCodec(m.Codec())
 +		webrtc.SetTemporalLayers(layers)
 +		if layers > 1 {
-+			w.log.Info().Msgf("Temporal SVC: %d layers (weak peers get fewer frames, not a worse room)", layers)
++			w.log.Info().Msgf("Temporal SVC: %d layers, %s (weak peers get fewer frames, not a worse room)",
++				layers, m.Codec())
++		}
++		if fl := webrtc.ForcedLayer(); fl >= 0 {
++			w.log.Warn().Msgf("Temporal SVC: CLOUD_GAME_SVC_FORCE_LAYER=%d — EVERY peer is capped at layer %d, "+
++				"regardless of its link. Diagnostic only; unset it and recycle this worker", fl, fl)
 +		}
 +
 +		if gameInfo.System == caged.CaptureSystem {
@@ -85845,10 +86131,10 @@ index 0000000..be84e8e
 +	C.zc_push(g.v.src(), C.uint(texID), C.int(w), C.int(h), C.ulonglong(durNs))
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..f342a19 100644
+index 4a6171f..2175c5d 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,1073 @@
+@@ -1,579 +1,1083 @@
 -package media
 -
 -import (
@@ -86806,6 +87092,16 @@ index 4a6171f..f342a19 100644
 +		return n
 +	}
 +	return 1
++}
++
++// Codec reports which encoder.list entry this pipe will actually build ("av1", "h264", ...), from
++// the SAME lookup that selects the element — for the same one-source-of-truth reason TemporalLayers
++// reads its count out of the params string. The send path taggers are per-codec (svc.go), so a
++// codec name that disagreed with the bitstream would make the tagger read the wrong bytes and thin
++// the wrong frames. "" when no encoder is configured for the codec.
++func (g *GstMediaPipe) Codec() string {
++	_, codec := g.conf.VideoSettings()
++	return codec
 +}
 +
 +func NewGstreamer(conf config.Encoder, log *logger.Logger) *GstMediaPipe {
