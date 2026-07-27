@@ -1570,12 +1570,50 @@ emulator:
           # system/scummvm/scummvm.dat (GUI/engine resources, must version-match this core build) and a
           # scummvm.ini with one [target] section per game, path= pointing at that same materialized
           # location — both deployed alongside this config, not carried here.
-          # Gamepad-only by design: the core's OWN built-in cursor emulation (left stick moves the
-          # pointer, L/R = click) reads our existing continuous analog axes — no input-profile change.
+          # Playable with EITHER device: the core's OWN built-in cursor emulation (left stick moves the
+          # pointer, L/R = click) reads our existing continuous analog axes — no input-profile change —
+          # and a real mouse rides the separate RETRO_DEVICE_MOUSE path (kbMouseSupport + the option
+          # below). The two are independent code paths inside the core, so enabling one keeps the other.
           lib: scummvm_libretro
           folder: scummvm
           roms: ["scummvm"]
-          scale: 3
+          # ENCODE GEOMETRY. This core is the reason scaleMaxWidth exists: unlike every console here, its
+          # games do NOT share one native resolution — most SCUMM/Sierra classics are 320x200, the later
+          # ones (Curse of Monkey Island, Broken Sword) are 640x480 — so a bare multiplier is wrong for
+          # half the catalog either way. `scale` is therefore a CEILING: the worker picks the largest
+          # INTEGER factor whose output still fits scaleMaxWidth, per game, from the frame the core
+          # actually renders (Frontend.Scale).
+          #   320x200 -> x6 = 1920x1200      640x480 -> x3 = 1920x1440      320x240 -> x6 = 1920x1440
+          # Measured 2026-07-27: at the old flat `scale: 3` a 320x200 game shipped a 960x600 stream, and
+          # the browser's bilinear stretch of that across a full window is the whole of the "ScummVM looks
+          # fuzzy even at 16 Mbps" complaint — the bitrate was never the constraint (ABR reached 15956
+          # kbps in 9 s and held; 960x600 is simply not many pixels). Integer factors matter: a fractional
+          # nearest-neighbour ratio duplicates some rows more than others and shimmers on panning shots.
+          scale: 6
+          scaleMaxWidth: 1920
+          # This core stops calling the audio callback ENTIRELY while a game is quiet — it does not emit
+          # zeros the way every other core here does. Verified 2026-07-26/27 in the worker log: whole 5 s
+          # pace-diag windows at audio/s=0 with video/s steady at 60, then exactly 48000/s again the
+          # moment sound resumed, and `deficit` climbing 26.7 s across one 3.5 min session while maxTick
+          # and ticks/s stayed perfectly healthy. So the core is NOT stalling; its audio clock simply
+          # stops. Left alone that freezes the Opus/RTP timeline for the length of every silence, draining
+          # the client's jitter buffer so it has to re-ramp on the next sound — which in a point-and-click
+          # lands on the front of dialogue lines.
+          # ⚠ Do NOT "fix" this with audioMaster (an earlier note here proposed exactly that). audioMaster
+          # repays a deficit by running the core up to 2% FAST, which can never make up silence that was
+          # never owed — it would just hold this core permanently above its fps floor. The two settings
+          # are mutually exclusive and the worker refuses the combination out loud.
+          audioSilenceFill: true
+          # ⚠ REQUIRED by scummvm_pointer_device: "mouse" below — and the reason the first attempt at
+          # relative-mouse support shipped DEAD (2026-07-27). RETRO_DEVICE_MOUSE deltas ride a dedicated
+          # "mouse" DataChannel, and the worker only OPENS that channel (and the "keyboard" one) when the
+          # core declares kbMouseSupport (coordinatorhandlers.go: `needsKbMouse := r.App().KbMouseSupport()`).
+          # Stock sets it on exactly one core (dos/dosbox_pure) and nothing else in this file had it, so the
+          # browser's pc.ondatachannel never fired for "mouse", every delta/click was dropped into a null
+          # channel, and flipping the option away from "pointer" removed the only path that had been
+          # working — mouse support went from "clicks work, hover doesn't" to nothing at all.
+          # The flag ONLY gates channel creation; it costs an unused keyboard channel and nothing else.
+          kbMouseSupport: true
           # no_options_update_flag (patch 0046): do NOT raise the one-shot GET_VARIABLE_UPDATE
           # "options changed" flag for this core. ScummVM answers that flag inside retro_run by walking
           # its options/GUI path on tick 1 — before its engine and graphics manager exist — and

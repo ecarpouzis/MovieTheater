@@ -1878,7 +1878,7 @@ index 0000000..d83f053
 +	}
 +}
 diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
-index baf701e..36fa838 100644
+index baf701e..75a6b97 100644
 --- a/pkg/config/emulator.go
 +++ b/pkg/config/emulator.go
 @@ -17,6 +17,53 @@ type Emulator struct {
@@ -1935,7 +1935,7 @@ index baf701e..36fa838 100644
  }
  
  type LibretroConfig struct {
-@@ -69,20 +116,82 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
+@@ -69,24 +116,98 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
  		errors.New("core mapping not found for " + runtime.GOOS + ":" + runtime.GOARCH)
  }
  
@@ -1968,6 +1968,7 @@ index baf701e..36fa838 100644
 +
  type LibretroCoreConfig struct {
 -	AltRepo         bool
+-	AutoGlContext   bool // hack: keep it here to pass it down the emulator
 +	AltRepo bool
 +	// AudioMaster lets the AUDIO clock pace this core, even when that means running slightly FASTER
 +	// than the core's advertised fps (patch 0043). Opt-in, because it exists for cores that lie:
@@ -1977,8 +1978,15 @@ index baf701e..36fa838 100644
 +	// That deficit drains the client's audio buffer in ~15 s, and the player hears a faint crackle.
 +	// Dolphin, by contrast, produces exactly the 533.9 samples/frame it promises, which is why gc is
 +	// clean in the same browser. The speed-up is bounded (audioPullMax) so a silent core cannot run away.
-+	AudioMaster     bool
- 	AutoGlContext   bool // hack: keep it here to pass it down the emulator
++	AudioMaster bool
++	// AudioSilenceFill tops the audio clock back up with real silence when this core stops calling the
++	// audio callback ALTOGETHER during a quiet passage (ScummVM does; nothing else here is known to).
++	// Left off, that core's Opus/RTP timeline freezes for the length of every silence — the client's
++	// jitter buffer drains and has to re-ramp on the next sound, and the pacer's `deficit` climbs
++	// without bound and reads as a fault. Mutually exclusive with AudioMaster, which is the answer for
++	// the OPPOSITE failure (a core that under-produces while sound is playing); see Frontend.
++	AudioSilenceFill bool
++	AutoGlContext    bool // hack: keep it here to pass it down the emulator
  	CoreAspectRatio bool
 +	CoreCache       CoreCache
  	Folder          string
@@ -2020,8 +2028,19 @@ index baf701e..36fa838 100644
 +	Fps4rom         map[string]float64           // per-ROM forced framerate override (arcade per-game config)
  	Roms            []string
  	SaveStateFs     string
- 	Scale           float64
-@@ -128,6 +237,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
+-	Scale           float64
+-	ScaleMethod     string
++	Scale float64
++	// ScaleMaxWidth turns Scale into a CEILING measured in output pixels: the largest integer factor
++	// whose result still fits wins. For a core whose games all share one native size a bare multiplier
++	// is fine; ScummVM's span 320x200 to 640x480, so one multiplier is either too soft for the small
++	// games or a needlessly large encode for the big ones. 0 = off (every other core).
++	ScaleMaxWidth int
++	ScaleMethod   string
+ 	MaxThreads      int
+ 	UniqueSaveDir   bool
+ 	UsesLibCo       bool
+@@ -128,6 +249,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
  	return found
  }
  
@@ -9575,7 +9594,7 @@ index f3553b1..df14005 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..e40dd3c 100644
+index 6974d59..fa89117 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
 @@ -1,8 +1,10 @@
@@ -9597,7 +9616,13 @@ index 6974d59..e40dd3c 100644
  )
  
  type Emulator interface {
-@@ -82,12 +85,64 @@ type Frontend struct {
+@@ -79,15 +82,99 @@ type Frontend struct {
+ 	// skipVideo used when new frame was too late
+ 	skipVideo bool
+ 
++	// silenceBuf is pushSilence's reusable zero buffer (emulator goroutine only).
++	silenceBuf []byte
++
  	mu  sync.Mutex
  	mui sync.Mutex
  
@@ -9631,6 +9656,35 @@ index 6974d59..e40dd3c 100644
 +	NoSaveStates      bool // this core cannot be serialized; its memory card is the progress (0041)
 +	AudioMaster       bool // the audio clock paces this core, even above its fps floor (0043)
 +
++	// AudioSilenceFill: this core emits NO audio callbacks at all while the game is SILENT, rather than
++	// the stream of zero samples every other core produces. Its audio clock therefore stops dead for the
++	// length of every quiet passage, and the Opus/RTP timeline stops with it — measured on ScummVM
++	// (2026-07-27): whole 5 s pace-diag windows at audio/s=0 while video/s held 60, and the pacer's
++	// `deficit` climbed to 26.7 s over one 3.5 min session and never came back down.
++	//
++	// Two things that costs, both real:
++	//   * The client's NetEq buffer drains to empty during every silence and has to re-ramp when sound
++	//     resumes — in a point-and-click game, where speech starts and stops constantly, that lands on
++	//     the FRONT of dialogue lines.
++	//   * The audio track's RTP clock drifts from wall clock without bound, so nothing downstream can
++	//     use it as a timebase, and the deficit diagnostic reads as a catastrophic fault when the core
++	//     is in fact perfectly healthy. (That misreading cost a whole investigation once.)
++	//
++	// Armed per core, never globally: the top-up below is SILENCE, so on a core that merely trickles
++	// slightly behind its declared rate (PPSSPP: 733 samples/frame against 735.7) it would splice
++	// periodic silence into live sound — audible clicks. Those cores want AudioMaster instead, which
++	// REPAYS the shortfall with real samples. The two are mutually exclusive and Start() enforces it.
++	AudioSilenceFill bool
++
++	// ScaleMaxWidth caps the server-side upscale in OUTPUT pixels instead of leaving `scale` as a blind
++	// multiplier. Cores whose games have a FIXED native size are fine with a bare multiplier; ScummVM's
++	// do not — its catalog runs 320x200 (most SCUMM/Sierra classics) through 640x480 (Curse of Monkey
++	// Island, Broken Sword), so any single `scale` is either too soft for the small ones or a needlessly
++	// huge encode for the large ones. With this set, `scale` becomes "up to", and Scale() picks the
++	// largest INTEGER factor that still fits — integer being the point, since a fractional
++	// nearest-neighbour ratio duplicates some rows more than others and shimmers.
++	ScaleMaxWidth int
++
 +	// ── Fast-forward / rewind (t=114/115) ────────────────────────────────────────────────────
 +	// ffOn/rwOn are written from the coordinator's command goroutine (SetFastForward/SetRewind)
 +	// and read by the emulator loop and the AV callbacks; rewindArmed flips off permanently if
@@ -9662,7 +9716,7 @@ index 6974d59..e40dd3c 100644
  type Device byte
  
  const (
-@@ -173,10 +228,14 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -173,10 +260,14 @@ func (f *Frontend) LoadCore(emu string) {
  		Hacks:           conf.Hacks,
  		HasVFR:          conf.VFR,
  		Hid:             conf.Hid,
@@ -9677,7 +9731,7 @@ index 6974d59..e40dd3c 100644
  		UsesLibCo:       conf.UsesLibCo,
  		CoreAspectRatio: conf.CoreAspectRatio,
  		KbMouseSupport:  conf.KbMouseSupport,
-@@ -184,15 +243,59 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -184,15 +275,72 @@ func (f *Frontend) LoadCore(emu string) {
  	}
  	f.mu.Lock()
  	f.SaveStateFs = conf.SaveStateFs
@@ -9689,6 +9743,19 @@ index 6974d59..e40dd3c 100644
 +	if conf.NoSaveStates {
 +		f.log.Info().Msgf("%v: save-states are off for this core; progress lives on the memory card", emu)
 +	}
++	// AudioSilenceFill and AudioMaster are opposite answers to "the audio clock is behind real time", and
++	// running both would have the pacer chasing a deficit that the filler keeps erasing. Refuse the combo
++	// loudly rather than let it half-work: silence-fill wins because it is the one that can be WRONG in an
++	// audible way if it fires on the other kind of core.
++	if conf.AudioSilenceFill && conf.AudioMaster {
++		f.log.Warn().Msgf("%v: audioSilenceFill and audioMaster are mutually exclusive — dropping audioMaster", emu)
++		f.AudioMaster = false
++	}
++	f.AudioSilenceFill = conf.AudioSilenceFill
++	if f.AudioSilenceFill {
++		f.log.Info().Msgf("%v: audio silence-fill armed (this core emits nothing while the game is quiet)", emu)
++	}
++	f.ScaleMaxWidth = conf.ScaleMaxWidth
 +	// Rewind is opt-in per core and hard-gated to cores that can serialize cheaply and safely:
 +	// NoSaveStates cores obviously can't, and LibCo cores route serialize through the cothread
 +	// trampoline — a per-step cost and crash surface the ring must never sit on (PSP wedges, mupen
@@ -9739,7 +9806,7 @@ index 6974d59..e40dd3c 100644
  	}
  	f.storage.SetNonBlocking(conf.NonBlockingSave)
  	f.scale = scale
-@@ -203,6 +306,13 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -203,6 +351,13 @@ func (f *Frontend) LoadCore(emu string) {
  }
  
  func (f *Frontend) handleAudio(audio unsafe.Pointer, samples int) {
@@ -9753,7 +9820,27 @@ index 6974d59..e40dd3c 100644
  	fr, _ := audioPool.Get().(*app.Audio)
  	if fr == nil {
  		fr = new(app.Audio)
-@@ -220,11 +330,37 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
+@@ -215,16 +370,57 @@ func (f *Frontend) handleAudio(audio unsafe.Pointer, samples int) {
+ 	audioPool.Put(fr)
+ }
+ 
++// pushSilence hands the audio pipeline n frames (per channel) of silence, as if the core had produced
++// them. S16LE stereo, so 4 bytes a frame — and the buffer is grown-and-reused rather than allocated,
++// because this runs on the emulator goroutine inside the frame budget.
++//
++// Called ONLY from the pacing loop, which is that same goroutine — the same one every real audio frame
++// arrives on (coreAudioSampleBatch fires inside retro_run), so this needs no extra synchronisation and
++// can never interleave with a real callback.
++func (f *Frontend) pushSilence(n int) {
++	need := n << 2
++	if cap(f.silenceBuf) < need {
++		f.silenceBuf = make([]byte, need)
++	}
++	f.onAudio(app.Audio{Data: f.silenceBuf[:need]})
++}
++
+ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.FrameInfo) {
+ 	if f.conf.SkipLateFrames && f.skipVideo {
  		return
  	}
  
@@ -9791,7 +9878,7 @@ index 6974d59..e40dd3c 100644
  	fr.Frame.W = int(fi.W)
  	fr.Frame.H = int(fi.H)
  	fr.Frame.Stride = int(fi.Stride)
-@@ -237,9 +373,18 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
+@@ -237,9 +433,18 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
  }
  
  func (f *Frontend) handleDup() {
@@ -9812,7 +9899,7 @@ index 6974d59..e40dd3c 100644
  }
  
  func (f *Frontend) Shutdown() {
-@@ -292,8 +437,19 @@ func (f *Frontend) Start() {
+@@ -292,8 +497,19 @@ func (f *Frontend) Start() {
  	f.nano.LastFrameTime = time.Now()
  
  	defer func() {
@@ -9834,7 +9921,7 @@ index 6974d59..e40dd3c 100644
  			f.log.Debug().Msg("save on quit")
  			if err := f.Save(); err != nil {
  				f.log.Error().Err(err).Msg("save on quit failed")
-@@ -301,10 +457,39 @@ func (f *Frontend) Start() {
+@@ -301,10 +517,39 @@ func (f *Frontend) Start() {
  		}
  		f.mui.Unlock()
  		f.Shutdown()
@@ -9875,7 +9962,7 @@ index 6974d59..e40dd3c 100644
  		// advance 1 frame for Mupen, DOSBox save states
  		// loading will work if autostart is selected for DOSBox apps
  		f.Tick()
-@@ -318,6 +503,11 @@ func (f *Frontend) Start() {
+@@ -318,6 +563,11 @@ func (f *Frontend) Start() {
  		go f.autosave(f.conf.AutosaveSec)
  	}
  
@@ -9887,7 +9974,7 @@ index 6974d59..e40dd3c 100644
  	// The main loop of Libretro
  
  	targetFrameTimeNs := int64(float64(time.Second) / f.nano.VideoFramerate())
-@@ -328,66 +518,460 @@ func (f *Frontend) Start() {
+@@ -328,66 +578,505 @@ func (f *Frontend) Start() {
  	// how many frames will be considered not normal
  	const lateFramesThreshold = 3
  
@@ -9903,6 +9990,13 @@ index 6974d59..e40dd3c 100644
 +	// which is not — that one gets forgiven, as before. Comfortably above any load stall we have measured
 +	// (the worst PSP transition is ~60 ms; a cold gc boot ~110 ms).
 +	const audioForgiveAfter = 500 * time.Millisecond
++
++	// Silence-fill thresholds (see the AudioSilenceFill field). audioFillAfter must sit well clear of a
++	// healthy core's normal one-tick swing about real time (16.7 ms at 60 fps) so the filler can never
++	// splice silence between live samples; audioFillMaxPerTick bounds the catch-up so an inherited debt
++	// is paid over a few ticks rather than dumped into the Opus queue in one push.
++	const audioFillAfter = 100 * time.Millisecond
++	const audioFillMaxPerTick = 40 * time.Millisecond
 +
  	batch := max(f.SpinBatch, 1)
  
@@ -9962,6 +10056,10 @@ index 6974d59..e40dd3c 100644
 +	var diagNoSleep int64
 +	var diagForgiven int64
 +	var diagMaxDeficitNs int64
++	// silence/s counts the frames the silence-filler injected, kept SEPARATE from audio/s on purpose:
++	// audio/s must keep reporting what the CORE produced, or the one number that shows a core has gone
++	// quiet would be masked by our own fill and the metric would lie exactly where it matters.
++	var diagSilence int64
 +
 +	// prevRw edge-detects rewind engage so the first pop happens NOW, not up to a step later —
 +	// a held rewind that visibly does nothing for 100 ms feels broken.
@@ -10009,6 +10107,35 @@ index 6974d59..e40dd3c 100644
 -					time.Sleep(time.Duration(sleepTimeNs - spinThresholdNs))
 +			audioDelta := f.nano.TakeAudioFrames()
 +			audioFrames += audioDelta
++
++			// ── Audio silence-fill (2026-07-27) ───────────────────────────────────────────
++			// Top the audio clock back up to real time with actual silence when an armed core
++			// has simply stopped emitting (see Frontend.AudioSilenceFill for why ScummVM does).
++			// The samples are real: they go down the same path the core's would, so the Opus
++			// stream keeps ticking, the client's jitter buffer stays primed through a quiet
++			// passage, and the audio track remains a wall-clock timebase.
++			//
++			// Never during a warp — handleAudio drops audio outright there and the warp branch
++			// pins the epoch, so "behind" is meaningless and a fill would be dropped anyway.
++			if f.AudioSilenceFill && !ff && !rw {
++				behind := os.Nanotime() - (audioEpoch + int64(float64(audioFrames)/sr*1e9))
++				// audioFillAfter is the arming threshold, NOT a target: a healthy core's clock
++				// swings by a tick (16.7 ms at 60 fps) either side of real time all the time, and
++				// filling that would splice silence into live sound. 100 ms is far outside that
++				// swing and still only ~1/10 s of quiet before the stream is carrying samples again.
++				if behind > int64(audioFillAfter) {
++					// Bound the per-tick fill so a debt inherited from a long silence (or from
++					// boot) is paid down over several ticks instead of arriving as one burst the
++					// Opus queue has to swallow whole.
++					fill := min(behind, int64(audioFillMaxPerTick))
++					if n := int(float64(fill) / 1e9 * sr); n > 0 {
++						f.pushSilence(n)
++						audioFrames += int64(n)
++						diagSilence += int64(n)
++					}
++				}
++			}
++
 +			diagTicks++
 +			diagSumTickNs += tickDur
 +			if tickDur > diagMaxTickNs {
@@ -10024,9 +10151,13 @@ index 6974d59..e40dd3c 100644
 +				deficitNs := os.Nanotime() - (audioEpoch + int64(float64(audioFrames)/sr*1e9))
 +				vcb, vnull := f.nano.TakeVideoFrames()
 +				f.log.Info().Msgf(
-+					"pace-diag: ticks/s=%.1f audio/s=%.0f video/s=%.1f vnull/s=%.1f maxTick=%.1fms slowTicks(>20ms)=%d "+
++					"pace-diag: ticks/s=%.1f audio/s=%.0f silence/s=%.0f video/s=%.1f vnull/s=%.1f maxTick=%.1fms slowTicks(>20ms)=%d "+
 +						"meanTick=%.2fms noSleep=%.1f%% deficit=%.1fms maxDeficit=%.1fms forgiven=%d",
-+					float64(diagTicks)/winSec, float64(audioFrames-diagAudioBase)/winSec,
++					float64(diagTicks)/winSec,
++					// audio/s is the CORE's own production — the injected silence is netted back out so
++					// this number keeps meaning what every past reading of it meant.
++					float64(audioFrames-diagAudioBase-diagSilence)/winSec,
++					float64(diagSilence)/winSec,
 +					float64(vcb)/winSec, float64(vnull)/winSec,
 +					float64(diagMaxTickNs)/1e6, diagSlow,
 +					float64(diagSumTickNs)/float64(max(diagTicks, 1))/1e6,
@@ -10034,6 +10165,7 @@ index 6974d59..e40dd3c 100644
 +					float64(deficitNs)/1e6, float64(diagMaxDeficitNs)/1e6, diagForgiven)
 +				diagWindow, diagTicks, diagSlow, diagMaxTickNs = now, 0, 0, 0
 +				diagSumTickNs, diagNoSleep, diagForgiven, diagMaxDeficitNs = 0, 0, 0, 0
++				diagSilence = 0
 +				diagAudioBase = audioFrames
 +			}
 +
@@ -10300,10 +10432,10 @@ index 6974d59..e40dd3c 100644
 +	_ = filepath.WalkDir(root, func(_ string, d fs.DirEntry, err error) error {
 +		if err != nil || d.IsDir() {
 +			return nil
- 		}
++		}
 +		if fi, err := d.Info(); err == nil {
 +			total += fi.Size()
-+		}
+ 		}
 +		return nil
 +	})
 +	return total
@@ -10384,7 +10516,7 @@ index 6974d59..e40dd3c 100644
  	}
  }
  
-@@ -395,13 +979,428 @@ func (f *Frontend) LoadGame(path string) error {
+@@ -395,13 +1084,428 @@ func (f *Frontend) LoadGame(path string) error {
  	if f.UniqueSaveDir {
  		f.copyFsMaybe(path)
  	}
@@ -10814,7 +10946,32 @@ index 6974d59..e40dd3c 100644
  func (f *Frontend) FrameSize() (int, int)         { return f.nano.BaseWidth(), f.nano.BaseHeight() }
  func (f *Frontend) HasSave() bool                 { return os.Exists(f.HashPath()) }
  func (f *Frontend) HashPath() string              { return f.storage.GetSavePath() }
-@@ -419,9 +1418,16 @@ func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
+@@ -414,14 +1518,40 @@ func (f *Frontend) Rotation() uint                { return f.nano.Rot }
+ func (f *Frontend) SRAMPath() string              { return f.storage.GetSRAMPath() }
+ func (f *Frontend) SaveGameState() error          { return f.Save() }
+ func (f *Frontend) SaveStateName() string         { return filepath.Base(f.HashPath()) }
+-func (f *Frontend) Scale() (float64, string)      { return f.scale, f.scaleM }
++
++// Scale is the server-side upscale the encoder applies before NVENC. With ScaleMaxWidth set it is a
++// CEILING rather than a fixed multiplier: the largest integer factor whose output still fits wins.
++//
++// Both call sites (coordinatorhandlers) run ViewportRecalculate() immediately before this, so f.vw is
++// the CURRENT frame's width — which is the whole point. A core that changes resolution between games
++// (ScummVM) or mid-game re-picks its factor for free, and a core with no ScaleMaxWidth is untouched.
++func (f *Frontend) Scale() (float64, string) {
++	s := f.scale
++	if f.ScaleMaxWidth > 0 && s > 1 {
++		if w, _ := f.ViewportSize(); w > 0 {
++			k := int(s)
++			for k > 1 && w*k > f.ScaleMaxWidth {
++				k--
++			}
++			s = float64(k)
++		}
++	}
++	return s, f.scaleM
++}
+ func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
  func (f *Frontend) SetSessionId(name string)      { f.storage.SetMainSaveName(name) }
  func (f *Frontend) SetDataCb(cb func([]byte))     { f.onData = cb }
  func (f *Frontend) SetVideoCb(ff func(app.Video)) { f.onVideo = ff }
@@ -10834,7 +10991,7 @@ index 6974d59..e40dd3c 100644
  
  func (f *Frontend) Input(port int, device byte, data []byte) {
  	switch Device(device) {
-@@ -434,6 +1440,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
+@@ -434,6 +1564,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
  	}
  }
  
@@ -10844,7 +11001,7 @@ index 6974d59..e40dd3c 100644
  func (f *Frontend) ViewportCalc() (nw int, nh int) {
  	w, h := f.FrameSize()
  	nw, nh = w, h
-@@ -478,6 +1487,9 @@ func (f *Frontend) Close() {
+@@ -478,6 +1611,9 @@ func (f *Frontend) Close() {
  
  // Save writes the current state to the filesystem.
  func (f *Frontend) Save() error {
@@ -10854,7 +11011,7 @@ index 6974d59..e40dd3c 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -501,6 +1513,9 @@ func (f *Frontend) Save() error {
+@@ -501,6 +1637,9 @@ func (f *Frontend) Save() error {
  
  // Load restores the state from the filesystem.
  func (f *Frontend) Load() error {
@@ -10864,7 +11021,7 @@ index 6974d59..e40dd3c 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -522,6 +1537,88 @@ func (f *Frontend) Load() error {
+@@ -522,6 +1661,88 @@ func (f *Frontend) Load() error {
  	return nil
  }
  
@@ -10953,7 +11110,7 @@ index 6974d59..e40dd3c 100644
  func (f *Frontend) IsSupported() error {
  	return graphics.RGFWTryInit()
  }
-@@ -537,6 +1634,13 @@ func (f *Frontend) autosave(periodSec int) {
+@@ -537,6 +1758,13 @@ func (f *Frontend) autosave(periodSec int) {
  			if f.nano.IsStopped() {
  				return
  			}
@@ -12778,7 +12935,7 @@ index 0000000..dbd35c1
 +
 +#endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.c b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
-index 669862d..4bc57d8 100644
+index 669862d..b5e229a 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.c
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.c
 @@ -10,11 +10,12 @@
@@ -12901,7 +13058,28 @@ index 669862d..4bc57d8 100644
              return (int16_t)((input_cache.buttons[port] >> id) & 1);
  
          case RETRO_DEVICE_ANALOG:
-@@ -265,6 +313,26 @@ int16_t core_input_state_cgo(unsigned port, unsigned device, unsigned index, uns
+@@ -246,6 +294,20 @@ int16_t core_input_state_cgo(unsigned port, unsigned device, unsigned index, uns
+             break;
+ 
+         case RETRO_DEVICE_MOUSE:
++            // One-shot proof that RELATIVE mouse reaches the core, the twin of the POINTER line below.
++            // It is the only way to tell the two silent failures apart: a core that never polls
++            // RETRO_DEVICE_MOUSE at all (wrong device for it — ScummVM needs scummvm_pointer_device
++            // "mouse", and the whole path is dead without kbMouseSupport opening the channel) versus one
++            // that polls but is being handed zeroes. Fires on the first NON-ZERO delta specifically:
++            // cores poll X/Y every frame regardless, so logging any read would prove nothing.
++            // ⚠ Like the POINTER line, this fires ONCE PER WORKER PROCESS — its absence in a log that
++            // already served a mouse room is not evidence. Recycle the worker before trusting a silence.
++            static int mouse_logged = 0;
++            if (!mouse_logged && (input_cache.mouse_x || input_cache.mouse_y)) {
++                mouse_logged = 1;
++                core_log_cgo(RETRO_LOG_INFO, "[mse] core read MOUSE delta: dx=%d dy=%d\n",
++                             input_cache.mouse_x, input_cache.mouse_y);
++            }
+             switch (id) {
+                 case RETRO_DEVICE_ID_MOUSE_X: {
+                     int16_t x = input_cache.mouse_x;
+@@ -265,6 +327,26 @@ int16_t core_input_state_cgo(unsigned port, unsigned device, unsigned index, uns
                      return (input_cache.mouse_buttons & 0x04) ? 1 : 0;
              }
              break;
@@ -12928,7 +13106,7 @@ index 669862d..4bc57d8 100644
      }
  
      return 0;
-@@ -304,6 +372,29 @@ void deinit_video_cgo() {
+@@ -304,6 +386,29 @@ void deinit_video_cgo() {
      deinitVideo();
  }
  
@@ -12958,7 +13136,7 @@ index 669862d..4bc57d8 100644
  typedef struct {
     pthread_mutex_t m;
     pthread_cond_t cond;
-@@ -341,7 +432,10 @@ void *run_loop(void *unused) {
+@@ -341,7 +446,10 @@ void *run_loop(void *unused) {
          switch (call.type) {
              case CALL_SERIALIZE:
              case CALL_UNSERIALIZE:
@@ -12970,7 +13148,7 @@ index 669862d..4bc57d8 100644
                break;
              default:
                  ((void (*)(void)) call.fn)();
-@@ -367,7 +461,20 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -367,7 +475,20 @@ void *same_thread_with_args(void *f, int type, ...) {
          mutex_init(&run_mutex);
          mutex_init(&done_mutex);
          mutex_lock(&done_mutex);
@@ -12992,7 +13170,7 @@ index 669862d..4bc57d8 100644
          mutex_wait(&done_mutex);
          mutex_unlock(&done_mutex);
      }
-@@ -377,21 +484,17 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -377,21 +498,17 @@ void *same_thread_with_args(void *f, int type, ...) {
      call.type = type;
      call.fn = f;
  
@@ -13022,7 +13200,7 @@ index 669862d..4bc57d8 100644
      }
      mutex_signal(&run_mutex);
      mutex_unlock(&run_mutex);
-@@ -400,10 +503,49 @@ void *same_thread_with_args(void *f, int type, ...) {
+@@ -400,10 +517,49 @@ void *same_thread_with_args(void *f, int type, ...) {
      return call.result;
  }
  

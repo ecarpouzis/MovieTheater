@@ -488,13 +488,14 @@ export function systemUsesPointer(system) { return POINTER_SYSTEMS.has(String(sy
 const MOUSE_SYSTEMS = new Set(["scummvm"]);
 export function systemUsesMouse(system) { return MOUSE_SYSTEMS.has(String(system || "").toLowerCase()); }
 
-// The core reads RETRO_DEVICE_MOUSE deltas in ITS OWN unscaled coordinate space (clamped to
-// getScreenWidth()/Height() — the real internal game resolution), but config.worker-gl.yaml's scummvm
-// entry sets `scale: 3` (server-side nearest-neighbour upscale before encode — see the 2D-crispness
-// note elsewhere in that file). So the encoded video's intrinsic pixel size (videoEl.videoWidth/Height)
-// is 3x the core's actual coordinate space; a delta computed straight off the video element would be 3x
-// too large. Divide it back out. MUST be kept in step with that config's scummvm `scale` value (same
-// client/config parity requirement as REWIND_SYSTEMS vs config `rewind: true`).
+// FALLBACK ONLY. The core reads RETRO_DEVICE_MOUSE deltas in ITS OWN unscaled coordinate space (clamped
+// to getScreenWidth()/Height() — the real internal game resolution), while videoEl.videoWidth/Height is
+// that size AFTER the worker's server-side upscale, so a delta taken straight off the video element is
+// too large by whatever that factor is. mseScale() normally divides it out using the worker's own
+// APP_VIDEO_CHANGE payload (av.w/av.h = the frame the core actually renders), which is exact and needs
+// no parity with any config value. This constant is only used if that packet never arrived, and is a
+// guess at the config's `scale` — deliberately NOT load-bearing, because that config value is now a
+// per-game CEILING (scaleMaxWidth), not a fixed multiplier, so no single number here could be right.
 const SCUMMVM_VIDEO_SCALE = 3;
 
 // Pointer cores map the libretro pointer through their OWN screen layout in DISPLAY (top-down) space,
@@ -526,7 +527,14 @@ export function encodePointer(x, y, pressed) {
 
 // Relative-mouse wire packets (RETRO_DEVICE_MOUSE), on the worker's own dedicated "mouse" DataChannel —
 // this is STOCK CloudRetro's own protocol (pkg/worker/coordinatorhandlers.go `s.Channel("mouse", ...)`
-// → InputMouse → MouseState.ShiftPos/SetButtons), never previously wired into this shim. Format matches
+// → InputMouse → MouseState.ShiftPos/SetButtons), never previously wired into this shim.
+// ⚠ That channel only EXISTS for a core whose config declares `kbMouseSupport: true` — the worker gates
+// both it and "keyboard" on `r.App().KbMouseSupport()`. Stock sets it on dosbox_pure alone, so the first
+// version of this code shipped completely dead: pc.ondatachannel never fired for "mouse", every delta
+// and click went nowhere, and because the same change flipped scummvm_pointer_device off "pointer" it
+// also removed the POINTER path that had at least made clicks work. Keep config.worker-gl.yaml's
+// kbMouseSupport in step with MOUSE_SYSTEMS below or mouse support silently disappears again.
+// Format matches
 // nanoarch.go's InputMouse exactly: a 1-byte type tag, then type-specific payload, BIG-ENDIAN (this
 // channel does NOT follow the pad/pointer channel's little-endian convention).
 //   Move:   [0x00][dx:i16 BE][dy:i16 BE]
@@ -1423,18 +1431,26 @@ export function createCloudRetroSession(descriptor, opts) {
   let mseRaf = 0;
   let mseLastMask = 0;
 
-  // CSS-px → core-px scale for this frame: the video element's rect vs its DECODED intrinsic size
-  // (== the core's encoded BASE geometry per the "encode size = core base geometry" verdict), corrected
-  // for the server-side scale:3 upscale (SCUMMVM_VIDEO_SCALE) so the delta lands in the core's own
-  // unscaled coordinate space (see that constant's comment).
+  // CSS-px → core-px gain: how many of the CORE's own coordinate units one pixel of real mouse travel
+  // should be worth, so the ScummVM cursor keeps pace with the physical pointer instead of drifting at
+  // some arbitrary sensitivity.
+  //
+  // The core clamps its cursor to its OWN unscaled resolution (getScreenWidth/Height), which is NOT the
+  // decoded video size — the worker upscales before encoding. The authority on that unscaled size is the
+  // worker's own APP_VIDEO_CHANGE payload (`av.w`/`av.h` = ViewportSize, the frame the core actually
+  // renders), which every ScummVM room sends because the core switches from its declared 1280x720 GUI
+  // geometry to the game's real size on the first frame. Using it means this needs no per-game table and
+  // no client/config parity: a 320x200 SCUMM classic and a 640x480 Broken Sword each get the right gain,
+  // and changing the server-side `scale` can never silently skew the cursor.
+  //
+  // The videoWidth/SCUMMVM_VIDEO_SCALE fallback is only for a room where that payload never arrived.
   function mseScale() {
     const rect = videoEl.getBoundingClientRect();
     if (!rect || rect.width <= 0 || rect.height <= 0) return null;
     if (!videoEl.videoWidth || !videoEl.videoHeight) return null; // no frame decoded yet
-    return {
-      sx: (videoEl.videoWidth / SCUMMVM_VIDEO_SCALE) / rect.width,
-      sy: (videoEl.videoHeight / SCUMMVM_VIDEO_SCALE) / rect.height,
-    };
+    const coreW = lastAv && lastAv.w > 0 ? lastAv.w : videoEl.videoWidth / SCUMMVM_VIDEO_SCALE;
+    const coreH = lastAv && lastAv.h > 0 ? lastAv.h : videoEl.videoHeight / SCUMMVM_VIDEO_SCALE;
+    return { sx: coreW / rect.width, sy: coreH / rect.height };
   }
   function mseSendButtons(mask) {
     if (!mouseDc || mouseDc.readyState !== "open") return;
