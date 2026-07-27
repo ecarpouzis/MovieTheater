@@ -46711,10 +46711,10 @@ index 0000000..6506f53
 +#endif /* CHEEVOS_BRIDGE_H */
 diff --git a/pkg/worker/cheevos/cheevos.go b/pkg/worker/cheevos/cheevos.go
 new file mode 100644
-index 0000000..32afd0f
+index 0000000..bb3574a
 --- /dev/null
 +++ b/pkg/worker/cheevos/cheevos.go
-@@ -0,0 +1,532 @@
+@@ -0,0 +1,531 @@
 +// Package cheevos embeds the RetroAchievements runtime (rcheevos' rc_client) into the libretro worker.
 +// rc_client hashes the loaded ROM, logs the player in with their OWN connect token, evaluates
 +// achievement + leaderboard triggers each emulated frame against core RAM, and submits unlocks/runs to
@@ -46898,9 +46898,8 @@ index 0000000..32afd0f
 +}
 +
 +// NotifyFastForward marks the run as time-manipulated when fast-forward (or rewind) is engaged. Sticky
-+// until a hard reset, like Savescum. NOTE: no fast-forward/rewind control is exposed in this arcade
-+// stack today, so nothing calls this yet and Timeplay is always false in practice — it's the hook for
-+// when speed control lands, so the taint model + the wire/DB/UI are already complete.
++// until a hard reset, like Savescum. Called from the t=114/115 handlers (HandleFastForwardGame/
++// HandleRewindGame) whenever a player engages either control.
 +func (c *Client) NotifyFastForward(on bool) {
 +	if c == nil || !on {
 +		return
