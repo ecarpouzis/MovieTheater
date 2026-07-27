@@ -95,7 +95,7 @@ const PROFILES = {
     keymap: { ...DEFAULT_KEYMAP, KeyM: PAD.L3, KeyN: PAD.R3 },
     // Same as default: a 2D core where stick and d-pad both mean "move the cursor".
     foldStickToDpad: true,
-    hint: "Mouse recommended — point and click straight on the picture. M = ScummVM menu (save/load, options). Keyboard: arrows move the cursor, Q W = left/right click, Enter = Start.",
+    hint: "Mouse recommended — click the picture to capture the pointer, then point and click as normal; press Esc to release it. M = ScummVM menu (save/load, options). Keyboard: arrows move the cursor, Q W = left/right click, Enter = Start.",
   },
   // N64: mupen64plus-next maps N64 A ← RetroPad **B** and N64 B ← RetroPad A (verified live in
   // Bomberman 64's menus: PAD.B confirms, PAD.A backs out — the earlier assumption here was
@@ -1468,8 +1468,33 @@ export function createCloudRetroSession(descriptor, opts) {
     if (!mouseDc || mouseDc.readyState !== "open") return;
     try { mouseDc.send(encodeMouseMove(dx, dy)); } catch { /* channel closing */ }
   }
+  // ── Pointer lock ────────────────────────────────────────────────────────────────────────────────
+  // RETRO_DEVICE_MOUSE is RELATIVE, so the game's cursor and the player's real pointer are two
+  // independent positions with nothing tying them together. They begin misaligned (ScummVM puts its
+  // cursor wherever it likes; your pointer is wherever you left it) and then drift further apart for
+  // three reasons that cannot all be engineered away:
+  //   * a lost delta is unrecoverable (mitigated worker-side now — the "mouse" channel was on the
+  //     unreliable default and is now ordered/reliable — but never zero),
+  //   * ScummVM applies its own scummvm_mouse_speed multiplier on top of ours,
+  //   * the real pointer stops at the window edge while the game cursor still has room, and vice versa.
+  // Chasing exact agreement between two cursors is the wrong fix. Pointer lock removes the SECOND
+  // CURSOR: the OS pointer is hidden and uncapped, so there is only ScummVM's cursor on screen,
+  // nothing to be "offset" from, and no edge to run out of. It is also how the game feels natively.
+  //
+  // Engaged by clicking the video (which a point-and-click player does anyway) and released with Esc,
+  // which the browser wires up and announces itself. If the request is denied — an unfocused document,
+  // a browser that refuses it, an iframe without allow="pointer-lock" — everything below still works
+  // exactly as before, just with the old two-cursor behaviour.
+  const mseLocked = () => typeof document !== "undefined" && document.pointerLockElement === videoEl;
+  function mseRequestLock() {
+    if (!mouseEnabled || mseLocked() || !videoEl.requestPointerLock) return;
+    // Chrome returns a promise here and rejects it if the document isn't focused; unhandled, that
+    // surfaces as a console error on an otherwise fine room.
+    try { Promise.resolve(videoEl.requestPointerLock()).catch(() => {}); } catch { /* older API */ }
+  }
   function onMseDown(ev) {
     if (ev.button !== 0) return; // left click only — right/middle unused by ScummVM's UI
+    mseRequestLock();
     mseSendButtons(mseLastMask | 0x01);
     ev.preventDefault();
   }
@@ -1489,16 +1514,23 @@ export function createCloudRetroSession(descriptor, opts) {
     mseSendButtons(mseLastMask & ~0x01);
   }
   function onMseLeave() {
-    // Don't leave a click stuck down if the real cursor wanders off the video mid-press.
+    // Don't leave a click stuck down if the real cursor wanders off the video mid-press. Moot while
+    // locked (the pointer cannot leave), which is fine — this is the unlocked fallback's guard.
     if (mseLastMask) mseSendButtons(0);
   }
+  function onMseLockChange() {
+    // Esc (or any other release) mid-press would otherwise strand the button down in the game.
+    if (!mseLocked() && mseLastMask) mseSendButtons(0);
+  }
+  function onMseContextMenu(e) { e.preventDefault(); }
   function attachMouse() {
     if (!mouseEnabled) return;
     videoEl.addEventListener("mousedown", onMseDown);
     videoEl.addEventListener("mousemove", onMseMove);
     videoEl.addEventListener("mouseup", onMseUp);
     videoEl.addEventListener("mouseleave", onMseLeave);
-    videoEl.addEventListener("contextmenu", (e) => e.preventDefault());
+    videoEl.addEventListener("contextmenu", onMseContextMenu);
+    document.addEventListener("pointerlockchange", onMseLockChange);
   }
   function detachMouse() {
     if (!mouseEnabled) return;
@@ -1506,6 +1538,11 @@ export function createCloudRetroSession(descriptor, opts) {
     videoEl.removeEventListener("mousemove", onMseMove);
     videoEl.removeEventListener("mouseup", onMseUp);
     videoEl.removeEventListener("mouseleave", onMseLeave);
+    videoEl.removeEventListener("contextmenu", onMseContextMenu);
+    document.removeEventListener("pointerlockchange", onMseLockChange);
+    // Leaving a room must not leave the page holding the pointer — the player would find the room's
+    // own buttons unclickable with no cursor to click them with.
+    if (mseLocked() && document.exitPointerLock) { try { document.exitPointerLock(); } catch { /* */ } }
     if (mseRaf && typeof cancelAnimationFrame === "function") { cancelAnimationFrame(mseRaf); mseRaf = 0; }
   }
   attachMouse();

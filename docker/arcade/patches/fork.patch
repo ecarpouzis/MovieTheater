@@ -4600,7 +4600,7 @@ index 0000000..7182664
 +	}
 +}
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..6b6d3cd 100644
+index b342b6b..d46d813 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,14 @@ import (
@@ -4618,7 +4618,7 @@ index b342b6b..6b6d3cd 100644
  	"github.com/pion/webrtc/v4"
  	"github.com/pion/webrtc/v4/pkg/media"
  )
-@@ -16,15 +19,80 @@ import (
+@@ -16,21 +19,96 @@ import (
  type Peer struct {
  	api *ApiFactory
  	c   *webrtc.PeerConnection
@@ -4699,7 +4699,23 @@ index b342b6b..6b6d3cd 100644
  var samplePool sync.Pool
  
  var DefaultOfferAnswerOptions = webrtc.OfferAnswerOptions{ICETricklingSupported: true}
-@@ -45,23 +113,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
+ var DefaultOfferOptions = webrtc.OfferOptions{OfferAnswerOptions: DefaultOfferAnswerOptions}
+ var DefaultAnswerOptions = webrtc.AnswerOptions{OfferAnswerOptions: DefaultOfferAnswerOptions}
+ var DefaultChannelParams = webrtc.DataChannelInit{Ordered: new(false), MaxRetransmits: new(uint16)}
++
++// ReliableChannelParams is for input that is RELATIVE or EDGE-TRIGGERED, where a dropped message is
++// not corrected by the next one (MovieTheater, 2026-07-27). The unreliable default above is right for
++// the RetroPad, whose every frame is a FULL button snapshot — lose one and the next arrives 16 ms
++// later with the complete truth. It is wrong for the mouse, where each message is a DELTA: one lost
++// packet is a permanent, unrecoverable shift in cursor position, and the error accumulates for the
++// whole session (this is what drifted ScummVM's cursor away from the player's real pointer). Same
++// argument for the keyboard, where a lost key-up sticks a key down forever.
++// Retransmission costs a few ms after a loss, which no cursor or keypress can perceive.
++var ReliableChannelParams = webrtc.DataChannelInit{Ordered: new(true)}
+ var DefaultDataChannelParams = webrtc.DataChannelInit{
+ 	ID:             new(uint16),
+ 	Negotiated:     new(true),
+@@ -45,23 +123,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
  			Str(logger.DirectionField, "").
  			Str(logger.ClientField, ""),
  	)
@@ -4732,7 +4748,7 @@ index b342b6b..6b6d3cd 100644
  		return
  	}
  
-@@ -96,6 +170,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -96,6 +180,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.c.OnDataChannel(func(ch *webrtc.DataChannel) { p.log.Debug().Msgf("rtc [chan] [%s] remote", ch.Label()) })
  
@@ -4768,7 +4784,7 @@ index b342b6b..6b6d3cd 100644
  	aCodec := "opus"
  	if err = p.InitMedia(vCodec, aCodec); err != nil {
  		return
-@@ -143,8 +246,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+@@ -143,8 +256,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
  	return encoded, nil
  }
  
@@ -4810,7 +4826,7 @@ index b342b6b..6b6d3cd 100644
  		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
  		if err != nil {
  			return err
-@@ -153,6 +289,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -153,6 +299,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  		return p.c.AddICECandidate(candidate)
  	}
  	if sdp != nil {
@@ -4828,7 +4844,7 @@ index b342b6b..6b6d3cd 100644
  		answer, err := fromJson[webrtc.SessionDescription](*sdp)
  		if err != nil {
  			return err
-@@ -176,6 +323,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -176,6 +333,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
  		mime = webrtc.MimeTypeVP8
  	case "video/vp9":
  		mime = webrtc.MimeTypeVP9
@@ -4842,7 +4858,7 @@ index b342b6b..6b6d3cd 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -221,17 +375,94 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
+@@ -221,17 +385,94 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
  }
  
  func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
@@ -4939,7 +4955,7 @@ index b342b6b..6b6d3cd 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -250,6 +481,22 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -250,6 +491,22 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  }
  
  func (p *Peer) Disconnect() {
@@ -4962,7 +4978,7 @@ index b342b6b..6b6d3cd 100644
  	if p.c == nil {
  		return
  	}
-@@ -261,6 +508,15 @@ func (p *Peer) Disconnect() {
+@@ -261,6 +518,15 @@ func (p *Peer) Disconnect() {
  }
  
  func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
@@ -4978,7 +4994,7 @@ index b342b6b..6b6d3cd 100644
  	if p.v, err = newTrack("video", "video", vCodec); err != nil {
  		return err
  	}
-@@ -274,20 +530,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +540,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -5028,7 +5044,7 @@ index b342b6b..6b6d3cd 100644
  			}
  		}()
  	}
-@@ -313,3 +595,29 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +605,29 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -85126,10 +85142,10 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..97a7759 100644
+index 6972cc7..37d3809 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,700 @@
+@@ -1,310 +1,707 @@
 -package worker
 -
 -import (
@@ -85971,8 +85987,15 @@ index 6972cc7..97a7759 100644
 +	s := room.WithWebRTC(user.Session)
 +	s.OnMessage(func(data []byte) { r.App().Input(user.Index, byte(caged.RetroPad), data) })
 +	if needsKbMouse {
-+		_, _ = s.Channel("keyboard", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Keyboard), data) })
-+		_, _ = s.Channel("mouse", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Mouse), data) })
++		// Keyboard and mouse both carry RELATIVE/EDGE-TRIGGERED state, not a resendable snapshot, so
++		// neither may ride the default unreliable channel (Ordered:false, MaxRetransmits:0) the RetroPad
++		// uses. That default is right for the pad — a frame is a FULL button snapshot, so a lost one is
++		// corrected 16 ms later by the next. It is wrong here: a dropped mouse delta is a permanent,
++		// unrecoverable shift in cursor position that accumulates for the whole session (this is what
++		// made ScummVM's cursor drift a "large offset" away from the player's real pointer), and a
++		// dropped key-up leaves a key stuck down forever.
++		_, _ = s.Channel("keyboard", &webrtc.ReliableChannelParams, func(data []byte) { r.App().Input(user.Index, byte(caged.Keyboard), data) })
++		_, _ = s.Channel("mouse", &webrtc.ReliableChannelParams, func(data []byte) { r.App().Input(user.Index, byte(caged.Mouse), data) })
 +	}
 +	// patch 0005: multi-disc swap. The browser opens a "disc" channel and sends a 1-byte target image
 +	// index; the frontend applies it on the emulator thread. No-op for cores without disk control.
