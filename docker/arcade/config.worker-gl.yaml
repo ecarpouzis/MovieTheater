@@ -198,9 +198,24 @@ emulator:
     # Glob, not a dir spec: only the loose save files move, so a subdir the core may add later is left
     # alone rather than silently vaulted.
     arcade: "save:fbneo/*"
-    # scummvm is DELIBERATELY ABSENT. It is the fifth unvaulted system, but it has never written a save
-    # here, so its path is unverified — and a card pointed at the wrong path "vaults an empty directory
-    # forever" (see this block's header). Add it only after a real in-game save proves the location.
+    # scummvm (2026-07-27) — the fifth unvaulted system, and the one that needed its path PROVEN rather
+    # than assumed. Its saves were NOT under any core dir at all: scummvm.ini carried
+    # savepath=D:/ArcadeStorage/saves/scummvm, i.e. the GATEWAY's saves mount, which no card can reach
+    # (specs root at save:/system: only) and which the gateway's own harvest sweep ignores (it scans root
+    # .dat/.srm + coresaves/<sessionId>/). One save folder for every player on both workers, unvaulted.
+    #
+    # Fix was to DELETE that savepath line (data/arcade/scummvm-deploy.ini): with it unset the libretro
+    # backend falls back to the frontend-provided save dir. VERIFIED by booting a real Day of the
+    # Tentacle room and reading what ScummVM wrote back into its own ini:
+    #     savepath=D:\ArcadeStorage\worker-gl-2\libretro/legacy_save
+    # — per-worker, and card-vaultable. Leaving it unset also keeps the deployed ini PORTABLE: each
+    # worker self-heals to its own ConfDir, so one repo file still serves both.
+    #
+    # ⚠ It resolves to the ROOT of legacy_save, shared with every other core's files — so this MUST be a
+    # narrow glob, never a dir spec (that would vault every core's saves into one user's ScummVM card).
+    # `*.s[0-9][0-9]` is ScummVM's own <target>.s## slot naming and is deliberately tighter than `*.s??`,
+    # which would also match a stray `.srm`. Verified to match nothing else at either root today.
+    scummvm: "save:*.s[0-9][0-9]"
 
   # Wii SD-card + ELF/DOL loader boot (Brawl mods: Project REX, Smash Bros Infinite — 2026-07-18). A
   # small number of Wii ROM hacks crash when baked onto a standalone disc because their own
