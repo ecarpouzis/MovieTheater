@@ -38,14 +38,22 @@ export const canHaveArt = (game) => Boolean(game?.hasBoxArt) || ART_SYSTEMS.has(
 // save path at all (docs/arcade-heavy-lane-plan.md §7.1).
 export const HEAVY_LANE_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "capture"]);
 
-// Systems with NO emulator save-state: their progress is a virtual memory card, not a serialized
+// Systems with NO emulator save-state: their progress is their own save data, not a serialized
 // machine state. psp + ps2 are noSaveStates cores (config.worker-gl.yaml — a t=106 there returns
 // ErrNoSaveStates). Keep in step with that file.
 //
+// scummvm is here for a DIFFERENT reason and is not marked in that config: the core simply cannot
+// serialize. Observed live 2026-07-27 —
+//   Libretro save on quit failed error="retro_serialize_size returned 0 (core cannot save-state this game)"
+// so Save/Load/Continue silently do nothing there. It degraded correctly by accident (no save rows are
+// ever written, so the launch modal already fell through to Clean Start), but the in-room Save button
+// was still offered and would fail silently. ScummVM's progress is entirely its own in-game save,
+// written through ScummVM's savepath.
+//
 // These have no state to continue from or quickload, so the launch modal collapses to Clean Start
-// alone for them — and, happily, they can never be save-scummed either: their card is the game's own
-// save system, which is legitimate on real hardware.
-export const NO_SAVE_STATE_SYSTEMS = new Set(["psp", "ps2", ...HEAVY_LANE_SYSTEMS]);
+// alone for them — and, happily, they can never be save-scummed either: their own save system is
+// legitimate exactly the way a real memory card is.
+export const NO_SAVE_STATE_SYSTEMS = new Set(["psp", "ps2", "scummvm", ...HEAVY_LANE_SYSTEMS]);
 
 /** True when a system can offer Continue / Quickload at all (i.e. it has emulator save-states). */
 export const hasSaveStates = (system) => !NO_SAVE_STATE_SYSTEMS.has(String(system || "").toLowerCase());
