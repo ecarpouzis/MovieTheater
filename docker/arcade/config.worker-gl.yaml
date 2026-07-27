@@ -1579,6 +1579,33 @@ emulator:
             # GET_AUDIO_VIDEO_ENABLE (nanoarch.c) — ScummVM reads a refusal as "produce nothing"
             # and ticked forever with video_cb never called.
             scummvm_video_hw_acceleration: "disabled"
+            # MOUSE (2026-07-27). These are point-and-click games and the room now streams the player's
+            # real mouse: the client sends RETRO_DEVICE_POINTER (POINTER_SYSTEMS in cloudRetroClient.js),
+            # hovering with pressed=0 so the ScummVM cursor tracks the mouse, and a click is the down/up
+            # edge. Before this, scummvm was gamepad-only and a mouse did nothing at all.
+            #
+            # "pointer" = the core's "RetroPad + Pointer" — ADDITIVE, so the stick-driven cursor keeps
+            # working for pad players; it does not take anything away. ("retropad" would remove mouse
+            # control outright, "mouse" wants RETRO_DEVICE_MOUSE relative deltas, which we do not send.)
+            # Pinned explicitly because the core's own default for this option is PLATFORM-CONDITIONAL —
+            # leaving it unset means guessing what our build does.
+            scummvm_pointer_device: "pointer"
+            # ScummVM's own Global Main Menu (save/load, engine options, quit) on a stick-click. This is
+            # the one core in the arcade where an in-core menu even exists: libretro cores normally have
+            # no UI of their own (RetroArch draws the options screen, and CloudRetro has no menu layer —
+            # which is why the site has its own ⚙ Configure panel instead). ScummVM is the exception
+            # because the core embeds ScummVM itself and draws its GUI into the video frame.
+            #
+            # ⚠ Mapper VALUES are RETROK_* tokens (verified in the deployed DLL's option table, alongside
+            # labels like "Keyboard F5" — the recurring values-not-labels trap). They are NOT ScummVM's
+            # internal keymapper action ids (MENU/OPTS/LCLK...), which look plausible in a strings dump
+            # but belong to a different layer entirely.
+            #
+            # L3/R3 chosen because they are unused by the core's gamepad cursor emulation, so nothing
+            # that works today is clobbered. If a game swallows F5 for its own save dialog, switch this
+            # to RETROK_F1 — one token, no other change.
+            scummvm_mapper_l3: "RETROK_F5"
+            scummvm_mapper_r3: "RETROK_F7"
         cdi:
           # same_cdi (MAME's CD-i driver, stripped to a libretro core) — pure software, safe. Needs
           # cdimono1.zip both at the BIOS root AND under same_cdi/bios/ (the core's own lookup path).

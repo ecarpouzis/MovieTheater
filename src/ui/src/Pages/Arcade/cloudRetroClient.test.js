@@ -39,6 +39,16 @@ describe("systemUsesPointer (capability gate)", () => {
     expect(systemUsesPointer("nds")).toBe(true);
     expect(systemUsesPointer("NDS")).toBe(true);
   });
+  it("is on for the touch/stylus consoles", () => {
+    expect(systemUsesPointer("3ds")).toBe(true);
+  });
+  it("is on for scummvm — a mouse game, not a touch one", () => {
+    // The first non-touch member (2026-07-27). Point-and-click adventures were gamepad-only before
+    // this and a player's mouse was never sent. Pairs with scummvm_pointer_device:"pointer" in
+    // config.worker-gl.yaml — without that core option the packets arrive and the core ignores them.
+    expect(systemUsesPointer("scummvm")).toBe(true);
+    expect(systemUsesPointer("ScummVM")).toBe(true);
+  });
   it("is off for non-pointer systems and junk (no hover flood / no pointer on a pad-only room)", () => {
     for (const s of ["snes", "n64", "ps1", "gba", "gc", "", null, undefined])
       expect(systemUsesPointer(s)).toBe(false);

@@ -455,7 +455,14 @@ function encodeInput(mask, axes) {
 // melonDS does (normalized pointer -> frame pixels -> clamped into the bottomScreen rect), so nothing
 // client-side is 3DS-specific. Needs citra_touch_touchscreen:"enabled" in config.worker-gl.yaml —
 // without it citra ignores POINTER_PRESSED and taps never register.
-const POINTER_SYSTEMS = new Set(["nds", "3ds"]);
+// scummvm joins unchanged too (2026-07-27) and is the first NON-touch member: a point-and-click
+// adventure is a mouse game, and the hover-with-pressed=0 stream added for the 3DS stylus cursor is
+// exactly what it needs — the ScummVM cursor tracks the real mouse, and a click is the down/up edge.
+// Before this, scummvm was gamepad-only (left stick nudges the cursor) and a player's mouse was never
+// sent at all. Needs scummvm_pointer_device:"pointer" in config.worker-gl.yaml — the core's default is
+// PLATFORM-CONDITIONAL, so it is pinned there rather than assumed. That value is "RetroPad + Pointer",
+// additive: the stick cursor keeps working for pad players.
+const POINTER_SYSTEMS = new Set(["nds", "3ds", "scummvm"]);
 export function systemUsesPointer(system) { return POINTER_SYSTEMS.has(String(system || "").toLowerCase()); }
 
 // Pointer cores map the libretro pointer through their OWN screen layout in DISPLAY (top-down) space,
@@ -466,7 +473,11 @@ export function systemUsesPointer(system) { return POINTER_SYSTEMS.has(String(sy
 // mirrored (confirmed live on Phoenix Wright New Game AND Mario Kart 7 OK, 2026-07-24). So no current
 // pointer core wants the flip undone; the set is kept (== POINTER_SYSTEMS today) to document WHY and to
 // leave room for a hypothetical future core that genuinely hit-tests in raw-framebuffer space.
-const POINTER_DISPLAY_SPACE_SYSTEMS = new Set(["nds", "3ds"]);
+// scummvm is a SOFTWARE core, so its rooms never send av.flip and this is inert for it today. It is
+// listed anyway, deliberately: the core ships scummvm_video_hw_acceleration, and if that were ever
+// turned on the rooms WOULD flip — at which point being absent here would silently invert every click
+// vertically. ScummVM hit-tests its own 2D display space, so it belongs on this side of the fence.
+const POINTER_DISPLAY_SPACE_SYSTEMS = new Set(["nds", "3ds", "scummvm"]);
 export function pointerIgnoresFrameFlip(system) { return POINTER_DISPLAY_SPACE_SYSTEMS.has(String(system || "").toLowerCase()); }
 
 // Pointer wire packet (W10 stylus/touch) — rides the SAME "data" channel as the pad frame, length+tag
