@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
 import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
@@ -107,6 +107,15 @@ export default function ArcadeRoomPage() {
   const [achToasts, setAchToasts] = useState([]);
   const achToastKeyRef = useRef(0);
   const achBadgeRef = useRef({});
+  // Already-earned suppression. rcheevos runs in SPECTATOR mode with no unlock history, so it re-fires
+  // every achievement you re-trigger in a later session — our mirror is the only memory of what you
+  // already have. Preloaded alongside the badge art: achId → was that earn a LEGIT run. A prior CASUAL
+  // earn still lets the first legit one through (a distinct row, and a genuine first).
+  const achEarnedRef = useRef(new Map());
+  // Unlocks that beat the preload are held rather than popped blind, then replayed once it lands. The
+  // ready flag MUST end up true on every path (including "no gameId"), or pops would vanish for good.
+  const achEarnedReadyRef = useRef(false);
+  const achPendingRef = useRef([]);
   const [players, setPlayers] = useState([]);
   const [spectators, setSpectators] = useState([]);
   const [maxPlayers, setMaxPlayers] = useState(0);
@@ -127,8 +136,12 @@ export default function ArcadeRoomPage() {
   const [padList, setPadList] = useState([]); // [{ index, id }]
   // Face-button convention override — mirrors the shim's machine-wide localStorage setting.
   // "auto" (default) picks the convention from each pad's detected controller family; the other
-  // two values force it for pads that misreport.
+  // two values force it for pads that misreport. It is only the DEFAULT: a per-pad choice wins.
   const [faceSwapMode, setFaceSwapModeState] = useState(getFaceSwapMode());
+  // Re-render after a per-pad face-swap choice. The overrides themselves live in the shim
+  // (localStorage + a module cache the 60Hz input poll reads), deliberately NOT mirrored into React
+  // state — two copies of the same setting is how they drift. This just says "re-read them".
+  const [, rereadPadSwaps] = useReducer((n) => n + 1, 0);
   // Button-mapping visualizer: which system's mapping the Controllers panel is currently showing.
   // null = follow the room's own system (the common case); set once the player picks a different
   // one from the dropdown to preview it.
@@ -338,23 +351,7 @@ export default function ArcadeRoomPage() {
         },
         onAchievement: (a) => {
           if (cancelled || !a) return;
-          // Live RetroAchievements unlock (worker push). Cosmetic only — RA + the server mirror hold the
-          // real record. Show a Steam-style pop in the corner with the badge art (looked up from the
-          // preloaded map); a tainted run carries its why-icon so the room sees it wasn't legit.
-          const key = ++achToastKeyRef.current;
-          setAchToasts((list) => [
-            ...list.slice(-3), // cap how many stack at once
-            {
-              key,
-              badgeUrl: achBadgeRef.current[String(a.id)] || null,
-              title: a.title,
-              points: a.points,
-              hardcore: a.hardcore,
-              cheat: a.cheat,
-              savescum: a.savescum,
-              timeplay: a.timeplay,
-            },
-          ]);
+          pushAchievementToast(a);
         },
       });
     }, 0);
@@ -480,27 +477,75 @@ export default function ArcadeRoomPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Preload the game's achievement badge art (achId → colour badge URL) so unlock pops can show it — the
-  // worker's t=160 carries no badge. gameId is parsed out of the deterministic room id, and the endpoint
-  // is DB-cached server-side so this is cheap. Failure just means pops fall back to an emoji.
+  // Pop one unlock — or deliberately swallow it. Split out of the session handler so the preload below
+  // can replay unlocks that arrived before the earned map landed. Cosmetic only: RA + the server mirror
+  // hold the real record, and the mirror still stores a re-fire (idempotently) whether or not we pop.
+  const pushAchievementToast = (a) => {
+    if (!achEarnedReadyRef.current) { achPendingRef.current.push(a); return; }
+    const id = String(a.id);
+    // Same legitimacy test the toast itself renders on (see AchievementToast).
+    const incomingLegit = !!a.hardcore && !a.cheat && !a.savescum && !a.timeplay;
+    const prior = achEarnedRef.current.get(id);
+    // Already have it at the same or better legitimacy → not news. Also dedupes a repeat packet within
+    // this session, since every pop records itself here.
+    if (prior !== undefined && (prior || !incomingLegit)) return;
+    achEarnedRef.current.set(id, prior || incomingLegit);
+    const key = ++achToastKeyRef.current;
+    setAchToasts((list) => [
+      ...list.slice(-3), // cap how many stack at once
+      {
+        key,
+        badgeUrl: achBadgeRef.current[id] || null,
+        title: a.title,
+        points: a.points,
+        hardcore: a.hardcore,
+        cheat: a.cheat,
+        savescum: a.savescum,
+        timeplay: a.timeplay,
+      },
+    ]);
+  };
+
+  // Preload the game's achievement set: badge art (achId → colour badge URL) so unlock pops can show it —
+  // the worker's t=160 carries no badge — and this user's earned overlay so we don't re-pop what they
+  // already have. gameId is parsed out of the deterministic room id, and the endpoint is DB-cached
+  // server-side so this is cheap. Failure degrades to the old behaviour: emoji badge, every unlock pops.
   useEffect(() => {
+    let cancelled = false;
+    const ready = () => {
+      if (cancelled) return;
+      achEarnedReadyRef.current = true;
+      const queued = achPendingRef.current;
+      achPendingRef.current = [];
+      for (const a of queued) pushAchievementToast(a);
+    };
+
     const d = descriptorRef.current;
-    if (!d?.wsUrl) return;
     let gameId = null;
     try {
-      const qs = new URLSearchParams(d.wsUrl.slice(d.wsUrl.indexOf("?") + 1));
+      const qs = new URLSearchParams((d?.wsUrl || "").slice((d?.wsUrl || "").indexOf("?") + 1));
       const m = decodeURIComponent(qs.get("room_id") || "").match(/^sv-\d+-(\d+)-/);
       if (m) gameId = parseInt(m[1], 10);
     } catch { /* ignore */ }
-    if (!gameId) return;
-    let cancelled = false;
-    MovieAPI.getArcadeGameAchievements(gameId).then((res) => {
-      if (cancelled || !res || !Array.isArray(res.achievements)) return;
-      const map = {};
-      for (const a of res.achievements) if (a.badgeUrl) map[String(a.id)] = a.badgeUrl;
-      achBadgeRef.current = map;
-    });
+    if (!gameId) { ready(); return; }
+
+    MovieAPI.getArcadeGameAchievements(gameId)
+      .then((res) => {
+        if (cancelled || !res || !Array.isArray(res.achievements)) return;
+        const map = {};
+        const earned = new Map();
+        for (const a of res.achievements) {
+          if (a.badgeUrl) map[String(a.id)] = a.badgeUrl;
+          if (a.earned) earned.set(String(a.id), !!a.legit);
+        }
+        achBadgeRef.current = map;
+        achEarnedRef.current = earned;
+      })
+      .catch(() => { /* degrade to no overlay */ })
+      .then(ready);
+
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const removeAchToast = (key) => setAchToasts((list) => list.filter((t) => t.key !== key));
@@ -1137,41 +1182,75 @@ export default function ArcadeRoomPage() {
           <Text style={{ flex: 1 }}>⌨️ Keyboard &amp; mouse</Text>
           <Text type="secondary">P{(yourSlot ?? 0) + 1} — you</Text>
         </div>
-        {padList.map((p) => (
-          <div key={p.index} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <Text ellipsis={{ tooltip: p.id }} style={{ display: "block" }}>
-                🎮 {p.id || `Controller ${p.index + 1}`}
-                {isStreamedPad(p) && <Text type="secondary"> (streamed — not auto-adopted)</Text>}
-              </Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                Detected: {controllerLabelFor(p)}{faceSwapMode !== "auto" && " (override applied)"}
-              </Text>
+        {padList.map((p) => {
+          // Per-PAD face-button convention (see controllerIdentity.js). The checkbox always shows
+          // what this pad will actually do — the auto-detected answer until it's ticked by hand —
+          // so "my pad feels backwards" is one click, on the row of the player holding it. It
+          // applies to whichever session owns the pad (the primary seat OR a local player's
+          // input-only session, in a room we host or one we joined), because every session's input
+          // poll resolves effectiveFaceSwap per pad per frame. Remote players tick their own.
+          const padSwap = effectiveFaceSwap(p);
+          const padSwapSetByHand = getPadFaceSwapOverride(p) !== undefined;
+          return (
+            <div key={p.index} style={{ padding: "8px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Text ellipsis={{ tooltip: p.id }} style={{ display: "block" }}>
+                    🎮 {p.id || `Controller ${p.index + 1}`}
+                    {isStreamedPad(p) && <Text type="secondary"> (streamed — not auto-adopted)</Text>}
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Detected: {controllerLabelFor(p)}
+                    {padSwapSetByHand ? " — layout set by hand" : faceSwapMode !== "auto" ? " (default override applied)" : ""}
+                  </Text>
+                </div>
+                <Select
+                  style={{ width: 190 }}
+                  value={padAssignment(p.index)}
+                  onChange={(v) => assignPad(p.index, v)}
+                  options={[
+                    { value: "primary", label: `P${(yourSlot ?? 0) + 1} — you` },
+                    ...localPlayers.map((lp) => ({ value: `seat:${lp.slot}`, label: `P${lp.slot + 1} (local)` })),
+                    ...(maxPlayers === 0 || players.length < maxPlayers
+                      ? [{ value: "new", label: "➕ New local player" }] : []),
+                    { value: "unused", label: "Not used" },
+                  ]}
+                />
+              </div>
+              <div style={{ marginTop: 2 }}>
+                <Tooltip title="Tick this for a controller whose A button is the BOTTOM face button (Xbox layout); leave it off for Nintendo / PlayStation pads, where the RIGHT-hand face button is A / Circle. Ticking it swaps this pad's A↔B and X↔Y so the game does what the buttons say. Applies to this controller only, on every game, and takes effect immediately.">
+                  <Checkbox
+                    checked={padSwap}
+                    onChange={(e) => { setPadFaceSwapOverride(p, e.target.checked); rereadPadSwaps(); }}
+                  >
+                    <span style={{ fontSize: 13 }}>Xbox layout (A on the bottom)</span>
+                  </Checkbox>
+                </Tooltip>
+                {padSwapSetByHand && (
+                  <a
+                    style={{ fontSize: 12, marginLeft: 8 }}
+                    onClick={() => { setPadFaceSwapOverride(p, null); rereadPadSwaps(); }}
+                  >
+                    back to auto
+                  </a>
+                )}
+              </div>
             </div>
-            <Select
-              style={{ width: 190 }}
-              value={padAssignment(p.index)}
-              onChange={(v) => assignPad(p.index, v)}
-              options={[
-                { value: "primary", label: `P${(yourSlot ?? 0) + 1} — you` },
-                ...localPlayers.map((lp) => ({ value: `seat:${lp.slot}`, label: `P${lp.slot + 1} (local)` })),
-                ...(maxPlayers === 0 || players.length < maxPlayers
-                  ? [{ value: "new", label: "➕ New local player" }] : []),
-                { value: "unused", label: "Not used" },
-              ]}
-            />
-          </div>
-        ))}
+          );
+        })}
         {padList.length === 0 && (
           <Text type="secondary">No controllers detected — connect one and press any button on it.</Text>
         )}
-        {/* Face-button convention — auto-detected per pad from its controller family (DualSense,
-            DualShock 4, Xbox, Switch Pro, generic), with a manual override for pads that misreport.
-            Machine-wide localStorage setting read by the shim per poll, so it takes effect
-            immediately, mid-game. Full per-user rebinding is future work. */}
+        {/* Face-button convention, machine-wide FALLBACK. Each pad above has its own checkbox and
+            that wins; this only decides what a pad does before anyone touches its checkbox — "auto"
+            (the default) reads the convention off the controller's detected family (DualSense,
+            DualShock 4, Xbox, Switch Pro, generic). Kept as a control rather than folded away
+            because an existing forced choice migrated into it from the old boolean setting, and a
+            setting you can't see is a setting you can't undo. Read by the shim per poll, so any
+            change here takes effect immediately, mid-game. */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: "1px solid rgba(128,128,128,0.25)", marginTop: 12, paddingTop: 12 }}>
-          <Tooltip title="Auto picks the face-button layout from each controller's detected type (PlayStation/Nintendo pads vs Xbox pads mirror their labels). Override it only if a pad misreports or still feels backwards.">
-            <Text style={{ flex: 1 }}>Face-button convention</Text>
+          <Tooltip title="What a controller does before you tick its own checkbox above. Auto reads the layout from each controller's detected type (PlayStation/Nintendo pads vs Xbox pads mirror their labels). Change this only if every pad on this machine is the same kind and keeps being detected wrong.">
+            <Text style={{ flex: 1 }}>Default for controllers you haven&apos;t set</Text>
           </Tooltip>
           <Select
             style={{ width: 190 }}
@@ -1355,8 +1434,10 @@ export default function ArcadeRoomPage() {
           </Tooltip>
         </div>
         <Text type="secondary" style={{ display: "block", marginTop: 12, fontSize: 12 }}>
-          Controllers plugged into other players' machines are assigned on their screens.
-          A controller drives one player; assigning it elsewhere frees its old seat's controls.
+          Controllers plugged into other players' machines are assigned — and their layouts ticked —
+          on their own screens; this panel covers every controller on this machine, including the
+          extra players sitting next to you. A controller drives one player; assigning it elsewhere
+          frees its old seat's controls.
         </Text>
       </Modal>
     </div>

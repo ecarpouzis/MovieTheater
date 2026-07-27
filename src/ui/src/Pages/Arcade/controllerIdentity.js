@@ -115,8 +115,64 @@ export function setFaceSwapMode(mode) {
   try { localStorage.setItem(MODE_KEY, safe); } catch { /* storage disabled */ }
 }
 
-/** Whether THIS pad's face buttons (south/east/west/north) should be relabeled Xbox-style. */
+// ── Per-CONTROLLER override (the Controllers panel's per-player checkbox) ────────────────────────
+// The mode above is machine-wide, which is the wrong grain the moment two people play on one
+// machine with different pads: local multiplayer runs several sessions in ONE browser, so a single
+// flag would force both players onto the same convention. This map is the per-pad answer, and it
+// beats the machine-wide mode.
+//
+// Keyed by gp.id (the model string), NOT gp.index. Indices are not stable — a Bluetooth pad that
+// idle-sleeps comes back at a different index (the same re-enumeration readGamepad's adoption
+// heuristic exists to survive), so an index-keyed choice would silently detach from the controller
+// the player set it on, mid-session. Two identical pads share one entry, which is the right answer
+// anyway: same model, same printed labels. Shape: { "<pad id>": true|false }.
+const PAD_OVERRIDE_KEY = "arcade.padFaceSwap";
+
+let padOverrides = (() => {
+  try {
+    const stored = localStorage.getItem(PAD_OVERRIDE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+})();
+
+// Same reason familyCache exists: effectiveFaceSwap runs per pad on every ~60Hz input poll, so the
+// id→key normalization is memoized rather than re-done 60 times a second.
+const padKeyCache = new Map();
+
+function padOverrideKeyFor(gp) {
+  const raw = (gp && gp.id) || "";
+  if (!raw) return gp && Number.isInteger(gp.index) ? `index:${gp.index}` : "";
+  let key = padKeyCache.get(raw);
+  if (key === undefined) {
+    key = raw.trim().toLowerCase();
+    padKeyCache.set(raw, key);
+  }
+  return key;
+}
+
+/** This pad's hand-set convention: true (Xbox), false (Nintendo/PlayStation), or undefined (auto). */
+export function getPadFaceSwapOverride(gp) {
+  const key = padOverrideKeyFor(gp);
+  return key ? padOverrides[key] : undefined;
+}
+
+/** Set (true/false) or clear (null/undefined) THIS pad's convention. Takes effect on the next input
+ *  poll — every session on this machine re-reads it per frame, so no rejoin, no session plumbing. */
+export function setPadFaceSwapOverride(gp, on) {
+  const key = padOverrideKeyFor(gp);
+  if (!key) return;
+  if (on === null || on === undefined) delete padOverrides[key];
+  else padOverrides[key] = !!on;
+  try { localStorage.setItem(PAD_OVERRIDE_KEY, JSON.stringify(padOverrides)); } catch { /* storage disabled */ }
+}
+
+/** Whether THIS pad's face buttons (south/east/west/north) should be relabeled Xbox-style.
+ *  Precedence: the pad's own hand-set choice > the machine-wide mode > its detected family. */
 export function effectiveFaceSwap(gp) {
+  const override = getPadFaceSwapOverride(gp);
+  if (override !== undefined) return !!override;
   const mode = getFaceSwapMode();
   if (mode === "auto") return controllerFamilyFor(gp).swapFaceButtons;
   return mode === "xbox";

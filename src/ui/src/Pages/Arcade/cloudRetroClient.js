@@ -263,13 +263,17 @@ const claimedPadIndexes = new Set();
 // confirm on the position DEFAULT_GAMEPAD already targets, Xbox pads mirror it. This used to be one
 // manual machine-wide boolean; it's now auto-detected PER PAD from the controller's own identity
 // (controllerIdentity.js classifies gp.id into a family — DualSense/DualShock4/Xbox/Switch Pro/
-// generic), with a manual override for pads that misreport. Barrel-exported here so
-// ArcadeRoomPage.js keeps importing the whole arcade-shim surface from one module.
+// generic), with a manual override for pads that misreport — machine-wide as a default, and
+// PER PAD (getPadFaceSwapOverride/setPadFaceSwapOverride) as the one that actually wins, so local
+// multiplayer on one machine can mix an Xbox pad and a Switch pad and get both right. Barrel-
+// exported here so ArcadeRoomPage.js keeps importing the whole arcade-shim surface from one module.
 export {
   controllerFamilyFor,
   controllerLabelFor,
   getFaceSwapMode,
   setFaceSwapMode,
+  getPadFaceSwapOverride,
+  setPadFaceSwapOverride,
   effectiveFaceSwap,
 } from "./controllerIdentity";
 export { mappingRowsFor, SYSTEM_BUTTON_LABELS } from "./controllerMapDisplay";

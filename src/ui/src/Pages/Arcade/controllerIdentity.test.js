@@ -4,10 +4,16 @@ import {
   controllerLabelFor,
   getFaceSwapMode,
   setFaceSwapMode,
+  getPadFaceSwapOverride,
+  setPadFaceSwapOverride,
   effectiveFaceSwap,
 } from "./controllerIdentity";
 
 const gp = (id, index = 0) => ({ id, index });
+
+const XBOX = "Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e Product: 0b13)";
+const DUALSENSE = "DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)";
+const SWITCHPRO = "Pro Controller (STANDARD GAMEPAD Vendor: 057e Product: 2009)";
 
 describe("controllerFamilyFor / controllerLabelFor", () => {
   it("classifies a DualSense pad from its Vendor/Product hex", () => {
@@ -73,8 +79,8 @@ describe("face-swap mode: tri-state + legacy boolean migration", () => {
   });
 
   it("effectiveFaceSwap: auto resolves from the pad's family; overrides ignore the pad entirely", () => {
-    const xbox = gp("Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e Product: 0b13)");
-    const dualsense = gp("DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)");
+    const xbox = gp(XBOX);
+    const dualsense = gp(DUALSENSE);
 
     setFaceSwapMode("auto");
     expect(effectiveFaceSwap(xbox)).toBe(true);
@@ -85,5 +91,67 @@ describe("face-swap mode: tri-state + legacy boolean migration", () => {
 
     setFaceSwapMode("nintendo");
     expect(effectiveFaceSwap(xbox)).toBe(false); // override wins even for an Xbox pad
+  });
+});
+
+describe("per-controller face-swap override (the Controllers panel's per-player checkbox)", () => {
+  const xbox = gp(XBOX, 0);
+  const dualsense = gp(DUALSENSE, 1);
+  const switchpro = gp(SWITCHPRO, 2);
+
+  beforeEach(() => {
+    localStorage.clear();
+    setFaceSwapMode("auto");
+    // The override map is module-cached (the 60Hz input poll reads it), so localStorage.clear()
+    // alone doesn't reset it — clear each pad through the real API.
+    for (const pad of [xbox, dualsense, switchpro]) setPadFaceSwapOverride(pad, null);
+  });
+
+  it("unset by default, and then reports exactly what was set", () => {
+    expect(getPadFaceSwapOverride(dualsense)).toBeUndefined();
+    setPadFaceSwapOverride(dualsense, true);
+    expect(getPadFaceSwapOverride(dualsense)).toBe(true);
+    setPadFaceSwapOverride(dualsense, false);
+    expect(getPadFaceSwapOverride(dualsense)).toBe(false);
+    setPadFaceSwapOverride(dualsense, null); // "back to auto"
+    expect(getPadFaceSwapOverride(dualsense)).toBeUndefined();
+  });
+
+  it("beats BOTH the machine-wide mode and the pad's detected family", () => {
+    setFaceSwapMode("nintendo");
+    setPadFaceSwapOverride(dualsense, true);
+    expect(effectiveFaceSwap(dualsense)).toBe(true); // pad choice > machine mode
+
+    setFaceSwapMode("auto");
+    setPadFaceSwapOverride(xbox, false);
+    expect(effectiveFaceSwap(xbox)).toBe(false); // pad choice > "xbox family swaps"
+  });
+
+  it("is PER PAD — one player's choice never moves another player's controller", () => {
+    // The local-multiplayer case: two pads, one machine, one browser, different conventions.
+    setPadFaceSwapOverride(xbox, false);
+    expect(effectiveFaceSwap(xbox)).toBe(false);
+    expect(effectiveFaceSwap(dualsense)).toBe(false); // untouched, still its auto answer
+    expect(effectiveFaceSwap(switchpro)).toBe(false);
+
+    setPadFaceSwapOverride(switchpro, true);
+    expect(effectiveFaceSwap(switchpro)).toBe(true);
+    expect(effectiveFaceSwap(xbox)).toBe(false); // unchanged
+    expect(effectiveFaceSwap(dualsense)).toBe(false); // unchanged
+  });
+
+  it("keys off the pad's id, not its index — a re-enumerated pad keeps its choice", () => {
+    setPadFaceSwapOverride(gp(DUALSENSE, 1), true);
+    // Same physical pad, new Gamepad-API slot after a Bluetooth sleep/wake.
+    expect(effectiveFaceSwap(gp(DUALSENSE, 3))).toBe(true);
+  });
+
+  it("falls back to an index key for a pad with no id, without throwing", () => {
+    const nameless = { index: 4 };
+    expect(getPadFaceSwapOverride(nameless)).toBeUndefined();
+    setPadFaceSwapOverride(nameless, true);
+    expect(effectiveFaceSwap(nameless)).toBe(true);
+    setPadFaceSwapOverride(nameless, null);
+    expect(effectiveFaceSwap(nameless)).toBe(false);
   });
 });
