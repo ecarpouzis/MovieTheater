@@ -81,6 +81,21 @@ const PROFILES = {
     foldStickToDpad: true,
     hint: "Gamepad recommended. Keyboard: arrows = move, Z X A S = buttons, Q W = L/R, Enter = Start, Shift = Select.",
   },
+  // ScummVM: the one system here that is primarily a MOUSE game (it joins POINTER_SYSTEMS, so the real
+  // cursor is streamed) AND the one core that embeds its own GUI, reachable via the Global Main Menu
+  // bound to L3/R3 in config.worker-gl.yaml (scummvm_mapper_l3/r3 -> RETROK_F5/F7).
+  //
+  // The default keymap has NOTHING on L3/R3 — no keyboard key reaches them — so that menu was pressable
+  // only on a gamepad, i.e. unreachable for exactly the players most likely to be here. M for Menu.
+  // Scoped to this system rather than added to DEFAULT_KEYMAP: L3/R3 are stick-clicks with real
+  // meaning on the 3D consoles, and the SELECT+L3/R3 quick-save chords live on them everywhere.
+  scummvm: {
+    gamepad: DEFAULT_GAMEPAD,
+    keymap: { ...DEFAULT_KEYMAP, KeyM: PAD.L3, KeyN: PAD.R3 },
+    // Same as default: a 2D core where stick and d-pad both mean "move the cursor".
+    foldStickToDpad: true,
+    hint: "Mouse recommended — point and click straight on the picture. M = ScummVM menu (save/load, options). Keyboard: arrows move the cursor, Q W = left/right click, Enter = Start.",
+  },
   // N64: mupen64plus-next maps N64 A ← RetroPad **B** and N64 B ← RetroPad A (verified live in
   // Bomberman 64's menus: PAD.B confirms, PAD.A backs out — the earlier assumption here was
   // inverted, which put "back" on the bottom button and made every N64 menu feel broken). So the

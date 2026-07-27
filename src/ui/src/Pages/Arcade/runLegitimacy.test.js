@@ -61,6 +61,14 @@ describe("start options by system", () => {
     for (const sys of HEAVY_LANE_SYSTEMS) expect(NO_SAVE_STATE_SYSTEMS.has(sys)).toBe(true);
   });
 
+  it("gates the in-room save-state controls, not just the launch modal", () => {
+    // hasSaveStates now drives BOTH: the Clean-Start collapse in ArcadePage AND whether Save / Load /
+    // Snapshot render at all in the room. It previously only did the former, so those buttons were
+    // still offered on cores that cannot serialize and failed silently when pressed.
+    for (const sys of ["psp", "ps2", "scummvm"]) expect(hasSaveStates(sys)).toBe(false);
+    for (const sys of ["snes", "ps1", "n64"]) expect(hasSaveStates(sys)).toBe(true);
+  });
+
   it("keeps the quick slot off slot 0, which is the auto Continue slot", () => {
     // SaveStore.QuickSlot. If these ever collide, pressing Save would overwrite the player's
     // save-on-quit state — the exact bug the separate slot exists to prevent.

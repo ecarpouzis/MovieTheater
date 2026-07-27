@@ -4,7 +4,7 @@ import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkb
 import { MovieAPI } from "../../MovieAPI";
 import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, findNewPad, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
 import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
-import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, QUICK_SLOT } from "./arcadeSystems";
+import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, QUICK_SLOT, hasSaveStates } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
 import { useWakeLock } from "../../useWakeLock";
 import AchievementToaster from "./AchievementToast";
@@ -373,6 +373,13 @@ export default function ArcadeRoomPage() {
             return;
           }
           if (!engaged) return; // one-shot chords act on engage only
+          // A core with no save-state can't honour these at all (psp/ps2 return ErrNoSaveStates;
+          // ScummVM's retro_serialize_size is 0). The buttons are hidden for those systems, so say
+          // why rather than let the pad chord fail silently.
+          if ((action === "quickSave" || action === "quickLoad") && !hasSaveStates(descriptorRef.current?.system)) {
+            message.info("This system has no save states — your progress saves inside the game itself.");
+            return;
+          }
           // quickSave/quickLoad already report their own success/failure via message.* — no need
           // to add a second toast on top of theirs.
           if (action === "quickSave") { quickSave(); return; }
@@ -1174,7 +1181,11 @@ export default function ArcadeRoomPage() {
               <Tag color="volcano">🏁 Competitive — no saves / cheats</Tag>
             </Tooltip>
           )}
-          {!competitive && !spectator && (
+          {/* Hidden entirely on cores that cannot serialize — psp/ps2 (noSaveStates in
+              config.worker-gl.yaml) and scummvm (retro_serialize_size returns 0). Offering a button
+              that can only fail is worse than not offering it; on those systems the game's own save
+              (memory card / memstick / ScummVM save slot) IS the progress and is vaulted per-user. */}
+          {!competitive && !spectator && hasSaveStates(system) && (
             <>
               <Tooltip title="Quicksave — keeps your place until you press Save again. Leaving the room never overwrites it. (Pad: hold Select + R3)">
                 <Button loading={snapping} onClick={quickSave}>Save</Button>
@@ -1212,12 +1223,13 @@ export default function ArcadeRoomPage() {
               </Button>
             </Tooltip>
           )}
-          {!competitive && yourSlot === 0 && (
+          {/* Named snapshots are save-STATES too, so they follow the same rule as Save/Load above. */}
+          {!competitive && yourSlot === 0 && hasSaveStates(system) && (
             <Tooltip title="Save a named snapshot you can resume later">
               <Button loading={snapping} onClick={saveSnapshot}>📸 Snapshot</Button>
             </Tooltip>
           )}
-          {!competitive && yourSlot === 0 && (
+          {!competitive && yourSlot === 0 && hasSaveStates(system) && (
             <Tooltip title="Load a saved snapshot without leaving the room">
               <Button onClick={loadSnapshot}>📂 Load snapshot</Button>
             </Tooltip>
