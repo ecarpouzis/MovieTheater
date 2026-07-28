@@ -100,6 +100,9 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
     setPads();
     vi.stubGlobal("navigator", { ...navigator, getGamepads: () => padsNow });
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    // The echo guard's "when did WE last send something" stamp is module-scope (one machine, many
+    // sessions), so it outlives a test. Start every test outside that window.
+    vi.advanceTimersByTime(600);
   });
   afterEach(() => { setIgnoreStreamedPads(false); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
@@ -262,6 +265,65 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
     await vi.advanceTimersByTimeAsync(100);
     const last = new Int16Array(dc.sent[dc.sent.length - 1])[0];
     expect(last).not.toBe(0); // the pin bypasses the guard
+    s.close();
+  });
+
+  // ── Echo guard (capture lane): on the capture HOST our own output comes back as an XInput pad ──
+
+  it("echo guard: the seat is never handed to a pad mirroring our own output", async () => {
+    setPads(pad(0, [0])); // the player's own pad, A held
+    const s = createCloudRetroSession(descriptorFor({ playerSlot: 0 }), { videoEl: null });
+    await driveToGameStart(sockets[0]);
+    const dc = channels.find((c) => c.label === "data");
+    dc.onopen?.();
+    await vi.advanceTimersByTimeAsync(50);
+    expect(s.getActivePadIndex()).toBe(0);
+    expect(new Int16Array(dc.sent[dc.sent.length - 1])[0]).not.toBe(0);
+
+    // The capture worker pressed its virtual ViGEm pad because WE told it to, and on the host
+    // Chrome enumerates that pad like any Xbox controller. The player lets go: for one poll their
+    // pad reads idle while the echo still reads pressed (our release is still in flight).
+    setPads(pad(0), xpad(1, [0]));
+    await vi.advanceTimersByTimeAsync(100);
+    expect(s.getActivePadIndex()).toBe(0); // the echo never takes the seat...
+    expect(new Int16Array(dc.sent[dc.sent.length - 1])[0]).toBe(0); // ...so the release is sent
+    s.close();
+  });
+
+  it("echo guard: a real pad is still adopted once our output has gone quiet", async () => {
+    setPads(pad(0, [0]));
+    const s = createCloudRetroSession(descriptorFor({ playerSlot: 0 }), { videoEl: null });
+    await driveToGameStart(sockets[0]);
+    const dc = channels.find((c) => c.label === "data");
+    dc.onopen?.();
+    await vi.advanceTimersByTimeAsync(50);
+
+    setPads(pad(0));                    // released — nothing left for a virtual pad to mirror
+    await vi.advanceTimersByTimeAsync(600);
+    setPads(pad(0), pad(1, [0]));       // ...then they pick up another pad (the re-enumeration case)
+    await vi.advanceTimersByTimeAsync(50);
+    expect(s.getActivePadIndex()).toBe(1);
+    expect(new Int16Array(dc.sent[dc.sent.length - 1])[0]).not.toBe(0);
+    s.close();
+  });
+
+  it("keepalive: the unchanged frame is re-sent ~1/s so a dropped release can't stick forever", async () => {
+    setPads(pad(0, [0]));
+    const s = createCloudRetroSession(descriptorFor({ playerSlot: 0 }), { videoEl: null });
+    await driveToGameStart(sockets[0]);
+    const dc = channels.find((c) => c.label === "data");
+    dc.onopen?.();
+    await vi.advanceTimersByTimeAsync(100);
+    const afterPress = dc.sent.length;
+    expect(afterPress).toBe(1); // send-on-change: one frame for the press, not one per 16 ms poll
+
+    await vi.advanceTimersByTimeAsync(300);
+    expect(dc.sent.length).toBe(afterPress); // still quiet — the dedupe is intact
+
+    await vi.advanceTimersByTimeAsync(800); // now past the resync interval
+    expect(dc.sent.length).toBe(afterPress + 1);
+    const [resent, held] = [dc.sent[dc.sent.length - 1], dc.sent[afterPress - 1]].map((f) => new Int16Array(f)[0]);
+    expect(resent).toBe(held); // absolute state, re-asserted — not an edge
     s.close();
   });
 

@@ -322,6 +322,29 @@ export function isStreamedPad(gp) {
   return ignoreStreamedPads && !!gp && /xinput/i.test(gp.id || "");
 }
 
+// ── Echo guard: our OWN output can come back as "a controller pressing buttons" ──────────────────
+// The capture lane (docs/arcade-capture-worker-plan.md §4.5) drives a ViGEm virtual Xbox 360 pad on
+// the CAPTURE HOST so the streamed app sees a controller. When the browser playing that room runs ON
+// THAT SAME MACHINE — the normal way this gets tested on the host — Chrome enumerates that virtual
+// pad exactly like a real Xbox pad, and it mirrors, one round trip later, whatever we send. That
+// turns the adoption heuristic below into a latch: the poll after the player lets go, THEIR pad reads
+// idle while the echo still reads pressed (our release is in flight), so the seat is handed to the
+// echo — and from then on the session is reading its own output and re-sending it. Observed live
+// 2026-07-28: one tap of A in SM64 (pc-sm64-plus, a capture title) became A tapping forever until a
+// page refresh. It oscillates rather than sticks because the echo presents as an Xbox pad, so
+// effectiveFaceSwap flips the face buttons and each round trip maps back to the OTHER bit.
+//
+// The guard is structural, not a heuristic: an echo can only look active because our output is (or
+// just was) non-neutral, whereas a real pad the player picks up is active while we send nothing. So
+// auto-adoption simply refuses to change pads inside a short window after our own last non-neutral
+// frame. It costs a real re-adoption at most ECHO_WINDOW_MS (the player is by definition not touching
+// the old pad), needs no per-machine config, and covers the Moonlight-host case the manual
+// ignoreStreamedPads toggle above was added for. Pinned pads and explicit panel assignment bypass it.
+const ECHO_WINDOW_MS = 500;
+// Module-scope on purpose: with local multiplayer one machine holds several sessions, and ANY of
+// them driving the host's virtual pad can be the thing another session sees echoed back.
+let lastNonNeutralOutputAt = 0;
+
 // ── Gamepad button rebinding ────────────────────────────────────────────────────────────────
 // Custom gamepad profiles override the system defaults. Maps physical button index -> RetroPad bit.
 // Stored per-system in localStorage.
@@ -831,7 +854,14 @@ export function createCloudRetroSession(descriptor, opts) {
       const free = (p) => p && !claimedPadIndexes.has(p.index) && !isStreamedPad(p);
       gp = activePadIndex >= 0 && !claimedPadIndexes.has(activePadIndex) ? pads[activePadIndex] : null;
       if (gp && isStreamedPad(gp)) gp = null;
-      if (!adoptionHeld
+      // Never re-adopt while our own output could still be bouncing back off a virtual pad on this
+      // machine (see the echo guard above) — that "active" pad may be us. Keep whatever we hold.
+      // A negative age means the stamp is in the future (system clock moved back, or a stamp left by
+      // a session that outlived a clock change): un-trustable, so treat it as no risk rather than
+      // wedging adoption until the clock catches up.
+      const outputAge = Date.now() - lastNonNeutralOutputAt;
+      const echoRisk = outputAge >= 0 && outputAge < ECHO_WINDOW_MS;
+      if (!adoptionHeld && !echoRisk
           && (!gp || (!padActive(gp) && Array.prototype.some.call(pads, (p) => free(p) && p !== gp && padActive(p))))) {
         gp = Array.prototype.find.call(pads, (p) => free(p) && padActive(p)) || gp
           || Array.prototype.find.call(pads, (p) => free(p)) || null;
@@ -866,8 +896,17 @@ export function createCloudRetroSession(descriptor, opts) {
     return { mask, axes };
   }
 
-  // Send on change only, like the stock client (dirty flag over the whole 5-int16 frame).
+  // Send on change only, like the stock client (dirty flag over the whole 5-int16 frame) — plus a
+  // slow KEEPALIVE resend of the current frame (RESYNC_MS), because "on change only" over an
+  // unreliable transport is a one-way trip: the joypad channel is maxRetransmits:0 / unordered, so a
+  // dropped frame is simply gone, and the worker keeps whatever state it last heard until the NEXT
+  // change. Lose a RELEASE and the button is held in-game forever — nothing else resends it (blur/
+  // focus force a resync, but only if the player happens to leave the tab). Resending the current
+  // state once a second bounds any such desync to ~1s at ~10 bytes/s, and is safe out of order
+  // precisely because the frame is absolute state, not an edge.
+  const RESYNC_MS = 1000;
   let last = null;
+  let lastSentAt = 0;
   function pumpInput() {
     if (closed || !dc || dc.readyState !== "open") return;
     const gp = readGamepad();
@@ -903,9 +942,17 @@ export function createCloudRetroSession(descriptor, opts) {
       if (!ry) ry = rKeys.up ? -32767 : rKeys.down ? 32767 : 0;
     }
     const a = [ax, ay, rx, ry];
-    if (last && last[0] === mask && last[1] === a[0] && last[2] === a[1] && last[3] === a[2] && last[4] === a[3])
+    // Echo-guard bookkeeping (see ECHO_WINDOW_MS): stamp every tick our output is non-neutral, NOT
+    // every frame we send — a HELD button stops producing sends the moment the dedupe below latches,
+    // while the worker's virtual pad stays pressed the whole time. Stamping on send would let the
+    // window expire mid-hold, which is exactly when the release makes the echo look like a live pad.
+    const now = Date.now();
+    if (mask !== 0 || a[0] !== 0 || a[1] !== 0 || a[2] !== 0 || a[3] !== 0) lastNonNeutralOutputAt = now;
+    if (last && last[0] === mask && last[1] === a[0] && last[2] === a[1] && last[3] === a[2] && last[4] === a[3]
+        && now - lastSentAt < RESYNC_MS)
       return;
     last = [mask, a[0], a[1], a[2], a[3]];
+    lastSentAt = now;
     try { dc.send(encodeInput(mask, a)); } catch { /* channel closing */ }
   }
 
