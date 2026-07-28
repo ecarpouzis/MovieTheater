@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createCloudRetroSession, findNewPad, setIgnoreStreamedPads, isStreamedPad } from "./cloudRetroClient";
+import { createCloudRetroSession, findNewPad, setIgnoreStreamedPads, isStreamedPad, livePads, isPhantomPad } from "./cloudRetroClient";
 
 // Local multiplayer (extra controllers on one machine): each extra pad gets its own INPUT-ONLY
 // CloudRetro session pinned to that pad, because the wire protocol routes input by CONNECTION —
@@ -74,6 +74,14 @@ const pad = (index, pressed = []) => ({
 const xpad = (index, pressed = []) => ({
   ...pad(index, pressed),
   id: "Xbox 360 Controller (XInput STANDARD GAMEPAD)",
+});
+
+// A pad with an identity and a sample timestamp — what phantom detection reads. Liveness is
+// OBSERVED (does `timestamp` still advance?) and a stale entry is only condemned once a live twin of
+// the same model exists, so both fields matter; a reconnect is modelled by leaving the old entry
+// frozen and adding a second one with the same id at a new index.
+const idPad = (index, { id = "DualSense Wireless Controller (STANDARD GAMEPAD)", ts = 0, pressed = [] } = {}) => ({
+  ...pad(index, pressed), id, timestamp: ts, connected: true,
 });
 
 let padsNow;
@@ -324,6 +332,72 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
     expect(dc.sent.length).toBe(afterPress + 1);
     const [resent, held] = [dc.sent[dc.sent.length - 1], dc.sent[afterPress - 1]].map((f) => new Int16Array(f)[0]);
     expect(resent).toBe(held); // absolute state, re-asserted — not an edge
+    s.close();
+  });
+
+  // ── Phantom pads: the corpse a disconnect/reconnect leaves in the Gamepad API ──────────────────
+
+  it("phantom: a corpse leaves the pad list once its live twin reports", async () => {
+    setPads(idPad(0, { ts: 100 }));
+    expect(livePads().map((p) => p.index)).toEqual([0]);
+
+    // Reconnected: the old slot lingers frozen at ts 100, the same controller returns at index 1.
+    setPads(idPad(0, { ts: 100 }), idPad(1, { ts: 500 }));
+    expect(livePads().map((p) => p.index)).toEqual([0, 1]); // both new to us — nothing condemned yet
+
+    await vi.advanceTimersByTimeAsync(3200);
+    setPads(idPad(0, { ts: 100 }), idPad(1, { ts: 900 })); // only the live one keeps sampling
+    expect(livePads().map((p) => p.index)).toEqual([1]);
+    expect(isPhantomPad(padsNow[0])).toBe(true);
+    expect(isPhantomPad(padsNow[1])).toBe(false);
+  });
+
+  it("phantom: an idle pad with no twin is never condemned", async () => {
+    setPads(idPad(0, { ts: 100, id: "Pad A" }), idPad(1, { ts: 100, id: "Pad B" }));
+    livePads();
+    await vi.advanceTimersByTimeAsync(5000); // both quiet far past the stale window
+    expect(livePads().map((p) => p.index)).toEqual([0, 1]); // "quiet" is not "dead"
+  });
+
+  it("phantom: a pinned seat follows its controller to the index it comes back on", async () => {
+    setPads(idPad(1, { ts: 100, pressed: [0] }));
+    const s = createCloudRetroSession(descriptorFor(), { padIndex: 1 });
+    await driveToGameStart(sockets[0]);
+    const dc = channels.find((c) => c.label === "data");
+    dc.onopen?.();
+    await vi.advanceTimersByTimeAsync(50);
+    expect(s.getActivePadIndex()).toBe(1);
+    expect(new Int16Array(dc.sent[dc.sent.length - 1])[0]).not.toBe(0);
+
+    // Unplugged MID-PRESS (the nastiest corpse: it reports that button held forever) and plugged
+    // back in at index 2.
+    setPads(idPad(1, { ts: 100, pressed: [0] }), idPad(2, { ts: 600 }));
+    await vi.advanceTimersByTimeAsync(3200);
+    setPads(idPad(1, { ts: 100, pressed: [0] }), idPad(2, { ts: 1200 }));
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(s.getActivePadIndex()).toBe(2); // the pin followed the controller, not the index
+    expect(new Int16Array(dc.sent[dc.sent.length - 1])[0]).toBe(0); // and the frozen press let go
+    expect(findNewPad()).toBe(-1); // the corpse can't answer the press-a-button detector either
+    s.close();
+  });
+
+  it("phantom: the primary drops a corpse it had latched instead of holding its button", async () => {
+    setPads(idPad(0, { ts: 100, pressed: [0] }));
+    const s = createCloudRetroSession(descriptorFor({ playerSlot: 0 }), { videoEl: null });
+    await driveToGameStart(sockets[0]);
+    const dc = channels.find((c) => c.label === "data");
+    dc.onopen?.();
+    await vi.advanceTimersByTimeAsync(50);
+    expect(new Int16Array(dc.sent[dc.sent.length - 1])[0]).not.toBe(0);
+
+    setPads(idPad(0, { ts: 100, pressed: [0] }), idPad(1, { ts: 600 }));
+    await vi.advanceTimersByTimeAsync(3200);
+    setPads(idPad(0, { ts: 100, pressed: [0] }), idPad(1, { ts: 1200 }));
+    await vi.advanceTimersByTimeAsync(600); // past the stale window, then past the echo window
+
+    expect(new Int16Array(dc.sent[dc.sent.length - 1])[0]).toBe(0);
+    expect(s.getActivePadIndex()).toBe(1); // adoption moved on to the real pad
     s.close();
   });
 
