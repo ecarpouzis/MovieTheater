@@ -64,7 +64,9 @@
 .agm-ach__bar { flex: 1; margin: 0 !important; }
 .agm-ach__ra { white-space: nowrap; font-size: 12px; }
 .agm-ach__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 8px; }
-.agm-ach__cell { position: relative; display: block; aspect-ratio: 1; border-radius: 8px; overflow: hidden; }
+/* A badge is a tap target for its own detail tooltip, not a link — no link cursor, no tap flash. */
+.agm-ach__cell { position: relative; display: block; aspect-ratio: 1; border-radius: 8px; overflow: hidden;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .agm-ach__badge { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 8px; }
 .agm-ach__badge--none { display: flex; align-items: center; justify-content: center; font-size: 24px; background: var(--chip-neutral-bg); }
 .agm-ach__cell--locked { opacity: .55; filter: grayscale(.5); }

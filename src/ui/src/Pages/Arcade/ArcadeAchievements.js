@@ -53,6 +53,9 @@ export default function ArcadeAchievements({ gameId }) {
         {data.achievements.map((a) => (
           <Tooltip
             key={a.id}
+            // Tapping a badge shows its details — it is NOT a link off to RA. (The one RA link is in
+            // the header.) "click" is what makes the tooltip usable on touch, where there's no hover.
+            trigger={["hover", "focus", "click"]}
             title={
               <div className="agm-ach__tip">
                 <div className="agm-ach__tip-title">{a.title} · {a.points} pts</div>
@@ -62,10 +65,9 @@ export default function ArcadeAchievements({ gameId }) {
               </div>
             }
           >
-            <a
-              href={a.raUrl}
-              target="_blank"
-              rel="noreferrer"
+            <span
+              role="button"
+              tabIndex={0}
               className={a.earned ? "agm-ach__cell agm-ach__cell--earned" : "agm-ach__cell agm-ach__cell--locked"}
             >
               {a.badgeUrl
@@ -76,7 +78,7 @@ export default function ArcadeAchievements({ gameId }) {
                   <LegitTags entry={{ competitive: a.earnedCompetitive, cheat: a.cheat, savescum: a.savescum, timeplay: a.timeplay, legit: a.legit }} />
                 </span>
               )}
-            </a>
+            </span>
           </Tooltip>
         ))}
       </div>
