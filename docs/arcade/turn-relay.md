@@ -51,6 +51,12 @@ reproduced here — global options block:
 			@acme tls alpn acme-tls/1     # MUST come first (cert renewal)
 			route @acme { proxy 127.0.0.1:8443 }
 
+			@turnweb tls {           # HTTP clients -> web app, so the host isn't a black hole
+				sni turn.carpouzis.com
+				alpn h2 http/1.1
+			}
+			route @turnweb { proxy 127.0.0.1:8443 }
+
 			@turn tls sni turn.carpouzis.com
 			route @turn { proxy 127.0.0.1:5349 }
 
@@ -59,6 +65,24 @@ reproduced here — global options block:
 	}
 }
 ```
+
+### Why `@turnweb` exists (added 2026-07-28)
+
+Sending *all* of `SNI=turn.carpouzis.com` to pion made the hostname a black hole over HTTP — it
+completes TLS then swallows the request and times out, which reads as evasive to a reputation
+scanner. Bad, given FortiGuard had just auto-rated `arcade.carpouzis.com` as **Phishing** (see
+[[arcade-public-wifi-signaling]]); the fingerprint it scores is "valid cert + residential IP + zero
+human content + opaque token paths". `arcade`, `stream` and `turn` now each serve a real landing
+page, `robots.txt` and `favicon.ico` from `C:\caddy\site\<host>\` at exactly those three paths;
+every functional path still proxies through untouched.
+
+Browsers and crawlers always negotiate `h2`/`http/1.1`, and a browser's TURN/TLS client negotiates
+neither — **verified**, not assumed: headless Chromium with `iceTransportPolicy:'relay'` and only the
+:443 url offered gathered `typ relay` candidates.
+
+⚠ **Do not test this with a .NET/PowerShell HTTP client** — it sends no ALPN, so it falls through to
+the relay and *appears* to hang, which looks exactly like the bug this fixed. Use `curl` (sends ALPN
+by default) for the web path, and a no-ALPN raw TLS socket + STUN Allocate for the relay path.
 
 Deploy it with `scripts/deploy-caddy-turn443.ps1` (elevated) — it backs up the binary and config,
 swaps, restarts, then verifies each web host still serves its own cert on 443, that SNI=turn reaches
