@@ -19,6 +19,56 @@ route that works from such a network — and it forwards to the worker over the 
 - The honest cost when it *does* relay: real-time media over TCP → head-of-line blocking under loss.
   Fine for a fallback; a notch below a direct UDP path.
 
+### TURNS is also served on **443** (2026-07-28) — and that is the port that matters
+
+5349 is the IANA turns port, but a genuinely locked-down network doesn't care: **a FortiGuard-filtered
+public wifi permits basically 80/443 and nothing else**, so the relay was unreachable from exactly the
+networks that need a relay. (The same venue also blocked `arcade.carpouzis.com` outright — rated
+**Phishing**, a miscategorisation — and MITM'd the TLS to inject its block page, which is why the
+browser complained about the cert. See [[arcade-public-wifi-signaling]].)
+
+Ziggy has one WAN IP and Caddy already owns 443, so the two share it by **SNI demux**: Caddy's
+`layer4` app listens on TCP :443 and hands `SNI = turn.carpouzis.com` to the relay as a **raw TCP
+passthrough**, everything else to the normal HTTP app (moved to `https_port 8443`).
+
+- **Never put a `tls` handler on the turn route.** The relay terminates TURNS itself with its own copy
+  of the cert; terminating at Caddy would hand pion plaintext.
+- **`acme-tls/1` is matched FIRST and sent to the HTTP app.** A TLS-ALPN-01 challenge for the turn
+  hostname carries `turn.carpouzis.com` as SNI, so without that route the relay would answer the
+  challenge and fail it — and the cert could never renew.
+- Requires the `github.com/mholt/caddy-l4` plugin in the Caddy build (alongside `caddy-dns/godaddy`).
+  Get one from `https://caddyserver.com/api/download?os=windows&arch=amd64&p=github.com/mholt/caddy-l4&p=github.com/caddy-dns/godaddy`.
+
+The Caddyfile lives at `C:\caddy\Caddyfile` (outside this repo), so the load-bearing part is
+reproduced here — global options block:
+
+```caddyfile
+{
+	https_port 8443          # the HTTP app moves off :443; layer4 owns it
+
+	layer4 {
+		:443 {
+			@acme tls alpn acme-tls/1     # MUST come first (cert renewal)
+			route @acme { proxy 127.0.0.1:8443 }
+
+			@turn tls sni turn.carpouzis.com
+			route @turn { proxy 127.0.0.1:5349 }
+
+			route { proxy 127.0.0.1:8443 }
+		}
+	}
+}
+```
+
+Deploy it with `scripts/deploy-caddy-turn443.ps1` (elevated) — it backs up the binary and config,
+swaps, restarts, then verifies each web host still serves its own cert on 443, that SNI=turn reaches
+the relay, that 5349 still answers, and that arcade `/healthz` is 200. Any failure auto-rolls-back.
+`-Rollback` undoes it later.
+- Known trade-offs: the HTTP app sees `127.0.0.1` as the client IP (nothing depends on client IP
+  today — the old `remote_ip` books redirect was removed), and HTTP/3 no longer runs on UDP 443
+  (layer4 is TCP-only), so browsers use HTTP/2 over TCP.
+- 5349 stays open and listed as a second ICE url, so this is safe to roll back.
+
 ## Pieces
 
 | Piece | Path |
@@ -106,13 +156,15 @@ The **same** value goes in the site's `ArcadeTurnSecret` (step 5).
 
 ### 4. Deco WAN port-forward
 **Deco app → More → Advanced → NAT Forwarding → Port Forwarding**: add **TCP 5349 → 192.168.68.69**.
+(TCP 443 is already forwarded for the web hosts — that is the port the 443 SNI demux above rides, so
+nothing extra is needed for it.)
 While you're there, set an **Address Reservation** for Ziggy at `192.168.68.69` (Advanced → Address
 Reservation) so the LAN IP the relay/forwards depend on can't drift.
 
 ### 5. Site config (the shared prod/dev appsettings + the prod secret)
 Add to the arcade config block:
 ```json
-"ArcadeTurnUrls": [ "turns:turn.carpouzis.com:5349?transport=tcp" ],
+"ArcadeTurnUrls": [ "turns:turn.carpouzis.com:443?transport=tcp", "turns:turn.carpouzis.com:5349?transport=tcp" ],
 "ArcadeTurnSecret": "J73r8022wh/jPexI32+DX9kOdnOJcaC5jpoI/aERRY8=",
 "ArcadeTurnCredentialTtlSeconds": 43200
 ```
