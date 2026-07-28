@@ -62,6 +62,17 @@ namespace MovieTheater.Controllers
             return title != null && title.StartsWith("English", StringComparison.OrdinalIgnoreCase);
         }
 
+        // Director's commentary and audio-description tracks carry an English language tag too, so a
+        // foreign film whose only English audio is a commentary must NOT auto-switch to it — that's a
+        // worse default than the original language. Excluded from the auto-pick; still hand-selectable.
+        private static bool IsCommentaryOrDescription(JellyfinPlaybackStream s)
+        {
+            var title = s.DisplayTitle;
+            return title != null
+                && (title.Contains("commentary", StringComparison.OrdinalIgnoreCase)
+                    || title.Contains("description", StringComparison.OrdinalIgnoreCase));
+        }
+
         // PGS (HDMV Presentation Graphic Stream — Blu-ray bitmap subtitles): rendered client-side by
         // libpgs as a canvas overlay, so it's delivered as an external .sup and never burned in (the
         // video stays copied). Jellyfin reports the codec as "pgssub".
@@ -163,12 +174,13 @@ namespace MovieTheater.Controllers
             }
 
             var startTicks = (long)((request.StartSeconds ?? 0) * TicksPerSecond);
-            // Direct play serves the whole original file, so it can't honor a burned-in subtitle
-            // or a non-default audio selection — fall back to a transcode in those cases. ForceTranscode
-            // (the channel mid-join escalation for a title whose keyframe index breaks the copy seek)
-            // also rules out direct play: only a real re-encode lays down seekable keyframes.
-            var allowDirectPlay = request.SubtitleStreamIndex == null && request.AudioStreamIndex == null
-                && !request.ForceTranscode;
+            // Direct play serves the whole original file, so it can't honor a burned-in subtitle:
+            // fall back to a transcode. ForceTranscode (the channel mid-join escalation for a title
+            // whose keyframe index breaks the copy seek) also rules out direct play: only a real
+            // re-encode lays down seekable keyframes. An audio selection does NOT rule it out here —
+            // whether it actually blocks direct play depends on whether it names a non-default track,
+            // which is only knowable after Jellyfin describes the streams (below).
+            var allowDirectPlay = request.SubtitleStreamIndex == null && !request.ForceTranscode;
             JellyfinPlaybackInfoResult info;
             try
             {
@@ -184,36 +196,56 @@ namespace MovieTheater.Controllers
 
             var source = info.MediaSources[0];
 
-            // Auto-default to English audio: when the caller expressed no preference and the track
-            // that would play (the container default, else the first) isn't English while an English
-            // track exists, re-resolve pinned to it. An explicit audio selection disables direct play,
-            // so this only re-requests when a switch is actually needed. Clients keep sending no
-            // preference, so this re-applies on every start (incl. each channel advance) for free.
+            // The track that plays when nobody pins one: the container default, else the first.
+            // Direct play and an unpinned transcode both land on this track.
+            var allAudioStreams = source.MediaStreams.Where(s => s.Type == "Audio").ToList();
+            var defaultAudioIndex = (allAudioStreams.FirstOrDefault(s => s.IsDefault) ?? allAudioStreams.FirstOrDefault())?.Index;
+
+            // Which audio track should actually play: the caller's explicit pick, else the English
+            // auto-default — when the caller expressed no preference and the default track isn't
+            // English while a non-commentary English track exists, switch to it. Clients keep sending
+            // no preference, so the auto-default re-applies on every start (incl. each channel advance).
             int? effectiveAudioIndex = request.AudioStreamIndex;
-            if (request.AudioStreamIndex == null)
+            if (effectiveAudioIndex == null && allAudioStreams.Count > 1)
             {
-                var audioStreams = source.MediaStreams.Where(s => s.Type == "Audio").ToList();
-                if (audioStreams.Count > 1)
+                var playing = allAudioStreams.FirstOrDefault(s => s.IsDefault) ?? allAudioStreams[0];
+                if (!IsEnglish(playing)
+                    && allAudioStreams.FirstOrDefault(s => IsEnglish(s) && !IsCommentaryOrDescription(s)) is { } english)
+                    effectiveAudioIndex = english.Index;
+            }
+
+            // A selection naming the track that would play anyway is a no-op: don't pin it, so the
+            // stream stays eligible for direct play (and the one-call path). This is what lets a viewer
+            // re-select the default track — e.g. Japanese on a subbed anime, overriding the English
+            // auto-default — without paying for a transcode. selectedAudioIndex (below) still reports
+            // the default, so the player highlights the right entry either way.
+            if (effectiveAudioIndex != null && effectiveAudioIndex == defaultAudioIndex)
+                effectiveAudioIndex = null;
+
+            // Pinning a track needs a SECOND PlaybackInfo call carrying the media source id. Jellyfin's
+            // MediaInfoHelper only applies the requested AudioStreamIndex/SubtitleStreamIndex when the request
+            // also names the source (`string.Equals(mediaSourceId, mediaSource.Id)`); the first call can't —
+            // the id isn't known until Jellyfin answers. Without it BOTH indices were silently dropped and the
+            // TranscodingUrl came back on the container's default audio, which is why picking a language (or the
+            // English auto-default) never actually swapped the audio. Only pay for the extra round trip when a
+            // track is actually selected — the no-preference case (most starts, and the only one that can direct
+            // play) still resolves in one call.
+            if ((effectiveAudioIndex != null || request.SubtitleStreamIndex != null)
+                && !string.IsNullOrEmpty(source.Id))
+            {
+                allowDirectPlay = false;   // a pinned track can't be served by handing over the original file
+                try
                 {
-                    var playing = audioStreams.FirstOrDefault(s => s.IsDefault) ?? audioStreams[0];
-                    if (!IsEnglish(playing) && audioStreams.FirstOrDefault(IsEnglish) is { } english)
-                    {
-                        effectiveAudioIndex = english.Index;
-                        allowDirectPlay = false;
-                        try
-                        {
-                            info = await jellyfin.GetPlaybackInfoAsync(
-                                file.JellyfinItemId, request.MaxBitrateBps, effectiveAudioIndex, request.SubtitleStreamIndex,
-                                startTicks, request.ToCapabilities(), allowDirectPlay);
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.LogError(ex, "Jellyfin PlaybackInfo (English audio) failed for playable {PlayableId}", playableId);
-                            return StatusCode(502, new { message = "Could not reach the media server." });
-                        }
-                        source = info.MediaSources[0];
-                    }
+                    info = await jellyfin.GetPlaybackInfoAsync(
+                        file.JellyfinItemId, request.MaxBitrateBps, effectiveAudioIndex, request.SubtitleStreamIndex,
+                        startTicks, request.ToCapabilities(), allowDirectPlay, source.Id);
                 }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Jellyfin PlaybackInfo (pinned tracks) failed for playable {PlayableId}", playableId);
+                    return StatusCode(502, new { message = "Could not reach the media server." });
+                }
+                source = info.MediaSources[0];
             }
 
             // Serve the original file (no ffmpeg) when the browser can play it as-is and the bitrate
@@ -334,13 +366,15 @@ namespace MovieTheater.Controllers
                 // rips lack. The client only sets this after the cheap copy path has looped.
                 if (request.ForceTranscode)
                     transcodingUrl += "&AllowVideoStreamCopy=false";
-                // Jellyfin's PlaybackInfo drops the subtitle params from the TranscodingUrl even when an
-                // image subtitle is selected to be burned in (its SubtitleDeliveryMethod is "Encode").
-                // Without them the transcode still runs (for container/audio reasons) but ffmpeg never
-                // paints the subtitle, so a selected "burned-in" sub silently fails to appear. Re-append
-                // them — exactly what the official Jellyfin web client does — so the sub is burned in.
-                // Guarded to image subs: text subs ride as sidecar WebVTT and are never burned.
-                if (burnInImageIndex is int burnIndex)
+                // Fallback for a TranscodingUrl that carries no subtitle params even though an image subtitle
+                // is selected to be burned in (SubtitleDeliveryMethod "Encode") — without them the transcode
+                // still runs (container/audio reasons) but ffmpeg never paints the subtitle, so the sub
+                // silently fails to appear. Normally moot now that the pinned second call makes Jellyfin emit
+                // them itself; hence the "already present" guard — appending a duplicate SubtitleStreamIndex
+                // would bind as "3,3" and fail the int? parse on Jellyfin's side. Guarded to image subs too:
+                // text subs ride as sidecar WebVTT and are never burned.
+                if (burnInImageIndex is int burnIndex
+                    && !transcodingUrl.Contains("SubtitleStreamIndex=", StringComparison.OrdinalIgnoreCase))
                     transcodingUrl += $"&SubtitleStreamIndex={burnIndex}&SubtitleMethod=Encode";
                 playbackUrl = ToGatewayUrl(transcodingUrl);
                 isHls = true;

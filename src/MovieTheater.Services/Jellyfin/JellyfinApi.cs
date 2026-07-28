@@ -68,9 +68,18 @@ namespace MovieTheater.Services.Jellyfin
         /// answer is always an HLS TranscodingUrl — "direct stream" then means ffmpeg
         /// copies the video into HLS containers without re-encoding.
         /// </summary>
+        /// <param name="mediaSourceId">
+        /// The id of the source being played. REQUIRED for <paramref name="audioStreamIndex"/> /
+        /// <paramref name="subtitleStreamIndex"/> to have any effect: Jellyfin's MediaInfoHelper only copies the
+        /// requested track indices onto the stream-build options when the request pins the media source
+        /// (<c>string.Equals(mediaSourceId, mediaSource.Id)</c>) — with it null the indices are silently dropped
+        /// and the container's default audio is what the TranscodingUrl selects. Null on the first (discovery)
+        /// call, since the source id isn't known until Jellyfin answers; pass it on any follow-up that pins a track.
+        /// </param>
         public async Task<JellyfinPlaybackInfoResult> GetPlaybackInfoAsync(
             string itemId, long? maxStreamingBitrate, int? audioStreamIndex, int? subtitleStreamIndex,
-            long startTimeTicks, ClientCapabilities capabilities, bool enableDirectPlay, CancellationToken cancel = default)
+            long startTimeTicks, ClientCapabilities capabilities, bool enableDirectPlay,
+            string? mediaSourceId = null, CancellationToken cancel = default)
         {
             EnsureConfigured();
             var userId = await GetUserIdAsync(cancel);
@@ -82,6 +91,7 @@ namespace MovieTheater.Services.Jellyfin
                 StartTimeTicks = startTimeTicks,
                 AudioStreamIndex = audioStreamIndex,
                 SubtitleStreamIndex = subtitleStreamIndex,
+                MediaSourceId = mediaSourceId,
                 // When allowed (no burn-in subtitle), let Jellyfin flag a browser-playable source
                 // as direct-play so the controller can serve the original file with no transcode
                 // (streaming-plan §"direct play"); a TranscodingUrl is still returned as fallback.
