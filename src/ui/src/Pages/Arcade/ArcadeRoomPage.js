@@ -2,7 +2,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, livePads, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
 import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, QUICK_SLOT, hasSaveStates } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
@@ -800,10 +800,10 @@ export default function ArcadeRoomPage() {
   // Chrome only exposes a pad after it has seen input, so the list refreshes while the panel is open.
   useEffect(() => {
     if (!showControllers) return;
-    const refresh = () => {
-      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-      setPadList(Array.prototype.filter.call(pads, Boolean).map((p) => ({ index: p.index, id: p.id })));
-    };
+    // livePads() (not the raw table) so the corpses a disconnect/reconnect leaves behind aren't
+    // offered as assignable controllers — picking one silently deadens a seat. A ghost disappears
+    // within a second or so of its live twin reporting, i.e. of the player touching the real pad.
+    const refresh = () => setPadList(livePads().map((p) => ({ index: p.index, id: p.id })));
     refresh();
     const t = setInterval(refresh, 1000);
     window.addEventListener("gamepadconnected", refresh);

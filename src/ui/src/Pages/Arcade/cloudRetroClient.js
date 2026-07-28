@@ -345,6 +345,75 @@ const ECHO_WINDOW_MS = 500;
 // them driving the host's virtual pad can be the thing another session sees echoed back.
 let lastNonNeutralOutputAt = 0;
 
+// ── Phantom pads: the corpses a disconnect/reconnect leaves in the Gamepad API ───────────────────
+// Unplug a pad (or let a Bluetooth one sleep) and plug it back in, and the browser does not always
+// retire the old slot: getGamepads() keeps returning a non-null entry that will never report again,
+// while the SAME controller reappears at a new index. The corpse is not harmless — it shows up in the
+// Controllers panel as an assignable controller, it can be latched by the primary's fluid adoption
+// (and if it froze mid-press it reads that button as held FOREVER, which no amount of releasing the
+// real pad can undo), and a local player pinned to the old index just goes dead.
+//
+// There is no flag that says "corpse": a phantom looks exactly like a real pad nobody is touching.
+// What distinguishes it is a TWIN — the same model id at another index that IS still reporting. So
+// liveness is tracked by observation (has this slot's sample timestamp advanced lately?) and an entry
+// is only condemned when a live twin exists. Consequences of that choice, both deliberate:
+//   • a stale entry with no twin stays listed — we cannot prove it dead, and hiding someone's idle
+//     controller is worse than showing one ghost;
+//   • two REAL identical pads: while one is in use and the other has sat untouched past the stale
+//     window, the untouched one is hidden — and it comes straight back the moment it is touched,
+//     which is also exactly how a player "wakes" a pad Chrome hasn't surfaced yet.
+const PAD_STALE_MS = 3000;
+const padSeen = new Map();      // index -> { id, ts, changedAt } — as last OBSERVED, not as claimed
+let phantomIndexes = new Set(); // recomputed by notePads on every poll
+
+// Sample the pad table into the liveness registry. Every entry point that reads pads calls this
+// first, so the registry stays fresh at whatever the fastest poller's rate is (readGamepad, 60 Hz).
+function notePads(pads) {
+  const now = Date.now();
+  const present = new Set();
+  for (const p of pads) {
+    if (!p) continue;
+    present.add(p.index);
+    const rec = padSeen.get(p.index);
+    // A different id at the same index means the slot was RECYCLED — a new pad, not the old one
+    // going quiet, so start its observation over rather than inheriting the corpse's staleness.
+    if (!rec || rec.id !== p.id) padSeen.set(p.index, { id: p.id, ts: p.timestamp, changedAt: now });
+    else if (p.timestamp !== rec.ts) { rec.ts = p.timestamp; rec.changedAt = now; }
+  }
+  for (const idx of padSeen.keys()) if (!present.has(idx)) padSeen.delete(idx);
+
+  const fresh = new Set();
+  const next = new Set();
+  for (const p of pads) {
+    if (!p) continue;
+    const rec = padSeen.get(p.index);
+    if (rec && now - rec.changedAt < PAD_STALE_MS) fresh.add(p.index);
+  }
+  for (const p of pads) {
+    if (!p || fresh.has(p.index)) continue;
+    // Stale. Condemn it only if a live twin — same model, another index, a NEWER sample — exists.
+    const hasLiveTwin = Array.prototype.some.call(pads, (q) =>
+      q && q.index !== p.index && q.id === p.id && fresh.has(q.index) && q.timestamp > p.timestamp);
+    if (hasLiveTwin) next.add(p.index);
+  }
+  phantomIndexes = next;
+}
+
+/** True when this entry is a corpse the browser hasn't retired (or an obviously hollow slot). */
+export function isPhantomPad(gp) {
+  if (!gp) return true;
+  if (gp.connected === false) return true;            // the spec's own answer, when a browser gives it
+  if (!gp.buttons || gp.buttons.length === 0) return true; // hollow slot: nothing to read anyway
+  return phantomIndexes.has(gp.index);
+}
+
+/** The pads worth showing/assigning: present, non-hollow, not a corpse with a live twin. */
+export function livePads() {
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  notePads(pads);
+  return Array.prototype.filter.call(pads, (p) => p && !isPhantomPad(p));
+}
+
 // ── Gamepad button rebinding ────────────────────────────────────────────────────────────────
 // Custom gamepad profiles override the system defaults. Maps physical button index -> RetroPad bit.
 // Stored per-system in localStorage.
@@ -463,8 +532,12 @@ export function keyboardArrowsDriveDpad(system, foldStickToDpad) {
  */
 export function findNewPad(excludeIndexes = []) {
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  notePads(pads);
   for (const gp of pads) {
     if (!gp || claimedPadIndexes.has(gp.index) || excludeIndexes.includes(gp.index) || isStreamedPad(gp)) continue;
+    // A pad that was unplugged mid-press keeps reporting that button as held; without this the
+    // "press a button" detector would hand the new seat a corpse that can never let go.
+    if (isPhantomPad(gp)) continue;
     if (gp.buttons.some((b) => b.pressed)) return gp.index;
   }
   return -1;
@@ -666,6 +739,10 @@ export function createCloudRetroSession(descriptor, opts) {
   let pinnedPad = Number.isInteger(opts && opts.padIndex) ? opts.padIndex : -1;
   const inputOnly = pinnedPad >= 0;
   if (pinnedPad >= 0) claimedPadIndexes.add(pinnedPad);
+  // The MODEL of the pinned pad, learned the first time we read it. Indexes are not stable across a
+  // disconnect/reconnect but the id is, so this is what lets the pin follow the same controller to
+  // its new slot (readGamepad) instead of the seat silently going dead.
+  let pinnedPadId = null;
 
   // Chord/hold-to-fire bindings (quick-save/quick-load/reset — see controllerChords.js). Only
   // built when a caller passes onChordAction (the primary session; local-player extra sessions
@@ -837,12 +914,35 @@ export function createCloudRetroSession(descriptor, opts) {
 
   function readGamepad() {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    notePads(pads); // 60 Hz: the freshest liveness sampling anything here gets (see PAD_STALE_MS)
     const mask0 = { mask: 0, axes: [0, 0, 0, 0] };
     let gp;
     if (pinnedPad >= 0) {
       // Pinned to one physical pad — never adopt another. If Chrome re-enumerates the pad away
-      // (Bluetooth sleep), send neutral until it returns at the same index.
+      // (Bluetooth sleep), send neutral until it returns.
       gp = pads[pinnedPad] || null;
+      if (gp && !isPhantomPad(gp)) {
+        pinnedPadId = gp.id || pinnedPadId; // remembered so the pin can FOLLOW this controller
+      } else if (pinnedPadId) {
+        // The pin points at nothing, or at a corpse. Reconnecting a controller is how a player fixes
+        // a misbehaving pad, and it usually comes back at a NEW index — so follow it there instead of
+        // leaving this seat dead until someone re-assigns it by hand. Only when the answer is
+        // unambiguous: exactly one live, unclaimed entry of the same model.
+        const twins = Array.prototype.filter.call(pads, (p) =>
+          p && p.index !== pinnedPad && p.id === pinnedPadId
+          && !isPhantomPad(p) && !claimedPadIndexes.has(p.index));
+        if (twins.length === 1) {
+          claimedPadIndexes.delete(pinnedPad);
+          pinnedPad = twins[0].index;
+          claimedPadIndexes.add(pinnedPad);
+          gp = twins[0];
+        } else {
+          gp = null;
+        }
+      }
+      // A corpse we can't replace must still not be READ: one frozen mid-press would hold that
+      // button on this seat for the rest of the room.
+      if (gp && isPhantomPad(gp)) gp = null;
     } else if (inputOnly) {
       // A local seat whose pad was reassigned away: neutral until the panel gives it another.
       gp = null;
@@ -851,9 +951,12 @@ export function createCloudRetroSession(descriptor, opts) {
       // extra seat would both forward the same physical controller. Streamed (ViGEm) pads are
       // likewise never auto-adopted when the guard is on; if the guard is flipped on mid-game while
       // one is latched, drop it so the primary re-adopts a real pad (or goes keyboard-only).
-      const free = (p) => p && !claimedPadIndexes.has(p.index) && !isStreamedPad(p);
+      const free = (p) => p && !claimedPadIndexes.has(p.index) && !isStreamedPad(p) && !isPhantomPad(p);
       gp = activePadIndex >= 0 && !claimedPadIndexes.has(activePadIndex) ? pads[activePadIndex] : null;
       if (gp && isStreamedPad(gp)) gp = null;
+      // Drop a latched corpse too — otherwise a pad unplugged mid-press stays "active" forever, which
+      // both holds that button down and (being active) stops adoption from ever moving on.
+      if (gp && isPhantomPad(gp)) gp = null;
       // Never re-adopt while our own output could still be bouncing back off a virtual pad on this
       // machine (see the echo guard above) — that "active" pad may be us. Keep whatever we hold.
       // A negative age means the stamp is in the future (system clock moved back, or a stamp left by
@@ -1680,6 +1783,7 @@ export function createCloudRetroSession(descriptor, opts) {
       if (next === pinnedPad) return;
       if (pinnedPad >= 0) claimedPadIndexes.delete(pinnedPad);
       pinnedPad = next;
+      pinnedPadId = null; // a hand-assignment re-learns the model; never follow the OLD pad's id
       if (pinnedPad >= 0) claimedPadIndexes.add(pinnedPad);
       // Null the dedupe so the next pump resends true state — the old pad's held buttons release
       // on the worker instead of riding this seat forever.
