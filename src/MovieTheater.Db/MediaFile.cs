@@ -86,6 +86,37 @@ namespace MovieTheater.Db
         /// </summary>
         public double? KeyframeIntervalSeconds { get; set; }
 
+        /// <summary>
+        /// SMALLEST gap seen across the sampled windows, against <see cref="KeyframeIntervalSeconds"/>'s
+        /// largest. The pair separates a constant-GOP encode (min ≈ worst — every segment boundary misses)
+        /// from a scene-cut/variable one (min ≪ worst — the long gap is occasional), which the single
+        /// worst-case number cannot express. Null on rows probed before this was captured.
+        /// </summary>
+        public double? KeyframeMinSeconds { get; set; }
+
+        /// <summary>
+        /// Raw per-window readout from the probe, e.g. <c>"603s:8.65 1206s:8.09 1809s:&gt;30"</c> — the
+        /// offset sampled and the worst gap found there, or <c>-</c> for a window that read nothing.
+        /// Persisted verbatim so the sampling can be re-analysed later WITHOUT re-reading 26k files off
+        /// the NAS; the first pass computed this and discarded it, which cost a full re-probe to recover.
+        /// </summary>
+        [MaxLength(256)]
+        public string? KeyframeSampleDetail { get; set; }
+
+        /// <summary>
+        /// True when at least one window held fewer than two keyframes, so its spacing was recorded as the
+        /// probe's window length (a FLOOR, not a measurement) — the real gap is "&gt;= that", possibly far
+        /// more. Distinguishes a genuine 30 s GOP from a file with almost no keyframes at all.
+        /// </summary>
+        public bool? KeyframeSpacingCensored { get; set; }
+
+        /// <summary>
+        /// When the probe last wrote this row's keyframe fields. Lets a re-probe target rows measured by an
+        /// older/coarser pass instead of re-reading everything, and dates the measurement if a file is
+        /// replaced on disk.
+        /// </summary>
+        public DateTime? KeyframeProbedUtc { get; set; }
+
         /// <summary>Last time a sync saw this file in Jellyfin.</summary>
         public DateTime? LastSyncedUtc { get; set; }
 

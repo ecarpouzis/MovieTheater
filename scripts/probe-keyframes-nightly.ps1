@@ -21,6 +21,13 @@ Add-Content $log "[$stamp] nightly run starting"
 for ($i = 0; $i -lt 5; $i++) {
     # Out-String -Width keeps the CLI's one-line summary from wrapping (a wrapped line loses its
     # tail fields to the filter below, which gutted the log's progress reporting).
+    #
+    # The filter keeps FAILURES and the summary, and drops the per-file success lines because they are
+    # thousands per night and the measurement they carry is now persisted to the DB
+    # (MediaFile.KeyframeSampleDetail). It was not always: the first pass had this filter and NO column,
+    # so the per-window detail it computed was destroyed here, at the shell, before ever reaching disk —
+    # and recovering it costs a full re-probe. If the CLI ever computes something new, PERSIST IT rather
+    # than relying on these lines surviving.
     $out = (& dotnet run --project "$repo\src\MovieTheater\MovieTheater.csproj" -c Release -- probe-keyframes --limit 200 2>&1 |
         Out-String -Width 500) -split "\r?\n" |
         Where-Object { $_ -match '^\s\s[!\+]|^\{ processed|Nothing to probe' }

@@ -112,7 +112,8 @@ namespace MovieTheater.Streaming
                     continue;
                 }
 
-                var (spacing, detail) = await ProbeAsync(file.Path, file.DurationTicks, cancel);
+                var probe = await ProbeAsync(file.Path, file.DurationTicks, cancel);
+                var (spacing, detail) = (probe.Worst, probe.Detail);
                 if (spacing == null)
                 {
                     probeFailed++;
@@ -121,6 +122,12 @@ namespace MovieTheater.Streaming
                 }
 
                 file.KeyframeIntervalSeconds = spacing;
+                // Everything the probe measured, kept: the first pass stored only the worst gap and threw
+                // the rest away, which made re-analysis impossible without re-reading every file.
+                file.KeyframeMinSeconds = probe.Best;
+                file.KeyframeSampleDetail = detail.Length <= 256 ? detail : detail[..256];
+                file.KeyframeSpacingCensored = probe.Censored;
+                file.KeyframeProbedUtc = DateTime.UtcNow;
                 processed++;
                 if (spacing > StreamController.CopyHlsSegmentSeconds) forceCandidates++;
                 w.WriteLine($"  {file.Id} {spacing.Value:F2}s [{detail}] {Path.GetFileName(file.Path)}");
@@ -129,51 +136,76 @@ namespace MovieTheater.Streaming
             if (processed > 0)
                 await db.SaveChangesAsync(cancel);
 
-            // The true work queue: rows still unprobed, regardless of this run's --force / --playable-id.
-            var remaining = await db.MediaFiles
-                .CountAsync(f => f.MissingSinceUtc == null && f.JellyfinItemId != null && f.KeyframeIntervalSeconds == null, cancel);
+            // The true work queue, regardless of this run's --force / --playable-id. Split so a driver can
+            // see the two jobs: rows with NO measurement at all (the streaming fix can't act on those), and
+            // rows measured by the first pass, which kept only the worst-case number and discarded the
+            // per-window detail — those need re-reading to recover it.
+            var unprobed = await db.MediaFiles
+                .CountAsync(f => f.MissingSinceUtc == null && f.JellyfinItemId != null
+                                 && f.KeyframeIntervalSeconds == null, cancel);
+            var detailless = await db.MediaFiles
+                .CountAsync(f => f.MissingSinceUtc == null && f.JellyfinItemId != null
+                                 && f.KeyframeIntervalSeconds != null && f.KeyframeSampleDetail == null, cancel);
 
             w.WriteLine("");
-            w.WriteLine($"{{ processed: {processed}, remaining: {remaining}, skippedMissingFile: {skippedMissingFile}, " +
+            w.WriteLine($"{{ processed: {processed}, remaining: {unprobed + detailless}, unprobed: {unprobed}, " +
+                        $"detailBackfill: {detailless}, skippedMissingFile: {skippedMissingFile}, " +
                         $"probeFailed: {probeFailed}, forceCandidates: {forceCandidates} }}");
         }
 
-        // Rows worth probing: present, synced files. Biggest bitrate (SizeBytes / DurationTicks) first —
-        // the remuxes, which is where long-GOP copy sessions actually hurt — with unknown-bitrate rows
-        // last (SQL Server sorts NULL lowest, so DESC leaves them at the end). --playable-id names one
-        // title's files instead, in play order.
+        // Rows worth probing: present, synced files that are either unmeasured, or measured by the first
+        // pass that discarded the per-window detail. Selecting on "the new field is null" is what makes the
+        // detail backfill a resumable QUEUE rather than a blunt --force over everything: re-running after
+        // an interruption continues, and a row is never re-read once it carries detail.
+        //
+        // Unprobed rows go FIRST — they have no measurement at all, so StreamController cannot act on them,
+        // whereas a detail-less row still has a working copy/encode decision. Within each group, biggest
+        // bitrate (SizeBytes / DurationTicks) first — the remuxes, where long-GOP copy sessions actually
+        // hurt — with unknown-bitrate rows last (SQL Server sorts NULL lowest, so DESC leaves them at the
+        // end). --playable-id names one title's files instead, in play order.
         private IQueryable<MediaFile> OrderedQueue(MovieDb db)
         {
             var q = db.MediaFiles.Where(f => f.MissingSinceUtc == null && f.JellyfinItemId != null);
             if (!Force)
-                q = q.Where(f => f.KeyframeIntervalSeconds == null);
+                q = q.Where(f => f.KeyframeIntervalSeconds == null || f.KeyframeSampleDetail == null);
 
             if (PlayableId is int pid)
                 return q.Where(f => f.PlayableId == pid).OrderBy(f => f.Role).ThenBy(f => f.Id);
 
             return q
-                .OrderByDescending(f => f.SizeBytes == null || f.DurationTicks == null || f.DurationTicks == 0
+                .OrderBy(f => f.KeyframeIntervalSeconds == null ? 0 : 1)
+                .ThenByDescending(f => f.SizeBytes == null || f.DurationTicks == null || f.DurationTicks == 0
                     ? (double?)null
                     : (double)f.SizeBytes.Value / (double)f.DurationTicks.Value)
                 .ThenBy(f => f.Id);
         }
 
-        // Worst keyframe gap across the sampled windows, plus a per-window readout for the log. Null =
-        // no window yielded anything (dead path, unreadable file, ffprobe error).
-        private async Task<(double? Spacing, string Detail)> ProbeAsync(string path, long? durationTicks, CancellationToken cancel)
+        /// <summary>
+        /// Everything one file's sampling produced. <see cref="Worst"/> drives the copy/encode decision;
+        /// the rest is persisted alongside it so the sampling can be re-analysed without re-reading the
+        /// file (see [[persist-hard-won-measurements]] — the first pass kept only Worst and the rest had
+        /// to be re-measured off the NAS). <see cref="Worst"/> null = no window yielded anything.
+        /// </summary>
+        private sealed record ProbeResult(double? Worst, double? Best, bool Censored, string Detail);
+
+        // Worst and best keyframe gap across the sampled windows, whether any window hit the censoring
+        // floor, and a per-window readout. Null Worst = no window yielded anything (dead path, unreadable
+        // file, ffprobe error).
+        private async Task<ProbeResult> ProbeAsync(string path, long? durationTicks, CancellationToken cancel)
         {
             double seconds = (durationTicks ?? 0) / (double)TicksPerSecond;
             var offsets = seconds > 0
                 ? SampleFractions.Select(f => seconds * f).ToArray()
                 : BlindOffsets;
 
-            double? worst = null;
+            double? worst = null, best = null;
+            bool censored = false;
             var parts = new List<string>();
             foreach (var offset in offsets)
             {
                 var window = await ReadWindowAsync(path, offset, cancel);
                 if (window.Error.Length > 0)
-                    return (null, window.Error);
+                    return new ProbeResult(null, null, false, window.Error);
                 if (window.Packets == 0)
                 {
                     parts.Add($"{offset:F0}s:-");   // past the end (blind offsets) or an empty window
@@ -184,6 +216,7 @@ namespace MovieTheater.Streaming
                 if (window.KeyframeTimes.Count < 2)
                 {
                     candidate = WindowSeconds;      // spacing exceeds the window: record the floor
+                    censored = true;                // ...so this is a ">=", not a measurement
                     parts.Add($"{offset:F0}s:>{WindowSeconds:F0}");
                 }
                 else
@@ -195,9 +228,10 @@ namespace MovieTheater.Streaming
                 }
 
                 if (worst == null || candidate > worst) worst = candidate;
+                if (best == null || candidate < best) best = candidate;
             }
 
-            return (worst, string.Join(" ", parts));
+            return new ProbeResult(worst, best, censored, string.Join(" ", parts));
         }
 
         // Empty Error = the window read cleanly (it may still hold no packets, e.g. a blind offset past

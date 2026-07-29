@@ -85,6 +85,10 @@ while ($true) {
     finally { Pop-Location }
 
     # Per-file failures ("  ! <id> ...") and the summary are what the nightly log keeps; do the same here.
+    # The per-file SUCCESS lines are dropped on purpose: their measurement is persisted to the DB
+    # (MediaFile.KeyframeSampleDetail / KeyframeMinSeconds). Before those columns existed this same filter
+    # silently destroyed the only copy of that data. Never let a log filter be the thing standing between
+    # an expensive measurement and durable storage.
     ($out | Where-Object { $_ -match '^\s\s!' }) | Add-Content $log
 
     if ($out -match 'Nothing to probe') {
