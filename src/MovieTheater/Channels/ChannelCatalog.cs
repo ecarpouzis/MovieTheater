@@ -75,6 +75,12 @@ namespace MovieTheater.Channels
         public ChannelDef Occasion(params string[] v) => Tag(TagCategory.Occasion, v);
         public ChannelDef Keyword(params string[] v) => Tag(TagCategory.Keyword, v);
 
+        /// <summary>Judged channel membership: the pool is the set of titles hand-curated onto this
+        /// station (Channel tags written by load-channel-tags), not a facet formula. The station's
+        /// identity lives in docs/channel-slate-2026-07.md; its regression canon in
+        /// docs/channel-canon.json. Convention: the tag value is the channel's own catalog key.</summary>
+        public ChannelDef Judged() => Tag(TagCategory.Channel, Key);
+
         public ChannelDef Cult(double min) { Filter.CultClassic = new FilterRange(min, null); return this; }
         public ChannelDef Surreal(double min) { Filter.Surrealism = new FilterRange(min, null); return this; }
         public ChannelDef Novelty(double min) { Filter.Novelty = new FilterRange(min, null); return this; }
@@ -206,7 +212,6 @@ namespace MovieTheater.Channels
                 D("arthouse","The Arthouse","The artistic canon","Cult, Weird & Arthouse").Sub("art house"),
                 D("cult-vault","The Cult Vault","Beloved oddities","Cult, Weird & Arthouse").Cult(70).Imdb(null,8.3),
                 D("schlock","Schlock Theater","Gloriously bad B-movies","Cult, Weird & Arthouse").Sub("b movie"),
-                D("so-bad-good","So Bad It's Good","The disasterpieces","Cult, Weird & Arthouse").Imdb(null,5.0).Cult(45),
                 D("bw","In Glorious Black & White","Monochrome cinema","Cult, Weird & Arthouse").Visual("black and white"),
                 D("surreal","Surreal Cinema","Dream logic","Cult, Weird & Arthouse").Surreal(70),
                 D("neon-noir","Neon Noir","Synthwave sci-fi & neon nights","Cult, Weird & Arthouse").Genre("Sci-Fi","Action","Thriller").Visual("neon-soaked"),
@@ -239,7 +244,6 @@ namespace MovieTheater.Channels
                 D("tearjerkers","Bring Tissues","Tearjerkers","Signature Picks").Content("tearjerker"),
                 D("spoofs","Spoofs & Mockumentaries","Brooks, Proft & the parody crew","Signature Picks").Sub("spoof","mockumentary"),
                 D("mst3k","Mystery Science Theater","Riff over the worst movies ever made","Signature Picks").In(T).Path("MST3K","Mystery Science").Strat(err),
-                D("silent-comedy","Silent Comedy","Keaton, Chaplin & the pioneers","Signature Picks").Star("Buster Keaton","Charles Chaplin").Year(null,1936),
                 D("coming-of-age","Coming of Age","Growing up on screen","Signature Picks").Tag(TagCategory.Theme,"coming of age"),
 
                 // ── Decades ──
@@ -268,36 +272,31 @@ namespace MovieTheater.Channels
                 D("disney-afternoon","The Disney Afternoon","Classic Disney TV animation","Animation Hall of Fame").In(T).Path("DuckTales","TaleSpin","Darkwing Duck","Chip 'n' Dale","Gargoyles").Strat(err),
                 D("animated-heroes","Animated Superheroes","Heroes in animation","Animation Hall of Fame").In(MT).Path("Marvel Animated","Batman The Animated","X-Men","Spider-Man","Avatar - The Last Airbender","Korra").Strat(err),
                 D("stop-motion","Stop-Motion & Handcrafted","Made by hand","Animation Hall of Fame").In(MT).Visual("stop-motion","claymation","rotoscope"),
-                D("adult-swim","[adult swim]","Late-night adult animation","Animation Hall of Fame").In(T).Path("Aqua Teen","Sealab","Metalocalypse","Venture Bros","Samurai Jack","Rick and Morty","Harley Quinn","Off the Air","Space Dandy").Strat(err),
-                D("animation-grownups","Animation for Grown-Ups","Not for kids","Animation Hall of Fame").In(MT).Genre("Animation").Intensity(60,null),
+                // Judged pair (slate v3): [adult swim] is the literal Williams Street block; Adult
+                // Animation is the art form beyond it (absorbed Animation for Grown-Ups). The old path
+                // lists had the identities washed — Superjail/Frisky Dingo sat opposite their network.
+                D("adult-swim","[adult swim]","The Williams Street block, faithfully","Animation Hall of Fame").In(T).Judged().Strat(err),
+                // AllowAdult: the canon includes X/NC-17 landmarks (Fritz the Cat, Belladonna) that the
+                // default adult exclusion would silently drop; membership is judged, so nothing arrives
+                // by accident.
+                D("adult-animation","Adult Animation","Animation as an adult art form — Bakshi to Akira","Animation Hall of Fame").In(MT).Judged().AllowAdult().Strat(err),
 
                 // ── Kids & Family ──
                 D("nickelodeon","Nickelodeon","'90s-2000s Nicktoons & live-action","Kids & Family").In(T).Path("SpongeBob","Ren & Stimpy","Rugrats","Wild Thornberrys","CatDog","Angry Beavers","Aaahh","Invader Zim","KaBlam","All That","Are You Afraid of the Dark","Pete & Pete","Blues Clues","Salute Your Shorts","Legends of the Hidden Temple").Strat(err),
                 D("preschool","Preschool Corner","Gentlest TV for the littlest","Kids & Family").In(T).Path("Mister Rogers","Sesame Street","Bluey","Peppa Pig","Blues Clues").Strat(err),
                 D("saturday-cartoons","Saturday Morning Cartoons","Classic toon energy","Kids & Family").In(MT).Genre("Animation").Mpaa(2).Strat(err),
-                // The two family FILM channels are a deliberate pair: Kid-Friendly Films is the gentle
-                // tier you can leave on unattended; Family Movie Night is the whole family sitting down
-                // together, and it reaches up to PG-13 for the adventure canon (Star Wars, Jurassic Park,
-                // Raiders, Back to the Future, E.T., Ghostbusters). They share ~282 titles, which is
-                // intended — a film belongs on every channel it fits; channels never subtract from each
-                // other. Both are movies-only: the kids' TV that used to air here lives on The Family Room.
-                //
-                // NOTE: do NOT gate these on the AI Occasion tag. It reads as a curation signal and isn't
-                // one — only 24% of movies carry any Occasion at all (Star Wars and E.T. carry none), and
-                // where it exists it's unreliable (Gremlins is tagged BOTH "christmas" and "halloween").
-                // Gating on `family-night` was what kept Star Wars, E.T., Back to the Future and Raiders
-                // off this channel while all 13 Land Before Time sequels aired. Occasion belongs on
-                // genuinely holiday-specific content (Rudolph, Frosty) and nothing else.
-                // The real "would a family put this on again" signal is Rewatchability + an Intensity cap.
-                D("kid-films","Kid-Friendly Films","Gentle movies for the youngest viewers","Kids & Family").In(M).Genre("Family","Animation").Mpaa(2).Intensity(null,40),
-                D("family-night","Family Movie Night","Toy Story to Jurassic Park — the whole family","Kids & Family").In(M).Genre("Family","Adventure","Fantasy","Animation").Mpaa(3).Rewatch(60).Intensity(null,55)
-                    // Keeps the adult end of Adventure (Lawrence of Arabia, The Dirty Dozen, Gallipoli) and
-                    // the scary end (Poltergeist, Something Wicked) from drifting onto a cozy family night.
-                    .NotTag(TagCategory.Subgenre,"historical drama","war film","war epic","spy thriller","dystopian","horror","gothic horror","slasher"),
-                D("family-tv","The Family Room","Kid-safe shows to leave on all afternoon","Kids & Family").In(T).Genre("Animation","Family").Mpaa(2).Intensity(null,40).Strat(err),
+                // ── The judged family cluster (station briefs: docs/channel-slate-2026-07.md) ──
+                // Membership is a per-title judgment loaded by load-channel-tags — NOT a facet formula.
+                // The whole 2026-07 lesson: no facet separates "Jurassic Park, yes" from "The Dirty
+                // Dozen, no", the AI Occasion tag is not a curation signal (24% coverage; Gremlins was
+                // tagged both christmas AND halloween), and rating caps here are belt-and-braces only.
+                // Regression canon: docs/channel-canon.json (channel-canon command).
+                D("kid-films","Kid-Friendly Films","Gentle movies for the youngest viewers","Kids & Family").In(M).Mpaa(2).Judged(),
+                D("family-night","Family Movie Night","Toy Story to Jurassic Park — the whole family","Kids & Family").In(M).Mpaa(3).Judged(),
+                D("family-tv","The Family Room","Kid-safe shows to leave on all afternoon","Kids & Family").In(T).Mpaa(2).Judged().Strat(err),
+                D("big-kid-horror","The Monster Club","Scary the way a sleepover is scary","Kids & Family").In(M).Mpaa(3).Judged(),
                 D("read-learn","Read & Learn","Educational classics","Kids & Family").In(T).Path("Reading Rainbow","Magic School Bus","Schoolhouse Rock","Ada Twist","Hilda").Strat(err),
-                D("sing-along","Sing-Along Musicals","Songs for all ages","Kids & Family").In(MT).Genre("Musical").Mpaa(2),
-                D("kid-shorts","Kid-Friendly Shorts","Gentle short cartoons for the littlest","Kids & Family").In(T).Path("Schoolhouse Rock","Wonderful World of Mickey","Mickey Mouse (2013","Bluey Minisode","Cracking Contraption").Strat(err),
+                D("kid-shorts","Kid-Friendly Shorts","Real short films for young viewers — Pixar to the golden age","Kids & Family").In(M).Mpaa(2).Judged(),
 
                 // ── Anime ──
                 D("anime-central","Anime Central","All anime, all day","Anime").In(MT).Sub("anime").Strat(err),
@@ -319,7 +318,6 @@ namespace MovieTheater.Channels
                 D("primetime-toons","Primetime Animation","The Simpsons, Futurama & adult-cartoon primetime","The TV Vault").In(T).Path("Simpsons","Futurama","Daria","Beavis and Butt-Head","Duckman","Critic","Clone High").Strat(err),
                 D("sketch-comedy","Sketch Comedy","Monty Python to the Whitest Kids","The TV Vault").In(T).Path("Monty Python","Whitest Kids","Liquid Television","Banzai","Mr. Show","Kids in the Hall","Hey, Vern").Strat(err),
                 D("web-series","Web Series","Internet originals & machinima","The TV Vault").In(T).Path("Red Versus Blue","Marble Hornets","Auralnaut").Strat(err),
-                D("adult-animation","Adult Animation","Surreal, transgressive toons","The TV Vault").In(T).Path("Aeon Flux","Æon Flux","Maxx","Superjail","Spicy City","Midnight Gospel","Death Parade","Dicktown","Frisky Dingo","Wonder Showzen","Love, Death").Strat(err),
                 D("stunts-pranks","Stunts & Pranks","Dares, mayhem & mind games","The TV Vault").In(T).Path("Jackass","Banzai","Trick of the Mind").Strat(err),
                 D("arthouse-tv","Arthouse TV","Long-form cinema — Decalogue to Berlin Alexanderplatz","The TV Vault").In(T).Path("Berlin Alexanderplatz","Heimat","Decalogue","Phantom India","Histoire","Tanner").Strat(err),
 
@@ -334,11 +332,19 @@ namespace MovieTheater.Channels
                 D("russian-cinema","Russian & Soviet Cinema","Tarkovsky to the Thaw","International").Lang("ru"),
                 D("scandi-cinema","Scandinavian Cinema","The bleak, beautiful North","International").Lang("sv","da","no"),
 
-                // ── Seasonal (date-windowed) ──
-                D("spooky-season","Spooky Season","The Halloween mood — spooky, not just gory","Seasonal").Occasion("halloween").Season(10,1,11,1),
-                D("holiday-cheer","Holiday Cheer","Christmas & winter holidays","Seasonal").Occasion("christmas","holiday").Season(12,1,1,2),
-                D("summer-blockbusters","Summer Blockbusters","Big summer fun","Seasonal").Genre("Action","Adventure").Energy(70).Season(5,25,9,5),
-                D("sweethearts","Sweetheart Cinema","Valentine's rom-coms","Seasonal").GenreAll("Romance","Comedy").Season(2,1,2,15),
+                // ── The Networks (judged station identities — slate v4) ──
+                D("superstation","The Superstation","The movie you stop on while flipping","The Networks").In(M).Judged(),
+                D("after-dark","After Dark","The kids are asleep — R-rated comfort","The Networks").In(M).Judged(),
+                D("public-access","Public Access","1 a.m. UHF — found footage & outsider video","The Networks").In(ContentKinds.Movies | ContentKinds.Misc).Judged(),
+                D("whodunit","Whodunit Weekend","A body in the library, never in the walls","The Networks").In(M).Judged(),
+                D("lazy-sunday","Lazy Sunday","Nap-adjacent epics for the long afternoon","The Networks").In(M).Judged(),
+                D("date-night","Date Night","Romance that ends warmly","The Networks").In(M).Judged(),
+
+                // ── Seasonal (date-windowed; the 2x2: family x adult, October x December) ──
+                D("spooky-season","Spooky Season","The Halloween mood — spooky, not just gory","Seasonal").In(MT).Judged().Season(10,1,11,1),
+                D("witching-hour","The Witching Hour","October, after the kids are asleep","Seasonal").In(M).Judged().Season(10,1,11,1),
+                D("holiday-cheer","Holiday Cheer","Actually-Christmas movies — the Rudolf rule","Seasonal").In(MT).Judged().Season(12,1,1,2),
+                D("naughty-list","The Naughty List","Christmas after bedtime — tinsel & whiskey","Seasonal").In(M).Judged().Season(12,1,1,2),
             };
             return list;
         }
