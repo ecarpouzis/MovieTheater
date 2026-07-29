@@ -80,7 +80,9 @@
   // read as a second romance rail rather than a station of its own.
   {
     "channel": "romance",
-    "mustInclude": ["When Harry Met Sally", "Moonstruck", "Before Sunrise"],
+    // The merge is the point: these three carry no Romance genre and came in from Date Night.
+    "mustInclude": ["When Harry Met Sally", "Moonstruck", "Before Sunrise",
+                    "Bringing Up Baby", "Lost in Translation", "Grand Budapest Hotel"],
     "mustExclude": ["Charlie Brown Christmas"]
   },
   // The holiday lock: a Christmas- or Halloween-SPECIFIC title airs on the seasonal channels and
@@ -106,8 +108,17 @@
   // mechanical (Animation + PG) until 2026-07-29, which is why Blue's Clues, Peppa, Naruto, Duckman
   // and Daria all aired on it.
   {
+    "channel": "crime",
+    // Absorbed Heist & Capers; these three carry no Crime genre and came in from the spotlight.
+    "mustInclude": ["Goodfellas", "Inception", "To Catch a Thief", "Castle of Cagliostro"],
+    "mustExclude": ["Toy Story"]
+  },
+  {
     "channel": "saturday-cartoons",
-    "mustInclude": ["Animaniacs", "Scooby-Doo, Where Are You", "X-Men", "Tiny Toon", "DuckTales"],
+    // Eric widened it 2026-07-29: the cable-auteur era and Pokemon belong. Pokemon's 977 episodes
+    // buy it no extra airtime — round-robin gives every show one slot per round.
+    "mustInclude": ["Animaniacs", "Scooby-Doo, Where Are You", "X-Men", "Tiny Toon", "DuckTales",
+                    "Adventure Time", "Samurai Jack", "Regular Show", "Pokémon"],
     "mustExclude": ["Blue's Clues", "Peppa Pig", "Sesame Street", "Bluey", "Mister Rogers",
                     "Spidey and His Amazing", "Naruto", "Dragon Ball", "One Punch Man", "Off the Air",
                     "Duckman", "Daria"]

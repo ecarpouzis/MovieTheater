@@ -248,11 +248,15 @@ namespace MovieTheater.Channels
                 D("action","Action & Adventure","Explosions and quests","Genres").Genre("Action","Adventure"),
                 D("thrillers","Thrillers","Suspense and tension","Genres").Genre("Thriller"),
                 D("scifi-fantasy","Sci-Fi & Fantasy","Other worlds","Genres").Genre("Sci-Fi","Fantasy"),
-                // Absorbed Heist & Capers (88% of it was already Crime, and this description literally said
-                // "capers"): one crime channel, spotlights reserved for genuinely distinct shelves.
-                D("crime","Crime & Mob","Gangsters, capers and the criminal underworld","Genres").Genre("Crime"),
-                // Absorbed Date Night (92% of it was already Romance): one romance channel, weepies included.
-                D("romance","Romance","Love stories — swooning, sweeping and devastating","Genres").Genre("Romance"),
+                // MERGED, not retired (Eric): Crime & Mob absorbed Heist & Capers and Romance absorbed Date
+                // Night, so each is now the genre UNION the curated station — Inception, To Catch a Thief and
+                // the Lupin films carry no Crime genre; Bringing Up Baby, Lost in Translation and The Grand
+                // Budapest Hotel carry no Romance genre, and all of them would have been dropped by a plain
+                // genre filter. Cross-category OR isn't expressible in a ChannelFilter, so the union is
+                // materialized as judged membership — which does mean these two now need load-channel-tags
+                // on a new ingest like any other judged station.
+                D("crime","Crime & Mob","Gangsters, capers and the criminal underworld","Genres").In(M).Judged(),
+                D("romance","Romance","Love stories and date-night picks — swooning to devastating","Genres").In(M).Judged(),
                 D("documentaries","Documentaries","Real stories","Genres").Genre("Documentary"),
                 // Judged (was Genre Musical + Music): those two genres overlap by only 33 titles, so 250
                 // music-ADJACENT dramas — The Blue Angel, Almost Famous, Amadeus, Airheads — outnumbered the

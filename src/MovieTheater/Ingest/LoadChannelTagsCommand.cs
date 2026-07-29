@@ -89,6 +89,25 @@ namespace MovieTheater.Ingest
             { w.WriteLine($"Unknown --mode '{Mode}' — use replace | add | remove."); return; }
             w.WriteLine($"mode: {Mode.ToLowerInvariant()}");
 
+            // Fold repeats of the same subject into ONE entry before touching the change tracker. A batch
+            // that names a title twice (easy to author — the Romance and Crime merges both listed every
+            // film that carries both genres) used to be processed twice: the second pass tried to delete
+            // the tag rows the first pass had just added, which still hold temporary keys, and EF threw
+            // "The property 'TitleTag.Id' has a temporary value while attempting to change the entity's
+            // state to 'Deleted'" partway through the write.
+            int dupes = batch.Count;
+            batch = batch
+                .GroupBy(b => (b.Kind, b.SubjectId))
+                .Select(g => new EntryDto
+                {
+                    SubjectKind = g.First().SubjectKind,
+                    SubjectId = g.Key.SubjectId,
+                    Channels = g.SelectMany(e => e.Channels ?? new List<ChannelDto>()).ToList(),
+                })
+                .ToList();
+            dupes -= batch.Count;
+            if (dupes > 0) w.WriteLine($"folded {dupes} repeated subject entr(ies) into their first occurrence");
+
             // Catalog keys plus the reserved holiday-lock markers, which ride the same Channel tag category
             // but name a holiday rather than a station (see ChannelCatalog.HolidayLockKeys).
             var validKeys = new HashSet<string>(
