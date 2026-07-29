@@ -255,7 +255,10 @@ namespace MovieTheater.Services.Jellyfin
             // surround track rides through losslessly; when a transcode is unavoidable (e.g. DTS) the
             // channel count is kept. A non-reporting client stays at the stereo baseline (MaxChannels 2).
             int maxAudioChannels = Math.Clamp(caps.MaxAudioChannels, 2, 8);
-            string directPlayAudio = "aac,mp3" + (caps.Ac3 ? ",ac3" : "") + (caps.Eac3 ? ",eac3" : "");
+            // FLAC is the audio on most Blu-ray remuxes here; letting a FLAC-capable browser direct-play
+            // it is what keeps those files off the HLS path (and its keyframe/segment pitfalls) entirely.
+            string directPlayAudio = "aac,mp3" + (caps.Ac3 ? ",ac3" : "") + (caps.Eac3 ? ",eac3" : "")
+                + (caps.Flac ? ",flac" : "");
 
             // MKV is the dominant library container. Chromium's <video> can play a Matroska file whose
             // codecs it supports (canPlayType('video/x-matroska')); Firefox reports it but preloads the
@@ -377,10 +380,14 @@ namespace MovieTheater.Services.Jellyfin
                         // Dolby track in an MKV always re-encoded to AAC because it was only in the (mp4-only)
                         // DirectPlay list, never the HLS path. Copying a 5.1 track still needs MaxAudioChannels
                         // >= the source's channels (set below), so stereo clients correctly fall back to a downmix.
+                        // FLAC additionally requires fMP4 — it has no MPEG-TS mapping, so on a TS
+                        // fallback client it must transcode to AAC rather than copy. hls.js handles
+                        // fLaC-in-fMP4 natively (codec tables + passthrough, verified in 1.6.16).
                         AudioCodec = "aac"
                             + (caps.Mp3 ? ",mp3" : "")
                             + (caps.Ac3 ? ",ac3" : "")
-                            + (caps.Eac3 ? ",eac3" : ""),
+                            + (caps.Eac3 ? ",eac3" : "")
+                            + (caps.Flac && useFmp4 ? ",flac" : ""),
                         Protocol = "hls",
                         Context = "Streaming",
                         MaxAudioChannels = maxAudioChannels.ToString(),
@@ -681,7 +688,7 @@ namespace MovieTheater.Services.Jellyfin
         bool Hevc = false, bool Av1 = false, bool Hdr = false, bool Fmp4 = false, bool Mp3 = false,
         bool Ac3 = false, bool Eac3 = false, int MaxAudioChannels = 2,
         bool HevcMain10 = false, bool Av110Bit = false, bool HeAac = false, bool DolbyVision = false,
-        bool Mkv = false)
+        bool Mkv = false, bool Flac = false)
     {
         /// <summary>The pre-§14 universal baseline: H.264 in MPEG-TS, stereo, nothing fancy.</summary>
         public static readonly ClientCapabilities H264Baseline = new();

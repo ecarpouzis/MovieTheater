@@ -117,13 +117,18 @@ export function detectStreamCapabilities() {
   // downmixing to stereo. Chrome/Edge desktop decode both; the browser then emits multichannel LPCM.
   const supportsAc3 = canPlay('audio/mp4; codecs="ac-3"');
   const supportsEac3 = canPlay('audio/mp4; codecs="ec-3"');
+  // FLAC: the audio on most Blu-ray remuxes in this library. When the browser decodes it (Chromium
+  // and Firefox both do), a FLAC-audio MKV can direct-play — and on the HLS path the track is COPIED
+  // losslessly instead of re-encoded to AAC. Without this flag those files always landed in an HLS
+  // session just for the audio, which is the population the keyframe force-encode exists for.
+  const supportsFlac = canPlay('audio/mp4; codecs="flac"');
   const maxAudioChannels = detectMaxAudioChannels();
   const supportsHdr = detectHdr();
   const supportsMkv = detectMkv();
 
   cached = {
     supportsHevc, supportsHevcMain10, supportsAv1, supportsAv110bit, supportsHdr, supportsDolbyVision,
-    supportsFmp4, supportsMp3, supportsAc3, supportsEac3, supportsHeAac, maxAudioChannels, supportsMkv,
+    supportsFmp4, supportsMp3, supportsAc3, supportsEac3, supportsHeAac, supportsFlac, maxAudioChannels, supportsMkv,
   };
   return cached;
 }

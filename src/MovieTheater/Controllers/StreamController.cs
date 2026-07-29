@@ -144,6 +144,7 @@ namespace MovieTheater.Controllers
             public bool SupportsHeAac { get; set; }       // MSE decodes HE-AAC (SBR); else HE-AAC must transcode
             public bool SupportsDolbyVision { get; set; } // decodes Dolby Vision → DOVI ranges may pass through
             public bool SupportsMkv { get; set; }         // <video> can play a Matroska container (Chromium yes, Firefox excluded) → direct-play MKV
+            public bool SupportsFlac { get; set; }        // decodes FLAC audio → direct-play/copy Blu-ray-remux tracks instead of forcing an HLS session
 
             // A stable per-browser id (see DeviceFor). Without it every viewer collapses into one
             // Jellyfin session, so the dashboard can't tell who is watching what.
@@ -153,7 +154,7 @@ namespace MovieTheater.Controllers
                 new(SupportsHevc, SupportsAv1, SupportsHdr, SupportsFmp4, SupportsMp3,
                     SupportsAc3, SupportsEac3, MaxAudioChannels ?? 2,
                     SupportsHevcMain10, SupportsAv110Bit, SupportsHeAac, SupportsDolbyVision,
-                    SupportsMkv);
+                    SupportsMkv, SupportsFlac);
         }
 
         [HttpPost("/API/Stream/Start")]
