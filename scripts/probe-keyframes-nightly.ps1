@@ -19,8 +19,11 @@ Add-Content $log "[$stamp] nightly run starting"
 # retries. Sequential runs re-read the queue, so successes never repeat and failures are retried at
 # most once per night.
 for ($i = 0; $i -lt 5; $i++) {
-    $out = & dotnet run --project "$repo\src\MovieTheater\MovieTheater.csproj" -c Release -- probe-keyframes --limit 200 2>&1 |
-        Where-Object { $_ -match '^\s\s[!\+]|^\{ processed' }
+    # Out-String -Width keeps the CLI's one-line summary from wrapping (a wrapped line loses its
+    # tail fields to the filter below, which gutted the log's progress reporting).
+    $out = (& dotnet run --project "$repo\src\MovieTheater\MovieTheater.csproj" -c Release -- probe-keyframes --limit 200 2>&1 |
+        Out-String -Width 500) -split "\r?\n" |
+        Where-Object { $_ -match '^\s\s[!\+]|^\{ processed|Nothing to probe' }
     $out | Add-Content $log
     # An empty batch means the library is fully probed — nothing left for the later chunks either.
     if ($out -match 'Nothing to probe') { break }
