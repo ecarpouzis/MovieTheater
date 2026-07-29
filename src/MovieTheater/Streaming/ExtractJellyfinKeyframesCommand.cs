@@ -135,10 +135,13 @@ namespace MovieTheater.Streaming
         // stamp is null" is what makes this a resumable QUEUE rather than a blunt re-run over everything.
         //
         // Worst measured GOP first: those are exactly the titles StreamController force-encodes today, so
-        // each batch converts GPU-burning encodes back into copies. SQL Server sorts NULL lowest, so DESC
-        // leaves unprobed rows at the end — right, because an unprobed row has no known problem. Ties break
-        // on biggest bitrate (SizeBytes / DurationTicks — the remuxes), mirroring probe-keyframes.
-        // --playable-id names one title's files instead, in play order.
+        // UNMEASURED files go first: with the sampled probe pipeline retired (2026-07-29), this backfill
+        // is the ONLY thing that closes their safety hole — a NULL KeyframeIntervalSeconds can never trip
+        // the mid-file force-encode gate, so an unmeasured long-GOP file can still hit the legacy freeze
+        // until it's stamped. Measured long-GOP files follow (they're SAFE — the gate force-encodes their
+        // mid-file joins — just expensive; each stamp converts a GPU-burning encode back into a lossless
+        // copy), then everything else. Ties break on biggest bitrate (SizeBytes / DurationTicks — the
+        // remuxes). --playable-id names one title's files instead, in play order.
         private IQueryable<MediaFile> OrderedQueue(MovieDb db)
         {
             var q = db.MediaFiles.Where(f => f.MissingSinceUtc == null && f.JellyfinItemId != null
@@ -150,7 +153,8 @@ namespace MovieTheater.Streaming
                 return q.Where(f => f.PlayableId == pid).OrderBy(f => f.Role).ThenBy(f => f.Id);
 
             return q
-                .OrderByDescending(f => f.KeyframeIntervalSeconds)
+                .OrderBy(f => f.KeyframeIntervalSeconds == null ? 0 : 1)
+                .ThenByDescending(f => f.KeyframeIntervalSeconds)
                 .ThenByDescending(f => f.SizeBytes == null || f.DurationTicks == null || f.DurationTicks == 0
                     ? (double?)null
                     : (double)f.SizeBytes.Value / (double)f.DurationTicks.Value)

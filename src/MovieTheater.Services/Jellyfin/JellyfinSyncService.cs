@@ -656,7 +656,7 @@ namespace MovieTheater.Services.Jellyfin
             var sizeChanged = row.SizeBytes != null && src?.Size != null && row.SizeBytes != src.Size;
             var serverKeyframesStale = sizeChanged && !idChanged && row.JfKeyframesUtc != null;
             if (sizeChanged)
-                row.KeyframeIntervalSeconds = null;   // the nightly probe-keyframes run re-measures
+                row.KeyframeIntervalSeconds = null;   // sampled estimate of an encode that no longer exists
             if (sizeChanged || idChanged)
                 row.JfKeyframesUtc = null;            // exact-copy authorization no longer holds
             row.JellyfinItemId = item.Id;
