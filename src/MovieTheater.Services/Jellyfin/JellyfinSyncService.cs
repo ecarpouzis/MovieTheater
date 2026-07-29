@@ -638,6 +638,12 @@ namespace MovieTheater.Services.Jellyfin
             row.AudioCodec = Truncate(aud?.Codec, 32);
             row.Width = vid?.Width;
             row.Height = vid?.Height;
+            // A changed size means the file on disk was replaced (a re-rip), so the probed keyframe
+            // spacing describes an encode that no longer exists — null it and the nightly
+            // probe-keyframes run re-measures. Same-size updates keep it: the probe is a property of
+            // the bytes, not of anything Jellyfin re-reports.
+            if (row.SizeBytes != null && src?.Size != null && row.SizeBytes != src.Size)
+                row.KeyframeIntervalSeconds = null;
             row.SizeBytes = src?.Size;
             row.LastSyncedUtc = now;
             row.MissingSinceUtc = null;
