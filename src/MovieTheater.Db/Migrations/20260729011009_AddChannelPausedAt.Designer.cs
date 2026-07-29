@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MovieTheater.Db;
 
@@ -11,9 +12,11 @@ using MovieTheater.Db;
 namespace MovieTheater.Db.Migrations
 {
     [DbContext(typeof(MovieDb))]
-    partial class MovieDbModelSnapshot : ModelSnapshot
+    [Migration("20260729011009_AddChannelPausedAt")]
+    partial class AddChannelPausedAt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -775,9 +778,6 @@ namespace MovieTheater.Db.Migrations
 
                     b.Property<DateTime?>("PausedAtUtc")
                         .HasColumnType("datetime2");
-
-                    b.Property<int?>("PausedByUserId")
-                        .HasColumnType("int");
 
                     b.Property<string>("RotationJson")
                         .HasColumnType("nvarchar(max)");

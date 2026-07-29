@@ -424,6 +424,15 @@ function TvPage({ userData }) {
         const video = videoRef.current;
         if (!video) return;
         const joinAt = nowData.current.offsetSeconds;
+        // Tuning a frozen channel loads the frame but must NOT start it: the picture holds on the
+        // paused instant. (The buffered frame still renders, and 'loadeddata' clears the tuning card.)
+        const frozen = !!nowData.paused;
+        // Keyed off this tune's own Now answer, not pausedRef: a resume re-tunes immediately and must
+        // never be left holding a still frame by a ref that hasn't re-rendered yet. (The 'playing'
+        // handler covers the other direction — a pause landing mid-tune.)
+        const startPlayback = () => {
+          if (!frozen) video.play().catch(() => {});
+        };
         if (session.isHls === false) {
           // Direct play: the original file. Seek to the live offset via a range request —
           // no transcode, so the channel joins near-instantly.
@@ -432,7 +441,7 @@ function TvPage({ userData }) {
             "loadedmetadata",
             () => {
               video.currentTime = joinAt;
-              video.play().catch(() => {});
+              startPlayback();
             },
             { once: true }
           );
@@ -450,9 +459,7 @@ function TvPage({ userData }) {
             onFatal: () => setError(new Error("The signal dropped.")),
           });
           hlsRef.current = hls;
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            video.play().catch(() => {});
-          });
+          hls.on(Hls.Events.MANIFEST_PARSED, startPlayback);
           hls.loadSource(session.hlsUrl);
           hls.attachMedia(video);
         } else {
@@ -462,7 +469,7 @@ function TvPage({ userData }) {
             "loadedmetadata",
             () => {
               video.currentTime = joinAt;
-              video.play().catch(() => {});
+              startPlayback();
             },
             { once: true }
           );
@@ -585,13 +592,21 @@ function TvPage({ userData }) {
     const onTimeUpdate = () => {
       if (video.currentTime > 0 && !video.paused) setTuning(false);
     };
+    // Tuning into a frozen channel never plays, so 'playing'/'timeupdate' never fire — the held frame
+    // arriving is the only signal that we're tuned. Without this the "Tuning in…" card sits over a
+    // channel someone paused hours ago.
+    const onLoadedData = () => {
+      if (pausedRef.current) setTuning(false);
+    };
     video.addEventListener("ended", onEnded);
     video.addEventListener("playing", onPlaying);
     video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("loadeddata", onLoadedData);
     return () => {
       video.removeEventListener("ended", onEnded);
       video.removeEventListener("playing", onPlaying);
       video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("loadeddata", onLoadedData);
     };
   }, [channel, tune, wakeChrome]);
 

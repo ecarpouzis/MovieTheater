@@ -146,17 +146,20 @@ namespace MovieTheater.Controllers
 
             // While the channel is paused the timeline is frozen, so read "what's on" against the
             // pause instant rather than the moving wall clock — the offset (and everything derived
-            // from it) holds steady until someone resumes.
-            var pausedAt = skipService.PausedSince(id);
+            // from it) holds steady until someone resumes. The window's far edge is frozen too, so a
+            // long pause doesn't drag the lineup forward day after day for a channel nobody is advancing.
+            var pausedAt = await TryAutoResumeAsync(channel, userId.Value, now);
             var clock = pausedAt ?? now;
 
             // Read-only window: enough history to catch a long current item (a movie can run several
             // hours) and enough runway ahead for the "next 5". No full-schedule load on this poll.
-            var items = await scheduleService.GetReadWindowAsync(channel, clock.AddHours(-8), now.AddHours(12));
+            var items = await scheduleService.GetReadWindowAsync(channel, clock.AddHours(-8), clock.AddHours(12));
 
             var currentIndex = items.FindIndex(i => i.StartUtc <= clock && clock < i.EndUtc);
             if (currentIndex < 0)
-                return Json(new { current = (object?)null, next = Array.Empty<object>(), paused = false });
+                // Report the real pause state even here: a frozen channel whose item we can't resolve is
+                // still frozen, and answering "not paused" would let every viewer silently resume.
+                return Json(new { current = (object?)null, next = Array.Empty<object>(), paused = pausedAt != null });
 
             var current = items[currentIndex];
             var titles = await TitlesForAsync(items.Skip(currentIndex).Take(6).Select(i => i.PlayableId));
@@ -345,7 +348,7 @@ namespace MovieTheater.Controllers
             // vote — it's only offered to a lone viewer. Touch first so our own presence counts, then refuse
             // if anyone else is watching, or if the channel is frozen (resume before seeking).
             skipService.Touch(id, current.Id, userId.Value);
-            if (skipService.ViewerIds(id).Count > 1 || skipService.PausedSince(id) != null)
+            if (skipService.ViewerIds(id).Count > 1 || channel.PausedAtUtc != null)
                 return Json(new { seeked = false });
 
             // The seek must be about the item the client is actually watching; a stale itemId just no-ops.
@@ -371,22 +374,83 @@ namespace MovieTheater.Controllers
                 return StatusCode(403, new { message = "This channel isn't available on your account." });
 
             var now = DateTime.UtcNow;
-            var items = await scheduleService.EnsureScheduleAsync(channel, now.Add(TimeSpan.FromHours(48)));
 
-            // Find the item the viewer is actually looking at — frozen-clock aware, so resuming
-            // targets the same item that was airing when the channel was paused.
-            var clock = skipService.PausedSince(id) ?? now;
+            // Find the item the viewer is actually looking at — frozen-clock aware, so resuming targets
+            // the same item that was airing when the channel was paused, however long ago that was. The
+            // window is read against that same frozen clock so a long pause doesn't drag the lineup ahead.
+            var pausedAt = channel.PausedAtUtc;
+            var clock = pausedAt ?? now;
+            var items = await scheduleService.GetReadWindowAsync(channel, clock.AddHours(-8), clock.AddHours(12));
             var current = items.FirstOrDefault(i => i.StartUtc <= clock && clock < i.EndUtc);
             if (current == null)
-                return Json(new { paused = false });
+                // Nothing resolvable to freeze/thaw — leave the stored state alone rather than
+                // reporting (and next poll applying) a resume nobody asked for.
+                return Json(new { paused = pausedAt != null });
+
+            skipService.Touch(id, current.Id, userId.Value); // flipping the pause is also presence
 
             // Anyone watching may flip the shared pause — no vote. On resume, slide the schedule
             // forward by however long it was frozen so playback continues from where it stopped.
-            var (pausedNow, wasPausedFor) = skipService.TogglePause(id, current.Id, userId.Value);
-            if (pausedNow == null)
-                await scheduleService.ShiftForResumeAsync(channel, wasPausedFor);
+            if (pausedAt is DateTime since)
+            {
+                await scheduleService.ShiftForResumeAsync(channel, DateTime.UtcNow - since);
+                channel.PausedAtUtc = null;
+                channel.PausedByUserId = null;
+            }
+            else
+            {
+                channel.PausedAtUtc = DateTime.UtcNow;
+                // Remember whose freeze this is: they can leave and come back to the same frame, while
+                // anyone else arriving to an empty frozen channel resumes it (see Now).
+                channel.PausedByUserId = userId.Value;
+            }
+            await movieDb.SaveChangesAsync();
 
-            return Json(new { paused = pausedNow != null });
+            return Json(new { paused = channel.PausedAtUtc != null });
+        }
+
+        /// <summary>
+        /// Lift an ABANDONED pause: a channel frozen with nobody left watching resumes for the next person
+        /// who tunes in, picking the lineup up where it was frozen. The freeze belongs to the session that
+        /// made it, not to the channel forever — otherwise one viewer pausing and wandering off leaves the
+        /// channel dead for everybody else. Two deliberate exemptions:
+        /// <list type="bullet">
+        /// <item>the viewer who paused it — their TV going dark for a day must still come back to the same
+        /// frame, which is the whole reason the pause is durable;</item>
+        /// <item>watch parties — there the freeze IS the "wait until everyone's here" gate, and members
+        /// arrive one at a time by definition, so a late joiner must never start the film on the group.</item>
+        /// </list>
+        /// Returns the pause instant still in force, or null if the channel is (now) playing.
+        /// </summary>
+        private async Task<DateTime?> TryAutoResumeAsync(Channel channel, int userId, DateTime now)
+        {
+            if (channel.PausedAtUtc is not DateTime pausedAt)
+                return null;
+
+            if (channel.WatchpartyToken != null || channel.PausedByUserId == userId)
+                return pausedAt;
+
+            // The live viewer set, pruned of anyone gone quiet. This caller isn't in it yet (Now touches
+            // presence further down), so empty genuinely means nobody else is holding the channel.
+            if (skipService.ViewerIds(channel.Id).Count > 0)
+                return pausedAt;
+
+            // Compare-and-set on the stored instant: two viewers arriving in the same beat must not both
+            // resume and shift the schedule twice.
+            int claimed = await movieDb.Channels
+                .Where(c => c.Id == channel.Id && c.PausedAtUtc == pausedAt)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(c => c.PausedAtUtc, (DateTime?)null)
+                    .SetProperty(c => c.PausedByUserId, (int?)null));
+            if (claimed != 1)
+                return null; // lost the race — the other arrival is doing the shift; either way it's playing
+
+            channel.PausedAtUtc = null;
+            channel.PausedByUserId = null;
+            // Resume where it was frozen rather than jumping to the live position — same as a hand resume,
+            // so a broadcast never loses its place.
+            await scheduleService.ShiftForResumeAsync(channel, now - pausedAt);
+            return null;
         }
 
         [HttpGet("/API/Channel/{id}/Guide")]
@@ -487,14 +551,16 @@ namespace MovieTheater.Controllers
             var windowed = await scheduleService.WindowedItemsAsync(visibleIds, now, until);
             var titles = await TitlesForAsync(windowed.Values.SelectMany(list => list.Select(i => i.PlayableId)));
 
+            var pausedIds = channels.Where(c => c.PausedAtUtc != null).Select(c => c.Id).ToHashSet();
+
             var result = visibleIds.Select(id =>
             {
                 var items = windowed.GetValueOrDefault(id) ?? new List<ChannelScheduleItem>();
                 return new
                 {
                     id,
-                    // paused/viewers are in-memory (the skip singleton) — cheap, no DB.
-                    paused = skipService.PausedSince(id) != null,
+                    // paused came with the channel rows above; viewers are in-memory (the skip singleton).
+                    paused = pausedIds.Contains(id),
                     viewers = skipService.ViewerIds(id).Count,
                     items = items.Select(i =>
                     {

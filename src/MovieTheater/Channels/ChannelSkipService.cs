@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MovieTheater.Db;
 
 namespace MovieTheater.Channels
 {
@@ -16,6 +17,10 @@ namespace MovieTheater.Channels
     /// seen within <see cref="ViewerTtl"/> has left. Votes are scoped to the current schedule
     /// item, so they reset the moment the item changes (it ended, or a skip already fired). A
     /// restart keeps the same item, so its poll is cleared explicitly once it carries.
+    ///
+    /// The shared PAUSE is deliberately NOT here: unlike a vote tally it has no expiry (a viewer may
+    /// pause, switch the TV off for a day and come back), so it lives durably on
+    /// <see cref="Channel.PausedAtUtc"/> — an API restart must never quietly resume a frozen channel.
     /// </summary>
     public class ChannelSkipService
     {
@@ -38,7 +43,6 @@ namespace MovieTheater.Channels
             public readonly Dictionary<int, DateTime> Viewers = new(); // userId -> last seen
             public readonly Poll Skip = new();
             public readonly Poll Restart = new();
-            public DateTime? PausedAt;                                 // non-null = channel frozen at this instant
         }
 
         public sealed record PollStatus(int Viewers, int Votes, int Required, bool YouVoted);
@@ -104,41 +108,6 @@ namespace MovieTheater.Channels
                 if (carried)
                     poll.Fired = true;
                 return (carried, Status(state, userId));
-            }
-        }
-
-        /// <summary>
-        /// The instant the channel was paused, or null if it's playing. A pause is a shared broadcast
-        /// state — frozen here in memory alongside the vote tallies, since like them it's ephemeral and
-        /// needn't survive a restart (a restart simply resumes the channel at the true live position).
-        /// </summary>
-        public DateTime? PausedSince(int channelId)
-        {
-            lock (gate)
-                return states.TryGetValue(channelId, out var state) ? state.PausedAt : null;
-        }
-
-        /// <summary>
-        /// Flip the shared pause for a channel. Unlike skip/restart this isn't a vote — anyone watching
-        /// can pause or resume the whole channel with one tap. Returns the new paused instant (non-null =
-        /// now paused) and, when resuming, how long it had been frozen so the caller can slide the
-        /// schedule forward by exactly that much.
-        /// </summary>
-        public (DateTime? PausedAt, TimeSpan WasPausedFor) TogglePause(int channelId, long itemId, int userId)
-        {
-            lock (gate)
-            {
-                var state = StateFor(channelId, itemId);
-                var now = DateTime.UtcNow;
-                state.Viewers[userId] = now; // toggling is also presence
-                Prune(state, now);
-                if (state.PausedAt is DateTime since)
-                {
-                    state.PausedAt = null;
-                    return (null, now - since);
-                }
-                state.PausedAt = now;
-                return (now, TimeSpan.Zero);
             }
         }
 

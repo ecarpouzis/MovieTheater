@@ -107,6 +107,18 @@ namespace MovieTheater.Db
         /// mid-party doesn't lose whether it had started.</summary>
         public DateTime? WatchpartyStartedUtc { get; set; }
 
+        /// <summary>Non-null ⇒ the channel is PAUSED for everyone watching, frozen at this instant: the
+        /// timeline is read against it instead of the wall clock, and on resume the whole lineup slides
+        /// forward by however long it was held. Durable (not in-memory like the skip/restart tallies)
+        /// because a pause has no expiry — someone can pause, turn the TV off for a day and come back —
+        /// and an API restart in the meantime must not quietly resume the channel.</summary>
+        public DateTime? PausedAtUtc { get; set; }
+
+        /// <summary>Who pressed pause — the freeze belongs to their session, so it survives their TV going
+        /// dark, but any OTHER viewer arriving to an empty frozen channel resumes it (an abandoned pause
+        /// mustn't leave a channel dead for everyone else). NULL when the channel isn't paused.</summary>
+        public int? PausedByUserId { get; set; }
+
         public ICollection<ChannelScheduleItem> ScheduleItems { get; set; } = [];
 
         /// <summary>The hand-picked, ordered lineup for a playlist / watch-party channel (empty for filter

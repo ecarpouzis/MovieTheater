@@ -704,9 +704,12 @@ namespace MovieTheater.Channels
 
         /// <summary>Enabled channel ids in display order — for the background maintainer's round-robin.
         /// Watch-party channels are excluded: their timeline must stay frozen in the lobby until the party
-        /// presses Begin, so the maintainer must never materialize their lineup ahead.</summary>
+        /// presses Begin, so the maintainer must never materialize their lineup ahead. Paused channels are
+        /// excluded for the same reason — their clock is stopped, so extending them would just pile up
+        /// lineup that the resume shift has to push forward again.</summary>
         public Task<List<int>> EnabledChannelIdsAsync(CancellationToken cancel = default) =>
-            movieDb.Channels.Where(c => c.Enabled && c.WatchpartyToken == null).OrderBy(c => c.SortOrder).ThenBy(c => c.Id)
+            movieDb.Channels.Where(c => c.Enabled && c.WatchpartyToken == null && c.PausedAtUtc == null)
+                .OrderBy(c => c.SortOrder).ThenBy(c => c.Id)
                 .Select(c => c.Id).ToListAsync(cancel);
 
         /// <summary>
@@ -757,8 +760,12 @@ namespace MovieTheater.Channels
         {
             var now = DateTime.UtcNow;
 
+            // Prune against the channel's own clock: a paused channel is frozen at PausedAtUtc, so measuring
+            // staleness by the wall clock would eventually delete the very item it's holding on (and a
+            // channel with no current item reads as "not paused" to everyone watching).
+            var pruneBefore = (channel.PausedAtUtc ?? now) - PruneAge;
             var stale = await movieDb.ChannelScheduleItems
-                .Where(i => i.ChannelId == channel.Id && i.EndUtc < now - PruneAge)
+                .Where(i => i.ChannelId == channel.Id && i.EndUtc < pruneBefore)
                 .ToListAsync(cancel);
             if (stale.Count > 0)
                 movieDb.ChannelScheduleItems.RemoveRange(stale);
@@ -972,13 +979,16 @@ namespace MovieTheater.Channels
             if (wasPausedFor <= TimeSpan.Zero)
                 return;
 
-            var now = DateTime.UtcNow;
-            var items = await EnsureScheduleAsync(channel, now.Add(ScheduleHorizon), cancel);
+            // The item airing at the moment of pause is the one whose original window still contained
+            // that instant; shift it and everything later back into the future. Loaded directly (not via
+            // EnsureScheduleAsync) so a resume never extends the lineup while the clock is still frozen —
+            // the pause can have lasted days, and the maintainer will catch the horizon up right after.
+            var pausedAt = DateTime.UtcNow - wasPausedFor;
+            var items = await movieDb.ChannelScheduleItems
+                .Where(i => i.ChannelId == channel.Id && i.EndUtc > pausedAt)
+                .ToListAsync(cancel);
 
-            // The item airing at the moment of pause is the one whose original window still
-            // contained that instant; shift it and everything later back into the future.
-            var pausedAt = now - wasPausedFor;
-            foreach (var item in items.Where(i => i.EndUtc > pausedAt))
+            foreach (var item in items)
             {
                 item.StartUtc += wasPausedFor;
                 item.EndUtc += wasPausedFor;
