@@ -62,12 +62,21 @@ namespace MovieTheater.Streaming
         private const double WindowSeconds = 30;
 
         // Sample mid-file, never the head: the opening scene cuts carry extra keyframes and would
-        // underestimate the steady-state GOP.
-        private static readonly double[] SampleFractions = { 0.25, 0.50, 0.75 };
+        // underestimate the steady-state GOP. Neither the tail — end credits are near-static and their
+        // long gaps are real but unrepresentative of the body.
+        //
+        // SIX windows, doubled from the original three (2026-07-29). The estimator is a max over samples,
+        // so it can only ever UNDER-report the file's true worst gap: three 30 s windows covered ~1.5% of
+        // a feature, which made a just-under-threshold reading ("copy is safe") the least trustworthy
+        // value the probe produced — precisely the wrong place to be optimistic, since this measurement
+        // decides whether a title can be stream-copied at all. Six windows double the coverage and roughly
+        // double the probe's wall-clock (~65 -> ~33 files/min); the file read is bounded either way,
+        // ~30 s of packets per window and nothing decoded.
+        private static readonly double[] SampleFractions = { 0.20, 0.32, 0.44, 0.56, 0.68, 0.80 };
 
         // Fallback offsets for a row with no usable DurationTicks — a window past the end simply reads
         // nothing and is dropped rather than counted as a spacing floor.
-        private static readonly double[] BlindOffsets = { 300, 900, 1800 };
+        private static readonly double[] BlindOffsets = { 300, 900, 1800, 2700, 3600, 5400 };
 
         // One dead NAS path must not hang the run, so every invocation is bounded and a timeout is
         // recorded as a probe failure for that file only.
