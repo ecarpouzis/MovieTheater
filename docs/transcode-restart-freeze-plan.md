@@ -63,8 +63,44 @@ Self-sustaining, and entirely server-side.
 ## Fix
 
 Force the re-encode **up front** when Jellyfin would copy video whose keyframe spacing exceeds the HLS
-segment length. A real encode emits its own keyframes on the segment boundary, so numbering and reality
-agree and there is nothing to renumber.
+segment length, **and the session opens mid-file**. A real encode emits its own keyframes on the segment
+boundary, so numbering and reality agree and there is nothing to renumber.
+
+Verified in the field 2026-07-29, four restarts on the encode path: ffmpeg is given
+`-g:v:0 72 -keyint_min:v:0 72` (72 frames at 24 fps = exactly the 3 s `-hls_time`), and the implied
+segment length came back 3.000 / 3.000 / 3.004 / 3.002 s — bookkeeping and reality agree. Compare the
+broken copy sessions above: 8.65 s and 8.09 s, disagreeing with the nominal 6 s *and with each other*.
+
+### Why the mid-file gate (added 2026-07-29)
+
+Long spacing is only the **precondition**. The thing worth suppressing is not *a* restart but a
+**self-sustaining storm** of them, and only a mid-file join produces that. Measured across the retained
+FFmpeg logs (grouped by session, using each log's **creation** time — `LastWriteTime` is when that
+ffmpeg *exited* and will mislead you):
+
+| Session | Entry | Source GOP | ffmpeg starts | Outcome |
+|---|---|---|---|---|
+| Muppet Treasure Island | from 0 | 10.01 s | 4 over 72 min | recovered, never reported |
+| James and the Giant Peach | from 0 | 10.39 s | 7 | recovered, never reported |
+| The Secret of NIMH | **mid-file join** (`-ss 903`, 4 s after open) | 9.97 s | **58** | the reported freeze storm |
+
+So a from-the-start session **does** get restarted at the playhead — it simply recovers, because nothing
+is fighting the timeline. A mid-file join does not: the join lands up to one GOP early, the /tv drift
+corrector reads that as lag and seeks, each seek restarts the encoder at a new wrong offset, and it
+never converges. `StartRequest.StartSeconds` already tells the server which case it is.
+
+Without the gate the rule fires on **~67% of h264 files** (6,631 confirmed of 16,028, trending to
+~10,700 once probing finishes), converting a large share of the library from lossless copy to NVENC to
+suppress restarts that recover on their own — real quality and GPU cost on a box with a 0x116 TDR
+history.
+
+Residual risk, accepted: a from-the-start session on a long-GOP source can still hiccup at each of those
+few restarts. That is exactly the pre-fix behaviour, and nobody reported it. The client's
+`ForceTranscode` escalation reopens the session as an encode if it degenerates, and the `LogDebug` on the
+let-through path names the file if it ever bites.
+
+This also explains why the same title froze one evening and played cleanly earlier the same day — the
+variable was never the file, it was whether the session joined mid-film.
 
 The mechanism already exists end to end: `StreamController.StartRequest.ForceTranscode` appends
 `&AllowVideoStreamCopy=false` to the TranscodingUrl (`StreamController.cs:395`), and Jellyfin's

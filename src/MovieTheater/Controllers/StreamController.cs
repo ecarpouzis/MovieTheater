@@ -28,11 +28,10 @@ namespace MovieTheater.Controllers
         // Past this fraction, resume is "done" — next play starts from the beginning. (This is resume
         // bookkeeping only; it never marks a title Seen — that's a manual user action.)
         private const double ResumeCompleteThreshold = 0.9;
-        // The HLS segment length of the COPY path: every `-codec:v:0 copy` session in Jellyfin's FFmpeg
-        // logs runs `-hls_time 6`. Its *encode* sessions use 3, so don't "confirm" this against one of
-        // those. A source whose keyframes fall further apart than this can't be safely copied — see
-        // the force-encode decision in Start.
-        internal const double CopyHlsSegmentSeconds = 6.0;
+        // The copy path's segment length and the force-encode decision live in Streaming/HlsCopySafety.cs
+        // (dependency-free so the tests can link it). Aliased here because both are read all over this
+        // controller and by ProbeKeyframesCommand.
+        internal const double CopyHlsSegmentSeconds = Streaming.HlsCopySafety.CopySegmentSeconds;
 
         private readonly MovieDb movieDb;
         private readonly JellyfinApi jellyfin;
@@ -388,19 +387,21 @@ namespace MovieTheater.Controllers
                     && (source.TranscodeReasons == null
                         || !source.TranscodeReasons.Any(r => r.Contains("Video", StringComparison.OrdinalIgnoreCase)));
 
-                // A copied stream can only be cut on the SOURCE's keyframes, so when those fall further
-                // apart than the segment length Jellyfin's -start_number bookkeeping (derived from assumed
-                // durations) disagrees with the segments ffmpeg actually wrote — differently on each
-                // mid-session restart. The restarted encoder then renumbers underneath a playing decoder
-                // and the picture freezes while audio drains. A real encode emits its own keyframes on the
-                // segment boundary, so there is nothing to renumber. Null spacing = never probed →
-                // don't force (the client's ForceTranscode escalation stays the backstop for those).
-                var forceEncode = request.ForceTranscode
-                    || (wouldCopy && file.KeyframeIntervalSeconds > CopyHlsSegmentSeconds);
+                // See Streaming/HlsCopySafety.ShouldForceEncode for the mechanism and why a from-the-start
+                // session is left on the (lossless, free) copy path.
+                var joinsMidFile = startTicks > 0;
+                var forceEncode = Streaming.HlsCopySafety.ShouldForceEncode(
+                    request.ForceTranscode, wouldCopy, joinsMidFile, file.KeyframeIntervalSeconds);
                 if (forceEncode && !request.ForceTranscode)
                     logger.LogInformation(
-                        "Forcing re-encode: MediaFile {MediaFileId} keyframe spacing {Spacing}s exceeds the {SegmentSeconds}s copy segment length",
-                        file.Id, file.KeyframeIntervalSeconds, CopyHlsSegmentSeconds);
+                        "Forcing re-encode: MediaFile {MediaFileId} joins mid-file at {StartSeconds}s and its keyframe spacing {Spacing}s exceeds the {SegmentSeconds}s copy segment length",
+                        file.Id, startTicks / (double)TicksPerSecond, file.KeyframeIntervalSeconds, CopyHlsSegmentSeconds);
+                // The case the gate deliberately lets through, logged so the tradeoff is visible if a
+                // freeze ever shows up on a from-the-start session.
+                else if (wouldCopy && !joinsMidFile && file.KeyframeIntervalSeconds > CopyHlsSegmentSeconds)
+                    logger.LogDebug(
+                        "Copying MediaFile {MediaFileId} despite {Spacing}s keyframe spacing: opens at 0, so no restart can renumber it",
+                        file.Id, file.KeyframeIntervalSeconds);
 
                 // A forced encode is never a copy, so isDirectStream and the codec readout stay honest.
                 videoIsCopied = wouldCopy && !forceEncode;
