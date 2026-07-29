@@ -117,6 +117,19 @@ namespace MovieTheater.Db
         /// </summary>
         public DateTime? KeyframeProbedUtc { get; set; }
 
+        /// <summary>
+        /// When Jellyfin's own keyframe repository was stamped with a COMPLETE ffprobe keyframe list for
+        /// this file, by the <c>extract-jellyfin-keyframes</c> command. Distinct from
+        /// <see cref="KeyframeProbedUtc"/>, which dates OUR sampled estimate: this dates the exhaustive
+        /// list living server-side, and it is what authorizes the patched Jellyfin to cut a stream-COPIED
+        /// HLS session on the file's real keyframes instead of on fixed-length guesses. With exact
+        /// segmentation the segment numbering can no longer drift, so a mid-session restart cannot
+        /// renumber the timeline — which is the whole reason long-GOP titles are force-encoded today.
+        /// <c>StreamController</c> reads this to SKIP that mid-file force-encode. Null = not backfilled,
+        /// so the force-encode still applies (today's behavior for every row).
+        /// </summary>
+        public DateTime? JfKeyframesUtc { get; set; }
+
         /// <summary>Last time a sync saw this file in Jellyfin.</summary>
         public DateTime? LastSyncedUtc { get; set; }
 

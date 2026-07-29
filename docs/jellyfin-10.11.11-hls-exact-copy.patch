@@ -1,0 +1,469 @@
+--- ../../jf-pristine/jellyfin-10.11.11/Jellyfin.Api/Controllers/DynamicHlsController.cs	2026-06-06 11:37:28.000000000 -0400
++++ Jellyfin.Api/Controllers/DynamicHlsController.cs	2026-07-29 18:15:46.538748100 -0400
+@@ -1606,8 +1606,6 @@
+             state.BaseRequest.BreakOnNonKeyFrames = false;
+         }
+ 
+-        var mapArgs = state.IsOutputVideo ? _encodingHelper.GetMapArgs(state) : string.Empty;
+-
+         var directory = Path.GetDirectoryName(outputPath) ?? throw new ArgumentException($"Provided path ({outputPath}) is not valid.", nameof(outputPath));
+         var outputFileNameWithoutExtension = Path.GetFileNameWithoutExtension(outputPath);
+         var outputPrefix = Path.Combine(directory, outputFileNameWithoutExtension);
+@@ -1616,7 +1614,43 @@
+ 
+         var segmentFormat = string.Empty;
+         var segmentContainer = outputExtension.TrimStart('.');
++
++        // A copied video stream can only be cut on the source's own keyframes, and the muxer's split
++        // grid is anchored at each run's first packet — so any hls_time > 0 makes the segmentation
++        // depend on where a (re)started run began, and a mid-file restart writes segments that
++        // disagree with the VOD playlist. hls_time 0 degenerates the split rule to "cut at every
++        // keyframe", which is anchor-free: every run reproduces identical segments from any start
++        // point. Only valid when the VOD playlist advertises the matching per-keyframe boundaries,
++        // which is exactly WouldUseKeyframeSegments — a copied source WITHOUT extractable keyframes
++        // keeps the configured length, matching its equal-length playlist. Event playlists also keep
++        // it: they are consumed live and never rebuilt from a restart.
++        var mediaSourceIdStr = state.BaseRequest.MediaSourceId;
++        var hlsTimeSeconds = !isEventPlaylist
++            && EncodingHelper.IsCopyCodec(videoCodec)
++            && _dynamicHlsPlaylistGenerator.WouldUseKeyframeSegments(
++                mediaSourceIdStr is null ? null : Guid.Parse(mediaSourceIdStr), state.MediaPath)
++            ? 0
++            : state.SegmentLength;
++
++        // In per-keyframe mode every seek target is a playlist boundary, i.e. an exact keyframe pts.
++        // The seek must then be accurate and un-nudged (see EncodingJobInfo.SeekIsKeyframeBoundary).
++        // MUST be set before GetInputModifier below — that is where the -ss argument is built.
++        state.SeekIsKeyframeBoundary = hlsTimeSeconds == 0;
++
+         var inputModifier = _encodingHelper.GetInputModifier(state, _encodingOptions, segmentContainer);
++
++        var mapArgs = state.IsOutputVideo ? _encodingHelper.GetMapArgs(state) : string.Empty;
++        if (state.SeekIsKeyframeBoundary && (state.BaseRequest.StartTimeTicks ?? 0) > 0)
++        {
++            // Accurate input seek trims DECODED streams to the target, but a stream-COPIED one keeps
++            // every packet from the demuxer's landing point ("when doing stream copy it will be
++            // preserved") — and the demuxer can only land on the container's seek index, which may
++            // sit a whole GOP before the target when that keyframe isn't indexed. The copied video
++            // would then start early and every segment number the restarted muxer writes is off by
++            // one. -copypriorss 0 drops copied packets before the -ss point; the target is a
++            // keyframe, so the trimmed stream starts decodable and aligned with the playlist.
++            mapArgs += " -copypriorss 0";
++        }
+         var hlsArguments = $"-hls_playlist_type {(isEventPlaylist ? "event" : "vod")} -hls_list_size 0";
+ 
+         if (string.Equals(segmentContainer, "ts", StringComparison.OrdinalIgnoreCase))
+@@ -1672,7 +1706,7 @@
+             GetVideoArguments(state, startNumber, isEventPlaylist, segmentContainer),
+             GetAudioArguments(state),
+             maxMuxingQueueSize,
+-            state.SegmentLength.ToString(CultureInfo.InvariantCulture),
++            hlsTimeSeconds.ToString(CultureInfo.InvariantCulture),
+             segmentFormat,
+             startNumber.ToString(CultureInfo.InvariantCulture),
+             baseUrlParam,
+--- ../../jf-pristine/jellyfin-10.11.11/Jellyfin.Api/Jellyfin.Api.csproj	2026-06-06 11:37:28.000000000 -0400
++++ Jellyfin.Api/Jellyfin.Api.csproj	2026-07-29 17:09:18.573650400 -0400
+@@ -8,6 +8,10 @@
+   <PropertyGroup>
+     <TargetFramework>net9.0</TargetFramework>
+     <GenerateDocumentationFile>true</GenerateDocumentationFile>
++    <!-- Match the binding identity of the assembly shipped in the installed 10.11.11 server,
++         so this patched DLL can be dropped into C:\Program Files\Jellyfin\Server. -->
++    <AssemblyVersion>12.0.0.0</AssemblyVersion>
++    <FileVersion>12.0.0.0</FileVersion>
+   </PropertyGroup>
+ 
+   <ItemGroup>
+--- ../../jf-pristine/jellyfin-10.11.11/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlaylistGenerator.cs	2026-06-06 11:37:28.000000000 -0400
++++ src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlaylistGenerator.cs	2026-07-29 17:22:27.703276400 -0400
+@@ -9,6 +9,7 @@
+ using Jellyfin.MediaEncoding.Keyframes;
+ using MediaBrowser.Common.Configuration;
+ using MediaBrowser.Controller.Configuration;
++using MediaBrowser.Controller.IO;
+ using MediaBrowser.Controller.MediaEncoding;
+ 
+ namespace Jellyfin.MediaEncoding.Hls.Playlist;
+@@ -17,16 +18,19 @@
+ public class DynamicHlsPlaylistGenerator : IDynamicHlsPlaylistGenerator
+ {
+     private readonly IServerConfigurationManager _serverConfigurationManager;
++    private readonly IKeyframeManager _keyframeManager;
+     private readonly IKeyframeExtractor[] _extractors;
+ 
+     /// <summary>
+     /// Initializes a new instance of the <see cref="DynamicHlsPlaylistGenerator"/> class.
+     /// </summary>
+     /// <param name="serverConfigurationManager">An instance of the see <see cref="IServerConfigurationManager"/> interface.</param>
++    /// <param name="keyframeManager">An instance of the <see cref="IKeyframeManager"/> interface.</param>
+     /// <param name="extractors">An instance of <see cref="IEnumerable{IKeyframeExtractor}"/>.</param>
+-    public DynamicHlsPlaylistGenerator(IServerConfigurationManager serverConfigurationManager, IEnumerable<IKeyframeExtractor> extractors)
++    public DynamicHlsPlaylistGenerator(IServerConfigurationManager serverConfigurationManager, IKeyframeManager keyframeManager, IEnumerable<IKeyframeExtractor> extractors)
+     {
+         _serverConfigurationManager = serverConfigurationManager;
++        _keyframeManager = keyframeManager;
+         _extractors = extractors.Where(e => e.IsMetadataBased).ToArray();
+     }
+ 
+@@ -37,8 +41,23 @@
+         // For video transcodes it is sufficient with equal length segments as ffmpeg will create new keyframes
+         if (request.IsRemuxingVideo
+             && request.MediaSourceId is not null
++            && TryGetStoredKeyframes(request.MediaSourceId.Value, out var storedKeyframes))
++        {
++            // Remuxed video runs with hls_time 0 (see DynamicHlsController), which splits at every
++            // keyframe. The playlist must promise exactly those boundaries: any coarser segmentation
++            // is anchored to where the muxer's run started, so a session restarted mid-file would
++            // write segments whose content disagrees with this playlist. Only the repository can
++            // authorize this mode — its rows are full ffprobe packet walks. Container cues are NOT
++            // sufficient: some muxers cue a subset of the real keyframes (measured: a 2001-era mkv
++            // missing 12 of 57 sampled), and the muxer would split at the uncued ones too.
++            segments = ComputeAllKeyframeSegments(storedKeyframes);
++        }
++        else if (request.IsRemuxingVideo
++            && request.MediaSourceId is not null
+             && TryExtractKeyframes(request.MediaSourceId.Value, request.FilePath, out var keyframeData))
+         {
++            // Cue-derived keyframes: possibly incomplete, so keep the historical desired-length
++            // segmentation and the matching non-zero hls_time.
+             segments = ComputeSegments(keyframeData, request.DesiredSegmentLengthMs);
+         }
+         else
+@@ -106,6 +125,16 @@
+         return builder.ToString();
+     }
+ 
++    /// <inheritdoc />
++    public bool WouldUseKeyframeSegments(Guid? mediaSourceId, string filePath)
++        => mediaSourceId is not null && TryGetStoredKeyframes(mediaSourceId.Value, out _);
++
++    private bool TryGetStoredKeyframes(Guid itemId, [NotNullWhen(true)] out KeyframeData? keyframeData)
++    {
++        keyframeData = _keyframeManager.GetKeyframeData(itemId).FirstOrDefault();
++        return keyframeData is not null && keyframeData.KeyframeTicks.Count > 0;
++    }
++
+     private bool TryExtractKeyframes(Guid itemId, string filePath, [NotNullWhen(true)] out KeyframeData? keyframeData)
+     {
+         keyframeData = null;
+@@ -152,6 +181,45 @@
+         return false;
+     }
+ 
++    /// <summary>
++    /// Computes one segment per keyframe interval, mirroring the muxer's hls_time 0 behavior of
++    /// cutting at every keyframe. Unlike <see cref="ComputeSegments"/>, the result does not depend
++    /// on any grid anchor, so a restarted muxer run reproduces the same boundaries from any
++    /// starting keyframe. Duplicate or non-monotonic keyframe entries are skipped: a zero-length
++    /// segment in the playlist breaks players.
++    /// </summary>
++    /// <param name="keyframeData">The keyframes to compute the segments from.</param>
++    /// <returns>The segment lengths in seconds.</returns>
++    internal static IReadOnlyList<double> ComputeAllKeyframeSegments(KeyframeData keyframeData)
++    {
++        if (keyframeData.KeyframeTicks.Count > 0 && keyframeData.TotalDuration < keyframeData.KeyframeTicks[^1])
++        {
++            throw new ArgumentException("Invalid duration in keyframe data", nameof(keyframeData));
++        }
++
++        long lastKeyframe = 0;
++        var result = new List<double>();
++        for (var j = 0; j < keyframeData.KeyframeTicks.Count; j++)
++        {
++            var keyframe = keyframeData.KeyframeTicks[j];
++            // The keyframe at 0 opens the first segment rather than closing one.
++            if (keyframe <= lastKeyframe)
++            {
++                continue;
++            }
++
++            result.Add(TimeSpan.FromTicks(keyframe - lastKeyframe).TotalSeconds);
++            lastKeyframe = keyframe;
++        }
++
++        if (keyframeData.TotalDuration > lastKeyframe)
++        {
++            result.Add(TimeSpan.FromTicks(keyframeData.TotalDuration - lastKeyframe).TotalSeconds);
++        }
++
++        return result;
++    }
++
+     internal static IReadOnlyList<double> ComputeSegments(KeyframeData keyframeData, int desiredSegmentLengthMs)
+     {
+         if (keyframeData.KeyframeTicks.Count > 0 && keyframeData.TotalDuration < keyframeData.KeyframeTicks[^1])
+--- ../../jf-pristine/jellyfin-10.11.11/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPlaylistGenerator.cs	2026-06-06 11:37:28.000000000 -0400
++++ src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPlaylistGenerator.cs	2026-07-29 17:17:49.852038200 -0400
+@@ -1,3 +1,5 @@
++using System;
++
+ namespace Jellyfin.MediaEncoding.Hls.Playlist;
+ 
+ /// <summary>
+@@ -11,4 +13,17 @@
+     /// <param name="request">An instance of the <see cref="CreateMainPlaylistRequest"/> class.</param>
+     /// <returns>The playlist as a formatted string.</returns>
+     string CreateMainPlaylist(CreateMainPlaylistRequest request);
++
++    /// <summary>
++    /// Whether <see cref="CreateMainPlaylist"/> would build per-keyframe segments for the given
++    /// source — i.e. the keyframe repository holds a complete (ffprobe packet walk) keyframe list
++    /// for it. The transcoding command line must segment the same way the playlist promises
++    /// (hls_time 0 when and only when the playlist is per-keyframe), so both decisions have to
++    /// come from this one test. Container cues never qualify: they can be a subset of the real
++    /// keyframes, and the muxer splits at all of them.
++    /// </summary>
++    /// <param name="mediaSourceId">The id of the media source, if known.</param>
++    /// <param name="filePath">The file path.</param>
++    /// <returns><see langword="true"/> if per-keyframe segmentation will be used.</returns>
++    bool WouldUseKeyframeSegments(Guid? mediaSourceId, string filePath);
+ }
+--- ../../jf-pristine/jellyfin-10.11.11/src/Jellyfin.MediaEncoding.Hls/Cache/CacheDecorator.cs	2026-06-06 11:37:28.000000000 -0400
++++ src/Jellyfin.MediaEncoding.Hls/Cache/CacheDecorator.cs	2026-07-29 17:17:54.582733300 -0400
+@@ -53,7 +53,15 @@
+ 
+             _logger.LogDebug("Successfully extracted keyframes using {ExtractorName}", _keyframeExtractorName);
+             keyframeData = result;
+-            _keyframeRepository.SaveKeyframeDataAsync(itemId, keyframeData, CancellationToken.None).GetAwaiter().GetResult();
++
++            // Only persist complete keyframe lists (ffprobe packet walks). Metadata-based results
++            // come from container cues, which some muxers write for a SUBSET of the real keyframes —
++            // persisting one would make DynamicHlsPlaylistGenerator treat it as authoritative and
++            // promise per-keyframe segments the muxer won't match. Cues stay cheap to re-read.
++            if (!_keyframeExtractor.IsMetadataBased)
++            {
++                _keyframeRepository.SaveKeyframeDataAsync(itemId, keyframeData, CancellationToken.None).GetAwaiter().GetResult();
++            }
+         }
+ 
+         return true;
+--- ../../jf-pristine/jellyfin-10.11.11/src/Jellyfin.MediaEncoding.Hls/Jellyfin.MediaEncoding.Hls.csproj	2026-06-06 11:37:28.000000000 -0400
++++ src/Jellyfin.MediaEncoding.Hls/Jellyfin.MediaEncoding.Hls.csproj	2026-07-29 17:09:22.031836500 -0400
+@@ -3,6 +3,10 @@
+   <PropertyGroup>
+     <TargetFramework>net9.0</TargetFramework>
+     <GenerateDocumentationFile>true</GenerateDocumentationFile>
++    <!-- Match the binding identity of the assembly shipped in the installed 10.11.11 server,
++         so this patched DLL can be dropped into C:\Program Files\Jellyfin\Server. -->
++    <AssemblyVersion>12.0.0.0</AssemblyVersion>
++    <FileVersion>12.0.0.0</FileVersion>
+   </PropertyGroup>
+ 
+   <ItemGroup>
+--- ../../jf-pristine/jellyfin-10.11.11/MediaBrowser.Controller/MediaEncoding/EncodingHelper.cs	2026-06-06 11:37:28.000000000 -0400
++++ MediaBrowser.Controller/MediaEncoding/EncodingHelper.cs	2026-07-29 17:52:29.755850400 -0400
+@@ -2960,10 +2960,19 @@
+             {
+                 // For direct streaming/remuxing, we seek at the exact position of the keyframe
+                 // However, ffmpeg will seek to previous keyframe when the exact time is the input
+-                // Workaround this by adding 0.5s offset to the seeking time to get the exact keyframe on most videos.
++                // Workaround this by adding a small offset to the seeking time to get the exact keyframe on most videos.
+                 // This will help subtitle syncing.
++                // The offset must stay well below any real keyframe interval: HLS remux playlists
++                // promise one segment per keyframe, so an offset that reaches PAST the next keyframe
++                // makes the restarted muxer start one keyframe late and every following segment
++                // disagrees with the playlist. Playlist times are exact tick sums of the container's
++                // cue times, so 1ms is enough to defeat rounding-down while never skipping a
++                // keyframe (no frame duration is under 1ms).
+                 var isHlsRemuxing = state.IsVideoRequest && state.TranscodingType is TranscodingJobType.Hls && IsCopyCodec(state.OutputVideoCodec);
+-                var seekTick = isHlsRemuxing ? time + 5000000L : time;
++                // A seek to a known keyframe boundary must not be nudged at all: it runs as an
++                // ACCURATE seek (see below), where any positive offset would discard the boundary
++                // keyframe itself and the copied output would start undecodable.
++                var seekTick = isHlsRemuxing && !state.SeekIsKeyframeBoundary ? time + 10000L : time;
+ 
+                 // Seeking beyond EOF makes no sense in transcoding. Clamp the seekTick value to
+                 // [0, RuntimeTicks - 5.0s], so that the muxer gets packets and avoid error codes.
+@@ -2982,11 +2991,17 @@
+                     // Important: If this is ever re-enabled, make sure not to use it with wtv because it breaks seeking
+                     // Disable -noaccurate_seek on mpegts container due to the timestamps issue on some clients,
+                     // but it's still required for fMP4 container otherwise the audio can't be synced to the video.
++                    // A keyframe-boundary seek is the exception: it must be accurate, because the fast
++                    // (index-based) seek can land a GOP early when the target keyframe isn't in the
++                    // container's seek index. Accurate + copy is safe exactly there — the discarded
++                    // leading packets end at the target, which IS a keyframe, so the output starts
++                    // decodable and both streams begin at the same instant.
+                     if (!string.Equals(state.InputContainer, "wtv", StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(segmentFormat, "ts", StringComparison.OrdinalIgnoreCase)
+                         && state.TranscodingType != TranscodingJobType.Progressive
+                         && !state.EnableBreakOnNonKeyFrames(outputVideoCodec)
+-                        && (state.BaseRequest.StartTimeTicks ?? 0) > 0)
++                        && (state.BaseRequest.StartTimeTicks ?? 0) > 0
++                        && !state.SeekIsKeyframeBoundary)
+                     {
+                         seekParam += " -noaccurate_seek";
+                     }
+--- ../../jf-pristine/jellyfin-10.11.11/MediaBrowser.Controller/MediaEncoding/EncodingJobInfo.cs	2026-06-06 11:37:28.000000000 -0400
++++ MediaBrowser.Controller/MediaEncoding/EncodingJobInfo.cs	2026-07-29 17:52:06.096888800 -0400
+@@ -74,6 +74,16 @@
+ 
+         public bool IsInputVideo { get; set; }
+ 
++        /// <summary>
++        /// Gets or sets a value indicating whether the seek target is known to be an exact keyframe
++        /// boundary of a per-keyframe HLS playlist (hls_time 0 remux). Such a seek must be ACCURATE
++        /// and un-nudged: the container's seek index (e.g. Matroska cues) may omit some real
++        /// keyframes, so a fast seek can land a whole GOP early and every segment the restarted
++        /// muxer writes is then numbered one off. An accurate seek discards leading packets without
++        /// decoding and starts exactly on the target keyframe, cued or not.
++        /// </summary>
++        public bool SeekIsKeyframeBoundary { get; set; }
++
+         public string OutputAudioCodec { get; set; }
+ 
+         public int? OutputVideoBitrate { get; set; }
+--- ../../jf-pristine/jellyfin-10.11.11/tests/Jellyfin.MediaEncoding.Hls.Tests/Playlist/DynamicHlsPlaylistGeneratorTests.cs	2026-06-06 11:37:28.000000000 -0400
++++ tests/Jellyfin.MediaEncoding.Hls.Tests/Playlist/DynamicHlsPlaylistGeneratorTests.cs	2026-07-29 16:11:57.074309800 -0400
+@@ -22,6 +22,61 @@
+         }
+ 
+         [Theory]
++        [MemberData(nameof(ComputeAllKeyframeSegments_Valid_Success_Data))]
++        public void ComputeAllKeyframeSegments_Valid_Success(KeyframeData keyframeData, double[] segments)
++        {
++            Assert.Equal(segments, DynamicHlsPlaylistGenerator.ComputeAllKeyframeSegments(keyframeData));
++        }
++
++        [Fact]
++        public void ComputeAllKeyframeSegments_InvalidDuration_ThrowsArgumentException()
++        {
++            var keyframeData = new KeyframeData(0, new[] { MsToTicks(10000) });
++            Assert.Throws<ArgumentException>(() => DynamicHlsPlaylistGenerator.ComputeAllKeyframeSegments(keyframeData));
++        }
++
++        [Fact]
++        public void ComputeAllKeyframeSegments_NoZeroLengthSegments()
++        {
++            // Duplicate and out-of-order cue entries, a keyframe at 0, and a duration equal to the
++            // last keyframe must never yield a zero-length segment — they break players.
++            var keyframeData = new KeyframeData(
++                MsToTicks(20000),
++                new[] { 0, MsToTicks(8000), MsToTicks(8000), MsToTicks(7000), MsToTicks(20000) });
++            Assert.Equal(new[] { 8.0, 12.0 }, DynamicHlsPlaylistGenerator.ComputeAllKeyframeSegments(keyframeData));
++        }
++
++        public static TheoryData<KeyframeData, double[]> ComputeAllKeyframeSegments_Valid_Success_Data()
++        {
++            var data = new TheoryData<KeyframeData, double[]>
++            {
++                {
++                    // Constant long GOP with a trailing partial segment
++                    new KeyframeData(MsToTicks(35000), new[] { 0, MsToTicks(10427), MsToTicks(20854), MsToTicks(31240) }),
++                    new[] { 10.427, 10.427, 10.386, 3.760 }
++                },
++                {
++                    // Irregular spacing including sub-second scene-cut GOPs: every keyframe is a
++                    // boundary, matching the muxer's hls_time 0 split behavior
++                    new KeyframeData(MsToTicks(30000), new[] { 0, MsToTicks(10000), MsToTicks(10900), MsToTicks(12000), MsToTicks(22000) }),
++                    new[] { 10.0, 0.9, 1.1, 10.0, 8.0 }
++                },
++                {
++                    // Only a keyframe at 0 → one full-length segment
++                    new KeyframeData(MsToTicks(15000), new[] { 0L }),
++                    new[] { 15.0 }
++                },
++                {
++                    // No keyframe data at all → one full-length segment
++                    new KeyframeData(MsToTicks(15000), Array.Empty<long>()),
++                    new[] { 15.0 }
++                }
++            };
++
++            return data;
++        }
++
++        [Theory]
+         [MemberData(nameof(ComputeEqualLengthSegments_Valid_Success_Data))]
+         public void ComputeEqualLengthSegments_Valid_Success(int desiredSegmentLengthMs, long totalRuntimeTicks, double[] segments)
+         {
+--- /dev/null	2026-07-29 18:25:56.000000000 -0400
++++ Jellyfin.Api/Controllers/KeyframeExtractionController.cs	2026-07-29 17:25:25.588215500 -0400
+@@ -0,0 +1,87 @@
++using System;
++using System.Collections.Generic;
++using System.ComponentModel.DataAnnotations;
++using System.Linq;
++using System.Threading;
++using System.Threading.Tasks;
++using Jellyfin.MediaEncoding.Hls.Extractors;
++using MediaBrowser.Common.Api;
++using MediaBrowser.Controller.IO;
++using MediaBrowser.Controller.Library;
++using Microsoft.AspNetCore.Authorization;
++using Microsoft.AspNetCore.Http;
++using Microsoft.AspNetCore.Mvc;
++
++namespace Jellyfin.Api.Controllers;
++
++/// <summary>
++/// Per-item keyframe extraction. Populates the keyframe repository with a COMPLETE keyframe list
++/// (ffprobe packet walk) for one video, which authorizes the exact per-keyframe HLS segmentation
++/// for stream-copied sessions (see DynamicHlsPlaylistGenerator). Exists so a driver can backfill
++/// the library in bounded, resumable batches instead of the all-or-nothing scheduled task — whose
++/// extractor ordering also prefers container cues, which are not complete enough for this purpose.
++/// </summary>
++[Route("Videos")]
++[Authorize(Policy = Policies.RequiresElevation)]
++public class KeyframeExtractionController : BaseJellyfinApiController
++{
++    private readonly ILibraryManager _libraryManager;
++    private readonly IKeyframeManager _keyframeManager;
++    private readonly IKeyframeExtractor[] _keyframeExtractors;
++
++    /// <summary>
++    /// Initializes a new instance of the <see cref="KeyframeExtractionController"/> class.
++    /// </summary>
++    /// <param name="libraryManager">An instance of the <see cref="ILibraryManager"/> interface.</param>
++    /// <param name="keyframeManager">An instance of the <see cref="IKeyframeManager"/> interface.</param>
++    /// <param name="keyframeExtractors">The registered keyframe extractors.</param>
++    public KeyframeExtractionController(
++        ILibraryManager libraryManager,
++        IKeyframeManager keyframeManager,
++        IEnumerable<IKeyframeExtractor> keyframeExtractors)
++    {
++        _libraryManager = libraryManager;
++        _keyframeManager = keyframeManager;
++        _keyframeExtractors = keyframeExtractors.ToArray();
++    }
++
++    /// <summary>
++    /// Extracts and stores the complete keyframe list for a video via ffprobe.
++    /// </summary>
++    /// <param name="itemId">The item id.</param>
++    /// <param name="cancellationToken">The cancellation token.</param>
++    /// <response code="204">Keyframes extracted and stored.</response>
++    /// <response code="404">Item not found or has no local path.</response>
++    /// <response code="500">Extraction failed.</response>
++    /// <returns>A <see cref="NoContentResult"/> on success.</returns>
++    [HttpPost("{itemId}/ExtractKeyframes")]
++    [ProducesResponseType(StatusCodes.Status204NoContent)]
++    [ProducesResponseType(StatusCodes.Status404NotFound)]
++    public async Task<ActionResult> ExtractKeyframes([FromRoute, Required] Guid itemId, CancellationToken cancellationToken)
++    {
++        var item = _libraryManager.GetItemById(itemId);
++        var path = item?.Path;
++        if (item is null || string.IsNullOrEmpty(path) || !System.IO.File.Exists(path))
++        {
++            return NotFound();
++        }
++
++        // The non-metadata extractor is the ffprobe packet walk — the only complete source. It is
++        // registered behind the cache decorator, which returns any stored row instead of re-reading
++        // the file, so clear the repository first: this endpoint's contract is a FRESH complete
++        // extraction (it also purges any legacy cue-derived row for the item).
++        var ffprobeExtractor = _keyframeExtractors.FirstOrDefault(e => !e.IsMetadataBased);
++        if (ffprobeExtractor is null)
++        {
++            return StatusCode(StatusCodes.Status500InternalServerError, "No ffprobe keyframe extractor registered");
++        }
++
++        await _keyframeManager.DeleteKeyframeDataAsync(itemId, cancellationToken).ConfigureAwait(false);
++        if (!ffprobeExtractor.TryExtractKeyframes(itemId, path, out _))
++        {
++            return StatusCode(StatusCodes.Status500InternalServerError, "Keyframe extraction failed");
++        }
++
++        return NoContent();
++    }
++}

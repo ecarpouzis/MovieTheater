@@ -48,10 +48,21 @@ namespace MovieTheater.Streaming
         ///
         /// <para>Null <paramref name="keyframeIntervalSeconds"/> = never probed → don't force; the same
         /// client escalation is the backstop there.</para>
+        ///
+        /// <para><b>The exact-segmentation exemption:</b> the patched Jellyfin on Ziggy (10.11.11 +
+        /// per-keyframe HLS segmentation, 2026-07-29) segments a video-copied session at EVERY source
+        /// keyframe — anchor-free, so a restarted encoder run reproduces identical segments from any
+        /// start point (verified to 0 ms on mid-file restarts) and nothing can renumber or shift the
+        /// timeline. That mode is only authorized per file, once a complete ffprobe keyframe list has
+        /// been backfilled into Jellyfin's keyframe repository (the <c>extract-jellyfin-keyframes</c>
+        /// CLI stamps <c>MediaFile.JfKeyframesUtc</c> as it does so). Container cues can't authorize
+        /// it — some muxers cue only a subset of the real keyframes. Unstamped files keep today's
+        /// uniform-grid playlists and therefore keep this force-encode gate.</para>
         /// </summary>
         public static bool ShouldForceEncode(
-            bool forceTranscodeRequested, bool wouldCopy, bool joinsMidFile, double? keyframeIntervalSeconds)
+            bool forceTranscodeRequested, bool wouldCopy, bool joinsMidFile, double? keyframeIntervalSeconds,
+            bool hasExactCopySegmentation)
             => forceTranscodeRequested
-                || (wouldCopy && joinsMidFile && keyframeIntervalSeconds > CopySegmentSeconds);
+                || (wouldCopy && joinsMidFile && !hasExactCopySegmentation && keyframeIntervalSeconds > CopySegmentSeconds);
     }
 }

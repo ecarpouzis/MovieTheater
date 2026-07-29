@@ -18,10 +18,10 @@ namespace MovieTheater.Services.Jellyfin
                 options.TunnelKey = config.JellyfinTunnelKey;
             });
 
-            services.AddHttpClient<JellyfinApi>(httpClient =>
+            void Configure(HttpClient httpClient, TimeSpan timeout)
             {
                 httpClient.BaseAddress = new Uri(config.JellyfinBaseUrl ?? "http://jellyfin-not-configured.invalid");
-                httpClient.Timeout = TimeSpan.FromMinutes(2);
+                httpClient.Timeout = timeout;
                 if (!string.IsNullOrEmpty(config.JellyfinApiKey))
                 {
                     httpClient.DefaultRequestHeaders.Add("X-Emby-Token", config.JellyfinApiKey);
@@ -32,7 +32,15 @@ namespace MovieTheater.Services.Jellyfin
                 }
                 if (!string.IsNullOrEmpty(config.JellyfinTunnelKey))
                     httpClient.DefaultRequestHeaders.Add("X-Tunnel-Key", config.JellyfinTunnelKey);
-            });
+            }
+
+            services.AddHttpClient<JellyfinApi>(c => Configure(c, TimeSpan.FromMinutes(2)));
+
+            // Same auth/base, far longer ceiling — for admin calls that block server-side for minutes
+            // (keyframe extraction walks every packet of a file over SMB). The default client's 2 minutes
+            // is deliberately tight because user-facing PlaybackInfo rides it, so raising that instead
+            // would let a hung Jellyfin stall a page request for a quarter of an hour.
+            services.AddHttpClient(JellyfinApi.LongRunningClientName, c => Configure(c, TimeSpan.FromMinutes(15)));
 
             return services;
         }

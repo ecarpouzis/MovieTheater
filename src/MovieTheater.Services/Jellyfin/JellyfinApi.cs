@@ -16,13 +16,19 @@ namespace MovieTheater.Services.Jellyfin
         private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
         private readonly HttpClient httpClient;
+        private readonly IHttpClientFactory httpClientFactory;
         private readonly JellyfinApiOptions options;
 
-        public JellyfinApi(HttpClient httpClient, IOptions<JellyfinApiOptions> options)
+        public JellyfinApi(HttpClient httpClient, IHttpClientFactory httpClientFactory, IOptions<JellyfinApiOptions> options)
         {
             this.httpClient = httpClient;
+            this.httpClientFactory = httpClientFactory;
             this.options = options.Value;
         }
+
+        /// <summary>Named client for calls Jellyfin answers in minutes, not seconds — see the registration
+        /// in <c>JellyfinServiceExtensions</c>; identical auth, 15-minute ceiling.</summary>
+        public const string LongRunningClientName = "jellyfin-long-running";
 
         private void EnsureConfigured()
         {
@@ -250,11 +256,15 @@ namespace MovieTheater.Services.Jellyfin
             if (caps.Av1 && useFmp4) videoCodecs.Add("av1");
             string videoCodec = string.Join(',', videoCodecs);
 
-            // Audio: preserve surround up to the client's output channels (5.1 = 6) instead of force-
-            // downmixing to stereo. AC-3/E-AC-3 the client can decode join the copy set, so a Dolby
-            // surround track rides through losslessly; when a transcode is unavoidable (e.g. DTS) the
-            // channel count is kept. A non-reporting client stays at the stereo baseline (MaxChannels 2).
-            int maxAudioChannels = Math.Clamp(caps.MaxAudioChannels, 2, 8);
+            // Audio: preserve surround. Floor at 6 channels (5.1) rather than trusting the client's
+            // AudioContext probe: maxChannelCount reads the OS OUTPUT config, which reports 2 on any
+            // stereo-configured desktop even when a 5.1 receiver is attached — and a wrongly-stereo
+            // profile makes Jellyfin downmix server-side through its DownMixAudioBoost volume filter,
+            // which clips loud music into audible distortion. Every MSE browser decodes multichannel
+            // AAC and downmixes cleanly client-side when the output really is stereo, so claiming 6
+            // is safe there and strictly better on a real surround setup (discrete 5.1 survives).
+            // 7.1 (8) is still honored when the client reports it.
+            int maxAudioChannels = Math.Clamp(caps.MaxAudioChannels, 6, 8);
             // FLAC is the audio on most Blu-ray remuxes here; letting a FLAC-capable browser direct-play
             // it is what keeps those files off the HLS path (and its keyframe/segment pitfalls) entirely.
             string directPlayAudio = "aac,mp3" + (caps.Ac3 ? ",ac3" : "") + (caps.Eac3 ? ",eac3" : "")
@@ -557,6 +567,46 @@ namespace MovieTheater.Services.Jellyfin
                       $"?Recursive=true&MetadataRefreshMode=Default&ImageRefreshMode=None&ReplaceAllMetadata=false";
             using var resp = await httpClient.PostAsync(url, null, cancel);
             resp.EnsureSuccessStatusCode();
+        }
+
+        /// <summary>
+        /// What one <see cref="ExtractKeyframesAsync"/> call did. Not a bare bool because the two failure
+        /// modes need different handling by a backfill driver: 404 (the item or its path is gone — a
+        /// permanent skip) vs 500 / transport error (worth retrying on a later pass).
+        /// </summary>
+        public readonly record struct KeyframeExtractOutcome(bool Ok, int StatusCode, string? Error);
+
+        /// <summary>
+        /// Asks Jellyfin to build a COMPLETE keyframe list for an item and store it in its own keyframe
+        /// repository — the site-side half of the exact-segmentation patch (see
+        /// <see cref="MovieTheater.Db.MediaFile.JfKeyframesUtc"/>): once an item is in that repository the patched
+        /// server cuts a stream-COPIED HLS session on the file's real keyframes, so segment numbering can
+        /// no longer drift and a mid-session restart can't renumber the timeline.
+        ///
+        /// <para>Server-side this is a full ffprobe packet walk over the media mount — tens of seconds to
+        /// several minutes per file — so it rides <see cref="LongRunningClientName"/> and must only ever be
+        /// driven by a bounded backfill, never a request path. Returns rather than throws on 404/500 so a
+        /// batch continues past one bad file.</para>
+        /// </summary>
+        public async Task<KeyframeExtractOutcome> ExtractKeyframesAsync(string itemId, CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            var client = httpClientFactory.CreateClient(LongRunningClientName);
+            try
+            {
+                using var resp = await client.PostAsync($"/Videos/{Uri.EscapeDataString(itemId)}/ExtractKeyframes", null, cancel);
+                if (resp.IsSuccessStatusCode)
+                    return new KeyframeExtractOutcome(true, (int)resp.StatusCode, null);
+                var body = await resp.Content.ReadAsStringAsync(cancel);
+                return new KeyframeExtractOutcome(false, (int)resp.StatusCode,
+                    body.Length == 0 ? resp.ReasonPhrase : body.Length <= 200 ? body : body[..200]);
+            }
+            catch (Exception e) when (e is HttpRequestException or TaskCanceledException && !cancel.IsCancellationRequested)
+            {
+                // A timeout surfaces as TaskCanceledException with OUR token unsignalled; treat it as this
+                // file's failure so the batch moves on, and never swallow an operator Ctrl-C.
+                return new KeyframeExtractOutcome(false, 0, e.Message.Length <= 200 ? e.Message : e.Message[..200]);
+            }
         }
 
         private async Task<List<JellyfinItem>> GetAllItemsAsync(string includeItemTypes, CancellationToken cancel) =>
