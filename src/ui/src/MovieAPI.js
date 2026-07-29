@@ -164,6 +164,31 @@ function setPassword(currentPassword, newPassword) {
 // any title's playableId (episode / misc / movie), and optionally a specific
 // mediaFileId (a Part / Variant / Extra). The server resolves movieId → playableId
 // when playableId is absent.
+// A stable id for THIS browser, sent with every stream call. Jellyfin derives a transcode's output
+// directory from (media, params, device id) and runs one ffmpeg per directory — so when the whole site
+// shared one device id, two screens on the same title fought over the same segment files: each start
+// killed the other's ffmpeg and rewrote its init segment mid-playback, freezing the (copied) video
+// while the re-encoded audio played on. One id per browser keeps them apart. Persisted so a reload
+// doesn't strand the transcode it started under the previous id.
+const DEVICE_TOKEN_KEY = "mt-device-token";
+const fallbackDeviceToken = `t${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+let cachedDeviceToken = null;
+function deviceToken() {
+  if (cachedDeviceToken) return cachedDeviceToken;
+  try {
+    let token = window.localStorage.getItem(DEVICE_TOKEN_KEY);
+    if (!token) {
+      token = (window.crypto?.randomUUID?.() || fallbackDeviceToken).replace(/-/g, "");
+      window.localStorage.setItem(DEVICE_TOKEN_KEY, token);
+    }
+    cachedDeviceToken = token;
+  } catch {
+    // Storage blocked (private mode): a per-tab token still separates this screen from every other.
+    cachedDeviceToken = fallbackDeviceToken;
+  }
+  return cachedDeviceToken;
+}
+
 function startStream({ movieId = null, playableId = null, mediaFileId = null, maxBitrateBps = null, audioStreamIndex = null, subtitleStreamIndex = null, startSeconds = null, forceTranscode = false }) {
   // Negotiate the codec profile from this browser's real capabilities (§14.1) so
   // HEVC/AV1-capable clients avoid a needless H.264 re-encode.
@@ -171,7 +196,7 @@ function startStream({ movieId = null, playableId = null, mediaFileId = null, ma
   return fetch("/API/Stream/Start", {
     method: "post",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ movieId, playableId, mediaFileId, maxBitrateBps, audioStreamIndex, subtitleStreamIndex, startSeconds, forceTranscode, ...caps }),
+    body: JSON.stringify({ movieId, playableId, mediaFileId, maxBitrateBps, audioStreamIndex, subtitleStreamIndex, startSeconds, forceTranscode, deviceToken: deviceToken(), ...caps }),
   });
 }
 
@@ -183,7 +208,7 @@ function reportStreamProgress({ playSessionId, movieId = null, playableId = null
     method: "post",
     headers: { "Content-Type": "application/json" },
     keepalive: true,
-    body: JSON.stringify({ playSessionId, movieId, playableId, mediaFileId, positionTicks, paused, passive }),
+    body: JSON.stringify({ playSessionId, movieId, playableId, mediaFileId, positionTicks, paused, passive, deviceToken: deviceToken() }),
   }).catch(() => {});
 }
 
@@ -192,14 +217,14 @@ function stopStream({ playSessionId, movieId = null, playableId = null, mediaFil
     method: "post",
     headers: { "Content-Type": "application/json" },
     keepalive: true,
-    body: JSON.stringify({ playSessionId, movieId, playableId, mediaFileId }),
+    body: JSON.stringify({ playSessionId, movieId, playableId, mediaFileId, deviceToken: deviceToken() }),
   }).catch(() => {});
 }
 
 // Fire-and-forget Stop for tab close — sendBeacon survives page teardown,
 // which is what actually kills the server-side ffmpeg process promptly.
 function beaconStopStream({ playSessionId, movieId = null, playableId = null, mediaFileId = null }) {
-  const payload = JSON.stringify({ playSessionId, movieId, playableId, mediaFileId });
+  const payload = JSON.stringify({ playSessionId, movieId, playableId, mediaFileId, deviceToken: deviceToken() });
   if (navigator.sendBeacon) {
     navigator.sendBeacon("/API/Stream/Stop", new Blob([payload], { type: "application/json" }));
   } else {

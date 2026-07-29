@@ -6,11 +6,14 @@ namespace MovieTheater.Streaming
     /// <summary>
     /// In-app ledger of active play sessions, used by the streaming concurrency guard.
     ///
-    /// We can't derive the transcode count from Jellyfin's <c>/Sessions</c>: every viewer's requests
-    /// carry the same <c>DeviceId</c> ("movietheater-site"), and Jellyfin keys sessions by
-    /// Client+DeviceId — so all viewers collapse into a single session and <c>/Sessions</c> reports at
-    /// most one transcode no matter how many ffmpegs are actually running. The guard that's meant to cap
-    /// concurrent transcodes therefore never trips.
+    /// Historically we couldn't derive the count from Jellyfin's <c>/Sessions</c>: every viewer's requests
+    /// carried the same <c>DeviceId</c> ("movietheater-site") and Jellyfin keys sessions by
+    /// Client+DeviceId, so all viewers collapsed into one session and <c>/Sessions</c> reported at most
+    /// one transcode however many ffmpegs were running. Playback now sends a per-viewer device id
+    /// (<c>StreamController.DeviceIdFor</c> — it had to, because a shared id also made two viewers of one
+    /// title collide on the same ffmpeg output directory), so <c>/Sessions</c> could be believed again.
+    /// This ledger is kept anyway: it costs no Jellyfin round trip on the hot path, and it counts the
+    /// sessions WE started rather than anything else pointed at the same server.
     ///
     /// Instead we track our own play sessions here, fed by the Stream Start/Progress/Stop beats the
     /// client already sends (~10s). A session that stops checking in for <see cref="StaleAfter"/> is

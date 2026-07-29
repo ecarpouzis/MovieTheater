@@ -32,6 +32,37 @@ namespace MovieTheater.Services.Jellyfin
                 throw new BusinessException("JellyfinApiKey is not configured.");
         }
 
+        /// <summary>Who Jellyfin should believe is playing: a stable per-screen id, plus an optional
+        /// human label for its dashboard. See <see cref="DeviceRequest"/>.</summary>
+        public readonly record struct JellyfinDevice(string Id, string? Name = null);
+
+        /// <summary>
+        /// A playback-lifecycle request stamped with THIS VIEWER'S device identity instead of the
+        /// site-wide one. Jellyfin keys a *session* by Client+DeviceId, so while every viewer shared one
+        /// id they all collapsed into a single session: <c>/Sessions</c> reported one viewer and at most
+        /// one transcode however many were really running, and the dashboard couldn't tell who was
+        /// watching what. One id per screen makes that accounting true again.
+        ///
+        /// It does NOT change where ffmpeg writes: Jellyfin omits DeviceId from the TranscodingUrl it
+        /// hands back (verified against 10.11.11), so the transcode's output directory is keyed without
+        /// it. Don't reach for this to separate two viewers' segment files.
+        ///
+        /// Only the playback lifecycle needs it; library sweeps and admin calls keep the default header
+        /// attached at registration. A per-request header wins over the client's default.
+        /// </summary>
+        private HttpRequestMessage DeviceRequest(HttpMethod method, string url, JellyfinDevice? device, HttpContent? content = null)
+        {
+            var request = new HttpRequestMessage(method, url) { Content = content };
+            if (device is JellyfinDevice d && !string.IsNullOrEmpty(d.Id))
+            {
+                // Quoted header values: keep the label free of quotes/backslashes rather than escaping.
+                var label = new string((d.Name ?? "site").Where(c => char.IsLetterOrDigit(c) || c is ' ' or '-' or '_' or '.').Take(40).ToArray());
+                request.Headers.TryAddWithoutValidation("X-Emby-Authorization",
+                    $"MediaBrowser Client=\"MovieTheater\", Device=\"{(label.Length > 0 ? label : "site")}\", DeviceId=\"{d.Id}\", Version=\"1.0\", Token=\"{options.ApiKey}\"");
+            }
+            return request;
+        }
+
         /// <summary>Server name/version — cheap connectivity check and version pin for the sync report.</summary>
         public async Task<JellyfinSystemInfo> GetSystemInfoAsync(CancellationToken cancel = default)
         {
@@ -76,10 +107,15 @@ namespace MovieTheater.Services.Jellyfin
         /// and the container's default audio is what the TranscodingUrl selects. Null on the first (discovery)
         /// call, since the source id isn't known until Jellyfin answers; pass it on any follow-up that pins a track.
         /// </param>
+        /// <param name="device">
+        /// The VIEWER'S device identity (see <see cref="DeviceRequest"/>) — this is the call that opens
+        /// the Jellyfin session, so it decides whether viewers are counted separately. Null → the
+        /// site-wide identity.
+        /// </param>
         public async Task<JellyfinPlaybackInfoResult> GetPlaybackInfoAsync(
             string itemId, long? maxStreamingBitrate, int? audioStreamIndex, int? subtitleStreamIndex,
             long startTimeTicks, ClientCapabilities capabilities, bool enableDirectPlay,
-            string? mediaSourceId = null, CancellationToken cancel = default)
+            string? mediaSourceId = null, JellyfinDevice? device = null, CancellationToken cancel = default)
         {
             EnsureConfigured();
             var userId = await GetUserIdAsync(cancel);
@@ -102,8 +138,12 @@ namespace MovieTheater.Services.Jellyfin
                 DeviceProfile = BuildWebDeviceProfile(maxStreamingBitrate, capabilities),
             };
 
-            var response = await httpClient.PostAsJsonAsync(
-                $"/Items/{Uri.EscapeDataString(itemId)}/PlaybackInfo?userId={Uri.EscapeDataString(userId)}", body, JsonOptions, cancel);
+            using var request = DeviceRequest(
+                HttpMethod.Post,
+                $"/Items/{Uri.EscapeDataString(itemId)}/PlaybackInfo?userId={Uri.EscapeDataString(userId)}",
+                device,
+                JsonContent.Create(body, options: JsonOptions));
+            using var response = await httpClient.SendAsync(request, cancel);
             response.EnsureSuccessStatusCode();
             var result = await response.Content.ReadFromJsonAsync<JellyfinPlaybackInfoResult>(JsonOptions, cancel);
             if (result == null || result.MediaSources.Count == 0)
@@ -117,41 +157,50 @@ namespace MovieTheater.Services.Jellyfin
         private static readonly TimeSpan LifecycleTimeout = TimeSpan.FromSeconds(5);
 
         /// <summary>Progress report — keeps Jellyfin's transcode throttling honest.</summary>
-        public async Task ReportPlaybackProgressAsync(string itemId, string playSessionId, long positionTicks, bool isPaused, CancellationToken cancel = default)
+        public async Task ReportPlaybackProgressAsync(string itemId, string playSessionId, long positionTicks, bool isPaused, JellyfinDevice? device = null, CancellationToken cancel = default)
         {
             EnsureConfigured();
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
             cts.CancelAfter(LifecycleTimeout);
-            using var resp = await httpClient.PostAsJsonAsync("/Sessions/Playing/Progress", new
-            {
-                ItemId = itemId,
-                PlaySessionId = playSessionId,
-                PositionTicks = positionTicks,
-                IsPaused = isPaused,
-            }, JsonOptions, cts.Token);
+            using var request = DeviceRequest(HttpMethod.Post, "/Sessions/Playing/Progress", device,
+                JsonContent.Create(new
+                {
+                    ItemId = itemId,
+                    PlaySessionId = playSessionId,
+                    PositionTicks = positionTicks,
+                    IsPaused = isPaused,
+                }, options: JsonOptions));
+            using var resp = await httpClient.SendAsync(request, cts.Token);
         }
 
-        public async Task ReportPlaybackStoppedAsync(string itemId, string playSessionId, long positionTicks, CancellationToken cancel = default)
+        public async Task ReportPlaybackStoppedAsync(string itemId, string playSessionId, long positionTicks, JellyfinDevice? device = null, CancellationToken cancel = default)
         {
             EnsureConfigured();
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
             cts.CancelAfter(LifecycleTimeout);
-            using var resp = await httpClient.PostAsJsonAsync("/Sessions/Playing/Stopped", new
-            {
-                ItemId = itemId,
-                PlaySessionId = playSessionId,
-                PositionTicks = positionTicks,
-            }, JsonOptions, cts.Token);
+            using var request = DeviceRequest(HttpMethod.Post, "/Sessions/Playing/Stopped", device,
+                JsonContent.Create(new
+                {
+                    ItemId = itemId,
+                    PlaySessionId = playSessionId,
+                    PositionTicks = positionTicks,
+                }, options: JsonOptions));
+            using var resp = await httpClient.SendAsync(request, cts.Token);
         }
 
-        /// <summary>Kills the ffmpeg process and cleans segments immediately instead of waiting for the idle timeout.</summary>
-        public async Task StopActiveEncodingsAsync(string playSessionId, CancellationToken cancel = default)
+        /// <summary>Kills the ffmpeg process and cleans segments immediately instead of waiting for the idle
+        /// timeout. Jellyfin matches the job by playSessionId whenever one is given (the deviceId is only
+        /// the fallback selector), which is why stops kept working even while the jobs themselves carried
+        /// no device id — so pass the session's device for correct accounting, not to make the kill land.</summary>
+        public async Task StopActiveEncodingsAsync(string playSessionId, JellyfinDevice? device = null, CancellationToken cancel = default)
         {
             EnsureConfigured();
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
             cts.CancelAfter(LifecycleTimeout);
-            using var resp = await httpClient.DeleteAsync(
-                $"/Videos/ActiveEncodings?deviceId={Uri.EscapeDataString(DeviceId)}&playSessionId={Uri.EscapeDataString(playSessionId)}", cts.Token);
+            using var request = DeviceRequest(HttpMethod.Delete,
+                $"/Videos/ActiveEncodings?deviceId={Uri.EscapeDataString(device?.Id ?? DeviceId)}&playSessionId={Uri.EscapeDataString(playSessionId)}",
+                device);
+            using var resp = await httpClient.SendAsync(request, cts.Token);
         }
 
         /// <summary>A transcode whose session hasn't checked in within this window is treated as
@@ -174,6 +223,9 @@ namespace MovieTheater.Services.Jellyfin
                 && !(s.LastPlaybackCheckIn is DateTime checkIn && checkIn.ToUniversalTime() <= cutoff));
         }
 
+        /// <summary>The site's own device identity — used by library sweeps, admin calls, and as the prefix
+        /// for per-viewer ids. Playback should send a per-viewer id instead (see <see cref="DeviceRequest"/>),
+        /// or every viewer collapses into one Jellyfin session.</summary>
         public const string DeviceId = "movietheater-site";
 
         // VideoLevel is expressed ×30 for HEVC; 183 ≈ level 6.1, generous enough to copy

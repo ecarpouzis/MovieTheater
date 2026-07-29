@@ -141,6 +141,18 @@ function TvPage({ userData }) {
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
 
+  // Read inside the drift corrector's interval, which isn't re-bound per render.
+  const tuningRef = useRef(tuning);
+  tuningRef.current = tuning;
+
+  // Where the CHANNEL is, as last stated by the server: { itemId, position, atMs }. Every Now answer
+  // re-anchors it (position = the item offset the server reported, atMs = the local clock when that was
+  // true, backdated by half the round trip). The drift corrector below plays this back to decide where
+  // the picture should be — anchoring on the server, not on our own join, is what makes two viewers
+  // converge on the same frame rather than each drifting from wherever they happened to start.
+  const syncRef = useRef(null);
+  const lastSyncSeekAtRef = useRef(0);
+
   // Whether any popout is open — read inside the idle timer (not re-bound per change) so a
   // menu/picker/guide left open keeps the chrome up instead of fading mid-interaction.
   const popoutOpenRef = useRef(false);
@@ -164,6 +176,13 @@ function TvPage({ userData }) {
   const retuneLoopRef = useRef({ itemId: null, count: 0, firstAt: 0, escalated: false });
   const RETUNE_LOOP_WINDOW_MS = 20_000;
   const RETUNE_LOOP_LIMIT = 3;
+
+  // Drift correction thresholds (see the corrector effect). Wide enough not to hunt around a normal
+  // measurement wobble, tight enough that two people on the same channel stay on the same beat.
+  const SYNC_TOLERANCE_S = 0.4;   // inside this we're in sync — hold the rate at 1
+  const SYNC_SEEK_AFTER_S = 5;    // past this a 3% nudge would take minutes — jump instead
+  const SYNC_RATE_STEP = 0.03;    // ±3%: closes a second of drift in ~33s, pitch-preserved and inaudible
+  const SYNC_SEEK_COOLDOWN_MS = 15_000; // never re-seek faster than this (see the corrector)
 
   // A broadcast item escalated to a forced re-encode after the copy path couldn't mid-join it
   // (bad/absent keyframe index → seek loop). Keyed by itemId, so it applies only to that item and
@@ -279,6 +298,22 @@ function TvPage({ userData }) {
     [resolveBitrate]
   );
 
+  // Re-anchor the channel clock from a Now answer. The offset the server states was true about half a
+  // round trip ago, so backdate by that much instead of pretending the answer was instantaneous (the
+  // clamp keeps one pathological request from throwing the anchor seconds off).
+  const anchorSync = useCallback((nowData, rttMs) => {
+    const position = nowData?.current?.offsetSeconds;
+    if (typeof position !== "number") {
+      syncRef.current = null;
+      return;
+    }
+    syncRef.current = {
+      itemId: nowData.current.itemId ?? null,
+      position,
+      atMs: performance.now() - Math.min(rttMs, 2_000) / 2,
+    };
+  }, []);
+
   // ── tune to the channel's live position ─────────────────────────────────────
   const tune = useCallback(
     async (chan) => {
@@ -296,6 +331,7 @@ function TvPage({ userData }) {
       setTimeout(() => setStaticBurst(false), 420);
 
       try {
+        const askedAt = performance.now();
         const nowResponse = await fetch(`/API/Channel/${chan.id}/Now`);
         if (superseded()) return;
         if (!nowResponse.ok) throw Object.assign(new Error(), { status: nowResponse.status });
@@ -307,6 +343,7 @@ function TvPage({ userData }) {
           setTuning(false);
           currentItemIdRef.current = null;
           currentEndsAtRef.current = null;
+          syncRef.current = null;
           setSkip(null);
           setRestart(null);
           setViewers(null);
@@ -314,6 +351,7 @@ function TvPage({ userData }) {
         }
         currentItemIdRef.current = nowData.current.itemId ?? null;
         currentEndsAtRef.current = nowData.current.endsAtUtc ?? null;
+        anchorSync(nowData, performance.now() - askedAt);
 
         const loopTs = Date.now();
         const loop = retuneLoopRef.current;
@@ -423,6 +461,7 @@ function TvPage({ userData }) {
 
         const video = videoRef.current;
         if (!video) return;
+        video.playbackRate = 1; // a fresh join starts on-tempo; the drift corrector re-nudges if it has to
         const joinAt = nowData.current.offsetSeconds;
         // Tuning a frozen channel loads the frame but must NOT start it: the picture holds on the
         // paused instant. (The buffered frame still renders, and 'loadeddata' clears the tuning card.)
@@ -500,7 +539,7 @@ function TvPage({ userData }) {
         }
       }
     },
-    [stopSession, destroyHls, resolveBitrate, prewarmNext, handleStall]
+    [stopSession, destroyHls, resolveBitrate, prewarmNext, handleStall, anchorSync]
   );
   // tune() is invoked from the ABR adapt path (useAdaptiveBitrate onAdapt) via this ref, avoiding a
   // tune/adapt dependency cycle.
@@ -575,6 +614,47 @@ function TvPage({ userData }) {
       }
     }, 10_000);
     return () => clearInterval(beat);
+  }, []);
+
+  // ── keep every viewer on the same frame ─────────────────────────────────────
+  // A channel is one broadcast, but each viewer decodes it separately: join latency, the keyframe
+  // ffmpeg actually seeks to, and every rebuffer leave the picture a little behind the schedule — and
+  // those errors only accumulate, so two people watching together drift apart over an evening (and a
+  // re-tune was the only thing that ever resnapped them). Compare where we are against where the
+  // server says the channel is, then close the gap by nudging the playback rate — pitch-preserved and
+  // inaudible at 3% — falling back to a jump only when a nudge would take minutes. Purely per-viewer:
+  // it never touches the shared schedule, so correcting yourself can't shove anyone else.
+  useEffect(() => {
+    const correct = setInterval(() => {
+      const video = videoRef.current;
+      const anchor = syncRef.current;
+      if (!video || !anchor || pausedRef.current || tuningRef.current) return;
+      if (video.paused || video.seeking || !video.readyState) return;
+      if (anchor.itemId !== currentItemIdRef.current) return; // channel moved on — wait for a fresh anchor
+
+      const expected = anchor.position + (performance.now() - anchor.atMs) / 1000;
+      const drift = video.currentTime - expected; // > 0 → running ahead of the channel
+      if (!isFinite(drift)) return;
+
+      if (Math.abs(drift) > SYNC_SEEK_AFTER_S) {
+        // Rate-limited: a picture that's frozen (not merely behind) keeps reading as huge drift, and
+        // seeking every beat would just hammer the transcoder instead of letting it recover.
+        if (performance.now() - lastSyncSeekAtRef.current < SYNC_SEEK_COOLDOWN_MS) return;
+        lastSyncSeekAtRef.current = performance.now();
+        video.playbackRate = 1;
+        try {
+          video.currentTime = expected;
+        } catch {
+          /* not seekable yet — the next beat retries */
+        }
+        return;
+      }
+      const rate =
+        Math.abs(drift) <= SYNC_TOLERANCE_S ? 1 : drift > 0 ? 1 - SYNC_RATE_STEP : 1 + SYNC_RATE_STEP;
+      if (Math.abs(video.playbackRate - rate) > 0.001) video.playbackRate = rate;
+    }, 3_000);
+    return () => clearInterval(correct);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -782,9 +862,13 @@ function TvPage({ userData }) {
     if (!channel) return undefined;
     const poll = setInterval(async () => {
       try {
+        const askedAt = performance.now();
         const r = await fetch(`/API/Channel/${channel.id}/Now`);
         if (!r.ok) return;
         const data = await r.json();
+        // Re-anchor the channel clock on every beat, so the drift corrector tracks the server rather
+        // than compounding our own measurement error between tunes.
+        if (data.current && !data.paused) anchorSync(data, performance.now() - askedAt);
         setSkip(data.skip || null);
         setRestart(data.restart || null);
         setViewers(data.viewers || null);
@@ -818,7 +902,7 @@ function TvPage({ userData }) {
       }
     }, 12_000);
     return () => clearInterval(poll);
-  }, [channel, tune]);
+  }, [channel, tune, anchorSync]);
 
   // Cast a skip vote for the current item. If it carries the majority the server collapses
   // the schedule and we jump straight to the next movie; otherwise we just reflect the tally.

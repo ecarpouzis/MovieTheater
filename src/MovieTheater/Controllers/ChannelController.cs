@@ -175,7 +175,10 @@ namespace MovieTheater.Controllers
                     kind = t.Kind ?? "movie",
                     posterVersion = t.PosterVersion,
                     title = t.Title ?? "",
-                    startsAtUtc = i.StartUtc,
+                    // Kind=Utc so this serializes with a trailing 'Z'. EF hands back Unspecified, which the
+                    // browser reads as LOCAL time — hours off, which is what left the player's advance and
+                    // prewarm timers armed for the wrong instant (the same trap the guide grid documents).
+                    startsAtUtc = DateTime.SpecifyKind(i.StartUtc, DateTimeKind.Utc),
                 };
             });
 
@@ -225,9 +228,12 @@ namespace MovieTheater.Controllers
                     reason,
                     offsetSeconds = Math.Max(0, (clock - current.StartUtc).TotalSeconds),
                     durationSeconds = (current.EndUtc - current.StartUtc).TotalSeconds,
-                    endsAtUtc = current.EndUtc,
+                    endsAtUtc = DateTime.SpecifyKind(current.EndUtc, DateTimeKind.Utc),
                 },
                 next = nextItems,
+                // The instant this answer describes. The player anchors its drift correction to it, so two
+                // viewers converge on the SAME frame instead of each drifting from its own join point.
+                serverNowUtc = DateTime.SpecifyKind(clock, DateTimeKind.Utc),
                 paused = pausedAt != null,
                 viewers = new { count = viewers.Count, names = viewers },
                 skip = new { viewers = status.Skip.Viewers, votes = status.Skip.Votes, required = status.Skip.Required, youVoted = status.Skip.YouVoted },

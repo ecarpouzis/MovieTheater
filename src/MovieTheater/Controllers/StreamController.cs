@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -85,6 +85,29 @@ namespace MovieTheater.Controllers
             s.Codec != null && (s.Codec.Equals("ass", StringComparison.OrdinalIgnoreCase)
                 || s.Codec.Equals("ssa", StringComparison.OrdinalIgnoreCase));
 
+        /// <summary>
+        /// This viewer's Jellyfin device identity. Jellyfin keys a session by Client+DeviceId, so while
+        /// every viewer shared one id they all collapsed into a single session: <c>/Sessions</c> reported
+        /// one viewer and ≤1 transcode no matter how many were really running, and the dashboard couldn't
+        /// say who was watching what. The client's own token gives one session per screen; a client too old
+        /// to send one falls back to per-account, which at least separates different people.
+        ///
+        /// This does NOT separate two viewers' segment files — Jellyfin leaves DeviceId out of the
+        /// TranscodingUrl, so the ffmpeg output directory is keyed without it.
+        /// </summary>
+        private JellyfinApi.JellyfinDevice? DeviceFor(int? userId, string? deviceToken)
+        {
+            var clean = new string((deviceToken ?? string.Empty).Where(char.IsLetterOrDigit).Take(40).ToArray());
+            var id = clean.Length >= 8
+                ? $"{JellyfinApi.DeviceId}-{clean}"
+                : userId is int uid ? $"{JellyfinApi.DeviceId}-u{uid}" : null;
+            if (id == null)
+                return null; // nothing to identify this viewer by → the site-wide identity
+            // A readable label so Jellyfin's session list names the person, not just a hash.
+            var name = User.Identity?.Name;
+            return new JellyfinApi.JellyfinDevice(id, string.IsNullOrWhiteSpace(name) ? "site" : name);
+        }
+
         public class StartRequest
         {
             public int? MovieId { get; set; }                 // legacy: a movie to play (its Primary file)
@@ -116,6 +139,10 @@ namespace MovieTheater.Controllers
             public bool SupportsHeAac { get; set; }       // MSE decodes HE-AAC (SBR); else HE-AAC must transcode
             public bool SupportsDolbyVision { get; set; } // decodes Dolby Vision → DOVI ranges may pass through
             public bool SupportsMkv { get; set; }         // <video> can play a Matroska container (Chromium yes, Firefox excluded) → direct-play MKV
+
+            // A stable per-browser id (see DeviceFor). Without it every viewer collapses into one
+            // Jellyfin session, so the dashboard can't tell who is watching what.
+            public string? DeviceToken { get; set; }
 
             public ClientCapabilities ToCapabilities() =>
                 new(SupportsHevc, SupportsAv1, SupportsHdr, SupportsFmp4, SupportsMp3,
@@ -165,8 +192,8 @@ namespace MovieTheater.Controllers
                 return NotFound(new { message = "This title has no playable file." });
 
             // Optional concurrency guard — a friendly "theater full" beats a melted GPU. Counted from our
-            // own in-app session registry (Jellyfin's /Sessions can't tell our viewers apart — they share
-            // one DeviceId, so it always reports ≤1 transcode). Direct-play sessions don't count.
+            // own in-app session registry rather than Jellyfin's /Sessions: it needs no round trip here and
+            // counts only the sessions we started. Direct-play sessions don't count.
             if (config.StreamingMaxConcurrentTranscodes > 0
                 && transcodeSessions.ActiveTranscodeCount() >= config.StreamingMaxConcurrentTranscodes)
             {
@@ -181,12 +208,13 @@ namespace MovieTheater.Controllers
             // whether it actually blocks direct play depends on whether it names a non-default track,
             // which is only knowable after Jellyfin describes the streams (below).
             var allowDirectPlay = request.SubtitleStreamIndex == null && !request.ForceTranscode;
+            var device = DeviceFor(userId.Value, request.DeviceToken);
             JellyfinPlaybackInfoResult info;
             try
             {
                 info = await jellyfin.GetPlaybackInfoAsync(
                     file.JellyfinItemId, request.MaxBitrateBps, request.AudioStreamIndex, request.SubtitleStreamIndex,
-                    startTicks, request.ToCapabilities(), allowDirectPlay);
+                    startTicks, request.ToCapabilities(), allowDirectPlay, device: device);
             }
             catch (Exception ex)
             {
@@ -238,7 +266,7 @@ namespace MovieTheater.Controllers
                 {
                     info = await jellyfin.GetPlaybackInfoAsync(
                         file.JellyfinItemId, request.MaxBitrateBps, effectiveAudioIndex, request.SubtitleStreamIndex,
-                        startTicks, request.ToCapabilities(), allowDirectPlay, source.Id);
+                        startTicks, request.ToCapabilities(), allowDirectPlay, source.Id, device);
                 }
                 catch (Exception ex)
                 {
@@ -422,6 +450,9 @@ namespace MovieTheater.Controllers
             public bool Paused { get; set; }
             /// <summary>TV-channel playback: report to Jellyfin but write no resume/Seen.</summary>
             public bool Passive { get; set; }
+            /// <summary>This browser's device token — the report must reach the session under the same
+            /// device identity it was started with (see <see cref="DeviceFor"/>).</summary>
+            public string? DeviceToken { get; set; }
         }
 
         [HttpPost("/API/Stream/Progress")]
@@ -444,7 +475,8 @@ namespace MovieTheater.Controllers
             {
                 try
                 {
-                    await jellyfin.ReportPlaybackProgressAsync(itemId, request.PlaySessionId, request.PositionTicks, request.Paused);
+                    await jellyfin.ReportPlaybackProgressAsync(itemId, request.PlaySessionId, request.PositionTicks, request.Paused,
+                        DeviceFor(userId.Value, request.DeviceToken));
                 }
                 catch (Exception ex)
                 {
@@ -489,6 +521,9 @@ namespace MovieTheater.Controllers
             public int? MovieId { get; set; }
             public int? PlayableId { get; set; }
             public int? MediaFileId { get; set; }
+            /// <summary>This browser's device token, so the stop is recorded against the session that
+            /// actually started (see <see cref="DeviceFor"/>). The kill itself matches on playSessionId.</summary>
+            public string? DeviceToken { get; set; }
         }
 
         [HttpPost("/API/Stream/Stop")]
@@ -499,14 +534,18 @@ namespace MovieTheater.Controllers
 
             transcodeSessions.Remove(request.PlaySessionId);
 
+            // Beacons on tab-close still carry the cookie, so the account fallback resolves even for a
+            // client too old to send a token.
+            var device = DeviceFor(GetCurrentUserId(), request.DeviceToken);
+
             var playableId = request.PlayableId
                 ?? await movieDb.Movies.Where(m => m.id == request.MovieId).Select(m => m.PlayableId).FirstOrDefaultAsync();
             var itemId = playableId == null ? null : await ItemIdForFileOrPlayableAsync(request.MediaFileId, playableId.Value);
             try
             {
                 if (itemId != null)
-                    await jellyfin.ReportPlaybackStoppedAsync(itemId, request.PlaySessionId, 0);
-                await jellyfin.StopActiveEncodingsAsync(request.PlaySessionId);
+                    await jellyfin.ReportPlaybackStoppedAsync(itemId, request.PlaySessionId, 0, device);
+                await jellyfin.StopActiveEncodingsAsync(request.PlaySessionId, device);
             }
             catch (Exception ex)
             {
