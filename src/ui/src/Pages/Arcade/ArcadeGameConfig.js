@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button, Input, Modal, Select, Spin, Tooltip, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import { systemLabel } from "./arcadeSystems";
+import "./ArcadeModal.css";
 import "./ArcadeGameConfig.css";
 
 /**
@@ -199,7 +200,10 @@ export default function ArcadeGameConfig({ game, onClose }) {
       onCancel={onClose}
       width={800}
       zIndex={1600}
-      wrapClassName="arcade-config-modal"
+      // `arcade-modal` = the shared shell (bounded, pinned header/footer); `--themed` gives it the
+      // arcade surface its own CSS already writes text for — without it the category rail is
+      // white-on-white in dark theme. See ArcadeModal.css.
+      wrapClassName="arcade-modal arcade-modal--themed arcade-config-modal"
       title={<span className="agc-title">⚙ {game.title} <span className="agc-title__sys">— {systemLabel(cfg?.system)}</span></span>}
       footer={[
         <span key="hint" className="agc-foot-hint">Applies the next time the game starts</span>,

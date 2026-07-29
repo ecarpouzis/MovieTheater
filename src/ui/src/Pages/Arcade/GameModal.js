@@ -1,17 +1,26 @@
 import { cloneElement, useEffect, useState } from "react";
 import { Button, Checkbox, Dropdown, Modal, Select, Tooltip } from "antd";
+import useMediaQuery from "../../hooks/useMediaQuery";
 import GameCover from "./GameCover";
 import CheatPicker from "./CheatPicker";
 import ArcadeGameConfig from "./ArcadeGameConfig";
 import ArcadeLeaderboards from "./ArcadeLeaderboards";
 import ArcadeAchievements from "./ArcadeAchievements";
 import { systemLabel } from "./arcadeSystems";
+import "./ArcadeModal.css";
 import "./GameModal.css";
 
 /**
  * The full-page game modal (mirrors the movie modal): a card opens this instead of launching inline.
  * The card is now a pure display tile — everything you DO with a game lives here: pick the ROM
  * version, toggle cheats, choose a Wii controller scheme, start the room, and manage your saves.
+ *
+ * It's a full-screen sheet on every platform, not a floating card, laid out as hero → scrolling
+ * details → pinned action bar. That last part is load-bearing rather than decorative: as a card it
+ * was an auto-height box parked 100px down the page, so on a TV browser (short viewport, no wheel,
+ * no scrollbar to grab) a game with a long summary pushed ▶ Start room off the bottom of the screen
+ * with no way to reach it. Start now lives in a real modal footer that the shared shell holds
+ * against the bottom edge — see ArcadeModal.css.
  *
  * The launch state (selected version, cheats, controller scheme) used to live on the card; it moved
  * here wholesale. Cheats are per-ROM, so switching the version resets the cheat selection to that
@@ -85,19 +94,76 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
 
   const hasControls = multiVersion || version?.cheatCount > 0 || game.supportsControllerScheme;
 
+  // The hero art has to be sized in PIXELS — GameCover's box is exact by design (see coverBox: a
+  // percentage height would make the art size the layout instead of the other way round) — so the
+  // breakpoints that scale it are read here rather than expressed in GameModal.css. Roomy screens
+  // (a desktop monitor, a TV) get a genuinely big cover; short ones (phone landscape) get out of
+  // the way so the controls and Start still fit above the fold.
+  const roomy = useMediaQuery("(min-width: 1100px) and (min-height: 820px)");
+  const shortViewport = useMediaQuery("(max-height: 620px)");
+  const narrow = useMediaQuery("(max-width: 700px)");
+  // maxWidth matters as much as height: a 4:3 cartridge box is twice as wide as a 3:4 jewel case at
+  // the same height, so it's the width cap — not the height — that actually binds for a Genesis or
+  // SNES cover. Capping it at the old 230px is what made box art on a 1080p TV look like a thumbnail.
+  const artHeight = shortViewport ? 190 : narrow ? 250 : roomy ? 440 : 330;
+  const artMaxWidth = shortViewport ? 200 : narrow ? 240 : roomy ? 460 : 330;
+
   return (
     <Modal
       open
       onCancel={onClose}
-      footer={null}
       width={720}
       // Above the nav bar (z-index 1300) so the modal and its close button render over it.
       zIndex={1500}
-      wrapClassName="arcade-game-modal"
+      // `arcade-modal` is the shared shell (viewport-bounded, body scrolls); `arcade-game-modal`
+      // takes it the rest of the way to a full-screen sheet at every size. See ArcadeModal.css.
+      wrapClassName="arcade-modal arcade-game-modal"
+      // Start lives in a REAL modal footer, not at the end of the body. The shell pins the footer
+      // and scrolls the body between header and footer, so the primary action is on screen no
+      // matter how long the summary runs or how short the viewport is — a TV browser was pushing
+      // it off the bottom with nothing to scroll with.
+      footer={
+        <div className="agm-foot">
+          <div className="agm-foot__ctx">
+            <span className="agm-foot__sys">{systemLabel(game.system)}</span>
+            {version?.label && <span className="agm-foot__ver" title={version.label}>{version.label}</span>}
+            {competitive && <span className="agm-foot__flag">🏁 Competitive</span>}
+          </div>
+          <div className="agm-actions">
+            {game.supportsHwToggle ? (
+              <Dropdown.Button
+                type="primary"
+                className="agm-start"
+                loading={busy}
+                onClick={() => start("")}
+                // The game modal is zIndex 1500; antd's dropdown menu defaults lower and would open
+                // BEHIND it (the "Force GL does nothing" report). Lift it above the modal.
+                overlayStyle={{ zIndex: 1700 }}
+                // Portals to body like the version/pill pickers (GameModal.css note), so it never
+                // picked up this app's dark theme — it rendered with no themed background, just
+                // inherited light body text floating over whatever was behind the modal ("popping
+                // under the cards"). Give it a class to theme, same as .arcade-version-dropdown.
+                overlayClassName="agm-start-menu"
+                menu={{ items: rendererItems }}
+                buttonsRender={([left, right]) => [
+                  cloneElement(left, { className: [left.props.className, "arcade-btn-start"].filter(Boolean).join(" ") }),
+                  cloneElement(right, { className: [right.props.className, "arcade-btn-start", "arcade-btn-start__arrow"].filter(Boolean).join(" ") }),
+                ]}
+              >
+                ▶ Start room
+              </Dropdown.Button>
+            ) : (
+              <Button type="primary" className="arcade-btn-start agm-start" loading={busy} onClick={() => start()}>
+                ▶ Start room
+              </Button>
+            )}
+          </div>
+        </div>
+      }
     >
       <div className="agm-body">
         <div className="agm-art">
-          <GameCover game={game} height={300} maxWidth={230} />
+          <GameCover game={game} height={artHeight} maxWidth={artMaxWidth} />
         </div>
 
         <div className="agm-info">
@@ -183,38 +249,9 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
             </Checkbox>
           </label>
 
-          <div className="agm-actions">
-            {game.supportsHwToggle ? (
-              <Dropdown.Button
-                type="primary"
-                className="agm-start"
-                loading={busy}
-                onClick={() => start("")}
-                // The game modal is zIndex 1500; antd's dropdown menu defaults lower and would open
-                // BEHIND it (the "Force GL does nothing" report). Lift it above the modal.
-                overlayStyle={{ zIndex: 1700 }}
-                // Portals to body like the version/pill pickers (GameModal.css note), so it never
-                // picked up this app's dark theme — it rendered with no themed background, just
-                // inherited light body text floating over whatever was behind the modal ("popping
-                // under the cards"). Give it a class to theme, same as .arcade-version-dropdown.
-                overlayClassName="agm-start-menu"
-                menu={{ items: rendererItems }}
-                buttonsRender={([left, right]) => [
-                  cloneElement(left, { className: [left.props.className, "arcade-btn-start"].filter(Boolean).join(" ") }),
-                  cloneElement(right, { className: [right.props.className, "arcade-btn-start", "arcade-btn-start__arrow"].filter(Boolean).join(" ") }),
-                ]}
-              >
-                ▶ Start room
-              </Dropdown.Button>
-            ) : (
-              <Button type="primary" className="arcade-btn-start agm-start" loading={busy} onClick={() => start()}>
-                ▶ Start room
-              </Button>
-            )}
-          </div>
-
-          {/* Utility links live on their own wrapping row so they never crowd — or overflow past —
-              the Start pill (the modal's info column is only ~420px on a 720px modal). */}
+          {/* Utility links stay in the BODY, next to the panels they open — only Start is promoted
+              to the pinned footer. They wrap onto a row of their own so they never crowd each
+              other on a narrow info column. */}
           <div className="agm-links">
             <button type="button" className="arcade-link" onClick={() => onManageSaves?.(sel, game.title)}>
               💾 My saves

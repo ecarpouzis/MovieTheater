@@ -4,32 +4,118 @@
    lives on <html>, so every var(--…) token still resolves. That also means the
    Start-button pill style (defined under .arcade-page in ArcadePage.css) has to
    be re-declared here, scoped to the wrap.
+
+   This one is a FULL-SCREEN SHEET on every platform — the same call the movie
+   modal makes, and for the same reason: it's a detail page, not a prompt. Box
+   art, summary, chips, versions, leaderboards, achievements — there's enough
+   here to deserve the whole screen, and cramming it into a 720px card is what
+   pushed ▶ Start room off the bottom of a TV browser in the first place.
+
+   It's a sheet, not a document: the shell in ArcadeModal.css pins the footer and
+   scrolls the body between it and the top, so Start is on screen at any viewport
+   height. Content is capped to a readable column and centered rather than
+   stretched, so 1920px of TV reads as a designed page instead of a blown-up card.
    ============================================================================ */
 
-.arcade-game-modal .ant-modal-content {
-  background: var(--card-surface);
-  border: 1px solid var(--card-border);
-  border-radius: 18px;
-  /* Clip the body to the rounded corners, and lift the panel off the (masked) lobby with a real
-     drop shadow so it reads as a focused surface rather than a flat sheet. */
+.arcade-game-modal.ant-modal-wrap {
+  /* Wider than the shell default — this dialog is two columns (art + details). */
+  --arcade-sheet-measure: min(1080px, 94vw);
+  --arcade-sheet-gutter: clamp(18px, 4vw, 32px);
+  /* Sheet at EVERY size, so the shell's card inset never applies. */
+  --arcade-sheet-inset: 0px;
+  padding: 0;
+  /* The body is the scroller; the wrap must not add a second one behind it. */
   overflow: hidden;
-  box-shadow: 0 24px 64px rgba(18, 8, 38, 0.34);
-  color: var(--text-primary);
-}
-.arcade-game-modal .ant-modal-body {
-  padding: 28px 30px 30px;
-}
-.arcade-game-modal .ant-modal-close {
-  top: 8px;
-  inset-inline-end: 8px;
-}
-.arcade-game-modal .ant-modal-close-x {
-  color: var(--text-muted);
 }
 
+.arcade-game-modal.ant-modal-wrap .ant-modal {
+  top: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  vertical-align: top;
+}
+
+.arcade-game-modal .ant-modal-content {
+  position: relative;
+  /* The page surface, not the card surface: edge-to-edge, this IS the page. */
+  background: var(--content-bg);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--text-primary);
+  /* dvh so the sheet tracks the visible viewport as mobile browser chrome collapses. */
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+/* Ambient wash behind the hero, in the arcade's neon purple — the same trick the movie modal
+   plays with a poster's dominant color, and what keeps a full-bleed sheet from reading as a
+   flat slab of background on a big screen. */
+.arcade-game-modal .ant-modal-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 320px;
+  background:
+    radial-gradient(120% 85% at 22% -15%, var(--accent-soft), transparent 64%),
+    linear-gradient(to bottom, var(--accent-soft), transparent 92%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.arcade-game-modal .ant-modal-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  padding-block: clamp(22px, 4vh, 52px) clamp(20px, 3vh, 36px);
+}
+/* Centered in whatever height is left over, so a short entry doesn't sit in the top-left corner of
+   a 1080p TV with half the screen empty beneath it. `margin: auto` rather than `justify-content:
+   center`, which clips the top of the content once it's taller than the scroller instead of
+   scrolling to it — the auto margins simply resolve to 0 in that case. */
+.arcade-game-modal .agm-body {
+  margin-block: auto;
+}
+
+/* Headerless sheet: the ✕ floats over the hero art, so it wears a contrast chip. Park it in the
+   viewport corner — .ant-modal-content is exactly the viewport here and never scrolls, so absolute
+   is already fixed. The shell states this too, but behind `:not(:has(.ant-modal-header))`; an older
+   TV browser without :has() throws that whole selector away, and this is the one dialog where
+   losing the chip would leave a grey ✕ sitting on box art. Stated plainly here as well. */
+.arcade-game-modal .ant-modal-close {
+  top: 6px;
+  right: 6px;
+  inset-inline-end: 6px;
+  z-index: 2;
+}
+.arcade-game-modal .ant-modal-close-x {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+  margin: 6px;
+  font-size: 18px;
+  color: #fff;
+  background: rgba(20, 20, 24, 0.62);
+  border-radius: 50%;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.arcade-game-modal .ant-modal-close:hover .ant-modal-close-x {
+  color: #fff;
+  background: rgba(20, 20, 24, 0.85);
+}
+
+/* Art + details. The shell centers this on the readable column via the body's padding, so the
+   row itself just needs to lay the two out. */
 .agm-body {
   display: flex;
-  gap: 26px;
+  gap: clamp(20px, 2.6vw, 40px);
   align-items: flex-start;
 }
 
@@ -55,13 +141,16 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: clamp(12px, 1.5vh, 18px);
 }
 
+/* Type scales with the screen: this is a hero title on a full-bleed page, and a TV is read from
+   across a room, not from 60cm. clamp() rather than breakpoints so it moves continuously and
+   never lands awkwardly between two steps. */
 .agm-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: clamp(24px, 1.4vw + 15px, 40px);
   font-weight: 700;
   line-height: 1.12;
   letter-spacing: -0.015em;
@@ -78,8 +167,8 @@
 /* Detail-context chips carry a touch more weight than the tiny grid tags they reuse — this is the
    one place a game gets a full page, so its metadata should be comfortably legible. */
 .agm-tags .arcade-chip {
-  font-size: 11px;
-  padding: 2px 9px;
+  font-size: clamp(11px, 0.22vw + 9.5px, 14px);
+  padding: 3px 10px;
   border-radius: 5px;
   line-height: 1.5;
 }
@@ -92,11 +181,11 @@
 
 .agm-summary {
   margin: 0;
-  font-size: 13.5px;
-  line-height: 1.55;
+  font-size: clamp(13.5px, 0.3vw + 12px, 17px);
+  line-height: 1.6;
   color: var(--text-secondary);
   /* Cap the measure so long summaries stay readable instead of running the full panel width. */
-  max-width: 60ch;
+  max-width: 62ch;
 }
 
 /* ── The launch controls (moved off the card) ─────────────────────────────── */
@@ -127,33 +216,96 @@
   max-width: 340px;
 }
 
-/* ── Actions: the Start pill is the primary CTA and owns its own row ───────── */
+/* ── The pinned action bar ─────────────────────────────────────────────────── */
+/* A real .ant-modal-footer, so the shell (ArcadeModal.css) holds it against the bottom of the
+   sheet while the body scrolls above it. Start is never more than a glance away no matter how
+   long the summary runs — which is the whole fix for "the Start button was off-screen". */
+.arcade-game-modal .ant-modal-footer {
+  position: relative;
+  z-index: 1;
+  padding-block: clamp(10px, 1.6vh, 18px);
+  border-top: 1px solid var(--card-border);
+  /* Reads as a bar lifted off the page surface behind it. */
+  background: var(--card-surface);
+  text-align: initial;
+}
+/* antd spaces adjacent footer buttons by hand; the bar lays itself out. */
+.arcade-game-modal .ant-modal-footer .ant-btn + .ant-btn {
+  margin-inline-start: 0;
+}
+
+.agm-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+
+/* What you're about to launch, so the bar isn't a lone button: system, the selected dump, and the
+   competitive flag when it's armed (it lives up in the body, out of sight once you've scrolled). */
+.agm-foot__ctx {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  min-width: 0;
+  font-size: clamp(12px, 0.16vw + 11px, 14px);
+  color: var(--text-secondary);
+}
+.agm-foot__sys {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.agm-foot__ver {
+  min-width: 0;
+  max-width: 42ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agm-foot__flag {
+  font-weight: 600;
+  color: var(--accent-link);
+}
+
 .agm-actions {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 6px;
+  margin-inline-start: auto;
 }
 
 /* Utility links (My saves / Leaderboards / Achievements / Configure) wrap onto a tidy row of
-   their own beneath the pill. They used to share .agm-actions with the Start button on a single
-   `white-space: nowrap` line — five items in a ~420px info column overflowed the panel's right
-   edge (Configure spilled onto the dark lobby behind the modal). Wrapping keeps them contained. */
+   their own. They used to share .agm-actions with the Start button on a single `white-space:
+   nowrap` line — five items in a ~420px info column overflowed the panel's right edge (Configure
+   spilled onto the dark lobby behind the modal). Wrapping keeps them contained. They stay in the
+   BODY rather than joining Start in the footer bar, because three of the four toggle a panel open
+   directly beneath them; a disclosure control that sits nowhere near what it discloses is worse
+   than one you have to scroll to. */
 .agm-links {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 18px;
+  gap: 4px 10px;
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--card-border);
 }
+/* Pull the leading link back by its own padding so its text lines up with the column above it —
+   on the row, not on the container, which would drag the border-top out of alignment too. */
+.agm-links .arcade-link:first-child {
+  margin-inline-start: -8px;
+}
 .agm-links .arcade-link {
   background: none;
   border: none;
-  padding: 0;
-  font-size: 13px;
+  /* A real target, not just a run of text: this row is the touch/remote hit area on a phone and
+     on a TV, where there's no cursor to aim with. */
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: clamp(13px, 0.16vw + 12px, 15px);
   font-weight: 600;
   white-space: nowrap;
   color: var(--accent-link);
@@ -173,9 +325,9 @@
   gap: 5px;
   border: none;
   border-radius: 9px;
-  padding: 11px 26px;
+  padding: clamp(11px, 0.9vh, 15px) clamp(26px, 1.6vw + 16px, 44px);
   height: auto;
-  font-size: 14px;
+  font-size: clamp(14px, 0.22vw + 12.5px, 18px);
   font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
@@ -213,10 +365,14 @@
   border-top-left-radius: 9px;
   border-bottom-left-radius: 9px;
 }
+/* The caret is sized by its own glyph, never by the row. antd lets it flex, so the moment the pill
+   goes full-width (a phone footer) the caret grew to half the pill and the divider landed in the
+   middle of the button. */
 .arcade-game-modal .ant-dropdown-button.agm-start .ant-btn.arcade-btn-start__arrow {
+  flex: 0 0 auto;
   border-top-right-radius: 9px;
   border-bottom-right-radius: 9px;
-  padding: 10px 12px;
+  padding-inline: clamp(12px, 0.5vw + 8px, 20px);
   border-left: 1px solid rgba(255, 255, 255, 0.28);
 }
 
@@ -245,8 +401,8 @@
   background: var(--accent-soft);
 }
 
-/* ── Narrow viewports ─────────────────────────────────────────────────────── */
-@media (max-width: 640px) {
+/* ── Narrow viewports: stack the art above the details ────────────────────── */
+@media (max-width: 700px) {
   .agm-body {
     flex-direction: column;
     align-items: center;
@@ -257,6 +413,7 @@
   }
   .agm-title {
     text-align: center;
+    /* The ✕ is up on the art now, not beside the title. */
     padding-right: 0;
   }
   .agm-tags {
@@ -264,6 +421,62 @@
   }
   .agm-select.ant-select {
     max-width: none;
+  }
+
+  /* The bar goes to one full-width Start pill: context above, action below, thumb-sized. */
+  .agm-foot {
+    justify-content: stretch;
+    gap: 8px;
+  }
+  .agm-foot__ctx {
+    width: 100%;
+    justify-content: center;
+  }
+  /* `> .ant-btn` on purpose: the split button's two halves also carry .arcade-btn-start, and
+     stretching the CARET to 100% is what put the divider in the middle of the pill. Only the
+     standalone Start button is a direct child of the row. */
+  .agm-actions,
+  .arcade-game-modal .agm-actions > .ant-btn.arcade-btn-start,
+  .arcade-game-modal .ant-dropdown-button.agm-start {
+    width: 100%;
+  }
+  .agm-actions {
+    margin-inline-start: 0;
+  }
+  /* Inside the split pill the caret keeps its own width and Start takes the rest. */
+  .arcade-game-modal .ant-dropdown-button.agm-start .ant-btn.arcade-btn-start:first-child {
+    flex: 1 1 auto;
+  }
+}
+
+/* ── Short viewports (phone landscape, a squat desktop window) ─────────────── */
+/* Vertical space is the scarce thing here, so the sheet trades padding for content — the art is
+   already cut down to 190px by the JS breakpoint in GameModal.js. */
+@media (max-height: 620px) {
+  .agm-info {
+    gap: 10px;
+  }
+  .agm-controls {
+    padding-top: 10px;
+  }
+  .agm-competitive {
+    padding: 7px 12px;
+  }
+  .arcade-game-modal .ant-modal-content::before {
+    height: 180px;
+  }
+}
+
+/* ── Big screens (a large desktop monitor, a TV) ───────────────────────────── */
+/* The type already scales with clamp(); this is the layout half — a wider gutter between the hero
+   art and the details, so the extra width reads as composition rather than a stretched card. */
+@media (min-width: 1100px) and (min-height: 820px) {
+  .agm-body {
+    gap: 44px;
+  }
+  .agm-links {
+    margin-top: 20px;
+    padding-top: 16px;
   }
 }
 
@@ -277,6 +490,13 @@
   border: 1px solid var(--card-border);
   border-radius: 10px;
   transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+/* antd's checkbox label is its own near-black default, which on the dark arcade sheet came out as
+   grey-on-grey — the row read as disabled. It never inherited the modal's text color because
+   .ant-checkbox-wrapper sets `color` itself. */
+.agm-competitive .ant-checkbox-wrapper {
+  color: var(--text-primary);
+  font-size: clamp(13.5px, 0.2vw + 12.5px, 16px);
 }
 .agm-competitive:has(.ant-checkbox-checked) {
   border-color: var(--accent);
