@@ -68,6 +68,9 @@ namespace MovieTheater.Services.Jellyfin
             var filesByPlayable = existingFiles.ToLookup(f => f.PlayableId);
             r.MoviesWithPath = movies.Count;
             r.ExistingFileRows = existingFiles.Count;
+            // Rows whose server-side keyframe list went stale this run (file replaced in place) —
+            // re-extracted in bulk before the final save; see ReExtractStaleKeyframesAsync.
+            var staleKeyframeRows = new List<MediaFile>();
 
             // DB path → movie. Duplicate paths are matched to the first movie and reported.
             var byPath = new Dictionary<string, (int Id, string Title, string FilePath)>();
@@ -131,7 +134,7 @@ namespace MovieTheater.Services.Jellyfin
                 {
                     if (row == null) { row = new MediaFile { PlayableId = playableId.Value, Path = moviePath }; db.MediaFiles.Add(row); created++; }
                     else updated++;
-                    StampFromItem(row, item, now);
+                    if (StampFromItem(row, item, now)) staleKeyframeRows.Add(row);
                 }
                 if (row != null) matchedRows.Add(row);
             }
@@ -174,7 +177,7 @@ namespace MovieTheater.Services.Jellyfin
                 {
                     if (!matchedEpFileIds.Add(row.Id)) continue;   // first Jellyfin item wins per file
                     matchedRows.Add(row);
-                    if (!dryRun) StampFromItem(row, item, now);
+                    if (!dryRun && StampFromItem(row, item, now)) staleKeyframeRows.Add(row);
                 }
             }
             r.EpMatched = matchedEpFileIds.Count;
@@ -214,7 +217,7 @@ namespace MovieTheater.Services.Jellyfin
                 if (JellyfinPathMapper.NormalizeForCompare(row.Path) == JellyfinPathMapper.NormalizeForCompare(u.DbPath))
                     continue;                                          // already sitting at the right path
                 if (matchedRows.Contains(row)) maskedRepoints++;       // was linked to a now-superseded (dead) item
-                if (!dryRun) { row.Path = u.DbPath; StampFromItem(row, u.Item, now); }
+                if (!dryRun) { row.Path = u.DbPath; if (StampFromItem(row, u.Item, now)) staleKeyframeRows.Add(row); }
                 repointedRows.Add(row);
                 repointedItemIds.Add(u.Item.Id);
                 matchedRows.Add(row);
@@ -275,7 +278,7 @@ namespace MovieTheater.Services.Jellyfin
                     {
                         matchedRows.Add(f);
                         r.RescuedAlternateVersions++;
-                        if (!dryRun) StampFromItem(f, item, now);
+                        if (!dryRun && StampFromItem(f, item, now)) staleKeyframeRows.Add(f);
                     }
             }
 
@@ -339,6 +342,8 @@ namespace MovieTheater.Services.Jellyfin
             if (!dryRun)
             {
                 foreach (var f in existingFiles.Where(f => !matchedRows.Contains(f))) f.MissingSinceUtc ??= now;
+                if (staleKeyframeRows.Count > 0)
+                    await ReExtractStaleKeyframesAsync(staleKeyframeRows, now, cancel);
                 await db.SaveChangesAsync(cancel);
             }
 
@@ -518,7 +523,9 @@ namespace MovieTheater.Services.Jellyfin
                 db.MediaFiles.Add(primary);
             }
             else primary.Path = newPath;
-            StampFromItem(primary, detail, now);
+            var staleServerKeyframes = StampFromItem(primary, detail, now);
+            if (staleServerKeyframes)
+                await ReExtractStaleKeyframesAsync(new[] { primary }, now, cancel);
             movie.FilePath = newPath;
             res.PrimaryRepointed = true;
             res.NewPath = newPath;
@@ -626,11 +633,32 @@ namespace MovieTheater.Services.Jellyfin
 
         private static int TokenOverlap(HashSet<string> a, HashSet<string> b) => a.Count(b.Contains);
 
-        private static void StampFromItem(MediaFile row, JellyfinItem item, DateTime now)
+        /// <summary>
+        /// Returns true when Jellyfin's SERVER-SIDE stored keyframe list for this item just went
+        /// stale: the file's bytes were replaced under the SAME item id while the row carried a
+        /// <c>JfKeyframesUtc</c> stamp. The caller must re-run keyframe extraction for those items —
+        /// the patched Jellyfin builds exact per-keyframe copy playlists from that stored list, and a
+        /// list describing the OLD encode reintroduces the very playlist/segment divergence (freezes)
+        /// the whole mechanism exists to prevent. An item-id CHANGE is safe server-side (the new id
+        /// has no stored list, so Jellyfin falls back to legacy segmentation) but still clears the
+        /// stamp, since the stamp vouches for data the new item doesn't have.
+        /// </summary>
+        private static bool StampFromItem(MediaFile row, JellyfinItem item, DateTime now)
         {
             var src = item.MediaSources?.FirstOrDefault();
             var vid = src?.MediaStreams?.FirstOrDefault(s => s.Type == "Video");
             var aud = src?.MediaStreams?.Where(s => s.Type == "Audio").OrderByDescending(s => s.IsDefault).FirstOrDefault();
+            var idChanged = row.JellyfinItemId != null
+                && !string.Equals(row.JellyfinItemId, item.Id, StringComparison.OrdinalIgnoreCase);
+            // A changed size means the file on disk was replaced (a re-rip), so every keyframe
+            // measurement describes an encode that no longer exists. Same-size updates keep them:
+            // they are properties of the bytes, not of anything Jellyfin re-reports.
+            var sizeChanged = row.SizeBytes != null && src?.Size != null && row.SizeBytes != src.Size;
+            var serverKeyframesStale = sizeChanged && !idChanged && row.JfKeyframesUtc != null;
+            if (sizeChanged)
+                row.KeyframeIntervalSeconds = null;   // the nightly probe-keyframes run re-measures
+            if (sizeChanged || idChanged)
+                row.JfKeyframesUtc = null;            // exact-copy authorization no longer holds
             row.JellyfinItemId = item.Id;
             row.DurationTicks = item.RunTimeTicks;
             row.Container = Truncate(src?.Container, 32);
@@ -638,15 +666,40 @@ namespace MovieTheater.Services.Jellyfin
             row.AudioCodec = Truncate(aud?.Codec, 32);
             row.Width = vid?.Width;
             row.Height = vid?.Height;
-            // A changed size means the file on disk was replaced (a re-rip), so the probed keyframe
-            // spacing describes an encode that no longer exists — null it and the nightly
-            // probe-keyframes run re-measures. Same-size updates keep it: the probe is a property of
-            // the bytes, not of anything Jellyfin re-reports.
-            if (row.SizeBytes != null && src?.Size != null && row.SizeBytes != src.Size)
-                row.KeyframeIntervalSeconds = null;
             row.SizeBytes = src?.Size;
             row.LastSyncedUtc = now;
             row.MissingSinceUtc = null;
+            return serverKeyframesStale;
+        }
+
+        /// <summary>
+        /// Re-runs Jellyfin's full keyframe extraction for rows whose stored server-side list just
+        /// went stale (see <see cref="StampFromItem"/>). The endpoint deletes the old list BEFORE
+        /// extracting, so even a failed extraction leaves the server safe (legacy segmentation);
+        /// only an unreachable server leaves a stale list behind — logged loudly, since that file
+        /// would freeze on mid-file joins until re-extracted. Capped: replacements are rare, and a
+        /// sync run must stay bounded; leftovers are listed for a manual pass.
+        /// </summary>
+        private async Task ReExtractStaleKeyframesAsync(IReadOnlyList<MediaFile> rows, DateTime now, CancellationToken cancel)
+        {
+            const int Cap = 25;
+            foreach (var row in rows.Take(Cap))
+            {
+                var outcome = await jellyfin.ExtractKeyframesAsync(row.JellyfinItemId!, cancel);
+                if (outcome.Ok)
+                    row.JfKeyframesUtc = now;
+                else
+                    logger.LogWarning(
+                        "Keyframe re-extraction after file replacement failed for MediaFile {Id} (item {ItemId}): {Status} {Error} — " +
+                        "run extract-jellyfin-keyframes for it, its exact-copy playback is disabled until then",
+                        row.Id, row.JellyfinItemId, outcome.StatusCode, outcome.Error);
+            }
+
+            foreach (var row in rows.Skip(Cap))
+                logger.LogWarning(
+                    "Keyframe re-extraction cap ({Cap}) reached; MediaFile {Id} (item {ItemId}) has a STALE server-side keyframe list — " +
+                    "run extract-jellyfin-keyframes --playable-id {PlayableId} promptly",
+                    Cap, row.Id, row.JellyfinItemId, row.PlayableId);
         }
 
         /// <summary>Index by key, keeping ONLY keys that occur exactly once (so a match is unambiguous).</summary>
