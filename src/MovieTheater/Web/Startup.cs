@@ -150,6 +150,11 @@ namespace MovieTheater
 
             services.AddScoped<Channels.ChannelScheduleService>();
             services.AddSingleton<Channels.ChannelSkipService>();
+            // Durable channel-viewing telemetry: the /Now poll records beats in memory; this service
+            // flushes one ChannelViewStat row per user/channel/day every few minutes. Registered as
+            // both the injectable accumulator and the background flusher (same instance).
+            services.AddSingleton<Channels.ChannelViewTelemetryService>();
+            services.AddHostedService(sp => sp.GetRequiredService<Channels.ChannelViewTelemetryService>());
             // Watch-party lobby state (presence + ready) is in-memory like the skip service; the reaper deletes
             // finished parties (docs/playlists-watchparty-plan.md).
             services.AddSingleton<Channels.WatchpartyService>();

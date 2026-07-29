@@ -340,6 +340,10 @@ namespace MovieTheater.Recommendations
                 {
                     if (t.Value == null) continue;
                     if (t.Category == TagCategory.CompTitle) { comps.Add(t.Value); continue; }
+                    // Channel tags are curated lineup membership, not content description — two films
+                    // sharing a channel already share the real features that put them there. Letting
+                    // curation labels into the vector would silently reshape recommendations.
+                    if (t.Category == TagCategory.Channel) continue;
                     Put($"tag:{t.Category}:{t.Value}", (t.Weight ?? 60) / 100.0);
                 }
 

@@ -148,6 +148,11 @@ namespace MovieTheater.Services
         /// </summary>
         public List<string> AdminUsernames { get; set; } = new();
 
+        /// <summary>IANA/Windows timezone id for the household — used to bucket channel-viewing
+        /// telemetry into local days (a movie night must not straddle two UTC dates). Default
+        /// America/New_York.</summary>
+        public string? TelemetryTimeZone { get; set; }
+
         public HostedEnvironment Environment { get; }
 
         public IConfiguration RawConfiguration { get; }

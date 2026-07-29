@@ -418,6 +418,7 @@ namespace MovieTheater.Db
         public DbSet<Channel> Channels { get; set; }
         public DbSet<ChannelScheduleItem> ChannelScheduleItems { get; set; }
         public DbSet<ChannelShelf> ChannelShelves { get; set; }
+        public DbSet<ChannelViewStat> ChannelViewStats { get; set; }
         public DbSet<PlaylistItem> PlaylistItems { get; set; }
         public DbSet<TitleInsight> TitleInsights { get; set; }
         public DbSet<TitleTag> TitleTags { get; set; }

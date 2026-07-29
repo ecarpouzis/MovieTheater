@@ -42,5 +42,11 @@ namespace MovieTheater.Db
 
         /// <summary>Anything else salient that doesn't fit a category above.</summary>
         Keyword = 11,
+
+        /// <summary>Curated channel membership. Value is a ChannelCatalog key ("family-night");
+        /// written by the load-channel-tags command as a direct per-title judgment, consumed by
+        /// Channel filters. Deliberately NOT a similarity feature (see RecommendationRefresher) —
+        /// curation labels must not reshape recommendations.</summary>
+        Channel = 12,
     }
 }

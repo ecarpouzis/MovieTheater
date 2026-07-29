@@ -147,6 +147,12 @@ namespace MovieTheater.Ingest
                 "stephen king", "neil gaiman", "hannibal lecter", "thin man", "oceans", "knives out",
                 "avatar", "independence day", "the karate kid", "twin peaks", "lost",
                 "discworld", "dragon age", "disgaea"),
+
+            // Channel-membership tags are only ever valid catalog keys. Seeded dynamically from the
+            // catalog so a rename/removal there instantly makes the old key "novel" (a typo net for
+            // generic load-ai-metadata batches; load-channel-tags validates harder and skips).
+            [TagCategory.Channel] = new HashSet<string>(
+                Channels.ChannelCatalog.All.Select(d => d.Key), StringComparer.OrdinalIgnoreCase),
         };
 
         private static HashSet<string> New(params string[] values) =>

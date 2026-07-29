@@ -28,14 +28,17 @@ namespace MovieTheater.Controllers
         private readonly MovieDb movieDb;
         private readonly ChannelScheduleService scheduleService;
         private readonly ChannelSkipService skipService;
+        private readonly ChannelViewTelemetryService viewTelemetry;
         private readonly Microsoft.Extensions.Logging.ILogger<ChannelController> logger;
 
         public ChannelController(MovieDb movieDb, ChannelScheduleService scheduleService, ChannelSkipService skipService,
+            ChannelViewTelemetryService viewTelemetry,
             Microsoft.Extensions.Logging.ILogger<ChannelController> logger)
         {
             this.movieDb = movieDb;
             this.scheduleService = scheduleService;
             this.skipService = skipService;
+            this.viewTelemetry = viewTelemetry;
             this.logger = logger;
         }
 
@@ -182,8 +185,11 @@ namespace MovieTheater.Controllers
                 };
             });
 
-            // Polling Now is also the presence heartbeat for the skip/restart tallies (§8).
+            // Polling Now is also the presence heartbeat for the skip/restart tallies (§8)…
             var status = skipService.Touch(id, current.Id, userId.Value);
+            // …and the durable viewing-telemetry beat (in-memory accumulate, periodic flush). A paused
+            // channel still counts: someone is parked on it, which is exactly the signal we're after.
+            viewTelemetry.RecordBeat(userId.Value, id, now);
 
             // Put names to the live presence so the viewer count can reveal who's connected. Yourself
             // sorts first and is flagged, the rest alphabetically.

@@ -1,0 +1,45 @@
+// Per-channel canon for the channel-canon command: titles that MUST be in the eligible pool and
+// titles that MUST NOT be. Case-insensitive substrings — keep them distinctive ("Toy Story",
+// never "It"). This is the regression harness born from the 2026-07-28/29 session: every entry
+// below was a real failure or a real leak at some point that night. Extend it whenever a channel's
+// identity gets litigated — the argument becomes a permanent test.
+//
+// NOTE: entries for judged channels describe the POST-SWEEP contract. Until the channel-tag sweep
+// has loaded membership for a channel, DB-mode failures here are the documented gap, not a bug.
+[
+  {
+    "channel": "family-night",
+    "mustInclude": [
+      "Star Wars: Episode IV", "E.T.", "Jurassic Park", "Back to the Future",
+      "Raiders of the Lost Ark", "Ghostbusters", "Princess Bride", "Toy Story",
+      "Goonies", "Moana", "Karate Kid"
+    ],
+    "mustExclude": [
+      "Anchorman", "Dirty Dozen", "Lawrence of Arabia", "Casino Royale",
+      "Dumb & Dumber", "Wayne's World", "Berserk", "Evangelion", "Poltergeist"
+    ]
+  },
+  {
+    "channel": "kid-films",
+    "mustInclude": ["Toy Story", "Land Before Time", "Winnie the Pooh"],
+    "mustExclude": ["Jurassic Park", "Gremlins", "Watership Down", "Jaws"]
+  },
+  {
+    "channel": "family-tv",
+    "mustInclude": ["Bluey", "Sesame Street", "Avatar: The Last Airbender", "DuckTales"],
+    "mustExclude": ["Rick and Morty", "Berserk", "South Park"]
+  },
+  {
+    "channel": "holiday-cheer",
+    "mustInclude": ["It's a Wonderful Life", "Grinch Stole Christmas", "Muppet Christmas"],
+    // Eric's strict rule: Occasion-style membership only for movies that ARE the holiday
+    // (Rudolf/Frosty tier). Gremlins is a monster movie that happens to be set at Christmas.
+    "mustExclude": ["Gremlins"]
+  },
+  {
+    "channel": "spooky-season",
+    // Deliberately broad — a seasonal MOOD channel may air year-round monster movies in October.
+    "mustInclude": ["Hocus Pocus", "Great Pumpkin", "Nightmare Before Christmas"],
+    "mustExclude": []
+  }
+]
