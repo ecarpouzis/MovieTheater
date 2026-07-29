@@ -275,7 +275,26 @@ namespace MovieTheater.Channels
                 D("nickelodeon","Nickelodeon","'90s-2000s Nicktoons & live-action","Kids & Family").In(T).Path("SpongeBob","Ren & Stimpy","Rugrats","Wild Thornberrys","CatDog","Angry Beavers","Aaahh","Invader Zim","KaBlam","All That","Are You Afraid of the Dark","Pete & Pete","Blues Clues","Salute Your Shorts","Legends of the Hidden Temple").Strat(err),
                 D("preschool","Preschool Corner","Gentlest TV for the littlest","Kids & Family").In(T).Path("Mister Rogers","Sesame Street","Bluey","Peppa Pig","Blues Clues").Strat(err),
                 D("saturday-cartoons","Saturday Morning Cartoons","Classic toon energy","Kids & Family").In(MT).Genre("Animation").Mpaa(2).Strat(err),
-                D("family-night","Family Movie Night","Something for everyone","Kids & Family").In(MT).Mpaa(3).Occasion("family-night"),
+                // The two family FILM channels are a deliberate pair: Kid-Friendly Films is the gentle
+                // tier you can leave on unattended; Family Movie Night is the whole family sitting down
+                // together, and it reaches up to PG-13 for the adventure canon (Star Wars, Jurassic Park,
+                // Raiders, Back to the Future, E.T., Ghostbusters). They share ~282 titles, which is
+                // intended — a film belongs on every channel it fits; channels never subtract from each
+                // other. Both are movies-only: the kids' TV that used to air here lives on The Family Room.
+                //
+                // NOTE: do NOT gate these on the AI Occasion tag. It reads as a curation signal and isn't
+                // one — only 24% of movies carry any Occasion at all (Star Wars and E.T. carry none), and
+                // where it exists it's unreliable (Gremlins is tagged BOTH "christmas" and "halloween").
+                // Gating on `family-night` was what kept Star Wars, E.T., Back to the Future and Raiders
+                // off this channel while all 13 Land Before Time sequels aired. Occasion belongs on
+                // genuinely holiday-specific content (Rudolph, Frosty) and nothing else.
+                // The real "would a family put this on again" signal is Rewatchability + an Intensity cap.
+                D("kid-films","Kid-Friendly Films","Gentle movies for the youngest viewers","Kids & Family").In(M).Genre("Family","Animation").Mpaa(2).Intensity(null,40),
+                D("family-night","Family Movie Night","Toy Story to Jurassic Park — the whole family","Kids & Family").In(M).Genre("Family","Adventure","Fantasy","Animation").Mpaa(3).Rewatch(60).Intensity(null,55)
+                    // Keeps the adult end of Adventure (Lawrence of Arabia, The Dirty Dozen, Gallipoli) and
+                    // the scary end (Poltergeist, Something Wicked) from drifting onto a cozy family night.
+                    .NotTag(TagCategory.Subgenre,"historical drama","war film","war epic","spy thriller","dystopian","horror","gothic horror","slasher"),
+                D("family-tv","The Family Room","Kid-safe shows to leave on all afternoon","Kids & Family").In(T).Genre("Animation","Family").Mpaa(2).Intensity(null,40).Strat(err),
                 D("read-learn","Read & Learn","Educational classics","Kids & Family").In(T).Path("Reading Rainbow","Magic School Bus","Schoolhouse Rock","Ada Twist","Hilda").Strat(err),
                 D("sing-along","Sing-Along Musicals","Songs for all ages","Kids & Family").In(MT).Genre("Musical").Mpaa(2),
                 D("kid-shorts","Kid-Friendly Shorts","Gentle short cartoons for the littlest","Kids & Family").In(T).Path("Schoolhouse Rock","Wonderful World of Mickey","Mickey Mouse (2013","Bluey Minisode","Cracking Contraption").Strat(err),
