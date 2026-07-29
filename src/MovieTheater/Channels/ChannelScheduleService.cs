@@ -142,6 +142,9 @@ namespace MovieTheater.Channels
                 return await BuildPlaylistEligibleCoreAsync(channel, cancel);
 
             var filter = ChannelFilter.Parse(channel.FilterJson);
+            // Only a date-windowed channel may air holiday-locked titles; everywhere else they're invisible
+            // year-round (see ChannelCatalog.HolidayLockKeys). Derived here rather than stored in FilterJson.
+            filter.AllowHolidayLocked = ChannelSeason.HasSeason(channel);
 
             var cands = new List<Cand>();
             if (filter.Kinds.HasFlag(ContentKinds.Movies))
@@ -376,6 +379,15 @@ namespace MovieTheater.Channels
             if (filter.Novelty is FilterRange s4) { int? lo = s4.Min is double a ? (int)Math.Round(a) : (int?)null, hi = s4.Max is double b ? (int)Math.Round(b) : (int?)null; f.Add((cur.Where(ti => (!req || ti.Recognized) && ti.Novelty != null && (lo == null || ti.Novelty >= lo) && (hi == null || ti.Novelty <= hi)).Select(ti => ti.SubjectId), false)); }
             if (filter.Rewatchability is FilterRange s5) { int? lo = s5.Min is double a ? (int)Math.Round(a) : (int?)null, hi = s5.Max is double b ? (int)Math.Round(b) : (int?)null; f.Add((cur.Where(ti => (!req || ti.Recognized) && ti.Rewatchability != null && (lo == null || ti.Rewatchability >= lo) && (hi == null || ti.Rewatchability <= hi)).Select(ti => ti.SubjectId), false)); }
             if (filter.Energy is FilterRange s6) { int? lo = s6.Min is double a ? (int)Math.Round(a) : (int?)null, hi = s6.Max is double b ? (int)Math.Round(b) : (int?)null; f.Add((cur.Where(ti => (!req || ti.Recognized) && ti.Energy != null && (lo == null || ti.Energy >= lo) && (hi == null || ti.Energy <= hi)).Select(ti => ti.SubjectId), false)); }
+
+            // Holiday lock: a Christmas- or Halloween-SPECIFIC title airs only on a seasonal channel, and is
+            // excluded from every other channel every day of the year — Marquee and genre channels included.
+            if (!filter.AllowHolidayLocked)
+            {
+                var locks = ChannelCatalog.HolidayLockKeys;
+                f.Add((cur.Where(ti => ti.Tags.Any(t => t.Category == TagCategory.Channel && locks.Contains(t.Value)))
+                          .Select(ti => ti.SubjectId), true));
+            }
 
             foreach (var tr in filter.Tags)
             {
@@ -836,9 +848,14 @@ namespace MovieTheater.Channels
                         foreach (var prev in items.Skip(Math.Max(0, items.Count - cooldownK)))
                             recent.Enqueue(prev.PlayableId);
 
+                    // Round-robin keeps a cursor PER SHOW instead of one flat sequence, so it resumes and
+                    // wraps per show (see RoundRobinRotation) — the other strategies keep the flat-queue
+                    // resume-skip below.
+                    var rotation = strategy == "EpisodeRoundRobin" ? new RoundRobinRotation(eligible, items) : null;
+
                     var queue = new Queue<EligibleItem>();
                     int reroll = 0;       // shuffles regenerated within this call (disambiguates a tiny pool re-shuffling inside one rotation window)
-                    bool resumed = false;
+                    bool resumed = rotation != null;   // the rotation resumes itself from the tail
                     while (cursor < horizonUtc)
                     {
                         if (queue.Count == 0)
@@ -847,7 +864,7 @@ namespace MovieTheater.Channels
                             // through its whole catalog over days instead of cycling one window forever;
                             // ordered strategies ignore the round number.
                             int round = ordered ? 0 : unchecked((int)(cursor.Ticks / ShuffleRotation.Ticks) + reroll++);
-                            queue = GenerateRound(eligible, channel.Seed, round, strategy);
+                            queue = rotation?.NextRound() ?? GenerateRound(eligible, channel.Seed, round, strategy);
                         }
 
                         // First round of an ordered strategy (no cooldown to lean on): advance past the
@@ -1078,7 +1095,9 @@ namespace MovieTheater.Channels
                 case "NewestFirst":
                     return new Queue<EligibleItem>(source.OrderByDescending(e => e.OrderRank));
                 case "EpisodeRoundRobin":
-                    return new Queue<EligibleItem>(RoundRobin(source));
+                    // The scheduler drives round-robin through RoundRobinRotation (per-show cursors that
+                    // resume and wrap); this is the history-free equivalent for any other caller.
+                    return new RoundRobinRotation(source, Array.Empty<ChannelScheduleItem>()).NextRound();
                 case "WeightedShuffle":
                 case "RecommendationWeighted": // same weighted shuffle; Copies() reads the per-user score
                 {
@@ -1095,19 +1114,62 @@ namespace MovieTheater.Channels
             }
         }
 
-        // Interleave items across their groups (series) one per pass, so a TV channel rotates between
-        // shows in episode order rather than bingeing a single series.
-        private static List<EligibleItem> RoundRobin(List<EligibleItem> source)
+        /// <summary>
+        /// The <c>EpisodeRoundRobin</c> rotation: one cursor per show, so every round airs exactly one
+        /// episode of every show and a show that reaches its finale WRAPS to its first episode rather
+        /// than leaving the rotation. Short shows therefore loop sooner; no show ever goes off the air.
+        ///
+        /// <para>This replaces a single flat pass (<c>for i in 0..max: each group[i] if it has one</c>),
+        /// whose tail was necessarily a solid block of the longest show — every other series had been
+        /// exhausted. Left running, that made Primetime Animation air 466 consecutive Simpsons episodes
+        /// (~7 days) while Futurama, Daria, Duckman, Beavis, Clone High and The Critic never came up, and
+        /// collapsed Classic Sitcoms to Seinfeld / All in the Family with seven other shows benched. The
+        /// same fate was queued up for Cartoon Shorts (Looney Tunes), Read &amp; Learn and Preschool
+        /// (Mister Rogers) and Nickelodeon (SpongeBob).</para>
+        /// </summary>
+        private sealed class RoundRobinRotation
         {
-            var groups = source.GroupBy(e => e.GroupId)
-                .Select(g => g.OrderBy(e => e.OrderRank).ToList())
-                .ToList();
-            var result = new List<EligibleItem>(source.Count);
-            int max = groups.Count == 0 ? 0 : groups.Max(g => g.Count);
-            for (int i = 0; i < max; i++)
-                foreach (var g in groups)
-                    if (i < g.Count) result.Add(g[i]);
-            return result;
+            private readonly List<List<EligibleItem>> shows;
+            private readonly int[] cursors;
+            private readonly int lead;   // which show opens every round (set by the resume)
+
+            public RoundRobinRotation(List<EligibleItem> source, IReadOnlyList<ChannelScheduleItem> aired)
+            {
+                // Ordered by series id, then by episode order, so the rotation is stable across calls
+                // (GroupBy's own ordering is only as stable as the candidate query's).
+                shows = source.GroupBy(e => e.GroupId).OrderBy(g => g.Key)
+                    .Select(g => g.OrderBy(e => e.OrderRank).ToList())
+                    .ToList();
+                cursors = new int[shows.Count];
+
+                // Resume: replay the materialized tail so each show picks up after ITS last-aired episode
+                // and the next round opens with the show after the one that aired last. A round covers
+                // every show, so the retained tail always spans at least one full round.
+                var placed = new Dictionary<int, (int Show, int Index)>();
+                for (int s = 0; s < shows.Count; s++)
+                    for (int i = 0; i < shows[s].Count; i++)
+                        placed[shows[s][i].PlayableId] = (s, i);
+                foreach (var item in aired)
+                    if (placed.TryGetValue(item.PlayableId, out var at))
+                    {
+                        cursors[at.Show] = at.Index + 1;
+                        lead = at.Show + 1;
+                    }
+            }
+
+            /// <summary>One episode of every show, in rotation order.</summary>
+            public Queue<EligibleItem> NextRound()
+            {
+                var round = new Queue<EligibleItem>();
+                for (int i = 0; i < shows.Count; i++)
+                {
+                    int s = (lead + i) % shows.Count;
+                    var show = shows[s];
+                    round.Enqueue(show[cursors[s] % show.Count]);
+                    cursors[s]++;
+                }
+                return round;
+            }
         }
     }
 }

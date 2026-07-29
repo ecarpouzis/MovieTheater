@@ -44,9 +44,11 @@
   },
   {
     "channel": "big-kid-horror",
-    "mustInclude": ["Gremlins", "Monster Squad", "Hocus Pocus", "Coraline", "Beetlejuice"],
+    "mustInclude": ["Gremlins", "Monster Squad", "Coraline", "Beetlejuice"],
     // Poltergeist judged out (follows a kid to bed); R-tier excluded mechanically anyway.
-    "mustExclude": ["Poltergeist", "Exorcist", "Saw", "Ju-on"]
+    // Hocus Pocus moved OUT: it is Halloween-SPECIFIC, so the holiday lock confines it to the
+    // seasonal channels year-round (Eric, 2026-07-29). Gremlins stays — it merely happens in December.
+    "mustExclude": ["Poltergeist", "Exorcist", "Saw", "Ju-on", "Hocus Pocus"]
   },
   {
     "channel": "superstation",
@@ -74,10 +76,71 @@
     "mustInclude": ["Great Escape", "Bridge on the River Kwai", "Hunt for Red October", "Ben-Hur", "Das Boot"],
     "mustExclude": ["Bluey", "Anchorman"]
   },
+  // Date Night retired into Romance (Eric, 2026-07-29) — 92% of it was already Romance-genre, so it
+  // read as a second romance rail rather than a station of its own.
   {
-    "channel": "date-night",
-    "mustInclude": ["When Harry Met Sally", "Princess Bride", "Amélie", "Before Sunrise", "Moonstruck"],
-    "mustExclude": ["Antichrist", "Blue Valentine"]
+    "channel": "romance",
+    "mustInclude": ["When Harry Met Sally", "Moonstruck", "Before Sunrise"],
+    "mustExclude": ["Charlie Brown Christmas"]
+  },
+  // The holiday lock: a Christmas- or Halloween-SPECIFIC title airs on the seasonal channels and
+  // NOWHERE else, all year. The bar is specificity, not setting — Gremlins and Die Hard merely
+  // happen in the season and keep every other home.
+  {
+    "channel": "family-night",
+    "mustInclude": ["Toy Story"],
+    "mustExclude": ["Home Alone", "How the Grinch Stole", "Charlie Brown Christmas", "Great Pumpkin", "Ghidorah",
+                    "To Have and Have Not", "Duck Soup", "Modern Times", "Forrest Gump"]
+  },
+  {
+    "channel": "everything",
+    // The lock reaches even the Marquee.
+    "mustExclude": ["Charlie Brown Christmas", "Hocus Pocus", "Rudolph the Red-Nosed"]
+  },
+  {
+    "channel": "holiday-cheer",
+    "mustInclude": ["Charlie Brown Christmas", "Rudolph the Red-Nosed", "Home Alone", "How the Grinch Stole"],
+    "mustExclude": ["Gremlins", "Hocus Pocus"]
+  },
+  // Saturday Morning Cartoons: judged, so the toddler hard rule is finally enforceable here. It was
+  // mechanical (Animation + PG) until 2026-07-29, which is why Blue's Clues, Peppa, Naruto, Duckman
+  // and Daria all aired on it.
+  {
+    "channel": "saturday-cartoons",
+    "mustInclude": ["Animaniacs", "Scooby-Doo, Where Are You", "X-Men", "Tiny Toon", "DuckTales"],
+    "mustExclude": ["Blue's Clues", "Peppa Pig", "Sesame Street", "Bluey", "Mister Rogers",
+                    "Spidey and His Amazing", "Naruto", "Dragon Ball", "One Punch Man", "Off the Air",
+                    "Duckman", "Daria"]
+  },
+  {
+    "channel": "channel-zero",
+    // The MTV-shaped gap: 11-16, too old for Nick, not [adult swim].
+    "mustInclude": ["Daria", "Beavis and Butt-Head", "Jackass", "Liquid Television", "Æon Flux", "Duckman"],
+    "mustExclude": ["Bluey", "Peppa Pig", "Sesame Street", "Blue's Clues", "Mister Rogers"]
+  },
+  {
+    "channel": "disney-tv",
+    "mustInclude": ["Mickey Mouse", "DuckTales", "Gravity Falls", "Chip 'n' Dale", "Silly Symphony"],
+    // Toddler tier stays off general channels even when it is Disney's own.
+    "mustExclude": ["New Adventures of Winnie the Pooh", "Blue's Clues", "Sesame Street"]
+  },
+  {
+    "channel": "short-films",
+    // Judged 2026-07-29: a runtime cap is not an identity. The children's shorts belong to kid-shorts.
+    "mustInclude": ["La Jetée", "Meshes of the Afternoon", "Un Chien Andalou", "Great Train Robbery"],
+    "mustExclude": ["Great Pumpkin", "Winnie the Pooh", "Charlie Brown", "Frosty"]
+  },
+  {
+    "channel": "anime-films",
+    "mustInclude": ["Akira", "Spirited Away", "Ghost in the Shell", "Perfect Blue"],
+    // The genre rows carry Animation for any film with an animated sequence.
+    "mustExclude": ["Smog Monster", "Seven Samurai", "Rashomon"]
+  },
+  {
+    "channel": "musicals",
+    "mustInclude": ["Singin' in the Rain", "Sound of Music", "This Is Spinal Tap", "Stop Making Sense"],
+    // The Music genre alone is not a curation signal — it drags in music-adjacent drama.
+    "mustExclude": ["Blue Angel", "Piano Teacher", "Three Colors: Blue"]
   },
   {
     "channel": "naughty-list",

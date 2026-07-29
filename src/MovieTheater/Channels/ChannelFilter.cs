@@ -75,6 +75,17 @@ namespace MovieTheater.Channels
         /// channels avoid them; an explicitly adult channel sets this false.</summary>
         public bool ExcludeAdult { get; set; } = true;
 
+        /// <summary>
+        /// Whether this channel may air holiday-locked titles (see <see cref="ChannelCatalog.HolidayLockKeys"/>).
+        /// NOT part of the stored filter — the scheduler sets it from the channel's own season window, so a
+        /// Christmas- or Halloween-SPECIFIC film shows up on Holiday Cheer or Spooky Season and nowhere else,
+        /// all year round. Deriving it from the season columns rather than storing a new FilterJson field
+        /// keeps it impossible for the lock to drift out of step with the guide's seasonal visibility (and
+        /// dodges the "old prod ignores an unknown filter field" deploy trap).
+        /// </summary>
+        [JsonIgnore]
+        public bool AllowHolidayLocked { get; set; }
+
         /// <summary>When set, exclude titles this user has already marked Seen.</summary>
         public int? UnwatchedByUserId { get; set; }
 

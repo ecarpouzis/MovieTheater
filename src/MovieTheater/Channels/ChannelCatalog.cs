@@ -124,6 +124,18 @@ namespace MovieTheater.Channels
         private const ContentKinds T = ContentKinds.Series;
         private static ChannelDef D(string k, string n, string? d, string g) => ChannelDef.Def(k, n, d, g);
 
+        /// <summary>
+        /// Reserved <see cref="TagCategory.Channel"/> values that are NOT channels — they mark a title as
+        /// belonging to one holiday and one holiday only. A locked title is excluded from every channel
+        /// without a season window, all year (Eric, 2026-07: "we don't want a Christmas or Halloween-SPECIFIC
+        /// movie showing on another channel"), which is why the judgment lives on the TITLE and not on
+        /// seasonal-channel membership. The bar is specificity, not setting: A Charlie Brown Christmas and
+        /// Hocus Pocus are locked; Gremlins and Die Hard merely happen in the season and stay everywhere.
+        /// <para>Written by <c>load-channel-tags</c> like any membership; consumed by
+        /// <c>ChannelScheduleService.AiFilters</c> via <see cref="ChannelFilter.AllowHolidayLocked"/>.</para>
+        /// </summary>
+        public static readonly List<string> HolidayLockKeys = new() { "lock-christmas", "lock-halloween" };
+
         public static IReadOnlyList<ChannelDef> All { get; } = Build();
 
         private static List<ChannelDef> Build()
@@ -216,8 +228,19 @@ namespace MovieTheater.Channels
                 D("surreal","Surreal Cinema","Dream logic","Cult, Weird & Arthouse").Surreal(70),
                 D("neon-noir","Neon Noir","Synthwave sci-fi & neon nights","Cult, Weird & Arthouse").Genre("Sci-Fi","Action","Thriller").Visual("neon-soaked"),
                 D("wordless","Wordless Wonders","Show, don't tell","Cult, Weird & Arthouse").Content("no dialogue"),
-                D("off-beaten","Off the Beaten Path","Deep cuts and obscurities","Cult, Weird & Arthouse").Novelty(70),
-                D("short-films","Short Film Theater","Pixar to Lynch — animation, experiment & early cinema","Cult, Weird & Arthouse").Runtime(null,40),
+                // Judged (was Novelty>=70): an AI slider is not a curator. "Deep cut" is a claim about how
+                // far off the beaten path a film sits, and the slider put Madoka Rebellion and The Matrix on
+                // a channel of obscurities.
+                D("off-beaten","Off the Beaten Path","Deep cuts and obscurities","Cult, Weird & Arthouse").In(M).Judged(),
+                // Judged (was Runtime<=40 and nothing else): a runtime cap is not an identity. 45% of the old
+                // pool was the Kid-Friendly Shorts set, so Winnie the Pooh and It's the Great Pumpkin aired
+                // between Scorpio Rising and La Jetée. This is the grown-up shelf — arthouse, experimental,
+                // silent and animation-as-art; the children's shorts belong to kid-shorts, the episodic
+                // golden-age cartoons to cartoon-shorts.
+                // AllowAdult for the same reason Adult Animation needs it: the avant-garde canon includes titles
+                // the rating map classes as adult/banned (Un Chien Andalou, Meat Joy), and the age gate still
+                // raises the channel's ceiling accordingly. Membership is judged, so nothing arrives by accident.
+                D("short-films","Short Film Theater","Arthouse, experimental & early cinema in under 40 minutes","Cult, Weird & Arthouse").In(M).Judged().AllowAdult(),
 
                 // ── Genres ──
                 D("comedy","Comedy","Laughs around the clock","Genres").Genre("Comedy"),
@@ -225,16 +248,21 @@ namespace MovieTheater.Channels
                 D("action","Action & Adventure","Explosions and quests","Genres").Genre("Action","Adventure"),
                 D("thrillers","Thrillers","Suspense and tension","Genres").Genre("Thriller"),
                 D("scifi-fantasy","Sci-Fi & Fantasy","Other worlds","Genres").Genre("Sci-Fi","Fantasy"),
-                D("crime","Crime & Mob","Gangsters and capers","Genres").Genre("Crime"),
-                D("romance","Romance","Love stories","Genres").Genre("Romance"),
+                // Absorbed Heist & Capers (88% of it was already Crime, and this description literally said
+                // "capers"): one crime channel, spotlights reserved for genuinely distinct shelves.
+                D("crime","Crime & Mob","Gangsters, capers and the criminal underworld","Genres").Genre("Crime"),
+                // Absorbed Date Night (92% of it was already Romance): one romance channel, weepies included.
+                D("romance","Romance","Love stories — swooning, sweeping and devastating","Genres").Genre("Romance"),
                 D("documentaries","Documentaries","Real stories","Genres").Genre("Documentary"),
-                D("musicals","Musicals & Music","Song, dance, and bands","Genres").Genre("Musical","Music"),
+                // Judged (was Genre Musical + Music): those two genres overlap by only 33 titles, so 250
+                // music-ADJACENT dramas — The Blue Angel, Almost Famous, Amadeus, Airheads — outnumbered the
+                // musicals on a channel called Musicals. One channel still (Eric), but a judged one.
+                D("musicals","Musicals & Music","Song, dance, and the films music built","Genres").In(M).Judged(),
 
                 // ── Subgenre Spotlights ──
                 D("film-noir","Film Noir","Shadows and moral fog","Subgenre Spotlights").Sub("noir","neo-noir"),
                 D("spaghetti-western","Westerns","Saddle up — Leone to Eastwood","Subgenre Spotlights").Genre("Western"),
                 D("psych-thriller","Psychological Thrillers","Mind games","Subgenre Spotlights").Sub("psychological thriller"),
-                D("heist","Heist & Capers","Plans and double-crosses","Subgenre Spotlights").Sub("heist"),
                 D("superhero","Superhero","Capes and cowls","Subgenre Spotlights").In(MT).Sub("superhero"),
                 D("martial-arts","Enter the Dragon","Martial arts & kung fu","Subgenre Spotlights").Keyword("martial arts","martial-arts"),
 
@@ -270,6 +298,10 @@ namespace MovieTheater.Channels
                 D("disney-classics","Disney Animated Classics","The Disney film canon","Animation Hall of Fame").Path("Disney Films","Walt Disney"),
                 D("hanna-barbera","Hanna-Barbera Classics","Yabba dabba doo","Animation Hall of Fame").In(T).Judged().Strat(err),
                 D("disney-afternoon","The Disney Afternoon","Classic Disney TV animation","Animation Hall of Fame").In(T).Judged().Strat(err),
+                // New: episodic Disney had no home of its own, so Mickey Mouse and Chip 'n Dale were landing
+                // on the shorts channels and burying the one-off films there (Eric). Disney's own television —
+                // the Mickey shorts series, the Treasures collections, Pooh, Gravity Falls — lives here.
+                D("disney-tv","The Disney Channel","Disney's own television, afternoon to bedtime","Animation Hall of Fame").In(T).Judged().Strat(err),
                 D("animated-heroes","Animated Superheroes","Heroes in animation","Animation Hall of Fame").In(MT).Judged().Strat(err),
                 D("stop-motion","Stop-Motion & Handcrafted","Made by hand","Animation Hall of Fame").In(MT).Visual("stop-motion","claymation","rotoscope"),
                 // Judged pair (slate v3): [adult swim] is the literal Williams Street block; Adult
@@ -284,7 +316,12 @@ namespace MovieTheater.Channels
                 // ── Kids & Family ──
                 D("nickelodeon","Nickelodeon","'90s-2000s Nicktoons & live-action","Kids & Family").In(T).Judged().Strat(err),
                 D("preschool","Preschool Corner","Gentlest TV for the littlest","Kids & Family").In(T).Mpaa(2).Judged().Strat(err),
-                D("saturday-cartoons","Saturday Morning Cartoons","Classic toon energy","Kids & Family").In(MT).Genre("Animation").Mpaa(2).Strat(err),
+                // Judged (was Genre Animation + Mpaa<=2, i.e. 100 series / 7,528 episodes — the entire
+                // animated-TV library). Mechanical membership also put it OUTSIDE the toddler hard rule,
+                // which canon can only enforce on judged channels: Blue's Clues, Peppa and Sesame Street
+                // aired here alongside Duckman, Daria, Ren & Stimpy, Off the Air and most of the anime shelf.
+                // The identity is the broadcast block itself — network/syndicated Saturday-morning TV.
+                D("saturday-cartoons","Saturday Morning Cartoons","The network Saturday block — cereal optional","Kids & Family").In(T).Mpaa(2).Judged().Strat(err),
                 // ── The judged family cluster (station briefs: docs/channel-slate-2026-07.md) ──
                 // Membership is a per-title judgment loaded by load-channel-tags — NOT a facet formula.
                 // The whole 2026-07 lesson: no facet separates "Jurassic Park, yes" from "The Dirty
@@ -306,7 +343,9 @@ namespace MovieTheater.Channels
                 D("anime-arthouse","Anime Arthouse","The bold, strange & sublime","Anime").In(MT).Judged().Strat(err),
                 D("modern-anime","Modern Anime","Today's hits","Anime").In(MT).Judged().Strat(err),
                 D("classic-anime","Classic Anime","The canon","Anime").In(MT).Judged().Strat(err),
-                D("anime-films","Anime Films","Feature-length anime","Anime").Lang("ja").Genre("Animation"),
+                // Judged (was Lang ja + Genre Animation): the genre rows carry Animation for any film with an
+                // animated sequence, so Godzilla vs. the Smog Monster qualified as an anime film.
+                D("anime-films","Anime Films","Feature-length anime","Anime").In(M).Judged(),
 
                 // ── The TV Vault ──
                 D("cult-tv","Cult TV","Riff-worthy and strange","The TV Vault").In(T).Judged().Strat(err),
@@ -318,7 +357,11 @@ namespace MovieTheater.Channels
                 D("primetime-toons","Primetime Animation","The Simpsons, Futurama & adult-cartoon primetime","The TV Vault").In(T).Judged().Strat(err),
                 D("sketch-comedy","Sketch Comedy","Monty Python to the Whitest Kids","The TV Vault").In(T).Judged().Strat(err),
                 D("web-series","Web Series","Internet originals & machinima","The TV Vault").In(T).Judged().Strat(err),
-                D("stunts-pranks","Stunts & Pranks","Dares, mayhem & mind games","The TV Vault").In(T).Judged().Strat(err),
+                // New; absorbed Stunts & Pranks whole (Eric). The MTV-shaped gap in the lineup: the 11-16
+                // shelf had nowhere to go, so Daria and Duckman washed up on Saturday Morning Cartoons and
+                // Beavis on Primetime Animation. Dares, alt-cartoons and noise — old enough to be rude, young
+                // enough that it isn't [adult swim].
+                D("channel-zero","Channel Zero","Too old for Nick, too young for [adult swim]","The TV Vault").In(MT).Judged().Strat(err),
                 D("arthouse-tv","Arthouse TV","Long-form cinema — Decalogue to Berlin Alexanderplatz","The TV Vault").In(T).Judged().Strat(err),
 
                 // ── International ──
@@ -338,7 +381,8 @@ namespace MovieTheater.Channels
                 D("public-access","Public Access","1 a.m. UHF — found footage & outsider video","The Networks").In(ContentKinds.Movies | ContentKinds.Misc).Judged(),
                 D("whodunit","Whodunit Weekend","A body in the library, never in the walls","The Networks").In(M).Judged(),
                 D("lazy-sunday","Lazy Sunday","Nap-adjacent epics for the long afternoon","The Networks").In(M).Judged(),
-                D("date-night","Date Night","Romance that ends warmly","The Networks").In(M).Judged(),
+                // Date Night retired into Romance (Eric): 92% of its 285 titles were already Romance-genre,
+                // so it read as a duplicate rail rather than a station. Its judged tags stay on the titles.
 
                 // ── Seasonal (date-windowed; the 2x2: family x adult, October x December) ──
                 D("spooky-season","Spooky Season","The Halloween mood — spooky, not just gory","Seasonal").In(MT).Judged().Season(10,1,11,1),

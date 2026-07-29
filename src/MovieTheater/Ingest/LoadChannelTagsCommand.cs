@@ -49,6 +49,9 @@ namespace MovieTheater.Ingest
         [CommandOption("limit", Description = "Max batch entries to process this run.")]
         public int? Limit { get; set; }
 
+        [CommandOption("mode", Description = "replace (default: the batch IS the title's full membership) | add (union with what's there) | remove (drop just the listed keys).")]
+        public string Mode { get; set; } = "replace";
+
         [CommandOption("prune-schedules", Description = "After an --apply, drop future ChannelScheduleItems for every channel whose membership changed, so lineups regenerate promptly.")]
         public bool PruneSchedules { get; set; }
 
@@ -80,7 +83,17 @@ namespace MovieTheater.Ingest
             if (batch is null || batch.Count == 0) { w.WriteLine("Batch is empty."); return; }
             if (Limit.HasValue) batch = batch.Take(Limit.Value).ToList();
 
-            var validKeys = new HashSet<string>(ChannelCatalog.All.Select(d => d.Key), StringComparer.OrdinalIgnoreCase);
+            bool add = string.Equals(Mode, "add", StringComparison.OrdinalIgnoreCase);
+            bool remove = string.Equals(Mode, "remove", StringComparison.OrdinalIgnoreCase);
+            if (!add && !remove && !string.Equals(Mode, "replace", StringComparison.OrdinalIgnoreCase))
+            { w.WriteLine($"Unknown --mode '{Mode}' — use replace | add | remove."); return; }
+            w.WriteLine($"mode: {Mode.ToLowerInvariant()}");
+
+            // Catalog keys plus the reserved holiday-lock markers, which ride the same Channel tag category
+            // but name a holiday rather than a station (see ChannelCatalog.HolidayLockKeys).
+            var validKeys = new HashSet<string>(
+                ChannelCatalog.All.Select(d => d.Key).Concat(ChannelCatalog.HolidayLockKeys),
+                StringComparer.OrdinalIgnoreCase);
 
             await using var db = await dbFactory.CreateDbContextAsync();
 
@@ -142,6 +155,21 @@ namespace MovieTheater.Ingest
                     .GroupBy(t => t.Value!, StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(g => g.Key, g => g.OrderByDescending(t => t.Weight ?? -1).First().Weight, StringComparer.OrdinalIgnoreCase);
 
+                // add/remove fold the batch into the existing set, so a sweep that only cares about one
+                // station doesn't have to restate (and risk dropping) every other membership a title holds.
+                if (add)
+                {
+                    var merged = new Dictionary<string, int?>(have, StringComparer.OrdinalIgnoreCase);
+                    foreach (var kv in desired) merged[kv.Key] = kv.Value;
+                    desired = merged;
+                }
+                else if (remove)
+                {
+                    var kept = new Dictionary<string, int?>(have, StringComparer.OrdinalIgnoreCase);
+                    foreach (var k in desired.Keys) kept.Remove(k);
+                    desired = kept;
+                }
+
                 bool same = have.Count == desired.Count
                     && have.All(kv => desired.TryGetValue(kv.Key, out var dw) && dw == kv.Value);
                 if (same) { unchanged++; continue; }
@@ -153,9 +181,9 @@ namespace MovieTheater.Ingest
 
                 if (Apply)
                 {
-                    var remove = insight.Tags.Where(t => t.Category == TagCategory.Channel).ToList();
-                    foreach (var t in remove) insight.Tags.Remove(t);
-                    db.RemoveRange(remove);
+                    var obsolete = insight.Tags.Where(t => t.Category == TagCategory.Channel).ToList();
+                    foreach (var t in obsolete) insight.Tags.Remove(t);
+                    db.RemoveRange(obsolete);
                     foreach (var kv in desired)
                         insight.Tags.Add(new TitleTag { Category = TagCategory.Channel, Value = kv.Key, Weight = kv.Value });
                 }
