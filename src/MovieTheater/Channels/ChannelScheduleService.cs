@@ -418,6 +418,7 @@ namespace MovieTheater.Channels
             if (filter.RecommendedForUserId is int rmid) q = q.Where(m => movieDb.TitleRecommendations.Any(r => r.UserId == rmid && r.SubjectKind == InsightSubjectKind.Movie && r.SubjectId == m.id));
             if (filter.MinViewers is int minv) q = q.Where(m => movieDb.Viewings.Where(v => v.MovieID == m.id && v.ViewingType == "Seen").Select(v => v.UserID).Distinct().Count() >= minv);
             if (filter.AddedWithinDays is int days) { var since = DateTime.UtcNow.AddDays(-days); q = q.Where(m => m.UploadedDate != null && m.UploadedDate >= since); }
+            if (filter.ReleasedWithinYears is int ry) { var cut = DateTime.UtcNow.Date.AddYears(-ry); q = q.Where(m => (m.ImdbReleaseDate ?? m.ReleaseDate) != null && (m.ImdbReleaseDate ?? m.ReleaseDate)! >= cut); }
 
             foreach (var (ids, neg) in AiFilters(filter, InsightSubjectKind.Movie))
                 q = neg ? q.Where(m => !ids.Contains(m.id)) : q.Where(m => ids.Contains(m.id));
@@ -498,6 +499,7 @@ namespace MovieTheater.Channels
             if (filter.RecommendedForUserId is int rsid) q = q.Where(s => movieDb.TitleRecommendations.Any(r => r.UserId == rsid && r.SubjectKind == InsightSubjectKind.Series && r.SubjectId == s.Id));
             if (filter.MinViewers is int minv) q = q.Where(s => movieDb.Viewings.Where(v => v.SeriesId == s.Id && v.ViewingType == "Seen").Select(v => v.UserID).Distinct().Count() >= minv);
             if (filter.AddedWithinDays is int days) { var since = DateTime.UtcNow.AddDays(-days); q = q.Where(s => s.UploadedDate != null && s.UploadedDate >= since); }
+            if (filter.ReleasedWithinYears is int ry) { var cut = DateTime.UtcNow.Date.AddYears(-ry); q = q.Where(s => (s.ImdbReleaseDate ?? s.ReleaseDate) != null && (s.ImdbReleaseDate ?? s.ReleaseDate)! >= cut); }
 
             foreach (var (ids, neg) in AiFilters(filter, InsightSubjectKind.Series))
                 q = neg ? q.Where(s => !ids.Contains(s.Id)) : q.Where(s => ids.Contains(s.Id));
@@ -540,6 +542,9 @@ namespace MovieTheater.Channels
 
             if (filter.YearMin is int y0) q = q.Where(mv => mv.Year != null && mv.Year >= y0);
             if (filter.YearMax is int y1) q = q.Where(mv => mv.Year != null && mv.Year <= y1);
+            // Misc videos carry only a year, no release date, so the rolling window rounds out to whole
+            // calendar years here (slightly wider than the movie/series day-exact cut).
+            if (filter.ReleasedWithinYears is int ry) { var minYear = DateTime.UtcNow.Year - ry; q = q.Where(mv => mv.Year != null && mv.Year >= minYear); }
 
             if (filter.PathContains.Count > 0) { var pats = filter.PathContains; q = q.Where(mv => mv.Playable.Files.Any(f => pats.Any(p => f.Path.Contains(p)))); }
 

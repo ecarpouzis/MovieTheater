@@ -95,6 +95,9 @@ namespace MovieTheater.Channels
         public ChannelDef Path(params string[] v) { Filter.PathContains.AddRange(v); return this; }
         public ChannelDef MinViewers(int n) { Filter.MinViewers = n; return this; }
         public ChannelDef AddedWithin(int days) { Filter.AddedWithinDays = days; return this; }
+        /// <summary>Rolling release window ("the last N years", re-evaluated at query time) — unlike
+        /// <see cref="Year"/>, which bakes fixed years into the stored filter.</summary>
+        public ChannelDef ReleasedWithin(int years) { Filter.ReleasedWithinYears = years; return this; }
         public ChannelDef AllowAdult() { Filter.ExcludeAdult = false; return this; }
 
         public ChannelDef Season(int sm, int sd, int em, int ed)
@@ -131,6 +134,9 @@ namespace MovieTheater.Channels
                 D("crowd-pleasers","Crowd-Pleasers","Films people love","The Marquee").Popcorn(80),
                 D("hidden-gems","Hidden Gems","Great and under-seen","The Marquee").Imdb(7.5).Popular(null,8).Novelty(55),
                 D("community-favorites","Community Favorites","Most-watched by our viewers","The Marquee").MinViewers(3),
+                // Rolling, not a fixed .Year(2025,2026) range: ReleasedWithin re-reads "now" every time the
+                // schedule is extended, so this channel ages itself and never needs a January edit.
+                D("new-releases","New Releases","The last two years of movies","The Marquee").In(M).ReleasedWithin(2),
 
                 // ── The Auteurs ──
                 D("hitchcock","The Hitchcock Hour","The Master of Suspense","The Auteurs").Dir("Alfred Hitchcock"),

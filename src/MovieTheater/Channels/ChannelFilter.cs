@@ -139,6 +139,14 @@ namespace MovieTheater.Channels
         /// <summary>When set, restrict to titles added to the library within the last N days.</summary>
         public int? AddedWithinDays { get; set; }
 
+        /// <summary>When set, restrict to titles <em>released</em> within the last N years — a rolling
+        /// window measured from "now" at query time, not a baked-in year range. Deliberately rolling
+        /// rather than <see cref="YearMin"/>/<see cref="YearMax"/>: the schedule is materialized ~48h
+        /// ahead, so a "New Releases" channel re-evaluates this on every extension and stays current
+        /// without anyone editing the catalog each January. A calendar-year equivalent
+        /// (<c>year >= now.Year - 1</c>) would instead collapse the pool on Jan 1.</summary>
+        public int? ReleasedWithinYears { get; set; }
+
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             PropertyNameCaseInsensitive = true,
