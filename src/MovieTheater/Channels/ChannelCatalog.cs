@@ -266,11 +266,11 @@ namespace MovieTheater.Channels
                 D("epics","Epics","Sweeping, big-canvas cinema","Moods & Vibes").Mood("epic"),
 
                 // ── Animation Hall of Fame ──
-                D("cartoon-shorts","Cartoon Shorts Theater","Looney Tunes, Tom & Jerry & the golden-age greats","Animation Hall of Fame").In(T).Path("Looney Tunes","Merrie Melodies","Tom and Jerry","Walt Disney Treasures","Walt Disney Fables","Tex Avery").Strat(err),
+                D("cartoon-shorts","Cartoon Shorts Theater","Looney Tunes, Tom & Jerry & the golden-age greats","Animation Hall of Fame").In(T).Judged().Strat(err),
                 D("disney-classics","Disney Animated Classics","The Disney film canon","Animation Hall of Fame").Path("Disney Films","Walt Disney"),
-                D("hanna-barbera","Hanna-Barbera Classics","Yabba dabba doo","Animation Hall of Fame").In(T).Path("Flintstones","Jetsons","Scooby Doo","Wacky Races","Atom Ant","Rocky and Bullwinkle").Strat(err),
-                D("disney-afternoon","The Disney Afternoon","Classic Disney TV animation","Animation Hall of Fame").In(T).Path("DuckTales","TaleSpin","Darkwing Duck","Chip 'n' Dale","Gargoyles").Strat(err),
-                D("animated-heroes","Animated Superheroes","Heroes in animation","Animation Hall of Fame").In(MT).Path("Marvel Animated","Batman The Animated","X-Men","Spider-Man","Avatar - The Last Airbender","Korra").Strat(err),
+                D("hanna-barbera","Hanna-Barbera Classics","Yabba dabba doo","Animation Hall of Fame").In(T).Judged().Strat(err),
+                D("disney-afternoon","The Disney Afternoon","Classic Disney TV animation","Animation Hall of Fame").In(T).Judged().Strat(err),
+                D("animated-heroes","Animated Superheroes","Heroes in animation","Animation Hall of Fame").In(MT).Judged().Strat(err),
                 D("stop-motion","Stop-Motion & Handcrafted","Made by hand","Animation Hall of Fame").In(MT).Visual("stop-motion","claymation","rotoscope"),
                 // Judged pair (slate v3): [adult swim] is the literal Williams Street block; Adult
                 // Animation is the art form beyond it (absorbed Animation for Grown-Ups). The old path
@@ -282,8 +282,8 @@ namespace MovieTheater.Channels
                 D("adult-animation","Adult Animation","Animation as an adult art form — Bakshi to Akira","Animation Hall of Fame").In(MT).Judged().AllowAdult().Strat(err),
 
                 // ── Kids & Family ──
-                D("nickelodeon","Nickelodeon","'90s-2000s Nicktoons & live-action","Kids & Family").In(T).Path("SpongeBob","Ren & Stimpy","Rugrats","Wild Thornberrys","CatDog","Angry Beavers","Aaahh","Invader Zim","KaBlam","All That","Are You Afraid of the Dark","Pete & Pete","Blues Clues","Salute Your Shorts","Legends of the Hidden Temple").Strat(err),
-                D("preschool","Preschool Corner","Gentlest TV for the littlest","Kids & Family").In(T).Path("Mister Rogers","Sesame Street","Bluey","Peppa Pig","Blues Clues").Strat(err),
+                D("nickelodeon","Nickelodeon","'90s-2000s Nicktoons & live-action","Kids & Family").In(T).Judged().Strat(err),
+                D("preschool","Preschool Corner","Gentlest TV for the littlest","Kids & Family").In(T).Mpaa(2).Judged().Strat(err),
                 D("saturday-cartoons","Saturday Morning Cartoons","Classic toon energy","Kids & Family").In(MT).Genre("Animation").Mpaa(2).Strat(err),
                 // ── The judged family cluster (station briefs: docs/channel-slate-2026-07.md) ──
                 // Membership is a per-title judgment loaded by load-channel-tags — NOT a facet formula.
@@ -295,7 +295,7 @@ namespace MovieTheater.Channels
                 D("family-night","Family Movie Night","Toy Story to Jurassic Park — the whole family","Kids & Family").In(M).Mpaa(3).Judged(),
                 D("family-tv","The Family Room","Kid-safe shows to leave on all afternoon","Kids & Family").In(T).Mpaa(2).Judged().Strat(err),
                 D("big-kid-horror","The Monster Club","Scary the way a sleepover is scary","Kids & Family").In(M).Mpaa(3).Judged(),
-                D("read-learn","Read & Learn","Educational classics","Kids & Family").In(T).Path("Reading Rainbow","Magic School Bus","Schoolhouse Rock","Ada Twist","Hilda").Strat(err),
+                D("read-learn","Read & Learn","Educational classics","Kids & Family").In(T).Mpaa(2).Judged().Strat(err),
                 D("kid-shorts","Kid-Friendly Shorts","Real short films for young viewers — Pixar to the golden age","Kids & Family").In(M).Mpaa(2).Judged(),
 
                 // ── Anime ──
@@ -303,23 +303,23 @@ namespace MovieTheater.Channels
                 D("ghibli","Studio Ghibli","The Ghibli canon","Anime").Path("Studio Ghibli","Ghibli").Strat(mar),
                 D("pokemon","Pokemon","Gotta catch 'em all","Anime").In(MT).Path("Pokémon","Pokemon").Strat(err),
                 D("dragon-ball","Dragon Ball","Saiyan saga","Anime").In(MT).Path("Dragon Ball").Strat(mar),
-                D("anime-arthouse","Anime Arthouse","The bold, strange & sublime","Anime").In(MT).Path("Odd Taxi","Redline","Paprika","Perfect Blue","Paranoia Agent","Tatami","Experiments Lain","Cat Soup","Belladonna","Angel's Egg","Mind Game","Tekkon","Millennium Actress","Tokyo Godfathers","Ping Pong","Mononoke","Kaiba","Dead Leaves","Texhnolyze","Space Dandy").Strat(err),
-                D("modern-anime","Modern Anime","Today's hits","Anime").In(MT).Path("Demon Slayer","Jujutsu Kaisen","Attack on Titan","One Punch Man","Re - Zero","Steins","Chainsaw Man").Strat(err),
-                D("classic-anime","Classic Anime","The canon","Anime").In(MT).Path("Ranma","Cowboy Bebop","Trigun","Evangelion","Samurai Champloo","Ghost in the Shell","Fullmetal Alchemist",@"\Monster (2004","Death Note","Haruhi","Planetes").Strat(err),
+                D("anime-arthouse","Anime Arthouse","The bold, strange & sublime","Anime").In(MT).Judged().Strat(err),
+                D("modern-anime","Modern Anime","Today's hits","Anime").In(MT).Judged().Strat(err),
+                D("classic-anime","Classic Anime","The canon","Anime").In(MT).Judged().Strat(err),
                 D("anime-films","Anime Films","Feature-length anime","Anime").Lang("ja").Genre("Animation"),
 
                 // ── The TV Vault ──
-                D("cult-tv","Cult TV","Riff-worthy and strange","The TV Vault").In(T).Path("Twilight Zone","Doctor Who","Lexx","Are You Afraid of the Dark","Tales from","Prisoner","Eerie","Hitchhiker","Neverwhere").Strat(err),
-                D("classic-scifi-tv","Classic Sci-Fi TV","Final frontiers","The TV Vault").In(T).Path("Star Trek","Battlestar Galactica","Farscape","Buck Rogers","Quantum Leap").Strat(err),
-                D("prestige-drama","Prestige Drama","Appointment television","The TV Vault").In(T).Path("Game of Thrones","Breaking Bad","Lost (2004","Twin Peaks","The Boys","Firefly","Westworld","Stranger Things","Band of Brothers","Sandman","Good Omens","Fringe","Roots","Pluribus","Alien - Earth","I'm a Virgo","Twisted Metal","Blue Eye Samurai").Strat(err),
-                D("classic-sitcoms","Classic Sitcoms","Comfort comedy","The TV Vault").In(T).Path("Seinfeld","All in the Family","Community","Arrested Development","Archer","Spaced","Flight of the Conchords","Police Squad","Look Around You").Strat(err),
-                D("science-tv","Science & Nature","How the world works","The TV Vault").In(T).Path("How It's Made","MythBusters","Penn & Teller","Cosmos","Planet Earth","deGrasse","M Theory","Fun to Imagine","Bill Nye","Book of Cool").Strat(err),
-                D("muppets","The Muppets & Jim Henson","Felt and felt deeply","The TV Vault").In(MT).Path("Jim Henson","Muppet").Strat(err),
-                D("primetime-toons","Primetime Animation","The Simpsons, Futurama & adult-cartoon primetime","The TV Vault").In(T).Path("Simpsons","Futurama","Daria","Beavis and Butt-Head","Duckman","Critic","Clone High").Strat(err),
-                D("sketch-comedy","Sketch Comedy","Monty Python to the Whitest Kids","The TV Vault").In(T).Path("Monty Python","Whitest Kids","Liquid Television","Banzai","Mr. Show","Kids in the Hall","Hey, Vern").Strat(err),
-                D("web-series","Web Series","Internet originals & machinima","The TV Vault").In(T).Path("Red Versus Blue","Marble Hornets","Auralnaut").Strat(err),
-                D("stunts-pranks","Stunts & Pranks","Dares, mayhem & mind games","The TV Vault").In(T).Path("Jackass","Banzai","Trick of the Mind").Strat(err),
-                D("arthouse-tv","Arthouse TV","Long-form cinema — Decalogue to Berlin Alexanderplatz","The TV Vault").In(T).Path("Berlin Alexanderplatz","Heimat","Decalogue","Phantom India","Histoire","Tanner").Strat(err),
+                D("cult-tv","Cult TV","Riff-worthy and strange","The TV Vault").In(T).Judged().Strat(err),
+                D("classic-scifi-tv","Classic Sci-Fi TV","Final frontiers","The TV Vault").In(T).Judged().Strat(err),
+                D("prestige-drama","Prestige Drama","Appointment television","The TV Vault").In(T).Judged().Strat(err),
+                D("classic-sitcoms","Classic Sitcoms","Comfort comedy","The TV Vault").In(T).Judged().Strat(err),
+                D("science-tv","Science & Nature","How the world works","The TV Vault").In(T).Judged().Strat(err),
+                D("muppets","The Muppets & Jim Henson","Felt and felt deeply","The TV Vault").In(MT).Judged().Strat(err),
+                D("primetime-toons","Primetime Animation","The Simpsons, Futurama & adult-cartoon primetime","The TV Vault").In(T).Judged().Strat(err),
+                D("sketch-comedy","Sketch Comedy","Monty Python to the Whitest Kids","The TV Vault").In(T).Judged().Strat(err),
+                D("web-series","Web Series","Internet originals & machinima","The TV Vault").In(T).Judged().Strat(err),
+                D("stunts-pranks","Stunts & Pranks","Dares, mayhem & mind games","The TV Vault").In(T).Judged().Strat(err),
+                D("arthouse-tv","Arthouse TV","Long-form cinema — Decalogue to Berlin Alexanderplatz","The TV Vault").In(T).Judged().Strat(err),
 
                 // ── International ──
                 D("world-cinema","World Cinema","Beyond Hollywood","International").NotLang("en"),
