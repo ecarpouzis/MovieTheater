@@ -43,6 +43,35 @@ function logStall(hls) {
 }
 
 /**
+ * The media-timeline shift on a mid-file HLS join, in seconds, from an INIT_PTS_FOUND payload
+ * (null when the payload can't be read). Jellyfin starts an encode with an input seek that snaps to
+ * the previous SOURCE keyframe, so the first fragment's true PTS can be up to one GOP earlier than
+ * the playlist slot it is muxed into; hls.js aligns fragment→slot with initPTS = truePTS −
+ * playlistTime and maps every fragment start to decodeTime − initPTS, which shifts the whole media
+ * timeline: video.currentTime = true content time + offset.
+ *
+ *     offset = −(initPTS / timescale)
+ *     trueContentTime(T) = T − offset          // T = video.currentTime
+ *
+ * Sign check with the measured 2026-07-29 join: initPTS = 2702.95 − 2711.71 = −8.76 → offset =
+ * +8.76 → a cue authored at content 2705 must render at currentTime 2713.76, where the picture
+ * shows 2713.76 − 8.76 = 2705. Correct.
+ *
+ * 1.6.16 emits a numeric `initPTS` (a baseTime in `timescale` units) alongside `timescale`, but it
+ * is copied straight off an internal { baseTime, timescale, trackId } record — accept either shape
+ * rather than betting the ride on which one a future version hands us.
+ */
+export function timelineOffsetFromInitPts(data) {
+  const raw = data?.initPTS;
+  const wrapped = raw !== null && typeof raw === "object";
+  const baseTime = wrapped ? raw.baseTime : raw;
+  const timescale = (wrapped ? raw.timescale : undefined) ?? data?.timescale;
+  if (!Number.isFinite(baseTime) || !Number.isFinite(timescale) || timescale <= 0) return null;
+  const offset = -(baseTime / timescale);
+  return offset === 0 ? 0 : offset; // negating an aligned start yields -0; hand back a plain 0
+}
+
+/**
  * Build an hls.js instance with the shared buffer config + error recovery. The caller still wires its
  * own MANIFEST_PARSED handler (seek-to-start / play) and any diagnostics, then loadSource + attachMedia.
  *
@@ -62,8 +91,12 @@ function logStall(hls) {
  * @param onFatal  called on a fatal error the staged NETWORK/MEDIA recovery below can't clear (a dead
  *   session, or a decode error that survives recoverMediaError + swapAudioCodec). The page surfaces it
  *   (Watch's fatal card / TV's "no signal") instead of spinning forever.
+ * @param onTimelineOffset  called with the seconds this instance's media timeline sits AHEAD of true
+ *   content time (see timelineOffsetFromInitPts). Fires on every INIT_PTS_FOUND — the value re-rolls
+ *   across seeks and discontinuities, so the latest wins. A new instance implicitly starts at 0, so
+ *   callers re-zero on every re-tune / new session; direct play never fires it and stays at 0.
  */
-export function createHls({ backBufferLength = 90, startPosition, onStall, onFatal } = {}) {
+export function createHls({ backBufferLength = 90, startPosition, onStall, onFatal, onTimelineOffset } = {}) {
   const hls = new Hls({
     maxBufferLength: 120,             // ~2 min of lead so calm scenes pre-buffer the next spike
     // Explicit ceiling. The 400 MB byte budget below otherwise lets the forward buffer grow to hls.js's
@@ -89,6 +122,13 @@ export function createHls({ backBufferLength = 90, startPosition, onStall, onFat
   let lastMediaRecoverAt = null; // last plain recoverMediaError()
   let lastAudioSwapAt = null;    // last swapAudioCodec() + recover
   let networkRetries = 0;        // bounded fatal-NETWORK startLoad() attempts
+
+  if (onTimelineOffset) {
+    hls.on(Hls.Events.INIT_PTS_FOUND, (_event, data) => {
+      const offset = timelineOffsetFromInitPts(data);
+      if (offset !== null) onTimelineOffset(offset);
+    });
+  }
 
   hls.on(Hls.Events.ERROR, (_event, data) => {
     // A buffer stall (non-fatal) is the adaptive-downshift signal.

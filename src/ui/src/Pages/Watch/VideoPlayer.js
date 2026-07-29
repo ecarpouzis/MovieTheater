@@ -155,6 +155,21 @@ function VideoPlayer({
   const [flash, setFlash] = useState(null); // transient center icon: 'play' | 'pause'
   const [fatalError, setFatalError] = useState(null);
 
+  // ── player time vs content time ─────────────────────────────────────────────
+  // An HLS session that starts mid-file (a resume, a seek, an ABR/quality restart) lands on the
+  // previous SOURCE keyframe, so hls.js's timeline sits up to one GOP ahead of true content time:
+  // currentTime = content + timelineOffset (streamEngine's timelineOffsetFromInitPts). Everything the
+  // SERVER interprets as a position — progress beats, the resume it stores, the offset a restart
+  // re-opens at — must be content time; the scrub bar and seeks stay on the player timeline they
+  // address. State for the subtitle renderers (it lands after they mount), ref for the native event
+  // handlers and the 10s beat, which aren't re-bound per render.
+  const [timelineOffset, setTimelineOffset] = useState(0);
+  const timelineOffsetRef = useRef(0);
+  const contentTimeOf = useCallback(
+    (video) => Math.max(0, (video?.currentTime ?? 0) - timelineOffsetRef.current),
+    []
+  );
+
   // Subtitle timing nudge — shift the showing soft (sidecar VTT) track's cues so the viewer can fix
   // small sync drift. Shared with the TV player; only meaningful for soft tracks (burned-in image
   // subs are baked into the picture server-side and can't be moved client-side).
@@ -169,7 +184,7 @@ function VideoPlayer({
     beginSync: beginSubtitleSync,
     capturePoint: captureSubtitleSyncPoint,
     cancelSync: cancelSubtitleSync,
-  } = useSubtitleOffset(videoRef, selectedSubtitleIndex, src);
+  } = useSubtitleOffset(videoRef, selectedSubtitleIndex, src, timelineOffset);
 
   // Caption appearance (size/color/font/edge/box/lift), shared with the TV player via a hook that
   // owns persistence and the injected ::cue rule. `styleOpen` reveals the editor + on-video preview.
@@ -205,6 +220,10 @@ function VideoPlayer({
 
     setBuffering(true);
     setFatalError(null);
+    // Each session re-rolls its own offset (and direct play has none) — zero it before attaching so a
+    // stale offset can't outlive the stream that produced it.
+    timelineOffsetRef.current = 0;
+    setTimelineOffset(0);
     sourceReloadRef.current = { at: performance.now(), startAt }; // watchdog: note (re)loads of the source
 
     const tryPlay = () => {
@@ -236,6 +255,10 @@ function VideoPlayer({
         startPosition: startAt > 0.5 ? startAt : undefined,
         onStall,
         onFatal: () => setFatalError("Playback failed — the stream could not be decoded."),
+        onTimelineOffset: (offset) => {
+          timelineOffsetRef.current = offset;
+          setTimelineOffset(offset);
+        },
       });
       hlsRef.current = hls;
       // watchdog: remember the most recent of the hls.js events that can move/flush the playhead, so a
@@ -305,13 +328,13 @@ function VideoPlayer({
     const onPlay = () => {
       setPlaying(true);
       setNeedsTap(false);
-      onProgress?.(video.currentTime, false);
+      onProgress?.(contentTimeOf(video), false);
     };
     const onPause = () => {
       setPlaying(false);
-      onProgress?.(video.currentTime, true);
+      onProgress?.(contentTimeOf(video), true);
     };
-    const onSeeked = () => onProgress?.(video.currentTime, video.paused);
+    const onSeeked = () => onProgress?.(contentTimeOf(video), video.paused);
     const onWaiting = () => setBuffering(true);
     const onPlaying = () => setBuffering(false);
     const onBufferProgress = () => {
@@ -321,7 +344,7 @@ function VideoPlayer({
         /* transient invalid ranges while switching sources */
       }
     };
-    const onVideoEnded = () => onEnded?.(video.currentTime);
+    const onVideoEnded = () => onEnded?.(contentTimeOf(video));
 
     video.addEventListener("timeupdate", onTime);
     video.addEventListener("seeking", onSeekingWatch);
@@ -343,7 +366,7 @@ function VideoPlayer({
       video.removeEventListener("progress", onBufferProgress);
       video.removeEventListener("ended", onVideoEnded);
     };
-  }, [onProgress, onEnded]);
+  }, [onProgress, onEnded, contentTimeOf]);
 
   // ── steady progress beat (~10s), paused or not ───────────────────────────────
   // Jellyfin's HLS job has a 60s ping timeout kept alive ONLY by these progress reports —
@@ -356,10 +379,10 @@ function VideoPlayer({
   useEffect(() => {
     const beat = setInterval(() => {
       const video = videoRef.current;
-      if (video) onProgress?.(video.currentTime, video.paused);
+      if (video) onProgress?.(contentTimeOf(video), video.paused);
     }, 10_000);
     return () => clearInterval(beat);
-  }, [onProgress]);
+  }, [onProgress, contentTimeOf]);
 
   // ── bandwidth telemetry for adaptive bitrate (§14.4) ────────────────────────
   // hls.js refines bandwidthEstimate as segments load; sample it while playing so
@@ -408,11 +431,11 @@ function VideoPlayer({
   // Client-rendered PGS (Blu-ray bitmap) subs — drawn over the video by libpgs so the server copies the
   // video instead of burning the bitmap in. Active only while the selected track is a PGS image sub.
   const activePgsSub = subtitleTracks.find((t) => t.index === selectedSubtitleIndex && t.kind === "image-pgs");
-  usePgsSubtitle(videoRef, activePgsSub ? activePgsSub.deliveryUrl : null);
+  usePgsSubtitle(videoRef, activePgsSub ? activePgsSub.deliveryUrl : null, timelineOffset);
 
   // Client-rendered ASS/SSA via libass — full typesetting, also keeps the video copied (no flatten to VTT).
   const activeAssSub = subtitleTracks.find((t) => t.index === selectedSubtitleIndex && t.kind === "ass");
-  useAssSubtitle(videoRef, activeAssSub ? activeAssSub.deliveryUrl : null);
+  useAssSubtitle(videoRef, activeAssSub ? activeAssSub.deliveryUrl : null, timelineOffset);
 
   // Keep the screen awake during a film — shared with the TV player.
   useWakeLock();

@@ -143,6 +143,22 @@ const AB_MIN_SECONDS_APART = 30;
 const AB_MIN_SCALE = 0.6;
 const AB_MAX_SCALE = 1.5;
 
+// The total shift applied to a cue: the viewer's nudge PLUS the (invisible) timeline baseline — the
+// seconds this HLS session's media timeline runs ahead of true content time (streamEngine's
+// timelineOffsetFromInitPts). Cues are authored in content time and fire against currentTime, so a
+// cue at content C must be moved to C + baseline to land on its dialogue. The two are separate
+// inputs and only ever added here, so the delay readout keeps showing the nudge alone.
+export function cueShiftSeconds(offsetMs, baselineSeconds = 0) {
+  return offsetMs / 1000 + (Number.isFinite(baselineSeconds) ? baselineSeconds : 0);
+}
+
+// New times for one cue, always solved from its ORIGINAL pair so repeated applications can't
+// compound. The end is held a hair past the start: a transient start > end throws in some browsers.
+export function retimedCue(orig, rateScale, shiftSeconds) {
+  const start = Math.max(0, orig.start * rateScale + shiftSeconds);
+  return { start, end: Math.max(start + 0.001, orig.end * rateScale + shiftSeconds) };
+}
+
 /**
  * Live subtitle timing correction for the showing SOFT (sidecar VTT) track. Two knobs, both applied
  * from each cue's ORIGINAL times so they never compound: new = orig × rateScale + offset.
@@ -162,9 +178,14 @@ const AB_MAX_SCALE = 1.5;
  * and we want the final mapping to land each at its real time (tA, tB): scale = (tA−tB)/(OA−OB),
  * offset = tA − scale·OA.
  *
+ * `baselineOffsetSec` is plumbing, not a knob: the HLS timeline offset of the live session (0 for
+ * direct play), added on top of the nudge so cues land on the picture even when a mid-file join
+ * shifted the media timeline. It arrives (and re-rolls) AFTER the tracks are mounted, so it's a
+ * dependency of the re-time effect. `offsetMs` — the delay readout — stays the viewer's nudge alone.
+ *
  * Returns { offsetMs, nudge, reset, toast, rateScale, abStep, abError, beginSync, capturePoint, cancelSync }.
  */
-export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey) {
+export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey, baselineOffsetSec = 0) {
   const [offsetMs, setOffsetMs] = useState(0);
   const [rateScale, setRateScale] = useState(1);
   const [toast, setToast] = useState(false);
@@ -188,7 +209,7 @@ export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey) {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return undefined;
-    const offsetSec = offsetMs / 1000;
+    const shiftSec = cueShiftSeconds(offsetMs, baselineOffsetSec);
     const apply = () => {
       for (const track of Array.from(video.textTracks)) {
         if (String(track.id) !== String(selectedSubtitleIndex)) continue;
@@ -200,8 +221,7 @@ export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey) {
             orig = { start: cue.startTime, end: cue.endTime };
             cueOriginalsRef.current.set(cue, orig);
           }
-          const ns = Math.max(0, orig.start * rateScale + offsetSec);
-          const ne = Math.max(ns + 0.001, orig.end * rateScale + offsetSec);
+          const { start: ns, end: ne } = retimedCue(orig, rateScale, shiftSec);
           // Assign in whichever order keeps start <= end at every step (a transient start > end can throw).
           try {
             if (ne >= cue.startTime) {
@@ -221,7 +241,7 @@ export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey) {
     const tracks = Array.from(video.querySelectorAll("track"));
     tracks.forEach((t) => t.addEventListener("load", apply));
     return () => tracks.forEach((t) => t.removeEventListener("load", apply));
-  }, [videoRef, offsetMs, rateScale, selectedSubtitleIndex, reloadKey]);
+  }, [videoRef, offsetMs, rateScale, baselineOffsetSec, selectedSubtitleIndex, reloadKey]);
 
   const flashToast = useCallback(() => {
     setToast(true);
@@ -270,7 +290,9 @@ export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey) {
   const capturePoint = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
-    const mark = { t: video.currentTime, d: offsetMs / 1000 };
+    // Mark in CONTENT time: the baseline is plumbing the viewer never sees, and taking it off here
+    // keeps the solved offset a pure user correction (it cancels out of the scale either way).
+    const mark = { t: video.currentTime - baselineOffsetSec, d: offsetMs / 1000 };
     if (abStep === "a") {
       pointARef.current = mark;
       setAbError(null);
@@ -300,7 +322,7 @@ export function useSubtitleOffset(videoRef, selectedSubtitleIndex, reloadKey) {
       setAbStep("idle");
       flashToast();
     }
-  }, [videoRef, offsetMs, abStep, flashToast]);
+  }, [videoRef, offsetMs, abStep, baselineOffsetSec, flashToast]);
 
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 

@@ -110,8 +110,18 @@ namespace MovieTheater.Channels
                      || (o.SpecVersion == ti.SpecVersion && o.GeneratedUtc > ti.GeneratedUtc)
                      || (o.SpecVersion == ti.SpecVersion && o.GeneratedUtc == ti.GeneratedUtc && o.Id > ti.Id))));
 
+        // A slot shorter than this is bad metadata, not a short film: Flash Gordon (1980) carried a
+        // DurationTicks of ~5.58 s for a 111-minute AVI and the scheduler duly minted a 5.58-second slot,
+        // which the channel blew through in seconds. Legitimate shorts run minutes, so the floor is safe.
+        private const long MinItemDurationTicks = 60 * TicksPerSecond;
+
         // Per-kind SQL projection: enough to resolve duration, the effective rating (precedence
         // A→B→C), the quality/rewatch weight inputs, and the order/group keys.
+        //
+        // Duration comes from the file the player would actually open — Primary first, by (Role, Id),
+        // exactly as StreamController.Start picks it, and only from files that carry a duration at all.
+        // Unordered, this took an arbitrary matching row, so a seconds-long Extra/Variant stub could
+        // supply the scheduled length of the feature it hangs off.
         private sealed record Cand(
             int PlayableId, long? DurationTicks, int? RuntimeMinutes,
             string? RatingA, string? RatingB, string? RatingC,
@@ -195,6 +205,12 @@ namespace MovieTheater.Channels
                     ?? (c.RuntimeMinutes is int min && min > 0 ? (long)min * 60 * TicksPerSecond : 0);
                 if (durationTicks <= 0)
                     continue; // §8: skip items with neither a file duration nor a runtime
+                if (durationTicks < MinItemDurationTicks)
+                {
+                    logger.LogWarning("Channel {ChannelId}: playable {PlayableId} excluded from the lineup — duration {DurationSeconds:F2}s is under the {FloorSeconds}s floor (bad file metadata)",
+                        channel.Id, c.PlayableId, durationTicks / (double)TicksPerSecond, MinItemDurationTicks / TicksPerSecond);
+                    continue;
+                }
 
                 int ratingId = Effective(c.RatingA, c.RatingB, c.RatingC);
                 if (filter.MaxMpaRatingId is int max && ratingId > max)
@@ -277,7 +293,8 @@ namespace MovieTheater.Channels
                     && m.Playable!.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null))
                 .Select(m => new Cand(
                     m.PlayableId!.Value,
-                    m.Playable!.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
+                    m.Playable!.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null && f.DurationTicks != null)
+                        .OrderBy(f => f.Role).ThenBy(f => f.Id).Select(f => (long?)f.DurationTicks).FirstOrDefault(),
                     m.RuntimeMinutes,
                     m.MpaaRating, m.Rating, m.MpaaRatingInferred,
                     m.ImdbRatingScraped, m.RtTomatometer,
@@ -290,7 +307,8 @@ namespace MovieTheater.Channels
                     && e.Playable!.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null))
                 .Select(e => new Cand(
                     e.PlayableId!.Value,
-                    e.Playable!.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
+                    e.Playable!.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null && f.DurationTicks != null)
+                        .OrderBy(f => f.Role).ThenBy(f => f.Id).Select(f => (long?)f.DurationTicks).FirstOrDefault(),
                     e.RuntimeMinutes,
                     e.Series!.MpaaRating, e.Series.Rating, e.Series.MpaaRatingInferred,
                     e.Series.ImdbRatingScraped, e.Series.RtTomatometer,
@@ -303,7 +321,8 @@ namespace MovieTheater.Channels
                     && mv.Playable.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null))
                 .Select(mv => new Cand(
                     mv.PlayableId,
-                    mv.Playable.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
+                    mv.Playable.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null && f.DurationTicks != null)
+                        .OrderBy(f => f.Role).ThenBy(f => f.Id).Select(f => (long?)f.DurationTicks).FirstOrDefault(),
                     null,
                     null, null, mv.MpaaRatingInferred,
                     null, null,
@@ -325,6 +344,12 @@ namespace MovieTheater.Channels
                     ?? (c.RuntimeMinutes is int min && min > 0 ? (long)min * 60 * TicksPerSecond : 0);
                 if (durationTicks <= 0)
                     continue;
+                if (durationTicks < MinItemDurationTicks)
+                {
+                    logger.LogWarning("Channel {ChannelId}: playable {PlayableId} excluded from the lineup — duration {DurationSeconds:F2}s is under the {FloorSeconds}s floor (bad file metadata)",
+                        channel.Id, pi.PlayableId, durationTicks / (double)TicksPerSecond, MinItemDurationTicks / TicksPerSecond);
+                    continue;
+                }
 
                 int ratingId = EffectiveRating(ratingMap, c.RatingA, c.RatingB, c.RatingC);
                 if (ratingId > maxRating) maxRating = ratingId;
@@ -432,7 +457,8 @@ namespace MovieTheater.Channels
             // id carried in OrderRank), not a correlated best-insight subquery per row.
             return MovieQuery(filter).Select(m => new Cand(
                 m.PlayableId!.Value,
-                m.Playable!.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
+                m.Playable!.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null && f.DurationTicks != null)
+                    .OrderBy(f => f.Role).ThenBy(f => f.Id).Select(f => (long?)f.DurationTicks).FirstOrDefault(),
                 m.RuntimeMinutes,
                 m.MpaaRating, m.Rating, m.MpaaRatingInferred,
                 m.ImdbRatingScraped, m.RtTomatometer,
@@ -518,7 +544,8 @@ namespace MovieTheater.Channels
                     && e.Playable!.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null))
                 .Select(e => new Cand(
                     e.PlayableId!.Value,
-                    e.Playable!.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
+                    e.Playable!.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null && f.DurationTicks != null)
+                        .OrderBy(f => f.Role).ThenBy(f => f.Id).Select(f => (long?)f.DurationTicks).FirstOrDefault(),
                     e.RuntimeMinutes,
                     e.Series!.MpaaRating, e.Series.Rating, e.Series.MpaaRatingInferred,
                     e.Series.ImdbRatingScraped, e.Series.RtTomatometer,
@@ -562,7 +589,8 @@ namespace MovieTheater.Channels
             // (disjoint) id → null, exactly as the old per-row subquery returned.
             return MiscQuery(filter).Select(mv => new Cand(
                 mv.PlayableId,
-                mv.Playable.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
+                mv.Playable.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null && f.DurationTicks != null)
+                    .OrderBy(f => f.Role).ThenBy(f => f.Id).Select(f => (long?)f.DurationTicks).FirstOrDefault(),
                 null,
                 null, null, mv.MpaaRatingInferred,
                 null, null,
@@ -590,7 +618,8 @@ namespace MovieTheater.Channels
                     && mv.Playable.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null))
                 .Select(mv => new Cand(
                     mv.PlayableId,
-                    mv.Playable.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null).Select(f => f.DurationTicks).FirstOrDefault(),
+                    mv.Playable.Files.Where(f => f.JellyfinItemId != null && f.MissingSinceUtc == null && f.DurationTicks != null)
+                        .OrderBy(f => f.Role).ThenBy(f => f.Id).Select(f => (long?)f.DurationTicks).FirstOrDefault(),
                     null,
                     null, null, mv.MpaaRatingInferred,
                     null, null,

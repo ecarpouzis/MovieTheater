@@ -28,6 +28,11 @@ namespace MovieTheater.Controllers
         // Past this fraction, resume is "done" — next play starts from the beginning. (This is resume
         // bookkeeping only; it never marks a title Seen — that's a manual user action.)
         private const double ResumeCompleteThreshold = 0.9;
+        // The HLS segment length of the COPY path: every `-codec:v:0 copy` session in Jellyfin's FFmpeg
+        // logs runs `-hls_time 6`. Its *encode* sessions use 3, so don't "confirm" this against one of
+        // those. A source whose keyframes fall further apart than this can't be safely copied — see
+        // the force-encode decision in Start.
+        internal const double CopyHlsSegmentSeconds = 6.0;
 
         private readonly MovieDb movieDb;
         private readonly JellyfinApi jellyfin;
@@ -376,10 +381,28 @@ namespace MovieTheater.Controllers
                 }
                 var burningInSubtitle = burnInImageIndex != null;
 
-                // ForceTranscode always re-encodes the video (see below), so it's never a copy.
-                videoIsCopied = !request.ForceTranscode && !burningInSubtitle
+                // What Jellyfin would do left alone: copy the video unless it named a Video transcode
+                // reason (or we're burning a sub in, which necessarily re-encodes).
+                var wouldCopy = !burningInSubtitle
                     && (source.TranscodeReasons == null
                         || !source.TranscodeReasons.Any(r => r.Contains("Video", StringComparison.OrdinalIgnoreCase)));
+
+                // A copied stream can only be cut on the SOURCE's keyframes, so when those fall further
+                // apart than the segment length Jellyfin's -start_number bookkeeping (derived from assumed
+                // durations) disagrees with the segments ffmpeg actually wrote — differently on each
+                // mid-session restart. The restarted encoder then renumbers underneath a playing decoder
+                // and the picture freezes while audio drains. A real encode emits its own keyframes on the
+                // segment boundary, so there is nothing to renumber. Null spacing = never probed →
+                // don't force (the client's ForceTranscode escalation stays the backstop for those).
+                var forceEncode = request.ForceTranscode
+                    || (wouldCopy && file.KeyframeIntervalSeconds > CopyHlsSegmentSeconds);
+                if (forceEncode && !request.ForceTranscode)
+                    logger.LogInformation(
+                        "Forcing re-encode: MediaFile {MediaFileId} keyframe spacing {Spacing}s exceeds the {SegmentSeconds}s copy segment length",
+                        file.Id, file.KeyframeIntervalSeconds, CopyHlsSegmentSeconds);
+
+                // A forced encode is never a copy, so isDirectStream and the codec readout stay honest.
+                videoIsCopied = wouldCopy && !forceEncode;
                 // The codec the player actually receives: when the video is copied it's the source
                 // codec; when re-encoded it's the first of the negotiated list (the encode target).
                 // The transcoding url only carries the candidate list, so a copied H.264 source to
@@ -391,8 +414,9 @@ namespace MovieTheater.Controllers
                 // Forced re-encode: tell Jellyfin not to stream-copy the video (CanStreamCopyVideo
                 // short-circuits on this), so ffmpeg emits its own keyframes and a mid-program seek
                 // lands — copy-mode seeking depends on the source's own keyframe index, which some
-                // rips lack. The client only sets this after the cheap copy path has looped.
-                if (request.ForceTranscode)
+                // rips lack. Reached either from the probed keyframe spacing above (server-side, before
+                // the first freeze) or from the client's escalation after the cheap copy path has looped.
+                if (forceEncode)
                     transcodingUrl += "&AllowVideoStreamCopy=false";
                 // Fallback for a TranscodingUrl that carries no subtitle params even though an image subtitle
                 // is selected to be burned in (SubtitleDeliveryMethod "Encode") — without them the transcode

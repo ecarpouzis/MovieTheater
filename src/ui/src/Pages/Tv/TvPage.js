@@ -69,6 +69,12 @@ function TvPage({ userData }) {
   const [playingDirect, setPlayingDirect] = useState(false); // true = original copied (no re-encode), for the readout
   const [playingHls, setPlayingHls] = useState(true); // true = HLS session (not raw direct play), for the readout
   const [subtitleIndex, setSubtitleIndex] = useState(null); // burned-in subtitle stream; null = off
+  // Seconds this session's media timeline runs AHEAD of true content time (streamEngine's
+  // timelineOffsetFromInitPts): a mid-file HLS join lands on the previous source keyframe, so
+  // currentTime = content + offset. State for the subtitle renderers (it arrives after they mount),
+  // ref for the handlers/intervals that aren't re-bound per render. 0 on direct play.
+  const [timelineOffset, setTimelineOffset] = useState(0);
+  const timelineOffsetRef = useRef(0);
   const [audioOpen, setAudioOpen] = useState(false);
   const [subsOpen, setSubsOpen] = useState(false);
   // Caption appearance — shared with the Watch player (same hook + persisted settings + injected ::cue).
@@ -86,7 +92,7 @@ function TvPage({ userData }) {
     beginSync: beginSubtitleSync,
     capturePoint: captureSubtitleSyncPoint,
     cancelSync: cancelSubtitleSync,
-  } = useSubtitleOffset(videoRef, subtitleIndex, subtitleTracks);
+  } = useSubtitleOffset(videoRef, subtitleIndex, subtitleTracks, timelineOffset);
   // The selected SOFT (sidecar VTT) subtitle — only these can be re-timed client-side, so the delay
   // UI gates on it (burned-in image subs are baked into the transcode and can't be moved).
   const activeTextSub =
@@ -324,6 +330,10 @@ function TvPage({ userData }) {
       clearTimeout(prewarmTimerRef.current);
       stopSession();
       destroyHls();
+      // Every join re-rolls the timeline offset (0 … one source GOP), and direct play has none —
+      // zero it before anything can attach, so a stale offset can never outlive its stream.
+      timelineOffsetRef.current = 0;
+      setTimelineOffset(0);
       setError(null);
       setOffAir(false);
       setTuning(true);
@@ -496,6 +506,10 @@ function TvPage({ userData }) {
             // A truly fatal decode error (past the standard network/media recovery) drops the channel
             // to "No signal" instead of leaving the picture silently stuck.
             onFatal: () => setError(new Error("The signal dropped.")),
+            onTimelineOffset: (offset) => {
+              timelineOffsetRef.current = offset;
+              setTimelineOffset(offset);
+            },
           });
           hlsRef.current = hls;
           hls.on(Hls.Events.MANIFEST_PARSED, startPlayback);
@@ -607,7 +621,9 @@ function TvPage({ userData }) {
         MovieAPI.reportStreamProgress({
           playSessionId: s.playSessionId,
           playableId: s.playableId,
-          positionTicks: Math.round(video.currentTime * TICKS_PER_SECOND),
+          // Content time, not player time: a mid-file join shifts the media timeline (see
+          // timelineOffsetRef), and the server's resume/progress bookkeeping is in content seconds.
+          positionTicks: Math.max(0, Math.round((video.currentTime - timelineOffsetRef.current) * TICKS_PER_SECOND)),
           paused: video.paused,
           passive: true,
         });
@@ -633,7 +649,11 @@ function TvPage({ userData }) {
       if (anchor.itemId !== currentItemIdRef.current) return; // channel moved on — wait for a fresh anchor
 
       const expected = anchor.position + (performance.now() - anchor.atMs) / 1000;
-      const drift = video.currentTime - expected; // > 0 → running ahead of the channel
+      // Both sides in CONTENT time. The channel clock states a content offset, while currentTime can
+      // sit a whole source GOP ahead of it on a mid-file HLS join — comparing them raw reads that
+      // constant as drift and seeks every cooldown, which restarts the encoder, re-rolls the offset,
+      // and never converges (the ~15s tune/seek storm in the 2026-07-29 logs).
+      const drift = video.currentTime - timelineOffsetRef.current - expected; // > 0 → ahead of the channel
       if (!isFinite(drift)) return;
 
       if (Math.abs(drift) > SYNC_SEEK_AFTER_S) {
@@ -643,7 +663,7 @@ function TvPage({ userData }) {
         lastSyncSeekAtRef.current = performance.now();
         video.playbackRate = 1;
         try {
-          video.currentTime = expected;
+          video.currentTime = expected + timelineOffsetRef.current; // back into player time
         } catch {
           /* not seekable yet — the next beat retries */
         }
@@ -1122,11 +1142,11 @@ function TvPage({ userData }) {
 
   // Client-rendered PGS (Blu-ray bitmap) subs via libpgs — keeps the video copied instead of burned.
   const activePgsSub = subtitleTracks.find((t) => t.index === subtitleIndex && t.kind === "image-pgs");
-  usePgsSubtitle(videoRef, activePgsSub ? activePgsSub.deliveryUrl : null);
+  usePgsSubtitle(videoRef, activePgsSub ? activePgsSub.deliveryUrl : null, timelineOffset);
 
   // Client-rendered ASS/SSA via libass — full typesetting, also keeps the video copied.
   const activeAssSub = subtitleTracks.find((t) => t.index === subtitleIndex && t.kind === "ass");
-  useAssSubtitle(videoRef, activeAssSub ? activeAssSub.deliveryUrl : null);
+  useAssSubtitle(videoRef, activeAssSub ? activeAssSub.deliveryUrl : null, timelineOffset);
 
   // Keep the fullscreen button's icon in sync with the actual state (incl. Esc to exit).
   useEffect(() => {

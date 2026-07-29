@@ -75,6 +75,17 @@ namespace MovieTheater.Db
 
         public int? BitDepth { get; set; }
 
+        /// <summary>
+        /// Worst-case spacing between this file's own video keyframes, in seconds, sampled mid-file by
+        /// the <c>probe-keyframes</c> command (docs/transcode-restart-freeze-plan.md §Part 1) — Jellyfin's
+        /// API doesn't expose it, so it comes from ffprobe rather than <c>sync-jellyfin</c>. When it
+        /// exceeds the copy path's HLS segment length, a stream-copied session's segment numbering drifts
+        /// from where ffmpeg can actually cut and mid-session restarts renumber the timeline, so
+        /// <c>StreamController</c> forces a real encode instead. Null = not probed; the controller must
+        /// NOT force on null (today's behavior).
+        /// </summary>
+        public double? KeyframeIntervalSeconds { get; set; }
+
         /// <summary>Last time a sync saw this file in Jellyfin.</summary>
         public DateTime? LastSyncedUtc { get; set; }
 
