@@ -1,18 +1,47 @@
-/* Per-game emulator config (⚙ Configure) — a settings dialog: category rail + inline-described options. */
+/* Per-game emulator config (⚙ Configure) — a settings dialog: category rail + inline-described options.
+   Wears the shared arcade shell (ArcadeModal.css): bounded to the viewport, header and footer pinned.
+   The shell normally makes the BODY the scroller, but this dialog overrides that below — see .agc. */
 
-.arcade-config-modal .ant-modal { top: 40px; }
 .arcade-config-modal .ant-modal-content { border-radius: 12px; }
-.arcade-config-modal .ant-modal-body { padding-top: 16px; }
+
+/* The right pane is this dialog's natural scroll region: the category rail has to stay put while
+   options scroll past it, which a body-level scroller can't do. So the body stops scrolling and
+   hands its (already viewport-bounded) height down to the panes. */
+.arcade-modal.arcade-config-modal.ant-modal-wrap .ant-modal-body {
+  display: flex;
+  overflow: hidden;
+  padding-top: 16px;
+}
+.arcade-config-modal .agc { flex: 1; min-width: 0; }
+/* `min-height: 0` on each nesting level, or the default `auto` minimum refuses to shrink and the
+   panes push the dialog past the viewport bound instead of scrolling inside it. */
+.arcade-config-modal .agc,
+.arcade-config-modal .agc-panes,
+.arcade-config-modal .agc-rail,
+.arcade-config-modal .agc-content { min-height: 0; }
 
 .agc-title { font-weight: 700; }
 .agc-title__sys { font-weight: 400; opacity: 0.6; }
 
 .agc-loading { display: flex; justify-content: center; padding: 60px 0; }
 
-/* Footer: keep the "applies next start" hint on the far left, buttons on the right. */
-.arcade-config-modal .ant-modal-footer { display: flex; align-items: center; gap: 8px; }
+/* Footer: keep the "applies next start" hint on the far left, buttons on the right.
+   `flex-wrap` is load-bearing, not tidiness: the row is a hint + a tier select + three buttons, and
+   without it a narrow sheet squeezed the hint into a one-word-per-line column and shoved SAVE clean
+   off the right edge — the same "primary action you can't reach" the shell exists to prevent. */
+.arcade-config-modal .ant-modal-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
 .arcade-config-modal .ant-modal-footer .ant-btn { margin: 0; }
 .agc-foot-hint { margin-right: auto; font-size: 12px; opacity: 0.55; }
+/* Too narrow to share a line: the hint takes its own row and the buttons keep theirs. */
+@media (max-width: 700px) {
+  .agc-foot-hint { width: 100%; margin-right: 0; }
+}
 /* Quality-tier dropdown (the Reset target), left of "Reset to defaults". */
 .agc-tier { min-width: 92px; text-align: left; }
 
@@ -49,13 +78,14 @@
 .agc-info { cursor: help; opacity: 0.5; font-size: 12px; }
 
 /* ── Two-pane body ──────────────────────────────────────────────────────────── */
+/* Fills whatever height the shell left after the header, search row and footer. */
 .agc-panes {
+  flex: 1;
   display: grid;
   grid-template-columns: 172px 1fr;
   border: 1px solid rgba(128, 128, 128, 0.22);
   border-radius: 10px;
   overflow: hidden;
-  min-height: 360px;
 }
 
 .agc-rail {
@@ -63,6 +93,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 7px;
+  overflow-y: auto;
   border-right: 1px solid rgba(128, 128, 128, 0.22);
   background: rgba(128, 128, 128, 0.05);
 }
@@ -98,9 +129,11 @@
 }
 .agc-rail__item.is-active .agc-rail__count { opacity: 0.8; }
 
+/* The one scroller. It used to cap itself at 58vh, which stranded the rest of a tall dialog empty
+   and — once header + search + footer were added on — could still run past the bottom of a short
+   viewport. It now simply takes the height the shell allots. */
 .agc-content {
   padding: 12px 16px;
-  max-height: 58vh;
   overflow-y: auto;
 }
 
@@ -138,11 +171,17 @@
 .agc-adv .ant-btn-sm { align-self: flex-start; }
 
 /* ── Responsive: stack the rail above the content ───────────────────────────── */
-@media (max-width: 640px) {
-  .agc-panes { grid-template-columns: 1fr; }
+@media (max-width: 700px) {
+  /* `minmax(0, 1fr)` not `1fr`: a bare 1fr row won't shrink below its content, so the options pane
+     would grow the grid instead of scrolling inside it. */
+  .agc-panes {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
   .agc-rail {
     flex-direction: row;
     overflow-x: auto;
+    overflow-y: hidden;
     border-right: none;
     border-bottom: 1px solid rgba(128, 128, 128, 0.22);
   }

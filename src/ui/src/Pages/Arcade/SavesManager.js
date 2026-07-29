@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Empty, Modal, Space, Spin, Typography, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
+import "./ArcadeModal.css";
 
 const { Text } = Typography;
 
@@ -60,13 +61,27 @@ function SavesManager({ game, onClose, onResume }) {
   }
 
   return (
-    <Modal open title={`My saves — ${game.title}`} onCancel={onClose} footer={null} width={520}>
+    <Modal
+      open
+      title={`My saves — ${game.title}`}
+      onCancel={onClose}
+      footer={null}
+      width={520}
+      // Above the nav bar (1300) so the sheet covers it rather than sliding under it;
+      // `arcade-modal` is the shared shell — bounded to the viewport, body scrolls, full
+      // screen on a phone or a short window (ArcadeModal.css).
+      zIndex={1500}
+      wrapClassName="arcade-modal"
+    >
       {rows === null ? (
         <div style={{ textAlign: "center", padding: 24 }}><Spin /></div>
       ) : rows.length === 0 ? (
         <Empty description="No saves for this game yet." />
       ) : (
-        <div style={{ maxHeight: 360, overflowY: "auto" }}>
+        // The list used to cap itself at 360px and scroll on its own. The shell already bounds
+        // the dialog and scrolls the body, so a second scroller here would just be a smaller
+        // window inside a window — .arcade-modal-scroll opts back out of it.
+        <div className="arcade-modal-scroll">
           {rows.slice().sort((a, b) => a.slotId - b.slotId).map((r) => (
             <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f0f0f0" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
