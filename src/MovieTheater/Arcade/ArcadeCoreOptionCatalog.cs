@@ -174,10 +174,16 @@ namespace MovieTheater.Arcade
                 // 1280x960 delivery. Raising this renders at delivery size instead of upscaling a small
                 // frame. Vulkan/paraLLEl-RDP ignores it and uses parallel-rdp-upscaling instead.
                 new CoreOption("parallel-n64-screensize", "Internal resolution", Category.Video,
+                    // ⚠ DELIBERATELY NOT the core's full token list. The core DECLARES 1440x1080, 2240x1680,
+                    // 2880x2160 and 5760x4320, but the mupen config bridge that the HLE GL plugins read
+                    // (`api/config.c`, the ScreenWidth/ScreenHeight translate table) does NOT list them —
+                    // and on a miss `ConfigGetParamInt` falls through to a `return 0`, so glide64/rice get
+                    // ScreenWidth=0. Those four are broken, not merely unavailable, under the Glide64
+                    // profile we ship for romhacks. Only bridge-known tokens are offered here.
+                    // For sharper output beyond 6x, use the Vulkan profile's supersampling, not this.
                     new[] { V("320x240","1x (native, fastest)"), V("640x480","2x"), V("960x720","3x"),
-                            V("1280x960","4x"), V("1440x1080","4.5x"), V("1600x1200","5x"),
-                            V("1920x1440","6x"), V("2240x1680","7x"), V("2880x2160","9x"),
-                            V("5760x4320","18x (absurd, will not stream)") },
+                            V("1280x960","4x (good default)"), V("1600x1200","5x"),
+                            V("1920x1440","6x (sharpest safe)") },
                     "640x480",
                     "How large the game renders internally before the stream scales it. Higher is sharper but heavier."),
                 // dynamic_recompiler_ari64 added 2026-07-29 — a 4th token this core really exposes
@@ -204,7 +210,9 @@ namespace MovieTheater.Arcade
                 // (parallel-n64 libretro/libretro_core_options.h), not guessed and not scraped from the
                 // DLL string table — a string-table read of screensize above gave a WRONG list (it
                 // surfaced a legacy 320x200/400x256/800x600 set and appeared to cap at 960x720, when the
-                // real list runs to 5760x4320). Read the source, or the option silently does nothing.
+                // real declared list runs to 5760x4320). Read the source, or the option silently does
+                // nothing. Note the follow-on lesson: the DECLARED list is still not the USABLE list —
+                // see the bridge caveat on screensize above.
                 //
                 // THE SPEED/ACCURACY DIAL FOR THE GL PLUGINS, and it defaults to the most expensive
                 // setting. Nothing in our stack ever set it, so every GLideN64/Glide64/rice room has been
@@ -224,6 +232,50 @@ namespace MovieTheater.Arcade
                     new[] { V("True","Allow unaligned (romhack compatible)"), V("False","Force alignment (hardware accurate)") },
                     "True",
                     "Honours odd PI cart addresses instead of force-aligning them. Required by some romhacks; hardware-accurate alignment breaks them."),
+                // MT-PATCHED OPTION (our build only): this core had NO counter-factor control at all — the
+                // CountPerOp global existed and the core consumed it, but nothing ever set it. It is the
+                // COP0 counter factor, i.e. how much emulated CPU work happens per counter tick, and it is
+                // the difference between Last Impact running properly and Mario moving in slow motion while
+                // the machine still reports a perfect 60 fps (the emulated CPU is throttled, not the box).
+                // Project64 pins Counter Factor=1 for that ROM in its own per-game database.
+                // 0 = defer to the core's per-ROM database, which is the old behaviour.
+                new CoreOption("parallel-n64-countperop", "CPU counter factor", Category.Performance,
+                    new[] { V("0","Auto (ROM database)"), V("1","1 (romhacks — Project64's choice)"),
+                            V("2","2"), V("3","3"), V("4","4"), V("5","5") },
+                    "0",
+                    "Emulated CPU work per counter tick. Some romhacks run in slow motion at the database default and need 1. A wrong value can also desync a game's audio."),
+                // ⚠ The upstream NAME is misleading: this is FRAME DUPLICATION, not a speed limiter. Enabled
+                // sends one frame per emulated video interrupt, which is what our fixed-cadence pipeline
+                // expects; disabled sends only newly-rendered frames, so a 30fps-rendering game (SM64 and
+                // its hacks) streams at ~30 and reads as choppy. mupen64plus_next does this by default
+                // (FrameDuping=1), which is why the same game looked smooth there and stuttery here.
+                // ⚠ READ ONCE, AT CORE BOOT (upstream guards it with `initial_boot`) — setting it per-room
+                // does nothing until the worker restarts, which cost a wasted test cycle to discover.
+                new CoreOption("parallel-n64-framerate", "Frame duplication", Category.Video,
+                    new[] { V("fullspeed","Enabled — one frame per VI (smooth)"), V("original","Disabled — only new frames (cheaper)") },
+                    "original",
+                    "Sends a duplicate frame when the game does not draw a new one, so the stream stays at the full video rate. Games that render at 30fps look choppy without it. Takes effect only when the core next starts."),
+                new CoreOption("parallel-n64-dithering", "Dithering", Category.Video,
+                    new[] { V("enabled","Enabled (authentic)"), V("disabled","Disabled (cleaner gradients)") },
+                    "enabled",
+                    "The N64's output dithering. Authentic on, slightly cleaner gradients off."),
+                new CoreOption("parallel-n64-virefresh", "VI refresh (overclock)", Category.Performance,
+                    new[] { V("auto","Auto (from the game)"), V("1500","1500"), V("2200","2200") },
+                    "auto",
+                    "Overrides the video-interface refresh timing. Auto follows the game; the fixed values are a last resort for titles with timing faults."),
+                // The key is spelled `disable_expmem` but its meaning is NOT inverted: the mupen bridge maps
+                // enabled->DisableExtraMem=0, and `main.c` then picks rdram_size 0x800000 (8 MB) for 0 and
+                // 0x400000 (4 MB) for 1. So "enabled" really does mean the Expansion Pak is present, and
+                // that is the core default. Exposed because the key name invites someone to "un-disable" it
+                // and land on 4 MB, which breaks the large romhacks this core is mostly used for.
+                new CoreOption("parallel-n64-disable_expmem", "Expansion Pak RAM", Category.System,
+                    new[] { V("enabled","8 MB — Expansion Pak fitted (default)"), V("disabled","4 MB — retail base console") },
+                    "enabled",
+                    "The N64 shipped with 4 MB and the Expansion Pak took it to 8 MB. Leave this on: most romhacks and a few retail games (Donkey Kong 64, Majora's Mask) require 8 MB and will not boot on 4."),
+                new CoreOption("parallel-n64-allow-large-roms", "Allow large ROMs", Category.System,
+                    new[] { V("True","Allow ROMs over 64 MiB"), V("False","Reject ROMs over 64 MiB") },
+                    "True",
+                    "Lifts the 64 MiB cartridge size limit. Needed by a handful of oversized romhacks; harmless to leave on."),
                 // MT-PATCHED OPTION (our build only). Normally set by the Glide64 render profile rather
                 // than by hand — it is listed here so the ⚙ panel explains it instead of showing an
                 // unexplained key, and so a player can turn it off if a game sounds fine without the cost.
@@ -231,6 +283,16 @@ namespace MovieTheater.Arcade
                     new[] { V("enabled","Accurate (LLE audio RSP)"), V("disabled","Fast (HLE audio)") },
                     "disabled",
                     "Runs N64 audio on the accurate RSP while graphics stay on the fast HLE one. Fixes romhack music that crackles under HLE audio (SM64: Last Impact) while keeping an OpenGL renderer working. Costs some CPU; no effect on the Vulkan renderer, which is already accurate."),
+                // The UPSTREAM mirror of the option above, and the exact opposite trade: it makes AUDIO fast
+                // while graphics stay accurate, so it is the one that pairs with the Vulkan/angrylion
+                // renderers. Both are listed because they are not interchangeable — they move different
+                // halves of the workload.
+                // ⚠ If BOTH are enabled the FAST path wins: in `plugin.c` our LLE branch is the `else if`
+                // after this one, so enabling both silently gives you HLE audio (i.e. the crackle is back).
+                new CoreOption("parallel-n64-send_allist_to_hle_rsp", "Fast audio with an accurate renderer", Category.Performance,
+                    new[] { V("enabled","Fast (HLE audio)"), V("disabled","Accurate (selected RSP)") },
+                    "disabled",
+                    "Runs N64 audio on the fast HLE RSP while graphics stay on the accurate one, which reclaims noticeable CPU under the Vulkan renderer with little audible difference in most games. Leave off for romhacks with custom music, and never combine it with \"Accurate audio with an HLE renderer\" — this one wins."),
             },
 
             // ── ScummVM. Point-and-click games driven by a GAMEPAD, so the only settings worth a

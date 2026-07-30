@@ -1301,8 +1301,11 @@ emulator:
         # gfxplugin default IS angrylion, so this block must always set gfxplugin explicitly.
         # ⚠ The GL plugins do NOT supersample, so `scale: 2` below is a pure 2x BLUR up to the 1280x960
         # delivery on those paths (it is a supersample only on the Vulkan path, where parallel-rdp-upscaling
-        # renders large first). Sharpness on GL comes from parallel-n64-screensize instead (valid up to
-        # 5760x4320 — verified in the core source; a DLL string-table read of that list is WRONG/legacy).
+        # renders large first). Sharpness on GL comes from parallel-n64-screensize instead — but only up to
+        # 1920x1440 on THESE plugins: the core declares tokens to 5760x4320, while the mupen config bridge
+        # the GL plugins read (api/config.c ScreenWidth/ScreenHeight table) knows nothing above 2048x2048,
+        # and ConfigGetParamInt returns 0 on a miss. 1440x1080/2240x1680/2880x2160/5760x4320 therefore hand
+        # glide64 a width of ZERO. The site catalog offers only bridge-known tokens; do not widen it here.
         # ⚠ parallel-n64-gfxplugin-accuracy defaults to "veryhigh" and this block has never set it, so
         # every GL room pays the most expensive setting. Same GL Flip contract as the other GL 3D cores
         # (isGlAllowed + coreAspectRatio, or the bottom-left-origin frame renders upside down).

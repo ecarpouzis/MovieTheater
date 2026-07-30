@@ -75,7 +75,10 @@ namespace MovieTheater.Arcade
                 // from the Vulkan profile it ships only where it has an effect.
                 new RenderProfile("parallel_n64", "parallel_n64 core · Vulkan (paraLLEl-RDP)", "parallel_n64", "vulkan", "parallel_n64",
                     Opt(("parallel-n64-gfxplugin", "parallel"), ("parallel-n64-rspplugin", "parallel"),
-                        ("parallel-n64-parallel-rdp-upscaling", "4x")), false),
+                        // 8x, matching what config.worker-gl.yaml has always delivered — moving the option
+                        // must not silently change the VALUE too, or "where did my supersampling go" becomes
+                        // the next mystery. Remove the config copy once this is confirmed live.
+                        ("parallel-n64-parallel-rdp-upscaling", "8x")), false),
                 // GLideN64 (GL) fallback. The FB options are mixed-case libretro keys and MUST ride this
                 // render-profile path (t=104 room-options), NOT config.yaml — the config loader lowercases
                 // YAML keys and libretro option keys are case-sensitive, so they'd be silently ignored there
