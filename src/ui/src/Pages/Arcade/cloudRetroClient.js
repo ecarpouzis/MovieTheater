@@ -1291,6 +1291,12 @@ export function createCloudRetroSession(descriptor, opts) {
     const ctrlscheme = strFromWsUrl(descriptor.wsUrl, "ctrlscheme");
     if (vbr > 0) p.video_bitrate = vbr;
     if (fec > 0) p.audio_fec = fec;
+    // RUN LEGITIMACY: tell the worker this boot restored a state the player DELIBERATELY PICKED (a named
+    // snapshot / Quickload, ?seedslot=N) rather than the ordinary auto-save continue. The worker cannot
+    // tell them apart on its own — all it sees is "a save existed and we restored it" — so without this
+    // it tagged EVERY resumed room save-scummed before a button was pressed, and nobody who plays across
+    // sessions could ever earn a clean achievement. Absent = auto-continue = clean.
+    if (numFromWsUrl(descriptor.wsUrl, "seedslot") > 0) p.seed_explicit = true;
     // Per-room codec (worker patch 0036): the creator's t=104 selects which encoder.list entry this
     // room's pipeline builds with; must match the video_codec every member sent at INIT_WEBRTC.
     if (codec) p.video_codec = codec;
