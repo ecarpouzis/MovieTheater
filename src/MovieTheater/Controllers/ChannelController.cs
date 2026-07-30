@@ -427,11 +427,14 @@ namespace MovieTheater.Controllers
         /// made it, not to the channel forever — otherwise one viewer pausing and wandering off leaves the
         /// channel dead for everybody else. Two deliberate exemptions:
         /// <list type="bullet">
-        /// <item>the viewer who paused it — their TV going dark for a day must still come back to the same
-        /// frame, which is the whole reason the pause is durable;</item>
+        /// <item>the viewer who paused it — their TV going dark for the evening must still come back to the
+        /// same frame, which is the whole reason the pause is durable;</item>
         /// <item>watch parties — there the freeze IS the "wait until everyone's here" gate, and members
         /// arrive one at a time by definition, so a late joiner must never start the film on the group.</item>
         /// </list>
+        /// The first exemption expires: past <see cref="ChannelScheduleService.StalePauseAge"/> a pause is
+        /// abandoned no matter whose it was, so a channel can't sit frozen on one show for days because the
+        /// pauser never came back (and the background sweep lifts it even if nobody tunes in at all).
         /// Returns the pause instant still in force, or null if the channel is (now) playing.
         /// </summary>
         private async Task<DateTime?> TryAutoResumeAsync(Channel channel, int userId, DateTime now)
@@ -439,13 +442,19 @@ namespace MovieTheater.Controllers
             if (channel.PausedAtUtc is not DateTime pausedAt)
                 return null;
 
-            if (channel.WatchpartyToken != null || channel.PausedByUserId == userId)
+            if (channel.WatchpartyToken != null)
                 return pausedAt;
 
-            // The live viewer set, pruned of anyone gone quiet. This caller isn't in it yet (Now touches
-            // presence further down), so empty genuinely means nobody else is holding the channel.
-            if (skipService.ViewerIds(channel.Id).Count > 0)
-                return pausedAt;
+            if (now - pausedAt < ChannelScheduleService.StalePauseAge)
+            {
+                if (channel.PausedByUserId == userId)
+                    return pausedAt;
+
+                // The live viewer set, pruned of anyone gone quiet. This caller isn't in it yet (Now touches
+                // presence further down), so empty genuinely means nobody else is holding the channel.
+                if (skipService.ViewerIds(channel.Id).Count > 0)
+                    return pausedAt;
+            }
 
             // Compare-and-set on the stored instant: two viewers arriving in the same beat must not both
             // resume and shift the schedule twice.

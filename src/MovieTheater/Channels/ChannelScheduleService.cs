@@ -24,6 +24,16 @@ namespace MovieTheater.Channels
         private static readonly TimeSpan ScheduleHorizon = TimeSpan.FromHours(48);
         private static readonly TimeSpan PruneAge = TimeSpan.FromDays(3);
 
+        /// <summary>
+        /// How long a shared pause may hold a channel frozen before it lifts itself. The pause is durable
+        /// on purpose (pause, walk away, come back to the same frame), but "durable" can't mean "forever":
+        /// somebody who pauses and never returns would otherwise leave the channel stuck on one show
+        /// indefinitely, so the next person to tune in — or the background sweep, if nobody ever does —
+        /// finds a day-old still frame. Half a day is long enough to cover an evening-to-morning walk-away
+        /// and short enough that a channel is always live again by the next viewing session.
+        /// </summary>
+        public static readonly TimeSpan StalePauseAge = TimeSpan.FromHours(12);
+
         // A weighted shuffle re-rolls its order on this cadence (keyed by slot start time) so a large pool
         // rotates through its whole catalog over days instead of forever cycling one anti-repeat window.
         private static readonly TimeSpan ShuffleRotation = TimeSpan.FromHours(3);
@@ -757,6 +767,59 @@ namespace MovieTheater.Channels
             movieDb.Channels.Where(c => c.Enabled && c.WatchpartyToken == null && c.PausedAtUtc == null)
                 .OrderBy(c => c.SortOrder).ThenBy(c => c.Id)
                 .Select(c => c.Id).ToListAsync(cancel);
+
+        /// <summary>
+        /// Lift pauses older than <see cref="StalePauseAge"/>, so a channel frozen by someone who wandered
+        /// off comes back to life on its own — no viewer has to tune in first (the tune-time path is
+        /// ChannelController.TryAutoResumeAsync, which enforces the same age). Each resume slides the lineup
+        /// forward by the freeze, exactly like a hand resume, so the channel picks up where it stopped
+        /// rather than jumping to the live position.
+        ///
+        /// Watch parties are exempt: their freeze is the "wait until everyone's here" lobby gate, and an
+        /// abandoned party is deleted outright by <see cref="WatchpartyReaperService"/> rather than started
+        /// with nobody watching.
+        ///
+        /// Bounded per the long-job rule: at most <paramref name="limit"/> channels per call, oldest pause
+        /// first, and each one is claimed with a compare-and-set so a viewer resuming in the same beat
+        /// can't make the schedule shift twice. Returns how many were resumed.
+        /// </summary>
+        public async Task<int> ResumeStalePausesAsync(int limit, CancellationToken cancel = default)
+        {
+            var now = DateTime.UtcNow;
+            var cutoff = now - StalePauseAge;
+
+            // AsNoTracking: the claim below writes the pause columns straight through, so the row must not
+            // also be sitting in the change tracker waiting to re-write them on the shift's SaveChanges.
+            var stale = await movieDb.Channels
+                .AsNoTracking()
+                .Where(c => c.Enabled && c.WatchpartyToken == null && c.PausedAtUtc != null && c.PausedAtUtc < cutoff)
+                .OrderBy(c => c.PausedAtUtc)
+                .Take(limit)
+                .ToListAsync(cancel);
+
+            int resumed = 0;
+            foreach (var channel in stale)
+            {
+                var pausedAt = channel.PausedAtUtc!.Value;
+                int claimed = await movieDb.Channels
+                    .Where(c => c.Id == channel.Id && c.PausedAtUtc == pausedAt)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(c => c.PausedAtUtc, (DateTime?)null)
+                        .SetProperty(c => c.PausedByUserId, (int?)null), cancel);
+                if (claimed != 1)
+                    continue; // somebody resumed it first — theirs is the shift
+
+                channel.PausedAtUtc = null;
+                channel.PausedByUserId = null;
+                await ShiftForResumeAsync(channel, now - pausedAt, cancel);
+                resumed++;
+                logger.LogInformation(
+                    "Channel {ChannelId} ({Name}) resumed automatically after {Hours:F1}h paused.",
+                    channel.Id, channel.Name, (now - pausedAt).TotalHours);
+            }
+
+            return resumed;
+        }
 
         /// <summary>
         /// Extend one channel's lineup to the horizon and warm its ceiling cache — the unit of work the

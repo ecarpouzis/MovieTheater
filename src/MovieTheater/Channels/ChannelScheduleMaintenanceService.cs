@@ -23,6 +23,7 @@ namespace MovieTheater.Channels
         private static readonly TimeSpan Tick = TimeSpan.FromSeconds(15);
         private static readonly TimeSpan Horizon = TimeSpan.FromHours(48);
         private const int BatchSize = 8; // channels touched per tick — keeps per-tick DB work tiny
+        private const int StalePauseBatchSize = 4; // abandoned pauses lifted per tick (see ResumeStalePausesAsync)
 
         // On a cold start (every deploy/restart wipes the in-memory ceiling + schedule caches) the first
         // pass over all channels is what makes the guide "come up". Cover it faster — bigger batch, shorter
@@ -75,6 +76,12 @@ namespace MovieTheater.Channels
             using var scope = scopeFactory.CreateScope();
             var schedule = scope.ServiceProvider.GetRequiredService<ChannelScheduleService>();
 
+            // Lift abandoned pauses first: a frozen channel is excluded from the round-robin below (its
+            // clock is stopped, so there's nothing to extend), which is exactly why nothing else would ever
+            // un-stick a channel somebody paused and walked away from. Bounded batch, so a pile of them is
+            // cleared over several ticks.
+            int resumed = await schedule.ResumeStalePausesAsync(StalePauseBatchSize, cancel);
+
             var ids = await schedule.EnabledChannelIdsAsync(cancel);
             if (ids.Count == 0)
                 return;
@@ -107,7 +114,9 @@ namespace MovieTheater.Channels
                 }
             }
             if (processed > 0)
-                logger.LogDebug("Channel schedule maintenance: refreshed {Count} channel(s).", processed);
+                logger.LogDebug(
+                    "Channel schedule maintenance: refreshed {Count} channel(s), auto-resumed {Resumed}.",
+                    processed, resumed);
         }
     }
 }
