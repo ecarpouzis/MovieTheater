@@ -1,0 +1,167 @@
+diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
+index 319f28a..1eaa982 100644
+--- a/pkg/worker/caged/libretro/frontend.go
++++ b/pkg/worker/caged/libretro/frontend.go
+@@ -638,6 +638,9 @@ func (f *Frontend) Start() {
+ 	// per-game data (this is what stock emulators do — "sync to audio"). Constant-rate cores (PSP, 60fps
+ 	// DC, all 2D) produce audio at a steady sampleRate/fps per frame, so the floor dominates and behavior
+ 	// is unchanged.
++	// Nan0 is a singleton reused across rooms — clear any rate derived for a PREVIOUS game before we
++	// read the declaration, or this room starts timed against the last game's measurement.
++	f.nano.SetDerivedAudioSampleRate(0)
+ 	sr := float64(f.nano.AudioSampleRate())
+ 	if sr <= 0 {
+ 		sr = 44100
+@@ -646,6 +649,32 @@ func (f *Frontend) Start() {
+ 	var audioFrames int64       // cumulative audio frames produced (the audio clock)
+ 	floorNext := os.Nanotime()  // earliest allowed time for the next tick (max-rate floor)
+ 
++	// ── TRUE-RATE DERIVATION ─────────────────────────────────────────────────────────────────────
++	// sr is the denominator of every audio-clock computation (the deadline, the epoch re-pin, the
++	// deficit, the silence-fill threshold). It used to be read ONCE, here, while the video frame time
++	// IS re-read every tick to follow the core — so we honoured half of SET_SYSTEM_AV_INFO and a
++	// mid-session rate change left the pacer timing against a stale denominator forever.
++	//
++	// Worse, a core can be wrong from the START: parallel_n64 declares 32040 Hz on SM64: Last Impact
++	// and delivers ~31230 (2.6% short). audioPullMax caps the rescue at 2%, so the pacer pins at the
++	// clamp and the delivered rate OSCILLATES — audible as crackle, and immune to every downstream
++	// remedy (client jitter buffer 80 -> 400 ms and Opus frame-size 10 -> 20 ms both measured no
++	// change, because a rate error is not jitter).
++	//
++	// So: measure what the core actually produces and adopt it. Then no pull is needed (the game runs
++	// at its true speed rather than 2.6% fast) and room.go's per-batch AudioSampleRate() comparison
++	// re-caps the appsrc + resampler for free through ReconfigureAudio.
++	const rateWindow = 3 * time.Second // long enough to average out bursty audio DMA
++	const rateAdoptMin = 0.005         // < 0.5% error: leave it, the pull absorbs that inaudibly
++	const rateAgree = 0.003            // consecutive windows must agree within 0.3% to count as steady
++	const rateSane = 0.15              // never adopt further than 15% from the declaration
++	const rateAdoptMax = 3             // bound thrash; a core that needs more than this is broken elsewhere
++	rateWinStart := os.Nanotime()
++	var rateWinFrames int64
++	var ratePrevObserved float64
++	rateAdoptions := 0
++	rateWinDirty := false // a warp/fill/stall happened in this window -> its average is meaningless
++
+ 	// pace-diag: every 5s, log what the emulator actually produced — ticks/s, audio frames/s (should
+ 	// track the core's sample rate), the worst single retro_run of the window, and how many ticks blew
+ 	// a 20ms budget. Steady audio/s while the player hears gaps = the problem is DOWNSTREAM of the
+@@ -722,6 +751,53 @@ func (f *Frontend) Start() {
+ 			audioDelta := f.nano.TakeAudioFrames()
+ 			audioFrames += audioDelta
+ 
++			// ── Follow the core's rate, and derive it when the declaration is wrong ───────────
++			// (1) Honour a CHANGED rate (SET_SYSTEM_AV_INFO, or our own derivation below). Re-pinning
++			// the epoch is mandatory: sr is the denominator of the audio clock, so swapping it without
++			// restarting the anchor would make the clock jump by the ratio of old to new.
++			if cur := float64(f.nano.AudioSampleRate()); cur > 0 && cur != sr {
++				f.log.Info().Msgf("[audio] pacer sample rate %.0f -> %.0f Hz (re-pinning audio clock)", sr, cur)
++				sr = cur
++				audioEpoch = os.Nanotime()
++				audioFrames = 0
++				rateWinStart = audioEpoch
++				rateWinFrames = 0
++				ratePrevObserved = 0
++			}
++
++			// (2) Measure what the core REALLY delivers. Windows containing a warp or a silence-fill are
++			// discarded rather than averaged — fast-forward multiplies audio, rewind drops it, and a fill
++			// injects samples the core never made, so any of them would poison the measurement.
++			rateWinFrames += audioDelta
++			if ff || rw {
++				rateWinDirty = true
++			}
++			if el := os.Nanotime() - rateWinStart; el >= int64(rateWindow) {
++				observed := float64(rateWinFrames) / (float64(el) / 1e9)
++				declared := float64(f.nano.DeclaredAudioSampleRate())
++				sane := declared > 0 && observed > declared*(1-rateSane) && observed < declared*(1+rateSane)
++				steady := ratePrevObserved > 0 && absf(observed-ratePrevObserved)/observed < rateAgree
++				wrong := absf(observed-sr)/sr > rateAdoptMin
++
++				if !rateWinDirty && sane && steady && wrong && rateAdoptions < rateAdoptMax {
++					rateAdoptions++
++					hz := int(observed + 0.5)
++					f.log.Warn().Msgf(
++						"[audio] DERIVED true sample rate %d Hz (core declares %.0f, pacer had %.0f, %.2f%% off) "+
++							"— adopting: pacer re-times and the appsrc/resampler re-cap. A declared-vs-delivered "+
++							"error beyond audioPullMax (%.0f%%) cannot be paced away and is heard as crackle.",
++						hz, declared, sr, (observed-sr)/sr*100, audioPullMax*100)
++					// Installing the override changes what AudioSampleRate() returns, so branch (1) picks
++					// it up on the next tick (re-pinning the clock) and room.go's per-batch comparison
++					// re-caps the pipeline via ReconfigureAudio. One write, both consumers.
++					f.nano.SetDerivedAudioSampleRate(hz)
++				}
++				ratePrevObserved = observed
++				rateWinStart = os.Nanotime()
++				rateWinFrames = 0
++				rateWinDirty = false
++			}
++
+ 			// ── Audio silence-fill (2026-07-27) ───────────────────────────────────────────
+ 			// Top the audio clock back up to real time with actual silence when an armed core
+ 			// has simply stopped emitting (see Frontend.AudioSilenceFill for why ScummVM does).
+@@ -1871,3 +1947,12 @@ func (f *Frontend) copyFsMaybe(path string) {
+ 		}
+ 	}
+ }
++
++// absf: |x| for float64. Local rather than importing math for one call, mirroring abs(int) in abr.go.
++// Used by the true-rate derivation in Start to compare a measured rate against the declared one.
++func absf(x float64) float64 {
++	if x < 0 {
++		return -x
++	}
++	return x
++}
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+index 25b61fc..1781709 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
+@@ -259,8 +259,46 @@ func NewNano(localPath string) *Nanoarch {
+ 	return nano
+ }
+ 
+-func (n *Nanoarch) AspectRatio() float32             { return float32(n.sys.av.geometry.aspect_ratio) }
+-func (n *Nanoarch) AudioSampleRate() int             { return int(n.sys.av.timing.sample_rate) }
++// audioRateDerived: the MEASURED true output rate, adopted when a core's DECLARED sample rate is wrong.
++//
++// Some cores announce a rate they do not actually deliver. parallel_n64 on SM64: Last Impact declares
++// 32040 Hz but produces ~519 audio frames per video frame where 32040 @ 60.13 fps implies 533 — a flat
++// 2.6% shortfall. The audio-mastered pacer answers a shortfall by running the core faster, but that pull
++// is bounded to audioPullMax (2%), so a 2.6% error can NEVER be closed: the loop pins at the clamp,
++// overshoots, falls back, and the delivered rate oscillates (measured: audio/s swinging 31230 <-> 32747
++// around a 32040 declaration). That oscillation is a rate error, not jitter — no client buffer depth or
++// Opus frame size can absorb it, which is exactly why none of those changed the audible crackle.
++//
++// Deriving the real rate fixes the cause instead: the pacer times against a denominator that matches
++// reality (no pull needed, so the game runs at its true speed) and — because room.go re-checks
++// AudioSampleRate() per audio batch — the pipeline's appsrc caps + resampler ratio get re-derived for
++// free via ReconfigureAudio. Nan0 is a SINGLETON reused across rooms, so the frontend clears this at the
++// start of every pacing loop; never assume a fresh zero here.
++var audioRateDerived atomic.Int64
++
++// DeclaredAudioSampleRate is what the CORE announced (retro_get_system_av_info / SET_SYSTEM_AV_INFO),
++// ignoring any derived override — for logging the two side by side.
++func (n *Nanoarch) DeclaredAudioSampleRate() int { return int(n.sys.av.timing.sample_rate) }
++
++// SetDerivedAudioSampleRate installs (hz > 0) or clears (hz <= 0) the measured-rate override.
++func (n *Nanoarch) SetDerivedAudioSampleRate(hz int) {
++	if hz <= 0 {
++		audioRateDerived.Store(0)
++		return
++	}
++	audioRateDerived.Store(int64(hz))
++}
++
++func (n *Nanoarch) AspectRatio() float32 { return float32(n.sys.av.geometry.aspect_ratio) }
++
++// AudioSampleRate returns the DERIVED rate when one has been measured, else the core's declaration.
++// Everything downstream (pacer denominator, appsrc caps, resampler ratio) keys off this single value.
++func (n *Nanoarch) AudioSampleRate() int {
++	if d := audioRateDerived.Load(); d > 0 {
++		return int(d)
++	}
++	return int(n.sys.av.timing.sample_rate)
++}
+ func (n *Nanoarch) VideoFramerate() float64          { return float64(n.sys.av.timing.fps) }
+ func (n *Nanoarch) IsPortrait() bool                 { return 90 == n.Rot%180 }
+ func (n *Nanoarch) KbMouseSupport() bool             { return n.meta.KbMouseSupport }

@@ -67,8 +67,15 @@ namespace MovieTheater.Arcade
                 // Two renderers, same as mupen: Vulkan (paraLLEl-RDP, the primary/best) and GL (GLideN64,
                 // fallback) — angrylion is banned. The profile's Options flip gfxplugin/rspplugin + surface;
                 // both share the "n64-parallel_n64" save namespace (same core). See config.worker-gl.yaml.
+                // parallel-rdp-upscaling belongs HERE, not in config.worker-gl.yaml. Config options are
+                // per-CORE, so a config entry ships to EVERY profile — and on the two GL profiles below,
+                // paraLLEl-RDP's supersampling lever does nothing at all. Every Glide64/GLideN64 room was
+                // being handed `parallel-rdp-upscaling=8x` as dead weight, which is exactly the kind of
+                // inert-but-present option that makes a room's real configuration unreadable. Delivered
+                // from the Vulkan profile it ships only where it has an effect.
                 new RenderProfile("parallel_n64", "parallel_n64 core · Vulkan (paraLLEl-RDP)", "parallel_n64", "vulkan", "parallel_n64",
-                    Opt(("parallel-n64-gfxplugin", "parallel"), ("parallel-n64-rspplugin", "parallel")), false),
+                    Opt(("parallel-n64-gfxplugin", "parallel"), ("parallel-n64-rspplugin", "parallel"),
+                        ("parallel-n64-parallel-rdp-upscaling", "4x")), false),
                 // GLideN64 (GL) fallback. The FB options are mixed-case libretro keys and MUST ride this
                 // render-profile path (t=104 room-options), NOT config.yaml — the config loader lowercases
                 // YAML keys and libretro option keys are case-sensitive, so they'd be silently ignored there
@@ -96,8 +103,22 @@ namespace MovieTheater.Arcade
                 // DLL), and we had never once run it. rspplugin=hle to match the era the plugin targets.
                 // If Glide64 still shows black assets, `rice` (Rice Video) is the next closest legacy
                 // plugin in the same core. angrylion stays BANNED (it hard-panics the GL scaffolding).
+                // Ships gfxplugin + rspplugin + the AUDIO SPLIT, and deliberately NO gliden64-* options:
+                // those are GLideN64's and are inert under Glide64 (the parallel_n64_gl profile above
+                // rightly carries them; this one must not).
+                //
+                // send_alist_to_lle_rsp is part of the PROFILE, not a per-game opt-in, because it is a
+                // property of this combination rather than of any one ROM: Glide64 is an HLE graphics
+                // plugin, so the active RSP must be HLE, which would otherwise drag AUDIO onto the HLE
+                // audio microcode — and that microcode renders SM64: Last Impact's custom music with a
+                // constant crackle (proven: BAZR clean on LLE audio, rspplugin=parallel killed the crackle
+                // but broke graphics, and Project64 — correct on this game — ships exactly this split,
+                // m_AudioHle=false + m_GraphicsHle=true). Our patched core routes audio to cxd4 while
+                // graphics stay HLE. Anyone selecting Glide64 wants that pairing; making them find a
+                // separate option to avoid a crackle would be a trap.
                 new RenderProfile("parallel_n64_glide64", "parallel_n64 core · Glide64 (romhack compat)", "parallel_n64", "gl", "parallel_n64",
-                    Opt(("parallel-n64-gfxplugin", "glide64"), ("parallel-n64-rspplugin", "hle")), false),
+                    Opt(("parallel-n64-gfxplugin", "glide64"), ("parallel-n64-rspplugin", "hle"),
+                        ("parallel-n64-send_alist_to_lle_rsp", "enabled")), false),
             },
             ["ps2"] = new[]
             {

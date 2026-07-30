@@ -178,6 +178,19 @@ while ($true) {
             }
         }
     } -ArgumentList $SinglePort | Out-Null
+    # DEBUG AUDIO CAPTURE (opt-in, marker-file gated). Drop a file named `.audiodump` in this worker's
+    # ConfDir and the next spawn writes ~10s of the core's RAW PCM (S16LE stereo, pre-resample/Opus/
+    # WebRTC) to <ConfDir>\audiodump\. Delete the marker to turn it off — no script edit needed, and
+    # nothing is captured unless the marker exists. See nanoarch/audiodump.go for why this exists: the
+    # pacer can prove the audio RATE is correct while saying nothing about whether individual buffers
+    # contain the discontinuities a crackle is made of.
+    $dumpMarker = Join-Path $ConfDir ".audiodump"
+    if (Test-Path $dumpMarker) {
+        $env:CLOUD_GAME_AUDIO_DUMP_DIR = (Join-Path $ConfDir "audiodump")
+        Write-LogLine "AUDIO DUMP ARMED -> $env:CLOUD_GAME_AUDIO_DUMP_DIR (marker $dumpMarker present)"
+    } else {
+        Remove-Item Env:\CLOUD_GAME_AUDIO_DUMP_DIR -ErrorAction SilentlyContinue
+    }
     & cmd.exe /c "`"$WorkerExe`" --w-conf `"$ConfDir`" >> `"$LogFile`" 2>&1"
     $code = $LASTEXITCODE
     Write-LogLine ("glworker EXITED exitcode={0} (0x{1:X8}) - restarting in 4s" -f $code, ($code -band 0xFFFFFFFF))

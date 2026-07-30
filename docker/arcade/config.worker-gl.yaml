@@ -2137,7 +2137,28 @@ encoder:
     # mirrored-relay hop, so it's also the clean A/B control for the WS-A audio-loss hunt.
     opus:
       encoder: opusenc
-      params: "audio-type=generic inband-fec=true packet-loss-percentage=15 frame-size=10 complexity=8 bitrate=96000"
+      # frame-size 10 -> 20 (2026-07-29), chasing CRACKLE on N64 music that a client jitter buffer
+      # CANNOT fix: 80 ms and 400 ms (arcade.audioJitterMs) sounded identical, which rules out drift and
+      # underrun — a jitter buffer only smooths samples that ARRIVE. The audio path has no slack by
+      # design (`queue max-size-buffers=1` into `appsink max-buffers=1 drop=true`, gstreamer.go
+      # buildAudioPipeline), so a buffer the Go consumer fails to pull inside one frame period is
+      # DROPPED, not delayed. 20 ms frames double that deadline and halve the packet rate, and 20 ms is
+      # the usual Opus frame for music besides. Still >=10 ms, so in-band FEC/LBRR stays real.
+      # Cost: ~10 ms more audio latency for every system (the rhythm-game concern in the psp audio
+      # note applies). ROLLBACK: frame-size=10.
+      # ⚠ If this does not fix it, the next step is a FORK patch giving the audio queue real depth
+      # (audio drops are inaudible in the metrics we have — pace-diag's audio/s counts what the CORE
+      # produced, not what survived the pipeline), NOT more client buffering.
+      # ⚠ REVERTED 2026-07-30. A diagnostic briefly set packet-loss-percentage=0 / inband-fec=false /
+      # complexity=10 / bitrate=128000 while hunting the SM64 Last Impact crackle. It made NO difference,
+      # and the real cause turned out to be upstream of the encoder entirely (the HLE audio microcode —
+      # see the parallel_n64 block's send_alist_to_lle_rsp note). Restored, because disabling loss
+      # resilience is a genuine regression for anyone on a lossy link and there is now no reason to pay it.
+      # frame-size stays 20 ms: also not the crackle, but 20 ms is the conventional Opus frame for music,
+      # halves packet rate, keeps LBRR valid (needs >=10 ms), and costs ~10 ms of latency nobody reported.
+      # NOT the place to chase audio faults — this whole line was eliminated by a pre-encode PCM capture
+      # (nanoarch/audiodump.go) showing the samples were already correct before Opus ever saw them.
+      params: "audio-type=generic inband-fec=true packet-loss-percentage=15 frame-size=20 complexity=8 bitrate=96000"
   audio:
     codec: opus
 

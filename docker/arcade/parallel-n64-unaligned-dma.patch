@@ -1,3 +1,124 @@
+diff --git a/libretro/libretro.c b/libretro/libretro.c
+index e0c9dec..1b6d7cc 100644
+--- a/libretro/libretro.c
++++ b/libretro/libretro.c
+@@ -225,6 +225,10 @@ float    screen_aspect_ratio        = 4.0 / 3.0;
+ uint32_t screen_pitch               = 0;
+ uint32_t screen_aspectmodehint;
+ uint32_t send_allist_to_hle_rsp     = 0;
++/* MT PATCH: the mirror of send_allist_to_hle_rsp — route AUDIO (type 2) tasks to the ACCURATE (LLE) RSP
++ * while GRAPHICS stay on HLE. The only way to pair an HLE graphics plugin (glide64, which romhacks need)
++ * with accurate audio microcode; consumed by plugin.c plugin_start_rsp. Off = upstream behaviour. */
++uint32_t send_alist_to_lle_rsp      = 0;
+ /* Set from the ROM header for titles whose audio microcode use cannot be
+  * HLE'd faithfully; consulted by plugin_rsp_init (plugin.c). */
+ unsigned int FAKE_SDL_TICKS         = 0;
+@@ -1526,6 +1530,18 @@ void update_variables(bool startup)
+    else
+       send_allist_to_hle_rsp = false;
+ 
++   /* MT PATCH: mirror option — audio on the ACCURATE RSP while graphics stay HLE. See plugin.c for the
++    * evidence trail; short version: the HLE audio microcode crackles on SM64: Last Impact's custom music,
++    * an HLE graphics plugin is required for its rendering, and Project64 (which sounds right) ships
++    * exactly this split. Read every update_variables, so it can be flipped per-room. */
++   var.key   = "parallel-n64-send_alist_to_lle_rsp";
++   var.value = NULL;
++
++   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
++      send_alist_to_lle_rsp = !strcmp(var.value, "enabled") ? 1 : 0;
++   else
++      send_alist_to_lle_rsp = 0;
++
+    var.key   = "parallel-n64-screensize";
+    var.value = NULL;
+ 
+@@ -2057,6 +2073,19 @@ void update_variables(bool startup)
+       AllowUnalignedDMA = !strcmp(var.value, "False") ? 0 : 1;
+    }
+ 
++   /* MT PATCH: Count Per Op (COP0 counter factor). The global below has always existed and the core
++    * has always consumed it (main.c: count_per_op = CountPerOp, falling back to the per-ROM database
++    * when <= 0) — nothing ever assigned it, so this core silently had no counter-factor control.
++    * 0 preserves the old behaviour exactly (defer to the ROM database). Project64 pins Counter
++    * Factor=1 for the SM64 romhacks that need it; without this option, honouring that on OUR stack
++    * meant switching to mupen64plus_next and giving up Glide64, which only this core has. */
++   var.key = CORE_NAME "-countperop";
++   var.value = NULL;
++   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
++   {
++      CountPerOp = (uint32_t)atoi(var.value);
++   }
++
+    var.key = CORE_NAME "-allow-large-roms";
+    var.value = NULL;
+    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+diff --git a/libretro/libretro_core_options.h b/libretro/libretro_core_options.h
+index 686a930..2c9d4a5 100644
+--- a/libretro/libretro_core_options.h
++++ b/libretro/libretro_core_options.h
+@@ -697,6 +697,27 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         },
+         "disabled"
+     },
++    /* MT PATCH: the mirror of "Audio Processing (HLE RSP)" above. That one keeps graphics accurate and
++     * makes audio fast; this one keeps graphics FAST (HLE, which is what an HLE video plugin such as
++     * glide64 requires) and makes AUDIO accurate. Needed because the HLE audio microcode renders some
++     * romhacks' custom music with a constant crackle — SM64: Last Impact is the proven case, and
++     * Project64, which sounds correct on it, ships exactly this split (AudioHle off, GraphicsHle on).
++     * Costs a little CPU: the accurate RSP is initialised alongside the HLE one and runs every audio
++     * task. Off by default = upstream behaviour. */
++    {
++        CORE_NAME "-send_alist_to_lle_rsp",
++        "Audio Processing (Accurate RSP)",
++        NULL,
++        "Run N64 audio on the accurate (LLE) RSP while graphics stay on the fast HLE RSP. Fixes romhacks whose custom music crackles or plays wrong under HLE audio, while keeping an HLE graphics plugin (GLideN64/Glide64/rice) working. Costs some CPU. Disable if audio is already correct.",
++        NULL,
++        NULL,
++        {
++            { "disabled", "Fast (HLE audio)" },
++            { "enabled", "Accurate (LLE audio)" },
++            { NULL, NULL },
++        },
++        "disabled"
++    },
+     {
+         CORE_NAME "-gfxplugin",
+         "GFX Plugin",
+@@ -1107,6 +1128,34 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         },
+         "True"
+     },
++    /* MT PATCH: expose Count Per Op. The global `CountPerOp` already exists in libretro.c and the core
++     * already consumes it (main.c: count_per_op = CountPerOp; falling back to ROM_SETTINGS.countperop
++     * when <= 0) — but NOTHING ever set it, so this core had no counter-factor control at all. That is
++     * why romhacks needing a non-default counter factor could only be run on mupen64plus_next, which
++     * forced a choice between the right CPU timing (mupen) and the right graphics plugin (Glide64, which
++     * only this core has). Same dead-global shape as allow-unaligned-dma above.
++     * Project64's per-game database asks for exactly this pair on SM64: Last Impact
++     * ([DC493C8D-E033E6F2-C:45] Counter Factor=1 / Unaligned DMA=1); the COP0 counter sets interrupt
++     * cadence, so a wrong factor desyncs a game's audio thread from its mixer and drags speed.
++     * 0 keeps the previous behaviour exactly (defer to the core's per-ROM database). */
++    {
++        CORE_NAME "-countperop",
++        "Count Per Op (CPU counter factor)",
++        NULL,
++        "Cycles counted per emulated instruction, i.e. the COP0 counter factor that sets interrupt cadence. 0 uses the core's per-ROM database. Some romhacks need 1 (Project64 pins Counter Factor=1 for them); a wrong value can desync a game's audio and change its speed.",
++        NULL,
++        NULL,
++        {
++            {"0", "Auto (ROM database)"},
++            {"1", "1"},
++            {"2", "2"},
++            {"3", "3"},
++            {"4", "4"},
++            {"5", "5"},
++            { NULL, NULL }
++        },
++        "0"
++    },
+     {
+         CORE_NAME "-allow-large-roms",
+         "Allow Large Roms",
 diff --git a/mupen64plus-core/src/device/rcp/pi/pi_controller.c b/mupen64plus-core/src/device/rcp/pi/pi_controller.c
 index aa4efe7..bd58034 100644
 --- a/mupen64plus-core/src/device/rcp/pi/pi_controller.c
@@ -66,3 +187,56 @@ index aa4efe7..bd58034 100644
  
      /* schedule end of dma interrupt event */
      cp0_update_count(pi->mi->r4300);
+diff --git a/mupen64plus-core/src/plugin/plugin.c b/mupen64plus-core/src/plugin/plugin.c
+index a835782..4513158 100644
+--- a/mupen64plus-core/src/plugin/plugin.c
++++ b/mupen64plus-core/src/plugin/plugin.c
+@@ -123,6 +123,10 @@ RSP_INFO rsp_info;
+ 
+ /* Set from the libretro "Audio Processing (HLE RSP)" core option. */
+ extern uint32_t send_allist_to_hle_rsp;
++/* MT PATCH: set from the libretro "Audio Processing (LLE RSP)" core option — the mirror of the above.
++ * Routes audio (type 2) tasks to the ACCURATE RSP while graphics stay on HLE, which is the only way to
++ * pair an HLE graphics plugin (glide64, needed for romhack rendering) with accurate audio microcode. */
++extern uint32_t send_alist_to_lle_rsp;
+ 
+ 
+ 
+@@ -307,6 +311,37 @@ static m64p_error plugin_start_rsp(void)
+         rsp_hle.initiateRSP(rsp_info, NULL);
+         rsp_audio = rsp_hle;
+     }
++    /* MT PATCH: the MIRROR of the branch above — graphics HLE, audio LLE.
++     *
++     * WHY: an HLE GRAPHICS plugin (glide64/GLideN64/rice) needs the RSP to hand it display lists, which
++     * forces the active RSP to HLE — and that drags AUDIO onto the HLE audio microcode too. For most
++     * games that is fine; for SM64: Last Impact the HLE audio microcode renders its custom music with a
++     * constant crackle. Proven three ways: BAZR (another SM64 hack) is clean on the LLE RSP; switching
++     * this game to rspplugin=parallel removed the crackle entirely (and broke graphics, because the LLE
++     * RSP consumes the graphics tasks); and Project64 — which sounds correct — ships exactly this split,
++     * m_AudioHle(false) + m_GraphicsHle(true) in its own RSP core.
++     *
++     * A raw pre-encode PCM capture ruled out the whole delivery chain first (0 clicks, 0 clipping, 0
++     * held-sample runs), as did client jitter buffer 80/400 ms, Opus frame-size 10/20, loss resilience
++     * and bitrate, codec, and a pacer measured flat — so the microcode was the only remaining producer.
++     *
++     * Everything needed was already here: rsp_core.c dispatches task type 2 to rsp_audio unconditionally,
++     * whichever RSP is active. So we only re-point rsp_audio. paraLLEl-RSP is preferred (a recompiler, it
++     * runs the real audio microcode fast); cxd4 is the fallback when parallel is not compiled in.
++     * NOTE the comment above about LLE plugins "not emulating audio" is upstream's and is WRONG for
++     * paraLLEl-RSP — it executes whatever microcode the game uploads, audio included. Measured, not assumed. */
++    else if (send_alist_to_lle_rsp && current_rsp_type == RSP_PLUGIN_HLE)
++    {
++        /* cxd4, NOT paraLLEl-RSP, and the choice is load-bearing. paraLLEl-RSP is a recompiler with its
++         * own threading and lifecycle; initialised as a SECONDARY alongside an active HLE RSP it hung the
++         * game a few frames into boot (measured 2026-07-30 — the room started, logged no error, and never
++         * produced a pace-diag window). cxd4 is a plain self-contained software interpreter, which is the
++         * same shape as the lightweight secondary upstream uses in the mirror branch above (rsp_hle).
++         * It costs more CPU than paraLLEl-RSP would, but it is only running audio lists. */
++        rsp_cxd4.initiateRSP(rsp_info, NULL);
++        rsp_audio = rsp_cxd4;
++        DebugMessage(M64MSG_INFO, "audio RSP: cxd4 (LLE) while graphics stay on HLE [send_alist_to_lle_rsp]");
++    }
+     else
+     {
+         rsp_audio = rsp;

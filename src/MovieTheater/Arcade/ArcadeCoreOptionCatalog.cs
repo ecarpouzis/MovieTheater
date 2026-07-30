@@ -224,6 +224,13 @@ namespace MovieTheater.Arcade
                     new[] { V("True","Allow unaligned (romhack compatible)"), V("False","Force alignment (hardware accurate)") },
                     "True",
                     "Honours odd PI cart addresses instead of force-aligning them. Required by some romhacks; hardware-accurate alignment breaks them."),
+                // MT-PATCHED OPTION (our build only). Normally set by the Glide64 render profile rather
+                // than by hand — it is listed here so the ⚙ panel explains it instead of showing an
+                // unexplained key, and so a player can turn it off if a game sounds fine without the cost.
+                new CoreOption("parallel-n64-send_alist_to_lle_rsp", "Accurate audio with an HLE renderer", Category.System,
+                    new[] { V("enabled","Accurate (LLE audio RSP)"), V("disabled","Fast (HLE audio)") },
+                    "disabled",
+                    "Runs N64 audio on the accurate RSP while graphics stay on the fast HLE one. Fixes romhack music that crackles under HLE audio (SM64: Last Impact) while keeping an OpenGL renderer working. Costs some CPU; no effect on the Vulkan renderer, which is already accurate."),
             },
 
             // ── ScummVM. Point-and-click games driven by a GAMEPAD, so the only settings worth a
