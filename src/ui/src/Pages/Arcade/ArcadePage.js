@@ -26,17 +26,22 @@ const SENTINEL_STYLE = { height: 1 };
 // choice). Lower bitrate = smaller video bursts = smoother audio + less upstream for remote players.
 const QUALITY_KEY = "arcade.streamQuality";
 const BITRATE_PRESETS = [
-  // 0 = Auto: the SERVER picks from the game's system (CloudRetroHost.DefaultVideoBitrateKbps). Encoded
-  // resolution varies ~4.6x across systems — a 912×672 arcade board and a 1280×1056 GameCube frame both
-  // got a flat 5 Mbps, which starves the big ones (~0.06 bits/pixel/frame). Auto is a CEILING between
-  // 5 and 14 Mbps; the worker's ABR (patch 0021) backs off from it within a second when a player's link
-  // can't carry it, so picking a number here is now mostly about capping your own upstream.
-  { label: "Auto · match the system", value: 0 },
-  // Manual override for a mostly-LAN session on a fat pipe. ABR still walks it back for remote players.
-  { label: "LAN · 16 Mbps", value: 16000 },
+  // 0 = Auto: the WORKER now DERIVES the ceiling from the frame it actually encodes — encoded pixels ×
+  // fps × a bits-per-pixel target (abr.go autoCeilingKbps), clamped to 5–25 Mbps. It is no longer a
+  // per-system constant: that table could not see the core's real viewport, its scale, a core changing
+  // resolution mid-game, or a render profile moving the frame. Measured live 2026-07-30: genesis 19328,
+  // snes 15508, n64 13271, gc 14583, psp 12584. Auto is usually the RIGHT answer now — the manual
+  // presets below are for capping your own upstream, not for beating Auto.
+  { label: "Auto · match the frame", value: 0 },
+  // 25 Mbps matches abrAutoMaxKbps, so a manual pick can reach what Auto can. Raised from 16 (2026-07-30)
+  // because a 960×672 Genesis frame derives 19328 — the old top preset sat BELOW Auto for 2D systems.
+  // ⚠ ArcadeController clamps this server-side; that clamp had to move to 25000 with it.
+  { label: "LAN · 25 Mbps", value: 25000 },
+  // Kept as the old top preset for anyone who had chosen it deliberately.
+  { label: "Very high · 16 Mbps", value: 16000 },
   // 10 Mbps, best for hi-res 3D cores (GameCube 1280×1056, PS2 upscaled) on a fat pipe. At
   // 4 remote players that's ~40 Mbps upstream, so it's really a post-FiOS / mostly-LAN setting; on
-  // cable uplinks prefer 5 or lower. Overkill (but harmless) for retro/2D. Worker clamps 500–20000.
+  // cable uplinks prefer 5 or lower. Overkill (but harmless) for retro/2D. Server clamps 500–25000.
   { label: "High · 10 Mbps", value: 10000 },
   { label: "Sharp · 8 Mbps", value: 8000 },
   { label: "Balanced · 5 Mbps", value: 5000 },

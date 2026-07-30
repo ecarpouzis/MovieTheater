@@ -1559,8 +1559,11 @@ namespace MovieTheater.Controllers
             //
             // CAPTURE still uses the table. That lane runs a SEPARATE worker binary which has no
             // autoCeilingKbps, so omitting the value there would drop it to its config default.
+            // ⚠ Upper clamp is 25000 to match the lobby's top preset AND the worker's abrAutoMaxKbps. It
+            // was 20000, which would have silently turned a "LAN · 25 Mbps" pick into 20 Mbps — the kind
+            // of mismatch that reads as "the setting does nothing".
             var vbr = request.VideoBitrateKbps > 0
-                ? Math.Clamp(request.VideoBitrateKbps, 500, 20000)
+                ? Math.Clamp(request.VideoBitrateKbps, 500, 25000)
                 : (isCapture ? CloudRetroHost.DefaultVideoBitrateKbps(roomSystem) : 0);
             if (vbr > 0)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + vbr };
