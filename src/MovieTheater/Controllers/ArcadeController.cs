@@ -1857,6 +1857,47 @@ namespace MovieTheater.Controllers
             return NoContent();
         }
 
+        /// <summary>Ziggy's arcade watchdog (check H) pushes the patched-artifact verifier's report here
+        /// every 30 minutes so a REVERTED patched binary raises a popup for admins instead of a line in a
+        /// log file. See <see cref="MovieTheater.Arcade.PatchedArtifactAlerts"/> for why this signal exists
+        /// and why it is in-memory. Read back by <c>GET /API/Admin/PatchedArtifacts</c>.
+        /// Accepts and stores even an OK report — the heartbeat is half the signal, because a watchdog
+        /// that has gone silent must not look like a healthy one.</summary>
+        // [AllowAnonymous] like every other Internal callback: the caller is Ziggy's watchdog, not a
+        // logged-in browser, so the class-wide StreamingUser policy would reject it before the secret
+        // check below ever ran (verified live — the correct secret 401'd without this).
+        [AllowAnonymous]
+        [HttpPost("/API/Arcade/Internal/PatchedArtifactAlert")]
+        public IActionResult PatchedArtifactAlert([FromBody] PatchedArtifactAlertRequest req)
+        {
+            if (!IsInternalCallerAuthorized()) return Unauthorized();
+            if (req == null) return BadRequest();
+
+            MovieTheater.Arcade.PatchedArtifactAlerts.Record(req.Ok, req.Findings?.Count ?? 0, req.RawJson);
+            return NoContent();
+        }
+
+        public sealed class PatchedArtifactAlertRequest
+        {
+            /// <summary>True when every patched/pinned binary matched the manifest.</summary>
+            public bool Ok { get; set; }
+            /// <summary>One entry per problem: MISSING / DRIFT / DISAGREE, with the artifact id and path.</summary>
+            public List<PatchedArtifactFinding>? Findings { get; set; }
+            /// <summary>The verifier's own JSON, passed through verbatim for display.</summary>
+            public string? RawJson { get; set; }
+        }
+
+        public sealed class PatchedArtifactFinding
+        {
+            public string? Id { get; set; }
+            public string? Status { get; set; }
+            public string? Path { get; set; }
+            public string? Detail { get; set; }
+            /// <summary>True when upstream ships a file of this exact name, so a MISSING file gets
+            /// SILENTLY replaced with stock by the next worker start — the worst case.</summary>
+            public bool StockName { get; set; }
+        }
+
         // Shared arcade secret gate for the server-to-server callbacks (same header SaveHarvested checks).
         private bool IsInternalCallerAuthorized()
         {

@@ -168,15 +168,25 @@ namespace MovieTheater.Arcade
             // these — so every preset key/token for this core MUST appear here).
             ["parallel_n64"] = new()
             {
+                // Full token list verified against libretro_core_options.h 2026-07-29 (10 values; the four
+                // above 1920x1440 were absent here). This is the SHARPNESS lever on the GL plugins: they do
+                // not supersample, so at 640x480 the pipeline's scale:2 is a pure 2x BLUR up to the
+                // 1280x960 delivery. Raising this renders at delivery size instead of upscaling a small
+                // frame. Vulkan/paraLLEl-RDP ignores it and uses parallel-rdp-upscaling instead.
                 new CoreOption("parallel-n64-screensize", "Internal resolution", Category.Video,
                     new[] { V("320x240","1x (native, fastest)"), V("640x480","2x"), V("960x720","3x"),
-                            V("1280x960","4x"), V("1440x1080","4.5x"), V("1920x1440","6x (sharpest)") },
+                            V("1280x960","4x"), V("1440x1080","4.5x"), V("1600x1200","5x"),
+                            V("1920x1440","6x"), V("2240x1680","7x"), V("2880x2160","9x"),
+                            V("5760x4320","18x (absurd, will not stream)") },
                     "640x480",
                     "How large the game renders internally before the stream scales it. Higher is sharper but heavier."),
+                // dynamic_recompiler_ari64 added 2026-07-29 — a 4th token this core really exposes
+                // (verified in libretro_core_options.h) that was missing here, so it was unreachable.
                 new CoreOption("parallel-n64-cpucore", "CPU core", Category.Performance,
                     new[] { V("pure_interpreter","Pure interpreter (most accurate)"),
                             V("cached_interpreter","Cached interpreter (balanced)"),
-                            V("dynamic_recompiler","Dynamic recompiler (fastest)") },
+                            V("dynamic_recompiler","Dynamic recompiler (fastest)"),
+                            V("dynamic_recompiler_ari64","Dynamic recompiler — ari64 (alternate JIT)") },
                     "cached_interpreter",
                     "Accuracy vs speed of the emulated CPU. Cached interpreter is the safe default for romhacks."),
                 new CoreOption("parallel-n64-filtering", "Texture filtering", Category.Video,
@@ -190,6 +200,30 @@ namespace MovieTheater.Arcade
                     new[] { V("1x","Off (native)"), V("2x","2x"), V("4x","4x"), V("8x","8x (sharpest)") },
                     "8x",
                     "Renders at a multiple of native then downsamples — anti-aliasing on the paraLLEl-RDP (Vulkan) renderer."),
+                // ── ADDED 2026-07-29. Tokens + DEFAULTS read from the CORE SOURCE
+                // (parallel-n64 libretro/libretro_core_options.h), not guessed and not scraped from the
+                // DLL string table — a string-table read of screensize above gave a WRONG list (it
+                // surfaced a legacy 320x200/400x256/800x600 set and appeared to cap at 960x720, when the
+                // real list runs to 5760x4320). Read the source, or the option silently does nothing.
+                //
+                // THE SPEED/ACCURACY DIAL FOR THE GL PLUGINS, and it defaults to the most expensive
+                // setting. Nothing in our stack ever set it, so every GLideN64/Glide64/rice room has been
+                // paying veryhigh. Suspected cause of the heavy frame-rate collapse measured on the
+                // Glide64 path (video/s falling to 9.6 with ticks/s pinned at 60, i.e. the emulator idle
+                // while frames stop arriving). Inert on the paraLLEl-RDP (Vulkan) profile.
+                new CoreOption("parallel-n64-gfxplugin-accuracy", "Graphics accuracy (GL plugins)", Category.Performance,
+                    new[] { V("low","Low (fastest)"), V("medium","Medium"), V("high","High"),
+                            V("veryhigh","Very high (core default, slowest)") },
+                    "veryhigh",
+                    "Accuracy vs speed of the OpenGL graphics plugins (GLideN64 / Glide64 / rice). Lower it if the game chugs; it does nothing on the Vulkan renderer."),
+                // The romhack compatibility switch. Real on OUR build only: upstream declares this option
+                // and assigns it, but NOTHING READS IT (dead code) — our patched core wires it into
+                // pi_controller.c. SM64: Last Impact needs it or the emulated CPU dies ~11 s into boot.
+                // Core default is True (permissive), matching upstream's own advertised default.
+                new CoreOption("parallel-n64-allow-unaligned-dma", "Allow unaligned DMA (romhacks)", Category.System,
+                    new[] { V("True","Allow unaligned (romhack compatible)"), V("False","Force alignment (hardware accurate)") },
+                    "True",
+                    "Honours odd PI cart addresses instead of force-aligning them. Required by some romhacks; hardware-accurate alignment breaks them."),
             },
 
             // ── ScummVM. Point-and-click games driven by a GAMEPAD, so the only settings worth a

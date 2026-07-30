@@ -1288,10 +1288,24 @@ emulator:
         # parallel-n64-allow-unaligned-dma below). mupen64plus_next lacks the option entirely, so the
         # earlier "both are mupen forks, both share the fault, Last Impact is unsupportable" verdict
         # was wrong: the forks differ in the option, not the CPU. Do not re-derive the old conclusion.
-        # RENDERER: GLideN64 on the GL surface — angrylion is BANNED (it hard-panics CloudRetro's GL
-        # scaffolding on isGlAllowed cores, arcade hard rule), and the Vulkan paraLLEl-RDP path is
-        # mupen's job, not this core's. Same GL Flip contract as the other GL 3D cores (isGlAllowed +
-        # coreAspectRatio, or the bottom-left-origin frame renders upside down — the n64 lesson).
+        # RENDERERS (updated 2026-07-29 — this core now has THREE, not one):
+        #   parallel  = paraLLEl-RDP (Vulkan LLE)  -> render profile "parallel_n64"
+        #   gliden64  = GLideN64 (GL)              -> render profile "parallel_n64_gl"
+        #   glide64   = Glide64 (GL)               -> render profile "parallel_n64_glide64"  [ROMHACKS]
+        # Glide64 is why this core matters now: it is the libretro-era descendant of Project64's Jabo's
+        # Direct3D, and Jabo's is the ONLY plugin that renders SM64: Last Impact's custom assets and music
+        # correctly (verified live in P64 3.0.1 — GLideN64 fails THERE too, so this is a plugin-LINEAGE
+        # requirement, not an accuracy one). Jabo's is closed-source + P64-only and cannot be ported;
+        # `rice` is the remaining legacy fallback in this core. angrylion stays BANNED (it hard-panics
+        # CloudRetro's GL scaffolding on isGlAllowed cores, arcade hard rule) — note the CORE's own
+        # gfxplugin default IS angrylion, so this block must always set gfxplugin explicitly.
+        # ⚠ The GL plugins do NOT supersample, so `scale: 2` below is a pure 2x BLUR up to the 1280x960
+        # delivery on those paths (it is a supersample only on the Vulkan path, where parallel-rdp-upscaling
+        # renders large first). Sharpness on GL comes from parallel-n64-screensize instead (valid up to
+        # 5760x4320 — verified in the core source; a DLL string-table read of that list is WRONG/legacy).
+        # ⚠ parallel-n64-gfxplugin-accuracy defaults to "veryhigh" and this block has never set it, so
+        # every GL room pays the most expensive setting. Same GL Flip contract as the other GL 3D cores
+        # (isGlAllowed + coreAspectRatio, or the bottom-left-origin frame renders upside down).
         # ⚠ SAVE ISOLATION: the SITE keys this core's saves under "n64-parallel_n64" (renderProfile.CoreKey),
         # distinct from mupen's "n64" — a save-state is core-specific and cross-feeding crash-loops the room.
         parallel_n64:
@@ -1319,6 +1333,23 @@ emulator:
           coreAspectRatio: true
           usesLibCo: true
           vfr: false
+          # audioMaster (patch 0043) — ADDED 2026-07-29 for the SCRATCHY AUDIO on this core.
+          # This core's declared A/V contract is off-nominal in BOTH axes where mupen's is clean:
+          #   parallel_n64 : [60.13fps]  audio [32040Hz]      <- 532.9 samples/frame implied
+          #   mupen64plus  : [60fps]     audio [44100Hz]      <- clean, and mupen sounds clean
+          # 60.13 Hz is the N64's REAL NTSC refresh (~60.0988), so the core is being honest; the problem
+          # is that `vfr: false` paces on a fixed 60 Hz cadence, so the pacer's fps floor outruns the
+          # slightly-slower audio clock and the core under-feeds the Opus encoder every second, forever.
+          # The client's jitter buffer drains and you hear crackle - the SAME mechanism documented at
+          # length on the psp block (PPSSPP declares 44100 and delivers ~43850). audioMaster lets the
+          # audio clock pull the loop slightly above the fps floor (bounded 2%) so the core produces
+          # exactly what the encoder consumes.
+          # Why not the alternatives: `vfr: true` is what made Sonic Adventure run double-speed on the
+          # psp path (and both N64 blocks pin vfr:false deliberately); `audioSilenceFill` is for a core
+          # that stops calling the audio callback entirely while quiet (ScummVM) and its own note warns
+          # explicitly against using audioMaster for THAT - the two fix opposite faults, do not swap them.
+          # NOT set on the mupen n64 block: it declares a clean 60/44100 and has no drift to correct.
+          audioMaster: true
           # 640x480 core base (2x native) → the pipeline scale:2 delivers 1280x960, matching mupen's N64;
           # parallel-rdp-upscaling supersamples ON TOP of that (deeper SSAA, delivery size unchanged).
           scale: 2

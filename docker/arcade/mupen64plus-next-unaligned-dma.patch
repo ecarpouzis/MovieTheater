@@ -1,0 +1,136 @@
+diff --git a/libretro/libretro.c b/libretro/libretro.c
+index 7665666..5ef8309 100644
+--- a/libretro/libretro.c
++++ b/libretro/libretro.c
+@@ -18,6 +18,12 @@
+  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.          *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+ 
++/* MT BUILD FIX (not part of the unaligned-DMA feature): the netplay path below calls rand_s()
++ * under #ifdef __MINGW32__, but MinGW-w64 only DECLARES rand_s when _CRT_RAND_S is defined before
++ * <stdlib.h>. Upstream builds on an older GCC where the resulting implicit declaration was just a
++ * warning; GCC 14+ makes it a hard error. Must precede the stdlib.h include below. */
++#define _CRT_RAND_S
++
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -219,6 +225,9 @@ uint32_t CountPerOpDenomPot = 0;
+ uint32_t CountPerScanlineOverride = 0;
+ uint32_t ForceDisableExtraMem = 0;
+ uint32_t IgnoreTLBExceptions = 0;
++/* MT PATCH: honour odd (unaligned) PI cart addresses instead of force-aligning them.
++ * Read by mupen64plus-core/src/device/rcp/pi/pi_controller.c. Default 0 = stock behaviour. */
++uint32_t AllowUnalignedDMA = 0;
+ 
+ extern struct device g_dev;
+ extern unsigned int r4300_emumode;
+@@ -1472,6 +1481,17 @@ static void update_variables(bool startup)
+           CountPerOpDenomPot = atoi(var.value);
+        }
+ 
++       /* MT PATCH: unaligned PI DMA. Some romhacks (SM64: Last Impact) program an ODD
++        * PI_CART_ADDR_REG; stock mupen clears bit 0, so the transfer lands one byte off and the
++        * CPU executes garbage seconds later (`reserved opcode` -> `error in ERET`). Project64
++        * gates the same bit behind its per-game "Unaligned DMA" setting; this is that switch. */
++       var.key = CORE_NAME "-AllowUnalignedDMA";
++       var.value = NULL;
++       if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
++       {
++          AllowUnalignedDMA = !strcmp(var.value, "True") ? 1 : 0;
++       }
++
+        if(EnableFullspeed)
+        {
+           CountPerOp = 1; // Force CountPerOp == 1
+diff --git a/libretro/libretro_core_options.h b/libretro/libretro_core_options.h
+index fb39aa9..24be3bd 100644
+--- a/libretro/libretro_core_options.h
++++ b/libretro/libretro_core_options.h
+@@ -1488,6 +1488,20 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         },
+         "False"
+     },
++    {
++        CORE_NAME "-AllowUnalignedDMA",
++        "Allow Unaligned DMA",
++        NULL,
++        "Honour odd PI cart addresses instead of force-aligning them to even. Required by some romhacks (e.g. SM64: Last Impact), which otherwise crash the emulated CPU a few seconds into boot. Accurate hardware alignment is the default; only enable per-game.",
++        NULL,
++        NULL,
++        {
++            {"False", NULL},
++            {"True", NULL},
++            { NULL, NULL },
++        },
++        "False"
++    },
+     {
+         CORE_NAME "-CountPerOp",
+         "Count Per Op",
+diff --git a/mupen64plus-core/src/device/rcp/pi/pi_controller.c b/mupen64plus-core/src/device/rcp/pi/pi_controller.c
+index 0fc36bf..adc895a 100644
+--- a/mupen64plus-core/src/device/rcp/pi/pi_controller.c
++++ b/mupen64plus-core/src/device/rcp/pi/pi_controller.c
+@@ -38,6 +38,14 @@
+ #define __STDC_FORMAT_MACROS
+ #include <inttypes.h>
+ 
++/* MT PATCH: set from the libretro core option "-AllowUnalignedDMA" (libretro/libretro.c).
++ * 0 (default) = stock: bit 0 of the PI cart address is cleared, matching real-hardware
++ * alignment. 1 = keep odd cart addresses, which some romhacks program deliberately.
++ * Mirrors Project64's per-game "Unaligned DMA" setting, which masks the same single bit
++ * (Source/Project64-core/N64System/MemoryHandler/PeripheralInterfaceHandler.cpp). */
++extern uint32_t AllowUnalignedDMA;
++#define PI_CART_ADDR_ALIGN_MASK (AllowUnalignedDMA ? ~UINT32_C(0) : ~UINT32_C(1))
++
+ int validate_pi_request(struct pi_controller* pi)
+ {
+     if (pi->regs[PI_STATUS_REG] & (PI_STATUS_DMA_BUSY | PI_STATUS_IO_BUSY)) {
+@@ -53,7 +61,7 @@ static void dma_pi_read(struct pi_controller* pi)
+     if (!validate_pi_request(pi))
+         return;
+ 
+-    uint32_t cart_addr = pi->regs[PI_CART_ADDR_REG] & ~UINT32_C(1);
++    uint32_t cart_addr = pi->regs[PI_CART_ADDR_REG] & PI_CART_ADDR_ALIGN_MASK;
+     uint32_t dram_addr = pi->regs[PI_DRAM_ADDR_REG] & 0xfffffe;
+     uint32_t length = (pi->regs[PI_RD_LEN_REG] & UINT32_C(0x00ffffff)) + 1;
+     const uint8_t* dram = (uint8_t*)pi->ri->rdram->dram;
+@@ -79,7 +87,14 @@ static void dma_pi_read(struct pi_controller* pi)
+     pi->regs[PI_STATUS_REG] |= PI_STATUS_DMA_BUSY;
+     /* Update PI_DRAM_ADDR_REG and PI_CART_ADDR_REG */
+     pi->regs[PI_DRAM_ADDR_REG] = (pi->regs[PI_DRAM_ADDR_REG] + length + 7) & ~7;
+-    pi->regs[PI_CART_ADDR_REG] = (pi->regs[PI_CART_ADDR_REG] + length + 1) & ~1;
++    /* MT PATCH: the stock writeback ROUNDS THE END ADDRESS UP TO EVEN ("+ 1) & ~1"), which silently
++     * re-aligns the register after every transfer. Honouring the odd address at DMA time but then
++     * re-aligning here leaves CHAINED transfers off by one byte: the first DMA lands correctly (the
++     * game boots) and later ones are shifted - observed as untextured/black models and wrong music.
++     * When unaligned DMA is allowed, advance by exactly the bytes consumed. */
++    pi->regs[PI_CART_ADDR_REG] = AllowUnalignedDMA
++        ? (pi->regs[PI_CART_ADDR_REG] + length)
++        : ((pi->regs[PI_CART_ADDR_REG] + length + 1) & ~1);
+ 
+     /* schedule end of dma interrupt event */
+     cp0_update_count(pi->mi->r4300);
+@@ -91,7 +106,7 @@ static void dma_pi_write(struct pi_controller* pi)
+     if (!validate_pi_request(pi))
+         return;
+ 
+-    uint32_t cart_addr = pi->regs[PI_CART_ADDR_REG] & ~UINT32_C(1);
++    uint32_t cart_addr = pi->regs[PI_CART_ADDR_REG] & PI_CART_ADDR_ALIGN_MASK;
+     uint32_t dram_addr = pi->regs[PI_DRAM_ADDR_REG] & 0xfffffe;
+     uint32_t length = (pi->regs[PI_WR_LEN_REG] & UINT32_C(0x00ffffff)) + 1;
+     uint8_t* dram = (uint8_t*)pi->ri->rdram->dram;
+@@ -119,7 +134,11 @@ static void dma_pi_write(struct pi_controller* pi)
+     pi->regs[PI_STATUS_REG] |= PI_STATUS_DMA_BUSY;
+     /* Update PI_DRAM_ADDR_REG and PI_CART_ADDR_REG */
+     pi->regs[PI_DRAM_ADDR_REG] = (pi->regs[PI_DRAM_ADDR_REG] + length + 7) & ~7;
+-    pi->regs[PI_CART_ADDR_REG] = (pi->regs[PI_CART_ADDR_REG] + length + 1) & ~1;
++    /* MT PATCH: see the matching note in dma_pi_read - do not re-align the end address when
++     * unaligned DMA is allowed, or chained transfers drift a byte. */
++    pi->regs[PI_CART_ADDR_REG] = AllowUnalignedDMA
++        ? (pi->regs[PI_CART_ADDR_REG] + length)
++        : ((pi->regs[PI_CART_ADDR_REG] + length + 1) & ~1);
+ 
+     /* schedule end of dma interrupt event */
+     cp0_update_count(pi->mi->r4300);

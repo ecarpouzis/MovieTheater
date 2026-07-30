@@ -602,6 +602,43 @@ while ($true) {
                         }
                         Log ("PATCHED-ARTIFACT: {0} finding(s) -- run scripts\verify-patched-artifacts.ps1 (add -Restore only if this is a revert, -Snapshot if it was an intentional rebuild)" -f @($res.findings).Count)
                     }
+                    # PUSH TO THE SITE so this raises a POPUP for admins instead of only landing in
+                    # this log. Posted EVERY cycle, healthy or not: the report doubles as a heartbeat,
+                    # and the site escalates on staleness -- a watchdog that has gone silent must not
+                    # look like a healthy one. Best-effort: a site outage must never break the watchdog.
+                    try {
+                        if (-not $script:artifactAlertCfg) {
+                            $script:artifactAlertCfg = @{ Url = $null; Secret = $null }
+                            $gwCfg = 'F:\Work\MovieTheater\src\MovieTheater.ArcadeGateway\appsettings.Production.json'
+                            if (Test-Path $gwCfg) {
+                                $g = Get-Content $gwCfg -Raw | ConvertFrom-Json
+                                if ($g.SiteOrigin -and $g.ArcadeTokenSecret) {
+                                    $script:artifactAlertCfg.Url = ($g.SiteOrigin.TrimEnd('/') + '/API/Arcade/Internal/PatchedArtifactAlert')
+                                    $script:artifactAlertCfg.Secret = $g.ArcadeTokenSecret
+                                }
+                            }
+                            if (-not $script:artifactAlertCfg.Url) { Log "check H: no SiteOrigin/ArcadeTokenSecret in gateway config -- site popups DISABLED (log-only)" }
+                        }
+                        if ($script:artifactAlertCfg.Url) {
+                            $body = @{ Ok = [bool]$res.ok; RawJson = $raw.Trim(); Findings = @(
+                                foreach ($f in $res.findings) {
+                                    @{ Id = $f.id; Status = $f.status; Path = $f.path; Detail = $f.detail; StockName = [bool]$f.stockName }
+                                }) } | ConvertTo-Json -Depth 5 -Compress
+                            # ⚠ MUST assert 204, not just "no exception". An UNDEPLOYED endpoint returns
+                            # HTTP 200 with the SPA's index.html (YARP serves the React app for unknown
+                            # routes), so Invoke-RestMethod succeeds and the alert is silently swallowed —
+                            # verified live against prod before the site was deployed. A delivery channel
+                            # for a silent-failure alarm must not itself fail silently.
+                            $postResp = Invoke-WebRequest -Method Post -Uri $script:artifactAlertCfg.Url `
+                                -Headers @{ "X-Arcade-Internal-Secret" = $script:artifactAlertCfg.Secret } `
+                                -Body $body -ContentType 'application/json' -TimeoutSec 15 -UseBasicParsing
+                            if ($postResp.StatusCode -ne 204) {
+                                Log ("check H: site alert POST returned HTTP {0} (expected 204) -- endpoint probably NOT DEPLOYED and the SPA fallback answered; admin popups are NOT live" -f $postResp.StatusCode)
+                            }
+                        }
+                    } catch {
+                        Log ("check H: site alert POST failed ({0}) -- findings above are log-only this cycle" -f $_.Exception.Message)
+                    }
                 } else {
                     Log "check H skipped: verify-patched-artifacts.ps1 not found next to the watchdog"
                 }

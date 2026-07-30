@@ -50,6 +50,34 @@ namespace MovieTheater.Controllers
             User.FindFirst("amr")?.Value == "pwd"
             && IsAdminUsername(User.FindFirst(ClaimTypes.Name)?.Value);
 
+        /// <summary>Live state of our PATCHED/PINNED binaries (hand-built + byte-patched arcade cores,
+        /// nightly-pinned cores, and the 3 patched Jellyfin DLLs), as last reported by Ziggy's arcade
+        /// watchdog. The admin UI polls this and raises a persistent popup on trouble.
+        ///
+        /// <para>Returns THREE distinct bad states, and the third is the one people forget: findings
+        /// present (something was reverted), or the report is STALE / never arrived (the watchdog itself
+        /// is dead, so we have no evidence and must not show a green light). Everything else is healthy.</para></summary>
+        [HttpGet("/API/Admin/PatchedArtifacts")]
+        public IActionResult PatchedArtifacts()
+        {
+            if (!IsCurrentUserAdmin()) return Forbid();
+
+            var s = MovieTheater.Arcade.PatchedArtifactAlerts.Current;
+            return Json(new
+            {
+                reported = s.Reported,
+                ok = s.Ok,
+                findingCount = s.FindingCount,
+                receivedUtc = s.ReceivedUtc,
+                ageMinutes = s.Age.HasValue ? (int?)Math.Round(s.Age.Value.TotalMinutes) : null,
+                stale = s.Stale,
+                staleAfterMinutes = (int)MovieTheater.Arcade.PatchedArtifactAlerts.StaleAfter.TotalMinutes,
+                // Verbatim verifier JSON so the popup can list exactly which artifact/path/hash is wrong
+                // without this endpoint having to model the finding shape.
+                payloadJson = s.PayloadJson,
+            });
+        }
+
         /// <summary>Every user with the bits an admin needs to manage them.</summary>
         [HttpGet("/API/Admin/Users")]
         public async Task<IActionResult> Users()

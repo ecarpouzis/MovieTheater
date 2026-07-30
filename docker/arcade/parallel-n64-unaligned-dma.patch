@@ -1,0 +1,68 @@
+diff --git a/mupen64plus-core/src/device/rcp/pi/pi_controller.c b/mupen64plus-core/src/device/rcp/pi/pi_controller.c
+index aa4efe7..bd58034 100644
+--- a/mupen64plus-core/src/device/rcp/pi/pi_controller.c
++++ b/mupen64plus-core/src/device/rcp/pi/pi_controller.c
+@@ -38,6 +38,17 @@
+ #define __STDC_FORMAT_MACROS
+ #include <inttypes.h>
+ 
++/* MT PATCH: parallel_n64 ALREADY declares this global in libretro/libretro.c and ALREADY assigns it
++ * from its "parallel-n64-allow-unaligned-dma" core option - but NOTHING EVER READ IT. The option was
++ * pure UI: it registered, the core dutifully queried it (worker logged reconcile 13/13), and it did
++ * nothing at all, which is why this core faulted identically to mupen64plus_next on SM64: Last Impact.
++ * Wiring it up here is the whole fix. NOTE the default in libretro.c is 1 (permissive), unlike our
++ * mupen64plus_next patch which defaults to 0 - left as upstream had it so behaviour matches the
++ * option's own advertised default ("'Force Alignment' is accurate to N64, but breaks some romhacks").
++ * Same single-bit semantics as Project64's per-game "Unaligned DMA" setting. */
++extern uint32_t AllowUnalignedDMA;
++#define PI_CART_ADDR_ALIGN_MASK (AllowUnalignedDMA ? ~UINT32_C(0) : ~UINT32_C(1))
++
+ int validate_pi_request(struct pi_controller* pi)
+ {
+     if (pi->regs[PI_STATUS_REG] & (PI_STATUS_DMA_BUSY | PI_STATUS_IO_BUSY)) {
+@@ -53,7 +64,7 @@ static void dma_pi_read(struct pi_controller* pi)
+     if (!validate_pi_request(pi))
+         return;
+ 
+-    uint32_t cart_addr = pi->regs[PI_CART_ADDR_REG] & ~UINT32_C(1);
++    uint32_t cart_addr = pi->regs[PI_CART_ADDR_REG] & PI_CART_ADDR_ALIGN_MASK;
+     uint32_t dram_addr = pi->regs[PI_DRAM_ADDR_REG] & 0xfffffe;
+     uint32_t length = (pi->regs[PI_RD_LEN_REG] & UINT32_C(0x00ffffff)) + 1;
+     const uint8_t* dram = (uint8_t*)pi->ri->rdram->dram;
+@@ -79,7 +90,12 @@ static void dma_pi_read(struct pi_controller* pi)
+     pi->regs[PI_STATUS_REG] |= PI_STATUS_DMA_BUSY;
+     /* Update PI_DRAM_ADDR_REG and PI_CART_ADDR_REG */
+     pi->regs[PI_DRAM_ADDR_REG] = (pi->regs[PI_DRAM_ADDR_REG] + length + 7) & ~7;
+-    pi->regs[PI_CART_ADDR_REG] = (pi->regs[PI_CART_ADDR_REG] + length + 1) & ~1;
++    /* MT PATCH: stock rounds the end address UP TO EVEN, which re-aligns the register after
++     * every transfer and leaves CHAINED odd transfers a byte off. Project64 advances by the
++     * exact length read (PeripheralInterfaceHandler.cpp: PI_CART_ADDR_REG += ReadLen). */
++    pi->regs[PI_CART_ADDR_REG] = AllowUnalignedDMA
++        ? (pi->regs[PI_CART_ADDR_REG] + length)
++        : ((pi->regs[PI_CART_ADDR_REG] + length + 1) & ~1);
+ 
+     /* schedule end of dma interrupt event */
+     cp0_update_count(pi->mi->r4300);
+@@ -91,7 +107,7 @@ static void dma_pi_write(struct pi_controller* pi)
+     if (!validate_pi_request(pi))
+         return;
+ 
+-    uint32_t cart_addr = pi->regs[PI_CART_ADDR_REG] & ~UINT32_C(1);
++    uint32_t cart_addr = pi->regs[PI_CART_ADDR_REG] & PI_CART_ADDR_ALIGN_MASK;
+     uint32_t dram_addr = pi->regs[PI_DRAM_ADDR_REG] & 0xfffffe;
+     uint32_t length = (pi->regs[PI_WR_LEN_REG] & UINT32_C(0x00ffffff)) + 1;
+     uint8_t* dram = (uint8_t*)pi->ri->rdram->dram;
+@@ -119,7 +135,12 @@ static void dma_pi_write(struct pi_controller* pi)
+     pi->regs[PI_STATUS_REG] |= PI_STATUS_DMA_BUSY;
+     /* Update PI_DRAM_ADDR_REG and PI_CART_ADDR_REG */
+     pi->regs[PI_DRAM_ADDR_REG] = (pi->regs[PI_DRAM_ADDR_REG] + length + 7) & ~7;
+-    pi->regs[PI_CART_ADDR_REG] = (pi->regs[PI_CART_ADDR_REG] + length + 1) & ~1;
++    /* MT PATCH: stock rounds the end address UP TO EVEN, which re-aligns the register after
++     * every transfer and leaves CHAINED odd transfers a byte off. Project64 advances by the
++     * exact length read (PeripheralInterfaceHandler.cpp: PI_CART_ADDR_REG += ReadLen). */
++    pi->regs[PI_CART_ADDR_REG] = AllowUnalignedDMA
++        ? (pi->regs[PI_CART_ADDR_REG] + length)
++        : ((pi->regs[PI_CART_ADDR_REG] + length + 1) & ~1);
+ 
+     /* schedule end of dma interrupt event */
+     cp0_update_count(pi->mi->r4300);

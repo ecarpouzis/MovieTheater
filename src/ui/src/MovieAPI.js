@@ -928,6 +928,14 @@ function adminGetUsers() {
   return fetch("/API/Admin/Users");
 }
 
+// Are our PATCHED binaries still patched? (hand-built/byte-patched arcade cores, nightly-pinned
+// cores, the 3 patched Jellyfin DLLs). Reported by Ziggy's arcade watchdog every 30 min; a revert is
+// otherwise SILENT — the worker's core sync reinstalls stock over any missing core, and a stock
+// Jellyfin upgrade wipes its DLLs. Also returns staleness, because a dead watchdog is its own alarm.
+function adminGetPatchedArtifacts() {
+  return fetch("/API/Admin/PatchedArtifacts");
+}
+
 // Pass a null/empty newPassword to clear the user's password.
 function adminSetUserPassword(userId, newPassword) {
   return fetch("/API/Admin/SetPassword", {
@@ -1231,6 +1239,7 @@ const MovieAPI = {
   leaveArcadeRoom,
   beaconLeaveArcadeRoom,
   adminGetUsers,
+  adminGetPatchedArtifacts,
   adminSetUserPassword,
   adminSetUserSetting,
   ingestReviewList,

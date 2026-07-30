@@ -4,6 +4,7 @@ import { useState, useRef, Suspense } from "react";
 import { lazyWithReload as lazy } from "./lazyWithReload";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import NavBar from "./NavBar/NavBar";
+import PatchedArtifactAlarm from "./NavBar/PatchedArtifactAlarm";
 import Browse from "./Pages/Browse/Browse";
 import { useMovieSearch } from "./hooks/useMovieSearch";
 import { useTheme } from "./hooks/useTheme";
@@ -88,6 +89,10 @@ function App() {
 
   return (
     <BrowserRouter>
+      {/* Mounted at the app root, not on a page: a reverted patched binary (arcade core / Jellyfin
+          DLL) must alarm wherever an admin happens to be, since nothing else reports it. Renders
+          null for non-admins and is inert until the watchdog reports trouble. */}
+      <PatchedArtifactAlarm userData={userData} />
       <Layout className="app-layout" hasSider>
         <NavBar
           search={search}
