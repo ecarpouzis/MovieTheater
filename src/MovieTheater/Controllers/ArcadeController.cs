@@ -1548,10 +1548,22 @@ namespace MovieTheater.Controllers
             // 0 / absent = "Auto": pick a default from the game's system, because encoded resolution varies
             // ~4.6x across systems (912x672 arcade vs 1280x1056 GameCube) and a flat bitrate starves the
             // big ones. See CloudRetroHost.DefaultVideoBitrateKbps. An explicit lobby choice always wins.
+            // "Auto" (0/absent) now means "let the WORKER derive it from the frame it actually encodes"
+            // (worker abr.go autoCeilingKbps) rather than "look it up per system here". The table this
+            // used to call could not be right: it was measured once, in July 2026, against one
+            // configuration, and it is blind to the core's real viewport, its `scale`, a core that
+            // changes resolution mid-game, and render profiles that move the frame wholesale — the N64
+            // screensize option alone spans 320x240 to 1920x1440 while the table said a flat 11000.
+            // Measured consequence: 2D rooms sat at 5000 (0.129 bits/px/frame on a 960x672 Genesis
+            // frame) and visibly blocked, while every 3D system had been raised off that same default.
+            //
+            // CAPTURE still uses the table. That lane runs a SEPARATE worker binary which has no
+            // autoCeilingKbps, so omitting the value there would drop it to its config default.
             var vbr = request.VideoBitrateKbps > 0
                 ? Math.Clamp(request.VideoBitrateKbps, 500, 20000)
-                : CloudRetroHost.DefaultVideoBitrateKbps(roomSystem); // "capture" → 1080p desktop ceiling
-            descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + vbr };
+                : (isCapture ? CloudRetroHost.DefaultVideoBitrateKbps(roomSystem) : 0);
+            if (vbr > 0)
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + vbr };
             if (request.AudioFec is 1 or 2)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fec=" + request.AudioFec };
             // In-frame packet pacing (patch 0028). Capture rooms DEFAULT it to 8 ms server-side (like vbr
