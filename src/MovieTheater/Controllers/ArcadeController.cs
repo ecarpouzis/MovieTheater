@@ -1791,6 +1791,45 @@ namespace MovieTheater.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// The RA achievement ids this player has ALREADY unlocked, so the worker can stop re-toasting
+        /// them every session.
+        ///
+        /// Why the worker cannot know this by itself: the rcheevos runtime is a single site service
+        /// account in SPECTATOR mode (it evaluates trigger definitions locally and never submits), so it
+        /// has no per-user unlock history to load. It starts every session blank and re-raises every
+        /// achievement the moment its trigger fires again — which is exactly the repeat-popup complaint.
+        /// The DB is the only place that history exists, hence this lookup.
+        ///
+        /// Returns both sets because a re-earn is not always noise: `clean` are the ones already earned
+        /// legitimately (never toast again), `all` includes dirty unlocks (earning it CLEANLY afterwards
+        /// is a genuine first and still deserves its toast — the unlock table treats it as a new row for
+        /// the same reason, keying on (UserId, RaAchievementId, Clean)).
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("/API/Arcade/Internal/UnlockedAchievements")]
+        public async Task<IActionResult> UnlockedAchievements(int userId, string? raUser)
+        {
+            if (!IsInternalCallerAuthorized()) return Unauthorized();
+
+            var resolved = await ResolveRaUserIdAsync(userId, raUser);
+            if (resolved == null) return Ok(new { all = Array.Empty<long>(), clean = Array.Empty<long>() });
+
+            // Not scoped to a game: RA achievement ids are globally unique, the per-user row count is
+            // small, and scoping by ArcadeGameId would miss unlocks mirrored from a different version
+            // row of the same title.
+            var rows = await movieDb.ArcadeAchievementUnlocks
+                .Where(a => a.UserId == resolved.Value)
+                .Select(a => new { a.RaAchievementId, a.Clean })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                all = rows.Select(r => r.RaAchievementId).Distinct().ToArray(),
+                clean = rows.Where(r => r.Clean).Select(r => r.RaAchievementId).Distinct().ToArray(),
+            });
+        }
+
         public sealed class LeaderboardSubmittedRequest
         {
             public int UserId { get; set; }
