@@ -272,10 +272,12 @@ namespace MovieTheater.Arcade
                     new[] { V("enabled","8 MB — Expansion Pak fitted (default)"), V("disabled","4 MB — retail base console") },
                     "enabled",
                     "The N64 shipped with 4 MB and the Expansion Pak took it to 8 MB. Leave this on: most romhacks and a few retail games (Donkey Kong 64, Majora's Mask) require 8 MB and will not boot on 4."),
-                new CoreOption("parallel-n64-allow-large-roms", "Allow large ROMs", Category.System,
-                    new[] { V("True","Allow ROMs over 64 MiB"), V("False","Reject ROMs over 64 MiB") },
-                    "True",
-                    "Lifts the 64 MiB cartridge size limit. Needed by a handful of oversized romhacks; harmless to leave on."),
+                // ⚠ NOT EXPOSED: parallel-n64-allow-large-roms. It LOOKS like the ROM size limit and is not.
+                // The global it sets (AllowLargeRoms) is assigned in libretro.c and read NOWHERE — the same
+                // dead-global shape CountPerOp had before we wired it up — so every value, including its
+                // default of 1, does exactly nothing. The real cap was the hard-coded CART_ROM_MAX_SIZE in
+                // api/frontend.c, raised 64 -> 128 MiB in our patched cores. Offering this would hand a
+                // player a knob that cannot fix the failure it appears to describe.
                 // MT-PATCHED OPTION (our build only). Normally set by the Glide64 render profile rather
                 // than by hand — it is listed here so the ⚙ panel explains it instead of showing an
                 // unexplained key, and so a player can turn it off if a game sounds fine without the cost.

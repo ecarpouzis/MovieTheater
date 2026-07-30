@@ -42,6 +42,28 @@ namespace MovieTheater.Tests
 
         private string CueOf(string key) => Path.Combine(romsDir, "psx", key + ".cue");
 
+        /// <summary>
+        /// Marks an already-staged file so a later re-stage is detectable, and returns the marked bytes.
+        ///
+        /// Idempotency here CANNOT be asserted on the mtime, which is what these tests used to do. A no-op
+        /// EnsureMaterializedAsync deliberately stamps the primary ROM's mtime (RomCache.TouchRomMtime):
+        /// that timestamp is where a game's last-boot time survives a gateway restart, and stale eviction
+        /// reads it back — 7z x preserves an archive's own (2005-era) date, so there is nowhere else for it
+        /// to live. Asserting "mtime unchanged" therefore tested against a deliberate feature and failed
+        /// even though nothing was re-staged.
+        ///
+        /// Content is the honest question: both re-staging paths (a plain copy and a 7z re-extract) would
+        /// restore the source bytes over this mark, so an intact mark proves the file was left alone.
+        /// </summary>
+        private static byte[] MarkStaged(string path)
+        {
+            var b = File.ReadAllBytes(path);
+            Assert.NotEmpty(b);
+            b[0] ^= 0xFF;
+            File.WriteAllBytes(path, b);
+            return b;
+        }
+
         [Fact]
         public void Gcz_decompresses_to_original_bytes()
         {
@@ -107,10 +129,9 @@ namespace MovieTheater.Tests
             Assert.True(File.Exists(CueOf("Foo (USA)")));
             Assert.True(File.Exists(Path.Combine(romsDir, "psx", "Foo (USA) (Track 1).bin")));
 
-            var mtime = File.GetLastWriteTimeUtc(CueOf("Foo (USA)"));
-            await Task.Delay(20);
+            var marked = MarkStaged(CueOf("Foo (USA)"));
             await cache.EnsureMaterializedAsync(1); // must be a no-op, not a re-extract
-            Assert.Equal(mtime, File.GetLastWriteTimeUtc(CueOf("Foo (USA)")));
+            Assert.Equal(marked, File.ReadAllBytes(CueOf("Foo (USA)")));
             Assert.True(File.Exists(Path.Combine(archivesDir, "Foo (USA).7z")));
         }
 
@@ -179,10 +200,9 @@ namespace MovieTheater.Tests
             var sfc = Path.Combine(romsDir, "snes", key + ".sfc");
             Assert.True(File.Exists(sfc), "SNES rom extracted, found by its .sfc extension");
 
-            var mtime = File.GetLastWriteTimeUtc(sfc);
-            await Task.Delay(20);
+            var marked = MarkStaged(sfc);
             await cache.EnsureMaterializedAsync(10); // idempotent — no re-extract
-            Assert.Equal(mtime, File.GetLastWriteTimeUtc(sfc));
+            Assert.Equal(marked, File.ReadAllBytes(sfc));
             Assert.True(File.Exists(arc), "source .zip never deleted");
         }
 
@@ -216,10 +236,46 @@ namespace MovieTheater.Tests
             Assert.Equal(bytes, File.ReadAllBytes(dest));
             Assert.True(File.Exists(srcRom), "source ROM untouched");
 
-            var mt = File.GetLastWriteTimeUtc(dest);
-            await Task.Delay(20);
+            var marked = MarkStaged(dest);
             await cache.EnsureMaterializedAsync(20); // idempotent — no re-copy
-            Assert.Equal(mt, File.GetLastWriteTimeUtc(dest));
+            Assert.Equal(marked, File.ReadAllBytes(dest));
+        }
+
+        [Fact]
+        public async Task No_op_materialize_restamps_the_last_boot_mtime()
+        {
+            // The other side of the coin, pinned down so nobody "fixes" the stamp away while making an
+            // idempotency test pass: a no-op materialize MUST refresh the primary ROM's mtime, because that
+            // is the only place a game's last-boot time survives a gateway restart (ReconcileBootTime reads
+            // it back, and anything older than StaleEvictionDays gets swept). Asserted against a deliberately
+            // ancient timestamp rather than an elapsed-time delta, so it cannot flake on clock granularity.
+            const string key = "Super Mario 64 (USA)";
+            var srcRom = Path.Combine(archivesDir, key + ".z64");
+            File.WriteAllBytes(srcRom, new byte[64 * 1024]);
+
+            var manifest = Path.Combine(root, "manifest-n64-stamp.json");
+            File.WriteAllText(manifest, JsonSerializer.Serialize(new
+            {
+                version = 1,
+                games = new object[]
+                {
+                    new { gameId = 21, gameKey = key, system = "n64", folder = "n64", archive = srcRom, exts = new[] { ".n64", ".z64", ".v64" } },
+                },
+            }));
+            var cache = new RomCache(new RomCacheOptions
+            {
+                ManifestPath = manifest, RomsDir = romsDir, SevenZipPath = SevenZip, MaxBytes = 1024L * 1024 * 1024,
+            }, NullLogger.Instance);
+
+            await cache.EnsureMaterializedAsync(21);
+            var dest = Path.Combine(romsDir, "n64", key + ".z64");
+            Assert.True(File.Exists(dest));
+
+            var ancient = new DateTime(2005, 1, 1, 0, 0, 0, DateTimeKind.Utc); // what 7z x would leave behind
+            File.SetLastWriteTimeUtc(dest, ancient);
+            await cache.EnsureMaterializedAsync(21);
+            Assert.True(File.GetLastWriteTimeUtc(dest) > ancient,
+                "a no-op materialize must re-stamp the ROM mtime — stale eviction reads last-boot from it");
         }
 
         // A PSX-shaped archive: <key>.cue + <key> (Track 1).bin of binMb, zipped to <key>.7z.
