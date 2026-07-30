@@ -1208,6 +1208,18 @@ emulator:
           # Costs ~1.0 CPU core per room (0.37 without); two concurrent rooms fit easily on the 13700K.
           scale: 2
           scaleMethod: bilinear2
+          # REWIND: OFF, and the reason is MEASURED, not inherited (2026-07-29).
+          # The old blanket refusal ("usesLibCo cores can't serialize safely, mupen is flaky") was
+          # stale — that flakiness WAS patch 0030's bug (same_thread_with_args read the Go
+          # pointer-to-size as the size, so every LibCo serialize got a garbage byte count), fixed
+          # long since. So it was tried here properly, and the cost is what disqualifies it:
+          #   rewind-diag: snapshot 16.02 MB mean=11.61ms max=17.54ms
+          # 11.6 ms is most of a 16.7 ms frame, and a serialize STOPS the emulator. A/B on the same
+          # game and scene, step 12: video 55.4 fps armed vs 60.0 fps off — an ~8% frame-rate tax
+          # paid by EVERY player in EVERY N64 room, whether or not anyone ever holds rewind.
+          # Widening the step to hide it (≥36 frames) makes the rewind itself a 600 ms scrub, which
+          # is not the feature. parallel_n64 serializes the SAME state in 2.42 ms and is armed —
+          # see its block. Re-test here if mupen's serialize ever gets cheaper.
           options:
             # Legal values are a fixed list (verified in mupen64plus_next_libretro.dll):
             # 320x240, 640x480, 960x720, 1280x960, ..., 1920x1440 — not an arbitrary WxH.
@@ -1267,8 +1279,12 @@ emulator:
         # The DEFAULT n64 core stays mupen64plus_next. Why it exists: some romhacks — proven with
         # SM64: Last Impact — crash mupen64plus_next's R4300 with `reserved opcode` / `error in ERET`
         # ~11 s into boot, on EVERY renderer (parallel-RDP AND GLideN64), BOTH cpucores, and with
-        # CountPerOp=1 (all verified read-by-core in the worker logs, 2026-07-22/23). parallel_n64 is a
-        # different mupen fork with its own R4300 that the libretro community runs these hacks on.
+        # CountPerOp=1 (all verified read-by-core in the worker logs, 2026-07-22/23).
+        # ⚠ CORRECTED 2026-07-29: that fault is NOT an R4300 difference between the two forks — it is
+        # UNALIGNED DMA, which the game requires and only THIS core can be told to allow (see
+        # parallel-n64-allow-unaligned-dma below). mupen64plus_next lacks the option entirely, so the
+        # earlier "both are mupen forks, both share the fault, Last Impact is unsupportable" verdict
+        # was wrong: the forks differ in the option, not the CPU. Do not re-derive the old conclusion.
         # RENDERER: GLideN64 on the GL surface — angrylion is BANNED (it hard-panics CloudRetro's GL
         # scaffolding on isGlAllowed cores, arcade hard rule), and the Vulkan paraLLEl-RDP path is
         # mupen's job, not this core's. Same GL Flip contract as the other GL 3D cores (isGlAllowed +
@@ -1292,6 +1308,16 @@ emulator:
           # parallel-rdp-upscaling supersamples ON TOP of that (deeper SSAA, delivery size unchanged).
           scale: 2
           scaleMethod: bilinear2
+          # REWIND: ON here and OFF on mupen, and the split is a MEASUREMENT, not a preference. Same
+          # 16 MB N64 state, same box, same game — mupen64plus_next serializes it in 11.6 ms (an ~8%
+          # frame-rate tax on every room, see its block), parallel_n64 in 2.42 ms:
+          #   rewind-diag: snapshot 16.01 MB mean=2.42ms max=6.72ms ring=63 (~12.6s of history)
+          # A/B: 60.1 fps armed vs 60.1 fps off — no measurable cost. Step 12 = 200 ms granularity;
+          # 1024 MB = ~63 snapshots = ~12.6 s of history. Watch `rewind-diag` after any core update:
+          # this arming is only justified while that mean stays low.
+          rewind: true
+          rewindStepFrames: 12
+          rewindMB: 1024
           options:
             # Value tokens verified from parallel_n64_libretro.dll (2026-07-23). gfxplugin values are
             # gln64|gliden64|rice|glide64|angrylion|parallel — "parallel" = paraLLEl-RDP (Vulkan compute),
@@ -1299,13 +1325,40 @@ emulator:
             parallel-n64-gfxplugin: "parallel"
             parallel-n64-rspplugin: "parallel"
             parallel-n64-parallel-rdp-upscaling: "8x"
+            # ── ROMHACK COMPATIBILITY (2026-07-29) — NECESSARY BUT NOT SUFFICIENT, see the ⚠ below ──
+            # Last Impact issues UNALIGNED DMA transfers. Every emulator that masks the DMA address
+            # instead of honouring them executes garbage a few seconds later; that is the origin of
+            # BOTH log lines we chased for a week (`Unaligned dword write 00000101` and the
+            # reserved-opcode / `error in ERET` that follows it). The write was never the bug — it
+            # was the core telling us the game needs this flag. Project64's community ROM database
+            # says the same thing per-ROM: `[DC493C8D-E033E6F2-C:45] Unaligned DMA=1` (that CRC pair
+            # is our exact v1.2 image, verified against the header). P64 2.4 has no such entry and
+            # black-screens; 3.0.1 has it and plays. mupen64plus_next has NO equivalent option key
+            # (verified by symbol dump), which is why the DEFAULT core cannot run these hacks at all
+            # and this core is the only home for them — not because its R4300 differs.
+            # Both keys are all-lowercase, so they survive the config loader's keysToLower (unlike
+            # the mixed-case gliden64 keys, which must ride the render-profile path).
+            # ⚠ TESTED 2026-07-29 AND IT IS NOT ENOUGH — do not re-run this experiment. Both flags were
+            # delivered and CONFIRMED CONSUMED (`[opt] reconcile: 13/13 provided keys were read by the
+            # core`), on BOTH renderers back to back: parallel_n64·Vulkan 20:37:52 (gfxplugin=parallel,
+            # Vulkan zero-copy ACTIVE) and parallel_n64·GLideN64 20:39:05 (gfxplugin=gliden64). Both still
+            # died on `reserved opcode: 8027F550` -> `error in ERET`, same address, ~11 s in. So this core's
+            # allow-unaligned-dma does NOT implement what the game needs the way P64 3.0.1's does. Left
+            # enabled: it is what the ROM legitimately requires and is harmless (nothing else regressed),
+            # but it is NECESSARY-not-sufficient. The remaining paths are a core patch to the PI DMA path
+            # or the heavy lane running P64 3.0.1 (which plays it) — NOT a core port, and NOT this flag.
+            parallel-n64-allow-unaligned-dma: "True"
+            # 64 MB image (b3313 is 96 MB). This flag exists for exactly these oversized hack ROMs;
+            # off by default, and a large ROM that is silently refused looks identical to a crash.
+            parallel-n64-allow-large-roms: "True"
             # dynamic_recompiler = parallel_n64's native Hacktarux JIT (its default). Chosen over the
             # interpreters because on the shared mupen R4300 fault that SM64: Last Impact triggers
             # (reserved-opcode / error-in-ERET ~11s in), the interpreters WEDGE the worker (core never
             # finishes teardown → the unkillable-worker class), while the dynarec faults ONCE then
-            # recovers/restarts the R4300 without wedging. Neither actually runs Last Impact (both cores
-            # are mupen forks that share the fault), but the dynarec fails SAFELY — so it is the correct
-            # default. Tokens: pure_interpreter|cached_interpreter|dynamic_recompiler.
+            # recovers/restarts the R4300 without wedging. The dynarec fails SAFELY, so it is the
+            # correct default regardless. (The "neither core can ever run Last Impact" claim that used
+            # to sit here was wrong — see the allow-unaligned-dma note above.)
+            # Tokens: pure_interpreter|cached_interpreter|dynamic_recompiler.
             parallel-n64-cpucore: "dynamic_recompiler"
             # 2x-native base (WxH tokens verified in the DLL). Expansion Pak stays enabled (Last Impact
             # needs the 8 MB) — disable_expmem defaults False, left unset.
@@ -1325,10 +1378,14 @@ emulator:
         # (These merge INTO the default core entries per-key — lib/roms/etc. survive.)
         # rewind (2026-07-26): arms the worker's in-memory savestate ring (snapshot every 6 frames,
         # 512 MB cap — code defaults) so a held Select+West chord walks time backward. Opt-in per
-        # core, ONLY on this 2D software tier: serialize here is sub-ms and reliable. The worker
-        # additionally hard-refuses rewind on usesLibCo/noSaveStates cores (psx/psp/ps2/gc/...),
-        # so a stray flag on those would be a no-op with a warning, and a core whose serialize
-        # fails 3x in a row drops rewind for that session on its own.
+        # core; on this 2D software tier serialize is sub-ms and reliable, so the defaults are left
+        # alone. The worker hard-refuses rewind only on noSaveStates cores (psp/ps2 — they cannot be
+        # serialized at ALL), so a stray flag there is a no-op with a warning, and a core whose
+        # serialize fails 3x in a row drops rewind for that session on its own. Heavier cores CAN be
+        # armed — parallel_n64 is (2026-07-29) — but the deciding number is the SERIALIZE COST, and
+        # it is per-CORE, not per-system: the two N64 cores hold the same 16 MB state and differ 5x
+        # (2.4 ms vs 11.6 ms), which is the difference between free and an 8% frame-rate tax. Arm a
+        # heavy core only after reading its `rewind-diag` mean out of a real room.
         snes:
           scale: 3
           rewind: true

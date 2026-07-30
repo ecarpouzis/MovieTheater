@@ -41,6 +41,12 @@ const NOT_REMAPPED_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "c
 // it; the heavy/capture lanes stream a native app with no retro_run to pace. Rewind additionally
 // needs the worker's in-memory savestate ring, armed per core with `rewind: true` in
 // config.worker-gl.yaml — this set mirrors that file (the serialize-cheap 2D tier), keep in step.
+//
+// ⚠ n64 is deliberately ABSENT even though one of its two cores (parallel_n64) now has the ring
+// armed: this set is keyed by SYSTEM and the arming is per-CORE, so adding "n64" would show a
+// Rewind button on every N64 room and have it do nothing on the ~all of them that boot the default
+// mupen64plus_next (whose serialize costs 11.6 ms — see the config). Exposing n64 rewind needs the
+// join descriptor to carry the arming as a real capability, not this set to guess at it.
 const REWIND_SYSTEMS = new Set([
   "nes", "snes", "genesis", "gb", "gbc", "gba", "sms", "gg", "sg1000", "segacd", "sega32x",
   "pce", "ngpc", "wsc", "a2600", "a7800", "lynx", "vb", "fds", "neogeo", "arcade",

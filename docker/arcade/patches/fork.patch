@@ -9610,7 +9610,7 @@ index f3553b1..df14005 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..fa89117 100644
+index 6974d59..319f28a 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
 @@ -1,8 +1,10 @@
@@ -9632,7 +9632,7 @@ index 6974d59..fa89117 100644
  )
  
  type Emulator interface {
-@@ -79,15 +82,99 @@ type Frontend struct {
+@@ -79,15 +82,107 @@ type Frontend struct {
  	// skipVideo used when new frame was too late
  	skipVideo bool
  
@@ -9718,9 +9718,17 @@ index 6974d59..fa89117 100644
 +	rewindPopNow     bool     // engage edge: pop immediately, don't wait for a step boundary
 +	rewindTicks      uint64   // loop tick counter driving both capture and pop cadence
 +	rewindFails      int      // consecutive serialize failures (3 = disable for the session)
++	rewindFree       [][]byte // evicted buffers, recycled into the next capture (see rewindCapture)
++	rewindCapN       int      // captures since the last cost report
++	rewindCapSumMs   float64  // their total wall cost
++	rewindCapMaxMs   float64  // the worst one
 +	ffLastVideoNs    int64    // last frame pushed downstream while fast-forwarding (throttle)
  }
  
++// rewindFreeMax bounds the recycle list. The ring only ever evicts from the front, so a couple of
++// spare buffers is all a steady state needs; anything beyond that is just held memory.
++const rewindFreeMax = 4
++
 +// ffRatio is the fast-forward speed multiplier: the pacing floor shrinks to 1/ffRatio of a
 +// frame while engaged. 2D cores hit it exactly; heavy cores run as fast as retro_run allows
 +// and land wherever they land — the ratio is a ceiling on pacing, not a promise.
@@ -9732,7 +9740,7 @@ index 6974d59..fa89117 100644
  type Device byte
  
  const (
-@@ -173,10 +260,14 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -173,10 +268,14 @@ func (f *Frontend) LoadCore(emu string) {
  		Hacks:           conf.Hacks,
  		HasVFR:          conf.VFR,
  		Hid:             conf.Hid,
@@ -9747,7 +9755,7 @@ index 6974d59..fa89117 100644
  		UsesLibCo:       conf.UsesLibCo,
  		CoreAspectRatio: conf.CoreAspectRatio,
  		KbMouseSupport:  conf.KbMouseSupport,
-@@ -184,15 +275,72 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -184,15 +283,79 @@ func (f *Frontend) LoadCore(emu string) {
  	}
  	f.mu.Lock()
  	f.SaveStateFs = conf.SaveStateFs
@@ -9772,15 +9780,22 @@ index 6974d59..fa89117 100644
 +		f.log.Info().Msgf("%v: audio silence-fill armed (this core emits nothing while the game is quiet)", emu)
 +	}
 +	f.ScaleMaxWidth = conf.ScaleMaxWidth
-+	// Rewind is opt-in per core and hard-gated to cores that can serialize cheaply and safely:
-+	// NoSaveStates cores obviously can't, and LibCo cores route serialize through the cothread
-+	// trampoline — a per-step cost and crash surface the ring must never sit on (PSP wedges, mupen
-+	// is flaky). The config asking for it anyway gets a loud no, not a quiet one.
-+	if conf.Rewind && (conf.NoSaveStates || conf.UsesLibCo) {
-+		f.log.Warn().Msgf("%v: rewind is configured but this core can't support it (noSaveStates=%v, usesLibCo=%v) — off",
-+			emu, conf.NoSaveStates, conf.UsesLibCo)
++	// Rewind is opt-in per core and hard-gated on the one thing that is categorically disqualifying:
++	// a core that cannot be serialized at all. NoSaveStates is that flag (PSP, PS2 — their progress
++	// lives on the memory card precisely because serializing them wedges or crashes them).
++	//
++	// LibCo used to be disqualifying too, on the belief that routing serialize through the cothread
++	// trampoline was inherently unsafe and that "mupen is flaky". Both halves of that are stale:
++	// patch 0030 moved serialize AND its size probe onto the core's own thread, and the same patch
++	// fixed same_thread_with_args reading the Go POINTER-to-size as the size — which is exactly what
++	// made mupen's load-states flaky. N64 has autosaved and quicksaved through that path in
++	// production since. So the gate is capability, not thread model; everything else stays opt-in
++	// per core, and a core whose serialize fails three times running still drops rewind for the
++	// session on its own.
++	if conf.Rewind && conf.NoSaveStates {
++		f.log.Warn().Msgf("%v: rewind is configured but this core cannot be serialized (noSaveStates) — off", emu)
 +	}
-+	if armed := conf.Rewind && !conf.NoSaveStates && !conf.UsesLibCo; armed {
++	if armed := conf.Rewind && !conf.NoSaveStates; armed {
 +		f.rewindStepFrames = conf.RewindStepFrames
 +		if f.rewindStepFrames <= 0 {
 +			f.rewindStepFrames = 6 // ~100 ms granularity at 60 fps
@@ -9822,7 +9837,7 @@ index 6974d59..fa89117 100644
  	}
  	f.storage.SetNonBlocking(conf.NonBlockingSave)
  	f.scale = scale
-@@ -203,6 +351,13 @@ func (f *Frontend) LoadCore(emu string) {
+@@ -203,6 +366,13 @@ func (f *Frontend) LoadCore(emu string) {
  }
  
  func (f *Frontend) handleAudio(audio unsafe.Pointer, samples int) {
@@ -9836,10 +9851,11 @@ index 6974d59..fa89117 100644
  	fr, _ := audioPool.Get().(*app.Audio)
  	if fr == nil {
  		fr = new(app.Audio)
-@@ -215,16 +370,57 @@ func (f *Frontend) handleAudio(audio unsafe.Pointer, samples int) {
+@@ -215,16 +385,67 @@ func (f *Frontend) handleAudio(audio unsafe.Pointer, samples int) {
  	audioPool.Put(fr)
  }
  
+-func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.FrameInfo) {
 +// pushSilence hands the audio pipeline n frames (per channel) of silence, as if the core had produced
 +// them. S16LE stereo, so 4 bytes a frame — and the buffer is grown-and-reused rather than allocated,
 +// because this runs on the emulator goroutine inside the frame budget.
@@ -9855,27 +9871,38 @@ index 6974d59..fa89117 100644
 +	f.onAudio(app.Audio{Data: f.silenceBuf[:need]})
 +}
 +
- func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.FrameInfo) {
++// skipFrame is nanoarch's per-frame delivery gate (Handlers.SkipFrame). It runs on the emulator
++// thread inside video_cb, BEFORE the frame is captured, and true means the frame is never captured
++// at all — no Vulkan/GL zero-copy slot checked out, no blit, no readback.
++//
++// It lives at that point, and not at the top of handleVideo where it used to, because dropping a
++// frame AFTER capture leaks the pool slot the capture checked out: nothing but GStreamer freeing the
++// wrapping buffer ever returns one. Holding fast-forward for half a second was enough to leak all
++// eight and freeze the picture for the rest of the session. See coreVideoRefresh.
++func (f *Frontend) skipFrame() bool {
  	if f.conf.SkipLateFrames && f.skipVideo {
- 		return
- 	}
- 
+-		return
++		return true
++	}
 +	// Fast-forward: the core renders up to ffRatio× the frames, but the encoder must keep seeing
-+	// ~native fps — every skipped frame here is pure savings (NVENC load, bitrate, client decode)
-+	// and the player can't perceive frames that would exceed their display anyway. Same-goroutine
-+	// state: video_cb fires inside retro_run, on the emulator loop's thread.
++	// ~native fps — every skipped frame is pure savings (the capture itself, NVENC load, bitrate,
++	// client decode) and the player can't perceive frames that would exceed their display anyway.
++	// Same-goroutine state: video_cb fires inside retro_run, on the emulator loop's thread.
 +	if f.ffOn.Load() {
 +		minGap := int64(0)
 +		if fps := f.nano.VideoFramerate(); fps > 0 {
 +			minGap = int64(float64(time.Second) / fps * 0.9)
 +		}
 +		if now := os.Nanotime(); now-f.ffLastVideoNs < minGap {
-+			return
++			return true
 +		} else {
 +			f.ffLastVideoNs = now
 +		}
-+	}
-+
+ 	}
++	return false
++}
+ 
++func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.FrameInfo) {
  	fr, _ := videoPool.Get().(*app.Video)
  	if fr == nil {
  		fr = new(app.Video)
@@ -9894,7 +9921,7 @@ index 6974d59..fa89117 100644
  	fr.Frame.W = int(fi.W)
  	fr.Frame.H = int(fi.H)
  	fr.Frame.Stride = int(fi.Stride)
-@@ -237,9 +433,18 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
+@@ -237,9 +458,18 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
  }
  
  func (f *Frontend) handleDup() {
@@ -9915,7 +9942,15 @@ index 6974d59..fa89117 100644
  }
  
  func (f *Frontend) Shutdown() {
-@@ -292,8 +497,19 @@ func (f *Frontend) Start() {
+@@ -262,6 +492,7 @@ func (f *Frontend) linkNano(nano *nanoarch.Nanoarch) {
+ 	f.nano.OnVideo = f.handleVideo
+ 	f.nano.OnAudio = f.handleAudio
+ 	f.nano.OnDup = f.handleDup
++	f.nano.SkipFrame = f.skipFrame
+ }
+ 
+ func (f *Frontend) SetVideoChangeCb(fn func()) {
+@@ -292,8 +523,19 @@ func (f *Frontend) Start() {
  	f.nano.LastFrameTime = time.Now()
  
  	defer func() {
@@ -9937,7 +9972,7 @@ index 6974d59..fa89117 100644
  			f.log.Debug().Msg("save on quit")
  			if err := f.Save(); err != nil {
  				f.log.Error().Err(err).Msg("save on quit failed")
-@@ -301,10 +517,39 @@ func (f *Frontend) Start() {
+@@ -301,10 +543,39 @@ func (f *Frontend) Start() {
  		}
  		f.mui.Unlock()
  		f.Shutdown()
@@ -9978,7 +10013,7 @@ index 6974d59..fa89117 100644
  		// advance 1 frame for Mupen, DOSBox save states
  		// loading will work if autostart is selected for DOSBox apps
  		f.Tick()
-@@ -318,6 +563,11 @@ func (f *Frontend) Start() {
+@@ -318,6 +589,11 @@ func (f *Frontend) Start() {
  		go f.autosave(f.conf.AutosaveSec)
  	}
  
@@ -9990,7 +10025,7 @@ index 6974d59..fa89117 100644
  	// The main loop of Libretro
  
  	targetFrameTimeNs := int64(float64(time.Second) / f.nano.VideoFramerate())
-@@ -328,66 +578,505 @@ func (f *Frontend) Start() {
+@@ -328,80 +604,934 @@ func (f *Frontend) Start() {
  	// how many frames will be considered not normal
  	const lateFramesThreshold = 3
  
@@ -10149,9 +10184,16 @@ index 6974d59..fa89117 100644
 +						audioFrames += int64(n)
 +						diagSilence += int64(n)
 +					}
-+				}
+ 				}
 +			}
-+
+ 
+-				// SPIN
+-				// if we are close to the target,
+-				// burn CPU and check the clock with ns resolution.
+-				// SpinBatch batches the time check to reduce
+-				// overhead while keeping sub-us precision.
+-				for {
+-					for range batch - 1 {
 +			diagTicks++
 +			diagSumTickNs += tickDur
 +			if tickDur > diagMaxTickNs {
@@ -10189,16 +10231,9 @@ index 6974d59..fa89117 100644
 +			if fps := f.nano.VideoFramerate(); fps > 0 {
 +				if nt := int64(float64(time.Second) / fps); nt != targetFrameTimeNs {
 +					targetFrameTimeNs = nt
- 				}
++				}
 +			}
- 
--				// SPIN
--				// if we are close to the target,
--				// burn CPU and check the clock with ns resolution.
--				// SpinBatch batches the time check to reduce
--				// overhead while keeping sub-us precision.
--				for {
--					for range batch - 1 {
++
 +			// ── Time-warp pacing ──────────────────────────────────────────────────────────
 +			// While fast-forwarding or rewinding the audio clock is moot (handleAudio drops
 +			// every sample), so pacing falls back to a pure frame-time floor: 1/ffRatio of a
@@ -10429,8 +10464,8 @@ index 6974d59..fa89117 100644
 +				continue
  			}
 +			removed++
-+		}
-+	}
+ 		}
+ 	}
 +	f.log.Info().Msgf("core cache purged: %d entr(ies), ~%v freed, now owned by build %v",
 +		removed, byteCount(freed), id)
 +
@@ -10451,7 +10486,7 @@ index 6974d59..fa89117 100644
 +		}
 +		if fi, err := d.Info(); err == nil {
 +			total += fi.Size()
- 		}
++		}
 +		return nil
 +	})
 +	return total
@@ -10529,10 +10564,10 @@ index 6974d59..fa89117 100644
 +	if f.ra != nil {
 +		f.ra.Close()
 +		f.ra = nil
- 	}
++	}
  }
  
-@@ -395,13 +1084,428 @@ func (f *Frontend) LoadGame(path string) error {
+ func (f *Frontend) LoadGame(path string) error {
  	if f.UniqueSaveDir {
  		f.copyFsMaybe(path)
  	}
@@ -10962,7 +10997,7 @@ index 6974d59..fa89117 100644
  func (f *Frontend) FrameSize() (int, int)         { return f.nano.BaseWidth(), f.nano.BaseHeight() }
  func (f *Frontend) HasSave() bool                 { return os.Exists(f.HashPath()) }
  func (f *Frontend) HashPath() string              { return f.storage.GetSavePath() }
-@@ -414,14 +1518,40 @@ func (f *Frontend) Rotation() uint                { return f.nano.Rot }
+@@ -414,14 +1544,40 @@ func (f *Frontend) Rotation() uint                { return f.nano.Rot }
  func (f *Frontend) SRAMPath() string              { return f.storage.GetSRAMPath() }
  func (f *Frontend) SaveGameState() error          { return f.Save() }
  func (f *Frontend) SaveStateName() string         { return filepath.Base(f.HashPath()) }
@@ -11007,7 +11042,7 @@ index 6974d59..fa89117 100644
  
  func (f *Frontend) Input(port int, device byte, data []byte) {
  	switch Device(device) {
-@@ -434,6 +1564,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
+@@ -434,6 +1590,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
  	}
  }
  
@@ -11017,7 +11052,7 @@ index 6974d59..fa89117 100644
  func (f *Frontend) ViewportCalc() (nw int, nh int) {
  	w, h := f.FrameSize()
  	nw, nh = w, h
-@@ -478,6 +1611,9 @@ func (f *Frontend) Close() {
+@@ -478,6 +1637,9 @@ func (f *Frontend) Close() {
  
  // Save writes the current state to the filesystem.
  func (f *Frontend) Save() error {
@@ -11027,7 +11062,7 @@ index 6974d59..fa89117 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -501,6 +1637,9 @@ func (f *Frontend) Save() error {
+@@ -501,6 +1663,9 @@ func (f *Frontend) Save() error {
  
  // Load restores the state from the filesystem.
  func (f *Frontend) Load() error {
@@ -11037,7 +11072,7 @@ index 6974d59..fa89117 100644
  	f.mu.Lock()
  	defer f.mu.Unlock()
  
-@@ -522,6 +1661,88 @@ func (f *Frontend) Load() error {
+@@ -522,6 +1687,129 @@ func (f *Frontend) Load() error {
  	return nil
  }
  
@@ -11080,6 +11115,8 @@ index 6974d59..fa89117 100644
 +		f.rewindSnaps[n-1] = nil
 +		f.rewindSnaps = f.rewindSnaps[:n-1]
 +		f.rewindBytes -= len(st)
++		// The state being displaced was restored on a previous step and nothing else references it.
++		f.recycle(f.rewindHold)
 +		f.rewindHold = st
 +	}
 +	if st == nil {
@@ -11093,13 +11130,35 @@ index 6974d59..fa89117 100644
 +	}
 +}
 +
++// recycle offers a state buffer back to the capture path. Only buffers the ring itself has just
++// given up may be passed here — a buffer still reachable from rewindSnaps/rewindHold would be
++// overwritten by the next serialize and silently corrupt that snapshot. Emulator goroutine only.
++func (f *Frontend) recycle(buf []byte) {
++	if buf == nil || len(f.rewindFree) >= rewindFreeMax {
++		return
++	}
++	f.rewindFree = append(f.rewindFree, buf)
++}
++
 +// rewindCapture appends the current state to the ring and evicts the oldest past the memory
 +// cap. A core that keeps failing to serialize (3 in a row) loses rewind for the session — a
 +// per-step error would otherwise log sixty times a minute for nothing. Emulator goroutine only.
 +func (f *Frontend) rewindCapture() {
++	// Hand the core a buffer the ring already owns. A 2D core's state is a few hundred KB and this
++	// hardly matters, but N64's is 16.8 MB EVERY time — five a second is ~84 MB/s of garbage
++	// allocated on the emulator's own thread, and the GC that pays for it lands as visible hitches
++	// in a 60 fps stream. Recycling makes the steady state allocation-free.
++	var reuse []byte
++	if n := len(f.rewindFree); n > 0 {
++		reuse = f.rewindFree[n-1]
++		f.rewindFree[n-1] = nil
++		f.rewindFree = f.rewindFree[:n-1]
++	}
++	t0 := os.Nanotime()
 +	f.mu.Lock()
-+	st, err := nanoarch.SaveState()
++	st, err := nanoarch.SaveStateInto(reuse)
 +	f.mu.Unlock()
++	costMs := float64(os.Nanotime()-t0) / 1e6
 +	if err != nil {
 +		f.rewindFails++
 +		if f.rewindFails >= 3 {
@@ -11109,10 +11168,27 @@ index 6974d59..fa89117 100644
 +		return
 +	}
 +	f.rewindFails = 0
++	// A serialize STOPS the emulator for its duration, so on a heavy core the ring's cadence is a
++	// frame-budget decision, not a memory one — and it is only knowable per core, per game. Report
++	// it rather than assume it: mean/max against the frame budget is what says whether a core's
++	// rewind step should be widened (or the whole thing dropped for that tier).
++	f.rewindCapN++
++	f.rewindCapSumMs += costMs
++	if costMs > f.rewindCapMaxMs {
++		f.rewindCapMaxMs = costMs
++	}
++	if f.rewindCapN >= 100 {
++		f.log.Info().Msgf("rewind-diag: snapshot %.2f MB mean=%.2fms max=%.2fms ring=%d (%.0f MB / %.0f MB cap, ~%.1fs of history)",
++			float64(len(st))/(1<<20), f.rewindCapSumMs/float64(f.rewindCapN), f.rewindCapMaxMs,
++			len(f.rewindSnaps), float64(f.rewindBytes)/(1<<20), float64(f.rewindMaxBytes)/(1<<20),
++			float64(len(f.rewindSnaps)*f.rewindStepFrames)/max(f.nano.VideoFramerate(), 1))
++		f.rewindCapN, f.rewindCapSumMs, f.rewindCapMaxMs = 0, 0, 0
++	}
 +	f.rewindSnaps = append(f.rewindSnaps, st)
 +	f.rewindBytes += len(st)
 +	for f.rewindBytes > f.rewindMaxBytes && len(f.rewindSnaps) > 1 {
 +		f.rewindBytes -= len(f.rewindSnaps[0])
++		f.recycle(f.rewindSnaps[0])
 +		f.rewindSnaps[0] = nil
 +		f.rewindSnaps = f.rewindSnaps[1:]
 +	}
@@ -11126,7 +11202,7 @@ index 6974d59..fa89117 100644
  func (f *Frontend) IsSupported() error {
  	return graphics.RGFWTryInit()
  }
-@@ -537,6 +1758,13 @@ func (f *Frontend) autosave(periodSec int) {
+@@ -537,6 +1825,13 @@ func (f *Frontend) autosave(periodSec int) {
  			if f.nano.IsStopped() {
  				return
  			}
@@ -13269,7 +13345,7 @@ index 669862d..b5e229a 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..d354c02 100644
+index 17f10fc..25b61fc 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 @@ -4,9 +4,11 @@ import (
@@ -13424,7 +13500,23 @@ index 17f10fc..d354c02 100644
  
  	audioBuffCb    *C.struct_retro_audio_buffer_status_callback
  	lastFrameDelta float64 // most recent frame delta (ns)
-@@ -87,22 +175,36 @@ type Handlers struct {
+@@ -80,29 +168,49 @@ type Nanoarch struct {
+ }
+ 
+ type Handlers struct {
+-	OnAudio        func(ptr unsafe.Pointer, frames int)
+-	OnVideo        func(data []byte, delta time.Duration, fi FrameInfo)
+-	OnDup          func()
++	OnAudio func(ptr unsafe.Pointer, frames int)
++	OnVideo func(data []byte, delta time.Duration, fi FrameInfo)
++	OnDup   func()
++	// SkipFrame is asked, per real frame, whether this one will be delivered at all — BEFORE it is
++	// captured. It exists because "drop it after capture" is not a valid option on the hardware
++	// paths: capture CHECKS OUT a zero-copy pool slot that is returned only when GStreamer frees the
++	// buffer wrapping it, so a frame the frontend discards downstream leaks its slot for good. See
++	// coreVideoRefresh for the freeze that cost.
++	SkipFrame      func() bool
+ 	OnSystemAvInfo func()
  }
  
  type FrameInfo struct {
@@ -13464,7 +13556,21 @@ index 17f10fc..d354c02 100644
  	CoreAspectRatio bool
  	KbMouseSupport  bool
  	LibExt          string
-@@ -162,6 +264,14 @@ func (n *Nanoarch) Close()                           { n.Stopped.Store(true); n.
+@@ -132,9 +240,10 @@ var Nan0 = Nanoarch{
+ 	Stopped:  atomic.Bool{},
+ 	limiter:  func(fn func()) { fn() },
+ 	Handlers: Handlers{
+-		OnAudio: func(unsafe.Pointer, int) {},
+-		OnVideo: func([]byte, time.Duration, FrameInfo) {},
+-		OnDup:   func() {},
++		OnAudio:   func(unsafe.Pointer, int) {},
++		OnVideo:   func([]byte, time.Duration, FrameInfo) {},
++		OnDup:     func() {},
++		SkipFrame: func() bool { return false },
+ 	},
+ }
+ 
+@@ -162,6 +271,14 @@ func (n *Nanoarch) Close()                           { n.Stopped.Store(true); n.
  func (n *Nanoarch) SetLogger(log *logger.Logger)     { n.log = log }
  func (n *Nanoarch) SetVideoDebounce(t time.Duration) { n.limiter = NewLimit(t) }
  func (n *Nanoarch) SaveDir() string                  { return C.GoString(n.cSaveDirectory) }
@@ -13479,7 +13585,7 @@ index 17f10fc..d354c02 100644
  func (n *Nanoarch) SetSaveDirSuffix(sx string) {
  	dir := C.GoString(n.cSaveDirectory) + "/" + sx
  	err := os.CheckCreateDir(dir)
-@@ -184,29 +294,78 @@ func (n *Nanoarch) DeleteSaveDir() error {
+@@ -184,29 +301,78 @@ func (n *Nanoarch) DeleteSaveDir() error {
  
  func (n *Nanoarch) CoreLoad(meta Metadata) {
  	var err error
@@ -13560,7 +13666,7 @@ index 17f10fc..d354c02 100644
  
  	corePath := meta.LibPath + meta.LibExt
  	coreLib, err = open(corePath)
-@@ -228,6 +387,8 @@ func (n *Nanoarch) CoreLoad(meta Metadata) {
+@@ -228,6 +394,8 @@ func (n *Nanoarch) CoreLoad(meta Metadata) {
  	retroReset = coreLib.load("retro_reset")
  	retroRun = coreLib.load("retro_run")
  	retroLoadGame = coreLib.load("retro_load_game")
@@ -13569,7 +13675,7 @@ index 17f10fc..d354c02 100644
  	retroUnloadGame = coreLib.load("retro_unload_game")
  	retroSerializeSize = coreLib.load("retro_serialize_size")
  	retroSerialize = coreLib.load("retro_serialize")
-@@ -284,9 +445,10 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -284,9 +452,10 @@ func (n *Nanoarch) LoadGame(path string) error {
  
  	n.log.Debug().Msgf("ROM - big: %v, size: %v", big, byteCountBinary(int64(game.size)))
  
@@ -13582,7 +13688,7 @@ index 17f10fc..d354c02 100644
  		if _, ok := n.options4rom[romName]; ok {
  			for k, v := range n.options4rom[romName] {
  				n.options[k] = v
-@@ -295,10 +457,64 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -295,10 +464,64 @@ func (n *Nanoarch) LoadGame(path string) error {
  		}
  	}
  
@@ -13647,7 +13753,7 @@ index 17f10fc..d354c02 100644
  	var av C.struct_retro_system_av_info
  	C.bridge_retro_get_system_av_info(retroGetSystemAVInfo, &av)
  	n.log.Info().Msgf("System A/V >>> %vx%v (%vx%v), [%vfps], AR [%v], audio [%vHz]",
-@@ -306,13 +522,52 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -306,13 +529,52 @@ func (n *Nanoarch) LoadGame(path string) error {
  		av.geometry.max_width, av.geometry.max_height,
  		av.timing.fps, av.geometry.aspect_ratio, av.timing.sample_rate,
  	)
@@ -13702,7 +13808,7 @@ index 17f10fc..d354c02 100644
  
  	Nan0.tickTime = time.Duration(float64(time.Second) / float64(n.sys.av.timing.fps))
  	if n.vfr {
-@@ -322,15 +577,55 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -322,15 +584,55 @@ func (n *Nanoarch) LoadGame(path string) error {
  	n.Stopped.Store(false)
  
  	if n.Video.gl.enabled {
@@ -13760,7 +13866,7 @@ index 17f10fc..d354c02 100644
  	}
  
  	// set default controller types on all ports
-@@ -339,8 +634,38 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -339,8 +641,38 @@ func (n *Nanoarch) LoadGame(path string) error {
  		C.bridge_retro_set_controller_port_device(retroSetControllerPortDevice, C.uint(i), C.RETRO_DEVICE_JOYPAD)
  	}
  
@@ -13801,7 +13907,7 @@ index 17f10fc..d354c02 100644
  		for _, device := range v {
  			C.bridge_retro_set_controller_port_device(retroSetControllerPortDevice, C.uint(k), C.unsigned(device))
  			n.log.Debug().Msgf("set custom port-device: %v:%v", k, device)
-@@ -361,6 +686,9 @@ func (n *Nanoarch) Shutdown() {
+@@ -361,6 +693,9 @@ func (n *Nanoarch) Shutdown() {
  			if n.Video.gl.enabled {
  				C.same_thread(C.deinit_video_cgo)
  			}
@@ -13811,7 +13917,7 @@ index 17f10fc..d354c02 100644
  			C.same_thread(C.same_thread_stop)
  		})
  	} else {
-@@ -381,6 +709,9 @@ func (n *Nanoarch) Shutdown() {
+@@ -381,6 +716,9 @@ func (n *Nanoarch) Shutdown() {
  				runtime.UnlockOSThread()
  			})
  		}
@@ -13821,7 +13927,7 @@ index 17f10fc..d354c02 100644
  	}
  
  	setRotation(0)
-@@ -406,11 +737,33 @@ func (n *Nanoarch) syncInputToCache() {
+@@ -406,11 +744,33 @@ func (n *Nanoarch) syncInputToCache() {
  		n.keyboard.SyncToCache()
  	}
  	n.mouse.SyncToCache()
@@ -13855,7 +13961,7 @@ index 17f10fc..d354c02 100644
  	if n.LibCo {
  		C.same_thread(retroRun)
  	} else {
-@@ -427,10 +780,46 @@ func (n *Nanoarch) Run() {
+@@ -427,10 +787,46 @@ func (n *Nanoarch) Run() {
  	}
  }
  
@@ -13906,10 +14012,13 @@ index 17f10fc..d354c02 100644
  func (n *Nanoarch) InputKeyboard(_ int, data []byte) {
  	if n.keyboardCb == nil {
  		return
-@@ -512,13 +901,34 @@ const (
+@@ -512,13 +908,47 @@ const (
  )
  
  // SaveState returns emulator internal state.
+-func SaveState() (State, error) {
+-	size := C.bridge_retro_serialize_size(retroSerializeSize)
+-	data := make([]byte, uint(size))
 +//
 +// Patch 0030 — two long-standing faults fixed here:
 +//  1. retro_serialize_size ran on the CALLER's goroutine even for LibCo cores, whose entire
@@ -13928,13 +14037,25 @@ index 17f10fc..d354c02 100644
 +	return C.bridge_retro_serialize_size(retroSerializeSize)
 +}
 +
- func SaveState() (State, error) {
--	size := C.bridge_retro_serialize_size(retroSerializeSize)
++func SaveState() (State, error) { return SaveStateInto(nil) }
++
++// SaveStateInto is SaveState with an optional buffer to serialize into, used when the caller already
++// owns a correctly-sized one it is done with. The rewind ring is why it exists: N64's state is
++// 16.8 MB and it snapshots several times a second, so allocating a fresh one each capture puts ~84 MB/s
++// of garbage on the emulator's own thread and pay for it in GC pauses the stream can see.
++//
++// buf is used ONLY on an exact size match. retro_serialize_size drifts within a core (Dolphin's
++// grows as a game warms up), and a short buffer handed to retro_serialize is a heap overrun, not a
++// failed save — so a mismatch allocates and the caller gets the new slice back.
++func SaveStateInto(buf []byte) (State, error) {
 +	size := serializeSize()
 +	if size == 0 {
 +		return nil, errors.New("retro_serialize_size returned 0 (core cannot save-state this game)")
 +	}
- 	data := make([]byte, uint(size))
++	data := buf
++	if uint(len(data)) != uint(size) {
++		data = make([]byte, uint(size))
++	}
  	rez := false
  
  	if Nan0.LibCo && !Nan0.hackSkipSameThreadSave {
@@ -13943,7 +14064,7 @@ index 17f10fc..d354c02 100644
  	} else {
  		rez = bool(C.bridge_retro_serialize(retroSerialize, unsafe.Pointer(&data[0]), size))
  	}
-@@ -536,11 +946,37 @@ func RestoreSaveState(st State) error {
+@@ -536,11 +966,37 @@ func RestoreSaveState(st State) error {
  		return errors.New("empty load state")
  	}
  
@@ -13982,7 +14103,7 @@ index 17f10fc..d354c02 100644
  	} else {
  		rez = bool(C.bridge_retro_unserialize(retroUnserialize, unsafe.Pointer(&st[0]), size))
  	}
-@@ -581,6 +1017,24 @@ func memoryData(id C.uint) unsafe.Pointer {
+@@ -581,6 +1037,24 @@ func memoryData(id C.uint) unsafe.Pointer {
  	return C.bridge_retro_get_memory_data(retroGetMemoryData, id)
  }
  
@@ -14007,7 +14128,7 @@ index 17f10fc..d354c02 100644
  // ptSaveRam return SRAM memory pointer if core supports it or nil.
  func ptSaveRAM() *mem {
  	ptr, size := memoryData(C.RETRO_MEMORY_SAVE_RAM), memorySize(C.RETRO_MEMORY_SAVE_RAM)
-@@ -613,6 +1067,8 @@ var (
+@@ -613,6 +1087,8 @@ var (
  	retroGetSystemInfo           unsafe.Pointer
  	retroInit                    unsafe.Pointer
  	retroLoadGame                unsafe.Pointer
@@ -14016,7 +14137,7 @@ index 17f10fc..d354c02 100644
  	retroReset                   unsafe.Pointer
  	retroRun                     unsafe.Pointer
  	retroSetAudioSample          unsafe.Pointer
-@@ -630,11 +1086,71 @@ var (
+@@ -630,11 +1106,71 @@ var (
  	retroUnserialize             unsafe.Pointer
  )
  
@@ -14088,7 +14209,40 @@ index 17f10fc..d354c02 100644
  
  	// some frames can be rendered slower or faster than internal 1/fps core tick
  	// so track actual frame render time for proper RTP packet timestamps
-@@ -668,10 +1184,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -658,6 +1194,32 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+ 		return
+ 	}
+ 
++	// ── FRAME THINNING GATE (fast-forward; also the SkipLateFrames option) ────────────────────────
++	// The frontend decides HERE whether this frame will be delivered — before it is captured, not
++	// after. That ordering is the whole point, and it is not a micro-optimisation:
++	//
++	// every hardware path below CHECKS OUT a zero-copy pool slot (nano_vk_zc_frame's Vulkan slot,
++	// graphics.CopyFrameToPool's GL texture), and a slot comes back ONLY when GStreamer frees the
++	// buffer wrapping it. A frame captured and then discarded downstream therefore leaks its slot
++	// permanently. Fast-forward used to drop in the frontend's handleVideo, which meant ~half a
++	// second of holding it leaked all 8 Vulkan slots; from then on nano_vk_zc_frame returned 0 for
++	// every frame, the core dup'd forever, and the picture was frozen for the rest of the session
++	// while audio and input carried on (live 2026-07-29, N64 + fast-forward — the same trap was
++	// armed on every Vulkan/GL zero-copy 3D system, N64 just got there first).
++	//
++	// Skipping here also skips the blit/readback, the encode and the send — which is most of what
++	// fast-forward is trying to buy in the first place.
++	if Nan0.Handlers.SkipFrame() {
++		// The libretro sync-index protocol is per-FRAME, not per-DELIVERED-frame: a core that keys
++		// its per-frame resources off get_sync_index desyncs if the index stops advancing (see
++		// nano_vk_zc_frame, which advances ahead of its own drop guards for exactly this reason).
++		// Only the Vulkan paths advance it, so only they need the stand-in.
++		if Nan0.Video.vk.enabled && data == C.RETRO_HW_FRAME_BUFFER_VALID {
++			C.nano_vk_zc_skip()
++		}
++		return
++	}
++
+ 	// calculate real frame width in pixels from packed data (realWidth >= width)
+ 	// some cores or games output zero pitch, i.e. N64 Mupen
+ 	bpp := Nan0.Video.PixFmt.BPP
+@@ -668,10 +1230,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	bytes := packed * height
  
  	var data_ []byte
@@ -14153,7 +14307,7 @@ index 17f10fc..d354c02 100644
  		// if Libretro renders frame with OpenGL context
  		data_ = graphics.ReadFramebuffer(bytes, width, height)
  	}
-@@ -680,7 +1250,104 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -680,7 +1296,104 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	// also we have an option of xN output frame magnification
  	// so, it may be rescaled
  
@@ -14259,7 +14413,7 @@ index 17f10fc..d354c02 100644
  }
  
  //export coreAudioSampleBatch
-@@ -688,6 +1355,7 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+@@ -688,6 +1401,7 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
  	if Nan0.Stopped.Load() {
  		return frames
  	}
@@ -14267,7 +14421,7 @@ index 17f10fc..d354c02 100644
  	Nan0.Handlers.OnAudio(data, int(frames)<<1)
  
  	// Audio buffer status for the core (e.g. mGBA frameskip).
-@@ -739,7 +1407,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
+@@ -739,7 +1453,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
  
  //export coreGetProcAddress
  func coreGetProcAddress(sym *C.char) C.retro_proc_address_t {
@@ -14282,7 +14436,7 @@ index 17f10fc..d354c02 100644
  }
  
  //export coreEnvironment
-@@ -748,9 +1422,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -748,9 +1468,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	// see core_environment_cgo
  
  	switch cmd {
@@ -14314,7 +14468,7 @@ index 17f10fc..d354c02 100644
  		if isGeometryDifferent(av.geometry) {
  			geometryChange(av.geometry)
  		}
-@@ -788,6 +1484,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -788,6 +1530,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	case C.RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
  		*(**C.char)(data) = Nan0.cSaveDirectory
  		return true
@@ -14327,7 +14481,7 @@ index 17f10fc..d354c02 100644
  	case C.RETRO_ENVIRONMENT_SET_MESSAGE:
  		// only with the Libretro debug mode
  		if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -797,12 +1499,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -797,12 +1545,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -14376,7 +14530,7 @@ index 17f10fc..d354c02 100644
  		if v, ok := Nan0.options[key]; ok {
  			// make Go strings null-terminated copies ;_;
  			Nan0.options[key] = v + "\x00"
-@@ -816,14 +1554,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -816,14 +1600,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -14471,7 +14625,7 @@ index 17f10fc..d354c02 100644
  	case C.RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
  		if Nan0.log.GetLevel() > logger.DebugLevel {
  			return false
-@@ -851,7 +1668,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -851,7 +1714,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		return true
  	case C.RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
  		Nan0.log.Debug().Msgf("Keyboard event callback was set")
@@ -14491,7 +14645,7 @@ index 17f10fc..d354c02 100644
  		return true
  	case C.RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK:
  		if data == nil {
-@@ -869,11 +1697,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -869,11 +1743,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		Nan0.log.Info().Uint("latency_ms", uint(latency)).Msg("audio latency requested")
  		return true
  	}
@@ -14523,7 +14677,7 @@ index 17f10fc..d354c02 100644
  	var context graphics.Context
  	switch Nan0.Video.hw.context_type {
  	case C.RETRO_HW_CONTEXT_NONE:
-@@ -911,6 +1759,25 @@ func initVideo() {
+@@ -911,6 +1805,25 @@ func initVideo() {
  		if err != nil {
  			panic(err)
  		}
@@ -14549,7 +14703,7 @@ index 17f10fc..d354c02 100644
  	})
  
  	if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -918,12 +1785,31 @@ func initVideo() {
+@@ -918,12 +1831,31 @@ func initVideo() {
  	}
  }
  
@@ -14581,7 +14735,7 @@ index 17f10fc..d354c02 100644
  		if err := Nan0.glCtx.Deinit(); err != nil {
  			Nan0.log.Error().Err(err).Msg("deinit fail")
  		}
-@@ -932,9 +1818,227 @@ func deinitVideo() {
+@@ -932,9 +1864,227 @@ func deinitVideo() {
  	Nan0.Video.gl.autoCtx = false
  	Nan0.hackSkipHwContextDestroy = false
  	Nan0.hackSkipSameThreadSave = false
@@ -14809,7 +14963,7 @@ index 17f10fc..d354c02 100644
  type limit struct {
  	d  time.Duration
  	t  *time.Timer
-@@ -958,6 +2062,11 @@ func (d *limit) push(f func()) {
+@@ -958,6 +2108,11 @@ func (d *limit) push(f func()) {
  func geometryChange(geom C.struct_retro_game_geometry) {
  	Nan0.limiter(func() {
  		old := Nan0.sys.av.geometry
@@ -14822,7 +14976,7 @@ index 17f10fc..d354c02 100644
  
  		if Nan0.Video.gl.enabled && (old.max_width != geom.max_width || old.max_height != geom.max_height) {
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.h b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
-index 2479d0c..26d953b 100644
+index 2479d0c..47c25f4 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 @@ -5,6 +5,8 @@ void bridge_call(void *f);
@@ -14834,7 +14988,7 @@ index 2479d0c..26d953b 100644
  bool bridge_retro_serialize(void *f, void *data, size_t size);
  size_t bridge_retro_serialize_size(void *f);
  bool bridge_retro_unserialize(void *f, void *data, size_t size);
-@@ -32,13 +34,51 @@ void init_video_cgo();
+@@ -32,13 +34,52 @@ void init_video_cgo();
  void deinit_video_cgo();
  
  void same_thread(void *f);
@@ -14870,6 +15024,7 @@ index 2479d0c..26d953b 100644
 +int nano_vk_zc_active(void);
 +int nano_vk_zc_setup(unsigned w, unsigned h);
 +unsigned nano_vk_zc_frame(unsigned width, unsigned height);
++void nano_vk_zc_skip(void);
 +unsigned long long nano_vk_zc_last_serial(void);
 +int nano_vk_zc_tex_current(unsigned tex, unsigned long long serial);
 +int nano_vk_zc_release(unsigned texid);
@@ -14889,10 +15044,10 @@ index 2479d0c..26d953b 100644
  #endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
 new file mode 100644
-index 0000000..adbe830
+index 0000000..dfa8059
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
-@@ -0,0 +1,1944 @@
+@@ -0,0 +1,1956 @@
 +// MovieTheater arcade — Vulkan-capture frontend (M1: readback path).
 +//
 +// Lets the CloudRetro worker host libretro cores that render with RETRO_HW_CONTEXT_VULKAN
@@ -16411,6 +16566,18 @@ index 0000000..adbe830
 +// filled. Go reads it right after nano_vk_zc_frame (same cothread, no race) to tag the frame so a later
 +// dup can verify the slot still holds THIS content before re-pushing it.
 +unsigned long long nano_vk_zc_last_serial(void) { return vk.frame_serial; }
++
++// The frontend skipped a frame outright (fast-forward thinning): it never called nano_vk_zc_frame or
++// nano_vk_readback, so nothing advanced the sync index — and the sync-index protocol is per-FRAME, not
++// per-delivered-frame. A core that keys its per-frame resources off get_sync_index (beetle_psx_hw,
++// Themaister's reference client) desyncs its VRAM-upload tracking once its ring fills and starts
++// delivering degenerate strip frames. So advance it here, exactly as nano_vk_zc_frame's own drop guards
++// do. sync_slot is deliberately left alone: it still names the last slot that really serviced this
++// index, whose fence is the only thing wait_sync_index could usefully block on.
++void nano_vk_zc_skip(void) {
++    if (!vk.iface_ready) return; // no core is reading get_sync_index yet
++    vk.sync_index = (vk.sync_index + 1) % NANO_VK_SYNC;
++}
 +
 +// DUP-PIN: is GL texture `tex` STILL the live current-gen slot holding `serial`? lastFrame borrows a raw
 +// zc-slot texture; GStreamer frees the slot after encode and a later frame can re-blit new content into
