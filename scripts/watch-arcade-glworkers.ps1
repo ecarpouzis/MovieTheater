@@ -594,14 +594,36 @@ while ($true) {
                 $vscript = Join-Path $PSScriptRoot 'verify-patched-artifacts.ps1'
                 if (Test-Path $vscript) {
                     $raw = & pwsh -NoProfile -File $vscript -Json 2>&1 | Out-String
-                    $res = $raw | ConvertFrom-Json
-                    if (-not $res.ok) {
-                        foreach ($f in $res.findings) {
+                    $res = $null
+                    try { $res = $raw | ConvertFrom-Json } catch { $res = $null }
+                    # !! A BROKEN VERIFIER MUST NOT READ AS A CHANGED BINARY (fired a false popup at an
+                    # admin 2026-07-30). The old code went straight to `if (-not $res.ok)`, so ANY run
+                    # that failed to emit parseable JSON -- a transient error, stderr noise captured by
+                    # 2>&1, an empty result -- left $res.ok ABSENT, which is falsey, and then
+                    # `@($res.findings).Count` on a null findings list is 1, not 0. The result was a
+                    # report of exactly "1 finding(s)" with no detail line, and a POST carrying
+                    # Ok=false with an empty Findings array, which the site renders as a drift popup.
+                    # Two different failures must not produce the same alarm.
+                    $usable = ($null -ne $res) -and ($null -ne $res.PSObject.Properties['ok'])
+                    if (-not $usable) {
+                        $snippet = ($raw.Trim() -replace '\s+', ' ')
+                        if ($snippet.Length -gt 200) { $snippet = $snippet.Substring(0, 200) }
+                        Log ("check H: verifier produced NO USABLE JSON -- not reporting drift this cycle. Output was: {0}" -f $snippet)
+                        # Deliberately NOT posting: the report doubles as a heartbeat, so staying silent
+                        # escalates through the site's STALENESS path instead ("the guard has gone quiet"),
+                        # which is the honest signal. Posting Ok=true would claim a verification that never
+                        # happened; posting Ok=false would claim a drift nobody observed.
+                        $script:lastArtifactCheck = (Get-Date).AddMinutes(-25)  # retry in ~5 min, not 30
+                    }
+                    elseif (-not $res.ok) {
+                        $findings = @($res.findings | Where-Object { $null -ne $_ })
+                        foreach ($f in $findings) {
                             $extra = if ($f.stockName -and $f.status -eq 'MISSING') { ' -- STOCK NAME: next worker start installs STOCK over it' } else { '' }
                             Log ("PATCHED-ARTIFACT {0}: {1} [{2}]{3}" -f $f.status, $f.id, $f.detail, $extra)
                         }
-                        Log ("PATCHED-ARTIFACT: {0} finding(s) -- run scripts\verify-patched-artifacts.ps1 (add -Restore only if this is a revert, -Snapshot if it was an intentional rebuild)" -f @($res.findings).Count)
+                        Log ("PATCHED-ARTIFACT: {0} finding(s) -- run scripts\verify-patched-artifacts.ps1 (add -Restore only if this is a revert, -Snapshot if it was an intentional rebuild)" -f $findings.Count)
                     }
+                    if ($usable) {
                     # PUSH TO THE SITE so this raises a POPUP for admins instead of only landing in
                     # this log. Posted EVERY cycle, healthy or not: the report doubles as a heartbeat,
                     # and the site escalates on staleness -- a watchdog that has gone silent must not
@@ -639,6 +661,7 @@ while ($true) {
                     } catch {
                         Log ("check H: site alert POST failed ({0}) -- findings above are log-only this cycle" -f $_.Exception.Message)
                     }
+                    } # end if ($usable) -- an unusable verifier run posts NOTHING (see above)
                 } else {
                     Log "check H skipped: verify-patched-artifacts.ps1 not found next to the watchdog"
                 }
