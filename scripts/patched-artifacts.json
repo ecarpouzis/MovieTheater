@@ -1,0 +1,159 @@
+{
+  "generatedUtc": "2026-07-30T02:06:23.3659332Z",
+  "note": "Expected bytes for every patched/pinned binary. Regenerate ONLY after an intentional rebuild (verify-patched-artifacts.ps1 -Snapshot). Never regenerate to silence an unexplained finding.",
+  "artifacts": [
+    {
+      "id": "core-mupen64plus-next",
+      "file": "mupen64plus_next_libretro.dll",
+      "stockName": true,
+      "sha256": "CD6AE1F652A8EE87533751D7595DEBD2768960466EBB613C290818687738B3DE",
+      "size": 12382877,
+      "locations": [
+        "D:\\ArcadeStorage\\worker-gl\\assets\\cores\\mupen64plus_next_libretro.dll",
+        "D:\\ArcadeStorage\\worker-gl-2\\assets\\cores\\mupen64plus_next_libretro.dll",
+        "D:\\Arcade\\build\\cloud-game-gl\\assets\\cores\\mupen64plus_next_libretro.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\core-mupen64plus-next__mupen64plus_next_libretro.dll",
+      "provenance": "MT-PATCHED: adds core option mupen64plus-AllowUnalignedDMA (honours odd PI cart addresses; SM64 Last Impact requires it). Patch = pi_controller.c PI_CART_ADDR_ALIGN_MASK + libretro.c global + core option, plus a _CRT_RAND_S build fix.",
+      "rebuild": "See memory mupen64plus-next-core-build: clone libretro/mupen64plus-libretro-nx, apply patch, build from PowerShell with $env:MSYSTEM=MINGW64 + nasm, make platform=win -j8."
+    },
+    {
+      "id": "core-mednafen-psx-hw",
+      "file": "mednafen_psx_hw_libretro.dll",
+      "stockName": true,
+      "sha256": "7C6B95126A8DBB26BE286071791367C6987B116A154CC1B82F7964840A77C55B",
+      "size": 14980133,
+      "locations": [
+        "D:\\ArcadeStorage\\worker-gl\\assets\\cores\\mednafen_psx_hw_libretro.dll",
+        "D:\\ArcadeStorage\\worker-gl-2\\assets\\cores\\mednafen_psx_hw_libretro.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\core-mednafen-psx-hw__mednafen_psx_hw_libretro.dll",
+      "provenance": "PINNED to the buildbot nightly dated 2026-07-16 (fixes the SotN dog-death black-rectangle flash). NOT the newest nightly - do not \"update\" it without re-running the sotn-dog-repro A/B.",
+      "rebuild": "Re-download that specific nightly; rollback copy at *.pre-nightly.bak."
+    },
+    {
+      "id": "core-kronos",
+      "file": "kronos_libretro.dll",
+      "stockName": true,
+      "sha256": "CA1C04907B1457C9BF79BB7E435BCCEFB628326BDB2FF54661BB5F7103C6EE52",
+      "size": 20979619,
+      "locations": [
+        "D:\\ArcadeStorage\\worker-gl\\assets\\cores\\kronos_libretro.dll",
+        "D:\\ArcadeStorage\\worker-gl-2\\assets\\cores\\kronos_libretro.dll",
+        "D:\\Arcade\\build\\cloud-game-gl\\assets\\cores\\kronos_libretro.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\core-kronos__kronos_libretro.dll",
+      "provenance": "NON-BUILDBOT build (live 21 MB vs the 7.7 MB buildbot build kept at *.buildbot.bak). Saturn.",
+      "rebuild": "Unknown - the buildbot copy is at *.buildbot.bak. Confirm provenance before ever replacing."
+    },
+    {
+      "id": "core-citra-custom",
+      "file": "citra_custom_libretro.dll",
+      "stockName": false,
+      "sha256": "70BA943B388C482B802F518BB0E17E2DC238B7909FE59E9C409A46F1EB54F8B9",
+      "size": 20211200,
+      "locations": [
+        "D:\\ArcadeStorage\\worker-gl\\assets\\cores\\citra_custom_libretro.dll",
+        "D:\\ArcadeStorage\\worker-gl-2\\assets\\cores\\citra_custom_libretro.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\core-citra-custom__citra_custom_libretro.dll",
+      "provenance": "CUSTOM 3DS build (MSVC; docker/arcade/citra-msvc-vs18.patch) + loose update/translation patch support.",
+      "rebuild": "docker/arcade/citra-msvc-vs18.patch"
+    },
+    {
+      "id": "core-dolphin-custom",
+      "file": "dolphin_custom_libretro.dll",
+      "stockName": false,
+      "sha256": "CF960B78B4796E8D4D61B2B37BA526C7B9F01EFD553A9079D9FDC580ED16D236",
+      "size": 13979136,
+      "locations": [
+        "D:\\ArcadeStorage\\worker-gl\\assets\\cores\\dolphin_custom_libretro.dll",
+        "D:\\ArcadeStorage\\worker-gl-2\\assets\\cores\\dolphin_custom_libretro.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\core-dolphin-custom__dolphin_custom_libretro.dll",
+      "provenance": "CUSTOM GameCube/Wii build: docker/arcade/dolphin-createsharedcontext.patch (implements CreateSharedContext; enables async ubershaders).",
+      "rebuild": "docker/arcade/dolphin-createsharedcontext.patch"
+    },
+    {
+      "id": "core-flycast-custom",
+      "file": "flycast_custom_libretro.dll",
+      "stockName": false,
+      "sha256": "9FE8A6940EE396AE6A0F82EA58B46F1C6B46CE99101E770840F9E13B73E97FFB",
+      "size": 22692864,
+      "locations": [
+        "D:\\ArcadeStorage\\worker-gl\\assets\\cores\\flycast_custom_libretro.dll",
+        "D:\\ArcadeStorage\\worker-gl-2\\assets\\cores\\flycast_custom_libretro.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\core-flycast-custom__flycast_custom_libretro.dll",
+      "provenance": "CUSTOM Dreamcast/Naomi build: flycast-custom-core.patch (Vulkan + OIT lockstep).",
+      "rebuild": "docker/arcade/flycast-custom-core.patch"
+    },
+    {
+      "id": "core-pcsx2-custom",
+      "file": "pcsx2_custom_libretro.dll",
+      "stockName": false,
+      "sha256": "D95CF2B566765A57DA9231609D532F78DF9E6B5B186751BD8C52749D3BE0903C",
+      "size": 11317760,
+      "locations": [
+        "D:\\ArcadeStorage\\worker-gl\\assets\\cores\\pcsx2_custom_libretro.dll",
+        "D:\\ArcadeStorage\\worker-gl-2\\assets\\cores\\pcsx2_custom_libretro.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\core-pcsx2-custom__pcsx2_custom_libretro.dll",
+      "provenance": "BYTE-PATCHED LRPS2: one GameDB data edit (Stuntman SLUS-20250 round/clamp modes) reachable ONLY via the embedded GameDB.",
+      "rebuild": "docker/arcade/lrps2-perfattr-and-gamedb.patch + lrps2-patch-gamedb.py"
+    },
+    {
+      "id": "core-ppsspp-custom",
+      "file": "ppsspp_custom_libretro.dll",
+      "stockName": false,
+      "sha256": "00E0B77787993D6CB451E4F6D8EDDD7FC4528DDD4206B96B40FEF0EDE0C6D369",
+      "size": 15322624,
+      "locations": [
+        "D:\\ArcadeStorage\\worker-gl\\assets\\cores\\ppsspp_custom_libretro.dll",
+        "D:\\ArcadeStorage\\worker-gl-2\\assets\\cores\\ppsspp_custom_libretro.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\core-ppsspp-custom__ppsspp_custom_libretro.dll",
+      "provenance": "CUSTOM PSP build: docker/arcade/ppsspp-custom-core.patch (patched MachineContext AV-rescue handler; permits real JIT + fastmem).",
+      "rebuild": "docker/arcade/ppsspp-build-core.bat (MSVC + libretro/Makefile; NEVER MinGW for PPSSPP)"
+    },
+    {
+      "id": "jellyfin-api",
+      "file": "Jellyfin.Api.dll",
+      "stockName": true,
+      "sha256": "B03CA9E11AB81767C84D0BAFC3B4A8848983333A16BAF3031A23C980F372CE44",
+      "size": 664576,
+      "locations": [
+        "C:\\Program Files\\Jellyfin\\Server\\Jellyfin.Api.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\jellyfin-api__Jellyfin.Api.dll",
+      "provenance": "PATCHED Jellyfin 10.11.11: exact per-keyframe HLS copy segmentation + POST /Videos/{itemId}/ExtractKeyframes. Binding identity MUST stay 12.0.0.0.",
+      "rebuild": ".claude/skills/hls-copy-freeze/tools/build-jellyfin-patch.ps1 then deploy-jellyfin-patch.ps1 (elevated)"
+    },
+    {
+      "id": "jellyfin-hls",
+      "file": "Jellyfin.MediaEncoding.Hls.dll",
+      "stockName": true,
+      "sha256": "44D11A0E93410BD92329BC739B968364C1EE022399E2B6A24AB63ADC0F21556A",
+      "size": 18432,
+      "locations": [
+        "C:\\Program Files\\Jellyfin\\Server\\Jellyfin.MediaEncoding.Hls.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\jellyfin-hls__Jellyfin.MediaEncoding.Hls.dll",
+      "provenance": "PATCHED Jellyfin 10.11.11 (HLS segmentation). Binding identity MUST stay 12.0.0.0.",
+      "rebuild": ".claude/skills/hls-copy-freeze/tools/build-jellyfin-patch.ps1"
+    },
+    {
+      "id": "jellyfin-controller",
+      "file": "MediaBrowser.Controller.dll",
+      "stockName": true,
+      "sha256": "79C1481F11636CD97676ED85816E8B36E4039D671B5DB11B45F30917998082E2",
+      "size": 607744,
+      "locations": [
+        "C:\\Program Files\\Jellyfin\\Server\\MediaBrowser.Controller.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\jellyfin-controller__MediaBrowser.Controller.dll",
+      "provenance": "PATCHED Jellyfin 10.11.11. Binding identity MUST stay 10.11.11.0.",
+      "rebuild": ".claude/skills/hls-copy-freeze/tools/build-jellyfin-patch.ps1"
+    }
+  ]
+}
