@@ -38,20 +38,16 @@ const NOT_REMAPPED_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "c
 // copies of "which cores have save-states" is exactly the drift that breaks a save path silently.
 
 // Time controls (fork t=114/115). Fast-forward is pacing-only, so every libretro-lane system has
-// it; the heavy/capture lanes stream a native app with no retro_run to pace. Rewind additionally
-// needs the worker's in-memory savestate ring, armed per core with `rewind: true` in
-// config.worker-gl.yaml — this set mirrors that file (the serialize-cheap 2D tier), keep in step.
+// it; the heavy/capture lanes stream a native app with no retro_run to pace — that one IS a system
+// property, so it stays a set here.
 //
-// ⚠ n64 is deliberately ABSENT even though one of its two cores (parallel_n64) now has the ring
-// armed: this set is keyed by SYSTEM and the arming is per-CORE, so adding "n64" would show a
-// Rewind button on every N64 room and have it do nothing on the ~all of them that boot the default
-// mupen64plus_next (whose serialize costs 11.6 ms — see the config). Exposing n64 rewind needs the
-// join descriptor to carry the arming as a real capability, not this set to guess at it.
-const REWIND_SYSTEMS = new Set([
-  "nes", "snes", "genesis", "gb", "gbc", "gba", "sms", "gg", "sg1000", "segacd", "sega32x",
-  "pce", "ngpc", "wsc", "a2600", "a7800", "lynx", "vb", "fds", "neogeo", "arcade",
-  "vectrex", "intv", "coleco", "channelf", "o2em", "arcadia", "supervision", "pokemini", "3do",
-]);
+// Rewind is NOT. It needs the worker's in-memory savestate ring, which is armed per CORE
+// (`rewind: true` in config.worker-gl.yaml), and a system can have more than one core: N64's
+// parallel_n64 serializes its 16 MB state in 2.4 ms and is armed, mupen64plus_next takes 11.6 ms
+// and is not. Which one a room booted is a server-side decision (play-button pick, saved profile,
+// or the core a resumed save was written on), so the server answers it — descriptor.canRewind,
+// from ArcadeRewindSupport. A set here could only guess, and a wrong guess is a Rewind button that
+// the worker accepts and ignores.
 const MAPPABLE_SYSTEM_OPTIONS = Object.keys(SYSTEM_LABEL)
   .filter((s) => !NOT_REMAPPED_SYSTEMS.has(s))
   .map((s) => ({ value: s, label: systemLabel(s) }))
@@ -126,6 +122,11 @@ export default function ArcadeRoomPage() {
   // descriptor for every member (server sources it from the durable ArcadeSession). Drives hiding the
   // Save/Load/Snapshot controls + showing the badge — the honest-UI half of "no save-scumming".
   const [competitive, setCompetitive] = useState(!!location.state?.descriptor?.competitive);
+  // Whether this room's worker has the rewind ring armed. It is a per-ROOM answer, not a per-system
+  // one — the arming is per CORE (parallel_n64 serializes N64's 16 MB state in 2.4 ms, mupen in 11.6)
+  // and only the server knows which core a room booted. Absent/false = don't offer rewind at all,
+  // because an unarmed worker accepts t=115 and does nothing with it.
+  const [canRewind, setCanRewind] = useState(!!location.state?.descriptor?.canRewind);
   // Steam-style achievement pops (bottom-right, badge art). The worker's t=160 unlock packet carries no
   // badge, so we preload the game's badge map (achId → colour badge URL) once and look it up per pop.
   const [achToasts, setAchToasts] = useState([]);
@@ -290,6 +291,7 @@ export default function ArcadeRoomPage() {
       setControllerScheme(controllerSchemeFromWsUrl(descriptor.wsUrl));
       setCompetitive(!!descriptor.competitive);
       competitiveRef.current = !!descriptor.competitive;
+      setCanRewind(!!descriptor.canRewind);
       setDiscCount(descriptor.discCount || 0);
 
       // A JIT game's first play may have to inflate a compressed disc image (a PSP .cso, a GameCube
@@ -366,7 +368,13 @@ export default function ArcadeRoomPage() {
           // Competitive rooms block both (rewind IS save-scumming; fast-forward is the time
           // manipulation the leaderboards exist to keep out), mirroring the hidden save buttons.
           if (action === "fastForward" || action === "rewind") {
-            const supported = action === "fastForward" ? !HEAVY_LANE_SYSTEMS.has(sys) : REWIND_SYSTEMS.has(sys);
+            // Rewind is answered by the SERVER (descriptor.canRewind), never guessed from the system:
+            // the worker arms the ring per CORE, and which core a room booted is decided server-side
+            // from the play-button pick / saved profile / resume slot. Fast-forward is pacing-only, so
+            // every libretro-lane system has it; the heavy lane streams a native app with no retro_run.
+            const supported = action === "fastForward"
+              ? !HEAVY_LANE_SYSTEMS.has(sys)
+              : !!descriptor.canRewind;
             if (competitiveRef.current || !supported) {
               if (engaged) {
                 message.info(competitiveRef.current
@@ -1211,7 +1219,7 @@ export default function ArcadeRoomPage() {
               (Select + West = rewind, Select + East = fast-forward). Hidden in competitive rooms —
               rewind is save-scumming and fast-forward is exactly the time manipulation the
               leaderboards keep out — and on systems whose core can't do them. */}
-          {!competitive && !spectator && REWIND_SYSTEMS.has(String(system || "").toLowerCase()) && (
+          {!competitive && !spectator && canRewind && (
             <Tooltip title="Hold to rewind — or hold Select + the West face button on your pad">
               <Button
                 onPointerDown={() => sessionRef.current?.rewind?.(true)}

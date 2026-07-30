@@ -69,6 +69,14 @@ namespace MovieTheater.Services.Arcade
     /// Never logged. Null when the creator hasn't linked RA.</param>
     /// <param name="Hardcore">True to run rcheevos in HARDCORE mode — set for a competitive room with a
     /// linked creator. Hardcore is what makes RA count the unlocks/leaderboard runs as legit.</param>
+    /// <param name="CoreKey">The ALTERNATE core this room booted (<c>parallel_n64</c>), or empty for the
+    /// system's default core. Distinct from <see cref="System"/> on purpose: the two together are the
+    /// room's identity, and folding the core into the system string is what broke a joiner's input
+    /// profile (see the Join path's note on the save namespace).</param>
+    /// <param name="CanRewind">Whether the worker has this room's rewind ring armed. Server-computed
+    /// from (system, core) because the arming is per-CORE and the client cannot know which core booted
+    /// — see <c>ArcadeRewindSupport</c>. False means the room page must not offer rewind at all: the
+    /// packet would be accepted and silently do nothing.</param>
     public sealed record ArcadeJoinDescriptor(
         string RoomCode,
         string WsUrl,
@@ -81,7 +89,9 @@ namespace MovieTheater.Services.Arcade
         IReadOnlyList<string>? CheatCodes = null,
         string? RaUser = null,
         string? RaToken = null,
-        bool Hardcore = false);
+        bool Hardcore = false,
+        string? CoreKey = null,
+        bool CanRewind = false);
 
     /// <summary>One ICE server for the client's RTCPeerConnection. STUN entries carry only
     /// <paramref name="Urls"/>; a TURN entry additionally carries the ephemeral

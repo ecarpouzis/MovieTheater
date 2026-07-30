@@ -56,6 +56,32 @@ namespace MovieTheater.Controllers
             return saveSystem.StartsWith(prefix, StringComparison.Ordinal) ? saveSystem[prefix.Length..] : null;
         }
 
+        /// <summary>
+        /// A live room's (system, coreKey), recovered from the bound save id — the only record a JOINER
+        /// has of how the creator launched. The id carries the SAVE namespace, which is the system for a
+        /// default-core room and <c>system-coreKey</c> for an alternate one.
+        ///
+        /// <para>Splitting the two apart is a fix, not a refactor. Join used to hand the raw save
+        /// namespace to the client as <c>descriptor.system</c>, so a joiner in a parallel_n64 room got
+        /// <c>"n64-parallel_n64"</c> — a key in none of the client's system tables. The one that hurt was
+        /// <c>profileFor()</c>: the miss falls back to the DEFAULT input profile, which turns the N64
+        /// stick-to-dpad fold back ON (the Goldeneye "pans the view while walking" double-bind the n64
+        /// profile exists to kill), swaps confirm/back on the keyboard, and drops the C-buttons off the
+        /// right stick. The creator was fine; only joiners were affected, which is exactly the kind of
+        /// bug that survives a solo test.</para>
+        ///
+        /// <para>A capture room's namespace is the literal "capture" and does not derive from the
+        /// catalog system ("switch"), so it falls through to "use the id verbatim, no alternate core" —
+        /// the behaviour it already had.</para>
+        /// </summary>
+        private static (string System, string CoreKey) RoomSystemAndCore(string catalogSystem, string? boundRoomId)
+        {
+            if (!ArcadeSaveId.TryParse(boundRoomId, out _, out _, out _, out var saveSystem, out _))
+                return (catalogSystem, string.Empty);
+            var core = SaveCoreKey(catalogSystem, saveSystem);
+            return core == null ? (saveSystem, string.Empty) : (catalogSystem, core);
+        }
+
         private readonly MovieDb movieDb;
         private readonly IArcadeHost host;
         private readonly ArcadeRoomService rooms;
@@ -1555,6 +1581,17 @@ namespace MovieTheater.Controllers
                     descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&hwctx=" + renderProfile.HwContext };
             }
 
+            // Which core booted, and therefore whether this room can rewind. The core is what decides
+            // (ArcadeRewindSupport), and only the server knows it — the profile was resolved up there
+            // from a play-button pick, a saved profile, or a resume-slot's save namespace, none of which
+            // the browser sees. Joiners recover the same pair from the bound save id; see Join.
+            var roomCoreKey = isCapture ? "" : (renderProfile?.CoreKey ?? "");
+            descriptor = descriptor with
+            {
+                CoreKey = roomCoreKey,
+                CanRewind = ArcadeRewindSupport.IsArmed(roomSystem, roomCoreKey),
+            };
+
             // Per-room Wii controller-scheme override (computed above, before CreateRoom, since it also
             // needs to land in room state for joiners): ride the creator's own descriptor too.
             if (ctrlScheme != "" && !isCapture)
@@ -2604,10 +2641,15 @@ namespace MovieTheater.Controllers
             // Use the room's ACTUAL system from its bound id (a capture room is "capture", not the
             // catalog "switch") so a joiner's descriptor.system matches the creator's — client tables
             // keyed on descriptor.system (aspect fallback, the "Live" label) would otherwise diverge (R2).
-            var joinSystem = ArcadeSaveId.TryParse(boundRoomId, out _, out _, out _, out var jsys, out _) ? jsys : game.System;
+            var (joinSystem, joinCore) = RoomSystemAndCore(game.System, boundRoomId);
             var descriptor = host.BuildJoinDescriptor(
                 userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, joinSystem),
                 code, boundRoomId, join.PlayerSlot, isCreator: false);
+            descriptor = descriptor with
+            {
+                CoreKey = joinCore,
+                CanRewind = ArcadeRewindSupport.IsArmed(joinSystem, joinCore),
+            };
 
             // The room's codec (patch 0036): a joiner's track mime is fixed at INIT_WEBRTC and must match
             // the room's one encoder, so every joiner echoes the creator's choice.
@@ -2665,10 +2707,15 @@ namespace MovieTheater.Controllers
             var boundRoomId = rooms.BoundRoomId(code) ?? string.Empty;
             var (launchKey, discCount) = await ResolveLaunchAsync(game);
             // Match the room's real system (capture rooms are "capture", not "switch") — see R2 in Join.
-            var claimSystem = ArcadeSaveId.TryParse(boundRoomId, out _, out _, out _, out var csys, out _) ? csys : game.System;
+            var (claimSystem, claimCore) = RoomSystemAndCore(game.System, boundRoomId);
             var descriptor = host.BuildJoinDescriptor(
                 userId.Value, new ArcadeGameDescriptor(game.Id, launchKey, claimSystem),
                 code, boundRoomId, claim.PlayerSlot, isCreator: false);
+            descriptor = descriptor with
+            {
+                CoreKey = claimCore,
+                CanRewind = ArcadeRewindSupport.IsArmed(claimSystem, claimCore),
+            };
 
             // Input-only sessions never attach media, but their peer still negotiates a track — keep its
             // mime consistent with the room's encoder (patch 0036) like every other descriptor.
@@ -2856,6 +2903,13 @@ namespace MovieTheater.Controllers
             iceConfig = d.IceConfig.Select(i => new { urls = i.Urls, username = i.Username, credential = i.Credential }).ToList(),
             isCreator = d.IsCreator,
             system = d.System,
+            // The alternate core this room booted, when it isn't the system's default. Kept out of
+            // `system` on purpose — every client table (input profiles, save-state support, the system
+            // label) is keyed by system, and folding the core in made all of them miss for joiners.
+            coreKey = string.IsNullOrEmpty(d.CoreKey) ? null : d.CoreKey,
+            // Whether the worker has this room's rewind ring armed. Per-CORE, so only the server can
+            // answer it; the room page offers the Rewind control on this and nothing else.
+            canRewind = d.CanRewind,
             discCount,
             // The shim copies these straight into its t=104 GAME_START. Omitted when empty so a room with no
             // cheats sends the same packet it always did.
