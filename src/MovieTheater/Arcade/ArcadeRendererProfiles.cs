@@ -84,6 +84,20 @@ namespace MovieTheater.Arcade
                         ("parallel-n64-gliden64-EnableLegacyBlending", "False"),
                         ("parallel-n64-gliden64-EnableCopyAuxToRDRAM", "True"),
                         ("parallel-n64-gliden64-EnableNativeResTexrects", "Optimized")), false),
+                // ── Glide64 (GL) — THE ROMHACK RENDERER, added 2026-07-29 ───────────────────────────
+                // The libretro-era answer to Project64's Jabo's Direct3D. Late-2010s SM64 romhacks were
+                // authored and tested against Jabo's/Glide64, and they lean on its exact (often
+                // inaccurate) handling of custom display lists: SM64: Last Impact renders the hack's
+                // CUSTOM assets as solid black silhouettes on BOTH gliden64 and paraLLEl-RDP, while
+                // Eric confirmed live in Project64 3.0.1 that switching to Jabo's Direct3D fixes the
+                // visuals AND the music. Jabo's itself is closed-source and P64-only, so it cannot be
+                // ported — but parallel_n64 is the ONLY core in our fleet that still BUNDLES Glide64
+                // (gfxplugin tokens: gln64|gliden64|rice|glide64|angrylion|parallel, verified in the
+                // DLL), and we had never once run it. rspplugin=hle to match the era the plugin targets.
+                // If Glide64 still shows black assets, `rice` (Rice Video) is the next closest legacy
+                // plugin in the same core. angrylion stays BANNED (it hard-panics the GL scaffolding).
+                new RenderProfile("parallel_n64_glide64", "parallel_n64 core · Glide64 (romhack compat)", "parallel_n64", "gl", "parallel_n64",
+                    Opt(("parallel-n64-gfxplugin", "glide64"), ("parallel-n64-rspplugin", "hle")), false),
             },
             ["ps2"] = new[]
             {

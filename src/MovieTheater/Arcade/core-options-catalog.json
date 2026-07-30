@@ -13878,6 +13878,23 @@
           "category": "performance"
         },
         {
+          "key": "mupen64plus-AllowUnalignedDMA",
+          "label": "Allow Unaligned DMA",
+          "values": [
+            {
+              "token": "False",
+              "label": "False"
+            },
+            {
+              "token": "True",
+              "label": "True"
+            }
+          ],
+          "default": "False",
+          "desc": "MT-PATCHED CORE ONLY. Honours odd PI cart addresses instead of force-aligning them. Required by romhacks that program an odd PI_CART_ADDR_REG (SM64: Last Impact), which otherwise crash the emulated CPU ~11s into boot. Hardware-accurate alignment is the default; enable PER-GAME only.",
+          "category": "hack"
+        },
+        {
           "key": "mupen64plus-ForceDisableExtraMem",
           "label": "Disable Expansion Pak",
           "values": [

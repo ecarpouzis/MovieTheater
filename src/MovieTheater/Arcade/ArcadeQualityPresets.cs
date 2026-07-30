@@ -315,10 +315,23 @@ namespace MovieTheater.Arcade
                     ("pcsx2_anisotropic_filtering", "8x"),
                     ("pcsx2_blending_accuracy", "Medium")),
                 ["mupen64plus_next"] = Opt(
-                    ("mupen64plus-parallel-rdp-upscaling", "8x"),
-                    ("mupen64plus-43screensize", "640x480"),
-                    ("mupen64plus-EnableNativeResTexrects", "Optimized"), // HUD/text stays native-crisp at upscale
-                    ("mupen64plus-BilinearMode", "3point")),              // the N64's real texture filter
+                    // Demoted from 8x 2026-07-29, deliberately, to match the yaml rollback (see the n64
+                    // block's note). 8x is not a clean supersample on this pipeline: N64 renders 640x240
+                    // on many titles, so 8x is a 5120x1920 core frame downscaled NON-UNIFORMLY into the
+                    // 1280x960 delivery — 4:1 across, 2:1 down. It is also expensive in a way that was
+                    // never weighed: measured on parallel_n64, same game and scene, meanTick 6.2-6.4 ms
+                    // at 8x against 3.6-3.8 ms at 4x, i.e. 8x nearly DOUBLES the core's per-frame cost
+                    // for pixels the player never receives. That budget is what caps N64 fast-forward
+                    // and squeezes everything else in the frame.
+                    ("mupen64plus-parallel-rdp-upscaling", "4x"),
+                    ("mupen64plus-43screensize", "640x480")),
+                    // EnableNativeResTexrects / BilinearMode used to be welded here too. They left the
+                    // yaml on 2026-07-29 because a CamelCase key CANNOT be delivered from it — the config
+                    // loader lowercases every key and libretro's are case-sensitive, so they arrived dead
+                    // and showed up as DEAD keys in every N64 room's log. They are real Ultra values, but
+                    // they are GLideN64's and they ride the render-profile path (ArcadeRendererProfiles,
+                    // the n64 "opengl" profile) which preserves case. This weld asserts what the YAML
+                    // delivers, so a key the yaml structurally can't deliver does not belong in it.
                 ["ppsspp"] = Opt(
                     ("ppsspp_internal_resolution", "2880x1632"),
                     ("ppsspp_texture_anisotropic_filtering", "16x"),

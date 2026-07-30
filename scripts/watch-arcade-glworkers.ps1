@@ -334,6 +334,7 @@ $strikes = @{}       # PID -> consecutive no-coordinator-connection strikes (che
 $wedgeStrikes = @{}  # PID -> consecutive busy-but-silent strikes (check C)
 $absentStrikes = @{} # port -> consecutive "no listener AND no runner" strikes (check F)
 $lastActedTimeout = [datetime]::MinValue  # newest coordinator work-timeout already acted on (check D)
+$script:lastArtifactCheck = $null         # last patched-artifact drift scan (check H, every 30 min)
 
 while ($true) {
     try {
@@ -576,6 +577,38 @@ while ($true) {
 
         # Count husks the watchdog never killed itself (sentinel HardExit, core crash) -- see HuskScan.
         HuskScan
+
+        # -- H) PATCHED-ARTIFACT DRIFT (added 2026-07-29) ------------------------------------
+        # We run a dozen binaries that are NOT what upstream ships (hand-built + byte-patched +
+        # nightly-pinned cores, and 3 patched Jellyfin DLLs). Two mechanisms revert them with NO
+        # error and NO log line: (1) cores.repo.sync pulls the buildbot nightly on every worker
+        # start and its diff() is PRESENCE-ONLY, so any ABSENT core is silently replaced with
+        # STOCK -- worst for patched cores keeping their stock filename; (2) a stock Jellyfin
+        # upgrade overwrites its 3 DLLs. Nothing else on this box would ever notice. Report-only:
+        # this NEVER rewrites a binary (that needs an explicit -Restore by a human), because a
+        # watchdog that silently "fixes" binaries is how you lose an intentional rebuild.
+        # Throttled -- it sha256s ~130 MB, which is wasteful every cycle but cheap every 30 min.
+        if (-not $script:lastArtifactCheck -or ((Get-Date) - $script:lastArtifactCheck).TotalMinutes -ge 30) {
+            $script:lastArtifactCheck = Get-Date
+            try {
+                $vscript = Join-Path $PSScriptRoot 'verify-patched-artifacts.ps1'
+                if (Test-Path $vscript) {
+                    $raw = & pwsh -NoProfile -File $vscript -Json 2>&1 | Out-String
+                    $res = $raw | ConvertFrom-Json
+                    if (-not $res.ok) {
+                        foreach ($f in $res.findings) {
+                            $extra = if ($f.stockName -and $f.status -eq 'MISSING') { ' -- STOCK NAME: next worker start installs STOCK over it' } else { '' }
+                            Log ("PATCHED-ARTIFACT {0}: {1} [{2}]{3}" -f $f.status, $f.id, $f.detail, $extra)
+                        }
+                        Log ("PATCHED-ARTIFACT: {0} finding(s) -- run scripts\verify-patched-artifacts.ps1 (add -Restore only if this is a revert, -Snapshot if it was an intentional rebuild)" -f @($res.findings).Count)
+                    }
+                } else {
+                    Log "check H skipped: verify-patched-artifacts.ps1 not found next to the watchdog"
+                }
+            } catch {
+                Log ("check H error (artifact verify): {0}" -f $_.Exception.Message)
+            }
+        }
 
         # Tidy strike entries for PIDs that no longer exist.
         foreach ($k in @($strikes.Keys)) { if (-not $livePids[$k]) { $strikes.Remove($k) | Out-Null } }

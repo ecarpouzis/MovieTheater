@@ -1226,8 +1226,16 @@ emulator:
             mupen64plus-43screensize: "640x480"
             # Phase-2 raise 4x->8x (2026-07-18): renders 8x native, downsampled to the unchanged
             # 1280x960 delivery = deeper supersampling. Smoke gate: 60fps attract + geometry
-            # unchanged. ROLLBACK: "4x".
-            mupen64plus-parallel-rdp-upscaling: "8x"
+            # unchanged.
+            # ROLLED BACK TO 4x 2026-07-29. The 8x smoke gate only checked fps + geometry, never
+            # SHARPNESS, and 8x is not a clean supersample here: N64 native is 640x240 on this title,
+            # so 8x produces a 5120x1920 core frame (logged: "gl source caps 640x480 -> 5120x1920").
+            # Against the 1280x960 delivery that is 4x horizontally but only 2x vertically - a
+            # NON-UNIFORM downscale, which softens and fringes rather than anti-aliasing. 4x halves
+            # the axis mismatch and the GPU cost. The honest fix would be to derive upscaling from the
+            # delivered geometry per title instead of pinning one multiplier for every N64 game; until
+            # then this is the documented rollback value from the line above.
+            mupen64plus-parallel-rdp-upscaling: "4x"
             mupen64plus-rdp-plugin: "parallel"   # paraLLEl-RDP (Vulkan LLE) — the default renderer
             mupen64plus-rsp-plugin: "parallel"   # LLE RSP accuracy pairing
             # MSAA left OFF (core default). "4" was tried and A/B-measured on Mario Kart 64 at 960x720:
@@ -1242,36 +1250,31 @@ emulator:
             # for any future raw-frame A/B (F-Zero GX is NOT deterministic; see the gc note).
             # (It did NOT break framebuffer effects: Bomberman 64's flat-blue story cinematic renders
             # identically with MSAA 0 and 4 — that is the pre-existing gliden64 limit, not a regression.)
-            # ⚠ The CamelCase mupen64plus-Enable*/MultiSampling/BilinearMode keys below are INERT here:
-            # CloudRetro's config loader (pkg/config/loader.go keysToLower) lowercases every YAML key and
-            # libretro option keys are case-SENSITIVE, so these arrive as `...enable...` and the core ignores
-            # them (worker "DEAD keys" reconcile). They are kept for documentation of intent; the ones that
-            # matter are delivered case-preserved via the n64 "opengl" RENDER PROFILE (ArcadeRendererProfiles.cs)
-            # — that path (t=104 room-options) is authoritative. Only lowercase keys work from config.
-            mupen64plus-MultiSampling: "0"
-            # REQUIRED once you upscale: gliden64 draws N64 2D "texrects" (HUDs, sprites, text) at the
-            # upscaled resolution by default, which seams and blurs them. Optimized renders them at native
-            # res. Values: Disabled|Unoptimized|Optimized.
-            mupen64plus-EnableNativeResTexrects: "Optimized"
-            # 3-point is the N64's real texture filter; "standard" bilinear is a PC approximation that
-            # looks subtly wrong on N64 textures. Values: 3point|standard.
-            mupen64plus-BilinearMode: "3point"
-            # Framebuffer readback — the core defaults ship these Off, which renders framebuffer
-            # effects BLACK (Bomberman 64's whole intro movie) or wrong (DKR uses FB/depth tricks).
-            # Async color copy + software depth copy are the standard gliden64 compat settings;
-            # cost is trivial on a real GPU.
-            mupen64plus-EnableCopyColorToRDRAM: "Async"
-            mupen64plus-EnableCopyDepthToRDRAM: "Software"
-            # Legacy (fast, inaccurate) blending ships ON in the core defaults — with it, Bomberman
-            # 64's intro cinematic renders as flat color planes with no geometry on the D3D12 path.
-            mupen64plus-EnableLegacyBlending: "False"
-            # Cutscenes/cinematics often composite via auxiliary color buffers. With this on,
-            # Bomberman 64's attract/intro scenes render (mine-cart, snow demo — were flat planes).
-            # KNOWN LIMIT: its STORY cinematics (Adventure opening movie) still render as flat
-            # clear-color planes — every gliden64 FB option was tried (CopyColor To/From, CopyDepth,
-            # CopyAux, LegacyBlending); a real fix needs LLE RSP/RDP or a renderer fix on D3D12.
-            # In-engine gameplay/menus/training all render correctly; Battle mode has no cinematics.
-            mupen64plus-EnableCopyAuxToRDRAM: "True"
+            # ── GLideN64 framebuffer/filter settings are NOT set here. DO NOT ADD THEM BACK. ──────
+            # They are CamelCase libretro keys, and CloudRetro's loader (pkg/config/loader.go keysToLower)
+            # lowercases every YAML key while libretro option keys are case-SENSITIVE. A CamelCase key
+            # written here therefore arrives as `...enable...`, is never queried, and its value is INERT.
+            # They used to sit here "for documentation of intent" - REMOVED 2026-07-29 because being
+            # delivered-but-inert is worse than absent: the worker logs 7 DEAD keys every single N64 room,
+            # and reading that list as real configuration sent a debugging session badly off course (it
+            # looks exactly like "our settings are being ignored", when the settings that matter were
+            # never meant to come from here).
+            # WHERE THEY ACTUALLY LIVE: the n64 "opengl" render profile in ArcadeRendererProfiles.cs,
+            # delivered case-preserved as per-room options (t=104). That path is authoritative and is why
+            # the GLideN64 profile renders correctly. Values pinned there, with the reasons kept here so
+            # they are not lost: EnableNativeResTexrects=Optimized (2D texrects/HUD/text at native res,
+            # else they seam and blur once upscaled); BilinearMode=3point (the N64's real texture filter);
+            # EnableCopyColorToRDRAM=Async + EnableCopyDepthToRDRAM=Software (core ships both Off, which
+            # renders framebuffer effects BLACK - Bomberman 64's intro movie - or wrong, e.g. DKR's
+            # FB/depth tricks); EnableLegacyBlending=False (ships ON; with it Bomberman 64's intro is flat
+            # colour planes with no geometry on D3D12); EnableCopyAuxToRDRAM=True (aux-buffer composites,
+            # i.e. Bomberman 64's attract/mine-cart/snow scenes). MultiSampling stays at the core default
+            # 0 - MSAA is INERT on this core (measured bit-identical frames, see the note above).
+            # KNOWN LIMIT, unrelated to any of this: Bomberman 64's STORY cinematics still render as flat
+            # clear-colour planes on D3D12; every gliden64 FB combination was tried. In-engine gameplay,
+            # menus and training all render correctly.
+            # Under the DEFAULT Vulkan profile none of the above applies at all - paraLLEl-RDP is a
+            # different (LLE) renderer and never queries GLideN64's options.
 
         # ── N64 ALTERNATE CORE: parallel_n64 (compatibility) ─────────────────────────────────────
         # A SECOND N64 core, booted per-room ONLY when the render profile sets core-key "parallel_n64"
@@ -1293,7 +1296,19 @@ emulator:
         # distinct from mupen's "n64" — a save-state is core-specific and cross-feeding crash-loops the room.
         parallel_n64:
           lib: parallel_n64_libretro
-          roms: ["n64", "v64", "z64"]
+          # ⚠ roms is DELIBERATELY EMPTY (2026-07-29). It used to be ["n64","v64","z64"], identical to
+          # the `n64` entry above — and config.Emulator.GetEmulator (pkg/config/emulator.go:234) picks a
+          # core by scanning Cores.List for the first entry matching the ROM's extension AND folder, over
+          # a Go MAP (randomized order) with an early return. With both entries claiming z64 + folder n64,
+          # WHICH CORE BOOTED A NO-OVERRIDE N64 ROOM WAS NOT DETERMINISTIC — and in practice parallel_n64
+          # won 5/5 measured rooms, so every "default N64 core" room was silently running the alternate
+          # fork. That is the 2026-07-23 "no-override room booted the WRONG core, render-profile options
+          # reconciled DEAD" footgun, and it invalidated a week of mupen-vs-parallel A/B testing.
+          # An EMPTY roms list cannot match, so this core can never be auto-selected — while an EXPLICIT
+          # per-room override still works, because coordinatorhandlers.go:170 sets game.System straight
+          # from rq.Core (checking only that the key exists in Cores.List) and the ROM path was already
+          # resolved by FindApp under the game's REAL system. So: dropdown-selectable, never the default.
+          roms: []
           folder: n64
           # VULKAN (paraLLEl-RDP) BY DEFAULT — same high-fidelity LLE renderer mupen runs, paired here with
           # parallel_n64's compatibility R4300. Mirrors the mupen64plus_next n64 block (isGlAllowed:false +
@@ -1338,7 +1353,15 @@ emulator:
             # and this core is the only home for them — not because its R4300 differs.
             # Both keys are all-lowercase, so they survive the config loader's keysToLower (unlike
             # the mixed-case gliden64 keys, which must ride the render-profile path).
-            # ⚠ TESTED 2026-07-29 AND IT IS NOT ENOUGH — do not re-run this experiment. Both flags were
+            # ✅ ROOT CAUSE CONFIRMED 2026-07-29 by direct A/B in Project64 3.0.1, same ROM, one checkbox
+            # apart: per-game `Unaligned DMA` ON = plays; OFF = **the EXACT same reserved-opcode / ERET
+            # fault our cores produce**. That is a controlled single-variable proof, not an inference —
+            # unaligned DMA is THE requirement, and every failure we logged (mupen64plus_next,
+            # parallel_n64, P64 2.4) is the same missing capability wearing different hats.
+            # ⚠ AND THIS CORE'S FLAG IS A NO-OP — do not re-run this experiment. Counter Factor was ruled
+            # out too (P64 3.0.1 still boots the game at Counter factor 2), so unaligned DMA is the SOLE
+            # requirement — which means this core's identically-named option simply does not implement it.
+            # A read option is NOT an applied option: `reconcile` proves delivery, never effect. Both flags were
             # delivered and CONFIRMED CONSUMED (`[opt] reconcile: 13/13 provided keys were read by the
             # core`), on BOTH renderers back to back: parallel_n64·Vulkan 20:37:52 (gfxplugin=parallel,
             # Vulkan zero-copy ACTIVE) and parallel_n64·GLideN64 20:39:05 (gfxplugin=gliden64). Both still
