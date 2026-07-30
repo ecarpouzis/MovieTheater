@@ -42,10 +42,17 @@
 #   encW/encH are the PRODUCTION encode size (core viewport x scale) - read it off the worker's own
 #   `abr: auto ceiling ... encode WxH` line, do not compute it by hand.
 #
-# READING THE RESULT
-#   SSIM rises steeply, then flattens. The knee is where extra bitrate stops buying fidelity. Take the
-#   bpp at the knee, not the bpp of the highest SSIM. Y (luma) is the column that matters; chroma
-#   saturates early and will flatter a low bitrate.
+# READING THE RESULT — LOOK AT THE TAIL, NOT THE AVERAGE
+#   ⚠ Mean and median SSIM are USELESS here and will tell you every bitrate is fine. Measured on 600
+#   Genesis frames: per-frame MEDIAN was identical (0.99994) from 5 to 25 Mbps, while the WORST frames
+#   went 0.9957 -> 0.9998. A frame-wide mean averages localized blocking over ~645k pixels, and
+#   localized blocking is the whole complaint. (Same lesson the input-latency probe learned: detect
+#   per-block, not frame-wide.) So this script reports p05/p01/worst, and those are what to read.
+#   Y (luma) is the column that matters; chroma saturates early and flatters a low bitrate.
+#
+#   Do not assume a knee exists. For scroll-heavy pixel art the tail kept improving across the whole
+#   range with no flattening, which means "pick the knee" has no answer and the right target is
+#   whatever lands near abrAutoMaxKbps. A 3D core may well have a real knee; measure it.
 set -euo pipefail
 
 DUMP="${1:?usage: calibrate-arcade-bpp.sh <dumpdir> <encW> <encH> [fps]}"
