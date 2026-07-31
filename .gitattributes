@@ -1,0 +1,10 @@
+# fork.patch is a GENERATED `git diff` of the CloudRetro fork, and its CONTENT legitimately contains
+# CR bytes (the fork's own sources are CRLF). With core.autocrlf=true and no rule here, git rewrote
+# every line to CRLF on checkout — 72,004 CRs became 91,664, the file grew 19,660 bytes, and
+# `git apply` then rejected the patch outright. The rebuild path was therefore broken from any fresh
+# clone, while export-arcade-fork.ps1 still reported "the backup is real": it verifies the file it
+# has just written to disk, never the one git hands back after a round trip.
+#
+# -text = never convert line endings on checkin or checkout. The bytes committed are the bytes
+# restored, which is the only thing that makes this patch a usable backup.
+docker/arcade/patches/*.patch -text
