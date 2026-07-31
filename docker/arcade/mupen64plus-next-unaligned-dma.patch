@@ -1,3 +1,40 @@
+diff --git a/custom/mupen64plus-core/main/mupen64plus.ini.h b/custom/mupen64plus-core/main/mupen64plus.ini.h
+index 4d05aa3..2f34aba 100644
+--- a/custom/mupen64plus-core/main/mupen64plus.ini.h
++++ b/custom/mupen64plus-core/main/mupen64plus.ini.h
+@@ -18389,7 +18389,31 @@ char inifile[] =
+ "\n"
+ "[A76B619EC832A7E2ABCFBDFEB5375E39]\n"
+ "GoodName=Mario Artist Paint Studio (J) (1999-02-11 Proto)\n"
+-"CountPerOp=1\n";
++"CountPerOp=1\n"
++/* MT PATCH: OoT romhacks built on the Master Quest DEBUG ROM.
++ *
++ * This database is NOT a file you can edit — retro_init() does copy_file(inifile, "mupen64plus.ini")
++ * with fopen(...,"w"), so it rewrites the system-dir copy from this string at EVERY core init. An
++ * edit on disk survives until the next room start and no further. Entries must be added HERE.
++ *
++ * Why these hacks need an entry at all: an unrecognised ROM falls through to open_rom()'s else
++ * branch, whose comment reads "There's no way to guess the save type, but 4K EEPROM is better than
++ * nothing" — and OoT uses SRAM. Given a save chip that isn't there, the game boots, holds a steady
++ * 60 ticks/s with audio, and never draws a frame. The base ROM works only because it is recognised.
++ *
++ * They cannot fall back to the base entry either: a hack keeps the base's header CRC, and
++ * ini_search_by_crc() deliberately returns NULL when a CRC is ambiguous — 917D18F6 69BC5453 is
++ * already shared by the "(Debug Version)" and "(Debug Version) [f2]" entries. So MD5 is the only
++ * key that can work, and every hack needs its own line. */
++"\n"
++"[30E9434D818732C60020E62BE4091BA1]\n"
++"GoodName=Legend of Zelda, The - Ocarina of Time (USA) - 4 Player Edition [Hack]\n"
++"CRC=917D18F6 69BC5453\n"
++"Status=4\n"
++"Players=4\n"
++"SaveType=SRAM\n"
++"Rumble=Yes\n"
++"Mempak=Yes\n";
+ 
+ #endif
+ 
 diff --git a/libretro/libretro.c b/libretro/libretro.c
 index 7665666..5ef8309 100644
 --- a/libretro/libretro.c
@@ -68,6 +105,89 @@ index fb39aa9..24be3bd 100644
      {
          CORE_NAME "-CountPerOp",
          "Count Per Op",
+diff --git a/mupen64plus-core/src/device/cart/cart_rom.c b/mupen64plus-core/src/device/cart/cart_rom.c
+index 86657df..abc9648 100644
+--- a/mupen64plus-core/src/device/cart/cart_rom.c
++++ b/mupen64plus-core/src/device/cart/cart_rom.c
+@@ -32,7 +32,12 @@
+ #define __STDC_FORMAT_MACROS
+ #include <inttypes.h>
+ 
+-#define CART_ROM_ADDR_MASK UINT32_C(0x03ffffff);
++/* MT PATCH: 0x03ffffff -> 0x07ffffff, the mask half of the 128 MiB cart-ROM raise. Same change and
++ * same reasoning as in parallel_n64's device/cart/cart_rom.c — without it a DMA from cart offset
++ * 64 MiB masks back to offset 0 and the game reads the start of its own ROM instead of failing,
++ * which is a far nastier bug than the load rejection it replaces. Never raise CART_ROM_MAX_SIZE
++ * without raising this in the same commit. */
++#define CART_ROM_ADDR_MASK UINT32_C(0x07ffffff);
+ 
+ 
+ void init_cart_rom(struct cart_rom* cart_rom,
+@@ -62,6 +67,15 @@ void read_cart_rom(void* opaque, uint32_t address, uint32_t* value)
+     {
+         *value = cart_rom->last_write;
+     }
++    else if (addr + 4 > cart_rom->rom_size)
++    {
++        /* MT PATCH: bounds check, required by the 128 MiB rom_address() mask. Upstream indexes the
++         * ROM buffer unchecked and gets away with it only because the mask (64 MiB) matched the
++         * largest ROM it would load. A wider mask over a smaller cartridge would read off the end of
++         * the allocation, so anything above rom_size reads as zero — matching what cart_rom_dma_write
++         * already does for a short DMA, and what a real cartridge returns for unpopulated space. */
++        *value = 0;
++    }
+     else
+     {
+         *value = *(uint32_t*)(cart_rom->rom + addr);
+diff --git a/mupen64plus-core/src/device/cart/cart_rom.h b/mupen64plus-core/src/device/cart/cart_rom.h
+index 2bba5a3..77d615d 100644
+--- a/mupen64plus-core/src/device/cart/cart_rom.h
++++ b/mupen64plus-core/src/device/cart/cart_rom.h
+@@ -41,9 +41,21 @@ struct cart_rom
+     struct pi_controller* pi;
+ };
+ 
++/* MT PATCH: 0x03fffffc -> 0x07fffffc, the THIRD mask of the 128 MiB cart-ROM raise.
++ *
++ * There are three, and missing this one is silent. cart_rom.c's CART_ROM_ADDR_MASK covers PI *DMA*
++ * (how a game normally streams itself in) and memory.h's CART_ROM_MAX_SIZE covers the load-time size
++ * gate — but this is the mask for a *direct CPU load* out of cart space, and it lived in the header
++ * rather than next to the other two. Raise the first two alone and a >64 MiB ROM loads, runs at full
++ * speed, and quietly reads the START of itself whenever it touches its own data above the 64 MiB
++ * line: OoT 4 Player Edition (64 MiB + 16,896 B) boots, holds 60 ticks/s with audio, and never draws
++ * a frame, because the bytes the hack appended wrap to the ROM header.
++ *
++ * The low two bits stay masked off (word alignment) — that is 0x...fc, not 0x...ff. Keep all three
++ * masks in step; see the notes in cart_rom.c and memory.h. */
+ static osal_inline uint32_t rom_address(uint32_t address)
+ {
+-    return (address & 0x03fffffc);
++    return (address & 0x07fffffc);
+ }
+ 
+ void init_cart_rom(struct cart_rom* cart_rom,
+diff --git a/mupen64plus-core/src/device/memory/memory.h b/mupen64plus-core/src/device/memory/memory.h
+index bd0dd63..56879c4 100644
+--- a/mupen64plus-core/src/device/memory/memory.h
++++ b/mupen64plus-core/src/device/memory/memory.h
+@@ -28,7 +28,16 @@
+ #include "osal/preproc.h"
+ 
+ enum { RDRAM_MAX_SIZE = 0x800000 };
+-enum { CART_ROM_MAX_SIZE = 0x4000000 };
++/* MT PATCH: 64 MiB -> 128 MiB. Identical change, identical reasoning, to the one in parallel_n64
++ * (see the long note on CART_ROM_MAX_SIZE in that core's device/memory/m64p_memory.h). Both cores
++ * are mupen64plus-core forks and BOTH shipped the same 0x4000000 cap and the same
++ * `ParamInt > CART_ROM_MAX_SIZE` assert in api/frontend.c, so switching cores was never a
++ * workaround for an over-64 MiB romhack — it failed the same way on each. Patched here too so the
++ * default N64 core is not the odd one out: a title that only boots on one core is a support trap,
++ * and OoT "4 Player Edition" (64 MiB + 16,896 B) and b3313 (96 MiB) are mainstream enough to be
++ * tried on whatever core a room happens to pick.
++ * MUST be kept in step with CART_ROM_ADDR_MASK in device/cart/cart_rom.c. */
++enum { CART_ROM_MAX_SIZE = 0x8000000 };
+ enum { DD_ROM_MAX_SIZE = 0x400000 };
+ 
+ typedef void (*read32fn)(void*,uint32_t,uint32_t*);
 diff --git a/mupen64plus-core/src/device/rcp/pi/pi_controller.c b/mupen64plus-core/src/device/rcp/pi/pi_controller.c
 index 0fc36bf..adc895a 100644
 --- a/mupen64plus-core/src/device/rcp/pi/pi_controller.c

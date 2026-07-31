@@ -159,6 +159,24 @@ namespace MovieTheater.Arcade
             ["scummvm|simonthesorcererspuzzlepackjumble"] = "Simon the Sorcerer Puzzle Pack",
             ["scummvm|simonthesorcererspuzzlepacknopatience"] = "Simon the Sorcerer Puzzle Pack",
             ["scummvm|simonthesorcererspuzzlepackswampyadventures"] = "Simon the Sorcerer Puzzle Pack",
+
+            // ── Romhacks (2026-07-30) ────────────────────────────────────────────────────────────────
+            // A hack's title is its own, so no cover database matches it: libretro has no entry, IGDB
+            // has no id, and the SteamGridDB title search misses on names this generic ("Chaos Edition",
+            // "On-Foot Mode Unlocked"). Point each at its BASE GAME's official box, which is the closest
+            // honest art and is what the card would otherwise show a placeholder for. Every target below
+            // was HEAD-checked against the libretro-thumbnails repo before being added — an unverified
+            // guess here just re-breaks the card silently.
+            // Deliberately NOT aliased: "NES Deadpool" (nes) — its base game is unclear, and a wrong
+            // alias would put confidently-wrong art on the card. A placeholder is the correct answer.
+            ["n64|mario64randomizer"] = "Super Mario 64 (USA)",
+            ["n64|chaosedition"] = "Super Mario 64 (USA)",
+            ["n64|fourswordsarenaedition"] = "Legend of Zelda, The - Ocarina of Time (USA)",
+            ["n64|ootrandomizerseedlibrary2026"] = "Legend of Zelda, The - Ocarina of Time (USA)",
+            ["n64|onfootmodeunlocked"] = "Star Fox 64 (USA)",
+            ["nes|supermario3mix"] = "Super Mario Bros. 3 (USA)",
+            ["nds|ctgpnitro"] = "Mario Kart DS (USA) (En,Fr,De,Es,It)",
+            ["snes|zeroproject"] = "Mega Man X3 (USA)",
         };
 
         /// <summary>The aliased libretro filename for a card, or null.</summary>

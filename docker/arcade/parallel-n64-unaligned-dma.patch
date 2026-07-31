@@ -119,6 +119,120 @@ index 686a930..2c9d4a5 100644
      {
          CORE_NAME "-allow-large-roms",
          "Allow Large Roms",
+diff --git a/mupen64plus-core/src/device/cart/cart_rom.c b/mupen64plus-core/src/device/cart/cart_rom.c
+index 4a6c95d..54eb01b 100644
+--- a/mupen64plus-core/src/device/cart/cart_rom.c
++++ b/mupen64plus-core/src/device/cart/cart_rom.c
+@@ -32,7 +32,18 @@
+ #define __STDC_FORMAT_MACROS
+ #include <inttypes.h>
+ 
+-#define CART_ROM_ADDR_MASK UINT32_C(0x03ffffff);
++/* MT PATCH: 0x03ffffff -> 0x07ffffff, the mask half of the 128 MiB cart-ROM raise (see
++ * CART_ROM_MAX_SIZE in device/memory/m64p_memory.h for the full rationale). This mask is applied to
++ * the PI cart address on every DMA, and it does double duty: it strips the 0x10000000 MM_CART_ROM
++ * base (bit 28, which neither mask covers) AND wraps the offset. At 0x03ffffff a DMA from cart
++ * offset 64 MiB (physical 0x14000000) masked to 0 and silently read the START of the ROM, so
++ * raising CART_ROM_MAX_SIZE without this would produce a game that loads and then reads garbage
++ * for every asset past the 64 MiB mark — far worse than the honest load failure it replaces.
++ * Widening to bit 26 makes offsets up to 128 MiB address correctly; the real bounds check is
++ * cart_rom->rom_size in cart_rom_dma_write below, which is unchanged.
++ * (The trailing semicolon is upstream's and is preserved deliberately — it is harmless at both use
++ * sites, and dropping it is a gratuitous diff against a file we want to keep easy to rebase.) */
++#define CART_ROM_ADDR_MASK UINT32_C(0x07ffffff);
+ 
+ 
+ void init_cart_rom(struct cart_rom* cart_rom,
+@@ -62,6 +73,15 @@ void read_cart_rom(void* opaque, uint32_t address, uint32_t* value)
+     {
+         *value = cart_rom->last_write;
+     }
++    else if (addr + 4 > cart_rom->rom_size)
++    {
++        /* MT PATCH: bounds check, required by the 128 MiB rom_address() mask. Upstream indexes the
++         * ROM buffer unchecked and gets away with it only because the mask (64 MiB) matched the
++         * largest ROM it would load. A wider mask over a smaller cartridge would read off the end of
++         * the allocation, so anything above rom_size reads as zero — matching what cart_rom_dma_write
++         * already does for a short DMA, and what a real cartridge returns for unpopulated space. */
++        *value = 0;
++    }
+     else
+     {
+         *value = *(uint32_t*)(cart_rom->rom + addr);
+diff --git a/mupen64plus-core/src/device/cart/cart_rom.h b/mupen64plus-core/src/device/cart/cart_rom.h
+index 2bba5a3..40bcf1f 100644
+--- a/mupen64plus-core/src/device/cart/cart_rom.h
++++ b/mupen64plus-core/src/device/cart/cart_rom.h
+@@ -41,9 +41,21 @@ struct cart_rom
+     struct pi_controller* pi;
+ };
+ 
++/* MT PATCH: 0x03fffffc -> 0x07fffffc, the THIRD mask of the 128 MiB cart-ROM raise.
++ *
++ * There are three, and missing this one is silent. cart_rom.c's CART_ROM_ADDR_MASK covers PI *DMA*
++ * (how a game normally streams itself in) and m64p_memory.h's CART_ROM_MAX_SIZE covers the load-time
++ * size gate — but this is the mask for a *direct CPU load* out of cart space, and it lived in the
++ * header rather than next to the other two. Raise the first two alone and a >64 MiB ROM loads, runs
++ * at full speed, and quietly reads the START of itself whenever it touches its own data above the
++ * 64 MiB line: OoT 4 Player Edition (64 MiB + 16,896 B) boots, holds 60 ticks/s with audio, and never
++ * draws a frame, because the bytes the hack appended wrap to the ROM header.
++ *
++ * The low two bits stay masked off (word alignment) — that is 0x...fc, not 0x...ff. Keep all three
++ * masks in step; see the notes in cart_rom.c and m64p_memory.h. */
+ static osal_inline uint32_t rom_address(uint32_t address)
+ {
+-    return (address & 0x03fffffc);
++    return (address & 0x07fffffc);
+ }
+ 
+ void init_cart_rom(struct cart_rom* cart_rom,
+diff --git a/mupen64plus-core/src/device/memory/m64p_memory.h b/mupen64plus-core/src/device/memory/m64p_memory.h
+index bd0dd63..4794d03 100644
+--- a/mupen64plus-core/src/device/memory/m64p_memory.h
++++ b/mupen64plus-core/src/device/memory/m64p_memory.h
+@@ -28,7 +28,28 @@
+ #include "osal/preproc.h"
+ 
+ enum { RDRAM_MAX_SIZE = 0x800000 };
+-enum { CART_ROM_MAX_SIZE = 0x4000000 };
++/* MT PATCH: 64 MiB -> 128 MiB. This is the cap that api/frontend.c asserts on in M64CMD_ROM_OPEN
++ * (`ParamInt > CART_ROM_MAX_SIZE` -> M64ERR_INPUT_ASSERT, surfaced by libretro.c as the generic
++ * "Failed to load ROM"), so at 0x4000000 any ROM even one byte over 64 MiB was rejected before a
++ * single frame ran. That is not a theoretical limit: OoT "4 Player Edition" is 64 MiB + 16,896 B
++ * and b3313 is 96 MiB, and both are mainstream romhacks. SM64: Last Impact is EXACTLY 0x4000000
++ * and loaded fine, which is what pinned the boundary to this constant (the test is `>`, not `>=`).
++ * The `parallel-n64-allow-large-roms` core option does NOT gate this and never did — its global
++ * AllowLargeRoms is assigned in libretro.c and read NOWHERE, the same dead-global shape as
++ * CountPerOp before it was wired up. Do not "fix" this by flipping that option; it is inert.
++ * Raising it is cheap because everything downstream keys off the ACTUAL rom_size: the region map
++ * is built as A(MM_CART_ROM, rom_size-1) in device.c, and cart_rom_dma_write bounds-checks against
++ * cart_rom->rom_size. Only two things scale with the constant: MB_RSP_MEM and the rest of the
++ * COMPRESSED mem-base layout shift up by 64 MiB (that path is the fallback used only when the
++ * 512 MiB MB_MAX_SIZE_FULL alloc fails; the worker logs "Using full mem base"), and a ROM larger
++ * than 63.94 MiB now overlaps the 64 KiB IS-Viewer window at MM_IS_VIEWER (0x13ff0000). The
++ * overlap is benign and deliberate: device.c applies the IS_VIEWER mapping BEFORE the cart mapping,
++ * so cart ROM wins for a large ROM, IS-Viewer is a homebrew debug printf port these romhacks do not
++ * use, and PI DMA never consults the region map anyway. 128 MiB keeps the cart window
++ * (0x10000000..0x18000000) clear of MM_PIF_MEM at 0x1fc00000, so PIF is unaffected.
++ * MUST be kept in step with CART_ROM_ADDR_MASK in device/cart/cart_rom.c — raising this alone
++ * lets a big ROM load and then silently wraps every read past 64 MiB back to offset 0. */
++enum { CART_ROM_MAX_SIZE = 0x8000000 };
+ enum { DD_ROM_MAX_SIZE = 0x400000 };
+ 
+ typedef void (*read32fn)(void*,uint32_t,uint32_t*);
+diff --git a/mupen64plus-core/src/device/r4300/cp0.c b/mupen64plus-core/src/device/r4300/cp0.c
+index fcee877..b24b236 100644
+--- a/mupen64plus-core/src/device/r4300/cp0.c
++++ b/mupen64plus-core/src/device/r4300/cp0.c
+@@ -28,6 +28,8 @@
+ #include "recomp.h"
+ 
+ #ifdef COMPARE_CORE
++#include "api/callbacks.h"
++#include "api/m64p_types.h"
+ #include "api/debugger.h"
+ #endif
+ 
 diff --git a/mupen64plus-core/src/device/rcp/pi/pi_controller.c b/mupen64plus-core/src/device/rcp/pi/pi_controller.c
 index aa4efe7..bd58034 100644
 --- a/mupen64plus-core/src/device/rcp/pi/pi_controller.c
