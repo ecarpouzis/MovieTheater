@@ -89,10 +89,45 @@ namespace MovieTheater.Controllers
             // (keyed by the card's lowest version id) so we don't keep a near-duplicate PNG per region/revision.
             var siblings = await movieDb.ArcadeGames
                 .Where(g => g.System == game.System && g.CollapseKey == game.CollapseKey)
-                .Select(g => new { g.Id, g.BoxArtPath, g.Region, g.CloudRetroGameKey, g.IgdbId, g.Notes })
+                .Select(g => new { g.Id, g.BoxArtPath, g.Region, g.CloudRetroGameKey, g.IgdbId, g.Notes, g.BoxArtSourceUrl })
                 .ToListAsync();
             var cardId = siblings.Count > 0 ? siblings.Min(s => s.Id) : id;
             var anchor = siblings.OrderBy(s => s.Id).FirstOrDefault();  // metadata (IgdbId/Notes) lives here
+
+            // 0. An explicit BoxArtSourceUrl wins over everything below — INCLUDING already-cached art.
+            //    It exists for titles no cover database can ever carry (community mods), where the cascade's
+            //    title search doesn't just miss, it returns confidently-wrong art. Ordering it ahead of the
+            //    cache is the whole point: the posters mount is shared and we cannot delete from it, so a
+            //    wrong cover cached by an earlier cascade run would otherwise win at step 1 forever. Keying
+            //    the cache file by a hash of the URL means changing the URL retires the old file for free.
+            var srcUrl = siblings.Select(s => s.BoxArtSourceUrl).FirstOrDefault(u => !string.IsNullOrWhiteSpace(u));
+            if (srcUrl != null)
+            {
+                var srcRel = $"arcade/{game.System}/{cardId}-{ShortHash(srcUrl)}.png";
+                var srcPath = ResolveUnderRoot(root, srcRel);
+                if (srcPath != null && System.IO.File.Exists(srcPath)) return ServeFile(srcPath);
+                try
+                {
+                    var bytes = ArcadeBoxArt.Thumbnail(await Http.GetByteArrayAsync(srcUrl), ThumbPx);
+                    if (bytes != null)
+                    {
+                        if (srcPath != null)
+                        {
+                            try
+                            {
+                                Directory.CreateDirectory(Path.GetDirectoryName(srcPath)!);
+                                await System.IO.File.WriteAllBytesAsync(srcPath, bytes);
+                                game.BoxArtPath = srcRel;
+                                await movieDb.SaveChangesAsync();
+                            }
+                            catch { /* couldn't cache (mount read-only?) — still serve what we fetched */ }
+                        }
+                        Response.Headers["Cache-Control"] = "public, max-age=86400";
+                        return File(bytes, "image/png");
+                    }
+                }
+                catch { /* unreachable or undecodable — fall through to the normal cascade */ }
+            }
 
             // 1. Any existing art for this card (the requested row, then any sibling, then the canonical
             //    card file) → serve it. Reuses art already downloaded under the old per-row scheme.
@@ -172,6 +207,14 @@ namespace MovieTheater.Controllers
             }
             Response.Headers["Cache-Control"] = "public, max-age=86400";
             return File(thumb, "image/png");
+        }
+
+        // 8 hex chars of SHA-1 over the source URL — enough to make the cache filename change whenever the
+        // URL does, which is what lets a corrected BoxArtSourceUrl retire the file the old one wrote.
+        private static string ShortHash(string s)
+        {
+            var bytes = System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(s));
+            return Convert.ToHexString(bytes, 0, 4).ToLowerInvariant();
         }
 
         // Resolve a stored-relative path under the posters root, rejecting traversal ("../") escapes.

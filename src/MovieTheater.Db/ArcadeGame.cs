@@ -135,6 +135,21 @@ namespace MovieTheater.Db
         [MaxLength(120)]
         public string? CommunityRatingSource { get; set; }
 
+        /// <summary>An explicit image URL to use as this card's box art, tried BEFORE the whole
+        /// libretro -> IGDB -> SteamGridDB -> web-search cascade.
+        ///
+        /// <para>For titles that exist only as a community mod, no cover database will ever carry art, and
+        /// the cascade's title search actively produces WRONG art — three Wii BrawlEx mods were all serving
+        /// the N64 "Super Smash Bros." box. Their real art lives on a wiki or the mod's own site, so this
+        /// column points straight at it.</para>
+        ///
+        /// <para>The fetched file is cached as <c>arcade/{system}/{cardId}-{urlhash}.png</c>, NOT the plain
+        /// <c>{cardId}.png</c>. That is deliberate: the cache is a shared mount we cannot delete from here, so
+        /// keying the filename by the URL is the only way to retire a wrong cached box — change the URL and
+        /// the next request misses and re-fetches, instead of serving the stale file forever.</para></summary>
+        [MaxLength(500)]
+        public string? BoxArtSourceUrl { get; set; }
+
         /// <summary>Confidence-adjusted score used for <c>sort=rating</c> ONLY (never displayed): the effective
         /// raw score (LaunchBox, else IGDB) shrunk toward its system's mean by vote count —
         /// <c>(v/(v+m))·raw + (m/(v+m))·mean</c>, m=20. Without this a 1-vote 100 outranks a 4,000-vote 94.

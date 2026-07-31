@@ -194,6 +194,12 @@ namespace MovieTheater.Arcade
             // (The other blank, "Titanic English Translation", stays blank on purpose: its base is an
             // unlicensed Shenzhen Nanjing cart that no cover database carries.)
             ["nes|nesdeadpool"] = "Ninja Gaiden (USA)",
+            // The two Redux patches were renamed 2026-07-31 to end in "Redux". Until then their Title was
+            // character-identical to the stock game, so NormalizeTitle produced the same CollapseKey and the
+            // hack was swallowed as a silent "version" of the vanilla card. Note the suffix cannot be
+            // parenthesised — NormalizeTitle strips parentheticals, so "(Redux)" would still collide.
+            ["n64|legendofzeldatheocarinaoftimeredux"] = "Legend of Zelda, The - Ocarina of Time (USA)",
+            ["n64|legendofzeldathemajorasmaskredux"] = "Legend of Zelda, The - Majora's Mask (USA)",
         };
 
         /// <summary>The aliased libretro filename for a card, or null.</summary>

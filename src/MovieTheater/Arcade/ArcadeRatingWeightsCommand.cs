@@ -55,12 +55,20 @@ namespace MovieTheater.Arcade
 
         /// <summary>The card's effective raw score + confidence: the hand-curated community score first (it
         /// exists only where the importers were wrong or absent), then LaunchBox, then IGDB as a fallback.
-        /// A curated score with no vote count reports 0 votes, so the shrink pulls it to the system mean.</summary>
-        public static (double Raw, int Votes)? Effective(ArcadeGame a)
+        ///
+        /// <para><b>A curated estimate is exempt from the shrink.</b> The shrink exists to stop a SMALL SAMPLE
+        /// from outranking a well-voted score. A <see cref="ArcadeGame.CommunityRating"/> with no vote count
+        /// isn't a small sample — it's a judgement with no sample at all, so treating it as "0 votes" pinned
+        /// every one of them to its system's mean and made the grid's order contradict the number printed on
+        /// the card (a curated 40 sorted ABOVE a polled 70, and every estimate landed mid-grid regardless of
+        /// score). Such a row sorts on its raw value. It still contributes zero weight to the system mean, so
+        /// an estimate can never move the baseline everything else is shrunk toward.</para></summary>
+        public static (double Raw, int Votes, bool Curated)? Effective(ArcadeGame a)
         {
-            if (a.CommunityRating is double cr) return (cr, Math.Max(0, a.CommunityRatingCount ?? 0));
-            if (a.LaunchBoxRating is double lb) return (lb, Math.Max(0, a.LaunchBoxRatingCount ?? 0));
-            if (a.RatingScore is double ig) return (ig, Math.Max(0, a.RatingCount ?? 0));
+            if (a.CommunityRating is double cr)
+                return (cr, Math.Max(0, a.CommunityRatingCount ?? 0), a.CommunityRatingCount == null);
+            if (a.LaunchBoxRating is double lb) return (lb, Math.Max(0, a.LaunchBoxRatingCount ?? 0), false);
+            if (a.RatingScore is double ig) return (ig, Math.Max(0, a.RatingCount ?? 0), false);
             return null;
         }
 
@@ -95,7 +103,7 @@ namespace MovieTheater.Arcade
             {
                 var eff = Effective(a);
                 double? weighted = eff is { } e && means.TryGetValue(a.System, out var mean)
-                    ? Math.Round(Weighted(e.Raw, e.Votes, mean), 4)
+                    ? Math.Round(e.Curated ? e.Raw : Weighted(e.Raw, e.Votes, mean), 4)
                     : null;
 
                 if (a.RatingWeighted != weighted)
