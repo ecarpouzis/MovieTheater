@@ -1592,13 +1592,64 @@ index 89d0628..fb1eb58 100644
  		return "LibNewGameList"
  	case PrevSessions:
 diff --git a/pkg/api/user.go b/pkg/api/user.go
-index e487b93..d71083a 100644
+index e487b93..c3247b5 100644
 --- a/pkg/api/user.go
 +++ b/pkg/api/user.go
-@@ -10,6 +10,48 @@ type (
- 		Record      bool   `json:"record,omitempty"`
- 		RecordUser  string `json:"record_user,omitempty"`
- 		PlayerIndex int    `json:"player_index"`
+@@ -1,42 +1,95 @@
+-package api
+-
+-type (
+-	ChangePlayerUserRequest  int
+-	CheckLatencyUserResponse []string
+-	CheckLatencyUserRequest  map[string]int64
+-	GameStartUserRequest     struct {
+-		GameName    string `json:"game_name"`
+-		RoomId      string `json:"room_id"`
+-		Record      bool   `json:"record,omitempty"`
+-		RecordUser  string `json:"record_user,omitempty"`
+-		PlayerIndex int    `json:"player_index"`
+-	}
+-	GameStartUserResponse struct {
+-		RoomId  string        `json:"roomId"`
+-		Av      *AppVideoInfo `json:"av"`
+-		KbMouse bool          `json:"kb_mouse"`
+-	}
+-	IceServer struct {
+-		Urls       string `json:"urls,omitempty"`
+-		Username   string `json:"username,omitempty"`
+-		Credential string `json:"credential,omitempty"`
+-	}
+-	InitSessionUserResponse struct {
+-		Ice   []IceServer `json:"ice"`
+-		Games []AppMeta   `json:"games"`
+-		Wid   string      `json:"wid"`
+-	}
+-	AppMeta struct {
+-		Alias  string `json:"alias,omitempty"`
+-		Title  string `json:"title"`
+-		System string `json:"system"`
+-	}
+-	WebrtcSignalUser struct {
+-		Ice *string `json:"ice,omitempty"`
+-		Sdp *string `json:"sdp,omitempty"`
+-	}
+-	InitUserWebrtcStreamRequest struct {
+-		Initiator bool   `json:"initiator"`
+-		Sdp       string `json:"sdp,omitempty"`
+-	}
+-)
++package api
++
++type (
++	ChangePlayerUserRequest  int
++	CheckLatencyUserResponse []string
++	CheckLatencyUserRequest  map[string]int64
++	GameStartUserRequest     struct {
++		GameName    string `json:"game_name"`
++		RoomId      string `json:"room_id"`
++		Record      bool   `json:"record,omitempty"`
++		RecordUser  string `json:"record_user,omitempty"`
++		PlayerIndex int    `json:"player_index"`
 +		// Per-room encoder quality (arcade per-room bitrate/FEC). Only the room CREATOR's
 +		// request builds the encoder, so only its values take effect. 0 = leave config default.
 +		VideoBitrate int `json:"video_bitrate,omitempty"` // kbps; 0 = config default
@@ -1641,27 +1692,138 @@ index e487b93..d71083a 100644
 +		RaUser   string `json:"ra_user,omitempty"`
 +		RaToken  string `json:"ra_token,omitempty"`
 +		Hardcore bool   `json:"hardcore,omitempty"`
- 	}
- 	GameStartUserResponse struct {
- 		RoomId  string        `json:"roomId"`
-@@ -38,5 +80,9 @@ type (
- 	InitUserWebrtcStreamRequest struct {
- 		Initiator bool   `json:"initiator"`
- 		Sdp       string `json:"sdp,omitempty"`
++		// SeedExplicit: this boot restored a state the player DELIBERATELY PICKED (a named snapshot /
++		// Quickload, ?seedslot=N), not the ordinary auto-save continue. Only that first kind is
++		// save-scumming; resuming where you left off is not. The worker cannot tell them apart -- all it
++		// sees is "a save existed and we restored it" -- so without this every resumed room was tagged
++		// save-scummed before a button was pressed. Same silent-drop trap as HwContext: it MUST also
++		// appear in worker.go StartGameRequest AND workerapi.go's StartGameRequest literal.
++		SeedExplicit bool `json:"seed_explicit,omitempty"`
++	}
++	GameStartUserResponse struct {
++		RoomId  string        `json:"roomId"`
++		Av      *AppVideoInfo `json:"av"`
++		KbMouse bool          `json:"kb_mouse"`
++	}
++	IceServer struct {
++		Urls       string `json:"urls,omitempty"`
++		Username   string `json:"username,omitempty"`
++		Credential string `json:"credential,omitempty"`
++	}
++	InitSessionUserResponse struct {
++		Ice   []IceServer `json:"ice"`
++		Games []AppMeta   `json:"games"`
++		Wid   string      `json:"wid"`
++	}
++	AppMeta struct {
++		Alias  string `json:"alias,omitempty"`
++		Title  string `json:"title"`
++		System string `json:"system"`
++	}
++	WebrtcSignalUser struct {
++		Ice *string `json:"ice,omitempty"`
++		Sdp *string `json:"sdp,omitempty"`
++	}
++	InitUserWebrtcStreamRequest struct {
++		Initiator bool   `json:"initiator"`
++		Sdp       string `json:"sdp,omitempty"`
 +		// Per-room video codec (patch 0036). The peer's TRACK codec is fixed here, before the
 +		// game start builds the encoder — every client of a room sends the same value (the site's
 +		// join descriptor carries the creator's choice), so track and encoder always agree.
 +		VideoCodec string `json:"video_codec,omitempty"`
- 	}
- )
++	}
++)
 diff --git a/pkg/api/worker.go b/pkg/api/worker.go
-index d8c7324..e270185 100644
+index d8c7324..2a9ab36 100644
 --- a/pkg/api/worker.go
 +++ b/pkg/api/worker.go
-@@ -9,6 +9,19 @@ type (
- 	GameQuitRequest      StatefulRoom
- 	LoadGameRequest      StatefulRoom
- 	LoadGameResponse     string
+@@ -1,75 +1,123 @@
+-package api
+-
+-type (
+-	ChangePlayerRequest struct {
+-		StatefulRoom
+-		Index int `json:"index"`
+-	}
+-	ChangePlayerResponse int
+-	GameQuitRequest      StatefulRoom
+-	LoadGameRequest      StatefulRoom
+-	LoadGameResponse     string
+-	ResetGameRequest     StatefulRoom
+-	ResetGameResponse    string
+-	SaveGameRequest      StatefulRoom
+-	SaveGameResponse     string
+-	StartGameRequest     struct {
+-		StatefulRoom
+-		Record      bool
+-		RecordUser  string
+-		Game        string `json:"game"`
+-		PlayerIndex int    `json:"player_index"`
+-	}
+-	GameInfo struct {
+-		Alias  string `json:"alias"`
+-		Base   string `json:"base"`
+-		Name   string `json:"name"`
+-		Path   string `json:"path"`
+-		System string `json:"system"`
+-		Type   string `json:"type"`
+-	}
+-	StartGameResponse struct {
+-		Room
+-		AV      *AppVideoInfo `json:"av"`
+-		Record  bool          `json:"record"`
+-		KbMouse bool          `json:"kb_mouse"`
+-	}
+-	RecordGameRequest struct {
+-		StatefulRoom
+-		Active bool   `json:"active"`
+-		User   string `json:"user"`
+-	}
+-	RecordGameResponse      string
+-	TerminateSessionRequest Stateful
+-	WebrtcSignalRequest     struct {
+-		Stateful
+-		Sdp *string `json:"sdp,omitempty"`
+-		Ice *string `json:"ice,omitempty"`
+-	}
+-	InitWebrtcStreamRequest struct {
+-		// Stateful
+-		Id        string `json:"id"`
+-		Initiator bool   `json:"initiator"`
+-		Sdp       string `json:"sdp,omitempty"`
+-	}
+-	InitWebrtcStreamResponse string
+-
+-	AppVideoInfo struct {
+-		W    int     `json:"w"`
+-		H    int     `json:"h"`
+-		A    float32 `json:"a"`
+-		S    int     `json:"s"`
+-		SM   string  `json:"sm,omitempty"`
+-		Flip bool    `json:"flip"`
+-		Rot  uint    `json:"rot"`
+-	}
+-
+-	LibGameListInfo struct {
+-		T    int
+-		List []GameInfo
+-	}
+-
+-	PrevSessionInfo struct {
+-		List []string
+-	}
+-)
++package api
++
++type (
++	ChangePlayerRequest struct {
++		StatefulRoom
++		Index int `json:"index"`
++	}
++	ChangePlayerResponse int
++	GameQuitRequest      StatefulRoom
++	LoadGameRequest      StatefulRoom
++	LoadGameResponse     string
 +	// FastForwardGameRequest / RewindGameRequest toggle time manipulation on the room's emulator
 +	// (t=114 / t=115). Hold-to-engage from the browser: {active:true} on chord press, {active:false}
 +	// on release. Same shape browser->coordinator and coordinator->worker.
@@ -1675,13 +1837,16 @@ index d8c7324..e270185 100644
 +		Active bool `json:"active"`
 +	}
 +	RewindGameResponse string
- 	ResetGameRequest     StatefulRoom
- 	ResetGameResponse    string
- 	SaveGameRequest      StatefulRoom
-@@ -19,6 +32,34 @@ type (
- 		RecordUser  string
- 		Game        string `json:"game"`
- 		PlayerIndex int    `json:"player_index"`
++	ResetGameRequest     StatefulRoom
++	ResetGameResponse    string
++	SaveGameRequest      StatefulRoom
++	SaveGameResponse     string
++	StartGameRequest     struct {
++		StatefulRoom
++		Record      bool
++		RecordUser  string
++		Game        string `json:"game"`
++		PlayerIndex int    `json:"player_index"`
 +		// Per-room encoder quality forwarded from the creator's GameStartUserRequest
 +		// (arcade per-room bitrate/FEC). 0 = leave the worker's config default.
 +		VideoBitrate int    `json:"video_bitrate,omitempty"` // kbps
@@ -1710,19 +1875,67 @@ index d8c7324..e270185 100644
 +		RaUser   string `json:"ra_user,omitempty"`
 +		RaToken  string `json:"ra_token,omitempty"`
 +		Hardcore bool   `json:"hardcore,omitempty"`
- 	}
- 	GameInfo struct {
- 		Alias  string `json:"alias"`
-@@ -51,6 +92,9 @@ type (
- 		Id        string `json:"id"`
- 		Initiator bool   `json:"initiator"`
- 		Sdp       string `json:"sdp,omitempty"`
++		// SeedExplicit: the boot state was a DELIBERATE pick (named snapshot / Quickload), not the
++		// ordinary auto-save continue -- only the former is save-scumming. Keep in sync with user.go
++		// AND the workerapi.go literal, or the coordinator drops it silently.
++		SeedExplicit bool `json:"seed_explicit,omitempty"`
++	}
++	GameInfo struct {
++		Alias  string `json:"alias"`
++		Base   string `json:"base"`
++		Name   string `json:"name"`
++		Path   string `json:"path"`
++		System string `json:"system"`
++		Type   string `json:"type"`
++	}
++	StartGameResponse struct {
++		Room
++		AV      *AppVideoInfo `json:"av"`
++		Record  bool          `json:"record"`
++		KbMouse bool          `json:"kb_mouse"`
++	}
++	RecordGameRequest struct {
++		StatefulRoom
++		Active bool   `json:"active"`
++		User   string `json:"user"`
++	}
++	RecordGameResponse      string
++	TerminateSessionRequest Stateful
++	WebrtcSignalRequest     struct {
++		Stateful
++		Sdp *string `json:"sdp,omitempty"`
++		Ice *string `json:"ice,omitempty"`
++	}
++	InitWebrtcStreamRequest struct {
++		// Stateful
++		Id        string `json:"id"`
++		Initiator bool   `json:"initiator"`
++		Sdp       string `json:"sdp,omitempty"`
 +		// Per-room video codec for this peer's track (patch 0036); "" = config default. Set before
 +		// game start because the PeerConnection (and its track mime) is created HERE.
 +		VideoCodec string `json:"video_codec,omitempty"`
- 	}
- 	InitWebrtcStreamResponse string
- 
++	}
++	InitWebrtcStreamResponse string
++
++	AppVideoInfo struct {
++		W    int     `json:"w"`
++		H    int     `json:"h"`
++		A    float32 `json:"a"`
++		S    int     `json:"s"`
++		SM   string  `json:"sm,omitempty"`
++		Flip bool    `json:"flip"`
++		Rot  uint    `json:"rot"`
++	}
++
++	LibGameListInfo struct {
++		T    int
++		List []GameInfo
++	}
++
++	PrevSessionInfo struct {
++		List []string
++	}
++)
 diff --git a/pkg/com/com.go b/pkg/com/com.go
 index 8b47562..444d962 100644
 --- a/pkg/com/com.go
@@ -1878,7 +2091,7 @@ index 0000000..d83f053
 +	}
 +}
 diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
-index baf701e..75a6b97 100644
+index baf701e..556c438 100644
 --- a/pkg/config/emulator.go
 +++ b/pkg/config/emulator.go
 @@ -17,6 +17,53 @@ type Emulator struct {
@@ -1935,7 +2148,7 @@ index baf701e..75a6b97 100644
  }
  
  type LibretroConfig struct {
-@@ -69,24 +116,98 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
+@@ -69,24 +116,108 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
  		errors.New("core mapping not found for " + runtime.GOOS + ":" + runtime.GOARCH)
  }
  
@@ -2037,10 +2250,20 @@ index baf701e..75a6b97 100644
 +	// games or a needlessly large encode for the big ones. 0 = off (every other core).
 +	ScaleMaxWidth int
 +	ScaleMethod   string
++	// BppTarget overrides the bits-per-pixel-per-frame the derived bitrate ceiling is computed from
++	// (worker abr.go autoCeilingKbps). 0 = use the class default, which is inferred from ScaleMethod:
++	// a NEAREST magnify gets the high pixel-art target, anything else the smooth/3D one.
++	//
++	// The class default is a PROXY. It reads the edge characteristic — nearest magnification makes
++	// step-function edges that cost bits — but it is blind to content complexity, and it cannot tell
++	// point-sampled 3D from actual pixel art. pcsx_rearmed is the standing example: nearest at x2, but
++	// its content is PSX 3D, not a sprite sheet, so the pixel-art target over-provisions it. Set this
++	// per core when a measurement disagrees with the class, and say what measured it.
++	BppTarget float64
  	MaxThreads      int
  	UniqueSaveDir   bool
  	UsesLibCo       bool
-@@ -128,6 +249,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
+@@ -128,6 +259,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
  	return found
  }
  
@@ -3318,17 +3541,79 @@ index 51e805c..e7f6017 100644
  	resp, err := u.w.SaveGame(u.Id().String())
  	if err != nil {
 diff --git a/pkg/coordinator/workerapi.go b/pkg/coordinator/workerapi.go
-index dbceaed..569ff80 100644
+index dbceaed..8d75eca 100644
 --- a/pkg/coordinator/workerapi.go
 +++ b/pkg/coordinator/workerapi.go
-@@ -1,10 +1,28 @@
- package coordinator
- 
+@@ -1,64 +1,119 @@
+-package coordinator
+-
 -import "github.com/giongto35/cloud-game/v3/pkg/api"
+-
+-func (w *Worker) InitWebrtcStream(id string, initiator bool, sdp string) (*api.InitWebrtcStreamResponse, error) {
+-	return api.UnwrapChecked[api.InitWebrtcStreamResponse](
+-		w.Send(api.InitWebrtcStream, api.InitWebrtcStreamRequest{Id: id, Initiator: initiator, Sdp: sdp}))
+-}
+-
+-func (w *Worker) WebrtcSignal(id string, sdp, ice *string) {
+-	w.Notify(api.WebrtcSignal, api.WebrtcSignalRequest{
+-		Stateful: api.Stateful{Id: id}, Ice: ice, Sdp: sdp,
+-	})
+-}
+-
+-func (w *Worker) StartGame(id string, req api.GameStartUserRequest) (*api.StartGameResponse, error) {
+-	return api.UnwrapChecked[api.StartGameResponse](
+-		w.Send(api.StartGame, api.StartGameRequest{
+-			StatefulRoom: api.StatefulRoom{Id: id, Rid: req.RoomId},
+-			Game:         req.GameName,
+-			PlayerIndex:  req.PlayerIndex,
+-			Record:       req.Record,
+-			RecordUser:   req.RecordUser,
+-		}))
+-}
+-
+-func (w *Worker) QuitGame(id string) {
+-	w.Notify(api.QuitGame, api.GameQuitRequest{Id: id, Rid: w.RoomId})
+-}
+-
+-func (w *Worker) SaveGame(id string) (*api.SaveGameResponse, error) {
+-	return api.UnwrapChecked[api.SaveGameResponse](
+-		w.Send(api.SaveGame, api.SaveGameRequest{Id: id, Rid: w.RoomId}))
+-}
+-
+-func (w *Worker) LoadGame(id string) (*api.LoadGameResponse, error) {
+-	return api.UnwrapChecked[api.LoadGameResponse](
+-		w.Send(api.LoadGame, api.LoadGameRequest{Id: id, Rid: w.RoomId}))
+-}
+-
+-func (w *Worker) ChangePlayer(id string, index int) (*api.ChangePlayerResponse, error) {
+-	return api.UnwrapChecked[api.ChangePlayerResponse](
+-		w.Send(api.ChangePlayer, api.ChangePlayerRequest{
+-			StatefulRoom: api.StatefulRoom{Id: id, Rid: w.RoomId},
+-			Index:        index,
+-		}))
+-}
+-
+-func (w *Worker) ResetGame(id string) {
+-	w.Notify(api.ResetGame, api.ResetGameRequest{Id: id, Rid: w.RoomId})
+-}
+-
+-func (w *Worker) RecordGame(id string, rec bool, recUser string) (*api.RecordGameResponse, error) {
+-	return api.UnwrapChecked[api.RecordGameResponse](
+-		w.Send(api.RecordGame, api.RecordGameRequest{
+-			StatefulRoom: api.StatefulRoom{Id: id, Rid: w.RoomId},
+-			Active:       rec,
+-			User:         recUser,
+-		}))
+-}
+-
+-func (w *Worker) TerminateSession(id string) {
+-	_, _ = w.Send(api.TerminateSession, api.TerminateSessionRequest{Id: id})
+-}
++package coordinator
++
 +import (
 +	"time"
- 
--func (w *Worker) InitWebrtcStream(id string, initiator bool, sdp string) (*api.InitWebrtcStreamResponse, error) {
++
 +	"github.com/giongto35/cloud-game/v3/pkg/api"
 +)
 +
@@ -3347,24 +3632,24 @@ index dbceaed..569ff80 100644
 +const GameStartTimeout = 60 * time.Second
 +
 +func (w *Worker) InitWebrtcStream(id string, initiator bool, sdp string, videoCodec string) (*api.InitWebrtcStreamResponse, error) {
- 	return api.UnwrapChecked[api.InitWebrtcStreamResponse](
--		w.Send(api.InitWebrtcStream, api.InitWebrtcStreamRequest{Id: id, Initiator: initiator, Sdp: sdp}))
++	return api.UnwrapChecked[api.InitWebrtcStreamResponse](
 +		w.Send(api.InitWebrtcStream, api.InitWebrtcStreamRequest{Id: id, Initiator: initiator, Sdp: sdp, VideoCodec: videoCodec}))
- }
- 
- func (w *Worker) WebrtcSignal(id string, sdp, ice *string) {
-@@ -15,13 +33,33 @@ func (w *Worker) WebrtcSignal(id string, sdp, ice *string) {
- 
- func (w *Worker) StartGame(id string, req api.GameStartUserRequest) (*api.StartGameResponse, error) {
- 	return api.UnwrapChecked[api.StartGameResponse](
--		w.Send(api.StartGame, api.StartGameRequest{
++}
++
++func (w *Worker) WebrtcSignal(id string, sdp, ice *string) {
++	w.Notify(api.WebrtcSignal, api.WebrtcSignalRequest{
++		Stateful: api.Stateful{Id: id}, Ice: ice, Sdp: sdp,
++	})
++}
++
++func (w *Worker) StartGame(id string, req api.GameStartUserRequest) (*api.StartGameResponse, error) {
++	return api.UnwrapChecked[api.StartGameResponse](
 +		w.SendWith(api.StartGame, api.StartGameRequest{
- 			StatefulRoom: api.StatefulRoom{Id: id, Rid: req.RoomId},
- 			Game:         req.GameName,
- 			PlayerIndex:  req.PlayerIndex,
- 			Record:       req.Record,
- 			RecordUser:   req.RecordUser,
--		}))
++			StatefulRoom: api.StatefulRoom{Id: id, Rid: req.RoomId},
++			Game:         req.GameName,
++			PlayerIndex:  req.PlayerIndex,
++			Record:       req.Record,
++			RecordUser:   req.RecordUser,
 +			// Forward the creator's per-room encoder quality choice to the worker.
 +			VideoBitrate: req.VideoBitrate,
 +			AudioFec:     req.AudioFec,
@@ -3380,19 +3665,43 @@ index dbceaed..569ff80 100644
 +			// about is dropped here without an error, so this line is what makes the feature exist.
 +			CoreOptions: req.CoreOptions,
 +			Cheats:      req.Cheats,
++			// ...and whether the boot state was a deliberate snapshot pick (save-scum) rather than the
++			// ordinary auto-save continue. Omitting this line is what silently drops the field.
++			SeedExplicit: req.SeedExplicit,
 +			// ...and the RetroAchievements creds + hardcore. Same silent-drop trap — the coordinator
 +			// relays only what it names, so these lines are what carry RA to the worker.
 +			RaUser:   req.RaUser,
 +			RaToken:  req.RaToken,
 +			Hardcore: req.Hardcore,
 +		}, GameStartTimeout))
- }
- 
- func (w *Worker) QuitGame(id string) {
-@@ -50,6 +88,20 @@ func (w *Worker) ResetGame(id string) {
- 	w.Notify(api.ResetGame, api.ResetGameRequest{Id: id, Rid: w.RoomId})
- }
- 
++}
++
++func (w *Worker) QuitGame(id string) {
++	w.Notify(api.QuitGame, api.GameQuitRequest{Id: id, Rid: w.RoomId})
++}
++
++func (w *Worker) SaveGame(id string) (*api.SaveGameResponse, error) {
++	return api.UnwrapChecked[api.SaveGameResponse](
++		w.Send(api.SaveGame, api.SaveGameRequest{Id: id, Rid: w.RoomId}))
++}
++
++func (w *Worker) LoadGame(id string) (*api.LoadGameResponse, error) {
++	return api.UnwrapChecked[api.LoadGameResponse](
++		w.Send(api.LoadGame, api.LoadGameRequest{Id: id, Rid: w.RoomId}))
++}
++
++func (w *Worker) ChangePlayer(id string, index int) (*api.ChangePlayerResponse, error) {
++	return api.UnwrapChecked[api.ChangePlayerResponse](
++		w.Send(api.ChangePlayer, api.ChangePlayerRequest{
++			StatefulRoom: api.StatefulRoom{Id: id, Rid: w.RoomId},
++			Index:        index,
++		}))
++}
++
++func (w *Worker) ResetGame(id string) {
++	w.Notify(api.ResetGame, api.ResetGameRequest{Id: id, Rid: w.RoomId})
++}
++
 +func (w *Worker) FastForwardGame(id string, active bool) {
 +	w.Notify(api.FastForwardGame, api.FastForwardGameRequest{
 +		StatefulRoom: api.StatefulRoom{Id: id, Rid: w.RoomId},
@@ -3407,9 +3716,18 @@ index dbceaed..569ff80 100644
 +	})
 +}
 +
- func (w *Worker) RecordGame(id string, rec bool, recUser string) (*api.RecordGameResponse, error) {
- 	return api.UnwrapChecked[api.RecordGameResponse](
- 		w.Send(api.RecordGame, api.RecordGameRequest{
++func (w *Worker) RecordGame(id string, rec bool, recUser string) (*api.RecordGameResponse, error) {
++	return api.UnwrapChecked[api.RecordGameResponse](
++		w.Send(api.RecordGame, api.RecordGameRequest{
++			StatefulRoom: api.StatefulRoom{Id: id, Rid: w.RoomId},
++			Active:       rec,
++			User:         recUser,
++		}))
++}
++
++func (w *Worker) TerminateSession(id string) {
++	_, _ = w.Send(api.TerminateSession, api.TerminateSessionRequest{Id: id})
++}
 diff --git a/pkg/games/launcher.go b/pkg/games/launcher.go
 index 8850ea7..13b2220 100644
 --- a/pkg/games/launcher.go
@@ -4600,14 +4918,15 @@ index 0000000..7182664
 +	}
 +}
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..d46d813 100644
+index b342b6b..67d2d06 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
-@@ -4,11 +4,14 @@ import (
+@@ -4,11 +4,15 @@ import (
  	"cmp"
  	"encoding/json"
  	"fmt"
 +	"github.com/pion/rtcp"
++	"net"
  	"strings"
  	"sync"
 +	"sync/atomic"
@@ -4618,7 +4937,7 @@ index b342b6b..d46d813 100644
  	"github.com/pion/webrtc/v4"
  	"github.com/pion/webrtc/v4/pkg/media"
  )
-@@ -16,21 +19,96 @@ import (
+@@ -16,21 +20,102 @@ import (
  type Peer struct {
  	api *ApiFactory
  	c   *webrtc.PeerConnection
@@ -4637,6 +4956,12 @@ index b342b6b..d46d813 100644
 +	// congestion control is unavailable, which simply means this peer contributes no ABR opinion.
 +	// Audio rides its own PC (ac) and is never rate-adapted: it is ~96 kbps and must not be starved.
 +	bwe cc.BandwidthEstimator
++
++	// Cached locality of the selected ICE candidate pair (see SameHostLink): 0 = not classified yet,
++	// 1 = same host, 2 = off host. Cached because the classification costs a net.InterfaceAddrs()
++	// syscall and ABR asks once per peer per second, while the answer cannot meaningfully change —
++	// a pair that is same-host stays same-host for the life of this peer session.
++	sameHost atomic.Int32
 +
  	a *webrtc.TrackLocalStaticSample
  	v *webrtc.TrackLocalStaticSample
@@ -4715,7 +5040,7 @@ index b342b6b..d46d813 100644
  var DefaultDataChannelParams = webrtc.DataChannelInit{
  	ID:             new(uint16),
  	Negotiated:     new(true),
-@@ -45,23 +123,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
+@@ -45,23 +130,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
  			Str(logger.DirectionField, "").
  			Str(logger.ClientField, ""),
  	)
@@ -4748,7 +5073,7 @@ index b342b6b..d46d813 100644
  		return
  	}
  
-@@ -96,6 +180,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -96,6 +187,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.c.OnDataChannel(func(ch *webrtc.DataChannel) { p.log.Debug().Msgf("rtc [chan] [%s] remote", ch.Label()) })
  
@@ -4784,7 +5109,7 @@ index b342b6b..d46d813 100644
  	aCodec := "opus"
  	if err = p.InitMedia(vCodec, aCodec); err != nil {
  		return
-@@ -143,8 +256,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+@@ -143,8 +263,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
  	return encoded, nil
  }
  
@@ -4826,7 +5151,7 @@ index b342b6b..d46d813 100644
  		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
  		if err != nil {
  			return err
-@@ -153,6 +299,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -153,6 +306,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  		return p.c.AddICECandidate(candidate)
  	}
  	if sdp != nil {
@@ -4844,7 +5169,7 @@ index b342b6b..d46d813 100644
  		answer, err := fromJson[webrtc.SessionDescription](*sdp)
  		if err != nil {
  			return err
-@@ -176,6 +333,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -176,6 +340,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
  		mime = webrtc.MimeTypeVP8
  	case "video/vp9":
  		mime = webrtc.MimeTypeVP9
@@ -4858,7 +5183,7 @@ index b342b6b..d46d813 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -221,17 +385,94 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
+@@ -221,17 +392,94 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
  }
  
  func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
@@ -4885,7 +5210,7 @@ index b342b6b..d46d813 100644
 -		p.log.Error().Err(err).Send()
 +	if p.inputOnly { // no video track (local co-op controller); nothing to send, and no sender goroutine
 +		return
-+	}
+ 	}
 +	p.startVideoSender()
 +
 +	select {
@@ -4908,8 +5233,8 @@ index b342b6b..d46d813 100644
 +		p.vqStop = make(chan struct{})
 +		go p.videoSender()
 +	})
-+}
-+
+ }
+ 
 +// videoSender owns everything that costs TIME per peer — the temporal-SVC decision, the packet pacer's
 +// sleeps, and the RTP write itself — so none of it is charged to the media thread or to other peers.
 +// One goroutine per peer, so a peer's frames keep their order.
@@ -4942,9 +5267,9 @@ index b342b6b..d46d813 100644
 +				}
 +			}
 +		}
- 	}
- }
- 
++	}
++}
++
 +// SetMaxTemporalLayer caps which temporal layers this peer is fed (0 = base only). Called by the ABR
 +// loop from its own goroutine.
 +func (p *Peer) SetMaxTemporalLayer(l int) { p.maxLayer.Store(int32(l)) }
@@ -4955,7 +5280,7 @@ index b342b6b..d46d813 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -250,6 +491,22 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -250,6 +498,22 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  }
  
  func (p *Peer) Disconnect() {
@@ -4978,7 +5303,7 @@ index b342b6b..d46d813 100644
  	if p.c == nil {
  		return
  	}
-@@ -261,6 +518,15 @@ func (p *Peer) Disconnect() {
+@@ -261,6 +525,15 @@ func (p *Peer) Disconnect() {
  }
  
  func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
@@ -4994,7 +5319,7 @@ index b342b6b..d46d813 100644
  	if p.v, err = newTrack("video", "video", vCodec); err != nil {
  		return err
  	}
-@@ -274,20 +540,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +547,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -5044,7 +5369,7 @@ index b342b6b..d46d813 100644
  			}
  		}()
  	}
-@@ -313,3 +605,29 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +612,137 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -5073,6 +5398,114 @@ index b342b6b..d46d813 100644
 +		return 0
 +	}
 +	return bps / 1000
++}
++
++// SameHostLink reports whether this peer's media actually crosses a NETWORK, by inspecting the remote
++// end of the selected ICE candidate pair: true only when the peer is the WORKER'S OWN MACHINE — a
++// loopback address, or one of this host's own interface IPs (the common case, because a browser on the
++// worker reaches the site by hostname and nominates the host↔host pair on a real LAN IP).
++//
++// Why this and not the lobby's network profile: that profile DEFAULTS to "lan", so it carries no
++// information — a friend across the country who never opened the picker is labelled LAN, and letting
++// that drive rate decisions would re-create the wireless cold-start collapse the 60% opener fixed
++// (see abr.go's abrStartCeilPct). This is measured rather than declared.
++//
++// Why same-host and not "private address": a private IP does NOT imply capacity. A tablet on the same
++// Wi-Fi is 192.168/16 and is exactly the client whose radio queue the conservative ramp protects.
++// Same-host has no radio, no switch and no queue, so it is the one case that is safe by construction.
++//
++// Relay pairs are never same-host: TURN means the traffic left the machine by definition.
++func (p *Peer) SameHostLink() bool {
++	if p == nil || p.c == nil {
++		return false
++	}
++	if v := p.sameHost.Load(); v != 0 {
++		return v == 1
++	}
++	pair := p.selectedPair()
++	if pair == nil || pair.Remote == nil {
++		return false // not nominated yet — stay unclassified and re-ask next tick
++	}
++	local := pair.Remote.Typ != webrtc.ICECandidateTypeRelay &&
++		(net.ParseIP(pair.Remote.Address).IsLoopback() || isLocalInterfaceIP(pair.Remote.Address))
++	if local {
++		p.sameHost.Store(1)
++		p.log.Info().Msgf("rtc [abr] peer is on the worker's own host (%s, %s) — no network between us",
++			pair.Remote.Address, pair.Remote.Typ)
++	} else {
++		p.sameHost.Store(2)
++	}
++	return local
++}
++
++// LinkDesc identifies WHICH machine this peer is, for logs: "<remote addr>:<port>/<candidate type>",
++// or "unknown" before ICE nominates a pair. The remote address is what makes a log line attributable to
++// a specific device after the fact — every device on a LAN has its own IP, so a session can be told
++// apart from another without anyone recording which device was used when.
++func (p *Peer) LinkDesc() string {
++	if p == nil || p.c == nil {
++		return "unknown"
++	}
++	pair := p.selectedPair()
++	if pair == nil || pair.Remote == nil {
++		return "unknown"
++	}
++	return fmt.Sprintf("%s:%d/%s", pair.Remote.Address, pair.Remote.Port, pair.Remote.Typ)
++}
++
++// LinkRttMs is the latest ICE round-trip time to this peer, in milliseconds, and whether a measurement
++// exists yet. OBSERVABILITY ONLY as of 2026-07-30 — nothing adapts to it.
++//
++// The question it is here to answer: a wired desktop and a Wi-Fi tablet on the SAME LAN are
++// indistinguishable from this side by address (same subnet) and by bandwidth estimate (which is bounded
++// by what we send plus probe headroom, so it reads ~2.4x the send rate on any link, healthy or not).
++// RTT — and especially its VARIANCE, since the tablet's failure mode is radio-queue buildup rather than
++// raw latency — is the only discriminator we have. Log it on real hardware before any threshold is
++// chosen; guessing one is how the gentle ramp gets reverted for the tablet it was built for.
++func (p *Peer) LinkRttMs() (float64, bool) {
++	if p == nil || p.c == nil {
++		return 0, false
++	}
++	s := p.c.SCTP()
++	if s == nil {
++		return 0, false
++	}
++	d := s.Transport()
++	if d == nil {
++		return 0, false
++	}
++	i := d.ICETransport()
++	if i == nil {
++		return 0, false
++	}
++	st, ok := i.GetSelectedCandidatePairStats()
++	if !ok || st.CurrentRoundTripTime <= 0 {
++		return 0, false
++	}
++	return st.CurrentRoundTripTime * 1000, true
++}
++
++// selectedPair returns the nominated ICE candidate pair of the VIDEO PeerConnection, or nil while ICE
++// is still in progress. Reached through the SCTP transport because that is where pion hangs the DTLS →
++// ICE transport chain; our rooms always negotiate the input DataChannel, so SCTP is always present.
++func (p *Peer) selectedPair() *webrtc.ICECandidatePair {
++	s := p.c.SCTP()
++	if s == nil {
++		return nil
++	}
++	d := s.Transport()
++	if d == nil {
++		return nil
++	}
++	i := d.ICETransport()
++	if i == nil {
++		return nil
++	}
++	pair, err := i.GetSelectedCandidatePair()
++	if err != nil {
++		return nil
++	}
++	return pair
 +}
 diff --git a/pkg/network/websocket/websocket.go b/pkg/network/websocket/websocket.go
 index 5b3d3fe..e6ef733 100644
@@ -5835,13 +6268,16 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..76219e5
+index 0000000..f432e03
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,444 @@
+@@ -0,0 +1,742 @@
 +package worker
 +
 +import (
++	"fmt"
++	"math"
++	"strings"
 +	"time"
 +
 +	"github.com/giongto35/cloud-game/v3/pkg/logger"
@@ -6006,6 +6442,98 @@ index 0000000..76219e5
 +	TargetBitrateKbps() int
 +	SetMaxTemporalLayer(int)
 +	MaxTemporalLayer() int
++	// SameHostLink reports that this peer is the worker's own machine (loopback or one of our own
++	// interface IPs), so there is no radio, switch or queue between us. See the local fast path.
++	SameHostLink() bool
++	// LinkRttMs is the latest ICE RTT in ms, and whether one exists. Observability only — see rttStat.
++	LinkRttMs() (float64, bool)
++	// LinkDesc is "<remote addr>:<port>/<type>" — what makes an rtt-probe line attributable to a device.
++	LinkDesc() string
++}
++
++// rttStat accumulates one peer's RTT samples so we can report mean and spread. OBSERVABILITY ONLY: no
++// decision reads it. It exists to answer whether RTT can separate a wired LAN desktop from a Wi-Fi
++// tablet on the same subnet — the two cases ABR currently cannot tell apart, where guessing wrong
++// reverts the gentle ramp for the tablet it was built for. Bounded window; ABR ticks once a second.
++type rttStat struct {
++	n              int
++	mean, m2       float64 // Welford
++	min, max, last float64
++}
++
++func (s *rttStat) add(v float64) {
++	if s.n == 0 || v < s.min {
++		s.min = v
++	}
++	if v > s.max {
++		s.max = v
++	}
++	s.last = v
++	s.n++
++	d := v - s.mean
++	s.mean += d / float64(s.n)
++	s.m2 += d * (v - s.mean)
++}
++
++// sd is the sample standard deviation — the VARIANCE half of the question, which matters more than the
++// mean: a radio under load jitters long before its average latency looks bad.
++func (s *rttStat) sd() float64 {
++	if s.n < 2 {
++		return 0
++	}
++	return math.Sqrt(s.m2 / float64(s.n-1))
++}
++
++// rttProbeEvery: emit a summary line this many ABR ticks (= seconds) apart. Often enough that a short
++// session still produces several lines, rare enough not to bury the abr rate lines.
++const rttProbeEvery = 15
++
++const (
++	// A peer whose SUSTAINED mean ICE RTT is below this has no queue worth protecting, so the upward
++	// probe does not need to creep. MEASURED on real hardware 2026-07-30 (rtt-probe), same LAN, same
++	// game, minutes apart:
++	//
++	//   wired desktop   mean 0.91ms  sd 0.92  min 0.50  (n=90)
++	//   Wi-Fi tablet    mean 3.86ms  sd 1.50  min 1.59  (n=115)
++	//
++	// 1.5ms sits below the TABLET'S BEST EVER SINGLE SAMPLE (1.59ms) and 2.6x under its mean, while the
++	// wired machine runs 40% under it. The tablet is the client this whole ramp exists for — it starved
++	// 46 times in one session before the guards landed — so the threshold is placed to exclude it with
++	// margin rather than to include as much hardware as possible.
++	//
++	// Deliberately the MEAN, not the max: the wired machine's max was 5.61ms (one outlier above the
++	// tablet's mean), so any max-based rule would misclassify the good link. Deliberately not the sd
++	// either — 0.92 vs 1.50 does not separate, because that outlier inflates the wired figure.
++	//
++	// ⚠ One device pair is thin evidence. A close-range Wi-Fi 6 client could plausibly sit nearer this
++	// line than the tablet does. That is survivable by construction: this only changes the SIZE of an
++	// upward probe, every guard below still applies, and one confirmed cut sets congKbps and disables
++	// the path for the rest of the room. Widen it only with more measurements, never by intuition.
++	abrFastRttMs = 1.5
++	// Require a sustained read, not a lucky first sample: ~5s of evidence before trusting the link. The
++	// cost of waiting is small (the creep still runs meanwhile) and it prevents an unloaded first
++	// second from speaking for a link that is about to get busy.
++	abrFastRttMinSamples = 5
++)
++
++// logRttProbe emits ONE self-describing key=value line per peer. Deliberately verbose and machine
++// readable: `dev=` carries the remote address, so sessions from different devices can be told apart
++// afterwards without anyone having written down which device was used when. Grep with `rtt-probe`.
++func logRttProbe(log *logger.Logger, roomId string, p svcPeer, s *rttStat, final bool) {
++	if s == nil || s.n == 0 {
++		return
++	}
++	kind := "sample"
++	if final {
++		kind = "final"
++	}
++	sameHost := 0
++	if p.SameHostLink() {
++		sameHost = 1
++	}
++	log.Info().Msgf(
++		"rtt-probe %s room=%s dev=%s samehost=%d n=%d mean=%.2fms sd=%.2fms min=%.2fms max=%.2fms last=%.2fms est=%dkbps",
++		kind, roomId, p.LinkDesc(), sameHost, s.n, s.mean, s.sd(), s.min, s.max, s.last, p.TargetBitrateKbps())
 +}
 +
 +// pickLayer returns the highest temporal layer whose share of `sendKbps` fits inside `estKbps`, and
@@ -6045,11 +6573,124 @@ index 0000000..76219e5
 +	return 0, true // even base layer does not fit
 +}
 +
++const (
++	// Bits per pixel per frame, the invariant a bitrate ceiling should actually be expressed in. A flat
++	// per-system table cannot be right: it was measured once against one configuration and is blind to
++	// `scale`, ScaleMaxWidth, a core that changes resolution mid-game (ScummVM, and Sonic switching
++	// 320x224 <-> 256x192 within seconds of boot), and render profiles that move the frame wholesale —
++	// the N64 `screensize` option alone spans 320x240 to 1920x1440 while the table says "n64 -> 11000".
++	//
++	// Two targets, because content class changes what a pixel costs, and `scale` already tells us which
++	// we have (frontend.go: "Scale > 1 magnifies (2D cores: integer nearest upscale)"; scale <= 1 is a
++	// native or SUPERSAMPLED 3D frame):
++	//
++	//   MAGNIFIED 2D — nearest-neighbour upscale. Every pixel edge is a step function, which is
++	//   expensive in DCT terms, and a full-screen scroll (Sonic) destroys frame-to-frame redundancy.
++	//   The old "2D cores are cheap, the encoder sees flat NxN blocks" assumption is why every 3D
++	//   system got raised off the flat 5000 default and 2D never did.
++	//
++	//   0.65 is MEASURED, not judged (scripts/calibrate-arcade-bpp.sh): 600 real Genesis frames
++	//   re-encoded through these exact encoder params across a bitrate sweep, scored by SSIM against
++	//   the same nearest-upscaled source. The result that matters is the TAIL, not the average —
++	//   per-frame MEDIAN SSIM is identical (0.99994) from 5 to 25 Mbps, because a frame-wide mean
++	//   averages localized blocking over 645,120 pixels and cannot see it. The WORST frames:
++	//
++	//     5000 (0.129 bpp)  0.995696      16000 (0.413)  0.999585
++	//     8000 (0.207)      0.998791      20000 (0.517)  0.999742
++	//    12000 (0.310)      0.999352      25000 (0.646)  0.999811
++	//
++	//   Error (1-SSIM) on the hard frames falls 4.3e-3 -> 1.9e-4 across that range and is STILL
++	//   improving at the top: there is no knee to calibrate to. For scroll-heavy pixel art the honest
++	//   answer is "as much as the link allows", so the target is set to land a typical 2D frame near
++	//   abrAutoMaxKbps and the CLAMP becomes the real policy. Matches the reported experience exactly
++	//   (5000 blocked badly; 16000 "much better but still some artifacts").
++	//
++	//   SMOOTH/3D — gradients and motion that compensates well. 0.18 reproduces the hand-measured
++	//   GameCube number almost exactly (1280x1056@60 -> 14.6 Mbps vs the table's 14000), which is the
++	//   cross-check that this formula is calibrated and not invented.
++	abrBppMagnified = 0.65
++	// ⚠ NOT calibrated by the sweep above — that captured a 2D core only. 0.18 stands on the
++	// independent agreement with the hand-measured GameCube number (1280x1056@60 -> 14.6 Mbps against
++	// a table value of 14000, 4% apart). Re-run calibrate-arcade-bpp.sh against a 3D core before
++	// trusting it the way the 2D figure is now trusted.
++	abrBppSmooth = 0.18
++	// Never below the old flat default (so "Auto" cannot be worse than what shipped before), and never
++	// above a rate that stops being about quality. ABR still treats the result as a CEILING, not a
++	// target — a weak peer is walked down from it within a second.
++	abrAutoMinKbps = 5000
++	abrAutoMaxKbps = 25000
++	// Used only when geometry is not yet known, which should not happen at the call site.
++	abrAutoFallbackKbps = 8000
++)
++
++// autoCeilingKbps derives the room's bitrate ceiling from the frame we ACTUALLY encode, rather than
++// from a per-system constant. Encoded size is the core's viewport AFTER `scale` (media.initVideo does
++// exactly this: `sw, sh := round(w, scale), round(h, scale)`), so this tracks every lever that moves
++// the frame, including ones added later, without anybody remembering to update a table.
++// Returns the ceiling and a human description of how it got there. It does NOT log: it is called every
++// ABR tick so the ceiling can follow a mid-room geometry change, and logging there would emit a line a
++// second. Callers log the description once at room start and again whenever the value moves.
++func autoCeilingKbps(m *media.GstMediaPipe) (int, string) {
++	scale := m.VideoScale
++	if scale <= 0 {
++		scale = 1
++	}
++	ew := int(math.Round(float64(m.VideoW) * scale))
++	eh := int(math.Round(float64(m.VideoH) * scale))
++	fps := m.VideoFPS
++	if fps <= 0 {
++		fps = 60
++	}
++	if ew <= 0 || eh <= 0 {
++		return abrAutoFallbackKbps, fmt.Sprintf("no geometry yet (%dx%d x%.4g) — fallback", m.VideoW, m.VideoH, scale)
++	}
++	// Classify by the SCALE METHOD, not by scale alone. `scale > 1` was the first cut and it is wrong
++	// for most of the arcade: n64, parallel_n64, dc, naomi, atomiswave, saturn and pcsx all magnify by 2
++	// with `scaleMethod: bilinear2`, i.e. a SMOOTH upscale of 3D content — no hard edges, nothing like
++	// pixel art. Giving those the 0.50 target computed ~36 Mbps for an N64 room (clamped to 25000
++	// against a hand-measured 11000), and same-host rooms no longer adapt, so that rate would really be
++	// sent. Only a NEAREST magnify produces the step-function edges the high target exists for.
++	// The default when the config omits scaleMethod is nearest-neighbour (media/gstreamer.go
++	// `cmp.Or(scaleMethod, "nearest-neighbour")`), which is what the 2D cores rely on.
++	method := m.ScaleMethod
++	if method == "" {
++		method = "nearest-neighbour"
++	}
++	bpp, class := abrBppSmooth, "smooth/3d"
++	if scale > 1 && strings.Contains(strings.ToLower(method), "nearest") {
++		bpp, class = abrBppMagnified, "magnified-2d"
++	}
++	// A per-core `bppTarget:` wins over the class default. The class is a PROXY — it reads the edge
++	// characteristic (a nearest magnify makes step-function edges that cost bits) but is blind to
++	// content complexity, and cannot tell point-sampled 3D from a sprite sheet. Set the override when a
++	// MEASUREMENT disagrees with the class, never to express a preference.
++	if m.BppTarget > 0 {
++		bpp, class = m.BppTarget, "core-override"
++	}
++	raw := int(bpp * float64(ew) * float64(eh) * fps / 1000)
++	kbps := min(max(raw, abrAutoMinKbps), abrAutoMaxKbps)
++	note := ""
++	if kbps != raw {
++		note = fmt.Sprintf(" [clamped from %d]", raw)
++	}
++	return kbps, fmt.Sprintf("encode %dx%d @%.2ffps (core %dx%d x%.4g %s), %s, %.3f bpp%s",
++		ew, eh, fps, m.VideoW, m.VideoH, scale, method, class, bpp, note)
++}
++
 +// startRoomAbr drives the room's encoder bitrate, and each peer's temporal layer, from the peers'
 +// send-side estimates. ceilKbps is the room's chosen quality (the creator's t=104 bitrate, else the
 +// config default): ABR never exceeds it, so "Auto" on the site still decides how good a room may look.
-+func startRoomAbr(log *logger.Logger, r *room.Room[*room.GameSession], m *media.GstMediaPipe, ceilKbps int) {
-+	if ceilKbps <= 0 || r == nil || m == nil {
++// ceilFn is read EVERY TICK, not captured once: a core can change resolution after boot, and the
++// ceiling has to follow it. Sonic comes up at 256x192 and settles at 320x224 roughly 250ms later —
++// sampling once at room start sized the room for 768x576 when it went on to encode 960x672, a 46%
++// pixel undercount that under-provisioned the room for its entire session. The pipeline already
++// rebuilt itself on that change (VideoChangeCb -> Reinit); the ceiling was the one thing that did not.
++func startRoomAbr(log *logger.Logger, r *room.Room[*room.GameSession], m *media.GstMediaPipe, ceilFn func() int) {
++	if ceilFn == nil || r == nil || m == nil {
++		return
++	}
++	ceilKbps := ceilFn()
++	if ceilKbps <= 0 {
 +		return
 +	}
 +	floor := min(abrFloorKbps, ceilKbps)
@@ -6092,10 +6733,32 @@ index 0000000..76219e5
 +		// (0 = none seen), how many consecutive healthy ticks we have spent at/above it, and how many
 +		// ticks remain of the post-cut probe hold.
 +		congKbps, congClear, congHold := 0, 0, 0
++		// RTT accumulators per peer (observability only). Same lifetime rules as layerDown above: this
++		// goroutine owns them, and a peer that leaves simply stops being iterated.
++		rtt := map[svcPeer]*rttStat{}
++		ticks := 0
 +		for range t.C {
 +			if r.Closed() {
++				// Final RTT summary per peer BEFORE returning — a short session may never reach a
++				// periodic emit, and the close line is the one that always exists.
++				for p, s := range rtt {
++					logRttProbe(log, r.Id(), p, s, true)
++				}
 +				log.Debug().Msg("abr: room closed")
 +				return
++			}
++			ticks++
++			// Re-read the ceiling: a mid-room geometry change moves it (see ceilFn). Widening it simply
++			// gives the healthy branch somewhere to climb; narrowing it is enforced by the clamp below,
++			// so a core that shrinks its frame cannot leave the room sending more than it should.
++			if c := ceilFn(); c > 0 && c != ceilKbps {
++				_, why := autoCeilingKbps(m)
++				log.Info().Msgf("abr: ceiling %d -> %d kbps — %s", ceilKbps, c, why)
++				ceilKbps = c
++				floor = min(abrFloorKbps, ceilKbps)
++				// Congestion memory was learned against the OLD frame size. A bigger frame at the same
++				// bitrate is a different picture, so the remembered wall no longer describes this room.
++				congKbps, congClear, congHold = 0, 0, 0
 +			}
 +
 +			// worstServable: the tightest estimate among peers we can still serve at their assigned
@@ -6104,6 +6767,9 @@ index 0000000..76219e5
 +			// roomCap: a hard ceiling contributed by any STARVED peer (one for whom not even the base
 +			// layer fits) — set to what base layer alone would need.
 +			worstServable, roomCap, peers := 0, 0, 0
++			// How many of the estimating peers are on the worker's own host, and how many have a link
++			// fast enough to skip the creep (same-host, or a sustained low RTT). See the fast path below.
++			sameHostPeers, fastPeers := 0, 0
 +			// Pre-count the estimating peers: the layer policy below needs to know whether this peer
 +			// is ALONE before deciding anything about it.
 +			solo := func() bool {
@@ -6128,6 +6794,27 @@ index 0000000..76219e5
 +					continue
 +				}
 +				peers++
++				sameHost := p.SameHostLink()
++				if sameHost {
++					sameHostPeers++
++				}
++				if ms, ok := p.LinkRttMs(); ok {
++					s := rtt[p]
++					if s == nil {
++						s = &rttStat{}
++						rtt[p] = s
++					}
++					s.add(ms)
++					if ticks%rttProbeEvery == 0 {
++						logRttProbe(log, r.Id(), p, s, false)
++					}
++				}
++				// "Fast" = nothing between us worth protecting from a probe. Same-host qualifies by
++				// construction (no radio, no switch, no queue); everyone else has to EARN it with a
++				// sustained sub-abrFastRttMs mean. A peer with no RTT reading yet never qualifies.
++				if s := rtt[p]; sameHost || (s != nil && s.n >= abrFastRttMinSamples && s.mean < abrFastRttMs) {
++					fastPeers++
++				}
 +
 +				// A LONE player has nobody to protect. The ladder's whole rationale — "weak peers get
 +				// fewer frames, NOT a worse room" — has no beneficiary when the weak peer IS the room,
@@ -6207,7 +6894,20 @@ index 0000000..76219e5
 +			}
 +
 +			next := cur
++			// SAME-HOST ROOMS DO NOT ADAPT. When every estimating peer is this machine, the media never
++			// crosses a network — loopback or our own NIC — so GCC is not measuring a link, it is
++			// measuring our own encoder and CPU. Feeding that back into a bandwidth decision is what
++			// produced both failed ramp attempts above. There is nothing to congest and nothing to
++			// protect, so sit at the ceiling and leave the estimate out of it.
++			//
++			// Strictly same-host, never "fast RTT": a wired LAN desktop is a real link that can really
++			// saturate, and its estimate is meaningful. RTT classification stays observability only (the
++			// `fast` count in the log line) until there is a design that earns more.
++			sameHostRoom := peers > 0 && sameHostPeers == peers
 +			switch {
++			case sameHostRoom:
++				lowTicks = 0
++				next = ceilKbps
 +			case worstServable > 0 && worstServable*100 < cur*abrBackoffPct:
 +				lowTicks++
 +				if lowTicks >= 2 { // confirmed congestion
@@ -6216,6 +6916,37 @@ index 0000000..76219e5
 +			case worstServable > 0 && worstServable*100 >= cur*abrHealthyPct && cur < ceilKbps:
 +				lowTicks = 0
 +				step := max(abrMinStepKbps, cur*abrRampPct/100) // healthy: probe upward
++				// FAST-LINK PATH. The opener is deliberately conservative (min(6000, ceiling*60%)) and
++				// then creeps +15%/tick, which is right when an opening burst can overrun a radio queue.
++				// It is pure waste when the player IS this machine: measured on Ziggy, every room crept
++				// 6000 -> 6900 -> 7935 -> 9125 -> 10493 -> 12066 -> 13875 -> 15956 over ~35s with `cong 0`
++				// and `starved-cap 0` the entire way — nothing was ever congested, and every new room paid
++				// it again. Eric's report was "it looked like a low quality stream repeatedly", which is
++				// exactly what 35 seconds of ramp looks like on a link that was never the constraint.
++				//
++				// So: when EVERY estimating peer is same-host and we hold no congestion memory, go to the
++				// ceiling in one step. Same-host has no queue to overrun, and the guards all still apply —
++				// this only replaces the size of an upward probe. If the estimate later disagrees, the
++				// two-tick backoff, the 70% cut clamp and congestion memory handle it exactly as before,
++				// and once a wall is remembered (congKbps > 0) this path switches itself off.
++				//
++				// Deliberately NOT applied to the opener: at startRoomAbr no peer has connected yet, so
++				// there is no candidate pair to classify. One tick of ramp is the cost of measuring.
++				// ACTIVATED 2026-07-30 against measured hardware, having shipped inert for one session
++				// while the bitrate work was in flight (two behaviour changes competing for blame is how
++				// you learn nothing from a test). Confirming numbers, same LAN, same game:
++				//   wired PC  mean 0.90ms sd 0.48  -> qualifies, and spent 15s creeping 6000 -> 19328
++				//   tablet    mean 3.86ms sd 1.50  -> excluded, best single sample 1.59ms
++				// NOTE: there is deliberately NO "fast link" step multiplier here. Two attempts failed
++				// for the same measured reason (2026-07-30): the +15%/tick creep is not a conservative
++				// choice, it is approximately GCC'S OWN MAXIMUM TRACKING RATE. The estimate can only rise
++				// as we send more, so ANY larger step is judged against an estimate taken at the old rate
++				// and reads as congestion:
++				//   leap 6000 -> 19328 : servable 6861 -> cut to 13529 two ticks later, then a 250/tick crawl
++				//   double 6000 -> 12000: servable 6805 -> cut to 8400 two ticks later, same crawl
++				// Both left the room WORSE than the creep. A faster ramp cannot come from a bigger step;
++				// it can only come from not consulting the estimator at all, which is defensible in
++				// exactly one case — see the same-host branch above the switch.
 +				if congKbps > 0 {
 +					// Holding at/above the remembered wall and still healthy: count toward forgetting
 +					// it. Enough proof and probing goes back to full speed.
@@ -6270,8 +7001,8 @@ index 0000000..76219e5
 +				log.Warn().Err(err).Msgf("abr: failed to set %d kbps", next)
 +				continue
 +			}
-+			log.Info().Msgf("abr: %d -> %d kbps (servable %d, starved-cap %d, ceiling %d, peers %d, cong %d)",
-+				cur, next, worstServable, roomCap, ceilKbps, peers, congKbps)
++			log.Info().Msgf("abr: %d -> %d kbps (servable %d, starved-cap %d, ceiling %d, peers %d, samehost %d, fast %d, cong %d)",
++				cur, next, worstServable, roomCap, ceilKbps, peers, sameHostPeers, fastPeers, congKbps)
 +			cur = next
 +		}
 +	}()
@@ -9558,7 +10289,7 @@ index 0000000..6dd8a84
 +	atomic.StoreUintptr(&a.winHwnd, 0)
 +}
 diff --git a/pkg/worker/caged/libretro/caged.go b/pkg/worker/caged/libretro/caged.go
-index f3553b1..df14005 100644
+index f3553b1..d66ce23 100644
 --- a/pkg/worker/caged/libretro/caged.go
 +++ b/pkg/worker/caged/libretro/caged.go
 @@ -5,6 +5,7 @@ import (
@@ -9582,8 +10313,8 @@ index f3553b1..df14005 100644
 +
 +// SetRetroAchievements stages this room's RetroAchievements session (creator's account + hardcore +
 +// whether cheats were staged). Call it BEFORE Load, like SetRoomCheats. See Frontend.SetRetroAchievements.
-+func (c *Caged) SetRetroAchievements(user, token, system string, hardcore, cheats bool, h cheevos.Handlers) {
-+	c.base.SetRetroAchievements(user, token, system, hardcore, cheats, h)
++func (c *Caged) SetRetroAchievements(user, token, system string, hardcore, cheats, seedExplicit bool, h cheevos.Handlers) {
++	c.base.SetRetroAchievements(user, token, system, hardcore, cheats, seedExplicit, h)
 +}
 +
 +// NotifySaveStateLoaded / NotifyFastForward / NotifyReset forward run-legitimacy events to the RA
@@ -9610,38 +10341,678 @@ index f3553b1..df14005 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..319f28a 100644
+index 6974d59..2f9101d 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,8 +1,10 @@
- package libretro
- 
- import (
+@@ -1,578 +1,2007 @@
+-package libretro
+-
+-import (
+-	"errors"
+-	"fmt"
+-	"path/filepath"
+-	"runtime"
+-	"strings"
+-	"sync"
+-	"sync/atomic"
+-	"time"
+-	"unsafe"
+-
+-	"github.com/giongto35/cloud-game/v3/pkg/config"
+-	"github.com/giongto35/cloud-game/v3/pkg/logger"
+-	"github.com/giongto35/cloud-game/v3/pkg/os"
+-	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/app"
+-	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/graphics"
+-	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/nanoarch"
+-)
+-
+-type Emulator interface {
+-	SetAudioCb(func(app.Audio))
+-	SetVideoCb(func(app.Video))
+-	SetDataCb(func([]byte))
+-	LoadCore(name string)
+-	LoadGame(path string) error
+-	FPS() float64
+-	Flipped() bool
+-	Rotation() uint
+-	PixFormat() uint32
+-	AudioSampleRate() int
+-	IsPortrait() bool
+-	// Start is called after LoadGame
+-	Start()
+-	// ViewportRecalculate calculates output resolution with aspect and scale
+-	ViewportRecalculate()
+-	RestoreGameState() error
+-	// SetSessionId sets distinct name for the game session (in order to save/load it later)
+-	SetSessionId(name string)
+-	SaveGameState() error
+-	SaveStateName() string
+-	// HashPath returns the path emulator will save state to
+-	HashPath() string
+-	// HasSave returns true if the current ROM was saved before
+-	HasSave() bool
+-	// Close will be called when the game is done
+-	Close()
+-	// Input passes input to the emulator
+-	Input(player int, device byte, data []byte)
+-	// Scale returns set video scale factor and method
+-	Scale() (float64, string)
+-	Reset()
+-}
+-
+-type Frontend struct {
+-	conf    config.Emulator
+-	done    chan struct{}
+-	doneEvt chan struct{} // closed when Start() fully exits
+-	closed  atomic.Bool
+-	log     *logger.Logger
+-	nano    *nanoarch.Nanoarch
+-	onAudio func(app.Audio)
+-	onData  func([]byte)
+-	onVideo func(app.Video)
+-	storage Storage
+-	scale   float64
+-	scaleM  string
+-	isGL    bool
+-	th      int // draw threads
+-	vw, vh  int // out frame size
+-
+-	// directives
+-
+-	// SpinBatch batches nanotime checks in the spin loop.
+-	// Higher values = check every N iterations, reducing syscall overhead.
+-	SpinBatch int
+-
+-	// skipVideo used when new frame was too late
+-	skipVideo bool
+-
+-	mu  sync.Mutex
+-	mui sync.Mutex
+-
+-	DisableCanvasPool bool
+-	SaveOnClose       bool
+-	UniqueSaveDir     bool
+-	SaveStateFs       string
+-}
+-
+-type Device byte
+-
+-const (
+-	RetroPad = Device(nanoarch.RetroPad)
+-	Keyboard = Device(nanoarch.Keyboard)
+-	Mouse    = Device(nanoarch.Mouse)
+-)
+-
+-var (
+-	audioPool sync.Pool
+-	noAudio   = func(app.Audio) {}
+-	noData    = func([]byte) {}
+-	noVideo   = func(app.Video) {}
+-	videoPool sync.Pool
+-	lastFrame *app.Video
+-)
+-
+-// NewFrontend implements Emulator interface for a Libretro frontend.
+-func NewFrontend(conf config.Emulator, log *logger.Logger) (*Frontend, error) {
+-	path, err := filepath.Abs(conf.LocalPath)
+-	if err != nil {
+-		return nil, fmt.Errorf("failed to use emulator path: %v, %w", conf.LocalPath, err)
+-	}
+-	if err := os.CheckCreateDir(path); err != nil {
+-		return nil, fmt.Errorf("failed to create local path: %v, %w", conf.LocalPath, err)
+-	}
+-	log.Info().Msgf("Emulator save path is %v", path)
+-
+-	// we use the global Nanoarch instance from nanoarch
+-	nano := nanoarch.NewNano(path)
+-
+-	log = log.Extend(log.With().Str("m", "Libretro"))
+-	level := logger.Level(conf.Libretro.LogLevel)
+-	nano.SetLogger(log.Extend(log.Level(level).With()))
+-
+-	// Check if room is on local storage, if not, pull from GCS to local storage
+-	log.Info().Msgf("Local storage path: %v", conf.Storage)
+-	if err := os.CheckCreateDir(conf.Storage); err != nil {
+-		return nil, fmt.Errorf("failed to create local storage path: %v, %w", conf.Storage, err)
+-	}
+-
+-	var store Storage = &StateStorage{Path: conf.Storage}
+-	if conf.Libretro.SaveCompression {
+-		store = &ZipStorage{Storage: store}
+-	}
+-
+-	// set global link to the Libretro
+-	f := &Frontend{
+-		conf:      conf,
+-		done:      make(chan struct{}),
+-		log:       log,
+-		onAudio:   noAudio,
+-		onData:    noData,
+-		onVideo:   noVideo,
+-		storage:   store,
+-		th:        conf.Threads,
+-		SpinBatch: 2048, // ~ 3GHz 3M / 2048 calls
+-	}
+-	f.linkNano(nano)
+-
+-	if conf.Libretro.DebounceMs > 0 {
+-		t := time.Duration(conf.Libretro.DebounceMs) * time.Millisecond
+-		f.nano.SetVideoDebounce(t)
+-		f.log.Debug().Msgf("set debounce time: %v", t)
+-	}
+-
+-	return f, nil
+-}
+-
+-func (f *Frontend) LoadCore(emu string) {
+-	conf := f.conf.GetLibretroCoreConfig(emu)
+-
+-	libExt := ""
+-	if ar, err := f.conf.Libretro.Cores.Repo.Guess(); err == nil {
+-		libExt = ar.Ext
+-	} else {
+-		f.log.Warn().Err(err).Msg("system arch guesser failed")
+-	}
+-
+-	meta := nanoarch.Metadata{
+-		AutoGlContext:   conf.AutoGlContext,
+-		FrameDup:        f.conf.Libretro.Dup,
+-		Hacks:           conf.Hacks,
+-		HasVFR:          conf.VFR,
+-		Hid:             conf.Hid,
+-		IsGlAllowed:     conf.IsGlAllowed,
+-		LibPath:         conf.Lib,
+-		Options:         conf.Options,
+-		Options4rom:     conf.Options4rom,
+-		UsesLibCo:       conf.UsesLibCo,
+-		CoreAspectRatio: conf.CoreAspectRatio,
+-		KbMouseSupport:  conf.KbMouseSupport,
+-		LibExt:          libExt,
+-	}
+-	f.mu.Lock()
+-	f.SaveStateFs = conf.SaveStateFs
+-	if conf.UniqueSaveDir {
+-		f.UniqueSaveDir = true
+-		f.nano.SetSaveDirSuffix(f.storage.MainPath())
+-		f.log.Debug().Msgf("Using unique dir for saves: %v", f.storage.MainPath())
+-	}
+-	scale := 1.0
+-	if conf.Scale > 1 {
+-		scale = conf.Scale
+-		f.log.Debug().Msgf("Scale: x%v", scale)
+-	}
+-	f.storage.SetNonBlocking(conf.NonBlockingSave)
+-	f.scale = scale
+-	f.scaleM = conf.ScaleMethod
+-	f.isGL = conf.IsGlAllowed
+-	f.nano.CoreLoad(meta)
+-	f.mu.Unlock()
+-}
+-
+-func (f *Frontend) handleAudio(audio unsafe.Pointer, samples int) {
+-	fr, _ := audioPool.Get().(*app.Audio)
+-	if fr == nil {
+-		fr = new(app.Audio)
+-	}
+-	// !to look if we need a copy
+-	fr.Data = unsafe.Slice((*byte)(audio), samples<<1)
+-	// due to audio buffering for opus fixed frames and const duration up in the hierarchy,
+-	// we skip Duration here
+-	f.onAudio(*fr)
+-	audioPool.Put(fr)
+-}
+-
+-func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.FrameInfo) {
+-	if f.conf.SkipLateFrames && f.skipVideo {
+-		return
+-	}
+-
+-	fr, _ := videoPool.Get().(*app.Video)
+-	if fr == nil {
+-		fr = new(app.Video)
+-	}
+-	fr.Frame.Data = data
+-	fr.Frame.W = int(fi.W)
+-	fr.Frame.H = int(fi.H)
+-	fr.Frame.Stride = int(fi.Stride)
+-	fr.Duration = delta
+-
+-	lastFrame = fr
+-	f.onVideo(*fr)
+-
+-	videoPool.Put(fr)
+-}
+-
+-func (f *Frontend) handleDup() {
+-	if lastFrame != nil {
+-		f.onVideo(*lastFrame)
+-	}
+-}
+-
+-func (f *Frontend) Shutdown() {
+-	f.mu.Lock()
+-	f.nano.Shutdown()
+-	f.SetAudioCb(noAudio)
+-	f.SetVideoCb(noVideo)
+-	lastFrame = nil
+-	f.mu.Unlock()
+-	f.log.Debug().Msgf("frontend shutdown done")
+-}
+-
+-func (f *Frontend) linkNano(nano *nanoarch.Nanoarch) {
+-	f.nano = nano
+-	if nano == nil {
+-		return
+-	}
+-	f.nano.WaitReady() // start only when nano is available
+-
+-	f.nano.OnVideo = f.handleVideo
+-	f.nano.OnAudio = f.handleAudio
+-	f.nano.OnDup = f.handleDup
+-}
+-
+-func (f *Frontend) SetVideoChangeCb(fn func()) {
+-	if f.nano != nil {
+-		f.nano.OnSystemAvInfo = fn
+-	}
+-}
+-
+-func (f *Frontend) Start() {
+-	f.log.Debug().Msgf("frontend start")
+-	if f.nano.Stopped.Load() {
+-		f.log.Warn().Msgf("frontend stopped during the start")
+-		f.mui.Lock()
+-		defer f.mui.Unlock()
+-		f.Shutdown()
+-		return
+-	}
+-
+-	if f.isGL {
+-		// don't jump between threads
+-		runtime.LockOSThread()
+-		defer runtime.UnlockOSThread()
+-	}
+-
+-	f.mui.Lock()
+-	f.done = make(chan struct{})
+-	f.doneEvt = make(chan struct{})
+-	f.nano.LastFrameTime = time.Now()
+-
+-	defer func() {
+-		// Save game on quit if it was saved before (shared or click-saved).
+-		if f.SaveOnClose && f.HasSave() {
+-			f.log.Debug().Msg("save on quit")
+-			if err := f.Save(); err != nil {
+-				f.log.Error().Err(err).Msg("save on quit failed")
+-			}
+-		}
+-		f.mui.Unlock()
+-		f.Shutdown()
+-		close(f.doneEvt)
+-	}()
+-
+-	if f.HasSave() {
+-		// advance 1 frame for Mupen, DOSBox save states
+-		// loading will work if autostart is selected for DOSBox apps
+-		f.Tick()
+-		if err := f.RestoreGameState(); err != nil {
+-			f.log.Error().Err(err).Msg("couldn't load a save file")
+-		}
+-	}
+-
+-	if f.conf.AutosaveSec > 0 {
+-		// !to sync both for loops, can crash if the emulator starts later
+-		go f.autosave(f.conf.AutosaveSec)
+-	}
+-
+-	// The main loop of Libretro
+-
+-	targetFrameTimeNs := int64(float64(time.Second) / f.nano.VideoFramerate())
+-
+-	// stop sleeping and start spinning in the remaining 1ms
+-	const spinThresholdNs = int64(1 * time.Millisecond)
+-
+-	// how many frames will be considered not normal
+-	const lateFramesThreshold = 3
+-
+-	batch := max(f.SpinBatch, 1)
+-
+-	lastFrameStart := os.Nanotime()
+-
+-	for {
+-		select {
+-		case <-f.done:
+-			return
+-		default:
+-			f.Tick()
+-
+-			now := os.Nanotime()
+-			elapsed := now - lastFrameStart
+-			sleepTimeNs := targetFrameTimeNs - elapsed
+-			deadline := lastFrameStart + targetFrameTimeNs
+-
+-			if sleepTimeNs > 0 {
+-				// SLEEP
+-				// if we have plenty of time, sleep to save CPU and
+-				// wake up slightly before the target time
+-				if sleepTimeNs > spinThresholdNs {
+-					time.Sleep(time.Duration(sleepTimeNs - spinThresholdNs))
+-				}
+-
+-				// SPIN
+-				// if we are close to the target,
+-				// burn CPU and check the clock with ns resolution.
+-				// SpinBatch batches the time check to reduce
+-				// overhead while keeping sub-us precision.
+-				for {
+-					for range batch - 1 {
+-					}
+-					if os.Nanotime() >= deadline {
+-						break
+-					}
+-				}
+-				f.skipVideo = false
+-			} else {
+-				// lagging behind the target framerate so we don't sleep
+-				if f.conf.LogDroppedFrames {
+-					// !to make some stats counter instead
+-					f.log.Debug().Msgf("[] Frame drop: %v", time.Duration(elapsed))
+-				}
+-				f.skipVideo = true
+-			}
+-
+-			// timer reset
+-			//
+-			// adding targetFrameTime to the previous start
+-			// prevents drift, if one frame was late,
+-			// we try to catch up in the next frame
+-			lastFrameStart = lastFrameStart + targetFrameTimeNs
+-
+-			// if execution was paused or heavily delayed,
+-			// reset lastFrameStart so we don't try to run
+-			// a bunch of frames instantly to catch up
+-			if os.Nanotime()-lastFrameStart > targetFrameTimeNs*lateFramesThreshold {
+-				lastFrameStart = os.Nanotime()
+-			}
+-		}
+-	}
+-}
+-
+-func (f *Frontend) LoadGame(path string) error {
+-	if f.UniqueSaveDir {
+-		f.copyFsMaybe(path)
+-	}
+-	return f.nano.LoadGame(path)
+-}
+-
+-func (f *Frontend) AspectRatio() float32          { return f.nano.AspectRatio() }
+-func (f *Frontend) AudioSampleRate() int          { return f.nano.AudioSampleRate() }
+-func (f *Frontend) FPS() float64                  { return f.nano.VideoFramerate() }
+-func (f *Frontend) Flipped() bool                 { return f.nano.IsGL() }
+-func (f *Frontend) FrameSize() (int, int)         { return f.nano.BaseWidth(), f.nano.BaseHeight() }
+-func (f *Frontend) HasSave() bool                 { return os.Exists(f.HashPath()) }
+-func (f *Frontend) HashPath() string              { return f.storage.GetSavePath() }
+-func (f *Frontend) IsPortrait() bool              { return f.nano.IsPortrait() }
+-func (f *Frontend) KbMouseSupport() bool          { return f.nano.KbMouseSupport() }
+-func (f *Frontend) PixFormat() uint32             { return f.nano.Video.PixFmt.C }
+-func (f *Frontend) Reset()                        { f.mu.Lock(); defer f.mu.Unlock(); f.nano.Reset() }
+-func (f *Frontend) RestoreGameState() error       { return f.Load() }
+-func (f *Frontend) Rotation() uint                { return f.nano.Rot }
+-func (f *Frontend) SRAMPath() string              { return f.storage.GetSRAMPath() }
+-func (f *Frontend) SaveGameState() error          { return f.Save() }
+-func (f *Frontend) SaveStateName() string         { return filepath.Base(f.HashPath()) }
+-func (f *Frontend) Scale() (float64, string)      { return f.scale, f.scaleM }
+-func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
+-func (f *Frontend) SetSessionId(name string)      { f.storage.SetMainSaveName(name) }
+-func (f *Frontend) SetDataCb(cb func([]byte))     { f.onData = cb }
+-func (f *Frontend) SetVideoCb(ff func(app.Video)) { f.onVideo = ff }
+-func (f *Frontend) Tick()                         { f.mu.Lock(); f.nano.Run(); f.mu.Unlock() }
+-func (f *Frontend) ViewportRecalculate()          { f.mu.Lock(); f.vw, f.vh = f.ViewportCalc(); f.mu.Unlock() }
+-func (f *Frontend) ViewportSize() (int, int)      { return f.vw, f.vh }
+-
+-func (f *Frontend) Input(port int, device byte, data []byte) {
+-	switch Device(device) {
+-	case RetroPad:
+-		f.nano.InputRetropad(port, data)
+-	case Keyboard:
+-		f.nano.InputKeyboard(port, data)
+-	case Mouse:
+-		f.nano.InputMouse(port, data)
+-	}
+-}
+-
+-func (f *Frontend) ViewportCalc() (nw int, nh int) {
+-	w, h := f.FrameSize()
+-	nw, nh = w, h
+-
+-	if f.IsPortrait() {
+-		nw, nh = nh, nw
+-	}
+-
+-	f.log.Debug().Msgf("viewport: %dx%d -> %dx%d", w, h, nw, nh)
+-
+-	return
+-}
+-
+-func (f *Frontend) Close() {
+-	f.log.Debug().Msgf("frontend close")
+-	if f.closed.Swap(true) {
+-		return
+-	}
+-	close(f.done)
+-
+-	f.mui.Lock()
+-	f.nano.Close()
+-	f.mui.Unlock()
+-
+-	if f.doneEvt != nil {
+-		<-f.doneEvt
+-	}
+-
+-	f.mui.Lock()
+-	if f.UniqueSaveDir && !f.HasSave() {
+-		if err := f.nano.DeleteSaveDir(); err != nil {
+-			f.log.Error().Msgf("couldn't delete save dir: %v", err)
+-		}
+-	}
+-
+-	f.UniqueSaveDir = false
+-	f.SaveStateFs = ""
+-
+-	f.mui.Unlock()
+-	f.log.Debug().Msgf("frontend closed")
+-}
+-
+-// Save writes the current state to the filesystem.
+-func (f *Frontend) Save() error {
+-	f.mu.Lock()
+-	defer f.mu.Unlock()
+-
+-	ss, err := nanoarch.SaveState()
+-	if err != nil {
+-		return err
+-	}
+-	if err := f.storage.Save(f.HashPath(), ss); err != nil {
+-		return err
+-	}
+-	ss = nil
+-
+-	if sram := nanoarch.SaveRAM(); sram != nil {
+-		if err := f.storage.Save(f.SRAMPath(), sram); err != nil {
+-			return err
+-		}
+-		sram = nil
+-	}
+-	return nil
+-}
+-
+-// Load restores the state from the filesystem.
+-func (f *Frontend) Load() error {
+-	f.mu.Lock()
+-	defer f.mu.Unlock()
+-
+-	ss, err := f.storage.Load(f.HashPath())
+-	if err != nil && !errors.Is(err, os.ErrNotExist) {
+-		return err
+-	}
+-	if err := nanoarch.RestoreSaveState(ss); err != nil {
+-		return err
+-	}
+-
+-	sram, err := f.storage.Load(f.SRAMPath())
+-	if err != nil && !errors.Is(err, os.ErrNotExist) {
+-		return err
+-	}
+-	if sram != nil {
+-		nanoarch.RestoreSaveRAM(sram)
+-	}
+-	return nil
+-}
+-
+-func (f *Frontend) IsSupported() error {
+-	return graphics.RGFWTryInit()
+-}
+-
+-func (f *Frontend) autosave(periodSec int) {
+-	f.log.Info().Msgf("Autosave every [%vs]", periodSec)
+-	ticker := time.NewTicker(time.Duration(periodSec) * time.Second)
+-	defer ticker.Stop()
+-
+-	for {
+-		select {
+-		case <-ticker.C:
+-			if f.nano.IsStopped() {
+-				return
+-			}
+-			if err := f.Save(); err != nil {
+-				f.log.Error().Msgf("Autosave failed: %v", err)
+-			} else {
+-				f.log.Debug().Msgf("Autosave done")
+-			}
+-		case <-f.done:
+-			return
+-		}
+-	}
+-}
+-
+-func (f *Frontend) copyFsMaybe(path string) {
+-	if f.SaveStateFs == "" {
+-		return
+-	}
+-
+-	fileName := f.SaveStateFs
+-	hasPlaceholder := strings.HasPrefix(f.SaveStateFs, "*")
+-	if hasPlaceholder {
+-		game := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+-		fileName = strings.Replace(f.SaveStateFs, "*", game, 1)
+-	}
+-
+-	fullPath := filepath.Join(f.nano.SaveDir(), fileName)
+-
+-	if os.Exists(fullPath) {
+-		return
+-	}
+-
+-	storePath := filepath.Dir(path)
+-	fsPath := filepath.Join(storePath, fileName)
+-	if os.Exists(fsPath) {
+-		if err := os.CopyFile(fsPath, fullPath); err != nil {
+-			f.log.Error().Err(err).Msgf("fs copy fail")
+-		} else {
+-			f.log.Debug().Msgf("copied fs %v to %v", fsPath, fullPath)
+-		}
+-	}
+-}
++package libretro
++
++import (
 +	"crypto/sha256"
- 	"errors"
- 	"fmt"
++	"errors"
++	"fmt"
 +	"io/fs"
- 	"path/filepath"
- 	"runtime"
- 	"strings"
-@@ -17,6 +19,7 @@ import (
- 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/app"
- 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/graphics"
- 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/nanoarch"
++	"path/filepath"
++	"runtime"
++	"strings"
++	"sync"
++	"sync/atomic"
++	"time"
++	"unsafe"
++
++	"github.com/giongto35/cloud-game/v3/pkg/config"
++	"github.com/giongto35/cloud-game/v3/pkg/logger"
++	"github.com/giongto35/cloud-game/v3/pkg/os"
++	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/app"
++	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/graphics"
++	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/nanoarch"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/cheevos"
- )
- 
- type Emulator interface {
-@@ -79,15 +82,107 @@ type Frontend struct {
- 	// skipVideo used when new frame was too late
- 	skipVideo bool
- 
++)
++
++type Emulator interface {
++	SetAudioCb(func(app.Audio))
++	SetVideoCb(func(app.Video))
++	SetDataCb(func([]byte))
++	LoadCore(name string)
++	LoadGame(path string) error
++	FPS() float64
++	Flipped() bool
++	Rotation() uint
++	PixFormat() uint32
++	AudioSampleRate() int
++	IsPortrait() bool
++	// Start is called after LoadGame
++	Start()
++	// ViewportRecalculate calculates output resolution with aspect and scale
++	ViewportRecalculate()
++	RestoreGameState() error
++	// SetSessionId sets distinct name for the game session (in order to save/load it later)
++	SetSessionId(name string)
++	SaveGameState() error
++	SaveStateName() string
++	// HashPath returns the path emulator will save state to
++	HashPath() string
++	// HasSave returns true if the current ROM was saved before
++	HasSave() bool
++	// Close will be called when the game is done
++	Close()
++	// Input passes input to the emulator
++	Input(player int, device byte, data []byte)
++	// Scale returns set video scale factor and method
++	Scale() (float64, string)
++	Reset()
++}
++
++type Frontend struct {
++	conf    config.Emulator
++	done    chan struct{}
++	doneEvt chan struct{} // closed when Start() fully exits
++	closed  atomic.Bool
++	log     *logger.Logger
++	nano    *nanoarch.Nanoarch
++	onAudio func(app.Audio)
++	onData  func([]byte)
++	onVideo func(app.Video)
++	storage Storage
++	scale   float64
++	scaleM  string
++	isGL    bool
++	th      int // draw threads
++	vw, vh  int // out frame size
++
++	// directives
++
++	// SpinBatch batches nanotime checks in the spin loop.
++	// Higher values = check every N iterations, reducing syscall overhead.
++	SpinBatch int
++
++	// skipVideo used when new frame was too late
++	skipVideo bool
++
 +	// silenceBuf is pushSilence's reusable zero buffer (emulator goroutine only).
 +	silenceBuf []byte
 +
- 	mu  sync.Mutex
- 	mui sync.Mutex
- 
++	mu  sync.Mutex
++	mui sync.Mutex
++
 +	// RetroAchievements (per room, when the creator linked RA). Staged by SetRetroAchievements before
 +	// Load, the live client is created in Start() once memory is available and ticked each frame; nil =
 +	// RA off for this room. The Frontend is recreated per room (ReloadFrontend), so this never leaks
@@ -9662,13 +11033,16 @@ index 6974d59..319f28a 100644
 +	// until something dirties it. A hard reset still clears it, exactly like a mid-run Load: RA restores
 +	// hardcore eligibility on reset, so a clean run started after one is legit again.
 +	raSeededState bool
++	// raSeedExplicit: the boot state was a DELIBERATE pick (named snapshot / Quickload, ?seedslot=N)
++	// rather than the ordinary auto-save continue. Only the former is save-scumming.
++	raSeedExplicit bool
 +	raHandler cheevos.Handlers
 +	gamePath  string // the ROM/disc path last loaded — RetroAchievements hashes it to identify the game
 +
- 	DisableCanvasPool bool
- 	SaveOnClose       bool
- 	UniqueSaveDir     bool
- 	SaveStateFs       string
++	DisableCanvasPool bool
++	SaveOnClose       bool
++	UniqueSaveDir     bool
++	SaveStateFs       string
 +	NoSaveStates      bool // this core cannot be serialized; its memory card is the progress (0041)
 +	AudioMaster       bool // the audio clock paces this core, even above its fps floor (0043)
 +
@@ -9723,8 +11097,8 @@ index 6974d59..319f28a 100644
 +	rewindCapSumMs   float64  // their total wall cost
 +	rewindCapMaxMs   float64  // the worst one
 +	ffLastVideoNs    int64    // last frame pushed downstream while fast-forwarding (throttle)
- }
- 
++}
++
 +// rewindFreeMax bounds the recycle list. The ring only ever evicts from the front, so a couple of
 +// spare buffers is all a steady state needs; anything beyond that is just held memory.
 +const rewindFreeMax = 4
@@ -9737,28 +11111,106 @@ index 6974d59..319f28a 100644
 +// ErrNoSaveStates is returned instead of serializing a core that cannot survive it.
 +var ErrNoSaveStates = errors.New("this system has no save states; its progress is kept on the memory card")
 +
- type Device byte
- 
- const (
-@@ -173,10 +268,14 @@ func (f *Frontend) LoadCore(emu string) {
- 		Hacks:           conf.Hacks,
- 		HasVFR:          conf.VFR,
- 		Hid:             conf.Hid,
++type Device byte
++
++const (
++	RetroPad = Device(nanoarch.RetroPad)
++	Keyboard = Device(nanoarch.Keyboard)
++	Mouse    = Device(nanoarch.Mouse)
++)
++
++var (
++	audioPool sync.Pool
++	noAudio   = func(app.Audio) {}
++	noData    = func([]byte) {}
++	noVideo   = func(app.Video) {}
++	videoPool sync.Pool
++	lastFrame *app.Video
++)
++
++// NewFrontend implements Emulator interface for a Libretro frontend.
++func NewFrontend(conf config.Emulator, log *logger.Logger) (*Frontend, error) {
++	path, err := filepath.Abs(conf.LocalPath)
++	if err != nil {
++		return nil, fmt.Errorf("failed to use emulator path: %v, %w", conf.LocalPath, err)
++	}
++	if err := os.CheckCreateDir(path); err != nil {
++		return nil, fmt.Errorf("failed to create local path: %v, %w", conf.LocalPath, err)
++	}
++	log.Info().Msgf("Emulator save path is %v", path)
++
++	// we use the global Nanoarch instance from nanoarch
++	nano := nanoarch.NewNano(path)
++
++	log = log.Extend(log.With().Str("m", "Libretro"))
++	level := logger.Level(conf.Libretro.LogLevel)
++	nano.SetLogger(log.Extend(log.Level(level).With()))
++
++	// Check if room is on local storage, if not, pull from GCS to local storage
++	log.Info().Msgf("Local storage path: %v", conf.Storage)
++	if err := os.CheckCreateDir(conf.Storage); err != nil {
++		return nil, fmt.Errorf("failed to create local storage path: %v, %w", conf.Storage, err)
++	}
++
++	var store Storage = &StateStorage{Path: conf.Storage}
++	if conf.Libretro.SaveCompression {
++		store = &ZipStorage{Storage: store}
++	}
++
++	// set global link to the Libretro
++	f := &Frontend{
++		conf:      conf,
++		done:      make(chan struct{}),
++		log:       log,
++		onAudio:   noAudio,
++		onData:    noData,
++		onVideo:   noVideo,
++		storage:   store,
++		th:        conf.Threads,
++		SpinBatch: 2048, // ~ 3GHz 3M / 2048 calls
++	}
++	f.linkNano(nano)
++
++	if conf.Libretro.DebounceMs > 0 {
++		t := time.Duration(conf.Libretro.DebounceMs) * time.Millisecond
++		f.nano.SetVideoDebounce(t)
++		f.log.Debug().Msgf("set debounce time: %v", t)
++	}
++
++	return f, nil
++}
++
++func (f *Frontend) LoadCore(emu string) {
++	conf := f.conf.GetLibretroCoreConfig(emu)
++
++	libExt := ""
++	if ar, err := f.conf.Libretro.Cores.Repo.Guess(); err == nil {
++		libExt = ar.Ext
++	} else {
++		f.log.Warn().Err(err).Msg("system arch guesser failed")
++	}
++
++	meta := nanoarch.Metadata{
++		AutoGlContext:   conf.AutoGlContext,
++		FrameDup:        f.conf.Libretro.Dup,
++		Hacks:           conf.Hacks,
++		HasVFR:          conf.VFR,
++		Hid:             conf.Hid,
 +		Hid4rom:         conf.Hid4rom,
 +		HidGc:           conf.HidGc,
- 		IsGlAllowed:     conf.IsGlAllowed,
++		IsGlAllowed:     conf.IsGlAllowed,
 +		HwContext:       conf.HwContext,
- 		LibPath:         conf.Lib,
- 		Options:         conf.Options,
- 		Options4rom:     conf.Options4rom,
++		LibPath:         conf.Lib,
++		Options:         conf.Options,
++		Options4rom:     conf.Options4rom,
 +		Fps4rom:         conf.Fps4rom,
- 		UsesLibCo:       conf.UsesLibCo,
- 		CoreAspectRatio: conf.CoreAspectRatio,
- 		KbMouseSupport:  conf.KbMouseSupport,
-@@ -184,15 +283,79 @@ func (f *Frontend) LoadCore(emu string) {
- 	}
- 	f.mu.Lock()
- 	f.SaveStateFs = conf.SaveStateFs
++		UsesLibCo:       conf.UsesLibCo,
++		CoreAspectRatio: conf.CoreAspectRatio,
++		KbMouseSupport:  conf.KbMouseSupport,
++		LibExt:          libExt,
++	}
++	f.mu.Lock()
++	f.SaveStateFs = conf.SaveStateFs
 +	f.NoSaveStates = conf.NoSaveStates
 +	f.AudioMaster = conf.AudioMaster
 +	if conf.AudioMaster {
@@ -9808,11 +11260,11 @@ index 6974d59..319f28a 100644
 +		f.rewindArmed.Store(true)
 +		f.log.Info().Msgf("%v: rewind armed (step %v frames, cap %v MB)", emu, f.rewindStepFrames, mb)
 +	}
- 	if conf.UniqueSaveDir {
- 		f.UniqueSaveDir = true
- 		f.nano.SetSaveDirSuffix(f.storage.MainPath())
- 		f.log.Debug().Msgf("Using unique dir for saves: %v", f.storage.MainPath())
- 	}
++	if conf.UniqueSaveDir {
++		f.UniqueSaveDir = true
++		f.nano.SetSaveDirSuffix(f.storage.MainPath())
++		f.log.Debug().Msgf("Using unique dir for saves: %v", f.storage.MainPath())
++	}
 +	// Drop a cache the current core build did not write. Must run HERE: the save dir is final by now
 +	// (the block above may have re-pointed it), and the core reads its cache during the load that
 +	// follows — context_reset, still inside this same call. A purge after that point would be a no-op.
@@ -9828,19 +11280,20 @@ index 6974d59..319f28a 100644
 +	// already handles it (it rounds up to an even size), so this is the whole change. Pair a fractional
 +	// scale with a SMOOTH scaleMethod (bilinear2): nearest would point-sample and defeat the purpose —
 +	// downscaling with nearest doesn't anti-alias, it aliases.
- 	scale := 1.0
--	if conf.Scale > 1 {
++	scale := 1.0
 +	if conf.Scale > 0 && conf.Scale != 1 {
- 		scale = conf.Scale
--		f.log.Debug().Msgf("Scale: x%v", scale)
++		scale = conf.Scale
 +		f.log.Debug().Msgf("Scale: x%v (%s)", scale, map[bool]string{true: "supersample", false: "magnify"}[scale < 1])
- 	}
- 	f.storage.SetNonBlocking(conf.NonBlockingSave)
- 	f.scale = scale
-@@ -203,6 +366,13 @@ func (f *Frontend) LoadCore(emu string) {
- }
- 
- func (f *Frontend) handleAudio(audio unsafe.Pointer, samples int) {
++	}
++	f.storage.SetNonBlocking(conf.NonBlockingSave)
++	f.scale = scale
++	f.scaleM = conf.ScaleMethod
++	f.isGL = conf.IsGlAllowed
++	f.nano.CoreLoad(meta)
++	f.mu.Unlock()
++}
++
++func (f *Frontend) handleAudio(audio unsafe.Pointer, samples int) {
 +	// Time warp (fast-forward/rewind) drops audio entirely: a 4x-fast core produces 4x the samples,
 +	// which would pile into the Opus pipeline's buffer and come out as chipmunk sound followed by a
 +	// permanent multi-second audio lag after release. Silence while engaged is the correct sound —
@@ -9848,14 +11301,18 @@ index 6974d59..319f28a 100644
 +	if f.ffOn.Load() || f.rwOn.Load() {
 +		return
 +	}
- 	fr, _ := audioPool.Get().(*app.Audio)
- 	if fr == nil {
- 		fr = new(app.Audio)
-@@ -215,16 +385,67 @@ func (f *Frontend) handleAudio(audio unsafe.Pointer, samples int) {
- 	audioPool.Put(fr)
- }
- 
--func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.FrameInfo) {
++	fr, _ := audioPool.Get().(*app.Audio)
++	if fr == nil {
++		fr = new(app.Audio)
++	}
++	// !to look if we need a copy
++	fr.Data = unsafe.Slice((*byte)(audio), samples<<1)
++	// due to audio buffering for opus fixed frames and const duration up in the hierarchy,
++	// we skip Duration here
++	f.onAudio(*fr)
++	audioPool.Put(fr)
++}
++
 +// pushSilence hands the audio pipeline n frames (per channel) of silence, as if the core had produced
 +// them. S16LE stereo, so 4 bytes a frame — and the buffer is grown-and-reused rather than allocated,
 +// because this runs on the emulator goroutine inside the frame budget.
@@ -9880,8 +11337,7 @@ index 6974d59..319f28a 100644
 +// wrapping buffer ever returns one. Holding fast-forward for half a second was enough to leak all
 +// eight and freeze the picture for the rest of the session. See coreVideoRefresh.
 +func (f *Frontend) skipFrame() bool {
- 	if f.conf.SkipLateFrames && f.skipVideo {
--		return
++	if f.conf.SkipLateFrames && f.skipVideo {
 +		return true
 +	}
 +	// Fast-forward: the core renders up to ffRatio× the frames, but the encoder must keep seeing
@@ -9898,15 +11354,15 @@ index 6974d59..319f28a 100644
 +		} else {
 +			f.ffLastVideoNs = now
 +		}
- 	}
++	}
 +	return false
 +}
- 
++
 +func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.FrameInfo) {
- 	fr, _ := videoPool.Get().(*app.Video)
- 	if fr == nil {
- 		fr = new(app.Video)
- 	}
++	fr, _ := videoPool.Get().(*app.Video)
++	if fr == nil {
++		fr = new(app.Video)
++	}
 +	// STALE-FRAME FIX #1 (2026-07-17): on a per-frame geometry reneg (PS2 field/frame flip, loading<->level
 +	// at 1280x447<->1280x896), the previous lastFrame is PRE-transition content. Drop the reference so a
 +	// dropped-frame dup (handleDup re-pushes lastFrame) can never replay the old geometry across the
@@ -9915,18 +11371,21 @@ index 6974d59..319f28a 100644
 +		lastFrame = nil
 +	}
 +
- 	fr.Frame.Data = data
++	fr.Frame.Data = data
 +	fr.Frame.Tex = fi.Tex
 +	fr.Frame.Serial = fi.Serial
- 	fr.Frame.W = int(fi.W)
- 	fr.Frame.H = int(fi.H)
- 	fr.Frame.Stride = int(fi.Stride)
-@@ -237,9 +458,18 @@ func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.Fra
- }
- 
- func (f *Frontend) handleDup() {
--	if lastFrame != nil {
--		f.onVideo(*lastFrame)
++	fr.Frame.W = int(fi.W)
++	fr.Frame.H = int(fi.H)
++	fr.Frame.Stride = int(fi.Stride)
++	fr.Duration = delta
++
++	lastFrame = fr
++	f.onVideo(*fr)
++
++	videoPool.Put(fr)
++}
++
++func (f *Frontend) handleDup() {
 +	if lastFrame == nil {
 +		return
 +	}
@@ -9937,25 +11396,61 @@ index 6974d59..319f28a 100644
 +	// (the encoder just repeats its last frame). Readback frames (Serial 0) own their pixels — always safe.
 +	if lastFrame.Frame.Serial != 0 && !f.nano.ZcTexCurrent(lastFrame.Frame.Tex, lastFrame.Frame.Serial) {
 +		return
- 	}
++	}
 +	f.onVideo(*lastFrame)
- }
- 
- func (f *Frontend) Shutdown() {
-@@ -262,6 +492,7 @@ func (f *Frontend) linkNano(nano *nanoarch.Nanoarch) {
- 	f.nano.OnVideo = f.handleVideo
- 	f.nano.OnAudio = f.handleAudio
- 	f.nano.OnDup = f.handleDup
++}
++
++func (f *Frontend) Shutdown() {
++	f.mu.Lock()
++	f.nano.Shutdown()
++	f.SetAudioCb(noAudio)
++	f.SetVideoCb(noVideo)
++	lastFrame = nil
++	f.mu.Unlock()
++	f.log.Debug().Msgf("frontend shutdown done")
++}
++
++func (f *Frontend) linkNano(nano *nanoarch.Nanoarch) {
++	f.nano = nano
++	if nano == nil {
++		return
++	}
++	f.nano.WaitReady() // start only when nano is available
++
++	f.nano.OnVideo = f.handleVideo
++	f.nano.OnAudio = f.handleAudio
++	f.nano.OnDup = f.handleDup
 +	f.nano.SkipFrame = f.skipFrame
- }
- 
- func (f *Frontend) SetVideoChangeCb(fn func()) {
-@@ -292,8 +523,19 @@ func (f *Frontend) Start() {
- 	f.nano.LastFrameTime = time.Now()
- 
- 	defer func() {
--		// Save game on quit if it was saved before (shared or click-saved).
--		if f.SaveOnClose && f.HasSave() {
++}
++
++func (f *Frontend) SetVideoChangeCb(fn func()) {
++	if f.nano != nil {
++		f.nano.OnSystemAvInfo = fn
++	}
++}
++
++func (f *Frontend) Start() {
++	f.log.Debug().Msgf("frontend start")
++	if f.nano.Stopped.Load() {
++		f.log.Warn().Msgf("frontend stopped during the start")
++		f.mui.Lock()
++		defer f.mui.Unlock()
++		f.Shutdown()
++		return
++	}
++
++	if f.isGL {
++		// don't jump between threads
++		runtime.LockOSThread()
++		defer runtime.UnlockOSThread()
++	}
++
++	f.mui.Lock()
++	f.done = make(chan struct{})
++	f.doneEvt = make(chan struct{})
++	f.nano.LastFrameTime = time.Now()
++
++	defer func() {
 +		// FIRST, before anything that can take the process down with it (patch 0041). Both steps
 +		// below can: a serialize can access-violate inside a core, and flycast corrupts the heap on
 +		// teardown — and a dead worker harvests nothing, so the room used to end with the player's
@@ -9969,31 +11464,38 @@ index 6974d59..319f28a 100644
 +		// couldn't click Save at all until patch 0030. One serialize at teardown costs
 +		// nothing anyone can see; it runs before Shutdown so the core is still live.
 +		if f.SaveOnClose && !f.NoSaveStates {
- 			f.log.Debug().Msg("save on quit")
- 			if err := f.Save(); err != nil {
- 				f.log.Error().Err(err).Msg("save on quit failed")
-@@ -301,10 +543,39 @@ func (f *Frontend) Start() {
- 		}
- 		f.mui.Unlock()
- 		f.Shutdown()
++			f.log.Debug().Msg("save on quit")
++			if err := f.Save(); err != nil {
++				f.log.Error().Err(err).Msg("save on quit failed")
++			}
++		}
++		f.mui.Unlock()
++		f.Shutdown()
 +		// AND again after: the cores that DO survive teardown (Dolphin, PCSX2) flush their card on the
 +		// way out, so this pass picks that up. It cannot undo the one above — vaulting never replaces
 +		// a card with an older one (os.CopyTreeNewer).
 +		f.harvestCards()
- 		close(f.doneEvt)
- 	}()
- 
--	if f.HasSave() {
++		close(f.doneEvt)
++	}()
++
 +	// skip_boot_restore => DEFERRED restore (patch 0032b): PCSX2 "successfully" unserializes one
 +	// tick after init into a WEDGED black GS (then close-save re-serializes the wedge — a poison
 +	// loop on the deterministic save id). But an in-session Load a few seconds in round-trips
 +	// cleanly (verified live 2026-07-09). So heavy GL cores restore INTO A WARM VM: the same code
 +	// path as a user pressing Load ~5s after boot, which is exactly what this schedules.
-+	// Run legitimacy: a boot-time restore is a save-scum just like a mid-run Load, so record it BEFORE
-+	// startCheevos() below reads it. This mirrors the union of the two restore branches that follow —
-+	// keep it in step with them. (The deferred branch restores 5s in, but the run is compromised the
-+	// moment we commit to restoring, so tainting at boot is both correct and simpler.)
-+	f.raSeededState = f.HasSave() && (f.nano.SkipBootRestore() || !f.NoSaveStates)
++	// Run legitimacy: a boot-time restore taints the run ONLY when the player deliberately picked that
++	// state (a named snapshot / Quickload). Recorded BEFORE startCheevos() below reads it, and mirroring
++	// the union of the two restore branches that follow — keep it in step with them. (The deferred
++	// branch restores 5s in, but the run is compromised the moment we commit to restoring, so tainting
++	// at boot is both correct and simpler.)
++	//
++	// ⚠ raSeedExplicit is the whole point of this condition. It used to be absent, so ANY room that
++	// resumed from the auto-save was tagged save-scummed before the player pressed a button — which
++	// meant nobody who plays across sessions could ever earn a clean achievement. Resuming where you
++	// left off is not save-scumming; reloading to undo an outcome is. The worker cannot tell those
++	// apart on its own (all it sees is "a save existed and we restored it"), so the site sends intent.
++	f.raSeedExplicit = f.raSeedExplicit && f.HasSave() && (f.nano.SkipBootRestore() || !f.NoSaveStates)
++	f.raSeededState = f.raSeedExplicit
 +
 +	if f.HasSave() && f.nano.SkipBootRestore() {
 +		go func() {
@@ -10010,25 +11512,34 @@ index 6974d59..319f28a 100644
 +		}()
 +	}
 +	if f.HasSave() && !f.nano.SkipBootRestore() && !f.NoSaveStates {
- 		// advance 1 frame for Mupen, DOSBox save states
- 		// loading will work if autostart is selected for DOSBox apps
- 		f.Tick()
-@@ -318,6 +589,11 @@ func (f *Frontend) Start() {
- 		go f.autosave(f.conf.AutosaveSec)
- 	}
- 
++		// advance 1 frame for Mupen, DOSBox save states
++		// loading will work if autostart is selected for DOSBox apps
++		f.Tick()
++		if err := f.RestoreGameState(); err != nil {
++			f.log.Error().Err(err).Msg("couldn't load a save file")
++		}
++	}
++
++	if f.conf.AutosaveSec > 0 {
++		// !to sync both for loops, can crash if the emulator starts later
++		go f.autosave(f.conf.AutosaveSec)
++	}
++
 +	// RetroAchievements: bring the session up now that the core + memory are live, and tear it down when
 +	// this loop exits (both on this, the emulator goroutine — rc_client is single-threaded). No-op off.
 +	f.startCheevos()
 +	defer f.stopCheevos()
 +
- 	// The main loop of Libretro
- 
- 	targetFrameTimeNs := int64(float64(time.Second) / f.nano.VideoFramerate())
-@@ -328,80 +604,934 @@ func (f *Frontend) Start() {
- 	// how many frames will be considered not normal
- 	const lateFramesThreshold = 3
- 
++	// The main loop of Libretro
++
++	targetFrameTimeNs := int64(float64(time.Second) / f.nano.VideoFramerate())
++
++	// stop sleeping and start spinning in the remaining 1ms
++	const spinThresholdNs = int64(1 * time.Millisecond)
++
++	// how many frames will be considered not normal
++	const lateFramesThreshold = 3
++
 +	// How far an audio-mastered core may be pulled ABOVE its advertised fps to keep its audio clock
 +	// fed, as a fraction of one frame. 2% covers PPSSPP's ~0.35-0.6% shortfall many times over while
 +	// staying far below anything a player could perceive as fast (60.0 -> 61.2 fps worst case), and it
@@ -10049,9 +11560,8 @@ index 6974d59..319f28a 100644
 +	const audioFillAfter = 100 * time.Millisecond
 +	const audioFillMaxPerTick = 40 * time.Millisecond
 +
- 	batch := max(f.SpinBatch, 1)
- 
--	lastFrameStart := os.Nanotime()
++	batch := max(f.SpinBatch, 1)
++
 +	// AUDIO-DRIVEN PACING. We pace retro_run against the emulated AUDIO clock (the game should produce
 +	// exactly sampleRate audio frames per real second) rather than a fixed video fps, with the video
 +	// frame time kept as a MAX-RATE FLOOR (never faster than the core's fps; also the whole pace when a
@@ -10064,6 +11574,9 @@ index 6974d59..319f28a 100644
 +	// per-game data (this is what stock emulators do — "sync to audio"). Constant-rate cores (PSP, 60fps
 +	// DC, all 2D) produce audio at a steady sampleRate/fps per frame, so the floor dominates and behavior
 +	// is unchanged.
++	// Nan0 is a singleton reused across rooms — clear any rate derived for a PREVIOUS game before we
++	// read the declaration, or this room starts timed against the last game's measurement.
++	f.nano.SetDerivedAudioSampleRate(0)
 +	sr := float64(f.nano.AudioSampleRate())
 +	if sr <= 0 {
 +		sr = 44100
@@ -10071,6 +11584,32 @@ index 6974d59..319f28a 100644
 +	audioEpoch := os.Nanotime() // real-time anchor of the audio clock
 +	var audioFrames int64       // cumulative audio frames produced (the audio clock)
 +	floorNext := os.Nanotime()  // earliest allowed time for the next tick (max-rate floor)
++
++	// ── TRUE-RATE DERIVATION ─────────────────────────────────────────────────────────────────────
++	// sr is the denominator of every audio-clock computation (the deadline, the epoch re-pin, the
++	// deficit, the silence-fill threshold). It used to be read ONCE, here, while the video frame time
++	// IS re-read every tick to follow the core — so we honoured half of SET_SYSTEM_AV_INFO and a
++	// mid-session rate change left the pacer timing against a stale denominator forever.
++	//
++	// Worse, a core can be wrong from the START: parallel_n64 declares 32040 Hz on SM64: Last Impact
++	// and delivers ~31230 (2.6% short). audioPullMax caps the rescue at 2%, so the pacer pins at the
++	// clamp and the delivered rate OSCILLATES — audible as crackle, and immune to every downstream
++	// remedy (client jitter buffer 80 -> 400 ms and Opus frame-size 10 -> 20 ms both measured no
++	// change, because a rate error is not jitter).
++	//
++	// So: measure what the core actually produces and adopt it. Then no pull is needed (the game runs
++	// at its true speed rather than 2.6% fast) and room.go's per-batch AudioSampleRate() comparison
++	// re-caps the appsrc + resampler for free through ReconfigureAudio.
++	const rateWindow = 3 * time.Second // long enough to average out bursty audio DMA
++	const rateAdoptMin = 0.005         // < 0.5% error: leave it, the pull absorbs that inaudibly
++	const rateAgree = 0.003            // consecutive windows must agree within 0.3% to count as steady
++	const rateSane = 0.15              // never adopt further than 15% from the declaration
++	const rateAdoptMax = 3             // bound thrash; a core that needs more than this is broken elsewhere
++	rateWinStart := os.Nanotime()
++	var rateWinFrames int64
++	var ratePrevObserved float64
++	rateAdoptions := 0
++	rateWinDirty := false // a warp/fill/stall happened in this window -> its average is meaningless
 +
 +	// pace-diag: every 5s, log what the emulator actually produced — ticks/s, audio frames/s (should
 +	// track the core's sample rate), the worst single retro_run of the window, and how many ticks blew
@@ -10115,12 +11654,12 @@ index 6974d59..319f28a 100644
 +	// prevRw edge-detects rewind engage so the first pop happens NOW, not up to a step later —
 +	// a held rewind that visibly does nothing for 100 ms feels broken.
 +	prevRw := false
- 
- 	for {
- 		select {
- 		case <-f.done:
- 			return
- 		default:
++
++	for {
++		select {
++		case <-f.done:
++			return
++		default:
 +			// ── Time warp state (fast-forward / rewind, t=114/115) ────────────────────────
 +			ff := f.ffOn.Load()
 +			rw := f.rwOn.Load() && f.rewindArmed.Load() && !ff // FF wins when both are held
@@ -10134,7 +11673,7 @@ index 6974d59..319f28a 100644
 +			}
 +
 +			tick0 := os.Nanotime()
- 			f.Tick()
++			f.Tick()
 +			tickDur := os.Nanotime() - tick0
 +
 +			// Record the ring OUTSIDE any warp: never while rewinding (we'd re-record what we
@@ -10144,20 +11683,56 @@ index 6974d59..319f28a 100644
 +			if f.rewindArmed.Load() && !rw && !ff && f.rewindTicks%uint64(f.rewindStepFrames) == 0 {
 +				f.rewindCapture()
 +			}
- 
--			now := os.Nanotime()
--			elapsed := now - lastFrameStart
--			sleepTimeNs := targetFrameTimeNs - elapsed
--			deadline := lastFrameStart + targetFrameTimeNs
--
--			if sleepTimeNs > 0 {
--				// SLEEP
--				// if we have plenty of time, sleep to save CPU and
--				// wake up slightly before the target time
--				if sleepTimeNs > spinThresholdNs {
--					time.Sleep(time.Duration(sleepTimeNs - spinThresholdNs))
++
 +			audioDelta := f.nano.TakeAudioFrames()
 +			audioFrames += audioDelta
++
++			// ── Follow the core's rate, and derive it when the declaration is wrong ───────────
++			// (1) Honour a CHANGED rate (SET_SYSTEM_AV_INFO, or our own derivation below). Re-pinning
++			// the epoch is mandatory: sr is the denominator of the audio clock, so swapping it without
++			// restarting the anchor would make the clock jump by the ratio of old to new.
++			if cur := float64(f.nano.AudioSampleRate()); cur > 0 && cur != sr {
++				f.log.Info().Msgf("[audio] pacer sample rate %.0f -> %.0f Hz (re-pinning audio clock)", sr, cur)
++				sr = cur
++				audioEpoch = os.Nanotime()
++				audioFrames = 0
++				rateWinStart = audioEpoch
++				rateWinFrames = 0
++				ratePrevObserved = 0
++			}
++
++			// (2) Measure what the core REALLY delivers. Windows containing a warp or a silence-fill are
++			// discarded rather than averaged — fast-forward multiplies audio, rewind drops it, and a fill
++			// injects samples the core never made, so any of them would poison the measurement.
++			rateWinFrames += audioDelta
++			if ff || rw {
++				rateWinDirty = true
++			}
++			if el := os.Nanotime() - rateWinStart; el >= int64(rateWindow) {
++				observed := float64(rateWinFrames) / (float64(el) / 1e9)
++				declared := float64(f.nano.DeclaredAudioSampleRate())
++				sane := declared > 0 && observed > declared*(1-rateSane) && observed < declared*(1+rateSane)
++				steady := ratePrevObserved > 0 && absf(observed-ratePrevObserved)/observed < rateAgree
++				wrong := absf(observed-sr)/sr > rateAdoptMin
++
++				if !rateWinDirty && sane && steady && wrong && rateAdoptions < rateAdoptMax {
++					rateAdoptions++
++					hz := int(observed + 0.5)
++					f.log.Warn().Msgf(
++						"[audio] DERIVED true sample rate %d Hz (core declares %.0f, pacer had %.0f, %.2f%% off) "+
++							"— adopting: pacer re-times and the appsrc/resampler re-cap. A declared-vs-delivered "+
++							"error beyond audioPullMax (%.0f%%) cannot be paced away and is heard as crackle.",
++						hz, declared, sr, (observed-sr)/sr*100, audioPullMax*100)
++					// Installing the override changes what AudioSampleRate() returns, so branch (1) picks
++					// it up on the next tick (re-pinning the clock) and room.go's per-batch comparison
++					// re-caps the pipeline via ReconfigureAudio. One write, both consumers.
++					f.nano.SetDerivedAudioSampleRate(hz)
++				}
++				ratePrevObserved = observed
++				rateWinStart = os.Nanotime()
++				rateWinFrames = 0
++				rateWinDirty = false
++			}
 +
 +			// ── Audio silence-fill (2026-07-27) ───────────────────────────────────────────
 +			// Top the audio clock back up to real time with actual silence when an armed core
@@ -10184,16 +11759,9 @@ index 6974d59..319f28a 100644
 +						audioFrames += int64(n)
 +						diagSilence += int64(n)
 +					}
- 				}
++				}
 +			}
- 
--				// SPIN
--				// if we are close to the target,
--				// burn CPU and check the clock with ns resolution.
--				// SpinBatch batches the time check to reduce
--				// overhead while keeping sub-us precision.
--				for {
--					for range batch - 1 {
++
 +			diagTicks++
 +			diagSumTickNs += tickDur
 +			if tickDur > diagMaxTickNs {
@@ -10257,9 +11825,7 @@ index 6974d59..319f28a 100644
 +				if sleepNs := deadline - now; sleepNs > 0 {
 +					if sleepNs > spinThresholdNs {
 +						time.Sleep(time.Duration(sleepNs - spinThresholdNs))
- 					}
--					if os.Nanotime() >= deadline {
--						break
++					}
 +					for os.Nanotime() < deadline {
 +						for range batch - 1 {
 +						}
@@ -10341,35 +11907,20 @@ index 6974d59..319f28a 100644
 +				}
 +				for os.Nanotime() < deadline {
 +					for range batch - 1 {
- 					}
- 				}
- 				f.skipVideo = false
- 			} else {
--				// lagging behind the target framerate so we don't sleep
++					}
++				}
++				f.skipVideo = false
++			} else {
 +				// No sleep left: retro_run itself ate the whole frame budget. This is the tick that
 +				// decides the crackle — a core with no spare time cannot run the <=2% fast that repaying
 +				// an audio deficit requires, so the debt stands and the buffer ratchets down.
 +				diagNoSleep++
- 				if f.conf.LogDroppedFrames {
--					// !to make some stats counter instead
--					f.log.Debug().Msgf("[] Frame drop: %v", time.Duration(elapsed))
++				if f.conf.LogDroppedFrames {
 +					f.log.Debug().Msgf("[] Frame drop: %v", time.Duration(-sleepNs))
- 				}
- 				f.skipVideo = true
- 			}
- 
--			// timer reset
--			//
--			// adding targetFrameTime to the previous start
--			// prevents drift, if one frame was late,
--			// we try to catch up in the next frame
--			lastFrameStart = lastFrameStart + targetFrameTimeNs
--
--			// if execution was paused or heavily delayed,
--			// reset lastFrameStart so we don't try to run
--			// a bunch of frames instantly to catch up
--			if os.Nanotime()-lastFrameStart > targetFrameTimeNs*lateFramesThreshold {
--				lastFrameStart = os.Nanotime()
++				}
++				f.skipVideo = true
++			}
++
 +			// Anchor the next floor to this frame's intended deadline (drift-free 60fps cap).
 +			floorNext = deadline + targetFrameTimeNs
 +		}
@@ -10462,10 +12013,10 @@ index 6974d59..319f28a 100644
 +			if err := os.RemoveAll(hit); err != nil {
 +				f.log.Error().Err(err).Msgf("couldn't drop cached %v", hit)
 +				continue
- 			}
++			}
 +			removed++
- 		}
- 	}
++		}
++	}
 +	f.log.Info().Msgf("core cache purged: %d entr(ies), ~%v freed, now owned by build %v",
 +		removed, byteCount(freed), id)
 +
@@ -10515,8 +12066,9 @@ index 6974d59..319f28a 100644
 +// SetRetroAchievements stages this room's RetroAchievements session — the creator's linked account and
 +// whether it runs hardcore (a competitive room). Call BEFORE Load, like SetRoomCheats; the live client
 +// is created in Start() once the core's memory exists. Empty user/token = RA off (the common case).
-+func (f *Frontend) SetRetroAchievements(user, token, system string, hardcore, cheats bool, h cheevos.Handlers) {
++func (f *Frontend) SetRetroAchievements(user, token, system string, hardcore, cheats, seedExplicit bool, h cheevos.Handlers) {
 +	f.raUser, f.raToken, f.raSystem, f.raHard, f.raCheats, f.raHandler = user, token, system, hardcore, cheats, h
++	f.raSeedExplicit = seedExplicit
 +}
 +
 +// NotifySaveStateLoaded / NotifyFastForward / NotifyReset forward run-legitimacy events to the RA
@@ -10565,18 +12117,18 @@ index 6974d59..319f28a 100644
 +		f.ra.Close()
 +		f.ra = nil
 +	}
- }
- 
- func (f *Frontend) LoadGame(path string) error {
- 	if f.UniqueSaveDir {
- 		f.copyFsMaybe(path)
- 	}
++}
++
++func (f *Frontend) LoadGame(path string) error {
++	if f.UniqueSaveDir {
++		f.copyFsMaybe(path)
++	}
 +	f.seedCards()
 +	f.seedWiiSdLoader(path)
 +	f.gamePath = path // RetroAchievements hashes this to identify the game
- 	return f.nano.LoadGame(path)
- }
- 
++	return f.nano.LoadGame(path)
++}
++
 +// ── Per-user virtual memory cards (MovieTheater patch 0039) ──────────────────────────────────────
 +//
 +// A memory card is the one save class libretro never exposes: PCSX2 and Dolphin write theirs into
@@ -10768,6 +12320,7 @@ index 6974d59..319f28a 100644
 +			f.log.Error().Err(err).Msgf("cards: could not clear the %v card", system)
 +			return
 +		}
++		f.seedCardSkeleton(system, c)
 +		f.log.Info().Msgf("cards: fresh %v card for user %v", system, user)
 +	default:
 +		var err error
@@ -10787,6 +12340,42 @@ index 6974d59..319f28a 100644
 +	if err := os.WriteFile(f.cardOwnerPath(system, c), []byte(user), 0644); err != nil {
 +		f.log.Error().Err(err).Msg("cards: could not stamp the card owner")
 +	}
++}
++
++// seedCardSkeleton lays a system's minimum-viable card contents over a card that seedCards just
++// cleared, from the optional <CardVault>/_skeleton/<system> directory. Absent directory = no-op, so
++// this stays inert for every system that doesn't need one.
++//
++// "Fresh card = new console" is the right default, but a bare Wii NAND is NOT a working console for
++// the BrawlEx SD-loader mods: Brawl requires IOS36 in the NAND, and without it GeckoOS stops on
++// "This Game Requires IOS 36" — and taking that install path then boots VANILLA Brawl for the rest
++// of the session. So a first-time player of Smash Universe / Infinite would not see an error, they
++// would see the unmodded game and report the mod as broken (proven by direct test 2026-07-30, and a
++// third member of this project's "looks fixed but isn't" family — see the brawlex-wii-mods skill).
++//
++// Deliberately a directory convention rather than a config key: it needs no config.worker-gl.yaml
++// change (so no coordinator rebuild) and no code edit to cover a future system — drop a folder in.
++// The vault root is never enumerated (vaultDir is always built from a specific user id), and the
++// "_" prefix cannot collide with the numeric user ids the site mints.
++func (f *Frontend) seedCardSkeleton(system string, c card) {
++	if f.conf.CardVault == "" {
++		return
++	}
++	skel := filepath.Join(f.conf.CardVault, "_skeleton", system)
++	if !os.Exists(skel) {
++		return
++	}
++	if err := os.MakeDirAll(c.dir); err != nil {
++		f.log.Warn().Err(err).Msgf("cards: could not prepare the %v card dir for its skeleton", system)
++		return
++	}
++	// Copy, never move: the skeleton is reused by every new player of this system. Anything the
++	// player saves later simply overwrites it when their card is harvested.
++	if err := os.CopyTreeNewer(skel, c.dir); err != nil {
++		f.log.Warn().Err(err).Msgf("cards: could not lay the %v card skeleton", system)
++		return
++	}
++	f.log.Info().Msgf("cards: laid the %v card skeleton", system)
 +}
 +
 +// harvestCards copies the room owner's card back to their vault. Called twice on close — once with
@@ -10989,19 +12578,22 @@ index 6974d59..319f28a 100644
 +	return out
 +}
 +
- func (f *Frontend) AspectRatio() float32          { return f.nano.AspectRatio() }
- func (f *Frontend) AudioSampleRate() int          { return f.nano.AudioSampleRate() }
- func (f *Frontend) FPS() float64                  { return f.nano.VideoFramerate() }
--func (f *Frontend) Flipped() bool                 { return f.nano.IsGL() }
++func (f *Frontend) AspectRatio() float32          { return f.nano.AspectRatio() }
++func (f *Frontend) AudioSampleRate() int          { return f.nano.AudioSampleRate() }
++func (f *Frontend) FPS() float64                  { return f.nano.VideoFramerate() }
 +func (f *Frontend) Flipped() bool                 { return f.nano.Flipped() }
- func (f *Frontend) FrameSize() (int, int)         { return f.nano.BaseWidth(), f.nano.BaseHeight() }
- func (f *Frontend) HasSave() bool                 { return os.Exists(f.HashPath()) }
- func (f *Frontend) HashPath() string              { return f.storage.GetSavePath() }
-@@ -414,14 +1544,40 @@ func (f *Frontend) Rotation() uint                { return f.nano.Rot }
- func (f *Frontend) SRAMPath() string              { return f.storage.GetSRAMPath() }
- func (f *Frontend) SaveGameState() error          { return f.Save() }
- func (f *Frontend) SaveStateName() string         { return filepath.Base(f.HashPath()) }
--func (f *Frontend) Scale() (float64, string)      { return f.scale, f.scaleM }
++func (f *Frontend) FrameSize() (int, int)         { return f.nano.BaseWidth(), f.nano.BaseHeight() }
++func (f *Frontend) HasSave() bool                 { return os.Exists(f.HashPath()) }
++func (f *Frontend) HashPath() string              { return f.storage.GetSavePath() }
++func (f *Frontend) IsPortrait() bool              { return f.nano.IsPortrait() }
++func (f *Frontend) KbMouseSupport() bool          { return f.nano.KbMouseSupport() }
++func (f *Frontend) PixFormat() uint32             { return f.nano.Video.PixFmt.C }
++func (f *Frontend) Reset()                        { f.mu.Lock(); defer f.mu.Unlock(); f.nano.Reset() }
++func (f *Frontend) RestoreGameState() error       { return f.Load() }
++func (f *Frontend) Rotation() uint                { return f.nano.Rot }
++func (f *Frontend) SRAMPath() string              { return f.storage.GetSRAMPath() }
++func (f *Frontend) SaveGameState() error          { return f.Save() }
++func (f *Frontend) SaveStateName() string         { return filepath.Base(f.HashPath()) }
 +
 +// Scale is the server-side upscale the encoder applies before NVENC. With ScaleMaxWidth set it is a
 +// CEILING rather than a fixed multiplier: the largest integer factor whose output still fits wins.
@@ -11022,13 +12614,10 @@ index 6974d59..319f28a 100644
 +	}
 +	return s, f.scaleM
 +}
- func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
- func (f *Frontend) SetSessionId(name string)      { f.storage.SetMainSaveName(name) }
- func (f *Frontend) SetDataCb(cb func([]byte))     { f.onData = cb }
- func (f *Frontend) SetVideoCb(ff func(app.Video)) { f.onVideo = ff }
--func (f *Frontend) Tick()                         { f.mu.Lock(); f.nano.Run(); f.mu.Unlock() }
--func (f *Frontend) ViewportRecalculate()          { f.mu.Lock(); f.vw, f.vh = f.ViewportCalc(); f.mu.Unlock() }
--func (f *Frontend) ViewportSize() (int, int)      { return f.vw, f.vh }
++func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
++func (f *Frontend) SetSessionId(name string)      { f.storage.SetMainSaveName(name) }
++func (f *Frontend) SetDataCb(cb func([]byte))     { f.onData = cb }
++func (f *Frontend) SetVideoCb(ff func(app.Video)) { f.onVideo = ff }
 +func (f *Frontend) Tick() {
 +	f.mu.Lock()
 +	f.nano.Run()
@@ -11039,43 +12628,115 @@ index 6974d59..319f28a 100644
 +}
 +func (f *Frontend) ViewportRecalculate()     { f.mu.Lock(); f.vw, f.vh = f.ViewportCalc(); f.mu.Unlock() }
 +func (f *Frontend) ViewportSize() (int, int) { return f.vw, f.vh }
- 
- func (f *Frontend) Input(port int, device byte, data []byte) {
- 	switch Device(device) {
-@@ -434,6 +1590,9 @@ func (f *Frontend) Input(port int, device byte, data []byte) {
- 	}
- }
- 
++
++func (f *Frontend) Input(port int, device byte, data []byte) {
++	switch Device(device) {
++	case RetroPad:
++		f.nano.InputRetropad(port, data)
++	case Keyboard:
++		f.nano.InputKeyboard(port, data)
++	case Mouse:
++		f.nano.InputMouse(port, data)
++	}
++}
++
 +// RequestDisk queues a multi-disc swap to image index i (patch 0005 — the "disc" data channel).
 +func (f *Frontend) RequestDisk(i int) { f.nano.RequestDisk(i) }
 +
- func (f *Frontend) ViewportCalc() (nw int, nh int) {
- 	w, h := f.FrameSize()
- 	nw, nh = w, h
-@@ -478,6 +1637,9 @@ func (f *Frontend) Close() {
- 
- // Save writes the current state to the filesystem.
- func (f *Frontend) Save() error {
++func (f *Frontend) ViewportCalc() (nw int, nh int) {
++	w, h := f.FrameSize()
++	nw, nh = w, h
++
++	if f.IsPortrait() {
++		nw, nh = nh, nw
++	}
++
++	f.log.Debug().Msgf("viewport: %dx%d -> %dx%d", w, h, nw, nh)
++
++	return
++}
++
++func (f *Frontend) Close() {
++	f.log.Debug().Msgf("frontend close")
++	if f.closed.Swap(true) {
++		return
++	}
++	close(f.done)
++
++	f.mui.Lock()
++	f.nano.Close()
++	f.mui.Unlock()
++
++	if f.doneEvt != nil {
++		<-f.doneEvt
++	}
++
++	f.mui.Lock()
++	if f.UniqueSaveDir && !f.HasSave() {
++		if err := f.nano.DeleteSaveDir(); err != nil {
++			f.log.Error().Msgf("couldn't delete save dir: %v", err)
++		}
++	}
++
++	f.UniqueSaveDir = false
++	f.SaveStateFs = ""
++
++	f.mui.Unlock()
++	f.log.Debug().Msgf("frontend closed")
++}
++
++// Save writes the current state to the filesystem.
++func (f *Frontend) Save() error {
 +	if f.NoSaveStates {
 +		return ErrNoSaveStates
 +	}
- 	f.mu.Lock()
- 	defer f.mu.Unlock()
- 
-@@ -501,6 +1663,9 @@ func (f *Frontend) Save() error {
- 
- // Load restores the state from the filesystem.
- func (f *Frontend) Load() error {
++	f.mu.Lock()
++	defer f.mu.Unlock()
++
++	ss, err := nanoarch.SaveState()
++	if err != nil {
++		return err
++	}
++	if err := f.storage.Save(f.HashPath(), ss); err != nil {
++		return err
++	}
++	ss = nil
++
++	if sram := nanoarch.SaveRAM(); sram != nil {
++		if err := f.storage.Save(f.SRAMPath(), sram); err != nil {
++			return err
++		}
++		sram = nil
++	}
++	return nil
++}
++
++// Load restores the state from the filesystem.
++func (f *Frontend) Load() error {
 +	if f.NoSaveStates {
 +		return ErrNoSaveStates
 +	}
- 	f.mu.Lock()
- 	defer f.mu.Unlock()
- 
-@@ -522,6 +1687,129 @@ func (f *Frontend) Load() error {
- 	return nil
- }
- 
++	f.mu.Lock()
++	defer f.mu.Unlock()
++
++	ss, err := f.storage.Load(f.HashPath())
++	if err != nil && !errors.Is(err, os.ErrNotExist) {
++		return err
++	}
++	if err := nanoarch.RestoreSaveState(ss); err != nil {
++		return err
++	}
++
++	sram, err := f.storage.Load(f.SRAMPath())
++	if err != nil && !errors.Is(err, os.ErrNotExist) {
++		return err
++	}
++	if sram != nil {
++		nanoarch.RestoreSaveRAM(sram)
++	}
++	return nil
++}
++
 +// ── Fast-forward / rewind (t=114/115) ────────────────────────────────────────────────────────────
 +
 +// SetFastForward engages/releases fast-forward. Safe on every core — it only changes pacing
@@ -11199,13 +12860,21 @@ index 6974d59..319f28a 100644
 +	}
 +}
 +
- func (f *Frontend) IsSupported() error {
- 	return graphics.RGFWTryInit()
- }
-@@ -537,6 +1825,13 @@ func (f *Frontend) autosave(periodSec int) {
- 			if f.nano.IsStopped() {
- 				return
- 			}
++func (f *Frontend) IsSupported() error {
++	return graphics.RGFWTryInit()
++}
++
++func (f *Frontend) autosave(periodSec int) {
++	f.log.Info().Msgf("Autosave every [%vs]", periodSec)
++	ticker := time.NewTicker(time.Duration(periodSec) * time.Second)
++	defer ticker.Stop()
++
++	for {
++		select {
++		case <-ticker.C:
++			if f.nano.IsStopped() {
++				return
++			}
 +			// The card comes first: it is progress in its own right, and it survives a core that
 +			// dies during the save-state below. On a NoSaveStates core it is the ONLY thing there
 +			// is to persist, which is exactly why the tick still runs for them.
@@ -11213,9 +12882,54 @@ index 6974d59..319f28a 100644
 +			if f.NoSaveStates {
 +				continue
 +			}
- 			if err := f.Save(); err != nil {
- 				f.log.Error().Msgf("Autosave failed: %v", err)
- 			} else {
++			if err := f.Save(); err != nil {
++				f.log.Error().Msgf("Autosave failed: %v", err)
++			} else {
++				f.log.Debug().Msgf("Autosave done")
++			}
++		case <-f.done:
++			return
++		}
++	}
++}
++
++func (f *Frontend) copyFsMaybe(path string) {
++	if f.SaveStateFs == "" {
++		return
++	}
++
++	fileName := f.SaveStateFs
++	hasPlaceholder := strings.HasPrefix(f.SaveStateFs, "*")
++	if hasPlaceholder {
++		game := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
++		fileName = strings.Replace(f.SaveStateFs, "*", game, 1)
++	}
++
++	fullPath := filepath.Join(f.nano.SaveDir(), fileName)
++
++	if os.Exists(fullPath) {
++		return
++	}
++
++	storePath := filepath.Dir(path)
++	fsPath := filepath.Join(storePath, fileName)
++	if os.Exists(fsPath) {
++		if err := os.CopyFile(fsPath, fullPath); err != nil {
++			f.log.Error().Err(err).Msgf("fs copy fail")
++		} else {
++			f.log.Debug().Msgf("copied fs %v to %v", fsPath, fullPath)
++		}
++	}
++}
++
++// absf: |x| for float64. Local rather than importing math for one call, mirroring abs(int) in abr.go.
++// Used by the true-rate derivation in Start to compare a measured rate against the declared one.
++func absf(x float64) float64 {
++	if x < 0 {
++		return -x
++	}
++	return x
++}
 diff --git a/pkg/worker/caged/libretro/graphics/opengl.go b/pkg/worker/caged/libretro/graphics/opengl.go
 index 0c9d773..241031f 100644
 --- a/pkg/worker/caged/libretro/graphics/opengl.go
@@ -12344,6 +14058,126 @@ index 0000000..8d1ef77
 +	finish()
 +	return dst
 +}
+diff --git a/pkg/worker/caged/libretro/nanoarch/audiodump.go b/pkg/worker/caged/libretro/nanoarch/audiodump.go
+new file mode 100644
+index 0000000..5fe29f9
+--- /dev/null
++++ b/pkg/worker/caged/libretro/nanoarch/audiodump.go
+@@ -0,0 +1,114 @@
++package nanoarch
++
++import (
++	"encoding/json"
++	"os"
++	"path/filepath"
++	"sync/atomic"
++	"unsafe"
++)
++
++// Debug-only RAW audio dump, taken at `audio_cb` — i.e. BEFORE the resampler, Opus and WebRTC. The
++// sibling of framedump.go, and it exists for the same reason: a question the browser cannot answer.
++//
++// THE QUESTION: SM64 Last Impact crackles on our stack and not in Project64, and every downstream
++// suspect has been eliminated by measurement — client jitter buffer (80 ms and 400 ms identical),
++// Opus frame size (10 and 20 ms identical), loss resilience + bitrate (packet-loss-percentage 15->0,
++// inband-fec off, 96k->128k: identical), countperop (1 and 0 identical), and the pacer, which now
++// measures FLAT (ticks/s 60.0, audio/s 32004-32007 against a 32006 declaration, forgiven=0,
++// silence/s=0, noSleep 0%).
++//
++// Crucially, that pacing evidence proves the RATE is right and says NOTHING about the WAVEFORM: a
++// 5-second average of 32005 samples/s is perfectly compatible with individual buffers containing
++// discontinuities, and a discontinuity is exactly what a crackle IS. So the one untested link is the
++// PCM the core hands us. This dump captures it verbatim; if the clicks are already present here, they
++// are the core's (HLE audio microcode), and no amount of pipeline tuning was ever going to help.
++//
++// Off unless CLOUD_GAME_AUDIO_DUMP_DIR is set. Bounded two ways so it can never fill a disk: it stops
++// after CLOUD_GAME_AUDIO_DUMP_SECONDS (default 10) of audio and skips the first
++// CLOUD_GAME_AUDIO_DUMP_SKIP_SECONDS (default 8) so boot silence and the title jingle aren't what gets
++// captured. Writes ONE raw file (S16LE, stereo, interleaved — exactly the core's buffer) plus a small
++// JSON sidecar with the sample rate, because the raw file has no header to carry it.
++//
++// Analysis afterwards is plain arithmetic on the samples: a crackle shows up as isolated
++// sample-to-sample jumps far outside the local signal envelope. Silence in the dump while the game is
++// audibly playing would instead mean the core never produced it.
++type audioDumper struct {
++	dir      string
++	f        *os.File
++	skipLeft atomic.Int64 // frames still to be skipped before capture starts
++	left     atomic.Int64 // frames still to be captured
++	written  atomic.Int64
++	rate     atomic.Int64
++	metaOnce atomic.Bool
++	failed   atomic.Bool
++}
++
++var audioDump = func() *audioDumper {
++	dir := os.Getenv("CLOUD_GAME_AUDIO_DUMP_DIR")
++	if dir == "" {
++		return nil
++	}
++	if err := os.MkdirAll(dir, 0o755); err != nil {
++		return nil
++	}
++	d := &audioDumper{dir: dir}
++	// Frame counts are derived from the rate at first callback (below); seconds are the knob because
++	// "10 seconds of audio" is what an operator actually wants to reason about.
++	d.skipLeft.Store(int64(envInt("CLOUD_GAME_AUDIO_DUMP_SKIP_SECONDS", 8)))
++	d.left.Store(int64(envInt("CLOUD_GAME_AUDIO_DUMP_SECONDS", 10)))
++	return d
++}()
++
++// dumpAudio is a no-op unless CLOUD_GAME_AUDIO_DUMP_DIR is set. Called on the EMULATOR thread from
++// coreAudioSampleBatch, so it must stay one nil check when disabled and must never block the emulator
++// for long when enabled (a plain buffered write to a local file; the caps keep the total tiny).
++//
++// data points at `frames` stereo frames of int16 (2 channels interleaved) = frames*4 bytes.
++func dumpAudio(data unsafe.Pointer, frames int, rate int) {
++	d := audioDump
++	if d == nil || d.failed.Load() || data == nil || frames <= 0 {
++		return
++	}
++	// Convert the second-based budgets to frames once we know the real rate.
++	if d.metaOnce.CompareAndSwap(false, true) {
++		if rate <= 0 {
++			rate = 44100
++		}
++		d.rate.Store(int64(rate))
++		d.skipLeft.Store(d.skipLeft.Load() * int64(rate))
++		d.left.Store(d.left.Load() * int64(rate))
++		f, err := os.Create(filepath.Join(d.dir, "audio.s16le"))
++		if err != nil {
++			d.failed.Store(true)
++			return
++		}
++		d.f = f
++		meta, _ := json.MarshalIndent(map[string]any{
++			"format": "s16le", "channels": 2, "rate": rate,
++			"note": "raw interleaved stereo PCM captured at audio_cb, BEFORE resample/Opus/WebRTC",
++		}, "", "  ")
++		_ = os.WriteFile(filepath.Join(d.dir, "audio.json"), meta, 0o644)
++	}
++	if d.f == nil {
++		return
++	}
++	if d.skipLeft.Add(-int64(frames)) >= 0 {
++		return
++	}
++	if d.left.Add(-int64(frames)) < 0 {
++		if f := d.f; f != nil {
++			d.f = nil
++			_ = f.Close()
++		}
++		return
++	}
++	// frames*4 bytes: 2 channels * int16. unsafe.Slice is a VIEW, not a copy — deliberately, to keep the
++	// emulator thread cheap. Safe because we write it synchronously here, before returning to the core,
++	// so the core cannot reuse the buffer underneath us. (Avoids needing a cgo preamble in this file.)
++	b := unsafe.Slice((*byte)(data), frames*4)
++	if _, err := d.f.Write(b); err != nil {
++		d.failed.Store(true)
++	}
++	d.written.Add(int64(frames))
++}
 diff --git a/pkg/worker/caged/libretro/nanoarch/framedump.go b/pkg/worker/caged/libretro/nanoarch/framedump.go
 new file mode 100644
 index 0000000..b8fd32e
@@ -13345,7 +15179,7 @@ index 669862d..b5e229a 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..25b61fc 100644
+index 17f10fc..73900b7 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 @@ -4,9 +4,11 @@ import (
@@ -13360,7 +15194,7 @@ index 17f10fc..25b61fc 100644
  	"strings"
  	"sync"
  	"sync/atomic"
-@@ -20,6 +22,7 @@ import (
+@@ -20,9 +22,55 @@ import (
  )
  
  /*
@@ -13368,7 +15202,55 @@ index 17f10fc..25b61fc 100644
  #include "libretro.h"
  #include "nanoarch.h"
  #include <stdlib.h>
-@@ -37,19 +40,64 @@ type Nanoarch struct {
++#include <string.h>
++
++// MT PATCH: deep-copy the core's SET_MEMORY_MAPS payload.
++//
++// libretro only guarantees that pointer for the DURATION OF THE CALLBACK — the frontend must copy it
++// if it wants to keep it. We used to stash the raw pointer and hand it to rcheevos at game-load time,
++// which works only for cores whose map is static. mGBA builds its descriptor array on the STACK, so by
++// the time cheevos_init_memory() ran the pointer dangled and rc_libretro_memory_init walked freed
++// memory: every gb/gbc/gba room died with 0xc0000005 while the site still showed "Playing".
++//
++// descriptor.ptr is NOT copied and must not be — it points at the core's live RAM, which the core owns
++// and keeps valid for the session. Only the map struct, the descriptor array and the addrspace strings
++// are ours.
++static struct retro_memory_map *mt_clone_memory_map(const struct retro_memory_map *src) {
++  if (src == NULL || src->descriptors == NULL || src->num_descriptors == 0) return NULL;
++  struct retro_memory_map *dst = (struct retro_memory_map *)calloc(1, sizeof(*dst));
++  if (dst == NULL) return NULL;
++  size_t n = (size_t)src->num_descriptors;
++  struct retro_memory_descriptor *ds =
++      (struct retro_memory_descriptor *)calloc(n, sizeof(*ds));
++  if (ds == NULL) { free(dst); return NULL; }
++  memcpy(ds, src->descriptors, n * sizeof(*ds));
++  for (size_t i = 0; i < n; i++) {
++    if (src->descriptors[i].addrspace != NULL) {
++      size_t len = strlen(src->descriptors[i].addrspace);
++      char *s = (char *)malloc(len + 1);
++      if (s != NULL) { memcpy(s, src->descriptors[i].addrspace, len + 1); }
++      ds[i].addrspace = s;
++    }
++  }
++  dst->descriptors = ds;
++  dst->num_descriptors = src->num_descriptors;
++  return dst;
++}
++
++static void mt_free_memory_map(struct retro_memory_map *m) {
++  if (m == NULL) return;
++  if (m->descriptors != NULL) {
++    for (size_t i = 0; i < (size_t)m->num_descriptors; i++) {
++      free((void *)m->descriptors[i].addrspace);
++    }
++    free((void *)m->descriptors);
++  }
++  free(m);
++}
+ */
+ import "C"
+ 
+@@ -37,19 +85,64 @@ type Nanoarch struct {
  
  	keyboard KeyboardState
  	mouse    MouseState
@@ -13439,7 +15321,7 @@ index 17f10fc..25b61fc 100644
  		av  C.struct_retro_system_av_info
  		i   C.struct_retro_system_info
  		api C.unsigned
-@@ -63,16 +111,56 @@ type Nanoarch struct {
+@@ -63,16 +156,56 @@ type Nanoarch struct {
  			enabled bool
  			autoCtx bool
  		}
@@ -13500,7 +15382,7 @@ index 17f10fc..25b61fc 100644
  
  	audioBuffCb    *C.struct_retro_audio_buffer_status_callback
  	lastFrameDelta float64 // most recent frame delta (ns)
-@@ -80,29 +168,49 @@ type Nanoarch struct {
+@@ -80,29 +213,49 @@ type Nanoarch struct {
  }
  
  type Handlers struct {
@@ -13556,7 +15438,7 @@ index 17f10fc..25b61fc 100644
  	CoreAspectRatio bool
  	KbMouseSupport  bool
  	LibExt          string
-@@ -132,9 +240,10 @@ var Nan0 = Nanoarch{
+@@ -132,9 +285,10 @@ var Nan0 = Nanoarch{
  	Stopped:  atomic.Bool{},
  	limiter:  func(fn func()) { fn() },
  	Handlers: Handlers{
@@ -13570,7 +15452,56 @@ index 17f10fc..25b61fc 100644
  	},
  }
  
-@@ -162,6 +271,14 @@ func (n *Nanoarch) Close()                           { n.Stopped.Store(true); n.
+@@ -150,8 +304,46 @@ func NewNano(localPath string) *Nanoarch {
+ 	return nano
+ }
+ 
+-func (n *Nanoarch) AspectRatio() float32             { return float32(n.sys.av.geometry.aspect_ratio) }
+-func (n *Nanoarch) AudioSampleRate() int             { return int(n.sys.av.timing.sample_rate) }
++// audioRateDerived: the MEASURED true output rate, adopted when a core's DECLARED sample rate is wrong.
++//
++// Some cores announce a rate they do not actually deliver. parallel_n64 on SM64: Last Impact declares
++// 32040 Hz but produces ~519 audio frames per video frame where 32040 @ 60.13 fps implies 533 — a flat
++// 2.6% shortfall. The audio-mastered pacer answers a shortfall by running the core faster, but that pull
++// is bounded to audioPullMax (2%), so a 2.6% error can NEVER be closed: the loop pins at the clamp,
++// overshoots, falls back, and the delivered rate oscillates (measured: audio/s swinging 31230 <-> 32747
++// around a 32040 declaration). That oscillation is a rate error, not jitter — no client buffer depth or
++// Opus frame size can absorb it, which is exactly why none of those changed the audible crackle.
++//
++// Deriving the real rate fixes the cause instead: the pacer times against a denominator that matches
++// reality (no pull needed, so the game runs at its true speed) and — because room.go re-checks
++// AudioSampleRate() per audio batch — the pipeline's appsrc caps + resampler ratio get re-derived for
++// free via ReconfigureAudio. Nan0 is a SINGLETON reused across rooms, so the frontend clears this at the
++// start of every pacing loop; never assume a fresh zero here.
++var audioRateDerived atomic.Int64
++
++// DeclaredAudioSampleRate is what the CORE announced (retro_get_system_av_info / SET_SYSTEM_AV_INFO),
++// ignoring any derived override — for logging the two side by side.
++func (n *Nanoarch) DeclaredAudioSampleRate() int { return int(n.sys.av.timing.sample_rate) }
++
++// SetDerivedAudioSampleRate installs (hz > 0) or clears (hz <= 0) the measured-rate override.
++func (n *Nanoarch) SetDerivedAudioSampleRate(hz int) {
++	if hz <= 0 {
++		audioRateDerived.Store(0)
++		return
++	}
++	audioRateDerived.Store(int64(hz))
++}
++
++func (n *Nanoarch) AspectRatio() float32 { return float32(n.sys.av.geometry.aspect_ratio) }
++
++// AudioSampleRate returns the DERIVED rate when one has been measured, else the core's declaration.
++// Everything downstream (pacer denominator, appsrc caps, resampler ratio) keys off this single value.
++func (n *Nanoarch) AudioSampleRate() int {
++	if d := audioRateDerived.Load(); d > 0 {
++		return int(d)
++	}
++	return int(n.sys.av.timing.sample_rate)
++}
+ func (n *Nanoarch) VideoFramerate() float64          { return float64(n.sys.av.timing.fps) }
+ func (n *Nanoarch) IsPortrait() bool                 { return 90 == n.Rot%180 }
+ func (n *Nanoarch) KbMouseSupport() bool             { return n.meta.KbMouseSupport }
+@@ -162,6 +354,14 @@ func (n *Nanoarch) Close()                           { n.Stopped.Store(true); n.
  func (n *Nanoarch) SetLogger(log *logger.Logger)     { n.log = log }
  func (n *Nanoarch) SetVideoDebounce(t time.Duration) { n.limiter = NewLimit(t) }
  func (n *Nanoarch) SaveDir() string                  { return C.GoString(n.cSaveDirectory) }
@@ -13585,7 +15516,7 @@ index 17f10fc..25b61fc 100644
  func (n *Nanoarch) SetSaveDirSuffix(sx string) {
  	dir := C.GoString(n.cSaveDirectory) + "/" + sx
  	err := os.CheckCreateDir(dir)
-@@ -184,29 +301,78 @@ func (n *Nanoarch) DeleteSaveDir() error {
+@@ -184,29 +384,78 @@ func (n *Nanoarch) DeleteSaveDir() error {
  
  func (n *Nanoarch) CoreLoad(meta Metadata) {
  	var err error
@@ -13666,7 +15597,7 @@ index 17f10fc..25b61fc 100644
  
  	corePath := meta.LibPath + meta.LibExt
  	coreLib, err = open(corePath)
-@@ -228,6 +394,8 @@ func (n *Nanoarch) CoreLoad(meta Metadata) {
+@@ -228,6 +477,8 @@ func (n *Nanoarch) CoreLoad(meta Metadata) {
  	retroReset = coreLib.load("retro_reset")
  	retroRun = coreLib.load("retro_run")
  	retroLoadGame = coreLib.load("retro_load_game")
@@ -13675,7 +15606,7 @@ index 17f10fc..25b61fc 100644
  	retroUnloadGame = coreLib.load("retro_unload_game")
  	retroSerializeSize = coreLib.load("retro_serialize_size")
  	retroSerialize = coreLib.load("retro_serialize")
-@@ -284,9 +452,10 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -284,9 +535,10 @@ func (n *Nanoarch) LoadGame(path string) error {
  
  	n.log.Debug().Msgf("ROM - big: %v, size: %v", big, byteCountBinary(int64(game.size)))
  
@@ -13688,7 +15619,7 @@ index 17f10fc..25b61fc 100644
  		if _, ok := n.options4rom[romName]; ok {
  			for k, v := range n.options4rom[romName] {
  				n.options[k] = v
-@@ -295,10 +464,64 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -295,10 +547,64 @@ func (n *Nanoarch) LoadGame(path string) error {
  		}
  	}
  
@@ -13753,7 +15684,7 @@ index 17f10fc..25b61fc 100644
  	var av C.struct_retro_system_av_info
  	C.bridge_retro_get_system_av_info(retroGetSystemAVInfo, &av)
  	n.log.Info().Msgf("System A/V >>> %vx%v (%vx%v), [%vfps], AR [%v], audio [%vHz]",
-@@ -306,13 +529,52 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -306,13 +612,52 @@ func (n *Nanoarch) LoadGame(path string) error {
  		av.geometry.max_width, av.geometry.max_height,
  		av.timing.fps, av.geometry.aspect_ratio, av.timing.sample_rate,
  	)
@@ -13808,7 +15739,7 @@ index 17f10fc..25b61fc 100644
  
  	Nan0.tickTime = time.Duration(float64(time.Second) / float64(n.sys.av.timing.fps))
  	if n.vfr {
-@@ -322,15 +584,55 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -322,15 +667,55 @@ func (n *Nanoarch) LoadGame(path string) error {
  	n.Stopped.Store(false)
  
  	if n.Video.gl.enabled {
@@ -13866,7 +15797,7 @@ index 17f10fc..25b61fc 100644
  	}
  
  	// set default controller types on all ports
-@@ -339,8 +641,38 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -339,8 +724,38 @@ func (n *Nanoarch) LoadGame(path string) error {
  		C.bridge_retro_set_controller_port_device(retroSetControllerPortDevice, C.uint(i), C.RETRO_DEVICE_JOYPAD)
  	}
  
@@ -13907,7 +15838,7 @@ index 17f10fc..25b61fc 100644
  		for _, device := range v {
  			C.bridge_retro_set_controller_port_device(retroSetControllerPortDevice, C.uint(k), C.unsigned(device))
  			n.log.Debug().Msgf("set custom port-device: %v:%v", k, device)
-@@ -361,6 +693,9 @@ func (n *Nanoarch) Shutdown() {
+@@ -361,6 +776,9 @@ func (n *Nanoarch) Shutdown() {
  			if n.Video.gl.enabled {
  				C.same_thread(C.deinit_video_cgo)
  			}
@@ -13917,7 +15848,7 @@ index 17f10fc..25b61fc 100644
  			C.same_thread(C.same_thread_stop)
  		})
  	} else {
-@@ -381,6 +716,9 @@ func (n *Nanoarch) Shutdown() {
+@@ -381,6 +799,9 @@ func (n *Nanoarch) Shutdown() {
  				runtime.UnlockOSThread()
  			})
  		}
@@ -13927,7 +15858,7 @@ index 17f10fc..25b61fc 100644
  	}
  
  	setRotation(0)
-@@ -406,11 +744,33 @@ func (n *Nanoarch) syncInputToCache() {
+@@ -406,11 +827,33 @@ func (n *Nanoarch) syncInputToCache() {
  		n.keyboard.SyncToCache()
  	}
  	n.mouse.SyncToCache()
@@ -13961,7 +15892,7 @@ index 17f10fc..25b61fc 100644
  	if n.LibCo {
  		C.same_thread(retroRun)
  	} else {
-@@ -427,10 +787,46 @@ func (n *Nanoarch) Run() {
+@@ -427,10 +870,46 @@ func (n *Nanoarch) Run() {
  	}
  }
  
@@ -14012,7 +15943,7 @@ index 17f10fc..25b61fc 100644
  func (n *Nanoarch) InputKeyboard(_ int, data []byte) {
  	if n.keyboardCb == nil {
  		return
-@@ -512,13 +908,47 @@ const (
+@@ -512,13 +991,47 @@ const (
  )
  
  // SaveState returns emulator internal state.
@@ -14064,7 +15995,7 @@ index 17f10fc..25b61fc 100644
  	} else {
  		rez = bool(C.bridge_retro_serialize(retroSerialize, unsafe.Pointer(&data[0]), size))
  	}
-@@ -536,11 +966,37 @@ func RestoreSaveState(st State) error {
+@@ -536,11 +1049,37 @@ func RestoreSaveState(st State) error {
  		return errors.New("empty load state")
  	}
  
@@ -14103,7 +16034,7 @@ index 17f10fc..25b61fc 100644
  	} else {
  		rez = bool(C.bridge_retro_unserialize(retroUnserialize, unsafe.Pointer(&st[0]), size))
  	}
-@@ -581,6 +1037,24 @@ func memoryData(id C.uint) unsafe.Pointer {
+@@ -581,6 +1120,24 @@ func memoryData(id C.uint) unsafe.Pointer {
  	return C.bridge_retro_get_memory_data(retroGetMemoryData, id)
  }
  
@@ -14128,7 +16059,7 @@ index 17f10fc..25b61fc 100644
  // ptSaveRam return SRAM memory pointer if core supports it or nil.
  func ptSaveRAM() *mem {
  	ptr, size := memoryData(C.RETRO_MEMORY_SAVE_RAM), memorySize(C.RETRO_MEMORY_SAVE_RAM)
-@@ -613,6 +1087,8 @@ var (
+@@ -613,6 +1170,8 @@ var (
  	retroGetSystemInfo           unsafe.Pointer
  	retroInit                    unsafe.Pointer
  	retroLoadGame                unsafe.Pointer
@@ -14137,7 +16068,7 @@ index 17f10fc..25b61fc 100644
  	retroReset                   unsafe.Pointer
  	retroRun                     unsafe.Pointer
  	retroSetAudioSample          unsafe.Pointer
-@@ -630,11 +1106,71 @@ var (
+@@ -630,11 +1189,71 @@ var (
  	retroUnserialize             unsafe.Pointer
  )
  
@@ -14209,7 +16140,7 @@ index 17f10fc..25b61fc 100644
  
  	// some frames can be rendered slower or faster than internal 1/fps core tick
  	// so track actual frame render time for proper RTP packet timestamps
-@@ -658,6 +1194,32 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -658,6 +1277,32 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  		return
  	}
  
@@ -14242,7 +16173,7 @@ index 17f10fc..25b61fc 100644
  	// calculate real frame width in pixels from packed data (realWidth >= width)
  	// some cores or games output zero pitch, i.e. N64 Mupen
  	bpp := Nan0.Video.PixFmt.BPP
-@@ -668,10 +1230,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -668,10 +1313,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	bytes := packed * height
  
  	var data_ []byte
@@ -14307,7 +16238,7 @@ index 17f10fc..25b61fc 100644
  		// if Libretro renders frame with OpenGL context
  		data_ = graphics.ReadFramebuffer(bytes, width, height)
  	}
-@@ -680,7 +1296,104 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -680,7 +1379,104 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	// also we have an option of xN output frame magnification
  	// so, it may be rescaled
  
@@ -14413,15 +16344,17 @@ index 17f10fc..25b61fc 100644
  }
  
  //export coreAudioSampleBatch
-@@ -688,6 +1401,7 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+@@ -688,6 +1484,9 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
  	if Nan0.Stopped.Load() {
  		return frames
  	}
 +	audioClockFrames.Add(int64(frames))
++	// Debug-only raw PCM capture, BEFORE resample/Opus/WebRTC (audiodump.go). One nil check when off.
++	dumpAudio(data, int(frames), int(Nan0.sys.av.timing.sample_rate))
  	Nan0.Handlers.OnAudio(data, int(frames)<<1)
  
  	// Audio buffer status for the core (e.g. mGBA frameskip).
-@@ -739,7 +1453,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
+@@ -739,7 +1538,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
  
  //export coreGetProcAddress
  func coreGetProcAddress(sym *C.char) C.retro_proc_address_t {
@@ -14436,7 +16369,7 @@ index 17f10fc..25b61fc 100644
  }
  
  //export coreEnvironment
-@@ -748,9 +1468,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -748,9 +1553,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	// see core_environment_cgo
  
  	switch cmd {
@@ -14445,8 +16378,20 @@ index 17f10fc..25b61fc 100644
 +		// RetroAchievements needs these to map RA addresses to core RAM precisely — without them the
 +		// SYSTEM_RAM-only fallback leaves high work-RAM addresses (e.g. Genesis 0xFFxx, where Sonic keeps
 +		// its ring/score counters) unmapped, and rcheevos disables every achievement that reads them.
-+		Nan0.memoryMap = data
-+		Nan0.log.Info().Msg("retro_set_memory_maps (captured for RetroAchievements)")
++		// DEEP-COPY it: the pointer is only valid for this callback (see mt_clone_memory_map above).
++		// Keeping the core's pointer crashed every mGBA-backed room (gb/gbc/gba) inside rcheevos.
++		if Nan0.memoryMap != nil {
++			C.mt_free_memory_map((*C.struct_retro_memory_map)(Nan0.memoryMap))
++			Nan0.memoryMap = nil
++		}
++		clone := C.mt_clone_memory_map((*C.struct_retro_memory_map)(data))
++		if clone == nil {
++			Nan0.log.Warn().Msg("retro_set_memory_maps: empty/unclonable map — RetroAchievements falls back to SYSTEM_RAM")
++			return true
++		}
++		Nan0.memoryMap = unsafe.Pointer(clone)
++		Nan0.log.Info().Msgf("retro_set_memory_maps (captured for RetroAchievements: %d descriptor(s), deep-copied)",
++			int(clone.num_descriptors))
 +		return true
  	case C.RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
  		Nan0.log.Debug().Msgf("retro_set_system_av_info")
@@ -14468,7 +16413,7 @@ index 17f10fc..25b61fc 100644
  		if isGeometryDifferent(av.geometry) {
  			geometryChange(av.geometry)
  		}
-@@ -788,6 +1530,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -788,6 +1627,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	case C.RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
  		*(**C.char)(data) = Nan0.cSaveDirectory
  		return true
@@ -14481,7 +16426,7 @@ index 17f10fc..25b61fc 100644
  	case C.RETRO_ENVIRONMENT_SET_MESSAGE:
  		// only with the Libretro debug mode
  		if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -797,12 +1545,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -797,12 +1642,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -14530,7 +16475,7 @@ index 17f10fc..25b61fc 100644
  		if v, ok := Nan0.options[key]; ok {
  			// make Go strings null-terminated copies ;_;
  			Nan0.options[key] = v + "\x00"
-@@ -816,14 +1600,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -816,14 +1697,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -14625,7 +16570,7 @@ index 17f10fc..25b61fc 100644
  	case C.RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
  		if Nan0.log.GetLevel() > logger.DebugLevel {
  			return false
-@@ -851,7 +1714,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -851,7 +1811,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		return true
  	case C.RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
  		Nan0.log.Debug().Msgf("Keyboard event callback was set")
@@ -14645,7 +16590,7 @@ index 17f10fc..25b61fc 100644
  		return true
  	case C.RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK:
  		if data == nil {
-@@ -869,11 +1743,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -869,11 +1840,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		Nan0.log.Info().Uint("latency_ms", uint(latency)).Msg("audio latency requested")
  		return true
  	}
@@ -14677,7 +16622,7 @@ index 17f10fc..25b61fc 100644
  	var context graphics.Context
  	switch Nan0.Video.hw.context_type {
  	case C.RETRO_HW_CONTEXT_NONE:
-@@ -911,6 +1805,25 @@ func initVideo() {
+@@ -911,6 +1902,25 @@ func initVideo() {
  		if err != nil {
  			panic(err)
  		}
@@ -14703,7 +16648,7 @@ index 17f10fc..25b61fc 100644
  	})
  
  	if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -918,12 +1831,31 @@ func initVideo() {
+@@ -918,12 +1928,31 @@ func initVideo() {
  	}
  }
  
@@ -14735,12 +16680,17 @@ index 17f10fc..25b61fc 100644
  		if err := Nan0.glCtx.Deinit(); err != nil {
  			Nan0.log.Error().Err(err).Msg("deinit fail")
  		}
-@@ -932,9 +1864,227 @@ func deinitVideo() {
+@@ -932,9 +1961,237 @@ func deinitVideo() {
  	Nan0.Video.gl.autoCtx = false
  	Nan0.hackSkipHwContextDestroy = false
  	Nan0.hackSkipSameThreadSave = false
 +	Nan0.hackSkipBootRestore = false
-+	Nan0.memoryMap = nil // clear the captured map so the next game starts fresh (Nan0 is a singleton)
++	// Free the deep copy WE own (mt_clone_memory_map) before clearing, so the next game starts fresh
++	// (Nan0 is a singleton). Guarded, so running this on both teardown paths is harmless.
++	if Nan0.memoryMap != nil {
++		C.mt_free_memory_map((*C.struct_retro_memory_map)(Nan0.memoryMap))
++	}
++	Nan0.memoryMap = nil
 +	Nan0.hackSkipSerializeSizeProbe = false
 +	Nan0.hackVkSyntheticSurface = false
  	thread.SwitchGraphics(false)
@@ -14955,7 +16905,12 @@ index 17f10fc..25b61fc 100644
 +	Nan0.hackSkipHwContextDestroy = false
 +	Nan0.hackSkipSameThreadSave = false
 +	Nan0.hackSkipBootRestore = false
-+	Nan0.memoryMap = nil // clear the captured map so the next game starts fresh (Nan0 is a singleton)
++	// Free the deep copy WE own (mt_clone_memory_map) before clearing, so the next game starts fresh
++	// (Nan0 is a singleton). Guarded, so running this on both teardown paths is harmless.
++	if Nan0.memoryMap != nil {
++		C.mt_free_memory_map((*C.struct_retro_memory_map)(Nan0.memoryMap))
++	}
++	Nan0.memoryMap = nil
 +	Nan0.hackSkipSerializeSizeProbe = false
 +	Nan0.hackVkSyntheticSurface = false
 +}
@@ -14963,7 +16918,7 @@ index 17f10fc..25b61fc 100644
  type limit struct {
  	d  time.Duration
  	t  *time.Timer
-@@ -958,6 +2108,11 @@ func (d *limit) push(f func()) {
+@@ -958,6 +2215,11 @@ func (d *limit) push(f func()) {
  func geometryChange(geom C.struct_retro_game_geometry) {
  	Nan0.limiter(func() {
  		old := Nan0.sys.av.geometry
@@ -85309,340 +87264,29 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..37d3809 100644
+index 6972cc7..be987fd 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,707 @@
--package worker
--
--import (
--	"encoding/json"
--
--	"github.com/giongto35/cloud-game/v3/pkg/api"
--	"github.com/giongto35/cloud-game/v3/pkg/com"
--	"github.com/giongto35/cloud-game/v3/pkg/config"
--	"github.com/giongto35/cloud-game/v3/pkg/games"
--	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
--	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
--	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
--	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
--)
--
--// buildConnQuery builds initial connection data query to a coordinator.
--func buildConnQuery(id com.Uid, conf config.Worker, address string) (string, error) {
--	addr := conf.GetPingAddr(address)
--	return toJson(api.ConnectionRequest[com.Uid]{
--		Addr:    addr.Hostname(),
--		Id:      id,
--		IsHTTPS: conf.Server.Https,
--		PingURL: addr.String(),
--		Port:    conf.GetPort(address),
--		Tag:     conf.Tag,
--		Zone:    conf.Network.Zone,
--	})
--}
--
--func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *Worker, factory *webrtc.ApiFactory) api.Out {
--	var err error
--	defer func() {
--		if err != nil {
--			c.log.Error().Err(err).Str("peer", rq.Id).Msg("")
--		}
--	}()
--
--	peer := webrtc.New(c.log, factory)
--	codec := w.conf.Encoder.Video.Codec
--
--	if err = peer.NewConnection(codec, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
--		return api.EmptyPacket
--	}
--
--	if rq.Initiator {
--		if err = peer.HandleSignal(nil, &rq.Sdp); err != nil {
--			return api.EmptyPacket
--		}
--	}
--
--	var sdp string
--	sdp, err = peer.OfferAnswer(!rq.Initiator)
--	if err != nil {
--		return api.EmptyPacket
--	}
--
--	user := room.NewGameSession(rq.Id, peer) // use user uid from the coordinator
--	c.log.Info().Msgf("Peer connection: %s", user.Id())
--	w.router.AddUser(user)
--
--	return api.Out{Payload: sdp}
--}
--
--func (c *coordinator) HandleWebrtcSignal(rq api.WebrtcSignalRequest, w *Worker) {
--	user := w.router.FindUser(rq.Id)
--	if user == nil {
--		return
--	}
--
--	if webrtc := room.WithWebRTC(user.Session); webrtc != nil {
--		if err := webrtc.HandleSignal(rq.Ice, rq.Sdp); err != nil {
--			c.log.Error().Err(err).Msgf("cannot handle the signal from [%v]", rq.Id)
--		}
--	}
--}
--
--func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Out {
--	user := w.router.FindUser(rq.Id)
--	if user == nil {
--		c.log.Error().Msgf("no user [%v]", rq.Id)
--		return api.EmptyPacket
--	}
--	user.Index = rq.PlayerIndex
--
--	r := w.router.FindRoom(rq.Rid)
--
--	// +injects game data into the original game request
--	// the name of the game either in the `room id` field or
--	// it's in the initial request
--	gameName := rq.Game
--	if rq.Rid != "" {
--		name := w.launcher.ExtractAppNameFromUrl(rq.Rid)
--		if name == "" {
--			c.log.Warn().Msg("couldn't decode game name from the room id")
--			return api.EmptyPacket
--		}
--		gameName = name
--	}
--
--	gameInfo, err := w.launcher.FindAppByName(gameName)
--	if err != nil {
--		c.log.Error().Err(err).Send()
--		return api.EmptyPacket
--	}
--
--	if r == nil { // new room
--		uid := rq.Rid
--		if uid == "" {
--			uid = games.GenerateRoomID(gameName)
--		}
--		game := games.GameMetadata(gameInfo)
--
--		r = room.NewRoom(uid, nil, w.router.Users(), nil)
--		r.HandleClose = func() {
--			c.CloseRoom(uid)
--			c.log.Debug().Msgf("room close request %v sent", uid)
--		}
--
--		if other := w.router.Room(); other != nil {
--			c.log.Error().Msgf("concurrent room creation: %v / %v", uid, w.router.Room().Id())
--			return api.EmptyPacket
--		}
--
--		w.router.SetRoom(r)
--		c.log.Info().Str("room", r.Id()).Str("game", game.Name).Msg("New room")
--
--		// start the emulator
--		app := room.WithEmulator(w.mana.Get(caged.Libretro))
--		app.ReloadFrontend()
--		app.SetSessionId(uid)
--		app.SetSaveOnClose(true)
--		app.EnableCloudStorage(uid, w.storage)
--		app.EnableRecording(rq.Record, rq.RecordUser, gameName)
--
--		r.SetApp(app)
--
--		m := media.NewGstreamer(w.conf.Encoder, w.log)
--
--		// recreate the video encoder
--		app.VideoChangeCb(func() {
--			app.ViewportRecalculate()
--			m.VideoW, m.VideoH = app.ViewportSize()
--			m.VideoScale, m.ScaleMethod = app.Scale()
--
--			if err := m.Reinit(); err != nil {
--				c.log.Error().Err(err).Msgf("reinit fail")
--			}
--
--			data, err := api.Wrap(api.Out{
--				T: uint8(api.AppVideoChange),
--				Payload: api.AppVideoInfo{
--					W:    m.VideoW,
--					H:    m.VideoH,
--					A:    app.AspectRatio(),
--					S:    int(m.VideoScale),
--					SM:   m.ScaleMethod,
--					Flip: app.Flipped(),
--					Rot:  app.Rotation(),
--				}})
--			if err != nil {
--				c.log.Error().Err(err).Msgf("wrap")
--			}
--			r.Send(data)
--		})
--
--		w.log.Info().Msgf("Starting the game: %v", gameName)
--		if err := app.Load(game, w.conf.Library.BasePath); err != nil {
--			c.log.Error().Err(err).Msgf("couldn't load the game %v", game)
--			r.Close()
--			w.router.SetRoom(nil)
--			return api.EmptyPacket
--		}
--
--		m.AudioSrcHz = app.AudioSampleRate()
--		m.VideoW, m.VideoH = app.ViewportSize()
--		m.VideoScale, m.ScaleMethod = app.Scale()
--		coreConf := w.conf.Emulator.GetLibretroCoreConfig(game.System)
--		m.MaxThreads = coreConf.MaxThreads
--		m.VideoFPS = app.FPS()
--		m.VideoVFR = coreConf.VFR
--
--		m.SetPixFmt(app.PixFormat())
--		m.SetRot(app.Rotation())
--
--		r.SetMedia(m)
--
--		if err := m.Init(); err != nil {
--			c.log.Error().Err(err).Msgf("couldn't init the media")
--			r.Close()
--			w.router.SetRoom(nil)
--			return api.EmptyPacket
--		}
--
--		r.InitMedia()
--		r.StartApp()
--	}
--
--	needsKbMouse := r.App().KbMouseSupport()
--
--	s := room.WithWebRTC(user.Session)
--	s.OnMessage(func(data []byte) { r.App().Input(user.Index, byte(caged.RetroPad), data) })
--	if needsKbMouse {
--		_, _ = s.Channel("keyboard", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Keyboard), data) })
--		_, _ = s.Channel("mouse", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Mouse), data) })
--	}
--
--	c.RegisterRoom(r.Id())
--
--	response := api.StartGameResponse{
--		Room:    api.Room{Rid: r.Id()},
--		Record:  w.conf.Recording.Enabled,
--		KbMouse: needsKbMouse,
--	}
--
--	if r.App().AspectEnabled() {
--		ww, hh := r.App().ViewportSize()
--		scale, scaleM := r.App().Scale()
--		response.AV = &api.AppVideoInfo{
--			W:    ww,
--			H:    hh,
--			A:    r.App().AspectRatio(),
--			S:    int(scale),
--			SM:   scaleM,
--			Flip: r.App().Flipped(),
--			Rot:  r.App().Rotation(),
--		}
--	}
--
--	return api.Out{Payload: response}
--}
--
--// HandleTerminateSession handles cases when a user has been disconnected from the websocket of coordinator.
--func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *Worker) {
--	if user := w.router.FindUser(rq.Id); user != nil {
--		w.router.Remove(user)
--		user.Disconnect()
--	}
--}
--
--// HandleQuitGame handles cases when a user manually exits the game.
--func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
--	if user := w.router.FindUser(rq.Id); user != nil {
--		w.router.Remove(user)
--	}
--}
--
--func (c *coordinator) HandleResetGame(rq api.ResetGameRequest, w *Worker) api.Out {
--	if r := w.router.FindRoom(rq.Rid); r != nil {
--		room.WithEmulator(r.App()).Reset()
--		return api.OkPacket
--	}
--	return api.ErrPacket
--}
--
--func (c *coordinator) HandleSaveGame(rq api.SaveGameRequest, w *Worker) api.Out {
--	r := w.router.FindRoom(rq.Rid)
--	if r == nil {
--		return api.ErrPacket
--	}
--	if err := room.WithEmulator(r.App()).SaveGameState(); err != nil {
--		c.log.Error().Err(err).Msg("cannot save game state")
--		return api.ErrPacket
--	}
--	return api.OkPacket
--}
--
--func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out {
--	r := w.router.FindRoom(rq.Rid)
--	if r == nil {
--		return api.ErrPacket
--	}
--	if err := room.WithEmulator(r.App()).RestoreGameState(); err != nil {
--		c.log.Error().Err(err).Msg("cannot load game state")
--		return api.ErrPacket
--	}
--	return api.OkPacket
--}
--
--func (c *coordinator) HandleChangePlayer(rq api.ChangePlayerRequest, w *Worker) api.Out {
--	user := w.router.FindUser(rq.Id)
--	if user == nil || w.router.FindRoom(rq.Rid) == nil {
--		return api.Out{Payload: -1} // semi-predicates
--	}
--	user.Index = rq.Index
--	w.log.Info().Msgf("Updated player index to: %d", rq.Index)
--	return api.Out{Payload: rq.Index}
--}
--
--func (c *coordinator) HandleRecordGame(rq api.RecordGameRequest, w *Worker) api.Out {
--	if !w.conf.Recording.Enabled {
--		return api.ErrPacket
--	}
--	r := w.router.FindRoom(rq.Rid)
--	if r == nil {
--		return api.ErrPacket
--	}
--	room.WithRecorder(r.App()).ToggleRecording(rq.Active, rq.User)
--	return api.OkPacket
--}
--
--func toJson(data any) (string, error) {
--	if data == nil {
--		return "", nil
--	}
--	b, err := json.Marshal(data)
--	if err != nil {
--		return "", err
--	}
--	return string(b), nil
--}
-+package worker
-+
-+import (
-+	"encoding/json"
+@@ -2,6 +2,8 @@ package worker
+ 
+ import (
+ 	"encoding/json"
 +	"os"
 +	"strings"
-+
-+	"github.com/giongto35/cloud-game/v3/pkg/api"
-+	"github.com/giongto35/cloud-game/v3/pkg/com"
-+	"github.com/giongto35/cloud-game/v3/pkg/config"
-+	"github.com/giongto35/cloud-game/v3/pkg/games"
-+	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
-+	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
+ 
+ 	"github.com/giongto35/cloud-game/v3/pkg/api"
+ 	"github.com/giongto35/cloud-game/v3/pkg/com"
+@@ -9,10 +11,28 @@ import (
+ 	"github.com/giongto35/cloud-game/v3/pkg/games"
+ 	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/capture"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/nanoarch"
-+	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
-+	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
-+)
-+
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
+ )
+ 
 +// roomVideoCodec sanitizes a client-requested per-room video codec (patch 0036): lowercase, must
 +// have an encoder.list entry, else the config default. Never trust the wire value — an unknown
 +// codec would fail the pipeline build after the peer was already created.
@@ -85658,29 +87302,16 @@ index 6972cc7..37d3809 100644
 +	return c
 +}
 +
-+// buildConnQuery builds initial connection data query to a coordinator.
-+func buildConnQuery(id com.Uid, conf config.Worker, address string) (string, error) {
-+	addr := conf.GetPingAddr(address)
-+	return toJson(api.ConnectionRequest[com.Uid]{
-+		Addr:    addr.Hostname(),
-+		Id:      id,
-+		IsHTTPS: conf.Server.Https,
-+		PingURL: addr.String(),
-+		Port:    conf.GetPort(address),
-+		Tag:     conf.Tag,
-+		Zone:    conf.Network.Zone,
-+	})
-+}
-+
-+func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *Worker, factory *webrtc.ApiFactory) api.Out {
-+	var err error
-+	defer func() {
-+		if err != nil {
-+			c.log.Error().Err(err).Str("peer", rq.Id).Msg("")
-+		}
-+	}()
-+
-+	peer := webrtc.New(c.log, factory)
+ // buildConnQuery builds initial connection data query to a coordinator.
+ func buildConnQuery(id com.Uid, conf config.Worker, address string) (string, error) {
+ 	addr := conf.GetPingAddr(address)
+@@ -36,9 +56,25 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
+ 	}()
+ 
+ 	peer := webrtc.New(c.log, factory)
+-	codec := w.conf.Encoder.Video.Codec
+-
+-	if err = peer.NewConnection(codec, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
 +	// Per-room codec (patch 0036): the site's join descriptor hands every client of a room the
 +	// creator's codec choice, and each client echoes it here — so this peer's track mime matches
 +	// the encoder the creator's t=104 will build (or already built, for joiners).
@@ -85700,21 +87331,13 @@ index 6972cc7..37d3809 100644
 +	inputOnly := !rq.Initiator && rq.Sdp == "input-only"
 +
 +	if err = peer.NewConnection(codec, splitAudio, inputOnly, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
-+		return api.EmptyPacket
-+	}
-+
-+	if rq.Initiator {
-+		if err = peer.HandleSignal(nil, &rq.Sdp); err != nil {
-+			return api.EmptyPacket
-+		}
-+	}
-+
-+	var sdp string
-+	sdp, err = peer.OfferAnswer(!rq.Initiator)
-+	if err != nil {
-+		return api.EmptyPacket
-+	}
-+
+ 		return api.EmptyPacket
+ 	}
+ 
+@@ -54,6 +90,17 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
+ 		return api.EmptyPacket
+ 	}
+ 
 +	// The aux audio offer travels in the ice signal field ("aux-sdp:" envelope) — the coordinator
 +	// relays that string verbatim, and the browser buffers aux ICE until this lands. A failure here
 +	// costs only split audio (the room still runs video+input), so it doesn't abort the init.
@@ -85726,66 +87349,35 @@ index 6972cc7..37d3809 100644
 +		}
 +	}
 +
-+	user := room.NewGameSession(rq.Id, peer) // use user uid from the coordinator
-+	c.log.Info().Msgf("Peer connection: %s", user.Id())
-+	w.router.AddUser(user)
-+
-+	return api.Out{Payload: sdp}
-+}
-+
-+func (c *coordinator) HandleWebrtcSignal(rq api.WebrtcSignalRequest, w *Worker) {
-+	user := w.router.FindUser(rq.Id)
-+	if user == nil {
-+		return
-+	}
-+
-+	if webrtc := room.WithWebRTC(user.Session); webrtc != nil {
-+		if err := webrtc.HandleSignal(rq.Ice, rq.Sdp); err != nil {
-+			c.log.Error().Err(err).Msgf("cannot handle the signal from [%v]", rq.Id)
-+		}
-+	}
-+}
-+
-+func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Out {
-+	user := w.router.FindUser(rq.Id)
-+	if user == nil {
-+		c.log.Error().Msgf("no user [%v]", rq.Id)
-+		return api.EmptyPacket
-+	}
-+	user.Index = rq.PlayerIndex
-+
-+	r := w.router.FindRoom(rq.Rid)
-+
-+	// +injects game data into the original game request
-+	// the name of the game either in the `room id` field or
-+	// it's in the initial request
-+	gameName := rq.Game
+ 	user := room.NewGameSession(rq.Id, peer) // use user uid from the coordinator
+ 	c.log.Info().Msgf("Peer connection: %s", user.Id())
+ 	w.router.AddUser(user)
+@@ -88,6 +135,9 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 	// the name of the game either in the `room id` field or
+ 	// it's in the initial request
+ 	gameName := rq.Game
 +	// The room id also carries the SYSTEM the room was minted for, which is what keeps the lookup
 +	// on the right ROM when the same game name exists in several systems (it does, 1352 times).
 +	system := ""
-+	if rq.Rid != "" {
-+		name := w.launcher.ExtractAppNameFromUrl(rq.Rid)
-+		if name == "" {
-+			c.log.Warn().Msg("couldn't decode game name from the room id")
-+			return api.EmptyPacket
-+		}
-+		gameName = name
+ 	if rq.Rid != "" {
+ 		name := w.launcher.ExtractAppNameFromUrl(rq.Rid)
+ 		if name == "" {
+@@ -95,9 +145,10 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 			return api.EmptyPacket
+ 		}
+ 		gameName = name
 +		system = w.launcher.ExtractSystemFromUrl(rq.Rid)
-+	}
-+
+ 	}
+ 
+-	gameInfo, err := w.launcher.FindAppByName(gameName)
 +	gameInfo, err := w.launcher.FindApp(system, gameName)
-+	if err != nil {
-+		c.log.Error().Err(err).Send()
-+		return api.EmptyPacket
-+	}
-+
-+	if r == nil { // new room
-+		uid := rq.Rid
-+		if uid == "" {
-+			uid = games.GenerateRoomID(gameName)
-+		}
-+		game := games.GameMetadata(gameInfo)
-+
+ 	if err != nil {
+ 		c.log.Error().Err(err).Send()
+ 		return api.EmptyPacket
+@@ -110,6 +161,21 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 		}
+ 		game := games.GameMetadata(gameInfo)
+ 
 +		// Per-room CORE override (arcade render profiles): boot this game on an alternate core-key instead
 +		// of the one its system maps to — e.g. PS1 on pcsx_rearmed instead of the default Beetle. Applied
 +		// AFTER FindApp so the ROM still resolves by the game's REAL system; from here the whole room (core
@@ -85801,20 +87393,22 @@ index 6972cc7..37d3809 100644
 +			}
 +		}
 +
-+		r = room.NewRoom(uid, nil, w.router.Users(), nil)
-+		r.HandleClose = func() {
-+			c.CloseRoom(uid)
-+			c.log.Debug().Msgf("room close request %v sent", uid)
-+		}
-+
-+		if other := w.router.Room(); other != nil {
-+			c.log.Error().Msgf("concurrent room creation: %v / %v", uid, w.router.Room().Id())
-+			return api.EmptyPacket
-+		}
-+
-+		w.router.SetRoom(r)
-+		c.log.Info().Str("room", r.Id()).Str("game", game.Name).Msg("New room")
-+
+ 		r = room.NewRoom(uid, nil, w.router.Users(), nil)
+ 		r.HandleClose = func() {
+ 			c.CloseRoom(uid)
+@@ -124,63 +190,318 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 		w.router.SetRoom(r)
+ 		c.log.Info().Str("room", r.Id()).Str("game", game.Name).Msg("New room")
+ 
+-		// start the emulator
+-		app := room.WithEmulator(w.mana.Get(caged.Libretro))
+-		app.ReloadFrontend()
+-		app.SetSessionId(uid)
+-		app.SetSaveOnClose(true)
+-		app.EnableCloudStorage(uid, w.storage)
+-		app.EnableRecording(rq.Record, rq.RecordUser, gameName)
+-
+-		r.SetApp(app)
 +		// Per-room encoder quality (arcade per-room bitrate/FEC) — SHARED by both lanes. The creator's
 +		// t=104 carries an optional video bitrate (kbps) + opus FEC + codec. WithOverrides applies them
 +		// to a per-room COPY of the encoder config (deep-copies the codec map, never mutating the shared
@@ -85850,7 +87444,8 @@ index 6972cc7..37d3809 100644
 +			w.log.Warn().Msgf("Temporal SVC: CLOUD_GAME_SVC_FORCE_LAYER=%d — EVERY peer is capped at layer %d, "+
 +				"regardless of its link. Diagnostic only; unset it and recycle this worker", fl, fl)
 +		}
-+
+ 
+-		m := media.NewGstreamer(w.conf.Encoder, w.log)
 +		if gameInfo.System == caged.CaptureSystem {
 +			// Heavy browser lane (capture mod): launch a native program + capture the desktop through
 +			// the gateway heavy contract. No libretro frontend/cheats/cloud-save/VideoChangeCb — the
@@ -85904,7 +87499,12 @@ index 6972cc7..37d3809 100644
 +			if len(rq.CoreOptions) > 0 || len(rq.Cheats) > 0 {
 +				w.log.Info().Msgf("Per-room cheats: %d core option(s), %d code(s)", len(rq.CoreOptions), len(rq.Cheats))
 +			}
-+
+ 
+-		// recreate the video encoder
+-		app.VideoChangeCb(func() {
+-			app.ViewportRecalculate()
+-			m.VideoW, m.VideoH = app.ViewportSize()
+-			m.VideoScale, m.ScaleMethod = app.Scale()
 +			// RetroAchievements (arcade RA feature): the worker runs a SINGLE site service account as the
 +			// scoring engine for EVERY room (config RetroAchievements.SiteUser/SiteToken), in spectator mode
 +			// (never submits to RA) + hardcore-on (so leaderboards fire in every room). It fetches each
@@ -85920,10 +87520,12 @@ index 6972cc7..37d3809 100644
 +				// Seed the per-run Cheat legitimacy taint from whether this room staged cheat codes (codes-only
 +				// now; core options are quality settings, not cheats). Competitive rooms take no cheats, so this
 +				// is only ever true for a casual room — every event then reports the Cheat why-icon.
-+				app.SetRetroAchievements(raCfg.SiteUser, raCfg.SiteToken, game.System, rq.Hardcore, len(rq.Cheats) > 0, handlers)
++				app.SetRetroAchievements(raCfg.SiteUser, raCfg.SiteToken, game.System, rq.Hardcore, len(rq.Cheats) > 0, rq.SeedExplicit, handlers)
 +				w.log.Info().Msgf("RetroAchievements: engine active for room %q (competitive=%v)", uid, rq.Hardcore)
 +			}
-+
+ 
+-			if err := m.Reinit(); err != nil {
+-				c.log.Error().Err(err).Msgf("reinit fail")
 +			// Per-room Wii controller-scheme override (site: creator's room-create choice) for the
 +			// GC-controller-native BrawlEx mods. Unlike HwContext this needs no precedence resolution
 +			// against a DB pin/renderer inference: an empty/unrecognized value just leaves nanoarch's
@@ -85936,8 +87538,21 @@ index 6972cc7..37d3809 100644
 +				w.log.Info().Msgf("Per-room controller scheme: %q for %q", rq.ControllerScheme, gameName)
 +			default:
 +				nanoarch.Nan0.ControllerSchemeOverride = "" // unconditional clear, like HwContextOverride
-+			}
-+
+ 			}
+ 
+-			data, err := api.Wrap(api.Out{
+-				T: uint8(api.AppVideoChange),
+-				Payload: api.AppVideoInfo{
+-					W:    m.VideoW,
+-					H:    m.VideoH,
+-					A:    app.AspectRatio(),
+-					S:    int(m.VideoScale),
+-					SM:   m.ScaleMethod,
+-					Flip: app.Flipped(),
+-					Rot:  app.Rotation(),
+-				}})
+-			if err != nil {
+-				c.log.Error().Err(err).Msgf("wrap")
 +			r.SetApp(app)
 +
 +			// GL ZERO-COPY — ARMED HERE, BEFORE app.Load, AND THAT IS THE WHOLE POINT.
@@ -86067,8 +87682,16 @@ index 6972cc7..37d3809 100644
 +			}
 +			if glZC {
 +				w.log.Info().Msgf("GL zero-copy armed for %s (no glReadPixels)", game.System)
-+			}
-+
+ 			}
+-			r.Send(data)
+-		})
+ 
+-		w.log.Info().Msgf("Starting the game: %v", gameName)
+-		if err := app.Load(game, w.conf.Library.BasePath); err != nil {
+-			c.log.Error().Err(err).Msgf("couldn't load the game %v", game)
+-			r.Close()
+-			w.router.SetRoom(nil)
+-			return api.EmptyPacket
 +			// recreate the video encoder when the core's frame size changes at runtime
 +			app.VideoChangeCb(func() {
 +				app.ViewportRecalculate()
@@ -86109,8 +87732,12 @@ index 6972cc7..37d3809 100644
 +				w.router.SetRoom(nil)
 +				return api.EmptyPacket
 +			}
-+		}
-+
+ 		}
+ 
+-		m.AudioSrcHz = app.AudioSampleRate()
+-		m.VideoW, m.VideoH = app.ViewportSize()
+-		m.VideoScale, m.ScaleMethod = app.Scale()
+-		coreConf := w.conf.Emulator.GetLibretroCoreConfig(game.System)
 +		// Media finalize — SHARED by both lanes, read through the app.App interface. FPS() is not on
 +		// the interface (concrete on both apps), so it's fetched via a tiny local interface.
 +		ap := r.App()
@@ -86118,42 +87745,56 @@ index 6972cc7..37d3809 100644
 +		m.VideoW, m.VideoH = ap.ViewportSize()
 +		m.VideoScale, m.ScaleMethod = ap.Scale()
 +		coreConf := w.conf.Emulator.GetLibretroCoreConfig(game.System) // zero-value for "capture"
-+		m.MaxThreads = coreConf.MaxThreads
+ 		m.MaxThreads = coreConf.MaxThreads
+-		m.VideoFPS = app.FPS()
++		m.BppTarget = coreConf.BppTarget
 +		if f, ok := ap.(interface{ FPS() float64 }); ok {
 +			m.VideoFPS = f.FPS()
 +		}
-+		m.VideoVFR = coreConf.VFR
-+
+ 		m.VideoVFR = coreConf.VFR
+ 
+-		m.SetPixFmt(app.PixFormat())
+-		m.SetRot(app.Rotation())
 +		m.SetPixFmt(ap.PixFormat())
 +		m.SetRot(ap.Rotation())
-+
-+		r.SetMedia(m)
-+
-+		if err := m.Init(); err != nil {
-+			c.log.Error().Err(err).Msgf("couldn't init the media")
-+			r.Close()
-+			w.router.SetRoom(nil)
-+			return api.EmptyPacket
-+		}
-+
-+		r.InitMedia()
-+		r.StartApp()
+ 
+ 		r.SetMedia(m)
+ 
+@@ -193,6 +514,28 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 
+ 		r.InitMedia()
+ 		r.StartApp()
 +
 +		// Adaptive bitrate (patch 0021). The room's chosen quality becomes the CEILING; ABR moves the
 +		// encoder between a floor and that ceiling from the worst peer's send-side estimate. Costs one
 +		// GObject property set per rung — no rebuild, no reneg. See pkg/worker/abr.go.
-+		abrCeiling := rq.VideoBitrate
-+		if abrCeiling <= 0 {
-+			abrCeiling = encConf.VideoBitrateKbps()
++		// An explicit lobby choice always wins. Otherwise ("Auto") the ceiling is DERIVED from the frame
++		// this room actually encodes — see autoCeilingKbps. The old path took a per-system constant the
++		// site had picked before the core even loaded, which could not know the core's real viewport,
++		// its scale, or a render profile that changed the resolution.
++		// An explicit lobby choice is FIXED for the room; only the derived ceiling tracks geometry.
++		var ceilFn func() int
++		if rq.VideoBitrate > 0 {
++			fixed := rq.VideoBitrate
++			ceilFn = func() int { return fixed }
++		} else {
++			ceilFn = func() int { k, _ := autoCeilingKbps(m); return k }
++			k, why := autoCeilingKbps(m)
++			w.log.Info().Msgf("abr: auto ceiling %d kbps — %s", k, why)
++			if err := m.SetVideoBitrate(k); err != nil {
++				w.log.Warn().Err(err).Msg("abr: could not apply the initial auto ceiling")
++			}
 +		}
-+		startRoomAbr(w.log, r, m, abrCeiling)
-+	}
-+
-+	needsKbMouse := r.App().KbMouseSupport()
-+
-+	s := room.WithWebRTC(user.Session)
-+	s.OnMessage(func(data []byte) { r.App().Input(user.Index, byte(caged.RetroPad), data) })
-+	if needsKbMouse {
++		startRoomAbr(w.log, r, m, ceilFn)
+ 	}
+ 
+ 	needsKbMouse := r.App().KbMouseSupport()
+@@ -200,8 +543,24 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 	s := room.WithWebRTC(user.Session)
+ 	s.OnMessage(func(data []byte) { r.App().Input(user.Index, byte(caged.RetroPad), data) })
+ 	if needsKbMouse {
+-		_, _ = s.Channel("keyboard", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Keyboard), data) })
+-		_, _ = s.Channel("mouse", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Mouse), data) })
 +		// Keyboard and mouse both carry RELATIVE/EDGE-TRIGGERED state, not a resendable snapshot, so
 +		// neither may ride the default unreliable channel (Ordered:false, MaxRetransmits:0) the RetroPad
 +		// uses. That default is right for the pad — a frame is a FULL button snapshot, so a lost one is
@@ -86172,47 +87813,21 @@ index 6972cc7..37d3809 100644
 +				disc.RequestDisk(int(data[0]))
 +			}
 +		})
-+	}
-+
-+	c.RegisterRoom(r.Id())
-+
-+	response := api.StartGameResponse{
-+		Room:    api.Room{Rid: r.Id()},
-+		Record:  w.conf.Recording.Enabled,
-+		KbMouse: needsKbMouse,
-+	}
-+
-+	if r.App().AspectEnabled() {
-+		ww, hh := r.App().ViewportSize()
-+		scale, scaleM := r.App().Scale()
-+		response.AV = &api.AppVideoInfo{
-+			W:    ww,
-+			H:    hh,
-+			A:    r.App().AspectRatio(),
-+			S:    int(scale),
-+			SM:   scaleM,
-+			Flip: r.App().Flipped(),
-+			Rot:  r.App().Rotation(),
-+		}
-+	}
-+
-+	return api.Out{Payload: response}
-+}
-+
-+// HandleTerminateSession handles cases when a user has been disconnected from the websocket of coordinator.
-+func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *Worker) {
-+	if user := w.router.FindUser(rq.Id); user != nil {
-+		w.router.Remove(user)
-+		user.Disconnect()
-+	}
+ 	}
+ 
+ 	c.RegisterRoom(r.Id())
+@@ -235,6 +594,7 @@ func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *
+ 		w.router.Remove(user)
+ 		user.Disconnect()
+ 	}
 +	releaseTimeWarp(w)
-+}
-+
-+// HandleQuitGame handles cases when a user manually exits the game.
-+func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
-+	if user := w.router.FindUser(rq.Id); user != nil {
-+		w.router.Remove(user)
-+	}
+ }
+ 
+ // HandleQuitGame handles cases when a user manually exits the game.
+@@ -242,16 +602,61 @@ func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
+ 	if user := w.router.FindUser(rq.Id); user != nil {
+ 		w.router.Remove(user)
+ 	}
 +	releaseTimeWarp(w)
 +}
 +
@@ -86227,20 +87842,21 @@ index 6972cc7..37d3809 100644
 +			emu.SetRewind(false)
 +		}
 +	}
-+}
-+
-+func (c *coordinator) HandleResetGame(rq api.ResetGameRequest, w *Worker) api.Out {
-+	if r := w.router.FindRoom(rq.Rid); r != nil {
+ }
+ 
+ func (c *coordinator) HandleResetGame(rq api.ResetGameRequest, w *Worker) api.Out {
+ 	if r := w.router.FindRoom(rq.Rid); r != nil {
+-		room.WithEmulator(r.App()).Reset()
 +		emu := room.WithEmulator(r.App())
 +		emu.Reset()
 +		// A hard reset restores RA hardcore eligibility (RA's own rule), so clear the mid-run save-scum /
 +		// time-manipulation taints — a clean run started after this is legit again.
 +		emu.NotifyReset()
-+		return api.OkPacket
-+	}
-+	return api.ErrPacket
-+}
-+
+ 		return api.OkPacket
+ 	}
+ 	return api.ErrPacket
+ }
+ 
 +// HandleFastForwardGame / HandleRewindGame toggle the room's time manipulation (t=114/115).
 +// Checked cast, unlike the save/reset handlers above: a capture-lane room's App is a
 +// *capture.App, not a *libretro.Caged, and a stray packet there must no-op, not panic the
@@ -86268,68 +87884,27 @@ index 6972cc7..37d3809 100644
 +	}
 +}
 +
-+func (c *coordinator) HandleSaveGame(rq api.SaveGameRequest, w *Worker) api.Out {
-+	r := w.router.FindRoom(rq.Rid)
-+	if r == nil {
-+		return api.ErrPacket
-+	}
-+	if err := room.WithEmulator(r.App()).SaveGameState(); err != nil {
-+		c.log.Error().Err(err).Msg("cannot save game state")
-+		return api.ErrPacket
-+	}
-+	return api.OkPacket
-+}
-+
-+func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out {
-+	r := w.router.FindRoom(rq.Rid)
-+	if r == nil {
-+		return api.ErrPacket
-+	}
+ func (c *coordinator) HandleSaveGame(rq api.SaveGameRequest, w *Worker) api.Out {
+ 	r := w.router.FindRoom(rq.Rid)
+ 	if r == nil {
+@@ -269,10 +674,16 @@ func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out
+ 	if r == nil {
+ 		return api.ErrPacket
+ 	}
+-	if err := room.WithEmulator(r.App()).RestoreGameState(); err != nil {
 +	emu := room.WithEmulator(r.App())
 +	if err := emu.RestoreGameState(); err != nil {
-+		c.log.Error().Err(err).Msg("cannot load game state")
-+		return api.ErrPacket
-+	}
+ 		c.log.Error().Err(err).Msg("cannot load game state")
+ 		return api.ErrPacket
+ 	}
 +	// The player loaded a save-STATE mid-run — tag every subsequent RA unlock/leaderboard this session as
 +	// save-scummed (until a reset). This is the explicit Load press, NOT the gateway's boot-time seed
 +	// (which restores through Frontend.Load directly and never hits this handler), so it can't false-taint
 +	// a fresh Continue.
 +	emu.NotifySaveStateLoaded()
-+	return api.OkPacket
-+}
-+
-+func (c *coordinator) HandleChangePlayer(rq api.ChangePlayerRequest, w *Worker) api.Out {
-+	user := w.router.FindUser(rq.Id)
-+	if user == nil || w.router.FindRoom(rq.Rid) == nil {
-+		return api.Out{Payload: -1} // semi-predicates
-+	}
-+	user.Index = rq.Index
-+	w.log.Info().Msgf("Updated player index to: %d", rq.Index)
-+	return api.Out{Payload: rq.Index}
-+}
-+
-+func (c *coordinator) HandleRecordGame(rq api.RecordGameRequest, w *Worker) api.Out {
-+	if !w.conf.Recording.Enabled {
-+		return api.ErrPacket
-+	}
-+	r := w.router.FindRoom(rq.Rid)
-+	if r == nil {
-+		return api.ErrPacket
-+	}
-+	room.WithRecorder(r.App()).ToggleRecording(rq.Active, rq.User)
-+	return api.OkPacket
-+}
-+
-+func toJson(data any) (string, error) {
-+	if data == nil {
-+		return "", nil
-+	}
-+	b, err := json.Marshal(data)
-+	if err != nil {
-+		return "", err
-+	}
-+	return string(b), nil
-+}
+ 	return api.OkPacket
+ }
+ 
 diff --git a/pkg/worker/media/d3d11zerocopy.go b/pkg/worker/media/d3d11zerocopy.go
 new file mode 100644
 index 0000000..d76fe6d
@@ -86954,10 +88529,10 @@ index 0000000..be84e8e
 +	C.zc_push(g.v.src(), C.uint(texID), C.int(w), C.int(h), C.ulonglong(durNs))
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..2175c5d 100644
+index 4a6171f..f974cb6 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,1083 @@
+@@ -1,579 +1,1107 @@
 -package media
 -
 -import (
@@ -87746,6 +89321,11 @@ index 4a6171f..2175c5d 100644
 +	VideoScale     float64
 +	ScaleMethod    string
 +	MaxThreads     int
++	// BppTarget: per-core override for the derived bitrate ceiling's bits-per-pixel-per-frame target
++	// (worker abr.go autoCeilingKbps). 0 = infer the class from the scale method. Carried here with the
++	// other core-derived encode inputs (VideoScale/ScaleMethod/MaxThreads) because that is where the
++	// ceiling calculation already reads its geometry from.
++	BppTarget      float64
 +	AudioSrcHz     int
 +	// audioBuiltHz: the rate the audio pipeline was actually built at (initAudio). A live re-cap
 +	// (ReconfigureAudio) is only valid when a resampler is present, i.e. the room was built at a
@@ -88502,8 +90082,27 @@ index 4a6171f..2175c5d 100644
 +		build.writef("resample-method=%s quality=%d ! audio/x-raw,rate=48000 ", m, q)
 +	}
 +	build.writef("! %s name=audio_enc %s ", cmp.Or(opts.Encoder, "opusenc"), opts.Params)
-+	build.write("! queue name=audio_q max-size-buffers=1 ")
-+	build.write("! appsink name=audio_sink sync=false max-buffers=1 drop=true")
++	// AUDIO SLACK (2026-07-29). This used to be `queue max-size-buffers=1` into
++	// `appsink max-buffers=1 drop=true` — copied from the VIDEO path, where dropping a late frame is
++	// correct because a stale frame is worse than none. For AUDIO that reasoning is inverted: a dropped
++	// buffer is a permanent hole in a continuous signal, i.e. an audible click, and the listener would
++	// rather hear it 20 ms later than not at all.
++	//
++	// It also made the fault UNOBSERVABLE. pace-diag counts what the CORE produced, so audio discarded
++	// here never shows up anywhere: audio/s stays perfect while the stream has holes. That is exactly the
++	// state SM64: Last Impact was in — a raw audio_cb capture (nanoarch/audiodump.go) proved the core's
++	// PCM is CLEAN (0 clicks, 0 clipping, 0 held-sample runs, max |delta| 4120 against an 18168 peak),
++	// while every downstream suspect had already been eliminated by measurement: client jitter buffer
++	// (80 and 400 ms identical), Opus frame size (10 and 20 ms), loss resilience + bitrate
++	// (packet-loss-percentage 15->0, inband-fec off, 96k->128k), codec, countperop, and a pacer measured
++	// flat at ticks/s 60.0 with audio/s 32004-32007 against a 32006 declaration.
++	//
++	// 200 ms of time-based depth (buffers/bytes limits off so only time bounds it) and drop=false. The
++	// cost is bounded latency, NOT unbounded growth: the queue leaks nothing and the appsink is still
++	// pulled as fast as the consumer can. Audio latency was never the tight constraint here — the client
++	// already holds an 80 ms jitter buffer by default (cloudRetroClient.js AUDIO_JITTER_DEFAULT_MS).
++	build.write("! queue name=audio_q max-size-buffers=0 max-size-bytes=0 max-size-time=200000000 ")
++	build.write("! appsink name=audio_sink sync=false max-buffers=8 drop=false")
 +
 +	pipeDef := build.String()
 +	log.Debug().Msgf("Gstreamer [audio]: %s", pipeDef)
@@ -89164,10 +90763,10 @@ index f3e898f..f18e810 100644
 +}
 diff --git a/pkg/worker/racheevos.go b/pkg/worker/racheevos.go
 new file mode 100644
-index 0000000..913a603
+index 0000000..81fe95c
 --- /dev/null
 +++ b/pkg/worker/racheevos.go
-@@ -0,0 +1,152 @@
+@@ -0,0 +1,232 @@
 +package worker
 +
 +// RetroAchievements wiring between the embedded rcheevos runtime (pkg/worker/cheevos) and the outside
@@ -89180,6 +90779,7 @@ index 0000000..913a603
 +	"bytes"
 +	"encoding/json"
 +	"net/http"
++	neturl "net/url"
 +	"strconv"
 +	"strings"
 +	"time"
@@ -89219,10 +90819,24 @@ index 0000000..913a603
 +func buildCheevosHandlers(cfg raMirrorConfig, log *logger.Logger, send func([]byte), roomId, system, raUser string) cheevos.Handlers {
 +	userId, gameId, haveOwner := parseRoomOwner(roomId)
 +
++	// Fetched ONCE per room, off the emu loop. Nil when unavailable, which means "toast everything" —
++	// see fetchPriorUnlocks. Only read from the achievement callback, which the runtime serialises.
++	var prior *priorUnlocks
++	if haveOwner {
++		prior = cfg.fetchPriorUnlocks(log, userId, raUser)
++	}
++
 +	return cheevos.Handlers{
 +		OnAchievement: func(a cheevos.Achievement) {
 +			// 1) live toast to everyone in the room (cosmetic; RA + the mirror hold the real record).
-+			if data, err := api.Wrap(api.Out{
++			// SKIPPED for an achievement this player already holds. Spectator mode gives the runtime no
++			// per-user history, so it re-raises every achievement whenever its trigger fires again and
++			// the same unlocks popped session after session. The MIRROR below still runs: the DB keys on
++			// (UserId, RaAchievementId, Clean), so a re-earn at the same legitimacy updates in place,
++			// and a clean re-earn after a dirty one is a genuine new row.
++			if prior.suppressToast(a.ID, !a.Cheat && !a.Savescum && !a.Timeplay) {
++				log.Info().Msgf("RetroAchievements: %q already unlocked by this player — toast suppressed", a.Title)
++			} else if data, err := api.Wrap(api.Out{
 +				T: uint8(api.AchievementUnlock),
 +				Payload: achievementToast{
 +					ID: a.ID, Title: a.Title, Description: a.Description, Points: a.Points, Hardcore: a.Hardcore,
@@ -89288,6 +90902,71 @@ index 0000000..913a603
 +		return
 +	}
 +	_ = resp.Body.Close()
++}
++
++// priorUnlocks is what this player has already earned, so the room stops toasting the same achievement
++// every session. The rcheevos runtime cannot answer this: it runs as ONE site service account in
++// spectator mode, so it has no per-user history and re-raises every achievement whenever its trigger
++// fires again. Only the site DB knows.
++type priorUnlocks struct {
++	all   map[uint32]bool // ever unlocked, at any legitimacy
++	clean map[uint32]bool // unlocked on a clean run
++}
++
++// suppressToast reports whether this unlock is a repeat the player should NOT be popped about again.
++// A clean re-earn after a dirty one is deliberately still toasted: it is a genuine first, and the
++// unlock table records it as its own row for exactly the same reason.
++func (p *priorUnlocks) suppressToast(id uint32, clean bool) bool {
++	if p == nil {
++		return false // never fetched (mirror disabled, or the lookup failed) — better a repeat than a silence
++	}
++	if p.clean[id] {
++		return true // already earned legitimately; nothing left to announce
++	}
++	return p.all[id] && !clean // already earned dirty, and this one is dirty too
++}
++
++// fetchPriorUnlocks asks the site what this player already has. Returns nil on ANY failure, which the
++// caller treats as "toast everything" — a lookup problem must not silently swallow real unlocks.
++func (c raMirrorConfig) fetchPriorUnlocks(log *logger.Logger, userId int, raUser string) *priorUnlocks {
++	if !c.enabled() {
++		return nil
++	}
++	url := strings.TrimRight(c.baseURL, "/") + "/API/Arcade/Internal/UnlockedAchievements?userId=" +
++		strconv.Itoa(userId) + "&raUser=" + neturl.QueryEscape(raUser)
++	req, err := http.NewRequest(http.MethodGet, url, nil)
++	if err != nil {
++		return nil
++	}
++	req.Header.Set("X-Arcade-Internal-Secret", c.secret)
++	resp, err := raMirrorClient.Do(req)
++	if err != nil {
++		log.Warn().Err(err).Msg("RetroAchievements: prior-unlock lookup failed — every achievement will toast this session")
++		return nil
++	}
++	defer func() { _ = resp.Body.Close() }()
++	if resp.StatusCode != http.StatusOK {
++		log.Warn().Msgf("RetroAchievements: prior-unlock lookup returned HTTP %d — every achievement will toast this session", resp.StatusCode)
++		return nil
++	}
++	var body struct {
++		All   []uint32 `json:"all"`
++		Clean []uint32 `json:"clean"`
++	}
++	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
++		log.Warn().Err(err).Msg("RetroAchievements: prior-unlock lookup gave unreadable JSON — every achievement will toast this session")
++		return nil
++	}
++	p := &priorUnlocks{all: map[uint32]bool{}, clean: map[uint32]bool{}}
++	for _, id := range body.All {
++		p.all[id] = true
++	}
++	for _, id := range body.Clean {
++		p.clean[id] = true
++	}
++	log.Info().Msgf("RetroAchievements: %d achievement(s) already unlocked by this player (%d clean) — those will not re-toast",
++		len(p.all), len(p.clean))
++	return p
 +}
 +
 +func (c raMirrorConfig) postAchievement(log *logger.Logger, userId, gameId int, raUser string, a cheevos.Achievement) {
