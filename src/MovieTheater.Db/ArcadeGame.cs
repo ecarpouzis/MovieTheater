@@ -114,6 +114,27 @@ namespace MovieTheater.Db
         public double? LaunchBoxRating { get; set; }
         public int? LaunchBoxRatingCount { get; set; }
 
+        // ─── Hand-curated community rating. The THIRD rating source and the highest-precedence one, for the
+        // titles the bulk importers structurally cannot reach: romhacks. LaunchBox and IGDB index published
+        // games, so a hack either misses entirely or — worse — fuzzy-matches its BASE game and inherits a
+        // score that isn't its own (OoT "4 Player Edition" came out of the LaunchBox dump at 10/100). These
+        // columns hold a per-hack score researched from a source that actually rates hacks, and they win over
+        // both importers so a re-run of arcade-launchbox / arcade-igdb cannot clobber the better number. ──────
+        /// <summary>Community score 0-100 for this specific title. Beats <see cref="LaunchBoxRating"/> and
+        /// <see cref="RatingScore"/> everywhere a score is read.</summary>
+        public double? CommunityRating { get; set; }
+
+        /// <summary>Vote count behind <see cref="CommunityRating"/>. NULL means the score is an editorial
+        /// estimate rather than a poll — the Bayesian shrink then treats it as zero votes, which is correct:
+        /// an unsourced number should carry no confidence and sink to its system's mean.</summary>
+        public int? CommunityRatingCount { get; set; }
+
+        /// <summary>Provenance for <see cref="CommunityRating"/>, shown to the user in the score tooltip so a
+        /// researched estimate is never mistaken for a poll (e.g. "Backloggd", "romhacking.com",
+        /// "Estimated - no community score"). Required whenever CommunityRating is set.</summary>
+        [MaxLength(120)]
+        public string? CommunityRatingSource { get; set; }
+
         /// <summary>Confidence-adjusted score used for <c>sort=rating</c> ONLY (never displayed): the effective
         /// raw score (LaunchBox, else IGDB) shrunk toward its system's mean by vote count —
         /// <c>(v/(v+m))·raw + (m/(v+m))·mean</c>, m=20. Without this a 1-vote 100 outranks a 4,000-vote 94.

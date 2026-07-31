@@ -7,6 +7,7 @@ import ArcadeGameConfig from "./ArcadeGameConfig";
 import ArcadeLeaderboards from "./ArcadeLeaderboards";
 import ArcadeAchievements from "./ArcadeAchievements";
 import { systemLabel } from "./arcadeSystems";
+import { ratingTooltip } from "./arcadeRating";
 import "./ArcadeModal.css";
 import "./GameModal.css";
 
@@ -176,7 +177,7 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
             {region && <span className="arcade-chip">{region}</span>}
             {genre && <span className="arcade-chip arcade-chip--genre" title={genre}>{genre}</span>}
             {game.rating != null && (
-              <span className="arcade-chip agm-chip-rating" title={game.ratingCount ? `${game.ratingCount.toLocaleString()} votes` : undefined}>
+              <span className="arcade-chip agm-chip-rating" title={ratingTooltip(game)}>
                 ★ {game.rating}
               </span>
             )}

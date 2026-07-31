@@ -1,5 +1,6 @@
 import GameCover from "./GameCover";
 import { systemLabel } from "./arcadeSystems";
+import { ratingTooltip } from "./arcadeRating";
 
 // The art column: a fixed BOX, identical on every card.
 //
@@ -43,7 +44,7 @@ function GameCard({ game, onOpen }) {
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen?.(game); } }}>
       {/* The score pins to the CARD's top-right corner, clear of the art. */}
       {game.rating != null && (
-        <span className="arcade-card__rating" title={game.ratingCount ? `${game.ratingCount.toLocaleString()} votes` : undefined}>
+        <span className="arcade-card__rating" title={ratingTooltip(game)}>
           ★ {game.rating}
         </span>
       )}

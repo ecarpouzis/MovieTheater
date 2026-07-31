@@ -319,7 +319,8 @@ namespace MovieTheater.Controllers
                 // Enrichment (LaunchBox/IGDB rating + genres/summary/dev/pub) is written to a row's anchor;
                 // across a collapsed card spanning several Titles it may sit on any cross-dump sibling, so
                 // prefer the enriched one (rating present), else fall back to the lowest-id anchor.
-                var meta = vs.Where(g => g.LaunchBoxRating != null || g.RatingScore != null).OrderBy(g => g.Id).FirstOrDefault()
+                var meta = vs.Where(g => g.CommunityRating != null || g.LaunchBoxRating != null || g.RatingScore != null)
+                             .OrderBy(g => g.Id).FirstOrDefault()
                            ?? vs.OrderBy(g => g.Id).FirstOrDefault();
                 return (object)new
                 {
@@ -331,11 +332,19 @@ namespace MovieTheater.Controllers
                     year = rep?.Year ?? meta?.Year,
                     maxPlayers = versions.Count > 0 ? versions.Max(v => v.MaxPlayers) : (byte)1,
                     versionCount = versions.Count,
-                    // Review score: LaunchBox is the primary source (83% of cards); IGDB is a fallback for the
-                    // ~541 cards LaunchBox doesn't rate. The card shows the RAW score — the weighted one above
-                    // exists only to order the grid.
-                    rating = (meta?.LaunchBoxRating ?? meta?.RatingScore) is double rs ? (int?)Math.Round(rs) : null,
-                    ratingCount = meta?.LaunchBoxRatingCount ?? meta?.RatingCount,
+                    // Review score: the hand-curated community score wins (it only exists where the bulk
+                    // importers were absent or wrong — see ArcadeGame.CommunityRating), then LaunchBox (83% of
+                    // cards), then IGDB for the ~541 LaunchBox doesn't rate. The card shows the RAW score — the
+                    // weighted one above exists only to order the grid. ratingSource rides along so the UI can
+                    // say where the number came from, which is what keeps a researched estimate honest.
+                    rating = (meta?.CommunityRating ?? meta?.LaunchBoxRating ?? meta?.RatingScore) is double rs
+                        ? (int?)Math.Round(rs) : null,
+                    ratingCount = meta?.CommunityRating != null
+                        ? meta.CommunityRatingCount
+                        : meta?.LaunchBoxRatingCount ?? meta?.RatingCount,
+                    ratingSource = meta?.CommunityRating != null ? meta.CommunityRatingSource
+                        : meta?.LaunchBoxRating != null ? "LaunchBox"
+                        : meta?.RatingScore != null ? "IGDB" : null,
                     genres = meta?.Genres,
                     themes = meta?.Themes,
                     summary = meta?.Summary,

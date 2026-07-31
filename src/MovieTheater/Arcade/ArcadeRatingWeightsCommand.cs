@@ -53,9 +53,12 @@ namespace MovieTheater.Arcade
             dbFactory = GetRequiredService<IDbContextFactory<MovieDb>>();
         }
 
-        /// <summary>The card's effective raw score + confidence: LaunchBox first, IGDB only as a fallback.</summary>
+        /// <summary>The card's effective raw score + confidence: the hand-curated community score first (it
+        /// exists only where the importers were wrong or absent), then LaunchBox, then IGDB as a fallback.
+        /// A curated score with no vote count reports 0 votes, so the shrink pulls it to the system mean.</summary>
         public static (double Raw, int Votes)? Effective(ArcadeGame a)
         {
+            if (a.CommunityRating is double cr) return (cr, Math.Max(0, a.CommunityRatingCount ?? 0));
             if (a.LaunchBoxRating is double lb) return (lb, Math.Max(0, a.LaunchBoxRatingCount ?? 0));
             if (a.RatingScore is double ig) return (ig, Math.Max(0, a.RatingCount ?? 0));
             return null;

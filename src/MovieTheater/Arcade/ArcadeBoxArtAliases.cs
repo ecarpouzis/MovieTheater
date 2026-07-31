@@ -167,8 +167,6 @@ namespace MovieTheater.Arcade
             // honest art and is what the card would otherwise show a placeholder for. Every target below
             // was HEAD-checked against the libretro-thumbnails repo before being added — an unverified
             // guess here just re-breaks the card silently.
-            // Deliberately NOT aliased: "NES Deadpool" (nes) — its base game is unclear, and a wrong
-            // alias would put confidently-wrong art on the card. A placeholder is the correct answer.
             ["n64|mario64randomizer"] = "Super Mario 64 (USA)",
             ["n64|chaosedition"] = "Super Mario 64 (USA)",
             ["n64|fourswordsarenaedition"] = "Legend of Zelda, The - Ocarina of Time (USA)",
@@ -190,6 +188,12 @@ namespace MovieTheater.Arcade
             ["genesis|tmntshreddersrerevenge"] = "Streets of Rage 2 (USA)",
             ["n64|zeldasbirthday"] = "Legend of Zelda, The - Ocarina of Time (USA)",
             ["nes|wilfordbrimleybattle"] = "River City Ransom (USA)",
+            // "NES Deadpool" was left unaliased in the 2026-07-30 round because its base game was unknown.
+            // The RHDN entry (hack 4723) names it: a total conversion of Ninja Gaiden. Aliased 2026-07-31 —
+            // this was the only romhack card still serving a placeholder that HAS an honest base-game box.
+            // (The other blank, "Titanic English Translation", stays blank on purpose: its base is an
+            // unlicensed Shenzhen Nanjing cart that no cover database carries.)
+            ["nes|nesdeadpool"] = "Ninja Gaiden (USA)",
         };
 
         /// <summary>The aliased libretro filename for a card, or null.</summary>
