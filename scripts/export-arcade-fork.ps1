@@ -21,6 +21,12 @@
     So this script does not just export: it VERIFIES, by applying the patch to a pristine upstream
     worktree and building the worker from it. A backup that has never been restored is not a backup.
 
+    It also checks that git hands the file back UNCHANGED (`-text`, no eol rewriting). That is a
+    separate failure and the nastier one: for a long time git rewrote fork.patch's line endings on
+    checkout, so the patch a fresh clone received did not apply at all, while this script still
+    reported success — because it had only ever verified the bytes it wrote itself, never the bytes
+    git restores. Proving the on-disk file is not the same as proving the committed one.
+
     Run it after any change to the fork (and commit the resulting fork.patch).
 
 .PARAMETER Repo      The cloud-game checkout holding the fork branch.
@@ -61,6 +67,41 @@ if ($dirty) {
     Write-Warning "the fork checkout has UNCOMMITTED changes — they are NOT in fork.patch:"
     $dirty | ForEach-Object { Write-Warning "  $_" }
     Write-Warning "commit them to $Branch and re-run, or the exported patch is already a lie."
+}
+
+# Prove git will hand this file BACK unchanged.
+#
+# Everything below verifies the bytes sitting on disk right now — which is not what anyone else ever
+# gets. They get whatever git restores on checkout, and for a long time those were not the same file:
+# fork.patch's CONTENT legitimately holds CR bytes (the fork's sources are CRLF), the repo has
+# core.autocrlf=true, and with no .gitattributes rule git rewrote every line on checkout. 72,004 CRs
+# became 91,664, the file grew 19,660 bytes, and `git apply` rejected every hunk. The rebuild path was
+# broken from any fresh clone while this script cheerfully printed "the backup is real" — it had
+# validated the pre-round-trip bytes and never the restored ones (found 2026-07-30).
+#
+# `git hash-object` with filters vs --no-filters is the cheap, commit-free detector: if the checkin
+# filter alters a single byte, the two OIDs differ, and a file git rewrites on the way IN is a file it
+# rewrites on the way OUT. `-text` pins both directions to a no-op.
+$relOut = "docker/arcade/patches/fork.patch"
+$attr = (& git -C $repoRoot check-attr text -- $relOut) -replace '^.*:\s*text:\s*', ''
+$oidFiltered = & git -C $repoRoot hash-object $relOut
+$oidVerbatim = & git -C $repoRoot hash-object --no-filters $relOut
+if ($oidFiltered -ne $oidVerbatim) {
+    throw ("git would REWRITE fork.patch on checkin/checkout (text attr = '$attr'; filtered $oidFiltered " +
+           "vs verbatim $oidVerbatim). Whatever this run proves about the file on disk, a fresh clone " +
+           "gets different bytes and `git apply` will reject them. Fix: keep '$relOut -text' in " +
+           ".gitattributes, then re-export and re-add — a blob committed BEFORE that rule already had " +
+           "its CRs stripped on the way in, so the rule alone does not repair it.")
+}
+# The OID check above only fires once a patch actually CONTAINS CRs. Without the rule the hazard is
+# latent: today's export may be pure-LF and pass, and the breakage lands on whoever regenerates next.
+# "unset" is what `-text` reports and is the state we want; "unspecified" means no rule matched.
+if ($attr -ne "unset") {
+    Write-Warning ("$relOut is not marked -text (text attr = '$attr'). Today's bytes survive the " +
+                   "round trip, but nothing is stopping git from rewriting line endings the moment a " +
+                   "future export contains CRs. Add '$relOut -text' to .gitattributes.")
+} else {
+    Write-Host "git round-trip is byte-exact (-text in force)"
 }
 
 # Prove it: a pristine upstream tree + this patch must reproduce a worker that compiles.
