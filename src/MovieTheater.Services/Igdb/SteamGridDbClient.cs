@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -70,12 +71,18 @@ namespace MovieTheater.Services.Igdb
             return null;
         }
 
+        // Diacritics are folded (FormD + drop non-spacing marks) because SteamGridDB stores the real,
+        // accented name ("Pokémon Kart 64") while our catalog follows the No-Intro convention and spells it
+        // "Pokemon" — without the fold the gate rejects an exact match and the card falls through to the
+        // web-image last resort.
         private static string Normalize(string sIn)
         {
             var sb = new StringBuilder(sIn.Length);
             int depth = 0;
-            foreach (var ch in sIn)
+            foreach (var chRaw in sIn.Normalize(NormalizationForm.FormD))
             {
+                if (CharUnicodeInfo.GetUnicodeCategory(chRaw) == UnicodeCategory.NonSpacingMark) continue;
+                var ch = chRaw;
                 if (ch == '(' || ch == '[') depth++;
                 else if (ch == ')' || ch == ']') { if (depth > 0) depth--; }
                 else if (depth == 0 && char.IsLetterOrDigit(ch)) sb.Append(char.ToLowerInvariant(ch));

@@ -177,6 +177,19 @@ namespace MovieTheater.Arcade
             ["nes|supermario3mix"] = "Super Mario Bros. 3 (USA)",
             ["nds|ctgpnitro"] = "Mario Kart DS (USA) (En,Fr,De,Es,It)",
             ["snes|zeroproject"] = "Mega Man X3 (USA)",
+            // ps1's first romhack (2026-07-31). Without the alias the fallback chain reached past
+            // libretro to a franchise-title search and returned the NES "Castlevania" box — confidently
+            // wrong art on a PS1 card, the exact failure this table exists to prevent.
+            ["ps1|castlevaniarondoofthenight"] = "Castlevania - Symphony of the Night (USA)",
+            // Fifth romhack round (2026-07-31). Only the hacks that NO cover DB can reach get a base-game
+            // alias — SteamGridDB carries real hack-specific covers for Waluigi's Taco Stand, Conker's High
+            // Rule Tail, EarthBound Halloween Hack and Pokemon Kart 64, and an alias here would preempt them.
+            // These three need it, and two of them need it defensively: SteamGridDB's prefix rule matches
+            // "TMNT Shredder's Re-Revenge" to the unrelated 2007 "TMNT", so without an alias the card would
+            // get a confidently-wrong box.
+            ["genesis|tmntshreddersrerevenge"] = "Streets of Rage 2 (USA)",
+            ["n64|zeldasbirthday"] = "Legend of Zelda, The - Ocarina of Time (USA)",
+            ["nes|wilfordbrimleybattle"] = "River City Ransom (USA)",
         };
 
         /// <summary>The aliased libretro filename for a card, or null.</summary>
