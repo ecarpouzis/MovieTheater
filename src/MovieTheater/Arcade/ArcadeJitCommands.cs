@@ -468,7 +468,13 @@ namespace MovieTheater.Arcade
 
             var outFull = Path.GetFullPath(OutPath);
             Directory.CreateDirectory(Path.GetDirectoryName(outFull)!);
-            await File.WriteAllTextAsync(outFull, json);
+            // ATOMIC publish. The gateway hot-reloads this file on mtime, so writing ~10 MB in place gave
+            // it a window to read a half-written manifest — a parse failure there used to strand the
+            // gateway on a stale catalog (RomCache.LoadManifest). Write a temp file and move it into
+            // place: NTFS makes the replace atomic, so a reader sees only the old or the new file.
+            var tmp = outFull + ".tmp";
+            await File.WriteAllTextAsync(tmp, json);
+            File.Move(tmp, outFull, overwrite: true);
 
             int withDeps = games.Count(x => x.Deps is { Length: > 0 });
             int depRefs = games.Sum(x => x.Deps?.Length ?? 0);

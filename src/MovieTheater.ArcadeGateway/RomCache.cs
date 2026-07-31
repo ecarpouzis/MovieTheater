@@ -139,7 +139,18 @@ public sealed class RomCache
         MaybeReloadManifest();
         ManifestGame? g;
         lock (gate) { byId.TryGetValue(gameId, out g); }
-        if (g is null) return; // directly-staged (non-JIT) game — nothing to do
+        if (g is null)
+        {
+            // For a fire-and-forget stage job this is a contradiction: BeginMaterialize only starts one
+            // after IsManaged() said yes, so the entry vanished underneath us (a manifest reload landing
+            // mid-job — e.g. a re-export while this game was staging). Returning quietly makes the job
+            // "succeed" having done nothing, which is precisely what wedges the client on a spinner.
+            // Fail loudly instead so it is logged, surfaced as Failed, and retried.
+            if (job is not null)
+                throw new InvalidOperationException(
+                    $"game {gameId} left the JIT manifest while it was being prepared");
+            return; // directly-staged (non-JIT) game — nothing to do
+        }
 
         KickStaleSweep(); // a game is being launched — opportunistically drop long-cold ones (off critical path)
 
@@ -204,7 +215,13 @@ public sealed class RomCache
         public Task? Task;
         public long Done, Total;
         public string? Error;
+        public int Attempts;
     }
+
+    /// <summary>How many no-op preparations to retry before calling a game unpreparable. A retry is only
+    /// ever reached when a job FINISHED and left no ROM and no error, which should be impossible — the cap
+    /// exists so a genuinely broken game surfaces an error instead of re-staging forever.</summary>
+    private const int MaxStageAttempts = 3;
 
     /// <summary>Where this game's ROM is: already staged, being prepared (with progress), or failed.</summary>
     public StageStatus Status(int gameId)
@@ -219,6 +236,19 @@ public sealed class RomCache
         {
             if (!jobs.TryGetValue(gameId, out var j)) return new StageStatus(StageState.Absent, 0, null);
             if (j.Error is not null) return new StageStatus(StageState.Failed, 0, j.Error);
+
+            // A FINISHED job that left no ROM and recorded no error did nothing. Reporting Preparing here
+            // wedges the game forever: the client polls a spinner that can never resolve, and
+            // BeginMaterialize won't start another job because Status never says Absent again — only a
+            // gateway restart clears it (seen live 2026-07-31, a PS1 romhack stuck at "Preparing game..."
+            // through four rooms). Report Absent so the next poll re-stages, bounded so a truly broken
+            // game becomes a visible error rather than an endless retry.
+            if (j.Task is { IsCompleted: true })
+                return j.Attempts >= MaxStageAttempts
+                    ? new StageStatus(StageState.Failed, 0,
+                        $"ROM preparation ran {j.Attempts}x without producing {g.GameKey}.")
+                    : new StageStatus(StageState.Absent, 0, null);
+
             var pct = j.Total > 0 ? (int)Math.Clamp(j.Done * 100 / j.Total, 0, 99) : 0;
             return new StageStatus(StageState.Preparing, pct, null);
         }
@@ -235,7 +265,9 @@ public sealed class RomCache
         lock (gate)
         {
             if (jobs.TryGetValue(gameId, out var existing) && existing.Task is { IsCompleted: false }) return;
-            var job = new StageJob();
+            // Carry the attempt count across re-stages so Status can stop retrying a game that never
+            // materializes, instead of restarting the same no-op job on every poll.
+            var job = new StageJob { Attempts = (existing?.Attempts ?? 0) + 1 };
             jobs[gameId] = job;
             job.Task = Task.Run(async () =>
             {
@@ -977,7 +1009,11 @@ public sealed class RomCache
         {
             var path = opt.ManifestPath!;
             if (!File.Exists(path)) { log.LogWarning("RomCache manifest not found: {Path}", path); return; }
-            manifestMtime = File.GetLastWriteTimeUtc(path);
+            // Stamp BEFORE reading (so a write landing mid-read is still seen as newer next tick) but
+            // COMMIT the stamp only after a successful parse — assigning it up front meant a partial or
+            // corrupt read consumed the mtime, and MaybeReloadManifest then never retried: the gateway
+            // would serve a stale catalog until it was restarted.
+            var stamp = File.GetLastWriteTimeUtc(path);
             var m = JsonSerializer.Deserialize<Manifest>(File.ReadAllText(path),
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             lock (gate)
@@ -985,6 +1021,7 @@ public sealed class RomCache
                 byId.Clear();
                 foreach (var g in m?.Games ?? new()) byId[g.GameId] = g;
             }
+            manifestMtime = stamp;
             log.LogInformation("RomCache loaded {Count} JIT game(s) from {Path}", byId.Count, path);
         }
         catch (Exception ex) { log.LogError(ex, "RomCache failed to load manifest"); }
