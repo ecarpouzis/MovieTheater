@@ -328,6 +328,11 @@ namespace MovieTheater.Controllers
                     title,
                     system = k.System,
                     artId = artRow?.Id ?? rep?.Id ?? 0,
+                    // Cache-busting token for that cover — see ArcadeBoxArt.ArtVersion. Taken from artRow,
+                    // the same row /ArcadeImage resolves its bytes from, so the token moves exactly when the
+                    // art does. Without it a re-pointed cover stays stale in every browser that already
+                    // loaded the card, for a day, through hard reloads included.
+                    artV = ArcadeBoxArt.ArtVersion(artRow?.BoxArtSourceUrl, artRow?.BoxArtPath),
                     hasBoxArt = vs.Any(g => g.BoxArtPath != null),
                     year = rep?.Year ?? meta?.Year,
                     maxPlayers = versions.Count > 0 ? versions.Max(v => v.MaxPlayers) : (byte)1,

@@ -122,7 +122,7 @@ namespace MovieTheater.Controllers
                             }
                             catch { /* couldn't cache (mount read-only?) — still serve what we fetched */ }
                         }
-                        Response.Headers["Cache-Control"] = "public, max-age=86400";
+                        Response.Headers["Cache-Control"] = CachePolicy();
                         return File(bytes, "image/png");
                     }
                 }
@@ -205,17 +205,28 @@ namespace MovieTheater.Controllers
                 }
                 catch { /* couldn't cache (mount read-only?) — still serve the bytes we fetched */ }
             }
-            Response.Headers["Cache-Control"] = "public, max-age=86400";
+            Response.Headers["Cache-Control"] = CachePolicy();
             return File(thumb, "image/png");
         }
 
         // 8 hex chars of SHA-1 over the source URL — enough to make the cache filename change whenever the
         // URL does, which is what lets a corrected BoxArtSourceUrl retire the file the old one wrote.
-        private static string ShortHash(string s)
-        {
-            var bytes = System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(s));
-            return Convert.ToHexString(bytes, 0, 4).ToLowerInvariant();
-        }
+        private static string ShortHash(string s) => ArcadeBoxArt.ShortHash(s);
+
+        // How long a client may hold this cover.
+        //
+        // A request carrying ?v= is addressed by CONTENT: the lobby derives that token from the same fields
+        // that decide which bytes we serve (ArcadeBoxArt.ArtVersion), so re-pointing a card's art changes the
+        // URL and the old cache entry is simply never asked for again. That earns a much longer life than the
+        // bare URL, which is stable forever and so can only be trusted for a day.
+        //
+        // Deliberately a week rather than a year+immutable: the token moves for everything the site itself
+        // does (a BoxArtSourceUrl edit, a first cascade fetch), but the bulk CLIs — arcade-boxart --overwrite,
+        // arcade-igdb — rewrite {cardId}.png IN PLACE and leave BoxArtPath untouched, so a re-run swaps the
+        // bytes without moving the token. A week bounds how long that case can look stale; `immutable` would
+        // make it permanent. Any tool that changes a card's art should write a NEW filename.
+        private string CachePolicy() =>
+            Request.Query.ContainsKey("v") ? "public, max-age=604800" : "public, max-age=86400";
 
         // Resolve a stored-relative path under the posters root, rejecting traversal ("../") escapes.
         private static string? ResolveUnderRoot(string root, string rel)
@@ -230,7 +241,7 @@ namespace MovieTheater.Controllers
         {
             var etag = $"\"{System.IO.File.GetLastWriteTimeUtc(full).Ticks}\"";
             if (Request.Headers.TryGetValue("If-None-Match", out var inm) && inm == etag) return StatusCode(304);
-            Response.Headers["Cache-Control"] = "public, max-age=86400";
+            Response.Headers["Cache-Control"] = CachePolicy();
             Response.Headers["ETag"] = etag;
             return PhysicalFile(full, ContentTypeFor(full));
         }

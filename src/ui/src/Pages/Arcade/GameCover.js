@@ -53,6 +53,12 @@ export function coverBox(aspect, height, maxWidth) {
  */
 function GameCover({ game, artId, height, maxWidth, className = "" }) {
   const id = artId ?? game?.artId;
+  // Cache-bust the cover URL with the card's art token (API: artV, from ArcadeBoxArt.ArtVersion). The
+  // covers are lazy, and a lazily-fetched image takes the ordinary cache path even on a hard reload — so
+  // with a bare /ArcadeImage/{id} a re-pointed cover stays stale in every browser that already has it.
+  // Moving the token moves the URL, which is the only reliable way to retire the old entry. Surfaces that
+  // don't send one (room + save tiles) simply keep the plain URL and its shorter max-age.
+  const src = game?.artV ? `/ArcadeImage/${id}?v=${game.artV}` : `/ArcadeImage/${id}`;
   const [aspect, setAspect] = useState(() => getCoverAspect(id));
   const [broken, setBroken] = useState(() => !canHaveArt(game));
 
@@ -75,7 +81,7 @@ function GameCover({ game, artId, height, maxWidth, className = "" }) {
     <div className={`arcade-cover ${className}`} style={coverBox(aspect, height, maxWidth)}>
       <img
         className="arcade-cover__img"
-        src={`/ArcadeImage/${id}`}
+        src={src}
         alt=""
         loading="lazy"
         decoding="async"

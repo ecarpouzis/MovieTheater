@@ -342,6 +342,18 @@ describe("GameCover — natural aspect on a shared height", () => {
     expect(getCoverAspect(999)).toBeNull();
   });
 
+  it("cache-busts the cover URL with the card's art token", () => {
+    // The covers are lazy, and a lazy image is served from the browser cache even through a hard reload
+    // — so a re-pointed cover can only be retired by changing the URL. artV moves when the art does.
+    const { container } = render(<GameCover game={game({ artV: "920cfbba" })} height={168} />);
+    expect(container.querySelector(".arcade-cover__img").getAttribute("src")).toBe("/ArcadeImage/42?v=920cfbba");
+  });
+
+  it("still requests the plain URL where no token is sent (room + save tiles)", () => {
+    const { container } = render(<GameCover game={game()} artId={7} height={64} />);
+    expect(container.querySelector(".arcade-cover__img").getAttribute("src")).toBe("/ArcadeImage/7");
+  });
+
   it("falls back to a labelled placeholder for a system with no box art", () => {
     const { container } = render(<GameCover game={game({ system: "naomi", hasBoxArt: false })} height={168} maxWidth={150} />);
     expect(container.querySelector(".arcade-cover--empty")).toBeTruthy();

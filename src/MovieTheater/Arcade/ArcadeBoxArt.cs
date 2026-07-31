@@ -244,5 +244,27 @@ namespace MovieTheater.Arcade
             img.Save(ms, new PngEncoder { CompressionLevel = PngCompressionLevel.BestCompression });
             return ms.ToArray();
         }
+
+        /// <summary>8 hex chars of SHA-1 — short enough for a filename or a query string, wide enough that
+        /// two different inputs won't collide in a 49k-row catalog.</summary>
+        public static string ShortHash(string s)
+        {
+            var bytes = System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(s));
+            return Convert.ToHexString(bytes, 0, 4).ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Cache-busting token for a card's cover, sent to the client as <c>/ArcadeImage/{id}?v={token}</c>.
+        /// <para>Without it the cover URL is stable for the life of the row, so a browser that cached the old
+        /// art keeps serving it until the max-age expires — and because the covers are <c>loading="lazy"</c>,
+        /// not even a hard reload dislodges them (a forced reload only revalidates what it requests during the
+        /// reload; a lazy image fetched later on scroll takes the ordinary cache path). Deriving the token
+        /// from the fields that decide WHICH bytes get served means changing the art changes the URL.</para>
+        /// <para>Both inputs matter: <c>BoxArtSourceUrl</c> is step 0 of the image route and outranks the
+        /// cache, and <c>BoxArtPath</c> covers the cascade — NULL until the first fetch, then the file it
+        /// wrote. Setting a source URL moves both (the fetch is cached under a URL-hashed filename).</para>
+        /// </summary>
+        public static string ArtVersion(string? boxArtSourceUrl, string? boxArtPath) =>
+            ShortHash(boxArtSourceUrl ?? boxArtPath ?? "");
     }
 }
