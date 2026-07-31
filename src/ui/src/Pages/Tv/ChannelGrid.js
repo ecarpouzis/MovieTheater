@@ -10,6 +10,18 @@ function clockLabel(ms) {
   return new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+// What a channel is showing at `atMs`: the airing program, or the next one up if it's between
+// programs. The lineup reaches into the past now, so items[0] can be something that already
+// ended — never call that "now"; a lineup entirely behind us means the channel is off air.
+function nowPlaying(items, atMs) {
+  if (!items?.length) return null;
+  return (
+    items.find((p) => Date.parse(p.startUtc) <= atMs && atMs < Date.parse(p.endUtc)) ||
+    items.find((p) => Date.parse(p.endUtc) > atMs) ||
+    null
+  );
+}
+
 /**
  * The cross-channel grid guide (EPG): channels down the side, time across the top, each program a
  * block sized by its runtime, with a live "now" line and the airing portion shaded. Clicking any
@@ -48,13 +60,19 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
       for (const c of data.items || []) byId.set(c.id, c);
       const serverNow = Date.parse(data.serverNowUtc);
       skewRef.current = Number.isFinite(serverNow) ? serverNow - Date.now() : 0;
-      setLineup({ serverNowUtc: data.serverNowUtc, hours: data.hours || 6, byId });
+      setLineup({
+        serverNowUtc: data.serverNowUtc,
+        hours: data.hours || 6,
+        lookbackMinutes: data.lookbackMinutes ?? 30,
+        byId,
+      });
 
       // Preload every channel's now-playing poster up front (~121 small thumbs, one per row) so
       // scrolling the guide never snaps a poster in. "auto" priority — here the posters are the content.
+      const at = Number.isFinite(serverNow) ? serverNow : Date.now();
       preloadImages(
         (data.items || [])
-          .map((c) => { const np = c.items?.[0]; return np?.posterId ? MovieAPI.getPosterThumbnail(np.posterId, np.posterVersion, np.kind) : null; })
+          .map((c) => { const np = nowPlaying(c.items, at); return np?.posterId ? MovieAPI.getPosterThumbnail(np.posterId, np.posterVersion, np.kind) : null; })
           .filter(Boolean),
         "auto"
       );
@@ -113,15 +131,24 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
   // fetched horizon so no program is clipped on the right.
   const win = useMemo(() => {
     const hours = lineup?.hours || 6;
+    const lookbackMin = lineup?.lookbackMinutes ?? 30;
     const serverNow = lineup ? Date.parse(lineup.serverNowUtc) : Date.now() + skewRef.current;
-    const start = new Date(serverNow);
-    start.setMinutes(start.getMinutes() < 30 ? 0 : 30, 0, 0);
-    const startMs = start.getTime();
+    const floor = new Date(serverNow);
+    floor.setMinutes(floor.getMinutes() < 30 ? 0 : 30, 0, 0);
+    // Never open the window earlier than the lineup we actually fetched. The strip left of "now" has to
+    // be backed by programs on every channel — where it isn't, only the rows whose current program began
+    // before the window fill to the edge and the rest start at a ragged x (the growing black gap).
+    const startMs = Math.max(floor.getTime(), serverNow - lookbackMin * MS_PER_MIN);
     const endMs = serverNow + hours * 60 * MS_PER_MIN;
     const totalMin = (endMs - startMs) / MS_PER_MIN;
+    // Ticks sit on real clock half hours rather than at multiples of the window start, so the labels stay
+    // ":00 / :30" even when the clamp above pulls the window start off the half hour.
     const ticks = [];
-    for (let m = 0; m <= totalMin; m += 30) {
-      ticks.push({ pct: (m / totalMin) * 100, label: clockLabel(startMs + m * MS_PER_MIN) });
+    const firstTick = new Date(startMs);
+    firstTick.setSeconds(0, 0);
+    firstTick.setMinutes(firstTick.getMinutes() <= 0 ? 0 : firstTick.getMinutes() <= 30 ? 30 : 60);
+    for (let ms = firstTick.getTime(); ms <= endMs; ms += 30 * MS_PER_MIN) {
+      ticks.push({ pct: ((ms - startMs) / MS_PER_MIN / totalMin) * 100, label: clockLabel(ms) });
     }
     return { startMs, endMs, totalMin, ticks };
   }, [lineup]);
@@ -202,12 +229,9 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
             const row = lineup?.byId.get(ch.id);
             const isCurrent = ch.id === currentChannelId;
             // The truly-airing program (a long movie that started before the window has its block
-            // scrolled off the left, so this is the only place its title/plot stays readable). Falls
-            // back to the first listed item, which also supplies the poster/kind.
-            const np = row?.items?.find((p) => {
-              const s = Date.parse(p.startUtc), e = Date.parse(p.endUtc);
-              return s <= nowMs && nowMs < e;
-            }) || row?.items?.[0];
+            // scrolled off the left, so this is the only place its title/plot stays readable). It also
+            // supplies the poster/kind.
+            const np = nowPlaying(row?.items, nowMs);
             return (
               <div key={ch.id} className={`epg-row${isCurrent ? " epg-row--current" : ""}`}>
                 <button className="epg-chan" onClick={() => onPick(ch)} title={np ? `${ch.name} — now: ${np.title}` : `Watch ${ch.name}`}>
@@ -254,11 +278,16 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
                     const width = pct(endMs) - left;
                     if (width <= 0) return null;
                     const live = startMs <= nowMs && nowMs < endMs;
-                    const elapsedPct = live ? ((nowMs - startMs) / (endMs - startMs)) * 100 : 0;
+                    // Shade against the *drawn* span, not the program's true one — a block that began
+                    // before the window is clipped at the left edge, so its real start would overstate
+                    // how far the bar has filled and push the shading past the now line.
+                    const drawnStart = Math.max(startMs, win.startMs);
+                    const drawnEnd = Math.min(endMs, win.endMs);
+                    const elapsedPct = live ? ((nowMs - drawnStart) / (drawnEnd - drawnStart)) * 100 : 0;
                     return (
                       <button
                         key={i}
-                        className={`epg-prog${live ? " epg-prog--live" : ""}`}
+                        className={`epg-prog${live ? " epg-prog--live" : ""}${endMs <= nowMs ? " epg-prog--past" : ""}`}
                         style={{ left: `${left}%`, width: `${width}%` }}
                         onClick={() => onPick(ch)}
                         title={`${prog.title} · ${clockLabel(startMs)}–${clockLabel(endMs)}`}

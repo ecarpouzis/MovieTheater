@@ -519,6 +519,13 @@ namespace MovieTheater.Controllers
         // count — a cold channel just fills in on a later refresh once the maintainer has warmed it.
         private const int MaxColdCeilingsPerRequest = 8;
 
+        // The grid guide starts its window at the previous half hour (clean tick labels), so it needs the
+        // lineup to reach that far back — otherwise the strip left of "now" holds only the channels whose
+        // current program happened to start before the half hour, and every other row begins at a ragged
+        // x. Read that much history and the left edge is flush. The client is told the value so the two
+        // windows can't drift apart.
+        private const int GuideLookbackMinutes = 30;
+
         /// <summary>
         /// Cross-channel "what's on everywhere" for the grid guide (the EPG): every visible channel keyed
         /// by id, with its lineup across a window from now. Designed to scale to many channels — it's a
@@ -537,6 +544,7 @@ namespace MovieTheater.Controllers
             var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
             hours = Math.Clamp(hours, 1, 24);
             var now = DateTime.UtcNow;
+            var since = now.AddMinutes(-GuideLookbackMinutes);
             var until = now.AddHours(hours);
 
             var channels = (await movieDb.Channels
@@ -569,7 +577,7 @@ namespace MovieTheater.Controllers
             }
 
             // One bulk query for the whole window across all visible channels, then one for titles.
-            var windowed = await scheduleService.WindowedItemsAsync(visibleIds, now, until);
+            var windowed = await scheduleService.WindowedItemsAsync(visibleIds, since, until);
             var titles = await TitlesForAsync(windowed.Values.SelectMany(list => list.Select(i => i.PlayableId)));
 
             var pausedIds = channels.Where(c => c.PausedAtUtc != null).Select(c => c.Id).ToHashSet();
@@ -609,7 +617,7 @@ namespace MovieTheater.Controllers
                 logger.LogWarning("Channel GuideGrid slow: {Ms}ms ({Visible} of {Total} channels, {Cold} cold ceilings computed)",
                     sw.ElapsedMilliseconds, visibleIds.Count, channels.Count, MaxColdCeilingsPerRequest - coldBudget);
             // serverNowUtc lets the client align the "now" line to the server clock, not the browser's.
-            return Json(new { serverNowUtc = now, hours, items = result });
+            return Json(new { serverNowUtc = now, hours, lookbackMinutes = GuideLookbackMinutes, items = result });
         }
 
         // ───────────────────────── User playlists & watch parties ─────────────────────────
