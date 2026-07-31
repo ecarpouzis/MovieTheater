@@ -11,8 +11,11 @@ import SavesManager from "./SavesManager";
 import SavesVaultManager from "./SavesVaultManager";
 import RetroAchievementsModal from "./RetroAchievementsModal";
 import ArcadePager from "./ArcadePager";
+import ConsoleCarousel from "./ConsoleCarousel";
 import { rememberLobbySearch } from "./arcadeLobbyState";
 import { hasSaveStates, QUICK_SLOT } from "./arcadeSystems";
+import useArcadeFilters from "./useArcadeFilters";
+import { parseSystems, toggleSystem, SYSTEM_PARAM } from "./arcadeSystemFilter";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 import useGridWindow from "../../hooks/useGridWindow";
 import "./ArcadePage.css";
@@ -162,6 +165,24 @@ export default function ArcadePage({ userData }) {
 
   // Stash the filtered lobby URL so the room's exit buttons can come back to it (arcadeLobbyState).
   useEffect(() => { rememberLobbySearch(location.search); }, [location.search]);
+
+  // The console carousel writes the same ?system= param the rail's dropdown does — the URL is the one
+  // source of truth, so the two surfaces can never disagree about what's picked. Facets come from the
+  // shared hook, so the rail and the shelf make ONE request between them rather than one each.
+  const facets = useArcadeFilters(filters);
+  const selectedSystems = parseSystems(location.search);
+
+  const setSystems = useCallback((next) => {
+    const params = new URLSearchParams(location.search);
+    const value = next.join(",");
+    if (value) params.set(SYSTEM_PARAM, value); else params.delete(SYSTEM_PARAM);
+    history.push({ pathname: "/arcade", search: params.toString() ? `?${params.toString()}` : "" });
+  }, [history, location.search]);
+
+  const onToggleSystem = useCallback(
+    (system) => setSystems(toggleSystem(parseSystems(location.search), system)),
+    [setSystems, location.search],
+  );
 
   /**
    * Load `pageSize` cards starting at absolute catalog index `skip`.
@@ -481,6 +502,13 @@ export default function ArcadePage({ userData }) {
             </div>
           </div>
         </header>
+
+        <ConsoleCarousel
+          systems={facets?.systems}
+          selected={selectedSystems}
+          onToggle={onToggleSystem}
+          onClear={() => setSystems([])}
+        />
 
         <RecentlyPlayed rows={recentGames} onOpen={openGame} />
 

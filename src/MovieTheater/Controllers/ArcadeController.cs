@@ -132,6 +132,16 @@ namespace MovieTheater.Controllers
                 ? new List<string>()
                 : hideRegions.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
+        // The systems the user has switched ON (comma-separated). Empty = no system filter = every system,
+        // which is what an untouched lobby sends. The console carousel toggles several at once, so this
+        // grew from a single value to a set — a bare "?system=nes" is still exactly one-element list, which
+        // is what keeps every link and bookmark minted before the carousel working unchanged.
+        private static List<string> ParseSystems(string system) =>
+            string.IsNullOrWhiteSpace(system)
+                ? new List<string>()
+                : system.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(s => s.ToLowerInvariant()).Distinct().ToList();
+
         // Our hand-curated romhack/mod pile (L:\4 - Software\Romhacks, sorted per-system — see
         // arcade-jit-ingest usage) as opposed to the tens of thousands of No-Intro/GoodTools-tagged
         // hacks/betas/protos/pirates that live throughout the wider catalog and also carry Variant="Hack"
@@ -146,10 +156,12 @@ namespace MovieTheater.Controllers
         // letter's offset indexes EXACTLY the list Games pages — the moment the two disagree about what
         // matches, every letter jump lands on the wrong card.
         private static IQueryable<ArcadeGame> ApplyCardFilters(
-            IQueryable<ArcadeGame> baseQ, string system, int? maxPlayers, string genre, string search, List<string> hideRegions, string var_, string ra = null)
+            IQueryable<ArcadeGame> baseQ, List<string> systems, int? maxPlayers, string genre, string search, List<string> hideRegions, string var_, string ra = null)
         {
             var matchQ = baseQ;
-            if (!string.IsNullOrWhiteSpace(system)) matchQ = matchQ.Where(g => g.System == system);
+            // Several systems = a UNION (show me SNES *and* Genesis), which is how the carousel reads: each
+            // tile you light up ADDS a console rather than replacing the one before it.
+            if (systems != null && systems.Count > 0) matchQ = matchQ.Where(g => systems.Contains(g.System));
             if (maxPlayers is int mp && mp > 1) matchQ = matchQ.Where(g => g.MaxPlayers >= mp);
             if (!string.IsNullOrWhiteSpace(search)) { var s = search.Trim(); matchQ = matchQ.Where(g => g.Title.Contains(s)); }
 
@@ -219,9 +231,10 @@ namespace MovieTheater.Controllers
 
             var var_ = NormalizeVariant(variant);
             var hidden = ParseHideRegions(hideRegions);
+            var selectedSystems = ParseSystems(system);
 
             var baseQ = await VisibleGamesAsync(userId.Value);
-            var matchQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, hidden, var_, ra);
+            var matchQ = ApplyCardFilters(baseQ, selectedSystems, maxPlayers, genre, search, hidden, var_, ra);
 
             page = Math.Max(1, page);
             pageSize = Math.Clamp(pageSize, 1, 120);
@@ -456,9 +469,10 @@ namespace MovieTheater.Controllers
 
             var var_ = NormalizeVariant(variant);
             var hidden = ParseHideRegions(hideRegions);
+            var selectedSystems = ParseSystems(system);
 
             var baseQ = await VisibleGamesAsync(userId.Value);
-            var matchQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, hidden, var_, ra);
+            var matchQ = ApplyCardFilters(baseQ, selectedSystems, maxPlayers, genre, search, hidden, var_, ra);
 
             // The same grouping + the same default ordering Games uses, so index i here is card i there.
             // MUST match Games exactly: group by (System, CollapseKey), tie-break on the Min(Title).
@@ -508,14 +522,16 @@ namespace MovieTheater.Controllers
 
             var var_ = NormalizeVariant(variant);
             var hidden = ParseHideRegions(hideRegions);
+            var selectedSystems = ParseSystems(system);
             var baseQ = await VisibleGamesAsync(userId.Value);
 
             // Every facet below (except RA) now honors the current RA filter, so switching systems/regions/etc.
             // stays inside the "games with achievements" scope when that's selected.
-            // Systems facet: everything EXCEPT the system filter (so you can still switch systems). Count CARDS,
-            // not version rows — the grid groups by (System, CollapseKey). "All systems (total)" is this same
-            // scope with no system chosen, so total is exactly this key count.
-            var systemsQ = ApplyCardFilters(baseQ, null, maxPlayers, genre, search, hidden, var_, ra);
+            // Systems facet: everything EXCEPT the system filter, so every console keeps its real catalog
+            // count and stays offered while you pick — that's what lets the console carousel show a stable
+            // shelf instead of the unpicked tiles collapsing to zero. Count CARDS, not version rows: the grid
+            // groups by (System, CollapseKey), and `total` below is exactly this key count.
+            var systemsQ = ApplyCardFilters(baseQ, (List<string>)null, maxPlayers, genre, search, hidden, var_, ra);
             var systemKeys = await systemsQ.Select(g => new { g.System, g.CollapseKey }).Distinct().ToListAsync();
             var systems = systemKeys.GroupBy(k => k.System)
                 .Select(x => new { value = x.Key, count = x.Count() }).OrderByDescending(x => x.count).ToList();
@@ -523,17 +539,17 @@ namespace MovieTheater.Controllers
             // Regions facet: hide NOTHING (empty set) so the dropdown always lists every known region with its
             // full count, regardless of what's currently switched off. Unknown/NULL are dropped — they're never
             // a deselect option (you can only hide regions we positively know).
-            var regionsQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, new List<string>(), var_, ra);
+            var regionsQ = ApplyCardFilters(baseQ, selectedSystems, maxPlayers, genre, search, new List<string>(), var_, ra);
             var regions = await regionsQ.Where(g => g.Region != null && g.Region != "Unknown").GroupBy(g => g.Region)
                 .Select(x => new { value = x.Key, count = x.Count() }).OrderByDescending(x => x.count).ToListAsync();
 
             // Variants facet: everything EXCEPT variant (var_="all").
-            var variantsQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, hidden, "all", ra);
+            var variantsQ = ApplyCardFilters(baseQ, selectedSystems, maxPlayers, genre, search, hidden, "all", ra);
             var variants = await variantsQ.GroupBy(g => g.Variant)
                 .Select(x => new { value = x.Key ?? "Release", count = x.Count() }).OrderByDescending(x => x.count).ToListAsync();
 
             // Genres facet: everything EXCEPT genre. Genres are comma-joined on the anchor, so split + count in memory.
-            var genresQ = ApplyCardFilters(baseQ, system, maxPlayers, null, search, hidden, var_, ra);
+            var genresQ = ApplyCardFilters(baseQ, selectedSystems, maxPlayers, null, search, hidden, var_, ra);
             var genreStrings = await genresQ.Where(g => g.Genres != null).Select(g => g.Genres).ToListAsync();
             var genres = genreStrings
                 .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -542,11 +558,11 @@ namespace MovieTheater.Controllers
                 .OrderByDescending(x => x.count).Take(40).ToList();
 
             // Multiplayer count: the current scope EXCEPT the players filter (its own dimension).
-            var playersQ = ApplyCardFilters(baseQ, system, null, genre, search, hidden, var_, ra);
+            var playersQ = ApplyCardFilters(baseQ, selectedSystems, null, genre, search, hidden, var_, ra);
 
             // RetroAchievements facet: excludes its OWN dimension (ra: null), so each count is "how many cards
             // WOULD show if you picked that RA filter" under the other active filters. Counted as distinct cards.
-            var raScopeQ = ApplyCardFilters(baseQ, system, maxPlayers, genre, search, hidden, var_, null);
+            var raScopeQ = ApplyCardFilters(baseQ, selectedSystems, maxPlayers, genre, search, hidden, var_, null);
             async Task<int> CardCount(IQueryable<ArcadeGame> q) =>
                 await q.Select(g => new { g.System, g.CollapseKey }).Distinct().CountAsync();
             var raFacet = new

@@ -1048,3 +1048,186 @@
     justify-content: space-between;
   }
 }
+
+/* ── Console carousel (system picker above the grid) ──────────────────────── */
+/* A shelf of console thumbnails that writes the same ?system= filter as the rail's dropdown. The
+   tiles are pre-composited images (assets/consoles, built by scripts/console-art), so all this
+   layer does is size them, show selection, and scroll. */
+
+.arcade-consoles__actions {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+}
+
+.arcade-consoles__link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--accent-link);
+  cursor: pointer;
+}
+.arcade-consoles__link:hover { text-decoration: underline; }
+
+.arcade-consoles__viewport {
+  position: relative;
+}
+
+.arcade-consoles__rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  /* Room for the hover lift and focus ring, which would otherwise clip against the scroll box. */
+  padding: 3px 3px 10px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.arcade-console {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 0 2px;
+  background: none;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+
+.arcade-console__art {
+  position: relative;
+  display: block;
+  aspect-ratio: 200 / 130;
+  border-radius: 11px;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  background: var(--tile-base);
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+
+.arcade-console__art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Unpicked consoles sit back a little so the picked ones read as lit rather than merely outlined —
+     the tiles are colourful enough that a border alone doesn't carry the state. */
+  filter: saturate(0.72) brightness(0.82);
+  transition: filter 0.14s ease;
+}
+
+/* A system with no committed tile yet (newly ingested, art not built) still gets a usable button
+   rather than a broken image. */
+.arcade-console__art-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 10px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.arcade-console__tick {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent-solid);
+  color: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 45%);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.arcade-console__name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arcade-console__count {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+@media (hover: hover) {
+  .arcade-console:hover .arcade-console__art {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-hover);
+    border-color: var(--accent);
+  }
+  .arcade-console:hover .arcade-console__art img { filter: none; }
+}
+
+.arcade-console:focus-visible { outline: none; }
+.arcade-console:focus-visible .arcade-console__art {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.arcade-console.is-selected .arcade-console__art {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), var(--card-shadow);
+}
+.arcade-console.is-selected .arcade-console__art img { filter: none; }
+.arcade-console.is-selected .arcade-console__tick { opacity: 1; transform: scale(1); }
+.arcade-console.is-selected .arcade-console__name { color: var(--text-primary); }
+
+/* Scroll arrows: a mouse/touch convenience floating over the ends of the shelf. Hidden entirely on
+   coarse pointers, where swiping is the natural gesture and they'd only cover tiles. */
+.arcade-consoles__nav {
+  position: absolute;
+  top: calc(50% - 14px);
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--card-border);
+  background: var(--card-surface);
+  color: var(--text-secondary);
+  box-shadow: var(--card-shadow-hover);
+  cursor: pointer;
+  transition: opacity 0.14s ease;
+}
+.arcade-consoles__nav--prev { left: -6px; }
+.arcade-consoles__nav--next { right: -6px; }
+.arcade-consoles__nav:disabled { opacity: 0; pointer-events: none; }
+.arcade-consoles__nav:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+
+@media (pointer: coarse) {
+  .arcade-consoles__nav { display: none; }
+}
+
+@media (max-width: 640px) {
+  .arcade-console { flex: 0 0 156px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arcade-console__art,
+  .arcade-console__art img,
+  .arcade-console__tick { transition: none; }
+  .arcade-console:hover .arcade-console__art { transform: none; }
+}
