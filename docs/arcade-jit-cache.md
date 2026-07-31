@@ -74,6 +74,18 @@ the library drive, outside the mount, so it can never match the guard — it is 
    ```
    arcade-romcache-export --out docker/arcade/arcade-romcache.json
    ```
+   `--dat` defaults to `data/arcade/fbneo-arcade.dat` and is now found by searching up from the working
+   directory, so it resolves no matter where you run from (`dotnet run --project src/MovieTheater/…` sets
+   the CWD to the project dir, which used to miss it). The command **fails closed**, writing nothing and
+   exiting non-zero, if either
+   - the FBNeo DAT cannot be loaded (`--allow-no-dat` to override), or
+   - the export carries fewer dependency-archive references than the manifest already on disk
+     (`--allow-fewer-deps` to override).
+
+   Both guards exist because the old behaviour was a warning: a missed DAT still published a manifest,
+   just with **every** FBNeo `romof` closure gone, so arcade games failed at launch with "missing romset"
+   and nothing in the output said so. It recurred three times before being fixed. The healthy numbers to
+   look for are `4269 game(s) carry a romof dependency closure (4566 dep archive reference(s))`.
 3. **Point the gateway at it** (gateway `appsettings` / env). Both keys must be set to enable the cache;
    leave empty to disable (gateway = pure signaling proxy):
    ```

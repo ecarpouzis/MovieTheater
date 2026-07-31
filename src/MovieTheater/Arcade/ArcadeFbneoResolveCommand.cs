@@ -63,6 +63,7 @@ namespace MovieTheater.Arcade
             var w = console.Output;
 
             FbneoDat dat;
+            DatPath = RepoDataPath.Resolve(DatPath);
             try { dat = FbneoDat.Load(DatPath); }
             catch (Exception ex) { w.WriteLine($"Could not load DAT: {ex.Message}"); return; }
 

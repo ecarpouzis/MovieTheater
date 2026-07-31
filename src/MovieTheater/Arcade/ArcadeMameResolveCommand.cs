@@ -64,6 +64,7 @@ namespace MovieTheater.Arcade
             var w = console.Output;
 
             FbneoDat dat;
+            XmlPath = RepoDataPath.Resolve(XmlPath);
             try { dat = FbneoDat.Load(XmlPath); }
             catch (Exception ex) { w.WriteLine($"Could not load listxml: {ex.Message}"); return; }
 

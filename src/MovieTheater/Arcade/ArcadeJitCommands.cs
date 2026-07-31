@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CliFx;
 using CliFx.Attributes;
+using CliFx.Exceptions;
 using CliFx.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using MovieTheater.Console;
@@ -407,8 +408,14 @@ namespace MovieTheater.Arcade
         [CommandOption("out", 'o', Description = "Manifest output path (e.g. docker/arcade/arcade-romcache.json).", IsRequired = true)]
         public string OutPath { get; set; } = default!;
 
-        [CommandOption("dat", Description = "FBNeo Arcade DAT for the arcade/neogeo romof dependency closure. Default data/arcade/fbneo-arcade.dat.")]
+        [CommandOption("dat", Description = "FBNeo Arcade DAT for the arcade/neogeo romof dependency closure. Default data/arcade/fbneo-arcade.dat (found relative to the repo root, wherever you run from).")]
         public string DatPath { get; set; } = "data/arcade/fbneo-arcade.dat";
+
+        [CommandOption("allow-no-dat", Description = "Publish even though the FBNeo DAT could not be loaded. Arcade games then carry NO parent/BIOS closure and can fail with 'missing romset' — only for a catalog with no arcade/neogeo titles.")]
+        public bool AllowNoDat { get; set; }
+
+        [CommandOption("allow-fewer-deps", Description = "Publish even though this export has fewer dependency closures than the manifest already on disk (i.e. you really did disable arcade titles).")]
+        public bool AllowFewerDeps { get; set; }
 
         private readonly IDbContextFactory<MovieDb> dbFactory;
 
@@ -421,12 +428,26 @@ namespace MovieTheater.Arcade
         {
             var w = console.Output;
 
-            // The FBNeo DAT drives the arcade/neogeo dependency closure (romof parent+BIOS zips). Optional:
-            // without it, non-arcade systems still export fine, but arcade games get no closure and can hit
-            // "missing romset" at launch — so warn loudly.
+            // The FBNeo DAT drives the arcade/neogeo dependency closure (romof parent+BIOS zips). It used to
+            // be optional-with-a-warning, and that was the bug: a DAT the command failed to find still
+            // published a manifest, just with every closure silently gone, so arcade games hit "missing
+            // romset" at launch and nothing anywhere said so. FAIL CLOSED instead — this file is committed
+            // to the repo, so not finding it is a mistake, never a state worth publishing over.
             FbneoDat? dat = null;
-            try { dat = FbneoDat.Load(DatPath); w.WriteLine($"FBNeo DAT v{dat.Version} ({dat.Count} games) loaded for romof closure."); }
-            catch (Exception ex) { w.WriteLine($"WARNING: no FBNeo DAT ({ex.Message}) — arcade games will get NO dependency closure (may fail with 'missing romset')."); }
+            var datPath = RepoDataPath.Resolve(DatPath);
+            try { dat = FbneoDat.Load(datPath); w.WriteLine($"FBNeo DAT v{dat.Version} ({dat.Count} games) loaded for romof closure."); }
+            catch (Exception ex) when (AllowNoDat)
+            {
+                w.WriteLine($"WARNING: no FBNeo DAT ({ex.Message}) — arcade games will get NO dependency closure (may fail with 'missing romset'). Publishing anyway (--allow-no-dat).");
+            }
+            catch (Exception ex)
+            {
+                throw new CommandException(
+                    $"FBNeo DAT could not be loaded from '{datPath}': {ex.Message}\n" +
+                    "Refusing to write the manifest: without it every arcade/neogeo game loses its parent/BIOS\n" +
+                    "closure and fails at launch with 'missing romset'.\n" +
+                    "Pass --dat with the absolute path, or --allow-no-dat if this catalog genuinely has no arcade titles.", 1);
+            }
 
             await using var db = await dbFactory.CreateDbContextAsync();
 
@@ -467,6 +488,20 @@ namespace MovieTheater.Arcade
             var json = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true });
 
             var outFull = Path.GetFullPath(OutPath);
+
+            // REGRESSION GUARD. The DAT check above catches the one failure we know about; this catches the
+            // shape of it. Publishing here OVERWRITES a live artifact the gateway reads, and a manifest that
+            // lost its closures looks identical to a good one from the outside — so compare against what is
+            // already on disk and refuse to make it strictly worse. Losing closures is a real change only
+            // when arcade titles were deliberately disabled, which is what --allow-fewer-deps is for.
+            int newDepRefs = games.Sum(x => x.Deps?.Length ?? 0);
+            int oldDepRefs = ExistingDepRefs(outFull);
+            if (oldDepRefs > newDepRefs && !AllowFewerDeps)
+                throw new CommandException(
+                    $"Refusing to overwrite {outFull}: it carries {oldDepRefs} dependency archive reference(s), this export has only {newDepRefs}.\n" +
+                    "That is what a lost FBNeo DAT looks like, and the published manifest gives no sign of it.\n" +
+                    "Re-run with --dat pointing at data/arcade/fbneo-arcade.dat, or pass --allow-fewer-deps if the drop is intended.", 1);
+
             Directory.CreateDirectory(Path.GetDirectoryName(outFull)!);
             // ATOMIC publish. The gateway hot-reloads this file on mtime, so writing ~10 MB in place gave
             // it a window to read a half-written manifest — a parse failure there used to strand the
@@ -477,9 +512,22 @@ namespace MovieTheater.Arcade
             File.Move(tmp, outFull, overwrite: true);
 
             int withDeps = games.Count(x => x.Deps is { Length: > 0 });
-            int depRefs = games.Sum(x => x.Deps?.Length ?? 0);
             w.WriteLine($"Wrote {games.Count} JIT game(s) → {outFull}");
-            w.WriteLine($"  {withDeps} game(s) carry a romof dependency closure ({depRefs} dep archive reference(s)).");
+            w.WriteLine($"  {withDeps} game(s) carry a romof dependency closure ({newDepRefs} dep archive reference(s)).");
+        }
+
+        /// <summary>Dependency-archive references in the manifest already at <paramref name="path"/>, or 0 if
+        /// there is no readable one (a first export, or a file too corrupt to compare against — neither is a
+        /// regression, so both let the write proceed).</summary>
+        private static int ExistingDepRefs(string path)
+        {
+            try
+            {
+                if (!File.Exists(path)) return 0;
+                var prior = JsonSerializer.Deserialize<Manifest>(File.ReadAllText(path));
+                return prior?.Games?.Sum(g => g.Deps?.Length ?? 0) ?? 0;
+            }
+            catch { return 0; }
         }
 
         // The extract folder = the first path segment of the expected RomPath ("psx/Foo.cue" → "psx").
@@ -788,9 +836,9 @@ namespace MovieTheater.Arcade
         public async ValueTask ExecuteAsync(IConsole console)
         {
             var w = console.Output;
-            var iniFull = Path.GetFullPath(IniPath);
+            var iniFull = Path.GetFullPath(RepoDataPath.Resolve(IniPath));
             if (!File.Exists(iniFull)) { w.WriteLine($"Targets ini not found: {iniFull}"); return; }
-            var hooksFull = Path.GetFullPath(HooksDir);
+            var hooksFull = Path.GetFullPath(RepoDataPath.Resolve(HooksDir));
 
             var targets = ParseTargets(iniFull)
                 .OrderBy(t => t.Target, StringComparer.Ordinal)

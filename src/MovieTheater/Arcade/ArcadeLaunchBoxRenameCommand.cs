@@ -113,7 +113,7 @@ namespace MovieTheater.Arcade
             using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
             http.DefaultRequestHeaders.UserAgent.ParseAdd("MovieTheater-arcade-launchbox-rename/1.0");
 
-            var zipPath = await LaunchBoxMetadata.EnsureDumpAsync(http, Zip, Refresh, w.WriteLine);
+            var zipPath = await LaunchBoxMetadata.EnsureDumpAsync(http, RepoDataPath.Resolve(Zip), Refresh, w.WriteLine);
             var index = LaunchBoxMetadata.BuildNameIndex(zipPath, w.WriteLine);
 
             var mapped = new HashSet<string>(LaunchBoxMetadata.PlatformToSystem.Values, StringComparer.Ordinal);

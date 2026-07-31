@@ -17,10 +17,10 @@ namespace MovieTheater
         private readonly MovieTheaterConfiguration config;
         private readonly ILogger logger;
 
-        public static async Task Main()
+        public static async Task<int> Main()
         {
             var p = new Program();
-            await p.RunAsync();
+            return await p.RunAsync();
         }
 
         private Program()
@@ -36,7 +36,16 @@ namespace MovieTheater
             logger = serviceProvider.GetRequiredService<ILogger<Program>>();
         }
 
-        private async Task RunAsync()
+        /// <summary>Runs the CLI and returns its PROCESS EXIT CODE.</summary>
+        /// <remarks>
+        /// CliFx handles a <c>CommandException</c> itself — it prints the message and RETURNS the exit code
+        /// rather than throwing — so the <c>catch</c> below never sees one. This used to discard
+        /// <c>app.RunAsync()</c>'s result and return <c>Task</c>, which meant EVERY command reported success
+        /// no matter how it ended: a command that deliberately refused to act (e.g. arcade-romcache-export's
+        /// dependency-closure guard) exited 0 and any driver script sailed straight past it. Propagate the
+        /// code, and only claim success when it is actually 0.
+        /// </remarks>
+        private async Task<int> RunAsync()
         {
             var app = new CliApplicationBuilder()
                 .AddCommandsFromThisAssembly()
@@ -46,13 +55,15 @@ namespace MovieTheater
             try
             {
                 logger.LogInformation("Beginning command");
-                await app.RunAsync();
-                logger.LogInformation("Command completed successfully");
+                var exitCode = await app.RunAsync();
+                if (exitCode == 0) logger.LogInformation("Command completed successfully");
+                else logger.LogError("Command failed with exit code {ExitCode}", exitCode);
+                return exitCode;
             }
             catch (Exception e)
             {
                 logger.LogCritical(e, "Unhandled exception");
-                Environment.Exit(1);
+                return 1;
             }
         }
 
