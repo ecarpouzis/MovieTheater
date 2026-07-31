@@ -261,6 +261,30 @@ gateway's `ArcadeSaveId.TryParse` handles the `-`-containing system cleanly.
 options when you switch. The catalog is keyed by CORE, seeded from the embedded `core-options-catalog.json`
 (185 quality-relevant options across 15 cores, extracted from each core's `libretro_core_options.h`).
 
+### "Default" means TWO different things — say which (2026-07-31)
+
+The Start-room dropdown marked the **system** default (`RenderProfile.IsDefault`) with "— default" on every
+game, including games configured onto a different core. SM64: Last Impact has been pinned to
+`parallel_n64_glide64` since the Glide64 work, and the menu still read
+`mupen64plus-next · Vulkan (paraLLEl-RDP) — default` — so the one place that names a default named the
+wrong one, and there was no way to tell what Start would boot without opening ⚙ Configure and inferring it.
+
+- **One resolver, three surfaces.** `ArcadeController.EffectiveRenderProfile(system, savedId, savedHwContext)`
+  mirrors the launch precedence (saved profile id → legacy bare `HwContext` pin → system default) and returns
+  `FromGame` alongside the profile. The card DTO (`versions[].renderProfile/renderProfileLabel/
+  renderProfileFromGame`), the config panel, and the room launch now all answer from it, so the menu cannot
+  drift from what boots. A **stale** saved id reports `FromGame=false` — it falls through to the default at
+  launch too, and claiming otherwise would be the same lie in a new place.
+- **Game modal:** the effective entry is marked `✓ … — this game's setting` / `✓ … — system default`, and the
+  footer states the live core/renderer next to Start (⚙-prefixed when it's the game's own).
+- **`RenderProfile = null` is a real state and is now reachable.** PUT used to store the *resolved* id, so
+  saving any unrelated option pinned the game to whatever the default was that day — invisibly, and it would
+  stop tracking a later change to the system default. The config panel's Graphics selector now leads with
+  **"System default — <label>"** (value `""` → stored `null`, and `HwContext` clears with it, since it is the
+  legacy form of the same pin), marks the default entry in the list, and prints which of the two states the
+  game is in. Existing rows written by the old behaviour still read as pinned, because they are — clear one
+  by picking "System default" and saving.
+
 ### Deploy checklist (this touches the live emulation stack)
 1. **Worker + coordinator:** rebuild from the fork (`D:\Arcade\build\cloud-game-gl`, UCRT64 `go build`),
    regenerate `docker/arcade/patches/fork.patch` via `scripts/export-arcade-fork.ps1`, drain rooms, stop

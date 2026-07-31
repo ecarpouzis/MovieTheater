@@ -80,12 +80,26 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
     onStart(sel, game.title, competitive ? [] : cheats, hwContext,
       game.supportsControllerScheme ? ctrlScheme : "", renderProfile, competitive);
 
-  // Launch menu: one entry per core-and-renderer combination for this system, the default marked. Falls
-  // back to a bare Force GL/Vulkan pair only if the profile map hasn't arrived yet.
+  // What the primary Start button actually boots for the SELECTED version: this game's configured
+  // profile (⚙ Configure → ArcadeGameProfile) when it has one, else the system default. The server
+  // resolves it with the same helper the launch path uses, so the menu can't drift from the room.
+  // Marking the SYSTEM default here used to be a lie for every game with a configured core — SM64:
+  // Last Impact is pinned to parallel_n64/Glide64 and the menu still said mupen/Vulkan was "default".
+  const activeProfileId = version?.renderProfile || renderers.find((p) => p.isDefault)?.id || null;
+  const activeFromGame = !!version?.renderProfileFromGame;
+  const activeProfileLabel =
+    version?.renderProfileLabel || renderers.find((p) => p.id === activeProfileId)?.label || null;
+
+  // Launch menu: one entry per core-and-renderer combination for this system, with the one Start uses
+  // marked (and WHY it's the one). Falls back to a bare Force GL/Vulkan pair only if the profile map
+  // hasn't arrived yet.
   const rendererItems = renderers.length > 0
     ? renderers.map((p) => ({
         key: `p:${p.id}`,
-        label: p.isDefault ? `${p.label} — default` : p.label,
+        label:
+          p.id === activeProfileId
+            ? `✓ ${p.label} — ${activeFromGame ? "this game's setting" : "system default"}`
+            : p.label,
         onClick: () => start(p.id),
       }))
     : [
@@ -128,6 +142,22 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
           <div className="agm-foot__ctx">
             <span className="agm-foot__sys">{systemLabel(game.system)}</span>
             {version?.label && <span className="agm-foot__ver" title={version.label}>{version.label}</span>}
+            {/* The core/renderer Start will boot, stated up front — the dropdown lists five N64
+                combinations and which one is live for THIS game was previously unanswerable without
+                opening ⚙ Configure. Marked when it's the game's own setting rather than the default. */}
+            {game.supportsHwToggle && activeProfileLabel && (
+              <span
+                className={`agm-foot__gfx${activeFromGame ? " is-pinned" : ""}`}
+                title={
+                  activeFromGame
+                    ? `Configured for this game: ${activeProfileLabel}. Change it in ⚙ Configure, or pick another for one room from the Start menu.`
+                    : `${systemLabel(game.system)} default: ${activeProfileLabel}. Set a per-game choice in ⚙ Configure.`
+                }
+              >
+                {activeFromGame ? "⚙ " : ""}
+                {activeProfileLabel}
+              </span>
+            )}
             {competitive && <span className="agm-foot__flag">🏁 Competitive</span>}
           </div>
           <div className="agm-actions">

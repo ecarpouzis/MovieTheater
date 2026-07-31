@@ -52,7 +52,10 @@ export default function ArcadeGameConfig({ game, onClose }) {
   const [switching, setSwitching] = useState(false);
   const [cfg, setCfg] = useState(null); // server payload
   const [values, setValues] = useState({}); // key -> token (selected core's catalog options)
-  const [renderProfile, setRenderProfile] = useState(null); // graphics profile id
+  // Graphics selection: a profile id = this game is PINNED to that core/renderer; "" = follow the
+  // system default (stored as null, so the game keeps tracking that default if it ever changes).
+  // The two are deliberately different states — pinning a game to today's default silently freezes it.
+  const [renderProfile, setRenderProfile] = useState("");
   const [notes, setNotes] = useState("");
   const [advanced, setAdvanced] = useState([]); // [{ key, value }] raw escape-hatch rows
   const [tab, setTab] = useState("video"); // active rail item: a category, "advanced", or "notes"
@@ -66,7 +69,9 @@ export default function ArcadeGameConfig({ game, onClose }) {
   const applyConfig = (d, keepUserFields) => {
     setCfg(d);
     setValues((d.options || []).reduce((m, o) => { m[o.key] = o.value; return m; }, {}));
-    setRenderProfile(d.renderProfile || null);
+    // Only the initial load sets the selection from the server; a profile switch is already showing the
+    // user's pick and a GET made with ?profile= can't tell us what's stored (it echoes the preview).
+    if (!keepUserFields) setRenderProfile(d.savedRenderProfile || "");
     const cats = CATEGORY_ORDER.filter((c) => (d.options || []).some((o) => o.category === c));
     const firstCat = cats[0] || "advanced";
     // Keep the current tab across a profile switch when it's still valid; otherwise land on the first category.
@@ -94,10 +99,11 @@ export default function ArcadeGameConfig({ game, onClose }) {
 
   // Changing the Graphics profile re-fetches THAT profile's core options (PS1 Beetle vs pcsx_rearmed expose
   // different options). Unsaved edits to the previous profile's options are discarded (notes/advanced kept).
+  // "" (System default) previews the SYSTEM default profile's options — that is what such a game boots.
   const switchProfile = (id) => {
     setRenderProfile(id);
     setSwitching(true);
-    MovieAPI.getArcadeGameConfig(gameId, id)
+    MovieAPI.getArcadeGameConfig(gameId, id || cfg?.defaultProfile || "")
       .then(async (r) => { if (r.ok) applyConfig(await r.json(), true); })
       .catch(() => {})
       .finally(() => setSwitching(false));
@@ -150,6 +156,12 @@ export default function ArcadeGameConfig({ game, onClose }) {
   };
 
   const save = () => doSave(buildBody(), "Saved — applies the next time this game starts.");
+
+  // Labels for the graphics selection's two states (pinned to a core/renderer vs following the system
+  // default). activeProfileLabel is null while renderProfile is "" — that IS the "not pinned" state.
+  const defaultProfileLabel = cfg?.profiles?.find((p) => p.id === cfg?.defaultProfile)?.label || null;
+  const activeProfileLabel = cfg?.profiles?.find((p) => p.id === renderProfile)?.label || null;
+
   // Reset applies the picked tier's defaults for the CURRENTLY selected renderer/core (the tier
   // presets are per core/renderer combination, so the renderer choice is kept, not cleared). The
   // server resolves + stores the preset itself; Ultra stores nothing = the live system defaults.
@@ -236,7 +248,7 @@ export default function ArcadeGameConfig({ game, onClose }) {
               <div className="agc-renderer">
                 <span className="agc-renderer__label">
                   Renderer / core
-                  <Tooltip title="What Start Room launches — the core + renderer. The settings below follow this choice. Vulkan is the default for 3D systems; pick an OpenGL profile (or, on PS1, pcsx_rearmed) to use the GL core.">
+                  <Tooltip title="What Start room launches for THIS game — the core + renderer. The settings below follow this choice. “System default” means the game follows whatever this system's default is (and keeps following it if that changes); anything else pins this game to that core/renderer for every room.">
                     <span className="agc-info">ⓘ</span>
                   </Tooltip>
                 </span>
@@ -244,11 +256,27 @@ export default function ArcadeGameConfig({ game, onClose }) {
                   value={renderProfile}
                   onChange={switchProfile}
                   loading={switching}
-                  options={cfg.profiles.map((p) => ({ value: p.id, label: p.label }))}
+                  options={[
+                    // The explicit "no per-game choice" state. It exists because saving used to store the
+                    // resolved id, pinning every game to whatever the default was that day with nothing in
+                    // the UI saying so.
+                    { value: "", label: `System default${defaultProfileLabel ? ` — ${defaultProfileLabel}` : ""}` },
+                    ...cfg.profiles.map((p) => ({
+                      value: p.id,
+                      label: p.id === cfg.defaultProfile ? `${p.label} (the system default)` : p.label,
+                    })),
+                  ]}
                   popupClassName="arcade-version-dropdown"
                   dropdownStyle={DROPDOWN_STYLE}
                   dropdownMatchSelectWidth={false}
                 />
+                <span className="agc-renderer__hint">
+                  {renderProfile
+                    ? `Pinned for this game — every room boots ${activeProfileLabel || renderProfile}.`
+                    : `Not set for this game — it follows the ${systemLabel(cfg?.system)} default${
+                        defaultProfileLabel ? ` (${defaultProfileLabel})` : ""
+                      }.`}
+                </span>
               </div>
             )}
             <Input

@@ -264,6 +264,19 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* The core/renderer Start room will boot. `is-pinned` = this game's own configured choice rather than
+   the system default, so a deliberately-tuned game reads as tuned at a glance. */
+.agm-foot__gfx {
+  min-width: 0;
+  max-width: 38ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agm-foot__gfx.is-pinned {
+  font-weight: 600;
+  color: var(--text-primary);
+}
 .agm-foot__flag {
   font-weight: 600;
   color: var(--accent-link);

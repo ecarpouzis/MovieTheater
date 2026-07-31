@@ -61,6 +61,16 @@
   gap: 10px;
   flex: 1 1 340px;
   min-width: 260px;
+  /* The hint below sits on its own line (flex-basis 100%), so the label + select keep their row. */
+  flex-wrap: wrap;
+}
+/* Says in words which of the two states the selection is in — pinned to this core/renderer, or
+   following the system default. The dropdown alone can't distinguish "chose Vulkan" from
+   "inherited Vulkan", and that ambiguity is exactly what made per-game tuning unreadable. */
+.agc-renderer__hint {
+  flex: 1 0 100%;
+  font-size: 12px;
+  opacity: 0.7;
 }
 .agc-renderer__label {
   display: inline-flex;

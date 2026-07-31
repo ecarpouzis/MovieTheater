@@ -301,6 +301,21 @@ namespace MovieTheater.Controllers
                 .Select(g => new { GameId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.GameId, x => x.Count);
 
+            // The renderer/core each version ACTUALLY launches on (⚙ Configure → ArcadeGameProfile, else the
+            // system default). Without it the Start-room menu could only mark the SYSTEM's default, which for
+            // a game with a configured core is a lie — SM64: Last Impact is pinned to parallel_n64/Glide64 yet
+            // the menu marked "mupen64plus-next · Vulkan — default". One grouped query for the page, keyed the
+            // way the config tool keys its rows: (System, lowercased Title).
+            var pageTitleKeys = versionRows.Select(TitleKeyOf).Distinct().ToList();
+            var savedProfiles = await movieDb.ArcadeGameProfiles.AsNoTracking()
+                .Where(p => pageSystems.Contains(p.System) && pageTitleKeys.Contains(p.TitleKey))
+                .Select(p => new { p.System, p.TitleKey, p.RenderProfile, p.HwContext })
+                .ToListAsync();
+            var savedByKey = savedProfiles
+                .GroupBy(p => (p.System, p.TitleKey))
+                .ToDictionary(g => g.Key, g => g.First());
+            var rowById = versionRows.ToDictionary(g => g.Id);
+
             return keys.Select(k =>
             {
                 byGame.TryGetValue((k.System, k.CollapseKey), out var vs);
@@ -379,17 +394,35 @@ namespace MovieTheater.Controllers
                     // GC-native BrawlEx mods, "wiimote" for every other Wii game (empty = no picker).
                     supportsControllerScheme = CloudRetroHost.SupportsControllerScheme(k.System),
                     defaultControllerScheme = CloudRetroHost.DefaultControllerScheme(k.System, title),
-                    versions = versions.Select(v => new
+                    versions = versions.Select(v =>
                     {
-                        id = v.Id, label = v.Label, region = v.Region,
-                        variant = v.Variant, year = v.Year, maxPlayers = v.MaxPlayers, discCount = v.DiscCount,
-                        // Per-version RA support: our dump matches an RA-recognized hash, so achievements/scores
-                        // actually fire on THIS version. Drives the 🏆 marker in the modal's version dropdown.
-                        raSupported = v.RaSupported,
-                        // Code cheats only. Already zero on systems whose core ignores retro_cheat_set
-                        // (only imported systems get code rows — see ArcadeCheatCatalog.SupportsCheatCodes).
-                        cheatCount = ArcadeCheatCatalog.SupportsCheatCodes(k.System)
-                            && cheatCounts.TryGetValue(v.Id, out var cc) ? cc : 0,
+                        // What Start room boots for THIS version (per-game config, else the system default).
+                        // Per-version because the config profile is keyed by Title and a card can collapse
+                        // versions whose titles differ.
+                        ArcadeRendererProfiles.RenderProfile rp = null;
+                        var rpFromGame = false;
+                        if (rowById.TryGetValue(v.Id, out var vrow))
+                        {
+                            savedByKey.TryGetValue((vrow.System, TitleKeyOf(vrow)), out var sp);
+                            (rp, rpFromGame) = EffectiveRenderProfile(vrow.System, sp?.RenderProfile, sp?.HwContext);
+                        }
+                        return new
+                        {
+                            id = v.Id, label = v.Label, region = v.Region,
+                            variant = v.Variant, year = v.Year, maxPlayers = v.MaxPlayers, discCount = v.DiscCount,
+                            // The renderer/core Start room will use, and whether it's this game's own setting or
+                            // just the system default — the Start menu marks the right entry with it.
+                            renderProfile = rp?.Id,
+                            renderProfileLabel = rp?.Label,
+                            renderProfileFromGame = rpFromGame,
+                            // Per-version RA support: our dump matches an RA-recognized hash, so achievements/scores
+                            // actually fire on THIS version. Drives the 🏆 marker in the modal's version dropdown.
+                            raSupported = v.RaSupported,
+                            // Code cheats only. Already zero on systems whose core ignores retro_cheat_set
+                            // (only imported systems get code rows — see ArcadeCheatCatalog.SupportsCheatCodes).
+                            cheatCount = ArcadeCheatCatalog.SupportsCheatCodes(k.System)
+                                && cheatCounts.TryGetValue(v.Id, out var cc) ? cc : 0,
+                        };
                     }).ToList(),
                 };
             }).ToList();
@@ -739,6 +772,31 @@ namespace MovieTheater.Controllers
         /// Title, matching the arcade-gameconfig-export join (<c>g.Title.ToLower()</c>).</summary>
         private static string TitleKeyOf(ArcadeGame game) => (game.Title ?? "").Trim().ToLowerInvariant();
 
+        /// <summary>The render profile a room will ACTUALLY boot for a game, mirroring the launch-time
+        /// precedence in <c>CreateRoom</c> exactly: the saved profile id, else the legacy bare HwContext pin,
+        /// else the system default. <c>FromGame</c> says whether that came from this game's own config or is
+        /// merely the system default — the distinction the Start-room menu and the config tool must show, and
+        /// the reason a stale/unknown saved id reports FromGame=false (it falls through to the default at
+        /// launch too, rather than booting what the label claims).</summary>
+        private static (ArcadeRendererProfiles.RenderProfile? Profile, bool FromGame) EffectiveRenderProfile(
+            string system, string? savedProfileId, string? savedHwContext)
+        {
+            var profiles = ArcadeRendererProfiles.For(system);
+            if (profiles.Count == 0) return (null, false);
+            var fallback = ArcadeRendererProfiles.Default(system);
+            if (!string.IsNullOrEmpty(savedProfileId))
+            {
+                var exact = profiles.FirstOrDefault(p => string.Equals(p.Id, savedProfileId, StringComparison.Ordinal));
+                return (exact ?? fallback, exact != null);
+            }
+            if (!string.IsNullOrEmpty(savedHwContext))
+            {
+                var byHw = ArcadeRendererProfiles.ForRenderer(system, savedHwContext);
+                return (byHw ?? fallback, byHw != null);
+            }
+            return (fallback, false);
+        }
+
         /// <summary>Same CanEditMovies gate used elsewhere in this controller (e.g. heavy-lane pairing).</summary>
         private async Task<bool> IsEditorAsync(int userId)
         {
@@ -833,10 +891,11 @@ namespace MovieTheater.Controllers
             // pcsx_rearmed have different options). A `?profile=` query previews another profile's core options
             // before saving; otherwise the saved profile, the legacy HwContext pin, then the default.
             var renderProfiles = ArcadeRendererProfiles.For(game.System);
+            // What this game is PINNED to (if anything) vs. what it merely inherits — resolved by the same
+            // helper the launch path and the Start menu use, so all three agree about what "default" means.
+            var pinned = EffectiveRenderProfile(game.System, savedProfile?.RenderProfile, savedProfile?.HwContext);
             var selected = (!string.IsNullOrEmpty(profile) ? ArcadeRendererProfiles.Resolve(game.System, profile) : null)
-                           ?? ArcadeRendererProfiles.Resolve(game.System, savedProfile?.RenderProfile)
-                           ?? ArcadeRendererProfiles.ForRenderer(game.System, savedProfile?.HwContext)
-                           ?? ArcadeRendererProfiles.Default(game.System);
+                           ?? pinned.Profile;
             var core = selected?.OptionCore ?? ArcadeCoreOptionCatalog.CoreForSystem(game.System);
 
             // Effective value = the game's baseline (catalogued default → live system tuning → per-game
@@ -880,6 +939,13 @@ namespace MovieTheater.Controllers
                 // The graphics profiles (renderer/core choice) for this system + the selected one.
                 profiles = renderProfiles.Select(p => new { id = p.Id, label = p.Label }),
                 renderProfile = selected?.Id,
+                // Which of those is this SYSTEM's default, and what (if anything) this GAME pins. They are
+                // different questions and conflating them is what made the Start menu misleading: a game
+                // pinned to parallel_n64/Glide64 still saw "mupen64plus-next · Vulkan — default". Null
+                // savedRenderProfile = the game follows the system default and keeps following it if that
+                // default ever changes; the editor picks that state explicitly ("System default").
+                defaultProfile = ArcadeRendererProfiles.Default(game.System)?.Id,
+                savedRenderProfile = pinned.FromGame ? pinned.Profile?.Id : null,
                 // The quality-tier dropdown next to "Reset to defaults" (ArcadeQualityPresets). The
                 // selection isn't persisted — it's the reset target, defaulting to Ultra client-side.
                 qualityTiers = ArcadeQualityPresets.Tiers.Select(t => new { id = t.Id, label = t.Label }),
@@ -994,8 +1060,14 @@ namespace MovieTheater.Controllers
             foreach (var kv in toStore) final[kv.Key] = kv.Value;
 
             profile.CoreOptionsJson = final.Count > 0 ? System.Text.Json.JsonSerializer.Serialize(final) : null;
-            profile.RenderProfile = selected?.Id;
-            profile.HwContext = selected?.HwContext;  // keep in sync for the manifest export + legacy fallback
+            // An empty RenderProfile means "follow the system default" and must be STORED as null — not as
+            // today's default id. Writing the resolved id pinned every game the moment anyone saved any
+            // unrelated option, so a later change to the system default silently stopped reaching it, and
+            // nothing in the UI showed the game had been pinned at all. HwContext is the legacy pin for the
+            // same choice, so it clears with it or it would keep overriding on its own.
+            var pinsProfile = !string.IsNullOrEmpty(request.RenderProfile);
+            profile.RenderProfile = pinsProfile ? selected?.Id : null;
+            profile.HwContext = pinsProfile ? selected?.HwContext : null;  // in sync for the manifest export + legacy fallback
             profile.Notes = notes;
             // ForcedFps is deliberately NOT touched here — it stays SQL/CLI-managed (see docs).
             await movieDb.SaveChangesAsync();
@@ -1010,7 +1082,8 @@ namespace MovieTheater.Controllers
             /// Values equal to the game default are not stored.</summary>
             public Dictionary<string, string>? CoreOptions { get; set; }
             /// <summary>The graphics render-profile id (see ArcadeRendererProfiles), e.g. "opengl",
-            /// "beetle_opengl", "pcsx_rearmed". Null/empty = the system default profile.</summary>
+            /// "beetle_opengl", "pcsx_rearmed". Null/empty = follow the system default (stored as null, so
+            /// the game keeps tracking that default if it changes) — the config tool's "System default".</summary>
             public string? RenderProfile { get; set; }
             /// <summary>Set = a "Reset to defaults" with this quality tier picked (ArcadeQualityPresets):
             /// CoreOptions is ignored and the tier's preset for the selected profile's (core, renderer)
