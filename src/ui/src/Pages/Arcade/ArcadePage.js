@@ -324,7 +324,7 @@ export default function ArcadePage({ userData }) {
       doCreateRoom(versionId, { competitive: true, hwContext, renderProfile, controllerScheme });
       return;
     }
-    // Systems with no emulator save-state (psp/ps2 noSaveStates, heavy/capture lanes) have nothing to
+    // Systems with no emulator save-state (psp noSaveStates, scummvm, heavy/capture lanes) have nothing to
     // continue FROM: their progress is the memory card, which every boot seeds regardless. Offering
     // Continue/Quickload there would be dead UI, so they always boot clean.
     if (!hasSaveStates(system)) {
@@ -592,7 +592,7 @@ export default function ArcadePage({ userData }) {
           // z-index. This restores the exact pre-modal flow those surfaces were built for.
           onStart={(versionId, title, cheats, hwContext, controllerScheme, renderProfile, competitive) => {
             // Grab the system BEFORE clearing the modal — the start-choice prompt needs it to know
-            // whether this core even has save-states to offer (psp/ps2 don't).
+            // whether this core even has save-states to offer (psp/scummvm don't).
             const sys = modalGame?.system;
             setModalGame(null);
             createRoom(versionId, title, cheats, hwContext, controllerScheme, renderProfile, competitive, sys);

@@ -122,8 +122,15 @@ export const canHaveArt = (game) => Boolean(game?.hasBoxArt) || ART_SYSTEMS.has(
 export const HEAVY_LANE_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "pc", "capture"]);
 
 // Systems with NO emulator save-state: their progress is their own save data, not a serialized
-// machine state. psp + ps2 are noSaveStates cores (config.worker-gl.yaml — a t=106 there returns
+// machine state. psp is a noSaveStates core (config.worker-gl.yaml — a t=106 there returns
 // ErrNoSaveStates). Keep in step with that file.
+//
+// ⚠ ps2 was in this set from 2026-07-22 to 2026-08-01 and should NOT be re-added. It was never a core
+// that cannot serialize — patch 0030 added working Save/Load for it, and people used it. It was
+// flagged noSaveStates to stop the periodic autosave minting states nothing booted from, which took
+// the manual buttons with it. The config now uses noAutoSaveStates for that, so only the timer is
+// affected and ps2 has save-states like any other core. The distinction being drawn here is "this
+// core CANNOT be serialized", not "we would rather it didn't serialize on a schedule".
 //
 // scummvm is here for a DIFFERENT reason and is not marked in that config: the core simply cannot
 // serialize. Observed live 2026-07-27 —
@@ -136,7 +143,7 @@ export const HEAVY_LANE_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360
 // These have no state to continue from or quickload, so the launch modal collapses to Clean Start
 // alone for them — and, happily, they can never be save-scummed either: their own save system is
 // legitimate exactly the way a real memory card is.
-export const NO_SAVE_STATE_SYSTEMS = new Set(["psp", "ps2", "scummvm", ...HEAVY_LANE_SYSTEMS]);
+export const NO_SAVE_STATE_SYSTEMS = new Set(["psp", "scummvm", ...HEAVY_LANE_SYSTEMS]);
 
 /** True when a system can offer Continue / Quickload at all (i.e. it has emulator save-states). */
 export const hasSaveStates = (system) => !NO_SAVE_STATE_SYSTEMS.has(String(system || "").toLowerCase());

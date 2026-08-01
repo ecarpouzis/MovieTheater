@@ -393,7 +393,7 @@ export default function ArcadeRoomPage() {
             return;
           }
           if (!engaged) return; // one-shot chords act on engage only
-          // A core with no save-state can't honour these at all (psp/ps2 return ErrNoSaveStates;
+          // A core with no save-state can't honour these at all (psp returns ErrNoSaveStates;
           // ScummVM's retro_serialize_size is 0). The buttons are hidden for those systems, so say
           // why rather than let the pad chord fail silently.
           if ((action === "quickSave" || action === "quickLoad") && !hasSaveStates(descriptorRef.current?.system)) {
@@ -1206,10 +1206,11 @@ export default function ArcadeRoomPage() {
               <Tag color="volcano">🏁 Competitive — no saves / cheats</Tag>
             </Tooltip>
           )}
-          {/* Hidden entirely on cores that cannot serialize — psp/ps2 (noSaveStates in
+          {/* Hidden entirely on cores that cannot serialize — psp (noSaveStates in
               config.worker-gl.yaml) and scummvm (retro_serialize_size returns 0). Offering a button
               that can only fail is worse than not offering it; on those systems the game's own save
-              (memory card / memstick / ScummVM save slot) IS the progress and is vaulted per-user. */}
+              (memstick / ScummVM save slot) IS the progress and is vaulted per-user. ps2 is NOT one of
+              these — it serializes fine on demand; only its periodic autosave is held off. */}
           {!competitive && !spectator && hasSaveStates(system) && (
             <>
               <Tooltip title="Quicksave — keeps your place until you press Save again. Leaving the room never overwrites it. (Pad: hold Select + R3)">

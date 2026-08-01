@@ -1434,7 +1434,7 @@ index 0000000..6a94788
 +get_proc_address, so the delta is state/extensions, not context plumbing). Candidate fixes: custom
 +kronos core patch (established pattern) or frontend shim. Saturn rows remain IsEnabled=0.
 diff --git a/cmd/worker/main.go b/cmd/worker/main.go
-index a1b2db4..bc5c032 100644
+index a1b2db4..9c887e8 100644
 --- a/cmd/worker/main.go
 +++ b/cmd/worker/main.go
 @@ -1,6 +1,8 @@
@@ -1446,7 +1446,17 @@ index a1b2db4..bc5c032 100644
  	"github.com/giongto35/cloud-game/v3/pkg/config"
  	"github.com/giongto35/cloud-game/v3/pkg/logger"
  	"github.com/giongto35/cloud-game/v3/pkg/os"
-@@ -29,6 +31,20 @@ func run() {
+@@ -15,6 +17,9 @@ func run() {
+ 	conf.ParseFlags()
+ 
+ 	log := logger.NewConsole(conf.Worker.Debug, "w", false)
++	// Arm crash forensics before anything can crash. Last-chance filter only — see pkg/os/crash_windows.go
++	// for why this must never be a vectored (first-chance) handler on a stack that runs fastmem cores.
++	os.InstallCrashHandler()
+ 	log.Info().Msgf("version %s", Version)
+ 	log.Info().Msgf("conf: v%v, loaded: %v", conf.Version, paths)
+ 	if log.GetLevel() < logger.InfoLevel {
+@@ -29,6 +34,20 @@ func run() {
  	}
  	w.Start(done)
  	<-done
@@ -2091,7 +2101,7 @@ index 0000000..d83f053
 +	}
 +}
 diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
-index baf701e..556c438 100644
+index baf701e..30b4638 100644
 --- a/pkg/config/emulator.go
 +++ b/pkg/config/emulator.go
 @@ -17,6 +17,53 @@ type Emulator struct {
@@ -2148,7 +2158,7 @@ index baf701e..556c438 100644
  }
  
  type LibretroConfig struct {
-@@ -69,24 +116,108 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
+@@ -69,24 +116,122 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
  		errors.New("core mapping not found for " + runtime.GOOS + ":" + runtime.GOARCH)
  }
  
@@ -2211,6 +2221,7 @@ index baf701e..556c438 100644
  	IsGlAllowed     bool
 -	KbMouseSupport  bool
 -	Lib             string
+-	NonBlockingSave bool
 +	// HwContext picks the hardware-render context this core uses: "" / "gl" = the OpenGL/RGFW path
 +	// (the historical default, gated by IsGlAllowed), "vulkan" = the Vulkan-capture path
 +	// (RETRO_HW_CONTEXT_VULKAN, e.g. LRPS2 paraLLEl-GS). A "vulkan" core never creates a GL context;
@@ -2221,8 +2232,22 @@ index baf701e..556c438 100644
 +	// NoSaveStates refuses to serialize this core at all (patch 0041). PPSSPP cannot survive it on
 +	// EITHER thread: off its cothread retro_serialize_size access-violates, and on it the core wedges
 +	// (boots, then stops producing frames). Its progress is the memstick card, which the vault carries.
-+	NoSaveStates    bool
- 	NonBlockingSave bool
++	NoSaveStates bool
++	// NoAutoSaveStates keeps the PERIODIC autosave off the serialize path while leaving deliberate
++	// save-states (the player's Save/Load, save-on-quit, and the deferred warm-VM boot restore)
++	// working. It exists because merging those two things into NoSaveStates cost a feature nobody
++	// meant to remove: ps2 was flagged NoSaveStates on 2026-07-22 to stop a 300 s timer minting
++	// whole-machine states, and that also silently killed manual Save/Load — which patch 0030 had
++	// added FOR ps2, and which was in regular use (a 50 MB slot-099 quicksave, the slot only a human
++	// writes, sits in the vault from five days earlier).
++	//
++	// The distinction is the one the saves design already draws elsewhere: an AUTOMATIC writer firing
++	// on a timer is what makes a costly, crash-prone serialize unacceptable (PCSX2: ~126 ms hitch on
++	// the tick, 0xC0000409 risk), because it pays that cost repeatedly and unbidden. The same
++	// serialize on an explicit Save, or once on the way out of a room, is a cost the player asked for
++	// and gets something back for. So the timer harvests the card only; everything else serializes.
++	NoAutoSaveStates bool
++	NonBlockingSave  bool
 +	// Rewind arms the in-memory savestate ring for this core: while a room is live the worker
 +	// snapshots the machine state every RewindStepFrames frames (emulator goroutine, between
 +	// ticks), and a held rewind (t=115) walks back through those snapshots at real-time speed.
@@ -2263,7 +2288,7 @@ index baf701e..556c438 100644
  	MaxThreads      int
  	UniqueSaveDir   bool
  	UsesLibCo       bool
-@@ -128,6 +259,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
+@@ -128,6 +273,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
  	return found
  }
  
@@ -5604,6 +5629,207 @@ index 5b3d3fe..e6ef733 100644
  			}
  		}
  	}
+diff --git a/pkg/os/crash_windows.go b/pkg/os/crash_windows.go
+new file mode 100644
+index 0000000..6dbf471
+--- /dev/null
++++ b/pkg/os/crash_windows.go
+@@ -0,0 +1,195 @@
++//go:build windows
++
++package os
++
++import (
++	"fmt"
++	"os"
++	"strings"
++	"sync/atomic"
++	"syscall"
++	"unsafe"
++)
++
++// Crash forensics for the worker.
++//
++// Every worker death we have ever had to diagnose arrived as one line from the runner —
++// `glworker EXITED exitcode=-1073741819 (0xC0000005)` — and nothing else. The log's last line before
++// it belongs to whichever component happened to be chattiest, which has actively misled us: the
++// capture worker's aborts were blamed for weeks on a GStreamer audio-padding warning that turned out
++// to be innocent, and one gdb backtrace named the real culprit (libgstd3d12) in a minute. This turns
++// every future crash into that backtrace WITHOUT needing gdb attached at the right moment: the code,
++// the faulting address, and — the part that actually names the culprit — the MODULE each stack frame
++// lands in. "It died in pcsx2_custom_libretro+0x3f21a0" is an answer; "it died" is not.
++//
++// ⚠ THIS MUST HOOK THE UNHANDLED PATH ONLY — never AddVectoredExceptionHandler.
++// Recompiling cores raise access violations as a matter of NORMAL OPERATION: PCSX2's fastmem takes a
++// deliberate AV on every out-of-range guest access and rescues it in its own page-fault handler (the
++// worker log's "Fastmem area: ..." line is that mechanism arming itself), and PPSSPP does the same
++// where its handler installs. A first-chance vectored handler would fire thousands of times per
++// second on healthy PS2 gameplay, drown the log, and cost real time in the fault path. A last-chance
++// filter runs only once the owning core has DECLINED to handle the fault — i.e. only when the process
++// is genuinely dying. See the ppsspp-core skill, "fastmem needs an exception handler".
++//
++// The filter returns EXCEPTION_CONTINUE_SEARCH: it observes and never changes what happens next, so
++// the process still dies exactly as it did before, with the same exit code the watchdog keys on.
++
++const (
++	exceptionContinueSearch = 0 // observe only — do not swallow the exception
++
++	// GetModuleHandleExW flags: resolve the module OWNING an address without touching its refcount
++	// (taking a reference from inside a crashing process would be a needless way to make things worse).
++	getModuleHandleExFromAddress   = 0x00000004
++	getModuleHandleExUnchangedRef  = 0x00000002
++	getModuleHandleExAddressUnpin  = getModuleHandleExFromAddress | getModuleHandleExUnchangedRef
++
++	maxFrames = 32
++)
++
++// exceptionRecord mirrors Win32 EXCEPTION_RECORD (amd64 layout). Only the head is read; the process
++// is already broken, so this stays to fixed offsets and does no allocation-heavy work.
++type exceptionRecord struct {
++	Code             uint32
++	Flags            uint32
++	Next             uintptr
++	Address          uintptr
++	NumberParameters uint32
++	_                uint32
++	Information      [15]uintptr
++}
++
++type exceptionPointers struct {
++	ExceptionRecord *exceptionRecord
++	ContextRecord   uintptr
++}
++
++var (
++	kernel32                     = syscall.NewLazyDLL("kernel32.dll")
++	procSetUnhandledExceptionFlt = kernel32.NewProc("SetUnhandledExceptionFilter")
++	procGetModuleHandleExW       = kernel32.NewProc("GetModuleHandleExW")
++	procGetModuleFileNameW       = kernel32.NewProc("GetModuleFileNameW")
++	procCaptureStackBackTrace    = kernel32.NewProc("RtlCaptureStackBackTrace")
++
++	// Re-entrancy guard. A fault raised while we are already formatting a report (our own bug, or a
++	// second thread dying at the same moment) must not recurse into the filter forever — one report
++	// is worth having, a loop of them costs the log we came for.
++	reporting atomic.Bool
++
++	crashTag atomic.Pointer[string] // extra context line, e.g. the room/system that was booting
++)
++
++// SetCrashContext records what the worker is currently doing, echoed into any crash report. The
++// crash itself tells you WHERE the process died; this tells you WHAT it was doing when it did —
++// which room, which system, which core. Cheap enough to set on every room start.
++func SetCrashContext(s string) { crashTag.Store(&s) }
++
++// InstallCrashHandler arms the last-chance crash reporter. Call once from main, AFTER the Go runtime
++// is up (the runtime installs its own handlers during init; ours must be the one set last to win).
++// Report goes to stderr, which the worker runner appends to the worker log — so it lands in the same
++// file, in order, right after whatever the core last printed.
++func InstallCrashHandler() {
++	cb := syscall.NewCallback(func(info *exceptionPointers) uintptr {
++		if info == nil || info.ExceptionRecord == nil {
++			return exceptionContinueSearch
++		}
++		if !reporting.CompareAndSwap(false, true) {
++			return exceptionContinueSearch
++		}
++		defer reporting.Store(false)
++		report(info.ExceptionRecord)
++		return exceptionContinueSearch
++	})
++	_, _, _ = procSetUnhandledExceptionFlt.Call(cb)
++}
++
++func report(rec *exceptionRecord) {
++	var b strings.Builder
++	b.WriteString("\n=== WORKER CRASH (unhandled exception) ===\n")
++	fmt.Fprintf(&b, "code    : 0x%08X %s\n", rec.Code, exceptionName(rec.Code))
++	fmt.Fprintf(&b, "address : 0x%016X  %s\n", rec.Address, moduleFor(rec.Address))
++
++	// For an access violation the two parameters say what was attempted and where — the difference
++	// between "wrote through a dangling pointer" and "executed a NULL function pointer", which points
++	// at completely different bugs.
++	if rec.Code == 0xC0000005 && rec.NumberParameters >= 2 {
++		what := map[uintptr]string{0: "read from", 1: "write to", 8: "execute at"}[rec.Information[0]]
++		if what == "" {
++			what = fmt.Sprintf("op%d at", rec.Information[0])
++		}
++		fmt.Fprintf(&b, "access  : %s 0x%016X\n", what, rec.Information[1])
++	}
++	if p := crashTag.Load(); p != nil && *p != "" {
++		fmt.Fprintf(&b, "context : %s\n", *p)
++	}
++
++	// The filter runs ON the faulting thread with its stack intact, so a plain backtrace from here
++	// walks down through the frames that faulted. Symbol names would need dbghelp (and a symbol
++	// server we do not have); module+offset is enough to name the culprit BINARY, which is the
++	// question we are actually asking — and it stays correct with no symbols shipped.
++	var frames [maxFrames]uintptr
++	n, _, _ := procCaptureStackBackTrace.Call(0, maxFrames, uintptr(unsafe.Pointer(&frames[0])), 0)
++	if n > 0 {
++		b.WriteString("stack   :\n")
++		for i := 0; i < int(n); i++ {
++			fmt.Fprintf(&b, "  [%02d] 0x%016X  %s\n", i, frames[i], moduleFor(frames[i]))
++		}
++	}
++	b.WriteString("=== END WORKER CRASH ===\n")
++
++	_, _ = os.Stderr.WriteString(b.String())
++	_ = os.Stderr.Sync()
++}
++
++// moduleFor names the loaded module owning an address, as "name+0xoffset". Unowned addresses (JIT'd
++// recompiler code — which is most of a PS2/PSP crash's interesting frames) have no module at all;
++// saying so explicitly is itself a finding, because it means the fault is in emitted guest code
++// rather than in any DLL we could bisect.
++func moduleFor(addr uintptr) string {
++	if addr == 0 {
++		return "(null)"
++	}
++	var hmod uintptr
++	r, _, _ := procGetModuleHandleExW.Call(getModuleHandleExAddressUnpin, addr, uintptr(unsafe.Pointer(&hmod)))
++	if r == 0 || hmod == 0 {
++		return "(no module — JIT/dynamic code or freed)"
++	}
++	var buf [syscall.MAX_PATH]uint16
++	l, _, _ := procGetModuleFileNameW.Call(hmod, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
++	if l == 0 {
++		return fmt.Sprintf("(module 0x%X)", hmod)
++	}
++	path := syscall.UTF16ToString(buf[:l])
++	if i := strings.LastIndexAny(path, `\/`); i >= 0 {
++		path = path[i+1:]
++	}
++	return fmt.Sprintf("%s+0x%X", path, addr-hmod)
++}
++
++func exceptionName(code uint32) string {
++	switch code {
++	case 0xC0000005:
++		return "ACCESS_VIOLATION"
++	case 0xC0000006:
++		return "IN_PAGE_ERROR"
++	case 0xC000001D:
++		return "ILLEGAL_INSTRUCTION"
++	case 0xC0000025:
++		return "NONCONTINUABLE_EXCEPTION"
++	case 0xC000008C:
++		return "ARRAY_BOUNDS_EXCEEDED"
++	case 0xC0000094:
++		return "INT_DIVIDE_BY_ZERO"
++	case 0xC0000096:
++		return "PRIV_INSTRUCTION"
++	case 0xC00000FD:
++		return "STACK_OVERFLOW"
++	case 0xC0000374:
++		return "HEAP_CORRUPTION" // flycast's known teardown signature
++	case 0xC0000409:
++		return "STACK_BUFFER_OVERRUN / __fastfail (abort)"
++	case 0x80000003:
++		return "BREAKPOINT"
++	default:
++		return ""
++	}
++}
 diff --git a/pkg/os/os.go b/pkg/os/os.go
 index 42e8a10..52df4d2 100644
 --- a/pkg/os/os.go
@@ -10341,10 +10567,10 @@ index f3553b1..d66ce23 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..10f7f46 100644
+index 6974d59..69facd4 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,2116 @@
+@@ -1,578 +1,2143 @@
 -package libretro
 -
 -import (
@@ -11044,6 +11270,7 @@ index 6974d59..10f7f46 100644
 +	UniqueSaveDir     bool
 +	SaveStateFs       string
 +	NoSaveStates      bool // this core cannot be serialized; its memory card is the progress (0041)
++	NoAutoSaveStates  bool // only the PERIODIC autosave skips serializing; manual/close/boot states work
 +	AudioMaster       bool // the audio clock paces this core, even above its fps floor (0043)
 +
 +	// AudioSilenceFill: this core emits NO audio callbacks at all while the game is SILENT, rather than
@@ -11216,8 +11443,11 @@ index 6974d59..10f7f46 100644
 +	if conf.AudioMaster {
 +		f.log.Info().Msgf("%v: audio-mastered pacing (the audio clock may outrun the fps floor)", emu)
 +	}
++	f.NoAutoSaveStates = conf.NoAutoSaveStates
 +	if conf.NoSaveStates {
 +		f.log.Info().Msgf("%v: save-states are off for this core; progress lives on the memory card", emu)
++	} else if conf.NoAutoSaveStates {
++		f.log.Info().Msgf("%v: periodic autosave harvests the card only; manual Save/Load and save-on-quit still serialize", emu)
 +	}
 +	// AudioSilenceFill and AudioMaster are opposite answers to "the audio clock is behind real time", and
 +	// running both would have the pacer chasing a deficit that the filler keeps erasing. Refuse the combo
@@ -11504,9 +11734,16 @@ index 6974d59..10f7f46 100644
 +	// save-state (see the SAVE_RAM note above Save/Load for the five ways that lost people's saves).
 +	// The state restores after it, so on a Continue boot the outcome is unchanged: the state applies,
 +	// then Load()'s own .srm pass re-asserts the same card bytes.
++	// [boot] markers: the span from here to the first frame is where our worst crashes land, and until
++	// now it logged NOTHING between the core's own load chatter and the emulator loop. A 0xC0000005 in
++	// it left the log's last line owned by the core, which reads like "the core died on load" no matter
++	// which of our post-load steps actually faulted. One Info line per step makes the last line before
++	// a crash name the phase; they are once-per-room, so they cost nothing measurable.
++	f.log.Info().Msg("[boot] restoring SAVE_RAM card")
 +	if err := f.RestoreSRAM(); err != nil {
 +		f.log.Error().Err(err).Msg("couldn't insert the save card (SAVE_RAM)")
 +	}
++	f.log.Info().Msg("[boot] SAVE_RAM done")
 +
 +	if f.HasSave() && f.nano.SkipBootRestore() {
 +		go func() {
@@ -12096,12 +12333,20 @@ index 6974d59..10f7f46 100644
 +	if f.raUser == "" || f.raToken == "" {
 +		return
 +	}
++	// Each of the next few steps calls INTO the core (retro_get_memory_data/size) or walks a struct the
++	// core owns, on a core that has just finished loading — the exact shape of bug that has bitten this
++	// path before (the GBC memory-map dangling pointer). Log each one separately: "which of these five
++	// calls was in flight" is otherwise unanswerable after the fact, and the whole block is silent on
++	// the systems where it bails early.
++	f.log.Info().Msgf("[boot] cheevos: querying SYSTEM_RAM (system=%v, consoleID=%v)", f.raSystem, cheevos.ConsoleID(f.raSystem))
 +	sysRAM, sysSize := f.nano.MemoryRegion(uint(nanoarch.RetroMemorySystemRAM))
++	f.log.Info().Msgf("[boot] cheevos: SYSTEM_RAM ptr=%p size=0x%X", sysRAM, sysSize)
 +	if sysRAM == nil || sysSize == 0 {
 +		f.log.Warn().Msgf("RetroAchievements: %v exposes no SYSTEM_RAM; achievements disabled for this room", f.raSystem)
 +		return
 +	}
 +	saveRAM, saveSize := f.nano.MemoryRegion(uint(nanoarch.RetroMemorySaveRAM))
++	f.log.Info().Msgf("[boot] cheevos: SAVE_RAM ptr=%p size=0x%X", saveRAM, saveSize)
 +
 +	f.ra = cheevos.New(f.raUser, f.raToken, f.raHard, f.raCheats, cheevos.ConsoleID(f.raSystem), f.gamePath, f.raHandler)
 +	if f.ra == nil {
@@ -12113,7 +12358,10 @@ index 6974d59..10f7f46 100644
 +	if f.raSeededState {
 +		f.ra.NotifySaveStateLoaded()
 +	}
-+	f.ra.SetMemory(sysRAM, uintptr(sysSize), saveRAM, uintptr(saveSize), f.nano.MemoryMap())
++	mmap := f.nano.MemoryMap()
++	f.log.Info().Msgf("[boot] cheevos: memoryMap=%p; registering regions", mmap)
++	f.ra.SetMemory(sysRAM, uintptr(sysSize), saveRAM, uintptr(saveSize), mmap)
++	f.log.Info().Msg("[boot] cheevos: regions registered; building address map")
 +	// Build the memory region map NOW, before the game load. rc_client probes every achievement address
 +	// through our read callback during load — if the regions aren't registered yet it disables the whole
 +	// set as "Invalid address". (This, not the memory-map, was why Genesis/N64 never fired.)
@@ -12982,7 +13230,12 @@ index 6974d59..10f7f46 100644
 +			// dies during the save-state below. On a NoSaveStates core it is the ONLY thing there
 +			// is to persist, which is exactly why the tick still runs for them.
 +			f.harvestCardsLive()
-+			if f.NoSaveStates {
++			// NoAutoSaveStates joins NoSaveStates HERE and nowhere else — that is the whole point of
++			// the flag. This tick is the automatic writer: it fires unbidden every period, so on a core
++			// where serializing is expensive and risky (PCSX2: ~126 ms stall, 0xC0000409) it must not
++			// serialize. Deliberate saves are a different bargain and stay on; see NoAutoSaveStates in
++			// pkg/config/emulator.go for why collapsing the two cost us manual Save/Load on ps2.
++			if f.NoSaveStates || f.NoAutoSaveStates {
 +				// Same reasoning one layer down: harvestCardsLive covers the cores whose card is a
 +				// FILE, this covers one whose card is SAVE_RAM. Save() would return ErrNoSaveStates
 +				// after writing it, so call the battery writer directly and keep the log quiet.
@@ -87373,19 +87626,23 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..be987fd 100644
+index 6972cc7..f3ba56d 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -2,6 +2,8 @@ package worker
+@@ -2,17 +2,41 @@ package worker
  
  import (
  	"encoding/json"
++	"fmt"
 +	"os"
 +	"strings"
  
  	"github.com/giongto35/cloud-game/v3/pkg/api"
++	// Aliased: this file already imports stdlib "os" for file work, and the project's own os package
++	// carries the process-level helpers (HardExit, crash forensics).
++	gos "github.com/giongto35/cloud-game/v3/pkg/os"
  	"github.com/giongto35/cloud-game/v3/pkg/com"
-@@ -9,10 +11,28 @@ import (
+ 	"github.com/giongto35/cloud-game/v3/pkg/config"
  	"github.com/giongto35/cloud-game/v3/pkg/games"
  	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
  	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
@@ -87414,7 +87671,7 @@ index 6972cc7..be987fd 100644
  // buildConnQuery builds initial connection data query to a coordinator.
  func buildConnQuery(id com.Uid, conf config.Worker, address string) (string, error) {
  	addr := conf.GetPingAddr(address)
-@@ -36,9 +56,25 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
+@@ -36,9 +60,25 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
  	}()
  
  	peer := webrtc.New(c.log, factory)
@@ -87443,7 +87700,7 @@ index 6972cc7..be987fd 100644
  		return api.EmptyPacket
  	}
  
-@@ -54,6 +90,17 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
+@@ -54,6 +94,17 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
  		return api.EmptyPacket
  	}
  
@@ -87461,7 +87718,7 @@ index 6972cc7..be987fd 100644
  	user := room.NewGameSession(rq.Id, peer) // use user uid from the coordinator
  	c.log.Info().Msgf("Peer connection: %s", user.Id())
  	w.router.AddUser(user)
-@@ -88,6 +135,9 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+@@ -88,6 +139,9 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
  	// the name of the game either in the `room id` field or
  	// it's in the initial request
  	gameName := rq.Game
@@ -87471,7 +87728,7 @@ index 6972cc7..be987fd 100644
  	if rq.Rid != "" {
  		name := w.launcher.ExtractAppNameFromUrl(rq.Rid)
  		if name == "" {
-@@ -95,9 +145,10 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+@@ -95,9 +149,10 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
  			return api.EmptyPacket
  		}
  		gameName = name
@@ -87483,7 +87740,7 @@ index 6972cc7..be987fd 100644
  	if err != nil {
  		c.log.Error().Err(err).Send()
  		return api.EmptyPacket
-@@ -110,6 +161,21 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+@@ -110,6 +165,21 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
  		}
  		game := games.GameMetadata(gameInfo)
  
@@ -87505,7 +87762,7 @@ index 6972cc7..be987fd 100644
  		r = room.NewRoom(uid, nil, w.router.Users(), nil)
  		r.HandleClose = func() {
  			c.CloseRoom(uid)
-@@ -124,63 +190,318 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+@@ -124,63 +194,325 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
  		w.router.SetRoom(r)
  		c.log.Info().Str("room", r.Id()).Str("game", game.Name).Msg("New room")
  
@@ -87829,12 +88086,19 @@ index 6972cc7..be987fd 100644
 +			})
 +
 +			w.log.Info().Msgf("Starting the game: %v", gameName)
++			// Name the room in any crash report. A worker only ever runs one room, so this is the
++			// single most useful fact to carry into a post-mortem: which game/system was live.
++			gos.SetCrashContext(fmt.Sprintf("room=%v game=%v", r.Id(), gameName))
 +			// Arm the wedge sentinel around the core load ONLY (app.Load is where a core
 +			// crashes/hangs — the citra GL-load 0xC0000005). exit() runs on any return; if Load never
 +			// returns (wedged), the sentinel trips at coreLoadDeadline, frees the port, and hard-exits.
 +			w.sentinel.enter(phaseCoreLoad, coreLoadDeadline)
 +			loadErr := app.Load(game, w.conf.Library.BasePath)
 +			w.sentinel.exit()
++			// The boundary that has been invisible: everything the core prints during retro_load_game
++			// looks identical whether load then RETURNED or died at its tail. This line is the proof it
++			// got through, so a crash before it is the core's load and a crash after it is ours.
++			w.log.Info().Msgf("[boot] core load returned (err=%v)", loadErr)
 +			if loadErr != nil {
 +				c.log.Error().Err(loadErr).Msgf("couldn't load the game %v", game)
 +				r.Close()
@@ -87869,7 +88133,7 @@ index 6972cc7..be987fd 100644
  
  		r.SetMedia(m)
  
-@@ -193,6 +514,28 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+@@ -193,6 +525,28 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
  
  		r.InitMedia()
  		r.StartApp()
@@ -87898,7 +88162,7 @@ index 6972cc7..be987fd 100644
  	}
  
  	needsKbMouse := r.App().KbMouseSupport()
-@@ -200,8 +543,24 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+@@ -200,8 +554,24 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
  	s := room.WithWebRTC(user.Session)
  	s.OnMessage(func(data []byte) { r.App().Input(user.Index, byte(caged.RetroPad), data) })
  	if needsKbMouse {
@@ -87925,7 +88189,7 @@ index 6972cc7..be987fd 100644
  	}
  
  	c.RegisterRoom(r.Id())
-@@ -235,6 +594,7 @@ func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *
+@@ -235,6 +605,7 @@ func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *
  		w.router.Remove(user)
  		user.Disconnect()
  	}
@@ -87933,7 +88197,7 @@ index 6972cc7..be987fd 100644
  }
  
  // HandleQuitGame handles cases when a user manually exits the game.
-@@ -242,16 +602,61 @@ func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
+@@ -242,16 +613,61 @@ func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
  	if user := w.router.FindUser(rq.Id); user != nil {
  		w.router.Remove(user)
  	}
@@ -87996,7 +88260,7 @@ index 6972cc7..be987fd 100644
  func (c *coordinator) HandleSaveGame(rq api.SaveGameRequest, w *Worker) api.Out {
  	r := w.router.FindRoom(rq.Rid)
  	if r == nil {
-@@ -269,10 +674,16 @@ func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out
+@@ -269,10 +685,16 @@ func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out
  	if r == nil {
  		return api.ErrPacket
  	}

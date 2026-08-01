@@ -754,17 +754,34 @@ emulator:
           # retro_unload_game (proven: the cache grew 71→98→101 across clean room-closes WITH this hack on).
           # The real cache-persist bug is elsewhere (see arcade-stuntman-audio-skip memory).
           hacks: [skip_hw_context_destroy, skip_boot_restore]
-          # noSaveStates (2026-07-22): PS2's progress is its VIRTUAL MEMORY CARD (cardVault), never a
-          # save-state. Boot-restore is already OFF (skip_boot_restore), the UI hides Save/Load for ps2,
-          # and serialize is the crash-prone path (0xC0000409, patch 0030) — so the 120/300s autosave was
-          # writing whole-machine <roomId>.dat states that NOTHING ever restores: pure dead weight (27 dead
-          # ArcadeSave 'state' rows across 18 games) plus a ~126 ms serialize hitch on the grid. With this
-          # set, the autosave tick HARVESTS THE CARD instead of serializing (frontend.go autosave() branches
-          # on NoSaveStates → harvestCardsLive), so PS2 keeps its real crash-safety — the card, saved every
-          # tick — at zero hitch, and stops minting unusable states. Mirrors psp (also card-only). A stray
-          # Save/Load now returns ErrNoSaveStates gracefully instead of risking the serialize crash. The 27
-          # pre-existing dead rows are inert (never seeded under skip_boot_restore); cleaning them is optional.
-          noSaveStates: true
+          # noAutoSaveStates (2026-08-01) — REPLACES `noSaveStates: true`, which was set here on
+          # 2026-07-22 and took a working feature down with it.
+          #
+          # What 07-22 was right about: the 120/300s autosave tick was minting whole-machine <roomId>.dat
+          # states on a timer, paying a ~126 ms serialize stall each time on the heaviest core we run, for
+          # a file nothing was going to boot from (skip_boot_restore). Killing THAT was correct.
+          #
+          # What it got wrong: it concluded from "boot-restore is off" that the states were dead weight
+          # generally, and reached for the flag that refuses to serialize AT ALL. But boot-restore was
+          # never how these were used — manual in-session Save/Load was (patch 0030 added it FOR ps2), and
+          # the Stuntman audio investigation drove entirely off seeded slots. The evidence was already on
+          # disk and pointed the other way: savestore\1\60439\slot-099.dat, 50 MB, dated 2026-07-17 —
+          # slot 99 is the QUICKSAVE slot, which only a human ever writes. The "27 dead rows" that
+          # justified the change were counting boot-restores that never fired, not saves nobody made.
+          #
+          # So the split is by WHO ASKED, not by which core: the automatic timer stays off the serialize
+          # path (it harvests the card, exactly as before), while a deliberate save-state — the player's
+          # Save/Load, save-on-quit, and the deferred warm-VM boot restore that lets you continue where you
+          # left off — serializes normally. psp/scummvm keep the full noSaveStates: those cores CANNOT be
+          # serialized at any time, which is a different fact about the core rather than a policy choice.
+          #
+          # ⚠ Watch on re-enable: save-on-quit + boot restore is the pairing that caused the 2026-07-09
+          # poison loop (PCSX2 unserialized one tick after init into a wedged black GS, then close-save
+          # wrote the wedge back). Patch 0032b is the mitigation and is what makes this safe now — under
+          # skip_boot_restore the restore is DEFERRED ~5 s into a warm VM, the same path as a human
+          # pressing Load, instead of running at init. If a black-GS resume ever reappears, that is the
+          # mechanism, and the answer is the restore timing — not turning save-states off again.
+          noAutoSaveStates: true
           # Build-stamp isolation for the GL shader cache (docs/arcade-shader-cache-plan.md G4b). We build
           # LRPS2 from source, and gl_programs written by one build can be garbage to the next (the same
           # struct-layout trap the gc/wii coreCache note documents). systemDir: the cache lives under the

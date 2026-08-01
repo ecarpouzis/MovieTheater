@@ -40,11 +40,20 @@ describe("start options by system", () => {
     }
   });
 
-  it("collapses to Clean Start on noSaveStates cores (psp/ps2)", () => {
-    // config.worker-gl.yaml sets noSaveStates: true for both — a t=106 returns ErrNoSaveStates, so
-    // Continue/Quickload would be dead UI. Their progress is the memory card, seeded every boot.
+  it("collapses to Clean Start on noSaveStates cores (psp/scummvm)", () => {
+    // config.worker-gl.yaml sets noSaveStates: true for psp — a t=106 returns ErrNoSaveStates, so
+    // Continue/Quickload would be dead UI. Its progress is the memstick card, seeded every boot.
+    // ScummVM is here for its own reason: retro_serialize_size returns 0.
     expect(hasSaveStates("psp")).toBe(false);
-    expect(hasSaveStates("ps2")).toBe(false);
+    expect(hasSaveStates("scummvm")).toBe(false);
+  });
+
+  it("keeps save-states for ps2 — only its PERIODIC autosave is held off", () => {
+    // Regression guard for 2026-07-22..08-01, when ps2 sat in NO_SAVE_STATE_SYSTEMS and the Save/Load
+    // buttons were hidden. PCSX2 serializes fine on demand (patch 0030); what was actually unwanted
+    // was the 300 s timer doing it unbidden, which is now `noAutoSaveStates` in the worker config.
+    // If this flips back to false, manual Save/Load and the seeded-state repro workflow die with it.
+    expect(hasSaveStates("ps2")).toBe(true);
   });
 
   it("collapses to Clean Start on every heavy/capture lane system", () => {
@@ -65,8 +74,8 @@ describe("start options by system", () => {
     // hasSaveStates now drives BOTH: the Clean-Start collapse in ArcadePage AND whether Save / Load /
     // Snapshot render at all in the room. It previously only did the former, so those buttons were
     // still offered on cores that cannot serialize and failed silently when pressed.
-    for (const sys of ["psp", "ps2", "scummvm"]) expect(hasSaveStates(sys)).toBe(false);
-    for (const sys of ["snes", "ps1", "n64"]) expect(hasSaveStates(sys)).toBe(true);
+    for (const sys of ["psp", "scummvm"]) expect(hasSaveStates(sys)).toBe(false);
+    for (const sys of ["snes", "ps1", "n64", "ps2"]) expect(hasSaveStates(sys)).toBe(true);
   });
 
   it("keeps the quick slot off slot 0, which is the auto Continue slot", () => {
