@@ -512,6 +512,46 @@ export function stickFoldFor(system) {
   return profileFor(system).foldStickToDpad === true;
 }
 
+// ── Right-stick left/right swap (per-game, user-toggled) ─────────────────────────────────────
+// Mirrors the right stick's X axis before it rides the frame. Plenty of 5th-gen 3D titles read the
+// camera stick the opposite way round from the modern convention (the N64 C-buttons are the usual
+// offender — the right stick IS the C-pad there, and a game that pans the camera with C-left/C-right
+// feels inverted to anyone who learned the layout after 1999). The fix belongs here rather than in a
+// rebind: the mapping panel's per-button rebinding works on BUTTON bits, and the right stick is sent
+// as two analog axes, so there is no pair of bits to exchange. Y is deliberately untouched — vertical
+// camera inversion is nearly always a setting inside the game itself.
+//
+// Keyed per GAME, not per system: mirroring is a property of the title (Zelda pans one way, Goldeneye
+// the other), so a per-system flag would be wrong for half the library the moment it was set. Off
+// everywhere by default — no profile default to consult, unlike the stick fold above.
+let rightStickSwaps = (() => {
+  try {
+    const stored = localStorage.getItem("arcade.rightStickSwapX");
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+})();
+
+// The storage key for a room. Falls back to the system when the game key isn't known yet (an invitee
+// before its descriptor resolves) so the toggle still does SOMETHING sane rather than writing under
+// a shared blank key that every such room would then share.
+function rightStickSwapKey(gameKey, system) {
+  return String(gameKey || `sys:${system || ""}`).toLowerCase();
+}
+
+export function getRightStickSwapX(gameKey, system) {
+  return rightStickSwaps[rightStickSwapKey(gameKey, system)] === true;
+}
+
+export function setRightStickSwapX(on, gameKey, system) {
+  const k = rightStickSwapKey(gameKey, system);
+  if (on) rightStickSwaps[k] = true; else delete rightStickSwaps[k]; // off IS the default — don't store it
+  try {
+    localStorage.setItem("arcade.rightStickSwapX", JSON.stringify(rightStickSwaps));
+  } catch { /* storage disabled */ }
+}
+
 // Whether the keyboard ARROW keys should ALSO press the d-pad. Arrows always drive the LEFT STICK
 // (so 3D games can steer); this decides the d-pad half. It mirrors the gamepad fold but is NOT the
 // same call, because the keyboard has only one directional input: on a stick-primary console whose
@@ -854,6 +894,9 @@ export function createCloudRetroSession(descriptor, opts) {
   // Resolved from the profile default + any saved user override; RUNTIME-REASSIGNABLE via setStickFold
   // (the mapping panel toggles it live, so a fix takes effect without leaving the room).
   let foldStickToDpad = stickFoldFor(inputSystem);
+  // Mirror the right stick's X axis (per-game, see getRightStickSwapX). Also runtime-reassignable —
+  // the whole point is flipping it mid-room when a game's camera turns out to be mirrored.
+  let swapRightStickX = getRightStickSwapX(descriptor.gameKey, descriptor.system);
 
   // Apply custom gamepad button rebindings if provided
   // customGamepadProfileOverride maps: physicalButtonIndex -> RetroPadBit (user rebindings)
@@ -1044,6 +1087,10 @@ export function createCloudRetroSession(descriptor, opts) {
       if (!rx) rx = rKeys.left ? -32767 : rKeys.right ? 32767 : 0;
       if (!ry) ry = rKeys.up ? -32767 : rKeys.down ? 32767 : 0;
     }
+    // Mirror right-stick left/right last, so it covers the keyboard's synthetic deflection too — the
+    // player's "left" must mean the same thing on both inputs. Safe to negate: axisToInt16 clamps to
+    // ±32767, never int16's -32768.
+    if (swapRightStickX) rx = -rx;
     const a = [ax, ay, rx, ry];
     // Echo-guard bookkeeping (see ECHO_WINDOW_MS): stamp every tick our output is non-neutral, NOT
     // every frame we send — a HELD button stops producing sends the moment the dedupe below latches,
@@ -1805,6 +1852,10 @@ export function createCloudRetroSession(descriptor, opts) {
     // true state — otherwise a d-pad bit that the fold was adding stays "held" on the worker until the
     // stick next crosses the deadzone.
     setStickFold: (on) => { foldStickToDpad = !!on; last = null; },
+    // Mirror right-stick left/right live. Null the dedupe for the same reason as the fold: a stick
+    // held off-centre while the toggle flips produces no NEW change to send, so the worker would keep
+    // the pre-flip deflection until the stick next moves.
+    setSwapRightStickX: (on) => { swapRightStickX = !!on; last = null; },
     // Rebuild the chord watcher from the current custom binds (controller tool "Quick actions" rebind),
     // so a changed chord fires immediately without restarting the room. No-op for non-primary sessions.
     reloadChords: () => { if (onChordAction) chordWatcher = createChordWatcher(onChordAction, resolveChords(customChordBinds)); },

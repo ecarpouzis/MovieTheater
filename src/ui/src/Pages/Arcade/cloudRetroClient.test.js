@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import {
   displayAspect, rotatedVideoSize, videoTransform,
   stickFoldFor, setStickFoldOverride, resetStickFoldOverride,
+  getRightStickSwapX, setRightStickSwapX,
   keyboardArrowsDriveDpad,
   encodePointer, systemUsesPointer,
   encodeMouseMove, encodeMouseButtons, systemUsesMouse,
@@ -211,6 +212,39 @@ describe("stickFoldFor", () => {
     expect(stickFoldFor("gc")).toBe(true);
     resetStickFoldOverride("gc");
     expect(stickFoldFor("gc")).toBe(false);
+  });
+});
+
+// Right-stick left/right mirror. Keyed per GAME (mirrored camera is a property of the title, not the
+// console), off unless explicitly turned on, and falling back to the system only when the game key
+// isn't known yet — a room mid-resolve must not write under a blank key every other such room shares.
+describe("getRightStickSwapX / setRightStickSwapX", () => {
+  afterEach(() => {
+    ["Mario Kart 64", "Bomberman 64", "GOLDENEYE", null].forEach((g) => setRightStickSwapX(false, g, "n64"));
+  });
+
+  it("is off until it is turned on, per game", () => {
+    expect(getRightStickSwapX("Mario Kart 64", "n64")).toBe(false);
+    setRightStickSwapX(true, "Mario Kart 64", "n64");
+    expect(getRightStickSwapX("Mario Kart 64", "n64")).toBe(true);
+    expect(getRightStickSwapX("Bomberman 64", "n64")).toBe(false); // same system, untouched
+  });
+
+  it("turns back off", () => {
+    setRightStickSwapX(true, "Mario Kart 64", "n64");
+    setRightStickSwapX(false, "Mario Kart 64", "n64");
+    expect(getRightStickSwapX("Mario Kart 64", "n64")).toBe(false);
+  });
+
+  it("is case-insensitive on the game key", () => {
+    setRightStickSwapX(true, "GOLDENEYE", "n64");
+    expect(getRightStickSwapX("goldeneye", "n64")).toBe(true);
+  });
+
+  it("falls back to the system when the game key isn't known yet", () => {
+    setRightStickSwapX(true, null, "n64");
+    expect(getRightStickSwapX(null, "n64")).toBe(true);
+    expect(getRightStickSwapX(null, "ps1")).toBe(false); // not a shared blank bucket
   });
 });
 

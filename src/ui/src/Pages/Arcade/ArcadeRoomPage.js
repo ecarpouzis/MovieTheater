@@ -2,7 +2,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, livePads, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, livePads, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, getRightStickSwapX, setRightStickSwapX, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
 import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, QUICK_SLOT, hasSaveStates } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
@@ -184,6 +184,9 @@ export default function ArcadeRoomPage() {
   // per-system (off for analog-native consoles so the stick doesn't double-bind with the d-pad —
   // e.g. N64 aim, GC/Wii Smash taunt); a saved override wins. Toggled live from the mapping panel.
   const [stickFold, setStickFoldState] = useState(false);
+  // Whether this GAME's right stick has its left/right mirrored (5th-gen camera controls). Per-game,
+  // not per-system — see getRightStickSwapX. Toggled live from the mapping panel.
+  const [swapRightX, setSwapRightXState] = useState(false);
   const [fatal, setFatal] = useState(null);
 
   // Load custom gamepad profile when system changes. Keyed off the EFFECTIVE input system (the two
@@ -195,6 +198,8 @@ export default function ArcadeRoomPage() {
       setCustomGamepadProfileState(getCustomGamepadProfile(effSystem));
       setStickFoldState(stickFoldFor(effSystem));
     }
+    // Per-GAME, so this re-reads once an invitee's descriptor lands and gameKey stops being null.
+    setSwapRightXState(getRightStickSwapX(gameKey, system));
   }, [system, gameKey, controllerScheme]);
   // Crash-loop detector. A worker that segfaults at core load (a bad ROM — Stuntman Ignition,
   // 2026-07-16) boots the room, dies in under a second, and the shim/refocus recovery just retries
@@ -1434,6 +1439,11 @@ export default function ArcadeRoomPage() {
               setStickFoldState(def);
               sessionRef.current?.setStickFold?.(def);
               for (const s of localSessionsRef.current.values()) s?.setStickFold?.(def);
+              // …and this game's right-stick mirror (default is off).
+              setRightStickSwapX(false, gameKey, system);
+              setSwapRightXState(false);
+              sessionRef.current?.setSwapRightStickX?.(false);
+              for (const s of localSessionsRef.current.values()) s?.setSwapRightStickX?.(false);
               message.info("Reset to default button mapping");
             }}>
               Reset button mapping
@@ -1456,6 +1466,25 @@ export default function ArcadeRoomPage() {
                 }}
               >
                 Left stick also acts as D-pad
+              </Checkbox>
+            </Tooltip>
+          </div>
+          {/* Right-stick left/right mirror. Per GAME (a mirrored camera is a property of the title,
+              not the console) and applied live to this room's session(s), so it can be flipped the
+              moment a game turns out to pan the wrong way — no rebinding, no rejoin. */}
+          <div style={{ marginTop: 8 }}>
+            <Tooltip title="Mirrors LEFT and RIGHT on the right analog stick for this game. Handy for older 3D titles whose camera pans the opposite way from the modern convention (on N64 the right stick is the C-buttons). Saved per game; up/down is unchanged.">
+              <Checkbox
+                checked={swapRightX}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  setSwapRightXState(on);
+                  setRightStickSwapX(on, gameKey, system);
+                  sessionRef.current?.setSwapRightStickX?.(on);
+                  for (const s of localSessionsRef.current.values()) s?.setSwapRightStickX?.(on);
+                }}
+              >
+                Swap right stick left/right
               </Checkbox>
             </Tooltip>
           </div>
