@@ -41,10 +41,19 @@ export default function ArcadeAchievements({ gameId }) {
     <div className="agm-ach">
       <div className="agm-ach__head">
         <div className="agm-ach__stat">
-          <strong>{data.earnedCount}</strong> / {data.numAchievements} earned
-          <span className="agm-ach__pts"> · {data.pointsEarned}/{data.pointsTotal} pts</span>
+          {/* `partial` = the server had no RA set to show, so these are the unlocks from our own mirror
+              and nothing else. Showing "3 / 3 earned · 100%" there would claim a completed game. */}
+          {data.partial
+            ? <><strong>{data.earnedCount}</strong> earned</>
+            : <><strong>{data.earnedCount}</strong> / {data.numAchievements} earned</>}
+          <span className="agm-ach__pts"> · {data.pointsEarned}{data.partial ? "" : `/${data.pointsTotal}`} pts</span>
         </div>
-        <Progress percent={pct} size="small" showInfo={false} strokeColor="#e0a800" className="agm-ach__bar" />
+        {/* No bar when partial: pointsTotal is just pointsEarned there, so it would sit at 100%. */}
+        {data.partial
+          ? <Tooltip title="This game isn't matched to its RetroAchievements set on the server, so only the achievements you've already unlocked here can be listed — the rest of the set, the descriptions and the badge art are missing. Everything you earned is safe; it's the catalogue link that's absent.">
+              <span className="agm-ach__partial">earned only ⓘ</span>
+            </Tooltip>
+          : <Progress percent={pct} size="small" showInfo={false} strokeColor="#e0a800" className="agm-ach__bar" />}
         {data.raUrl && (
           <a className="agm-ach__ra" href={data.raUrl} target="_blank" rel="noreferrer" title="View this game on RetroAchievements">RA ↗</a>
         )}

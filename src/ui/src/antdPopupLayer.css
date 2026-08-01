@@ -1,0 +1,40 @@
+/* ============================================================================
+   The popup layer — one z-index for every floating antd overlay.
+
+   THE BUG THIS FIXES: antd 4 has no automatic z-index management (that landed in
+   antd 5.13). Popups portal to document.body and take their z-index from these
+   classes — 1050 for a Select dropdown, 1070 for a Tooltip — while this app's
+   dialogs are pushed to 1400-1600 by hand so they clear the fixed nav bar
+   (NavBar.css, z-index 1300). Every popup opened INSIDE a dialog therefore
+   rendered BEHIND it. Reported from a Steam Deck: the Controllers panel's
+   "which player is this pad?" Select was unpickable, and the RetroAchievements
+   badge tooltips (their only description) were invisible.
+
+   It had been patched twice before, per-popup — ArcadeGameConfig.js's
+   DROPDOWN_STYLE and GameModal.css's .arcade-version-dropdown — which is why it
+   kept coming back: every new Select or Tooltip inside a dialog is born broken
+   and nobody finds out until someone opens that dialog. This file fixes the
+   LAYER instead, so there is nothing to remember.
+
+   1800 clears every dialog in the app: 1400/1500/1600 (UserSettingsModal.css,
+   the arcade modals, ArcadeGameConfig) and the 1700/1701 the two earlier
+   one-off patches used. Deliberately below AchievementToast.css, which sits on
+   its own layer above the fullscreen video.
+
+   `!important` because the earlier fixes set z-index INLINE (a `dropdownStyle`
+   / `overlayStyle` prop), and an inline style beats a stylesheet otherwise.
+   It also makes this immune to CSS import order — this file is imported last in
+   index.js, but lazy route chunks inject their CSS later still.
+
+   Popups are the topmost thing the user is currently interacting with, so a
+   single shared layer is correct: there is no case where a popup should render
+   under a dialog, and stacking within the layer follows DOM order (the popup
+   opened most recently is last in body, so it wins).
+   ============================================================================ */
+
+.ant-select-dropdown,
+.ant-dropdown,
+.ant-tooltip,
+.ant-popover {
+  z-index: 1800 !important;
+}

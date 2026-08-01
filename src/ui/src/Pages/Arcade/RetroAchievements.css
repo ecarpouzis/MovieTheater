@@ -63,6 +63,9 @@
 .agm-ach__pts { color: var(--text-muted); }
 .agm-ach__bar { flex: 1; margin: 0 !important; }
 .agm-ach__ra { white-space: nowrap; font-size: 12px; }
+/* Takes the progress bar's slot when the panel is showing earned-only (no RA set to measure against),
+   so the row keeps its shape instead of collapsing the stat and the RA link together. */
+.agm-ach__partial { flex: 1; font-size: 12px; color: var(--text-muted); cursor: help; white-space: nowrap; }
 .agm-ach__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 8px; }
 /* A badge is a tap target for its own detail tooltip, not a link — no link cursor, no tap flash. */
 .agm-ach__cell { position: relative; display: block; aspect-ratio: 1; border-radius: 8px; overflow: hidden;

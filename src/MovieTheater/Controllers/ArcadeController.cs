@@ -2240,19 +2240,42 @@ namespace MovieTheater.Controllers
             var versionIds = versions.Select(v => v.Id).ToList();
             var raGameId = versions.Select(v => v.RaGameId).FirstOrDefault(r => r != null && r > 0);
 
-            if (raGameId == null)
-                return Json(new { gameId, raGameId = (int?)null, configured = RaWebApiConfigured, available = false, achievements = Array.Empty<object>() });
-
             // What THIS user earned in our arcade (mirror), keyed by RA achievement id — the earned overlay.
+            // Read BEFORE the RA lookups, because it is also the FALLBACK when they come up empty (below).
             var earned = await movieDb.ArcadeAchievementUnlocks.AsNoTracking()
                 .Where(a => a.UserId == userId.Value && a.ArcadeGameId != null && versionIds.Contains(a.ArcadeGameId.Value))
                 .ToListAsync();
             var earnedById = earned.GroupBy(a => a.RaAchievementId)
                 .ToDictionary(g => g.Key, g => g.OrderBy(a => a.UnlockedUtc).First());
 
+            // No RA set for this card — either arcade-ra-enrich couldn't match its title (ROMHACKS are the
+            // standing case: rcheevos identifies the ROM by HASH and happily awards RA's hack set, while the
+            // enrich pass matches by title and RA names hacks "~Hack~ Super Mario 64: Last Impact"), or RA is
+            // unreachable/unconfigured. Falling straight through to `available: false` threw away unlocks we
+            // hold in our own mirror: the trophy room listed the game (it groups off those very rows) and then
+            // showed an empty panel — the "I earned trophies and there's nothing here" report. Show what we
+            // know. `partial` tells the client this is the earned subset, not the whole set.
+            // SELF-HEAL. A card with unlocks but no RaGameId means our title never matched RA's — romhacks are
+            // the standing case (RA names them "~Hack~ Super Mario 64: Last Impact"), and a translation patch
+            // can resolve to a different region's entry entirely ("Dynamite Headdy English Translation" → RA's
+            // "Dynamite Headdy (Japan)"), which no title match could ever find. We can recover it EXACTLY from
+            // what we already hold: rcheevos had to hash-identify the ROM before RA would award any of these
+            // achievements, so RA's own achievement→game map is authoritative. Resolve once, pin it, and the
+            // panel is whole from here on — this is what stops the empty-panel bug coming back per new hack
+            // rather than waiting for someone to re-run arcade-ra-enrich.
+            var selfHealed = false;
+            if (raGameId == null && earnedById.Count > 0)
+            {
+                raGameId = await ResolveAndPinRaGameIdAsync(versionIds, earnedById.Keys.Min());
+                selfHealed = raGameId != null;
+            }
+
+            if (raGameId == null || !RaWebApiConfigured)
+                return Json(MirrorOnlyAchievements(gameId, raGameId, earnedById));
+
             using var doc = await RaWebApiGetAsync($"API_GetGameExtended.php?i={raGameId}", RaMemTtl, RaDbDefs);
             if (doc == null)
-                return Json(new { gameId, raGameId, configured = RaWebApiConfigured, available = false, achievements = Array.Empty<object>() });
+                return Json(MirrorOnlyAchievements(gameId, raGameId, earnedById));
 
             var root = doc.RootElement;
             var items = new List<(int order, object obj)>();
@@ -2290,6 +2313,20 @@ namespace MovieTheater.Controllers
                 }
             }
 
+            // A self-healed card has RaGameId but still the 0 achievement count enrich left behind, and that
+            // count is what lights the 🏆 badge and answers the lobby's RA filter. We just counted the real
+            // set, so finish the job — cheap, and only on the one request that healed the card.
+            if (selfHealed && items.Count > 0)
+            {
+                try
+                {
+                    var versionRows = await movieDb.ArcadeGames.Where(v => versionIds.Contains(v.Id)).ToListAsync();
+                    foreach (var v in versionRows) v.RaAchievementCount = items.Count;
+                    await movieDb.SaveChangesAsync();
+                }
+                catch (Exception ex) { logger.LogWarning(ex, "Arcade RA self-heal: could not persist RaAchievementCount."); }
+            }
+
             return Json(new
             {
                 gameId,
@@ -2305,6 +2342,84 @@ namespace MovieTheater.Controllers
                 pointsTotal,
                 achievements = items.OrderBy(x => x.order).Select(x => x.obj).ToList(),
             });
+        }
+
+        /// <summary>Ask RA which game an achievement belongs to, and pin the answer onto every version of the
+        /// card that has none. Hash-grade provenance: the achievement is one rcheevos awarded, which it could
+        /// only do after identifying the ROM by content hash — so this outranks any title match, and
+        /// <c>arcade-ra-enrich</c> is careful not to erase it on a later title miss (--clear-unmatched opts in).
+        /// Returns null when RA can't place it; a persistence failure is logged and swallowed, because this is
+        /// a cache fill on a read path and must never fail the request that triggered it.</summary>
+        private async Task<int?> ResolveAndPinRaGameIdAsync(List<int> versionIds, long achievementId)
+        {
+            if (!RaWebApiConfigured) return null;
+            using var doc = await RaWebApiGetAsync($"API_GetAchievementUnlocks.php?a={achievementId}&c=1", RaMemTtl, RaDbDefs);
+            if (doc == null) return null;
+            if (!doc.RootElement.TryGetProperty("Game", out var g) || !g.TryGetProperty("ID", out var idv)) return null;
+            // RA is inconsistent about numeric-vs-string ids across endpoints; accept either.
+            var raId = idv.ValueKind == System.Text.Json.JsonValueKind.Number && idv.TryGetInt32(out var n) ? n
+                : int.TryParse(idv.GetString(), out var p) ? p : 0;
+            if (raId <= 0) return null;
+
+            try
+            {
+                var unpinned = await movieDb.ArcadeGames.Where(v => versionIds.Contains(v.Id) && v.RaGameId == null).ToListAsync();
+                foreach (var v in unpinned) v.RaGameId = raId;
+                if (unpinned.Count > 0)
+                {
+                    await movieDb.SaveChangesAsync();
+                    logger.LogInformation("Arcade RA self-heal: pinned RaGameId {RaGameId} onto {Count} version(s) via achievement {AchievementId}.",
+                        raId, unpinned.Count, achievementId);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Arcade RA self-heal: resolved RaGameId {RaGameId} but could not persist it.", raId);
+            }
+            return raId;
+        }
+
+        /// <summary>The achievements payload built from OUR mirror alone, for when RA can't supply the set
+        /// (card not matched to an RA game, or the Web API unconfigured/unreachable). Carries only what an
+        /// <see cref="ArcadeAchievementUnlock"/> row records — no description, no badge art, and no locked
+        /// entries, since the set itself is what's missing — so it reports <c>partial: true</c> and leaves
+        /// <c>pointsTotal</c> equal to what was earned rather than inventing a denominator. Empty mirror =
+        /// the honest <c>available: false</c> the caller used to return unconditionally.</summary>
+        private object MirrorOnlyAchievements(int gameId, int? raGameId, Dictionary<long, ArcadeAchievementUnlock> earnedById)
+        {
+            var mine = earnedById.Values.OrderBy(a => a.UnlockedUtc).ToList();
+            if (mine.Count == 0)
+                return new { gameId, raGameId, configured = RaWebApiConfigured, available = false, partial = false, achievements = Array.Empty<object>() };
+
+            return new
+            {
+                gameId,
+                raGameId,
+                configured = RaWebApiConfigured,
+                available = true,
+                partial = true,
+                raUrl = raGameId == null ? null : "https://retroachievements.org/game/" + raGameId,
+                numAchievements = mine.Count,
+                earnedCount = mine.Count,
+                pointsEarned = mine.Sum(a => a.Points),
+                pointsTotal = mine.Sum(a => a.Points),
+                achievements = mine.Select(a => new
+                {
+                    id = a.RaAchievementId,
+                    title = a.Title,
+                    description = (string?)null,
+                    points = a.Points,
+                    badgeUrl = (string?)null,
+                    earned = true,
+                    earnedCompetitive = a.Competitive,
+                    earnedUtc = a.UnlockedUtc,
+                    cheat = a.Cheat,
+                    savescum = a.Savescum,
+                    timeplay = a.Timeplay,
+                    legit = a.Clean,
+                    raUrl = "https://retroachievements.org/achievement/" + a.RaAchievementId,
+                }).ToList(),
+            };
         }
 
         /// <summary>The trophy-room summary for a user: the games they've earned achievements in (from our
