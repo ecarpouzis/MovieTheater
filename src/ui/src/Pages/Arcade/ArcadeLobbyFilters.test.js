@@ -66,12 +66,15 @@ describe("the lobby's system filter, end to end", () => {
     const { container, history } = renderLobby();
     await waitFor(() => expect(cards(container)).toBe(40));
 
+    // By NAME, not position: the shelf is ordered by console release date, so an index here would
+    // silently start testing a different console the day that order changes.
+    const nesTile = () => screen.getByRole("button", { name: /^NES/ });
     await waitFor(() => expect(container.querySelectorAll(".arcade-console").length).toBe(2));
-    await act(async () => { fireEvent.click(container.querySelectorAll(".arcade-console")[0]); });
+    await act(async () => { fireEvent.click(nesTile()); });
     await waitFor(() => expect(history.location.search).toBe("?system=nes"));
     await waitFor(() => expect(cards(container)).toBe(1));
 
-    await act(async () => { fireEvent.click(container.querySelectorAll(".arcade-console")[0]); });
+    await act(async () => { fireEvent.click(nesTile()); });
     await waitFor(() => expect(history.location.search).toBe(""));
     await waitFor(() => expect(cards(container)).toBe(40));
 

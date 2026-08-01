@@ -1,13 +1,14 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { consoleTile, systemLabel } from "./arcadeSystems";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { byConsoleAge, consoleTile, systemLabel, systemYear, HEAVY_LANE_SYSTEMS } from "./arcadeSystems";
 
 const COLLAPSE_KEY = "arcade.consoles.collapsed";
+const STREAMED_KEY = "arcade.consoles.showStreamed";
 
-function loadCollapsed() {
-  try { return localStorage.getItem(COLLAPSE_KEY) === "1"; } catch { return false; }
+function loadFlag(key) {
+  try { return localStorage.getItem(key) === "1"; } catch { return false; }
 }
-function saveCollapsed(v) {
-  try { localStorage.setItem(COLLAPSE_KEY, v ? "1" : "0"); } catch { /* private mode — not worth failing over */ }
+function saveFlag(key, v) {
+  try { localStorage.setItem(key, v ? "1" : "0"); } catch { /* private mode — not worth failing over */ }
 }
 
 /** One console tile. A toggle, not a link: pressing it ADDS its system to the filter, pressing it
@@ -15,12 +16,13 @@ function saveCollapsed(v) {
 function ConsoleTile({ system, count, selected, onToggle }) {
   const art = consoleTile(system);
   const label = systemLabel(system);
+  const year = systemYear(system);
   return (
     <button
       type="button"
       className={"arcade-console" + (selected ? " is-selected" : "")}
       aria-pressed={selected}
-      title={`${label} — ${count.toLocaleString()} game${count === 1 ? "" : "s"}`}
+      title={`${label}${year ? ` (${year})` : ""} — ${count.toLocaleString()} game${count === 1 ? "" : "s"}`}
       onClick={() => onToggle(system)}
     >
       <span className="arcade-console__art">
@@ -53,11 +55,27 @@ function ConsoleTile({ system, count, selected, onToggle }) {
  * `systems` are the faceted counts from /API/Arcade/Filters, which the server computes EXCLUDING the
  * system filter itself. That's what keeps the shelf stable: every console keeps its real catalog
  * count and stays on screen while you pick, instead of the unpicked ones collapsing to zero.
+ *
+ * The order is by HARDWARE RELEASE DATE, newest first, so scrolling right walks back through console
+ * generations. Sorting by catalog size instead put the shelf in an order nobody can predict — you
+ * can't guess where the Dreamcast sits in a popularity ranking, but you know it came after the Saturn.
  */
 export default function ConsoleCarousel({ systems, selected, onToggle, onClear }) {
   const railRef = useRef(null);
-  const [collapsed, setCollapsed] = useState(loadCollapsed);
+  const [collapsed, setCollapsed] = useState(() => loadFlag(COLLAPSE_KEY));
+  const [showStreamed, setShowStreamed] = useState(() => loadFlag(STREAMED_KEY));
   const [edges, setEdges] = useState({ left: false, right: false });
+
+  // Newest console first; the streamed (heavy/capture-lane) systems are held back until asked for,
+  // since a handful of titles between them shouldn't sit at the head of the shelf advertising a
+  // library we don't have yet. One that is already SELECTED always shows regardless — a filter you
+  // can see but can't switch off is a trap, and a bookmarked ?system=switch would otherwise be one.
+  const shelf = useMemo(() => (systems || [])
+    .filter((s) => showStreamed || !HEAVY_LANE_SYSTEMS.has(s.value) || selected.includes(s.value))
+    .slice()
+    .sort((a, b) => byConsoleAge(a.value, b.value)), [systems, showStreamed, selected]);
+  const streamedCount = useMemo(
+    () => (systems || []).filter((s) => HEAVY_LANE_SYSTEMS.has(s.value)).length, [systems]);
 
   const measure = useCallback(() => {
     const el = railRef.current;
@@ -78,7 +96,7 @@ export default function ConsoleCarousel({ systems, selected, onToggle, onClear }
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [collapsed, measure, systems]);
+  }, [collapsed, measure, shelf]);
 
   const scrollBy = (dir) => {
     const el = railRef.current;
@@ -98,7 +116,7 @@ export default function ConsoleCarousel({ systems, selected, onToggle, onClear }
         <h2 className="arcade-section__title">Consoles</h2>
         <span className="arcade-section__count">
           {selectedCount === 0
-            ? `${systems.length} systems`
+            ? `${shelf.length} systems · newest first`
             : `${selectedCount} selected · ${total.toLocaleString()} game${total === 1 ? "" : "s"}`}
         </span>
         <div className="arcade-consoles__actions">
@@ -109,7 +127,7 @@ export default function ConsoleCarousel({ systems, selected, onToggle, onClear }
             type="button"
             className="arcade-consoles__link"
             aria-expanded={!collapsed}
-            onClick={() => setCollapsed((c) => { saveCollapsed(!c); return !c; })}
+            onClick={() => setCollapsed((c) => { saveFlag(COLLAPSE_KEY, !c); return !c; })}
           >
             {collapsed ? "Show" : "Hide"}
           </button>
@@ -129,7 +147,7 @@ export default function ConsoleCarousel({ systems, selected, onToggle, onClear }
           {/* The shelf itself is keyboard-reachable by tabbing through the tiles, so the arrows are
               taken out of the tab order (tabIndex -1) — they're a mouse/touch convenience only. */}
           <div className="arcade-consoles__rail" ref={railRef} onScroll={measure}>
-            {systems.map((s) => (
+            {shelf.map((s) => (
               <ConsoleTile
                 key={s.value}
                 system={s.value}
@@ -148,6 +166,20 @@ export default function ConsoleCarousel({ systems, selected, onToggle, onClear }
               strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
           </button>
         </div>
+      )}
+
+      {/* Off by default: the streamed lane is a handful of titles, and a shelf tile promises a library.
+          Offered rather than hidden outright so the few that exist are still reachable — and the count
+          in the label is honest about how little is behind it. */}
+      {!collapsed && streamedCount > 0 && (
+        <label className="arcade-consoles__streamed">
+          <input
+            type="checkbox"
+            checked={showStreamed}
+            onChange={(e) => { setShowStreamed(e.target.checked); saveFlag(STREAMED_KEY, e.target.checked); }}
+          />
+          <span>Show streamed systems ({streamedCount})</span>
+        </label>
       )}
     </section>
   );

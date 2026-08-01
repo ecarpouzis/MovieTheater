@@ -1,8 +1,9 @@
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
-import { vi, describe, it, expect, afterEach } from "vitest";
+import { vi, describe, it, expect, afterEach, beforeEach } from "vitest";
 
 import ConsoleCarousel from "./ConsoleCarousel";
 import { parseSystems, serializeSystems, toggleSystem } from "./arcadeSystemFilter";
+import { SYSTEM_LABEL, SYSTEM_RELEASED, byConsoleAge } from "./arcadeSystems";
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 global.ResizeObserver = global.ResizeObserver || class { observe() {} unobserve() {} disconnect() {} };
@@ -42,6 +43,21 @@ describe("arcadeSystemFilter", () => {
   });
 });
 
+describe("console release dates", () => {
+  // A system that reaches the shelf without a date sorts to the far end, where nobody will look for
+  // it. Anything we bothered to name is something we ship, so it needs one — except `capture`, which
+  // is a lane rather than a machine and has no release date to claim.
+  it("dates every system the lobby can name", () => {
+    const undated = Object.keys(SYSTEM_LABEL).filter((s) => s !== "capture" && !SYSTEM_RELEASED[s]);
+    expect(undated).toEqual([]);
+  });
+
+  it("orders newest to oldest across the generations", () => {
+    const shelf = ["nes", "ps2", "switch", "gb", "arcade", "n64"].sort(byConsoleAge);
+    expect(shelf).toEqual(["switch", "ps2", "n64", "gb", "nes", "arcade"]);
+  });
+});
+
 describe("ConsoleCarousel", () => {
   it("adds a console to the selection rather than replacing it", () => {
     const onToggle = vi.fn();
@@ -61,7 +77,7 @@ describe("ConsoleCarousel", () => {
   it("summarises the picked consoles, and offers Clear only once something is picked", () => {
     const { rerender } = render(
       <ConsoleCarousel systems={systems} selected={[]} onToggle={vi.fn()} onClear={vi.fn()} />);
-    expect(screen.getByText("3 systems")).toBeTruthy();
+    expect(screen.getByText("3 systems · newest first")).toBeTruthy();
     expect(screen.queryByText("Clear consoles")).toBeNull();
 
     rerender(<ConsoleCarousel systems={systems} selected={["snes", "n64"]} onToggle={vi.fn()} onClear={vi.fn()} />);
@@ -81,5 +97,58 @@ describe("ConsoleCarousel", () => {
     render(<ConsoleCarousel systems={[{ value: "bogus", count: 3 }]} selected={[]} onToggle={vi.fn()} onClear={vi.fn()} />);
     // No committed tile for "bogus" → the label stands in for the art instead of a broken image.
     expect(screen.getByRole("button", { name: /BOGUS/ }).querySelector("img")).toBeNull();
+  });
+
+  // Newest hardware first, so scrolling right walks backwards through the generations. Catalog size
+  // is deliberately NOT the order: nobody can guess where the Dreamcast sits in a popularity ranking.
+  it("shelves the consoles newest-first, whatever their catalog size", () => {
+    const { container } = render(
+      <ConsoleCarousel systems={systems} selected={[]} onToggle={vi.fn()} onClear={vi.fn()} />);
+    const order = [...container.querySelectorAll(".arcade-console__name")].map((n) => n.textContent);
+    expect(order).toEqual(["Nintendo 64", "SNES", "Genesis"]);
+  });
+
+  // A system we have no release date for must not silently take pride of place at the head of the
+  // shelf — an unknown is not a new console.
+  it("puts an undated system last rather than first", () => {
+    const { container } = render(
+      <ConsoleCarousel systems={[{ value: "bogus", count: 3 }, ...systems]} selected={[]} onToggle={vi.fn()} onClear={vi.fn()} />);
+    const order = [...container.querySelectorAll(".arcade-console__name")].map((n) => n.textContent);
+    expect(order.at(-1)).toBe("BOGUS");
+  });
+});
+
+describe("ConsoleCarousel — the streamed lane", () => {
+  const withStreamed = [...systems, { value: "switch", count: 3 }, { value: "ps4", count: 1 }];
+
+  beforeEach(() => { try { localStorage.clear(); } catch { /* private mode */ } });
+
+  it("hides the streamed systems until asked, and says how many are behind the box", () => {
+    const { container } = render(
+      <ConsoleCarousel systems={withStreamed} selected={[]} onToggle={vi.fn()} onClear={vi.fn()} />);
+
+    expect(screen.queryByRole("button", { name: /Switch/ })).toBeNull();
+    expect(container.querySelectorAll(".arcade-console")).toHaveLength(3);
+
+    const box = screen.getByLabelText(/Show streamed systems \(2\)/);
+    expect(box.checked).toBe(false);
+    fireEvent.click(box);
+
+    // Shown, and still in release order — the Switch is the newest thing on the shelf.
+    const order = [...container.querySelectorAll(".arcade-console__name")].map((n) => n.textContent);
+    expect(order).toEqual(["Switch", "PlayStation 4", "Nintendo 64", "SNES", "Genesis"]);
+  });
+
+  // A filter you can see the effect of but can't switch off is a trap, and ?system=switch is
+  // bookmarkable — so a SELECTED streamed system stays on the shelf whatever the checkbox says.
+  it("keeps a streamed system visible while it is selected", () => {
+    render(<ConsoleCarousel systems={withStreamed} selected={["switch"]} onToggle={vi.fn()} onClear={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /Switch/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByRole("button", { name: /PlayStation 4/ })).toBeNull();
+  });
+
+  it("offers no checkbox at all when there is nothing streamed to show", () => {
+    render(<ConsoleCarousel systems={systems} selected={[]} onToggle={vi.fn()} onClear={vi.fn()} />);
+    expect(screen.queryByText(/Show streamed systems/)).toBeNull();
   });
 });

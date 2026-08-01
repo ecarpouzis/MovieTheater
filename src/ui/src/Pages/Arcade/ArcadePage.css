@@ -1075,6 +1075,30 @@
   position: relative;
 }
 
+/* Sits under the shelf, deliberately quiet — it's an opt-in for a lane most visits don't want. */
+.arcade-consoles__streamed {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 2px 0 0 3px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.arcade-consoles__streamed input {
+  /* The native control, sized down and tinted — an antd Checkbox here would drag its own font and
+     line-height into a row that has to stay this small. */
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.arcade-consoles__streamed:hover { color: var(--text-primary); }
+
 .arcade-consoles__rail {
   display: flex;
   gap: 12px;

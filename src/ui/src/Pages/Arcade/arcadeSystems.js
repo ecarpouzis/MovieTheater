@@ -14,6 +14,7 @@ export const SYSTEM_LABEL = {
   nds: "Nintendo DS", "3ds": "Nintendo 3DS",
   // Heavy lane (Moonlight-streamed, docs/arcade-heavy-lane-plan.md §7.1).
   switch: "Switch", ps3: "PlayStation 3", ps4: "PlayStation 4", wiiu: "Wii U", x360: "Xbox 360",
+  pc: "PC",
   // Capture lane (H5): a browser room for a heavy title shows system "capture" in its descriptor.
   capture: "Live",
 };
@@ -40,6 +41,57 @@ const TILE_BY_SYSTEM = Object.fromEntries(
 /** The tile image for a system code, or undefined when we have no art for it. */
 export const consoleTile = (system) => TILE_BY_SYSTEM[String(system || "").toLowerCase()];
 
+// When the hardware itself first went on sale, ANYWHERE — Famicom 1983 rather than NES 1985, Mega
+// Drive 1988 rather than Genesis 1989. That is what makes the shelf read as a timeline instead of a
+// popularity chart: scrolling right walks backwards through console generations, which is an order
+// you can navigate from memory even when you can't name the machine you're looking for.
+//
+// ISO strings so they sort as plain text — no Date parsing, no timezone to get wrong.
+//
+// Three entries are judgement calls, because they aren't consoles:
+//   arcade  — 1971, Computer Space, the first coin-op video game. The platform genuinely predates
+//             every console here, so it lands at the very end of the shelf despite being one of the
+//             largest collections.
+//   scummvm — 1987, Maniac Mansion: the first SCUMM game, which is what the engine is named after.
+//   pc      — 1981, the IBM PC, since the DOS era is what this lane actually holds.
+// `capture` is deliberately absent: it is a LANE, not a machine, and has no release date to claim.
+export const SYSTEM_RELEASED = {
+  switch: "2017-03-03", ps4: "2013-11-15", wiiu: "2012-11-18", "3ds": "2011-02-26",
+  wii: "2006-11-19", ps3: "2006-11-11", x360: "2005-11-22",
+  psp: "2004-12-12", nds: "2004-11-21", atomiswave: "2003-02-01",
+  pokemini: "2001-12-14", gc: "2001-09-14", gba: "2001-03-21",
+  wsc: "2000-12-09", ps2: "2000-03-04", ngpc: "1999-03-19",
+  dc: "1998-11-27", naomi: "1998-11-20", gbc: "1998-10-21",
+  n64: "1996-06-23", vb: "1995-07-21", ps1: "1994-12-03",
+  saturn: "1994-11-22", sega32x: "1994-11-21", "3do": "1993-10-04",
+  supervision: "1992-01-01", segacd: "1991-12-12", cdi: "1991-12-03",
+  snes: "1990-11-21", gg: "1990-10-06", neogeo: "1990-04-26",
+  lynx: "1989-09-01", gb: "1989-04-21", genesis: "1988-10-29",
+  pce: "1987-10-30", scummvm: "1987-10-05", a7800: "1986-05-01",
+  fds: "1986-02-21", sms: "1985-10-20", nes: "1983-07-15",
+  sg1000: "1983-07-15", vectrex: "1982-11-01", coleco: "1982-08-01",
+  arcadia: "1982-05-01", pc: "1981-08-12", intv: "1979-12-03",
+  o2em: "1978-12-01", a2600: "1977-09-11", channelf: "1976-11-01",
+  arcade: "1971-11-15",
+};
+
+/** The release year to show on a tile, or "" for the platforms that have no honest one. */
+export const systemYear = (system) => (SYSTEM_RELEASED[String(system || "").toLowerCase()] || "").slice(0, 4);
+
+/**
+ * Newest hardware first, so scrolling right goes back in time. A system we have no date for sorts to
+ * the END rather than the front — an unknown is not a new console, and a newly-ingested platform
+ * should not silently take pride of place on the shelf until someone gives it a date above.
+ */
+export function byConsoleAge(a, b) {
+  const da = SYSTEM_RELEASED[a] || "";
+  const db = SYSTEM_RELEASED[b] || "";
+  if (da && db) return da < db ? 1 : da > db ? -1 : systemLabel(a).localeCompare(systemLabel(b));
+  if (da) return -1;
+  if (db) return 1;
+  return systemLabel(a).localeCompare(systemLabel(b));
+}
+
 // Systems the box-art route can source (libretro-thumbnails) — so a card requests /ArcadeImage even
 // before its art is cached (the route lazily fetches on first view). Naomi/atomiswave are skipped
 // (arcade-named art won't match → don't 404 those cards). Mirror of ArcadeBoxArt.ThumbRepo keys.
@@ -54,9 +106,11 @@ export const ART_SYSTEMS = new Set([
 /** True when a card should attempt /ArcadeImage rather than going straight to its placeholder. */
 export const canHaveArt = (game) => Boolean(game?.hasBoxArt) || ART_SYSTEMS.has(game?.system);
 
-// Heavy/capture lane: a native app streamed by Moonlight, with no libretro core and no CloudRetro
-// save path at all (docs/arcade-heavy-lane-plan.md §7.1).
-export const HEAVY_LANE_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "capture"]);
+// Heavy/capture lane: a native app streamed by Moonlight or the capture worker, with no libretro core
+// and no CloudRetro save path at all (docs/arcade-heavy-lane-plan.md §7.1). `pc` belongs here too —
+// every pc row in the catalog carries Lane="heavy" — and being in this set is what correctly denies it
+// Continue/Quickload, since a captured native app has no emulator state to serialize.
+export const HEAVY_LANE_SYSTEMS = new Set(["switch", "ps3", "ps4", "wiiu", "x360", "pc", "capture"]);
 
 // Systems with NO emulator save-state: their progress is their own save data, not a serialized
 // machine state. psp + ps2 are noSaveStates cores (config.worker-gl.yaml — a t=106 there returns
