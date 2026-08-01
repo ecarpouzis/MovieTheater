@@ -53,7 +53,7 @@ export default function CheatPicker({ version, value, onChange, disabled, onOpen
 
   // The count-in-words header + Clear, shared by both layouts (chip has no room for it inline; the
   // block layout keeps it for the same "undo a default-on widescreen patch" reason).
-  const dropdownRender = (menu) => (
+  const popupRender = (menu) => (
     <div>
       <div className="arcade-cheat-dropdown__head">
         <span>
@@ -84,16 +84,16 @@ export default function CheatPicker({ version, value, onChange, disabled, onOpen
         disabled={disabled}
         value={value}
         onChange={onChange}
-        onDropdownVisibleChange={(open) => { if (open) load(); onOpenChange?.(open); }}
+        onOpenChange={(open) => { if (open) load(); onOpenChange?.(open); }}
         loading={loading}
         options={options}
         maxTagCount="responsive"
         placeholder={`⚡ ${count} ${cheatWord} available`}
-        popupClassName="arcade-version-dropdown arcade-cheat-dropdown"
+        classNames={{ popup: { root: "arcade-version-dropdown arcade-cheat-dropdown" } }}
         optionFilterProp="label"
         notFoundContent={loading ? "Loading…" : "No cheats for this version."}
         aria-label={`Cheats — ${selected} of ${count} on`}
-        dropdownRender={dropdownRender}
+        popupRender={popupRender}
       />
     );
   }
@@ -109,13 +109,13 @@ export default function CheatPicker({ version, value, onChange, disabled, onOpen
       <Select
         mode="multiple"
         size="small"
-        bordered={false}
+        variant="borderless"
         disabled={disabled}
         value={value}
         onChange={onChange}
         // The card has to know: an open popup renders inside this chip, and the card must be lifted
         // above the cards after it in the grid or they paint straight over the list (see GameCard).
-        onDropdownVisibleChange={(open) => { if (open) load(); onOpenChange?.(open); }}
+        onOpenChange={(open) => { if (open) load(); onOpenChange?.(open); }}
         loading={loading}
         options={options}
         // The chip is ~150px; individual cheat tags would blow it apart, so the collapsed state is a count.
@@ -124,14 +124,14 @@ export default function CheatPicker({ version, value, onChange, disabled, onOpen
         maxTagPlaceholder={(omitted) => `⚡ ${omitted.length} of ${count}`}
         placeholder={`⚡ ${count} ${cheatWord}`}
         getPopupContainer={(t) => t.parentElement}
-        popupClassName="arcade-version-dropdown arcade-cheat-dropdown"
-        dropdownMatchSelectWidth={260}
+        classNames={{ popup: { root: "arcade-version-dropdown arcade-cheat-dropdown" } }}
+        popupMatchSelectWidth={260}
         optionFilterProp="label"
         notFoundContent={loading ? "Loading…" : "No cheats for this version."}
         aria-label={`Cheats — ${selected} of ${count} on`}
         // A header the chip has no room for: the count in words, plus the way back out. Without a Clear,
         // undoing a default-on cheat (PS2 widescreen) means hunting it down in a list of hundreds.
-        dropdownRender={dropdownRender}
+        popupRender={popupRender}
       />
     </span>
   );

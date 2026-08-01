@@ -30,7 +30,9 @@ function CardPoster({ item, isAboveFold }) {
       alt=""
       src={thumbUrl}
       loading={isAboveFold ? "eager" : "lazy"}
-      fetchPriority={isAboveFold ? "high" : "auto"}
+      // lowercase: React 18 only knows the DOM attribute spelling (camelCase lands in v19) and
+      // warns + drops the camelCase prop on every card render.
+      fetchpriority={isAboveFold ? "high" : "auto"}
       decoding="async"
       onError={() => setFailed(true)}
     />

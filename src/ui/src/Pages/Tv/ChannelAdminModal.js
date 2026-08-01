@@ -532,7 +532,7 @@ function ChannelAdminModal({ open, onClose, onChanged }) {
       title={shelves ? "Reorder shelves" : editing ? (editing.id ? "Edit channel" : "New channel") : "TV channels"}
       width={600}
       centered
-      bodyStyle={{ maxHeight: "calc(100vh - 200px)", overflowY: "auto" }}
+      styles={{ body: { maxHeight: "calc(100vh - 200px)", overflowY: "auto" } }}
       footer={
         shelves
           ? [

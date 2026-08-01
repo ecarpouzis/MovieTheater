@@ -86,7 +86,7 @@ export default function PlaylistPickerModal({ open, items = [], defaultName = ""
       footer={null}
       width={460}
       title={count > 0 ? `Add ${count} ${count === 1 ? "title" : "titles"} to a playlist` : "New playlist"}
-      destroyOnClose
+      destroyOnHidden
     >
       <div className="plpick">
         <Radio.Group

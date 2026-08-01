@@ -1,4 +1,4 @@
-import { Input, List, Button, Select, Slider } from "antd";
+import { Input, Button, Select, Slider } from "antd";
 import { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
@@ -157,9 +157,9 @@ function SearchTools({ search, userData }) {
     return acc;
   }, {});
 
-  // onAfterChange, NOT onChange: picking the stop that's already selected has to CLEAR it, and
+  // onChangeComplete, NOT onChange: picking the stop that's already selected has to CLEAR it, and
   // onChange only fires when the value actually changes — so a second click on the same stop would
-  // be silently swallowed. onAfterChange fires on every release, changed or not.
+  // be silently swallowed. onChangeComplete fires on every release, changed or not.
   function onRatingPick(index) {
     const stop = ratingStops[index];
     if (!stop) return;
@@ -216,7 +216,7 @@ function SearchTools({ search, userData }) {
             placeholder="Genre (matches all selected)"
             style={{ width: "100%" }}
             getPopupContainer={(trigger) => trigger.parentNode}
-            popupClassName="login-user-dropdown"
+            classNames={{ popup: { root: "login-user-dropdown" } }}
             value={Array.isArray(search.genre) ? search.genre : search.genre ? [search.genre] : []}
             onChange={(vals) => navigateToBrowseSearch(vals.length ? "genre" : undefined, vals.join(","))}
             options={genres.map((g) => ({ label: g, value: g }))}
@@ -232,7 +232,7 @@ function SearchTools({ search, userData }) {
         placeholder="Title type (any selected)"
         style={{ width: "100%" }}
         getPopupContainer={(trigger) => trigger.parentNode}
-        popupClassName="login-user-dropdown"
+        classNames={{ popup: { root: "login-user-dropdown" } }}
         value={Array.isArray(search.titleTypes) ? search.titleTypes : []}
         onChange={(vals) => {
           const current = new URLSearchParams(location.search);
@@ -250,7 +250,7 @@ function SearchTools({ search, userData }) {
       <Select
         style={{ width: "100%" }}
         getPopupContainer={(trigger) => trigger.parentNode}
-        popupClassName="login-user-dropdown"
+        classNames={{ popup: { root: "login-user-dropdown" } }}
         value={new URLSearchParams(location.search).get("sort") || loadSort()}
         onChange={(val) => {
           const current = new URLSearchParams(location.search);
@@ -270,43 +270,31 @@ function SearchTools({ search, userData }) {
           marks={ratingMarks}
           tooltip={{ open: false }}
           value={activeRatingIndex < 0 ? 0 : activeRatingIndex}
-          onAfterChange={onRatingPick}
+          onChangeComplete={onRatingPick}
         />
       </div>
       <span style={inputLabelStyle}>First Letter</span>
-      <List
-        style={listStyle}
-        grid={{
-          gutter: [6, 8],
-          xs: 3,
-          sm: 3,
-          md: 3,
-          lg: 3,
-          xl: 4,
-          xxl: 4,
-        }}
-        dataSource={searchLetters}
-        renderItem={(item) => {
-          return (
-            <List.Item style={{ display: "flex", justifyContent: "center", marginBottom: 0 }}>
-              <Button
-                className={`search-letter-btn${item === search.startsWith ? " search-letter-btn--active" : ""}`}
-                onClick={() => {
-                  ToggleLetterSearch(item);
-                }}
-                style={{
-                  width: "36px",
-                  backgroundColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-pill-bg)",
-                  color: item === search.startsWith ? "#fff" : "var(--sidebar-text-muted)",
-                  borderColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-input-border)",
-                }}
-              >
-                <span style={searchLetterStyle}>{item}</span>
-              </Button>
-            </List.Item>
-          );
-        }}
-      />
+      {/* Plain CSS grid (.letter-grid in index.css) — this was an antd <List grid>, which v6
+          deprecated and v7 removes. */}
+      <div className="letter-grid" style={listStyle}>
+        {searchLetters.map((item) => (
+          <Button
+            key={item}
+            className={`search-letter-btn${item === search.startsWith ? " search-letter-btn--active" : ""}`}
+            onClick={() => {
+              ToggleLetterSearch(item);
+            }}
+            style={{
+              width: "36px",
+              backgroundColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-pill-bg)",
+              color: item === search.startsWith ? "#fff" : "var(--sidebar-text-muted)",
+              borderColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-input-border)",
+            }}
+          >
+            <span style={searchLetterStyle}>{item}</span>
+          </Button>
+        ))}
+      </div>
     </div>
   );
 }

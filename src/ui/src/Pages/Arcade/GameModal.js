@@ -1,5 +1,6 @@
-import { cloneElement, useEffect, useState } from "react";
-import { Button, Checkbox, Dropdown, Modal, Select, Tooltip } from "antd";
+import { useEffect, useState } from "react";
+import { Button, Checkbox, Dropdown, Modal, Select, Space, Tooltip } from "antd";
+import { EllipsisOutlined } from "@ant-design/icons";
 import useMediaQuery from "../../hooks/useMediaQuery";
 import GameCover from "./GameCover";
 import CheatPicker from "./CheatPicker";
@@ -162,27 +163,32 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
           </div>
           <div className="agm-actions">
             {game.supportsHwToggle ? (
-              <Dropdown.Button
-                type="primary"
-                className="agm-start"
-                loading={busy}
-                onClick={() => start("")}
-                // The game modal is zIndex 1500; antd's dropdown menu defaults lower and would open
-                // BEHIND it (the "Force GL does nothing" report). Lift it above the modal.
-                overlayStyle={{ zIndex: 1700 }}
-                // Portals to body like the version/pill pickers (GameModal.css note), so it never
-                // picked up this app's dark theme — it rendered with no themed background, just
-                // inherited light body text floating over whatever was behind the modal ("popping
-                // under the cards"). Give it a class to theme, same as .arcade-version-dropdown.
-                overlayClassName="agm-start-menu"
-                menu={{ items: rendererItems }}
-                buttonsRender={([left, right]) => [
-                  cloneElement(left, { className: [left.props.className, "arcade-btn-start"].filter(Boolean).join(" ") }),
-                  cloneElement(right, { className: [right.props.className, "arcade-btn-start", "arcade-btn-start__arrow"].filter(Boolean).join(" ") }),
-                ]}
-              >
-                ▶ Start room
-              </Dropdown.Button>
+              // Space.Compact + Button + Dropdown — hand-rolled Dropdown.Button, which antd 6
+              // deprecated (gone in v7). Same DOM shape the CSS expects: a compact pair where the
+              // left half starts the room and the right half opens the renderer menu.
+              <Space.Compact className="agm-start">
+                <Button type="primary" className="arcade-btn-start" loading={busy} onClick={() => start("")}>
+                  ▶ Start room
+                </Button>
+                <Dropdown
+                  // The game modal is zIndex 1500; antd's dropdown menu defaults lower and would open
+                  // BEHIND it (the "Force GL does nothing" report). Lift it above the modal.
+                  styles={{ root: { zIndex: 1700 } }}
+                  // Portals to body like the version/pill pickers (GameModal.css note), so it never
+                  // picked up this app's dark theme — it rendered with no themed background, just
+                  // inherited light body text floating over whatever was behind the modal ("popping
+                  // under the cards"). Give it a class to theme, same as .arcade-version-dropdown.
+                  classNames={{ root: "agm-start-menu" }}
+                  menu={{ items: rendererItems }}
+                >
+                  <Button
+                    type="primary"
+                    className="arcade-btn-start arcade-btn-start__arrow"
+                    aria-label="Start with a specific renderer"
+                    icon={<EllipsisOutlined />}
+                  />
+                </Dropdown>
+              </Space.Compact>
             ) : (
               <Button type="primary" className="arcade-btn-start agm-start" loading={busy} onClick={() => start()}>
                 ▶ Start room
@@ -227,7 +233,7 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
                     className="agm-select"
                     value={sel}
                     onChange={setSel}
-                    popupClassName="arcade-version-dropdown"
+                    classNames={{ popup: { root: "arcade-version-dropdown" } }}
                     optionLabelProp="label"
                     options={game.versions.map((v) => ({
                       value: v.id,
@@ -252,7 +258,7 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
                     className="agm-select"
                     value={ctrlScheme}
                     onChange={setCtrlScheme}
-                    popupClassName="arcade-version-dropdown"
+                    classNames={{ popup: { root: "arcade-version-dropdown" } }}
                     options={[
                       { value: "gc", label: "GameCube controller" },
                       { value: "wiimote", label: "Wiimote + Nunchuk" },

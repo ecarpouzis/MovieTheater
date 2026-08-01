@@ -164,7 +164,7 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
 
         <span style={inputLabelStyle}>Sort by</span>
         <Select style={{ width: "100%" }} value={activeSort} onChange={(v) => updateParam("sort", v)}
-          options={sortOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
+          options={sortOptions} classNames={{ popup: { root: "arcade-login-dropdown" } }} getPopupContainer={getPopup} />
 
         <span style={inputLabelStyle}>
           System{facets ? <span style={{ opacity: 0.6, fontWeight: 400 }}> — all {facets.total} by default</span> : null}
@@ -173,31 +173,31 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
           onChange={(v) => updateParam("system", serializeSystems(v))}
           options={systemOptions} placeholder="All systems" maxTagCount="responsive"
           showSearch optionFilterProp="label"
-          popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
+          classNames={{ popup: { root: "arcade-login-dropdown" } }} getPopupContainer={getPopup} />
 
         <span style={inputLabelStyle}>Region <span style={{ opacity: 0.6, fontWeight: 400 }}>— deselect to hide</span></span>
         <Select mode="multiple" allowClear style={{ width: "100%" }} value={selectedRegions}
           onChange={onRegionChange} options={regionOptions} placeholder="All regions" maxTagCount="responsive"
-          popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
+          classNames={{ popup: { root: "arcade-login-dropdown" } }} getPopupContainer={getPopup} />
 
         <span style={inputLabelStyle}>Players</span>
         <Select style={{ width: "100%" }} value={activePlayers} onChange={(v) => updateParam("players", v)}
-          options={playerOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
+          options={playerOptions} classNames={{ popup: { root: "arcade-login-dropdown" } }} getPopupContainer={getPopup} />
 
         <span style={inputLabelStyle}>Genre</span>
         <Select style={{ width: "100%" }} value={activeGenre} onChange={(v) => updateParam("genre", v)}
           options={genreOptions} showSearch optionFilterProp="label"
-          popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
+          classNames={{ popup: { root: "arcade-login-dropdown" } }} getPopupContainer={getPopup} />
 
         <span style={inputLabelStyle}>Mods &amp; Hacks</span>
         {/* "all" is the default, so choosing it CLEARS the param rather than writing ?variant=all — a
             URL that says it carries a filter when it doesn't, and which the API drops anyway. */}
         <Select style={{ width: "100%" }} value={activeVariant} onChange={(v) => updateParam("variant", v === "all" ? "" : v)}
-          options={modOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
+          options={modOptions} classNames={{ popup: { root: "arcade-login-dropdown" } }} getPopupContainer={getPopup} />
 
         <span style={inputLabelStyle}>RetroAchievements</span>
         <Select style={{ width: "100%" }} value={activeRa} onChange={(v) => updateParam("ra", v)}
-          options={raOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
+          options={raOptions} classNames={{ popup: { root: "arcade-login-dropdown" } }} getPopupContainer={getPopup} />
 
         {/* Region counts as an active filter when any region has been switched OFF — under the deselect
             model "everything selected" IS the default (there is no activeRegion any more). */}

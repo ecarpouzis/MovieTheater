@@ -66,7 +66,7 @@ export default function PlaylistManageModal({ playlistId, open, onClose, onChang
   };
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} width={520} title="Edit playlist" destroyOnClose>
+    <Modal open={open} onCancel={onClose} footer={null} width={520} title="Edit playlist" destroyOnHidden>
       {loading ? (
         <div className="plman-loading"><Spin /></div>
       ) : (

@@ -7,7 +7,7 @@
   z-index: 1400 !important;
 }
 
-.user-settings-modal .ant-modal-content {
+.user-settings-modal .ant-modal-container {
   background: #001529;
   color: white;
 }
@@ -112,11 +112,14 @@
   margin-top: 12px;
 }
 
-/* Force Ant Design Select and Checkbox text to be visible on dark backgrounds */
+/* Force Ant Design Select and Checkbox text to be visible on dark backgrounds.
+   antd 6: the select's box IS the .ant-select root; value/placeholder live in
+   .ant-select-content / .ant-select-placeholder (no more -selector/-selection-*). */
 .user-settings-modal .ant-select,
-.user-settings-modal .ant-select-selector,
+.user-settings-modal .ant-select .ant-select-content,
 .user-settings-modal .ant-select-selection-item,
-.user-settings-modal .ant-select-selection-placeholder {
+.user-settings-modal .ant-select .ant-select-placeholder,
+.user-settings-modal .ant-select .ant-select-input {
   color: #e6f7ff !important;
   background: #002140 !important;
   border-color: #1e3a57 !important;
@@ -140,7 +143,7 @@
 }
 
 /* Make the dropdown arrow visible against the dark select background */
-.user-settings-modal .ant-select-arrow {
+.user-settings-modal .ant-select-suffix {
   color: rgba(255, 255, 255, 0.45);
 }
 
@@ -153,8 +156,8 @@
   color: #e6f7ff !important;
 }
 
-.user-settings-modal .ant-select-selector:hover,
-.user-settings-modal .ant-select-focused .ant-select-selector {
+.user-settings-modal .ant-select:hover,
+.user-settings-modal .ant-select.ant-select-focused {
   border-color: #1890ff !important;
 }
 
@@ -179,17 +182,18 @@
   color: #1890ff !important;
 }
 
-.user-settings-modal .ant-checkbox-inner {
+/* antd 6: the checkbox box IS .ant-checkbox (no inner span); checkmark is its :after. */
+.user-settings-modal .ant-checkbox {
   background: #002140 !important;
   border-color: #4096ff !important;
 }
 
-.user-settings-modal .ant-checkbox-wrapper:hover .ant-checkbox-inner,
-.user-settings-modal .ant-checkbox:hover .ant-checkbox-inner {
+.user-settings-modal .ant-checkbox-wrapper:hover .ant-checkbox,
+.user-settings-modal .ant-checkbox:hover {
   border-color: #1890ff !important;
 }
 
-.user-settings-modal .ant-checkbox-checked .ant-checkbox-inner {
+.user-settings-modal .ant-checkbox.ant-checkbox-checked {
   background-color: #1677ff !important;
   border-color: #1677ff !important;
 }

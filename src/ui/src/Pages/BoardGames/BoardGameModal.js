@@ -6,7 +6,6 @@ import { stripHtml } from "./boardGameUtils";
 import useTouchDevice from "../../hooks/useTouchDevice";
 import useLongPress from "../../hooks/useLongPress";
 
-const { Panel } = Collapse;
 
 function SimilarGameItem({ game, onOpenGame }) {
   const isTouch = useTouchDevice();
@@ -470,8 +469,10 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
               )}
 
               {hasRulesContent && (
-                <Collapse ghost defaultActiveKey={[]} className="rules-collapse">
-                  <Panel header={collapseHeader} key="rules">
+                <Collapse ghost defaultActiveKey={[]} className="rules-collapse" items={[{
+                  key: "rules",
+                  label: collapseHeader,
+                  children: <>
                     {approvedPdfs.length > 0 && (
                       <div className="rules-pdf-links">
                         {approvedPdfs.map((pdf, slot) => (
@@ -506,8 +507,8 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
                         </div>
                       </div>
                     ))}
-                  </Panel>
-                </Collapse>
+                  </>,
+                }]} />
               )}
 
               {displayGame.baseGameId != null && (() => {

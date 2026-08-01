@@ -92,7 +92,7 @@ function YourRating({ id, kind, userData, setUserData }) {
   return (
     <div className="modal-your-rating">
       <span className="modal-label">Your Rating</span>
-      <Slider className="your-rating-slider" min={0} max={100} value={value} onChange={setValue} onAfterChange={(v) => persist(v)} />
+      <Slider className="your-rating-slider" min={0} max={100} value={value} onChange={setValue} onChangeComplete={(v) => persist(v)} />
       <span className="your-rating-score">{isRated ? value : "—"}</span>
       {isRated && (
         <button type="button" className="your-rating-clear" title="Remove your rating" onClick={() => persist(null)}>

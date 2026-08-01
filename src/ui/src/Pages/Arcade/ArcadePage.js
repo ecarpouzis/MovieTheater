@@ -478,17 +478,17 @@ export default function ArcadePage({ userData }) {
               <div className="arcade-pill">
                 <span className="arcade-dot-ok" />
                 <Select
-                  bordered={false} value={quality.videoBitrateKbps} options={BITRATE_PRESETS}
+                  variant="borderless" value={quality.videoBitrateKbps} options={BITRATE_PRESETS}
                   onChange={(v) => setQ({ videoBitrateKbps: v })}
-                  popupClassName="arcade-pill-dropdown" dropdownMatchSelectWidth={false}
+                  classNames={{ popup: { root: "arcade-pill-dropdown" } }} popupMatchSelectWidth={false}
                   aria-label="Stream bitrate"
                 />
               </div>
               <div className="arcade-pill">
                 <Select
-                  bordered={false} value={quality.network} optionLabelProp="label"
+                  variant="borderless" value={quality.network} optionLabelProp="label"
                   onChange={(v) => setQ({ network: v })}
-                  popupClassName="arcade-pill-dropdown" dropdownMatchSelectWidth={false}
+                  classNames={{ popup: { root: "arcade-pill-dropdown" } }} popupMatchSelectWidth={false}
                   aria-label="Network profile"
                 >
                   {NETWORK_OPTIONS.map((o) => (
@@ -498,9 +498,9 @@ export default function ArcadePage({ userData }) {
               </div>
               <div className="arcade-pill">
                 <Select
-                  bordered={false} value={quality.codec || "av1"} optionLabelProp="label"
+                  variant="borderless" value={quality.codec || "av1"} optionLabelProp="label"
                   onChange={(v) => setQ({ codec: v })}
-                  popupClassName="arcade-pill-dropdown" dropdownMatchSelectWidth={false}
+                  classNames={{ popup: { root: "arcade-pill-dropdown" } }} popupMatchSelectWidth={false}
                   aria-label="Video codec"
                 >
                   {CODEC_OPTIONS.map((o) => (

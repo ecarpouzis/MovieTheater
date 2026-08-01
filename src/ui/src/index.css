@@ -18,9 +18,26 @@ html {
   overflow-x: hidden;
 }
 
-.ant-list {
+/* First-letter grids + the browse "simple" 2-up card grid — plain CSS replacements for the antd
+   <List grid> layouts (List is deprecated in antd 6, removed in v7). Breakpoints mirror the old
+   grid props: 3-up (xs–lg) → 4-up at ≥1200px (xl/xxl) for letters; fixed 2-up for the cards. */
+.letter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  justify-items: center;
+  gap: 8px 6px;
   width: 100%;
-  margin: 0 auto;
+}
+@media (min-width: 1200px) {
+  .letter-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.simple-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  width: 100%;
 }
 
 .RightCol {
@@ -211,7 +228,7 @@ img {
 }
 
 /* Search button consistency */
-#SearchToolContainer .ant-input-search-button {
+#SearchToolContainer .ant-input-search-btn {
   height: 100% !important;
   min-height: 32px !important;
   padding: 4px 16px !important;
@@ -230,7 +247,7 @@ img {
 }
 
 /* Alphabet list scrollable space */
-#SearchToolContainer .ant-list {
+#SearchToolContainer .letter-grid {
   padding-bottom: 30px !important;
 }
 
@@ -301,8 +318,8 @@ img {
    ArcadeNavContent). A blanket .ant-btn rule squashed Arcade's "Clear filters" into a 36px square
    with its label absolutely positioned outside the box. */
 @media (min-width: 769px) {
-  #SearchToolContainer .ant-list-item {
-    margin-bottom: 10px;
+  #SearchToolContainer .letter-grid {
+    row-gap: 10px;
   }
 
   #SearchToolContainer .search-letter-btn {
@@ -323,12 +340,12 @@ img {
     margin-top: -0.5em;
   }
 
-  #SearchToolContainer .ant-list {
+  #SearchToolContainer .letter-grid {
     padding-right: 0 !important;
   }
 
   /* Desktop search button consistency */
-  #SearchToolContainer .ant-input-search-button {
+  #SearchToolContainer .ant-input-search-btn {
     height: 32px !important;
     min-height: 32px !important;
   }

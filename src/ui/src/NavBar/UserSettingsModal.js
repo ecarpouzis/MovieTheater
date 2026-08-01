@@ -146,7 +146,7 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
             <span className="settings-label">Age Restriction</span>
             <Select
               className="settings-select"
-              popupClassName="settings-select-dropdown"
+              classNames={{ popup: { root: "settings-select-dropdown" } }}
               value={ageRestriction}
               onChange={(v) => setAgeRestriction(v)}
               options={mpaOptions}
@@ -163,7 +163,7 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
             <span className="settings-label">Card Style</span>
             <Select
               className="settings-select"
-              popupClassName="settings-select-dropdown"
+              classNames={{ popup: { root: "settings-select-dropdown" } }}
               value={cardStyle}
               onChange={(v) => setCardStyle(v)}
               options={cardStyleOptions}

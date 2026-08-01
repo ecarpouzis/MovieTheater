@@ -55,7 +55,7 @@
   max-width: calc(100vw - 2 * var(--arcade-sheet-inset));
 }
 
-.arcade-modal.ant-modal-wrap .ant-modal-content {
+.arcade-modal.ant-modal-wrap .ant-modal-container {
   display: flex;
   flex-direction: column;
   /* dvh so the bound tracks the visible viewport as mobile browser chrome
@@ -121,7 +121,7 @@
     vertical-align: top;
   }
 
-  .arcade-modal.ant-modal-wrap .ant-modal-content {
+  .arcade-modal.ant-modal-wrap .ant-modal-container {
     height: 100vh;
     height: 100dvh;
     max-height: 100dvh;
@@ -143,12 +143,12 @@
   .arcade-modal.ant-modal-wrap .ant-modal-footer {
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
   }
-  .arcade-modal.ant-modal-wrap .ant-modal-content:has(.ant-modal-footer) .ant-modal-body {
+  .arcade-modal.ant-modal-wrap .ant-modal-container:has(.ant-modal-footer) .ant-modal-body {
     padding-bottom: 16px;
   }
 
   /* Full-thumb close target, parked in the corner of the sheet. Absolute against
-     .ant-modal-content, which no longer scrolls, so it stays put. */
+     .ant-modal-container, which no longer scrolls, so it stays put. */
   .arcade-modal.ant-modal-wrap .ant-modal-close {
     top: 4px;
     inset-inline-end: 4px;
@@ -163,7 +163,7 @@
 
 /* A headerless dialog has the ✕ floating over content — box art, usually — so it
    gets the movie modal's contrast chip. In a titled dialog the header backs it. */
-.arcade-modal.ant-modal-wrap .ant-modal-content:not(:has(.ant-modal-header)) .ant-modal-close-x {
+.arcade-modal.ant-modal-wrap .ant-modal-container:not(:has(.ant-modal-header)) .ant-modal-close-x {
   width: 40px;
   height: 40px;
   line-height: 40px;
@@ -186,7 +186,7 @@
    under data-theme="dark". On antd's near-white content that left the Configure category rail
    white-on-white and unreadable. Give a dialog that writes arcade tokens the arcade surface those
    tokens were written for. No `border`: sheet mode above removes it, and this block comes later. */
-.arcade-modal--themed.ant-modal-wrap .ant-modal-content {
+.arcade-modal--themed.ant-modal-wrap .ant-modal-container {
   background: var(--card-surface);
   color: var(--text-primary);
 }

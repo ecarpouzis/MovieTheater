@@ -76,7 +76,7 @@ function LoginForm({ onUserLoggedIn, popupClassName = "login-user-dropdown" }) {
         <AutoComplete
           options={filteredUserlist}
           className="login-autocomplete"
-          popupClassName={popupClassName}
+          classNames={{ popup: { root: popupClassName } }}
           onSelect={onSelect}
           onSearch={handleSearch}
           onChange={(value) => setSearchValue(value)}

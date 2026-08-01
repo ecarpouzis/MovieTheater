@@ -191,9 +191,9 @@ export default function ArcadeGameConfig({ game, onClose }) {
               value={values[o.key]}
               onChange={(val) => setValues((v) => ({ ...v, [o.key]: val }))}
               options={(o.values || []).map((vv) => ({ value: vv.token, label: vv.label }))}
-              popupClassName="arcade-version-dropdown"
-              dropdownStyle={DROPDOWN_STYLE}
-              dropdownMatchSelectWidth={false}
+              classNames={{ popup: { root: "arcade-version-dropdown" } }}
+              styles={{ popup: { root: DROPDOWN_STYLE } }}
+              popupMatchSelectWidth={false}
               showSearch
               optionFilterProp="label"
             />
@@ -229,9 +229,9 @@ export default function ArcadeGameConfig({ game, onClose }) {
             onChange={setQualityTier}
             disabled={loading || saving}
             options={tiers.map((t) => ({ value: t.id, label: t.label }))}
-            popupClassName="arcade-version-dropdown"
-            dropdownStyle={DROPDOWN_STYLE}
-            dropdownMatchSelectWidth={false}
+            classNames={{ popup: { root: "arcade-version-dropdown" } }}
+            styles={{ popup: { root: DROPDOWN_STYLE } }}
+            popupMatchSelectWidth={false}
           />
         </Tooltip>,
         <Button key="reset" danger onClick={reset} disabled={loading || saving}>Reset to defaults</Button>,
@@ -266,9 +266,9 @@ export default function ArcadeGameConfig({ game, onClose }) {
                       label: p.id === cfg.defaultProfile ? `${p.label} (the system default)` : p.label,
                     })),
                   ]}
-                  popupClassName="arcade-version-dropdown"
-                  dropdownStyle={DROPDOWN_STYLE}
-                  dropdownMatchSelectWidth={false}
+                  classNames={{ popup: { root: "arcade-version-dropdown" } }}
+                  styles={{ popup: { root: DROPDOWN_STYLE } }}
+                  popupMatchSelectWidth={false}
                 />
                 <span className="agc-renderer__hint">
                   {renderProfile

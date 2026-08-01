@@ -192,7 +192,7 @@ export default function RetroAchievementsModal({ open, onClose }) {
       // and headings already paint themselves for. See ArcadeModal.css.
       zIndex={1500}
       wrapClassName="arcade-modal arcade-modal--themed"
-      destroyOnClose
+      destroyOnHidden
     >
       <RaAccount />
       <div className="ra-modal__section-h">Your trophy room</div>

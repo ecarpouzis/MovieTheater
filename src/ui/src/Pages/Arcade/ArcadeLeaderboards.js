@@ -130,9 +130,14 @@ export default function ArcadeLeaderboards({ gameId }) {
       )}
 
       {raOnly.length > 0 && (
-        <Collapse ghost className="agm-lb__ra-boards" defaultActiveKey={friendBoards.length === 0 ? ["ra"] : []}>
-          <Collapse.Panel key="ra" header={`Other RA boards (${raOnly.length}) — no friend runs yet`}>
-            {raOnly.map((b) => (
+        <Collapse
+          ghost
+          className="agm-lb__ra-boards"
+          defaultActiveKey={friendBoards.length === 0 ? ["ra"] : []}
+          items={[{
+            key: "ra",
+            label: `Other RA boards (${raOnly.length}) — no friend runs yet`,
+            children: raOnly.map((b) => (
               <div key={b.leaderboardId} className="agm-lb__ra-board">
                 <a className="agm-lb__ra-board-title" href={b.raUrl} target="_blank" rel="noreferrer">
                   {b.title || `Leaderboard ${b.leaderboardId}`} ↗
@@ -141,9 +146,9 @@ export default function ArcadeLeaderboards({ gameId }) {
                   <span className="agm-lb__ra-ref">🌍 {b.raTopScore}{b.raTopUser ? ` — ${b.raTopUser}` : ""}</span>
                 )}
               </div>
-            ))}
-          </Collapse.Panel>
-        </Collapse>
+            )),
+          }]}
+        />
       )}
     </div>
   );

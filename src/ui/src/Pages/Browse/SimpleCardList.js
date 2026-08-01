@@ -1,5 +1,5 @@
 import { MovieAPI } from "../../MovieAPI";
-import { Card, List } from "antd";
+import { Card } from "antd";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import UserMovieOptions, { useViewingToggles } from "./UserMovieOptions";
 import { preloadImages } from "../../preloadImages";
@@ -114,10 +114,9 @@ const SimpleMovieCard = memo(function SimpleMovieCard({
   };
 
   return (
-    <List.Item>
       <Card
         className="mobile-movie-card"
-        bodyStyle={baseCardBodyStyle}
+        styles={{ body: baseCardBodyStyle }}
         style={{
           border: "1px solid #d9d9d9",
           width: "100%",
@@ -133,7 +132,7 @@ const SimpleMovieCard = memo(function SimpleMovieCard({
             alt={item.title}
             src={thumbUrl}
             loading={isAboveFold ? "eager" : "lazy"}
-            fetchPriority={isAboveFold ? "high" : "auto"}
+            fetchpriority={isAboveFold ? "high" : "auto"}
             decoding="async"
             onError={(e) => { e.currentTarget.style.display = "none"; }}
           />
@@ -163,7 +162,6 @@ const SimpleMovieCard = memo(function SimpleMovieCard({
           </div>
         )}
       </Card>
-    </List.Item>
   );
 });
 
@@ -181,12 +179,12 @@ function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, o
   }, [movieDataArray]);
 
   return (
-    <List
-      style={listStyle}
-      grid={{ gutter: 4, column: 2 }}
-      dataSource={movieDataArray}
-      renderItem={(item, index) => (
+    // Plain CSS grid (.simple-card-grid in index.css) — this was an antd <List grid>, which v6
+    // deprecated and v7 removes.
+    <div className="simple-card-grid" style={listStyle}>
+      {(movieDataArray || []).map((item, index) => (
         <SimpleMovieCard
+          key={`${item.kind || "movie"}-${item.id}`}
           item={item}
           isAboveFold={index < 6}
           showOptions={!!userData}
@@ -196,8 +194,8 @@ function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, o
           onToggleSeen={toggleSeen}
           onToggleWant={toggleWant}
         />
-      )}
-    />
+      ))}
+    </div>
   );
 }
 

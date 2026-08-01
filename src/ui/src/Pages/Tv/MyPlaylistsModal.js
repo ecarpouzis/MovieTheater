@@ -68,7 +68,7 @@ export default function MyPlaylistsModal({ open, onClose, userData }) {
 
   return (
     <>
-      <Modal open={open} onCancel={onClose} footer={null} width={640} title="My Playlists" destroyOnClose>
+      <Modal open={open} onCancel={onClose} footer={null} width={640} title="My Playlists" destroyOnHidden>
         <div className="mypl-grid">
           {list.map((p) => (
             <div className="mypl-card" key={p.id}>

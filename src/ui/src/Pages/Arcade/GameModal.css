@@ -37,7 +37,7 @@
   vertical-align: top;
 }
 
-.arcade-game-modal .ant-modal-content {
+.arcade-game-modal .ant-modal-container {
   position: relative;
   /* The page surface, not the card surface: edge-to-edge, this IS the page. */
   background: var(--content-bg);
@@ -54,7 +54,7 @@
 /* Ambient wash behind the hero, in the arcade's neon purple — the same trick the movie modal
    plays with a poster's dominant color, and what keeps a full-bleed sheet from reading as a
    flat slab of background on a big screen. */
-.arcade-game-modal .ant-modal-content::before {
+.arcade-game-modal .ant-modal-container::before {
   content: "";
   position: absolute;
   top: 0;
@@ -84,7 +84,7 @@
 }
 
 /* Headerless sheet: the ✕ floats over the hero art, so it wears a contrast chip. Park it in the
-   viewport corner — .ant-modal-content is exactly the viewport here and never scrolls, so absolute
+   viewport corner — .ant-modal-container is exactly the viewport here and never scrolls, so absolute
    is already fixed. The shell states this too, but behind `:not(:has(.ant-modal-header))`; an older
    TV browser without :has() throws that whole selector away, and this is the one dialog where
    losing the chip would leave a grey ✕ sitting on box art. Stated plainly here as well. */
@@ -358,30 +358,30 @@
 }
 
 /* Vulkan/GL split button: the two halves re-flattened so the pair reads as one pill.
-   The width rules are load-bearing. antd 4.24's Dropdown.Button renders a Space.Compact with the
-   `block` modifier, and `.ant-space-compact-block` is `display:flex; width:100%` — so this wrapper
-   stretched across the entire actions row, and the pill radius + glow we hang on it painted as an
+   Since the v6 upgrade this is a hand-rolled Space.Compact (Dropdown.Button is deprecated), so the
+   wrapper class is .ant-space-compact. The width rules are still load-bearing: sized by its two
+   buttons, never stretched by the row — a full-width wrapper painted the pill radius + glow as an
    empty pill trailing off to the right of the caret (while shoving My saves / Configure to the far
-   edge). It has to be sized by its two buttons, not by the row. */
-.arcade-game-modal .ant-dropdown-button.agm-start {
+   edge). */
+.arcade-game-modal .agm-start.ant-space-compact {
   display: inline-flex;
   width: auto;
   flex: 0 0 auto;
   box-shadow: var(--accent-glow);
   border-radius: 9px;
 }
-.arcade-game-modal .ant-dropdown-button.agm-start .ant-btn.arcade-btn-start {
+.arcade-game-modal .agm-start.ant-space-compact .ant-btn.arcade-btn-start {
   box-shadow: none;
   border-radius: 0;
 }
-.arcade-game-modal .ant-dropdown-button.agm-start .ant-btn.arcade-btn-start:first-child {
+.arcade-game-modal .agm-start.ant-space-compact .ant-btn.arcade-btn-start:first-child {
   border-top-left-radius: 9px;
   border-bottom-left-radius: 9px;
 }
 /* The caret is sized by its own glyph, never by the row. antd lets it flex, so the moment the pill
    goes full-width (a phone footer) the caret grew to half the pill and the divider landed in the
    middle of the button. */
-.arcade-game-modal .ant-dropdown-button.agm-start .ant-btn.arcade-btn-start__arrow {
+.arcade-game-modal .agm-start.ant-space-compact .ant-btn.arcade-btn-start__arrow {
   flex: 0 0 auto;
   border-top-right-radius: 9px;
   border-bottom-right-radius: 9px;
@@ -475,7 +475,7 @@
   .agm-competitive {
     padding: 7px 12px;
   }
-  .arcade-game-modal .ant-modal-content::before {
+  .arcade-game-modal .ant-modal-container::before {
     height: 180px;
   }
 }

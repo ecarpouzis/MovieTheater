@@ -1,4 +1,4 @@
-import { Input, List, Button, Select } from "antd";
+import { Input, Button, Select } from "antd";
 import { useHistory, useLocation } from "react-router-dom";
 import LoginForm from "./LoginForm";
 import UserPanelHeader from "./UserPanelHeader";
@@ -130,7 +130,7 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
           value={activePlayers ?? ""}
           onChange={(v) => updateParam("players", v)}
           options={playerOptions}
-          popupClassName="boardgame-login-dropdown"
+          classNames={{ popup: { root: "boardgame-login-dropdown" } }}
           getPopupContainer={getSelectPopupContainer}
         />
 
@@ -140,7 +140,7 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
           value={activeAge ?? ""}
           onChange={(v) => updateParam("age", v)}
           options={ageOptions}
-          popupClassName="boardgame-login-dropdown"
+          classNames={{ popup: { root: "boardgame-login-dropdown" } }}
           getPopupContainer={getSelectPopupContainer}
         />
 
@@ -150,7 +150,7 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
           value={activeTime ?? ""}
           onChange={(v) => updateParam("time", v)}
           options={timeOptions}
-          popupClassName="boardgame-login-dropdown"
+          classNames={{ popup: { root: "boardgame-login-dropdown" } }}
           getPopupContainer={getSelectPopupContainer}
         />
 
@@ -160,34 +160,32 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
           value={activeSort ?? ""}
           onChange={(v) => updateParam("sort", v)}
           options={sortOptions}
-          popupClassName="boardgame-login-dropdown"
+          classNames={{ popup: { root: "boardgame-login-dropdown" } }}
           getPopupContainer={getSelectPopupContainer}
         />
 
         <span style={inputLabelStyle}>First Letter</span>
-        <List
-          style={{ paddingBottom: "20px" }}
-          grid={{ gutter: [6, 8], xs: 3, sm: 3, md: 3, lg: 3, xl: 4, xxl: 4 }}
-          dataSource={searchLetters}
-          renderItem={(item) => (
-            <List.Item style={{ display: "flex", justifyContent: "center", marginBottom: 0 }}>
-              <Button
-                // search-letter-btn carries the 36px square + position:relative that
-                // searchLetterStyle's absolutely-positioned span needs to center itself.
-                className="search-letter-btn"
-                onClick={() => toggleLetter(item)}
-                style={{
-                  width: "36px",
-                  backgroundColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-pill-bg)",
-                  color: item === search.startsWith ? "#fff" : "var(--sidebar-text-muted)",
-                  borderColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-input-border)",
-                }}
-              >
-                <span style={searchLetterStyle}>{item}</span>
-              </Button>
-            </List.Item>
-          )}
-        />
+        {/* Plain CSS grid (.letter-grid in index.css) — this was an antd <List grid>, which v6
+            deprecated and v7 removes. */}
+        <div className="letter-grid" style={{ paddingBottom: "20px" }}>
+          {searchLetters.map((item) => (
+            <Button
+              key={item}
+              // search-letter-btn carries the 36px square + position:relative that
+              // searchLetterStyle's absolutely-positioned span needs to center itself.
+              className="search-letter-btn"
+              onClick={() => toggleLetter(item)}
+              style={{
+                width: "36px",
+                backgroundColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-pill-bg)",
+                color: item === search.startsWith ? "#fff" : "var(--sidebar-text-muted)",
+                borderColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-input-border)",
+              }}
+            >
+              <span style={searchLetterStyle}>{item}</span>
+            </Button>
+          ))}
+        </div>
       </div>
 
       <div style={{ marginTop: "auto", padding: "12px", borderTop: "1px solid var(--sidebar-border)" }}>

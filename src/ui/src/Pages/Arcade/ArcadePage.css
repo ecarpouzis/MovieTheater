@@ -109,14 +109,15 @@
   color: var(--pill-text);
 }
 
-/* Strip antd's Select chrome so the control *is* the pill's text + caret. */
+/* Strip antd's Select chrome so the control *is* the pill's text + caret.
+   antd 6: the box element IS the .ant-select root (no inner .ant-select-selector), so the
+   old selector rules are folded into the root rule; a single select's value renders in
+   .ant-select-content (the -selection-item element only exists in multiple mode now). */
 .arcade-pill .ant-select {
   width: auto;
   min-width: 0;
   color: inherit;
   font-size: 12px;
-}
-.arcade-pill .ant-select-selector {
   height: auto !important;
   padding: 0 18px 0 0 !important;
   background: transparent !important;
@@ -124,26 +125,20 @@
   box-shadow: none !important;
   cursor: pointer;
 }
-.arcade-pill .ant-select-selection-item {
+.arcade-pill .ant-select .ant-select-content {
   position: relative;
   line-height: 1.4 !important;
   padding: 0 !important;
   color: var(--pill-text);
   font-size: 12px;
 }
-/* Give the borderless single-select an intrinsic width: antd measures the search input, not the
-   label, so without this the pill collapses to the caret. */
-.arcade-pill .ant-select-single .ant-select-selector .ant-select-selection-search {
-  inset-inline-start: 0;
-  inset-inline-end: 18px;
-}
-.arcade-pill .ant-select-arrow {
+.arcade-pill .ant-select-suffix {
   right: 0;
   color: var(--text-muted);
   font-size: 10px;
 }
-.arcade-pill .ant-select-focused .ant-select-selector,
-.arcade-pill .ant-select-open .ant-select-selector {
+.arcade-pill .ant-select.ant-select-focused,
+.arcade-pill .ant-select.ant-select-open {
   box-shadow: none !important;
 }
 
@@ -520,8 +515,7 @@
   width: 100%;
   min-width: 0;
   color: inherit;
-}
-.arcade-chip--select .ant-select-selector {
+  /* antd 6: the root IS the box — the old .ant-select-selector rules live here now */
   height: 18px !important;
   padding: 0 14px 0 0 !important;
   background: transparent !important;
@@ -529,52 +523,53 @@
   box-shadow: none !important;
   cursor: pointer;
 }
+.arcade-chip--select .ant-select .ant-select-content,
 .arcade-chip--select .ant-select-selection-item {
   font-size: 10px;
   line-height: 18px !important;
   padding: 0 !important;
   color: var(--chip-neutral-text);
 }
-.arcade-chip--select .ant-select-arrow {
+.arcade-chip--select .ant-select-suffix {
   right: 0;
   color: var(--chip-neutral-text);
 }
-.arcade-chip--select .ant-select-arrow .anticon {
+.arcade-chip--select .ant-select-suffix .anticon {
   font-size: 8px;
 }
 
 /* ── Cheat picker (multi-select) ──────────────────────────────────────────────
-   A multiple-mode Select lays its value out in `.ant-select-selection-overflow` instead of a single
+   A multiple-mode Select lays its value out in `.ant-select-content` (antd 6) instead of a single
    `-selection-item`, so the chip's height rules have to be restated for it. maxTagCount={0} means the
    only thing ever rendered in the box is the "N cheats" placeholder — no tags to size around. */
 .arcade-chip--cheats {
   border-color: var(--chip-cheat-border, var(--accent));
   color: var(--chip-cheat-text, var(--accent));
 }
-.arcade-chip--cheats .ant-select-multiple .ant-select-selector {
+.arcade-chip--cheats .ant-select-multiple {
   height: 18px !important;
   padding: 0 14px 0 0 !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
 }
-.arcade-chip--cheats .ant-select-selection-overflow,
-.arcade-chip--cheats .ant-select-selection-placeholder,
+.arcade-chip--cheats .ant-select-content,
+.arcade-chip--cheats .ant-select-placeholder,
 .arcade-chip--cheats .ant-select-selection-item {
   font-size: 10px;
   line-height: 18px !important;
   color: inherit;
 }
 /* The placeholder is normally dimmed; here it IS the label ("⚡ Cheats (12)"). */
-.arcade-chip--cheats .ant-select-selection-placeholder {
+.arcade-chip--cheats .ant-select-placeholder {
   inset-inline-start: 0;
   opacity: 1;
   color: inherit;
 }
-.arcade-chip--cheats .ant-select-multiple .ant-select-selection-search {
+.arcade-chip--cheats .ant-select-multiple .ant-select-input {
   margin-inline-start: 0;
 }
-.arcade-chip--cheats .ant-select-arrow {
+.arcade-chip--cheats .ant-select-suffix {
   color: inherit;
 }
 .arcade-chip--cheats.arcade-chip--select .ant-select-disabled {
@@ -953,8 +948,14 @@
 .arcade-version-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
   background: var(--accent-soft);
 }
+/* The bare -selected selector ties with antd's own "-selected.-active" hover rule and loses on
+   specificity (antd 6 injects its styles at runtime, so load order no longer breaks the tie the
+   way it did under v4) — hence the explicit combo variants, which out-rank it. Without them the
+   selected row paints antd's default light-blue with our white text: unreadable in light theme. */
 .arcade-pill-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
-.arcade-version-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+.arcade-version-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
+.arcade-pill-dropdown .ant-select-item-option-selected.ant-select-item-option-active:not(.ant-select-item-option-disabled),
+.arcade-version-dropdown .ant-select-item-option-selected.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
   background: var(--accent);
   color: #fff;
 }
