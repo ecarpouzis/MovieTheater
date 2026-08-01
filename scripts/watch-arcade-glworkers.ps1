@@ -140,6 +140,34 @@ function WorkerLogPath([int]$port) {
     return (Join-Path $LogDir ("glworker-{0}.log" -f $id))
 }
 
+# =================================================================================================
+# LOG-SCAN MEMOIZATION. Both scans below read `-Tail 20000` off logs that are 12-14 MB, and both are
+# PURE FUNCTIONS OF FILE CONTENT -- so if a log has not changed, neither can the answer.
+#
+# WHY THIS IS THE HOT PATH (profiled 5.1, 2026-07-31): check G cost 728 ms of a ~1000 ms cycle, on a
+# box with nothing playing. Its "cheap silent-log guard first" comment is true but backwards for the
+# common case: it skips a worker whose log is FRESH, and an IDLE worker writes nothing at all, so its
+# log is permanently stale and every idle worker fell straight through to the full 20000-line scan.
+# Three idle workers x ~40 MB of log text re-read every 30 s, forever. Caching on (size, mtime) makes
+# an unchanged log free and leaves a changed one scanned exactly as before.
+#
+# Bounded by construction: one entry per (scan kind, path set) -- the signature is stored WITH the
+# value rather than baked into the key, so a churning log overwrites its entry instead of adding one.
+$script:logScanCache = @{}
+function CachedLogScan([string]$kind, [string[]]$paths, [scriptblock]$compute) {
+    $id = $kind + '|' + ($paths -join ';')
+    $sig = ''
+    foreach ($p in $paths) {
+        $fi = Get-Item $p -ErrorAction SilentlyContinue
+        $sig += if ($fi) { "{0}:{1};" -f $fi.Length, $fi.LastWriteTimeUtc.Ticks } else { '-;' }
+    }
+    $hit = $script:logScanCache[$id]
+    if ($hit -and $hit.Sig -eq $sig) { return $hit.Value }
+    $value = & $compute
+    $script:logScanCache[$id] = @{ Sig = $sig; Value = $value }
+    return $value
+}
+
 # The LAST "New room" id in a worker's log (checks the rotated .1 file as fallback).
 # Captures the id from BOTH shapes the logger emits:
 #   room="sv-1-24-0-nes___Super Mario Bros. 3"      <- quoted, because the id contains spaces
@@ -162,34 +190,179 @@ $ansiRx = "$([char]27)\[[0-9;]*m"
 # the watchdog blamed port 8446 all night (~18 innocent idle workers recycled, one every ~3 min)
 # while the truly wedged worker on 8447 sat untouched for 5.5 h.
 function LastRoomInLog([string]$path) {
-    foreach ($f in @($path, "$path.1")) {
-        if (-not (Test-Path $f)) { continue }
-        $m = Get-Content $f -Tail 20000 -ErrorAction SilentlyContinue |
-            ForEach-Object { $_ -replace $ansiRx, '' } |
-            Select-String -Pattern $roomRx | Select-Object -Last 1
-        if ($m) {
-            $g = $m.Matches[0].Groups
-            $room = if ($g[1].Success) { $g[1].Value } else { $g[2].Value }
-            $t = $null
-            if ($m.Line -match '^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+)') {
-                $parsed = [datetime]::MinValue
-                if ([datetime]::TryParse($Matches[1], [ref]$parsed)) { $t = $parsed }
+    return CachedLogScan 'room' @($path, "$path.1") {
+        foreach ($f in @($path, "$path.1")) {
+            if (-not (Test-Path $f)) { continue }
+            $m = Get-Content $f -Tail 20000 -ErrorAction SilentlyContinue |
+                ForEach-Object { $_ -replace $ansiRx, '' } |
+                Select-String -Pattern $roomRx | Select-Object -Last 1
+            if ($m) {
+                $g = $m.Matches[0].Groups
+                $room = if ($g[1].Success) { $g[1].Value } else { $g[2].Value }
+                $t = $null
+                if ($m.Line -match '^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+)') {
+                    $parsed = [datetime]::MinValue
+                    if ([datetime]::TryParse($Matches[1], [ref]$parsed)) { $t = $parsed }
+                }
+                return @{ Room = $room; Time = $t }
             }
-            return @{ Room = $room; Time = $t }
         }
+        return $null
     }
+}
+
+# =================================================================================================
+# SOCKET TABLE: one `netstat -ano` per cycle instead of ~11 Get-Net* calls.
+#
+# WHY (measured on Ziggy 2026-07-31): the Get-Net* cmdlets are CIM queries and are SLOW --
+# Get-NetUDPEndpoint (full enumeration) 786 ms, Get-NetTCPConnection 690 ms, and ~9 per-port
+# Get-NetUDPEndpoint at ~60 ms each. That was ~2.0 s of the ~1.6 CPU-seconds this watchdog burned
+# every 30 s: 5.3% of a core sustained, i.e. MORE CPU than the entire arcade stack it guards (all
+# three idle workers + coordinator + gateway together measured ~1.7%). Worse, most of it was pure
+# duplication -- check B already enumerates every UDP endpoint, then checks E/F/G re-query the same
+# table one port at a time. `netstat -ano` returns both tables, with owning PIDs, in 29 ms.
+#
+# ⚠ ACCURACY BEFORE SPEED. A mis-parse here is DESTRUCTIVE, not cosmetic: check A force-kills a
+# worker that shows "no coordinator connection" and check F starts a task for a port that shows "no
+# listener", so a table that wrongly reads as EMPTY would reap the entire pool in two cycles. Two
+# guards, because netstat's State column is a localized string on some Windows builds:
+#   1. The fast path PROVES ITSELF AT STARTUP against the very cmdlets it replaces (see
+#      CalibrateNetTable). Any disagreement -> log loudly and use the cmdlets forever this run.
+#   2. A per-cycle netstat failure returns $null and the caller SKIPS the cycle, rather than
+#      acting on an empty table. Same rule as check H: two different failures must not produce
+#      the same conclusion, and "I could not look" is never "I looked and saw nothing".
+# =================================================================================================
+
+# Port from a netstat endpoint: "0.0.0.0:8446", "[::1]:51551" (IPv6 has many colons -- take the
+# LAST one), or "*:*" for a UDP foreign address, which yields $null.
+function PortOfEndpoint([string]$addr) {
+    $i = $addr.LastIndexOf(':')
+    if ($i -lt 0) { return $null }
+    $p = 0
+    if ([int]::TryParse($addr.Substring($i + 1), [ref]$p)) { return $p }
     return $null
 }
 
+# Parse `netstat -ano` into exactly the two facts this watchdog acts on. Returns $null if netstat
+# gave us nothing usable -- callers MUST treat that as "unknown", never as "nothing is listening".
+# ⚠ ONE PORT CAN HAVE SEVERAL OWNERS. Found by the accuracy harness 2026-07-31: UDP 5353 (mDNS) is
+# bound by two processes, and netstat and Get-NetUDPEndpoint enumerate them in DIFFERENT orders, so
+# the old `| Select-Object -First 1` was picking an ARBITRARY one in both. That is not academic for
+# a mux port -- check B exists precisely because a worker's own stale socket can still hold the port
+# it is rebinding. So we keep EVERY owner per port and resolve deterministically in UdpOwner: prefer
+# a live worker. That is both reproducible and more correct than either source's row order.
+function ParseNetstat([int]$coordPort) {
+    $raw = @(& netstat -ano 2>$null)
+    if ($raw.Count -lt 5) { return $null }
+    $udpByPort  = @{}    # [int] local port -> [int[]] every owning pid, in enumeration order
+    $tcpToCoord = @{}    # [int] pid -> $true, for ESTABLISHED connections TO the coordinator
+    $rows = 0
+    foreach ($line in $raw) {
+        $f = ($line.Trim() -split '\s+')
+        if ($f.Count -lt 4) { continue }
+        if ($f[0] -eq 'UDP') {
+            # UDP rows have NO State column: Proto / Local / Foreign / PID.
+            $port = PortOfEndpoint $f[1]
+            $wpid = 0
+            if ($null -ne $port -and [int]::TryParse($f[3], [ref]$wpid)) {
+                if (-not $udpByPort.ContainsKey($port)) { $udpByPort[$port] = @() }
+                if ($udpByPort[$port] -notcontains $wpid) { $udpByPort[$port] += $wpid }
+                $rows++
+            }
+        }
+        elseif ($f[0] -eq 'TCP' -and $f.Count -ge 5) {
+            # TCP rows do: Proto / Local / Foreign / State / PID.
+            $rows++
+            if ($f[3] -ne 'ESTABLISHED') { continue }
+            $wpid = 0
+            if ((PortOfEndpoint $f[2]) -eq $coordPort -and [int]::TryParse($f[4], [ref]$wpid)) {
+                $tcpToCoord[$wpid] = $true
+            }
+        }
+    }
+    if ($rows -eq 0) { return $null }
+    return @{ UdpByPort = $udpByPort; TcpToCoord = $tcpToCoord }
+}
+
+# Prove the parser against the cmdlets, on the ONLY facts the watchdog acts on: who owns each mux
+# UDP port, and which PIDs hold a coordinator connection. Deliberately NOT a whole-table diff --
+# the two snapshots are taken milliseconds apart and the machine's transient sockets churn between
+# them, which would make an exact full comparison flap. Both compared sets are long-lived.
+function CalibrateNetTable([int]$coordPort) {
+    $fast = ParseNetstat $coordPort
+    if (-not $fast) { Log "NETSTAT FAST PATH DISABLED: netstat produced no usable rows -- falling back to Get-Net* cmdlets"; return $false }
+
+    $slowUdp = @{}
+    foreach ($e in @(Get-NetUDPEndpoint -ErrorAction SilentlyContinue)) {
+        $p = [int]$e.LocalPort
+        if ($p -ge 8446 -and $p -le 8465 -and -not $slowUdp.ContainsKey($p)) { $slowUdp[$p] = [int]$e.OwningProcess }
+    }
+    $slowTcp = @{}
+    foreach ($c in @(Get-NetTCPConnection -State Established -RemotePort $coordPort -ErrorAction SilentlyContinue)) {
+        $slowTcp[[int]$c.OwningProcess] = $true
+    }
+
+    $fastUdp = @{}
+    foreach ($k in $fast.UdpByPort.Keys) { if ($k -ge 8446 -and $k -le 8465) { $fastUdp[$k] = @($fast.UdpByPort[$k]) } }
+
+    # The cmdlet reports ONE owner per port (arbitrary when several are bound), so the correct
+    # agreement test is containment: whoever the cmdlet named must appear in netstat's owner set.
+    $diffs = @()
+    foreach ($k in @($slowUdp.Keys) + @($fastUdp.Keys) | Sort-Object -Unique) {
+        $want = $slowUdp[$k]; $got = @($fastUdp[$k])
+        if ($null -eq $want) { $diffs += ("udp:{0} cmdlet=<none> netstat={1}" -f $k, ($got -join '/')); continue }
+        if ($got -notcontains $want) { $diffs += ("udp:{0} cmdlet={1} netstat={2}" -f $k, $want, ($got -join '/')) }
+    }
+    foreach ($k in @($slowTcp.Keys) + @($fast.TcpToCoord.Keys) | Sort-Object -Unique) {
+        if ($slowTcp[$k] -ne $fast.TcpToCoord[$k]) { $diffs += ("tcp-pid:{0} cmdlet={1} netstat={2}" -f $k, [bool]$slowTcp[$k], [bool]$fast.TcpToCoord[$k]) }
+    }
+
+    if ($diffs.Count) {
+        Log ("NETSTAT FAST PATH DISABLED: parse disagrees with the cmdlets it replaces -- {0}" -f ($diffs -join '; '))
+        return $false
+    }
+    Log ("netstat fast path VERIFIED against Get-Net* ({0} mux UDP port(s), {1} coordinator connection(s) agree) -- socket scans now ~29 ms/cycle instead of ~2000 ms" -f $fastUdp.Count, $slowTcp.Count)
+    return $true
+}
+
+# The current cycle's socket table, published for the helpers that run inside KillWorker.
+$script:useFastNet = $false
+$script:netUdpByPort = $null   # [int] port -> [int[]] owners
+$script:netLivePids  = $null   # live worker PIDs, so UdpOwner can break multi-owner ties sensibly
+
 # Map a worker PID to its ConfDir via the mux UDP port it owns (8446 -> worker-gl, 8447 -> worker-gl-2, ...),
-# so we can drop that worker's graceful-stop sentinel.
+# so we can drop that worker's graceful-stop sentinel. Reads this cycle's cached table when we have
+# one; the cmdlet path is kept verbatim for the un-calibrated fallback.
 function ConfDirForPid([int]$wpid) {
-    $p = (Get-NetUDPEndpoint -ErrorAction SilentlyContinue |
-        Where-Object { [int]$_.OwningProcess -eq $wpid -and $_.LocalPort -ge 8446 -and $_.LocalPort -le 8465 } |
-        Select-Object -First 1).LocalPort
+    $p = $null
+    if ($script:netUdpByPort) {
+        foreach ($k in ($script:netUdpByPort.Keys | Sort-Object)) {
+            if ($k -ge 8446 -and $k -le 8465 -and (@($script:netUdpByPort[$k]) -contains $wpid)) { $p = $k; break }
+        }
+    } else {
+        $p = (Get-NetUDPEndpoint -ErrorAction SilentlyContinue |
+            Where-Object { [int]$_.OwningProcess -eq $wpid -and $_.LocalPort -ge 8446 -and $_.LocalPort -le 8465 } |
+            Select-Object -First 1).LocalPort
+    }
     if (-not $p) { return $null }
     $id = $p - 8445
     if ($id -le 1) { return "D:\ArcadeStorage\worker-gl" } else { return "D:\ArcadeStorage\worker-gl-$id" }
+}
+
+# Owner PID of a worker port this cycle, or $null. Replaces the ~9 per-port Get-NetUDPEndpoint calls.
+# When several processes hold the port, a LIVE worker wins over a husk -- every caller either kills
+# that PID or immediately tests it against $livePids, so naming the corpse would just waste a cycle.
+# Check F only tests truthiness ("is anything listening"), which this preserves either way.
+function UdpOwner([int]$port) {
+    if ($script:netUdpByPort) {
+        $owners = @($script:netUdpByPort[$port])
+        if (-not $owners.Count) { return $null }
+        if ($script:netLivePids) {
+            foreach ($o in $owners) { if ($script:netLivePids[[int]$o]) { return $o } }
+        }
+        return $owners[0]
+    }
+    return (Get-NetUDPEndpoint -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
 }
 
 # $zombies: PIDs that SURVIVED a force-kill (kernel-stuck GPU-teardown thread, unkillable from user mode).
@@ -206,15 +379,17 @@ $zombies = @{}
 $crashRx = 'Exception 0x[0-9a-fA-F]{8}|signal arrived during external code execution|^fatal error: '
 function CrashedAfterStart([string]$path) {
     if (-not (Test-Path $path)) { return $false }
-    # A goroutine dump is thousands of lines; 20000 covers a dump plus the boot lines around it.
-    $tail = @(Get-Content $path -Tail 20000 -ErrorAction SilentlyContinue)
-    if (-not $tail) { return $false }
-    $startIdx = -1; $crashIdx = -1
-    for ($i = 0; $i -lt $tail.Count; $i++) {
-        if ($tail[$i] -match '\[runner\] starting glworker') { $startIdx = $i }
-        elseif ($tail[$i] -match $crashRx)                   { $crashIdx = $i }
+    return CachedLogScan 'crash' @($path) {
+        # A goroutine dump is thousands of lines; 20000 covers a dump plus the boot lines around it.
+        $tail = @(Get-Content $path -Tail 20000 -ErrorAction SilentlyContinue)
+        if (-not $tail) { return $false }
+        $startIdx = -1; $crashIdx = -1
+        for ($i = 0; $i -lt $tail.Count; $i++) {
+            if ($tail[$i] -match '\[runner\] starting glworker') { $startIdx = $i }
+            elseif ($tail[$i] -match $crashRx)                   { $crashIdx = $i }
+        }
+        return ($crashIdx -ge 0 -and $crashIdx -gt $startIdx)
     }
-    return ($crashIdx -ge 0 -and $crashIdx -gt $startIdx)
 }
 
 function KillWorker([int]$wpid, [string]$why, [bool]$SkipGraceful = $false) {
@@ -335,18 +510,57 @@ $wedgeStrikes = @{}  # PID -> consecutive busy-but-silent strikes (check C)
 $absentStrikes = @{} # port -> consecutive "no listener AND no runner" strikes (check F)
 $lastActedTimeout = [datetime]::MinValue  # newest coordinator work-timeout already acted on (check D)
 $script:lastArtifactCheck = $null         # last patched-artifact drift scan (check H, every 30 min)
+$script:useFastNet = CalibrateNetTable $CoordinatorPort   # netstat vs Get-Net*: proven, or not used
 
 while ($true) {
     try {
-        $workers = @(Get-CimInstance Win32_Process -Filter "Name='worker.exe'" -ErrorAction SilentlyContinue)
+        # Get-Process, not Get-CimInstance: measured 23 ms vs 132 ms, and once the log scans below
+        # were memoized this was the single biggest remaining cost in an idle cycle. Verified
+        # equivalent on 2026-07-31 -- same PIDs, and StartTime matches Win32_Process.CreationDate to
+        # sub-tick precision with the same DateTimeKind (Local), which is what the ghost-room checks
+        # compare log timestamps against. Projected back to the CIM property NAMES so that every
+        # consumer below is untouched.
+        $workers = @(
+            foreach ($proc in @(Get-Process -Name worker -ErrorAction SilentlyContinue)) {
+                $started = $null
+                try { $started = $proc.StartTime } catch { }
+                if ($null -eq $started) {
+                    # Cannot age it, so cannot judge it. Skipping is the fail-safe direction (we
+                    # under-act rather than kill on incomplete data), but it must not be silent.
+                    Log ("worker PID {0}: StartTime unreadable -- excluded from this cycle's checks" -f $proc.Id)
+                    continue
+                }
+                [pscustomobject]@{ ProcessId = $proc.Id; CreationDate = $started }
+            }
+        )
         $age = @{}
         foreach ($w in $workers) { $age[[int]$w.ProcessId] = ((Get-Date) - $w.CreationDate).TotalSeconds }
         $livePids = @{}; foreach ($w in $workers) { $livePids[[int]$w.ProcessId] = $true }
 
+        # ONE socket snapshot for every check below (A, B, E, F, G and ConfDirForPid). If netstat
+        # fails we must NOT fall through with an empty table -- an empty table reads as "every
+        # worker is disconnected and no port has a listener", which is a pool-wide kill order.
+        # Skip the cycle instead; 30 s later we try again.
+        $connected = $null
+        $script:netUdpByPort = $null
+        $script:netLivePids = $livePids
+        if ($script:useFastNet) {
+            $net = ParseNetstat $CoordinatorPort
+            if (-not $net) {
+                Log "netstat returned nothing usable this cycle -- SKIPPING all socket checks (acting on an empty table would recycle the whole pool)"
+                Start-Sleep -Seconds $IntervalSec
+                continue
+            }
+            $script:netUdpByPort = $net.UdpByPort
+            $connected = $net.TcpToCoord
+        }
+
         # -- A) coordinator connection check ------------------------------------------------
-        $connected = @{}
-        Get-NetTCPConnection -State Established -RemotePort $CoordinatorPort -ErrorAction SilentlyContinue |
-            ForEach-Object { $connected[[int]$_.OwningProcess] = $true }
+        if ($null -eq $connected) {
+            $connected = @{}
+            Get-NetTCPConnection -State Established -RemotePort $CoordinatorPort -ErrorAction SilentlyContinue |
+                ForEach-Object { $connected[[int]$_.OwningProcess] = $true }
+        }
 
         foreach ($w in $workers) {
             $wpid = [int]$w.ProcessId
@@ -365,14 +579,32 @@ while ($true) {
         # means the worker rebound after an in-process reconnect: recycle on sight.
         $muxLo = ($WorkerPorts | Measure-Object -Minimum).Minimum
         $muxHi = $muxLo + 20
-        Get-NetUDPEndpoint -ErrorAction SilentlyContinue |
-            Where-Object { $_.LocalPort -ge $muxLo -and $_.LocalPort -le $muxHi -and $livePids[[int]$_.OwningProcess] } |
-            ForEach-Object {
-                $wpid = [int]$_.OwningProcess
-                if (($WorkerPorts -notcontains [int]$_.LocalPort) -and $age[$wpid] -ge $GraceSec) {
-                    KillWorker $wpid ("port drift: bound UDP {0}, expected one of {1}" -f $_.LocalPort, ($WorkerPorts -join ','))
-                }
+        # Same set as before, read from this cycle's snapshot instead of its own 786 ms enumeration.
+        # EVERY owner of a mux port is considered, not just the first: the whole point of this check
+        # is a worker holding a port it should not, and a drifted socket can share the port with
+        # another process. The $livePids filter below is what keeps husks out of it.
+        $muxOwners = @{}   # [int] port -> [int[]] owners
+        if ($script:netUdpByPort) {
+            foreach ($k in $script:netUdpByPort.Keys) {
+                if ($k -ge $muxLo -and $k -le $muxHi) { $muxOwners[[int]$k] = @($script:netUdpByPort[$k]) }
             }
+        } else {
+            foreach ($e in @(Get-NetUDPEndpoint -ErrorAction SilentlyContinue)) {
+                $p = [int]$e.LocalPort
+                if ($p -lt $muxLo -or $p -gt $muxHi) { continue }
+                if (-not $muxOwners.ContainsKey($p)) { $muxOwners[$p] = @() }
+                if ($muxOwners[$p] -notcontains [int]$e.OwningProcess) { $muxOwners[$p] += [int]$e.OwningProcess }
+            }
+        }
+        foreach ($port in @($muxOwners.Keys)) {
+            if ($WorkerPorts -contains [int]$port) { continue }
+            foreach ($o in @($muxOwners[$port])) {
+                $wpid = [int]$o
+                if (-not $livePids[$wpid]) { continue }
+                if ($age[$wpid] -lt $GraceSec) { continue }
+                KillWorker $wpid ("port drift: bound UDP {0}, expected one of {1}" -f $port, ($WorkerPorts -join ','))
+            }
+        }
 
         # -- C) room-close wedge check (needs coordinator /status, patch 0033) ---------------
         $status = $null
@@ -393,7 +625,7 @@ while ($true) {
                 foreach ($p in $WorkerPorts) {
                     $last = LastRoomInLog (WorkerLogPath $p)
                     if (-not $last -or $last.Room -ne $entry.room) { continue }
-                    $owner = (Get-NetUDPEndpoint -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+                    $owner = UdpOwner $p
                     $proc = if ($owner) { $workers | Where-Object { [int]$_.ProcessId -eq [int]$owner } | Select-Object -First 1 } else { $null }
                     if ($last.Time -and $proc -and $last.Time -lt $proc.CreationDate) {
                         Log ("ghost room '{0}': port {1} log matches but the line ({2}) predates its current worker PID {3} (started {4}) -- stale coordinator slot; NOT killing" -f `
@@ -406,7 +638,7 @@ while ($true) {
                 $logPath = WorkerLogPath $port
                 $staleSec = ((Get-Date) - (Get-Item $logPath).LastWriteTime).TotalSeconds
                 if ($staleSec -lt $WedgeStaleSec) { continue }   # room is ticking (pace-diag every 5 s)
-                $wpid = (Get-NetUDPEndpoint -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+                $wpid = UdpOwner $port
                 if (-not $wpid -or $age[[int]$wpid] -lt $GraceSec) { continue }
                 $wpid = [int]$wpid
                 $wedgedPids[$wpid] = $true
@@ -449,7 +681,7 @@ while ($true) {
             $lastActedTimeout = $newestTimeout
             $acted = $false
             foreach ($p in $WorkerPorts) {
-                $wpid = (Get-NetUDPEndpoint -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+                $wpid = UdpOwner $p
                 if (-not $wpid) { continue }
                 $wpid = [int]$wpid
                 if (-not $livePids[$wpid]) { continue }
@@ -483,7 +715,7 @@ while ($true) {
                 foreach ($p in $WorkerPorts) {
                     $last = LastRoomInLog (WorkerLogPath $p)
                     if (-not $last -or $last.Room -ne $entry.room) { continue }
-                    $owner = (Get-NetUDPEndpoint -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+                    $owner = UdpOwner $p
                     $proc  = if ($owner) { $workers | Where-Object { [int]$_.ProcessId -eq [int]$owner } | Select-Object -First 1 } else { $null }
                     if ($last.Time -and $proc -and $last.Time -lt $proc.CreationDate) { continue }  # ghost tail; not really busy here
                     $busyPorts[$p] = $true
@@ -491,7 +723,7 @@ while ($true) {
             }
             foreach ($p in $WorkerPorts) {
                 if ($busyPorts[$p]) { continue }                                    # hosting a live room
-                $owner = (Get-NetUDPEndpoint -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+                $owner = UdpOwner $p
                 if (-not $owner) { continue }
                 $wpid = [int]$owner
                 if (-not $livePids[$wpid]) { continue }
@@ -519,7 +751,7 @@ while ($true) {
         # The process still holds its port and coordinator socket, so A/B/C/D/F cannot see it. Force
         # kill: that unblocks the runner, which logs "glworker EXITED" and respawns in ~4 s.
         foreach ($p in $WorkerPorts) {
-            $owner = (Get-NetUDPEndpoint -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+            $owner = UdpOwner $p
             if (-not $owner) { continue }
             $wpid = [int]$owner
             if (-not $livePids[$wpid]) { continue }
@@ -549,7 +781,7 @@ while ($true) {
         # deliberate choice and is never overridden. Two consecutive cycles required so a normal
         # recycle (KillWorker -> 4s respawn) is never mistaken for an absent runner.
         foreach ($p in $WorkerPorts) {
-            $owner = (Get-NetUDPEndpoint -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+            $owner = UdpOwner $p
             if ($owner) { $absentStrikes.Remove($p) | Out-Null; continue }
             $taskName = WorkerTaskName $p
             $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
