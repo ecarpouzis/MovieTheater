@@ -41,6 +41,15 @@ namespace MovieTheater.Arcade
         [CommandOption("ps2-patches", Description = "Path to the extracted PS2 core patch table TSV (imports widescreen/no-interlace option cheats).")]
         public string Ps2Patches { get; set; } = "";
 
+        [CommandOption("dolphin-ini", Description = "Path to Dolphin's Sys/GameSettings folder (imports GameCube/Wii Gecko + ActionReplay cheats).")]
+        public string DolphinIni { get; set; } = "";
+
+        [CommandOption("dolphin-tool", Description = "Path to DolphinTool.exe — reads each disc's game id, which is what selects its cheats.")]
+        public string DolphinTool { get; set; } = "";
+
+        [CommandOption("roms-dir", Description = "ROM mount root, used to locate a disc when its SourceArchivePath is unset.")]
+        public string RomsDir { get; set; } = "";
+
         [CommandOption("system", Description = "Only this system code (e.g. n64). Default: every supported system.")]
         public string System { get; set; } = "";
 
@@ -66,14 +75,17 @@ namespace MovieTheater.Arcade
         public async ValueTask ExecuteAsync(IConsole console)
         {
             var w = console.Output;
-            if (string.IsNullOrWhiteSpace(Cht) && string.IsNullOrWhiteSpace(Ps2Patches))
+            if (string.IsNullOrWhiteSpace(Cht) && string.IsNullOrWhiteSpace(Ps2Patches) && string.IsNullOrWhiteSpace(DolphinIni))
             {
-                w.WriteLine("Nothing to do: pass --cht <dir> and/or --ps2-patches <file>.");
+                w.WriteLine("Nothing to do: pass --cht <dir>, --ps2-patches <file> and/or --dolphin-ini <dir>.");
                 return;
             }
 
             if (!string.IsNullOrWhiteSpace(Ps2Patches))
                 await ImportPs2PatchesAsync(console);
+
+            if (!string.IsNullOrWhiteSpace(DolphinIni))
+                await ImportDolphinIniCheatsAsync(console);
 
             if (!string.IsNullOrWhiteSpace(Cht))
                 await ImportCheatCodesAsync(console);
@@ -164,7 +176,128 @@ namespace MovieTheater.Arcade
             _ => null,
         };
 
-        // ── 2. Community cheat codes from libretro-database/cht ──────────────────────────────────────────
+        // ── 2. GameCube / Wii cheats from Dolphin's own Sys/GameSettings INIs ────────────────────────────
+        //
+        // These do not come from the community cheat database — upstream has no cht folder for either system,
+        // and Dolphin's retro_cheat_set could not use one anyway: it only ENABLES a code it already loaded from
+        // its own INIs, matched by re-serializing it and comparing strings (DolphinGameIni explains the format).
+        //
+        // The match key is the disc's GAME ID read out of the image, not its filename. That costs a DolphinTool
+        // invocation per ROM (~0.1 s local, ~0.3 s over the NAS) and buys the one thing filename matching can
+        // never give: it is impossible to hand a game another region's codes, because the region IS the id.
+        private async Task ImportDolphinIniCheatsAsync(IConsole console)
+        {
+            var w = console.Output;
+            var iniDir = Path.GetFullPath(DolphinIni);
+            if (!Directory.Exists(iniDir)) { w.WriteLine($"Dolphin GameSettings folder not found: {iniDir}"); return; }
+            if (string.IsNullOrWhiteSpace(DolphinTool) || !File.Exists(DolphinTool))
+            { w.WriteLine($"--dolphin-tool is required and must exist (got: '{DolphinTool}'). Without it we cannot read a disc's game id, and guessing one would hand a game another game's memory pokes."); return; }
+
+            var systems = string.IsNullOrWhiteSpace(System)
+                ? ArcadeCheatCatalog.DolphinIniSystems.ToList()
+                : new List<string> { System.Trim().ToLowerInvariant() };
+            systems = systems.Where(s => ArcadeCheatCatalog.UsesDolphinIniCheats(s)).ToList();
+            if (systems.Count == 0) { w.WriteLine("No Dolphin-INI systems selected (gc, wii)."); return; }
+
+            await using var db = await dbFactory.CreateDbContextAsync();
+            var games = await db.ArcadeGames
+                .Where(g => systems.Contains(g.System) && g.IsEnabled && g.Id > AfterId)
+                .OrderBy(g => g.Id).Take(Limit).ToListAsync();
+
+            int matched = 0, rows = 0, skippedExisting = 0, noImage = 0, noId = 0, noCodes = 0,
+                truncated = 0, unreproducible = 0, tooLong = 0;
+            int lastId = AfterId;
+
+            foreach (var g in games)
+            {
+                lastId = Math.Max(lastId, g.Id);
+
+                var had = await db.ArcadeCheats.AnyAsync(c => c.ArcadeGameId == g.Id && c.Source == DolphinSource);
+                if (had && !Overwrite) { skippedExisting++; continue; }
+
+                // The JIT/materialized copy under the ROM mount and the source archive are the same disc; take
+                // whichever exists. A game we cannot open is SKIPPED and counted, never guessed at by title.
+                var image = ResolveDiscPath(g);
+                if (image == null) { noImage++; continue; }
+
+                var header = await DolphinDiscId.ReadAsync(DolphinTool, image);
+                if (header == null) { noId++; continue; }
+
+                var texts = DolphinGameIni.IniChain(header.GameId, header.Revision)
+                    .Select(f => Path.Combine(iniDir, f))
+                    .Where(File.Exists)
+                    .Select(File.ReadAllText)
+                    .ToList();
+                if (texts.Count == 0) { noCodes++; continue; }
+
+                var cheats = DolphinGameIni.Parse(texts, out int skippedEncrypted);
+                unreproducible += skippedEncrypted;
+
+                // Gecko codes are whole PowerPC subroutines and a few run past the nvarchar(4000) column
+                // (the "Activate AX Mode" style patches). Drop them WHOLE, exactly as ArcadeChtFile does:
+                // half a code is not a weaker cheat, it is a poke at the wrong addresses. Reported, not silent.
+                int beforeLength = cheats.Count;
+                cheats = cheats.Where(c => c.Code.Length is > 0 and <= ArcadeChtFile.MaxCodeLength).ToList();
+                tooLong += beforeLength - cheats.Count;
+
+                if (cheats.Count == 0) { noCodes++; continue; }
+
+                matched++;
+                if (cheats.Count > ArcadeCheatCatalog.MaxCheatsPerGame)
+                {
+                    w.WriteLine($"  TRUNCATE [{g.System}] {g.Title}: {cheats.Count} cheats → keeping first {ArcadeCheatCatalog.MaxCheatsPerGame}.");
+                    cheats = cheats.Take(ArcadeCheatCatalog.MaxCheatsPerGame).ToList();
+                    truncated++;
+                }
+
+                w.WriteLine($"  [{g.System}] {g.Title} [{header.GameId}r{header.Revision}] → {cheats.Count} cheats");
+                if (Apply)
+                {
+                    if (had)
+                        db.ArcadeCheats.RemoveRange(await db.ArcadeCheats
+                            .Where(c => c.ArcadeGameId == g.Id && c.Source == DolphinSource).ToListAsync());
+                    for (int i = 0; i < cheats.Count; i++)
+                        db.ArcadeCheats.Add(new ArcadeCheat
+                        {
+                            ArcadeGameId = g.Id, Kind = "code", Ordinal = i,
+                            Name = Trunc(cheats[i].Name, 200), Code = cheats[i].Code, Source = DolphinSource,
+                        });
+                }
+                rows += cheats.Count;
+            }
+
+            if (Apply) await db.SaveChangesAsync();
+
+            var remaining = await db.ArcadeGames
+                .CountAsync(g => systems.Contains(g.System) && g.IsEnabled && g.Id > lastId);
+
+            w.WriteLine();
+            w.WriteLine($"{(Apply ? "APPLIED" : "DRY RUN")} dolphin-ini: processed={games.Count} matched={matched} rows={rows} " +
+                        $"skipped-existing={skippedExisting} no-image={noImage} no-game-id={noId} no-codes={noCodes} " +
+                        $"truncated-games={truncated} encrypted-AR-dropped={unreproducible} over-length-dropped={tooLong} " +
+                        $"remaining={remaining} nextCursor={lastId}");
+            if (remaining > 0) w.WriteLine($"Re-run with --after-id {lastId} to continue.");
+        }
+
+        /// <summary>Provenance for the Dolphin-INI rows. Kept distinct from "libretro-cht" so a re-import of
+        /// either source only ever deletes its own rows.</summary>
+        private const string DolphinSource = "dolphin-ini";
+
+        /// <summary>Where this game's disc image actually is: the archive/original if recorded, else under the
+        /// ROM mount. Returns null rather than a path that isn't there.</summary>
+        private string? ResolveDiscPath(ArcadeGame g)
+        {
+            if (!string.IsNullOrWhiteSpace(g.SourceArchivePath) && File.Exists(g.SourceArchivePath))
+                return g.SourceArchivePath;
+            if (!string.IsNullOrWhiteSpace(RomsDir) && !string.IsNullOrWhiteSpace(g.RomPath))
+            {
+                var p = Path.Combine(RomsDir, g.RomPath.Replace('/', Path.DirectorySeparatorChar));
+                if (File.Exists(p)) return p;
+            }
+            return null;
+        }
+
+        // ── 3. Community cheat codes from libretro-database/cht ──────────────────────────────────────────
         private async Task ImportCheatCodesAsync(IConsole console)
         {
             var w = console.Output;
@@ -207,7 +340,9 @@ namespace MovieTheater.Arcade
             {
                 if (indexes.TryGetValue(sys, out var hit)) return hit;
                 var dir = Path.Combine(root, ArcadeCheatCatalog.ChtFolder(sys)!);
-                var idx = ArcadeChtIndex.Build(Directory.EnumerateFiles(dir, "*.cht", SearchOption.TopDirectoryOnly));
+                // The naming profile is per system on purpose — see ArcadeCheatCatalog.NamingProfileFor.
+                var idx = ArcadeChtIndex.Build(Directory.EnumerateFiles(dir, "*.cht", SearchOption.TopDirectoryOnly),
+                                               ArcadeCheatCatalog.NamingProfileFor(sys));
                 w.WriteLine($"  [{sys}] {idx.Count} cht files indexed.");
                 return indexes[sys] = idx;
             }

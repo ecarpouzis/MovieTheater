@@ -1731,6 +1731,14 @@ namespace MovieTheater.Controllers
                         .Take(ArcadeCheatCatalog.MaxCheatsPerRoom).Select(o => o.Code!).ToList();
                 }
 
+                // Some systems need a core option before ANY code is honoured — Dolphin discards every cheat
+                // unless dolphin_cheats_enabled is on, and its default is off. Only for rooms that actually
+                // took a cheat, and never over a value the room set explicitly.
+                if (codes.Count > 0)
+                    foreach (var (impliedKey, impliedValue) in ArcadeCheatCatalog.ImpliedOptionsForSystem(game.System))
+                        if (!gameCoreOptions.ContainsKey(impliedKey))
+                            gameCoreOptions[impliedKey] = impliedValue;
+
                 if (gameCoreOptions.Count > 0 || codes.Count > 0)
                     descriptor = descriptor with
                     {

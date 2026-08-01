@@ -28,6 +28,9 @@ namespace MovieTheater.Arcade
         /// <summary>Longest code we will store (the DB column is nvarchar(4000)).</summary>
         public const int MaxCodeLength = 4000;
 
+        /// <summary>RetroArch writes this as a cheat's "code" when the entry is a heading, not a cheat.</summary>
+        private const string FolderMarker = "folder";
+
         /// <summary>Parse into ordered entries.
         ///
         /// <para><paramref name="withoutCode"/> counts entries that declare a description but no
@@ -67,6 +70,11 @@ namespace MovieTheater.Arcade
             {
                 var code = codes[idx];
                 if (code.Length == 0 || code.Length > MaxCodeLength) continue;
+                // "folder" is RetroArch's own marker for a heading row inside a cheat file ("Codes Are For
+                // Proper Version", "NOTE: Read Description"), not a code. Cores reject it — melonDS DS
+                // regex-checks its input and warns — so importing it puts a toggle in the picker that can
+                // never do anything, which is the one thing this whole subsystem exists to prevent.
+                if (code.Equals(FolderMarker, StringComparison.OrdinalIgnoreCase)) continue;
                 var name = descs.TryGetValue(idx, out var d) && d.Length > 0 ? d : $"Cheat {idx + 1}";
                 result.Add(new Entry(idx, name, code));
             }

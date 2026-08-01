@@ -37,25 +37,52 @@ namespace MovieTheater.Arcade
         // only honest one available — the API is mandatory, so every core exports the symbol, and a stub
         // accepts a code and silently discards it. Do not add a system on reasoning alone; run the probe.
         //
-        //   REAL: mupen64plus_next (n64), pcsx_rearmed (ps1), snes9x (snes), nestopia (nes/fds),
-        //         genesis_plus_gx (genesis/sms/gg/segacd), picodrive (sega32x), mgba (gb/gbc/gba).
-        //   STUB: pcsx2, flycast, fbneo, stella, mednafen_pce.
+        //   REAL: mupen64plus_next/parallel_n64 (n64), pcsx_rearmed + mednafen_psx_hw (ps1), snes9x (snes),
+        //         nestopia (nes/fds), genesis_plus_gx (genesis/sms/gg/segacd), picodrive (sega32x),
+        //         mgba (gb/gbc/gba), melondsds (nds), dolphin (gc/wii), kronos (saturn), ppsspp (psp).
+        //   STUB: pcsx2, flycast, fbneo, stella, mednafen_pce/lynx/ngp/vb/wswan, gearcoleco, freeintv, o2em,
+        //         opera, same_cdi, citra, scummvm, prosystem, potator, pokemini, vecx, freechaf, amiarcadia,
+        //         dosbox_pure.  (Re-probed 2026-07-31 across all 43 live cores — the 2026-07-09 run predated
+        //         ~20 systems, which is how nds/gc/wii sat at zero cheats while their cores could apply them.)
         //
         // Deliberately ABSENT, each for a reason worth keeping written down:
         //   ps2 (pcsx2), dc/naomi/atomiswave (flycast), arcade/neogeo (fbneo) — CONFIRMED stubs. They read
-        //     their own cheat formats (pnach) or carry internal cheat engines instead.
+        //     their own cheat formats (pnach) or carry internal cheat engines instead. Note dc and arcade DO
+        //     have upstream cht folders (292 and 71 files); a folder is not evidence the core will use it.
         //   pce (mednafen_pce) — a CONFIRMED stub, and it was wrongly allowlisted here at first on the
         //     assumption that "the mednafen cores implement it". They don't. 621 rows across 173 games were
         //     imported and offered as toggles that could never do anything before the probe caught it.
-        //   gc (dolphin), psp (ppsspp) — their retro_cheat_set is REAL, but gc has no upstream cht folder and
-        //     psp's is unverified end-to-end. Candidates, not entries.
-        //   a2600/a7800/lynx/vb/wsc/ngpc — cht folders exist upstream; stella is a confirmed stub and the
-        //     others are unprobed.
+        //   psp (ppsspp) — retro_cheat_set is REAL, but held back for TWO reasons, neither about the core's
+        //     honesty: (1) our psp filenames carry no region tag at all, so every match would be an unchecked
+        //     wildcard and a EUR code on a USA disc corrupts memory rather than no-op'ing; (2) PPSSPP does not
+        //     hold cheats in memory — it WRITES them to a cheat file on the memstick and re-parses it, so they
+        //     would outlive the room and leak into the next player's session. Both are fixable (read DISC_ID
+        //     out of PARAM.SFO; clear the file per room); until then it stays off.
+        //   saturn (kronos) — REAL (CheatAddARCode), but upstream has only 192 files for our 2,522 discs and
+        //     our saturn filenames are coded ("0029-discworld-eur-v2"), so matches would be region-unchecked.
+        //     Worth doing via a saturn-specific filename parse; not worth guessing.
+        //   a2600/a7800/lynx/vb/wsc/ngpc/coleco/intv/3do/cdi/3ds/scummvm — cht folders exist upstream for some
+        //     of them, but every one of those cores probed STUB.
         private static readonly HashSet<string> CodeCapable = new(StringComparer.OrdinalIgnoreCase)
         {
             "nes", "fds", "snes", "genesis", "sms", "gg", "segacd", "sega32x",
-            "gb", "gbc", "gba", "n64", "ps1",
+            "gb", "gbc", "gba", "n64", "ps1", "nds",
+            // GameCube and Wii carry cheats but NOT from a cht folder — see DolphinIniSystems below.
+            "gc", "wii",
         };
+
+        /// <summary>Systems whose cheats come from Dolphin's own <c>Sys/GameSettings/&lt;GAMEID&gt;.ini</c> files
+        /// rather than the libretro cheat database, because Dolphin's <c>retro_cheat_set</c> only ENABLES a code
+        /// it already loaded from those INIs — it cannot be handed a new one. Upstream has no cht folder for
+        /// either system, so without this path they can never have cheats at all.
+        ///
+        /// <para>These are matched by disc GAME ID, not filename, which makes them the only systems here with
+        /// no cross-region matching risk whatsoever. See <see cref="DolphinGameIni"/>.</para></summary>
+        private static readonly HashSet<string> DolphinIni = new(StringComparer.OrdinalIgnoreCase) { "gc", "wii" };
+
+        public static bool UsesDolphinIniCheats(string? system) => system != null && DolphinIni.Contains(system);
+
+        public static IEnumerable<string> DolphinIniSystems => DolphinIni;
 
         public static bool SupportsCheatCodes(string? system) => system != null && CodeCapable.Contains(system);
 
@@ -78,10 +105,25 @@ namespace MovieTheater.Arcade
             ["segacd"] = "Sega - Mega-CD - Sega CD",
             ["sega32x"] = "Sega - 32X",
             ["ps1"] = "Sony - PlayStation",
+            ["nds"] = "Nintendo - Nintendo DS",
         };
 
         public static string? ChtFolder(string? system) =>
             system != null && ChtFolders.TryGetValue(system, out var f) ? f : null;
+
+        // How each system's ROM filenames are shaped, for the cht matcher. Anything not listed uses the
+        // No-Intro default — and MUST keep using it: turning nds's rules on globally was measured to silently
+        // rewrite 87 already-working matches on the other systems.
+        private static readonly Dictionary<string, ArcadeChtIndex.NamingProfile> NamingProfiles =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                // "0168 - Mario Kart DS (US)(M5)": an index prefix, a trailing region tag, two-letter codes.
+                // Under the default rules this matched literally ZERO of our 6,604 DS ROMs.
+                ["nds"] = ArcadeChtIndex.NamingProfile.NumberedSet,
+            };
+
+        public static ArcadeChtIndex.NamingProfile NamingProfileFor(string? system) =>
+            system != null && NamingProfiles.TryGetValue(system, out var p) ? p : ArcadeChtIndex.NamingProfile.NoIntro;
 
         /// <summary>Every system we can import cheat codes for (has both a core that applies them and an
         /// upstream cht folder).</summary>
@@ -115,6 +157,29 @@ namespace MovieTheater.Arcade
         /// these into the room's core options for keys not already set explicitly.</summary>
         public static IReadOnlyList<(string Key, string Value)> ImpliedOptionsFor(string optionKey) =>
             Implied.TryGetValue(optionKey, out var i) ? i : Array.Empty<(string, string)>();
+
+        // ── Core options a SYSTEM needs before any cheat code works at all ──────────────────────────────
+        // Same trap as pcsx2_enable_hw_hacks, one level up: Dolphin's retro_cheat_set opens with
+        //
+        //     if (!Config::AreCheatsEnabled())  { OSD message; return; }
+        //
+        // and that config comes from `dolphin_cheats_enabled`, whose default is FALSE. Ship the codes without
+        // it and every GameCube/Wii cheat is accepted and discarded — the failure this whole file exists to
+        // prevent. `dolphin_cheats_import` gates the INI load that populates the list the code is matched
+        // against; it already defaults on, and is set explicitly so a core-side default change can't quietly
+        // empty the list. Applied ONLY to rooms that actually took a cheat, so cheat-free rooms keep the
+        // core's own defaults.
+        private static readonly Dictionary<string, (string Key, string Value)[]> SystemImplied =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                ["gc"] = new[] { ("dolphin_cheats_enabled", "enabled"), ("dolphin_cheats_import", "enabled") },
+                ["wii"] = new[] { ("dolphin_cheats_enabled", "enabled"), ("dolphin_cheats_import", "enabled") },
+            };
+
+        /// <summary>Core options that must accompany ANY cheat code on this system, or the core will accept the
+        /// code and silently do nothing. Merged only for keys the room hasn't set explicitly.</summary>
+        public static IReadOnlyList<(string Key, string Value)> ImpliedOptionsForSystem(string? system) =>
+            system != null && SystemImplied.TryGetValue(system, out var i) ? i : Array.Empty<(string, string)>();
 
         // ── The PS2 per-game option cheats the import writes (see docs/arcade/ps2-core-patches.tsv) ──────
         // NOTE the widescreen VALUE: libretro silently ignores an unrecognized option value, and this one is

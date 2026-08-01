@@ -21,7 +21,7 @@ what the whole design is shaped around:
 |---|---|---|
 | Delivered by | `retro_cheat_set(index, enabled, code)` | a libretro core option, set before load |
 | What it is | a raw memory poke ("`80165FBD 0001`") | a patch the **emulator already ships** |
-| Source | `libretro-database/cht`, per ROM | the core's own compiled-in table |
+| Source | `libretro-database/cht`, per ROM — **except gc/wii, whose codes come from Dolphin's own `Sys/GameSettings/<GAMEID>.ini`; see below** | the core's own compiled-in table |
 | Stored as | `ArcadeCheat` rows, `Kind="code"` | `ArcadeCheat` rows, `Kind="option"`, or `ArcadeCheatCatalog` |
 | Fails how? | **silently** | silently |
 
@@ -38,8 +38,51 @@ hoping. That is `ArcadeCheatCatalog`.
 ## What each system gets
 
 **Cheat codes** (`ArcadeCheatCatalog.SupportsCheatCodes`) — nes, fds, snes, genesis, sms, gg, segacd,
-sega32x, gb, gbc, gba, n64, ps1. Each has both a core whose `retro_cheat_set` is a *real implementation*
-(see "Is this core's `retro_cheat_set` real?" below) and an upstream `cht` folder.
+sega32x, gb, gbc, gba, n64, ps1, **nds**, **gc**, **wii**. Each has a core whose `retro_cheat_set` is a
+*real implementation* (see "Is this core's `retro_cheat_set` real?" below) plus a source of data: an upstream
+`cht` folder for all but gc/wii, which come from Dolphin's own INIs instead (next section).
+
+> **The allowlist has to be re-probed when systems are added.** The original probe ran 2026-07-09; roughly
+> twenty systems arrived after it and nobody re-ran it, so nds/gc/wii sat at **zero** cheats for weeks while
+> their cores could apply them perfectly well. A system arriving with no cheats looks exactly like a system
+> whose core can't do cheats. Re-probing all 43 live cores on 2026-07-31 is what found them.
+
+### GameCube and Wii — the one system whose cheats do NOT come from a code list
+
+Dolphin's `retro_cheat_set` is real, but it does not take a code. Read it:
+
+```cpp
+// DolphinLibretro/Main.cpp
+void retro_cheat_set(unsigned index, bool enabled, const char* code) {
+  if (!Config::AreCheatsEnabled()) { OSD::AddMessage("..."); return; }
+  enable_cheat_by_code(enabled, code);   // finds an ALREADY-LOADED code by re-serializing and comparing
+  ...
+}
+```
+
+It only flips a cheat Dolphin already loaded from `Sys/GameSettings/<GAMEID>.ini`. Hand it a Gecko code it
+has never seen and it matches nothing and returns — silently, like everything else here. So the site's job is
+not to supply codes; it is to **mirror the ones the core already has** and hand back the exact bytes the
+comparison expects. Three consequences shape `DolphinGameIni`:
+
+1. **The serialization is a wire format, not a display choice.** ActionReplay ops are re-emitted as
+   `{cmd_addr:X8} {value:X8}` (uppercase, one space, '+'-joined) because Dolphin parses to integers and
+   formats them back; Gecko lines go back **verbatim** (it keeps `original_line`). One byte off = dead cheat.
+   Proven against an oracle rather than by re-reading the source: the core writes its own RetroArch `.cht`
+   of everything it loaded (`generate_cht_from_ini`), and the parser reproduces those files byte for byte —
+   97/97 cheats over three games mixing both kinds.
+2. **A disc's codes are the UNION of an INI chain**, not one file: `G.ini` → `GFZ.ini` → `GFZE01.ini` →
+   `GFZE01r0.ini`. Read only the generic 3-char file and F-Zero GX loses all four of its codes.
+3. **`dolphin_cheats_enabled` defaults to FALSE**, so every GameCube/Wii cheat is inert without it. It rides
+   `ArcadeCheatCatalog.ImpliedOptionsForSystem` — the same shape as PS2's `pcsx2_enable_hw_hacks` gate, one
+   level up — and is merged only into rooms that actually took a cheat.
+
+Matching is by the disc's **game id** read out of the image with `DolphinTool header -j` (~0.1 s local,
+~0.3 s over the NAS), never by filename. The region is the 4th character of the id, so these are the only
+systems here with **no cross-region matching risk at all**.
+
+Yield (2026-07-31): **gc 134 games / 3,430 codes; wii 9 games / 72 codes.** Wii is genuinely thin — Dolphin's
+shipped INIs are overwhelmingly GameCube ActionReplay codes. 924 of the 1,870 INIs carry any codes at all.
 
 **PS2** gets no codes (LRPS2 ignores them, and upstream has no `cht` folder for it) but does get the two
 patches compiled into the core:
@@ -95,9 +138,22 @@ a binary struct array in the DLL rather than log strings, so unlike PCSX2 we can
 will fire; Dolphin's is a rendering hack, not a per-game patch, and can reveal un-drawn geometry at the
 edges. Neither can honestly be pre-selected.
 
-**Not offered at all:** psp, naomi, atomiswave, arcade/neogeo (fbneo and flycast have internal cheat engines
-we don't drive), and a2600/a7800/lynx/vb/wsc/ngpc (upstream `cht` folders exist, but nobody has confirmed a
-code takes effect on those cores here — adding one is a single line in `CodeCapable` once verified).
+**Not offered at all**, and the reason is never "we didn't get to it":
+
+- **Confirmed STUB cores** — ps2 (pcsx2), dc/naomi/atomiswave (flycast), arcade/neogeo (fbneo), pce, a2600,
+  a7800, lynx, vb, wsc, ngpc, coleco, intv, 3do, cdi, 3ds, scummvm, o2em, vectrex, channelf, pokemini,
+  supervision, arcadia. Note that dc (292 files) and arcade (71) *do* have upstream `cht` folders: **a folder
+  is not evidence the core will use it.**
+- **psp** — ppsspp's `retro_cheat_set` is REAL, but held back for two reasons, neither about the core:
+  (1) our psp filenames carry no region tag at all, so every match would be an unchecked wildcard, and a EUR
+  code on a USA disc corrupts memory rather than no-op'ing; (2) PPSSPP does not hold cheats in memory — it
+  **writes them to a cheat file on the memstick** and re-parses it, so they would outlive the room and leak
+  into the next player's session. Fixable (read `DISC_ID` from `PARAM.SFO`; clear the file per room); until
+  then it stays off. 2,654 upstream files are waiting.
+- **saturn** — kronos is REAL (`CheatAddARCode`), but upstream has only 192 files against our 2,522 discs and
+  our saturn filenames are coded (`0029-discworld-eur-v2`), so matches would be region-unchecked. Needs a
+  saturn-specific filename parse to be safe.
+- **segacd** shows near-zero coverage and that is not a bug: upstream ships **14** files for the whole system.
 
 ## How a cheat reaches the emulator
 
@@ -143,7 +199,23 @@ dotnet run --project src/MovieTheater -- arcade-cheats-import \
 # 2. Community cheat codes. Bounded per call — loop on the printed nextCursor until remaining=0.
 dotnet run --project src/MovieTheater -- arcade-cheats-import \
     --cht D:/ArcadeStorage/cheats/libretro-database/cht --limit 500 --after-id 0 --apply
+
+# 3. GameCube / Wii, from Dolphin's OWN GameSettings INIs. --dolphin-tool is required, not optional:
+#    it reads each disc's game id, and guessing one would hand a game another game's memory pokes.
+dotnet run --project src/MovieTheater -- arcade-cheats-import \
+    --dolphin-ini D:/ArcadeStorage/worker-gl/libretro/system/dolphin-emu/Sys/GameSettings \
+    --dolphin-tool D:/Tools/dolphin-2512/Dolphin-x64/DolphinTool.exe \
+    --roms-dir D:/ArcadeStorage/roms --system gc --limit 150 --after-id 0 --apply
 ```
+
+Each source writes its own `Source` value (`libretro-cht`, `pcsx2-gamedb`, `dolphin-ini`) and deletes are
+scoped to it, so any one can be re-run without touching the others.
+
+**Over-length codes are DROPPED, never truncated.** Gecko codes are whole PowerPC subroutines and a few run
+past the `nvarchar(4000)` column. Half a code is not a weaker cheat — it is a poke at the wrong addresses.
+Same rule as `ArcadeChtFile`, and it is reported (`over-length-dropped=N`), never silent. Encrypted
+ActionReplay codes are dropped for the related reason that we cannot reproduce Dolphin's decrypted ops and
+therefore cannot produce a string that will ever match.
 
 ### Matching a ROM to a cheat file (`ArcadeChtIndex`)
 
@@ -165,6 +237,39 @@ NTSC binary corrupts state instead of failing:
    region; `Micro Machines V3 (USA)` against a lone `(Europe) (Xploder)` file does **not**. A parenthetical
    naming no region at all — the device-only `(GameShark)` — carries no dump information and is treated as a
    last-resort wildcard, never chosen over a file that actually agrees on the region.
+
+Several files can pass both rules, and the tiebreak is a **correctness** rule, not tidiness: take the
+**least decorated** name — fewest words inside `(...)`/`[...]` — then the name itself, so the answer never
+depends on directory order. Upstream keeps **ROM HACK** cheat files beside the stock game's, and the hack's
+name lives in a parenthetical the title signature strips, so `Mario Kart DS (USA)` and
+`Mario Kart DS (USA) (CTGP Nitro (v1.0.0))` are indistinguishable to the signature *and* agree on region.
+On the first nds run the hack won and our stock Mario Kart DS was handed the hack's addresses. The same
+tiebreak prefers a plain dump over `(Rev 1)` and over a device-suffixed file.
+
+> Before this, the pick among equally-valid candidates was whatever the filesystem enumerated first. The
+> tiebreak changes which file **1,311** of the already-imported matches on the other 13 systems would resolve
+> to — no matches are lost (same candidate pool), but they were never re-imported with it. Re-running those
+> systems with `--overwrite` is a deliberate, separate decision.
+
+### Per-system naming profiles
+
+The rules above assume No-Intro naming (`Title (Region) (Tags)`). Not every collection obeys that, so
+`ArcadeChtIndex.NamingProfile` turns three relaxations on **per system**, via
+`ArcadeCheatCatalog.NamingProfileFor`. They are opt-in because they are not universally safe: enabling the
+short-region-code rule globally was measured to silently rewrite **87** working matches on the live systems
+(18 lost outright).
+
+`nds` is the one non-default profile today, and needed all three — under the default rules it matched
+**zero** of 6,604 DS ROMs:
+
+| Rule | Why nds needs it |
+|---|---|
+| `StripCatalogNumber` | `0168 - Mario Kart DS` — the index prefix poisons the title token set. Kept per-system because `007 - Agent Under Fire` looks identical to the pattern. |
+| `RegionsFromEveryTag` | The region is not the first tag: `Alice in Wonderland (DSi Enhanced) [b] (US)`. Reading only the first made that name look region-LESS, which matched it to a **Europe** cheat file. |
+| `ShortRegionCodes` | `(US)`/`(EU)`/`(JP)`/`(FR)`… These collide with GoodTools single letters elsewhere. |
+
+With all three: **3,221 of 6,604 DS games matched, 81,949 codes, essentially all region-verified** —
+a language-specific dump (`(IT)`, `(FR)`) deliberately MISSES a generic `(Europe)` file rather than guessing.
 
 Measured against the materialized ROM mount: **90% matched, 0 cross-region**. The naive
 "strip all tags and compare" that this replaced matched 92% — but 44 of those were cross-region, including
@@ -197,20 +302,22 @@ Do **not** use "the body contains some opcode other than `ret`": disassembling p
 runs into inter-function alignment padding (`data16 nopl …`) that belongs to no function, and that test
 reports every stub as REAL. It's how the pce bug survived its first check.
 
-Results (2026-07-09, the cores this stack actually loads):
+Results (**2026-07-31**, all 43 cores this stack loads — supersedes the 2026-07-09 run, which predated ~20
+systems):
 
 | verdict | cores |
 |---|---|
-| **REAL** | mupen64plus_next, pcsx_rearmed, snes9x, nestopia, genesis_plus_gx, picodrive, mgba, **dolphin, ppsspp** |
-| **STUB** | pcsx2, flycast, fbneo, stella, **mednafen_pce** |
+| **REAL** | mupen64plus_next, parallel_n64, pcsx_rearmed, mednafen_psx_hw, snes9x, nestopia, genesis_plus_gx, picodrive, mgba, **melonds / melondsds**, **dolphin**, **kronos**, **ppsspp** |
+| **STUB** | pcsx2, flycast, fbneo, stella, mednafen_pce, mednafen_lynx, mednafen_ngp, mednafen_vb, mednafen_wswan, gearcoleco, freeintv, o2em, opera, same_cdi, citra, scummvm, prosystem, potator, pokemini, vecx, freechaf, amiarcadia, dosbox_pure |
 
 `mednafen_pce` is why this section exists. It was allowlisted on the reasoning that "the mednafen cores
 implement the cheat API" — they don't, and 621 rows across 173 PC Engine games shipped as toggles that could
 never do anything. Caught by the probe, not by testing, because a stub is indistinguishable from a code that
-simply didn't change anything visible.
+simply didn't change anything visible. Note the whole mednafen family reads STUB, which is the useful shape
+of that lesson.
 
-`dolphin` and `ppsspp` are real but not enabled: upstream has no `cht` folder for GameCube, and PSP is
-unverified end-to-end.
+Re-run this whenever a system is added. It is the cheapest step in the whole runbook and it is the one that
+was skipped for twenty systems.
 
 ## Verification
 
@@ -230,11 +337,33 @@ Verified live 2026-07-09 on the real product path (login → lobby card → pick
 - **Correct absence** — God of War shows no picker: it isn't in the core's widescreen table (it gets GS
   hardware fixes instead), so there is nothing honest to offer.
 
+Coverage after the 2026-07-31 pass:
+
+| system | games with cheats | codes | source |
+|---|---:|---:|---|
+| nds | 3,221 | 81,949 | libretro-cht (new) |
+| n64 | 819 | 68,330 | libretro-cht |
+| snes | 1,797 | 48,474 | libretro-cht |
+| nes | 1,825 | 35,954 | libretro-cht |
+| genesis | 1,408 | 31,996 | libretro-cht |
+| ps1 | 1,187 | 14,172 | libretro-cht |
+| gb / gba / gbc / gg / sms | 2,223 | 24,458 | libretro-cht |
+| **gc** | **134** | **3,430** | **dolphin-ini (new)** |
+| sega32x / fds | 51 | 596 | libretro-cht |
+| **wii** | **9** | **72** | **dolphin-ini (new)** |
+
 ## Adding a system
 
 1. **Run the probe.** If `retro_cheat_set` is a stub, stop — no amount of testing will distinguish it from a
    code that had no visible effect.
-2. Confirm a code actually takes effect in a real room.
-3. Add the system to `CodeCapable` *and* its upstream folder to `ChtFolders` in `ArcadeCheatCatalog`. A
-   folder without an allowlist entry is how a stub core gets silently re-imported; a unit test guards this.
-4. Run the import for it: `arcade-cheats-import --cht <dir> --system <code> --apply`.
+2. **Check the matching is region-safe before the data looks tempting.** Dry-run the import and read the
+   chosen filenames, not just the counts. Two failures found this way, both of which would have shipped
+   silently: a numbered-set naming convention that matched *nothing*, and a romhack's cheat file winning over
+   the stock dump's. If our filenames can't establish a region, the system does not get codes (see psp).
+3. Confirm a code actually takes effect in a real room.
+4. Add the system to `CodeCapable` *and* its upstream folder to `ChtFolders` in `ArcadeCheatCatalog`, plus a
+   `NamingProfileFor` entry if its filenames aren't No-Intro shaped. A folder without an allowlist entry is
+   how a stub core gets silently re-imported; a unit test guards this.
+5. If the core needs a core option before it will honour codes at all (Dolphin does), add it to
+   `SystemImplied` — otherwise every cheat is accepted and discarded.
+6. Run the import for it: `arcade-cheats-import --cht <dir> --system <code> --apply`.
