@@ -54,9 +54,11 @@ namespace MovieTheater.Controllers
         /// nightly-pinned cores, and the 3 patched Jellyfin DLLs), as last reported by Ziggy's arcade
         /// watchdog. The admin UI polls this and raises a persistent popup on trouble.
         ///
-        /// <para>Returns THREE distinct bad states, and the third is the one people forget: findings
-        /// present (something was reverted), or the report is STALE / never arrived (the watchdog itself
-        /// is dead, so we have no evidence and must not show a green light). Everything else is healthy.</para></summary>
+        /// <para>Distinguishes FOUR states, and the split between the last two is what keeps this endpoint
+        /// from crying wolf: findings present (something was reverted — the only state worth interrupting
+        /// an admin for), healthy, WARMING (we restarted and the watchdog's 30-minute post hasn't landed
+        /// yet — expected after every deploy, not a fault), and STALE (silence we should not be hearing, so
+        /// the watchdog itself is dead and we have no evidence either way).</para></summary>
         [HttpGet("/API/Admin/PatchedArtifacts")]
         public IActionResult PatchedArtifacts()
         {
@@ -70,6 +72,10 @@ namespace MovieTheater.Controllers
                 findingCount = s.FindingCount,
                 receivedUtc = s.ReceivedUtc,
                 ageMinutes = s.Age.HasValue ? (int?)Math.Round(s.Age.Value.TotalMinutes) : null,
+                // Uptime lets the UI say "waiting for the first report" honestly instead of implying the
+                // guard has been silent for as long as it has existed.
+                uptimeMinutes = (int)Math.Round(s.Uptime.TotalMinutes),
+                warming = s.Warming,
                 stale = s.Stale,
                 staleAfterMinutes = (int)MovieTheater.Arcade.PatchedArtifactAlerts.StaleAfter.TotalMinutes,
                 // Verbatim verifier JSON so the popup can list exactly which artifact/path/hash is wrong

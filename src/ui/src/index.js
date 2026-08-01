@@ -36,9 +36,10 @@ import "antd/es/tag/style/css";
 import "antd/es/tooltip/style/css";
 import "antd/es/typography/style/css";
 import "antd/es/message/style/css";
-// notification (not message): the sticky patched-binary alarm in NavBar/PatchedArtifactAlarm.js.
-// Without this the popup renders UNSTYLED — the maintenance note at the top of this block is real.
-import "antd/es/notification/style/css";
+// antd `notification` is deliberately NOT imported: its only user was the patched-binary guard's
+// "not reporting" toast, which was removed as noise (it fired after every deploy — see
+// NavBar/PatchedArtifactAlarm.js). Re-add this line if anything starts calling notification.*,
+// or it renders UNSTYLED — the maintenance note at the top of this block is real.
 import App from "./App";
 
 const container = document.getElementById("root");

@@ -16,16 +16,22 @@ namespace MovieTheater.Arcade
     ///
     /// <para>DELIBERATELY IN-MEMORY, not a table. This is a CURRENT-STATE signal with a heartbeat, not
     /// history: the watchdog re-posts every 30 minutes, so a pod restart self-heals within one cycle and
-    /// there is nothing worth migrating a schema for. The cost is that <see cref="Age"/> is unknown right
-    /// after a restart, which is exactly why the UI treats "no report yet" as its own warning rather than
-    /// as good news — see <see cref="StaleAfter"/>.</para>
+    /// there is nothing worth migrating a schema for. The cost is that <see cref="Snapshot.Age"/> is
+    /// unknown right after a restart — see <see cref="Snapshot.Warming"/> for why that is a NON-event.</para>
     /// </summary>
     public static class PatchedArtifactAlerts
     {
         /// <summary>No report within this window means the WATCHDOG itself is the problem (task dead,
-        /// script broken, Ziggy down). A guard that goes quiet must never read as "all clear", so the UI
-        /// escalates on staleness too. 30-minute cadence + generous slack for a slow hashing pass.</summary>
+        /// script broken, Ziggy down). 30-minute cadence + generous slack for a slow hashing pass.</summary>
         public static readonly TimeSpan StaleAfter = TimeSpan.FromMinutes(95);
+
+        /// <summary>When THIS process started. Load-bearing: because the report is in-memory, every deploy
+        /// resets us to "never reported", and the site is deployed several times a day. Without this clock
+        /// we cannot tell "the guard is dead" from "we came up 90 seconds ago and the next 30-minute post
+        /// hasn't landed yet" — and we used to report both as an alarm, which fired a scary popup at an
+        /// admin after essentially every deploy. Silence is only evidence once we have been up long enough
+        /// to have HEARD something.</summary>
+        private static readonly DateTime ProcessStartUtc = DateTime.UtcNow;
 
         private static readonly object Gate = new();
         private static string? payloadJson;
@@ -53,16 +59,27 @@ namespace MovieTheater.Arcade
             {
                 lock (Gate)
                 {
-                    var age = receivedUtc.HasValue ? DateTime.UtcNow - receivedUtc.Value : (TimeSpan?)null;
+                    var now = DateTime.UtcNow;
+                    var age = receivedUtc.HasValue ? now - receivedUtc.Value : (TimeSpan?)null;
+                    var uptime = now - ProcessStartUtc;
+
+                    // Have not heard yet, but have not been up long enough to expect to. This is the
+                    // ordinary post-deploy state, NOT a fault: it resolves itself on the watchdog's next
+                    // 30-minute post with nobody doing anything.
+                    var warming = !receivedUtc.HasValue && uptime <= StaleAfter;
+
                     return new Snapshot(
                         Reported: receivedUtc.HasValue,
                         Ok: ok,
                         FindingCount: findingCount,
                         ReceivedUtc: receivedUtc,
                         Age: age,
-                        // Never-reported counts as stale: it means we have no evidence either way, and
-                        // "no evidence" must not be rendered as a green light.
-                        Stale: !receivedUtc.HasValue || age > StaleAfter,
+                        Uptime: uptime,
+                        Warming: warming,
+                        // Silence we should NOT be hearing: either a report went stale, or we have been up
+                        // longer than a full report window and never heard anything at all. Both mean the
+                        // watchdog is the problem. Warming deliberately does not qualify.
+                        Stale: receivedUtc.HasValue ? age > StaleAfter : uptime > StaleAfter,
                         PayloadJson: payloadJson);
                 }
             }
@@ -74,6 +91,8 @@ namespace MovieTheater.Arcade
             int FindingCount,
             DateTime? ReceivedUtc,
             TimeSpan? Age,
+            TimeSpan Uptime,
+            bool Warming,
             bool Stale,
             string? PayloadJson);
     }

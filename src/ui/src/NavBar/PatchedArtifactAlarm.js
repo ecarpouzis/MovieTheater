@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Modal, notification, Typography } from "antd";
+import { Modal, Typography } from "antd";
 import { WarningOutlined } from "@ant-design/icons";
 import { MovieAPI } from "../MovieAPI";
 
@@ -9,13 +9,8 @@ const { Text, Paragraph } = Typography;
 // nothing except load — 5 min is responsive enough to catch a revert within one worker recycle.
 const POLL_MS = 5 * 60 * 1000;
 
-// Deliberately NOT auto-dismissing. Every one of these means a binary we hand-built is no longer
-// running, which stays true until a human acts, so a toast that fades away would be worse than
-// useless: it would let a revert pass by unnoticed while looking like it was reported.
-const STICKY = 0;
-
 /**
- * LOUD alarm for reverted patched binaries.
+ * LOUD alarm for reverted patched binaries — and ONLY for that.
  *
  * WHY IT IS THIS AGGRESSIVE: we run ~11 binaries that are not what upstream ships (hand-built and
  * byte-patched arcade cores, cores pinned to one buildbot nightly, and 3 patched Jellyfin DLLs), and
@@ -24,11 +19,17 @@ const STICKY = 0;
  * The previous guard only wrote to a log on Ziggy, which nobody reads, so a revert would surface
  * weeks later as "that bug we fixed is back". Hence: a blocking modal, not a toast.
  *
- * Three states are treated as alarms, and the third is the one that usually gets missed:
- *   - findings    : something was reverted / replaced / differs between workers -> MODAL
- *   - stale       : no report in ~95 min, i.e. the WATCHDOG is dead -> sticky notification
- *   - never       : no report since this pod started -> same as stale (absence of evidence is not
- *                   evidence of health, so it must never render as a green light)
+ * ⚠ THIS INTERRUPTS ONLY ON FINDINGS — i.e. only when a core actually shifted and a patch has to be
+ * re-applied. It used to ALSO raise a sticky notification whenever the guard had not reported, and
+ * that was noise, not signal: the report is held in memory per pod, so EVERY deploy reset it to
+ * "never reported" and the very next admin page load got "Patched-binary guard is not reporting"
+ * even though the watchdog on Ziggy was perfectly healthy and simply hadn't hit its next 30-minute
+ * post. An alarm that fires after every deploy trains you to dismiss the one that matters.
+ *
+ * The guard's own liveness did not stop mattering, so it did not go away — it moved somewhere that
+ * does not interrupt: the Admin modal shows the guard's state whenever an admin opens it. See
+ * AdminModal.js. The server now also separates WARMING (just restarted, nothing is wrong) from
+ * genuinely STALE (up longer than a full report window and still silent).
  *
  * Admin-only: the endpoint is admin-gated server-side and the alarm is actionable only by an admin,
  * so there is no reason to alarm guests about a core DLL.
@@ -36,7 +37,7 @@ const STICKY = 0;
 export default function PatchedArtifactAlarm({ userData }) {
   const [modalPayload, setModalPayload] = useState(null);
   // Remember what we already shouted about so a 5-minute poll doesn't stack duplicate popups.
-  const shoutedRef = useRef({ signature: null, staleShown: false });
+  const shoutedRef = useRef({ signature: null });
 
   const isAdmin = !!userData?.isAdmin;
 
@@ -77,28 +78,11 @@ export default function PatchedArtifactAlarm({ userData }) {
         return;
       }
 
-      if (data.stale) {
-        if (!shoutedRef.current.staleShown) {
-          shoutedRef.current.staleShown = true;
-          notification.warning({
-            key: "patched-artifact-stale",
-            message: "Patched-binary guard is not reporting",
-            duration: STICKY,
-            icon: <WarningOutlined style={{ color: "#faad14" }} />,
-            description: data.reported
-              ? `Last report was ${data.ageMinutes} min ago (expected every 30). The arcade watchdog on Ziggy may be dead — until it reports again we do NOT know whether our patched cores and Jellyfin DLLs are intact.`
-              : "No report since the site started. The arcade watchdog on Ziggy has not checked in, so the state of our patched cores and Jellyfin DLLs is UNKNOWN.",
-          });
-        }
-        return;
-      }
+      // data.stale / data.warming deliberately fall through WITHOUT interrupting: neither means a
+      // binary changed, and the common one (warming) is just a fresh pod. Surfaced in the Admin modal.
 
-      // Healthy: clear the latches so a future problem alarms again.
+      // No live findings: clear the latch so a genuinely NEW problem alarms again.
       shoutedRef.current.signature = null;
-      if (shoutedRef.current.staleShown) {
-        shoutedRef.current.staleShown = false;
-        notification.destroy("patched-artifact-stale");
-      }
     }
 
     check();

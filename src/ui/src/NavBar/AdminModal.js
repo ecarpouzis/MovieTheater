@@ -4,6 +4,45 @@ import { MovieAPI } from "../MovieAPI";
 import "./UserSettingsModal.css";
 import "./AdminModal.css";
 
+// One line describing the patched-binary guard, for the footer of this modal.
+//
+// WHY IT LIVES HERE AND NOT IN A POPUP: the guard's *findings* interrupt (PatchedArtifactAlarm.js
+// still throws a modal when a core actually shifted), but its LIVENESS must not. The report is held
+// in memory per pod, so every deploy resets it and a "guard is not reporting" toast fired at the
+// next admin page load even though nothing was wrong. Pull-when-you-look beats push-after-every-deploy
+// for a fact that is only ever acted on deliberately.
+function guardStatus(guard) {
+  if (!guard) return { tone: "nopw", text: "Patched-binary guard: status unavailable." };
+  if (guard.warming) {
+    return {
+      tone: "nopw",
+      text:
+        `Patched-binary guard: waiting for its first report (site up ${guard.uptimeMinutes} min, ` +
+        `watchdog posts every 30). Normal after a deploy — nothing to do.`,
+    };
+  }
+  if (guard.stale) {
+    return {
+      tone: "nopw",
+      text: guard.reported
+        ? `Patched-binary guard: LAST REPORT ${guard.ageMinutes} min ago (expected every 30). The arcade ` +
+          `watchdog on Ziggy looks dead, so drift in our patched cores / Jellyfin DLLs would go unnoticed.`
+        : `Patched-binary guard: NO report in the ${guard.uptimeMinutes} min this site has been up. The ` +
+          `arcade watchdog on Ziggy looks dead, so drift would go unnoticed.`,
+    };
+  }
+  if (!guard.ok) {
+    return {
+      tone: "nopw",
+      text: `Patched-binary guard: ${guard.findingCount} finding(s) — a hand-built binary is not running.`,
+    };
+  }
+  return {
+    tone: "haspw",
+    text: `Patched-binary guard: all patched cores and Jellyfin DLLs intact (checked ${guard.ageMinutes} min ago).`,
+  };
+}
+
 // Admin-only tool for managing users: creating an initial streaming password (users can't
 // create their own first password) and granting the editor permission. Visibility is driven
 // by userData.isAdmin, and every endpoint it calls is independently admin-gated on the server.
@@ -11,6 +50,7 @@ function AdminModal({ open, onClose }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
+  const [guard, setGuard] = useState(null);
 
   // Per-user editing state keyed by userId: the in-progress password and a busy flag.
   const [passwordDrafts, setPasswordDrafts] = useState({});
@@ -20,6 +60,14 @@ function AdminModal({ open, onClose }) {
     if (!open) return;
     setFilter("");
     setPasswordDrafts({});
+
+    // Best-effort: the guard line is a footnote, so a failure here must never block the user list.
+    setGuard(null);
+    MovieAPI.adminGetPatchedArtifacts()
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setGuard)
+      .catch(() => setGuard(null));
+
     setLoading(true);
     MovieAPI.adminGetUsers()
       .then((r) => {
@@ -39,6 +87,8 @@ function AdminModal({ open, onClose }) {
     if (!needle) return users;
     return users.filter((u) => (u.username ?? "").toLowerCase().includes(needle));
   }, [users, filter]);
+
+  const guardLine = guardStatus(guard);
 
   const patchUser = (userId, patch) =>
     setUsers((prev) => prev.map((u) => (u.userId === userId ? { ...u, ...patch } : u)));
@@ -163,6 +213,10 @@ function AdminModal({ open, onClose }) {
         <p className="settings-hint admin-footnote">
           A password unlocks streaming for that user. Clearing it returns the account to passwordless login.
           Administrators are defined in server config (AdminUsernames) and can't be granted here.
+        </p>
+
+        <p className="settings-hint admin-footnote">
+          <span className={`admin-badge admin-badge--${guardLine.tone}`}>GUARD</span> {guardLine.text}
         </p>
       </div>
     </Modal>
