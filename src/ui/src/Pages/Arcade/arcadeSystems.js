@@ -48,13 +48,12 @@ export const consoleTile = (system) => TILE_BY_SYSTEM[String(system || "").toLow
 //
 // ISO strings so they sort as plain text — no Date parsing, no timezone to get wrong.
 //
-// Three entries are judgement calls, because they aren't consoles:
+// Two entries are judgement calls, because they aren't consoles:
 //   arcade  — 1971, Computer Space, the first coin-op video game. The platform genuinely predates
 //             every console here, so it lands at the very end of the shelf despite being one of the
 //             largest collections.
 //   scummvm — 1987, Maniac Mansion: the first SCUMM game, which is what the engine is named after.
-//   pc      — 1981, the IBM PC, since the DOS era is what this lane actually holds.
-// `capture` is deliberately absent: it is a LANE, not a machine, and has no release date to claim.
+// `pc` and `capture` are deliberately absent — see EVERGREEN_SYSTEMS below.
 export const SYSTEM_RELEASED = {
   switch: "2017-03-03", ps4: "2013-11-15", wiiu: "2012-11-18", "3ds": "2011-02-26",
   wii: "2006-11-19", ps3: "2006-11-11", x360: "2005-11-22",
@@ -70,25 +69,35 @@ export const SYSTEM_RELEASED = {
   pce: "1987-10-30", scummvm: "1987-10-05", a7800: "1986-05-01",
   fds: "1986-02-21", sms: "1985-10-20", nes: "1983-07-15",
   sg1000: "1983-07-15", vectrex: "1982-11-01", coleco: "1982-08-01",
-  arcadia: "1982-05-01", pc: "1981-08-12", intv: "1979-12-03",
+  arcadia: "1982-05-01", intv: "1979-12-03",
   o2em: "1978-12-01", a2600: "1977-09-11", channelf: "1976-11-01",
   arcade: "1971-11-15",
 };
+
+// Platforms that never had A release date because they never stopped having one. The PC is not a
+// 1981 machine we emulate, it is the current one — what this lane streams is whatever runs today —
+// and `capture` is the live window-capture lane, newer still. Dating them by their oldest ancestor
+// (the IBM PC) would bury the newest thing on the shelf down among the Ataris, so they head it
+// instead, and claim no year on their tiles.
+export const EVERGREEN_SYSTEMS = new Set(["pc", "capture"]);
 
 /** The release year to show on a tile, or "" for the platforms that have no honest one. */
 export const systemYear = (system) => (SYSTEM_RELEASED[String(system || "").toLowerCase()] || "").slice(0, 4);
 
 /**
- * Newest hardware first, so scrolling right goes back in time. A system we have no date for sorts to
- * the END rather than the front — an unknown is not a new console, and a newly-ingested platform
- * should not silently take pride of place on the shelf until someone gives it a date above.
+ * Newest first, so scrolling right goes back in time: evergreen platforms, then hardware by release
+ * date. A system we have no date for sorts to the END rather than the front — an unknown is not a new
+ * console, and a newly-ingested platform should not silently take pride of place on the shelf until
+ * someone gives it a date above.
  */
 export function byConsoleAge(a, b) {
+  const ea = EVERGREEN_SYSTEMS.has(a);
+  const eb = EVERGREEN_SYSTEMS.has(b);
+  if (ea !== eb) return ea ? -1 : 1;
   const da = SYSTEM_RELEASED[a] || "";
   const db = SYSTEM_RELEASED[b] || "";
-  if (da && db) return da < db ? 1 : da > db ? -1 : systemLabel(a).localeCompare(systemLabel(b));
-  if (da) return -1;
-  if (db) return 1;
+  if (da && db && da !== db) return da < db ? 1 : -1;
+  if (da !== db) return da ? -1 : 1;
   return systemLabel(a).localeCompare(systemLabel(b));
 }
 

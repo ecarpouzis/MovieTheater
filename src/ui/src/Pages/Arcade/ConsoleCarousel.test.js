@@ -3,7 +3,7 @@ import { vi, describe, it, expect, afterEach, beforeEach } from "vitest";
 
 import ConsoleCarousel from "./ConsoleCarousel";
 import { parseSystems, serializeSystems, toggleSystem } from "./arcadeSystemFilter";
-import { SYSTEM_LABEL, SYSTEM_RELEASED, byConsoleAge } from "./arcadeSystems";
+import { SYSTEM_LABEL, SYSTEM_RELEASED, EVERGREEN_SYSTEMS, byConsoleAge } from "./arcadeSystems";
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 global.ResizeObserver = global.ResizeObserver || class { observe() {} unobserve() {} disconnect() {} };
@@ -45,16 +45,22 @@ describe("arcadeSystemFilter", () => {
 
 describe("console release dates", () => {
   // A system that reaches the shelf without a date sorts to the far end, where nobody will look for
-  // it. Anything we bothered to name is something we ship, so it needs one — except `capture`, which
-  // is a lane rather than a machine and has no release date to claim.
+  // it. Anything we bothered to name is something we ship, so it needs one — unless it's evergreen,
+  // which is a claim about having no single release date rather than about not knowing it.
   it("dates every system the lobby can name", () => {
-    const undated = Object.keys(SYSTEM_LABEL).filter((s) => s !== "capture" && !SYSTEM_RELEASED[s]);
+    const undated = Object.keys(SYSTEM_LABEL).filter((s) => !EVERGREEN_SYSTEMS.has(s) && !SYSTEM_RELEASED[s]);
     expect(undated).toEqual([]);
   });
 
   it("orders newest to oldest across the generations", () => {
     const shelf = ["nes", "ps2", "switch", "gb", "arcade", "n64"].sort(byConsoleAge);
     expect(shelf).toEqual(["switch", "ps2", "n64", "gb", "nes", "arcade"]);
+  });
+
+  // PC heads the shelf: it isn't a 1981 machine we emulate, it's the current one. Dating it by the
+  // IBM PC would file the newest platform we stream between the Atari 7800 and the Intellivision.
+  it("puts the evergreen platforms ahead of the newest console", () => {
+    expect(["nes", "switch", "pc", "arcade"].sort(byConsoleAge)).toEqual(["pc", "switch", "nes", "arcade"]);
   });
 });
 
@@ -119,7 +125,7 @@ describe("ConsoleCarousel", () => {
 });
 
 describe("ConsoleCarousel — the streamed lane", () => {
-  const withStreamed = [...systems, { value: "switch", count: 3 }, { value: "ps4", count: 1 }];
+  const withStreamed = [...systems, { value: "switch", count: 3 }, { value: "pc", count: 1 }];
 
   beforeEach(() => { try { localStorage.clear(); } catch { /* private mode */ } });
 
@@ -134,9 +140,9 @@ describe("ConsoleCarousel — the streamed lane", () => {
     expect(box.checked).toBe(false);
     fireEvent.click(box);
 
-    // Shown, and still in release order — the Switch is the newest thing on the shelf.
+    // Shown, and in shelf order: PC (evergreen) heads it, then hardware newest-first.
     const order = [...container.querySelectorAll(".arcade-console__name")].map((n) => n.textContent);
-    expect(order).toEqual(["Switch", "PlayStation 4", "Nintendo 64", "SNES", "Genesis"]);
+    expect(order).toEqual(["PC", "Switch", "Nintendo 64", "SNES", "Genesis"]);
   });
 
   // A filter you can see the effect of but can't switch off is a trap, and ?system=switch is
@@ -144,7 +150,7 @@ describe("ConsoleCarousel — the streamed lane", () => {
   it("keeps a streamed system visible while it is selected", () => {
     render(<ConsoleCarousel systems={withStreamed} selected={["switch"]} onToggle={vi.fn()} onClear={vi.fn()} />);
     expect(screen.getByRole("button", { name: /Switch/ }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.queryByRole("button", { name: /PlayStation 4/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^PC/ })).toBeNull();
   });
 
   it("offers no checkbox at all when there is nothing streamed to show", () => {
