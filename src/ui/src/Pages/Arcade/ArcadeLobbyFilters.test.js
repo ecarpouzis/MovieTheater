@@ -1,0 +1,108 @@
+import { render, cleanup, waitFor, fireEvent, act, screen } from "@testing-library/react";
+import { vi, describe, it, expect, afterEach, beforeEach } from "vitest";
+import { Router } from "react-router-dom";
+import { createMemoryHistory } from "history";
+
+// Page-level tests for the lobby's filter round trip. The unit tests beside these cover the pieces
+// (ConsoleCarousel, arcadeSystemFilter, useArcadeFilters); what these pin down is the whole loop —
+// URL → request → grid — because that is where clearing the last console went wrong in the field.
+
+global.IS_REACT_ACT_ENVIRONMENT = true;
+global.matchMedia = global.matchMedia || ((q) => ({
+  matches: false, media: q, onchange: null,
+  addListener: vi.fn(), removeListener: vi.fn(),
+  addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+}));
+global.ResizeObserver = global.ResizeObserver || class { observe() {} unobserve() {} disconnect() {} };
+
+const gamesCalls = [];
+let gamesResponder = null; // set per test to control WHEN a page resolves
+
+const card = (i, system) => ({ key: `${system}|${i}`, title: `Game ${i}`, system, versions: [] });
+const CATALOG = {
+  "": Array.from({ length: 40 }, (_, i) => card(i, "snes")),
+  nes: [card(99, "nes")],
+};
+
+const ok = (body) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) });
+
+vi.mock("../../MovieAPI", () => ({
+  MovieAPI: {
+    getArcadeGames: (params) => {
+      gamesCalls.push(params);
+      if (gamesResponder) return gamesResponder(params);
+      const list = CATALOG[params.system || ""] || [];
+      return ok({ games: list, totalCount: list.length, skip: params.skip || 0 });
+    },
+    getArcadeGameLetters: () => ok({ letters: [] }),
+    getArcadeFilters: () => ok({
+      total: 41, multiplayer: 0,
+      systems: [{ value: "nes", count: 1 }, { value: "snes", count: 40 }],
+      regions: [], variants: [], genres: [], ra: { achievements: 0, highScores: 0, speedruns: 0 },
+    }),
+    getArcadeRooms: () => ok([]),
+    getArcadeRenderers: () => Promise.resolve({}),
+    getArcadeRecentlyPlayed: () => Promise.resolve([]),
+  },
+}));
+
+const ArcadePage = (await import("./ArcadePage")).default;
+
+const renderLobby = (search = "") => {
+  const history = createMemoryHistory({ initialEntries: [`/arcade${search}`] });
+  const view = render(<Router history={history}><ArcadePage userData={{ username: "Eric" }} /></Router>);
+  return { history, ...view };
+};
+
+const cards = (c) => c.querySelectorAll(".arcade-card").length;
+
+beforeEach(() => { gamesCalls.length = 0; gamesResponder = null; });
+afterEach(cleanup);
+
+describe("the lobby's system filter, end to end", () => {
+  // The reported bug: lighting a console up and switching it off again left an empty grid. Switching
+  // the LAST console off has to drop ?system= entirely and ask for the whole catalog again.
+  it("puts the whole catalog back when the last console is switched off", async () => {
+    const { container, history } = renderLobby();
+    await waitFor(() => expect(cards(container)).toBe(40));
+
+    await waitFor(() => expect(container.querySelectorAll(".arcade-console").length).toBe(2));
+    await act(async () => { fireEvent.click(container.querySelectorAll(".arcade-console")[0]); });
+    await waitFor(() => expect(history.location.search).toBe("?system=nes"));
+    await waitFor(() => expect(cards(container)).toBe(1));
+
+    await act(async () => { fireEvent.click(container.querySelectorAll(".arcade-console")[0]); });
+    await waitFor(() => expect(history.location.search).toBe(""));
+    await waitFor(() => expect(cards(container)).toBe(40));
+
+    // …and the request that refilled it carried no system at all, not an empty one.
+    expect(gamesCalls.at(-1).system).toBe("");
+  });
+
+  // Clearing the last console is the WIDEST query the lobby can ask for, so it is also the one most
+  // likely to time out. A page that never arrived must not be reported as a filter result — that is
+  // how "nothing is filtered, yet it says everything was filtered away" reached us from a phone.
+  it("says a failed page request failed, instead of blaming the filters — and can retry", async () => {
+    gamesResponder = () => Promise.resolve({ ok: false, status: 504, json: () => Promise.resolve(null) });
+    const { container } = renderLobby("?system=nes");
+
+    await waitFor(() => expect(screen.getByText(/Couldn't load the games list/)).toBeTruthy());
+    expect(screen.queryByText(/No games match those filters/)).toBeNull();
+    expect(cards(container)).toBe(0);
+
+    // Retry re-asks for the same page, and a good answer clears the error.
+    gamesResponder = null;
+    await act(async () => { fireEvent.click(screen.getByText("Try again")); });
+    await waitFor(() => expect(cards(container)).toBe(1));
+    expect(screen.queryByText(/Couldn't load the games list/)).toBeNull();
+  });
+
+  // "all" is the Mods & Hacks DEFAULT and the rail used to write it into the URL, so an untouched
+  // lobby could describe itself as filtered. The empty state has to read as an empty CATALOG.
+  it("treats ?variant=all as no filter at all", async () => {
+    gamesResponder = () => ok({ games: [], totalCount: 0, skip: 0 });
+    renderLobby("?variant=all");
+    await waitFor(() => expect(screen.getByText(/No games here yet/)).toBeTruthy());
+    expect(screen.queryByText(/No games match those filters/)).toBeNull();
+  });
+});

@@ -115,6 +115,7 @@ export default function ArcadePage({ userData }) {
   // appends from there, so there's no page bookkeeping to keep coherent with the appended window.
   const [startIndex, setStartIndex] = useState(0);
   const [loading, setLoading] = useState(false); // first page / a pager jump (replaces the grid)
+  const [loadError, setLoadError] = useState(false); // the page request failed — not an empty catalog
   const [loadingMore, setLoadingMore] = useState(false); // appending the next page
   const [letters, setLetters] = useState(null); // A–Z bucket offsets, for the pager (A–Z sort only)
   const [rooms, setRooms] = useState([]);
@@ -213,7 +214,11 @@ export default function ArcadePage({ userData }) {
       })
       .then((data) => {
         if (epochRef.current !== epoch) return; // a newer query owns the grid now
-        if (!data) { setGames((g) => g || []); return; }
+        // A page that didn't arrive is NOT an empty catalog. Falling through to an empty list here made
+        // a failed request render as "No games match those filters" — the lobby blaming the user's
+        // filters for its own broken fetch, with no way to tell the difference or to try again.
+        if (!data) { setLoadError(true); setGames((g) => g || []); return; }
+        setLoadError(false);
         setTotal(data.totalCount);
         if (replace) {
           setStartIndex(data.skip ?? skip);
@@ -222,7 +227,7 @@ export default function ArcadePage({ userData }) {
           setGames((prev) => (prev ? prev.concat(data.games) : data.games));
         }
       })
-      .catch((err) => { if (err?.name !== "AbortError") setGames((g) => g || []); })
+      .catch((err) => { if (err?.name !== "AbortError") { setLoadError(true); setGames((g) => g || []); } })
       .finally(() => {
         if (epochRef.current !== epoch) return;
         loadingMoreRef.current = false;
@@ -440,7 +445,11 @@ export default function ArcadePage({ userData }) {
     return <div style={{ padding: 48 }}><Empty description="The arcade isn't set up on this server yet." /></div>;
   }
 
-  const anyFilter = filters.system || filters.hideRegions || filters.maxPlayers || filters.variant || filters.genre || filters.search || filters.ra;
+  // "all" is the Mods & Hacks DEFAULT, and picking it explicitly leaves ?variant=all in the URL — so
+  // treating any variant value as a filter made an unfiltered lobby report "No games match those
+  // filters", which reads as though something had been filtered away when nothing had.
+  const anyFilter = filters.system || filters.hideRegions || filters.maxPlayers
+    || (filters.variant && filters.variant !== "all") || filters.genre || filters.search || filters.ra;
 
   return (
     <div className="arcade-page">
@@ -525,7 +534,16 @@ export default function ArcadePage({ userData }) {
           {games === null ? (
             <div className="arcade-loading"><Spin size="large" /></div>
           ) : games.length === 0 ? (
-            <Empty description={anyFilter ? "No games match those filters." : "No games here yet."} />
+            /* Never claim "nothing matched" while a request is still out, or when one failed. A wide
+               filter change — above all clearing the LAST console, which puts the whole catalog back in
+               scope — is the slowest query the lobby can ask for, and an empty grid that explains itself
+               as a filter result is indistinguishable from a real one. */
+            loading ? <div className="arcade-loading"><Spin size="large" /></div>
+              : loadError ? (
+                <Empty description="Couldn't load the games list.">
+                  <Button onClick={() => loadPage(startIndex, true)}>Try again</Button>
+                </Empty>
+              ) : <Empty description={anyFilter ? "No games match those filters." : "No games here yet."} />
           ) : (
             <>
               <div ref={hostRef}>

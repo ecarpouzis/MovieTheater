@@ -190,7 +190,9 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
           popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
 
         <span style={inputLabelStyle}>Mods &amp; Hacks</span>
-        <Select style={{ width: "100%" }} value={activeVariant} onChange={(v) => updateParam("variant", v)}
+        {/* "all" is the default, so choosing it CLEARS the param rather than writing ?variant=all — a
+            URL that says it carries a filter when it doesn't, and which the API drops anyway. */}
+        <Select style={{ width: "100%" }} value={activeVariant} onChange={(v) => updateParam("variant", v === "all" ? "" : v)}
           options={modOptions} popupClassName="arcade-login-dropdown" getPopupContainer={getPopup} />
 
         <span style={inputLabelStyle}>RetroAchievements</span>

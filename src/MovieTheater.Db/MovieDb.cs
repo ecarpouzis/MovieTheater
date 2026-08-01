@@ -303,6 +303,17 @@ namespace MovieTheater.Db
             // so cosmetically-different dumps of one game collapse into a single card. This index backs both
             // the grouped paging query and the version fetch that follows it.
             modelBuilder.Entity<ArcadeGame>().HasIndex(g => new { g.System, g.CollapseKey });
+            // …and this one COVERS that grouping, which is what makes the UNFILTERED lobby usable. Without it
+            // the grid's page query has to read Title/SortTitle/RatingWeighted/Year/MaxPlayers, none of which
+            // the index above carries, so SQL Server scans the whole 100 MB table and hash-aggregates three
+            // nvarchar(400) columns over ~39k rows — a grant it can't hold, so it SPILLS TO TEMPDB. Measured
+            // 2026-07-31: 13k logical reads on the table plus ~10k on the workfile, 450 ms of CPU stretched
+            // into 4.5–11 s of waiting. One console selected was 0.37 s, because that filter is what kept the
+            // scan small. Keyed on IsEnabled first (every lobby query starts there) and ordered by the group
+            // key, the aggregate can stream instead of hashing.
+            modelBuilder.Entity<ArcadeGame>()
+                .HasIndex(g => new { g.IsEnabled, g.System, g.CollapseKey })
+                .IncludeProperties(g => new { g.SortTitle, g.Title, g.RatingWeighted, g.Year, g.MaxPlayers });
 
             // One per-game profile per normalized identity; the export CLI upserts on this key.
             modelBuilder.Entity<ArcadeGameProfile>()
