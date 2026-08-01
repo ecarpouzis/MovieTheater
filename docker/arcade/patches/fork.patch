@@ -10341,10 +10341,10 @@ index f3553b1..d66ce23 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..2f9101d 100644
+index 6974d59..10f7f46 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,2007 @@
+@@ -1,578 +1,2116 @@
 -package libretro
 -
 -import (
@@ -11463,9 +11463,11 @@ index 6974d59..2f9101d 100644
 +		// harvested nothing and the vault's Continue slot stayed empty — and PS2 players
 +		// couldn't click Save at all until patch 0030. One serialize at teardown costs
 +		// nothing anyone can see; it runs before Shutdown so the core is still live.
-+		if f.SaveOnClose && !f.NoSaveStates {
++		// The NoSaveStates skip is on the STATE only — Save() writes the battery first and returns
++		// ErrNoSaveStates after, so a psp/ps2/scummvm room still flushes its card here.
++		if f.SaveOnClose {
 +			f.log.Debug().Msg("save on quit")
-+			if err := f.Save(); err != nil {
++			if err := f.Save(); err != nil && !errors.Is(err, ErrNoSaveStates) {
 +				f.log.Error().Err(err).Msg("save on quit failed")
 +			}
 +		}
@@ -11496,6 +11498,15 @@ index 6974d59..2f9101d 100644
 +	// apart on its own (all it sees is "a save existed and we restored it"), so the site sends intent.
 +	f.raSeedExplicit = f.raSeedExplicit && f.HasSave() && (f.nano.SkipBootRestore() || !f.NoSaveStates)
 +	f.raSeededState = f.raSeedExplicit
++
++	// INSERT THE CARD FIRST, and for every core — no HasSave(), no NoSaveStates gate. This is the one
++	// line that makes a battery/memory card its own persistence layer instead of a rider on the
++	// save-state (see the SAVE_RAM note above Save/Load for the five ways that lost people's saves).
++	// The state restores after it, so on a Continue boot the outcome is unchanged: the state applies,
++	// then Load()'s own .srm pass re-asserts the same card bytes.
++	if err := f.RestoreSRAM(); err != nil {
++		f.log.Error().Err(err).Msg("couldn't insert the save card (SAVE_RAM)")
++	}
 +
 +	if f.HasSave() && f.nano.SkipBootRestore() {
 +		go func() {
@@ -12685,13 +12696,109 @@ index 6974d59..2f9101d 100644
 +	f.log.Debug().Msgf("frontend closed")
 +}
 +
-+// Save writes the current state to the filesystem.
-+func (f *Frontend) Save() error {
-+	if f.NoSaveStates {
-+		return ErrNoSaveStates
-+	}
++// ── Battery / memory card (libretro SAVE_RAM) ────────────────────────────────────────────────────
++//
++// The card is a SEPARATE persistence layer from the save-state and is saved and restored on its own.
++// It used to ride along inside Save()/Load(), which made it a side effect of the save-STATE, and that
++// was the arcade's worst save bug (found 2026-08-01, SM64 romhack on n64). Every SAVE_RAM system —
++// nes/snes/gb/gbc/gba/n64/nds/ps1/pce/vb/… — reached the core ONLY from the tail of Load(), and Load()
++// ran at boot only when a .dat state existed. So the card was silently dropped on every path that
++// legitimately has no state to restore:
++//
++//   - "New game". The gateway deliberately clears the state and re-seeds the card (it logs
++//     "+card kept"), because starting a new game on real hardware does not eject the cartridge.
++//     HasSave() was then false, nothing loaded the .srm, and the game booted with a BLANK battery —
++//     after which the close-save wrote that blank battery back over the player's vaulted card. This
++//     path LOSES the save, it does not merely hide it, and it is the most common boot on the site.
++//   - A competitive room (same clear-the-state boot).
++//   - An alternate core. The gateway withholds a state saved by a different core (right — a state is
++//     that core's memory dump) but still seeds the .srm (also right — a battery reads the same on any
++//     core). With no .dat there was nothing to hang the card restore off, so it vanished there too.
++//   - A state that fails to restore. RestoreSaveState's error returned early, skipping the card
++//     restore below it — and mupen's retro_unserialize is known-flaky, so a bad state ate the battery.
++//   - A NoSaveStates core (psp/ps2/scummvm). Save() and Load() both bailed at the top, so such a core
++//     could never persist SAVE_RAM at all.
++//
++// The symptom is identical in all five: the game boots to an empty file-select screen while the vault
++// holds a perfectly good card, and the next room close overwrites the vault with the blank one.
++
++// SaveSRAM writes the core's battery/memory card to <id>.srm. Nil (no-op) on a core that exposes no
++// SAVE_RAM region, which is most of the heavy ones — they ride the worker's card vault instead.
++func (f *Frontend) SaveSRAM() error {
 +	f.mu.Lock()
 +	defer f.mu.Unlock()
++	return f.saveSRAMLocked()
++}
++
++func (f *Frontend) saveSRAMLocked() error {
++	sram := nanoarch.SaveRAM()
++	if sram == nil {
++		return nil
++	}
++	err := f.storage.Save(f.SRAMPath(), sram)
++	sram = nil
++	return err
++}
++
++// RestoreSRAM inserts <id>.srm into the core's SAVE_RAM. Called at boot for EVERY core, with or
++// without a state to restore — that independence is the whole point. Missing file = nothing to do.
++func (f *Frontend) RestoreSRAM() error {
++	f.mu.Lock()
++	defer f.mu.Unlock()
++	return f.restoreSRAMLocked()
++}
++
++func (f *Frontend) restoreSRAMLocked() error {
++	sram, err := f.storage.Load(f.SRAMPath())
++	if err != nil {
++		if errors.Is(err, os.ErrNotExist) {
++			return nil
++		}
++		return err
++	}
++	if len(sram) == 0 {
++		return nil
++	}
++	// Size disagreements are normal in one direction and dangerous in the other, so they are not one
++	// message. RestoreSaveRAM copies min(len) and can never overrun either way.
++	//
++	// SMALLER than the region is routine and NOT worth a warning: several cores size SAVE_RAM lazily.
++	// mgba reports the 128 KiB FLASH1M maximum until the game first touches flash and it detects the
++	// real type, so every GBA game with a 64 KiB save mismatches at boot (Mother 3, measured). The
++	// card lands at offset 0, which is exactly where that game's save belongs — nothing is lost.
++	//
++	// LARGER than the region genuinely drops the tail, so it stays a warning: that is a card from a
++	// different core or a different-sized battery, and the half of it we cannot deliver may be the
++	// half that matters.
++	if _, size := f.nano.MemoryRegion(nanoarch.RetroMemorySaveRAM); size > 0 && len(sram) > int(size) {
++		f.log.Warn().Msgf("SRAM card is BIGGER than this core's save region (%v bytes stored, region is %v) — "+
++			"restoring the first %v and DROPPING the rest; the card was likely written by another core",
++			len(sram), size, size)
++	}
++	nanoarch.RestoreSaveRAM(sram)
++	// Logged on purpose, at Info, once per boot. The failure this whole path exists to fix was SILENT
++	// on both sides — the gateway said "+card kept" and the worker said nothing at all, so the only
++	// evidence anything was wrong was a player staring at an empty file-select screen. One line here
++	// is what makes "was the card actually inserted?" answerable from the log.
++	f.log.Info().Msgf("save card inserted: %v bytes of SAVE_RAM from %v", len(sram), filepath.Base(f.SRAMPath()))
++	return nil
++}
++
++// Save writes the current state to the filesystem.
++func (f *Frontend) Save() error {
++	f.mu.Lock()
++	defer f.mu.Unlock()
++
++	// The card goes first and unconditionally: it is progress in its own right, it is the ONLY thing
++	// a NoSaveStates core has to persist, and it must survive a serialize that fails (or takes the
++	// process down) below it.
++	sramErr := f.saveSRAMLocked()
++	if f.NoSaveStates {
++		if sramErr != nil {
++			return sramErr
++		}
++		return ErrNoSaveStates
++	}
 +
 +	ss, err := nanoarch.SaveState()
 +	if err != nil {
@@ -12701,40 +12808,36 @@ index 6974d59..2f9101d 100644
 +		return err
 +	}
 +	ss = nil
-+
-+	if sram := nanoarch.SaveRAM(); sram != nil {
-+		if err := f.storage.Save(f.SRAMPath(), sram); err != nil {
-+			return err
-+		}
-+		sram = nil
-+	}
-+	return nil
++	return sramErr
 +}
 +
 +// Load restores the state from the filesystem.
 +func (f *Frontend) Load() error {
-+	if f.NoSaveStates {
-+		return ErrNoSaveStates
-+	}
 +	f.mu.Lock()
 +	defer f.mu.Unlock()
++
++	if f.NoSaveStates {
++		// No state to restore, but the card still belongs in the machine.
++		if err := f.restoreSRAMLocked(); err != nil {
++			return err
++		}
++		return ErrNoSaveStates
++	}
 +
 +	ss, err := f.storage.Load(f.HashPath())
 +	if err != nil && !errors.Is(err, os.ErrNotExist) {
 +		return err
 +	}
-+	if err := nanoarch.RestoreSaveState(ss); err != nil {
-+		return err
-+	}
++	stateErr := nanoarch.RestoreSaveState(ss)
 +
-+	sram, err := f.storage.Load(f.SRAMPath())
-+	if err != nil && !errors.Is(err, os.ErrNotExist) {
-+		return err
++	// Restored even when the state failed: a rejected or foreign state must not also cost the player
++	// their battery. Order stays state-then-card so the .srm — the newer, authoritative copy — wins
++	// over whatever copy of the card the state had embedded in it.
++	sramErr := f.restoreSRAMLocked()
++	if stateErr != nil {
++		return stateErr
 +	}
-+	if sram != nil {
-+		nanoarch.RestoreSaveRAM(sram)
-+	}
-+	return nil
++	return sramErr
 +}
 +
 +// ── Fast-forward / rewind (t=114/115) ────────────────────────────────────────────────────────────
@@ -12880,6 +12983,12 @@ index 6974d59..2f9101d 100644
 +			// is to persist, which is exactly why the tick still runs for them.
 +			f.harvestCardsLive()
 +			if f.NoSaveStates {
++				// Same reasoning one layer down: harvestCardsLive covers the cores whose card is a
++				// FILE, this covers one whose card is SAVE_RAM. Save() would return ErrNoSaveStates
++				// after writing it, so call the battery writer directly and keep the log quiet.
++				if err := f.SaveSRAM(); err != nil {
++					f.log.Error().Msgf("Autosave (card) failed: %v", err)
++				}
 +				continue
 +			}
 +			if err := f.Save(); err != nil {

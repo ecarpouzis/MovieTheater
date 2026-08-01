@@ -300,6 +300,15 @@ app.Map("/w/{token}", async (HttpContext context, string token) =>
                     seededCore ? "+coredir" : "", svUser, svGame, seedSlot,
                     chosenSeed ? " (chosen resume)" : "");
             }
+
+            // THE CARD IS NOT PART OF THAT DECISION. Everything above is about the save-STATE, which is
+            // one core's memory dump and rightly stays where it was written. A battery/memory card is the
+            // GAME's own data, reads identically on any core, and is the whole reason you can switch cores
+            // and keep playing the same file — so it follows the player unconditionally, and it is the ONE
+            // save that must converge rather than fork. Runs on every branch, including the ones above that
+            // seeded nothing: the don't-stomp guard is right about states and wrong about cards.
+            if (saveStore.SeedSramIfNewer(svUser, svGame, requestedRoomId))
+                app.Logger.LogInformation("Arcade card refreshed from vault for user {User} game {Game}", svUser, svGame);
         }
         catch (Exception ex) { app.Logger.LogWarning(ex, "Arcade save seed/clear failed for {Id}", requestedRoomId); }
     }

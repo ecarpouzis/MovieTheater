@@ -146,7 +146,7 @@ public sealed class SaveStore
         if (string.IsNullOrEmpty(sessionId)) return results;
 
         var srm = MountFile(sessionId, ".srm");
-        if (File.Exists(srm) && IsSettled(srm))
+        if (File.Exists(srm) && IsSettled(srm) && !VaultCardIsNewer(userId, gameId, srm))
         {
             var m = await CopyIntoStoreAsync(userId, gameId, system, KindSram, ContinueSlot, label: null,
                 coreName: null, coreVersion: null, src: srm, destName: "sram.srm", isAutosave, ct);
@@ -166,6 +166,32 @@ public sealed class SaveStore
 
         if (results.Count > 0) PruneStates(userId, gameId);
         return results;
+    }
+
+    /// <summary>
+    /// True when the vault already holds a card STRICTLY NEWER than this session's mount copy — in which
+    /// case harvesting the mount would move the player's save BACKWARDS.
+    ///
+    /// <para>The vault's <c>sram.srm</c> is one card per (user, game), but the mount is keyed by save id,
+    /// whose system field carries the CORE. So every core keeps its own mount <c>.srm</c>, and they go
+    /// stale the moment the player uses a different one. Without this guard, booting the second core
+    /// vaults ITS stale card over the newer one from the first — the harvest is not merely useless there,
+    /// it DESTROYS the good save, and the seed that follows then faithfully restores the loss. That is the
+    /// same shape as the memory-card vault's newer-wins rule (os.CopyTreeNewer), for the same reason.</para>
+    ///
+    /// <para>Ties harvest. Equal mtimes almost always mean "the vault copy came from this very file", so
+    /// the copy is a no-op either way — and where it is genuinely ambiguous, capturing what the player
+    /// just played is the safer side to err on.</para>
+    /// </summary>
+    private bool VaultCardIsNewer(int userId, int gameId, string mountSrm)
+    {
+        try
+        {
+            var blob = StoreFile(userId, gameId, "sram.srm");
+            if (!File.Exists(blob)) return false;
+            return File.GetLastWriteTimeUtc(blob) > File.GetLastWriteTimeUtc(mountSrm);
+        }
+        catch { return false; } // unreadable → fall through to the normal harvest
     }
 
     // Per-session-file mtime last harvested, so a sweep only copies changed files.
@@ -336,6 +362,59 @@ public sealed class SaveStore
         if (!File.Exists(sramBlob)) return false;
         CopyGuarded(sramBlob, MountFile(sessionId, ".srm"));
         return true;
+    }
+
+    /// <summary>
+    /// Put the vault's card into the mount when the vault's copy is NEWER — the card half of a normal
+    /// "Continue" boot, run even when the don't-stomp guard skips the state seed.
+    ///
+    /// <para>Why this is separate from the guard: the vault is keyed by (user, game) but the MOUNT is
+    /// keyed by the save id, whose system field carries the CORE ("n64" vs "n64-parallel_n64"). So each
+    /// core keeps its OWN mount .srm, and once a core had been played once, <c>MountHasSave</c> was true
+    /// and nothing re-seeded — the player's card silently FORKED per core. Earn seven stars on the stock
+    /// core, switch to parallel_n64, and you are handed that core's older card instead. A battery is the
+    /// GAME's data and reads the same on any core (unlike a save-state, which is one core's memory dump);
+    /// there should only ever be one of it.</para>
+    ///
+    /// <para>Newer-wins rather than always-wins, matching the worker's card vault (os.CopyTreeNewer): the
+    /// caller harvests this session's mount into the vault immediately before seeding, so the vault is
+    /// normally at least as new — but if that harvest FAILED, blindly seeding would overwrite live card
+    /// data with an older copy. Losing a save to the repair is worse than the fork it repairs.</para>
+    /// </summary>
+    /// <returns>True when the mount's card was replaced with a newer one from the vault.</returns>
+    public bool SeedSramIfNewer(int userId, int gameId, string sessionId)
+    {
+        if (string.IsNullOrEmpty(sessionId)) return false;
+        var sramBlob = StoreFile(userId, gameId, "sram.srm");
+        if (!File.Exists(sramBlob)) return false;
+
+        var mountSram = MountFile(sessionId, ".srm");
+        if (File.Exists(mountSram))
+        {
+            if (File.GetLastWriteTimeUtc(sramBlob) <= File.GetLastWriteTimeUtc(mountSram)) return false;
+            // Newer by clock is not the same as different. The owner reconnecting harvests the mount into
+            // the vault first, and that harvest refreshes the vault's timestamp even when it stores nothing
+            // new — so an unchanged card looks "newer" on every single reconnect. Writing it back would be
+            // a no-op that still rewrites a file a LIVE room's core may be about to save into. Compare the
+            // bytes and stay out of the way when there is nothing to change.
+            try
+            {
+                if (SameContent(sramBlob, mountSram)) return false;
+            }
+            catch (IOException) { return false; } // mid-write: leave the live file alone, next boot retries
+        }
+        CopyGuarded(sramBlob, mountSram);
+        return true;
+    }
+
+    private static bool SameContent(string a, string b)
+    {
+        var fa = new FileInfo(a);
+        var fb = new FileInfo(b);
+        if (fa.Length != fb.Length) return false;
+        using var sa = File.OpenRead(a);
+        using var sb = File.OpenRead(b);
+        return SHA256.HashData(sa).AsSpan().SequenceEqual(SHA256.HashData(sb));
     }
 
     // ── Snapshots (S3): named save-state slots the user creates from the live game ────────────────────
