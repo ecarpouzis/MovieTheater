@@ -28,11 +28,6 @@ namespace MovieTheater.Controllers
         // Past this fraction, resume is "done" — next play starts from the beginning. (This is resume
         // bookkeeping only; it never marks a title Seen — that's a manual user action.)
         private const double ResumeCompleteThreshold = 0.9;
-        // The copy path's segment length and the force-encode decision live in Streaming/HlsCopySafety.cs
-        // (dependency-free so the tests can link it). Aliased here because both are read all over this
-        // controller and by ProbeKeyframesCommand.
-        internal const double CopyHlsSegmentSeconds = Streaming.HlsCopySafety.CopySegmentSeconds;
-
         private readonly MovieDb movieDb;
         private readonly JellyfinApi jellyfin;
         private readonly MovieTheaterConfiguration config;
@@ -387,24 +382,13 @@ namespace MovieTheater.Controllers
                     && (source.TranscodeReasons == null
                         || !source.TranscodeReasons.Any(r => r.Contains("Video", StringComparison.OrdinalIgnoreCase)));
 
-                // See Streaming/HlsCopySafety.ShouldForceEncode for the mechanism, why a from-the-start
-                // session is left on the (lossless, free) copy path, and why a keyframe-backfilled file
-                // (JfKeyframesUtc stamped) is exempt entirely: the patched Jellyfin segments its copied
-                // stream at every source keyframe, so restarts are exact.
-                var joinsMidFile = startTicks > 0;
-                var forceEncode = Streaming.HlsCopySafety.ShouldForceEncode(
-                    request.ForceTranscode, wouldCopy, joinsMidFile, file.KeyframeIntervalSeconds,
-                    hasExactCopySegmentation: file.JfKeyframesUtc != null);
-                if (forceEncode && !request.ForceTranscode)
-                    logger.LogInformation(
-                        "Forcing re-encode: MediaFile {MediaFileId} joins mid-file at {StartSeconds}s and its keyframe spacing {Spacing}s exceeds the {SegmentSeconds}s copy segment length",
-                        file.Id, startTicks / (double)TicksPerSecond, file.KeyframeIntervalSeconds, CopyHlsSegmentSeconds);
-                // The case the gate deliberately lets through, logged so the tradeoff is visible if a
-                // freeze ever shows up on a from-the-start session.
-                else if (wouldCopy && !joinsMidFile && file.KeyframeIntervalSeconds > CopyHlsSegmentSeconds)
-                    logger.LogDebug(
-                        "Copying MediaFile {MediaFileId} despite {Spacing}s keyframe spacing: opens at 0, so no restart can renumber it",
-                        file.Id, file.KeyframeIntervalSeconds);
+                // Copy is safe from ANY join point since the 2026-08-02 keyframe backfill completed:
+                // the patched Jellyfin segments every copied session at the source's real keyframes
+                // (exact, anchor-free — see .claude/skills/hls-copy-freeze), so a mid-session restart
+                // reproduces identical segments and nothing can renumber the timeline. The old
+                // mid-file force-encode gate (HlsCopySafety) is gone with the sampled-probe columns
+                // it read; ForceTranscode remains as the client's explicit escalation.
+                var forceEncode = request.ForceTranscode;
 
                 // A forced encode is never a copy, so isDirectStream and the codec readout stay honest.
                 videoIsCopied = wouldCopy && !forceEncode;

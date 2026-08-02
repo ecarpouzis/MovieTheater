@@ -19,8 +19,8 @@ namespace MovieTheater.Streaming
     /// stream-COPIED HLS session on a file's real keyframes ONLY for items whose keyframe list it already
     /// holds; everything else keeps the fixed-length guesses whose numbering drifts on a mid-session
     /// restart. This walks the library calling <c>POST /Videos/{id}/ExtractKeyframes</c> and stamps
-    /// <see cref="MediaFile.JfKeyframesUtc"/> on success, which is what lets <c>StreamController</c> stop
-    /// force-encoding a long-GOP title.
+    /// <see cref="MediaFile.JfKeyframesUtc"/> on success. The full library was backfilled 2026-08-02
+    /// (.claude/skills/hls-copy-freeze); the nightly task now runs this only for newly synced files.
     ///
     /// <para><b>Extraction happens on the Jellyfin host, not here</b> — a full ffprobe packet walk of the
     /// file over SMB, tens of seconds to several minutes each. Unlike <c>probe-keyframes</c> this needs no
@@ -28,8 +28,8 @@ namespace MovieTheater.Streaming
     /// per row, hence the small default <c>--limit</c>.</para>
     ///
     /// <para><b>Chunked + resumable</b> (global bulk-job rule): <c>--limit</c> items per run, already-stamped
-    /// rows skipped unless <c>--force</c>, worst-GOP rows first so the titles that are being force-encoded
-    /// today get fixed first. Prints one line per item and a <c>{processed, …, remaining}</c> summary; safe
+    /// rows skipped unless <c>--force</c>, newest files first so fresh additions get exact copy soonest.
+    /// Prints one line per item and a <c>{processed, …, remaining}</c> summary; safe
     /// to re-run forever, and a 404/500 leaves the row unstamped (retried next run) without aborting the
     /// batch. <c>--skip</c> pages past rows that keep failing so a driver loop terminates.</para>
     /// </summary>
@@ -82,10 +82,7 @@ namespace MovieTheater.Streaming
             if (DryRun)
             {
                 foreach (var file in batch)
-                {
-                    var gop = file.KeyframeIntervalSeconds is double s ? $"{s:F2}s" : "unprobed";
-                    w.WriteLine($"  ? {file.Id} [{gop}] {file.VideoCodec} {file.Path}");
-                }
+                    w.WriteLine($"  ? {file.Id} {file.VideoCodec} {file.Path}");
                 w.WriteLine("");
                 w.WriteLine($"{{ dryRun: {batch.Count}, remaining: {await RemainingAsync(db, cancel)} }}");
                 return;
@@ -134,14 +131,10 @@ namespace MovieTheater.Streaming
         // Present, synced, stream-copyable rows Jellyfin holds no keyframe list for. Selecting on "the
         // stamp is null" is what makes this a resumable QUEUE rather than a blunt re-run over everything.
         //
-        // Worst measured GOP first: those are exactly the titles StreamController force-encodes today, so
-        // UNMEASURED files go first: with the sampled probe pipeline retired (2026-07-29), this backfill
-        // is the ONLY thing that closes their safety hole — a NULL KeyframeIntervalSeconds can never trip
-        // the mid-file force-encode gate, so an unmeasured long-GOP file can still hit the legacy freeze
-        // until it's stamped. Measured long-GOP files follow (they're SAFE — the gate force-encodes their
-        // mid-file joins — just expensive; each stamp converts a GPU-burning encode back into a lossless
-        // copy), then everything else. Ties break on biggest bitrate (SizeBytes / DurationTicks — the
-        // remuxes). --playable-id names one title's files instead, in play order.
+        // Since the 2026-08-02 full-library backfill this only ever sees NEW files (the nightly's
+        // trickle), so the elaborate risk ordering the marathon used is gone: newest rows first, so the
+        // most recently synced additions become exactly-copyable soonest. --playable-id names one
+        // title's files instead, in play order.
         private IQueryable<MediaFile> OrderedQueue(MovieDb db)
         {
             var q = db.MediaFiles.Where(f => f.MissingSinceUtc == null && f.JellyfinItemId != null
@@ -152,13 +145,7 @@ namespace MovieTheater.Streaming
             if (PlayableId is int pid)
                 return q.Where(f => f.PlayableId == pid).OrderBy(f => f.Role).ThenBy(f => f.Id);
 
-            return q
-                .OrderBy(f => f.KeyframeIntervalSeconds == null ? 0 : 1)
-                .ThenByDescending(f => f.KeyframeIntervalSeconds)
-                .ThenByDescending(f => f.SizeBytes == null || f.DurationTicks == null || f.DurationTicks == 0
-                    ? (double?)null
-                    : (double)f.SizeBytes.Value / (double)f.DurationTicks.Value)
-                .ThenBy(f => f.Id);
+            return q.OrderByDescending(f => f.Id);
         }
     }
 }

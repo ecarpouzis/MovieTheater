@@ -76,57 +76,14 @@ namespace MovieTheater.Db
         public int? BitDepth { get; set; }
 
         /// <summary>
-        /// Worst-case spacing between this file's own video keyframes, in seconds, sampled mid-file by
-        /// the <c>probe-keyframes</c> command (docs/transcode-restart-freeze-plan.md §Part 1) — Jellyfin's
-        /// API doesn't expose it, so it comes from ffprobe rather than <c>sync-jellyfin</c>. When it
-        /// exceeds the copy path's HLS segment length, a stream-copied session's segment numbering drifts
-        /// from where ffmpeg can actually cut and mid-session restarts renumber the timeline, so
-        /// <c>StreamController</c> forces a real encode instead. Null = not probed; the controller must
-        /// NOT force on null (today's behavior).
-        /// </summary>
-        public double? KeyframeIntervalSeconds { get; set; }
-
-        /// <summary>
-        /// SMALLEST gap seen across the sampled windows, against <see cref="KeyframeIntervalSeconds"/>'s
-        /// largest. The pair separates a constant-GOP encode (min ≈ worst — every segment boundary misses)
-        /// from a scene-cut/variable one (min ≪ worst — the long gap is occasional), which the single
-        /// worst-case number cannot express. Null on rows probed before this was captured.
-        /// </summary>
-        public double? KeyframeMinSeconds { get; set; }
-
-        /// <summary>
-        /// Raw per-window readout from the probe, e.g. <c>"603s:8.65 1206s:8.09 1809s:&gt;30"</c> — the
-        /// offset sampled and the worst gap found there, or <c>-</c> for a window that read nothing.
-        /// Persisted verbatim so the sampling can be re-analysed later WITHOUT re-reading 26k files off
-        /// the NAS; the first pass computed this and discarded it, which cost a full re-probe to recover.
-        /// </summary>
-        [MaxLength(256)]
-        public string? KeyframeSampleDetail { get; set; }
-
-        /// <summary>
-        /// True when at least one window held fewer than two keyframes, so its spacing was recorded as the
-        /// probe's window length (a FLOOR, not a measurement) — the real gap is "&gt;= that", possibly far
-        /// more. Distinguishes a genuine 30 s GOP from a file with almost no keyframes at all.
-        /// </summary>
-        public bool? KeyframeSpacingCensored { get; set; }
-
-        /// <summary>
-        /// When the probe last wrote this row's keyframe fields. Lets a re-probe target rows measured by an
-        /// older/coarser pass instead of re-reading everything, and dates the measurement if a file is
-        /// replaced on disk.
-        /// </summary>
-        public DateTime? KeyframeProbedUtc { get; set; }
-
-        /// <summary>
         /// When Jellyfin's own keyframe repository was stamped with a COMPLETE ffprobe keyframe list for
-        /// this file, by the <c>extract-jellyfin-keyframes</c> command. Distinct from
-        /// <see cref="KeyframeProbedUtc"/>, which dates OUR sampled estimate: this dates the exhaustive
-        /// list living server-side, and it is what authorizes the patched Jellyfin to cut a stream-COPIED
-        /// HLS session on the file's real keyframes instead of on fixed-length guesses. With exact
-        /// segmentation the segment numbering can no longer drift, so a mid-session restart cannot
-        /// renumber the timeline — which is the whole reason long-GOP titles are force-encoded today.
-        /// <c>StreamController</c> reads this to SKIP that mid-file force-encode. Null = not backfilled,
-        /// so the force-encode still applies (today's behavior for every row).
+        /// this file, by the <c>extract-jellyfin-keyframes</c> command. It is what authorizes the patched
+        /// Jellyfin to cut a stream-COPIED HLS session on the file's real keyframes instead of on
+        /// fixed-length guesses, so segment numbering can never drift and a mid-session restart cannot
+        /// renumber the timeline (.claude/skills/hls-copy-freeze). The 2026-08-02 backfill stamped the
+        /// entire copyable library; null now only means "new file the nightly hasn't reached yet".
+        /// A re-rip (size change) or item re-point clears it — the stored list would describe an encode
+        /// that no longer exists — and <c>sync-jellyfin</c> re-extracts same-item replacements inline.
         /// </summary>
         public DateTime? JfKeyframesUtc { get; set; }
 
