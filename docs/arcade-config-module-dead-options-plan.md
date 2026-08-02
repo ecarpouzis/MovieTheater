@@ -32,10 +32,26 @@ verification + pgs evidence":
   provided them on the Phase 3 game: paraLLEl-GS **8/11 with both READ**, Vulkan (GSdx) **7/11 with
   both DEAD**. The restriction was right, and unlike `pgs_disable_mipmaps` the namespace prediction
   held — but it now holds *because it was checked*. No `pcsx2_pgs_` rule rests on the name any more.
+**The two delivery-layer bleeds: RESOLVED 2026-08-02 (third pass).**
+- *pcsx_rearmed handed `beetle_psx_hw_renderer`* — NO LONGER REPRODUCES. Exercised live post-deploy:
+  a fresh SOTN pcsx_rearmed room provides exactly the 8 yaml keys (15:09:48, glworker.log). The
+  July sightings were the pre-Phase-0/2/3 site's doing; the worker fork is innocent — the W3 pin
+  provably never injects (overrides.go contract + tests) and the config assembly follows the
+  per-room core override. **No fork change made.** Residue for a later yaml pass:
+  `pcsx_rearmed_pad1type/pad2type` are shipped by the yaml but the deployed DLL doesn't declare
+  them (DEAD 2/8 every boot).
+- *parallel_n64 rooms receiving `mupen64plus-*` keys* — those are DELIBERATE two-namespace rows
+  (Last Impact keeps the mupen twins so a forced-mupen launch still works; OoT 4P is a documented
+  dead-end on a bad ROM — Eric confirmed). The fix is per-core DELIVERY, not data surgery:
+  `ArcadeRoomOptionDelivery.FilterForBootingCore` now filters BOTH halves — the per-room path in
+  CreateRoom (`692d08e`) and the manifest at export time (`a991343`, re-exported + deployed to both
+  ConfDirs). Storage keeps both namespaces; every room receives only what its booting core reads.
 Still open beyond this plan's scope: flycast's `reicast_oit_*` keys (commented out in the yaml, so
 NO room has ever provided them — a reconcile cannot speak to them in either direction; they stay
-visible); `beetle_psx_hw`'s GL profile, the one surface split still never booted; and the two
-delivery-layer bleeds (§3 Phase 2.2), which fix separately.
+visible); `beetle_psx_hw`'s GL profile, the one surface split still never booted; and the config
+yaml still ships `parallel-n64-parallel-rdp-upscaling` to every parallel_n64 room (the profile
+delivers it too — remove the config copy on the next yaml pass; note the glide64 room QUERIED it
+15:12:50, so "inert on GL" is ambiguous, stays visible).
 **Opened:** 2026-08-02, from a ps2/Stuntman session.
 **Trigger:** toggling "No interlacing (sharper)" returned `Too many options.`
 **Revised 2026-08-02 (second pass):** fleet-audited. Adds D7 (coverage gaps: ~18 systems have no
