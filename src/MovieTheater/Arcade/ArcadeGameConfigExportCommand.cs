@@ -78,6 +78,26 @@ namespace MovieTheater.Arcade
                     catch (Exception ex) { w.WriteLine($"  WARN [{p.System}] {p.TitleKey}: bad CoreOptionsJson ({ex.Message}) — skipping its options."); }
                 }
 
+                // Per-core delivery hygiene, manifest half (the CreateRoom per-room path has the same
+                // filter): the flat blob legitimately stores BOTH cores' keys on a multi-core system, but
+                // the manifest is applied by the WORKER to every room of this ROM, so it must carry only
+                // what the row's effective profile's core can read — otherwise those rooms boot with the
+                // other core's keys dead on arrival (the 2026-08-02 sweep's cross-namespace noise, e.g.
+                // Last Impact's mupen twins on its pinned parallel_n64 rooms). A forced-other-core launch
+                // still gets the twins: ResolveGameConfigAsync delivers the whole blob per-room and
+                // CreateRoom filters it by the core that launch actually boots.
+                if (opts is { Count: > 0 })
+                {
+                    var bootCore = ArcadeRendererProfiles.Resolve(p.System, p.RenderProfile)?.OptionCore;
+                    var (kept, droppedKeys) = ArcadeRoomOptionDelivery.FilterForBootingCore(p.System, bootCore, opts);
+                    if (droppedKeys.Count > 0)
+                    {
+                        w.WriteLine($"  [{p.System}] \"{p.TitleKey}\": manifest omits {droppedKeys.Count} other-core key(s) " +
+                                    $"({string.Join(", ", droppedKeys)}) — stored for the non-default core, delivered per-room only.");
+                        opts = kept;
+                    }
+                }
+
                 var hwContext = NormalizeHwContext(p.HwContext);
                 bool hasFps = p.ForcedFps is > 0;
                 bool hasOpts = opts is { Count: > 0 };
