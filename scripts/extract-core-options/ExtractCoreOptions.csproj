@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The libretro core-option EXTRACTOR (docs/arcade-config-module-dead-options-plan.md Phase 1).
+
+    It is a RUNTIME HARNESS, not a static parser: it LoadLibrary's one deployed core DLL, hands it a
+    retro_environment_t callback, and captures the option structs the core itself passes back. That
+    sidesteps the trap that made the earlier static read wrong — libretro option value lists are arrays
+    of string POINTERS and identical strings are pooled by the linker, so a contiguous ASCII run in the
+    binary is NOT a value list (the withdrawn D4 claim).
+
+    x64 only: every deployed core is a 64-bit Windows DLL, and the process must match.
+    ONE DLL PER INVOCATION — the driver (scripts/extract-core-options.ps1) spawns a child process per
+    core so a crasher is RECORDED, never mistaken for "this core has no options".
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AssemblyName>extract-core-options</AssemblyName>
+    <RootNamespace>MovieTheater.Tools.ExtractCoreOptions</RootNamespace>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Not part of the solution build; it is only ever run by its own driver. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>

@@ -75,6 +75,37 @@ namespace MovieTheater.Tests
                         $"{core}: renderer key '{o.Key}' leaked into the plain option catalog.")));
         }
 
+        // D7.2: a system missing from SystemDefaultCore has no options, so HasAnything() is false and the
+        // ⚙ Configure button is simply never rendered — an INVISIBLE gap (nothing errors, nothing logs).
+        // 18 systems sat in that state until 2026-08-02, sg1000 most absurdly: its core, genesis_plus_gx,
+        // had been catalogued the whole time. Pin every system the site can boot so the next one added
+        // fails here instead of quietly shipping without its config panel.
+        [Theory]
+        // Systems with a Graphics selector / 3D cores
+        [InlineData("n64")] [InlineData("ps2")] [InlineData("ps1")] [InlineData("psp")]
+        [InlineData("dc")] [InlineData("naomi")] [InlineData("atomiswave")]
+        [InlineData("gc")] [InlineData("wii")] [InlineData("saturn")]
+        [InlineData("nds")] [InlineData("3ds")] [InlineData("scummvm")] [InlineData("dos")]
+        // 2D / software systems
+        [InlineData("nes")] [InlineData("fds")] [InlineData("snes")]
+        [InlineData("gb")] [InlineData("gbc")] [InlineData("gba")]
+        [InlineData("genesis")] [InlineData("sms")] [InlineData("gg")] [InlineData("segacd")]
+        [InlineData("sega32x")] [InlineData("arcade")] [InlineData("neogeo")]
+        // The D7.2 batch
+        [InlineData("sg1000")] [InlineData("pce")] [InlineData("ngpc")] [InlineData("wsc")]
+        [InlineData("a2600")] [InlineData("a7800")] [InlineData("lynx")] [InlineData("vb")]
+        [InlineData("vectrex")] [InlineData("intv")] [InlineData("coleco")] [InlineData("channelf")]
+        [InlineData("o2em")] [InlineData("arcadia")] [InlineData("supervision")] [InlineData("pokemini")]
+        [InlineData("3do")] [InlineData("cdi")]
+        public void EveryBootableSystemResolvesToACoreWithOptions(string system)
+        {
+            var core = ArcadeCoreOptionCatalog.CoreForSystem(system);
+            Assert.True(core != null, $"'{system}' has no SystemDefaultCore mapping — its ⚙ Configure button can never appear.");
+            Assert.True(ArcadeCoreOptionCatalog.HasAnything(system),
+                $"'{system}' maps to core '{core}' but that core has no catalogued options — check " +
+                "scripts/extract-core-options/policy.json and core-options-catalog.json.");
+        }
+
         [Fact]
         public void IsRendererSelectingIgnoresNullAndOrdinaryKeys()
         {

@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "Per-core disposition for the arcade core-option catalog generator (docs/arcade-config-module-dead-options-plan.md,",
+    "Phase 1.2). 'fold' (the default for any core not listed) writes the extracted option set into",
+    "src/MovieTheater/Arcade/core-options-catalog.json, where ArcadeCoreOptionCatalog.LoadExtracted folds it in",
+    "beneath the hand-defined entries. 'hand-only' cores are STILL extracted — they appear in the drift report and",
+    "their renderer keys feed Phase 4's profile-token validation — but nothing is written to the catalog, because",
+    "their entries in ArcadeCoreOptionCatalog.cs encode decisions that cost whole sessions to earn and that a bulk",
+    "regeneration would silently bulldoze (D7.4).",
+    "",
+    "Hand entries already win per-key (AddExtracted skips a key the C# file defines). This file is the WHOLE-CORE",
+    "escape: it exists for cores where the danger is the keys we did NOT hand-define — i.e. where exposing the",
+    "core's full declared set is itself the mistake."
+  ],
+  "default": "fold",
+  "cores": {
+    "parallel_n64": {
+      "disposition": "hand-only",
+      "reason": "The mupen config bridge maps some DECLARED tokens to broken values — parallel-n64-screensize declares 1440x1080/2240x1680/2880x2160/5760x4320, which api/config.c's translate table does not list, so ConfigGetParamInt falls through to 0 and glide64/rice get ScreenWidth=0. Folding the declared list would offer options that are broken, not merely unavailable. Also carries MT-patched keys (countperop, send_alist_to_lle_rsp) whose hand-written notes are the only documentation they have."
+    },
+    "melondsds": {
+      "disposition": "hand-only",
+      "reason": "Single-lever curation by policy: only melonds_opengl_resolution is exposed. melonds_render_mode is a load-bearing pin — the software renderer cannot upscale AND the stylus/touch path is wired for the GL frame, so folding the full set would offer a toggle that breaks both."
+    },
+    "citra": {
+      "disposition": "hand-only",
+      "reason": "Same single-lever policy as melondsds: only citra_resolution_factor is exposed. citra_graphics_api stays pinned to OpenGL because touch needs the GL MouseTracker."
+    },
+    "scummvm": {
+      "disposition": "hand-only",
+      "reason": "Line-by-line curated exclusions documented in ArcadeCoreOptionCatalog.cs: video_hw_acceleration MUST stay disabled (its GL mode sends RETRO_HW_FRAME_BUFFER_VALID on a software-armed room and crashed the worker, 2026-07-18), pointer_device removes mouse control outright, samplerate is a room-level 48 kHz decision, gui_* is the launcher players never see, mapper_* belongs to the site's input layer."
+    }
+  }
+}

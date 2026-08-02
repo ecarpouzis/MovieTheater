@@ -24,6 +24,15 @@ namespace MovieTheater.Arcade
     /// <para>Flycast's prefix is <c>reicast_</c>, NOT <c>flycast_</c> — the core exposes zero real
     /// <c>flycast_*</c> keys.</para>
     ///
+    /// <para>The bulk of the catalog is NOT hand-written: <c>core-options-catalog.json</c> is GENERATED from
+    /// the deployed DLLs by <c>scripts/extract-core-options.ps1</c> (a runtime harness — it loads each core and
+    /// captures the option structs the core itself hands back, which is the only way to read the real value
+    /// tokens; a static read of the binary gives a WRONG list, because identical strings are pooled by the
+    /// linker). Per-core disposition lives in <c>scripts/extract-core-options/policy.json</c>: <c>fold</c>
+    /// (default) writes the core's options into the JSON, <c>hand-only</c> (parallel_n64, melondsds, citra,
+    /// scummvm) means the entries below are the whole catalog for that core and regeneration must not touch
+    /// it. Latest run: <c>docs/arcade/core-options-drift-2026-08-02.md</c>.</para>
+    ///
     /// <para>Delivery is per-room at Start: the controller reads the saved profile and injects these keys
     /// into the room's <c>CoreOptions</c> (the patch-0027 path), so a change takes effect on the next room
     /// with no worker-manifest regen. Renderer (GL/Vulkan) is handled separately via
@@ -163,9 +172,17 @@ namespace MovieTheater.Arcade
             // N64 alternate core — parallel_n64 (the compatibility profile; picked via the render-profile
             // selector, core-key "parallel_n64"). Its renderer (gfxplugin/rspplugin) is owned by the profile
             // and excluded below; these are the player-facing levers. Tokens verified from
-            // parallel_n64_libretro.dll (2026-07-23). The startup extraction folds in the full option set on
-            // top of these hand-tuned few (and the unit-test assembly, which has no embedded json, sees only
-            // these — so every preset key/token for this core MUST appear here).
+            // parallel_n64_libretro.dll (2026-07-23; re-confirmed by the runtime harness 2026-08-02 — the
+            // deployed DLL declares 94 options).
+            //
+            // ⚠ THIS CORE IS HAND-ONLY, AND THAT IS NOW OFFICIAL POLICY — scripts/extract-core-options/policy.json
+            // marks it `hand-only`, so the generator extracts it for the drift report but writes NOTHING for it
+            // into core-options-catalog.json. The list below is therefore the WHOLE catalog for this core.
+            // (An earlier version of this comment claimed "the startup extraction folds in the full option set
+            // on top of these hand-tuned few". It never did — there has never been a parallel_n64 block in the
+            // JSON — and it must not, because the core DECLARES tokens that are broken through the mupen config
+            // bridge; see the screensize caveat below. The comment was describing a fold that would have been a
+            // bug if it had ever happened.)
             ["parallel_n64"] = new()
             {
                 // Full token list verified against libretro_core_options.h 2026-07-29 (10 values; the four
@@ -376,6 +393,22 @@ namespace MovieTheater.Arcade
             ["arcade"] = "fbneo", ["neogeo"] = "fbneo", ["saturn"] = "kronos", ["dos"] = "dosbox_pure",
             ["nds"] = "melondsds", ["3ds"] = "citra",
             ["scummvm"] = "scummvm",
+            // ── D7.2, added 2026-08-02 ────────────────────────────────────────────────────────────────
+            // These 18 systems have a catalogued core but were absent from this map, so CoreForSystem
+            // returned null, HasAnything() was false, and the ⚙ Configure button was suppressed — an
+            // INVISIBLE gap (nothing errors; the button simply never appears). sg1000 is the sharpest
+            // case: its core, genesis_plus_gx, has been in the catalog the whole time.
+            // Cores are the DLL config.worker-gl.yaml loads per system (`lib:`), verified by the
+            // extraction in docs/arcade/core-options-drift-2026-08-02.md. Option sets here are naturally
+            // small (1-42), and the Save bound is derived from the catalog, so nothing else has to move.
+            ["sg1000"] = "genesis_plus_gx",
+            ["pce"] = "mednafen_pce", ["ngpc"] = "mednafen_ngp", ["wsc"] = "mednafen_wswan",
+            ["lynx"] = "mednafen_lynx", ["vb"] = "mednafen_vb",
+            ["a2600"] = "stella", ["a7800"] = "prosystem",
+            ["vectrex"] = "vecx", ["intv"] = "freeintv", ["coleco"] = "gearcoleco",
+            ["channelf"] = "freechaf", ["o2em"] = "o2em", ["arcadia"] = "amiarcadia",
+            ["supervision"] = "potator", ["pokemini"] = "pokemini",
+            ["3do"] = "opera", ["cdi"] = "same_cdi",
         };
 
         /// <summary>The core a system's config maps to by default (null if the system isn't mapped).</summary>
