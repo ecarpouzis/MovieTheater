@@ -46,7 +46,17 @@ namespace MovieTheater.Tests
                 Assert.DoesNotContain(gsdxOnly, pgs);
             }
             // paraLLEl-GS's own levers, log-proven DEAD on both GSdx backends.
-            foreach (var pgsOnly in new[] { "pcsx2_pgs_ssaa", "pcsx2_pgs_high_res_scanout" })
+            // pcsx2_pgs_deblur and pcsx2_pgs_ss_tex joined this list on 2026-08-02: they ship in NO room, so
+            // Phase 3 could not measure them and they rode the namespace argument alone. A dedicated boot
+            // pair PROVIDED them (temporary ArcadeGameProfile row, deleted after) on the same game with the
+            // same 11-key set: paraLLEl-GS 8/11 with both READ (glworker.log 14:50:12), Vulkan (GSdx) 7/11
+            // with both in the DEAD set (14:51:38). Pinned here because the restriction is now a measurement,
+            // and un-restricting them would have to overturn that measurement rather than a guess.
+            foreach (var pgsOnly in new[]
+                     {
+                         "pcsx2_pgs_ssaa", "pcsx2_pgs_high_res_scanout",
+                         "pcsx2_pgs_deblur", "pcsx2_pgs_ss_tex",
+                     })
             {
                 Assert.Contains(pgsOnly, pgs);
                 Assert.DoesNotContain(pgsOnly, vkGsdx);
@@ -141,9 +151,18 @@ namespace MovieTheater.Tests
             Assert.Contains("parallel-n64-gfxplugin-accuracy", KeysFor("parallel_n64", "parallel_n64_glide64"));
         }
 
-        // Cores with a renderer/surface split but NO renderer-split evidence must not be filtered at all —
-        // dolphin and flycast reconcile clean in every sample, and the beetle GL / psp-dc-gc GL profiles have
-        // never once been booted. Guessing here would hide levers that work.
+        // Cores with a renderer/surface split but no renderer-split RESTRICTION must not be filtered at all.
+        // ⚠ Updated 2026-08-02: for three of these four the reason changed from "no evidence" to a measured
+        // negative. The six surface-only GL profiles were booted for the first time on that date and each
+        // reconciled key-for-key with its Vulkan control — ppsspp 5/5 (glworker-2 14:34:26 vs 2026-07-30
+        // 13:29:22), flycast 3/3 (glworker 14:36:38 / 14:38:30 / 14:40:33 vs glworker-2 2026-08-02 01:45:56),
+        // dolphin 8/8 gc (glworker 14:42:04 vs glworker-2 2026-07-30 13:34:19) and 11/11 wii (glworker-2
+        // 14:44:30 vs 2026-07-31 22:45:29) — with zero DEAD keys on either surface. So "never filtered" is
+        // now the answer the logs give, not just the safe default. beetle_psx_hw is the one still unmeasured:
+        // its GL profile has never been booted, and it stays here on the visible-by-default policy.
+        // (Evidence: docs/arcade/opt-reconcile-evidence-2026-08-02.md, "GL-profile verification + pgs
+        // evidence". Caveat that keeps this honest: a reconcile can only speak for keys a room SHIPS, so
+        // flycast's commented-out reicast_oit_* knobs remain untested in either direction.)
         [Theory]
         [InlineData("beetle_psx_hw", "beetle_vulkan", "beetle_opengl")]
         [InlineData("flycast", "vulkan", "opengl")]

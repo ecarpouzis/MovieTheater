@@ -12,10 +12,30 @@ registration one-liner in its header, deliberately left to a human); and the **d
 16 ps2 rows dropped `pcsx2_renderer` (guarded UPDATE, safety net `_cfgmod_renderer_sweep_20260802`,
 0 renderer-selecting keys remain fleet-wide), with the re-exported `game-overrides.json` deployed
 to both GL ConfDirs (`.pre-renderer-sweep-20260802` backups beside them).
-Open beyond this plan's scope: the six surface-only systems' GL profiles remain unverified (same
-verify-before-offer bar as ps2, lower stakes); `pcsx2_pgs_deblur`/`_ss_tex` applicability is
-structural-only (never provided in any room); two delivery-layer bleeds (§3 Phase 2.2) fix
-separately.
+**Both of the "open beyond scope" evidence gaps CLOSED 2026-08-02** by a second boot pass — nine
+more live rooms, all evidence in `docs/arcade/opt-reconcile-evidence-2026-08-02.md` → "GL-profile
+verification + pgs evidence":
+- **All six surface-only GL profiles are now boot-verified and KEPT** (psp Daxter, dc Sonic
+  Adventure, naomi Crazy Taxi, atomiswave Metal Slug 6, gc F-Zero GX, wii Project REX). Every one
+  took the per-room `hwctx=gl` escape, logged its core's own GL renderer line
+  (`[SYSTEM] Using OpenGL backend` / `[RENDERER] OpenGL version 4.6` / `Using GFX backend: OGL`),
+  reconciled **with zero DEAD keys**, and rendered structured, changing video. None was retired;
+  naomi and atomiswave were each booted in their own room rather than inheriting dc's verdict.
+  Bonus result: the GL reconcile is key-for-key identical to each core's Vulkan control, so
+  "ppsspp/flycast/dolphin are never filtered" is now a **measured negative**, not merely an absence
+  of evidence.
+  ⚠ One anomaly recorded and NOT attributed: the worker exited `0xC0000374` at teardown of the
+  first dc GL room and the runner respawned it in 4 s; it did **not** reproduce on a second dc GL
+  room, and that process had hosted three PS2 rooms first.
+- **`pcsx2_pgs_deblur` / `pcsx2_pgs_ss_tex` are now cited-log, not structural.** These ship in no
+  room, so a temporary `ArcadeGameProfile` row (Id 31, deleted + verified; ps2 rows back to 17)
+  provided them on the Phase 3 game: paraLLEl-GS **8/11 with both READ**, Vulkan (GSdx) **7/11 with
+  both DEAD**. The restriction was right, and unlike `pgs_disable_mipmaps` the namespace prediction
+  held — but it now holds *because it was checked*. No `pcsx2_pgs_` rule rests on the name any more.
+Still open beyond this plan's scope: flycast's `reicast_oit_*` keys (commented out in the yaml, so
+NO room has ever provided them — a reconcile cannot speak to them in either direction; they stay
+visible); `beetle_psx_hw`'s GL profile, the one surface split still never booted; and the two
+delivery-layer bleeds (§3 Phase 2.2), which fix separately.
 **Opened:** 2026-08-02, from a ps2/Stuntman session.
 **Trigger:** toggling "No interlacing (sharper)" returned `Too many options.`
 **Revised 2026-08-02 (second pass):** fleet-audited. Adds D7 (coverage gaps: ~18 systems have no
@@ -295,6 +315,9 @@ or policy-excluded with a reason, and a re-run is a no-op.
    flycast, citra, scummvm reconcile clean; kronos leaves `kronos_sh2coretype` DEAD. No-evidence
    combinations (must be booted via test-roms): naomi/atomiswave with options, every non-default
    renderer profile (ps2 opengl, beetle GL, the GL escapes on psp/dc/gc/wii).
+   **Cleared 2026-08-02:** ps2 `opengl` in Phase 3 (13:32:24) and naomi, atomiswave and the
+   psp/dc/gc/wii GL escapes in the follow-up boot pass the same day (evidence doc, second appendix)
+   — every one reconciled with zero DEAD keys. `beetle_opengl` is the only one still unbooted.
    ⚠ "not queried in the sample window" ≠ "not applicable"; anything ambiguous stays VISIBLE and
    gets flagged for a longer run rather than hidden on weak evidence. Record the evidence source
    (log date/room) per restriction — an applicability entry with no evidence is a guess.
@@ -352,9 +375,12 @@ What the boots proved, and what changed because of them:
    `ForRenderer` still resolves the bare fallbacks (`vulkan` → `parallel_gs`, `gl` → `opengl`), which
    only matter before the profile list loads.
 
-**Deferred, unchanged:** the same verify-before-offer bar still applies fleet-wide to the six
+**Deferred then, DONE 2026-08-02:** the same verify-before-offer bar applied fleet-wide to the six
 surface-only systems' GL profiles (psp/dc/naomi/atomiswave/gc/wii) — same never-exercised shape, same
-test, lower stakes. Phase 3 covered PS2 only.
+test, lower stakes. Phase 3 covered PS2 only; a follow-up boot pass covered all six and **kept every
+one of them** (see the status header and the evidence doc's second appendix). The escape works
+identically outside ps2: `Per-game hw context: … → "gl" (…via per-request override)`, the core's own
+GL renderer line, zero DEAD keys, real rendered content, no `rejected non-GL hw render context type`.
 
 **Exit met:** every offered PS2 profile has been booted and streamed at least once.
 
@@ -391,7 +417,7 @@ the system can be inert under some profile.
 | n64 | mupen `vulkan` / mupen `opengl` / `parallel_n64` (vk) / `parallel_n64_gl` (GLideN64) / `parallel_n64_glide64` | mupen64plus_next OR parallel_n64 | **highest** — 2 cores × plugin-specific keys; `parallel-rdp-*` vk-only, `gliden64-*` one GL profile only, `gfxplugin-accuracy` GL-only |
 | ps2 | `parallel_gs` (paraLLEl-GS) / `vulkan_gsdx` (GSdx, Vulkan) / `opengl` (GSdx, GL) | pcsx2 | **high** — `pgs_*` vs GSdx keys (the headline D3), all three now boot-measured; two profiles SHARE hwContext `vulkan`, so neither applicability nor the presets can key on surface (D6 fixed, Phase 3) |
 | ps1 | `beetle_vulkan` / `beetle_opengl` / `pcsx_rearmed` | beetle_psx_hw OR pcsx_rearmed | medium — core split already modelled by OptionCore; Beetle vk-vs-gl-only keys need evidence |
-| psp / dc / naomi / atomiswave / gc / wii | `vulkan` / `opengl` (surface-only) | ppsspp / flycast / dolphin | medium — one core, but backend-specific keys (e.g. flycast OIT) may be surface-dependent; GL profiles never exercised since the Vulkan cutover |
+| psp / dc / naomi / atomiswave / gc / wii | `vulkan` / `opengl` (surface-only) | ppsspp / flycast / dolphin | **none measured** — all six GL profiles booted 2026-08-02 and each reconciled key-for-key with its Vulkan control, zero DEAD keys either side, so no filtering is warranted. Residual unknown: flycast's OIT keys are commented out in the yaml, so no room has ever provided them and no reconcile can speak to them |
 
 ### Systems with ONE fixed core+renderer (no selector — never filter)
 

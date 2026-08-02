@@ -173,7 +173,39 @@ namespace MovieTheater.Arcade
                 new RenderProfile("pcsx_rearmed", "pcsx_rearmed (OpenGL)", "pcsx_rearmed", null, "pcsx_rearmed",
                     None, false),
             },
-            // Surface-only systems: the frontend surface alone selects the renderer (no renderer core-option).
+            // ── Surface-only systems: the frontend surface alone selects the renderer (no renderer
+            // core-option — flycast has no reicast_renderer key at all, and ppsspp/dolphin pick their
+            // backend from the hw context we negotiate). ALL SIX "opengl" PROFILES BOOT-VERIFIED
+            // 2026-08-02 — the same verify-before-offer bar Phase 3 applied to ps2, closed here for the
+            // rest of the fleet. Until that date every one of these was a pre-Vulkan leftover that had
+            // never been exercised: each system's config.worker-gl.yaml block is isGlAllowed:false +
+            // hwContext:"vulkan", so the profile is reachable only through the per-room hwctx=gl escape
+            // (the designed W3-F1 path), and nothing had confirmed the escape still worked per system.
+            // It does — every boot logged `Per-game hw context: … → "gl" (core default "vulkan", via
+            // per-request override)`, NO `rejected non-GL hw render context type`, the CORE's own renderer
+            // line naming GL, a full reconcile with zero DEAD keys, and structured, changing video
+            // (mean luma + worst-8x8-block sd sampled every few seconds — flow counters alone are not a
+            // rendering check; that is the gc-Vk lesson). Full excerpts: docs/arcade/
+            // opt-reconcile-evidence-2026-08-02.md → "GL-profile verification + pgs evidence".
+            //
+            //   system      title              log (worker/time)             core's GL line               reconcile
+            //   psp         Daxter             glworker-2  14:34:26          "[SYSTEM] Using OpenGL backend"  5/5
+            //   dc          Sonic Adventure    glworker    14:36:38          "[RENDERER] OpenGL version 4.6"  3/3
+            //   naomi       Crazy Taxi         glworker    14:38:30          "[RENDERER] OpenGL version 4.6"  3/3
+            //   atomiswave  Metal Slug 6       glworker    14:40:33          "[RENDERER] OpenGL version 4.6"  3/3
+            //   gc          F-Zero GX          glworker    14:42:04          "Using GFX backend: OGL"         8/8
+            //   wii         Project REX        glworker-2  14:44:30          "Using GFX backend: OGL"        11/11
+            //
+            // naomi and atomiswave share dc's core, and each was booted on its OWN room anyway — nothing
+            // here is inherited. Zero-copy is absent from all six by design, exactly as on ps2/opengl:
+            // zero-copy is the Vulkan→GL IMPORT path, and a core already rendering into the worker's GL
+            // context has nothing to import.
+            // ⚠ One anomaly, recorded and NOT attributed: the worker exited 0xC0000374 (heap corruption)
+            // at teardown of the FIRST dc GL room (glworker.log 14:37:51; the runner respawned it in 4 s
+            // and the next room was healthy). It did NOT reproduce on a second dc GL room (glworker-2
+            // 14:46:51, clean teardown), and that worker process had also hosted three PS2 rooms first, so
+            // it is a one-off with no established GL link. dc keeps its GL profile; if this recurs on the
+            // GL path specifically, THAT is the evidence to retire it on.
             ["psp"] = SurfaceOnly("ppsspp"),
             ["dc"] = SurfaceOnly("flycast"),
             ["naomi"] = SurfaceOnly("flycast"),
@@ -182,6 +214,10 @@ namespace MovieTheater.Arcade
             ["wii"] = SurfaceOnly("dolphin"),
         };
 
+        /// <summary>The two-profile shape for systems whose renderer IS the surface. Both arms are
+        /// boot-verified for every system that uses this — see the block comment above the six entries for
+        /// the per-system log citations (2026-08-02). Keep it that way: adding a system here offers a GL
+        /// path that no room has ever taken, which is precisely the D6.2 mistake.</summary>
         private static RenderProfile[] SurfaceOnly(string optionCore) => new[]
         {
             new RenderProfile("vulkan", "Vulkan", null, "vulkan", optionCore, None, true),

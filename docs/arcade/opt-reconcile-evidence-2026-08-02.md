@@ -369,3 +369,232 @@ with one item per **render profile** (ps2 "OpenGL", n64 "parallel_n64 core · Gl
 compat)", ...) — the bare Force-GL/Vulkan pair is now only the profiles-not-yet-loaded fallback, so
 `--hwctx gl` could not reach A2 at all. `--profile OpenGL` picks by label and prints the whole menu
 it saw.
+
+---
+
+# Appendix — GL-profile verification + pgs evidence (2026-08-02, second boot pass)
+
+Closes the two evidence gaps the config-module plan left open beyond its own scope
+(`docs/arcade-config-module-dead-options-plan.md`, status header): **(1)** the six surface-only
+systems' `opengl` render profiles had never been exercised, and **(2)** `pcsx2_pgs_deblur` /
+`pcsx2_pgs_ss_tex` applicability rested on the structural namespace argument alone.
+
+Same method as the Phase 3 appendix above: live boots through the deployed prod site
+(`theater.carpouzis.com`), one room at a time, `localhost:8000/status` checked before and after every
+room (all three workers `free` every time), nothing restarted. Content is measured, never assumed —
+`.claude/skills/test-roms/largerom-verify.mjs` samples the `<video>` element every few seconds for
+mean luma **and** worst-8x8-block standard deviation, so a flat clear-colour field is reported
+instead of passing on flow counters (the gc-Vk lesson). Render profiles were selected from the
+GameModal play-button dropdown by label (`--match` / `--profile`); the prod menu was confirmed live
+to enumerate all three PS2 profiles:
+`✓ paraLLEl-GS (Vulkan) — system default | Vulkan (GSdx) | OpenGL (GSdx)`.
+
+## Part A — the six surface-only GL profiles
+
+Every one of these systems is `isGlAllowed: false` + `hwContext: "vulkan"` in
+`config.worker-gl.yaml`, so the `opengl` profile is reachable **only** through the per-room
+`hwctx=gl` escape (the designed W3-F1 path). Before this pass, nothing had confirmed that escape
+worked per system — the same never-exercised shape as ps2's `opengl` profile before Phase 3.
+
+| system | title | worker / start | core's own renderer line | reconcile | DEAD | content | verdict |
+|---|---|---|---|---:|---|---|---|
+| psp | Daxter | `glworker-2.log` 14:34:26 | `[SYSTEM] Using OpenGL backend` | **5/5** | none | luma 3→139, blockSd ≤98, 10/10 distinct | **GL WORKS** |
+| dc | Sonic Adventure v1.005 | `glworker.log` 14:36:38 | `[RENDERER] OpenGL version 4.6` | **3/3** | none | luma ≤191, blockSd ≤84, 10/10 distinct | **GL WORKS** ⚠ see teardown note |
+| naomi | Crazy Taxi (`crzytaxi`) | `glworker.log` 14:38:30 | `[RENDERER] OpenGL version 4.6` | **3/3** | none | luma ≤175, blockSd ≤91, 10/10 distinct | **GL WORKS** |
+| atomiswave | Metal Slug 6 (`mslug6`) | `glworker.log` 14:40:33 | `[RENDERER] OpenGL version 4.6` | **3/3** | none | luma ≤248, blockSd ≤91, 9/9 distinct | **GL WORKS** |
+| gc | F-Zero GX (USA) | `glworker.log` 14:42:04 | `Using GFX backend: OGL` | **8/8** | none | luma ≤163, blockSd ≤119, 10/10 distinct | **GL WORKS** |
+| wii | Project REX | `glworker-2.log` 14:44:30 | `Using GFX backend: OGL` | **11/11** | none | luma ≤52, blockSd ≤93 | **GL WORKS** |
+
+**Nothing is inherited.** naomi and atomiswave share dc's core (`flycast_custom_libretro`) but each
+was booted in its own room; all three are observed, none inferred. A seventh room re-ran dc on GL
+(`glworker-2.log` 14:46:51, reconcile 3/3) to test the teardown anomaly below.
+
+Common to all six, and the answer to "did the escape actually take":
+
+```
+Per-game hw context: "<title>" → "gl" (core default "vulkan", via per-request override)
+Libretro hw context override for this room: "gl" (core default "vulkan")
+```
+
+and in no room anywhere in either log during this pass: `rejected non-GL hw render context type`.
+None of the six logs a `zero-copy` line, which is correct and identical to ps2/`opengl` — zero-copy
+on this worker is the *Vulkan→GL import* path, and a core already rendering into the worker's GL
+context has nothing to import.
+
+### The renderer identity, per core
+
+- **psp / PPSSPP** — `2026-08-02 14:34:26.5052 … [SYSTEM] Using OpenGL backend`. Across both worker
+  logs this string appears exactly once (this room); the only other backend line is a single
+  `[SYSTEM] Using Vulkan backend` from an earlier Vulkan room. A direct, mutually exclusive pair.
+- **dc / naomi / atomiswave — flycast**:
+  ```
+  Libretro [RENDERER] OpenGL version 4.6
+  Libretro [RENDERER] Vendor 'NVIDIA Corporation' Renderer 'NVIDIA GeForce RTX 4070 Ti/PCIe/SSE2' Version '4.6.0 NVIDIA 610.74'
+  Libretro [RENDERER] glBlitFramebuffer test successful
+  ```
+  versus the Vulkan control (`glworker-2.log` 2026-08-02 01:45:56, same game): `[RENDERER] GPU
+  Supports Vulkan API: 1.4.341`, `[RENDERER] VulkanRenderer::Init`, `[vk] zero-copy: ACTIVE`.
+- **gc / wii — dolphin**:
+  ```
+  DolphinLibretro\Video.cpp:194 I[Video]: Video - SetHWRender - using OpenGL 3.0
+  DolphinLibretro\Boot.cpp:525 N[Video]: Using GFX backend: OGL
+  ```
+  and the shader cache follows the backend:
+  `Loaded 804 cached pipelines from …/Shaders/OpenGL-specialized-pipeline-GFZE01-246FFF41.cache`.
+
+### Pacing
+
+`pace-diag` was clean on every arm after warm-up: gc `ticks/s=59.9–60.0 slowTicks(>20ms)=0
+meanTick≈5.7ms`, wii `59.9 / 0 / ≈4.7ms`, naomi `59.4–59.6 / 0 / ≈6.2ms`, dc `30.0 / 0 / ≈6.1ms`
+(Sonic Adventure is forced to 30 fps by its per-game override — not a GL symptom), psp `30.0 / 0 /
+≈5.5ms` (Daxter's healthy 30 fps content rate). No smoothness verdict is claimed from a headless
+browser; these are worker-side numbers.
+
+### Content, not counters
+
+`F-Zero GX` under GL rendered the real attract flyover — city towers, banked track, legible
+`PRESS START/PAUSE` and the ©2003 Nintendo / AMUSEMENT VISION credit line (`lr-glgc-64.png`).
+`Project REX` booted through the SD loader (`wiiSdLoader: seeded Project REX (sd card +
+DefaultISO=base.iso)`) to Brawl's *"Press A to create a save file"* dialog (`lr-glwii-72.png`) — a
+genuinely static screen, which is why that run shows 5/9 distinct frame hashes while the worker held
+a flat 59.9 ticks/s. Repeated hashes on a static menu are the screen, not a freeze; the pace-diag is
+what separates the two.
+
+### ⚠ The one anomaly: a teardown crash on the first dc GL room, not reproduced
+
+```
+2026-08-02 14:37:50.6785  Libretro cards: harvested user 33's dc card
+2026-08-02 14:37:50.7421  rtt-probe final room=sv-33-56009-0-dc___Sonic Adventure …
+2026-08-02T14:37:51.0293  [runner] glworker EXITED exitcode=-1073740940 (0xC0000374) - restarting in 4s
+2026-08-02T14:37:55.0543  [runner] starting glworker (zone=main port=8446 …)
+```
+
+`0xC0000374` is STATUS_HEAP_CORRUPTION, raised **after** the session ended (card harvested, RTT
+probe final) — i.e. at teardown, not during play. The runner respawned the worker in 4 s and the
+next room (naomi, 14:38:30) was healthy on the new process; the coordinator showed all workers
+`free` throughout.
+
+Deliberately **not** attributed to the GL path:
+
+1. **It did not reproduce.** dc was booted on GL a second time (`glworker-2.log` 14:46:51, same
+   game, same profile, reconcile 3/3) and that worker tore down clean — no new `EXITED` line in
+   either log for the rest of the pass.
+2. **The crashing process had a longer history.** PID `b4d4` had been up since ~01:57 and had
+   already hosted the three Phase 3 PS2 rooms (13:29 Vulkan-GSdx, 13:32 OpenGL, 13:35 paraLLEl-GS)
+   before this dc room. Heap corruption reported at exit can be seeded arbitrarily earlier.
+3. dc carries `hacks: [skip_hw_context_destroy]` precisely because of a **known** DC teardown
+   segfault that predates any of this.
+
+Recorded as evidence rather than explained away. If a teardown crash recurs specifically on the dc
+GL path, *that* is what would justify retiring the profile — one non-reproducing sample is not.
+
+### What Part A means for applicability
+
+For ppsspp, flycast and dolphin the GL reconcile is **identical to the Vulkan control, key for key,
+with zero DEAD keys on either side**:
+
+| core | GL | Vulkan control |
+|---|---|---|
+| ppsspp (5 keys) | 5/5 — `glworker-2.log` 14:34:26 | 5/5 — `glworker-2.log` 2026-07-30 13:29:22 |
+| flycast (3 keys) | 3/3 — 14:36:38 / 14:38:30 / 14:40:33 / 14:46:51 | 3/3 — `glworker-2.log` 2026-08-02 01:45:56 |
+| dolphin gc (8 keys) | 8/8 — `glworker.log` 14:42:04 | 8/8 — `glworker-2.log` 2026-07-30 13:34:19 |
+| dolphin wii (11 keys) | 11/11 — `glworker-2.log` 14:44:30 | 11/11 — `glworker-2.log` 2026-07-31 22:45:29 |
+
+So **no** applicability restriction is added for these cores. That is now a *measured negative*
+rather than an absence of evidence, and
+`ArcadeCoreOptionApplicabilityTests.CoresWithoutEvidenceAreNeverFiltered` says so in its comment.
+
+⚠ **The limit of this instrument, stated plainly.** A reconcile line can only speak about keys the
+room actually SHIPS. flycast's per-pixel-OIT knobs (`reicast_oit_abuffer_size`,
+`reicast_oit_layers`) are commented out in `config.worker-gl.yaml` and the fleet runs
+`reicast_alpha_sorting="per-triangle (normal)"`, so **no room has ever provided them** and these
+boots say nothing about them in either direction. The plan's question "are flycast's `reicast_oit_*`
+keys dead under GL?" is therefore still **unanswered**, and they stay VISIBLE. Answering it needs a
+room that provides them (and, to be meaningful, `alpha_sorting="per-pixel (accurate)"` — which was
+REJECTED on quality grounds 2026-07-17, so the honest next step is a deliberate probe, not a fleet
+change). `beetle_psx_hw`'s GL profile likewise remains the one surface split still never booted.
+
+## Part B — `pcsx2_pgs_deblur` / `pcsx2_pgs_ss_tex`
+
+**The gap.** These two are the only `pcsx2_pgs_*` keys that appear in **no** room's provided set, so
+no reconcile line in the whole sweep could speak to them. Phase 2 restricted them to paraLLEl-GS on
+the structural namespace argument; Phase 3 measured the other three `pgs_*` keys and found the
+argument right for two and **wrong for one** (`pcsx2_pgs_disable_mipmaps`). One-in-three wrong is
+exactly why a namespace prefix is a hypothesis, so these two needed their own measurement.
+
+**Method.** Same as the Phase 3 boots: a temporary `ArcadeGameProfile` row makes the site provide a
+key it otherwise never sends. Row inserted `Id 31`, `System 'ps2'`, `TitleKey 'shin megami tensei -
+persona 3 fes'`, `CoreOptionsJson {"pcsx2_pgs_deblur":"enabled","pcsx2_pgs_ss_tex":"enabled"}` and
+**nothing else** (no `RenderProfile`, no `HwContext`, no `ForcedFps`). Same game as Phase 3, which
+still has no profile row of its own — so the provided set is exactly the Phase 3 nine **plus these
+two**, and the two arms differ only in `pcsx2_renderer`. Row **deleted by Id afterwards and
+verified**: 1 row deleted, 0 rows with Id 31, ps2 rows back to **17**, 0 rows matching the temp note.
+No other row was read into, updated or deleted.
+
+Provided set, identical in both arms (11 keys):
+`pcsx2_anisotropic_filtering="8x"`, `pcsx2_bios="scph39001.bin"`, `pcsx2_blending_accuracy="Medium"`,
+`pcsx2_fastboot="enabled"`, **`pcsx2_pgs_deblur="enabled"`**, `pcsx2_pgs_disable_mipmaps="enabled"`,
+`pcsx2_pgs_high_res_scanout="enabled"`, **`pcsx2_pgs_ss_tex="enabled"`**,
+`pcsx2_pgs_ssaa="8x SSAA (can high-res)"`, `pcsx2_renderer=…`,
+`pcsx2_upscale_multiplier="2x Native (~720p)"`.
+
+### B1 — paraLLEl-GS (system default) · both keys **READ**
+
+```
+2026-08-02 14:50:12.6193  New room … game="Shin Megami Tensei - Persona 3 FES (USA)"
+2026-08-02 14:50:12.8681  Libretro System >>> LRPS2 (v2.0.0-fe939ae) …
+2026-08-02 14:50:12.9243  Libretro [room-cheat] option pcsx2_pgs_deblur=enabled
+2026-08-02 14:50:12.9243  Libretro [room-cheat] option pcsx2_pgs_ss_tex=enabled
+2026-08-02 14:50:12.9243  Libretro [room-cheat] option pcsx2_renderer=paraLLEl-GS
+2026-08-02 14:50:12.9267  Libretro hw render context: Vulkan (version 4198400.0)
+2026-08-02 14:50:13.6048  Libretro [vk] zero-copy: ACTIVE (sync=semaphore(layer1))
+2026-08-02 14:50:17.9318  Libretro [opt] DEAD keys (…): pcsx2_anisotropic_filtering, pcsx2_blending_accuracy, pcsx2_upscale_multiplier
+2026-08-02 14:50:17.9318  Libretro [opt] reconcile: 8/11 provided keys were read by the core
+```
+
+**8/11, and the DEAD set is the three GSdx keys and nothing else** — so both new keys were queried.
+Content verified (`diag-pgs-b1-parallel.png`): the game's opening cinematic rendering normally, so
+`pgs_ss_tex="enabled"` ("highly experimental — may glitch") did not break the picture in this arm.
+
+### B2 — Vulkan (GSdx) · both keys **DEAD**
+
+```
+2026-08-02 14:51:38.5251  Libretro System >>> LRPS2 (v2.0.0-fe939ae) …
+2026-08-02 14:51:38.5362  Libretro [room-cheat] option pcsx2_renderer=Vulkan
+2026-08-02 14:51:38.5362  Libretro [room-cheat] option pcsx2_pgs_deblur=enabled
+2026-08-02 14:51:38.5362  Libretro [room-cheat] option pcsx2_pgs_ss_tex=enabled
+2026-08-02 14:51:38.5389  Libretro hw render context: Vulkan (version 4198400.0)
+2026-08-02 14:51:38.9393  Libretro [vk] zero-copy: ACTIVE (sync=semaphore(layer1))
+2026-08-02 14:51:43.5401  Libretro [opt] DEAD keys (…): pcsx2_pgs_deblur, pcsx2_pgs_high_res_scanout, pcsx2_pgs_ss_tex, pcsx2_pgs_ssaa
+2026-08-02 14:51:43.5401  Libretro [opt] reconcile: 7/11 provided keys were read by the core
+```
+
+**7/11, both new keys in the DEAD set.**
+
+### Verdict
+
+| key | paraLLEl-GS | Vulkan (GSdx) | conclusion |
+|---|---|---|---|
+| `pcsx2_pgs_deblur` | READ (14:50:12) | **DEAD** (14:51:38) | paraLLEl-GS-only — **confirmed by log** |
+| `pcsx2_pgs_ss_tex` | READ (14:50:12) | **DEAD** (14:51:38) | paraLLEl-GS-only — **confirmed by log** |
+
+The existing restriction is **correct** and its evidence string moves from structural to cited-log.
+Unlike `pcsx2_pgs_disable_mipmaps`, the namespace argument held for these two — but it held as a
+*prediction that was then checked*, which is the only status that entitles it to stay. The
+`pcsx2_pgs_` prefix rule now has direct two-directional log evidence for **all four** keys it
+restricts, plus the one exact-match exemption; nothing in the pcsx2 block rests on the name any
+more. A `pcsx2_pgs_*` key added to the catalog later still inherits the rule on the namespace
+argument alone and must be boot-checked the same way — that caveat is written into the rule.
+
+Only the GSdx profile that PS2 offers on a Vulkan surface was used for the DEAD arm. Phase 3
+established that the two GSdx profiles are indistinguishable at the option level (identical
+reconcile, identical DEAD set, only the surface differs), so `opengl` was not re-booted for this
+question — stated here so the inference is visible rather than silent.
+
+## Rooms opened in this pass (all closed cleanly)
+
+`FCDFED` psp/GL · `KI3IC4` dc/GL · `A4D4SP` naomi/GL · `G6KEVX` atomiswave/GL · `C5LK6J` gc/GL ·
+`VXAVAZ` wii/GL · `UNZDJG` dc/GL (teardown re-test) · `FDQCPM` ps2/paraLLEl-GS · `A3D3L4`
+ps2/Vulkan (GSdx). One at a time; `localhost:8000/status` all-free before and after each; nothing
+restarted (the single worker restart at 14:37:51 was the runner's own respawn, not an operator
+action).

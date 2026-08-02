@@ -53,10 +53,25 @@ namespace MovieTheater.Arcade
 
         // ── The restrictions ──────────────────────────────────────────────────────────────────────────
         // ONLY what the evidence supports. The three cores below are the ones with a renderer split AND
-        // evidence for it; beetle_psx_hw, ppsspp, flycast and dolphin have a renderer/surface split but NO
-        // renderer-split evidence (dolphin/flycast reconcile clean, the beetle GL and psp/dc/gc GL profiles
-        // have never once been booted), so they are deliberately absent — guessing there would hide levers
-        // that work. Phase 3's boot tests are what extends this list.
+        // evidence for it. ppsspp, flycast and dolphin are deliberately absent, and as of 2026-08-02 that
+        // is no longer an absence of evidence but a MEASURED NEGATIVE: the six surface-only GL profiles
+        // (psp/dc/naomi/atomiswave/gc/wii) were each booted on the GL surface for the first time and every
+        // one reconciled EXACTLY as its Vulkan control did, key for key —
+        //   ppsspp  5/5 GL  (glworker-2.log 2026-08-02 14:34:26, Daxter)   vs 5/5 Vk  (2026-07-30 13:29:22)
+        //   flycast 3/3 GL  (glworker.log   2026-08-02 14:36:38 dc / 14:38:30 naomi / 14:40:33 atomiswave,
+        //                    and 14:46:51 dc again)                        vs 3/3 Vk  (glworker-2.log
+        //                    2026-08-02 01:45:56, same game and same 3 keys)
+        //   dolphin 8/8 GL  (glworker.log 2026-08-02 14:42:04, gc F-Zero GX) vs 8/8 Vk (glworker-2.log
+        //                    2026-07-30 13:34:19) and 11/11 GL (glworker-2.log 2026-08-02 14:44:30, wii
+        //                    Project REX)                                  vs 11/11 Vk (2026-07-31 22:45:29)
+        // Zero DEAD keys on either surface for any of the three. So the "no restriction" state for these
+        // cores is now positively supported, not merely unfalsified — see the appendix "GL-profile
+        // verification + pgs evidence" in docs/arcade/opt-reconcile-evidence-2026-08-02.md.
+        // ⚠ What that does NOT cover: only the keys a room actually SHIPS can appear in a reconcile line.
+        // flycast's per-pixel-OIT knobs (reicast_oit_abuffer_size / reicast_oit_layers) are commented out
+        // in config.worker-gl.yaml and the fleet runs alpha_sorting="per-triangle (normal)", so no room has
+        // ever provided them and the GL boots say nothing about them either. They stay VISIBLE.
+        // beetle_psx_hw keeps the original status: its GL profile has still never been booted.
         private static readonly Dictionary<string, Rule[]> ByCore = new(StringComparer.OrdinalIgnoreCase)
         {
             // ── PS2 / LRPS2. Profiles (Phase 3, 2026-08-02): "parallel_gs" (paraLLEl-GS, the live default),
@@ -111,20 +126,26 @@ namespace MovieTheater.Arcade
                     + "implementation boundary; this key is live everywhere.",
                     "parallel_gs", "vulkan_gsdx", "opengl"),
 
-                // The rest of the namespace. Phase 2 took this on the structural argument alone because the
-                // sweep found the site never sent a pgs_* key; the Phase 3 boots now send them and confirm the
-                // two that ship in the live option set are genuinely paraLLEl-GS-only.
+                // The rest of the namespace. Phase 2 took this on the structural argument alone (the site had
+                // never sent a pgs_* key at all); Phase 3 measured the two that ship in the live option set;
+                // and the 2026-08-02 pgs boot pair closed the last gap by PROVIDING the two that never ship.
+                // Every pcsx2_pgs_* key the catalog exposes is now log-decided in both directions, so no part
+                // of this rule rests on the namespace argument any more.
                 Prefix("pcsx2_pgs_",
-                    "worker log for the two keys the room actually ships: pcsx2_pgs_ssaa and "
-                    + "pcsx2_pgs_high_res_scanout were the ENTIRE DEAD set under both GSdx backends "
-                    + "(glworker.log 2026-08-02 13:29:09 Vulkan, 13:32:24 OpenGL) and READ under paraLLEl-GS "
-                    + "(13:35:17), same game and same provided set — an exact mirror of the GSdx trio above. "
-                    + "For pcsx2_pgs_deblur / pcsx2_pgs_ss_tex there is still NO log evidence (never provided "
-                    + "in any observed room), so they ride the structural argument: the deployed "
-                    + "pcsx2_custom DLL declares the five as paraLLEl-GS's namespace "
-                    + "(docs/arcade/core-options-drift-2026-08-02.md §1), and the two that HAVE been measured "
-                    + "behaved exactly as that argument predicts. ⚠ pcsx2_pgs_disable_mipmaps is the known "
-                    + "counterexample and is exempted by the exact rule above.",
+                    "worker log, BOTH directions, for all FOUR restricted keys of the namespace. "
+                    + "(a) pcsx2_pgs_ssaa + pcsx2_pgs_high_res_scanout: the ENTIRE DEAD set under both GSdx "
+                    + "backends (glworker.log 2026-08-02 13:29:09 Vulkan, 13:32:24 OpenGL) and READ under "
+                    + "paraLLEl-GS (13:35:17) — Persona 3 FES, same 9-key provided set in all three arms. "
+                    + "(b) pcsx2_pgs_deblur + pcsx2_pgs_ss_tex: these ship in NO room, so a dedicated boot "
+                    + "pair provided them via a temporary ArcadeGameProfile row (Id 31, deleted; same game, "
+                    + "11-key set = the Phase 3 nine plus these two). paraLLEl-GS glworker.log 2026-08-02 "
+                    + "14:50:12 → reconcile 8/11, DEAD = the three GSdx keys ONLY, so both are READ. "
+                    + "Vulkan (GSdx) 14:51:38 → reconcile 7/11, DEAD = pcsx2_pgs_deblur, "
+                    + "pcsx2_pgs_high_res_scanout, pcsx2_pgs_ss_tex, pcsx2_pgs_ssaa — both are INERT. "
+                    + "The structural prediction held for these two, unlike pcsx2_pgs_disable_mipmaps, which "
+                    + "is the known counterexample and is exempted by the exact rule above. A pcsx2_pgs_* key "
+                    + "added to the catalog LATER inherits this rule on the namespace argument alone and must "
+                    + "be boot-checked the same way before it is trusted.",
                     "parallel_gs"),
                 // ⚠ Deliberately NOT restricted: pcsx2_texture_filtering, pcsx2_trilinear_filtering,
                 // pcsx2_dithering and the rest of the GSdx-ish family. The quality-preset notes PRESUME they
