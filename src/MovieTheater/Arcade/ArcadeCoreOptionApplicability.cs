@@ -59,40 +59,79 @@ namespace MovieTheater.Arcade
         // that work. Phase 3's boot tests are what extends this list.
         private static readonly Dictionary<string, Rule[]> ByCore = new(StringComparer.OrdinalIgnoreCase)
         {
-            // ── PS2 / LRPS2. Profiles: "vulkan" (= paraLLEl-GS, the live default) and "opengl" (= GSdx).
-            // ⚠ Phase 3 plans to split "vulkan" into paraLLEl-GS and a real Vulkan (GSdx) profile. When that
-            // lands, the GSdx keys below must gain the new profile id — the guard test will not catch a
-            // MISSING id, only a bogus one, so this is the note that has to be read.
+            // ── PS2 / LRPS2. Profiles (Phase 3, 2026-08-02): "parallel_gs" (paraLLEl-GS, the live default),
+            // "vulkan_gsdx" (PCSX2's own GS on Vulkan) and "opengl" (the same GS on a GL surface).
+            // ⚠ These are the ids in ArcadeRendererProfiles — rename there and the rules below must follow.
+            // EveryRestrictionNamesRealProfilesOfItsCore catches a BOGUS id; nothing catches a MISSING one,
+            // which is how a rename quietly turns "GSdx-only" into "hidden everywhere".
+            //
+            // The whole pcsx2 block was re-grounded by the Phase 3 boot tests, which for the first time ran
+            // all three renderers on ONE game with an IDENTICAL 9-key provided set, so the DEAD sets are
+            // directly comparable (docs/arcade/opt-reconcile-evidence-2026-08-02.md, "Phase 3 boot tests" —
+            // Persona 3 FES, glworker.log 13:29:09 Vulkan / 13:32:24 OpenGL / 13:35:17 paraLLEl-GS):
+            //   paraLLEl-GS  6/9  DEAD: upscale_multiplier, anisotropic_filtering, blending_accuracy
+            //   Vulkan(GSdx) 7/9  DEAD: pgs_high_res_scanout, pgs_ssaa
+            //   OpenGL(GSdx) 7/9  DEAD: pgs_high_res_scanout, pgs_ssaa
+            // An exact mirror — and the two GSdx profiles are indistinguishable, which is what licenses
+            // giving them the same rules.
             ["pcsx2"] = new[]
             {
-                // The headline D3 finding, and the only pcsx2 restriction with hard runtime proof.
+                // The headline D3 finding. Was already the only pcsx2 restriction with hard runtime proof of
+                // the DEAD half; Phase 3 supplied the missing LIVE half (it is read on both GSdx profiles).
                 Key("pcsx2_upscale_multiplier",
-                    "worker log: DEAD under paraLLEl-GS in EVERY sample — glworker.log 2026-08-02 12:24:24 / "
-                    + "11:58:06 / 01:41:33 and glworker-2.log 2026-08-01 15:32:37 (Stuntman, 007 Agent Under "
-                    + "Fire), identical DEAD set each time. GSdx-side lever.",
-                    "opengl"),
+                    "worker log, BOTH directions. DEAD under paraLLEl-GS in every sample — glworker.log "
+                    + "2026-08-02 12:24:24 / 11:58:06 / 01:41:33, glworker-2.log 2026-08-01 15:32:37 "
+                    + "(Stuntman, 007 Agent Under Fire) and again 2026-08-02 13:35:17 (Persona 3 FES). READ "
+                    + "under both GSdx backends in the Phase 3 boot tests — glworker.log 2026-08-02 13:29:09 "
+                    + "(pcsx2_renderer=Vulkan) and 13:32:24 (=OpenGL), same game, same provided set, 7/9 with "
+                    + "this key absent from the DEAD list.",
+                    "vulkan_gsdx", "opengl"),
                 Key("pcsx2_anisotropic_filtering",
-                    "worker log: same DEAD set as pcsx2_upscale_multiplier — DEAD under paraLLEl-GS in every "
-                    + "sample, glworker.log 2026-08-02 12:24:24 and 4 more.",
-                    "opengl"),
+                    "worker log: moves as one set with pcsx2_upscale_multiplier in every sample — DEAD under "
+                    + "paraLLEl-GS (glworker.log 2026-08-02 12:24:24 and 5 more, incl. 13:35:17) and READ "
+                    + "under both GSdx backends (13:29:09 Vulkan, 13:32:24 OpenGL — Phase 3 boot tests).",
+                    "vulkan_gsdx", "opengl"),
                 Key("pcsx2_blending_accuracy",
-                    "worker log: same DEAD set as pcsx2_upscale_multiplier — DEAD under paraLLEl-GS in every "
-                    + "sample, glworker.log 2026-08-02 12:24:24 and 4 more.",
-                    "opengl"),
-                // Structural, not log-derived: the sweep found the site never SENDS a pgs_* key at all, so no
-                // reconcile line can speak to them. They are paraLLEl-GS's own option namespace (the drift
-                // report's extraction confirms the deployed pcsx2_custom_libretro.dll declares all five), and
-                // a GSdx renderer has no code that reads them.
+                    "worker log: moves as one set with pcsx2_upscale_multiplier in every sample — DEAD under "
+                    + "paraLLEl-GS (glworker.log 2026-08-02 12:24:24 and 5 more, incl. 13:35:17) and READ "
+                    + "under both GSdx backends (13:29:09 Vulkan, 13:32:24 OpenGL — Phase 3 boot tests).",
+                    "vulkan_gsdx", "opengl"),
+
+                // ⚠ THE EXCEPTION THAT BREAKS THE NAMESPACE ARGUMENT — and it must come before the prefix
+                // rule is read, because exact match wins in RuleFor. pcsx2_pgs_disable_mipmaps is named like
+                // paraLLEl-GS's own but LRPS2 routes it to a shared GS setting: it was provided in ALL THREE
+                // Phase 3 arms and appeared in NO DEAD set. Restricting it would hide a working lever, which
+                // is exactly what the Phase 2 structural prefix rule would have done. Listed longhand on all
+                // three profiles (rather than deleted) so the exception is visible next to the rule it
+                // overrides instead of being an invisible absence.
+                Key("pcsx2_pgs_disable_mipmaps",
+                    "worker log: READ under all three renderers — glworker.log 2026-08-02 13:29:09 (Vulkan "
+                    + "GSdx), 13:32:24 (OpenGL GSdx) and 13:35:17 (paraLLEl-GS), Persona 3 FES, provided in "
+                    + "every arm and DEAD in none. The pcsx2_pgs_ prefix is therefore NOT a reliable "
+                    + "implementation boundary; this key is live everywhere.",
+                    "parallel_gs", "vulkan_gsdx", "opengl"),
+
+                // The rest of the namespace. Phase 2 took this on the structural argument alone because the
+                // sweep found the site never sent a pgs_* key; the Phase 3 boots now send them and confirm the
+                // two that ship in the live option set are genuinely paraLLEl-GS-only.
                 Prefix("pcsx2_pgs_",
-                    "structural: pcsx2_pgs_* is the paraLLEl-GS implementation's OWN namespace (5 keys declared "
-                    + "by the deployed pcsx2_custom DLL — docs/arcade/core-options-drift-2026-08-02.md §1); a "
-                    + "GSdx renderer cannot read them. No log evidence exists either way: the sweep found the "
-                    + "site never sends a pgs_*-prefixed key (evidence doc, PS2 section).",
-                    "vulkan"),
+                    "worker log for the two keys the room actually ships: pcsx2_pgs_ssaa and "
+                    + "pcsx2_pgs_high_res_scanout were the ENTIRE DEAD set under both GSdx backends "
+                    + "(glworker.log 2026-08-02 13:29:09 Vulkan, 13:32:24 OpenGL) and READ under paraLLEl-GS "
+                    + "(13:35:17), same game and same provided set — an exact mirror of the GSdx trio above. "
+                    + "For pcsx2_pgs_deblur / pcsx2_pgs_ss_tex there is still NO log evidence (never provided "
+                    + "in any observed room), so they ride the structural argument: the deployed "
+                    + "pcsx2_custom DLL declares the five as paraLLEl-GS's namespace "
+                    + "(docs/arcade/core-options-drift-2026-08-02.md §1), and the two that HAVE been measured "
+                    + "behaved exactly as that argument predicts. ⚠ pcsx2_pgs_disable_mipmaps is the known "
+                    + "counterexample and is exempted by the exact rule above.",
+                    "parallel_gs"),
                 // ⚠ Deliberately NOT restricted: pcsx2_texture_filtering, pcsx2_trilinear_filtering,
                 // pcsx2_dithering and the rest of the GSdx-ish family. The quality-preset notes PRESUME they
-                // are the same class as anisotropic/blending, but presumption is not evidence and the sweep
-                // never saw them provided. They stay visible on both profiles until a boot test says otherwise.
+                // are the same class as anisotropic/blending, but presumption is not evidence and no room has
+                // ever been handed them — the Phase 3 boots ship the same 9 keys as every other PS2 room, so
+                // they add nothing here either. They stay visible on all three profiles until a boot test
+                // that actually PROVIDES them says otherwise.
             },
 
             // ── N64 default core. Profiles: "vulkan" (rdp-plugin=parallel, paraLLEl-RDP) and "opengl"

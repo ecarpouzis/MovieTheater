@@ -23,29 +23,80 @@ namespace MovieTheater.Tests
         // ── (a) The user-visible promise: switching Graphics changes the option set ────────────────────
 
         // PS2 is the headline case. paraLLEl-GS and GSdx are different GS implementations sharing one
-        // OptionCore, and the three GSdx keys were proven DEAD under paraLLEl-GS in every single worker-log
-        // sample (docs/arcade/opt-reconcile-evidence-2026-08-02.md).
+        // OptionCore, and Phase 3's boot tests ran all three PS2 renderers on one game with one provided
+        // option set: the DEAD sets are an exact mirror (docs/arcade/opt-reconcile-evidence-2026-08-02.md,
+        // "Phase 3 boot tests"). Note vulkan_gsdx and parallel_gs share hwContext "vulkan" — a surface-keyed
+        // model could not tell them apart at all, which is the whole reason for profile-id keying.
         [Fact]
         public void Ps2ProfilesRenderDifferentOptionSets()
         {
-            var vulkan = KeysFor("pcsx2", "vulkan");   // paraLLEl-GS
-            var opengl = KeysFor("pcsx2", "opengl");   // GSdx
+            var pgs = KeysFor("pcsx2", "parallel_gs");     // paraLLEl-GS (default)
+            var vkGsdx = KeysFor("pcsx2", "vulkan_gsdx");  // PCSX2's own GS, Vulkan surface
+            var glGsdx = KeysFor("pcsx2", "opengl");       // the same GS, GL surface
 
-            Assert.NotEqual(vulkan, opengl);
+            Assert.NotEqual(pgs, vkGsdx);
+            // The two GSdx profiles read the same set — same GS, different surface (7/9 with the identical
+            // DEAD pair in both Phase 3 arms). Only the surface differs, so the option list must not.
+            Assert.Equal(vkGsdx, glGsdx);
 
             foreach (var gsdxOnly in new[] { "pcsx2_upscale_multiplier", "pcsx2_anisotropic_filtering", "pcsx2_blending_accuracy" })
             {
-                Assert.Contains(gsdxOnly, opengl);
-                Assert.DoesNotContain(gsdxOnly, vulkan);
+                Assert.Contains(gsdxOnly, vkGsdx);
+                Assert.Contains(gsdxOnly, glGsdx);
+                Assert.DoesNotContain(gsdxOnly, pgs);
             }
-            Assert.Contains(vulkan, k => k.StartsWith("pcsx2_pgs_"));
-            foreach (var pgsOnly in vulkan.Where(k => k.StartsWith("pcsx2_pgs_")))
-                Assert.DoesNotContain(pgsOnly, opengl);
+            // paraLLEl-GS's own levers, log-proven DEAD on both GSdx backends.
+            foreach (var pgsOnly in new[] { "pcsx2_pgs_ssaa", "pcsx2_pgs_high_res_scanout" })
+            {
+                Assert.Contains(pgsOnly, pgs);
+                Assert.DoesNotContain(pgsOnly, vkGsdx);
+                Assert.DoesNotContain(pgsOnly, glGsdx);
+            }
 
-            // Everything else must still be on BOTH — the restriction is narrow by design (no evidence yet on
-            // pcsx2_texture_filtering / trilinear / dithering, so they stay visible).
-            Assert.Contains("pcsx2_nointerlacing_hint", vulkan);
-            Assert.Contains("pcsx2_nointerlacing_hint", opengl);
+            // ⚠ The counterexample that keeps the prefix rule honest: despite its name, LRPS2 READS
+            // pcsx2_pgs_disable_mipmaps under all three renderers (provided in all three Phase 3 arms, DEAD
+            // in none). Hiding the whole pcsx2_pgs_ namespace on GSdx would hide a working lever.
+            Assert.Contains("pcsx2_pgs_disable_mipmaps", pgs);
+            Assert.Contains("pcsx2_pgs_disable_mipmaps", vkGsdx);
+            Assert.Contains("pcsx2_pgs_disable_mipmaps", glGsdx);
+
+            // Everything else must still be on ALL THREE — the restriction is narrow by design (no evidence
+            // yet on pcsx2_texture_filtering / trilinear / dithering, so they stay visible).
+            Assert.Contains("pcsx2_nointerlacing_hint", pgs);
+            Assert.Contains("pcsx2_nointerlacing_hint", vkGsdx);
+            Assert.Contains("pcsx2_nointerlacing_hint", glGsdx);
+        }
+
+        // Phase 3, D6: the profile set itself is a claim, and the claim used to be false — the profile
+        // LABELLED "Vulkan" selected paraLLEl-GS, and PCSX2's own Vulkan was unreachable. Every renderer
+        // offered here was booted and streamed first (evidence doc, "Phase 3 boot tests"); this pins the
+        // shape so a future edit cannot quietly reintroduce a label that names the wrong GS.
+        [Fact]
+        public void Ps2OffersThreeBootVerifiedRenderersAndNoneIsMislabelled()
+        {
+            var ps2 = ArcadeRendererProfiles.For("ps2");
+            Assert.Equal(new[] { "parallel_gs", "vulkan_gsdx", "opengl" }, ps2.Select(p => p.Id));
+            Assert.Equal("parallel_gs", ArcadeRendererProfiles.Default("ps2")!.Id);
+
+            // Each profile selects the renderer token its label names.
+            Assert.Equal("paraLLEl-GS", ps2.Single(p => p.Id == "parallel_gs").Options["pcsx2_renderer"]);
+            Assert.Equal("Vulkan", ps2.Single(p => p.Id == "vulkan_gsdx").Options["pcsx2_renderer"]);
+            Assert.Equal("OpenGL", ps2.Single(p => p.Id == "opengl").Options["pcsx2_renderer"]);
+
+            // The two Vulkan-surface profiles are distinguishable ONLY by id — the case that forced both
+            // applicability and the quality presets off HwContext keying.
+            Assert.Equal("vulkan", ps2.Single(p => p.Id == "parallel_gs").HwContext);
+            Assert.Equal("vulkan", ps2.Single(p => p.Id == "vulkan_gsdx").HwContext);
+            Assert.Equal("gl", ps2.Single(p => p.Id == "opengl").HwContext);
+
+            // No label may say "Vulkan" without saying WHICH GS — that ambiguity was defect D6.1.
+            Assert.All(ps2, p => Assert.True(
+                !p.Label.Contains("Vulkan") || p.Label.Contains("GSdx") || p.Label.Contains("paraLLEl-GS"),
+                $"ps2/{p.Id}: label '{p.Label}' says Vulkan without naming the GS implementation."));
+
+            // Bare Force GL / Force Vulkan must still land somewhere real (the play-button fallback path).
+            Assert.Equal("parallel_gs", ArcadeRendererProfiles.ForRenderer("ps2", "vulkan")!.Id);
+            Assert.Equal("opengl", ArcadeRendererProfiles.ForRenderer("ps2", "gl")!.Id);
         }
 
         // N64 has BOTH shapes: one core with two renderers (mupen64plus_next), and a second core whose two GL
@@ -200,7 +251,7 @@ namespace MovieTheater.Tests
             };
             var submitted = new Dictionary<string, string> { ["pcsx2_pgs_ssaa"] = "4x SSAA (ordered, can high-res)" };
 
-            var merged = ArcadeCoreOptionApplicability.MergeSave("ps2", "pcsx2", "vulkan", existing, submitted);
+            var merged = ArcadeCoreOptionApplicability.MergeSave("ps2", "pcsx2", "parallel_gs", existing, submitted);
 
             Assert.Equal("4x Native (~1440p/2K)", merged["pcsx2_upscale_multiplier"]);
             Assert.Equal("16x", merged["pcsx2_anisotropic_filtering"]);

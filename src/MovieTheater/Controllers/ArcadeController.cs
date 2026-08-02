@@ -715,10 +715,11 @@ namespace MovieTheater.Controllers
             public string? HwContext { get; set; }
 
             /// <summary>Per-launch render-PROFILE id from the play-button dropdown (see
-            /// <see cref="ArcadeRendererProfiles"/>), e.g. "vulkan", "opengl", "parallel_n64". This is the
-            /// full core-and-renderer pick — unlike <see cref="HwContext"/> (a bare gl/vulkan surface), a
-            /// profile id can select an ALTERNATE CORE (n64 parallel_n64, ps1 pcsx_rearmed) that shares a
-            /// surface with another profile. When set and valid for the game's system it is the TOP of the
+            /// <see cref="ArcadeRendererProfiles"/>), e.g. "parallel_gs", "vulkan_gsdx", "parallel_n64". This
+            /// is the full core-and-renderer pick — unlike <see cref="HwContext"/> (a bare gl/vulkan surface),
+            /// a profile id can select an ALTERNATE CORE (n64 parallel_n64, ps1 pcsx_rearmed) or a different
+            /// GS implementation on the SAME surface (ps2 parallel_gs vs vulkan_gsdx are both "vulkan", so a
+            /// bare HwContext cannot express the choice). When set and valid for the game's system it is the TOP of the
             /// renderer precedence (above the bare HwContext, the DB-saved profile, and the default);
             /// an unknown id is ignored (a stale open tab shouldn't fail the launch). Only meaningful for
             /// systems that offer more than one profile.</summary>
@@ -1049,13 +1050,17 @@ namespace MovieTheater.Controllers
             var toStore = new Dictionary<string, string>(StringComparer.Ordinal);
             if (tier != null)
             {
-                // Presets are keyed by (core, hwContext), which is one notch coarser than a render profile —
-                // parallel_n64's "gl" bundle serves BOTH gl profiles (GLideN64 and Glide64). Applying the
-                // applicability filter here keeps that structurally safe: a tier can never store a key that is
+                // Presets resolve profile-id → hwContext → core-wide, so the SELECTED PROFILE has to be passed
+                // in, not just its surface. PS2's parallel_gs and vulkan_gsdx share hwContext "vulkan" and read
+                // disjoint levers; on hwContext alone a GSdx reset would fetch the paraLLEl-GS bundle and the
+                // filter below would strip all of it, storing nothing (Phase 3, plan D6).
+                // Where a bundle IS still surface-keyed it can be one notch coarser than a profile —
+                // parallel_n64's "gl" bundle serves BOTH gl profiles (GLideN64 and Glide64) — so the
+                // applicability filter stays as the structural backstop: a tier can never store a key that is
                 // inert under the profile it was applied for, whatever the preset happens to contain.
-                // ArcadeQualityPresetsTests asserts the presets don't need this today (every preset key is
-                // applicable to some profile with that hwContext) — the filter is what keeps it true.
-                foreach (var (key, value) in ArcadeQualityPresets.For(core, selected?.HwContext, tier))
+                // ArcadeQualityPresetsTests asserts the presets don't NEED the filter (every preset key is live
+                // on some profile in its scope) — the filter is what keeps that true.
+                foreach (var (key, value) in ArcadeQualityPresets.For(core, selected?.Id, selected?.HwContext, tier))
                     if (ArcadeCoreOptionApplicability.IsApplicable(core, key, selected?.Id)) toStore[key] = value;
             }
             else if (request.CoreOptions != null)

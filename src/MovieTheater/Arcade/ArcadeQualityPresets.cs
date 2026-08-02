@@ -57,11 +57,40 @@ namespace MovieTheater.Arcade
             return d;
         }
 
-        // Presets keyed by (OptionCore, HwContext). HwContext null = applies to every renderer of that
-        // core (the option set doesn't differ by surface); pcsx2 and mupen64plus_next split because their
-        // Vulkan and GL renderers read DIFFERENT quality keys (paraLLEl-GS ignores pcsx2_upscale_multiplier;
-        // GLideN64 ignores mupen64plus-parallel-rdp-upscaling). "ultra" is intentionally absent everywhere.
-        private static readonly Dictionary<(string Core, string? Hw), Dictionary<string, Dictionary<string, string>>> ByCoreHw = new()
+        // ── PS2 GSdx tier bundle, shared by BOTH GSdx profiles ────────────────────────────────────────
+        // Named and hoisted because it is keyed twice below ("opengl" and "vulkan_gsdx"). The two profiles
+        // are the same GS implementation on different surfaces, and the Phase 3 boot tests found their
+        // reconcile IDENTICAL (7/9, same DEAD set — docs/arcade/opt-reconcile-evidence-2026-08-02.md), so
+        // one bundle serving both is a statement of fact, not a convenience. Must be declared BEFORE
+        // ByCoreScope: static field initializers run in declaration order.
+        private static readonly Dictionary<string, Dictionary<string, string>> Pcsx2GsdxTiers = new()
+        {
+            ["max"] = Opt(
+                ("pcsx2_upscale_multiplier", "4x Native (~1440p/2K)"),
+                ("pcsx2_anisotropic_filtering", "16x"),
+                ("pcsx2_blending_accuracy", "High")),
+            ["high"] = Opt(("pcsx2_upscale_multiplier", "2x Native (~720p)")),
+            ["medium"] = Opt(("pcsx2_upscale_multiplier", "1x Native (PS2)")),
+            ["low"] = Opt(
+                ("pcsx2_upscale_multiplier", "1x Native (PS2)"),
+                ("pcsx2_anisotropic_filtering", "disabled"),
+                ("pcsx2_blending_accuracy", "Basic")),
+        };
+
+        // Presets keyed by (OptionCore, Scope), where Scope is a render-PROFILE id, an HwContext, or null.
+        // null = applies to every renderer of that core (the option set doesn't differ by surface).
+        // mupen64plus_next and parallel_n64 split by HwContext because their Vulkan and GL renderers read
+        // DIFFERENT quality keys (GLideN64 ignores parallel-rdp-upscaling).
+        //
+        // ⚠ pcsx2 splits by PROFILE ID, and must. Phase 3 gave PS2 two profiles that SHARE hwContext
+        // "vulkan" — paraLLEl-GS ("parallel_gs") and PCSX2's own GS ("vulkan_gsdx") — which read disjoint
+        // quality levers. Under the old HwContext keying a GSdx tier reset would have fetched the
+        // paraLLEl-flavoured bundle; the controller's apply-time applicability filter would then have
+        // stripped every key in it and stored NOTHING, so "Reset to Max" would be a silently dead button.
+        // (That filter is a backstop against an inapplicable key, not a way to SELECT the right bundle.)
+        // Lookup order in For() is profile id → hwContext → null, so only the cores that need the finer
+        // key pay for it and every other core is untouched.
+        private static readonly Dictionary<(string Core, string? Scope), Dictionary<string, Dictionary<string, string>>> ByCoreScope = new()
         {
             // ── PS1 Beetle (Vulkan + OpenGL — same option set). Live: internal_resolution 4x.
             // 8x was documented as "the next step if 4x proves clean + wanted" — that's Max, plus the
@@ -96,7 +125,9 @@ namespace MovieTheater.Arcade
                 ["low"] = Opt(("pcsx_rearmed_neon_enhancement_enable", "disabled")),
             },
 
-            // ── PS2 paraLLEl-GS (Vulkan default). Live: 16x SSAA + high-res scanout + LOD0 mipmaps.
+            // ── PS2 paraLLEl-GS (the system default). Live: 16x SSAA + high-res scanout + LOD0 mipmaps.
+            // ⚠ Keyed by PROFILE ID, not by hwContext: since Phase 3 this profile shares hwContext "vulkan"
+            // with "vulkan_gsdx", and the two read disjoint levers (see the ByCoreScope note above).
             // upscale_multiplier / anisotropic / blending are DEAD keys under pgs (worker "[opt] DEAD
             // keys" proof — they belong to GSdx, and texture/trilinear filtering are presumed the same
             // class) — the pgs_* options are the only real levers. Max adds the two experimental
@@ -104,7 +135,7 @@ namespace MovieTheater.Arcade
             // Swept and left alone: ee_cycle_rate/skip (guest-side underclocks, GameDB territory),
             // hw_download_mode (measured & rejected — Stuntman), the hw-hacks family (gated behind
             // pcsx2_enable_hw_hacks, which kills the GameDB auto-fixes — never a default).
-            [("pcsx2", "vulkan")] = new()
+            [("pcsx2", "parallel_gs")] = new()
             {
                 // Ultra demoted 16x→8x 2026-07-22 (Eric-approved): 16x was the Phase-2 "one step past
                 // the old ceiling" raise on the heaviest core, and slow-ROM reports followed. 16x is
@@ -120,24 +151,19 @@ namespace MovieTheater.Arcade
                     ("pcsx2_pgs_high_res_scanout", "disabled")),
             },
 
-            // ── PS2 OpenGL (GSdx). Live companions when GL is selected: upscale 2x, aniso 8x, blending
-            // Medium. LRPS2 scales its BASE geometry with the multiplier, so lower tiers also shrink the
-            // encoded stream — the biggest perf lever on the heaviest core we run. Swept and left
-            // alone: trilinear "Forced" (glitch-prone even for Max), dithering (Unscaled is right),
+            // ── PS2 GSdx, BOTH surfaces. Live companions when a GSdx renderer is selected: upscale 2x,
+            // aniso 8x, blending Medium. LRPS2 scales its BASE geometry with the multiplier, so lower tiers
+            // also shrink the encoded stream — the biggest perf lever on the heaviest core we run. Swept and
+            // left alone: trilinear "Forced" (glitch-prone even for Max), dithering (Unscaled is right),
             // pcrtc_antiblur (already the good default).
-            [("pcsx2", "gl")] = new()
-            {
-                ["max"] = Opt(
-                    ("pcsx2_upscale_multiplier", "4x Native (~1440p/2K)"),
-                    ("pcsx2_anisotropic_filtering", "16x"),
-                    ("pcsx2_blending_accuracy", "High")),
-                ["high"] = Opt(("pcsx2_upscale_multiplier", "2x Native (~720p)")),
-                ["medium"] = Opt(("pcsx2_upscale_multiplier", "1x Native (PS2)")),
-                ["low"] = Opt(
-                    ("pcsx2_upscale_multiplier", "1x Native (PS2)"),
-                    ("pcsx2_anisotropic_filtering", "disabled"),
-                    ("pcsx2_blending_accuracy", "Basic")),
-            },
+            //
+            // The SAME bundle is keyed for the OpenGL and Vulkan GSdx profiles. It was written for the GL
+            // profile back when that was the only GSdx arm the site could name, and Phase 3 (2026-08-02)
+            // proved the two arms read the identical option set — same 7/9 reconcile, same two-key DEAD set
+            // on one game with one provided set (Persona 3 FES; glworker.log 13:32:24 GL vs 13:29:09 Vulkan).
+            // So "vulkan_gsdx" reuses the proven bundle rather than getting a speculative one of its own.
+            [("pcsx2", "opengl")] = Pcsx2GsdxTiers,
+            [("pcsx2", "vulkan_gsdx")] = Pcsx2GsdxTiers,
 
             // ── N64 paraLLEl-RDP (Vulkan default). Live: upscaling 8x (the token ceiling — Max pins it
             // explicitly so it survives any future Ultra step-down). Swept and left alone: the VI
@@ -358,25 +384,40 @@ namespace MovieTheater.Arcade
             new Dictionary<string, string>(StringComparer.Ordinal);
 
         /// <summary>The option bundle a tier pins for a (core, renderer) combination. Empty for Ultra,
-        /// for unknown tiers, and for cores with no presets (2D — every tier is the live default).</summary>
-        public static IReadOnlyDictionary<string, string> For(string? core, string? hwContext, string? tier)
+        /// for unknown tiers, and for cores with no presets (2D — every tier is the live default).
+        /// <para>Overload for callers with no render profile in hand; prefer the four-argument form.</para></summary>
+        public static IReadOnlyDictionary<string, string> For(string? core, string? hwContext, string? tier) =>
+            For(core, null, hwContext, tier);
+
+        /// <summary>The option bundle a tier pins for a room, resolved most-specific-first:
+        /// <b>render-profile id</b> → <b>hwContext</b> → the core-wide bundle.
+        /// <para>The profile step exists because a surface is not always fine enough: PS2's "parallel_gs"
+        /// and "vulkan_gsdx" are both hwContext "vulkan" and read disjoint quality levers, so keying on the
+        /// surface alone would hand a GSdx room the paraLLEl-GS bundle — every key of which the apply-time
+        /// applicability filter then drops, storing nothing at all. Cores whose bundles don't differ within a
+        /// surface simply have no profile-keyed entry and fall through, unchanged.</para></summary>
+        public static IReadOnlyDictionary<string, string> For(string? core, string? profileId, string? hwContext, string? tier)
         {
             if (core == null || tier == null) return Empty;
             var t = tier.Trim().ToLowerInvariant();
             if (t == "ultra") return Empty;
+            if (profileId != null
+                && ByCoreScope.TryGetValue((core, profileId), out var byProfile)
+                && byProfile.TryGetValue(t, out var exact)) return exact;
             if (hwContext != null
-                && ByCoreHw.TryGetValue((core, hwContext), out var byHw)
+                && ByCoreScope.TryGetValue((core, hwContext), out var byHw)
                 && byHw.TryGetValue(t, out var preset)) return preset;
-            return ByCoreHw.TryGetValue((core, null), out var any) && any.TryGetValue(t, out var p) ? p : Empty;
+            return ByCoreScope.TryGetValue((core, null), out var any) && any.TryGetValue(t, out var p) ? p : Empty;
         }
 
-        /// <summary>Every preset entry, flattened — for the token-validation test.</summary>
-        public static IEnumerable<(string Core, string? Hw, string Tier, string Key, string Value)> AllEntries()
+        /// <summary>Every preset entry, flattened — for the token-validation test. <c>Scope</c> is whatever
+        /// the entry is keyed by: a render-profile id, an hwContext, or null (core-wide).</summary>
+        public static IEnumerable<(string Core, string? Scope, string Tier, string Key, string Value)> AllEntries()
         {
-            foreach (var ((core, hw), tiers) in ByCoreHw)
+            foreach (var ((core, scope), tiers) in ByCoreScope)
                 foreach (var (tier, options) in tiers)
                     foreach (var (key, value) in options)
-                        yield return (core, hw, tier, key, value);
+                        yield return (core, scope, tier, key, value);
         }
     }
 }

@@ -123,11 +123,43 @@ namespace MovieTheater.Arcade
                     Opt(("parallel-n64-gfxplugin", "glide64"), ("parallel-n64-rspplugin", "hle"),
                         ("parallel-n64-send_alist_to_lle_rsp", "enabled")), false),
             },
+            // ── PS2 / LRPS2 — THREE renderers, all three boot-verified 2026-08-02 (plan D6 / Phase 3;
+            // full log evidence in docs/arcade/opt-reconcile-evidence-2026-08-02.md, "Phase 3 boot tests").
+            // The old set was two profiles and the first one's LABEL WAS A LIE: it said "Vulkan" and
+            // selected paraLLEl-GS. Those are different GS implementations that both happen to run on a
+            // Vulkan surface, and PCSX2's own Vulkan (GSdx) — where upscale/aniso/blending live — was not
+            // reachable from the site at all. Renaming the ids was safe: the live audit found ZERO ps2
+            // ArcadeGameProfile rows with RenderProfile set, and an unknown saved id falls back to the
+            // system default rather than failing (ArcadeController.EffectiveRenderProfile).
+            // ⚠ These ids are named by ArcadeCoreOptionApplicability's pcsx2 rules and by
+            // ArcadeQualityPresets' pcsx2 preset keys. Renaming one without the other silently mis-files
+            // every PS2 option; the guard tests catch a BOGUS id but not a MISSING one.
             ["ps2"] = new[]
             {
-                new RenderProfile("vulkan", "Vulkan (paraLLEl-GS)", null, "vulkan", "pcsx2",
+                // The live default, unchanged in behaviour — only the label stops lying. Keeps the pgs_*
+                // levers (ssaa / high_res_scanout), proven live here and DEAD on both GSdx backends.
+                new RenderProfile("parallel_gs", "paraLLEl-GS (Vulkan)", null, "vulkan", "pcsx2",
                     Opt(("pcsx2_renderer", "paraLLEl-GS")), true),
-                new RenderProfile("opengl", "OpenGL", null, "gl", "pcsx2",
+                // PCSX2's own GS on a Vulkan surface. NEW — previously unreachable from the site. Offered
+                // because it was BOOTED, not because it exists: Persona 3 FES, glworker.log 2026-08-02
+                // 13:29:09 — `hw render context: Vulkan`, `zero-copy: ACTIVE (sync=semaphore(layer1))`,
+                // 75 s at 59-60 fps / 0 freezes / real 3D content, and `[opt] reconcile: 7/9` with
+                // pcsx2_upscale_multiplier READ (it is DEAD in every paraLLEl-GS room ever logged).
+                // Same hwContext as the default, so the DIFFERENCE is entirely the renderer token — which
+                // is exactly why applicability and presets had to move off HwContext keying for pcsx2.
+                new RenderProfile("vulkan_gsdx", "Vulkan (GSdx)", null, "vulkan", "pcsx2",
+                    Opt(("pcsx2_renderer", "Vulkan")), false),
+                // KEPT, on boot evidence rather than on the isGlAllowed flag. This profile had never once
+                // been exercised (D6.2) and config.worker-gl.yaml's ps2 block is isGlAllowed:false +
+                // hwContext:"vulkan" — but that gates the INFERRED path, not the explicit per-room escape.
+                // Same game, glworker.log 2026-08-02 13:32:24: `Per-game hw context: … → "gl" (core default
+                // "vulkan", via per-request override)` then `Created an OpenGL context` with the real GL
+                // entry points resolved, NO `rejected non-GL hw render context type`, 70 s at a flat 60 fps
+                // / 0 freezes / real 3D content, pace-diag ticks/s=59.9 slowTicks=0. Reconcile 7/9,
+                // identical to Vulkan (GSdx) — same GS, different surface. It logs no zero-copy line and
+                // that is correct: zero-copy here is the Vulkan→GL IMPORT path, and a core already
+                // rendering into the worker's GL context has nothing to import.
+                new RenderProfile("opengl", "OpenGL (GSdx)", null, "gl", "pcsx2",
                     Opt(("pcsx2_renderer", "OpenGL")), false),
             },
             ["ps1"] = new[]

@@ -1,7 +1,8 @@
 # Arcade per-game config module — dead options, stale catalog, inert renderer selector
 
-**Status:** Phase 0 shipped (master `ef62f05`), Phase 1 shipped (`c5cfe5b`), Phase 2 shipped (below).
-Phases 3–4 open.
+**Status:** Phase 0 shipped (master `ef62f05`), Phase 1 shipped (`c5cfe5b`), Phase 2 shipped,
+Phase 3 shipped 2026-08-02 (all three PS2 renderers boot-verified — see D6 and Phase 3 below).
+Phase 4 open.
 **Opened:** 2026-08-02, from a ps2/Stuntman session.
 **Trigger:** toggling "No interlacing (sharper)" returned `Too many options.`
 **Revised 2026-08-02 (second pass):** fleet-audited. Adds D7 (coverage gaps: ~18 systems have no
@@ -67,6 +68,10 @@ renders under both, including options the selected renderer cannot read:
 | `pgs_ssaa`, `pgs_high_res_scanout`, `pgs_disable_mipmaps`, `pgs_deblur`, `pgs_ss_tex` | paraLLEl-GS-only; dead on any GSdx renderer |
 | `upscale_multiplier`, `anisotropic_filtering`, `blending_accuracy` | GSdx-only; dead on paraLLEl-GS |
 
+⚠ *Corrected by the Phase 3 boot tests:* `pgs_disable_mipmaps` does **not** belong in the first row —
+LRPS2 reads it under paraLLEl-GS *and* both GSdx backends. The row was written from the key's name;
+the name is not the boundary.
+
 This generalises: any system whose profiles share an `OptionCore` (ps2, ps1-Beetle, n64-mupen) shows
 the union of both renderers' options and marks none of them.
 
@@ -90,26 +95,50 @@ presets are clean. But renderer keys are deliberately absent from the catalog, s
 `RenderProfile.Options` is validated by **nothing at all**. A typo'd or retired renderer token would
 sit there indefinitely and fail silently.
 
-### D6 — The PS2 profile set is wrong on the merits *(OPEN)*
+### D6 — The PS2 profile set is wrong on the merits *(FIXED, Phase 3)*
+
+**Was** (two profiles, one of them mislabelled, one never exercised):
 
 | profile | label | sets | HwContext |
 |---|---|---|---|
 | `vulkan` | "Vulkan (paraLLEl-GS)" | `pcsx2_renderer=paraLLEl-GS` | `vulkan` |
 | `opengl` | "OpenGL" | `pcsx2_renderer=OpenGL` | `gl` |
 
-Two problems:
+**Now** (three profiles, every one booted and streamed on 2026-08-02 before being offered —
+`docs/arcade/opt-reconcile-evidence-2026-08-02.md`, "Phase 3 boot tests"):
 
-1. **The label lies.** `Vulkan` and `paraLLEl-GS` are *different GS implementations* that both run on
-   a Vulkan surface. The profile called "Vulkan" selects paraLLEl-GS. PCSX2's own Vulkan (GSdx)
-   backend — where the GameDB hardware fixes apply — **is not exposed by the site at all.**
-2. **The GL profile is a pre-Vulkan leftover that has NEVER been exercised.** `config.worker-gl.yaml`'s
-   ps2 block is now `isGlAllowed: false` + `hwContext: "vulkan"`, and every glworker log shows only
+| profile | label | sets | HwContext | boot evidence | live levers |
+|---|---|---|---|---|---|
+| `parallel_gs` *(default)* | "paraLLEl-GS (Vulkan)" | `pcsx2_renderer=paraLLEl-GS` | `vulkan` | 13:35:17, zero-copy ACTIVE, reconcile **6/9** | `pcsx2_pgs_ssaa`, `pcsx2_pgs_high_res_scanout` |
+| `vulkan_gsdx` **(new)** | "Vulkan (GSdx)" | `pcsx2_renderer=Vulkan` | `vulkan` | 13:29:09, zero-copy ACTIVE, 59–60 fps / 0 freezes, reconcile **7/9** | `pcsx2_upscale_multiplier`, `pcsx2_anisotropic_filtering`, `pcsx2_blending_accuracy` |
+| `opengl` *(kept, relabelled)* | "OpenGL (GSdx)" | `pcsx2_renderer=OpenGL` | `gl` | 13:32:24, `Created an OpenGL context`, flat 60 fps / 0 freezes, reconcile **7/9** | same as `vulkan_gsdx` |
+
+`pcsx2_pgs_disable_mipmaps` is read by **all three** and stays visible everywhere — the boot tests'
+one surprise, and the reason the `pcsx2_pgs_` prefix rule now carries an explicit exception.
+
+The two original problems, and how they were settled:
+
+1. **The label lied.** `Vulkan` and `paraLLEl-GS` are *different GS implementations* that both run on
+   a Vulkan surface. The profile called "Vulkan" selected paraLLEl-GS. PCSX2's own Vulkan (GSdx)
+   backend was not exposed by the site at all. ✅ **Settled:** the label now names the GS
+   implementation, and Vulkan (GSdx) is a profile of its own — reached in the boot test through a
+   temporary `CoreOptionsJson` row (the D2 merge order is what made an unreachable renderer testable
+   at all), then verified to zero-copy and stream before being offered.
+   ⚠ *One claim did NOT survive:* "where the GameDB hardware fixes apply" is **not** shown by the
+   test. GameDB fixes are logged on the paraLLEl-GS path too (Stuntman, 12:24:20:
+   `Enabled GS Hardware Fix: cpuSpriteRenderBW/halfPixelOffset`), and the test title matched no fix
+   at all. The GSdx profile is justified by the levers that provably work there, not by GameDB.
+2. **The GL profile was a pre-Vulkan leftover that had NEVER been exercised.** `config.worker-gl.yaml`'s
+   ps2 block is `isGlAllowed: false` + `hwContext: "vulkan"`, and every glworker log showed only
    paraLLEl-GS. ⚠ *Correction (second pass):* `isGlAllowed: false` does **not** make the profile
    impossible — the per-room `hwctx=gl` override is the **designed** W3-F1 GL escape (the yaml's own
    comments on psp/dc/gc say exactly this: "a per-GAME GL escape must use the explicit
-   hwContext:'gl' override field"). What is true: the profile is *unverified in both directions*
-   (token liveness in the custom DLL, and whether the GL path still boots + streams + zero-copies).
-   Retire or keep it on **boot evidence**, not on the isGlAllowed flag.
+   hwContext:'gl' override field"). ✅ **Settled: KEPT.** The escape works for ps2 and the worker says
+   so verbatim — `Per-game hw context: … → "gl" (core default "vulkan", via per-request override)`,
+   then `Created an OpenGL context` with real GL entry points, no `rejected non-GL hw render context
+   type`, 70 s at a flat 60 fps with 0 freezes and `pace-diag ticks/s=59.9 slowTicks=0`. It logs no
+   zero-copy line, correctly: zero-copy here is the *Vulkan→GL import* path, and a core already
+   rendering into the worker's GL context has nothing to import.
 
 ### D7 — Coverage gaps: whole systems and cores the module doesn't know exist *(OPEN — new, second pass)*
 
@@ -226,6 +255,13 @@ or policy-excluded with a reason, and a re-run is a no-op.
 > The save path gained `MergeSave`, which preserves saved keys of the SELECTED core that this profile does
 > not render — without it the first Save under one profile would silently delete the other's tuning, because
 > the modal posts the full RENDERED set. Zero UI changes (the modal already re-fetches per profile).
+>
+> ⚠ *Amended by Phase 3 (2026-08-02).* Two of the restrictions taken here were later re-grounded by
+> boot evidence: the pcsx2 GSdx keys gained their missing LIVE half (they are read on both GSdx
+> profiles, not merely dead on paraLLEl-GS), and the `pcsx2_pgs_` prefix rule — taken purely on the
+> structural namespace argument, because the site had never sent a `pgs_*` key — turned out to be
+> **wrong for one key**: `pcsx2_pgs_disable_mipmaps` is read by every renderer. The prefix rule
+> survives with an explicit exception. Everything else held.
 
 1. Add applicability to `CoreOption` — keyed by **render-profile id**, not by `HwContext`.
    ⚠ Surface is too coarse: parallel_n64 has TWO gl-surface profiles (`parallel_n64_gl` =
@@ -267,26 +303,47 @@ or policy-excluded with a reason, and a re-run is a no-op.
 
 **Exit:** switching Graphics visibly changes the option set, and no shown option is inert.
 
-### Phase 3 — fix the PS2 profiles (D6)
+### Phase 3 — fix the PS2 profiles (D6) ✅ *shipped 2026-08-02*
 
-Offer the renderers that are real, and only ones that have been booted:
+> **Shipped.** PS2 now offers **three** profiles, each booted and streamed on the deployed site
+> before being offered — `parallel_gs` ("paraLLEl-GS (Vulkan)", default), `vulkan_gsdx`
+> ("Vulkan (GSdx)", NEW) and `opengl` ("OpenGL (GSdx)", kept on boot evidence). Full log evidence:
+> `docs/arcade/opt-reconcile-evidence-2026-08-02.md` → "Appendix — Phase 3 boot tests". Renaming the
+> ids was DB-safe: the live audit found zero ps2 `ArcadeGameProfile` rows with `RenderProfile` set,
+> and an unknown saved id already falls back to the system default.
 
-- **paraLLEl-GS** (`hwContext: vulkan`) — today's default, keeps the `pgs_*` levers. Relabel so
-  "Vulkan" stops meaning paraLLEl-GS.
-- **Vulkan (GSdx)** (`hwContext: vulkan`) — PCSX2's native backend, where the GameDB hw-fixes and
-  `upscale_multiplier`/`anisotropic`/`blending` apply. Currently unreachable from the site. Token
-  name comes from Phase 1's evidence, never guessed.
-- **`opengl`**: decide by boot test, not by flag. The per-room `hwctx=gl` override is the designed
-  W3-F1 escape, so it *may* work despite `isGlAllowed: false` — but it has never once been
-  exercised. If it boots, streams, and zero-copies under test-roms, keep it (relabeled "OpenGL
-  (GSdx)"); if not, retire it.
+What the boots proved, and what changed because of them:
 
-Verify every survivor actually boots and streams (`test-roms`) before it is offered; a renderer
-that cannot zero-copy into the capture path must not appear in the list. The same
-verify-before-offer bar applies fleet-wide to the six surface-only systems' GL profiles
-(psp/dc/naomi/atomiswave/gc/wii) — same never-exercised shape, same test, lower stakes.
+1. **The three arms are an exact mirror.** One game (Persona 3 FES), one identical 9-key provided
+   set, three renderers, one worker: paraLLEl-GS **6/9** (DEAD: upscale/aniso/blending),
+   Vulkan (GSdx) **7/9** and OpenGL (GSdx) **7/9** (DEAD: `pgs_high_res_scanout`, `pgs_ssaa`).
+   The GSdx half of D3 had never been measured before — only the paraLLEl-GS half.
+2. **The two GSdx profiles are indistinguishable at the option level.** Same reconcile, same DEAD
+   set; only the surface differs. So they share applicability rules and share one preset bundle.
+3. **`pcsx2_pgs_disable_mipmaps` is read by all three.** The Phase 2 `pcsx2_pgs_` prefix rule was
+   taken on a purely structural namespace argument, and this falsifies it for one key — the rule now
+   carries an explicit exception. Recorded as the standing lesson: a namespace prefix is a
+   hypothesis, not a boundary.
+4. **⚠ The preset trap, and how it was closed.** `ArcadeQualityPresets` was keyed `(core, hwContext)`,
+   and `vulkan_gsdx` shares hwContext `vulkan` with `parallel_gs`. A GSdx tier reset would therefore
+   have fetched the *paraLLEl-flavoured* bundle, whose every key the controller's apply-time
+   applicability filter then strips — storing **nothing at all**. "Reset to Max" would have been a
+   silently dead button, on the one path that deliberately skips the baseline-drop. Fixed by keying
+   pcsx2's presets by **render-profile id**: `For()` now resolves profile id → hwContext → core-wide,
+   so only the cores that need the finer key pay for it. The GSdx bundle written for the GL profile
+   is *reused verbatim* for `vulkan_gsdx` (finding 2 is what licenses that), and two new tests pin it:
+   every ps2 profile's tier bundle survives its own room's applicability filter, and the paraLLEl-GS
+   and GSdx bundles share no key in either direction.
+5. **No UI change was needed.** The play-button menu has enumerated `ArcadeRendererProfiles` since the
+   2026-07-21 GameModal, so all three profiles appear with honest labels and nothing dead is offered.
+   `ForRenderer` still resolves the bare fallbacks (`vulkan` → `parallel_gs`, `gl` → `opengl`), which
+   only matter before the profile list loads.
 
-**Exit:** every offered PS2 profile has been booted and streamed at least once.
+**Deferred, unchanged:** the same verify-before-offer bar still applies fleet-wide to the six
+surface-only systems' GL profiles (psp/dc/naomi/atomiswave/gc/wii) — same never-exercised shape, same
+test, lower stakes. Phase 3 covered PS2 only.
+
+**Exit met:** every offered PS2 profile has been booted and streamed at least once.
 
 ### Phase 4 — close the loop so this cannot recur
 
@@ -319,7 +376,7 @@ the system can be inert under some profile.
 | system | profiles (first = default) | OptionCore | applicability risk |
 |---|---|---|---|
 | n64 | mupen `vulkan` / mupen `opengl` / `parallel_n64` (vk) / `parallel_n64_gl` (GLideN64) / `parallel_n64_glide64` | mupen64plus_next OR parallel_n64 | **highest** — 2 cores × plugin-specific keys; `parallel-rdp-*` vk-only, `gliden64-*` one GL profile only, `gfxplugin-accuracy` GL-only |
-| ps2 | `vulkan` (=paraLLEl-GS) / `opengl` | pcsx2 | **high** — `pgs_*` vs GSdx keys (the headline D3); profile set itself wrong (D6) |
+| ps2 | `parallel_gs` (paraLLEl-GS) / `vulkan_gsdx` (GSdx, Vulkan) / `opengl` (GSdx, GL) | pcsx2 | **high** — `pgs_*` vs GSdx keys (the headline D3), all three now boot-measured; two profiles SHARE hwContext `vulkan`, so neither applicability nor the presets can key on surface (D6 fixed, Phase 3) |
 | ps1 | `beetle_vulkan` / `beetle_opengl` / `pcsx_rearmed` | beetle_psx_hw OR pcsx_rearmed | medium — core split already modelled by OptionCore; Beetle vk-vs-gl-only keys need evidence |
 | psp / dc / naomi / atomiswave / gc / wii | `vulkan` / `opengl` (surface-only) | ppsspp / flycast / dolphin | medium — one core, but backend-specific keys (e.g. flycast OIT) may be surface-dependent; GL profiles never exercised since the Vulkan cutover |
 
@@ -348,3 +405,15 @@ ngpc wsc a2600 a7800 lynx vb vectrex intv coleco channelf o2em arcadia supervisi
 > A player-facing option list is a claim that every entry does something. Validate **across** layers —
 > deployed DLL → catalog → profile → rendered option — or the claim rots silently, because libretro
 > never errors on a key or token it does not recognise.
+
+And the corollary Phase 3 added, paid for by one boot test:
+
+> **A key's PREFIX is a hypothesis about which implementation reads it, not a boundary.**
+> `pcsx2_pgs_disable_mipmaps` is named for paraLLEl-GS and read by every PS2 renderer. Namespace
+> reasoning is a fine way to *decide what to measure*; it is not a substitute for measuring. Where a
+> restriction rests on a name alone, say so in its evidence string and treat it as provisional.
+
+> **The cheapest way to reach an unreachable renderer is the defect that made it unreachable.** The
+> Vulkan (GSdx) arm was booted through the very saved-options-win merge (D2) that the plan exists to
+> fix — a temporary `CoreOptionsJson` row. Before removing a bad precedence rule, check whether it is
+> currently the only test harness you have for the layer above it.
