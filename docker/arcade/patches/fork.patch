@@ -1433,6 +1433,266 @@ index 0000000..6a94788
 +satisfies and we don't (kronos imports NO wgl functions: single-context, all GL through OUR
 +get_proc_address, so the delta is state/extensions, not context plumbing). Candidate fixes: custom
 +kronos core patch (established pattern) or frontend shim. Saturn rows remain IsEnabled=0.
+diff --git a/cmd/rahash/main.go b/cmd/rahash/main.go
+new file mode 100644
+index 0000000..5bf70b8
+--- /dev/null
++++ b/cmd/rahash/main.go
+@@ -0,0 +1,254 @@
++// Command rahash computes RetroAchievements ROM hashes — the same identification rc_client performs
++// when it loads a game — so the site can map its library to RA games by CONTENT instead of by title.
++//
++// Why it exists: RA identifies a ROM by hash. Matching our cards to RA by normalised title is
++// structurally unable to be right every time — RA tags non-retail entries in the title (~Hack~,
++// ~Demo~, ~Prototype~, [Subset - …]), a translation patch resolves to a different REGION's entry, and
++// plenty of titles simply diverge (ours "Learn 2 Kaizo" vs RA "~Hack~ Super Mario World: Learn 2
++// Kaizo"). The hash has none of those failure modes: it is what RA itself keys on.
++//
++// PROTOCOL — one JSON request per line on stdin, one JSON result per line on stdout, in order:
++//
++//	{"path":"R:\\Roms\\Games\\n64\\Diddy Kong Racing (USA).z64","consoleId":2,"id":3}
++//	{"id":3,"hash":"3ec4c...","ok":true}
++//	{"id":4,"ok":false,"error":"could not hash"}
++//
++// `id` is opaque and echoed back, so the caller can correlate without depending on ordering. A line
++// that fails to parse, a file that cannot be read, and a console whose rules do not apply are all
++// reported as ok:false — one bad ROM never kills a batch.
++//
++// The CALLER drives the work and owns the chunking: it streams as many or as few lines as it wants,
++// and can stop after any line and resume from there (see the site's arcade-ra-hash command). This
++// process holds no state between lines beyond rcheevos' one-time reader install.
++package main
++
++import (
++	"archive/zip"
++	"bufio"
++	"encoding/json"
++	"fmt"
++	"io"
++	"os"
++	"os/exec"
++	"path/filepath"
++	"strings"
++
++	"github.com/giongto35/cloud-game/v3/pkg/worker/cheevos"
++)
++
++type request struct {
++	ID        any    `json:"id"`
++	Path      string `json:"path"`
++	ConsoleID uint32 `json:"consoleId"`
++	// System is an alternative to ConsoleID: pass the arcade system code ("n64", "snes") and let the
++	// same map the worker uses resolve it, so the two can never drift apart.
++	System string `json:"system"`
++}
++
++type response struct {
++	ID    any    `json:"id,omitempty"`
++	Hash  string `json:"hash,omitempty"`
++	OK    bool   `json:"ok"`
++	Error string `json:"error,omitempty"`
++}
++
++func main() {
++	in := bufio.NewScanner(os.Stdin)
++	// ROM paths are short, but a caller batching many is not this reader's business; give it room.
++	in.Buffer(make([]byte, 0, 64*1024), 1024*1024)
++	out := bufio.NewWriter(os.Stdout)
++	defer out.Flush()
++	enc := json.NewEncoder(out)
++
++	for in.Scan() {
++		line := in.Bytes()
++		if len(line) == 0 {
++			continue
++		}
++		var req request
++		if err := json.Unmarshal(line, &req); err != nil {
++			_ = enc.Encode(response{OK: false, Error: "bad request: " + err.Error()})
++			out.Flush()
++			continue
++		}
++		console := req.ConsoleID
++		if console == 0 && req.System != "" {
++			console = cheevos.ConsoleID(req.System)
++		}
++		hash, ok := hashSafely(console, req.Path)
++		res := response{ID: req.ID, OK: ok, Hash: hash}
++		if !ok {
++			// rcheevos keeps its reason in its own error buffer, which we do not surface; the caller
++			// needs to know only that this dump could not be identified, and for which path.
++			res.Error = "could not hash for console " + fmt.Sprint(console)
++		}
++		_ = enc.Encode(res)
++		// Flush per line: the caller reads results as they arrive and may stop at any point, so a
++		// buffered tail would look like lost work.
++		out.Flush()
++	}
++	if err := in.Err(); err != nil {
++		fmt.Fprintln(os.Stderr, "rahash: read stdin:", err)
++		os.Exit(1)
++	}
++}
++
++// hashSafely keeps one malformed dump from taking down a whole batch. rcheevos walks structures inside
++// the file (disc tables of contents, zip directories) and a truncated or corrupt image is exactly the
++// kind of input that reaches unhappy paths there — of which we have plenty, since half the point of
++// this tool is finding the dumps that are not what their name claims.
++func hashSafely(console uint32, path string) (hash string, ok bool) {
++	defer func() {
++		if r := recover(); r != nil {
++			hash, ok = "", false
++			fmt.Fprintf(os.Stderr, "rahash: panic hashing %q: %v\n", path, r)
++		}
++	}()
++	if path == "" {
++		return "", false
++	}
++	if st, err := os.Stat(path); err != nil || st.IsDir() {
++		return "", false
++	}
++	// A console ROM inside a .zip must be EXTRACTED before hashing. rc_hash handed the .zip path
++	// hashes the container instead — it succeeds and returns a well-formed hash that matches nothing,
++	// which is the worst possible failure here because every counter says the sweep worked. (Verified
++	// the hard way: ~10,000 zipped dumps hashed "successfully" and matched zero RA games, while the
++	// raw-.z64 N64 set matched perfectly.)
++	//
++	// RC_CONSOLE_ARCADE (27) is the deliberate exception: for MAME/FBNeo the zip IS the ROM, and
++	// rc_hash has its own rules for reading it, so the path form is the correct one there.
++	if console != 27 && strings.EqualFold(filepath.Ext(path), ".zip") {
++		data, err := romFromZip(path)
++		if err != nil || len(data) == 0 {
++			return "", false
++		}
++		return cheevos.HashBuffer(console, data)
++	}
++	// .7z gets the same treatment, but it has to go through an external extractor: there is no 7-Zip
++	// reader in the standard library, and a disc image inside one is not something rc_hash can reach.
++	// Disc archives are also too large to hold in memory comfortably, so this extracts to a temp DIR and
++	// hashes the resulting file by PATH — which additionally lets rc_hash's cdreader follow a .cue to
++	// its .bin tracks, something a lone buffer could never support.
++	if strings.EqualFold(filepath.Ext(path), ".7z") {
++		return hashFrom7z(console, path)
++	}
++	return cheevos.HashFile(console, path)
++}
++
++// sevenZipExe is resolved once from PATH. Absent = .7z dumps report unhashable rather than pretending;
++// the caller counts those separately, which is how the PS1 set (2,956 .7z archives) surfaced at all.
++var sevenZipExe = func() string {
++	for _, n := range []string{"7z", "7za", "7zr"} {
++		if p, err := exec.LookPath(n); err == nil {
++			return p
++		}
++	}
++	return ""
++}()
++
++// discExts are the members worth hashing inside a disc archive, best first. A .cue is preferred over the
++// .bin it references: rc_hash reads the track layout to find the executable it actually fingerprints.
++var discExts = []string{".m3u", ".cue", ".chd", ".iso", ".ccd", ".gdi", ".bin"}
++
++func hashFrom7z(console uint32, path string) (string, bool) {
++	if sevenZipExe == "" {
++		return "", false
++	}
++	dir, err := os.MkdirTemp("", "rahash7z")
++	if err != nil {
++		return "", false
++	}
++	defer os.RemoveAll(dir)
++
++	// `e` (not `x`) flattens the archive: disc sets reference their tracks by bare filename, so a nested
++	// layout would leave a .cue pointing at tracks it cannot find.
++	cmd := exec.Command(sevenZipExe, "e", "-y", "-bso0", "-bse0", "-o"+dir, path)
++	if err := cmd.Run(); err != nil {
++		return "", false
++	}
++	entries, err := os.ReadDir(dir)
++	if err != nil || len(entries) == 0 {
++		return "", false
++	}
++
++	// Pick by extension preference; fall back to the largest file so an unusual layout still hashes.
++	best, bestRank, bestSize := "", len(discExts)+len(romExts)+1, int64(-1)
++	for _, e := range entries {
++		if e.IsDir() {
++			continue
++		}
++		name := filepath.Join(dir, e.Name())
++		ext := strings.ToLower(filepath.Ext(e.Name()))
++		rank := len(discExts) + 1
++		for i, d := range discExts {
++			if ext == d {
++				rank = i
++				break
++			}
++		}
++		if rank > len(discExts) && romExts[ext] {
++			rank = len(discExts)
++		}
++		info, err := e.Info()
++		size := int64(0)
++		if err == nil {
++			size = info.Size()
++		}
++		if rank < bestRank || (rank == bestRank && size > bestSize) {
++			best, bestRank, bestSize = name, rank, size
++		}
++	}
++	if best == "" {
++		return "", false
++	}
++	return cheevos.HashFile(console, best)
++}
++
++// romExts are the members worth preferring inside a console ROM archive. Anything else in there is
++// usually a scan, a text file, or a save.
++var romExts = map[string]bool{
++	".nes": true, ".fds": true, ".unf": true, ".unif": true,
++	".sfc": true, ".smc": true, ".swc": true, ".fig": true,
++	".gb": true, ".gbc": true, ".gba": true, ".sgb": true,
++	".md": true, ".gen": true, ".smd": true, ".bin": true, ".sms": true, ".gg": true, ".sg": true,
++	".pce": true, ".sgx": true, ".n64": true, ".z64": true, ".v64": true,
++	".a26": true, ".a78": true, ".lnx": true, ".ngp": true, ".ngc": true, ".ws": true, ".wsc": true,
++	".col": true, ".vb": true, ".vboy": true,
++}
++
++// romFromZip reads the ROM out of a single-ROM console archive. Chooses the one obvious ROM member;
++// with several candidates it takes the LARGEST, which for these archives is the ROM rather than a
++// README or a patch sitting alongside it.
++func romFromZip(path string) ([]byte, error) {
++	zr, err := zip.OpenReader(path)
++	if err != nil {
++		return nil, err
++	}
++	defer zr.Close()
++
++	var best *zip.File
++	bestScore := -1
++	for _, f := range zr.File {
++		if f.FileInfo().IsDir() {
++			continue
++		}
++		// Prefer a known ROM extension; fall back to sheer size so an unusual extension still works.
++		score := 0
++		if romExts[strings.ToLower(filepath.Ext(f.Name))] {
++			score = 1
++		}
++		if score > bestScore || (score == bestScore && best != nil && f.UncompressedSize64 > best.UncompressedSize64) {
++			best, bestScore = f, score
++		}
++	}
++	if best == nil {
++		return nil, fmt.Errorf("no file in archive")
++	}
++	rc, err := best.Open()
++	if err != nil {
++		return nil, err
++	}
++	defer rc.Close()
++	return io.ReadAll(rc)
++}
 diff --git a/cmd/worker/main.go b/cmd/worker/main.go
 index a1b2db4..9c887e8 100644
 --- a/cmd/worker/main.go
@@ -10567,10 +10827,10 @@ index f3553b1..d66ce23 100644
  func (c *Caged) Start()                           { go c.Emulator.Start() }
  func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..69facd4 100644
+index 6974d59..9112b4c 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,2143 @@
+@@ -1,578 +1,2242 @@
 -package libretro
 -
 -import (
@@ -11264,6 +11524,10 @@ index 6974d59..69facd4 100644
 +	raSeedExplicit bool
 +	raHandler cheevos.Handlers
 +	gamePath  string // the ROM/disc path last loaded — RetroAchievements hashes it to identify the game
++	// Deferred RA bring-up state (see beginCheevosBoot). raBootPending gates a once-per-frame poll of
++	// the core's memory in the emulator loop; raBootStart is when we began waiting. Emu goroutine only.
++	raBootPending bool
++	raBootStart   int64
 +
 +	DisableCanvasPool bool
 +	SaveOnClose       bool
@@ -11773,9 +12037,10 @@ index 6974d59..69facd4 100644
 +		go f.autosave(f.conf.AutosaveSec)
 +	}
 +
-+	// RetroAchievements: bring the session up now that the core + memory are live, and tear it down when
-+	// this loop exits (both on this, the emulator goroutine — rc_client is single-threaded). No-op off.
-+	f.startCheevos()
++	// RetroAchievements: bring the session up as soon as the core's memory is live — which for some
++	// cores is not until a frame or two from now (see cheevosBootDecide) — and tear it down when this
++	// loop exits (both on this, the emulator goroutine — rc_client is single-threaded). No-op off.
++	f.beginCheevosBoot()
 +	defer f.stopCheevos()
 +
 +	// The main loop of Libretro
@@ -11916,6 +12181,12 @@ index 6974d59..69facd4 100644
 +			}
 +			prevRw = rw
 +			f.rewindTicks++
++
++			// Deferred RetroAchievements bring-up: retry until the core's memory shows up. One
++			// already-hot bool per frame once it has settled, which it does within a frame or two.
++			if f.raBootPending {
++				f.stepCheevosBoot()
++			}
 +			if rw {
 +				f.rewindStep()
 +			}
@@ -12327,24 +12598,108 @@ index 6974d59..69facd4 100644
 +func (f *Frontend) NotifyFastForward(on bool) { f.ra.NotifyFastForward(on) }
 +func (f *Frontend) NotifyReset()           { f.ra.NotifyReset() }
 +
-+// startCheevos brings up the RetroAchievements client after the game has loaded (its memory is valid),
-+// on the emulator goroutine. No-op when RA is off for the room or the core exposes no SYSTEM_RAM.
-+func (f *Frontend) startCheevos() {
++// How long the deferred bring-up keeps waiting for the core to publish ANY usable memory before it
++// gives up on the room, and how long it waits for the second source once it already has one.
++//
++// The grace is what stops a 2 ms race from costing a room its achievements, and it is sized for
++// "generous, and nobody can feel it": the observed mupen64plus gap is 2 ms, so 2 s is a thousandfold
++// margin, spent at a boot screen before the player has pressed anything. The deadline only ever
++// elapses on a core that publishes no memory at all, where the room was never going to track.
++const (
++	cheevosBootDeadline = 10 * time.Second
++	cheevosBootGrace    = 2 * time.Second
++)
++
++type cheevosBootAction int
++
++const (
++	cheevosBootWait cheevosBootAction = iota
++	cheevosBootStart
++	cheevosBootGiveUp
++)
++
++// cheevosBootDecide is the entire policy of the deferred bring-up, kept pure so it can be tested
++// without a core (frontend_cheevosboot_test.go).
++//
++// EITHER source of memory is enough to run RA, and we want both when we can get them:
++//   - the core's memory MAP is the better one — it maps RA addresses precisely, and it is what
++//     RetroArch uses, so every RA set was authored against it. rc_libretro_memory_init needs nothing
++//     else when it has one.
++//   - SYSTEM_RAM alone still works for the consoles whose RA addresses are a flat offset into it.
++//
++// So the only real failure is having NEITHER by the deadline. Everything else is worth waiting for.
++//
++// ⚠ WAITING IS THE WHOLE FIX — do not "simplify" this back to a single up-front query. A core
++// publishes its RAM pointer and its memory map when IT is ready, not when we happen to ask.
++// mupen64plus returns SYSTEM_RAM ptr=NULL with the SIZE already correct (0x800000) and sets its
++// memory map ~2 ms later, inside its first retro_run. Asking once, before frame 1, therefore
++// disabled RetroAchievements — achievements AND leaderboards — in every single plain-n64 room for
++// over a month (33 rooms; the paraLLEl-N64 rooms next to them worked, which is what made it look
++// core-specific rather than a race). Nothing in the log said "leaderboard" — the room just quietly
++// scored nothing.
++func cheevosBootDecide(hasRAM, hasMap bool, waited time.Duration) cheevosBootAction {
++	switch {
++	case hasRAM && hasMap:
++		return cheevosBootStart
++	case hasRAM || hasMap:
++		// One source is up. Give the core its grace to publish the other before we settle for what we
++		// have: starting without a map that was 2 ms away is exactly how a room ends up with every
++		// achievement disabled as "Invalid address".
++		if waited >= cheevosBootGrace {
++			return cheevosBootStart
++		}
++		return cheevosBootWait
++	case waited >= cheevosBootDeadline:
++		return cheevosBootGiveUp
++	default:
++		return cheevosBootWait
++	}
++}
++
++// beginCheevosBoot arms the deferred RetroAchievements bring-up, on the emulator goroutine, just
++// before the frame loop. It attempts the bring-up immediately — the common case is a core that is
++// already fully up, which then starts before frame 1 exactly as it always did — and otherwise leaves
++// stepCheevosBoot to retry once per frame. No-op when RA is off for the room.
++func (f *Frontend) beginCheevosBoot() {
 +	if f.raUser == "" || f.raToken == "" {
 +		return
 +	}
++	f.log.Info().Msgf("[boot] cheevos: waiting for core memory (system=%v, consoleID=%v)", f.raSystem, cheevos.ConsoleID(f.raSystem))
++	f.raBootPending = true
++	f.raBootStart = os.Nanotime()
++	f.stepCheevosBoot()
++}
++
++// stepCheevosBoot is the per-frame poll of the deferred bring-up. Called from the emulator loop while
++// raBootPending; both reads are a plain call into the core (retro_get_memory_data/size) and a struct
++// field, so a pending poll costs nothing measurable and a settled one costs one bool.
++func (f *Frontend) stepCheevosBoot() {
++	sysRAM, sysSize := f.nano.MemoryRegion(uint(nanoarch.RetroMemorySystemRAM))
++	mmap := f.nano.MemoryMap()
++	waited := time.Duration(os.Nanotime() - f.raBootStart)
++
++	switch cheevosBootDecide(sysRAM != nil && sysSize > 0, mmap != nil, waited) {
++	case cheevosBootWait:
++		return
++	case cheevosBootGiveUp:
++		f.raBootPending = false
++		f.log.Warn().Msgf("RetroAchievements: %v published neither SYSTEM_RAM nor a memory map within %v; achievements disabled for this room", f.raSystem, cheevosBootDeadline)
++		return
++	}
++	f.raBootPending = false
++	f.startCheevos(sysRAM, uint(sysSize), mmap, waited)
++}
++
++// startCheevos brings up the RetroAchievements client once the core's memory is live, on the emulator
++// goroutine. Called only by stepCheevosBoot, which owns the readiness decision above.
++func (f *Frontend) startCheevos(sysRAM unsafe.Pointer, sysSize uint, mmap unsafe.Pointer, waited time.Duration) {
 +	// Each of the next few steps calls INTO the core (retro_get_memory_data/size) or walks a struct the
 +	// core owns, on a core that has just finished loading — the exact shape of bug that has bitten this
 +	// path before (the GBC memory-map dangling pointer). Log each one separately: "which of these five
 +	// calls was in flight" is otherwise unanswerable after the fact, and the whole block is silent on
 +	// the systems where it bails early.
-+	f.log.Info().Msgf("[boot] cheevos: querying SYSTEM_RAM (system=%v, consoleID=%v)", f.raSystem, cheevos.ConsoleID(f.raSystem))
-+	sysRAM, sysSize := f.nano.MemoryRegion(uint(nanoarch.RetroMemorySystemRAM))
-+	f.log.Info().Msgf("[boot] cheevos: SYSTEM_RAM ptr=%p size=0x%X", sysRAM, sysSize)
-+	if sysRAM == nil || sysSize == 0 {
-+		f.log.Warn().Msgf("RetroAchievements: %v exposes no SYSTEM_RAM; achievements disabled for this room", f.raSystem)
-+		return
-+	}
++	f.log.Info().Msgf("[boot] cheevos: core memory live after %v (SYSTEM_RAM ptr=%p size=0x%X, memoryMap=%p)",
++		waited.Round(time.Millisecond), sysRAM, sysSize, mmap)
 +	saveRAM, saveSize := f.nano.MemoryRegion(uint(nanoarch.RetroMemorySaveRAM))
 +	f.log.Info().Msgf("[boot] cheevos: SAVE_RAM ptr=%p size=0x%X", saveRAM, saveSize)
 +
@@ -12358,7 +12713,6 @@ index 6974d59..69facd4 100644
 +	if f.raSeededState {
 +		f.ra.NotifySaveStateLoaded()
 +	}
-+	mmap := f.nano.MemoryMap()
 +	f.log.Info().Msgf("[boot] cheevos: memoryMap=%p; registering regions", mmap)
 +	f.ra.SetMemory(sysRAM, uintptr(sysSize), saveRAM, uintptr(saveSize), mmap)
 +	f.log.Info().Msg("[boot] cheevos: regions registered; building address map")
@@ -12366,8 +12720,13 @@ index 6974d59..69facd4 100644
 +	// through our read callback during load — if the regions aren't registered yet it disables the whole
 +	// set as "Invalid address". (This, not the memory-map, was why Genesis/N64 never fired.)
 +	memOK := f.ra.InitMemory()
-+	f.log.Info().Msgf("RetroAchievements: session started (hardcore=%v, seededState=%v, memmap=%v, systemRAM=0x%X, saveRAM=0x%X, regions=%v)",
-+		f.raHard, f.raSeededState, f.nano.MemoryMap() != nil, sysSize, saveSize, memOK)
++	f.log.Info().Msgf("RetroAchievements: session started (hardcore=%v, seededState=%v, memmap=%v, systemRAM=0x%X, saveRAM=0x%X, regions=%v, waited=%v)",
++		f.raHard, f.raSeededState, mmap != nil, sysSize, saveSize, memOK, waited.Round(time.Millisecond))
++	// regions=false means rc_libretro mapped nothing, so every address reads 0 and the whole set will
++	// be disabled during load. That is a dead room for RA and it must not hide inside an Info line.
++	if !memOK {
++		f.log.Warn().Msgf("RetroAchievements: %v mapped no memory regions (memmap=%v); nothing will track this room", f.raSystem, mmap != nil)
++	}
 +}
 +
 +// stopCheevos tears the client down on the emulator goroutine (after the frame loop stops).
@@ -13291,6 +13650,77 @@ index 6974d59..69facd4 100644
 +		return -x
 +	}
 +	return x
++}
+diff --git a/pkg/worker/caged/libretro/frontend_cheevosboot_test.go b/pkg/worker/caged/libretro/frontend_cheevosboot_test.go
+new file mode 100644
+index 0000000..9a39aeb
+--- /dev/null
++++ b/pkg/worker/caged/libretro/frontend_cheevosboot_test.go
+@@ -0,0 +1,65 @@
++package libretro
++
++import (
++	"testing"
++	"time"
++)
++
++// The regression these guard: RetroAchievements used to be brought up with ONE query for SYSTEM_RAM
++// before the first frame, and a NULL pointer there disabled achievements and leaderboards for the
++// whole room. mupen64plus answers that query with ptr=NULL (size already correct) and publishes its
++// memory map ~2 ms later, in its first retro_run — so every plain-n64 room silently scored nothing
++// for over a month. The policy below must WAIT for the core rather than judge it on frame 0.
++func TestCheevosBootDecide(t *testing.T) {
++	for _, tt := range []struct {
++		name           string
++		hasRAM, hasMap bool
++		waited         time.Duration
++		want           cheevosBootAction
++	}{
++		// The core is fully up (GBA, PS2 — their map lands before core load even returns).
++		{"both sources, frame 0", true, true, 0, cheevosBootStart},
++
++		// THE BUG. mupen64plus on frame 0: no RAM pointer, no map yet. Judging here is what broke N64.
++		{"mupen at frame 0: nothing yet", false, false, 0, cheevosBootWait},
++		{"mupen 2ms later: map has landed", false, true, 2 * time.Millisecond, cheevosBootWait},
++		{"mupen: map only, past grace", false, true, cheevosBootGrace, cheevosBootStart},
++
++		// A map alone is enough — rc_libretro_memory_init maps from the descriptors and needs no
++		// SYSTEM_RAM pointer at all. This is the second half of the fix: the old code demanded RAM.
++		{"map only, well past grace", false, true, 5 * time.Second, cheevosBootStart},
++
++		// RAM alone is enough for the flat-layout consoles, but wait out the grace first in case a
++		// map is 2 ms behind — starting mapless when a map was coming is how a set gets disabled as
++		// "Invalid address".
++		{"ram only, inside grace", true, false, cheevosBootGrace - time.Millisecond, cheevosBootWait},
++		{"ram only, at grace", true, false, cheevosBootGrace, cheevosBootStart},
++
++		// Give up only when the core has published nothing at all by the deadline.
++		{"nothing, just inside deadline", false, false, cheevosBootDeadline - time.Millisecond, cheevosBootWait},
++		{"nothing, at deadline", false, false, cheevosBootDeadline, cheevosBootGiveUp},
++		{"nothing, past deadline", false, false, time.Minute, cheevosBootGiveUp},
++
++		// A late core must never be given up on while it is still producing: having a source at the
++		// deadline still starts, it does not expire.
++		{"both sources at the deadline", true, true, cheevosBootDeadline, cheevosBootStart},
++	} {
++		t.Run(tt.name, func(t *testing.T) {
++			if got := cheevosBootDecide(tt.hasRAM, tt.hasMap, tt.waited); got != tt.want {
++				t.Errorf("cheevosBootDecide(ram=%v, map=%v, waited=%v) = %v, want %v",
++					tt.hasRAM, tt.hasMap, tt.waited, got, tt.want)
++			}
++		})
++	}
++}
++
++// The grace must be far larger than the race it covers (observed: 2 ms) and the deadline far larger
++// than the grace, or the policy collapses back into judging the core too early.
++func TestCheevosBootTimingsAreOrdered(t *testing.T) {
++	if cheevosBootGrace < 100*time.Millisecond {
++		t.Errorf("grace %v is too tight to cover a core publishing late", cheevosBootGrace)
++	}
++	if cheevosBootDeadline <= cheevosBootGrace {
++		t.Errorf("deadline %v must exceed grace %v", cheevosBootDeadline, cheevosBootGrace)
++	}
 +}
 diff --git a/pkg/worker/caged/libretro/graphics/opengl.go b/pkg/worker/caged/libretro/graphics/opengl.go
 index 0c9d773..241031f 100644
@@ -49166,10 +49596,10 @@ index eb84d6e..be09f97 100644
  	})
 diff --git a/pkg/worker/cheevos/bridge.c b/pkg/worker/cheevos/bridge.c
 new file mode 100644
-index 0000000..f50c8d5
+index 0000000..11fe90a
 --- /dev/null
 +++ b/pkg/worker/cheevos/bridge.c
-@@ -0,0 +1,168 @@
+@@ -0,0 +1,181 @@
 +/* bridge.c — see bridge.h. Adapts rcheevos' rc_client to the worker: memory reads come from the
 + * loaded core's RAM via rc_libretro's console mapping; server calls and events cross into Go. */
 +#include "bridge.h"
@@ -49327,6 +49757,19 @@ index 0000000..f50c8d5
 +  rc_hash_init_default_cdreader();
 +}
 +
++int cheevos_hash_file(char *out33, uint32_t console_id, const char *path) {
++  out33[0] = '\0';
++  /* rc_hash_generate_from_file is marked deprecated in favour of the iterator API, but it is the exact
++   * call rc_client_begin_load_game makes for a known console id, and "identical to what identifies the
++   * game at play time" is the property we need here. */
++  return rc_hash_generate_from_file(out33, console_id, path) ? 1 : 0;
++}
++
++int cheevos_hash_buffer(char *out33, uint32_t console_id, const uint8_t *data, size_t size) {
++  out33[0] = '\0';
++  return rc_hash_generate_from_buffer(out33, console_id, data, size) ? 1 : 0;
++}
++
 +void cheevos_begin_login(rc_client_t *client, const char *username, const char *token) {
 +  rc_client_begin_login_with_token(client, username, token, cheevos_login_callback, NULL);
 +}
@@ -49340,10 +49783,10 @@ index 0000000..f50c8d5
 +}
 diff --git a/pkg/worker/cheevos/bridge.h b/pkg/worker/cheevos/bridge.h
 new file mode 100644
-index 0000000..6506f53
+index 0000000..42828d1
 --- /dev/null
 +++ b/pkg/worker/cheevos/bridge.h
-@@ -0,0 +1,65 @@
+@@ -0,0 +1,81 @@
 +/* bridge.h — the C surface the Go cheevos package calls, and the glue that adapts rcheevos'
 + * rc_client to our worker. rc_client is the RetroAchievements runtime: it hashes the loaded ROM,
 + * logs the player in with their own connect token, evaluates achievement/leaderboard triggers each
@@ -49393,6 +49836,22 @@ index 0000000..6506f53
 +/* Install rcheevos' default file + CD readers so ROM/disc hashing works from a path. Call once. */
 +void cheevos_hash_init(void);
 +
++/* Compute the RetroAchievements hash of a ROM/disc at `path` for `console_id`, writing 32 hex chars +
++ * NUL into out33. Returns 1 on success, 0 if the file could not be hashed for that console.
++ *
++ * This is the SAME algorithm rc_client runs when it identifies a loaded game, which is the whole point:
++ * RA maps a game by CONTENT, never by title, and the per-console rules are not something to reimplement
++ * (N64 byte-order normalisation, SNES/NES header skipping, disc-based consoles hashing an executable
++ * rather than the image, zip member selection). Call cheevos_hash_init() once first so the file/CD
++ * readers are installed. No rc_client involved, so this is safe to call off the emulator goroutine. */
++int cheevos_hash_file(char *out33, uint32_t console_id, const char *path);
++
++/* Same, but over a buffer already in memory — used for a ROM extracted from an archive. A console ROM
++ * inside a .zip MUST be hashed this way: rc_hash applied to the .zip path hashes the CONTAINER, which
++ * succeeds and returns a perfectly well-formed hash that matches nothing on RetroAchievements. (The
++ * exception is arcade/MAME, where the zip IS the ROM and the path form is correct.) */
++int cheevos_hash_buffer(char *out33, uint32_t console_id, const uint8_t *data, size_t size);
++
 +/* Kick the async login with the player's RA username + connect token. Result arrives via goLoginResult. */
 +void cheevos_begin_login(rc_client_t *client, const char *username, const char *token);
 +
@@ -49411,10 +49870,10 @@ index 0000000..6506f53
 +#endif /* CHEEVOS_BRIDGE_H */
 diff --git a/pkg/worker/cheevos/cheevos.go b/pkg/worker/cheevos/cheevos.go
 new file mode 100644
-index 0000000..bb3574a
+index 0000000..94f5d9f
 --- /dev/null
 +++ b/pkg/worker/cheevos/cheevos.go
-@@ -0,0 +1,531 @@
+@@ -0,0 +1,577 @@
 +// Package cheevos embeds the RetroAchievements runtime (rcheevos' rc_client) into the libretro worker.
 +// rc_client hashes the loaded ROM, logs the player in with their OWN connect token, evaluates
 +// achievement + leaderboard triggers each emulated frame against core RAM, and submits unlocks/runs to
@@ -49752,6 +50211,52 @@ index 0000000..bb3574a
 +		return 1
 +	}
 +	return 0
++}
++
++// hashInitOnce guards the one-time install of rcheevos' file + CD readers. HashFile needs them, and a
++// worker that never opens an RA room would otherwise never have called it.
++var hashInitOnce sync.Once
++
++// HashFile computes the RetroAchievements hash of a ROM/disc for a console — the SAME identification
++// rc_client performs when it loads a game, which is why it is the only correct way to map one of our
++// dumps to an RA game. Returns ("", false) when the file cannot be hashed for that console (wrong
++// format, unreadable, or a console whose rules do not apply).
++//
++// consoleID may be 0 (RC_CONSOLE_UNKNOWN); rcheevos then picks its rules from the file's extension and
++// contents. Prefer passing the real id when it is known — it is what the room will use.
++//
++// No rc_client is involved, so unlike everything else in this package this is safe to call from any
++// goroutine (and from a plain CLI with no emulator at all — see cmd/rahash).
++func HashFile(consoleID uint32, path string) (string, bool) {
++	hashInitOnce.Do(func() { C.cheevos_hash_init() })
++	cPath := C.CString(path)
++	defer C.free(unsafe.Pointer(cPath))
++	var out [33]C.char
++	if C.cheevos_hash_file(&out[0], C.uint32_t(consoleID), cPath) == 0 {
++		return "", false
++	}
++	return C.GoString(&out[0]), true
++}
++
++// HashBuffer is HashFile over bytes already in memory — for a ROM read out of an archive.
++//
++// ⚠ A console ROM inside a .zip MUST come through here, not HashFile. rc_hash given the .zip PATH
++// hashes the container: it succeeds, returns a well-formed 32-hex hash, and matches nothing at all on
++// RetroAchievements. That silent-wrong-answer is the whole reason this exists — a sweep of ~10,000
++// zipped dumps reported "hashed, 0 unhashable" and produced 0 matches. (arcade/MAME is the exception:
++// there the zip IS the ROM and HashFile is correct.)
++func HashBuffer(consoleID uint32, data []byte) (string, bool) {
++	hashInitOnce.Do(func() { C.cheevos_hash_init() })
++	if len(data) == 0 {
++		return "", false
++	}
++	var out [33]C.char
++	// Passing a Go pointer into C is allowed here: the bytes contain no Go pointers and C does not
++	// retain them beyond this synchronous call.
++	if C.cheevos_hash_buffer(&out[0], C.uint32_t(consoleID), (*C.uint8_t)(unsafe.Pointer(&data[0])), C.size_t(len(data))) == 0 {
++		return "", false
++	}
++	return C.GoString(&out[0]), true
 +}
 +
 +// ConsoleID maps an arcade system code to the RetroAchievements console id. 0 (RC_CONSOLE_UNKNOWN) lets
