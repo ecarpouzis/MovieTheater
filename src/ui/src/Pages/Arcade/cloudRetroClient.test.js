@@ -195,6 +195,16 @@ describe("stickFoldFor", () => {
     }
   });
 
+  // The heavy/capture lane had NO profile entry, so every one of these fell through to `default`
+  // and folded — the same hole ps2 was given its own entry to close. Reported live on Bloodborne
+  // (ps4), where the d-pad is item/spell quick-select, so walking cycled your items.
+  // Keep in lockstep with arcadeSystems.HEAVY_LANE_SYSTEMS.
+  it("does NOT fold for the heavy/capture lane (native apps on a real dual-analog pad)", () => {
+    for (const sys of ["switch", "ps3", "ps4", "wiiu", "x360", "pc", "capture"]) {
+      expect(stickFoldFor(sys)).toBe(false);
+    }
+  });
+
   it("is case-insensitive on the system key", () => {
     expect(stickFoldFor("N64")).toBe(false);
     expect(stickFoldFor("SNES")).toBe(true);

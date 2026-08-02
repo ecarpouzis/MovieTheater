@@ -37,11 +37,15 @@ function Write-Log([string]$msg) {
 $cfgPath = Join-Path $heavyRoot "launch-config.json"
 $gatewayUrl = "http://localhost:2303"
 $secret = $null
+$affinityMask = $null
+$affinityExes = @()
 try {
     if (Test-Path $cfgPath) {
         $cfg = Get-Content $cfgPath -Raw | ConvertFrom-Json
         if ($cfg.gatewayUrl) { $gatewayUrl = $cfg.gatewayUrl }
         if ($cfg.secretFile -and (Test-Path $cfg.secretFile)) { $secret = (Get-Content $cfg.secretFile -Raw).Trim() }
+        if ($cfg.cpuAffinityMask) { $affinityMask = [Convert]::ToInt64(([string]$cfg.cpuAffinityMask -replace '^0[xX]', ''), 16) }
+        if ($cfg.cpuAffinityExes) { $affinityExes = @($cfg.cpuAffinityExes) }
     }
 } catch { Write-Log "config read failed: $_" }
 if (-not $secret) { Write-Log "FATAL: no gateway secret (launch-config.json → secretFile)"; exit 1 }
@@ -172,6 +176,19 @@ try {
     if ($prep.workingDir) { $startArgs.WorkingDirectory = $prep.workingDir }
     $proc = Start-Process @startArgs
     Write-Log "launched pid $($proc.Id)"
+
+    # Pin the emulator to the P-cores. Windows parks emulator threads on E-cores to save power, which
+    # wrecks frame pacing on a hybrid CPU (Ziggy is a 13700K: 8 P-cores = logical 0-15, E-cores 16-23,
+    # so mask 0xFFFF). Doubly relevant on this box because the capture worker's NVENC encode shares it.
+    # Opt-in per exe via launch-config.json (cpuAffinityMask + cpuAffinityExes) so a title that would
+    # rather have all 24 threads just stays out of the list. Best-effort: a failure here must never
+    # take down the launch, so it only logs.
+    if ($affinityMask -and $affinityExes -contains (Split-Path $prep.exe -Leaf)) {
+        try {
+            $proc.ProcessorAffinity = [IntPtr]$affinityMask
+            Write-Log ("cpu affinity pinned to 0x{0:X} (P-cores) for {1}" -f $affinityMask, (Split-Path $prep.exe -Leaf))
+        } catch { Write-Log "cpu affinity set FAILED (continuing at default affinity): $_" }
+    }
 
     try { Invoke-Gateway "POST" "/heavy/attach/$AppId" @{ pid = $proc.Id } | Out-Null }
     catch { Write-Log "attach failed (lock stays time-based): $_" }

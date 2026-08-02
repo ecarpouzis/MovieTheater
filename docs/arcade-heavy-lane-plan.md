@@ -24,7 +24,7 @@ Solo/remote play works from any Moonlight device.
 
 | Asset | Where | State |
 |---|---|---|
-| shadPS4 (PS4) | `C:\PS4` | Portable install (`user\` dir beside the exe); **Bloodborne v1.09 + DLC + mods verified playing** |
+| shadPS4 (PS4) | `E:\PS4` | Portable install (`user\` dir beside the exe); moved off `C:` 2026-08-01 so the whole heavy tier sits on `E:`. **Bloodborne v1.09 + DLC + mods played in Jan 2026; the exe has been broken since (dies `0xC0000139` before it ever makes a window) — reinstall pending** |
 | Yuzu (Switch) | `E:\Yuzu` | Frozen pre-takedown build, configured |
 | Ryujinx (Switch) | `E:\Ryujinx` | Frozen pre-takedown build, configured |
 | Cemu (Wii U) | `E:\Cemu` | Configured |
@@ -209,8 +209,8 @@ staring. So the heavy tier is **pre-staged, not just-in-time**:
   family installs into `user\nand`; adapter detail per fork — verify flags at H1). The descriptor's
   `updates` list is the record of what was installed; re-running is idempotent (skip if installed).
 - PS3: RPCS3 wants a decrypted folder-format game or ISO; PKG (PSN titles) installs into
-  `dev_hdd0\game` once. PS4/shadPS4: game folders (Bloodborne's already local on C:; future titles
-  stage to the E: tier).
+  `dev_hdd0\game` once. PS4/shadPS4: game folders (Bloodborne now lives on the E: tier with
+  everything else; future titles stage there too).
 - **Never run a heavy title directly off L:** — 45 GB of random reads over SMB from a spinning NAS
   is stutter city, and it violates the sidecar rule anyway.
 
@@ -341,7 +341,7 @@ Per-system truth table (the four strings each adapter must get right):
 |---|---|---|---|
 | Switch (yuzu family: Yuzu/Eden/Citron) | `<emu>\user\nand\user\save\0000...\<profileUid>\<titleId>\` | per title | Portable **within the yuzu family**; Ryujinx layout differs (`bis\user\save\<saveId>` with internal metadata) — treat Yuzu-family and Ryujinx as two save namespaces; a title's descriptor pins which emulator it runs on, so no cross-family sync is attempted |
 | PS3 (RPCS3) | `<rpcs3>\dev_hdd0\home\00000001\savedata\<TITLEID>-*\` | per title (one or more dirs) | Stable, documented layout; **savestates are version-fragile — never vaulted**, savedata only (the `.srm`-vs-`.dat` truth again) |
-| PS4 (shadPS4) | `C:\PS4\user\savedata\1\<CUSAxxxxx>\` | per title | shadPS4 is young; verify layout stability at H1 and pin the shadPS4 build per title |
+| PS4 (shadPS4) | `E:\PS4\user\savedata\1\<CUSAxxxxx>\` | per title | shadPS4 is young; verify layout stability at H1 and pin the shadPS4 build per title |
 | Wii U (Cemu) | `E:\Cemu\mlc01\usr\save\<titleId hi>\<lo>\user\` | per title | Standard Cemu mlc01 layout |
 | X360 (Xenia) | `E:\Xenia 360\content\<TitleID>\` | per title | Coarser; acceptable |
 

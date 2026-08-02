@@ -234,6 +234,33 @@ const PROFILES = {
     keyboardArrowsAsStickOnly: true,
     hint: "Gamepad recommended (left stick = Nunchuk movement; right stick = Wiimote pointer; hold L2 to swing). Keyboard: arrows = move, Z = A (confirm), X = B, A = Nunchuk Z, S = Nunchuk C, I J K L = pointer, E = swing/shake, Enter = 1, Shift = 2.",
   },
+  // HEAVY/CAPTURE LANE (switch/ps3/ps4/wiiu/x360/pc — arcadeSystems.HEAVY_LANE_SYSTEMS). These are
+  // native apps driven by a real ViGEm X360 pad, not libretro cores, so the RetroPad bits are just a
+  // transport: the worker replays them onto the virtual pad and the GAME reads a modern dual-analog
+  // controller. Every one of these consoles is analog-native and reads the stick and the d-pad as
+  // DISTINCT inputs — on Bloodborne the d-pad is item/spell/weapon quick-select, so folding made
+  // walking cycle your items (reported 2026-08-02).
+  //
+  // These had NO profile entry at all and therefore fell through to `default`, which folds. That is
+  // the exact hole ps2 was given its own entry to close; the heavy lane arrived later and reopened
+  // it for six more systems at once. Assigned by spread below so a new heavy system inherits it.
+  ...Object.fromEntries(
+    ["switch", "ps3", "ps4", "wiiu", "x360", "pc", "capture"].map((sys) => [sys, {
+      gamepad: DEFAULT_GAMEPAD,
+      keymap: {
+        ...DEFAULT_KEYMAP,
+        KeyE: PAD.L2, KeyR: PAD.R2, // triggers on E/R so A/S keep the west/north face buttons
+      },
+      // Keyboard drive for the right analog stick = the camera on every one of these.
+      rstick: { up: "KeyI", down: "KeyK", left: "KeyJ", right: "KeyL" },
+      // Analog-native: never fold the left stick into the d-pad (see the block comment above).
+      foldStickToDpad: false,
+      // Keyboard: arrows are the LEFT STICK only. The d-pad is a distinct function here (item select),
+      // so arrows must not press it — the keyboard twin of the same double-bind.
+      keyboardArrowsAsStickOnly: true,
+      hint: "Gamepad strongly recommended (both sticks + triggers). Keyboard: arrows = move, I J K L = camera, Z X A S = face buttons, Q W = shoulders, E R = triggers, Enter = Start, Shift = Select.",
+    }]),
+  ),
 };
 
 export function profileFor(system) {

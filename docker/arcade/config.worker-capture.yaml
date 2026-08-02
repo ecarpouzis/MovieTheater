@@ -156,11 +156,28 @@ encoder:
       # reads as black with zero frames even when the stream is perfect (test-roms gotcha 0b). Verify
       # from a SECOND machine. Rollback is deleting the key (the worker then reads 1 layer and the drop
       # path can never fire).
-      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=-1 intra-refresh-period=120 intra-refresh-count=15 temporal-layers=3 zerolatency=true"
+      # spatial-aq (added 2026-08-02, LOCKSTEP FIX): config.worker-gl.yaml gained this 2026-07-30 for
+      # blocking confined to busy/moving regions while the encoder sat pinned at its ceiling with zero
+      # congestion - per-frame bit starvation in specific AREAS, not a thin link. This file claims to
+      # track that one except colorimetry and had silently drifted, so the capture lane (the LARGEST
+      # frame we encode, 1080p60) was the one lane missing it. It moves bits within a frame rather than
+      # asking for more, so it costs no bitrate and no latency. Verified present on nvautogpuav1enc.
+      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=-1 intra-refresh-period=120 intra-refresh-count=15 temporal-layers=3 spatial-aq=true zerolatency=true"
       caps: video/x-av1,stream-format=obu-stream ! av1parse ! video/x-av1,stream-format=obu-stream,alignment=tu
     h264:
       encoder: nvh264enc
-      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=120 repeat-sequence-header=true zerolatency=true"
+      # temporal-layers=2 (added 2026-08-02): H.264 SVC was BUILT AND NEVER SWITCHED ON. abr.go carries
+      # a measured layerShare["h264"][2] = {80,100}, h264TemporalID reads nal_ref_idc to tag the layers,
+      # and the drop path is per-peer WriteSample - but neither this file nor config.worker-gl.yaml ever
+      # put the token in the params, so TemporalLayers() parsed nothing and returned 1 = SVC off. That
+      # is why an h264 room logs "temporal layers 1" while av1 logs 3: an omission, not a decision.
+      # 2 is the CEILING here and that part IS deliberate (abr.go): at 3 the middle layer becomes a
+      # reference frame, nal_ref_idc stops separating layers, and dropping would punch frame_num holes
+      # in a stream we negotiate as Constrained Baseline. The element enforces it too ("1 = off,
+      # 2 = hierarchical-P with non-reference odd frames"). Buys a weak peer 30fps instead of pulling
+      # the whole room down. Shallow vs av1 (~80% of the room, not ~28%) - real, but not a substitute.
+      # spatial-aq: same lockstep fix as the av1 block. Verified on nvautogpuh264enc + nvh264enc.
+      params: "preset=p6 tune=ultra-low-latency rc-mode=cbr bitrate=8000 gop-size=120 repeat-sequence-header=true temporal-layers=2 spatial-aq=true zerolatency=true"
       caps: video/x-h264,stream-format=byte-stream,alignment=au
     opus:
       encoder: opusenc
