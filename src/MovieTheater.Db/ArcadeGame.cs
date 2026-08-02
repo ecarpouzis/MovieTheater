@@ -216,6 +216,29 @@ namespace MovieTheater.Db
         /// <summary>When arcade-ra-enrich last resolved this row — the refresh/resume cursor.</summary>
         public System.DateTime? RaCheckedUtc { get; set; }
 
+        /// <summary>PER-VERSION: the RetroAchievements hash of THIS dump — 32 hex chars, computed by
+        /// <c>arcade-ra-hash</c> from the real file with rcheevos' own <c>rc_hash</c> (the fork's
+        /// <c>rahash</c> tool), which is the identical algorithm rc_client runs when it identifies a
+        /// loaded game.
+        ///
+        /// <para>This is the ONLY exact way to map a dump to an RA game. Title matching cannot be right
+        /// every time and is structurally unable to become so: RA tags non-retail entries inside the
+        /// title (<c>~Hack~</c>, <c>~Demo~</c>, <c>[Subset - …]</c>), a translation patch resolves to a
+        /// different REGION's entry, and plenty of names simply diverge. Worse, a title match can be
+        /// confidently WRONG about the dump in hand — our Diddy Kong Racing card claimed 94 achievements
+        /// and a time leaderboard from RA game 10202, while the file we actually run is the (Rev A)
+        /// revision, which RA does not carry at all, so a room on it could never score anything.</para>
+        ///
+        /// <para>Null = not hashed yet (or the file could not be hashed for its console). A hash is
+        /// stable for a file, so this is computed once and only recomputed when the dump changes.</para></summary>
+        [MaxLength(32)]
+        public string? RaHash { get; set; }
+
+        /// <summary>When <c>arcade-ra-hash</c> last hashed this dump — the resume cursor, and what
+        /// distinguishes "never tried" from "tried and this file cannot be hashed" (RaHash null with a
+        /// non-null stamp), so a retry sweep does not keep re-reading the same unhashable files.</summary>
+        public System.DateTime? RaHashedUtc { get; set; }
+
         public bool IsEnabled { get; set; } = true;
 
         /// <summary>The single canonical row of its (System, Title) group for the lobby's default lens —
