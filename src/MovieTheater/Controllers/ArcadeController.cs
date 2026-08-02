@@ -1655,6 +1655,22 @@ namespace MovieTheater.Controllers
                     }
                 }
 
+                // The blob may legitimately hold BOTH cores' keys on a multi-core system (Last Impact
+                // stores the mupen twins of its parallel_n64 fix so a forced mupen launch keeps working) —
+                // but the ROOM gets only what its booting core can read, or the other core's keys arrive
+                // dead and bury the worker's reconcile signal in known noise (the 2026-08-02 sweep's
+                // "cross-namespace bleed"). Storage stays whole; delivery is per-core.
+                var (deliverable, droppedForeign) = ArcadeRoomOptionDelivery.FilterForBootingCore(
+                    game.System, renderProfile?.OptionCore, gameCoreOptions);
+                if (droppedForeign.Count > 0)
+                {
+                    gameCoreOptions = deliverable;
+                    logger.LogInformation(
+                        "Arcade room {Room} ({System}/{Core}): withheld {Count} other-core option key(s): {Keys}",
+                        roomCode, game.System, renderProfile?.OptionCore ?? "default", droppedForeign.Count,
+                        string.Join(", ", droppedForeign));
+                }
+
                 // Saves are per-CORE: an alternate core (PS1 pcsx_rearmed) writes save-states the default core
                 // (Beetle) can't read — namespace them, or the gateway seeds a foreign state every boot and
                 // crash-loops the room (arcade hard rule). Both Beetle renderers share the core, so only a
