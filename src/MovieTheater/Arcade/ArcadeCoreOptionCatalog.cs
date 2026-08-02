@@ -437,6 +437,14 @@ namespace MovieTheater.Arcade
             }
         }
 
+        /// <summary>True if this key is owned by the render-profile selector. Such a key must never round-trip
+        /// through the config module — not as a plain option (excluded at load below) and not as an "advanced"
+        /// raw row. A stored renderer key WOULD land in the advanced set (it is deliberately absent from every
+        /// catalog), where the module re-submits it on every save and it then out-ranks the Graphics dropdown
+        /// in the exported overrides: picking OpenGL saved, but the raw row wrote paraLLEl-GS straight back.
+        /// Found 2026-08-02 on ps2/Stuntman, whose saved blob carries pcsx2_renderer.</summary>
+        public static bool IsRendererSelecting(string? key) => key != null && RendererSelectingKeys.Contains(key);
+
         // Renderer-selecting keys are driven by the render-profile selector, never shown as plain options.
         private static readonly HashSet<string> RendererSelectingKeys = new(StringComparer.Ordinal)
         {
