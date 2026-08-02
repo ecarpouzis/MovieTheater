@@ -24,12 +24,18 @@ namespace MovieTheater.Arcade
     /// lobby can badge each card/version. This is only the SUPPORT map (does RA cover this game); the
     /// actual unlocks/scores/times are recorded at play time by the worker's rcheevos engine.
     ///
-    /// <para>Matches by NORMALIZED TITLE per console: RA's game titles run through the same
-    /// <see cref="LaunchBoxMetadata.NormalizeTitle"/> our <see cref="ArcadeGame.CollapseKey"/> uses, so a
-    /// card matches when its CollapseKey equals a RA game's normalized title. Game-level (all versions of a
-    /// title share the flags) — full coverage including JIT/disc systems without hashing 448 GB of ROMs.
+    /// <para><b>Matching is HASH FIRST.</b> RA identifies a ROM by content, so a version whose
+    /// <see cref="ArcadeGame.RaHash"/> (filled by <c>arcade-ra-hash</c>) appears in RA's per-console hash
+    /// index resolves the card exactly — the same answer rc_client reaches when the room boots — and no
+    /// title is consulted. <c>RaSupported</c> is then a fact per version rather than a guess.</para>
+    ///
+    /// <para>TITLE matching remains the FALLBACK, for cards with no hashed version (not swept yet, an
+    /// unreadable dump, or a system we do not hash). RA's game titles run through the same
+    /// <see cref="LaunchBoxMetadata.NormalizeTitle"/> our <see cref="ArcadeGame.CollapseKey"/> uses, and
     /// RA's non-retail entries additionally match through a de-tagged alias (see
-    /// <see cref="NormalizeRaTitleUntagged"/>), which is what lets a romhack card find its set.</para>
+    /// <see cref="NormalizeRaTitleUntagged"/>), which is what lets a romhack card find its set. Treat it as
+    /// best-effort: a title match can be confidently wrong about the DUMP in hand, which is how a card came
+    /// to be badged with 94 achievements while the revision it actually boots exists in no RA entry.</para>
     ///
     /// <para>Bulk-job rules (global): dry-run unless <c>--apply</c>; bounded by <c>--limit</c> cards;
     /// resumable via <c>--after-id</c> (a card's min version id) + skips already-checked cards
@@ -61,6 +67,9 @@ namespace MovieTheater.Arcade
 
         [CommandOption("clear-unmatched", Description = "Also ERASE the RA mapping of cards whose title no longer matches. Off by default — a title miss is not evidence an existing mapping is wrong, and it would undo --from-unlocks.")]
         public bool ClearUnmatched { get; set; }
+
+        [CommandOption("no-enable-supported", Description = "Do NOT re-enable a disabled version whose HASH proves RA supports it. Default is to enable it — a disabled dump can never lead its card, however well it ranks.")]
+        public bool NoEnableSupported { get; set; }
 
         [CommandOption("user", Description = "RetroAchievements Web API username (z=).")]
         public string ApiUser { get; set; } = "";
@@ -95,6 +104,13 @@ namespace MovieTheater.Arcade
             ["3ds"] = 62,
         };
 
+        // Systems whose disabled rows are NEVER auto-enabled by a hash match. A MAME/FBNeo row is disabled
+        // because its shortname is not in the romset the core actually loads (arcade-mame-resolve /
+        // arcade-fbneo-resolve) — a content hash says the file is the right ROM, not that the core can run
+        // it, so re-enabling on hash evidence alone would put unlaunchable cards back in the lobby.
+        private static readonly HashSet<string> NoAutoEnableSystems =
+            new(StringComparer.OrdinalIgnoreCase) { "arcade", "fbneo", "mame", "neogeo" };
+
         // RA leaderboard Format tokens: time-ish (speedrun) vs score-ish (high score).
         private static bool IsTimeFormat(string f) => f?.ToUpperInvariant() switch
         {
@@ -113,6 +129,9 @@ namespace MovieTheater.Arcade
             [JsonPropertyName("Title")] public string? Title { get; set; }
             [JsonPropertyName("NumAchievements")] public int NumAchievements { get; set; }
             [JsonPropertyName("NumLeaderboards")] public int NumLeaderboards { get; set; }
+            /// <summary>Every ROM hash RA accepts for this game (API_GetGameList with h=1). This is RA's own
+            /// identity for the game — what rc_client matches at load — so it outranks any title compare.</summary>
+            [JsonPropertyName("Hashes")] public List<string>? Hashes { get; set; }
         }
         private sealed class RaLbResult { [JsonPropertyName("Format")] public string? Format { get; set; } }
         private sealed class RaLbResponse { [JsonPropertyName("Results")] public List<RaLbResult>? Results { get; set; } }
@@ -173,7 +192,15 @@ namespace MovieTheater.Arcade
             await using var db = await dbFactory.CreateDbContextAsync();
             db.Database.SetCommandTimeout(180);
 
-            var rows = await db.ArcadeGames.Where(g => g.IsEnabled && (sys == "" || g.System == sys)).ToListAsync();
+            // Disabled rows are normally none of this command's business — EXCEPT one that carries a hash.
+            // Those are the rows the re-enable rule below exists for: a dump RA supports which some earlier
+            // pass switched off, and which therefore cannot lead its card no matter how it ranks. Without
+            // them in the set the rule could never fire, because the row it needs to see is the one filtered
+            // out. (A disabled row with no hash stays invisible, so this does not drag in the ~30k disabled
+            // arcade/MAME rows.)
+            var rows = await db.ArcadeGames
+                .Where(g => (g.IsEnabled || g.RaHash != null) && (sys == "" || g.System == sys))
+                .ToListAsync();
 
             // --from-unlocks: the achievement ids we already mirrored ARE a hash-grade fingerprint — rcheevos
             // had to identify the ROM by content hash before RA would hand it that set — so one of them names
@@ -207,10 +234,14 @@ namespace MovieTheater.Arcade
 
             // Per-console RA game map (normalized title -> game), fetched once. Per-game leaderboard formats cached.
             var consoleMaps = new Dictionary<int, Dictionary<string, RaListGame>>();
+            // Per-console ROM-hash index (RA hash -> game), filled by the same fetch as consoleMaps.
+            var hashIndexes = new Dictionary<int, Dictionary<string, RaListGame>>();
             var lbCache = new Dictionary<int, (bool score, bool time)>();
             var hashCache = new Dictionary<int, HashSet<string>>(); // gameId -> normalized supported dump names
             int withAch = 0, withScore = 0, withTime = 0, noMatch = 0, skippedSys = 0, lastId = AfterId, sinceSave = 0;
             int keptMapping = 0; // no-match cards whose existing mapping was preserved rather than erased
+            int matchedByHash = 0; // cards resolved by ROM hash — the exact path, never a title guess
+            int reEnabled = 0;     // RA-supported versions that were disabled and are now offerable again
 
             async Task<Dictionary<string, RaListGame>?> ConsoleMap(int consoleId)
             {
@@ -218,9 +249,18 @@ namespace MovieTheater.Arcade
                 try
                 {
                     // f=1 = only games that HAVE achievements; that is exactly the set we want to badge.
+                    // h=1 additionally returns every game's ROM HASHES, which is what HashIndex below keys
+                    // on — one fetch serves both the authoritative hash lookup and the title fallback, so
+                    // the two can never be built from different snapshots of RA's catalogue.
                     var json = await http.GetStringAsync(
-                        $"https://retroachievements.org/API/API_GetGameList.php?i={consoleId}&f=1&z={Uri.EscapeDataString(ApiUser)}&y={Uri.EscapeDataString(key)}");
+                        $"https://retroachievements.org/API/API_GetGameList.php?i={consoleId}&f=1&h=1&z={Uri.EscapeDataString(ApiUser)}&y={Uri.EscapeDataString(key)}");
                     var list = JsonSerializer.Deserialize<List<RaListGame>>(json) ?? new();
+                    // Build the hash index from the same list, before the title passes below.
+                    var hidx = new Dictionary<string, RaListGame>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var g in list)
+                        foreach (var h in g.Hashes ?? new List<string>())
+                            if (!string.IsNullOrWhiteSpace(h)) hidx[h.Trim()] = g;
+                    hashIndexes[consoleId] = hidx;
                     var map = new Dictionary<string, RaListGame>(StringComparer.Ordinal);
                     // TWO PASSES, and the order between them is the whole point: every RA title claims its own
                     // normalized key first, and only then may a de-tagged alias fill a key still empty. Doing it
@@ -319,7 +359,37 @@ namespace MovieTheater.Arcade
                 if (!RaConsole.TryGetValue(system, out var consoleId)) { skippedSys++; continue; }
 
                 RaListGame? raGame;
-                if (FromUnlocks)
+                // HASH FIRST. RA identifies a ROM by content, so if any version of this card hashes into
+                // RA's index we are DONE — no title is consulted, and the answer is the same one rc_client
+                // will reach when the room boots. Only a card with no hashed version, or whose dumps RA
+                // does not carry, falls through to the title compare below.
+                //
+                // Versions of one card can hash to DIFFERENT RA games (a romhack and its base game share a
+                // CollapseKey), so take the game the MOST versions agree on rather than whichever sorts
+                // first — otherwise one hack decides the badges for the whole card.
+                Dictionary<string, RaListGame>? hashIdx = null;
+                var hashHits = new Dictionary<int, RaListGame>();   // version id -> the game its hash names
+                if (!FromUnlocks && card.Any(v => !string.IsNullOrWhiteSpace(v.RaHash)))
+                {
+                    await ConsoleMap(consoleId);                   // fills hashIndexes for this console
+                    hashIndexes.TryGetValue(consoleId, out hashIdx);
+                    if (hashIdx != null)
+                        foreach (var v in card)
+                            if (!string.IsNullOrWhiteSpace(v.RaHash) && hashIdx.TryGetValue(v.RaHash!.Trim(), out var hit))
+                                hashHits[v.Id] = hit;
+                }
+                var hashGame = hashHits.Values
+                    .GroupBy(g => g.Id)
+                    .OrderByDescending(grp => grp.Count()).ThenBy(grp => grp.Key)
+                    .Select(grp => grp.First()).FirstOrDefault();
+
+                if (hashGame != null)
+                {
+                    raGame = hashGame;
+                    matchedByHash++;
+                    w.WriteLine($"  # {system}/{card[0].Title} → RA {raGame.Id} \"{raGame.Title}\" by HASH ({hashHits.Count(h => h.Value.Id == raGame.Id)}/{card.Count} versions)");
+                }
+                else if (FromUnlocks)
                 {
                     // No console game list needed and no title involved — RA is asked directly which game
                     // this card's own unlocked achievement belongs to.
@@ -365,7 +435,9 @@ namespace MovieTheater.Arcade
 
                 bool score = false, time = false;
                 if (raGame.NumLeaderboards > 0) (score, time) = await LbFormats(raGame.Id);
-                var dumps = await SupportedDumps(raGame.Id); // the exact ROM dumps RA recognizes
+                // Dump names are only needed for versions we could not hash — see the per-version note below.
+                var needNames = card.Any(r => string.IsNullOrWhiteSpace(r.RaHash));
+                var dumps = needNames ? await SupportedDumps(raGame.Id) : new HashSet<string>();
                 foreach (var r in card)
                 {
                     r.RaGameId = raGame.Id;
@@ -373,8 +445,41 @@ namespace MovieTheater.Arcade
                     r.RaHasScoreLeaderboard = score;
                     r.RaHasTimeLeaderboard = time;
                     // Per-version: is THIS dump one RA supports? Floats it to the top of the dropdown (Rank).
-                    r.RaSupported = dumps.Contains(NormalizeDump(r.CloudRetroGameKey));
+                    //
+                    // A HASHED version answers this exactly — its hash is either in RA's index for this game
+                    // or it is not, with nothing to interpret. Only an unhashed version falls back to
+                    // comparing dump NAMES, which is a guess: it is what marked Diddy Kong Racing's (Rev A)
+                    // dump supported-looking when RA carries no such revision at all.
+                    r.RaSupported = string.IsNullOrWhiteSpace(r.RaHash)
+                        ? dumps.Contains(NormalizeDump(r.CloudRetroGameKey))
+                        : hashHits.TryGetValue(r.Id, out var hg) && hg.Id == raGame.Id;
                     r.RaCheckedUtc = now;
+
+                    // An RA-supported dump that is DISABLED can never lead its card — Rank only orders the
+                    // versions the lobby actually offers. That is precisely how Diddy Kong Racing came to
+                    // offer nothing but a revision RA cannot identify: a dedup pass picked the survivor by
+                    // REGION and disabled the one dump RA carries, so the card advertised 94 achievements
+                    // and could never award any of them. Two guards, because "disabled" has other causes:
+                    // the file must still be on disk (ingest --reconcile disables vanished ROMs), and
+                    // MAME/FBNeo rows are left alone — their disable reason is romset membership, which a
+                    // content hash cannot vouch for.
+                    if (!NoEnableSupported && r.RaSupported && !r.IsEnabled && !string.IsNullOrWhiteSpace(r.RaHash)
+                        && !NoAutoEnableSystems.Contains(r.System ?? ""))
+                    {
+                        if (!string.IsNullOrWhiteSpace(r.SourceArchivePath) && File.Exists(r.SourceArchivePath))
+                        {
+                            r.IsEnabled = true;
+                            r.Notes = string.IsNullOrWhiteSpace(r.Notes)
+                                ? $"Re-enabled {now:yyyy-MM-dd}: RA-supported dump (hash {r.RaHash}); a disabled dump can never lead its card."
+                                : r.Notes + $" | Re-enabled {now:yyyy-MM-dd}: RA-supported dump (hash {r.RaHash}).";
+                            reEnabled++;
+                            w.WriteLine($"  + ENABLED {r.System}/{r.CloudRetroGameKey} — RA-supported dump had been disabled");
+                        }
+                        else
+                        {
+                            w.WriteLine($"  ~ {r.System}/{r.CloudRetroGameKey} is RA-supported but disabled AND its file is gone — left alone");
+                        }
+                    }
                 }
                 if (raGame.NumAchievements > 0) withAch++;
                 if (score) withScore++;
@@ -387,7 +492,7 @@ namespace MovieTheater.Arcade
 
             if (Apply) await db.SaveChangesAsync();
 
-            w.WriteLine($"{{ processed: {batch.Count}, withAchievements: {withAch}, highScores: {withScore}, speedruns: {withTime}, noMatch: {noMatch}, keptExistingMapping: {keptMapping}, skippedUnmappedSystem: {skippedSys}, remaining: {remaining}, nextAfterId: {lastId} }}");
+            w.WriteLine($"{{ processed: {batch.Count}, withAchievements: {withAch}, highScores: {withScore}, speedruns: {withTime}, matchedByHash: {matchedByHash}, reEnabledSupported: {reEnabled}, noMatch: {noMatch}, keptExistingMapping: {keptMapping}, skippedUnmappedSystem: {skippedSys}, remaining: {remaining}, nextAfterId: {lastId} }}");
             if (!Apply) w.WriteLine("DRY RUN — nothing written. Re-run with --apply.");
             else if (remaining > 0) w.WriteLine($"More to do: re-run with --after-id {lastId} --apply.");
         }

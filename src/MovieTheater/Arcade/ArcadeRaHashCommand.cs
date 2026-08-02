@@ -71,39 +71,6 @@ namespace MovieTheater.Arcade
             dbFactory = GetRequiredService<IDbContextFactory<MovieDb>>();
         }
 
-        // Systems whose dumps RA can identify AND whose console id rcheevos knows. Deliberately the same
-        // set arcade-ra-enrich maps, minus nothing: a console rcheevos cannot place still hashes fine
-        // with RC_CONSOLE_UNKNOWN (0), because rc_hash falls back to the file's own shape. Passing the
-        // real id when we know it is still better — it is what the room itself will use.
-        private static readonly Dictionary<string, uint> RaConsole = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["megadrive"] = 1, ["genesis"] = 1, ["md"] = 1,
-            ["n64"] = 2, ["snes"] = 3, ["gb"] = 4, ["gba"] = 5, ["gbc"] = 6, ["nes"] = 7, ["fds"] = 7,
-            ["pce"] = 8, ["pcengine"] = 8, ["tg16"] = 8,
-            ["sms"] = 11, ["mastersystem"] = 11, ["ps1"] = 12, ["psx"] = 12,
-            ["lynx"] = 13, ["ngp"] = 14, ["ngpc"] = 14, ["gg"] = 15, ["gamegear"] = 15,
-            ["gc"] = 16, ["gamecube"] = 16, ["nds"] = 18, ["ds"] = 18, ["ps2"] = 21,
-            ["vb"] = 28, ["virtualboy"] = 28, ["sg1000"] = 33, ["saturn"] = 39,
-            ["dc"] = 40, ["dreamcast"] = 40, ["psp"] = 41, ["colecovision"] = 44, ["coleco"] = 44,
-            ["a2600"] = 25, ["atari2600"] = 25, ["a7800"] = 51, ["wsc"] = 53, ["ws"] = 53, ["wonderswan"] = 53,
-            ["arcade"] = 27, ["fbneo"] = 27, ["mame"] = 27, ["neogeo"] = 27,
-        };
-
-        private sealed class HashRequest
-        {
-            [JsonPropertyName("id")] public int Id { get; set; }
-            [JsonPropertyName("path")] public string Path { get; set; } = "";
-            [JsonPropertyName("consoleId")] public uint ConsoleId { get; set; }
-        }
-
-        private sealed class HashResponse
-        {
-            [JsonPropertyName("id")] public int Id { get; set; }
-            [JsonPropertyName("hash")] public string? Hash { get; set; }
-            [JsonPropertyName("ok")] public bool Ok { get; set; }
-            [JsonPropertyName("error")] public string? Error { get; set; }
-        }
-
         public async ValueTask ExecuteAsync(IConsole console)
         {
             var writer = console.Output;
@@ -122,7 +89,7 @@ namespace MovieTheater.Arcade
 
             // Only rows we could actually hash: RA has no console for the rest, and a row with no source
             // file on disk has nothing to read.
-            var systems = RaConsole.Keys.ToList();
+            var systems = ArcadeRaHasher.Console.Keys.ToList();
             q = q.Where(g => g.System != null && systems.Contains(g.System) && g.SourceArchivePath != null);
 
             var remainingBefore = await q.CountAsync();
@@ -141,7 +108,7 @@ namespace MovieTheater.Arcade
             // dump moved or was pruned), not a hashing failure, and lumping them together would hide a
             // library that is quietly losing files behind a plausible "unhashable" count.
             var missing = new List<int>();
-            var requests = new List<HashRequest>();
+            var requests = new List<ArcadeRaHasher.Item>();
             foreach (var row in batch)
             {
                 var path = row.SourceArchivePath ?? "";
@@ -150,28 +117,25 @@ namespace MovieTheater.Arcade
                     missing.Add(row.Id);
                     continue;
                 }
-                RaConsole.TryGetValue(row.System ?? "", out var consoleId);
-                requests.Add(new HashRequest { Id = row.Id, Path = path, ConsoleId = consoleId });
+                requests.Add(new ArcadeRaHasher.Item(row.Id, path, ArcadeRaHasher.ConsoleId(row.System)));
             }
 
-            var results = await RunHasherAsync(requests, writer);
+            var hashes = await ArcadeRaHasher.HashAsync(Hasher, requests, m => writer.WriteLine(m));
 
-            var hashed = results.Where(r => r.Ok && !string.IsNullOrWhiteSpace(r.Hash)).ToList();
-            var unhashable = results.Where(r => !r.Ok || string.IsNullOrWhiteSpace(r.Hash)).ToList();
+            var hashedIds = requests.Where(r => hashes.ContainsKey(r.Id)).Select(r => r.Id).ToList();
+            var unhashableIds = requests.Where(r => !hashes.ContainsKey(r.Id)).Select(r => r.Id).ToList();
 
             if (Apply)
             {
                 var now = DateTime.UtcNow;
-                var byId = results.ToDictionary(r => r.Id);
-                var ids = byId.Keys.ToList();
+                var ids = requests.Select(r => r.Id).ToList();
                 var rows = await db.ArcadeGames.Where(g => ids.Contains(g.Id)).ToListAsync();
                 foreach (var g in rows)
                 {
-                    var r = byId[g.Id];
                     // Stamp even a failure: it is what tells the next run "already tried, do not
                     // re-read this file", which is the difference between a sweep that converges and
                     // one that re-hashes the same broken dumps forever.
-                    g.RaHash = r.Ok ? r.Hash : null;
+                    g.RaHash = hashes.TryGetValue(g.Id, out var h) ? h : null;
                     g.RaHashedUtc = now;
                 }
                 await db.SaveChangesAsync();
@@ -182,8 +146,8 @@ namespace MovieTheater.Arcade
             {
                 apply = Apply,
                 processed = batch.Count,
-                hashed = hashed.Count,
-                unhashable = unhashable.Count,
+                hashed = hashedIds.Count,
+                unhashable = unhashableIds.Count,
                 missing = missing.Count,
                 remaining = Math.Max(0, remainingBefore - batch.Count),
                 nextAfterId,
@@ -192,9 +156,9 @@ namespace MovieTheater.Arcade
 
             // A few concrete examples make a dry run reviewable; the counts alone never show WHICH dump
             // could not be read.
-            foreach (var r in unhashable.Take(10))
+            foreach (var id in unhashableIds.Take(10))
             {
-                var row = batch.First(b => b.Id == r.Id);
+                var row = batch.First(b => b.Id == id);
                 writer.WriteLine($"  unhashable  [{row.System}] {row.Title} :: {row.SourceArchivePath}");
             }
             foreach (var id in missing.Take(10))
@@ -204,68 +168,5 @@ namespace MovieTheater.Arcade
             }
         }
 
-        /// <summary>
-        /// Stream a batch through the hasher process: one JSON request per line in, one result per line
-        /// out. The child is spawned once per batch rather than per file — a per-file process would spend
-        /// more time starting than hashing — but it holds no state between lines, so a batch that dies
-        /// halfway costs only the rows after the failure and the caller simply resumes at nextAfterId.
-        /// </summary>
-        private async Task<List<HashResponse>> RunHasherAsync(List<HashRequest> requests, ConsoleWriter writer)
-        {
-            var results = new List<HashResponse>();
-            if (requests.Count == 0) return results;
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = Hasher,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-            };
-            using var proc = Process.Start(psi);
-            if (proc == null)
-            {
-                writer.WriteLine("could not start the hasher");
-                return results;
-            }
-
-            var readErr = Task.Run(async () =>
-            {
-                var text = await proc.StandardError.ReadToEndAsync();
-                if (!string.IsNullOrWhiteSpace(text)) writer.WriteLine(text.Trim());
-            });
-
-            var readOut = Task.Run(async () =>
-            {
-                string? line;
-                while ((line = await proc.StandardOutput.ReadLineAsync()) != null)
-                {
-                    if (string.IsNullOrWhiteSpace(line)) continue;
-                    try
-                    {
-                        var r = JsonSerializer.Deserialize<HashResponse>(line);
-                        if (r != null) results.Add(r);
-                    }
-                    catch (JsonException)
-                    {
-                        // A line we cannot parse is the hasher misbehaving, not a row failing; keep going
-                        // so one bad line does not discard a whole batch's work.
-                        writer.WriteLine($"  (unparseable hasher output: {line})");
-                    }
-                }
-            });
-
-            foreach (var r in requests)
-            {
-                await proc.StandardInput.WriteLineAsync(JsonSerializer.Serialize(r));
-            }
-            proc.StandardInput.Close();
-
-            await readOut;
-            await readErr;
-            await proc.WaitForExitAsync();
-            return results;
-        }
     }
 }

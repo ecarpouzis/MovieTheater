@@ -44,6 +44,9 @@ namespace MovieTheater.Arcade
         [CommandOption("after", Description = "Resume cursor: skip files whose relative path is ≤ this (from a prior run's nextCursor).")]
         public string After { get; set; } = "";
 
+        [CommandOption("hasher", Description = "Path to the fork's rahash executable. When given, every row inserted this run also gets its RetroAchievements hash (ArcadeGame.RaHash) — the exact key arcade-ra-enrich matches on. Omit and the rows are simply left for the next arcade-ra-hash sweep.")]
+        public string Hasher { get; set; } = "";
+
         [CommandOption("reconcile", Description = "Also flag catalog rows whose ROM file has vanished as IsEnabled=false (never deletes).")]
         public bool Reconcile { get; set; }
 
@@ -84,6 +87,7 @@ namespace MovieTheater.Arcade
 
             int inserted = 0, updated = 0, skipped = 0;
             var addedThisRun = new HashSet<(string, string)>();
+            var insertedKeys = new List<(string, string)>(); // (system, romPath) of this run's new rows
             foreach (var f in batch)
             {
                 var key = Key(f.System, f.RomPath);
@@ -118,11 +122,19 @@ namespace MovieTheater.Arcade
                         });
                     }
                     inserted++;
+                    insertedKeys.Add(key);
                     w.WriteLine($"  + [{f.System}] {f.Title}");
                 }
             }
 
             if (Apply) await db.SaveChangesAsync();
+
+            // Hash the rows we just created, so a newly ingested game is identified to RetroAchievements the
+            // same way a swept one is. This runs AFTER SaveChangesAsync because the rows need their ids —
+            // RaHash is per-version, and the hash is the key arcade-ra-enrich matches on. Bounded by
+            // definition: only this run's inserts, which --limit already caps.
+            if (Apply && !string.IsNullOrWhiteSpace(Hasher) && insertedKeys.Count > 0)
+                await HashNewRowsAsync(db, root, insertedKeys, w);
 
             int reconciled = 0;
             if (Reconcile)
@@ -142,6 +154,51 @@ namespace MovieTheater.Arcade
         // Flag catalog rows whose file no longer exists (bounded to the current systems' rows). Never
         // deletes — sets IsEnabled=false + a note so a vanished ROM stops appearing but the row (and any
         // hand-edits) survive for when the file returns.
+        /// <summary>
+        /// Give this run's newly-created rows their RetroAchievements hash. Ingest is where a game enters
+        /// the site, so it is the natural place to establish the identity RA matches on — otherwise a new
+        /// game sits title-matched (a guess) until someone remembers to run the sweep, which is exactly the
+        /// gap that let a card advertise achievements its dump could never award.
+        /// </summary>
+        private async Task HashNewRowsAsync(MovieDb db, string root, List<(string sys, string rom)> keys, ConsoleWriter w)
+        {
+            var systems = keys.Select(k => k.sys).Distinct().ToList();
+            var roms = keys.Select(k => k.rom).Distinct().ToList();
+            var rows = await db.ArcadeGames
+                .Where(g => g.System != null && g.RomPath != null
+                            && systems.Contains(g.System) && roms.Contains(g.RomPath))
+                .ToListAsync();
+
+            var wanted = new HashSet<(string, string)>(keys.Select(k => (k.sys.ToLowerInvariant(), k.rom.ToLowerInvariant())));
+            var items = new List<ArcadeRaHasher.Item>();
+            foreach (var g in rows)
+            {
+                if (!wanted.Contains(((g.System ?? "").ToLowerInvariant(), (g.RomPath ?? "").ToLowerInvariant()))) continue;
+                // Prefer the recorded source file; fall back to the scanned root + relative path, which is
+                // what a row freshly inserted by THIS command has (SourceArchivePath is filled later by the
+                // JIT/companion passes).
+                var path = !string.IsNullOrWhiteSpace(g.SourceArchivePath) && File.Exists(g.SourceArchivePath)
+                    ? g.SourceArchivePath!
+                    : Path.Combine(root, (g.RomPath ?? "").Replace('/', Path.DirectorySeparatorChar));
+                if (!File.Exists(path)) continue;
+                items.Add(new ArcadeRaHasher.Item(g.Id, path, ArcadeRaHasher.ConsoleId(g.System)));
+            }
+            if (items.Count == 0) return;
+
+            var hashes = await ArcadeRaHasher.HashAsync(Hasher, items, m => w.WriteLine(m));
+            var now = DateTime.UtcNow;
+            var byId = rows.ToDictionary(g => g.Id);
+            foreach (var it in items)
+            {
+                if (!byId.TryGetValue(it.Id, out var g)) continue;
+                // Stamp even a miss, so the sweep does not keep re-reading a dump that cannot be hashed.
+                g.RaHash = hashes.TryGetValue(it.Id, out var h) ? h : null;
+                g.RaHashedUtc = now;
+            }
+            await db.SaveChangesAsync();
+            w.WriteLine($"  hashed {hashes.Count}/{items.Count} newly ingested dump(s) for RetroAchievements");
+        }
+
         private async Task<int> ReconcileVanishedAsync(MovieDb db, string root, List<ScannedRom> present, ConsoleWriter w)
         {
             var presentKeys = present.Select(f => (f.System, f.RomPath)).ToHashSet();
