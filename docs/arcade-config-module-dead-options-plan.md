@@ -1,8 +1,21 @@
 # Arcade per-game config module — dead options, stale catalog, inert renderer selector
 
-**Status:** Phase 0 shipped (master `ef62f05`), Phase 1 shipped (`c5cfe5b`), Phase 2 shipped,
-Phase 3 shipped 2026-08-02 (all three PS2 renderers boot-verified — see D6 and Phase 3 below).
-Phase 4 open.
+**Status: ALL PHASES SHIPPED 2026-08-02.** Phase 0 `ef62f05`, Phase 1 `c5cfe5b`, Phase 2 `2872d72`,
+Phase 3 `fb3cb5a` (all three PS2 renderers boot-verified — see D6 and Phase 3 below), Phase 4 in
+the closing commit. 394 tests green.
+Phase 4 closed: `ArcadeRenderProfileValidationTests` validates every profile key/token against the
+deployed DLLs' own declarations (D5 — via the catalog + the `rendererKeys` sidecar + a documented
+6-key hand-verified allowlist for the hand-only parallel_n64 GL FB set);
+`scripts/check-core-options-drift.ps1` re-extracts the deployed cores and fails on drift, proven
+end-to-end (exit 0 same-day; it is Ziggy-local because the CI runner is not this machine — schtasks
+registration one-liner in its header, deliberately left to a human); and the **data sweep ran**:
+16 ps2 rows dropped `pcsx2_renderer` (guarded UPDATE, safety net `_cfgmod_renderer_sweep_20260802`,
+0 renderer-selecting keys remain fleet-wide), with the re-exported `game-overrides.json` deployed
+to both GL ConfDirs (`.pre-renderer-sweep-20260802` backups beside them).
+Open beyond this plan's scope: the six surface-only systems' GL profiles remain unverified (same
+verify-before-offer bar as ps2, lower stakes); `pcsx2_pgs_deblur`/`_ss_tex` applicability is
+structural-only (never provided in any room); two delivery-layer bleeds (§3 Phase 2.2) fix
+separately.
 **Opened:** 2026-08-02, from a ps2/Stuntman session.
 **Trigger:** toggling "No interlacing (sharper)" returned `Too many options.`
 **Revised 2026-08-02 (second pass):** fleet-audited. Adds D7 (coverage gaps: ~18 systems have no
