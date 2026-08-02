@@ -872,9 +872,17 @@ namespace MovieTheater.Controllers
         ///
         /// <para>GET renders this (plus saved) as each control's selected value; PUT drops a submitted value
         /// equal to it. Both callers MUST use this helper — if the shown baseline and the drop baseline drift,
-        /// a left-alone quality lever round-trips into a stored override and stops tracking the yaml.</para></summary>
+        /// a left-alone quality lever round-trips into a stored override and stops tracking the yaml.</para>
+        ///
+        /// <para><b>Filtered by the selected render profile</b> (plan Phase 2.4). <c>UltraLiveSpec</c> is flat
+        /// per core — deliberately, because it is the weld against config.worker-gl.yaml and the yaml delivers
+        /// the UNION (pcsx2 carries both the paraLLEl-GS <c>pgs_*</c> values and the GSdx
+        /// upscale/aniso/blending ones) — so an unfiltered baseline is a BLEND of two renderers and switching
+        /// the Graphics dropdown could not change a displayed value even with the selector fixed. Overlaying
+        /// only the keys applicable to <paramref name="profileId"/> is the whole display fix; the yaml weld
+        /// keeps asserting the union.</para></summary>
         private static Dictionary<string, string> BuildEffectiveBaseline(
-            string? core, IEnumerable<(string? OptionKey, string? OptionValue)> defaultOnRows)
+            string? core, string? profileId, IEnumerable<(string? OptionKey, string? OptionValue)> defaultOnRows)
         {
             var baseline = new Dictionary<string, string>(StringComparer.Ordinal);
             if (core == null) return baseline;
@@ -883,6 +891,10 @@ namespace MovieTheater.Controllers
                 foreach (var kv in ultra) baseline[kv.Key] = kv.Value;   // live system tuning wins over factory default
             foreach (var (key, value) in defaultOnRows)                  // per-game default-on wins over system tuning
                 if (!string.IsNullOrEmpty(key)) baseline[key] = value ?? "enabled";
+            // Drop what this profile can't read, LAST, so every layer above is filtered by the same rule and
+            // GET's shown baseline and PUT's drop baseline stay identical (see the paragraph above).
+            foreach (var key in baseline.Keys.ToList())
+                if (!ArcadeCoreOptionApplicability.IsApplicable(core, key, profileId)) baseline.Remove(key);
             return baseline;
         }
 
@@ -921,10 +933,16 @@ namespace MovieTheater.Controllers
             var defaultOn = await movieDb.ArcadeCheats.AsNoTracking()
                 .Where(c => c.ArcadeGameId == game.Id && c.Kind == "option" && c.DefaultOn && c.OptionKey != null)
                 .Select(c => new { c.OptionKey, c.OptionValue }).ToListAsync();
-            var effective = BuildEffectiveBaseline(core, defaultOn.Select(r => (r.OptionKey, r.OptionValue)));
+            var effective = BuildEffectiveBaseline(core, selected?.Id, defaultOn.Select(r => (r.OptionKey, r.OptionValue)));
             foreach (var kv in saved) effective[kv.Key] = kv.Value;
 
-            var options = ArcadeCoreOptionCatalog.ForCore(core).Select(o => new
+            // ⚠ Only the options that are LIVE under the selected render profile (plan D3/Phase 2). A room is a
+            // (core, renderer) pair and this list used to be filtered by core alone, so both PS2 profiles
+            // rendered the union — the pgs_* levers that only paraLLEl-GS reads next to the three GSdx levers
+            // it provably never reads. Filtering here (not client-side) is enough because the modal re-fetches
+            // on every Graphics switch (ArcadeGameConfig.js switchProfile). See
+            // ArcadeCoreOptionApplicability — anything without evidence stays visible.
+            var options = ArcadeCoreOptionApplicability.OptionsFor(core, selected?.Id).Select(o => new
             {
                 key = o.Key,
                 label = o.Label,
@@ -939,6 +957,11 @@ namespace MovieTheater.Controllers
             });
 
             // Advanced/raw escape hatch: saved keys not in ANY of this system's cores' catalogs (hand-entered).
+            // ⚠ This set is deliberately UNFILTERED by render profile. A key that IS catalogued but is merely
+            // inapplicable to the selected profile (a stored GSdx pcsx2_upscale_multiplier while paraLLEl-GS is
+            // selected) is a known key the module is choosing not to render — it must NOT reappear as an
+            // "advanced" raw row, or hiding it would just move it, and the client would re-submit it under a
+            // profile that can't read it. It is preserved instead, in SaveGameConfig's merge.
             var allSystemKeys = renderProfiles.Select(p => p.OptionCore)
                 .Append(core).Where(c => c != null).Distinct()
                 .SelectMany(c => ArcadeCoreOptionCatalog.ForCore(c).Select(o => o.Key))
@@ -1008,7 +1031,7 @@ namespace MovieTheater.Controllers
             var defaultOn = await movieDb.ArcadeCheats.AsNoTracking()
                 .Where(c => c.ArcadeGameId == game.Id && c.Kind == "option" && c.DefaultOn && c.OptionKey != null)
                 .Select(c => new { c.OptionKey, c.OptionValue }).ToListAsync();
-            var baseline = BuildEffectiveBaseline(core, defaultOn.Select(r => (r.OptionKey, r.OptionValue)));
+            var baseline = BuildEffectiveBaseline(core, selected?.Id, defaultOn.Select(r => (r.OptionKey, r.OptionValue)));
 
             // A quality-tier reset ("Reset to defaults" with a tier picked): ignore any submitted values
             // and store the tier's preset for this (core, renderer) VERBATIM. Deliberately NO
@@ -1026,8 +1049,14 @@ namespace MovieTheater.Controllers
             var toStore = new Dictionary<string, string>(StringComparer.Ordinal);
             if (tier != null)
             {
+                // Presets are keyed by (core, hwContext), which is one notch coarser than a render profile —
+                // parallel_n64's "gl" bundle serves BOTH gl profiles (GLideN64 and Glide64). Applying the
+                // applicability filter here keeps that structurally safe: a tier can never store a key that is
+                // inert under the profile it was applied for, whatever the preset happens to contain.
+                // ArcadeQualityPresetsTests asserts the presets don't need this today (every preset key is
+                // applicable to some profile with that hwContext) — the filter is what keeps it true.
                 foreach (var (key, value) in ArcadeQualityPresets.For(core, selected?.HwContext, tier))
-                    toStore[key] = value;
+                    if (ArcadeCoreOptionApplicability.IsApplicable(core, key, selected?.Id)) toStore[key] = value;
             }
             else if (request.CoreOptions != null)
             {
@@ -1081,16 +1110,14 @@ namespace MovieTheater.Controllers
                 movieDb.ArcadeGameProfiles.Add(profile);
             }
 
-            // Preserve the OTHER cores' saved options (the module only edits the selected core's set, but the
-            // flat blob may hold another core's overrides from a different profile — don't wipe them on switch).
+            // Merge into the existing blob, preserving every saved key the module did NOT render for this
+            // profile: other cores' options (the flat blob spans a system's cores) and — since Phase 2 — the
+            // selected core's options that are inapplicable to the selected profile. The modal posts the FULL
+            // rendered set, so an unrendered key is simply absent from the payload and would otherwise be
+            // deleted by a save the editor never intended (a stored GSdx pcsx2_upscale_multiplier wiped by
+            // pressing Save while paraLLEl-GS is selected). See ArcadeCoreOptionApplicability.MergeSave.
             var existing = ParseOptionsJson(profile.CoreOptionsJson) ?? new Dictionary<string, string>(StringComparer.Ordinal);
-            var otherCoreKeys = ArcadeRendererProfiles.For(game.System).Select(p => p.OptionCore).Distinct()
-                .Where(c => c != core)
-                .SelectMany(c => ArcadeCoreOptionCatalog.ForCore(c).Select(o => o.Key))
-                .ToHashSet(StringComparer.Ordinal);
-            var final = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var kv in existing) if (otherCoreKeys.Contains(kv.Key)) final[kv.Key] = kv.Value;
-            foreach (var kv in toStore) final[kv.Key] = kv.Value;
+            var final = ArcadeCoreOptionApplicability.MergeSave(game.System, core, selected?.Id, existing, toStore);
 
             profile.CoreOptionsJson = final.Count > 0 ? System.Text.Json.JsonSerializer.Serialize(final) : null;
             // An empty RenderProfile means "follow the system default" and must be STORED as null — not as

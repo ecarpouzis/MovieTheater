@@ -1,6 +1,7 @@
 # Arcade per-game config module — dead options, stale catalog, inert renderer selector
 
-**Status:** Phase 0 shipped (master `ef62f05`). Phases 1–4 open.
+**Status:** Phase 0 shipped (master `ef62f05`), Phase 1 shipped (`c5cfe5b`), Phase 2 shipped (below).
+Phases 3–4 open.
 **Opened:** 2026-08-02, from a ps2/Stuntman session.
 **Trigger:** toggling "No interlacing (sharper)" returned `Too many options.`
 **Revised 2026-08-02 (second pass):** fleet-audited. Adds D7 (coverage gaps: ~18 systems have no
@@ -211,7 +212,20 @@ Nothing else is trustworthy until this exists.
 **Exit:** the catalog provably matches the deployed cores, every deployed core is either catalogued
 or policy-excluded with a reason, and a re-run is a no-op.
 
-### Phase 2 — model the renderer half (kills D3)
+### Phase 2 — model the renderer half (kills D3) ✅ *shipped*
+
+> **Shipped 2026-08-02** as `ArcadeCoreOptionApplicability` (a hand-curated rule map keyed by render-profile
+> id, every rule carrying a mandatory evidence string) + server-side filtering in `GetGameConfig`, the
+> displayed baseline, and the tier-preset apply path. Restrictions taken: pcsx2's three GSdx keys → the GSdx
+> profile (worker-log DEAD in every sample), `pcsx2_pgs_*` → paraLLEl-GS (structural namespace);
+> mupen64plus_next's `parallel-rdp-*` → vulkan and the 8 GLideN64 FB/AA keys → opengl; parallel_n64's
+> `parallel-rdp-upscaling` → vulkan, `gliden64-*` → `parallel_n64_gl` (latent — hand-only core),
+> `gfxplugin-accuracy` → both GL profiles. Left VISIBLE for want of evidence: `mupen64plus-169screensize`
+> (dead under both plugins = aspect-dependent, wrong axis), `parallel-n64-screensize` (strong candidate,
+> only our own note backs it), pcsx2's other GSdx-ish keys, and every beetle/ppsspp/flycast/dolphin key.
+> The save path gained `MergeSave`, which preserves saved keys of the SELECTED core that this profile does
+> not render — without it the first Save under one profile would silently delete the other's tuning, because
+> the modal posts the full RENDERED set. Zero UI changes (the modal already re-fetches per profile).
 
 1. Add applicability to `CoreOption` — keyed by **render-profile id**, not by `HwContext`.
    ⚠ Surface is too coarse: parallel_n64 has TWO gl-surface profiles (`parallel_n64_gl` =

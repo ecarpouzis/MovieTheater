@@ -53,6 +53,34 @@ namespace MovieTheater.Tests
             Assert.Equal("320x240", ArcadeQualityPresets.For("mupen64plus_next", "gl", "low")["mupen64plus-43screensize"]);
         }
 
+        // ── Presets vs applicability (plan Phase 2.5) ─────────────────────────────────────────────────
+        // A preset is keyed by (core, hwContext), which is ONE NOTCH COARSER than a render profile — and the
+        // config module now hides options that are inert on the selected profile. If a tier pinned a key that
+        // no profile with that hwContext can read, "Reset to High" would store an override the room ignores:
+        // the silent-no-op class, arriving through the one path that deliberately skips the baseline-drop.
+        // parallel_n64 is the case that makes this real — its "gl" bundle serves BOTH gl profiles
+        // (parallel_n64_gl = GLideN64 and parallel_n64_glide64 = Glide64), so it may only contain keys at
+        // least one of them reads; a bundle of gliden64-* keys would be half inert. It contains screensize +
+        // cpucore, which both read. (The controller ALSO filters at apply time, so the invariant holds even if
+        // a future preset breaks this — but a preset that needs the filter is a preset that is lying about a
+        // renderer, and this test is what says so.)
+        [Fact]
+        public void EveryPresetKeyIsLiveOnSomeProfileWithThatHwContext()
+        {
+            foreach (var e in ArcadeQualityPresets.AllEntries())
+            {
+                var candidates = ArcadeRendererProfiles.AllSystems
+                    .SelectMany(s => ArcadeRendererProfiles.For(s))
+                    .Where(p => p.OptionCore == e.Core && (e.Hw == null || p.HwContext == e.Hw))
+                    .ToList();
+                if (candidates.Count == 0) continue;   // no Graphics selector for this core → nothing filters
+                Assert.True(
+                    candidates.Any(p => ArcadeCoreOptionApplicability.IsApplicable(e.Core, e.Key, p.Id)),
+                    $"{e.Core}/{e.Hw ?? "any"}/{e.Tier}: '{e.Key}' is not live on ANY render profile with that " +
+                    "surface, so applying the tier would store a key the room cannot read.");
+            }
+        }
+
         // Surface-agnostic cores fall back from any hwContext to the core-wide preset, and a core
         // with no presets (2D) returns empty for every tier — the tiers all equal the live default.
         [Fact]
