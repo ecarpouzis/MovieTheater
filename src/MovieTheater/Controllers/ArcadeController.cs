@@ -1634,6 +1634,18 @@ namespace MovieTheater.Controllers
             // not "wipe my saves". The gateway/worker (Phase 1) honor this flag for both the boot seed and
             // the harvest (a competitive run must not overwrite the casual Continue save). A competitive room
             // ignores NewGame/SeedSlot — there is nothing to resume.
+            // The RetroAchievements hash we already computed for THIS dump (arcade-ra-hash). The shim puts
+            // it in t=104 and the worker loads that game directly instead of identifying the file itself.
+            //
+            // For five whole systems this is the difference between a tracked room and nothing at all:
+            // rc_hash cannot READ our compressed disc containers (.cso on PS2/PSP, .gcz on GameCube, .chd
+            // on Dreamcast/Saturn), so identify-at-boot fails with "Unknown game" however healthy the rest
+            // of the RA session is. Hashing them offline — where we can decompress — and handing the answer
+            // to the worker sidesteps the reader entirely. It is a small win everywhere else too: the ROM
+            // is not reopened and re-read at boot just to learn what it already is.
+            if (!string.IsNullOrWhiteSpace(game.RaHash))
+                descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&rahash=" + Uri.EscapeDataString(game.RaHash!) };
+
             if (competitive)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&competitive=1" };
             // "New game": tell the gateway (via ?fresh=1 on the WS URL) to clear the mount so the game

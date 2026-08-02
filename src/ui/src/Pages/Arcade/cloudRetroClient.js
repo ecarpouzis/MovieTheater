@@ -1425,6 +1425,12 @@ export function createCloudRetroSession(descriptor, opts) {
     // RetroAchievements: the worker runs a single SITE service account as the scoring engine (spectator
     // mode), so no per-user creds ride here. All the creator's t=104 needs to carry is whether this is a
     // COMPETITIVE (legit) run — the worker tags mirrored achievements/scores/times with it.
+    // The RetroAchievements hash the SITE computed for this dump (?rahash=). With it the worker loads
+    // that RA game directly instead of hashing the ROM itself — which is the only way PS2/PSP (.cso),
+    // GameCube (.gcz) and Dreamcast/Saturn (.chd) rooms can be identified at all, since rc_hash cannot
+    // read those containers. Creator-only, like the other boot flags: joiners never send GAME_START.
+    const rahash = strFromWsUrl(descriptor.wsUrl, "rahash");
+    if (rahash) p.ra_hash = rahash;
     if (descriptor.competitive) p.hardcore = true;
     send(T.GAME_START, p);
   }
