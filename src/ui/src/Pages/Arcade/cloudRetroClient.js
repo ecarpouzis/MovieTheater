@@ -377,8 +377,15 @@ function notePads(pads) {
     const rec = padSeen.get(p.index);
     // A different id at the same index means the slot was RECYCLED — a new pad, not the old one
     // going quiet, so start its observation over rather than inheriting the corpse's staleness.
-    if (!rec || rec.id !== p.id) padSeen.set(p.index, { id: p.id, ts: p.timestamp, changedAt: now });
+    if (!rec || rec.id !== p.id) padSeen.set(p.index, { id: p.id, ts: p.timestamp, changedAt: now, firstActiveAt: 0 });
     else if (p.timestamp !== rec.ts) { rec.ts = p.timestamp; rec.changedAt = now; }
+    // WHEN this pad first played — the one durable way to tell the controller that was ALREADY
+    // playing from one that just dropped in (see incumbentPad). Scanned only until it is known, so
+    // once every pad in the room has been touched this costs a single truthy test per pad per poll.
+    const cur = padSeen.get(p.index);
+    if (!cur.firstActiveAt && p.buttons && Array.prototype.some.call(p.buttons, (b) => b && b.pressed)) {
+      cur.firstActiveAt = now;
+    }
   }
   for (const idx of padSeen.keys()) if (!present.has(idx)) padSeen.delete(idx);
 
@@ -405,6 +412,52 @@ export function isPhantomPad(gp) {
   if (gp.connected === false) return true;            // the spec's own answer, when a browser gives it
   if (!gp.buttons || gp.buttons.length === 0) return true; // hollow slot: nothing to read anyway
   return phantomIndexes.has(gp.index);
+}
+
+/**
+ * The pad the PRIMARY seat should KEEP when another controller drops in: of the pads this machine can
+ * still assign — live, not already claimed by a local seat, not a streamed/virtual pad — the one that
+ * STARTED PLAYING FIRST. -1 when no pad here has ever been touched (a keyboard-only host).
+ *
+ * ⚠ This exists because "which pad is P1's?" MUST NOT be answered by asking the primary session what
+ * it is driving right now. The primary adopts whichever free pad is momentarily active — that is the
+ * whole point of fluid adoption, and it is correct while one person plays. But it means that in the
+ * instant a SECOND controller is first pressed (which is exactly when auto-bind runs), the primary
+ * may already have adopted the NEWCOMER. Sampling there inverts the two: the new pad is mistaken for
+ * P1's, gets pinned to P1, and the incumbent's own controller — still unclaimed and being pressed —
+ * is handed to the new local seat. The player who was already playing then finds their controller
+ * driving P2, i.e. "my controller stopped working the moment a second one was detected" (reported
+ * live 2026-08-01). First-input order cannot invert, so ask that instead.
+ */
+export function incumbentPad(excludeIndexes = []) {
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  notePads(pads);
+  let best = -1;
+  let bestAt = Infinity;
+  for (const gp of pads) {
+    if (!gp || claimedPadIndexes.has(gp.index) || excludeIndexes.includes(gp.index)) continue;
+    if (isStreamedPad(gp) || isPhantomPad(gp)) continue;
+    const rec = padSeen.get(gp.index);
+    const at = (rec && rec.firstActiveAt) || 0;
+    if (!at || at >= bestAt) continue; // never played, or someone else played earlier
+    best = gp.index;
+    bestAt = at;
+  }
+  return best;
+}
+
+/**
+ * The whole auto-bind decision, in one place so it can be tested as a unit: given P1's pin (or null
+ * while its adoption is still fluid), return the pad P1 must KEEP and the pad a new local seat should
+ * take. `candidate` is -1 when no new controller is asking to play, which is the common case.
+ *
+ * The invariant worth stating out loud, because violating it is the bug this replaced:
+ * **candidate is never the pad that was already playing.** incumbent is resolved first and excluded
+ * from the search, so the seat that exists cannot be handed someone else's controller.
+ */
+export function pickAutoBindPads(pinnedPad = null) {
+  const incumbent = Number.isInteger(pinnedPad) && pinnedPad >= 0 ? pinnedPad : incumbentPad();
+  return { incumbent, candidate: findNewPad(incumbent >= 0 ? [incumbent] : []) };
 }
 
 /** The pads worth showing/assigning: present, non-hollow, not a corpse with a live twin. */

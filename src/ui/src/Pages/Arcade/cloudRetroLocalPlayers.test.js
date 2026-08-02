@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createCloudRetroSession, findNewPad, setIgnoreStreamedPads, isStreamedPad, livePads, isPhantomPad } from "./cloudRetroClient";
+import { createCloudRetroSession, findNewPad, incumbentPad, pickAutoBindPads, setIgnoreStreamedPads, isStreamedPad, livePads, isPhantomPad } from "./cloudRetroClient";
 
 // Local multiplayer (extra controllers on one machine): each extra pad gets its own INPUT-ONLY
 // CloudRetro session pinned to that pad, because the wire protocol routes input by CONNECTION —
@@ -332,6 +332,96 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
     expect(dc.sent.length).toBe(afterPress + 1);
     const [resent, held] = [dc.sent[dc.sent.length - 1], dc.sent[afterPress - 1]].map((f) => new Int16Array(f)[0]);
     expect(resent).toBe(held); // absolute state, re-asserted — not an edge
+    s.close();
+  });
+
+  // ── Incumbency: who was already playing when a second controller drops in ─────────────────────
+  // THE BUG THESE GUARD (reported live 2026-08-01): auto-bind decided "which pad is P1's?" by asking
+  // the primary session what it was driving RIGHT NOW. Fluid adoption follows whichever free pad is
+  // momentarily active, so at the exact instant a second controller is first pressed the primary has
+  // often already adopted the NEWCOMER. That inverted the roles — the new pad was pinned to P1 and the
+  // incumbent's controller was handed to the new local seat — and the person already playing found
+  // their controller driving P2. First-input ORDER is the property that cannot invert.
+
+  it("incumbency: the pad that played first stays P1, even while the newcomer is the active one", async () => {
+    // Pad 0 has been playing for a while.
+    setPads(idPad(0, { ts: 100, id: "Pad A", pressed: [0] }));
+    livePads();
+    await vi.advanceTimersByTimeAsync(2000);
+
+    // Pad 1 arrives and is the one being pressed at this instant; pad 0 is momentarily at rest —
+    // exactly the sample that used to invert the two.
+    setPads(idPad(0, { ts: 300, id: "Pad A" }), idPad(1, { ts: 300, id: "Pad B", pressed: [0] }));
+    livePads();
+
+    expect(incumbentPad()).toBe(0);           // P1 keeps the controller that was already playing
+    expect(findNewPad([incumbentPad()])).toBe(1); // and the newcomer is the one that gets seated
+  });
+
+  it("incumbency: a pad that has never been touched is not an incumbent", async () => {
+    // A spare controller plugged in for a friend who hasn't arrived: present, never pressed.
+    setPads(idPad(0, { ts: 100, id: "Spare" }));
+    livePads();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(incumbentPad()).toBe(-1); // nothing to protect — a keyboard-only host stays keyboard-only
+
+    setPads(idPad(0, { ts: 200, id: "Spare", pressed: [1] }));
+    livePads();
+    expect(incumbentPad()).toBe(0); // the moment it plays, it is the incumbent
+  });
+
+  it("incumbency: order survives the incumbent going quiet for a long time", async () => {
+    setPads(idPad(0, { ts: 100, id: "Pad A", pressed: [0] }));
+    livePads();
+    // Idling in a menu far past the primary's 10 s activity window — the old sample would have read
+    // -1 here and let the newcomer take P1.
+    await vi.advanceTimersByTimeAsync(30_000);
+    setPads(idPad(0, { ts: 900, id: "Pad A" }), idPad(1, { ts: 900, id: "Pad B", pressed: [0] }));
+    livePads();
+    expect(incumbentPad()).toBe(0);
+  });
+
+  // The decision itself, as the room page actually makes it. This is the regression guard: assert the
+  // PAIR, because the failure mode was not "a wrong pad" but the two roles SWAPPED.
+  it("auto-bind: never hands the newcomer's seat the controller that was already playing", async () => {
+    setPads(idPad(0, { ts: 100, id: "Pad A", pressed: [0] }));
+    livePads();
+    await vi.advanceTimersByTimeAsync(2000);
+
+    // The moment auto-bind fires: the newcomer (pad 1) is the pad being pressed, the incumbent
+    // (pad 0) is momentarily at rest and is ALSO pressed a tick later. Both orderings must resolve
+    // the same way.
+    setPads(idPad(0, { ts: 300, id: "Pad A" }), idPad(1, { ts: 300, id: "Pad B", pressed: [0] }));
+    livePads();
+    expect(pickAutoBindPads(null)).toEqual({ incumbent: 0, candidate: 1 });
+
+    setPads(idPad(0, { ts: 400, id: "Pad A", pressed: [0] }), idPad(1, { ts: 400, id: "Pad B", pressed: [0] }));
+    livePads();
+    expect(pickAutoBindPads(null)).toEqual({ incumbent: 0, candidate: 1 });
+  });
+
+  it("auto-bind: an existing pin is authoritative and is never re-decided", async () => {
+    setPads(idPad(0, { ts: 100, id: "Pad A", pressed: [0] }));
+    livePads();
+    await vi.advanceTimersByTimeAsync(1000);
+    setPads(idPad(0, { ts: 200, id: "Pad A" }), idPad(1, { ts: 200, id: "Pad B", pressed: [0] }));
+    livePads();
+    expect(pickAutoBindPads(0)).toEqual({ incumbent: 0, candidate: 1 });
+  });
+
+  it("auto-bind: a lone player is left completely alone", async () => {
+    setPads(idPad(0, { ts: 100, id: "Pad A", pressed: [0] }));
+    livePads();
+    // One pad, being played. Nothing to seat, and nothing gets pinned as a side effect.
+    expect(pickAutoBindPads(null)).toEqual({ incumbent: 0, candidate: -1 });
+  });
+
+  it("incumbency: a pad already claimed by a local seat is never offered as the incumbent", async () => {
+    setPads(idPad(0, { ts: 100, id: "Pad A", pressed: [0] }), idPad(1, { ts: 100, id: "Pad B", pressed: [0] }));
+    livePads();
+    const s = createCloudRetroSession(descriptorFor(), { padIndex: 0 }); // P2 holds the earliest pad
+    await driveToGameStart(sockets[0]);
+    expect(incumbentPad()).toBe(1); // P1's own pad, not the one a local seat is already driving
     s.close();
   });
 

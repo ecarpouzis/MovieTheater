@@ -2,7 +2,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, livePads, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, getRightStickSwapX, setRightStickSwapX, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, pickAutoBindPads, livePads, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, getRightStickSwapX, setRightStickSwapX, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
 import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, QUICK_SLOT, hasSaveStates } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
@@ -782,24 +782,35 @@ export default function ArcadeRoomPage() {
       const heldLocally = 1 + localSessionsRef.current.size;
       const filled = Math.max(players.length, heldLocally);
       if (maxPlayers !== 0 && filled >= maxPlayers) return;
-      // The pad P1 is actively driving (its pin, or the pad it adopted in the last 10 s), excluded so
-      // the detector only ever grabs a DIFFERENT controller. Local seats' pads are already excluded by
-      // findNewPad (they're in the shim's claimed-pad registry), as are streamed pads when guarded.
-      const primaryPadIdx = sessionRef.current?.getActivePadIndex?.() ?? -1;
-      const candidate = findNewPad(primaryPadIdx >= 0 ? [primaryPadIdx] : []);
-      if (candidate < 0) return;
       addingLocalRef.current = true;
-      // Hold the primary's fluid adoption for the claim so its 16 ms poll can't snatch the new pad first
-      // (which would then hide it from the detector — the same reason the manual add holds it).
+      // Hold the primary's fluid adoption for the whole decision AND the claim, so its 16 ms poll can
+      // neither move P1 under us nor snatch the new pad first (which would then hide it from the
+      // detector — the same reason the manual add holds it).
       sessionRef.current?.setAdoptionHeld?.(true);
       try {
+        // WHICH PAD IS P1'S IS NOT A MOMENTARY QUESTION — do not go back to asking the session what it
+        // is driving right now (getActivePadIndex). Fluid adoption follows whichever free pad is active
+        // at this instant, so at the exact moment auto-bind fires — the first press of a SECOND
+        // controller — the primary has often already adopted the NEWCOMER. Sampling there swapped the
+        // two: the new pad was pinned to P1 and the incumbent's controller, still unclaimed and being
+        // pressed, was handed to the new local seat. The person already playing then found themselves
+        // driving P2 — "a second controller was detected and my controller stopped working" (reported
+        // live 2026-08-01). incumbentPad answers from FIRST-INPUT ORDER, which cannot invert.
+        // pickAutoBindPads resolves the incumbent FIRST and excludes it from the search, so the
+        // candidate can never be the controller that was already playing. (Local seats' pads are
+        // excluded too — they're in the shim's claimed-pad registry — as are streamed pads when
+        // guarded.)
+        const { incumbent, candidate } = pickAutoBindPads(primaryPad);
+        if (candidate < 0) return;
         // The first extra player is where a fluid primary stops helping and starts hurting: with two
         // controllers it flip-flops P1 between them (the "both pads drive player 1" report). Pin P1 to
-        // the pad it's using so the assignment is stable from here on. Only when P1 actually holds a pad
-        // — a keyboard-only host keeps its keyboard primary and the controller simply becomes P2.
-        if (primaryPadIdx >= 0 && primaryPad === null) {
-          sessionRef.current?.setPad?.(primaryPadIdx);
-          setPrimaryPad(primaryPadIdx);
+        // the pad it has been playing on so the assignment is stable from here on. Only when P1
+        // actually holds a pad — a keyboard-only host keeps its keyboard primary and the controller
+        // simply becomes P2. Pinning happens only once we have someone to seat, so a lone player's
+        // adoption stays fluid.
+        if (incumbent >= 0 && primaryPad === null) {
+          sessionRef.current?.setPad?.(incumbent);
+          setPrimaryPad(incumbent);
         }
         const slot = await openLocalSession(candidate, { silent: true });
         if (slot == null) autoBindCooldownRef.current = Date.now() + 5000; // lost a full-room race — back off
