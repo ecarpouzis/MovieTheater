@@ -354,8 +354,14 @@ emulator:
           options:
             pcsx_rearmed_drc: enabled
             pcsx_rearmed_frameskip_type: disabled
-            pcsx_rearmed_pad1type: dualshock
-            pcsx_rearmed_pad2type: dualshock
+            # pad1type/pad2type REMOVED 2026-08-02: the DEPLOYED pcsx_rearmed_libretro.dll declares
+            # neither key (the Phase 1 runtime extraction — they were among the catalog's removed dead
+            # keys), and every live room confirmed it: `[opt] DEAD keys: pcsx_rearmed_pad1type,
+            # pcsx_rearmed_pad2type`, 20/20 samples + a fresh 2026-08-02 15:09 boot (6/8 read). They
+            # were copied from the pre-Vulkan WSL config where an older core build read them. Pad type
+            # on this build follows the frontend's controller-port device, not an option. Removing a
+            # key libretro was silently ignoring is a behavioral no-op; it just stops polluting every
+            # room's reconcile with known noise.
             pcsx_rearmed_memcard1: libretro
             pcsx_rearmed_memcard2: none
             pcsx_rearmed_neon_enhancement_enable: enabled
@@ -1390,7 +1396,14 @@ emulator:
             # angrylion BANNED (CloudRetro panic). rspplugin "parallel" = paraLLEl-RSP (LLE accuracy pair).
             parallel-n64-gfxplugin: "parallel"
             parallel-n64-rspplugin: "parallel"
-            parallel-n64-parallel-rdp-upscaling: "8x"
+            # parallel-rdp-upscaling MOVED to the site's "parallel_n64" render profile (2026-08-02,
+            # planned in ArcadeRendererProfiles since 07-29): config options are per-CORE, so a copy
+            # here shipped `8x` to EVERY profile of this core — including the two GL-plugin profiles,
+            # where paraLLEl-RDP's supersampling lever is at best inert noise in the room's option set
+            # (a glide64 room was observed QUERYING it 2026-08-02 15:12, so "inert" is unproven — but
+            # the Vulkan profile delivering it per-room is proven live, and one owner beats two).
+            # The VALUE stays 8x, delivered from the profile. mupen's own 4x copy above is DIFFERENT:
+            # that one is the yaml-welded Ultra baseline (UltraLiveSpec) and must stay in the yaml.
             # ── ROMHACK COMPATIBILITY (2026-07-29) — NECESSARY BUT NOT SUFFICIENT, see the ⚠ below ──
             # Last Impact issues UNALIGNED DMA transfers. Every emulator that masks the DMA address
             # instead of honouring them executes garbage a few seconds later; that is the origin of
