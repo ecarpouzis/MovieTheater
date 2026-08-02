@@ -1435,10 +1435,10 @@ index 0000000..6a94788
 +kronos core patch (established pattern) or frontend shim. Saturn rows remain IsEnabled=0.
 diff --git a/cmd/rahash/main.go b/cmd/rahash/main.go
 new file mode 100644
-index 0000000..5bf70b8
+index 0000000..66c6d7b
 --- /dev/null
 +++ b/cmd/rahash/main.go
-@@ -0,0 +1,254 @@
+@@ -0,0 +1,320 @@
 +// Command rahash computes RetroAchievements ROM hashes — the same identification rc_client performs
 +// when it loads a game — so the site can map its library to RA games by CONTENT instead of by title.
 +//
@@ -1574,7 +1574,73 @@ index 0000000..5bf70b8
 +	if strings.EqualFold(filepath.Ext(path), ".7z") {
 +		return hashFrom7z(console, path)
 +	}
++	// .chd is the one container we cannot serve on demand: unlike CSO/GCZ (a block index and deflate,
++	// which the virtual filereader reads directly), CHD is a hunk-mapped format with several codecs
++	// (zlib/lzma/flac/zstd) and CD sector framing, so reading it needs libchdr. Until that is linked in,
++	// extract with MAME's chdman and hash the resulting .cue. Slower than the others by far, but correct.
++	if strings.EqualFold(filepath.Ext(path), ".chd") && chdmanExe != "" {
++		return hashFromChd(console, path)
++	}
 +	return cheevos.HashFile(console, path)
++}
++
++// chdmanExe is resolved from CHDMAN_EXE or PATH. Absent = .chd dumps report unhashable rather than
++// pretending — the counter is what makes a missing tool visible instead of silently halving coverage.
++var chdmanExe = func() string {
++	if p := os.Getenv("CHDMAN_EXE"); p != "" {
++		if _, err := os.Stat(p); err == nil {
++			return p
++		}
++	}
++	if p, err := exec.LookPath("chdman"); err == nil {
++		return p
++	}
++	return ""
++}()
++
++func hashFromChd(console uint32, path string) (string, bool) {
++	// THE DESCRIPTOR FORMAT MATTERS, and it differs by console. chdman picks its output format from the
++	// extension, and rc_hash will not accept the wrong one:
++	//
++	//   Dreamcast (40) is a GD-ROM — rc_hash reads IP.BIN through a .gdi and rejects a .cue outright
++	//                                (verified: the same disc fails as .cue, hashes as .gdi).
++	//   Saturn / PC Engine CD / everything else — ordinary CD, described by a .cue.
++	//
++	// Try the console's natural form first, then the other: a mislabelled system is far likelier than
++	// a genuinely unhashable disc, and the second attempt costs only a re-extract of one file.
++	order := []string{"out.cue", "out.gdi"}
++	if console == 40 {
++		order = []string{"out.gdi", "out.cue"}
++	}
++	for _, name := range order {
++		if h, ok := chdExtractAndHash(console, path, name); ok {
++			return h, true
++		}
++	}
++	return "", false
++}
++
++func chdExtractAndHash(console uint32, path, outName string) (string, bool) {
++	dir, err := os.MkdirTemp("", "rahashchd")
++	if err != nil {
++		return "", false
++	}
++	defer os.RemoveAll(dir)
++
++	out := filepath.Join(dir, outName)
++	// extractcd covers the CD-based consoles we store as CHD. A .gdi writes its own per-track files; a
++	// .cue needs the companion binary named explicitly.
++	args := []string{"extractcd", "-i", path, "-o", out, "-f"}
++	if strings.EqualFold(filepath.Ext(outName), ".cue") {
++		args = append(args, "-ob", filepath.Join(dir, "out.bin"))
++	}
++	if err := exec.Command(chdmanExe, args...).Run(); err != nil {
++		return "", false
++	}
++	if st, err := os.Stat(out); err != nil || st.Size() == 0 {
++		return "", false
++	}
++	return cheevos.HashFile(console, out)
 +}
 +
 +// sevenZipExe is resolved once from PATH. Absent = .7z dumps report unhashable rather than pretending;
@@ -1862,10 +1928,10 @@ index 89d0628..fb1eb58 100644
  		return "LibNewGameList"
  	case PrevSessions:
 diff --git a/pkg/api/user.go b/pkg/api/user.go
-index e487b93..c3247b5 100644
+index e487b93..60b3fcd 100644
 --- a/pkg/api/user.go
 +++ b/pkg/api/user.go
-@@ -1,42 +1,95 @@
+@@ -1,42 +1,99 @@
 -package api
 -
 -type (
@@ -1961,6 +2027,10 @@ index e487b93..c3247b5 100644
 +		// MUST also appear in worker.go StartGameRequest AND workerapi.go's StartGameRequest literal.
 +		RaUser   string `json:"ra_user,omitempty"`
 +		RaToken  string `json:"ra_token,omitempty"`
++		// RaHash: the RetroAchievements hash the SITE already computed for this dump. Present =
++		// the worker loads that game DIRECTLY instead of hashing the file, which is the only
++		// way .chd/.gcz/.cso dumps can be identified at all (rc_hash cannot read them).
++		RaHash   string `json:"ra_hash,omitempty"`
 +		Hardcore bool   `json:"hardcore,omitempty"`
 +		// SeedExplicit: this boot restored a state the player DELIBERATELY PICKED (a named snapshot /
 +		// Quickload, ?seedslot=N), not the ordinary auto-save continue. Only that first kind is
@@ -2004,10 +2074,10 @@ index e487b93..c3247b5 100644
 +	}
 +)
 diff --git a/pkg/api/worker.go b/pkg/api/worker.go
-index d8c7324..2a9ab36 100644
+index d8c7324..0774150 100644
 --- a/pkg/api/worker.go
 +++ b/pkg/api/worker.go
-@@ -1,75 +1,123 @@
+@@ -1,75 +1,127 @@
 -package api
 -
 -type (
@@ -2144,6 +2214,10 @@ index d8c7324..2a9ab36 100644
 +		// it — the same trap that ate per-room bitrate for days. Keep in sync with user.go.
 +		RaUser   string `json:"ra_user,omitempty"`
 +		RaToken  string `json:"ra_token,omitempty"`
++		// RaHash: the RetroAchievements hash the SITE already computed for this dump. Present =
++		// the worker loads that game DIRECTLY instead of hashing the file, which is the only
++		// way .chd/.gcz/.cso dumps can be identified at all (rc_hash cannot read them).
++		RaHash   string `json:"ra_hash,omitempty"`
 +		Hardcore bool   `json:"hardcore,omitempty"`
 +		// SeedExplicit: the boot state was a DELIBERATE pick (named snapshot / Quickload), not the
 +		// ordinary auto-save continue -- only the former is save-scumming. Keep in sync with user.go
@@ -3826,10 +3900,10 @@ index 51e805c..e7f6017 100644
  	resp, err := u.w.SaveGame(u.Id().String())
  	if err != nil {
 diff --git a/pkg/coordinator/workerapi.go b/pkg/coordinator/workerapi.go
-index dbceaed..8d75eca 100644
+index dbceaed..3f1c8f6 100644
 --- a/pkg/coordinator/workerapi.go
 +++ b/pkg/coordinator/workerapi.go
-@@ -1,64 +1,119 @@
+@@ -1,64 +1,120 @@
 -package coordinator
 -
 -import "github.com/giongto35/cloud-game/v3/pkg/api"
@@ -3957,6 +4031,7 @@ index dbceaed..8d75eca 100644
 +			// relays only what it names, so these lines are what carry RA to the worker.
 +			RaUser:   req.RaUser,
 +			RaToken:  req.RaToken,
++			RaHash:   req.RaHash,
 +			Hardcore: req.Hardcore,
 +		}, GameStartTimeout))
 +}
@@ -10775,21 +10850,169 @@ index 0000000..6dd8a84
 +	atomic.StoreUintptr(&a.winHwnd, 0)
 +}
 diff --git a/pkg/worker/caged/libretro/caged.go b/pkg/worker/caged/libretro/caged.go
-index f3553b1..d66ce23 100644
+index f3553b1..82912c8 100644
 --- a/pkg/worker/caged/libretro/caged.go
 +++ b/pkg/worker/caged/libretro/caged.go
-@@ -5,6 +5,7 @@ import (
- 	"github.com/giongto35/cloud-game/v3/pkg/games"
- 	"github.com/giongto35/cloud-game/v3/pkg/logger"
- 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/manager"
+@@ -1,102 +1,129 @@
+-package libretro
+-
+-import (
+-	"github.com/giongto35/cloud-game/v3/pkg/config"
+-	"github.com/giongto35/cloud-game/v3/pkg/games"
+-	"github.com/giongto35/cloud-game/v3/pkg/logger"
+-	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/manager"
+-	"github.com/giongto35/cloud-game/v3/pkg/worker/cloud"
+-)
+-
+-type Caged struct {
+-	Emulator
+-
+-	base *Frontend // maintains the root for mad embedding
+-	conf CagedConf
+-	log  *logger.Logger
+-}
+-
+-type CagedConf struct {
+-	Emulator  config.Emulator
+-	Recording config.Recording
+-}
+-
+-func (c *Caged) Name() string { return "libretro" }
+-
+-func Cage(conf CagedConf, log *logger.Logger) Caged {
+-	return Caged{conf: conf, log: log}
+-}
+-
+-func (c *Caged) Init() error {
+-	if err := manager.CheckCores(c.conf.Emulator, c.log); err != nil {
+-		c.log.Warn().Err(err).Msgf("a Libretro cores sync fail")
+-	}
+-
+-	if c.conf.Emulator.FailFast {
+-		if err := c.IsSupported(); err != nil {
+-			return err
+-		}
+-	}
+-
+-	return nil
+-}
+-
+-func (c *Caged) ReloadFrontend() {
+-	frontend, err := NewFrontend(c.conf.Emulator, c.log)
+-	if err != nil {
+-		c.log.Fatal().Err(err).Send()
+-		return
+-	}
+-	c.Emulator = frontend
+-	c.base = frontend
+-}
+-
+-// VideoChangeCb adds a callback when video params are changed by the app.
+-func (c *Caged) VideoChangeCb(fn func()) { c.base.SetVideoChangeCb(fn) }
+-
+-func (c *Caged) Load(game games.GameMetadata, path string) error {
+-	if c.Emulator == nil {
+-		return nil
+-	}
+-	c.Emulator.LoadCore(game.System)
+-	if err := c.Emulator.LoadGame(game.FullPath(path)); err != nil {
+-		return err
+-	}
+-	c.ViewportRecalculate()
+-	return nil
+-}
+-
+-func (c *Caged) EnableRecording(nowait bool, user string, game string) {
+-	if c.conf.Recording.Enabled {
+-		// !to fix races with canvas pool when recording
+-		c.base.DisableCanvasPool = true
+-		c.Emulator = WithRecording(c.Emulator, nowait, user, game, c.conf.Recording, c.log)
+-	}
+-}
+-
+-func (c *Caged) EnableCloudStorage(uid string, storage cloud.Storage) {
+-	if storage == nil {
+-		return
+-	}
+-	if wc, err := WithCloud(c.Emulator, uid, storage); err == nil {
+-		c.Emulator = wc
+-		c.log.Info().Msgf("cloud storage has been initialized")
+-	} else {
+-		c.log.Error().Err(err).Msgf("couldn't init cloud storage")
+-	}
+-}
+-
+-func (c *Caged) AspectEnabled() bool              { return c.base.nano.Aspect }
+-func (c *Caged) AspectRatio() float32             { return c.base.AspectRatio() }
+-func (c *Caged) PixFormat() uint32                { return c.Emulator.PixFormat() }
+-func (c *Caged) Rotation() uint                   { return c.Emulator.Rotation() }
+-func (c *Caged) AudioSampleRate() int             { return c.Emulator.AudioSampleRate() }
+-func (c *Caged) ViewportSize() (int, int)         { return c.base.ViewportSize() }
+-func (c *Caged) Scale() (float64, string)         { return c.Emulator.Scale() }
+-func (c *Caged) Input(p int, d byte, data []byte) { c.base.Input(p, d, data) }
+-func (c *Caged) KbMouseSupport() bool             { return c.base.KbMouseSupport() }
+-func (c *Caged) Start()                           { go c.Emulator.Start() }
+-func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
+-func (c *Caged) SetSessionId(name string)         { c.base.SetSessionId(name) }
+-func (c *Caged) Close()                           { c.Emulator.Close() }
+-func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
++package libretro
++
++import (
++	"github.com/giongto35/cloud-game/v3/pkg/config"
++	"github.com/giongto35/cloud-game/v3/pkg/games"
++	"github.com/giongto35/cloud-game/v3/pkg/logger"
++	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/manager"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/cheevos"
- 	"github.com/giongto35/cloud-game/v3/pkg/worker/cloud"
- )
- 
-@@ -54,6 +55,31 @@ func (c *Caged) ReloadFrontend() {
- // VideoChangeCb adds a callback when video params are changed by the app.
- func (c *Caged) VideoChangeCb(fn func()) { c.base.SetVideoChangeCb(fn) }
- 
++	"github.com/giongto35/cloud-game/v3/pkg/worker/cloud"
++)
++
++type Caged struct {
++	Emulator
++
++	base *Frontend // maintains the root for mad embedding
++	conf CagedConf
++	log  *logger.Logger
++}
++
++type CagedConf struct {
++	Emulator  config.Emulator
++	Recording config.Recording
++}
++
++func (c *Caged) Name() string { return "libretro" }
++
++func Cage(conf CagedConf, log *logger.Logger) Caged {
++	return Caged{conf: conf, log: log}
++}
++
++func (c *Caged) Init() error {
++	if err := manager.CheckCores(c.conf.Emulator, c.log); err != nil {
++		c.log.Warn().Err(err).Msgf("a Libretro cores sync fail")
++	}
++
++	if c.conf.Emulator.FailFast {
++		if err := c.IsSupported(); err != nil {
++			return err
++		}
++	}
++
++	return nil
++}
++
++func (c *Caged) ReloadFrontend() {
++	frontend, err := NewFrontend(c.conf.Emulator, c.log)
++	if err != nil {
++		c.log.Fatal().Err(err).Send()
++		return
++	}
++	c.Emulator = frontend
++	c.base = frontend
++}
++
++// VideoChangeCb adds a callback when video params are changed by the app.
++func (c *Caged) VideoChangeCb(fn func()) { c.base.SetVideoChangeCb(fn) }
++
 +// SetRoomCheats stages this room's cheats. Call it BEFORE Load: opts are core-option overrides the
 +// core reads while loading, codes go to retro_cheat_set once the game is up. Both are per-room, so
 +// they live on the frontend instance rather than the shared config.
@@ -10799,8 +11022,8 @@ index f3553b1..d66ce23 100644
 +
 +// SetRetroAchievements stages this room's RetroAchievements session (creator's account + hardcore +
 +// whether cheats were staged). Call it BEFORE Load, like SetRoomCheats. See Frontend.SetRetroAchievements.
-+func (c *Caged) SetRetroAchievements(user, token, system string, hardcore, cheats, seedExplicit bool, h cheevos.Handlers) {
-+	c.base.SetRetroAchievements(user, token, system, hardcore, cheats, seedExplicit, h)
++func (c *Caged) SetRetroAchievements(user, token, system, knownHash string, hardcore, cheats, seedExplicit bool, h cheevos.Handlers) {
++	c.base.SetRetroAchievements(user, token, system, knownHash, hardcore, cheats, seedExplicit, h)
 +}
 +
 +// NotifySaveStateLoaded / NotifyFastForward / NotifyReset forward run-legitimacy events to the RA
@@ -10815,22 +11038,58 @@ index f3553b1..d66ce23 100644
 +func (c *Caged) SetFastForward(on bool) { c.base.SetFastForward(on) }
 +func (c *Caged) SetRewind(on bool)      { c.base.SetRewind(on) }
 +
- func (c *Caged) Load(game games.GameMetadata, path string) error {
- 	if c.Emulator == nil {
- 		return nil
-@@ -94,6 +120,7 @@ func (c *Caged) AudioSampleRate() int             { return c.Emulator.AudioSampl
- func (c *Caged) ViewportSize() (int, int)         { return c.base.ViewportSize() }
- func (c *Caged) Scale() (float64, string)         { return c.Emulator.Scale() }
- func (c *Caged) Input(p int, d byte, data []byte) { c.base.Input(p, d, data) }
++func (c *Caged) Load(game games.GameMetadata, path string) error {
++	if c.Emulator == nil {
++		return nil
++	}
++	c.Emulator.LoadCore(game.System)
++	if err := c.Emulator.LoadGame(game.FullPath(path)); err != nil {
++		return err
++	}
++	c.ViewportRecalculate()
++	return nil
++}
++
++func (c *Caged) EnableRecording(nowait bool, user string, game string) {
++	if c.conf.Recording.Enabled {
++		// !to fix races with canvas pool when recording
++		c.base.DisableCanvasPool = true
++		c.Emulator = WithRecording(c.Emulator, nowait, user, game, c.conf.Recording, c.log)
++	}
++}
++
++func (c *Caged) EnableCloudStorage(uid string, storage cloud.Storage) {
++	if storage == nil {
++		return
++	}
++	if wc, err := WithCloud(c.Emulator, uid, storage); err == nil {
++		c.Emulator = wc
++		c.log.Info().Msgf("cloud storage has been initialized")
++	} else {
++		c.log.Error().Err(err).Msgf("couldn't init cloud storage")
++	}
++}
++
++func (c *Caged) AspectEnabled() bool              { return c.base.nano.Aspect }
++func (c *Caged) AspectRatio() float32             { return c.base.AspectRatio() }
++func (c *Caged) PixFormat() uint32                { return c.Emulator.PixFormat() }
++func (c *Caged) Rotation() uint                   { return c.Emulator.Rotation() }
++func (c *Caged) AudioSampleRate() int             { return c.Emulator.AudioSampleRate() }
++func (c *Caged) ViewportSize() (int, int)         { return c.base.ViewportSize() }
++func (c *Caged) Scale() (float64, string)         { return c.Emulator.Scale() }
++func (c *Caged) Input(p int, d byte, data []byte) { c.base.Input(p, d, data) }
 +func (c *Caged) RequestDisk(i int)                { c.base.RequestDisk(i) }
- func (c *Caged) KbMouseSupport() bool             { return c.base.KbMouseSupport() }
- func (c *Caged) Start()                           { go c.Emulator.Start() }
- func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
++func (c *Caged) KbMouseSupport() bool             { return c.base.KbMouseSupport() }
++func (c *Caged) Start()                           { go c.Emulator.Start() }
++func (c *Caged) SetSaveOnClose(v bool)            { c.base.SaveOnClose = v }
++func (c *Caged) SetSessionId(name string)         { c.base.SetSessionId(name) }
++func (c *Caged) Close()                           { c.Emulator.Close() }
++func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..9112b4c 100644
+index 6974d59..b273c48 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,2242 @@
+@@ -1,578 +1,2246 @@
 -package libretro
 -
 -import (
@@ -11523,6 +11782,8 @@ index 6974d59..9112b4c 100644
 +	// rather than the ordinary auto-save continue. Only the former is save-scumming.
 +	raSeedExplicit bool
 +	raHandler cheevos.Handlers
++	// raKnownHash: hash supplied by the site so the load skips identification (see cheevos.SetKnownHash).
++	raKnownHash string
 +	gamePath  string // the ROM/disc path last loaded — RetroAchievements hashes it to identify the game
 +	// Deferred RA bring-up state (see beginCheevosBoot). raBootPending gates a once-per-frame poll of
 +	// the core's memory in the emulator loop; raBootStart is when we began waiting. Emu goroutine only.
@@ -12585,8 +12846,9 @@ index 6974d59..9112b4c 100644
 +// SetRetroAchievements stages this room's RetroAchievements session — the creator's linked account and
 +// whether it runs hardcore (a competitive room). Call BEFORE Load, like SetRoomCheats; the live client
 +// is created in Start() once the core's memory exists. Empty user/token = RA off (the common case).
-+func (f *Frontend) SetRetroAchievements(user, token, system string, hardcore, cheats, seedExplicit bool, h cheevos.Handlers) {
++func (f *Frontend) SetRetroAchievements(user, token, system, knownHash string, hardcore, cheats, seedExplicit bool, h cheevos.Handlers) {
 +	f.raUser, f.raToken, f.raSystem, f.raHard, f.raCheats, f.raHandler = user, token, system, hardcore, cheats, h
++	f.raKnownHash = knownHash
 +	f.raSeedExplicit = seedExplicit
 +}
 +
@@ -12710,6 +12972,7 @@ index 6974d59..9112b4c 100644
 +	// A room that booted from a restored save-state starts save-scummed. Reuses the mid-run Load taint:
 +	// same meaning, same stickiness, same clear-on-hard-reset. Battery/SRAM and memory-card seeding are
 +	// deliberately NOT tainted — those are the game's own save system and legitimate on real hardware.
++	f.ra.SetKnownHash(f.raKnownHash)
 +	if f.raSeededState {
 +		f.ra.NotifySaveStateLoaded()
 +	}
@@ -49596,10 +49859,10 @@ index eb84d6e..be09f97 100644
  	})
 diff --git a/pkg/worker/cheevos/bridge.c b/pkg/worker/cheevos/bridge.c
 new file mode 100644
-index 0000000..11fe90a
+index 0000000..f12f96c
 --- /dev/null
 +++ b/pkg/worker/cheevos/bridge.c
-@@ -0,0 +1,181 @@
+@@ -0,0 +1,213 @@
 +/* bridge.c — see bridge.h. Adapts rcheevos' rc_client to the worker: memory reads come from the
 + * loaded core's RAM via rc_libretro's console mapping; server calls and events cross into Go. */
 +#include "bridge.h"
@@ -49770,6 +50033,29 @@ index 0000000..11fe90a
 +  return rc_hash_generate_from_buffer(out33, console_id, data, size) ? 1 : 0;
 +}
 +
++/* ── Virtual filereader (see bridge.h). Each callback is a thin hop into Go, which owns the handle
++ * table and the block decoders. rc_hash reads a few MB per disc, so the cgo crossings are not hot. */
++static void *mt_vfs_open(const char *path_utf8) {
++  uintptr_t h = goVfsOpen((char *)path_utf8);
++  return h ? (void *)h : NULL; /* NULL tells rc_hash the file could not be opened */
++}
++static void mt_vfs_seek(void *fh, int64_t offset, int origin) { goVfsSeek((uintptr_t)fh, offset, origin); }
++static int64_t mt_vfs_tell(void *fh) { return goVfsTell((uintptr_t)fh); }
++static size_t mt_vfs_read(void *fh, void *buffer, size_t requested) {
++  return goVfsRead((uintptr_t)fh, buffer, requested);
++}
++static void mt_vfs_close(void *fh) { goVfsClose((uintptr_t)fh); }
++
++void cheevos_install_virtual_filereader(void) {
++  static struct rc_hash_filereader reader;
++  reader.open = mt_vfs_open;
++  reader.seek = mt_vfs_seek;
++  reader.tell = mt_vfs_tell;
++  reader.read = mt_vfs_read;
++  reader.close = mt_vfs_close;
++  rc_hash_init_custom_filereader(&reader);
++}
++
 +void cheevos_begin_login(rc_client_t *client, const char *username, const char *token) {
 +  rc_client_begin_login_with_token(client, username, token, cheevos_login_callback, NULL);
 +}
@@ -49778,15 +50064,24 @@ index 0000000..11fe90a
 +  rc_client_begin_identify_and_load_game(client, console_id, file_path, NULL, 0, cheevos_load_callback, NULL);
 +}
 +
++void cheevos_begin_load_hash(rc_client_t *client, const char *hash) {
++  /* The site already knows this dump's hash, so skip identification entirely. This is not merely an
++   * optimisation: rc_hash cannot READ several of the container formats our library stores (.chd, .gcz,
++   * .cso), so identify-and-load fails with "Unknown game" on Dreamcast, Saturn, GameCube, PS2 and PSP no
++   * matter how healthy the rest of the RA session is. A hash computed offline sidesteps the reader
++   * entirely — the console id is not needed either, because a hash already names one exact game. */
++  rc_client_begin_load_game(client, hash, cheevos_load_callback, NULL);
++}
++
 +void cheevos_do_frame(rc_client_t *client) {
 +  rc_client_do_frame(client);
 +}
 diff --git a/pkg/worker/cheevos/bridge.h b/pkg/worker/cheevos/bridge.h
 new file mode 100644
-index 0000000..42828d1
+index 0000000..1b95f4d
 --- /dev/null
 +++ b/pkg/worker/cheevos/bridge.h
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,93 @@
 +/* bridge.h — the C surface the Go cheevos package calls, and the glue that adapts rcheevos'
 + * rc_client to our worker. rc_client is the RetroAchievements runtime: it hashes the loaded ROM,
 + * logs the player in with their own connect token, evaluates achievement/leaderboard triggers each
@@ -49836,6 +50131,12 @@ index 0000000..42828d1
 +/* Install rcheevos' default file + CD readers so ROM/disc hashing works from a path. Call once. */
 +void cheevos_hash_init(void);
 +
++/* Swap in a filereader backed by Go, so rc_hash can read COMPRESSED disc containers (.cso/.zso PS2+PSP,
++ * .gcz GameCube) that its built-in reader cannot open at all. Everything else passes through to the OS
++ * unchanged. Reads are served on demand from the block index rather than by materialising the image,
++ * which is what makes hashing thousands of multi-GB discs practical. Call after cheevos_hash_init. */
++void cheevos_install_virtual_filereader(void);
++
 +/* Compute the RetroAchievements hash of a ROM/disc at `path` for `console_id`, writing 32 hex chars +
 + * NUL into out33. Returns 1 on success, 0 if the file could not be hashed for that console.
 + *
@@ -49859,6 +50160,12 @@ index 0000000..42828d1
 + * rcheevos identify it. Result arrives via goLoadResult. */
 +void cheevos_begin_load(rc_client_t *client, uint32_t console_id, const char *file_path);
 +
++/* Load a game by a KNOWN RetroAchievements hash, skipping identification. The site computes hashes
++ * offline (ArcadeGame.RaHash) with readers rc_hash does not have, so this is the only path that works
++ * for .chd/.gcz/.cso dumps -- and it is strictly better for every other dump too: no file is reopened
++ * or re-read at boot. Result arrives via goLoadResult, same as cheevos_begin_load. */
++void cheevos_begin_load_hash(rc_client_t *client, const char *hash);
++
 +/* Advance the runtime one frame (reads memory, fires triggers). Called once per emulated frame. */
 +void cheevos_do_frame(rc_client_t *client);
 +
@@ -49870,10 +50177,10 @@ index 0000000..42828d1
 +#endif /* CHEEVOS_BRIDGE_H */
 diff --git a/pkg/worker/cheevos/cheevos.go b/pkg/worker/cheevos/cheevos.go
 new file mode 100644
-index 0000000..94f5d9f
+index 0000000..a71ce10
 --- /dev/null
 +++ b/pkg/worker/cheevos/cheevos.go
-@@ -0,0 +1,577 @@
+@@ -0,0 +1,640 @@
 +// Package cheevos embeds the RetroAchievements runtime (rcheevos' rc_client) into the libretro worker.
 +// rc_client hashes the loaded ROM, logs the player in with their OWN connect token, evaluates
 +// achievement + leaderboard triggers each emulated frame against core RAM, and submits unlocks/runs to
@@ -49977,6 +50284,9 @@ index 0000000..94f5d9f
 +	consoleID uint32
 +	memoryMap unsafe.Pointer // const struct retro_memory_map* from SET_MEMORY_MAPS; nil = core set none
 +	romPath   string
++	// knownHash: the RetroAchievements hash the SITE computed for this dump (ArcadeGame.RaHash).
++	// Non-empty means beginLoad skips identification entirely — see SetKnownHash.
++	knownHash string
 +	user      string
 +	token     string
 +	handlers  Handlers
@@ -50017,7 +50327,7 @@ index 0000000..94f5d9f
 +	if user == "" || token == "" {
 +		return nil
 +	}
-+	hashOnce.Do(func() { C.cheevos_hash_init() })
++	hashOnce.Do(hashInit)
 +
 +	ptr := C.cheevos_create()
 +	if ptr == nil {
@@ -50167,9 +50477,27 @@ index 0000000..94f5d9f
 +}
 +
 +func (c *Client) beginLoad() {
++	// A hash the site already computed wins over identifying the file ourselves. rc_hash cannot read
++	// .chd/.gcz/.cso, so for Dreamcast/Saturn/GameCube/PS2/PSP this is the difference between a tracked
++	// room and "Unknown game"; everywhere else it just saves reopening the ROM at boot.
++	if c.knownHash != "" {
++		ch := C.CString(c.knownHash)
++		defer C.free(unsafe.Pointer(ch))
++		c.state("RetroAchievements: loading by known hash " + c.knownHash)
++		C.cheevos_begin_load_hash((*C.rc_client_t)(c.ptr), ch)
++		return
++	}
 +	cp := C.CString(c.romPath)
 +	defer C.free(unsafe.Pointer(cp))
 +	C.cheevos_begin_load((*C.rc_client_t)(c.ptr), C.uint32_t(c.consoleID), cp)
++}
++
++// SetKnownHash supplies the RetroAchievements hash the site computed for this dump. Must be called
++// before the first DoFrame (which is what kicks login -> load). Empty = identify from the file.
++func (c *Client) SetKnownHash(h string) {
++	if c != nil {
++		c.knownHash = h
++	}
 +}
 +
 +func (c *Client) state(msg string) {
@@ -50217,6 +50545,14 @@ index 0000000..94f5d9f
 +// worker that never opens an RA room would otherwise never have called it.
 +var hashInitOnce sync.Once
 +
++// hashInit installs the default readers and then REPLACES the filereader with ours, so compressed
++// disc containers (.cso/.zso/.gcz) become readable. Order matters: cheevos_hash_init installs the
++// built-in filereader, so the swap has to follow it.
++func hashInit() {
++	C.cheevos_hash_init()
++	C.cheevos_install_virtual_filereader()
++}
++
 +// HashFile computes the RetroAchievements hash of a ROM/disc for a console — the SAME identification
 +// rc_client performs when it loads a game, which is why it is the only correct way to map one of our
 +// dumps to an RA game. Returns ("", false) when the file cannot be hashed for that console (wrong
@@ -50228,7 +50564,7 @@ index 0000000..94f5d9f
 +// No rc_client is involved, so unlike everything else in this package this is safe to call from any
 +// goroutine (and from a plain CLI with no emulator at all — see cmd/rahash).
 +func HashFile(consoleID uint32, path string) (string, bool) {
-+	hashInitOnce.Do(func() { C.cheevos_hash_init() })
++	hashInitOnce.Do(hashInit)
 +	cPath := C.CString(path)
 +	defer C.free(unsafe.Pointer(cPath))
 +	var out [33]C.char
@@ -50246,7 +50582,7 @@ index 0000000..94f5d9f
 +// zipped dumps reported "hashed, 0 unhashable" and produced 0 matches. (arcade/MAME is the exception:
 +// there the zip IS the ROM and HashFile is correct.)
 +func HashBuffer(consoleID uint32, data []byte) (string, bool) {
-+	hashInitOnce.Do(func() { C.cheevos_hash_init() })
++	hashInitOnce.Do(hashInit)
 +	if len(data) == 0 {
 +		return "", false
 +	}
@@ -50283,6 +50619,40 @@ index 0000000..94f5d9f
 +		return 11 // RC_CONSOLE_MASTER_SYSTEM
 +	case "ps1", "psx", "playstation":
 +		return 12 // RC_CONSOLE_PLAYSTATION
++	// The disc/handheld systems below were missing, so their rooms passed RC_CONSOLE_UNKNOWN into both
++	// the hash and rc_libretro's memory mapping. Keep this in step with the site's ArcadeRaHasher.Console.
++	case "lynx":
++		return 13
++	case "ngp", "ngpc":
++		return 14
++	case "gg", "gamegear":
++		return 15
++	case "gc", "gamecube":
++		return 16
++	case "nds", "ds":
++		return 18
++	case "ps2":
++		return 21
++	case "a2600", "atari2600":
++		return 25
++	case "arcade", "fbneo", "mame", "neogeo":
++		return 27
++	case "vb", "virtualboy":
++		return 28
++	case "sg1000":
++		return 33
++	case "saturn":
++		return 39
++	case "dc", "dreamcast":
++		return 40
++	case "psp":
++		return 41
++	case "coleco", "colecovision":
++		return 44
++	case "a7800":
++		return 51
++	case "ws", "wsc", "wonderswan":
++		return 53
 +	default:
 +		return 0 // RC_CONSOLE_UNKNOWN — identify by hash
 +	}
@@ -87837,6 +88207,356 @@ index 0000000..62c6ac1
 +RC_END_C_DECLS
 +
 +#endif /* RC_HASH_INTERNAL_H */
+diff --git a/pkg/worker/cheevos/vfs.go b/pkg/worker/cheevos/vfs.go
+new file mode 100644
+index 0000000..a2e250b
+--- /dev/null
++++ b/pkg/worker/cheevos/vfs.go
+@@ -0,0 +1,344 @@
++package cheevos
++
++/*
++#include <stdlib.h>
++#include "bridge.h"
++*/
++import "C"
++
++import (
++	"bytes"
++	"compress/flate"
++	"compress/zlib"
++	"encoding/binary"
++	"errors"
++	"io"
++	"os"
++	"path/filepath"
++	"strings"
++	"sync"
++	"unsafe"
++)
++
++// ── A virtual filereader for rc_hash ────────────────────────────────────────────────────────────
++//
++// rc_hash reads a disc image through a filereader it can be handed (open/seek/tell/read/close). Our
++// library stores whole systems in COMPRESSED disc containers that its built-in reader cannot open:
++//
++//	.cso  CISO       — PS2 (1,865 dumps) and PSP
++//	.gcz  GCZ        — GameCube (599 dumps)
++//
++// Both are the same idea: a fixed block size, an index of per-block file offsets, and deflate for any
++// block that compressed usefully. That makes them RANDOM-ACCESS, which is the whole point of doing it
++// here rather than extracting: rc_hash reads a disc's descriptor, its root directory and one
++// executable — a few MB — so serving those reads on demand takes a moment, while materialising the
++// image to hash it would mean writing multi-GB temp files for thousands of games.
++//
++// Everything else (raw dumps, .iso, .cue/.bin) passes straight through to the OS, so installing this
++// reader is transparent for the formats that already worked.
++
++// vfsFile is one open handle. Exactly one of osFile / blk is set.
++type vfsFile struct {
++	osFile *os.File
++	blk    *blockImage
++	pos    int64
++}
++
++var (
++	vfsMu    sync.Mutex
++	vfsNext  uintptr = 1
++	vfsFiles         = map[uintptr]*vfsFile{}
++)
++
++func vfsPut(f *vfsFile) uintptr {
++	vfsMu.Lock()
++	defer vfsMu.Unlock()
++	h := vfsNext
++	vfsNext++
++	vfsFiles[h] = f
++	return h
++}
++
++func vfsGet(h uintptr) *vfsFile {
++	vfsMu.Lock()
++	defer vfsMu.Unlock()
++	return vfsFiles[h]
++}
++
++func vfsDrop(h uintptr) *vfsFile {
++	vfsMu.Lock()
++	defer vfsMu.Unlock()
++	f := vfsFiles[h]
++	delete(vfsFiles, h)
++	return f
++}
++
++//export goVfsOpen
++func goVfsOpen(cpath *C.char) C.uintptr_t {
++	path := C.GoString(cpath)
++	ext := strings.ToLower(filepath.Ext(path))
++
++	if ext == ".cso" || ext == ".ciso" || ext == ".zso" || ext == ".gcz" {
++		img, err := openBlockImage(path)
++		if err == nil {
++			return C.uintptr_t(vfsPut(&vfsFile{blk: img}))
++		}
++		// Fall through to a plain open: a mis-named file is better read raw than not at all.
++	}
++	fh, err := os.Open(path)
++	if err != nil {
++		return 0
++	}
++	return C.uintptr_t(vfsPut(&vfsFile{osFile: fh}))
++}
++
++//export goVfsSeek
++func goVfsSeek(h C.uintptr_t, offset C.int64_t, origin C.int) {
++	f := vfsGet(uintptr(h))
++	if f == nil {
++		return
++	}
++	var base int64
++	switch origin {
++	case 0: // SEEK_SET
++		base = 0
++	case 1: // SEEK_CUR
++		base = f.pos
++	case 2: // SEEK_END
++		base = f.size()
++	}
++	f.pos = base + int64(offset)
++	if f.pos < 0 {
++		f.pos = 0
++	}
++}
++
++//export goVfsTell
++func goVfsTell(h C.uintptr_t) C.int64_t {
++	f := vfsGet(uintptr(h))
++	if f == nil {
++		return 0
++	}
++	return C.int64_t(f.pos)
++}
++
++//export goVfsRead
++func goVfsRead(h C.uintptr_t, buf unsafe.Pointer, requested C.size_t) C.size_t {
++	f := vfsGet(uintptr(h))
++	if f == nil || requested == 0 {
++		return 0
++	}
++	// View rc_hash's destination buffer as a Go slice; C owns the memory, we only fill it.
++	dst := unsafe.Slice((*byte)(buf), int(requested))
++	n, _ := f.readAt(dst, f.pos)
++	f.pos += int64(n)
++	return C.size_t(n)
++}
++
++//export goVfsClose
++func goVfsClose(h C.uintptr_t) {
++	f := vfsDrop(uintptr(h))
++	if f == nil {
++		return
++	}
++	if f.osFile != nil {
++		f.osFile.Close()
++	}
++	if f.blk != nil {
++		f.blk.Close()
++	}
++}
++
++func (f *vfsFile) size() int64 {
++	if f.blk != nil {
++		return f.blk.size
++	}
++	if st, err := f.osFile.Stat(); err == nil {
++		return st.Size()
++	}
++	return 0
++}
++
++func (f *vfsFile) readAt(p []byte, off int64) (int, error) {
++	if f.blk != nil {
++		return f.blk.ReadAt(p, off)
++	}
++	return f.osFile.ReadAt(p, off)
++}
++
++// ── Block-compressed disc images (CSO / ZSO / GCZ) ──────────────────────────────────────────────
++
++type blockImage struct {
++	f         *os.File
++	size      int64  // uncompressed size
++	blockSize int64  // uncompressed bytes per block
++	offsets   []int64
++	flags     []bool // true = block stored uncompressed
++	raw       bool   // GCZ stores zlib streams; CSO stores raw deflate
++
++	mu       sync.Mutex
++	cacheIdx int64
++	cache    []byte
++}
++
++func openBlockImage(path string) (*blockImage, error) {
++	f, err := os.Open(path)
++	if err != nil {
++		return nil, err
++	}
++	magic := make([]byte, 4)
++	if _, err := f.ReadAt(magic, 0); err != nil {
++		f.Close()
++		return nil, err
++	}
++	var img *blockImage
++	switch {
++	case string(magic) == "CISO" || string(magic) == "ZISO":
++		img, err = openCso(f)
++	case binary.LittleEndian.Uint32(magic) == 0xB10BC001:
++		img, err = openGcz(f)
++	default:
++		err = errors.New("not a block image")
++	}
++	if err != nil {
++		f.Close()
++		return nil, err
++	}
++	return img, nil
++}
++
++// CSO/CISO header: magic, header size, uncompressed size, block size, version, index shift, then
++// (blocks+1) little-endian uint32 offsets. The offset's TOP BIT means "stored uncompressed"; the
++// block's compressed length is the gap to the next offset.
++func openCso(f *os.File) (*blockImage, error) {
++	hdr := make([]byte, 24)
++	if _, err := f.ReadAt(hdr, 0); err != nil {
++		return nil, err
++	}
++	total := int64(binary.LittleEndian.Uint64(hdr[8:16]))
++	blockSize := int64(binary.LittleEndian.Uint32(hdr[16:20]))
++	shift := uint(hdr[21])
++	if blockSize <= 0 || total <= 0 {
++		return nil, errors.New("bad cso header")
++	}
++	nblocks := int((total + blockSize - 1) / blockSize)
++	idx := make([]byte, (nblocks+1)*4)
++	if _, err := f.ReadAt(idx, 24); err != nil {
++		return nil, err
++	}
++	offsets := make([]int64, nblocks+1)
++	flags := make([]bool, nblocks+1)
++	for i := 0; i <= nblocks; i++ {
++		v := binary.LittleEndian.Uint32(idx[i*4 : i*4+4])
++		flags[i] = v&0x80000000 != 0
++		offsets[i] = int64(v&0x7FFFFFFF) << shift
++	}
++	return &blockImage{f: f, size: total, blockSize: blockSize, offsets: offsets, flags: flags, cacheIdx: -1}, nil
++}
++
++// GCZ header: magic, sub_type, compressed_size, data_size, block_size, num_blocks, then num_blocks
++// uint64 offsets (top bit = uncompressed) and num_blocks uint32 hashes we do not verify.
++func openGcz(f *os.File) (*blockImage, error) {
++	hdr := make([]byte, 32)
++	if _, err := f.ReadAt(hdr, 0); err != nil {
++		return nil, err
++	}
++	dataSize := int64(binary.LittleEndian.Uint64(hdr[16:24]))
++	blockSize := int64(binary.LittleEndian.Uint32(hdr[24:28]))
++	nblocks := int(binary.LittleEndian.Uint32(hdr[28:32]))
++	if blockSize <= 0 || nblocks <= 0 {
++		return nil, errors.New("bad gcz header")
++	}
++	off := make([]byte, nblocks*8)
++	if _, err := f.ReadAt(off, 32); err != nil {
++		return nil, err
++	}
++	dataStart := int64(32 + nblocks*8 + nblocks*4)
++	offsets := make([]int64, nblocks+1)
++	flags := make([]bool, nblocks+1)
++	for i := 0; i < nblocks; i++ {
++		v := binary.LittleEndian.Uint64(off[i*8 : i*8+8])
++		flags[i] = v&0x8000000000000000 != 0
++		offsets[i] = dataStart + int64(v&0x7FFFFFFFFFFFFFFF)
++	}
++	// The final sentinel bounds the last block; the file's end is close enough for that.
++	if st, err := f.Stat(); err == nil {
++		offsets[nblocks] = st.Size()
++	}
++	return &blockImage{f: f, size: dataSize, blockSize: blockSize, offsets: offsets, flags: flags, raw: true, cacheIdx: -1}, nil
++}
++
++func (b *blockImage) block(i int64) ([]byte, error) {
++	b.mu.Lock()
++	defer b.mu.Unlock()
++	if b.cacheIdx == i && b.cache != nil {
++		return b.cache, nil
++	}
++	if i < 0 || int(i) >= len(b.offsets)-1 {
++		return nil, io.EOF
++	}
++	start, end := b.offsets[i], b.offsets[i+1]
++	if end <= start {
++		return nil, errors.New("bad block bounds")
++	}
++	comp := make([]byte, end-start)
++	if _, err := b.f.ReadAt(comp, start); err != nil && err != io.EOF {
++		return nil, err
++	}
++
++	var out []byte
++	if b.flags[i] {
++		out = comp
++		if int64(len(out)) > b.blockSize {
++			out = out[:b.blockSize]
++		}
++	} else {
++		var r io.ReadCloser
++		if b.raw {
++			zr, err := zlib.NewReader(bytes.NewReader(comp))
++			if err != nil {
++				return nil, err
++			}
++			r = zr
++		} else {
++			r = flate.NewReader(bytes.NewReader(comp))
++		}
++		dec, err := io.ReadAll(io.LimitReader(r, b.blockSize))
++		r.Close()
++		if err != nil && len(dec) == 0 {
++			return nil, err
++		}
++		out = dec
++	}
++	b.cacheIdx, b.cache = i, out
++	return out, nil
++}
++
++func (b *blockImage) ReadAt(p []byte, off int64) (int, error) {
++	if off >= b.size {
++		return 0, io.EOF
++	}
++	got := 0
++	for got < len(p) && off+int64(got) < b.size {
++		abs := off + int64(got)
++		blk, err := b.block(abs / b.blockSize)
++		if err != nil {
++			if got > 0 {
++				return got, nil
++			}
++			return 0, err
++		}
++		in := abs % b.blockSize
++		if in >= int64(len(blk)) {
++			break
++		}
++		n := copy(p[got:], blk[in:])
++		if n == 0 {
++			break
++		}
++		got += n
++	}
++	return got, nil
++}
++
++func (b *blockImage) Close() error { return b.f.Close() }
 diff --git a/pkg/worker/cheevos/z_rc_rapi_rc_api_common.c b/pkg/worker/cheevos/z_rc_rapi_rc_api_common.c
 new file mode 100644
 index 0000000..a520e0c
@@ -88131,33 +88851,344 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..f3ba56d 100644
+index 6972cc7..d30d7a3 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -2,17 +2,41 @@ package worker
- 
- import (
- 	"encoding/json"
+@@ -1,310 +1,732 @@
+-package worker
+-
+-import (
+-	"encoding/json"
+-
+-	"github.com/giongto35/cloud-game/v3/pkg/api"
+-	"github.com/giongto35/cloud-game/v3/pkg/com"
+-	"github.com/giongto35/cloud-game/v3/pkg/config"
+-	"github.com/giongto35/cloud-game/v3/pkg/games"
+-	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
+-	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
+-	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
+-	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
+-)
+-
+-// buildConnQuery builds initial connection data query to a coordinator.
+-func buildConnQuery(id com.Uid, conf config.Worker, address string) (string, error) {
+-	addr := conf.GetPingAddr(address)
+-	return toJson(api.ConnectionRequest[com.Uid]{
+-		Addr:    addr.Hostname(),
+-		Id:      id,
+-		IsHTTPS: conf.Server.Https,
+-		PingURL: addr.String(),
+-		Port:    conf.GetPort(address),
+-		Tag:     conf.Tag,
+-		Zone:    conf.Network.Zone,
+-	})
+-}
+-
+-func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *Worker, factory *webrtc.ApiFactory) api.Out {
+-	var err error
+-	defer func() {
+-		if err != nil {
+-			c.log.Error().Err(err).Str("peer", rq.Id).Msg("")
+-		}
+-	}()
+-
+-	peer := webrtc.New(c.log, factory)
+-	codec := w.conf.Encoder.Video.Codec
+-
+-	if err = peer.NewConnection(codec, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
+-		return api.EmptyPacket
+-	}
+-
+-	if rq.Initiator {
+-		if err = peer.HandleSignal(nil, &rq.Sdp); err != nil {
+-			return api.EmptyPacket
+-		}
+-	}
+-
+-	var sdp string
+-	sdp, err = peer.OfferAnswer(!rq.Initiator)
+-	if err != nil {
+-		return api.EmptyPacket
+-	}
+-
+-	user := room.NewGameSession(rq.Id, peer) // use user uid from the coordinator
+-	c.log.Info().Msgf("Peer connection: %s", user.Id())
+-	w.router.AddUser(user)
+-
+-	return api.Out{Payload: sdp}
+-}
+-
+-func (c *coordinator) HandleWebrtcSignal(rq api.WebrtcSignalRequest, w *Worker) {
+-	user := w.router.FindUser(rq.Id)
+-	if user == nil {
+-		return
+-	}
+-
+-	if webrtc := room.WithWebRTC(user.Session); webrtc != nil {
+-		if err := webrtc.HandleSignal(rq.Ice, rq.Sdp); err != nil {
+-			c.log.Error().Err(err).Msgf("cannot handle the signal from [%v]", rq.Id)
+-		}
+-	}
+-}
+-
+-func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Out {
+-	user := w.router.FindUser(rq.Id)
+-	if user == nil {
+-		c.log.Error().Msgf("no user [%v]", rq.Id)
+-		return api.EmptyPacket
+-	}
+-	user.Index = rq.PlayerIndex
+-
+-	r := w.router.FindRoom(rq.Rid)
+-
+-	// +injects game data into the original game request
+-	// the name of the game either in the `room id` field or
+-	// it's in the initial request
+-	gameName := rq.Game
+-	if rq.Rid != "" {
+-		name := w.launcher.ExtractAppNameFromUrl(rq.Rid)
+-		if name == "" {
+-			c.log.Warn().Msg("couldn't decode game name from the room id")
+-			return api.EmptyPacket
+-		}
+-		gameName = name
+-	}
+-
+-	gameInfo, err := w.launcher.FindAppByName(gameName)
+-	if err != nil {
+-		c.log.Error().Err(err).Send()
+-		return api.EmptyPacket
+-	}
+-
+-	if r == nil { // new room
+-		uid := rq.Rid
+-		if uid == "" {
+-			uid = games.GenerateRoomID(gameName)
+-		}
+-		game := games.GameMetadata(gameInfo)
+-
+-		r = room.NewRoom(uid, nil, w.router.Users(), nil)
+-		r.HandleClose = func() {
+-			c.CloseRoom(uid)
+-			c.log.Debug().Msgf("room close request %v sent", uid)
+-		}
+-
+-		if other := w.router.Room(); other != nil {
+-			c.log.Error().Msgf("concurrent room creation: %v / %v", uid, w.router.Room().Id())
+-			return api.EmptyPacket
+-		}
+-
+-		w.router.SetRoom(r)
+-		c.log.Info().Str("room", r.Id()).Str("game", game.Name).Msg("New room")
+-
+-		// start the emulator
+-		app := room.WithEmulator(w.mana.Get(caged.Libretro))
+-		app.ReloadFrontend()
+-		app.SetSessionId(uid)
+-		app.SetSaveOnClose(true)
+-		app.EnableCloudStorage(uid, w.storage)
+-		app.EnableRecording(rq.Record, rq.RecordUser, gameName)
+-
+-		r.SetApp(app)
+-
+-		m := media.NewGstreamer(w.conf.Encoder, w.log)
+-
+-		// recreate the video encoder
+-		app.VideoChangeCb(func() {
+-			app.ViewportRecalculate()
+-			m.VideoW, m.VideoH = app.ViewportSize()
+-			m.VideoScale, m.ScaleMethod = app.Scale()
+-
+-			if err := m.Reinit(); err != nil {
+-				c.log.Error().Err(err).Msgf("reinit fail")
+-			}
+-
+-			data, err := api.Wrap(api.Out{
+-				T: uint8(api.AppVideoChange),
+-				Payload: api.AppVideoInfo{
+-					W:    m.VideoW,
+-					H:    m.VideoH,
+-					A:    app.AspectRatio(),
+-					S:    int(m.VideoScale),
+-					SM:   m.ScaleMethod,
+-					Flip: app.Flipped(),
+-					Rot:  app.Rotation(),
+-				}})
+-			if err != nil {
+-				c.log.Error().Err(err).Msgf("wrap")
+-			}
+-			r.Send(data)
+-		})
+-
+-		w.log.Info().Msgf("Starting the game: %v", gameName)
+-		if err := app.Load(game, w.conf.Library.BasePath); err != nil {
+-			c.log.Error().Err(err).Msgf("couldn't load the game %v", game)
+-			r.Close()
+-			w.router.SetRoom(nil)
+-			return api.EmptyPacket
+-		}
+-
+-		m.AudioSrcHz = app.AudioSampleRate()
+-		m.VideoW, m.VideoH = app.ViewportSize()
+-		m.VideoScale, m.ScaleMethod = app.Scale()
+-		coreConf := w.conf.Emulator.GetLibretroCoreConfig(game.System)
+-		m.MaxThreads = coreConf.MaxThreads
+-		m.VideoFPS = app.FPS()
+-		m.VideoVFR = coreConf.VFR
+-
+-		m.SetPixFmt(app.PixFormat())
+-		m.SetRot(app.Rotation())
+-
+-		r.SetMedia(m)
+-
+-		if err := m.Init(); err != nil {
+-			c.log.Error().Err(err).Msgf("couldn't init the media")
+-			r.Close()
+-			w.router.SetRoom(nil)
+-			return api.EmptyPacket
+-		}
+-
+-		r.InitMedia()
+-		r.StartApp()
+-	}
+-
+-	needsKbMouse := r.App().KbMouseSupport()
+-
+-	s := room.WithWebRTC(user.Session)
+-	s.OnMessage(func(data []byte) { r.App().Input(user.Index, byte(caged.RetroPad), data) })
+-	if needsKbMouse {
+-		_, _ = s.Channel("keyboard", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Keyboard), data) })
+-		_, _ = s.Channel("mouse", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Mouse), data) })
+-	}
+-
+-	c.RegisterRoom(r.Id())
+-
+-	response := api.StartGameResponse{
+-		Room:    api.Room{Rid: r.Id()},
+-		Record:  w.conf.Recording.Enabled,
+-		KbMouse: needsKbMouse,
+-	}
+-
+-	if r.App().AspectEnabled() {
+-		ww, hh := r.App().ViewportSize()
+-		scale, scaleM := r.App().Scale()
+-		response.AV = &api.AppVideoInfo{
+-			W:    ww,
+-			H:    hh,
+-			A:    r.App().AspectRatio(),
+-			S:    int(scale),
+-			SM:   scaleM,
+-			Flip: r.App().Flipped(),
+-			Rot:  r.App().Rotation(),
+-		}
+-	}
+-
+-	return api.Out{Payload: response}
+-}
+-
+-// HandleTerminateSession handles cases when a user has been disconnected from the websocket of coordinator.
+-func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *Worker) {
+-	if user := w.router.FindUser(rq.Id); user != nil {
+-		w.router.Remove(user)
+-		user.Disconnect()
+-	}
+-}
+-
+-// HandleQuitGame handles cases when a user manually exits the game.
+-func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
+-	if user := w.router.FindUser(rq.Id); user != nil {
+-		w.router.Remove(user)
+-	}
+-}
+-
+-func (c *coordinator) HandleResetGame(rq api.ResetGameRequest, w *Worker) api.Out {
+-	if r := w.router.FindRoom(rq.Rid); r != nil {
+-		room.WithEmulator(r.App()).Reset()
+-		return api.OkPacket
+-	}
+-	return api.ErrPacket
+-}
+-
+-func (c *coordinator) HandleSaveGame(rq api.SaveGameRequest, w *Worker) api.Out {
+-	r := w.router.FindRoom(rq.Rid)
+-	if r == nil {
+-		return api.ErrPacket
+-	}
+-	if err := room.WithEmulator(r.App()).SaveGameState(); err != nil {
+-		c.log.Error().Err(err).Msg("cannot save game state")
+-		return api.ErrPacket
+-	}
+-	return api.OkPacket
+-}
+-
+-func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out {
+-	r := w.router.FindRoom(rq.Rid)
+-	if r == nil {
+-		return api.ErrPacket
+-	}
+-	if err := room.WithEmulator(r.App()).RestoreGameState(); err != nil {
+-		c.log.Error().Err(err).Msg("cannot load game state")
+-		return api.ErrPacket
+-	}
+-	return api.OkPacket
+-}
+-
+-func (c *coordinator) HandleChangePlayer(rq api.ChangePlayerRequest, w *Worker) api.Out {
+-	user := w.router.FindUser(rq.Id)
+-	if user == nil || w.router.FindRoom(rq.Rid) == nil {
+-		return api.Out{Payload: -1} // semi-predicates
+-	}
+-	user.Index = rq.Index
+-	w.log.Info().Msgf("Updated player index to: %d", rq.Index)
+-	return api.Out{Payload: rq.Index}
+-}
+-
+-func (c *coordinator) HandleRecordGame(rq api.RecordGameRequest, w *Worker) api.Out {
+-	if !w.conf.Recording.Enabled {
+-		return api.ErrPacket
+-	}
+-	r := w.router.FindRoom(rq.Rid)
+-	if r == nil {
+-		return api.ErrPacket
+-	}
+-	room.WithRecorder(r.App()).ToggleRecording(rq.Active, rq.User)
+-	return api.OkPacket
+-}
+-
+-func toJson(data any) (string, error) {
+-	if data == nil {
+-		return "", nil
+-	}
+-	b, err := json.Marshal(data)
+-	if err != nil {
+-		return "", err
+-	}
+-	return string(b), nil
+-}
++package worker
++
++import (
++	"encoding/json"
 +	"fmt"
 +	"os"
 +	"strings"
- 
- 	"github.com/giongto35/cloud-game/v3/pkg/api"
++
++	"github.com/giongto35/cloud-game/v3/pkg/api"
 +	// Aliased: this file already imports stdlib "os" for file work, and the project's own os package
 +	// carries the process-level helpers (HardExit, crash forensics).
 +	gos "github.com/giongto35/cloud-game/v3/pkg/os"
- 	"github.com/giongto35/cloud-game/v3/pkg/com"
- 	"github.com/giongto35/cloud-game/v3/pkg/config"
- 	"github.com/giongto35/cloud-game/v3/pkg/games"
- 	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
- 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
++	"github.com/giongto35/cloud-game/v3/pkg/com"
++	"github.com/giongto35/cloud-game/v3/pkg/config"
++	"github.com/giongto35/cloud-game/v3/pkg/games"
++	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
++	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/capture"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/nanoarch"
- 	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
- 	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
- )
- 
++	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
++	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
++)
++
 +// roomVideoCodec sanitizes a client-requested per-room video codec (patch 0036): lowercase, must
 +// have an encoder.list entry, else the config default. Never trust the wire value — an unknown
 +// codec would fail the pipeline build after the peer was already created.
@@ -88173,16 +89204,29 @@ index 6972cc7..f3ba56d 100644
 +	return c
 +}
 +
- // buildConnQuery builds initial connection data query to a coordinator.
- func buildConnQuery(id com.Uid, conf config.Worker, address string) (string, error) {
- 	addr := conf.GetPingAddr(address)
-@@ -36,9 +60,25 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
- 	}()
- 
- 	peer := webrtc.New(c.log, factory)
--	codec := w.conf.Encoder.Video.Codec
--
--	if err = peer.NewConnection(codec, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
++// buildConnQuery builds initial connection data query to a coordinator.
++func buildConnQuery(id com.Uid, conf config.Worker, address string) (string, error) {
++	addr := conf.GetPingAddr(address)
++	return toJson(api.ConnectionRequest[com.Uid]{
++		Addr:    addr.Hostname(),
++		Id:      id,
++		IsHTTPS: conf.Server.Https,
++		PingURL: addr.String(),
++		Port:    conf.GetPort(address),
++		Tag:     conf.Tag,
++		Zone:    conf.Network.Zone,
++	})
++}
++
++func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *Worker, factory *webrtc.ApiFactory) api.Out {
++	var err error
++	defer func() {
++		if err != nil {
++			c.log.Error().Err(err).Str("peer", rq.Id).Msg("")
++		}
++	}()
++
++	peer := webrtc.New(c.log, factory)
 +	// Per-room codec (patch 0036): the site's join descriptor hands every client of a room the
 +	// creator's codec choice, and each client echoes it here — so this peer's track mime matches
 +	// the encoder the creator's t=104 will build (or already built, for joiners).
@@ -88202,13 +89246,21 @@ index 6972cc7..f3ba56d 100644
 +	inputOnly := !rq.Initiator && rq.Sdp == "input-only"
 +
 +	if err = peer.NewConnection(codec, splitAudio, inputOnly, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
- 		return api.EmptyPacket
- 	}
- 
-@@ -54,6 +94,17 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
- 		return api.EmptyPacket
- 	}
- 
++		return api.EmptyPacket
++	}
++
++	if rq.Initiator {
++		if err = peer.HandleSignal(nil, &rq.Sdp); err != nil {
++			return api.EmptyPacket
++		}
++	}
++
++	var sdp string
++	sdp, err = peer.OfferAnswer(!rq.Initiator)
++	if err != nil {
++		return api.EmptyPacket
++	}
++
 +	// The aux audio offer travels in the ice signal field ("aux-sdp:" envelope) — the coordinator
 +	// relays that string verbatim, and the browser buffers aux ICE until this lands. A failure here
 +	// costs only split audio (the room still runs video+input), so it doesn't abort the init.
@@ -88220,35 +89272,66 @@ index 6972cc7..f3ba56d 100644
 +		}
 +	}
 +
- 	user := room.NewGameSession(rq.Id, peer) // use user uid from the coordinator
- 	c.log.Info().Msgf("Peer connection: %s", user.Id())
- 	w.router.AddUser(user)
-@@ -88,6 +139,9 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
- 	// the name of the game either in the `room id` field or
- 	// it's in the initial request
- 	gameName := rq.Game
++	user := room.NewGameSession(rq.Id, peer) // use user uid from the coordinator
++	c.log.Info().Msgf("Peer connection: %s", user.Id())
++	w.router.AddUser(user)
++
++	return api.Out{Payload: sdp}
++}
++
++func (c *coordinator) HandleWebrtcSignal(rq api.WebrtcSignalRequest, w *Worker) {
++	user := w.router.FindUser(rq.Id)
++	if user == nil {
++		return
++	}
++
++	if webrtc := room.WithWebRTC(user.Session); webrtc != nil {
++		if err := webrtc.HandleSignal(rq.Ice, rq.Sdp); err != nil {
++			c.log.Error().Err(err).Msgf("cannot handle the signal from [%v]", rq.Id)
++		}
++	}
++}
++
++func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Out {
++	user := w.router.FindUser(rq.Id)
++	if user == nil {
++		c.log.Error().Msgf("no user [%v]", rq.Id)
++		return api.EmptyPacket
++	}
++	user.Index = rq.PlayerIndex
++
++	r := w.router.FindRoom(rq.Rid)
++
++	// +injects game data into the original game request
++	// the name of the game either in the `room id` field or
++	// it's in the initial request
++	gameName := rq.Game
 +	// The room id also carries the SYSTEM the room was minted for, which is what keeps the lookup
 +	// on the right ROM when the same game name exists in several systems (it does, 1352 times).
 +	system := ""
- 	if rq.Rid != "" {
- 		name := w.launcher.ExtractAppNameFromUrl(rq.Rid)
- 		if name == "" {
-@@ -95,9 +149,10 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
- 			return api.EmptyPacket
- 		}
- 		gameName = name
++	if rq.Rid != "" {
++		name := w.launcher.ExtractAppNameFromUrl(rq.Rid)
++		if name == "" {
++			c.log.Warn().Msg("couldn't decode game name from the room id")
++			return api.EmptyPacket
++		}
++		gameName = name
 +		system = w.launcher.ExtractSystemFromUrl(rq.Rid)
- 	}
- 
--	gameInfo, err := w.launcher.FindAppByName(gameName)
++	}
++
 +	gameInfo, err := w.launcher.FindApp(system, gameName)
- 	if err != nil {
- 		c.log.Error().Err(err).Send()
- 		return api.EmptyPacket
-@@ -110,6 +165,21 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
- 		}
- 		game := games.GameMetadata(gameInfo)
- 
++	if err != nil {
++		c.log.Error().Err(err).Send()
++		return api.EmptyPacket
++	}
++
++	if r == nil { // new room
++		uid := rq.Rid
++		if uid == "" {
++			uid = games.GenerateRoomID(gameName)
++		}
++		game := games.GameMetadata(gameInfo)
++
 +		// Per-room CORE override (arcade render profiles): boot this game on an alternate core-key instead
 +		// of the one its system maps to — e.g. PS1 on pcsx_rearmed instead of the default Beetle. Applied
 +		// AFTER FindApp so the ROM still resolves by the game's REAL system; from here the whole room (core
@@ -88264,22 +89347,20 @@ index 6972cc7..f3ba56d 100644
 +			}
 +		}
 +
- 		r = room.NewRoom(uid, nil, w.router.Users(), nil)
- 		r.HandleClose = func() {
- 			c.CloseRoom(uid)
-@@ -124,63 +194,325 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
- 		w.router.SetRoom(r)
- 		c.log.Info().Str("room", r.Id()).Str("game", game.Name).Msg("New room")
- 
--		// start the emulator
--		app := room.WithEmulator(w.mana.Get(caged.Libretro))
--		app.ReloadFrontend()
--		app.SetSessionId(uid)
--		app.SetSaveOnClose(true)
--		app.EnableCloudStorage(uid, w.storage)
--		app.EnableRecording(rq.Record, rq.RecordUser, gameName)
--
--		r.SetApp(app)
++		r = room.NewRoom(uid, nil, w.router.Users(), nil)
++		r.HandleClose = func() {
++			c.CloseRoom(uid)
++			c.log.Debug().Msgf("room close request %v sent", uid)
++		}
++
++		if other := w.router.Room(); other != nil {
++			c.log.Error().Msgf("concurrent room creation: %v / %v", uid, w.router.Room().Id())
++			return api.EmptyPacket
++		}
++
++		w.router.SetRoom(r)
++		c.log.Info().Str("room", r.Id()).Str("game", game.Name).Msg("New room")
++
 +		// Per-room encoder quality (arcade per-room bitrate/FEC) — SHARED by both lanes. The creator's
 +		// t=104 carries an optional video bitrate (kbps) + opus FEC + codec. WithOverrides applies them
 +		// to a per-room COPY of the encoder config (deep-copies the codec map, never mutating the shared
@@ -88315,8 +89396,7 @@ index 6972cc7..f3ba56d 100644
 +			w.log.Warn().Msgf("Temporal SVC: CLOUD_GAME_SVC_FORCE_LAYER=%d — EVERY peer is capped at layer %d, "+
 +				"regardless of its link. Diagnostic only; unset it and recycle this worker", fl, fl)
 +		}
- 
--		m := media.NewGstreamer(w.conf.Encoder, w.log)
++
 +		if gameInfo.System == caged.CaptureSystem {
 +			// Heavy browser lane (capture mod): launch a native program + capture the desktop through
 +			// the gateway heavy contract. No libretro frontend/cheats/cloud-save/VideoChangeCb — the
@@ -88370,12 +89450,7 @@ index 6972cc7..f3ba56d 100644
 +			if len(rq.CoreOptions) > 0 || len(rq.Cheats) > 0 {
 +				w.log.Info().Msgf("Per-room cheats: %d core option(s), %d code(s)", len(rq.CoreOptions), len(rq.Cheats))
 +			}
- 
--		// recreate the video encoder
--		app.VideoChangeCb(func() {
--			app.ViewportRecalculate()
--			m.VideoW, m.VideoH = app.ViewportSize()
--			m.VideoScale, m.ScaleMethod = app.Scale()
++
 +			// RetroAchievements (arcade RA feature): the worker runs a SINGLE site service account as the
 +			// scoring engine for EVERY room (config RetroAchievements.SiteUser/SiteToken), in spectator mode
 +			// (never submits to RA) + hardcore-on (so leaderboards fire in every room). It fetches each
@@ -88391,12 +89466,10 @@ index 6972cc7..f3ba56d 100644
 +				// Seed the per-run Cheat legitimacy taint from whether this room staged cheat codes (codes-only
 +				// now; core options are quality settings, not cheats). Competitive rooms take no cheats, so this
 +				// is only ever true for a casual room — every event then reports the Cheat why-icon.
-+				app.SetRetroAchievements(raCfg.SiteUser, raCfg.SiteToken, game.System, rq.Hardcore, len(rq.Cheats) > 0, rq.SeedExplicit, handlers)
++				app.SetRetroAchievements(raCfg.SiteUser, raCfg.SiteToken, game.System, rq.RaHash, rq.Hardcore, len(rq.Cheats) > 0, rq.SeedExplicit, handlers)
 +				w.log.Info().Msgf("RetroAchievements: engine active for room %q (competitive=%v)", uid, rq.Hardcore)
 +			}
- 
--			if err := m.Reinit(); err != nil {
--				c.log.Error().Err(err).Msgf("reinit fail")
++
 +			// Per-room Wii controller-scheme override (site: creator's room-create choice) for the
 +			// GC-controller-native BrawlEx mods. Unlike HwContext this needs no precedence resolution
 +			// against a DB pin/renderer inference: an empty/unrecognized value just leaves nanoarch's
@@ -88409,21 +89482,8 @@ index 6972cc7..f3ba56d 100644
 +				w.log.Info().Msgf("Per-room controller scheme: %q for %q", rq.ControllerScheme, gameName)
 +			default:
 +				nanoarch.Nan0.ControllerSchemeOverride = "" // unconditional clear, like HwContextOverride
- 			}
- 
--			data, err := api.Wrap(api.Out{
--				T: uint8(api.AppVideoChange),
--				Payload: api.AppVideoInfo{
--					W:    m.VideoW,
--					H:    m.VideoH,
--					A:    app.AspectRatio(),
--					S:    int(m.VideoScale),
--					SM:   m.ScaleMethod,
--					Flip: app.Flipped(),
--					Rot:  app.Rotation(),
--				}})
--			if err != nil {
--				c.log.Error().Err(err).Msgf("wrap")
++			}
++
 +			r.SetApp(app)
 +
 +			// GL ZERO-COPY — ARMED HERE, BEFORE app.Load, AND THAT IS THE WHOLE POINT.
@@ -88553,16 +89613,8 @@ index 6972cc7..f3ba56d 100644
 +			}
 +			if glZC {
 +				w.log.Info().Msgf("GL zero-copy armed for %s (no glReadPixels)", game.System)
- 			}
--			r.Send(data)
--		})
- 
--		w.log.Info().Msgf("Starting the game: %v", gameName)
--		if err := app.Load(game, w.conf.Library.BasePath); err != nil {
--			c.log.Error().Err(err).Msgf("couldn't load the game %v", game)
--			r.Close()
--			w.router.SetRoom(nil)
--			return api.EmptyPacket
++			}
++
 +			// recreate the video encoder when the core's frame size changes at runtime
 +			app.VideoChangeCb(func() {
 +				app.ViewportRecalculate()
@@ -88610,12 +89662,8 @@ index 6972cc7..f3ba56d 100644
 +				w.router.SetRoom(nil)
 +				return api.EmptyPacket
 +			}
- 		}
- 
--		m.AudioSrcHz = app.AudioSampleRate()
--		m.VideoW, m.VideoH = app.ViewportSize()
--		m.VideoScale, m.ScaleMethod = app.Scale()
--		coreConf := w.conf.Emulator.GetLibretroCoreConfig(game.System)
++		}
++
 +		// Media finalize — SHARED by both lanes, read through the app.App interface. FPS() is not on
 +		// the interface (concrete on both apps), so it's fetched via a tiny local interface.
 +		ap := r.App()
@@ -88623,25 +89671,27 @@ index 6972cc7..f3ba56d 100644
 +		m.VideoW, m.VideoH = ap.ViewportSize()
 +		m.VideoScale, m.ScaleMethod = ap.Scale()
 +		coreConf := w.conf.Emulator.GetLibretroCoreConfig(game.System) // zero-value for "capture"
- 		m.MaxThreads = coreConf.MaxThreads
--		m.VideoFPS = app.FPS()
++		m.MaxThreads = coreConf.MaxThreads
 +		m.BppTarget = coreConf.BppTarget
 +		if f, ok := ap.(interface{ FPS() float64 }); ok {
 +			m.VideoFPS = f.FPS()
 +		}
- 		m.VideoVFR = coreConf.VFR
- 
--		m.SetPixFmt(app.PixFormat())
--		m.SetRot(app.Rotation())
++		m.VideoVFR = coreConf.VFR
++
 +		m.SetPixFmt(ap.PixFormat())
 +		m.SetRot(ap.Rotation())
- 
- 		r.SetMedia(m)
- 
-@@ -193,6 +525,28 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
- 
- 		r.InitMedia()
- 		r.StartApp()
++
++		r.SetMedia(m)
++
++		if err := m.Init(); err != nil {
++			c.log.Error().Err(err).Msgf("couldn't init the media")
++			r.Close()
++			w.router.SetRoom(nil)
++			return api.EmptyPacket
++		}
++
++		r.InitMedia()
++		r.StartApp()
 +
 +		// Adaptive bitrate (patch 0021). The room's chosen quality becomes the CEILING; ABR moves the
 +		// encoder between a floor and that ceiling from the worst peer's send-side estimate. Costs one
@@ -88664,15 +89714,13 @@ index 6972cc7..f3ba56d 100644
 +			}
 +		}
 +		startRoomAbr(w.log, r, m, ceilFn)
- 	}
- 
- 	needsKbMouse := r.App().KbMouseSupport()
-@@ -200,8 +554,24 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
- 	s := room.WithWebRTC(user.Session)
- 	s.OnMessage(func(data []byte) { r.App().Input(user.Index, byte(caged.RetroPad), data) })
- 	if needsKbMouse {
--		_, _ = s.Channel("keyboard", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Keyboard), data) })
--		_, _ = s.Channel("mouse", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Mouse), data) })
++	}
++
++	needsKbMouse := r.App().KbMouseSupport()
++
++	s := room.WithWebRTC(user.Session)
++	s.OnMessage(func(data []byte) { r.App().Input(user.Index, byte(caged.RetroPad), data) })
++	if needsKbMouse {
 +		// Keyboard and mouse both carry RELATIVE/EDGE-TRIGGERED state, not a resendable snapshot, so
 +		// neither may ride the default unreliable channel (Ordered:false, MaxRetransmits:0) the RetroPad
 +		// uses. That default is right for the pad — a frame is a FULL button snapshot, so a lost one is
@@ -88691,21 +89739,47 @@ index 6972cc7..f3ba56d 100644
 +				disc.RequestDisk(int(data[0]))
 +			}
 +		})
- 	}
- 
- 	c.RegisterRoom(r.Id())
-@@ -235,6 +605,7 @@ func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *
- 		w.router.Remove(user)
- 		user.Disconnect()
- 	}
++	}
++
++	c.RegisterRoom(r.Id())
++
++	response := api.StartGameResponse{
++		Room:    api.Room{Rid: r.Id()},
++		Record:  w.conf.Recording.Enabled,
++		KbMouse: needsKbMouse,
++	}
++
++	if r.App().AspectEnabled() {
++		ww, hh := r.App().ViewportSize()
++		scale, scaleM := r.App().Scale()
++		response.AV = &api.AppVideoInfo{
++			W:    ww,
++			H:    hh,
++			A:    r.App().AspectRatio(),
++			S:    int(scale),
++			SM:   scaleM,
++			Flip: r.App().Flipped(),
++			Rot:  r.App().Rotation(),
++		}
++	}
++
++	return api.Out{Payload: response}
++}
++
++// HandleTerminateSession handles cases when a user has been disconnected from the websocket of coordinator.
++func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *Worker) {
++	if user := w.router.FindUser(rq.Id); user != nil {
++		w.router.Remove(user)
++		user.Disconnect()
++	}
 +	releaseTimeWarp(w)
- }
- 
- // HandleQuitGame handles cases when a user manually exits the game.
-@@ -242,16 +613,61 @@ func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
- 	if user := w.router.FindUser(rq.Id); user != nil {
- 		w.router.Remove(user)
- 	}
++}
++
++// HandleQuitGame handles cases when a user manually exits the game.
++func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
++	if user := w.router.FindUser(rq.Id); user != nil {
++		w.router.Remove(user)
++	}
 +	releaseTimeWarp(w)
 +}
 +
@@ -88720,21 +89794,20 @@ index 6972cc7..f3ba56d 100644
 +			emu.SetRewind(false)
 +		}
 +	}
- }
- 
- func (c *coordinator) HandleResetGame(rq api.ResetGameRequest, w *Worker) api.Out {
- 	if r := w.router.FindRoom(rq.Rid); r != nil {
--		room.WithEmulator(r.App()).Reset()
++}
++
++func (c *coordinator) HandleResetGame(rq api.ResetGameRequest, w *Worker) api.Out {
++	if r := w.router.FindRoom(rq.Rid); r != nil {
 +		emu := room.WithEmulator(r.App())
 +		emu.Reset()
 +		// A hard reset restores RA hardcore eligibility (RA's own rule), so clear the mid-run save-scum /
 +		// time-manipulation taints — a clean run started after this is legit again.
 +		emu.NotifyReset()
- 		return api.OkPacket
- 	}
- 	return api.ErrPacket
- }
- 
++		return api.OkPacket
++	}
++	return api.ErrPacket
++}
++
 +// HandleFastForwardGame / HandleRewindGame toggle the room's time manipulation (t=114/115).
 +// Checked cast, unlike the save/reset handlers above: a capture-lane room's App is a
 +// *capture.App, not a *libretro.Caged, and a stray packet there must no-op, not panic the
@@ -88762,27 +89835,68 @@ index 6972cc7..f3ba56d 100644
 +	}
 +}
 +
- func (c *coordinator) HandleSaveGame(rq api.SaveGameRequest, w *Worker) api.Out {
- 	r := w.router.FindRoom(rq.Rid)
- 	if r == nil {
-@@ -269,10 +685,16 @@ func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out
- 	if r == nil {
- 		return api.ErrPacket
- 	}
--	if err := room.WithEmulator(r.App()).RestoreGameState(); err != nil {
++func (c *coordinator) HandleSaveGame(rq api.SaveGameRequest, w *Worker) api.Out {
++	r := w.router.FindRoom(rq.Rid)
++	if r == nil {
++		return api.ErrPacket
++	}
++	if err := room.WithEmulator(r.App()).SaveGameState(); err != nil {
++		c.log.Error().Err(err).Msg("cannot save game state")
++		return api.ErrPacket
++	}
++	return api.OkPacket
++}
++
++func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out {
++	r := w.router.FindRoom(rq.Rid)
++	if r == nil {
++		return api.ErrPacket
++	}
 +	emu := room.WithEmulator(r.App())
 +	if err := emu.RestoreGameState(); err != nil {
- 		c.log.Error().Err(err).Msg("cannot load game state")
- 		return api.ErrPacket
- 	}
++		c.log.Error().Err(err).Msg("cannot load game state")
++		return api.ErrPacket
++	}
 +	// The player loaded a save-STATE mid-run — tag every subsequent RA unlock/leaderboard this session as
 +	// save-scummed (until a reset). This is the explicit Load press, NOT the gateway's boot-time seed
 +	// (which restores through Frontend.Load directly and never hits this handler), so it can't false-taint
 +	// a fresh Continue.
 +	emu.NotifySaveStateLoaded()
- 	return api.OkPacket
- }
- 
++	return api.OkPacket
++}
++
++func (c *coordinator) HandleChangePlayer(rq api.ChangePlayerRequest, w *Worker) api.Out {
++	user := w.router.FindUser(rq.Id)
++	if user == nil || w.router.FindRoom(rq.Rid) == nil {
++		return api.Out{Payload: -1} // semi-predicates
++	}
++	user.Index = rq.Index
++	w.log.Info().Msgf("Updated player index to: %d", rq.Index)
++	return api.Out{Payload: rq.Index}
++}
++
++func (c *coordinator) HandleRecordGame(rq api.RecordGameRequest, w *Worker) api.Out {
++	if !w.conf.Recording.Enabled {
++		return api.ErrPacket
++	}
++	r := w.router.FindRoom(rq.Rid)
++	if r == nil {
++		return api.ErrPacket
++	}
++	room.WithRecorder(r.App()).ToggleRecording(rq.Active, rq.User)
++	return api.OkPacket
++}
++
++func toJson(data any) (string, error) {
++	if data == nil {
++		return "", nil
++	}
++	b, err := json.Marshal(data)
++	if err != nil {
++		return "", err
++	}
++	return string(b), nil
++}
 diff --git a/pkg/worker/media/d3d11zerocopy.go b/pkg/worker/media/d3d11zerocopy.go
 new file mode 100644
 index 0000000..d76fe6d
