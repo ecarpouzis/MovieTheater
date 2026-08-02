@@ -943,7 +943,11 @@ namespace MovieTheater.Controllers
                 .Append(core).Where(c => c != null).Distinct()
                 .SelectMany(c => ArcadeCoreOptionCatalog.ForCore(c).Select(o => o.Key))
                 .ToHashSet(StringComparer.Ordinal);
-            var advanced = saved.Where(kv => !allSystemKeys.Contains(kv.Key))
+            // Renderer keys are EXCLUDED here even though no catalog holds them: they are owned by the Graphics
+            // selector above, and surfacing one as an advanced row let it be re-submitted on every save and
+            // beat that selector in the exported overrides (see ArcadeCoreOptionCatalog.IsRendererSelecting).
+            var advanced = saved.Where(kv => !allSystemKeys.Contains(kv.Key)
+                                             && !ArcadeCoreOptionCatalog.IsRendererSelecting(kv.Key))
                 .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
 
             return Json(new
@@ -1027,11 +1031,24 @@ namespace MovieTheater.Controllers
             }
             else if (request.CoreOptions != null)
             {
-                if (request.CoreOptions.Count > 60)
+                // The modal posts the FULL rendered option set for the core (ArcadeGameConfig.js buildBody
+                // spreads every value, not just the edited ones), so this bound MUST scale with the catalog
+                // — a magic number silently turns "save" into a dead button for the biggest cores. The old
+                // flat 60 predated the startup extraction folding each core's complete option set in, and
+                // by 2026-08-02 it had broken Save outright for every core above it: dolphin 95, flycast 88,
+                // mupen64plus_next 77, ppsspp 75, beetle_psx_hw 74, pcsx2 62, genesis_plus_gx 62. Every
+                // option rendered; none could be saved (found via ps2 "No interlacing" → "Too many options").
+                // Headroom covers the Advanced raw-key rows, which the catalog does not bound.
+                var maxOptions = ArcadeCoreOptionCatalog.ForCore(core).Count + 64;
+                if (request.CoreOptions.Count > maxOptions)
                     return BadRequest(new { message = "Too many options." });
                 foreach (var (key, value) in request.CoreOptions)
                 {
                     if (string.IsNullOrWhiteSpace(key) || value == null) continue;
+                    // The Graphics selector owns the renderer keys — drop any that a client still submits
+                    // (an older payload, or a hand-typed Advanced row) rather than letting them silently
+                    // out-rank the selected profile in the export.
+                    if (ArcadeCoreOptionCatalog.IsRendererSelecting(key)) continue;
                     var opt = ArcadeCoreOptionCatalog.Find(core, key);
                     if (opt != null)
                     {
