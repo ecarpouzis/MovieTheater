@@ -2666,10 +2666,10 @@ index 9e70576..5f5c29f 100644
  
  func (l Library) GetSupportedExtensions() []string { return l.Supported }
 diff --git a/pkg/config/worker.go b/pkg/config/worker.go
-index be5ac42..d984f67 100644
+index be5ac42..05ec401 100644
 --- a/pkg/config/worker.go
 +++ b/pkg/config/worker.go
-@@ -6,20 +6,142 @@ import (
+@@ -6,20 +6,149 @@ import (
  	"net"
  	"net/url"
  	"path/filepath"
@@ -2755,9 +2755,16 @@ index be5ac42..d984f67 100644
 +	// Windows parks it off-canvas; OpenRoomDisplay resolves its HMONITOR and overrides MonitorIndex for
 +	// the room. Off = the legacy behavior (capture the physical MonitorIndex). See sudovda.go.
 +	VirtualDisplay bool
-+	Width          int // encode input width  (default 1920)
-+	Height         int // encode input height (default 1080)
-+	Fps            int // capture/encode fps  (default 60)
++	// PCoreAffinity: pin the launched game to the PERFORMANCE cores on a hybrid CPU. Windows parks
++	// threads on E-cores to save power, which wrecks frame pacing for an emulator — and this box also
++	// runs the NVENC encode for the room alongside it. The P-core set is detected at runtime from
++	// GetLogicalProcessorInformationEx's EfficiencyClass, so this is a no-op on a non-hybrid CPU and
++	// needs no per-machine mask in config. *bool so absence = the safe default of ENABLED (nil → true);
++	// set false for a title that would rather have every thread. See pCoreAffinityMask in launch.go.
++	PCoreAffinity *bool
++	Width         int // encode input width  (default 1920)
++	Height        int // encode input height (default 1080)
++	Fps           int // capture/encode fps  (default 60)
 +	// VideoSource: "d3d12" (what we RUN) | "d3d11" (fallback, no HDR tonemapping).
 +	//
 +	// ⚠ Do NOT "fix" this back to d3d11 on the strength of an old comment. d3d12screencapturesrc did
@@ -2820,7 +2827,7 @@ index be5ac42..d984f67 100644
  }
  
  type Storage struct {
-@@ -86,6 +208,111 @@ type CodecSettings struct {
+@@ -86,6 +215,111 @@ type CodecSettings struct {
  	Caps    string
  }
  
@@ -8189,10 +8196,10 @@ index 85ede12..6d1d955 100644
  
 diff --git a/pkg/worker/caged/capture/capture.go b/pkg/worker/caged/capture/capture.go
 new file mode 100644
-index 0000000..b70b92a
+index 0000000..0648c39
 --- /dev/null
 +++ b/pkg/worker/caged/capture/capture.go
-@@ -0,0 +1,732 @@
+@@ -0,0 +1,740 @@
 +// Package capture implements the "capture" caged mod (heavy browser lane, H5): instead of running
 +// a libretro core it launches a native Windows program through the heavy gateway contract, captures
 +// the desktop with GStreamer (Windows Graphics Capture), feeds frames/PCM into the UNCHANGED
@@ -8728,6 +8735,14 @@ index 0000000..b70b92a
 +	a.mu.Lock()
 +	a.gamePid = proc.pid
 +	a.mu.Unlock()
++
++	// Pin to the P-cores before the emulator spins up its worker threads (see pCoreAffinityMask).
++	// nil config = enabled; no-op on a non-hybrid CPU.
++	if a.conf.PCoreAffinity == nil || *a.conf.PCoreAffinity {
++		if m := pinToPCores(proc.pid); m != 0 {
++			a.log.Info().Msgf("capture: pinned pid %d to P-cores (affinity 0x%x)", proc.pid, m)
++		}
++	}
 +	a.log.Info().Msgf("capture: launched pid %d", proc.pid)
 +
 +	a.gwAttach(a.heavyAppId, proc.pid)
@@ -9324,10 +9339,10 @@ index 0000000..77ef11c
 +}
 diff --git a/pkg/worker/caged/capture/launch.go b/pkg/worker/caged/capture/launch.go
 new file mode 100644
-index 0000000..e04ceec
+index 0000000..fdf6f5d
 --- /dev/null
 +++ b/pkg/worker/caged/capture/launch.go
-@@ -0,0 +1,540 @@
+@@ -0,0 +1,640 @@
 +package capture
 +
 +import (
@@ -9639,6 +9654,106 @@ index 0000000..e04ceec
 +		}
 +	}
 +	return gp, nil
++}
++
++// ── P-core affinity (hybrid CPUs) ───────────────────────────────────────────────────────────────
++
++var (
++	procGetLogProcInfoEx = kernel32.NewProc("GetLogicalProcessorInformationEx")
++	procSetProcAffinity  = kernel32.NewProc("SetProcessAffinityMask")
++)
++
++const relationProcessorCore = 0
++
++// pCoreAffinityMask returns an affinity mask covering only the PERFORMANCE cores, or 0 when the CPU
++// is not hybrid (or the query fails) so the caller leaves affinity alone.
++//
++// Why: Windows parks threads on E-cores to save power, which is poison for an emulator's frame
++// pacing — and on this box the room's NVENC encode is competing for the same silicon. Pinning the
++// game to P-cores is the community's standard fix (Process Lasso does it by hand); doing it here
++// means every room gets it without a per-machine mask baked into config.
++//
++// GetLogicalProcessorInformationEx(RelationProcessorCore) yields one variable-length record per
++// physical core carrying an EfficiencyClass — higher is more performant. P-cores are the cores at
++// the MAXIMUM class, so a uniform (non-hybrid) CPU collapses to "every core is max" and we return 0.
++// Layout of each record: Relationship u32 @0, Size u32 @4, then PROCESSOR_RELATIONSHIP at 8 —
++// Flags u8 @8, EfficiencyClass u8 @9, Reserved[20] @10, GroupCount u16 @30, GroupMask[0] @32 whose
++// GROUP_AFFINITY is { Mask uintptr @32, Group u16 @40 }. Group 0 only: affinity masks are per-group
++// and this box is single-group; a >64-thread machine would need SetThreadGroupAffinity instead.
++func pCoreAffinityMask() uintptr {
++	var need uint32
++	// First call sizes the buffer; it is EXPECTED to fail with ERROR_INSUFFICIENT_BUFFER.
++	procGetLogProcInfoEx.Call(relationProcessorCore, 0, uintptr(unsafe.Pointer(&need)))
++	if need == 0 {
++		return 0
++	}
++	buf := make([]byte, need)
++	r, _, _ := procGetLogProcInfoEx.Call(relationProcessorCore,
++		uintptr(unsafe.Pointer(&buf[0])), uintptr(unsafe.Pointer(&need)))
++	if r == 0 {
++		return 0
++	}
++
++	type coreRec struct {
++		eff  byte
++		mask uintptr
++	}
++	var cores []coreRec
++	for off := uint32(0); off+8 <= need; {
++		rel := *(*uint32)(unsafe.Pointer(&buf[off]))
++		size := *(*uint32)(unsafe.Pointer(&buf[off+4]))
++		if size == 0 || off+size > need {
++			break
++		}
++		if rel == relationProcessorCore && size >= 48 {
++			cores = append(cores, coreRec{
++				eff:  buf[off+9],
++				mask: *(*uintptr)(unsafe.Pointer(&buf[off+32])),
++			})
++		}
++		off += size
++	}
++	if len(cores) == 0 {
++		return 0
++	}
++
++	maxEff := cores[0].eff
++	for _, c := range cores {
++		if c.eff > maxEff {
++			maxEff = c.eff
++		}
++	}
++	var mask uintptr
++	uniform := true
++	for _, c := range cores {
++		if c.eff != maxEff {
++			uniform = false
++		} else {
++			mask |= c.mask
++		}
++	}
++	if uniform {
++		return 0 // not a hybrid CPU — nothing to pin away from
++	}
++	return mask
++}
++
++// pinToPCores best-effort pins pid to the performance cores. Returns the mask applied (0 = no-op).
++// Never fatal: a failure here just means the game runs at default affinity.
++func pinToPCores(pid int) uintptr {
++	mask := pCoreAffinityMask()
++	if mask == 0 {
++		return 0
++	}
++	h, err := windows.OpenProcess(windows.PROCESS_SET_INFORMATION|windows.PROCESS_QUERY_INFORMATION, false, uint32(pid))
++	if err != nil {
++		return 0
++	}
++	defer windows.CloseHandle(h)
++	if r, _, _ := procSetProcAffinity.Call(uintptr(h), mask); r == 0 {
++		return 0
++	}
++	return mask
 +}
 +
 +// kill stops the game tree. GRACEFUL FIRST: post WM_CLOSE so the emulator stops cleanly and flushes
