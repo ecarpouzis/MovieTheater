@@ -10,9 +10,13 @@
   (Eric's save state staged on the test account; or Eric's next real session covers it).
 - Phase 4 (`cd052fb`): "Codec: Auto" default probes hardware AV1 (powerEfficient) at room create;
   deliberate picks (codecChosen flag, or any stored h264) never migrated.
-- Phase 2 in progress (capture-lane derive — reduced scope: the capture worker now runs the same
-  binary as GL, so this is likely just verifying the derive + flipping the site's capture-Auto vbr
-  to 0). Phases 1, 1.5-Auto (need the baseline week), 3 (needs real-display A/B), 5 (fiber) remain
+- Phase 2 (`78a092a`) DEPLOYED + VERIFIED: capture Auto derives — the site's isCapture pin is gone,
+  and a live capture room logged `abr: auto ceiling 22394 — encode 1920x1080 @60, smooth/3d 0.180`.
+  Verified precondition: deployed capture binary == GL build by hash (both lanes are one cmd/worker).
+  Noted latent trap: capture's Scale() says "nearest-neighbour" at scale 1.0 — fix before ever
+  scaling capture, else the derive flips to the magnified-2d class. VBV moves with the new ceiling
+  (kbps/20 ≈ 1120) — judge capture on a real display; that's the Phase 3 knob shifting as a side
+  effect. Phases 1, 1.5-Auto (need the baseline week), 3 (needs real-display A/B), 5 (fiber) remain
   PLAN.
 
 ## The problem, stated honestly
