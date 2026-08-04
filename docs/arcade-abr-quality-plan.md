@@ -1,11 +1,19 @@
 # Arcade ABR quality plan — killing the "low-quality YouTube" stream
 
-**Status (2026-08-04 EOD): Phase 0 DEPLOYED and verified end-to-end** (summary lines live on all
-three workers, coordinator relaying device_id/username, ArcadeLinkStat table + Internal endpoint
-live, deviceId minted by the deployed UI; verified with a prod harness room + a marker-row POST).
-**Phase 1.5's explicit-pick fix is DEPLOYED** (`4b2e587`). Phases 0.5, 1, 2, 3, 4, 5 and Phase
-1.5's Auto profile remain PLAN. Baseline collection is running now — let a few days of real
-sessions accumulate before starting Phase 1.
+**Status (2026-08-04 EOD): Phases 0, 0.5, and 4 DEPLOYED; Phase 1.5's explicit-pick fix DEPLOYED.**
+- Phase 0 (`cb73e2c`/`13e0410`): summary lines live on all three workers, coordinator relaying
+  device_id/username, ArcadeLinkStat + Internal endpoint live; verified with a prod harness room +
+  a marker-row POST. Baseline collection is RUNNING — let a few days of real sessions accumulate
+  before Phase 1.
+- Phase 0.5 (`def9b6a`): flap hysteresis live, K=5 (the 08-02 log shows a 4s dwell K=4 would have
+  committed); `geomFlapsSuppressed=` on the close summary. Stuntman replay verification pending
+  (Eric's save state staged on the test account; or Eric's next real session covers it).
+- Phase 4 (`cd052fb`): "Codec: Auto" default probes hardware AV1 (powerEfficient) at room create;
+  deliberate picks (codecChosen flag, or any stored h264) never migrated.
+- Phase 2 in progress (capture-lane derive — reduced scope: the capture worker now runs the same
+  binary as GL, so this is likely just verifying the derive + flipping the site's capture-Auto vbr
+  to 0). Phases 1, 1.5-Auto (need the baseline week), 3 (needs real-display A/B), 5 (fiber) remain
+  PLAN.
 
 ## The problem, stated honestly
 

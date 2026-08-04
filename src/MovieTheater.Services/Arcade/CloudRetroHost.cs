@@ -195,6 +195,11 @@ namespace MovieTheater.Services.Arcade
         ///
         /// 2D cores are cheap despite large frames: their `scale:` upscale is integer nearest-neighbour and
         /// adds no high-frequency detail — the encoder sees flat NxN blocks. Native-3D frames are not.
+        ///
+        /// ⚠ HISTORICAL as of ABR plan Phase 2 (2026-08-04): no production caller remains. Every lane's
+        /// Auto — capture included — now sends vbr=0 and the WORKER derives the ceiling per-tick from the
+        /// frame it actually encodes (abr.go autoCeilingKbps). This table is kept as the record of the
+        /// July 2026 measured values (tests pin it); do not wire it back into room create.
         /// </summary>
         public static int DefaultVideoBitrateKbps(string? system) => system?.ToLowerInvariant() switch
         {

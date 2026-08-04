@@ -1739,20 +1739,24 @@ namespace MovieTheater.Controllers
             // Measured consequence: 2D rooms sat at 5000 (0.129 bits/px/frame on a 960x672 Genesis
             // frame) and visibly blocked, while every 3D system had been raised off that same default.
             //
-            // CAPTURE still uses the table. That lane runs a SEPARATE worker binary which has no
-            // autoCeilingKbps, so omitting the value there would drop it to its config default.
+            // CAPTURE derives too, as of ABR plan Phase 2 (2026-08-04). The lane historically pinned the
+            // table's flat 12000 because its worker binary predated autoCeilingKbps — both lanes now
+            // build from the same cmd/worker, so Auto (0) lets the worker derive from the frame it
+            // actually encodes: 1920x1080@60 x 0.18 bpp ≈ 22.4 Mbps, ABR-governed like any ceiling.
+            // ⚠ Only flip this after verifying BY HASH that the deployed capture worker matches the GL
+            // build — an older capture binary given vbr=0 falls to its yaml default, BELOW the old 12000.
             // ⚠ Upper clamp is 25000 to match the lobby's top preset AND the worker's abrAutoMaxKbps. It
             // was 20000, which would have silently turned a "LAN · 25 Mbps" pick into 20 Mbps — the kind
             // of mismatch that reads as "the setting does nothing".
             var vbr = request.VideoBitrateKbps > 0
                 ? Math.Clamp(request.VideoBitrateKbps, 500, 25000)
-                : (isCapture ? CloudRetroHost.DefaultVideoBitrateKbps(roomSystem) : 0);
+                : 0;
             if (vbr > 0)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + vbr };
             if (request.AudioFec is 1 or 2)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fec=" + request.AudioFec };
-            // In-frame packet pacing (patch 0028). Capture rooms DEFAULT it to 8 ms server-side (like vbr
-            // defaults): the capture stream is the fattest we send (12 Mbps H.264, intra-refresh ⇒ every
+            // In-frame packet pacing (patch 0028). Capture rooms DEFAULT it to 8 ms server-side: the
+            // capture stream is the fattest we send (~22 Mbps derived H.264, intra-refresh ⇒ every
             // frame is sizable), and un-paced bursts on tablet WiFi queue behind each other and jitter the
             // audio packets sharing the air, growing the browser's audio jitter buffer (plan §12C). An
             // explicit lobby choice always wins, INCLUDING an explicit 0 (LAN on a capture room): only a
