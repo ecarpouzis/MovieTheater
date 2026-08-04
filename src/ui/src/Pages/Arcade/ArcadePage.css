@@ -1256,3 +1256,14 @@
   .arcade-console__tick { transition: none; }
   .arcade-console:hover .arcade-console__art { transform: none; }
 }
+
+/* ── Launch start-choice confirm (createRoom) ──────────────────────────────
+   Each save-state action is a row: the link on its own line, its meta (what it
+   is + timestamp) as an indented second line — inline meta used to wrap the
+   timestamp flush-left under the ▶ arrow, which read as a stray line. */
+.arcade-start-choice__row { padding: 3px 0; }
+.arcade-start-choice__meta {
+  display: block;
+  padding-left: 18px; /* aligns under the link text, past the ▶ */
+  font-size: 11px;
+}

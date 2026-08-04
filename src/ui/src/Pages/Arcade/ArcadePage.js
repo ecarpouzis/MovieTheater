@@ -341,61 +341,89 @@ export default function ArcadePage({ userData }) {
         const rows = Array.isArray(saves) ? saves : [];
         if (rows.length === 0) return doCreateRoom(versionId, { newGame: true, cheats, hwContext, renderProfile, controllerScheme });
         const states = rows.filter((s) => s.kind === "state");
-        const hasContinue = states.some((s) => s.slotId === 0);
+        const autoSave = states.find((s) => s.slotId === 0) || null;
         const quick = states.find((s) => s.slotId === QUICK_SLOT);
         const snaps = states.filter((s) => s.slotId >= 1 && s.slotId !== QUICK_SLOT)
           .sort((a, b) => a.slotId - b.slotId);
         // Nothing restorable → no choice to present.
-        if (!hasContinue && !quick && snaps.length === 0) {
+        if (!autoSave && !quick && snaps.length === 0) {
           return doCreateRoom(versionId, { newGame: true, cheats, hwContext, renderProfile, controllerScheme });
         }
         const start = (opts) => doCreateRoom(versionId, { ...opts, cheats, hwContext, renderProfile, controllerScheme });
         const when = (s) => (s?.updatedUtc ? new Date(s.updatedUtc).toLocaleString() : "");
+        const pick = (opts) => { modal.destroy(); start(opts); };
+        // A couple of snapshots read fine as rows; a pile becomes a searchable dropdown so the
+        // right one is findable without scanning a long list.
+        const useSnapPicker = snaps.length > 3;
         const modal = Modal.confirm({
           title: "How do you want to start?",
           icon: null,
           width: 520,
-          okText: "🏁 Clean Start",
-          cancelText: "Cancel",
-          onOk: () => start({ newGame: true }),
           onCancel: () => setCreating(0),
+          // Continue Auto-Save is what most launches want, so it takes the primary (rightmost)
+          // spot; with no auto-save yet, Clean Start is primary instead.
+          footer: (
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap", marginTop: 12 }}>
+              <Button onClick={() => { modal.destroy(); setCreating(0); }}>Cancel</Button>
+              <Button type={autoSave ? "default" : "primary"} onClick={() => pick({ newGame: true })}>🏁 Clean Start</Button>
+              {autoSave && (
+                <Button type="primary" onClick={() => pick({})}>▶ Continue Auto-Save</Button>
+              )}
+            </div>
+          ),
           content: (
             <div className="arcade-start-choice">
               <div style={{ marginBottom: 10 }}>
                 <b>🏁 Clean Start</b> — boot fresh, no save-state. Your memory card / battery stays in,
-                so you can still load from the game's own menu. <b>Only a clean start can set a legit
-                score, time, or achievement.</b>
+                so you can still load from the game's own menu.
               </div>
               <div style={{ borderTop: "1px solid rgba(128,128,128,.25)", paddingTop: 10 }}>
                 <Text type="secondary" style={{ fontSize: 12 }}>
                   Or pick up a save-state — these count as save-scumming, so the run won't be legit:
                 </Text>
-                <div style={{ marginTop: 6, maxHeight: 200, overflowY: "auto" }}>
-                  {hasContinue && (
-                    <div style={{ padding: "3px 0" }}>
-                      <a onClick={() => { modal.destroy(); start({}); }}>▶ Continue Auto-Save</a>
-                      <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>
+                <div style={{ marginTop: 6 }}>
+                  {autoSave && (
+                    <div className="arcade-start-choice__row">
+                      <a onClick={() => pick({})}>▶ Continue Auto-Save</a>
+                      <Text type="secondary" className="arcade-start-choice__meta">
                         where you left off — saved automatically each time you leave
-                        {when(states.find((s) => s.slotId === 0)) ? ` · ${when(states.find((s) => s.slotId === 0))}` : ""}
+                        {when(autoSave) ? ` · ${when(autoSave)}` : ""}
                       </Text>
                     </div>
                   )}
                   {quick && (
-                    <div style={{ padding: "3px 0" }}>
-                      <a onClick={() => { modal.destroy(); start({ seedSlot: QUICK_SLOT }); }}>▶ Quickload</a>
-                      <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>
+                    <div className="arcade-start-choice__row">
+                      <a onClick={() => pick({ seedSlot: QUICK_SLOT })}>▶ Quickload</a>
+                      <Text type="secondary" className="arcade-start-choice__meta">
                         your quicksave{when(quick) ? ` · ${when(quick)}` : ""}
                       </Text>
                     </div>
                   )}
-                  {snaps.map((s) => (
-                    <div key={s.slotId} style={{ padding: "3px 0" }}>
-                      <a onClick={() => { modal.destroy(); start({ seedSlot: s.slotId }); }}>
-                        ▶ {s.label || `Snapshot ${s.slotId}`}
-                      </a>
-                      <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>{when(s)}</Text>
+                  {useSnapPicker ? (
+                    <div className="arcade-start-choice__row">
+                      <Select
+                        showSearch
+                        placeholder={`▶ Load a snapshot… (${snaps.length})`}
+                        style={{ width: "100%", marginTop: 4 }}
+                        optionFilterProp="label"
+                        options={snaps.map((s) => ({
+                          value: s.slotId,
+                          label: `${s.label || `Snapshot ${s.slotId}`}${when(s) ? ` · ${when(s)}` : ""}`,
+                        }))}
+                        onChange={(slotId) => pick({ seedSlot: slotId })}
+                        aria-label="Load a snapshot save"
+                      />
                     </div>
-                  ))}
+                  ) : (
+                    snaps.map((s) => (
+                      <div key={s.slotId} className="arcade-start-choice__row">
+                        <a onClick={() => pick({ seedSlot: s.slotId })}>
+                          ▶ {s.label || `Snapshot ${s.slotId}`}
+                        </a>
+                        <Text type="secondary" className="arcade-start-choice__meta">{when(s)}</Text>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
               <div style={{ marginTop: 10 }}>
