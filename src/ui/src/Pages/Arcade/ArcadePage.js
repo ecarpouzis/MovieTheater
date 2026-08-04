@@ -71,32 +71,66 @@ const NETWORK_PROFILES = {
   remote: { audioFec: 1, paceMs: 5 },
   "5g": { audioFec: 1, paceMs: 8 },
 };
-// Per-room video codec (worker patch 0036). AV1 is the default (better quality per bit), but a
-// device without HARDWARE AV1 decode — most tablets — still negotiates it (Chrome offers software
-// dav1d) and then can't decode 60fps in real time; the keyframeless AV1 stream gives it nothing to
-// resync to, so video falls minutes behind the (separately-decoded) audio. H.264 hardware-decodes
-// everywhere. Room-wide: one encoder per room, so pick H.264 when ANY player will be on a tablet.
+// Per-room video codec (worker patch 0036). AV1 is the better codec per bit, but a device without
+// HARDWARE AV1 decode — most tablets — still negotiates it (Chrome offers software dav1d) and then
+// can't decode 60fps in real time; the keyframeless AV1 stream gives it nothing to resync to, so
+// video falls minutes behind the (separately-decoded) audio. H.264 hardware-decodes everywhere.
+// Room-wide: one encoder per room, so pick H.264 when ANY player will be on a tablet.
+//
+// "Auto" (ABR plan Phase 4) probes THIS device's hardware AV1 decode via MediaCapabilities at room
+// create and picks av1/h264 accordingly — the manual-dropdown-habit fix for rooms landing on h264
+// (or worse, tablet-AV1) for no reason. It reads the CREATOR's device only: a creator who knows a
+// tablet will JOIN should still pick H.264 explicitly, which is why stored explicit picks are never
+// migrated to Auto (same non-migration rule as the bitrate presets below).
 const CODEC_OPTIONS = [
+  { short: "Codec: Auto", label: "Codec: Auto · best this device can decode", value: "auto" },
   { short: "Codec: AV1", label: "Codec: AV1 · best picture (PCs & recent devices)", value: "av1" },
   { short: "Codec: H.264", label: "Codec: H.264 · smoothest on tablets & older devices", value: "h264" },
 ];
+// Resolve "auto" to a concrete codec for THIS device. powerEfficient is the hardware-decode signal —
+// smooth-but-software (dav1d on a big desktop) still reports smooth:true, and software AV1 is exactly
+// the tablet failure mode Auto exists to dodge, so the bar is powerEfficient. 1920x1080@60 is the
+// worst frame any lane sends today (capture); retro encodes larger canvases but at the same or lower
+// pixel rate. Any probe failure (old browser, Firefox without webrtc-type support) falls back to av1
+// — the status-quo default, so Auto can never be WORSE than before it existed.
+async function resolveAutoCodec() {
+  try {
+    const info = await navigator.mediaCapabilities.decodingInfo({
+      type: "webrtc",
+      video: { contentType: 'video/AV1; codecs="av01.0.08M.08"', width: 1920, height: 1080, bitrate: 12_000_000, framerate: 60 },
+    });
+    return info.supported && info.powerEfficient ? "av1" : "h264";
+  } catch { return "av1"; }
+}
 function loadQuality() {
   try {
     const q = JSON.parse(localStorage.getItem(QUALITY_KEY));
     if (q && typeof q.videoBitrateKbps === "number") {
       // Legacy audioFec-shaped values (pre network-profile) map to LAN — the old default behavior.
       const network = NETWORK_PROFILES[q.network] ? q.network : "lan";
-      const codec = q.codec === "h264" ? "h264" : "av1";
+      // Deliberate codec picks are NOT migrated to Auto — a chosen h264 often protects a JOINING
+      // tablet, which a creator-device probe cannot see. Deliberate = the codecChosen flag (set only
+      // by the Codec dropdown's own onChange), OR any stored "h264": av1 was the seeded default, so
+      // an un-flagged "av1" means "never picked" and gets Auto — which resolves back to av1 on every
+      // hardware-AV1 device and only changes behavior on the devices av1 was failing on.
+      const codec = (q.codecChosen === true && (q.codec === "h264" || q.codec === "av1")) || q.codec === "h264"
+        ? q.codec : "auto";
       // networkChosen: set ONLY by the Network dropdown's own onChange, never by seeding — it is
       // what lets an explicit "LAN · pace 0" beat the capture lane's server-side pace default.
       // Legacy values (no flag) stay "not chosen" so those users keep the lane defaults.
-      return { videoBitrateKbps: q.videoBitrateKbps, network, codec, networkChosen: q.networkChosen === true };
+      // Both *Chosen flags must round-trip here: setQ persists {...prev, ...patch}, so a flag this
+      // function drops would be erased from storage by the next unrelated quality change.
+      return {
+        videoBitrateKbps: q.videoBitrateKbps, network, codec,
+        networkChosen: q.networkChosen === true, codecChosen: q.codecChosen === true,
+      };
     }
   } catch { /* ignore */ }
-  // Auto + LAN. NOTE: a stored value is NOT migrated — someone who deliberately picked "Balanced ·
-  // 5 Mbps" on a thin uplink should not be silently moved to Auto (whose ceiling reaches 14 Mbps on
-  // GameCube; ABR would walk it back, but the choice is theirs). They opt in by choosing Auto once.
-  return { videoBitrateKbps: 0, network: "lan", codec: "av1", networkChosen: false };
+  // Auto + LAN + Auto-codec. NOTE: a stored value is NOT migrated — someone who deliberately picked
+  // "Balanced · 5 Mbps" on a thin uplink should not be silently moved to Auto (whose ceiling reaches
+  // 14 Mbps on GameCube; ABR would walk it back, but the choice is theirs). They opt in by choosing
+  // Auto once.
+  return { videoBitrateKbps: 0, network: "lan", codec: "auto", networkChosen: false, codecChosen: false };
 }
 function saveQuality(q) { try { localStorage.setItem(QUALITY_KEY, JSON.stringify(q)); } catch { /* ignore */ } }
 
@@ -450,7 +484,10 @@ export default function ArcadePage({ userData }) {
     const q = loadQuality();
     const net = NETWORK_PROFILES[q.network] || NETWORK_PROFILES.lan;
     const netParams = q.networkChosen ? net : { audioFec: net.audioFec };
-    return MovieAPI.createArcadeRoom(versionId, { ...opts, videoBitrateKbps: q.videoBitrateKbps, ...netParams, videoCodec: q.codec })
+    // "auto" resolves to a concrete codec HERE (the room's encoder needs one) — the server and worker
+    // never see "auto". The probe is ~instant (cached capability lookup), so it rides the chain.
+    return Promise.resolve(q.codec === "auto" ? resolveAutoCodec() : q.codec)
+      .then((codec) => MovieAPI.createArcadeRoom(versionId, { ...opts, videoBitrateKbps: q.videoBitrateKbps, ...netParams, videoCodec: codec }))
       .then(async (r) => {
         if (r.status === 503) { message.warning("The arcade is full — every machine is in use. Try again shortly."); return null; }
         if (!r.ok) { message.error("Couldn't start that game."); return null; }
@@ -533,7 +570,7 @@ export default function ArcadePage({ userData }) {
               <div className="arcade-pill">
                 <Select
                   variant="borderless" value={quality.codec || "av1"} optionLabelProp="label"
-                  onChange={(v) => setQ({ codec: v })}
+                  onChange={(v) => setQ({ codec: v, codecChosen: true })}
                   classNames={{ popup: { root: "arcade-pill-dropdown" } }} popupMatchSelectWidth={false}
                   aria-label="Video codec"
                 >
