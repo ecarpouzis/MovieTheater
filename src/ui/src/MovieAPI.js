@@ -722,7 +722,9 @@ function getArcadeRooms() {
 }
 
 // Create a room for a game → returns the creator's join descriptor (empty room_id, isCreator).
-function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0, paceMs = 0, cheats = [], videoCodec = "", hwContext = "", renderProfile = "", controllerScheme = "", competitive = false } = {}) {
+// paceMs: null = no deliberate Network pick (server applies lane defaults — capture 8ms, GL 0);
+// an explicit 0 means "pacing off" and is honored even on capture. Do NOT default it to 0.
+function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0, paceMs = null, cheats = [], videoCodec = "", hwContext = "", renderProfile = "", controllerScheme = "", competitive = false } = {}) {
   return fetch("/API/Arcade/Room", {
     method: "post",
     headers: { "Content-Type": "application/json" },

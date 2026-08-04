@@ -687,11 +687,13 @@ namespace MovieTheater.Controllers
             /// (LAN-only, saves audio-packet bytes). Rides the WS URL to the worker like the other room flags.</summary>
             public int AudioFec { get; set; }
 
-            /// <summary>In-frame packet pacing window in ms (worker patch 0028), 0 = off. The lobby's
-            /// Network profile sets it (Remote 5, 5G 8); the worker spreads each encoded frame's RTP
-            /// burst over this window so it doesn't slam cellular/shallow-buffer queues. LAN keeps 0 —
-            /// wire-speed bursts are the minimum-latency default.</summary>
-            public int PaceMs { get; set; }
+            /// <summary>In-frame packet pacing window in ms (worker patch 0028). The lobby's Network
+            /// profile sets it (LAN 0, Remote 5, 5G 8); the worker spreads each encoded frame's RTP
+            /// burst over this window so it doesn't slam cellular/shallow-buffer queues. Nullable on
+            /// purpose: null = no deliberate choice (lane defaults apply — capture 8, GL 0), while an
+            /// explicit 0 = pacing off, honored even on capture. The UI only sends a value when the
+            /// Network dropdown was deliberately set.</summary>
+            public int? PaceMs { get; set; }
 
             /// <summary>Per-room video codec (worker patch 0036): "av1"/"h264", null/empty = worker config
             /// default (AV1). The lobby's Codec selector sets it — pick H.264 when a tablet/software-AV1
@@ -1753,8 +1755,9 @@ namespace MovieTheater.Controllers
             // defaults): the capture stream is the fattest we send (12 Mbps H.264, intra-refresh ⇒ every
             // frame is sizable), and un-paced bursts on tablet WiFi queue behind each other and jitter the
             // audio packets sharing the air, growing the browser's audio jitter buffer (plan §12C). An
-            // explicit lobby choice still wins.
-            var paceMs = request.PaceMs > 0 ? request.PaceMs : (isCapture ? 8 : 0);
+            // explicit lobby choice always wins, INCLUDING an explicit 0 (LAN on a capture room): only a
+            // null (no deliberate choice) falls to the lane default.
+            var paceMs = request.PaceMs ?? (isCapture ? 8 : 0);
             if (paceMs > 0)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&pace=" + Math.Clamp(paceMs, 1, 20) };
             // Codec rides the WS URL like vbr/fec — but unlike them it ALSO rides every joiner's URL

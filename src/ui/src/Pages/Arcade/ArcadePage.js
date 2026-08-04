@@ -87,13 +87,16 @@ function loadQuality() {
       // Legacy audioFec-shaped values (pre network-profile) map to LAN — the old default behavior.
       const network = NETWORK_PROFILES[q.network] ? q.network : "lan";
       const codec = q.codec === "h264" ? "h264" : "av1";
-      return { videoBitrateKbps: q.videoBitrateKbps, network, codec };
+      // networkChosen: set ONLY by the Network dropdown's own onChange, never by seeding — it is
+      // what lets an explicit "LAN · pace 0" beat the capture lane's server-side pace default.
+      // Legacy values (no flag) stay "not chosen" so those users keep the lane defaults.
+      return { videoBitrateKbps: q.videoBitrateKbps, network, codec, networkChosen: q.networkChosen === true };
     }
   } catch { /* ignore */ }
   // Auto + LAN. NOTE: a stored value is NOT migrated — someone who deliberately picked "Balanced ·
   // 5 Mbps" on a thin uplink should not be silently moved to Auto (whose ceiling reaches 14 Mbps on
   // GameCube; ABR would walk it back, but the choice is theirs). They opt in by choosing Auto once.
-  return { videoBitrateKbps: 0, network: "lan", codec: "av1" };
+  return { videoBitrateKbps: 0, network: "lan", codec: "av1", networkChosen: false };
 }
 function saveQuality(q) { try { localStorage.setItem(QUALITY_KEY, JSON.stringify(q)); } catch { /* ignore */ } }
 
@@ -441,10 +444,13 @@ export default function ArcadePage({ userData }) {
   function doCreateRoom(versionId, opts) {
     // Merge the creator's current stream quality (read fresh from storage so a mid-modal change wins).
     // The network profile is unbundled HERE into the wire params (audioFec + paceMs) — the server and
-    // worker stay profile-agnostic.
+    // worker stay profile-agnostic. paceMs is sent ONLY for a deliberate dropdown pick: omitting it
+    // (server null) keeps the lane defaults (capture 8, GL 0), while an explicit LAN 0 must actually
+    // reach the server to beat the capture default.
     const q = loadQuality();
     const net = NETWORK_PROFILES[q.network] || NETWORK_PROFILES.lan;
-    return MovieAPI.createArcadeRoom(versionId, { ...opts, videoBitrateKbps: q.videoBitrateKbps, ...net, videoCodec: q.codec })
+    const netParams = q.networkChosen ? net : { audioFec: net.audioFec };
+    return MovieAPI.createArcadeRoom(versionId, { ...opts, videoBitrateKbps: q.videoBitrateKbps, ...netParams, videoCodec: q.codec })
       .then(async (r) => {
         if (r.status === 503) { message.warning("The arcade is full — every machine is in use. Try again shortly."); return null; }
         if (!r.ok) { message.error("Couldn't start that game."); return null; }
@@ -515,7 +521,7 @@ export default function ArcadePage({ userData }) {
               <div className="arcade-pill">
                 <Select
                   variant="borderless" value={quality.network} optionLabelProp="label"
-                  onChange={(v) => setQ({ network: v })}
+                  onChange={(v) => setQ({ network: v, networkChosen: true })}
                   classNames={{ popup: { root: "arcade-pill-dropdown" } }} popupMatchSelectWidth={false}
                   aria-label="Network profile"
                 >
