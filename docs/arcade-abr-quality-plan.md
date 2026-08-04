@@ -1,6 +1,11 @@
 # Arcade ABR quality plan — killing the "low-quality YouTube" stream
 
-**Status: PLAN (2026-08-04). Nothing here is implemented.**
+**Status (2026-08-04 EOD): Phase 0 DEPLOYED and verified end-to-end** (summary lines live on all
+three workers, coordinator relaying device_id/username, ArcadeLinkStat table + Internal endpoint
+live, deviceId minted by the deployed UI; verified with a prod harness room + a marker-row POST).
+**Phase 1.5's explicit-pick fix is DEPLOYED** (`4b2e587`). Phases 0.5, 1, 2, 3, 4, 5 and Phase
+1.5's Auto profile remain PLAN. Baseline collection is running now — let a few days of real
+sessions accumulate before starting Phase 1.
 
 ## The problem, stated honestly
 
