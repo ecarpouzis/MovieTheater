@@ -336,6 +336,35 @@ export { mappingRowsFor, SYSTEM_BUTTON_LABELS } from "./controllerMapDisplay";
 // XInput ⇒ streamed. This machine-wide toggle (enable it only on the stream host) makes the two
 // AUTOMATIC paths — the primary's fluid adoption and the press-a-button detector — skip XInput
 // pads. Explicit assignment in the Controllers panel still works on any pad: a deliberate override.
+// A stable, opaque id for THIS browser, sent with every arcade session so the worker's link
+// measurements can be filed per DEVICE rather than per user (ABR quality plan, Phase 0). One person's
+// wired desktop, tablet and phone must never share link history: a rate proven on the desktop, applied
+// to the Wi-Fi tablet, is exactly the collapse the conservative bitrate opener exists to prevent.
+//
+// Deliberately NOT the site's `mt-device-token` — that one keys Jellyfin transcode directories, and
+// tying a streaming-quality identity to it would silently couple two unrelated subsystems.
+// Random and meaningless by construction: it identifies a browser profile to itself, nothing more.
+const ARCADE_DEVICE_ID_KEY = "arcade.deviceId";
+let cachedArcadeDeviceId = null;
+function arcadeDeviceId() {
+  if (cachedArcadeDeviceId) return cachedArcadeDeviceId;
+  let id = "";
+  try {
+    id = localStorage.getItem(ARCADE_DEVICE_ID_KEY) || "";
+    if (!id) {
+      id = window.crypto?.randomUUID?.() || `d${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+      localStorage.setItem(ARCADE_DEVICE_ID_KEY, id);
+    }
+  } catch {
+    // Private mode / storage disabled: no durable identity is possible, so send nothing rather than a
+    // per-tab value that would pollute the table with single-use devices.
+    id = "";
+  }
+  // Match the worker's and the site's sanitiser so all three agree on the stored key.
+  cachedArcadeDeviceId = id.replace(/[^A-Za-z0-9-]/g, "").slice(0, 64);
+  return cachedArcadeDeviceId;
+}
+
 let ignoreStreamedPads = (() => { try { return localStorage.getItem("arcade.ignoreStreamedPads") === "1"; } catch { return false; } })();
 export function getIgnoreStreamedPads() { return ignoreStreamedPads; }
 export function setIgnoreStreamedPads(on) {
@@ -1293,6 +1322,17 @@ export function createCloudRetroSession(descriptor, opts) {
       : (AUDIO_PC ? { initiator: false, sdp: "audio-pc" } : { initiator: false });
     const codec = strFromWsUrl(descriptor.wsUrl, "codec");
     if (codec) init.video_codec = codec;
+    // device_id + username (ABR quality plan, Phase 0): who this PEER is, for the worker's
+    // session-close link-stat mirror. This message is the right carrier precisely because every peer
+    // sends it for itself — so ONE insertion here covers both the creator and every joiner, where the
+    // room-create params (t=104) are creator-only and could never describe a joiner's device.
+    // Observability only: the worker files the row, and nothing reads it back yet.
+    const deviceId = arcadeDeviceId();
+    if (deviceId) init.device_id = deviceId;
+    try {
+      const who = localStorage.getItem("Username");
+      if (who) init.username = who;
+    } catch { /* storage disabled — the row is simply not attributable, and the worker drops it */ }
     send(T.INIT_WEBRTC, init);
   }
 

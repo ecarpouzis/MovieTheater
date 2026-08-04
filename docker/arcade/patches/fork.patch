@@ -1928,10 +1928,10 @@ index 89d0628..fb1eb58 100644
  		return "LibNewGameList"
  	case PrevSessions:
 diff --git a/pkg/api/user.go b/pkg/api/user.go
-index e487b93..60b3fcd 100644
+index e487b93..13a874d 100644
 --- a/pkg/api/user.go
 +++ b/pkg/api/user.go
-@@ -1,42 +1,99 @@
+@@ -1,42 +1,109 @@
 -package api
 -
 -type (
@@ -2071,13 +2071,23 @@ index e487b93..60b3fcd 100644
 +		// game start builds the encoder — every client of a room sends the same value (the site's
 +		// join descriptor carries the creator's choice), so track and encoder always agree.
 +		VideoCodec string `json:"video_codec,omitempty"`
++		// PER-PEER identity for the ABR link-stat mirror (Phase 0 instrumentation). This message is
++		// the right carrier precisely because it is the ONE the browser sends per peer: t=104 is
++		// creator-only and room-wide, so a joiner's own device could never ride it, and a warm value
++		// learned on the desktop must never be applied to the tablet.
++		// DeviceId is an opaque GUID the site frontend mints once into localStorage; Username is the
++		// logged-in site user. Both empty on an older client → the room behaves exactly as before.
++		// Same silent-drop trap as HwContext in GameStartUserRequest: these MUST also appear in
++		// worker.go InitWebrtcStreamRequest AND workerapi.go's InitWebrtcStreamRequest literal.
++		DeviceId string `json:"device_id,omitempty"`
++		Username string `json:"username,omitempty"`
 +	}
 +)
 diff --git a/pkg/api/worker.go b/pkg/api/worker.go
-index d8c7324..0774150 100644
+index d8c7324..6cb5786 100644
 --- a/pkg/api/worker.go
 +++ b/pkg/api/worker.go
-@@ -1,75 +1,127 @@
+@@ -1,75 +1,133 @@
 -package api
 -
 -type (
@@ -2258,6 +2268,12 @@ index d8c7324..0774150 100644
 +		// Per-room video codec for this peer's track (patch 0036); "" = config default. Set before
 +		// game start because the PeerConnection (and its track mime) is created HERE.
 +		VideoCodec string `json:"video_codec,omitempty"`
++		// Per-peer identity for the ABR link-stat mirror, forwarded from the browser's
++		// InitUserWebrtcStreamRequest. Keep in sync with user.go — a field missing HERE is silently
++		// dropped by the coordinator's JSON relay even though the browser sent it, which is exactly
++		// how per-room bitrate went nowhere for days. Also add it to the workerapi.go literal.
++		DeviceId string `json:"device_id,omitempty"`
++		Username string `json:"username,omitempty"`
 +	}
 +	InitWebrtcStreamResponse string
 +
@@ -3806,7 +3822,7 @@ index 923aeff..9d5209d 100644
  			if !conf.Recording.Enabled {
  				return api.ErrForbidden
 diff --git a/pkg/coordinator/userhandlers.go b/pkg/coordinator/userhandlers.go
-index 51e805c..e7f6017 100644
+index 51e805c..2850ee6 100644
 --- a/pkg/coordinator/userhandlers.go
 +++ b/pkg/coordinator/userhandlers.go
 @@ -13,7 +13,7 @@ func (u *User) HandleInitWebrtcStream(rq api.InitUserWebrtcStreamRequest) {
@@ -3814,7 +3830,7 @@ index 51e805c..e7f6017 100644
  		return
  	}
 -	resp, err := u.w.InitWebrtcStream(u.Id().String(), rq.Initiator, rq.Sdp)
-+	resp, err := u.w.InitWebrtcStream(u.Id().String(), rq.Initiator, rq.Sdp, rq.VideoCodec)
++	resp, err := u.w.InitWebrtcStream(u.Id().String(), rq.Initiator, rq.Sdp, rq.VideoCodec, rq.DeviceId, rq.Username)
  	if err != nil || resp == nil || *resp == api.EMPTY {
  		u.log.Error().Err(err).Msg("malformed WebRTC init response")
  		return
@@ -3900,10 +3916,10 @@ index 51e805c..e7f6017 100644
  	resp, err := u.w.SaveGame(u.Id().String())
  	if err != nil {
 diff --git a/pkg/coordinator/workerapi.go b/pkg/coordinator/workerapi.go
-index dbceaed..3f1c8f6 100644
+index dbceaed..3e21244 100644
 --- a/pkg/coordinator/workerapi.go
 +++ b/pkg/coordinator/workerapi.go
-@@ -1,64 +1,120 @@
+@@ -1,64 +1,126 @@
 -package coordinator
 -
 -import "github.com/giongto35/cloud-game/v3/pkg/api"
@@ -3990,9 +4006,15 @@ index dbceaed..3f1c8f6 100644
 +// backstop against a hung worker, not a performance knob. A genuinely hung boot still fails, just later.
 +const GameStartTimeout = 60 * time.Second
 +
-+func (w *Worker) InitWebrtcStream(id string, initiator bool, sdp string, videoCodec string) (*api.InitWebrtcStreamResponse, error) {
++func (w *Worker) InitWebrtcStream(id string, initiator bool, sdp string, videoCodec string, deviceId, username string) (*api.InitWebrtcStreamResponse, error) {
 +	return api.UnwrapChecked[api.InitWebrtcStreamResponse](
-+		w.Send(api.InitWebrtcStream, api.InitWebrtcStreamRequest{Id: id, Initiator: initiator, Sdp: sdp, VideoCodec: videoCodec}))
++		w.Send(api.InitWebrtcStream, api.InitWebrtcStreamRequest{
++			Id: id, Initiator: initiator, Sdp: sdp, VideoCodec: videoCodec,
++			// DeviceId/Username relayed for the ABR link-stat mirror. THIS LITERAL is the silent-drop
++			// point the api structs warn about: a field present in both structs but missing here is
++			// dropped without an error anywhere.
++			DeviceId: deviceId, Username: username,
++		}))
 +}
 +
 +func (w *Worker) WebrtcSignal(id string, sdp, ice *string) {
@@ -5278,7 +5300,7 @@ index 0000000..7182664
 +	}
 +}
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..67d2d06 100644
+index b342b6b..0cc0ea2 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,15 @@ import (
@@ -5297,7 +5319,7 @@ index b342b6b..67d2d06 100644
  	"github.com/pion/webrtc/v4"
  	"github.com/pion/webrtc/v4/pkg/media"
  )
-@@ -16,21 +20,102 @@ import (
+@@ -16,21 +20,111 @@ import (
  type Peer struct {
  	api *ApiFactory
  	c   *webrtc.PeerConnection
@@ -5363,6 +5385,15 @@ index b342b6b..67d2d06 100644
 +	vDrops  atomic.Int64
 +	vLogged atomic.Int64
 +
++	// Who this peer IS, for the ABR link-stat mirror (Phase 0 instrumentation). Both arrive on the
++	// per-peer InitWebrtcStream message — the only browser->worker message every peer sends for
++	// itself (t=104 is creator-only and room-wide, so a joiner's device could never ride it).
++	// OBSERVABILITY ONLY: no ABR decision reads either, they exist so a stored link measurement can
++	// be keyed to the device that produced it. Written once at NewConnection before the peer is
++	// handed to the room, read from the ABR goroutine at room close.
++	deviceId string
++	username string
++
  	onMessage func(data []byte)
  }
  
@@ -5400,7 +5431,7 @@ index b342b6b..67d2d06 100644
  var DefaultDataChannelParams = webrtc.DataChannelInit{
  	ID:             new(uint16),
  	Negotiated:     new(true),
-@@ -45,23 +130,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
+@@ -45,23 +139,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
  			Str(logger.DirectionField, "").
  			Str(logger.ClientField, ""),
  	)
@@ -5433,7 +5464,7 @@ index b342b6b..67d2d06 100644
  		return
  	}
  
-@@ -96,6 +187,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -96,6 +196,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.c.OnDataChannel(func(ch *webrtc.DataChannel) { p.log.Debug().Msgf("rtc [chan] [%s] remote", ch.Label()) })
  
@@ -5469,7 +5500,7 @@ index b342b6b..67d2d06 100644
  	aCodec := "opus"
  	if err = p.InitMedia(vCodec, aCodec); err != nil {
  		return
-@@ -143,8 +263,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+@@ -143,8 +272,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
  	return encoded, nil
  }
  
@@ -5511,7 +5542,7 @@ index b342b6b..67d2d06 100644
  		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
  		if err != nil {
  			return err
-@@ -153,6 +306,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -153,6 +315,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  		return p.c.AddICECandidate(candidate)
  	}
  	if sdp != nil {
@@ -5529,7 +5560,7 @@ index b342b6b..67d2d06 100644
  		answer, err := fromJson[webrtc.SessionDescription](*sdp)
  		if err != nil {
  			return err
-@@ -176,6 +340,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -176,6 +349,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
  		mime = webrtc.MimeTypeVP8
  	case "video/vp9":
  		mime = webrtc.MimeTypeVP9
@@ -5543,7 +5574,7 @@ index b342b6b..67d2d06 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -221,17 +392,94 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
+@@ -221,17 +401,94 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
  }
  
  func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
@@ -5570,7 +5601,7 @@ index b342b6b..67d2d06 100644
 -		p.log.Error().Err(err).Send()
 +	if p.inputOnly { // no video track (local co-op controller); nothing to send, and no sender goroutine
 +		return
- 	}
++	}
 +	p.startVideoSender()
 +
 +	select {
@@ -5593,8 +5624,8 @@ index b342b6b..67d2d06 100644
 +		p.vqStop = make(chan struct{})
 +		go p.videoSender()
 +	})
- }
- 
++}
++
 +// videoSender owns everything that costs TIME per peer — the temporal-SVC decision, the packet pacer's
 +// sleeps, and the RTP write itself — so none of it is charged to the media thread or to other peers.
 +// One goroutine per peer, so a peer's frames keep their order.
@@ -5627,9 +5658,9 @@ index b342b6b..67d2d06 100644
 +				}
 +			}
 +		}
-+	}
-+}
-+
+ 	}
+ }
+ 
 +// SetMaxTemporalLayer caps which temporal layers this peer is fed (0 = base only). Called by the ABR
 +// loop from its own goroutine.
 +func (p *Peer) SetMaxTemporalLayer(l int) { p.maxLayer.Store(int32(l)) }
@@ -5640,7 +5671,7 @@ index b342b6b..67d2d06 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -250,6 +498,22 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -250,6 +507,22 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  }
  
  func (p *Peer) Disconnect() {
@@ -5663,7 +5694,7 @@ index b342b6b..67d2d06 100644
  	if p.c == nil {
  		return
  	}
-@@ -261,6 +525,15 @@ func (p *Peer) Disconnect() {
+@@ -261,6 +534,15 @@ func (p *Peer) Disconnect() {
  }
  
  func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
@@ -5679,7 +5710,7 @@ index b342b6b..67d2d06 100644
  	if p.v, err = newTrack("video", "video", vCodec); err != nil {
  		return err
  	}
-@@ -274,20 +547,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +556,46 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -5729,7 +5760,7 @@ index b342b6b..67d2d06 100644
  			}
  		}()
  	}
-@@ -313,3 +612,137 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +621,211 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -5811,6 +5842,80 @@ index b342b6b..67d2d06 100644
 +		return "unknown"
 +	}
 +	return fmt.Sprintf("%s:%d/%s", pair.Remote.Address, pair.Remote.Port, pair.Remote.Typ)
++}
++
++// LinkPath classifies the selected ICE candidate pair into the three classes a stored link measurement
++// may never be mixed across: "samehost" (our own machine — measures our encoder and CPU, not a link),
++// "relay" (a TURN pair, whose capacity describes the relay and not the peer's access network) and
++// "direct" (everything else — the ordinary LAN/WAN peer-to-peer pair). "unknown" until ICE nominates.
++//
++// Kept separate from SameHostLink deliberately: that one answers a BEHAVIOURAL question (does this room
++// adapt at all) and is hot-path cached, while this is a label for the mirrored row.
++func (p *Peer) LinkPath() string {
++	if p == nil || p.c == nil {
++		return "unknown"
++	}
++	pair := p.selectedPair()
++	if pair == nil || pair.Remote == nil {
++		return "unknown"
++	}
++	if pair.Remote.Typ == webrtc.ICECandidateTypeRelay {
++		return "relay"
++	}
++	if p.SameHostLink() {
++		return "samehost"
++	}
++	return "direct"
++}
++
++// deviceIdMaxLen caps the opaque device id the site mints. It is only ever a key we group rows by, so
++// nothing is lost by truncating a hostile value — and an unbounded string from the browser has no
++// business reaching a log line or a DB column.
++const deviceIdMaxLen = 64
++
++// SetIdentity records who this peer is for the link-stat mirror. Called once, at connection setup,
++// before the peer is visible to the ABR goroutine.
++//
++// The device id is sanitised HERE rather than at the caller so the restriction holds for every future
++// caller: it is treated as fully opaque (we never parse it), reduced to [A-Za-z0-9-] and truncated.
++// The username is untrusted too, but it is NOT sanitised into a different string — a mangled username
++// would silently attribute a row to the wrong person, so it is merely length-capped here and the SITE
++// drops the row outright unless it resolves to a real user.
++func (p *Peer) SetIdentity(deviceId, username string) {
++	if p == nil {
++		return
++	}
++	var b strings.Builder
++	for _, r := range deviceId {
++		if len(b.String()) >= deviceIdMaxLen {
++			break
++		}
++		if r == '-' || (r >= '0' && r <= '9') || (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') {
++			b.WriteRune(r)
++		}
++	}
++	p.deviceId = b.String()
++	if len(username) > deviceIdMaxLen {
++		username = username[:deviceIdMaxLen]
++	}
++	p.username = username
++}
++
++// DeviceId is the site-minted opaque per-device key, "" when the client did not send one (any older
++// browser build). Observability only.
++func (p *Peer) DeviceId() string {
++	if p == nil {
++		return ""
++	}
++	return p.deviceId
++}
++
++// Username is the site login this peer authenticated as, "" when unknown. Observability only.
++func (p *Peer) Username() string {
++	if p == nil {
++		return ""
++	}
++	return p.username
 +}
 +
 +// LinkRttMs is the latest ICE round-trip time to this peer, in milliseconds, and whether a measurement
@@ -6829,15 +6934,16 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..f432e03
+index 0000000..40ccaff
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,742 @@
+@@ -0,0 +1,983 @@
 +package worker
 +
 +import (
 +	"fmt"
 +	"math"
++	"strconv"
 +	"strings"
 +	"time"
 +
@@ -7010,6 +7116,13 @@ index 0000000..f432e03
 +	LinkRttMs() (float64, bool)
 +	// LinkDesc is "<remote addr>:<port>/<type>" — what makes an rtt-probe line attributable to a device.
 +	LinkDesc() string
++	// LinkPath is "samehost"/"direct"/"relay"/"unknown" — the class a stored link measurement belongs
++	// to, and may never be mixed across. Observability only (Phase 0 summary).
++	LinkPath() string
++	// DeviceId / Username identify WHOSE link this is, for the session-close mirror. Both "" on an
++	// older client. Observability only.
++	DeviceId() string
++	Username() string
 +}
 +
 +// rttStat accumulates one peer's RTT samples so we can report mean and spread. OBSERVABILITY ONLY: no
@@ -7048,6 +7161,54 @@ index 0000000..f432e03
 +// rttProbeEvery: emit a summary line this many ABR ticks (= seconds) apart. Often enough that a short
 +// session still produces several lines, rare enough not to bury the abr rate lines.
 +const rttProbeEvery = 15
++
++const (
++	// abrAtCeilPct: "at the ceiling" for summary purposes. Not 100%, because the loop deliberately
++	// stops stepping once a move would be smaller than abrMinStepKbps — a room that has arrived is
++	// normally parked a little under the ceiling, and calling that "not at the ceiling" would report
++	// every healthy room as having never got there.
++	abrAtCeilPct = 90
++	// abrSustainedMinTicks: how many CONSECUTIVE healthy ticks a rate must survive before it counts as
++	// sustained. Five seconds is long enough that a single probe overshoot cannot mint a sustained
++	// value it will immediately give back, and short enough that a 30-second room still produces one.
++	abrSustainedMinTicks = 5
++)
++
++// abrPeerStat is the per-peer half of the close summary. OBSERVABILITY ONLY: no ABR decision reads
++// any of it. Same lifetime rules as the rtt/layerDown maps — the ABR goroutine owns it, and a peer
++// that leaves the room simply stops being iterated.
++type abrPeerStat struct {
++	// Sampled ONCE, the first tick they are known: LinkDesc/LinkPath both walk to the selected ICE
++	// candidate pair, and by the time the room closes that pair is being torn down and would report
++	// "unknown". Sampling once also keeps this cheaper than the existing rtt-probe, which calls
++	// LinkDesc on every emit.
++	dev, path          string
++	deviceId, username string
++
++	// sustainedKbps is THE warm-start datum: the highest room send rate that survived
++	// abrSustainedMinTicks consecutive HEALTHY ticks while this peer was the binding estimator (the
++	// one whose estimate set worstServable, i.e. the peer actually constraining the room). Precisely:
++	// a run is a maximal sequence of consecutive ticks in which the tick was healthy AND this peer was
++	// binding; the run's rate is the MINIMUM send rate over the run (what it really held, not its
++	// peak); a run of at least abrSustainedMinTicks contributes its rate, and sustainedKbps is the
++	// largest such contribution. Ticks where this peer was not the constraint say nothing about ITS
++	// link — the room was being held down by somebody else — so they break the run rather than
++	// extending it.
++	sustainedKbps int
++	runTicks      int
++	runMinKbps    int
++}
++
++// abrSummaryPeer is a by-VALUE snapshot of one peer's summary, taken before the mirror goroutine is
++// dispatched. The peer objects and the stat maps die with the ABR goroutine the moment it returns, so
++// nothing that outlives it may hold a pointer into either.
++type abrSummaryPeer struct {
++	dev, path          string
++	deviceId, username string
++	sustainedKbps      int
++	sameHost           bool
++	rttMean, rttSd     float64
++}
 +
 +const (
 +	// A peer whose SUSTAINED mean ICE RTT is below this has no queue worth protecting, so the upward
@@ -7246,7 +7407,10 @@ index 0000000..f432e03
 +// sampling once at room start sized the room for 768x576 when it went on to encode 960x672, a 46%
 +// pixel undercount that under-provisioned the room for its entire session. The pipeline already
 +// rebuilt itself on that change (VideoChangeCb -> Reinit); the ceiling was the one thing that did not.
-+func startRoomAbr(log *logger.Logger, r *room.Room[*room.GameSession], m *media.GstMediaPipe, ceilFn func() int) {
++// mirror + system are carried purely for the Phase-0 session-close link-stat row; both may be zero
++// (mirror unconfigured) and the loop then behaves exactly as it did before instrumentation.
++func startRoomAbr(log *logger.Logger, r *room.Room[*room.GameSession], m *media.GstMediaPipe, ceilFn func() int,
++	mirror linkStatConfig, system string) {
 +	if ceilFn == nil || r == nil || m == nil {
 +		return
 +	}
@@ -7275,6 +7439,10 @@ index 0000000..f432e03
 +	log.Info().Msgf("abr: start %d kbps (floor %d, ceiling %d, %s temporal layers %d, base share %d%%)",
 +		cur, floor, ceilKbps, codec, layers, share[0])
 +
++	// The opening rate, kept separately because `cur` is about to start moving. Phase 0's whole point
++	// is that a room's story is open -> ramp -> steady, and the opener is the number Phase 1 replaces.
++	openKbps := cur
++
 +	go func() {
 +		t := time.NewTicker(abrTick)
 +		defer t.Stop()
@@ -7298,6 +7466,24 @@ index 0000000..f432e03
 +		// goroutine owns them, and a peer that leaves simply stops being iterated.
 +		rtt := map[svcPeer]*rttStat{}
 +		ticks := 0
++
++		// ── Phase-0 close-summary counters (observability only) ────────────────────────────────────
++		// NOTHING below this comment is read by any ABR decision. They exist so that "it looked bad"
++		// becomes an attributable row instead of a memory, and so the two populations the plan cares
++		// about — ramp tax vs genuine wireless limit — separate automatically.
++		//
++		// The RAMP/STEADY split is the discipline that matters: a cold room's climb produces cuts and
++		// starves that look pathological in a tail but are just the probe finding the ceiling. Encoding
++		// the split into the log itself is what stops the next reader misdiagnosing a healthy ramp.
++		pstat := map[svcPeer]*abrPeerStat{}
++		atCeilTicks := 0    // ticks spent at >= abrAtCeilPct of the ceiling
++		atCeilSeen := false // has the room EVER touched the ceiling? — the ramp/steady boundary
++		rampTicks := -1     // ticks from open to the first ceiling touch; -1 = never got there
++		cutsRamp, cutsSteady := 0, 0
++		starvesRamp, starvesSteady := 0, 0
++		congEpisodes := 0 // distinct congestion-memory episodes (0 -> non-zero transitions)
++		congMaxHold := 0  // longest run of consecutive ticks a remembered wall was held
++		congRun := 0
 +		for range t.C {
 +			if r.Closed() {
 +				// Final RTT summary per peer BEFORE returning — a short session may never reach a
@@ -7305,6 +7491,76 @@ index 0000000..f432e03
 +				for p, s := range rtt {
 +					logRttProbe(log, r.Id(), p, s, true)
 +				}
++
++				// ── Phase-0 session summary ────────────────────────────────────────────────────
++				// One greppable line for the room, one per peer, then the mirror. All of it is
++				// derived from counters already accumulated; the only work here is formatting, so
++				// the close path stays as fast as it was.
++				ramp := "never"
++				if rampTicks >= 0 {
++					ramp = strconv.Itoa(rampTicks)
++				}
++				atCeilPct := 0
++				if ticks > 0 {
++					atCeilPct = atCeilTicks * 100 / ticks
++				}
++				log.Info().Msgf(
++					"abr: summary room=%s system=%s open=%d ceil=%d codec=%s layers=%d ticks=%d "+
++						"rampTicks=%s atCeilPct=%d cuts=%d cutsRamp=%d cutsSteady=%d "+
++						"starves=%d starvesRamp=%d starvesSteady=%d congEpisodes=%d congMaxHoldTicks=%d",
++					r.Id(), system, openKbps, ceilKbps, codec, layers, ticks,
++					ramp, atCeilPct, cutsRamp+cutsSteady, cutsRamp, cutsSteady,
++					starvesRamp+starvesSteady, starvesRamp, starvesSteady, congEpisodes, congMaxHold)
++
++				// Snapshot each peer BY VALUE before dispatching anything: the peer objects and these
++				// maps die with this goroutine the instant it returns.
++				var snap []abrSummaryPeer
++				for p, st := range pstat {
++					sp := abrSummaryPeer{
++						dev: st.dev, path: st.path, deviceId: st.deviceId, username: st.username,
++						sustainedKbps: st.sustainedKbps, sameHost: st.path == "samehost",
++					}
++					if s := rtt[p]; s != nil {
++						sp.rttMean, sp.rttSd = s.mean, s.sd()
++					}
++					snap = append(snap, sp)
++				}
++				for _, sp := range snap {
++					log.Info().Msgf(
++						"abr: summary-peer room=%s dev=%s path=%s sustained=%d rttMean=%.2fms rttSd=%.2fms device=%s user=%s",
++						r.Id(), sp.dev, sp.path, sp.sustainedKbps, sp.rttMean, sp.rttSd, sp.deviceId, sp.username)
++				}
++
++				// Mirror to the site — one row per NON-SAMEHOST peer. Same-host rows are deliberately
++				// never stored: they measure our own encoder and CPU rather than a link (those rooms
++				// bypass ABR entirely), so a warm value derived from one would describe nothing. The
++				// plan's rule is that they never feed warm values; not storing them at all is the
++				// simplest way to make that unbreakable downstream. They are still LOGGED above.
++				//
++				// A row with no device or no user cannot be keyed to anything Phase 1 could look up,
++				// so it is dropped here rather than stored unattributable.
++				if mirror.enabled() {
++					for _, sp := range snap {
++						if sp.sameHost || sp.deviceId == "" || sp.username == "" {
++							continue
++						}
++						row := linkStatRow{
++							RoomId: r.Id(), Username: sp.username, DeviceId: sp.deviceId,
++							System: system, Codec: codec,
++							CeilingKbps: ceilKbps, OpenKbps: openKbps, SustainedKbps: sp.sustainedKbps,
++							AtCeilPct: atCeilPct, CutsSteady: cutsSteady, StarvesSteady: starvesSteady,
++							CongEpisodes: congEpisodes,
++							RttMeanMs:    sp.rttMean, RttSdMs: sp.rttSd, Path: sp.path,
++						}
++						if rampTicks >= 0 {
++							rt := rampTicks
++							row.RampTicks = &rt
++						}
++						// `go` per row: the room is already gone and must not wait on the site.
++						go mirror.post(log, row)
++					}
++				}
++
 +				log.Debug().Msg("abr: room closed")
 +				return
 +			}
@@ -7322,12 +7578,40 @@ index 0000000..f432e03
 +				congKbps, congClear, congHold = 0, 0, 0
 +			}
 +
++			// Summary accounting for the rate we are HOLDING as this tick begins (cur only moves at
++			// the end of a tick, so this is the rate that was actually on the wire for it).
++			if cur*100 >= ceilKbps*abrAtCeilPct {
++				atCeilTicks++
++				if !atCeilSeen {
++					// First touch of the ceiling: this is the ramp/steady boundary every later
++					// counter is split on, and rampTicks is the ramp-tax number Phase 1 must beat.
++					atCeilSeen = true
++					rampTicks = ticks
++				}
++			}
++			// Longest HOLD = the longest unbroken run of ticks during which a wall was remembered.
++			// Not the same as the post-cut probe hold (abrCongHoldTicks); this measures how long the
++			// room's behaviour was actually shaped by congestion memory.
++			if congKbps > 0 {
++				congRun++
++				if congRun > congMaxHold {
++					congMaxHold = congRun
++				}
++			} else {
++				congRun = 0
++			}
++
 +			// worstServable: the tightest estimate among peers we can still serve at their assigned
 +			// layer, expressed in ROOM terms (scaled back up by the share they receive). That is what
 +			// the room bitrate must respect.
 +			// roomCap: a hard ceiling contributed by any STARVED peer (one for whom not even the base
 +			// layer fits) — set to what base layer alone would need.
 +			worstServable, roomCap, peers := 0, 0, 0
++			// bindingPeer: whichever peer's estimate ended up SETTING worstServable this tick — i.e.
++			// the one actually constraining the room. Summary only; it feeds `sustained`, so that a
++			// peer is credited with a rate only while it was the constraint, never while somebody
++			// else was holding the room down.
++			var bindingPeer svcPeer
 +			// How many of the estimating peers are on the worker's own host, and how many have a link
 +			// fast enough to skip the creep (same-host, or a sustained low RTT). See the fast path below.
 +			sameHostPeers, fastPeers := 0, 0
@@ -7358,6 +7642,20 @@ index 0000000..f432e03
 +				sameHost := p.SameHostLink()
 +				if sameHost {
 +					sameHostPeers++
++				}
++				// Per-peer summary state. Identity is known from connection setup; the link
++				// description needs a nominated ICE pair, so it is sampled on the first tick it
++				// becomes available and never re-read — by room close the pair is being torn down
++				// and would report "unknown".
++				st := pstat[p]
++				if st == nil {
++					st = &abrPeerStat{deviceId: p.DeviceId(), username: p.Username()}
++					pstat[p] = st
++				}
++				if st.dev == "" {
++					if d := p.LinkDesc(); d != "unknown" {
++						st.dev, st.path = d, p.LinkPath()
++					}
 +				}
 +				if ms, ok := p.LinkRttMs(); ok {
 +					s := rtt[p]
@@ -7399,6 +7697,7 @@ index 0000000..f432e03
 +					// Full stream ⇒ share is 100%: the room bitrate must respect the raw estimate.
 +					if worstServable == 0 || est < worstServable {
 +						worstServable = est
++						bindingPeer = p
 +					}
 +					continue
 +				}
@@ -7433,6 +7732,17 @@ index 0000000..f432e03
 +					if starveHold[p] < abrStarveTicks {
 +						continue
 +					}
++					// Count the CONFIRMATION, not every starved tick: starveHold keeps climbing while
++					// a starve persists, so testing for equality counts one event per episode, which
++					// is what "starves=" is meant to mean. Split on whether the room had ever reached
++					// its ceiling — starves during the climb are the probe doing its job.
++					if starveHold[p] == abrStarveTicks {
++						if atCeilSeen {
++							starvesSteady++
++						} else {
++							starvesRamp++
++						}
++					}
 +					// Even the base layer is too much for this link. Lower the room only to what BASE
 +					// needs — not to this peer's raw estimate. Everyone else keeps the layers above.
 +					need := est * 100 / share[0]
@@ -7448,10 +7758,32 @@ index 0000000..f432e03
 +				effective := est * 100 / max(share[layer], 1)
 +				if worstServable == 0 || effective < worstServable {
 +					worstServable = effective
++					bindingPeer = p
 +				}
 +			}
 +			if peers == 0 {
 +				continue // hold: nobody has told us anything yet
++			}
++
++			// A tick is HEALTHY for summary purposes when nobody is starved and the binding estimate
++			// is keeping up with what we send. Deliberately computed from the same quantities the
++			// switch below reads, but INDEPENDENTLY of which branch runs: the healthy case requires
++			// `cur < ceilKbps`, so a room parked at its ceiling — the steady state `sustained` exists
++			// to measure — takes the default branch. Keying off the branch would blind it to exactly
++			// the ticks that matter. Reads nothing it mutates; the switch is unaffected.
++			healthyTick := roomCap == 0 && worstServable > 0 && worstServable*100 >= cur*abrHealthyPct
++			for p, st := range pstat {
++				if !healthyTick || p != bindingPeer {
++					st.runTicks = 0 // not the constraint (or not healthy) — the run says nothing
++					continue
++				}
++				if st.runTicks == 0 || cur < st.runMinKbps {
++					st.runMinKbps = cur
++				}
++				st.runTicks++
++				if st.runTicks >= abrSustainedMinTicks && st.runMinKbps > st.sustainedKbps {
++					st.sustainedKbps = st.runMinKbps
++				}
 +			}
 +
 +			next := cur
@@ -7556,6 +7888,20 @@ index 0000000..f432e03
 +			// link. Both the backoff and starve-cap paths funnel through here. The hold starts now —
 +			// the wall was just (re)confirmed, so probing into it again immediately is pointless.
 +			if next < cur {
++				// Summary: a CONFIRMED cut, split on whether the room had reached its ceiling yet.
++				// cutsRamp is the probe finding the wall on the way up; cutsSteady is the room losing
++				// ground it had already held, which is the one that indicates a real problem.
++				if atCeilSeen {
++					cutsSteady++
++				} else {
++					cutsRamp++
++				}
++				// A new congestion EPISODE is a transition from "no wall remembered" to a wall. A cut
++				// that re-confirms a wall we already remember extends the episode, it does not start
++				// a new one.
++				if congKbps == 0 {
++					congEpisodes++
++				}
 +				congKbps, congClear, congHold = cur, 0, abrCongHoldTicks
 +			}
 +			if err := m.SetVideoBitrate(next); err != nil {
@@ -88851,10 +89197,10 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..d30d7a3 100644
+index 6972cc7..bf4321e 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,732 @@
+@@ -1,310 +1,743 @@
 -package worker
 -
 -import (
@@ -89248,6 +89594,12 @@ index 6972cc7..d30d7a3 100644
 +	if err = peer.NewConnection(codec, splitAudio, inputOnly, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
 +		return api.EmptyPacket
 +	}
++
++	// Who this peer is, for the ABR link-stat mirror (Phase 0). Set before the peer joins the room, so
++	// the ABR goroutine never observes a half-identified peer. Untrusted browser input — SetIdentity
++	// sanitises the device id and the site validates the username. Empty from an older client, which
++	// simply means this peer's session is not mirrored.
++	peer.SetIdentity(rq.DeviceId, rq.Username)
 +
 +	if rq.Initiator {
 +		if err = peer.HandleSignal(nil, &rq.Sdp); err != nil {
@@ -89713,7 +90065,12 @@ index 6972cc7..d30d7a3 100644
 +				w.log.Warn().Err(err).Msg("abr: could not apply the initial auto ceiling")
 +			}
 +		}
-+		startRoomAbr(w.log, r, m, ceilFn)
++		// The link-stat mirror rides the RetroAchievements credentials: that config block is where the
++		// worker's site base URL + internal secret live, so there is one worker->site trust path
++		// rather than two. Unconfigured = summary lines still logged, nothing POSTed.
++		raCfg := w.conf.RetroAchievements
++		startRoomAbr(w.log, r, m, ceilFn,
++			linkStatConfig{baseURL: raCfg.MirrorURL, secret: raCfg.Secret}, game.System)
 +	}
 +
 +	needsKbMouse := r.App().KbMouseSupport()
@@ -89896,6 +90253,112 @@ index 6972cc7..d30d7a3 100644
 +		return "", err
 +	}
 +	return string(b), nil
++}
+diff --git a/pkg/worker/linkstat.go b/pkg/worker/linkstat.go
+new file mode 100644
+index 0000000..a98cd97
+--- /dev/null
++++ b/pkg/worker/linkstat.go
+@@ -0,0 +1,100 @@
++package worker
++
++// Session-close link statistics mirrored to the site (Phase 0 of the ABR quality plan).
++//
++// What this is for: the worker already KNOWS, by the end of every room, the rate each peer's link
++// actually sustained — and then forgets it when the room closes. Every room therefore re-certifies
++// from a cold 6000 kbps opener the same capacity it certified yesterday on the same link, which is
++// the 17–35s ramp Eric sees as "low-quality YouTube" at the start of every session. Storing the
++// measurement is what later lets a room open at a rate this device has already proven.
++//
++// This file is the WRITE half only, and it is deliberately inert: nothing here feeds back into any
++// ABR decision. It rides the same worker->site trust path as the RetroAchievements mirror
++// (racheevos.go) — same base URL, same X-Arcade-Internal-Secret header, same fire-and-forget
++// posture — so there is exactly one such transport to reason about, not two.
++
++import (
++	"bytes"
++	"encoding/json"
++	"io"
++	"net/http"
++	"strings"
++	"time"
++
++	"github.com/giongto35/cloud-game/v3/pkg/logger"
++)
++
++// Deliberately a SHORTER timeout than the RA mirror's 15s. An unlock is a durable user-visible record
++// worth waiting on; a link stat is a sample of a population, and the room it describes is already
++// gone. A stalled site must not leave goroutines parked for 15s per peer per room.
++var linkStatClient = &http.Client{Timeout: 5 * time.Second}
++
++// linkStatConfig is the site mirror endpoint + secret. Same fields, and in practice the same values,
++// as raMirrorConfig — the RA config block is where the worker's site credentials live, so a worker
++// with RA unconfigured also mirrors no link stats. That coupling is intentional (one secret to
++// rotate) but worth knowing: it is not a separate on/off switch.
++type linkStatConfig struct {
++	baseURL string
++	secret  string
++}
++
++func (c linkStatConfig) enabled() bool { return c.baseURL != "" && c.secret != "" }
++
++// linkStatRow is one peer's session summary. Field names match the site's LinkStatRequest.
++//
++// RampTicks is a POINTER because "never reached 90% of the ceiling" is a real, distinct outcome from
++// "reached it on tick 0" — a room that never got there is the single most interesting row in the
++// table, and collapsing it onto a sentinel integer would hide it.
++type linkStatRow struct {
++	RoomId        string  `json:"roomId"`
++	Username      string  `json:"username"`
++	DeviceId      string  `json:"deviceId"`
++	System        string  `json:"system"`
++	Codec         string  `json:"codec"`
++	CeilingKbps   int     `json:"ceilingKbps"`
++	OpenKbps      int     `json:"openKbps"`
++	SustainedKbps int     `json:"sustainedKbps"`
++	RampTicks     *int    `json:"rampTicks,omitempty"`
++	AtCeilPct     int     `json:"atCeilPct"`
++	CutsSteady    int     `json:"cutsSteady"`
++	StarvesSteady int     `json:"starvesSteady"`
++	CongEpisodes  int     `json:"congEpisodes"`
++	RttMeanMs     float64 `json:"rttMeanMs"`
++	RttSdMs       float64 `json:"rttSdMs"`
++	Path          string  `json:"path"`
++}
++
++// post ships one row. Call it from a goroutine: the only caller is the ABR loop's room-close branch,
++// and room teardown must not wait on the site being reachable.
++//
++// Fire-and-forget in the strict sense — no retry, no queue, no persistence. A dropped row costs one
++// sample out of many, and the alternative (a retry queue in the worker) would be a durability
++// mechanism for data whose entire value is statistical.
++func (c linkStatConfig) post(log *logger.Logger, row linkStatRow) {
++	if !c.enabled() {
++		return
++	}
++	buf, err := json.Marshal(row)
++	if err != nil {
++		return
++	}
++	req, err := http.NewRequest(http.MethodPost,
++		strings.TrimRight(c.baseURL, "/")+"/API/Arcade/Internal/LinkStat", bytes.NewReader(buf))
++	if err != nil {
++		return
++	}
++	req.Header.Set("Content-Type", "application/json")
++	req.Header.Set("X-Arcade-Internal-Secret", c.secret)
++	resp, err := linkStatClient.Do(req)
++	if err != nil {
++		log.Warn().Err(err).Msg("abr: link-stat mirror POST failed")
++		return
++	}
++	// Drain before close so the connection is reusable, and make a non-2xx VISIBLE: a wrong or rotated
++	// secret would otherwise fail with no symptom anywhere except "site rows never accumulate".
++	_, _ = io.Copy(io.Discard, resp.Body)
++	_ = resp.Body.Close()
++	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
++		log.Warn().Msgf("abr: link-stat mirror POST rejected: %s", resp.Status)
++	}
 +}
 diff --git a/pkg/worker/media/d3d11zerocopy.go b/pkg/worker/media/d3d11zerocopy.go
 new file mode 100644

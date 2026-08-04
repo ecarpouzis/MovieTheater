@@ -2102,6 +2102,112 @@ namespace MovieTheater.Controllers
             return NoContent();
         }
 
+        public sealed class LinkStatRequest
+        {
+            public string? RoomId { get; set; }
+            /// <summary>Site login the peer authenticated as. UNTRUSTED — it arrives from the browser, through
+            /// the worker, and is only ever accepted if it resolves to a real user (see below).</summary>
+            public string? Username { get; set; }
+            /// <summary>Opaque per-device key minted by the frontend into localStorage.</summary>
+            public string? DeviceId { get; set; }
+            public string? System { get; set; }
+            public string? Codec { get; set; }
+            public int CeilingKbps { get; set; }
+            public int OpenKbps { get; set; }
+            public int SustainedKbps { get; set; }
+            /// <summary>Null = the room never reached 90% of its ceiling.</summary>
+            public int? RampTicks { get; set; }
+            public int AtCeilPct { get; set; }
+            public int CutsSteady { get; set; }
+            public int StarvesSteady { get; set; }
+            public int CongEpisodes { get; set; }
+            public double RttMeanMs { get; set; }
+            public double RttSdMs { get; set; }
+            public string? Path { get; set; }
+        }
+
+        /// <summary>Record one peer's session link measurement from the CloudRetro worker at room close
+        /// (Phase 0 of the ABR quality plan). Secret-gated server-to-server, like
+        /// <see cref="AchievementUnlocked"/>. Append-only and purely observational — nothing reads these
+        /// rows yet; they are the baseline that later judges whether a warm start actually helped.</summary>
+        [AllowAnonymous]
+        [HttpPost("/API/Arcade/Internal/LinkStat")]
+        public async Task<IActionResult> LinkStat([FromBody] LinkStatRequest req)
+        {
+            if (!IsInternalCallerAuthorized()) return Unauthorized();
+            if (req == null) return BadRequest();
+
+            // The device id is the row's other half of the key: without it the measurement cannot be told
+            // apart from the same user's other hardware, which is the one mistake this table exists to avoid.
+            var deviceId = SanitizeDeviceId(req.DeviceId);
+            if (string.IsNullOrEmpty(deviceId)) return NoContent();
+
+            // The username is untrusted input that has passed through the browser. Resolve it or DROP the
+            // row — never insert an unattributable measurement, and never create a user from this path.
+            // NoContent rather than an error: a stale client is not a worker fault worth logging as one.
+            var username = req.Username?.Trim();
+            if (string.IsNullOrEmpty(username)) return NoContent();
+            var userId = await movieDb.Users
+                .Where(u => u.Username == username)
+                .Select(u => (int?)u.UserID)
+                .FirstOrDefaultAsync();
+            if (userId == null) return NoContent();
+
+            // Same-host sessions must never be stored: they measure our own encoder and CPU rather than a
+            // link, so a warm value derived from one would describe nothing. The worker already filters them
+            // out; this is the second half of that rule, enforced where the data actually lands.
+            var path = Clamp20(req.Path);
+            if (string.Equals(path, "samehost", StringComparison.OrdinalIgnoreCase)) return NoContent();
+
+            // Clamp every numeric server-side. These arrive from a process we trust, but a wedged or
+            // half-upgraded worker sending a garbage rate must not become a warm-start value later.
+            movieDb.ArcadeLinkStats.Add(new ArcadeLinkStat
+            {
+                UserId = userId.Value,
+                DeviceId = deviceId,
+                System = Clamp(req.System, 40),
+                Codec = Clamp20(req.Codec),
+                CeilingKbps = Math.Clamp(req.CeilingKbps, 0, 100000),
+                OpenKbps = Math.Clamp(req.OpenKbps, 0, 100000),
+                SustainedKbps = Math.Clamp(req.SustainedKbps, 0, 100000),
+                RampTicks = req.RampTicks is int rt ? Math.Clamp(rt, 0, 100000) : null,
+                AtCeilPct = Math.Clamp(req.AtCeilPct, 0, 100),
+                CutsSteady = Math.Clamp(req.CutsSteady, 0, 100000),
+                StarvesSteady = Math.Clamp(req.StarvesSteady, 0, 100000),
+                CongEpisodes = Math.Clamp(req.CongEpisodes, 0, 100000),
+                // NaN/Infinity would round-trip through JSON and poison any later average, so they are
+                // normalised to 0 rather than clamped (Math.Clamp propagates NaN).
+                RttMeanMs = SaneMs(req.RttMeanMs),
+                RttSdMs = SaneMs(req.RttSdMs),
+                Path = path,
+                CreatedUtc = DateTime.UtcNow,
+            });
+            await movieDb.SaveChangesAsync();
+            return NoContent();
+
+            static string? Clamp(string? s, int max) =>
+                string.IsNullOrWhiteSpace(s) ? null : (s!.Length > max ? s[..max] : s);
+            static string? Clamp20(string? s) => Clamp(s, 20);
+            static double SaneMs(double v) =>
+                double.IsNaN(v) || double.IsInfinity(v) ? 0 : Math.Clamp(v, 0, 600000);
+        }
+
+        /// <summary>Reduce a client-supplied device id to the opaque key we actually store: [A-Za-z0-9-],
+        /// capped at 64. Mirrors the worker's own sanitiser — both ends enforce it so neither has to trust
+        /// the other.</summary>
+        private static string SanitizeDeviceId(string? raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return "";
+            var sb = new System.Text.StringBuilder(Math.Min(raw.Length, 64));
+            foreach (var c in raw)
+            {
+                if (sb.Length >= 64) break;
+                if (c == '-' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+                    sb.Append(c);
+            }
+            return sb.ToString();
+        }
+
         /// <summary>Ziggy's arcade watchdog (check H) pushes the patched-artifact verifier's report here
         /// every 30 minutes so a REVERTED patched binary raises a popup for admins instead of a line in a
         /// log file. See <see cref="MovieTheater.Arcade.PatchedArtifactAlerts"/> for why this signal exists

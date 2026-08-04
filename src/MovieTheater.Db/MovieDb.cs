@@ -399,6 +399,13 @@ namespace MovieTheater.Db
             modelBuilder.Entity<ArcadeRaApiCache>()
                 .HasIndex(c => c.CacheKey)
                 .IsUnique();
+
+            // ArcadeLinkStat is append-only observability, so NOT unique — many sessions per device is the
+            // point. The index matches the only query shape planned for it: "the most recent rows for this
+            // user on THIS device", newest first, which is how a warm-start value gets computed (min of the
+            // last few sessions, ignoring anything older than ~12h).
+            modelBuilder.Entity<ArcadeLinkStat>()
+                .HasIndex(s => new { s.UserId, s.DeviceId, s.CreatedUtc });
         }
 
         public DbSet<Movie> Movies { get; set; }
@@ -443,6 +450,7 @@ namespace MovieTheater.Db
         public DbSet<ArcadeAchievementUnlock> ArcadeAchievementUnlocks { get; set; }
         public DbSet<ArcadeLeaderboardEntry> ArcadeLeaderboardEntries { get; set; }
         public DbSet<ArcadeRaApiCache> ArcadeRaApiCaches { get; set; }
+        public DbSet<ArcadeLinkStat> ArcadeLinkStats { get; set; }
         public DbSet<HeavyClient> HeavyClients { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
