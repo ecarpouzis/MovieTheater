@@ -57,10 +57,9 @@ namespace MovieTheater.Music
         [CommandOption("verbose", Description = "Print a line per album, not just the ones that changed.")]
         public bool Verbose { get; set; }
 
-        /// <summary>MusicBrainz asks for ≤1 request/second and a contact-bearing User-Agent; both are
-        /// conditions of use, not suggestions.</summary>
-        private const int MusicBrainzThrottleMs = 1100;
-        private const string RemoteUserAgent = "MovieTheater-music-art/1.0 (private home media library)";
+        /// <summary>See <see cref="MusicRemoteArt.MusicBrainzThrottleMs"/> — the remote lookup itself
+        /// now lives there so this command and the admin backfill endpoint can't drift apart.</summary>
+        private const int MusicBrainzThrottleMs = MusicRemoteArt.MusicBrainzThrottleMs;
 
         private readonly IDbContextFactory<MovieDb> dbFactory;
         private readonly MovieTheaterConfiguration config;
@@ -109,7 +108,7 @@ namespace MovieTheater.Music
                 .ToListAsync();
 
             int fromFolder = 0, fromEmbedded = 0, fromRemote = 0, alreadyOnDisk = 0, noArt = 0, failed = 0;
-            using var http = Remote ? CreateHttp() : null;
+            using var http = Remote ? MusicRemoteArt.CreateHttp() : null;
             DateTime lastMusicBrainz = DateTime.MinValue;
 
             foreach (var album in batch)
@@ -160,7 +159,7 @@ namespace MovieTheater.Music
                     if (wait > 0) await Task.Delay(wait);
                     lastMusicBrainz = DateTime.UtcNow;
 
-                    source = await FetchRemoteArtAsync(http!, album.Artist.Name, album.Title, w);
+                    source = await MusicRemoteArt.FetchAsync(http!, album.Artist.Name, album.Title);
                     if (source != null) origin = "remote";
                     if (Apply) album.ArtCheckedUtc = DateTime.UtcNow;
                 }
@@ -236,91 +235,5 @@ namespace MovieTheater.Music
             }
         }
 
-        private static HttpClient CreateHttp()
-        {
-            var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-            http.DefaultRequestHeaders.UserAgent.ParseAdd(RemoteUserAgent);
-            return http;
-        }
-
-        /// <summary>MusicBrainz release search → Cover Art Archive front image, then iTunes as the
-        /// fallback. Any network hiccup is a miss, never a crash — the caller stamps the negative
-        /// cache either way, and a genuinely transient failure costs one album until someone clears it.</summary>
-        private static async Task<byte[]?> FetchRemoteArtAsync(HttpClient http, string artist, string album, ConsoleWriter w)
-        {
-            foreach (var mbid in await MusicBrainzReleaseIdsAsync(http, artist, album))
-            {
-                var bytes = await TryGetAsync(http, $"https://coverartarchive.org/release/{mbid}/front-500");
-                if (bytes != null) return bytes;
-            }
-            return await ItunesArtworkAsync(http, artist, album);
-        }
-
-        private static async Task<List<string>> MusicBrainzReleaseIdsAsync(HttpClient http, string artist, string album)
-        {
-            var ids = new List<string>();
-            var query = Uri.EscapeDataString($"artist:\"{Sanitize(artist)}\" AND release:\"{Sanitize(album)}\"");
-            var json = await TryGetStringAsync(http, $"https://musicbrainz.org/ws/2/release/?query={query}&fmt=json&limit=5");
-            if (json == null) return ids;
-            try
-            {
-                using var doc = JsonDocument.Parse(json);
-                if (!doc.RootElement.TryGetProperty("releases", out var releases)) return ids;
-                foreach (var release in releases.EnumerateArray())
-                    if (release.TryGetProperty("id", out var id) && id.GetString() is string s)
-                        ids.Add(s);
-            }
-            catch { /* malformed response = miss */ }
-            return ids;
-        }
-
-        private static async Task<byte[]?> ItunesArtworkAsync(HttpClient http, string artist, string album)
-        {
-            var term = Uri.EscapeDataString($"{artist} {album}");
-            var json = await TryGetStringAsync(http, $"https://itunes.apple.com/search?term={term}&entity=album&limit=1");
-            if (json == null) return null;
-            try
-            {
-                using var doc = JsonDocument.Parse(json);
-                if (!doc.RootElement.TryGetProperty("results", out var results)) return null;
-                foreach (var result in results.EnumerateArray())
-                {
-                    if (!result.TryGetProperty("artworkUrl100", out var art)) continue;
-                    var url = art.GetString();
-                    if (url == null) continue;
-                    // iTunes serves any size by rewriting the dimension segment of the URL.
-                    return await TryGetAsync(http, url.Replace("100x100", "600x600"));
-                }
-            }
-            catch { /* malformed response = miss */ }
-            return null;
-        }
-
-        /// <summary>Lucene special characters in an album/artist name would otherwise break the
-        /// MusicBrainz query (or silently match nothing).</summary>
-        private static string Sanitize(string s) =>
-            new string(s.Where(c => !"\\+-!(){}[]^\"~*?:/".Contains(c)).ToArray()).Trim();
-
-        private static async Task<byte[]?> TryGetAsync(HttpClient http, string url)
-        {
-            try
-            {
-                var response = await http.GetAsync(url);
-                if (!response.IsSuccessStatusCode) return null;
-                return await response.Content.ReadAsByteArrayAsync();
-            }
-            catch { return null; }
-        }
-
-        private static async Task<string?> TryGetStringAsync(HttpClient http, string url)
-        {
-            try
-            {
-                var response = await http.GetAsync(url);
-                if (!response.IsSuccessStatusCode) return null;
-                return await response.Content.ReadAsStringAsync();
-            }
-            catch { return null; }
-        }
     }
 }

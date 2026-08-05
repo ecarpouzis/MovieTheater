@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MovieTheater.Core;
 using MovieTheater.Db;
+using MovieTheater.Music;
 using MovieTheater.Services;
 
 namespace MovieTheater.Controllers
@@ -496,6 +498,86 @@ namespace MovieTheater.Controllers
             movieDb.MusicPlaylists.Remove(playlist);
             await movieDb.SaveChangesAsync();
             return Ok(new { deleted = true });
+        }
+
+        // ── Admin: bulk album-art warm (music-plan.md §2.5) ──────────────────────────────────────────
+        // Runs the remote art lookup IN THE WEB APP so it writes to the live images mount — the CLI's
+        // pass can't, because a dev box has no access to prod's volume (same reason
+        // /API/Admin/IngestReview/BackfillPosters exists). This is the bulk version of what
+        // MusicImageController does lazily on first view; both share MusicArtFill and one throttle gate.
+        //
+        // Bounded per call (limit) and resumable (after cursor), returning { processed, remaining,
+        // nextCursor } so the CALLER drives it to completion — MusicBrainz's 1 req/s means the whole
+        // catalog is far more than one request's worth of work.
+
+        /// <summary>Admin = a config-designated username AND a password-verified session; the
+        /// passwordless communal login alone proves nothing (see AdminController's remarks).</summary>
+        private bool IsCurrentUserAdmin() =>
+            User.FindFirst("amr")?.Value == "pwd"
+            && config.AdminUsernames.Any(a => string.Equals(a, User.FindFirst(ClaimTypes.Name)?.Value, StringComparison.OrdinalIgnoreCase));
+
+        [HttpPost("/API/Admin/Music/BackfillArt")]
+        public async Task<IActionResult> BackfillArt([FromQuery] int limit = 25, [FromQuery] int after = 0)
+        {
+            if (!IsCurrentUserAdmin()) return Forbid();
+
+            var imagesDir = MusicArtStore.ResolveDir(config);
+            if (imagesDir == null)
+                return StatusCode(501, new { message = "No images directory configured (MusicImagesDir / MoviePostersDir)." });
+
+            limit = Math.Clamp(limit, 1, 100);
+
+            // The work set is "art missing ON THIS MOUNT and worth asking about": never-asked albums
+            // (ArtCheckedUtc null), plus albums flagged HasArt whose file isn't here — that flag means a
+            // local CLI run found art on a different mount, so this one still has to fetch it.
+            // A miss clears HasArt and stamps ArtCheckedUtc, so every album leaves the set exactly once
+            // and a driver loop terminates.
+            var candidates = await movieDb.MusicAlbums
+                .Where(a => a.ArtCheckedUtc == null || a.HasArt)
+                .OrderBy(a => a.Id)
+                .Select(a => new { a.Id })
+                .ToListAsync();
+
+            bool NeedsArt(int id) =>
+                !System.IO.File.Exists(Path.Combine(imagesDir, MusicArtStore.FileName(id, thumbnail: false)));
+
+            var pending = candidates.Where(c => c.Id > after && NeedsArt(c.Id)).Select(c => c.Id).ToList();
+            var batchIds = pending.Take(limit).ToList();
+
+            int filled = 0, missed = 0;
+            using var http = MusicRemoteArt.CreateHttp();
+            foreach (var id in batchIds)
+            {
+                var album = await movieDb.MusicAlbums.Include(a => a.Artist).FirstOrDefaultAsync(a => a.Id == id);
+                if (album == null) continue;
+
+                // Wait our turn behind any lazy fetch rather than doubling the request rate.
+                await MusicRemoteArt.Gate.WaitAsync(HttpContext.RequestAborted);
+                try
+                {
+                    if (await MusicArtFill.FetchAndStoreAsync(movieDb, config, http, album, MusicRemoteArt.SpaceCallAsync))
+                        filled++;
+                    else
+                        missed++;
+                }
+                finally
+                {
+                    MusicRemoteArt.Gate.Release();
+                }
+            }
+
+            var withArt = await movieDb.MusicAlbums.CountAsync(a => a.HasArt);
+            var totalAlbums = await movieDb.MusicAlbums.CountAsync();
+            return Ok(new
+            {
+                processed = batchIds.Count,
+                filled,
+                missed,
+                remaining = Math.Max(0, pending.Count - batchIds.Count),
+                nextCursor = batchIds.Count > 0 ? batchIds[^1] : after,
+                withArt,
+                totalAlbums,
+            });
         }
     }
 }
