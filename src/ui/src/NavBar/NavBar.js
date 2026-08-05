@@ -9,6 +9,7 @@ import SearchTools from "./SearchTools";
 import Login from "./Login";
 import BoardGameNavContent from "./BoardGameNavContent";
 import ArcadeNavContent from "./ArcadeNavContent";
+import MusicNavContent from "./MusicNavContent";
 // Settings/admin modals only open on demand (and admin only for privileged users), so keep them out
 // of the entry bundle and load their chunks when first rendered.
 const UserSettingsModal = lazy(() => import("./UserSettingsModal"));
@@ -24,6 +25,7 @@ import tvIcon from "../assets/icons/tv.svg";
 import boardGamesIcon from "../assets/icons/board-games.svg";
 import comicsIcon from "../assets/icons/comics.svg";
 import arcadeIcon from "../assets/icons/joystick.svg";
+import musicIcon from "../assets/icons/music.svg";
 
 function NavBar({
   search,
@@ -213,18 +215,19 @@ function NavBar({
 
   const isBoardGames = location.pathname.startsWith("/boardgames");
   const isArcade = location.pathname.startsWith("/arcade");
-  const isMovies = !isArcade && !isBoardGames;
+  const isMusic = location.pathname.startsWith("/music");
+  const isMovies = !isArcade && !isBoardGames && !isMusic;
   // Arcade's rail carries a bare word-mark: its joystick glyph was dropped in the browse redesign.
   // The switcher menu still shows the icon, so the section stays recognisable there.
-  const sectionIcon = isArcade ? null : isBoardGames ? boardGamesIcon : movieTheaterIcon;
-  const sectionTitle = isArcade ? "Arcade" : isBoardGames ? "Board Games" : "Movie Theater";
-  const navThemeClass = isArcade ? " navbar-arcade-theme" : isBoardGames ? " navbar-boardgames-theme" : "";
+  const sectionIcon = isArcade ? null : isBoardGames ? boardGamesIcon : isMusic ? musicIcon : movieTheaterIcon;
+  const sectionTitle = isArcade ? "Arcade" : isBoardGames ? "Board Games" : isMusic ? "Music" : "Movie Theater";
+  const navThemeClass = isArcade ? " navbar-arcade-theme" : isBoardGames ? " navbar-boardgames-theme" : isMusic ? " navbar-music-theme" : "";
 
   // Publish the active feature to <html> so theme.css re-tints its tokens (accent, sidebar,
   // content bg) per section. Runs on every route change.
   useEffect(() => {
-    document.documentElement.dataset.feature = isArcade ? "arcade" : isBoardGames ? "boardgames" : "movies";
-  }, [isArcade, isBoardGames]);
+    document.documentElement.dataset.feature = isArcade ? "arcade" : isBoardGames ? "boardgames" : isMusic ? "music" : "movies";
+  }, [isArcade, isBoardGames, isMusic]);
 
   // Sun/moon light-dark toggle — present on every feature's header/top bar.
   const themeToggleButton = (
@@ -285,6 +288,12 @@ function NavBar({
           <span className="navbar-hue-dot" style={{ background: "#9A7BD4" }} />
         </button>
       )}
+      {userData?.hasPassword && (
+        <button className="navbar-section-item" onClick={() => history.push("/music")}>
+          <img className="navbar-section-icon" src={musicIcon} alt="" /> Music
+          <span className="navbar-hue-dot" style={{ background: "#C9484F" }} />
+        </button>
+      )}
       <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>
         <img className="navbar-section-icon" src={boardGamesIcon} alt="" /> Board Games
         <span className="navbar-hue-dot" style={{ background: "#2E9E63" }} />
@@ -302,6 +311,13 @@ function NavBar({
   // The empty tags <> </> are a fragment — a grouping wrapper that emits no DOM element.
   const navContent = isArcade ? (
     <ArcadeNavContent
+      userData={userData}
+      onUserLoggedIn={onUserLoggedIn}
+      setSettingsModalOpen={setSettingsModalOpen}
+      setAdminModalOpen={setAdminModalOpen}
+    />
+  ) : isMusic ? (
+    <MusicNavContent
       userData={userData}
       onUserLoggedIn={onUserLoggedIn}
       setSettingsModalOpen={setSettingsModalOpen}

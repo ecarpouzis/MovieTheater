@@ -1,0 +1,314 @@
+/* Music library page (music-plan.md §2.6). Tokens come from theme.css's data-feature="music"
+   block; bottom padding clears the persistent mini-player bar. */
+
+.music-page {
+  padding: 20px 22px 90px;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.music-page--loading {
+  display: flex;
+  justify-content: center;
+  padding-top: 90px;
+}
+
+.music-gate-note {
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.music-section { margin-bottom: 26px; }
+
+.music-section-head {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.music-subhead {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--text-primary);
+  margin: 22px 0 8px;
+}
+
+.music-count {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.music-back {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0 0 10px;
+  font-size: 13px;
+}
+
+/* ── Album grid ── */
+.music-album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.music-album-card {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+  padding: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.music-album-card:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
+}
+
+.music-album-tile {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: 1px;
+  user-select: none;
+}
+
+/* Real art (music-plan.md §2.5): same square, image instead of initials. The dominant-color
+   background still shows through while the image loads and behind non-square covers. */
+.music-album-tile--art {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  display: block;
+}
+
+.music-album-card-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-album-card-sub {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.music-album-card-artist {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-album-card-year { flex: none; color: var(--text-muted); }
+
+.music-album-card-tag {
+  font-size: 10.5px;
+  color: var(--accent);
+}
+
+/* ── Artist grid ── */
+.music-artist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.music-artist-card {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.music-artist-card:hover { box-shadow: var(--card-shadow-hover); }
+
+.music-artist-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-artist-card-sub {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+/* ── Song rows (search results, loose tracks, album tracklist) ── */
+.music-song-list {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.music-song-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--card-border);
+  padding: 8px 12px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+}
+
+.music-song-row:last-child { border-bottom: none; }
+
+/* A row + its "＋ add to playlist" sibling share one line; the divider moves to the wrapper. */
+.music-song-item {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.music-song-item:last-child { border-bottom: none; }
+.music-song-item .music-song-row { flex: 1 1 auto; min-width: 0; border-bottom: none; }
+.music-song-item .music-add-btn { padding-right: 12px; }
+.music-song-row:hover:not(:disabled) { background: var(--accent-soft); }
+.music-song-row:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.music-song-play { color: var(--accent); font-size: 11px; flex: none; }
+
+.music-song-no {
+  width: 22px;
+  flex: none;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.music-song-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-song-meta {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-song-disc { flex: none; font-size: 10.5px; color: var(--text-muted); }
+
+.music-song-time {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.music-show-more {
+  margin-top: 14px;
+  width: 100%;
+  padding: 9px 0;
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.music-show-more:hover { background: var(--accent-soft); }
+
+/* ── Album modal internals ── */
+.music-album-detail-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.music-album-detail-meta { min-width: 0; flex: 1 1 auto; }
+
+/* Hero art: fixed square so the header height doesn't jump between art and initials. */
+.music-album-hero {
+  width: 132px;
+  height: 132px;
+  flex: none;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  object-fit: cover;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-display);
+  font-size: 34px;
+  letter-spacing: 1px;
+  user-select: none;
+}
+
+.music-album-detail-title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  margin: 0 0 2px;
+}
+
+.music-album-detail-sub {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.music-album-detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.music-album-detail-tracks {
+  max-height: 55vh;
+  overflow-y: auto;
+}

@@ -1,0 +1,174 @@
+/* Music playlists (music-plan.md Phase 3): picker modal, manage modal, and the /music shelf.
+   Tokens come from theme.css's data-feature="music" block. */
+
+/* ── Picker ── */
+.mplpick { display: flex; flex-direction: column; gap: 12px; }
+
+.mplpick-targets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 42vh;
+  overflow-y: auto;
+}
+
+.mplpick-count { color: var(--text-muted); font-size: 12px; }
+
+.mplpick-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ── Manage ── */
+.mplman { display: flex; flex-direction: column; gap: 12px; }
+.mplman-loading { display: flex; justify-content: center; padding: 40px 0; }
+
+.mplman-empty {
+  color: var(--text-secondary);
+  font-size: 13px;
+  padding: 14px 0;
+}
+
+.mplman-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  position: relative;
+}
+
+.mplman-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--card-border);
+  background: var(--card-surface);
+}
+
+.mplman-row:last-child { border-bottom: none; }
+.mplman-row--dragging { box-shadow: var(--card-shadow-hover); }
+
+.mplman-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  flex: none;
+  user-select: none;
+  touch-action: none;
+  font-size: 14px;
+}
+
+.mplman-no {
+  width: 22px;
+  flex: none;
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.mplman-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mplman-meta {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mplman-del {
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.mplman-del:hover { color: var(--accent); }
+
+.mplman-actions { display: flex; gap: 8px; align-items: center; }
+.mplman-spacer { flex: 1 1 auto; }
+
+/* ── Playlist shelf on /music ── */
+.music-playlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.music-playlist-card {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.music-playlist-card:hover { box-shadow: var(--card-shadow-hover); }
+
+.music-playlist-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-playlist-card-sub {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 15px;
+}
+
+.music-playlist-card-actions { display: flex; gap: 8px; margin-top: 2px; }
+
+.music-playlist-btn {
+  background: var(--sidebar-pill-bg, var(--accent-soft));
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+.music-playlist-btn:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); }
+.music-playlist-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Small "＋" button that opens the picker, used on song rows and next to album actions. */
+.music-add-btn {
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.music-add-btn:hover { color: var(--accent); }

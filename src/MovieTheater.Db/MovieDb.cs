@@ -400,6 +400,78 @@ namespace MovieTheater.Db
                 .HasIndex(c => c.CacheKey)
                 .IsUnique();
 
+            // ── Music (docs/music-plan.md §2.2; additive, own tables — tracks are not Movies) ──
+            // Identity comes from the curated folder tree: artist = top-level folder, album = its
+            // first-level subfolder, track = file. Each level's folder/path is the unique upsert key
+            // that makes music-ingest idempotent.
+            modelBuilder.Entity<MusicArtist>()
+                .HasIndex(a => a.FolderName)
+                .IsUnique();
+            modelBuilder.Entity<MusicArtist>()
+                .HasIndex(a => a.SortName);
+
+            modelBuilder.Entity<MusicAlbum>()
+                .HasIndex(a => a.FolderPath)
+                .IsUnique();
+            modelBuilder.Entity<MusicAlbum>()
+                .HasIndex(a => new { a.ArtistId, a.Year });
+            modelBuilder.Entity<MusicAlbum>()
+                .HasOne(a => a.Artist)
+                .WithMany()
+                .HasForeignKey(a => a.ArtistId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MusicTrack>()
+                .HasIndex(t => t.RelativePath)
+                .IsUnique();
+            // Album tracklist order and the artist/search lookups the browse endpoints run.
+            modelBuilder.Entity<MusicTrack>()
+                .HasIndex(t => new { t.AlbumId, t.DiscNo, t.TrackNo });
+            modelBuilder.Entity<MusicTrack>()
+                .HasIndex(t => t.ArtistId);
+            modelBuilder.Entity<MusicTrack>()
+                .HasIndex(t => t.Title);
+            // Restrict both parents: a track row must never vanish because its artist/album row was
+            // touched — reconcile flags MissingSinceUtc instead (same stance as MediaFile).
+            modelBuilder.Entity<MusicTrack>()
+                .HasOne(t => t.Artist)
+                .WithMany()
+                .HasForeignKey(t => t.ArtistId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<MusicTrack>()
+                .HasOne(t => t.Album)
+                .WithMany()
+                .HasForeignKey(t => t.AlbumId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MusicTrackLyrics>()
+                .HasOne(l => l.Track)
+                .WithOne()
+                .HasForeignKey<MusicTrackLyrics>(l => l.TrackId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MusicPlaylist>()
+                .HasIndex(p => p.UserId);
+            // Restrict on User to avoid multiple-cascade-path errors (same stance as MoviePlaybackProgress).
+            modelBuilder.Entity<MusicPlaylist>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MusicPlaylistItem>()
+                .HasIndex(i => new { i.PlaylistId, i.Position });
+            modelBuilder.Entity<MusicPlaylistItem>()
+                .HasOne(i => i.Playlist)
+                .WithMany(p => p.Items)
+                .HasForeignKey(i => i.PlaylistId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<MusicPlaylistItem>()
+                .HasOne(i => i.Track)
+                .WithMany()
+                .HasForeignKey(i => i.TrackId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // ArcadeLinkStat is append-only observability, so NOT unique — many sessions per device is the
             // point. The index matches the only query shape planned for it: "the most recent rows for this
             // user on THIS device", newest first, which is how a warm-start value gets computed (min of the
@@ -452,6 +524,12 @@ namespace MovieTheater.Db
         public DbSet<ArcadeRaApiCache> ArcadeRaApiCaches { get; set; }
         public DbSet<ArcadeLinkStat> ArcadeLinkStats { get; set; }
         public DbSet<HeavyClient> HeavyClients { get; set; }
+        public DbSet<MusicArtist> MusicArtists { get; set; }
+        public DbSet<MusicAlbum> MusicAlbums { get; set; }
+        public DbSet<MusicTrack> MusicTracks { get; set; }
+        public DbSet<MusicTrackLyrics> MusicTrackLyrics { get; set; }
+        public DbSet<MusicPlaylist> MusicPlaylists { get; set; }
+        public DbSet<MusicPlaylistItem> MusicPlaylistItems { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)

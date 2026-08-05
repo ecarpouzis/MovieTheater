@@ -1,0 +1,77 @@
+/* Butterchurn surface (music-plan.md §2.8). Fills its container; in fullscreen the same element is
+   promoted, so the canvas follows via the ResizeObserver. */
+
+.music-viz {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #05060a;
+  box-shadow: var(--card-shadow);
+}
+
+.music-viz:fullscreen { border-radius: 0; }
+
+.music-viz-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.music-viz-message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+}
+
+.music-viz-controls {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  opacity: 0.25;
+  transition: opacity 0.2s ease;
+}
+
+.music-viz:hover .music-viz-controls,
+.music-viz-controls:focus-within { opacity: 1; }
+
+.music-viz-controls button {
+  flex: none;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 3px 6px;
+  border-radius: 5px;
+}
+
+.music-viz-controls button:hover { background: rgba(255, 255, 255, 0.15); }
+
+.music-viz-controls select {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  font-size: 11.5px;
+  padding: 2px 4px;
+}
+
+.music-viz-controls option { color: #111; }

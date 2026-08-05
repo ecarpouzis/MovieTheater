@@ -1,5 +1,105 @@
 import { detectStreamCapabilities } from "./streamCapabilities";
 
+// ── Music (music-plan.md §2.4) ──────────────────────────────────────────────
+// The artist/album catalogs ship whole (they're small) and filter client-side;
+// only song search and per-album tracklists round-trip.
+
+function getMusicArtists() {
+  return fetch("/API/Music/Artists", { method: "get" });
+}
+
+function getMusicArtist(id) {
+  return fetch(`/API/Music/Artist/${id}`, { method: "get" });
+}
+
+function getMusicAlbums() {
+  return fetch("/API/Music/Albums?pageSize=5000", { method: "get" });
+}
+
+function getMusicAlbum(id) {
+  return fetch(`/API/Music/Album/${id}`, { method: "get" });
+}
+
+function searchMusicTracks(q) {
+  return fetch(`/API/Music/Search?q=${encodeURIComponent(q)}`, { method: "get" });
+}
+
+// Mints the signed gateway URL for one track (the audio data plane — bytes come
+// straight off the StreamGateway, never this server).
+function startMusicTrack(trackId) {
+  return fetch("/API/Music/Stream/Start", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ trackId }),
+  });
+}
+
+// Lyrics for one track: { plainText, syncedLrc, source } or 404 when we have none (§2.7).
+function getMusicTrackLyrics(trackId) {
+  return fetch(`/API/Music/Track/${trackId}/Lyrics`);
+}
+
+// Album art, served from the images mount (§2.5). ?v= only when art exists, so a card that
+// gains art later stops being served the cached 404.
+function getMusicAlbumArt(albumId, hasArt) {
+  return hasArt ? `/MusicImage/${albumId}?v=1` : `/MusicImage/${albumId}`;
+}
+
+function getMusicAlbumArtThumb(albumId, hasArt) {
+  return hasArt ? `/MusicImageThumb/${albumId}?v=1` : `/MusicImageThumb/${albumId}`;
+}
+
+// ── Music playlists (music-plan.md §2.4, Phase 3) ───────────────────────────
+// Their own endpoints over the Music* tables — the /API/Channel/Playlist/* verbs above are the
+// TV ones (video playables), same shape, different storage.
+
+function createMusicPlaylist(name, trackIds) {
+  return fetch("/API/Music/Playlist/Create", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, trackIds }),
+  });
+}
+
+// The caller's playlists: [{ id, name, count, trackTitles[], albumIds[] }].
+function getMyMusicPlaylists() {
+  return fetch("/API/Music/Playlist/Mine");
+}
+
+// A playlist's ordered tracks, already shaped like queue entries.
+function getMusicPlaylistItems(id) {
+  return fetch(`/API/Music/Playlist/${id}/Items`);
+}
+
+function addMusicPlaylistItems(id, trackIds) {
+  return fetch(`/API/Music/Playlist/${id}/AddItems`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ trackIds }),
+  });
+}
+
+// Replace the whole ordered lineup (covers reorder + remove).
+function setMusicPlaylistItems(id, trackIds) {
+  return fetch(`/API/Music/Playlist/${id}/SetItems`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ trackIds }),
+  });
+}
+
+function renameMusicPlaylist(id, name) {
+  return fetch(`/API/Music/Playlist/${id}/Rename`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+}
+
+function deleteMusicPlaylist(id) {
+  return fetch(`/API/Music/Playlist/${id}/Delete`, { method: "post" });
+}
+
 // Posters are on-disk files keyed by id, and the Movie / Series / MiscVideo id spaces overlap (a single
 // id can be both a Movie and a Series), so each non-movie kind has its own route namespace or they'd serve
 // each other's poster. Movies keep /Image; series use /SeriesImage; misc videos use /MiscImage (no version).
@@ -1268,6 +1368,22 @@ const MovieAPI = {
   ingestReviewRemoveFile,
   ingestReviewMoveFile,
   ingestReviewAcknowledgeOddity,
+  getMusicArtists,
+  getMusicArtist,
+  getMusicAlbums,
+  getMusicAlbum,
+  searchMusicTracks,
+  startMusicTrack,
+  getMusicTrackLyrics,
+  getMusicAlbumArt,
+  getMusicAlbumArtThumb,
+  createMusicPlaylist,
+  getMyMusicPlaylists,
+  getMusicPlaylistItems,
+  addMusicPlaylistItems,
+  setMusicPlaylistItems,
+  renameMusicPlaylist,
+  deleteMusicPlaylist,
 };
 
 export { MovieAPI };

@@ -1,0 +1,230 @@
+/* Persistent bottom player bar (music-plan.md §2.6). Fixed so it survives every route; sits above
+   page content but below antd popups (their layer starts ~1000 — see antdPopupLayer.css). */
+
+.music-miniplayer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px;
+  background: var(--sidebar-bg);
+  border-top: 1px solid var(--sidebar-border);
+  color: var(--sidebar-text);
+  font-family: var(--font-sans);
+}
+
+.music-miniplayer-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 160px;
+  max-width: 300px;
+  flex: 0 1 auto;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.music-miniplayer-note {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-family: var(--font-display);
+  letter-spacing: 0.5px;
+  object-fit: cover;
+  flex: none;
+}
+
+.music-miniplayer-titles { overflow: hidden; }
+
+.music-miniplayer-title {
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-miniplayer-artist {
+  font-size: 11.5px;
+  color: var(--sidebar-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-miniplayer-error { color: #e8657f; }
+
+.music-miniplayer-transport {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+.music-miniplayer-btn {
+  background: none;
+  border: none;
+  color: var(--sidebar-text);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 4px 7px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.music-miniplayer-btn:hover { background: var(--sidebar-pill-bg); }
+.music-miniplayer-btn--active { background: var(--nav-active-bg); }
+
+.music-miniplayer-play { font-size: 19px; }
+
+.music-miniplayer-seek {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.music-miniplayer-seek input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+
+.music-miniplayer-time {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--sidebar-text-muted);
+  flex: none;
+}
+
+.music-miniplayer-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.music-miniplayer-volume {
+  width: 80px;
+  accent-color: var(--accent);
+}
+
+/* Queue flyout — anchored above the bar, scrolls internally. */
+.music-miniplayer-queue {
+  position: absolute;
+  right: 10px;
+  bottom: calc(100% + 6px);
+  width: min(380px, calc(100vw - 20px));
+  max-height: 50vh;
+  overflow-y: auto;
+  background: var(--sidebar-bg-elev);
+  border: 1px solid var(--sidebar-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+}
+
+.music-miniplayer-queue-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px 6px;
+  font-size: 11px;
+  color: var(--sidebar-text-muted);
+  border-bottom: 1px solid var(--sidebar-border);
+  margin-bottom: 4px;
+}
+
+.music-miniplayer-queue-save {
+  background: none;
+  border: 1px solid var(--sidebar-input-border, var(--sidebar-border));
+  border-radius: 6px;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
+.music-miniplayer-queue-save:hover:not(:disabled) { background: var(--sidebar-pill-bg); }
+.music-miniplayer-queue-save:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.music-miniplayer-queue-row {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.music-miniplayer-queue-row--current { background: var(--nav-active-bg); }
+.music-miniplayer-queue-row:hover { background: var(--sidebar-pill-bg); }
+
+.music-miniplayer-queue-play {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.music-miniplayer-queue-no {
+  width: 20px;
+  flex: none;
+  font-size: 11px;
+  color: var(--sidebar-text-muted);
+  text-align: center;
+}
+
+.music-miniplayer-queue-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-miniplayer-queue-artist {
+  flex: none;
+  max-width: 110px;
+  font-size: 11px;
+  color: var(--sidebar-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-miniplayer-queue-remove {
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--sidebar-text-muted);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.music-miniplayer-queue-remove:hover { color: #e8657f; }
+
+/* On phones, drop the volume slider (OS hardware volume rules there) and tighten spacing. */
+@media (max-width: 640px) {
+  .music-miniplayer { gap: 8px; padding: 8px 10px; }
+  .music-miniplayer-volume { display: none; }
+  .music-miniplayer-info { min-width: 110px; }
+}

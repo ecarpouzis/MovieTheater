@@ -1,0 +1,501 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using MovieTheater.Core;
+using MovieTheater.Db;
+using MovieTheater.Services;
+
+namespace MovieTheater.Controllers
+{
+    /// <summary>
+    /// Music control plane (music-plan.md §2.4). Every endpoint requires a password-verified session
+    /// like the other streaming verticals; there is no age gate — it's a curated music collection.
+    /// The data plane is the StreamGateway's /s/{token}/MusicFile route (§2.1): Stream/Start hands
+    /// the player a signed capability URL and audio bytes never touch this server.
+    /// </summary>
+    [Authorize(Policy = "StreamingUser")]
+    public class MusicController : Controller
+    {
+        /// <summary>Generous because one minted URL serves the whole listening session for that track
+        /// (repeat/seek included); the capability is peer-locked to a path under the music root.</summary>
+        private const int TokenLifetimeSeconds = 6 * 3600;
+
+        private readonly MovieDb movieDb;
+        private readonly MovieTheaterConfiguration config;
+
+        public MusicController(MovieDb movieDb, MovieTheaterConfiguration config)
+        {
+            this.movieDb = movieDb;
+            this.config = config;
+        }
+
+        private int? GetCurrentUserId()
+        {
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier);
+            return claim != null && int.TryParse(claim.Value, out var id) ? id : null;
+        }
+
+        private bool MusicConfigured =>
+            !string.IsNullOrEmpty(config.StreamGatewayBaseUrl) && !string.IsNullOrEmpty(config.StreamTokenSecret);
+
+        public class StartRequest
+        {
+            public int TrackId { get; set; }
+        }
+
+
+        [HttpPost("/API/Music/Stream/Start")]
+        public async Task<IActionResult> Start([FromBody] StartRequest request)
+        {
+            // Without [ApiController], an unbindable body yields a null model rather than an auto-400.
+            if (request == null)
+                return BadRequest(new { message = "Invalid request." });
+            if (!MusicConfigured)
+                return StatusCode(501, new { message = "Music streaming is not configured on this server." });
+
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+
+            var track = await movieDb.MusicTracks
+                .Include(t => t.Artist)
+                .Include(t => t.Album)
+                .FirstOrDefaultAsync(t => t.Id == request.TrackId);
+            if (track == null || track.MissingSinceUtc != null)
+                return NotFound(new { message = "This track has no playable file." });
+            if (track.RequiresTranscode && !config.MusicTranscodeEnabled)
+                return StatusCode(409, new { message = "This format can't be streamed yet." });
+
+            var token = MusicCapabilityToken.Mint(config.StreamTokenSecret!, new MusicCapabilityToken.Payload(
+                userId.Value, track.Id, track.RelativePath,
+                DateTimeOffset.UtcNow.ToUnixTimeSeconds() + TokenLifetimeSeconds));
+
+            // The ROUTE decides how the gateway serves the bytes, so the capability itself is
+            // unchanged (still 4 fields) — a browser-native format streams as a file with Range,
+            // an exotic one is piped through ffmpeg as mp3 (§Phase 7). Keeping the token identical
+            // is deliberate: no version skew between the site and the gateway.
+            var transcode = track.RequiresTranscode;
+            return Ok(new
+            {
+                trackId = track.Id,
+                url = MusicStreamRoutes.Url(config.StreamGatewayBaseUrl!, token, transcode),
+                transcoded = transcode,
+                mimeType = transcode ? "audio/mpeg" : MusicMimeTypes.FromExtension(track.Extension),
+                durationSec = track.DurationSec,
+                title = track.Title,
+                artist = track.Artist.Name,
+                album = track.Album?.Title,
+            });
+        }
+
+        [HttpGet("/API/Music/Artists")]
+        public async Task<IActionResult> Artists()
+        {
+            // 333 artists — small enough to ship whole; the client groups/filters (BoardGames pattern).
+            var artists = await movieDb.MusicArtists.AsNoTracking()
+                .OrderBy(a => a.SortName)
+                .Select(a => new
+                {
+                    id = a.Id,
+                    name = a.Name,
+                    sortName = a.SortName,
+                    folderName = a.FolderName,
+                    yearRange = a.YearRange,
+                    albumCount = movieDb.MusicAlbums.Count(al => al.ArtistId == a.Id),
+                    trackCount = movieDb.MusicTracks.Count(t => t.ArtistId == a.Id && t.MissingSinceUtc == null),
+                })
+                .ToListAsync();
+            return Ok(artists);
+        }
+
+        [HttpGet("/API/Music/Artist/{id}")]
+        public async Task<IActionResult> Artist(int id)
+        {
+            var artist = await movieDb.MusicArtists.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id);
+            if (artist == null)
+                return NotFound();
+
+            var albums = await movieDb.MusicAlbums.AsNoTracking()
+                .Where(a => a.ArtistId == id)
+                .OrderBy(a => a.Year).ThenBy(a => a.Title)
+                .Select(a => new
+                {
+                    id = a.Id,
+                    title = a.Title,
+                    year = a.Year,
+                    tag = a.Tag,
+                    folderPath = a.FolderPath,
+                    hasArt = a.HasArt,
+                    dominantColor = a.DominantColor,
+                    trackCount = movieDb.MusicTracks.Count(t => t.AlbumId == a.Id),
+                })
+                .ToListAsync();
+
+            // Tracks sitting directly in the artist folder — real content (1,010 across the library),
+            // not an error state; surfaced as their own "Loose tracks" section.
+            var looseTracks = await movieDb.MusicTracks.AsNoTracking()
+                .Where(t => t.ArtistId == id && t.AlbumId == null)
+                .OrderBy(t => t.FileName)
+                .Select(t => new
+                {
+                    id = t.Id,
+                    title = t.Title,
+                    durationSec = t.DurationSec,
+                    codec = t.Codec,
+                    requiresTranscode = t.RequiresTranscode,
+                    missing = t.MissingSinceUtc != null,
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                id = artist.Id,
+                name = artist.Name,
+                sortName = artist.SortName,
+                folderName = artist.FolderName,
+                yearRange = artist.YearRange,
+                albums,
+                looseTracks,
+            });
+        }
+
+        [HttpGet("/API/Music/Search")]
+        public async Task<IActionResult> Search(string? q = null)
+        {
+            var term = (q ?? "").Trim();
+            if (term.Length < 2)
+                return Ok(new { tracks = Array.Empty<object>() });
+
+            // Track-title search only: the client already holds all artists/albums and matches those
+            // itself; songs are the one thing it can't (20k+ rows).
+            var tracks = await movieDb.MusicTracks.AsNoTracking()
+                .Where(t => t.Title.Contains(term) && t.MissingSinceUtc == null)
+                .OrderBy(t => t.Title).ThenBy(t => t.Id)
+                .Take(100)
+                .Select(t => new
+                {
+                    id = t.Id,
+                    title = t.Title,
+                    durationSec = t.DurationSec,
+                    requiresTranscode = t.RequiresTranscode,
+                    artistId = t.ArtistId,
+                    artistName = t.Artist.Name,
+                    albumId = t.AlbumId,
+                    albumTitle = t.Album != null ? t.Album.Title : null,
+                })
+                .ToListAsync();
+
+            return Ok(new { tracks });
+        }
+
+        [HttpGet("/API/Music/Albums")]
+        public async Task<IActionResult> Albums(string? q = null, int page = 0, int pageSize = 60)
+        {
+            // Ceiling above the whole catalog (1.3k albums): the library page loads it once and
+            // filters client-side, the sanctioned pattern for a modest catalog (BoardGames).
+            pageSize = Math.Clamp(pageSize, 1, 5000);
+            var query = movieDb.MusicAlbums.AsNoTracking().Include(a => a.Artist).AsQueryable();
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim();
+                query = query.Where(a => a.Title.Contains(term) || a.Artist.Name.Contains(term));
+            }
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderBy(a => a.Artist.SortName).ThenBy(a => a.Year).ThenBy(a => a.Title)
+                .Skip(page * pageSize).Take(pageSize)
+                .Select(a => new
+                {
+                    id = a.Id,
+                    title = a.Title,
+                    year = a.Year,
+                    tag = a.Tag,
+                    artistId = a.ArtistId,
+                    artistName = a.Artist.Name,
+                    hasArt = a.HasArt,
+                    dominantColor = a.DominantColor,
+                })
+                .ToListAsync();
+
+            return Ok(new { total, page, pageSize, items });
+        }
+
+        [HttpGet("/API/Music/Album/{id}")]
+        public async Task<IActionResult> Album(int id)
+        {
+            var album = await movieDb.MusicAlbums.AsNoTracking()
+                .Include(a => a.Artist)
+                .FirstOrDefaultAsync(a => a.Id == id);
+            if (album == null)
+                return NotFound();
+
+            var tracks = await movieDb.MusicTracks.AsNoTracking()
+                .Where(t => t.AlbumId == id)
+                .OrderBy(t => t.DiscNo).ThenBy(t => t.TrackNo).ThenBy(t => t.FileName)
+                .Select(t => new
+                {
+                    id = t.Id,
+                    title = t.Title,
+                    trackNo = t.TrackNo,
+                    discNo = t.DiscNo,
+                    durationSec = t.DurationSec,
+                    codec = t.Codec,
+                    bitrateKbps = t.BitrateKbps,
+                    requiresTranscode = t.RequiresTranscode,
+                    missing = t.MissingSinceUtc != null,
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                id = album.Id,
+                title = album.Title,
+                year = album.Year,
+                tag = album.Tag,
+                artistId = album.ArtistId,
+                artistName = album.Artist.Name,
+                hasArt = album.HasArt,
+                dominantColor = album.DominantColor,
+                tracks,
+            });
+        }
+
+        /// <summary>Lyrics for one track (music-plan.md §2.7). 404 when we have none — the pane's
+        /// empty state is the normal case until the LRCLIB pass has run over the catalog.</summary>
+        [HttpGet("/API/Music/Track/{id}/Lyrics")]
+        public async Task<IActionResult> Lyrics(int id)
+        {
+            var lyrics = await movieDb.MusicTrackLyrics.AsNoTracking()
+                .FirstOrDefaultAsync(l => l.TrackId == id);
+            if (lyrics == null || (lyrics.PlainText == null && lyrics.SyncedLrc == null))
+                return NotFound(new { message = "No lyrics for this track." });
+
+            return Ok(new
+            {
+                trackId = id,
+                plainText = lyrics.PlainText,
+                syncedLrc = lyrics.SyncedLrc,
+                source = lyrics.Source,
+            });
+        }
+
+        // ── Playlists (music-plan.md §2.4 / Phase 3) ─────────────────────────────────────────────
+        // Same verb set as the channel playlist API so the frontend layer is familiar, but over the
+        // Music* tables (§2.2): music needs queue semantics, not TV scheduling. Every playlist is
+        // private to its owner — the mutating verbs all go through LoadOwnedPlaylistAsync, which
+        // returns null (⇒ 404, not 403: someone else's playlist doesn't exist as far as you know)
+        // for a row you don't own. Positions are dense 0..n-1 and rewritten wholesale by SetItems.
+
+        private const int MaxPlaylistName = 200; // matches MusicPlaylist.Name's column width
+
+        private async Task<MusicPlaylist?> LoadOwnedPlaylistAsync(int id, int userId) =>
+            await movieDb.MusicPlaylists.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+
+        /// <summary>Keeps the caller's order, drops ids that aren't real tracks (a stale client list
+        /// must never be able to write a dangling FK).</summary>
+        private async Task<List<int>> ValidateOrderedTracksAsync(IEnumerable<int>? requested)
+        {
+            var list = (requested ?? Enumerable.Empty<int>()).ToList();
+            if (list.Count == 0) return new List<int>();
+            var exist = new HashSet<int>(await movieDb.MusicTracks
+                .Where(t => list.Contains(t.Id)).Select(t => t.Id).ToListAsync());
+            return list.Where(exist.Contains).ToList();
+        }
+
+        private static string NormalizeName(string? raw, string fallback)
+        {
+            var name = (raw ?? "").Trim();
+            if (name.Length == 0) name = fallback;
+            return name.Length > MaxPlaylistName ? name.Substring(0, MaxPlaylistName) : name;
+        }
+
+        public class CreatePlaylistRequest
+        {
+            public string? Name { get; set; }
+            public List<int>? TrackIds { get; set; } // in order
+        }
+
+        [HttpPost("/API/Music/Playlist/Create")]
+        public async Task<IActionResult> CreatePlaylist([FromBody] CreatePlaylistRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            if (request == null) return BadRequest(new { message = "Invalid request." });
+
+            var name = NormalizeName(request.Name, "My playlist");
+            var trackIds = await ValidateOrderedTracksAsync(request.TrackIds);
+
+            var playlist = new MusicPlaylist
+            {
+                UserId = userId.Value,
+                Name = name,
+                CreatedUtc = DateTime.UtcNow,
+            };
+            movieDb.MusicPlaylists.Add(playlist);
+            await movieDb.SaveChangesAsync();
+
+            for (int pos = 0; pos < trackIds.Count; pos++)
+                movieDb.MusicPlaylistItems.Add(new MusicPlaylistItem { PlaylistId = playlist.Id, TrackId = trackIds[pos], Position = pos });
+            if (trackIds.Count > 0)
+                await movieDb.SaveChangesAsync();
+
+            return Ok(new { id = playlist.Id, name = playlist.Name, count = trackIds.Count });
+        }
+
+        [HttpGet("/API/Music/Playlist/Mine")]
+        public async Task<IActionResult> MyPlaylists()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var playlists = await movieDb.MusicPlaylists.AsNoTracking()
+                .Where(p => p.UserId == userId.Value)
+                .OrderByDescending(p => p.Id)
+                .Select(p => new { p.Id, p.Name, p.CreatedUtc })
+                .ToListAsync();
+            if (playlists.Count == 0)
+                return Ok(Array.Empty<object>());
+
+            // Friends-scale playlists: pull every item once and group in memory for the count plus the
+            // lead few titles/albums a tile needs (the album ids drive the tile's art collage).
+            var ids = playlists.Select(p => p.Id).ToList();
+            var rows = await movieDb.MusicPlaylistItems.AsNoTracking()
+                .Where(i => ids.Contains(i.PlaylistId))
+                .OrderBy(i => i.Position).ThenBy(i => i.Id)
+                .Select(i => new { i.PlaylistId, i.TrackId, title = i.Track.Title, albumId = i.Track.AlbumId })
+                .ToListAsync();
+            var byPlaylist = rows.GroupBy(r => r.PlaylistId).ToDictionary(g => g.Key, g => g.ToList());
+
+            var result = playlists.Select(p =>
+            {
+                var items = byPlaylist.GetValueOrDefault(p.Id) ?? new();
+                return new
+                {
+                    id = p.Id,
+                    name = p.Name,
+                    createdUtc = p.CreatedUtc,
+                    count = items.Count,
+                    trackTitles = items.Take(3).Select(i => i.title).ToList(),
+                    albumIds = items.Where(i => i.albumId != null).Select(i => i.albumId!.Value).Distinct().Take(4).ToList(),
+                };
+            });
+            return Ok(result);
+        }
+
+        [HttpGet("/API/Music/Playlist/{id}/Items")]
+        public async Task<IActionResult> PlaylistItems(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var playlist = await LoadOwnedPlaylistAsync(id, userId.Value);
+            if (playlist == null) return NotFound(new { message = "Playlist not found." });
+
+            // Shaped like the album tracklist so the client can hand it straight to player.playTracks.
+            var items = await movieDb.MusicPlaylistItems.AsNoTracking()
+                .Where(i => i.PlaylistId == id)
+                .OrderBy(i => i.Position).ThenBy(i => i.Id)
+                .Select(i => new
+                {
+                    id = i.TrackId,
+                    title = i.Track.Title,
+                    durationSec = i.Track.DurationSec,
+                    requiresTranscode = i.Track.RequiresTranscode,
+                    missing = i.Track.MissingSinceUtc != null,
+                    artistId = i.Track.ArtistId,
+                    artistName = i.Track.Artist.Name,
+                    albumId = i.Track.AlbumId,
+                    albumTitle = i.Track.Album != null ? i.Track.Album.Title : null,
+                })
+                .ToListAsync();
+
+            return Ok(new { id = playlist.Id, name = playlist.Name, items });
+        }
+
+        public class PlaylistTracksRequest
+        {
+            public List<int>? TrackIds { get; set; } // in order
+        }
+
+        [HttpPost("/API/Music/Playlist/{id}/AddItems")]
+        public async Task<IActionResult> AddPlaylistItems(int id, [FromBody] PlaylistTracksRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var playlist = await LoadOwnedPlaylistAsync(id, userId.Value);
+            if (playlist == null) return NotFound(new { message = "Playlist not found." });
+
+            var trackIds = await ValidateOrderedTracksAsync(request?.TrackIds);
+            if (trackIds.Count == 0)
+                return Ok(new { count = await movieDb.MusicPlaylistItems.CountAsync(i => i.PlaylistId == id) });
+
+            int nextPos = 1 + (await movieDb.MusicPlaylistItems.Where(i => i.PlaylistId == id).MaxAsync(i => (int?)i.Position) ?? -1);
+            foreach (var trackId in trackIds)
+                movieDb.MusicPlaylistItems.Add(new MusicPlaylistItem { PlaylistId = id, TrackId = trackId, Position = nextPos++ });
+            await movieDb.SaveChangesAsync();
+
+            return Ok(new { count = await movieDb.MusicPlaylistItems.CountAsync(i => i.PlaylistId == id) });
+        }
+
+        /// <summary>Replaces the whole ordered lineup — reorder and remove in one call, positions
+        /// rewritten 0..n-1 (the manage modal's only save verb).</summary>
+        [HttpPost("/API/Music/Playlist/{id}/SetItems")]
+        public async Task<IActionResult> SetPlaylistItems(int id, [FromBody] PlaylistTracksRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var playlist = await LoadOwnedPlaylistAsync(id, userId.Value);
+            if (playlist == null) return NotFound(new { message = "Playlist not found." });
+
+            var trackIds = await ValidateOrderedTracksAsync(request?.TrackIds);
+
+            var existing = await movieDb.MusicPlaylistItems.Where(i => i.PlaylistId == id).ToListAsync();
+            movieDb.MusicPlaylistItems.RemoveRange(existing);
+            for (int pos = 0; pos < trackIds.Count; pos++)
+                movieDb.MusicPlaylistItems.Add(new MusicPlaylistItem { PlaylistId = id, TrackId = trackIds[pos], Position = pos });
+            await movieDb.SaveChangesAsync();
+
+            return Ok(new { count = trackIds.Count });
+        }
+
+        public class RenamePlaylistRequest
+        {
+            public string? Name { get; set; }
+        }
+
+        [HttpPost("/API/Music/Playlist/{id}/Rename")]
+        public async Task<IActionResult> RenamePlaylist(int id, [FromBody] RenamePlaylistRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var playlist = await LoadOwnedPlaylistAsync(id, userId.Value);
+            if (playlist == null) return NotFound(new { message = "Playlist not found." });
+
+            var name = (request?.Name ?? "").Trim();
+            if (name.Length == 0)
+                return BadRequest(new { message = "A name is required." });
+            playlist.Name = NormalizeName(name, "My playlist");
+            await movieDb.SaveChangesAsync();
+            return Ok(new { id = playlist.Id, name = playlist.Name });
+        }
+
+        [HttpPost("/API/Music/Playlist/{id}/Delete")]
+        public async Task<IActionResult> DeletePlaylist(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var playlist = await LoadOwnedPlaylistAsync(id, userId.Value);
+            if (playlist == null) return NotFound(new { message = "Playlist not found." });
+
+            // Items cascade with the playlist (§2.2); the tracks themselves are Restrict and untouched.
+            movieDb.MusicPlaylists.Remove(playlist);
+            await movieDb.SaveChangesAsync();
+            return Ok(new { deleted = true });
+        }
+    }
+}

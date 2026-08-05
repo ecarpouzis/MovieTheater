@@ -1,0 +1,202 @@
+/* Now Playing (music-plan.md §2.6): art/visualizer + queue on the left, lyrics on the right.
+   Bottom padding clears the persistent mini-player bar. */
+
+.music-np {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 24px;
+  padding: 20px 22px 90px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.music-np--idle {
+  display: block;
+  text-align: center;
+  padding-top: 90px;
+  color: var(--text-secondary);
+}
+
+.music-np--idle h2 {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+}
+
+.music-np-stage { min-width: 0; }
+
+.music-np-artwrap {
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 420px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.music-np-art {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-display);
+  font-size: 64px;
+  letter-spacing: 2px;
+  user-select: none;
+  box-shadow: var(--card-shadow);
+}
+
+.music-np-info { min-width: 0; }
+
+.music-np-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.music-np-sub {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.music-np-times {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.music-np-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+
+.music-playlist-btn--on {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.music-np-subhead {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--text-primary);
+  margin: 18px 0 8px;
+}
+
+.music-np-queue {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.music-np-queue-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--card-border);
+  padding: 7px 12px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+}
+
+.music-np-queue-row:last-child { border-bottom: none; }
+.music-np-queue-row:hover { background: var(--accent-soft); }
+.music-np-queue-row--current { background: var(--accent-soft); font-weight: 600; }
+
+.music-np-queue-no {
+  width: 20px;
+  flex: none;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.music-np-queue-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-np-queue-artist {
+  flex: none;
+  max-width: 140px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Lyrics pane ── */
+.music-np-lyricswrap { min-width: 0; }
+
+.music-np-lyrics {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  max-height: 68vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.music-np-lyrics-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--card-surface);
+  border: 1px dashed var(--card-border);
+  border-radius: 12px;
+  padding: 26px 20px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.music-np-lyrics-empty span { color: var(--text-muted); font-size: 12px; }
+
+.music-np-line {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.music-np-line--active {
+  color: var(--accent);
+  font-weight: 600;
+  transform: translateX(3px);
+}
+
+.music-np-plain {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .music-np { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .music-np-artwrap { max-width: 320px; }
+  .music-np-lyrics { max-height: 50vh; }
+}

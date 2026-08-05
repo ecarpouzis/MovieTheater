@@ -103,6 +103,24 @@ namespace MovieTheater.Services
         public string? ArcadeRaWebApiUser { get; set; }
         public string? ArcadeRaWebApiKey { get; set; }
 
+        // ── Music (docs/music-plan.md §3). Endpoints degrade to 501 when unconfigured, like every
+        // other optional vertical. ──
+
+        /// <summary>Root of the music library as this host mounts it. Used by the music-ingest CLI
+        /// (walks it, bounded per run) and by Stream/Start only to expose which relative paths exist —
+        /// the StreamGateway resolves the same relative paths against its own mount.</summary>
+        public string? MusicLibraryDir { get; set; }
+
+        /// <summary>Album art directory (music-plan.md §2.5); null = reuse <see cref="MoviePostersDir"/>
+        /// with the "music_" filename bucket.</summary>
+        public string? MusicImagesDir { get; set; }
+
+        /// <summary>Hand the player the gateway's ffmpeg transcode URL for formats no browser decodes
+        /// (.wma/.ape/…, music-plan.md §Phase 7) instead of refusing them. Off by default: it only
+        /// works when the StreamGateway host also has <c>FfmpegPath</c> set, and the two configs are
+        /// separate hosts — turning this on without that yields a 404 from the gateway.</summary>
+        public bool MusicTranscodeEnabled { get; set; }
+
         public string? ImdbApiKey { get; set; }
 
         public string? TmdbApiKey { get; set; }

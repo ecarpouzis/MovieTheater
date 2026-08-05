@@ -8,6 +8,7 @@ import PatchedArtifactAlarm from "./NavBar/PatchedArtifactAlarm";
 import Browse from "./Pages/Browse/Browse";
 import { useMovieSearch } from "./hooks/useMovieSearch";
 import { useTheme } from "./hooks/useTheme";
+import { MusicPlayerProvider } from "./Music/MusicPlayerContext";
 
 // Route-level code-splitting. The landing (Browse) and the nav shell stay in the main bundle; every
 // other page loads on demand, keeping its heavy deps out of the initial download — most notably
@@ -28,6 +29,8 @@ const ArcadeRoomPage = lazy(() => import("./Pages/Arcade/ArcadeRoomPage"));
 const WatchPartyPage = lazy(() => import("./Pages/Tv/WatchPartyPage"));
 const IngestReviewPage = lazy(() => import("./Pages/IngestReview/IngestReviewPage"));
 const RatePage = lazy(() => import("./Pages/Rate/RatePage"));
+const MusicPage = lazy(() => import("./Pages/Music/MusicPage"));
+const MusicNowPlayingPage = lazy(() => import("./Pages/Music/MusicNowPlayingPage"));
 
 const storedUsername = window.localStorage.getItem("Username");
 const storedCardStyle = window.localStorage.getItem("CardStyle");
@@ -93,6 +96,9 @@ function App() {
           DLL) must alarm wherever an admin happens to be, since nothing else reports it. Renders
           null for non-admins and is inert until the watchdog reports trouble. */}
       <PatchedArtifactAlarm userData={userData} />
+      {/* MusicPlayerProvider mounts the app's single persistent <audio> + the bottom mini-player
+          (music-plan.md §2.6): playback must survive route changes, so it lives above the Switch. */}
+      <MusicPlayerProvider>
       <Layout className="app-layout" hasSider>
         <NavBar
           search={search}
@@ -138,6 +144,14 @@ function App() {
             <Route path="/arcade" exact>
               <ArcadePage userData={userData} />
             </Route>
+            <Route path="/music" exact>
+              <MusicPage userData={userData} />
+            </Route>
+            {/* Full player: lyrics + queue + visualizer (music-plan.md §2.6). Declared before no
+                other /music route needs it, but kept exact so /music itself still matches above. */}
+            <Route path="/music/now-playing" exact>
+              <MusicNowPlayingPage />
+            </Route>
             <Route path="/arcade/room/:code" exact>
               <ArcadeRoomPage />
             </Route>
@@ -166,6 +180,7 @@ function App() {
           </Suspense>
         </Layout.Content>
       </Layout>
+      </MusicPlayerProvider>
     </BrowserRouter>
   );
 }

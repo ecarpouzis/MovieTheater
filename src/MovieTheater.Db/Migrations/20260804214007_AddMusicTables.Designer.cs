@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MovieTheater.Db;
 
@@ -11,9 +12,11 @@ using MovieTheater.Db;
 namespace MovieTheater.Db.Migrations
 {
     [DbContext(typeof(MovieDb))]
-    partial class MovieDbModelSnapshot : ModelSnapshot
+    [Migration("20260804214007_AddMusicTables")]
+    partial class AddMusicTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1602,9 +1605,6 @@ namespace MovieTheater.Db.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("ArtCheckedUtc")
-                        .HasColumnType("datetime2");
-
                     b.Property<int>("ArtistId")
                         .HasColumnType("int");
 
@@ -1770,9 +1770,6 @@ namespace MovieTheater.Db.Migrations
 
                     b.Property<bool>("HasEmbeddedArt")
                         .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LyricsCheckedUtc")
-                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("MissingSinceUtc")
                         .HasColumnType("datetime2");

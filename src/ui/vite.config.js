@@ -38,6 +38,10 @@ export default defineConfig({
       // Arcade box art. Without this the /arcade grid shows placeholders in dev, since the covers
       // fall through to vite's SPA catch-all instead of the lazily-caching image route.
       "/ArcadeImage": "http://localhost:3001",
+      // Album art (music-plan.md §2.5) — same bite as /ArcadeImage above: without these entries the
+      // /music grid's covers fall through to vite's SPA catch-all and 404 in dev.
+      "/MusicImage": "http://localhost:3001",
+      "/MusicImageThumb": "http://localhost:3001",
     },
   },
 
