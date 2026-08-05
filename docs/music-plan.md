@@ -1,6 +1,13 @@
 # Music Vertical Plan
 
-**Status: Phases 0–7 BUILT 2026-08-04 (local verification passing; not yet deployed).**
+**Status: Phases 0–7 BUILT 2026-08-04; DEPLOYED + PLAYING IN PROD 2026-08-05.**
+Prod bring-up took three separate fixes, each of which looked like the others: (1) the site half
+went live on push but the **StreamGateway was never redeployed** — `/s/{token}/MusicFile` didn't
+exist in the running binary; (2) album art written locally can never reach prod, so
+`MusicImageController` now fetches and persists lazily like `ArcadeImageController` (§Phase 4);
+(3) after a host reboot every track 404'd because the gateway ran as **LocalSystem, which has no
+credential path to `\\Library\Public`** — see §3.1. Art is at 967/1347 albums; lyrics at
+203/20,267 tracks (§Phase 5 backfill still to run).
 Phase 0 ran to completion: 333 artists / 1,347 albums / 20,267 tracks ingested, 0 tag errors,
 45 embedded/sidecar lyrics captured, 13 tracks (all .wma) flagged RequiresTranscode. Phase 1
 verified against a local gateway: mp3 Range → 206, tampered token → 403, traversal → 403.
@@ -209,6 +216,31 @@ Unsynced lyrics render as static scrollable text.
 - Gateway config: `FfmpegPath` — absolute path to ffmpeg. Unset ⇒ the transcode route 404s, which
   is the intended "feature off" state. `MusicMaxConcurrentTranscodes` (default 2) caps concurrency.
 
+### §3.1 Who may stream, and as whom the gateway runs
+
+**The site half — password-only.** `MusicController` carries a class-level
+`[Authorize(Policy = "StreamingUser")]` = authenticated **AND** the `amr=pwd` claim, so every
+`/API/Music/*` route — `Stream/Start` included — is closed to the passwordless communal login. That
+is the real enforcement; the frontend only mirrors it (`userData.hasPassword` gates the nav entry,
+both `/music` routes, the persistent player and its queue restore) so nobody is offered a player
+whose first request would 401.
+
+**⚠ The gateway half — the service ACCOUNT is load-bearing.** `MusicRootDir` must be a **UNC** path
+(`\\Library\Public\3 - Music`), because a service can't see per-user drive mappings — but UNC alone
+is not enough. Running the gateway as **LocalSystem cannot read that share at all**: `Get-Acl` on
+`1 - Movies` and `3 - Music` returns the same six NAS-local SIDs on both, with **no machine account
+and no Authenticated Users**; the only broad entry is Guest, and Windows blocks insecure guest
+logons by default. Every track then 404s — and note the symptom is a **404, not a 403**, because
+`File.Exists` returns false for access-denied too (403 means a bad signature; 404 means it couldn't
+*see* the file). A restart does not help; this is not boot-order.
+Run the service as an account that holds real NAS credentials — the house convention on that host,
+where every arcade task already runs as a user rather than LocalSystem.
+*Diagnostic that isolates it in one move, no elevation:* run the SAME exe against the SAME
+`appsettings.Production.json` as the interactive user on a spare port
+(`--Kestrel:Endpoints:Http:Url=http://localhost:5199` — plain `--urls` is ignored, the endpoint is
+pinned in config) and hit both with one token. Interactive 206 vs service 404 rules out the secret,
+the binary, the config and the path in a single comparison.
+
 ### CLI runbook (both are bounded + resumable; the caller loops until `remaining: 0`)
 
 Run these **from `src/MovieTheater`** — the dev `MoviePostersDir` is CWD-relative (`Posters`), so a
@@ -307,14 +339,37 @@ Butterchurn + butterchurn-presets, dynamically imported so they land in their ow
 (197 kB + 646 kB, both out of the main bundle). The Web Audio graph lives in `MusicPlayerContext`
 as a ref (`ensureAudioGraph`): one `MediaElementAudioSourceNode` for the element's lifetime,
 connected to BOTH an analyser and the destination, resumed from the toggle's click handler.
-Visualizer pane: canvas sized to its container via `ResizeObserver`, fullscreen button, random
-preset every 30s plus prev/next and a named picker, and a friendly message when WebGL2/Web Audio
-is unavailable. *Gotcha found here:* both packages are UMD, and the default export surfaces at
-`module`, `module.default`, or `module.default.default` depending on dev-vs-build — resolve by
-probing for the member you need (`unwrapModule`), not by guessing the interop shape.
+Visualizer pane: fullscreen button, random preset every 30s plus prev/next and a named picker, and
+a friendly message when WebGL2/Web Audio is unavailable. *Gotcha found here:* both packages are
+UMD, and the default export surfaces at `module`, `module.default`, or `module.default.default`
+depending on dev-vs-build — resolve by probing for the member you need (`unwrapModule`), not by
+guessing the interop shape.
 **Verified (headless Chrome):** two canvas screenshots 1.2s apart differ; audio advances
 5.41s → 11.46s across opening the visualizer and never pauses; closing it leaves playback running.
 Firefox was not exercised (no local Firefox harness).
+
+**⚠ Render surface — corrected 2026-08-05 (this shipped blurry).** Sizing the canvas "to its
+container via ResizeObserver" is NOT enough, and was the bug: butterchurn never touches the canvas
+element's `width`/`height` attributes, and its `renderToScreen` sets the GL viewport to the
+width/height it was handed **in raw drawing-buffer pixels**. The backing store therefore stayed at
+the HTML default **300×150** while the viewport was the CSS box, so GL clipped the viewport to the
+buffer — the page showed the bottom-left corner of the frame, CSS-stretched across the box, and
+fullscreen made it ~6× worse because the gap grows with the box.
+The rule now: `canvas.width/height` and the numbers passed to butterchurn are the SAME device
+pixels, computed by one exported `surfaceSize()` (7 regression tests), with **`pixelRatio: 1`** —
+butterchurn multiplies *texsize* by `pixelRatio` but NOT the screen viewport, so any other value
+desyncs the two again. Render resolution is `cssBox × devicePixelRatio` capped at ~3.7M pixels
+(2560×1440) so a 4K fullscreen doesn't stall the warp mesh + three blur passes. Re-applied on
+ResizeObserver, `fullscreenchange`, and window resize (the last catches a DPI change when the
+window moves between monitors, which leaves the CSS box identical).
+*Also fixed:* the boot effect depended on the whole context value, so the entire WebGL visualizer
+was torn down and rebuilt **on every play/pause**; it now keys off the stable `ensureAudioGraph`.
+
+**The visualizer switch lives in `MusicPlayerContext`, not on the page.** The play bar is on every
+route and owns the prominent toggle, so both surfaces must read one switch or they disagree the
+moment you navigate. Exactly ONE of them mounts the component — Now Playing inline in its art slot,
+the bar as a fixed overlay everywhere else (it measures its own height for the overlay's offset).
+Two butterchurn instances on one source would be a second GL context for no gain.
 
 ### Phase 7 — Long tail — ✅ PARTIAL 2026-08-04
 **Queue persistence — done.** `{queue, index}` is written to `music.queue` (capped at 500 entries)

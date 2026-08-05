@@ -24,12 +24,17 @@ const VOLUME_KEY = "music.volume"; // arcade-style namespaced localStorage key
 const QUEUE_KEY = "music.queue";   // { queue, index } — restored PAUSED on reload (§Phase 7)
 const QUEUE_PERSIST_MAX = 500;     // bounds what a runaway "queue everything" can put in localStorage
 
-export function MusicPlayerProvider({ children }) {
+export function MusicPlayerProvider({ children, enabled = true }) {
   // A queue entry: { id, title, artist, album, albumId, durationSec }
   const [queue, setQueue] = useState([]);
   const [index, setIndex] = useState(-1);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState(null);
+  // Visualizer on/off lives HERE, not on the Now Playing page: the play bar is on every route and
+  // owns the toggle, so the two surfaces have to read one switch or they disagree the moment you
+  // navigate. Which surface DRAWS it is decided by route (see MusicMiniPlayer) — never both, since
+  // two butterchurn instances on one source is a second GL context for no gain.
+  const [visualizerOn, setVisualizerOn] = useState(false);
   const audioRef = useRef(null);
   // Guards the async Start round-trip: a fast next/next must only apply the LAST track's URL.
   const loadSeqRef = useRef(0);
@@ -89,6 +94,10 @@ export function MusicPlayerProvider({ children }) {
   // Restore the queue on mount, PAUSED (§Phase 7). Corrupt/legacy JSON is simply dropped — a bad
   // stored queue must never keep the player from starting.
   useEffect(() => {
+    // No password on this account = no streaming (§3.1). Every /API/Music/* route enforces this
+    // server-side via the StreamingUser policy; restoring a queue here would only produce a bar
+    // that 401s on the first Stream/Start, so the player simply doesn't come back.
+    if (!enabled) return;
     try {
       const raw = window.localStorage.getItem(QUEUE_KEY);
       if (!raw) return;
@@ -103,7 +112,7 @@ export function MusicPlayerProvider({ children }) {
     } catch {
       window.localStorage.removeItem(QUEUE_KEY);
     }
-  }, []);
+  }, [enabled]);
 
   // Persist every queue/position change. Cheap (a few KB) and synchronous, but bounded.
   useEffect(() => {
@@ -119,6 +128,7 @@ export function MusicPlayerProvider({ children }) {
   }, [queue, index]);
 
   const playTracks = useCallback((tracks, startIndex = 0) => {
+    if (!enabled) return;
     const playable = (tracks || []).filter((t) => t && !t.requiresTranscode && !t.missing);
     if (playable.length === 0) return;
     // startIndex referred to the ORIGINAL list; re-locate that track among the playable ones.
@@ -127,9 +137,10 @@ export function MusicPlayerProvider({ children }) {
     setQueue(playable);
     setIndex(at);
     setPlaying(true);
-  }, []);
+  }, [enabled]);
 
   const enqueue = useCallback((tracks) => {
+    if (!enabled) return;
     const playable = (tracks || []).filter((t) => t && !t.requiresTranscode && !t.missing);
     if (playable.length === 0) return;
     setQueue((q) => {
@@ -139,7 +150,7 @@ export function MusicPlayerProvider({ children }) {
       }
       return [...q, ...playable];
     });
-  }, []);
+  }, [enabled]);
 
   const next = useCallback(() => {
     setIndex((i) => {
@@ -232,6 +243,17 @@ export function MusicPlayerProvider({ children }) {
     return graph;
   }, []);
 
+  /// Must be called FROM the click handler: ensureAudioGraph resumes the AudioContext, and a
+  /// browser only honours that inside a user gesture — an effect a tick later is not one.
+  const toggleVisualizer = useCallback(() => {
+    setVisualizerOn((on) => {
+      if (!on) ensureAudioGraph();
+      return !on;
+    });
+  }, [ensureAudioGraph]);
+
+  const closeVisualizer = useCallback(() => setVisualizerOn(false), []);
+
   const setVolume = useCallback((v) => {
     const audio = audioRef.current;
     if (audio) audio.volume = v;
@@ -264,8 +286,8 @@ export function MusicPlayerProvider({ children }) {
   });
 
   const value = useMemo(
-    () => ({ queue, index, current, playing, error, audioRef, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph }),
-    [queue, index, current, playing, error, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph]
+    () => ({ queue, index, current, playing, error, audioRef, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer }),
+    [queue, index, current, playing, error, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer]
   );
 
   return (
@@ -281,7 +303,7 @@ export function MusicPlayerProvider({ children }) {
         onEnded={onEnded}
         onError={onError}
       />
-      <MusicMiniPlayer />
+      {enabled && <MusicMiniPlayer />}
     </MusicPlayerContext.Provider>
   );
 }

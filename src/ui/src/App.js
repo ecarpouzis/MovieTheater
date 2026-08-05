@@ -97,8 +97,11 @@ function App() {
           null for non-admins and is inert until the watchdog reports trouble. */}
       <PatchedArtifactAlarm userData={userData} />
       {/* MusicPlayerProvider mounts the app's single persistent <audio> + the bottom mini-player
-          (music-plan.md §2.6): playback must survive route changes, so it lives above the Switch. */}
-      <MusicPlayerProvider>
+          (music-plan.md §2.6): playback must survive route changes, so it lives above the Switch.
+          enabled follows hasPassword — streaming is password-only (§3.1), enforced for real by the
+          StreamingUser policy on every /API/Music/* route; this just keeps the UI honest instead of
+          offering a player whose first request would 401. */}
+      <MusicPlayerProvider enabled={!!userData?.hasPassword}>
       <Layout className="app-layout" hasSider>
         <NavBar
           search={search}
@@ -150,7 +153,7 @@ function App() {
             {/* Full player: lyrics + queue + visualizer (music-plan.md §2.6). Declared before no
                 other /music route needs it, but kept exact so /music itself still matches above. */}
             <Route path="/music/now-playing" exact>
-              <MusicNowPlayingPage />
+              <MusicNowPlayingPage userData={userData} />
             </Route>
             <Route path="/arcade/room/:code" exact>
               <ArcadeRoomPage />

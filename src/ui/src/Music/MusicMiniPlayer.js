@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import { useMusicPlayer } from "./MusicPlayerContext";
 import MusicAlbumArt from "./MusicAlbumArt";
+import MusicVisualizer from "./MusicVisualizer";
 import MusicPlaylistPickerModal from "../Pages/Music/MusicPlaylistPickerModal";
 import "./MusicMiniPlayer.css";
 
@@ -20,6 +21,13 @@ function formatTime(sec) {
 function MusicMiniPlayer() {
   const player = useMusicPlayer();
   const history = useHistory();
+  const location = useLocation();
+  // The bar is on every route, so it also OWNS the visualizer overlay — except on Now Playing,
+  // which shows the visualizer inline in its art slot. Exactly one of the two mounts it: a second
+  // butterchurn instance would be a whole extra WebGL context rendering the same audio.
+  const onNowPlaying = location.pathname.startsWith("/music/now-playing");
+  const barRef = useRef(null);
+  const [barHeight, setBarHeight] = useState(0);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolumeState] = useState(() => {
@@ -51,12 +59,35 @@ function MusicMiniPlayer() {
     };
   }, [audio]);
 
+  // The overlay stops exactly where the bar starts; the bar's height is content-driven, so measure
+  // it rather than hard-coding a number that drifts the moment the layout changes.
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return undefined;
+    const measure = () => setBarHeight(el.offsetHeight);
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [player?.current?.id]);
+
   if (!player || !player.current) return null;
-  const { current, playing, error, queue, index } = player;
+  const { current, playing, error, queue, index, visualizerOn } = player;
   const effectiveDuration = duration || current.durationSec || 0;
 
   return (
-    <div className="music-miniplayer" data-testid="music-miniplayer">
+    <>
+    {visualizerOn && !onNowPlaying && (
+      <div
+        className="music-viz-overlay"
+        style={barHeight ? { bottom: barHeight } : undefined}
+        data-testid="music-visualizer-overlay"
+      >
+        <MusicVisualizer player={player} onClose={player.closeVisualizer} />
+      </div>
+    )}
+    <div className="music-miniplayer" data-testid="music-miniplayer" ref={barRef}>
       {/* Clicking the track info opens the full player; with nothing loaded it falls back to the
           library (the bar doesn't render then, but the fallback keeps the intent explicit). */}
       <div
@@ -125,6 +156,18 @@ function MusicMiniPlayer() {
           }}
           aria-label="Volume"
         />
+        {/* Deliberately NOT one of the ghost icon buttons: this is the bar's feature button, so it
+            carries a label and the accent fill and reads as the one thing worth clicking here. */}
+        <button
+          className={`music-miniplayer-viz${visualizerOn ? " music-miniplayer-viz--on" : ""}`}
+          onClick={player.toggleVisualizer}
+          aria-pressed={visualizerOn}
+          title={visualizerOn ? "Hide visualizer" : "Show visualizer"}
+          data-testid="music-visualizer-toggle-bar"
+        >
+          <span className="music-miniplayer-viz-icon" aria-hidden="true">◉</span>
+          <span className="music-miniplayer-viz-label">{visualizerOn ? "Hide" : "Visualizer"}</span>
+        </button>
         <button
           className={`music-miniplayer-btn${queueOpen ? " music-miniplayer-btn--active" : ""}`}
           onClick={() => setQueueOpen((o) => !o)}
@@ -179,6 +222,7 @@ function MusicMiniPlayer() {
         onClose={() => setPickerTracks(null)}
       />
     </div>
+    </>
   );
 }
 

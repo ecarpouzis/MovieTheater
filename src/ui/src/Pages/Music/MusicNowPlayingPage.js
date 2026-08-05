@@ -83,12 +83,14 @@ function LyricsPane({ trackId, position }) {
   );
 }
 
-export default function MusicNowPlayingPage() {
+export default function MusicNowPlayingPage({ userData }) {
   const player = useMusicPlayer();
   const history = useHistory();
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [visualizerOn, setVisualizerOn] = useState(false);
+  // Shared with the play bar's button (music-plan.md §2.8) — the switch lives in the player context
+  // so navigating between here and anywhere else doesn't silently flip the visualizer off.
+  const visualizerOn = !!player?.visualizerOn;
 
   const audio = player?.audioRef?.current;
   const current = player?.current;
@@ -109,6 +111,17 @@ export default function MusicNowPlayingPage() {
     };
   }, [audio]);
 
+  // Streaming is password-only (§3.1). The route was previously reachable by URL for anyone —
+  // harmless (the API 401s) but confusing; say so plainly instead.
+  if (!userData?.hasPassword) {
+    return (
+      <div className="music-np music-np--idle">
+        <h2>Music needs a password-protected account</h2>
+        <p>Ask the site admin to add a password to your account to listen.</p>
+      </div>
+    );
+  }
+
   if (!player || !current) {
     return (
       <div className="music-np music-np--idle">
@@ -126,7 +139,7 @@ export default function MusicNowPlayingPage() {
       <div className="music-np-stage">
         <div className="music-np-artwrap">
           {visualizerOn ? (
-            <MusicVisualizer player={player} onClose={() => setVisualizerOn(false)} />
+            <MusicVisualizer player={player} onClose={player.closeVisualizer} />
           ) : (
             <MusicAlbumArt
               albumId={current.albumId}
@@ -152,17 +165,15 @@ export default function MusicNowPlayingPage() {
               {player.playing ? "⏸ Pause" : "▶ Play"}
             </button>
             <button className="music-playlist-btn" onClick={player.next}>⏭ Next</button>
+            {/* toggleVisualizer resumes the AudioContext inside this gesture — a browser only
+                honours that from a user gesture, never from an effect a tick later. */}
             <button
-              className={`music-playlist-btn${visualizerOn ? " music-playlist-btn--on" : ""}`}
-              onClick={() => {
-                // Build/resume the Web Audio graph HERE, inside the gesture — an AudioContext may
-                // only be resumed from a user gesture, and an effect a tick later is not one.
-                if (!visualizerOn) player.ensureAudioGraph && player.ensureAudioGraph();
-                setVisualizerOn((v) => !v);
-              }}
+              className={`music-playlist-btn music-np-vizbtn${visualizerOn ? " music-np-vizbtn--on" : ""}`}
+              onClick={player.toggleVisualizer}
+              aria-pressed={visualizerOn}
               data-testid="music-visualizer-toggle"
             >
-              {visualizerOn ? "◼ Hide visualizer" : "◉ Visualizer"}
+              {visualizerOn ? "◼ Hide visualizer" : "◉ Show visualizer"}
             </button>
           </div>
 

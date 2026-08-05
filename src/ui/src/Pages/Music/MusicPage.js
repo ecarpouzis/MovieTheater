@@ -49,6 +49,9 @@ function MusicPage({ userData }) {
   const history = useHistory();
   const location = useLocation();
   const player = useMusicPlayer();
+  // Streaming is password-only (§3.1): every /API/Music/* route sits behind the StreamingUser
+  // policy. Without one, the fetches below would all 401 into an empty library, so don't make them.
+  const gated = !userData?.hasPassword;
 
   const params = new URLSearchParams(location.search);
   const view = params.get("view") === "artists" ? "artists" : "albums";
@@ -68,11 +71,12 @@ function MusicPage({ userData }) {
   const [managePlaylistId, setManagePlaylistId] = useState(null);
 
   const reloadPlaylists = useCallback(() => {
+    if (gated) return;
     MovieAPI.getMyMusicPlaylists()
       .then((r) => (r.ok ? r.json() : []))
       .then((list) => setPlaylists(list || []))
       .catch(() => setPlaylists([]));
-  }, []);
+  }, [gated]);
 
   useEffect(() => { reloadPlaylists(); }, [reloadPlaylists]);
 
@@ -101,6 +105,7 @@ function MusicPage({ userData }) {
   }
 
   useEffect(() => {
+    if (gated) return undefined;
     let alive = true;
     Promise.all([
       MovieAPI.getMusicAlbums().then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
@@ -117,7 +122,7 @@ function MusicPage({ userData }) {
         setArtists([]);
       });
     return () => { alive = false; };
-  }, []);
+  }, [gated]);
 
   // Server song search rides the same q, debounced a touch.
   useEffect(() => {
@@ -200,6 +205,16 @@ function MusicPage({ userData }) {
     player.playTracks(tracks, i);
   }
 
+  if (gated) {
+    return (
+      <div className="music-page">
+        <div className="music-gate-note">
+          Music streaming needs a password-protected account — ask the site admin.
+        </div>
+      </div>
+    );
+  }
+
   if (albums === null || artists === null) {
     return (
       <div className="music-page music-page--loading">
@@ -208,16 +223,8 @@ function MusicPage({ userData }) {
     );
   }
 
-  const gated = !userData?.hasPassword;
-
   return (
     <div className="music-page">
-      {gated && (
-        <div className="music-gate-note">
-          Music streaming needs a password-protected account — ask the site admin.
-        </div>
-      )}
-
       {/* Song results (server search) come first: they're the most specific match for a query. */}
       {songResults && songResults.length > 0 && (
         <section className="music-section">

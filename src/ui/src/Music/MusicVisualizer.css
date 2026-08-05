@@ -1,5 +1,9 @@
 /* Butterchurn surface (music-plan.md §2.8). Fills its container; in fullscreen the same element is
-   promoted, so the canvas follows via the ResizeObserver. */
+   promoted, so the canvas follows via the ResizeObserver + the fullscreenchange handler.
+
+   The canvas here only ever carries a CSS size — its BACKING STORE is set in JS to a device-pixel
+   box that matches what butterchurn is told to render (see MusicVisualizer.js). Never give this
+   canvas width/height attributes from CSS. */
 
 .music-viz {
   position: relative;
@@ -11,7 +15,16 @@
   box-shadow: var(--card-shadow);
 }
 
-.music-viz:fullscreen { border-radius: 0; }
+/* Explicit rather than inherited: in fullscreen the containing block is the screen, and a stray
+   height:100% against an auto-height ancestor is exactly how this ends up letterboxed. */
+.music-viz:fullscreen {
+  border-radius: 0;
+  width: 100vw;
+  height: 100vh;
+  box-shadow: none;
+}
+
+.music-viz--idle { cursor: none; }
 
 .music-viz-canvas {
   display: block;
@@ -29,6 +42,32 @@
   padding: 20px;
   color: rgba(255, 255, 255, 0.75);
   font-size: 13px;
+}
+
+/* Fullscreen preset announcement — the picker is out of reach there, so the name says itself. */
+.music-viz-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+  max-width: 80vw;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  animation: music-viz-toast-in 0.25s ease;
+}
+
+@keyframes music-viz-toast-in {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
 .music-viz-controls {
@@ -50,6 +89,25 @@
 .music-viz:hover .music-viz-controls,
 .music-viz-controls:focus-within { opacity: 1; }
 
+/* In fullscreen the pointer is permanently "over" the element, so hover can't be the reveal —
+   stillness is. Controls sit centred and out of the way, and leave entirely once the mouse rests. */
+.music-viz:fullscreen .music-viz-controls {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  bottom: 28px;
+  width: min(720px, 80vw);
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 1;
+}
+
+.music-viz--idle .music-viz-controls {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .music-viz-controls button {
   flex: none;
   background: none;
@@ -60,6 +118,8 @@
   padding: 3px 6px;
   border-radius: 5px;
 }
+
+.music-viz:fullscreen .music-viz-controls button { font-size: 16px; padding: 5px 10px; }
 
 .music-viz-controls button:hover { background: rgba(255, 255, 255, 0.15); }
 
@@ -74,4 +134,25 @@
   padding: 2px 4px;
 }
 
+.music-viz:fullscreen .music-viz-controls select { font-size: 13.5px; padding: 4px 8px; }
+
 .music-viz-controls option { color: #111; }
+
+/* ── Overlay mode ──────────────────────────────────────────────────────────
+   Opened from the persistent play bar (which is on every page), the visualizer takes over the
+   viewport above the page content and below the bar, instead of the Now Playing art slot. */
+.music-viz-overlay {
+  position: fixed;
+  inset: 0;
+  bottom: var(--music-miniplayer-height, 72px);
+  z-index: 900;
+  background: #05060a;
+  animation: music-viz-overlay-in 0.18s ease;
+}
+
+.music-viz-overlay .music-viz { border-radius: 0; box-shadow: none; }
+
+@keyframes music-viz-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

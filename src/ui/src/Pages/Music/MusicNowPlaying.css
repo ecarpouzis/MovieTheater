@@ -200,3 +200,23 @@
   .music-np-artwrap { max-width: 320px; }
   .music-np-lyrics { max-height: 50vh; }
 }
+
+/* Show visualizer — promoted out of the row of identical transport buttons (music-plan.md §2.8).
+   Same accent language as the play bar's button so the two read as one control in two places. */
+.music-np-vizbtn {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  font-weight: 600;
+}
+
+.music-np-vizbtn:hover {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.music-np-vizbtn--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}

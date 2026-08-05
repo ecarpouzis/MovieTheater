@@ -120,6 +120,52 @@
   accent-color: var(--accent);
 }
 
+/* The bar's one feature button. Everything else in this cluster is a ghost icon, so the visualizer
+   gets a label, an accent-tinted pill and a real border — it should be findable at a glance, which
+   the old icon-free arrangement (no button here at all) certainly wasn't. */
+.music-miniplayer-viz {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.music-miniplayer-viz:hover {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+/* On = filled, so the toggle state is unmistakable next to the ghost buttons. */
+.music-miniplayer-viz--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.music-miniplayer-viz--on:hover {
+  background: color-mix(in srgb, var(--accent) 88%, #000);
+}
+
+.music-miniplayer-viz-icon { font-size: 13px; line-height: 1; }
+
+/* The label is the prominence; drop it only when the bar genuinely can't fit it. */
+@media (max-width: 720px) {
+  .music-miniplayer-viz-label { display: none; }
+  .music-miniplayer-viz { padding: 5px 9px; }
+}
+
 /* Queue flyout — anchored above the bar, scrolls internally. */
 .music-miniplayer-queue {
   position: absolute;
