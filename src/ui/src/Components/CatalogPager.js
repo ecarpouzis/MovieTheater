@@ -1,19 +1,22 @@
 import { memo, useMemo } from "react";
+import "./CatalogPager.css";
 
-// The lobby's faux-pagination strip. "Faux" because the grid is one continuously scrolling,
-// infinitely-appending list — the buttons don't slice it into pages, they SEEK into it: a click
-// re-anchors the grid at that offset and infinite scroll carries on from there.
+// A catalog's faux-pagination strip, shared by the arcade lobby and the music library. "Faux" because
+// the grid is one continuously scrolling, infinitely-appending list — the buttons don't slice it into
+// pages, they SEEK into it: a click re-anchors the grid at that offset and infinite scroll carries on
+// from there.
 //
-// Sorted A–Z (the default) the strip shows letters, because that's the landmark the catalog actually
-// has: ~17k cards is 289 pages, and "page 147" means nothing to anyone. Under any other sort
-// (rating, year, system, players) alphabet buckets are meaningless, so it falls back to numbers.
+// Sorted A–Z (the default in both catalogs) the strip shows letters, because that's the landmark the
+// list actually has: ~17k arcade cards is 289 pages, and "page 147" means nothing to anyone. Under any
+// other sort (rating, year, system, players) alphabet buckets are meaningless, so it falls back to
+// numbers.
 //
-// The pure helpers are exported for tests — and they live in THIS file rather than an `arcadePager.js`
+// The pure helpers are exported for tests — and they live in THIS file rather than a `catalogPager.js`
 // beside it because Windows' filesystem is case-insensitive, so the two names are one file.
 
 export const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-/** The full #, A–Z strip, with the server's counts/offsets merged in (absent buckets → count 0). */
+/** The full #, A–Z strip, with the caller's counts/offsets merged in (absent buckets → count 0). */
 export function letterStrip(letters) {
   const byLetter = new Map((letters || []).map((l) => [l.letter, l]));
   return ["#", ...LETTERS].map((letter) => {
@@ -58,7 +61,29 @@ export function pageOf(index, pageSize) {
   return Math.floor(Math.max(0, index) / pageSize) + 1;
 }
 
-function ArcadePager({ mode, letters, total, pageSize, currentIndex, onJump, disabled }) {
+/**
+ * #, A–Z bucket offsets over an ALREADY-SORTED list held client-side — what the music library feeds
+ * the strip, since its whole catalog is in the browser and there's no server to ask for buckets the
+ * way the arcade does.
+ *
+ * Accumulated into a map rather than pushed per run: a sort key whose accents fold differently than
+ * the server's collation ("Ángel" filed next to "Anderson") would otherwise open a SECOND bucket for
+ * the same letter, and letterStrip keeps only one of them. First offset wins, every hit counts.
+ */
+export function bucketsFor(items, keyOf) {
+  const map = new Map();
+  (items || []).forEach((item, i) => {
+    const key = (keyOf(item) || "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const ch = key.charAt(0).toUpperCase();
+    const letter = ch >= "A" && ch <= "Z" ? ch : "#";
+    const hit = map.get(letter);
+    if (hit) hit.count += 1;
+    else map.set(letter, { letter, count: 1, offset: i });
+  });
+  return [...map.values()];
+}
+
+function CatalogPager({ mode, letters, total, pageSize, currentIndex, onJump, disabled, itemNoun = "game" }) {
   const strip = useMemo(() => letterStrip(letters), [letters]);
   const currentPage = pageOf(currentIndex, pageSize);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -73,15 +98,15 @@ function ArcadePager({ mode, letters, total, pageSize, currentIndex, onJump, dis
   const currentLetter = mode === "letters" ? activeLetter(strip, currentIndex) : null;
 
   return (
-    <nav className="arcade-pager" aria-label={mode === "letters" ? "Jump to letter" : "Jump to page"}>
+    <nav className="catalog-pager" aria-label={mode === "letters" ? "Jump to letter" : "Jump to page"}>
       {mode === "letters"
         ? strip.map(({ letter, count, offset }) => (
             <button
               key={letter}
               type="button"
-              className={`arcade-pager__btn${letter === currentLetter ? " arcade-pager__btn--active" : ""}`}
+              className={`catalog-pager__btn${letter === currentLetter ? " catalog-pager__btn--active" : ""}`}
               disabled={disabled || count === 0}
-              title={count ? `${count.toLocaleString()} ${count === 1 ? "game" : "games"}` : "No games"}
+              title={count ? `${count.toLocaleString()} ${count === 1 ? itemNoun : `${itemNoun}s`}` : `No ${itemNoun}s`}
               aria-current={letter === currentLetter ? "true" : undefined}
               onClick={() => onJump(offset)}
             >
@@ -90,12 +115,12 @@ function ArcadePager({ mode, letters, total, pageSize, currentIndex, onJump, dis
           ))
         : pages.map((item) =>
             item.type === "gap" ? (
-              <span key={item.key} className="arcade-pager__gap" aria-hidden="true">…</span>
+              <span key={item.key} className="catalog-pager__gap" aria-hidden="true">…</span>
             ) : (
               <button
                 key={item.page}
                 type="button"
-                className={`arcade-pager__btn${item.page === currentPage ? " arcade-pager__btn--active" : ""}`}
+                className={`catalog-pager__btn${item.page === currentPage ? " catalog-pager__btn--active" : ""}`}
                 disabled={disabled}
                 aria-current={item.page === currentPage ? "true" : undefined}
                 onClick={() => onJump((item.page - 1) * pageSize)}
@@ -108,4 +133,4 @@ function ArcadePager({ mode, letters, total, pageSize, currentIndex, onJump, dis
   );
 }
 
-export default memo(ArcadePager);
+export default memo(CatalogPager);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeLetter, letterStrip, pageOf, pageStrip } from "./ArcadePager";
+import { activeLetter, bucketsFor, letterStrip, pageOf, pageStrip } from "./CatalogPager";
 
 describe("letterStrip", () => {
   it("renders the full #, A–Z strip, filling in the buckets the catalog has no games for", () => {
@@ -75,5 +75,44 @@ describe("pageOf", () => {
     expect(pageOf(59, 60)).toBe(1);
     expect(pageOf(60, 60)).toBe(2);
     expect(pageOf(8760, 60)).toBe(147);
+  });
+});
+
+describe("bucketsFor", () => {
+  const key = (x) => x.sortName;
+
+  it("gives each letter its first offset and its full count", () => {
+    const items = [{ sortName: "Abba" }, { sortName: "Air" }, { sortName: "Beatles, The" }];
+    expect(bucketsFor(items, key)).toEqual([
+      { letter: "A", count: 2, offset: 0 },
+      { letter: "B", count: 1, offset: 2 },
+    ]);
+  });
+
+  it("files anything that doesn't start A–Z under #", () => {
+    const items = [{ sortName: "10cc" }, { sortName: "!!!" }, { sortName: "Air" }];
+    expect(bucketsFor(items, key)).toEqual([
+      { letter: "#", count: 2, offset: 0 },
+      { letter: "A", count: 1, offset: 2 },
+    ]);
+  });
+
+  it("folds accents onto the base letter — Ángel is an A, not a #", () => {
+    expect(bucketsFor([{ sortName: "Ángel" }], key)).toEqual([{ letter: "A", count: 1, offset: 0 }]);
+  });
+
+  it("keeps ONE bucket per letter even when the sort interleaves them", () => {
+    // The server's collation may file "Ángel" between "Anderson" and "Bach"; a naive run-length
+    // pass would open a second A bucket and the strip would keep only one of them.
+    const items = [{ sortName: "Anderson" }, { sortName: "Ángel" }, { sortName: "Bach" }];
+    expect(bucketsFor(items, key)).toEqual([
+      { letter: "A", count: 2, offset: 0 },
+      { letter: "B", count: 1, offset: 2 },
+    ]);
+  });
+
+  it("survives an empty list and a missing key", () => {
+    expect(bucketsFor([], key)).toEqual([]);
+    expect(bucketsFor([{}], key)).toEqual([{ letter: "#", count: 1, offset: 0 }]);
   });
 });

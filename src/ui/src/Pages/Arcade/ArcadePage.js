@@ -10,7 +10,7 @@ import RecentlyPlayed from "./RecentlyPlayed";
 import SavesManager from "./SavesManager";
 import SavesVaultManager from "./SavesVaultManager";
 import RetroAchievementsModal from "./RetroAchievementsModal";
-import ArcadePager from "./ArcadePager";
+import CatalogPager from "../../Components/CatalogPager";
 import ConsoleCarousel from "./ConsoleCarousel";
 import { rememberLobbySearch } from "./arcadeLobbyState";
 import { hasSaveStates, QUICK_SLOT } from "./arcadeSystems";
@@ -636,7 +636,7 @@ export default function ArcadePage({ userData }) {
               </div>
               {/* Letters when sorted A–Z, page numbers under any other sort. Both seek into the same
                   continuous list; the active button follows the grid as you scroll. */}
-              <ArcadePager
+              <CatalogPager
                 mode={filters.sort ? "pages" : "letters"}
                 letters={letters}
                 total={total}

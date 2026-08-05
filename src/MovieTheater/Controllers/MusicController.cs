@@ -98,6 +98,19 @@ namespace MovieTheater.Controllers
         [HttpGet("/API/Music/Artists")]
         public async Task<IActionResult> Artists()
         {
+            // Every artist card wears a cover: its alphabetically-first album that HAS art (§2.5).
+            // "First album WITH art" rather than "the art of album #1" on purpose — art coverage is
+            // partial and fills in lazily, so anchoring on album #1 would leave most artists blank
+            // while a perfectly good cover sat one row down. One pass over the art-bearing albums
+            // grouped in memory (1.3k rows), not a correlated subquery per artist.
+            var faces = (await movieDb.MusicAlbums.AsNoTracking()
+                    .Where(al => al.HasArt)
+                    .OrderBy(al => al.ArtistId).ThenBy(al => al.Title)
+                    .Select(al => new { al.ArtistId, al.Id, al.DominantColor })
+                    .ToListAsync())
+                .GroupBy(al => al.ArtistId)
+                .ToDictionary(g => g.Key, g => g.First());
+
             // 333 artists — small enough to ship whole; the client groups/filters (BoardGames pattern).
             var artists = await movieDb.MusicArtists.AsNoTracking()
                 .OrderBy(a => a.SortName)
@@ -112,7 +125,24 @@ namespace MovieTheater.Controllers
                     trackCount = movieDb.MusicTracks.Count(t => t.ArtistId == a.Id && t.MissingSinceUtc == null),
                 })
                 .ToListAsync();
-            return Ok(artists);
+
+            return Ok(artists.Select(a =>
+            {
+                faces.TryGetValue(a.id, out var face);
+                return new
+                {
+                    a.id,
+                    a.name,
+                    a.sortName,
+                    a.folderName,
+                    a.yearRange,
+                    a.albumCount,
+                    a.trackCount,
+                    artAlbumId = face?.Id,
+                    hasArt = face != null,
+                    dominantColor = face?.DominantColor,
+                };
+            }));
         }
 
         [HttpGet("/API/Music/Artist/{id}")]
@@ -220,6 +250,10 @@ namespace MovieTheater.Controllers
                     tag = a.Tag,
                     artistId = a.ArtistId,
                     artistName = a.Artist.Name,
+                    // The ORDER's key, shipped alongside: the album grid is sorted by artist, so the
+                    // client's A–Z jump strip has to bucket on the same string the sort used —
+                    // "Beatles, The" belongs under B, not T.
+                    artistSortName = a.Artist.SortName,
                     hasArt = a.HasArt,
                     dominantColor = a.DominantColor,
                 })

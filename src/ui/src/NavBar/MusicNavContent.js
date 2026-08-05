@@ -23,7 +23,7 @@ function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAd
   const location = useLocation();
 
   const params = new URLSearchParams(location.search);
-  const activeView = params.get("view") === "artists" ? "artists" : "albums";
+  const activeView = params.get("view") === "albums" ? "albums" : "artists";
   const activeQ = params.get("q") || "";
 
   function updateParam(key, value) {
@@ -70,12 +70,13 @@ function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAd
         </form>
 
         <span style={inputLabelStyle}>Browse</span>
-        <div style={{ display: "flex", gap: "6px" }}>
-          <button style={viewButtonStyle("albums")} onClick={() => updateParam("view", null)}>
-            Albums
-          </button>
-          <button style={viewButtonStyle("artists")} onClick={() => updateParam("view", "artists")}>
+        {/* Artists on top — it's the default view, and the rail should read in the same order. */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <button style={viewButtonStyle("artists")} onClick={() => updateParam("view", null)}>
             Artists
+          </button>
+          <button style={viewButtonStyle("albums")} onClick={() => updateParam("view", "albums")}>
+            Albums
           </button>
         </div>
       </div>

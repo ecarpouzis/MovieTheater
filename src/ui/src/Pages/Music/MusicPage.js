@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { Spin } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import { useMusicPlayer } from "../../Music/MusicPlayerContext";
 import MusicAlbumArt from "../../Music/MusicAlbumArt";
+import CatalogPager, { bucketsFor } from "../../Components/CatalogPager";
+import useInfiniteScroll from "../../hooks/useInfiniteScroll";
+import useGridWindow from "../../hooks/useGridWindow";
 import MusicAlbumModal from "./MusicAlbumModal";
 import MusicPlaylistPickerModal from "./MusicPlaylistPickerModal";
 import MusicPlaylistManageModal from "./MusicPlaylistManageModal";
@@ -15,9 +18,18 @@ import "./MusicPlaylists.css";
 // Catalog strategy: artists (333) and albums (1.3k) load whole, once, and every view/search over
 // them is client-side — the BoardGames pattern for a modest catalog. Songs are the one thing the
 // client can't hold (20k+), so a live q of 2+ chars also asks the server for matching tracks.
-// URL is the state store (arcade convention): ?view=albums|artists, ?q=, ?artist=<id>.
+// URL is the state store (arcade convention): ?view=artists|albums, ?q=, ?artist=<id>.
+// Artists is the DEFAULT view — the shelf people browse by is the performer, not the album.
+//
+// The grid runs the same engine as the arcade lobby and Browse: one continuously appending list
+// (useInfiniteScroll's sentinel), only the rows near the viewport mounted (useGridWindow), and an
+// A–Z strip that SEEKS into it (CatalogPager) rather than paging it. The difference is where the
+// pages come from — the arcade fetches them, music already has the whole catalog and just reveals
+// more of it, so `loadMore` is a slice widening and a "jump" is free.
 
-const PAGE_STEP = 120; // albums rendered per "Show more" — plain slicing, no virtualization yet
+const PAGE_STEP = 120; // cards revealed per scroll-triggered append
+const SENTINEL_STYLE = { height: 1 };
+const NO_ITEMS = [];
 
 function formatTime(sec) {
   if (!Number.isFinite(sec) || sec <= 0) return "";
@@ -45,6 +57,26 @@ function AlbumCard({ album, onOpen }) {
   );
 }
 
+/** An artist wears their first album's cover (see /API/Music/Artists) — initials tile when none has art. */
+function ArtistCard({ artist, onOpen }) {
+  return (
+    <button className="music-artist-card" onClick={() => onOpen(artist.id)}>
+      <MusicAlbumArt
+        albumId={artist.artAlbumId}
+        hasArt={artist.hasArt}
+        title={artist.name}
+        dominantColor={artist.dominantColor}
+      />
+      <div className="music-artist-card-name" title={artist.name}>{artist.name}</div>
+      <div className="music-artist-card-sub">
+        {artist.yearRange && <span>{artist.yearRange}</span>}
+        <span>{artist.albumCount} album{artist.albumCount === 1 ? "" : "s"}</span>
+        <span>{artist.trackCount} track{artist.trackCount === 1 ? "" : "s"}</span>
+      </div>
+    </button>
+  );
+}
+
 function MusicPage({ userData }) {
   const history = useHistory();
   const location = useLocation();
@@ -54,7 +86,7 @@ function MusicPage({ userData }) {
   const gated = !userData?.hasPassword;
 
   const params = new URLSearchParams(location.search);
-  const view = params.get("view") === "artists" ? "artists" : "albums";
+  const view = params.get("view") === "albums" ? "albums" : "artists";
   const q = (params.get("q") || "").trim();
   const artistParam = parseInt(params.get("artist"), 10);
 
@@ -63,7 +95,11 @@ function MusicPage({ userData }) {
   const [songResults, setSongResults] = useState(null);
   const [artistDetail, setArtistDetail] = useState(null);
   const [openAlbumId, setOpenAlbumId] = useState(null);
+  // The grid is ONE list the page seeks into: `startIndex` is the catalog index of the first card
+  // rendered (a pager jump re-anchors it) and `shown` is how far past it scrolling has revealed.
+  const [startIndex, setStartIndex] = useState(0);
   const [shown, setShown] = useState(PAGE_STEP);
+  const sectionRef = useRef(null);
   // Playlists (music-plan.md Phase 3): the shelf, plus the two modals it and the song rows drive.
   const [playlists, setPlaylists] = useState([]);
   const [pickerTracks, setPickerTracks] = useState(null); // non-null ⇒ picker open, holds what to add
@@ -155,7 +191,7 @@ function MusicPage({ userData }) {
   }, [artistParam]);
 
   // Reset paging whenever the visible set changes shape.
-  useEffect(() => { setShown(PAGE_STEP); }, [view, q, artistParam]);
+  useEffect(() => { setStartIndex(0); setShown(PAGE_STEP); }, [view, q, artistParam]);
 
   const lowerQ = q.toLowerCase();
   const filteredAlbums = useMemo(() => {
@@ -171,6 +207,47 @@ function MusicPage({ userData }) {
     if (!lowerQ) return artists;
     return artists.filter((a) => a.name.toLowerCase().includes(lowerQ));
   }, [artists, lowerQ]);
+
+  // The one browse list this page's scroll engine drives. Drilled into an artist there is no browse
+  // grid (that view renders the artist's own, short album list), so it idles on an empty list rather
+  // than windowing something nobody is looking at.
+  const drilledIn = Number.isInteger(artistParam);
+  const gridItems = drilledIn ? NO_ITEMS : view === "artists" ? filteredArtists : filteredAlbums;
+
+  const loaded = Math.min(shown, Math.max(0, gridItems.length - startIndex));
+  const hasMore = startIndex + loaded < gridItems.length;
+  const loadMore = useCallback(() => setShown((s) => s + PAGE_STEP), []);
+  const { sentinelRef, recheck } = useInfiniteScroll({
+    enabled: gridItems.length > 0,
+    hasMore,
+    onLoadMore: loadMore,
+  });
+  // Re-check after an append without re-subscribing — keeps filling while the list is still shorter
+  // than the viewport, or while the user sits parked at the bottom.
+  useEffect(() => { recheck(); }, [loaded, recheck]);
+
+  const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart } = useGridWindow(loaded, {
+    resetKey: `${view}:${lowerQ}:${startIndex}`,
+  });
+  const visibleItems = useMemo(
+    () => gridItems.slice(startIndex + start, startIndex + end),
+    [gridItems, startIndex, start, end]
+  );
+
+  // A–Z buckets over the list as ordered by the server: artists by their sort name, albums by their
+  // ARTIST's (that's what /API/Music/Albums orders on).
+  const letters = useMemo(
+    () => bucketsFor(gridItems, view === "artists"
+      ? (a) => a.sortName || a.name
+      : (a) => a.artistSortName || a.artistName),
+    [gridItems, view]
+  );
+
+  const jumpTo = useCallback((offset) => {
+    setStartIndex(Math.max(0, offset));
+    setShown(PAGE_STEP);
+    sectionRef.current?.scrollIntoView({ block: "start" });
+  }, []);
 
   function setParam(key, value) {
     const p = new URLSearchParams(location.search);
@@ -247,7 +324,7 @@ function MusicPage({ userData }) {
       )}
 
       {/* My playlists — only shown once there's at least one; created from any album or song row. */}
-      {playlists.length > 0 && !artistDetail && (
+      {playlists.length > 0 && !drilledIn && (
         <section className="music-section">
           <h2 className="music-section-head">
             Playlists <span className="music-count">{playlists.length}</span>
@@ -272,25 +349,39 @@ function MusicPage({ userData }) {
         </section>
       )}
 
-      {view === "artists" && !artistDetail && (
-        <section className="music-section">
-          <h2 className="music-section-head">Artists <span className="music-count">{filteredArtists.length}</span></h2>
-          <div className="music-artist-grid">
-            {filteredArtists.map((a) => (
-              <button key={a.id} className="music-artist-card" onClick={() => setParam("artist", a.id)}>
-                <div className="music-artist-card-name" title={a.name}>{a.name}</div>
-                <div className="music-artist-card-sub">
-                  {a.yearRange && <span>{a.yearRange}</span>}
-                  <span>{a.albumCount} album{a.albumCount === 1 ? "" : "s"}</span>
-                  <span>{a.trackCount} track{a.trackCount === 1 ? "" : "s"}</span>
-                </div>
-              </button>
-            ))}
+      {/* The browse grid — artists or albums, same engine either way. */}
+      {!drilledIn && (
+        <section className="music-section" ref={sectionRef}>
+          <h2 className="music-section-head">
+            {view === "artists" ? "Artists" : "Albums"}
+            <span className="music-count">{gridItems.length}</span>
+          </h2>
+          <div ref={hostRef}>
+            {padTop > 0 && <div className="grid-spacer" style={{ height: padTop }} aria-hidden="true" />}
+            <div className={view === "artists" ? "music-artist-grid" : "music-album-grid"} ref={gridRef}>
+              {visibleItems.map((item) => (view === "artists" ? (
+                <ArtistCard key={item.id} artist={item} onOpen={(id) => setParam("artist", id)} />
+              ) : (
+                <AlbumCard key={item.id} album={item} onOpen={setOpenAlbumId} />
+              )))}
+            </div>
+            {padBottom > 0 && <div className="grid-spacer" style={{ height: padBottom }} aria-hidden="true" />}
           </div>
+          <div ref={sentinelRef} aria-hidden="true" style={SENTINEL_STYLE} />
+          {/* Seeks into the same continuous list; the active letter follows the grid as you scroll. */}
+          <CatalogPager
+            mode="letters"
+            letters={letters}
+            total={gridItems.length}
+            pageSize={PAGE_STEP}
+            currentIndex={startIndex + visibleStart}
+            onJump={jumpTo}
+            itemNoun={view === "artists" ? "artist" : "album"}
+          />
         </section>
       )}
 
-      {view === "artists" && artistDetail && !artistDetail.missing && (
+      {drilledIn && artistDetail && !artistDetail.missing && (
         <section className="music-section">
           <button className="music-back" onClick={() => setParam("artist", null)}>← All artists</button>
           <h2 className="music-section-head">
@@ -323,22 +414,6 @@ function MusicPage({ userData }) {
                 ))}
               </div>
             </>
-          )}
-        </section>
-      )}
-
-      {view === "albums" && (
-        <section className="music-section">
-          <h2 className="music-section-head">Albums <span className="music-count">{filteredAlbums.length}</span></h2>
-          <div className="music-album-grid">
-            {filteredAlbums.slice(0, shown).map((a) => (
-              <AlbumCard key={a.id} album={a} onOpen={setOpenAlbumId} />
-            ))}
-          </div>
-          {shown < filteredAlbums.length && (
-            <button className="music-show-more" onClick={() => setShown((s) => s + PAGE_STEP)}>
-              Show more ({filteredAlbums.length - shown} left)
-            </button>
           )}
         </section>
       )}
