@@ -154,12 +154,17 @@ namespace MovieTheater.Music
                 }
                 else
                 {
-                    // Throttle applies to the MusicBrainz search regardless of outcome.
-                    var wait = MusicBrainzThrottleMs - (int)(DateTime.UtcNow - lastMusicBrainz).TotalMilliseconds;
-                    if (wait > 0) await Task.Delay(wait);
-                    lastMusicBrainz = DateTime.UtcNow;
+                    // Throttle applies to the MusicBrainz search regardless of outcome. The same spacer
+                    // goes in, so the second search the lookup may run stays inside the 1 req/s limit.
+                    async Task SpaceAsync()
+                    {
+                        var wait = MusicBrainzThrottleMs - (int)(DateTime.UtcNow - lastMusicBrainz).TotalMilliseconds;
+                        if (wait > 0) await Task.Delay(wait);
+                        lastMusicBrainz = DateTime.UtcNow;
+                    }
+                    await SpaceAsync();
 
-                    source = await MusicRemoteArt.FetchAsync(http!, album.Artist.Name, album.Title);
+                    source = await MusicRemoteArt.FetchAsync(http!, album.Artist.Name, album.Title, SpaceAsync);
                     if (source != null) origin = "remote";
                     if (Apply) album.ArtCheckedUtc = DateTime.UtcNow;
                 }

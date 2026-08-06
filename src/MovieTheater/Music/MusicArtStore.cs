@@ -56,6 +56,55 @@ namespace MovieTheater.Music
             return dir == null ? null : Path.Combine(dir, FileName(albumId, thumbnail));
         }
 
+        /// <summary>
+        /// Is this actually a cover, rather than something cover-shaped that arrived instead of one?
+        ///
+        /// <para>Shape is a correctness test, not a preference. Resizing here is aspect-preserving, so
+        /// whatever shape arrives is the shape a square grid tile shows. WIDE is the failure mode —
+        /// booklet spreads, traycards, and the per-track waveform PNGs that Internet Archive audio
+        /// items are full of (one of those, 800x200 and entirely black, once passed for a cover). TALL
+        /// is legitimate and common: an audiobook's art is a book cover and a box set's is a product
+        /// shot, so the bound is deliberately asymmetric.</para>
+        ///
+        /// <para>The flat-colour check catches the other class: a waveform drawn on transparency, or an
+        /// "image not available" placeholder, both of which flatten to a single colour and contain no
+        /// picture at all.</para>
+        /// </summary>
+        public static bool LooksLikeCover(byte[]? source)
+        {
+            if (source == null || source.Length < 4000) return false;
+            try
+            {
+                using var img = Image.Load<Rgba32>(source);
+                if (Math.Min(img.Width, img.Height) < 200) return false;
+
+                var ratio = (double)img.Width / img.Height;
+                if (ratio < 0.50 || ratio > 1.45) return false;
+
+                using var small = img.Clone(x => x.Resize(32, 32));
+                byte rLo = 255, gLo = 255, bLo = 255, rHi = 0, gHi = 0, bHi = 0;
+                small.ProcessPixelRows(rows =>
+                {
+                    for (var y = 0; y < rows.Height; y++)
+                    {
+                        var row = rows.GetRowSpan(y);
+                        for (var x = 0; x < row.Length; x++)
+                        {
+                            var p = row[x];
+                            rLo = Math.Min(rLo, p.R); rHi = Math.Max(rHi, p.R);
+                            gLo = Math.Min(gLo, p.G); gHi = Math.Max(gHi, p.G);
+                            bLo = Math.Min(bLo, p.B); bHi = Math.Max(bHi, p.B);
+                        }
+                    }
+                });
+                return Math.Max(rHi - rLo, Math.Max(gHi - gLo, bHi - bLo)) >= 24;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         /// <summary>Decode → downscale (never upscale) → PNG. Returns null when the bytes aren't a
         /// decodable image, which is the common case for a stray "art" file in a folder.</summary>
         public static byte[]? Downscale(byte[] source, int maxDim)

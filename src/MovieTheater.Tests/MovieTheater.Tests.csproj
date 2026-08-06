@@ -52,6 +52,10 @@
     <Compile Include="..\MovieTheater\Arcade\ArcadeRewindSupport.cs" Link="Arcade\ArcadeRewindSupport.cs" />
     <Compile Include="..\MovieTheater\Music\MusicNaming.cs" Link="Music\MusicNaming.cs" />
     <Compile Include="..\MovieTheater\Music\MusicArtStore.cs" Link="Music\MusicArtStore.cs" />
+    <!-- The remote-art match gate. Pure apart from the HTTP calls the tests never reach, and worth
+         testing directly: it is what stops a search result that merely shares a name from being
+         accepted as the album's cover. -->
+    <Compile Include="..\MovieTheater\Music\MusicRemoteArt.cs" Link="Music\MusicRemoteArt.cs" />
     <!-- The extracted per-core option catalog, embedded here too so the quality-preset tests can
          validate preset tokens against the FULL catalog (the hand-defined entries alone don't cover
          the extracted keys the presets pin). LoadExtracted finds it by resource-name suffix. -->

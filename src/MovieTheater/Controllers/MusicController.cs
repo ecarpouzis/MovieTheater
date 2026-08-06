@@ -732,6 +732,48 @@ namespace MovieTheater.Controllers
                 : StatusCode(422, new { albumId, stored = false, message = "Those bytes aren't a decodable image." });
         }
 
+        /// <summary>Removes an album's stored art, for when the art that is there is WRONG.</summary>
+        /// <remarks>
+        /// Until now art could only be added or overwritten, which is fine while a replacement exists.
+        /// It often doesn't: the in-house Disney compilations ("Disney's Ballads", "Hero Songs",
+        /// "Music Around Disneyland") are not in any public database, so the covers an unverified
+        /// backfill hung on them — ZOMBIES, High School Musical 3, Queen's Greatest Hits — could not be
+        /// taken off. A blank tile is strictly better than a confidently wrong one.
+        ///
+        /// <para><paramref name="recheck"/> also clears the negative cache so the lookup will try again
+        /// on next view; leave it false to make the album stay bare, which is what you want when the
+        /// record genuinely has no cover to find and re-asking would just re-fetch the same wrong one.</para>
+        /// </remarks>
+        [HttpPost("/API/Admin/Music/ClearArt/{albumId:int}")]
+        public async Task<IActionResult> ClearArt(int albumId, [FromQuery] bool recheck = false)
+        {
+            if (!IsCurrentUserAdmin()) return Forbid();
+
+            var album = await movieDb.MusicAlbums.FirstOrDefaultAsync(a => a.Id == albumId);
+            if (album == null) return NotFound(new { message = "No such album." });
+
+            var removed = 0;
+            var dir = MusicArtStore.ResolveDir(config);
+            if (dir != null)
+            {
+                foreach (var thumbnail in new[] { false, true })
+                {
+                    var path = Path.Combine(dir, MusicArtStore.FileName(albumId, thumbnail));
+                    try
+                    {
+                        if (System.IO.File.Exists(path)) { System.IO.File.Delete(path); removed++; }
+                    }
+                    catch (IOException) { /* leave the flag alone if the mount refuses */ }
+                }
+            }
+
+            album.HasArt = false;
+            album.DominantColor = null;
+            album.ArtCheckedUtc = recheck ? null : DateTime.UtcNow;
+            await movieDb.SaveChangesAsync();
+            return Ok(new { albumId, cleared = true, filesRemoved = removed, willRecheck = recheck });
+        }
+
         [HttpPost("/API/Admin/Music/BackfillArt")]
         public async Task<IActionResult> BackfillArt([FromQuery] int limit = 25, [FromQuery] int after = 0)
         {
