@@ -51,13 +51,23 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
   const playable = album && !album.missing && album.tracks.some(player.isPlayable);
 
   return (
-    <Modal open={albumId != null} onCancel={onClose} footer={null} width={560} destroyOnHidden>
+    <Modal
+      open={albumId != null}
+      onCancel={onClose}
+      footer={null}
+      width={560}
+      destroyOnHidden
+      /* Both classes are needed: the wrap carries the dialog, the root carries the mask, and BOTH
+         have to stop above the play bar or the bar is either covered or dimmed-and-dead. */
+      wrapClassName="music-album-modal"
+      rootClassName="music-album-modal-root"
+    >
       {!album && (
         <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
           <Spin />
         </div>
       )}
-      {album && album.missing && <p>This album couldn't be loaded.</p>}
+      {album && album.missing && <p>This album couldn&apos;t be loaded.</p>}
       {album && !album.missing && (
         <div className="music-album-detail">
           <div className="music-album-detail-head">

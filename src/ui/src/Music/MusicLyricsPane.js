@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MovieAPI } from "../MovieAPI";
 import { parseLrc, activeLineIndex } from "./lrc";
+// The pane's own stylesheet. It must NOT come from whichever page happens to render it — the play
+// bar shows this on every route, while the Now Playing route is lazy-loaded. See the file header.
+import "./MusicLyricsPane.css";
+
+// After a manual scroll, leave the reader where they put themselves for this long instead of
+// yanking the pane back on the next line.
+const MANUAL_SCROLL_GRACE_MS = 6000;
 
 // The lyrics view, shared by the Now Playing page and the play-bar overlay (music-plan.md §2.7).
 //
@@ -15,6 +22,7 @@ export default function MusicLyricsPane({ trackId, position, variant = "pane" })
   const [state, setState] = useState({ status: "loading" });
   const containerRef = useRef(null);
   const activeRef = useRef(null);
+  const nudgedAtRef = useRef(0);
 
   useEffect(() => {
     if (trackId == null) {
@@ -33,12 +41,35 @@ export default function MusicLyricsPane({ trackId, position, variant = "pane" })
   const lines = useMemo(() => parseLrc(state.syncedLrc), [state.syncedLrc]);
   const active = activeLineIndex(lines, position);
 
+  // Note when the reader scrolls by hand so the follow below backs off for a few seconds. Keyed on
+  // the rendered shape because the scroll container element is remounted when it changes.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return undefined;
+    const mark = () => { nudgedAtRef.current = Date.now(); };
+    container.addEventListener("wheel", mark, { passive: true });
+    container.addEventListener("touchmove", mark, { passive: true });
+    container.addEventListener("pointerdown", mark);
+    return () => {
+      container.removeEventListener("wheel", mark);
+      container.removeEventListener("touchmove", mark);
+      container.removeEventListener("pointerdown", mark);
+    };
+  }, [state.status, lines.length]);
+
   // Auto-scroll inside the pane only — scrollIntoView would drag the whole page.
+  //
+  // Measured with getBoundingClientRect, NOT offsetTop: offsetTop is relative to the nearest
+  // POSITIONED ancestor, which in the overlays is the overlay itself rather than this pane, so the
+  // old maths handed scrollTo a page-sized number and the pane just sat pinned at its bottom.
   useEffect(() => {
     const container = containerRef.current;
     const el = activeRef.current;
     if (!container || !el) return;
-    const target = el.offsetTop - container.clientHeight / 2 + el.clientHeight / 2;
+    if (container.scrollHeight <= container.clientHeight + 1) return; // nothing to scroll
+    if (Date.now() - nudgedAtRef.current < MANUAL_SCROLL_GRACE_MS) return;
+    const delta = el.getBoundingClientRect().top - container.getBoundingClientRect().top;
+    const target = container.scrollTop + delta - (container.clientHeight - el.clientHeight) / 2;
     container.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
   }, [active]);
 

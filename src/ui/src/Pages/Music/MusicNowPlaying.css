@@ -144,61 +144,16 @@
   text-overflow: ellipsis;
 }
 
-/* ── Lyrics pane ── */
+/* ── Lyrics pane ──
+   The pane's own look lives with the component (Music/MusicLyricsPane.css) — it renders on every
+   route via the play bar, and this page's stylesheet only loads on this lazy route. Anything here
+   is page LAYOUT and is scoped to the column so it can't reach the overlays. */
 .music-np-lyricswrap { min-width: 0; }
-
-.music-np-lyrics {
-  background: var(--card-surface);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 18px 20px;
-  max-height: 68vh;
-  overflow-y: auto;
-  scroll-behavior: smooth;
-}
-
-.music-np-lyrics-empty {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: var(--card-surface);
-  border: 1px dashed var(--card-border);
-  border-radius: 12px;
-  padding: 26px 20px;
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
-.music-np-lyrics-empty span { color: var(--text-muted); font-size: 12px; }
-
-.music-np-line {
-  margin: 0 0 10px;
-  font-size: 15px;
-  line-height: 1.4;
-  color: var(--text-muted);
-  transition: color 0.2s ease, transform 0.2s ease;
-}
-
-.music-np-line--active {
-  color: var(--accent);
-  font-weight: 600;
-  transform: translateX(3px);
-}
-
-.music-np-plain {
-  margin: 0;
-  font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--text-secondary);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
 
 @media (max-width: 900px) {
   .music-np { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .music-np-artwrap { max-width: 320px; }
-  .music-np-lyrics { max-height: 50vh; }
+  .music-np-lyricswrap .music-np-lyrics { max-height: 50vh; }
 }
 
 /* Show visualizer — promoted out of the row of identical transport buttons (music-plan.md §2.8).

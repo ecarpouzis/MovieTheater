@@ -42,14 +42,23 @@ function MusicMiniPlayer() {
   // rather than reaching for the library page's one.
   const [pickerTracks, setPickerTracks] = useState(null);
 
-  const audio = player?.audioRef?.current;
+  const audioRef = player?.audioRef;
+  const playing = !!player?.playing;
+  const currentId = player?.current?.id;
 
+  // Subscribe to the element, not to a value read during render: on the first render after a track
+  // is picked, audioRef.current can still be null (the ref attaches in the same commit), and a
+  // `[audio]` dependency read at render time would never see it fill in. Re-running on the track id
+  // guarantees a rebind for the life of the bar.
   useEffect(() => {
+    const audio = audioRef?.current;
     if (!audio) return undefined;
     const onTime = () => {
       if (!draggingRef.current) setPosition(audio.currentTime || 0);
     };
     const onDuration = () => setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+    onTime();
+    onDuration(); // metadata may already be in before we got here
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("durationchange", onDuration);
     audio.addEventListener("loadedmetadata", onDuration);
@@ -58,23 +67,77 @@ function MusicMiniPlayer() {
       audio.removeEventListener("durationchange", onDuration);
       audio.removeEventListener("loadedmetadata", onDuration);
     };
-  }, [audio]);
+  }, [audioRef, currentId]);
+
+  // Safety net: while the element says it is playing, the bar must advance. timeupdate is the cheap
+  // path, but it is not guaranteed — a throttled/backgrounded tab, a rebind that lost the race, or a
+  // stalled event stream all end with a bar frozen under music that is audibly still going. Polling
+  // to the same value is a no-op render (setState bails on Object.is), so this costs nothing when
+  // the events are working.
+  useEffect(() => {
+    if (!playing) return undefined;
+    const id = setInterval(() => {
+      const audio = audioRef?.current;
+      if (audio && !draggingRef.current) setPosition(audio.currentTime || 0);
+    }, 500);
+    return () => clearInterval(id);
+  }, [playing, audioRef]);
+
+  // The drag latch must be released by something that ALWAYS fires. On a phone it frequently isn't
+  // pointerup: the browser claims the gesture for a scroll and sends pointercancel instead, and the
+  // element-level handler alone then leaves draggingRef stuck true — every subsequent timeupdate is
+  // discarded and the bar sits at whatever second the touch happened on, forever.
+  useEffect(() => {
+    const end = () => { draggingRef.current = false; };
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+    return () => {
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+    };
+  }, []);
 
   // The overlay stops exactly where the bar starts; the bar's height is content-driven, so measure
   // it rather than hard-coding a number that drifts the moment the layout changes.
+  // It also publishes itself as a CSS variable, because the bar is not the only surface that has to
+  // stop where it starts: any full-height overlay (the visualizer, the lyrics panel, the album modal
+  // on a phone) has to leave the bar reachable, and a hard-coded 72px is wrong the moment this
+  // wraps to three rows.
   useEffect(() => {
+    const publish = (h) => document.documentElement.style.setProperty("--music-miniplayer-height", `${h}px`);
     const el = barRef.current;
-    if (!el) return undefined;
-    const measure = () => setBarHeight(el.offsetHeight);
+    if (!el) {
+      setBarHeight(0);
+      publish(0);
+      return undefined;
+    }
+    const measure = () => {
+      setBarHeight(el.offsetHeight);
+      publish(el.offsetHeight);
+    };
     measure();
-    if (typeof ResizeObserver === "undefined") return undefined;
+    if (typeof ResizeObserver === "undefined") return () => publish(0);
     const observer = new ResizeObserver(measure);
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      publish(0);
+    };
   }, [player?.current?.id]);
 
+  // The visualizer overlay covers the whole viewport, so the page behind it must not scroll while
+  // it's up. touch-action on the canvas stops the swipe itself (MusicVisualizer.css); this stops
+  // everything else — the wheel, the keyboard, and a fling already in flight when it opened.
+  const vizOverlayOpen = !!player?.current && !!player?.visualizerOn && !onNowPlaying;
+  useEffect(() => {
+    if (!vizOverlayOpen) return undefined;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [vizOverlayOpen]);
+
   if (!player || !player.current) return null;
-  const { current, playing, error, queue, index, visualizerOn, lyricsOn } = player;
+  const { current, error, queue, index, visualizerOn, lyricsOn } = player;
   const effectiveDuration = duration || current.durationSec || 0;
 
   return (
@@ -187,15 +250,20 @@ function MusicMiniPlayer() {
           <span className="music-miniplayer-viz-icon" aria-hidden="true">◉</span>
           <span className="music-miniplayer-viz-label">{visualizerOn ? "Hide" : "Visualizer"}</span>
         </button>
-        <button
-          className={`music-miniplayer-viz${lyricsOn ? " music-miniplayer-viz--on" : ""}`}
-          onClick={player.toggleLyrics}
-          title={lyricsOn ? "Hide lyrics" : "Show lyrics while this plays"}
-          aria-pressed={lyricsOn}
-        >
-          <span className="music-miniplayer-viz-icon" aria-hidden="true">♪</span>
-          <span className="music-miniplayer-viz-label">{lyricsOn ? "Hide" : "Lyrics"}</span>
-        </button>
+        {/* Not on Now Playing: that page shows the lyrics column unconditionally and both overlays
+            are suppressed there, so this button would toggle a switch with nothing to show for it —
+            a dead control on the one page most likely to be open when you want lyrics. */}
+        {!onNowPlaying && (
+          <button
+            className={`music-miniplayer-viz${lyricsOn ? " music-miniplayer-viz--on" : ""}`}
+            onClick={player.toggleLyrics}
+            title={lyricsOn ? "Hide lyrics" : "Show lyrics while this plays"}
+            aria-pressed={lyricsOn}
+          >
+            <span className="music-miniplayer-viz-icon" aria-hidden="true">♪</span>
+            <span className="music-miniplayer-viz-label">{lyricsOn ? "Hide" : "Lyrics"}</span>
+          </button>
+        )}
         <button
           className={`music-miniplayer-btn${queueOpen ? " music-miniplayer-btn--active" : ""}`}
           onClick={() => setQueueOpen((o) => !o)}
@@ -204,7 +272,20 @@ function MusicMiniPlayer() {
         >
           ☰
         </button>
-        <button className="music-miniplayer-btn" onClick={player.stop} aria-label="Close player" title="Close">✕</button>
+        {/* Closing the player from the Now Playing page would otherwise strand you on that page's
+            "Nothing playing" screen — the one surface that exists only because there IS a track.
+            Dismissing the music should hand you back to the library, not to a dead end. */}
+        <button
+          className="music-miniplayer-btn music-miniplayer-close"
+          onClick={() => {
+            player.stop();
+            if (onNowPlaying) history.replace("/music");
+          }}
+          aria-label="Close player"
+          title="Close"
+        >
+          ✕
+        </button>
       </div>
 
       {queueOpen && (

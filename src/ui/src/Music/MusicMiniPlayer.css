@@ -268,26 +268,49 @@
 
 .music-miniplayer-queue-remove:hover { color: #e8657f; }
 
-/* On phones, drop the volume slider (OS hardware volume rules there) and tighten spacing.
+/* On phones the bar is THREE deliberate rows, each a full-width band, rather than one row that
+   wraps wherever it runs out of space:
 
-   The scrub bar gets its OWN full-width row. In one row it was competing with the title, the
-   transport and the right-hand buttons, which left it a few dozen pixels wide — too small to read a
-   position from, let alone drag with a thumb. `flex-wrap` plus `flex-basis: 100%` puts it on line
-   two at full width; `order` keeps it below the controls regardless of DOM order. */
+     1. artwork + title/artist + transport
+     2. the scrub bar
+     3. the secondary controls (visualizer, lyrics, queue, close)
+
+   Row 3 has to be its own band. Left to wrap on its own it landed between the title and the scrub
+   bar — a ragged half-line that read as a layout accident, and it pushed the scrub bar away from
+   the times it belongs to. Giving BOTH row 2 and row 3 a 100% flex-basis (and orders that match the
+   DOM) makes the break points intentional instead of incidental.
+
+   The volume slider goes: hardware volume rules a phone. */
 @media (max-width: 640px) {
-  .music-miniplayer { gap: 8px 10px; padding: 8px 10px; flex-wrap: wrap; }
+  .music-miniplayer { gap: 6px 10px; padding: 8px 10px 10px; flex-wrap: wrap; }
   .music-miniplayer-volume { display: none; }
+
   .music-miniplayer-info { min-width: 0; flex: 1 1 auto; order: 1; }
-  .music-miniplayer-transport { order: 2; }
-  .music-miniplayer-right { order: 3; }
+  .music-miniplayer-transport { order: 2; flex: none; }
+
   .music-miniplayer-seek {
-    order: 4;
+    order: 3;
     flex: 1 0 100%;
     width: 100%;
     gap: 10px;
   }
-  /* A full-width row can afford a comfortable hit target for dragging. */
-  .music-miniplayer-seek input[type="range"] { height: 22px; }
+  /* A full-width row can afford a comfortable hit target for dragging. touch-action keeps the drag
+     as a drag: without it the browser can claim the gesture for a page scroll partway through, which
+     both loses the scrub and fires pointercancel instead of pointerup. */
+  .music-miniplayer-seek input[type="range"] { height: 22px; touch-action: none; }
+
+  .music-miniplayer-right {
+    order: 4;
+    flex: 1 0 100%;
+    width: 100%;
+    gap: 4px;
+    padding-top: 7px;
+    border-top: 1px solid var(--sidebar-border);
+  }
+  /* Its own band means room for real tap targets. */
+  .music-miniplayer-right .music-miniplayer-btn { padding: 6px 11px; font-size: 17px; }
+  /* Dismissing the player is the one destructive control here, so it sits apart from the toggles. */
+  .music-miniplayer-close { margin-left: auto; }
 }
 
 /* ── On-screen lyrics (music-plan.md §2.7) ──────────────────────────────────
@@ -307,6 +330,8 @@
   background: var(--sidebar-bg);
   border-top: 1px solid var(--sidebar-border);
   animation: music-lyrics-overlay-in 0.18s ease;
+  /* This panel is the sidebar palette in BOTH themes, so the lyrics inside take the overlay type
+     colours (Music/MusicLyricsPane.css) rather than the light content-area tokens. */
 }
 
 @keyframes music-lyrics-overlay-in {
@@ -329,9 +354,10 @@
 }
 .music-lyrics-overlay-close:hover { background: var(--sidebar-pill-bg); color: var(--sidebar-text); }
 
-/* Over the visualizer: no plate of its own, just legible text on top of the GL canvas. The
-   gradient is what keeps white lyrics readable over a bright preset without dimming the whole
-   visual — a flat scrim would defeat the point of showing Butterchurn at all. */
+/* Over the visualizer: no plate of its own, just legible text on top of the GL canvas. The gradient
+   is what keeps white lyrics readable over a bright preset without dimming the whole visual — a flat
+   scrim would defeat the point of showing Butterchurn at all. It runs the full height now that the
+   words can fill the screen, but stays graded so the preset still reads through the top. */
 .music-lyrics-over-viz {
   position: absolute;
   inset: 0;
@@ -339,31 +365,35 @@
   align-items: flex-end;
   justify-content: center;
   pointer-events: none;
-  padding: 0 16px 6vh;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.28) 28%, transparent 55%);
+  /* Bottom padding clears the preset controls sitting at the bottom of the canvas — otherwise the
+     pane covers them and eats the taps meant for the ✕. */
+  padding: 0 16px 62px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.26) 100%);
 }
 
 .music-lyrics-over-viz .music-np-lyrics--overlay {
   pointer-events: auto;
   text-align: center;
   max-width: 900px;
+  /* The container's height is definite (inset: 0), so this turns the pane into a REAL scroll box.
+     Without it max-height stayed `none`: the lines grew straight off the top of the screen, only
+     the last few were reachable, and the follow-the-song scroll had nothing to scroll. */
+  max-height: 100%;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
 }
 
-/* Shared overlay sizing for both modes. Scrollbar hidden: the pane auto-scrolls itself, and a
-   visible track over artwork/visuals is just noise. */
-.music-np-lyrics--overlay {
-  flex: 1 1 auto;
-  max-height: none;
-  overflow-y: auto;
-  padding: 18px 22px;
-  scrollbar-width: none;
-}
-.music-np-lyrics--overlay::-webkit-scrollbar { display: none; }
+.music-lyrics-over-viz .music-np-line { font-size: 17px; margin-bottom: 12px; }
+/* Over a moving preset the active line has to win on more than colour alone. */
+.music-lyrics-over-viz .music-np-line--active { transform: none; font-size: 19px; }
 
+/* The panel mode is bounded by the same number as its container: a percentage would resolve against
+   an auto height (i.e. to `none`) and the panel would clip its overflow instead of scrolling it. */
 .music-lyrics-overlay .music-np-lyrics--overlay { max-height: min(52vh, 460px); }
 
 @media (max-width: 640px) {
   .music-lyrics-overlay { max-height: 42vh; }
-  .music-lyrics-over-viz { padding-bottom: 4vh; }
+  .music-lyrics-overlay .music-np-lyrics--overlay { max-height: 42vh; }
+  .music-lyrics-over-viz { padding-bottom: 56px; }
+  .music-lyrics-over-viz .music-np-line { font-size: 16px; }
+  .music-lyrics-over-viz .music-np-line--active { font-size: 18px; }
 }

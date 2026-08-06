@@ -1,0 +1,97 @@
+/* Lyrics pane (music-plan.md §2.7) — owned by the COMPONENT, not by a page.
+
+   These rules used to live in MusicNowPlaying.css, and that was the bug behind "clicking Lyrics
+   doesn't show lyrics". The Now Playing route is lazy-loaded (App.js), so its stylesheet only
+   arrives once you actually visit /music/now-playing — but the play bar renders this very same pane
+   on EVERY route. Everywhere else the pane had no colours, no plate and no max-height: the lines
+   inherited the content area's dark-on-light body colour and landed on the dark overlay (invisible,
+   and black-on-black over Butterchurn), and with no height limit there was nothing to scroll.
+
+   A component that renders in more than one place carries its own CSS. */
+
+.music-np-lyrics {
+  /* position: relative also makes this pane the offsetParent for its lines — see the scroll math
+     in MusicLyricsPane.js, which measures against this box. */
+  position: relative;
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  max-height: 68vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  /* A scroll box inside a fixed overlay has to swallow the gesture. Without these a swipe past the
+     last line keeps going as a PAGE scroll underneath the overlay, which on a phone looks like the
+     site sliding around behind the lyrics. */
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.music-np-lyrics-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--card-surface);
+  border: 1px dashed var(--card-border);
+  border-radius: 12px;
+  padding: 26px 20px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.music-np-lyrics-empty span { color: var(--text-muted); font-size: 12px; }
+
+.music-np-line {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.music-np-line--active {
+  color: var(--accent);
+  font-weight: 600;
+  transform: translateX(3px);
+}
+
+.music-np-plain {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── Overlay variant ────────────────────────────────────────────────────────
+   Both overlay surfaces — the panel above the play bar and the words over the visualizer — are dark
+   in BOTH themes (the play bar takes the sidebar palette, the visualizer is a black canvas). So the
+   type here is stated in absolute light-on-dark values instead of the content-area tokens, which
+   are dark-on-light in the default theme. The overlay owns the surface; the pane brings no plate. */
+.music-np-lyrics--overlay {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 18px 22px;
+  color: rgba(255, 255, 255, 0.78);
+  /* The pane auto-scrolls itself; a visible track over artwork/visuals is just noise. */
+  scrollbar-width: none;
+}
+
+.music-np-lyrics--overlay::-webkit-scrollbar { display: none; }
+
+.music-np-lyrics--overlay span { color: rgba(255, 255, 255, 0.55); }
+.music-np-lyrics--overlay .music-np-plain { color: rgba(255, 255, 255, 0.8); }
+.music-np-lyrics--overlay .music-np-line { color: rgba(255, 255, 255, 0.5); }
+
+.music-np-lyrics--overlay .music-np-line--active {
+  color: #fff;
+  font-weight: 600;
+}

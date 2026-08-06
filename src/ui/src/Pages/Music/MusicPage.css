@@ -308,3 +308,70 @@
   max-height: 55vh;
   overflow-y: auto;
 }
+
+/* ── The album sheet stops where the player bar starts ───────────────────────
+   Browsing an album is exactly when you want the transport: skip a track, scrub,
+   pick the next thing. A modal that covers the bar makes "close this first" the
+   price of touching the music, which is backwards. So the dialog AND its mask end
+   at the top of the bar (--music-miniplayer-height, published by MusicMiniPlayer —
+   0px when nothing is playing, so with no music this is a normal full-height
+   sheet). The bar's own z-index is below the modal's, but it no longer has to win:
+   nothing is drawn over it. */
+.music-album-modal-root .ant-modal-mask,
+.music-album-modal.ant-modal-wrap {
+  bottom: var(--music-miniplayer-height, 0px);
+}
+
+/* Bound the card to the space that's left and hand the scrolling to the body, so a
+   long tracklist can't push the dialog down behind the bar. */
+.music-album-modal.ant-modal-wrap .ant-modal-container {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - var(--music-miniplayer-height, 0px) - 100px);
+  max-height: calc(100dvh - var(--music-miniplayer-height, 0px) - 100px);
+}
+
+.music-album-modal.ant-modal-wrap .ant-modal-body {
+  flex: 1 1 auto;
+  /* Load-bearing: a flex item's default `min-height: auto` refuses to shrink below
+     its content, so without this the tracklist grows the card past the bound above. */
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* One scroller, not two nested ones — the body owns it here. */
+.music-album-modal.ant-modal-wrap .music-album-detail-tracks {
+  max-height: none;
+  overflow: visible;
+}
+
+/* Phone: edge-to-edge sheet in the space above the bar. */
+@media (max-width: 640px) {
+  .music-album-modal.ant-modal-wrap {
+    padding: 0;
+    overflow: hidden; /* the body scrolls; the wrap must not add a second scroller */
+  }
+
+  .music-album-modal.ant-modal-wrap .ant-modal {
+    top: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    vertical-align: top;
+  }
+
+  .music-album-modal.ant-modal-wrap .ant-modal-container {
+    height: calc(100vh - var(--music-miniplayer-height, 0px));
+    height: calc(100dvh - var(--music-miniplayer-height, 0px));
+    max-height: calc(100dvh - var(--music-miniplayer-height, 0px));
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* The hero shrinks so the tracklist — the reason the sheet is open — starts on
+     the first screen rather than below a 132px square. */
+  .music-album-hero { width: 92px; height: 92px; font-size: 26px; }
+  .music-album-detail-title { font-size: 17px; }
+}
