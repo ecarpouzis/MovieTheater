@@ -110,13 +110,14 @@ namespace MovieTheater.Music
             var albumsByPath = (await db.MusicAlbums.ToListAsync())
                 .ToDictionary(a => a.FolderPath, a => a, StringComparer.OrdinalIgnoreCase);
 
-            int inserted = 0, updated = 0, skipped = 0, tagErrors = 0, flaggedMissing = 0;
+            int inserted = 0, updated = 0, skipped = 0, tagErrors = 0, flaggedMissing = 0, relinked = 0;
 
             foreach (var artistFolder in batch)
             {
                 var counts = await IngestArtistAsync(db, root, artistFolder, artistsByFolder, albumsByPath, w);
                 inserted += counts.inserted; updated += counts.updated; skipped += counts.skipped;
                 tagErrors += counts.tagErrors; flaggedMissing += counts.flaggedMissing;
+                relinked += counts.relinked;
 
                 // Save per artist folder: bounded transactions, and an interrupted run resumes at the
                 // artist granularity the cursor already works in.
@@ -129,18 +130,19 @@ namespace MovieTheater.Music
             w.WriteLine();
             w.WriteLine($"{allArtistDirs.Count} artist folder(s) total; this run: {inserted} inserted, {updated} updated, " +
                         $"{skipped} unchanged, {tagErrors} tag-read error(s)" +
-                        (Reconcile ? $", {flaggedMissing} flagged missing" : "") + ".");
+                        (Reconcile ? $", {flaggedMissing} flagged missing" : "") +
+                        (relinked > 0 ? $", {relinked} loose track(s) adopted into their folder's album" : "") + ".");
             w.WriteLine($"{{ processed: {batch.Count}, remaining: {remaining}, nextCursor: \"{nextCursor}\" }}");
             if (!Apply) w.WriteLine("DRY RUN — nothing written. Re-run with --apply.");
             else if (remaining > 0) w.WriteLine($"More to do: re-run with --after \"{nextCursor}\".");
         }
 
-        private async Task<(int inserted, int updated, int skipped, int tagErrors, int flaggedMissing)> IngestArtistAsync(
+        private async Task<(int inserted, int updated, int skipped, int tagErrors, int flaggedMissing, int relinked)> IngestArtistAsync(
             MovieDb db, string root, string artistFolder,
             Dictionary<string, MusicArtist> artistsByFolder, Dictionary<string, MusicAlbum> albumsByPath,
             ConsoleWriter w)
         {
-            int inserted = 0, updated = 0, skipped = 0, tagErrors = 0, flaggedMissing = 0;
+            int inserted = 0, updated = 0, skipped = 0, tagErrors = 0, flaggedMissing = 0, relinked = 0;
 
             var parsed = MusicNaming.ParseArtistFolder(artistFolder);
             if (!artistsByFolder.TryGetValue(artistFolder, out var artist))
@@ -171,8 +173,27 @@ namespace MovieTheater.Music
             var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var artistDir = Path.Combine(root, artistFolder);
-            foreach (var path in Directory.EnumerateFiles(artistDir, "*", SearchOption.AllDirectories)
-                                          .OrderBy(p => p, StringComparer.Ordinal))
+            var audioFiles = Directory.EnumerateFiles(artistDir, "*", SearchOption.AllDirectories)
+                                      .Where(p => IsAudio(Path.GetExtension(p)))
+                                      .OrderBy(p => p, StringComparer.Ordinal)
+                                      .ToList();
+
+            // A single-release soundtrack keeps its tracks FLAT in the artist folder (§2.2: Django,
+            // Garden State, A Clockwork Orange); only artists with several releases get album
+            // subfolders. Those flat folders ARE albums by project rule, so the artist folder
+            // doubles as the album folder for them.
+            //
+            // Requiring that NOTHING is nested is what keeps this honest. Thirteen real bands
+            // (Ramones, Hendrix, Pennywise…) have a stray track or two sitting beside their proper
+            // album folders; those strays are not a record and must stay album-less rather than being
+            // swept into a phantom self-titled album.
+            bool anyNested = audioFiles.Any(p => SegmentCount(root, p) > 2);
+            bool anyFlat = audioFiles.Any(p => SegmentCount(root, p) == 2);
+            var folderAlbum = (anyFlat && !anyNested)
+                ? ResolveFolderAlbum(db, albumsByPath, artist, artistFolder, parsed.Sort, w)
+                : null;
+
+            foreach (var path in audioFiles)
             {
                 var ext = Path.GetExtension(path).ToLowerInvariant();
                 bool native = NativeCodecs.TryGetValue(ext, out var codec);
@@ -184,6 +205,16 @@ namespace MovieTheater.Music
 
                 if (tracksByPath.TryGetValue(rel, out var existing))
                 {
+                    // Adopt tracks ingested before flat folders were understood to be albums. This is
+                    // the backfill: those rows are otherwise UNCHANGED, so they take the fast path
+                    // below and would never be revisited. Only ever fills a null — it will not move a
+                    // track that already belongs somewhere.
+                    if (existing.AlbumId == null && folderAlbum != null && rel.Split('/').Length == 2)
+                    {
+                        if (Apply) existing.Album = folderAlbum;
+                        relinked++;
+                    }
+
                     // Unchanged file: skip without re-opening it — this is what keeps re-runs fast and
                     // the job resumable over the network share.
                     bool changed = existing.SizeBytes != fi.Length ||
@@ -222,7 +253,7 @@ namespace MovieTheater.Music
                 var (fallbackNo, fallbackTitle) = MusicNaming.ParseTrackFileName(Path.GetFileNameWithoutExtension(fileName));
                 var tags = ReadTags(path, ref tagErrors);
 
-                var album = ResolveAlbum(db, albumsByPath, artist, artistFolder, parsed.Sort, rel, w);
+                var album = ResolveAlbum(db, albumsByPath, artist, artistFolder, parsed.Sort, rel, w, folderAlbum);
 
                 var track = new MusicTrack
                 {
@@ -264,20 +295,72 @@ namespace MovieTheater.Music
                 }
             }
 
-            if (inserted > 0 || updated > 0 || flaggedMissing > 0)
+            if (inserted > 0 || updated > 0 || flaggedMissing > 0 || relinked > 0)
                 w.WriteLine($"  [{artistFolder}] +{inserted} ~{updated} ={skipped}" +
-                            (flaggedMissing > 0 ? $" missing:{flaggedMissing}" : ""));
-            return (inserted, updated, skipped, tagErrors, flaggedMissing);
+                            (flaggedMissing > 0 ? $" missing:{flaggedMissing}" : "") +
+                            (relinked > 0 ? $" relinked:{relinked}" : ""));
+            return (inserted, updated, skipped, tagErrors, flaggedMissing, relinked);
         }
 
-        /// <summary>Album = first path segment under the artist folder; a file directly in the artist
-        /// folder is a loose track (null album). Deeper nesting (CD1/CD2) still belongs to the
-        /// first-level album folder (§2.2).</summary>
+        private static bool IsAudio(string extension)
+        {
+            var ext = extension.ToLowerInvariant();
+            return NativeCodecs.ContainsKey(ext) || TranscodeCodecs.ContainsKey(ext);
+        }
+
+        /// <summary>Path segments below the music root: 2 = artistFolder/file, 3+ = inside an album.</summary>
+        private static int SegmentCount(string root, string path) =>
+            Path.GetRelativePath(root, path).Replace('\\', '/').Split('/').Length;
+
+        /// <summary>
+        /// The album for an artist folder that IS one album — its tracks sit flat and it has no album
+        /// subfolders. Its FolderPath is the artist folder itself, which is what makes it stable: the
+        /// upsert key for an album is its FolderPath, so a re-ingest finds this row again instead of
+        /// inserting a second one and stranding the tracks.
+        /// </summary>
+        private MusicAlbum ResolveFolderAlbum(MovieDb db, Dictionary<string, MusicAlbum> albumsByPath,
+            MusicArtist artist, string artistFolder, string artistBase, ConsoleWriter w)
+        {
+            if (albumsByPath.TryGetValue(artistFolder, out var existing)) return existing;
+
+            // Parsed as an ALBUM folder, not an artist folder: that strips the "[Soundtrack]" tag and
+            // the "(1972)" year, so "A Clockwork Orange (1972) [Soundtrack]" titles as "A Clockwork
+            // Orange" with Year 1972 and Tag "Soundtrack" — the same shape a nested album would get.
+            var parsed = MusicNaming.ParseAlbumFolder(artistFolder, artistBase);
+
+            // A flat folder that is a plain ARTIST folder carries a year RANGE, which the album parser
+            // leaves in place because it only understands a single 4-digit year — titling the record
+            // "Iced Earth (1991-1999)". That title matches nothing at MusicBrainz and reads badly, so
+            // strip the range too. Done after the album parse, not before, so a single "(2004)" is
+            // still captured as the album's Year rather than discarded as a range.
+            var deranged = MusicNaming.ParseArtistFolder(parsed.Title);
+            if (deranged.YearRange != null)
+                parsed = parsed with { Title = deranged.Sort };
+            var album = new MusicAlbum
+            {
+                Artist = artist,
+                Title = parsed.Title,
+                Year = parsed.Year,
+                FolderPath = artistFolder,
+                Tag = parsed.Tag,
+            };
+            if (Apply) db.MusicAlbums.Add(album);
+            albumsByPath[artistFolder] = album;
+            w.WriteLine($"  + album  {parsed.Title}" + (parsed.Year != null ? $" ({parsed.Year})" : "")
+                        + "  [flat artist folder]");
+            return album;
+        }
+
+        /// <summary>Album = first path segment under the artist folder. A file directly in the artist
+        /// folder belongs to <paramref name="folderAlbum"/> when the whole folder is one album, and is
+        /// otherwise a loose track (a stray beside real album folders). Deeper nesting (CD1/CD2) still
+        /// belongs to the first-level album folder (§2.2).</summary>
         private MusicAlbum? ResolveAlbum(MovieDb db, Dictionary<string, MusicAlbum> albumsByPath,
-            MusicArtist artist, string artistFolder, string artistBase, string relPath, ConsoleWriter w)
+            MusicArtist artist, string artistFolder, string artistBase, string relPath, ConsoleWriter w,
+            MusicAlbum? folderAlbum)
         {
             var segments = relPath.Split('/');
-            if (segments.Length <= 2) return null; // artistFolder/file.mp3 — loose track
+            if (segments.Length <= 2) return folderAlbum; // artistFolder/file.mp3
 
             var albumPath = segments[0] + "/" + segments[1];
             if (albumsByPath.TryGetValue(albumPath, out var album)) return album;
