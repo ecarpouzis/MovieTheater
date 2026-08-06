@@ -48,7 +48,7 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
     }));
   }
 
-  const playable = album && !album.missing && album.tracks.some((t) => !t.requiresTranscode && !t.missing);
+  const playable = album && !album.missing && album.tracks.some(player.isPlayable);
 
   return (
     <Modal open={albumId != null} onCancel={onClose} footer={null} width={560} destroyOnHidden>
@@ -81,6 +81,9 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
                 <Button type="primary" disabled={!playable} onClick={() => player.playTracks(toQueueEntries(), 0)}>
                   ▶ Play
                 </Button>
+                <Button disabled={!playable} onClick={() => player.shuffleTracks(toQueueEntries())}>
+                  🔀 Shuffle
+                </Button>
                 <Button disabled={!playable} onClick={() => player.enqueue(toQueueEntries())}>
                   + Queue
                 </Button>
@@ -107,8 +110,12 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
                 title={t.title}
                 disc={t.discNo != null && t.discNo > 1 ? `CD${t.discNo}` : null}
                 time={formatTime(t.durationSec)}
-                disabled={t.requiresTranscode || t.missing}
-                hint={t.requiresTranscode ? "This format can't be streamed yet" : t.missing ? "File is missing" : t.title}
+                disabled={!player.isPlayable(t)}
+                hint={t.missing
+                  ? "File is missing"
+                  : t.requiresTranscode && !player.canTranscode
+                    ? "This format can't be streamed yet"
+                    : t.title}
                 onPlay={() => player.playTracks(toQueueEntries(), i)}
                 onAdd={onAddToPlaylist ? () => onAddToPlaylist([{ id: t.id, title: t.title }], t.title) : undefined}
               />

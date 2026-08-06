@@ -70,11 +70,34 @@ namespace MovieTheater.Music
                 return false;
             }
 
+            return await StoreAsync(db, config, album, source);
+        }
+
+        /// <summary>
+        /// Put these image bytes on this process's mount as the album's art, in both sizes, and make
+        /// the DB agree. Returns false when the bytes don't decode or the mount won't take them.
+        ///
+        /// <para>Split out of <see cref="FetchAndStoreAsync"/> so a source OTHER than the internet can
+        /// reuse it — specifically the embedded picture in a track or an album-folder cover, which
+        /// only a process that can read the MUSIC share can get at. Prod can't (its images mount and
+        /// the music share live on different hosts), so those bytes arrive by upload instead, and this
+        /// is the one place that decides how art is written either way.</para>
+        /// </summary>
+        public static async Task<bool> StoreAsync(
+            MovieDb db, MovieTheaterConfiguration config, MusicAlbum album, byte[] source)
+        {
+            var imagesDir = MusicArtStore.ResolveDir(config);
+            if (imagesDir == null) return false;
+
+            var mainPath = Path.Combine(imagesDir, MusicArtStore.FileName(album.Id, thumbnail: false));
+            var thumbPath = Path.Combine(imagesDir, MusicArtStore.FileName(album.Id, thumbnail: true));
+
             var main = MusicArtStore.Downscale(source, MusicArtStore.MainMaxPx);
             var thumb = MusicArtStore.Downscale(source, MusicArtStore.ThumbMaxPx);
             if (main == null || thumb == null)
             {
-                // Found bytes but they aren't a decodable image — treat exactly like a miss.
+                // Bytes arrived but aren't a decodable image — treat exactly like a miss.
+                album.ArtCheckedUtc = DateTime.UtcNow;
                 album.HasArt = false;
                 await db.SaveChangesAsync();
                 return false;
@@ -93,6 +116,7 @@ namespace MovieTheater.Music
                 return false;
             }
 
+            album.ArtCheckedUtc = DateTime.UtcNow;
             album.HasArt = true;
             album.DominantColor = MusicArtStore.ComputeAverageColor(thumb);
             await db.SaveChangesAsync();

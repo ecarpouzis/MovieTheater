@@ -121,7 +121,7 @@ function MusicPage({ userData }) {
     setPickerName(suggestedName);
   }
 
-  function playPlaylist(id) {
+  function playPlaylist(id, { shuffle = false } = {}) {
     MovieAPI.getMusicPlaylistItems(id)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((data) => {
@@ -135,7 +135,8 @@ function MusicPage({ userData }) {
           requiresTranscode: t.requiresTranscode,
           missing: t.missing,
         }));
-        player.playTracks(tracks, 0);
+        if (shuffle) player.shuffleTracks(tracks);
+        else player.playTracks(tracks, 0);
       })
       .catch(() => {});
   }
@@ -314,7 +315,7 @@ function MusicPage({ userData }) {
                 title={t.title}
                 meta={`${t.artistName}${t.albumTitle ? ` — ${t.albumTitle}` : ""}`}
                 time={formatTime(t.durationSec)}
-                disabled={t.requiresTranscode}
+                disabled={!player.isPlayable(t)}
                 onPlay={() => playSearchSong(i)}
                 onAdd={() => openPicker([{ id: t.id, title: t.title }], t.title)}
               />
@@ -340,6 +341,9 @@ function MusicPage({ userData }) {
                 <div className="music-playlist-card-actions">
                   <button className="music-playlist-btn" disabled={p.count === 0} onClick={() => playPlaylist(p.id)}>
                     ▶ Play
+                  </button>
+                  <button className="music-playlist-btn" disabled={p.count === 0} onClick={() => playPlaylist(p.id, { shuffle: true })}>
+                    🔀 Shuffle
                   </button>
                   <button className="music-playlist-btn" onClick={() => setManagePlaylistId(p.id)}>Manage</button>
                 </div>
@@ -407,7 +411,7 @@ function MusicPage({ userData }) {
                     no="▶"
                     title={t.title}
                     time={formatTime(t.durationSec)}
-                    disabled={t.requiresTranscode || t.missing}
+                    disabled={!player.isPlayable(t)}
                     onPlay={() => playLooseTracks(i)}
                     onAdd={() => openPicker([{ id: t.id, title: t.title }], t.title)}
                   />

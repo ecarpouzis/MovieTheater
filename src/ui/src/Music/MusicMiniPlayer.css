@@ -268,9 +268,102 @@
 
 .music-miniplayer-queue-remove:hover { color: #e8657f; }
 
-/* On phones, drop the volume slider (OS hardware volume rules there) and tighten spacing. */
+/* On phones, drop the volume slider (OS hardware volume rules there) and tighten spacing.
+
+   The scrub bar gets its OWN full-width row. In one row it was competing with the title, the
+   transport and the right-hand buttons, which left it a few dozen pixels wide — too small to read a
+   position from, let alone drag with a thumb. `flex-wrap` plus `flex-basis: 100%` puts it on line
+   two at full width; `order` keeps it below the controls regardless of DOM order. */
 @media (max-width: 640px) {
-  .music-miniplayer { gap: 8px; padding: 8px 10px; }
+  .music-miniplayer { gap: 8px 10px; padding: 8px 10px; flex-wrap: wrap; }
   .music-miniplayer-volume { display: none; }
-  .music-miniplayer-info { min-width: 110px; }
+  .music-miniplayer-info { min-width: 0; flex: 1 1 auto; order: 1; }
+  .music-miniplayer-transport { order: 2; }
+  .music-miniplayer-right { order: 3; }
+  .music-miniplayer-seek {
+    order: 4;
+    flex: 1 0 100%;
+    width: 100%;
+    gap: 10px;
+  }
+  /* A full-width row can afford a comfortable hit target for dragging. */
+  .music-miniplayer-seek input[type="range"] { height: 22px; }
+}
+
+/* ── On-screen lyrics (music-plan.md §2.7) ──────────────────────────────────
+   Two independent switches — Lyrics and Visualizer — compose into three states:
+   lyrics alone get this panel, lyrics + visualizer put the words OVER Butterchurn
+   (see .music-lyrics-over-viz), and the visualizer alone is unchanged. */
+
+.music-lyrics-overlay {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--music-miniplayer-height, 72px);
+  z-index: 900;
+  max-height: min(52vh, 460px);
+  overflow: hidden;
+  display: flex;
+  background: var(--sidebar-bg);
+  border-top: 1px solid var(--sidebar-border);
+  animation: music-lyrics-overlay-in 0.18s ease;
+}
+
+@keyframes music-lyrics-overlay-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.music-lyrics-overlay-close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  z-index: 1;
+  background: none;
+  border: none;
+  color: var(--sidebar-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 7px;
+  border-radius: 6px;
+}
+.music-lyrics-overlay-close:hover { background: var(--sidebar-pill-bg); color: var(--sidebar-text); }
+
+/* Over the visualizer: no plate of its own, just legible text on top of the GL canvas. The
+   gradient is what keeps white lyrics readable over a bright preset without dimming the whole
+   visual — a flat scrim would defeat the point of showing Butterchurn at all. */
+.music-lyrics-over-viz {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+  padding: 0 16px 6vh;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.28) 28%, transparent 55%);
+}
+
+.music-lyrics-over-viz .music-np-lyrics--overlay {
+  pointer-events: auto;
+  text-align: center;
+  max-width: 900px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
+}
+
+/* Shared overlay sizing for both modes. Scrollbar hidden: the pane auto-scrolls itself, and a
+   visible track over artwork/visuals is just noise. */
+.music-np-lyrics--overlay {
+  flex: 1 1 auto;
+  max-height: none;
+  overflow-y: auto;
+  padding: 18px 22px;
+  scrollbar-width: none;
+}
+.music-np-lyrics--overlay::-webkit-scrollbar { display: none; }
+
+.music-lyrics-overlay .music-np-lyrics--overlay { max-height: min(52vh, 460px); }
+
+@media (max-width: 640px) {
+  .music-lyrics-overlay { max-height: 42vh; }
+  .music-lyrics-over-viz { padding-bottom: 4vh; }
 }

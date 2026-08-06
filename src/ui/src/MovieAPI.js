@@ -24,6 +24,13 @@ function searchMusicTracks(q) {
   return fetch(`/API/Music/Search?q=${encodeURIComponent(q)}`, { method: "get" });
 }
 
+// What this server can play: { streamingConfigured, transcodeEnabled }. Asked once, so the UI
+// can offer .wma/.aif tracks when the gateway will transcode them instead of always greying
+// them out.
+function getMusicCapabilities() {
+  return fetch("/API/Music/Capabilities", { method: "get" });
+}
+
 // Mints the signed gateway URL for one track (the audio data plane — bytes come
 // straight off the StreamGateway, never this server).
 function startMusicTrack(trackId) {
@@ -1368,6 +1375,7 @@ const MovieAPI = {
   ingestReviewRemoveFile,
   ingestReviewMoveFile,
   ingestReviewAcknowledgeOddity,
+  getMusicCapabilities,
   getMusicArtists,
   getMusicArtist,
   getMusicAlbums,

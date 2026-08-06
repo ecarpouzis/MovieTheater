@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
-import { MovieAPI } from "../../MovieAPI";
 import { useMusicPlayer } from "../../Music/MusicPlayerContext";
 import MusicAlbumArt from "../../Music/MusicAlbumArt";
-import { parseLrc, activeLineIndex } from "../../Music/lrc";
+import MusicLyricsPane from "../../Music/MusicLyricsPane";
 import MusicVisualizer from "../../Music/MusicVisualizer";
 import "./MusicNowPlaying.css";
 
@@ -18,69 +17,6 @@ function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${m}:${s < 10 ? "0" : ""}${s}`;
-}
-
-function LyricsPane({ trackId, position }) {
-  const [state, setState] = useState({ status: "loading" });
-  const containerRef = useRef(null);
-  const activeRef = useRef(null);
-
-  useEffect(() => {
-    if (trackId == null) {
-      setState({ status: "empty" });
-      return undefined;
-    }
-    let alive = true;
-    setState({ status: "loading" });
-    MovieAPI.getMusicTrackLyrics(trackId)
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((data) => alive && setState({ status: "ready", ...data }))
-      .catch(() => alive && setState({ status: "empty" }));
-    return () => { alive = false; };
-  }, [trackId]);
-
-  const lines = useMemo(() => parseLrc(state.syncedLrc), [state.syncedLrc]);
-  const active = activeLineIndex(lines, position);
-
-  // Auto-scroll inside the pane only — scrollIntoView would drag the whole page.
-  useEffect(() => {
-    const container = containerRef.current;
-    const el = activeRef.current;
-    if (!container || !el) return;
-    const target = el.offsetTop - container.clientHeight / 2 + el.clientHeight / 2;
-    container.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
-  }, [active]);
-
-  if (state.status === "loading") return <div className="music-np-lyrics-empty">Loading lyrics…</div>;
-  if (state.status === "empty")
-    return (
-      <div className="music-np-lyrics-empty">
-        No lyrics for this track yet.
-        <span>Lyrics come from the file's own tags, a sidecar .lrc, or LRCLIB.</span>
-      </div>
-    );
-
-  if (lines.length > 0) {
-    return (
-      <div className="music-np-lyrics music-np-lyrics--synced" ref={containerRef} data-testid="music-lyrics-synced">
-        {lines.map((line, i) => (
-          <p
-            key={`${line.time}-${i}`}
-            ref={i === active ? activeRef : null}
-            className={`music-np-line${i === active ? " music-np-line--active" : ""}`}
-          >
-            {line.text || "♪"}
-          </p>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="music-np-lyrics" ref={containerRef} data-testid="music-lyrics-plain">
-      <pre className="music-np-plain">{state.plainText || state.syncedLrc}</pre>
-    </div>
-  );
 }
 
 export default function MusicNowPlayingPage({ userData }) {
@@ -196,7 +132,7 @@ export default function MusicNowPlayingPage({ userData }) {
 
       <div className="music-np-lyricswrap">
         <h3 className="music-np-subhead">Lyrics</h3>
-        <LyricsPane trackId={current.id} position={position} />
+        <MusicLyricsPane trackId={current.id} position={position} />
       </div>
     </div>
   );

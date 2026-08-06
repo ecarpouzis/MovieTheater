@@ -20,7 +20,32 @@ export function useMusicPlayer() {
   return useContext(MusicPlayerContext);
 }
 
+// Can this track's bytes reach the <audio> element? Natively, or via the gateway's ffmpeg route
+// when the server has transcoding switched on.
+//
+// Exported and pure because it is the single gate for playback: the queue filters on it and every
+// row's disabled state derives from it. It used to be spelled out inline in four places as
+// `!t.requiresTranscode`, which silently greyed out 92 tracks (85 .wma, 6 .aif, 1 .aiff) on a
+// server that could have transcoded every one of them.
+export function trackIsPlayable(track, canTranscode) {
+  if (!track || track.missing) return false;
+  return !track.requiresTranscode || !!canTranscode;
+}
+
+// Fisher-Yates over a COPY. Exported and pure so the shuffle order can be unit-tested without a
+// player: "every track exactly once, in some order" is the property that matters, and a subtly
+// biased or lossy shuffle is invisible by eye.
+export function shuffled(tracks, rand = Math.random) {
+  const out = (tracks || []).slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 const VOLUME_KEY = "music.volume"; // arcade-style namespaced localStorage key
+const LYRICS_KEY = "music.lyrics"; // on-screen lyrics toggle, remembered across routes/reloads
 const QUEUE_KEY = "music.queue";   // { queue, index } — restored PAUSED on reload (§Phase 7)
 const QUEUE_PERSIST_MAX = 500;     // bounds what a runaway "queue everything" can put in localStorage
 
@@ -35,6 +60,16 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // navigate. Which surface DRAWS it is decided by route (see MusicMiniPlayer) — never both, since
   // two butterchurn instances on one source is a second GL context for no gain.
   const [visualizerOn, setVisualizerOn] = useState(false);
+  // Whether the gateway will transcode a non-native codec for us. Until this answers we assume it
+  // WON'T, so a .wma track never looks playable and then fails — the optimistic direction is the
+  // one that produces a dead click.
+  const [canTranscode, setCanTranscode] = useState(false);
+  // On-screen lyrics. Independent of the visualizer on purpose: with both on, the lyrics ride
+  // OVER Butterchurn; with only lyrics on they get their own panel. Two switches compose into
+  // three useful states without a third mode to keep in sync.
+  const [lyricsOn, setLyricsOn] = useState(
+    () => { try { return window.localStorage.getItem(LYRICS_KEY) === "1"; } catch { return false; } }
+  );
   const audioRef = useRef(null);
   // Guards the async Start round-trip: a fast next/next must only apply the LAST track's URL.
   const loadSeqRef = useRef(0);
@@ -47,6 +82,20 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   const suppressAutoplayRef = useRef(false);
 
   const current = index >= 0 && index < queue.length ? queue[index] : null;
+
+  // Asked once per session. A failure leaves canTranscode false, which is the same behaviour the
+  // player had before this endpoint existed.
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    MovieAPI.getMusicCapabilities()
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => { if (!cancelled && c) setCanTranscode(!!c.transcodeEnabled); })
+      .catch(() => { /* leave it false; nothing becomes newly broken */ });
+    return () => { cancelled = true; };
+  }, [enabled]);
+
+  const isPlayable = useCallback((t) => trackIsPlayable(t, canTranscode), [canTranscode]);
 
   // Load + play whenever the current track changes. The signed URL comes from Stream/Start;
   // the <audio> element then streams straight off the gateway (Range requests, native decode).
@@ -129,7 +178,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
 
   const playTracks = useCallback((tracks, startIndex = 0) => {
     if (!enabled) return;
-    const playable = (tracks || []).filter((t) => t && !t.requiresTranscode && !t.missing);
+    const playable = (tracks || []).filter(isPlayable);
     if (playable.length === 0) return;
     // startIndex referred to the ORIGINAL list; re-locate that track among the playable ones.
     const wanted = tracks[startIndex];
@@ -137,11 +186,11 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     setQueue(playable);
     setIndex(at);
     setPlaying(true);
-  }, [enabled]);
+  }, [enabled, isPlayable]);
 
   const enqueue = useCallback((tracks) => {
     if (!enabled) return;
-    const playable = (tracks || []).filter((t) => t && !t.requiresTranscode && !t.missing);
+    const playable = (tracks || []).filter(isPlayable);
     if (playable.length === 0) return;
     setQueue((q) => {
       if (q.length === 0) {
@@ -150,7 +199,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       }
       return [...q, ...playable];
     });
-  }, [enabled]);
+  }, [enabled, isPlayable]);
 
   const next = useCallback(() => {
     setIndex((i) => {
@@ -254,6 +303,29 @@ export function MusicPlayerProvider({ children, enabled = true }) {
 
   const closeVisualizer = useCallback(() => setVisualizerOn(false), []);
 
+  const toggleLyrics = useCallback(() => {
+    setLyricsOn((on) => {
+      try { window.localStorage.setItem(LYRICS_KEY, on ? "0" : "1"); } catch { /* private mode */ }
+      return !on;
+    });
+  }, []);
+
+  const closeLyrics = useCallback(() => {
+    setLyricsOn(false);
+    try { window.localStorage.setItem(LYRICS_KEY, "0"); } catch { /* private mode */ }
+  }, []);
+
+  /// Queue the same tracks in random order. Filters through isPlayable first so a shuffle can't
+  /// stall on a format this server won't stream.
+  const shuffleTracks = useCallback((tracks) => {
+    if (!enabled) return;
+    const playable = shuffled((tracks || []).filter(isPlayable));
+    if (playable.length === 0) return;
+    setQueue(playable);
+    setIndex(0);
+    setPlaying(true);
+  }, [enabled, isPlayable]);
+
   const setVolume = useCallback((v) => {
     const audio = audioRef.current;
     if (audio) audio.volume = v;
@@ -286,8 +358,8 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   });
 
   const value = useMemo(
-    () => ({ queue, index, current, playing, error, audioRef, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer }),
-    [queue, index, current, playing, error, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer]
+    () => ({ queue, index, current, playing, error, audioRef, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks }),
+    [queue, index, current, playing, error, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks]
   );
 
   return (

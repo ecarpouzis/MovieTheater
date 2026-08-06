@@ -50,6 +50,21 @@ namespace MovieTheater.Controllers
             public int TrackId { get; set; }
         }
 
+        /// <summary>What this server can actually play, so the UI stops greying out formats it
+        /// could stream.</summary>
+        /// <remarks>
+        /// The gateway has always had the ffmpeg route and Start has always chosen it for a
+        /// transcode-only track — but the client had no way to know whether this server would honour
+        /// it, so it disabled every .wma/.aif track outright (92 of them here). Rather than have the
+        /// UI guess, or click-and-hope into a 409, it asks once and decides.
+        /// </remarks>
+        [HttpGet("/API/Music/Capabilities")]
+        public IActionResult Capabilities() => Ok(new
+        {
+            streamingConfigured = MusicConfigured,
+            transcodeEnabled = config.MusicTranscodeEnabled,
+        });
+
 
         [HttpPost("/API/Music/Stream/Start")]
         public async Task<IActionResult> Start([FromBody] StartRequest request)
@@ -549,6 +564,39 @@ namespace MovieTheater.Controllers
         private bool IsCurrentUserAdmin() =>
             User.FindFirst("amr")?.Value == "pwd"
             && config.AdminUsernames.Any(a => string.Equals(a, User.FindFirst(ClaimTypes.Name)?.Value, StringComparison.OrdinalIgnoreCase));
+
+        /// <summary>Accepts one album's cover as raw image bytes and stores it on the live images mount.</summary>
+        /// <remarks>
+        /// The remote lookup can only ask the internet, and it has now exhausted itself — the albums
+        /// still bare are forum compilations, audiobooks and bootlegs that MusicBrainz has never heard
+        /// of. Many of them DO carry art, embedded in the files or sitting as cover.jpg beside them,
+        /// but that is on the music share, which this process cannot read (images mount and music
+        /// share live on different hosts — the same split that forced BackfillArt to exist).
+        ///
+        /// So the extraction happens where the files are and the bytes are posted here. This endpoint
+        /// only stores; it never fetches, and it shares MusicArtStore/MusicArtFill with the other two
+        /// paths so all three agree on sizes, naming and the dominant colour.
+        /// </remarks>
+        [HttpPost("/API/Admin/Music/UploadArt/{albumId:int}")]
+        public async Task<IActionResult> UploadArt(int albumId)
+        {
+            if (!IsCurrentUserAdmin()) return Forbid();
+            if (MusicArtStore.ResolveDir(config) == null)
+                return StatusCode(501, new { message = "No images directory configured (MusicImagesDir / MoviePostersDir)." });
+
+            var album = await movieDb.MusicAlbums.Include(a => a.Artist).FirstOrDefaultAsync(a => a.Id == albumId);
+            if (album == null) return NotFound(new { message = "No such album." });
+
+            using var ms = new MemoryStream();
+            await Request.Body.CopyToAsync(ms);
+            var bytes = ms.ToArray();
+            if (bytes.Length == 0) return BadRequest(new { message = "Empty body." });
+
+            var ok = await MusicArtFill.StoreAsync(movieDb, config, album, bytes);
+            return ok
+                ? Ok(new { albumId, stored = true, dominantColor = album.DominantColor })
+                : StatusCode(422, new { albumId, stored = false, message = "Those bytes aren't a decodable image." });
+        }
 
         [HttpPost("/API/Admin/Music/BackfillArt")]
         public async Task<IActionResult> BackfillArt([FromQuery] int limit = 25, [FromQuery] int after = 0)

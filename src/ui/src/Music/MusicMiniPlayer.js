@@ -3,6 +3,7 @@ import { useHistory, useLocation } from "react-router-dom";
 import { useMusicPlayer } from "./MusicPlayerContext";
 import MusicAlbumArt from "./MusicAlbumArt";
 import MusicVisualizer from "./MusicVisualizer";
+import MusicLyricsPane from "./MusicLyricsPane";
 import MusicPlaylistPickerModal from "../Pages/Music/MusicPlaylistPickerModal";
 import "./MusicMiniPlayer.css";
 
@@ -73,7 +74,7 @@ function MusicMiniPlayer() {
   }, [player?.current?.id]);
 
   if (!player || !player.current) return null;
-  const { current, playing, error, queue, index, visualizerOn } = player;
+  const { current, playing, error, queue, index, visualizerOn, lyricsOn } = player;
   const effectiveDuration = duration || current.durationSec || 0;
 
   return (
@@ -85,6 +86,24 @@ function MusicMiniPlayer() {
         data-testid="music-visualizer-overlay"
       >
         <MusicVisualizer player={player} onClose={player.closeVisualizer} />
+        {/* Lyrics ON TOP of Butterchurn when both switches are on — one overlay, not two
+            fighting for the same space. */}
+        {lyricsOn && (
+          <div className="music-lyrics-over-viz" data-testid="music-lyrics-over-visualizer">
+            <MusicLyricsPane trackId={current.id} position={position} variant="overlay" />
+          </div>
+        )}
+      </div>
+    )}
+    {/* Lyrics with no visualizer: their own panel above the bar. */}
+    {lyricsOn && !visualizerOn && !onNowPlaying && (
+      <div
+        className="music-lyrics-overlay"
+        style={barHeight ? { bottom: barHeight } : undefined}
+        data-testid="music-lyrics-overlay"
+      >
+        <button className="music-lyrics-overlay-close" onClick={player.closeLyrics} aria-label="Hide lyrics">✕</button>
+        <MusicLyricsPane trackId={current.id} position={position} variant="overlay" />
       </div>
     )}
     <div className="music-miniplayer" data-testid="music-miniplayer" ref={barRef}>
@@ -167,6 +186,15 @@ function MusicMiniPlayer() {
         >
           <span className="music-miniplayer-viz-icon" aria-hidden="true">◉</span>
           <span className="music-miniplayer-viz-label">{visualizerOn ? "Hide" : "Visualizer"}</span>
+        </button>
+        <button
+          className={`music-miniplayer-viz${lyricsOn ? " music-miniplayer-viz--on" : ""}`}
+          onClick={player.toggleLyrics}
+          title={lyricsOn ? "Hide lyrics" : "Show lyrics while this plays"}
+          aria-pressed={lyricsOn}
+        >
+          <span className="music-miniplayer-viz-icon" aria-hidden="true">♪</span>
+          <span className="music-miniplayer-viz-label">{lyricsOn ? "Hide" : "Lyrics"}</span>
         </button>
         <button
           className={`music-miniplayer-btn${queueOpen ? " music-miniplayer-btn--active" : ""}`}
