@@ -54,13 +54,60 @@ namespace MovieTheater.Arcade
         private readonly IServiceScopeFactory scopeFactory;
         private readonly ArcadeRoomService rooms;
         private readonly ILogger<ArcadeRoomReaperService> logger;
+        private readonly MovieTheater.Services.MovieTheaterConfiguration config;
+
+        /// <summary>One client for the console-reattach nudge (below). Short timeout: this is a courtesy
+        /// call on a background tick, and Ziggy's watchdog does the same job 30 s later regardless.</summary>
+        private static readonly System.Net.Http.HttpClient gatewayClient = new() { Timeout = TimeSpan.FromSeconds(10) };
+
+        /// <summary>Did the previous tick see any live room? The reattach nudge fires on the EDGE
+        /// (some → none), not on every idle tick — an idle arcade must not poke Ziggy every 15 s.</summary>
+        private bool sawLiveRooms;
 
         public ArcadeRoomReaperService(
-            IServiceScopeFactory scopeFactory, ArcadeRoomService rooms, ILogger<ArcadeRoomReaperService> logger)
+            IServiceScopeFactory scopeFactory, ArcadeRoomService rooms, ILogger<ArcadeRoomReaperService> logger,
+            MovieTheater.Services.MovieTheaterConfiguration config)
         {
             this.scopeFactory = scopeFactory;
             this.rooms = rooms;
             this.logger = logger;
+            this.config = config;
+        }
+
+        /// <summary>
+        /// The arcade just went idle while Ziggy is reporting a degraded desktop session (a remote desktop
+        /// left open / closed without the console coming back). That is the exact moment the recovery
+        /// becomes possible — it is deliberately never run while a room is live — so ask for it NOW instead
+        /// of waiting on the host watchdog's next 30 s cycle. See <see cref="ArcadeHostSession"/>.
+        ///
+        /// <para>Fire-and-forget and deliberately un-retried: the gateway re-checks the coordinator (the
+        /// authority on whether anything is really playing) and can decline, the reattach script refuses to
+        /// move an ACTIVE session, and the watchdog re-attempts on its own schedule. Nothing here is the
+        /// only chance to get it right, so nothing here needs to be robust.</para>
+        /// </summary>
+        private void NudgeConsoleReattach()
+        {
+            var baseUrl = config.ArcadeGatewayBaseUrl;
+            if (string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(config.ArcadeTokenSecret)) return;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var req = new System.Net.Http.HttpRequestMessage(
+                        System.Net.Http.HttpMethod.Post, baseUrl.TrimEnd('/') + "/internal/reattach-console");
+                    req.Headers.Add("X-Arcade-Internal-Secret", config.ArcadeTokenSecret);
+                    using var resp = await gatewayClient.SendAsync(req);
+                    var body = await resp.Content.ReadAsStringAsync();
+                    logger.LogInformation(
+                        "Arcade host is degraded and the last room just ended — asked Ziggy to reattach its console: {Status} {Body}",
+                        (int)resp.StatusCode, body.Trim());
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Console-reattach nudge failed; Ziggy's watchdog will retry on its own cycle.");
+                }
+            });
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -99,6 +146,16 @@ namespace MovieTheater.Arcade
                         if (sessions.Count > 0)
                             await db.SaveChangesAsync(stoppingToken);
                     }
+
+                    // The arcade just went idle. If the host is sitting degraded (someone's remote desktop
+                    // is holding it off its own screen), this is the first moment the fix is allowed to
+                    // run — so ask for it on the EDGE rather than leaving players choppy until Ziggy's
+                    // watchdog comes round. Cheap and edge-triggered: an arcade that is idle all day
+                    // sends nothing.
+                    var liveNow = live.Count > 0;
+                    if (sawLiveRooms && !liveNow && ArcadeHostSession.Current.Degraded)
+                        NudgeConsoleReattach();
+                    sawLiveRooms = liveNow;
 
                     // Pass 2 — corpses no registry remembers. LastSeenUtc is null for rows written before
                     // the column existed (and for a room abandoned before its first beat), so CreatedUtc is

@@ -2253,6 +2253,71 @@ namespace MovieTheater.Controllers
             public bool StockName { get; set; }
         }
 
+        /// <summary>Ziggy's arcade watchdog (check I) pushes the host's desktop-session state here — is the
+        /// session the emulators render in attached to the physical console, or has someone left a remote
+        /// desktop open (or closed one without the console coming back)? Both cost roughly half the frame
+        /// rate with no error anywhere, so the lobby warns players instead of letting them blame their own
+        /// connection. See <see cref="MovieTheater.Arcade.ArcadeHostSession"/>. Read back by
+        /// <c>GET /API/Arcade/HostStatus</c>.
+        /// Posted on every state change plus a ~5-minute heartbeat: the heartbeat is what lets the site
+        /// distinguish "the console is fine" from "nobody has told us anything in an hour".</summary>
+        // [AllowAnonymous] for the same reason as PatchedArtifactAlert: the caller is Ziggy's watchdog,
+        // not a logged-in browser, so the class-wide StreamingUser policy would reject it before the
+        // secret check ran.
+        [AllowAnonymous]
+        [HttpPost("/API/Arcade/Internal/HostSessionAlert")]
+        public IActionResult HostSessionAlert([FromBody] HostSessionAlertRequest req)
+        {
+            if (!IsInternalCallerAuthorized()) return Unauthorized();
+            if (req == null) return BadRequest();
+
+            MovieTheater.Arcade.ArcadeHostSession.Record(req.Degraded, req.Kind, req.Detail, req.SessionId, req.Recovering);
+            return NoContent();
+        }
+
+        public sealed class HostSessionAlertRequest
+        {
+            /// <summary>True when the arcade's session is NOT on the physical console (remote attached, or
+            /// detached and not yet reattached) — i.e. capture/render is running at the reduced rate.</summary>
+            public bool Degraded { get; set; }
+            /// <summary>console | remote | disconnected | unknown — what the watchdog actually observed.</summary>
+            public string? Kind { get; set; }
+            /// <summary>The watchdog's own one-line reading (session id, state, WinStation name).</summary>
+            public string? Detail { get; set; }
+            public int? SessionId { get; set; }
+            /// <summary>The watchdog has triggered the "MovieTheater - Reattach Console" recovery and is
+            /// waiting to see it land. Lets the banner say "restoring…" instead of just "degraded".</summary>
+            public bool Recovering { get; set; }
+        }
+
+        /// <summary>The arcade host's session health for the lobby/room banner: is a remote desktop session
+        /// holding the box off its physical console right now, is the recovery running, or did it just come
+        /// back? Cheap (in-memory, no DB) so the lobby can poll it alongside everything else.</summary>
+        [HttpGet("/API/Arcade/HostStatus")]
+        public IActionResult HostStatus()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var s = MovieTheater.Arcade.ArcadeHostSession.Current;
+            return Json(new
+            {
+                degraded = s.Degraded,
+                kind = s.Kind,
+                // The raw reading is for admins/debugging; the banner writes its own copy from `kind`.
+                detail = s.Detail,
+                sessionId = s.SessionId,
+                recovering = s.Recovering,
+                recentlyRecovered = s.RecentlyRecovered,
+                degradedSinceUtc = s.DegradedSinceUtc,
+                recoveredUtc = s.RecoveredUtc,
+                // `stale` never rides along with degraded=true (the holder suppresses it) — it is here so a
+                // future admin view can say "we have lost contact with the watchdog" honestly.
+                reported = s.Reported,
+                stale = s.Stale,
+            });
+        }
+
         // Shared arcade secret gate for the server-to-server callbacks (same header SaveHarvested checks).
         private bool IsInternalCallerAuthorized()
         {

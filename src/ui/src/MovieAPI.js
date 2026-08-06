@@ -945,6 +945,13 @@ function getAllArcadeSaves(params = {}) {
   return fetch("/API/Arcade/Saves/Mine" + arcadeQuery(params));
 }
 
+// Arcade host health: is Ziggy's desktop session on its physical console, or is a remote desktop
+// holding it off (which halves capture/render rate with no error anywhere)? In-memory server-side,
+// so this is cheap enough to poll from the lobby and from inside a room.
+function getArcadeHostStatus() {
+  return fetch("/API/Arcade/HostStatus").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+}
+
 // ── Heavy lane (Moonlight-streamed titles, docs/arcade-heavy-lane-plan.md §7) ────────────────────
 // Lane status: who holds the one heavy session + per-app staging state for the heavy cards.
 function getArcadeHeavyStatus() {
@@ -1360,6 +1367,7 @@ const MovieAPI = {
   getArcadeCheats,
   getArcadeGameConfig,
   saveArcadeGameConfig,
+  getArcadeHostStatus,
   getArcadeHeavyStatus,
   stageArcadeHeavy,
   pairArcadeHeavy,

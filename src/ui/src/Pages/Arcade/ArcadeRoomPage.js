@@ -8,6 +8,7 @@ import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, Q
 import { lobbyPath } from "./arcadeLobbyState";
 import { useWakeLock } from "../../useWakeLock";
 import AchievementToaster from "./AchievementToast";
+import ArcadeHostBanner from "./ArcadeHostBanner";
 import "./ArcadeModal.css";
 import "./ArcadeRoomPage.css";
 
@@ -1081,6 +1082,12 @@ export default function ArcadeRoomPage() {
           <Button onClick={copyInvite}>Copy invite link</Button>
         </Space>
       </div>
+
+      {/* Host health, right above the picture: when a remote desktop is holding the arcade PC off its
+          own screen the stream really is choppy, and the player deserves the reason here — this is
+          where the symptom is felt, and the lobby banner is behind them by now. Same component, same
+          poll, and it flips to "restored" when the console comes back mid-session. */}
+      <ArcadeHostBanner />
 
       {/* Per-system DISPLAY aspect (what the console showed on a TV) — the emulated framebuffer is often
           non-square-pixel (e.g. PSX 512x240) so we stretch it to the correct aspect with object-fit:fill,

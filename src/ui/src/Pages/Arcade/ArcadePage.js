@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { Button, Empty, Modal, Select, Spin, Typography, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
+import ArcadeHostBanner from "./ArcadeHostBanner";
 import GameCard from "./GameCard";
 import GameModal from "./GameModal";
 import HeavyGameModal from "./HeavyGameModal";
@@ -582,6 +583,11 @@ export default function ArcadePage({ userData }) {
             </div>
           </div>
         </header>
+
+        {/* Host health, above everything you can click: if a remote desktop is holding the arcade PC
+            off its own screen, every room you start from here will be choppy, and that is worth
+            knowing BEFORE picking a game rather than after blaming your own wifi. */}
+        <ArcadeHostBanner />
 
         <ConsoleCarousel
           systems={facets?.systems}

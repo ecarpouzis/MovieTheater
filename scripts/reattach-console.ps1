@@ -24,7 +24,10 @@ function Log($m) { $ts = (Get-Date -Format o); try { Add-Content -Path $log -Val
 Add-Type @"
 using System; using System.Runtime.InteropServices;
 public static class WTS {
-  [DllImport("wtsapi32.dll", SetLastError=true)] public static extern int WTSEnumerateSessions(IntPtr h,int reserved,int ver,out IntPtr ppSessionInfo,out int count);
+  // CharSet.Unicode picks WTSEnumerateSessionsW to match the LPWStr field below. Without it the ANSI
+  // entry point is called and every pWinStationName logs as mojibake (the ints are unaffected, which
+  // is why this went unnoticed: the tscon decision reads State, not the name).
+  [DllImport("wtsapi32.dll", SetLastError=true, CharSet=CharSet.Unicode)] public static extern int WTSEnumerateSessions(IntPtr h,int reserved,int ver,out IntPtr ppSessionInfo,out int count);
   [DllImport("wtsapi32.dll")] public static extern void WTSFreeMemory(IntPtr p);
   [StructLayout(LayoutKind.Sequential)] public struct WTS_SESSION_INFO { public int SessionId; [MarshalAs(UnmanagedType.LPWStr)] public string pWinStationName; public int State; }
 }
@@ -52,7 +55,13 @@ if (Test-Path $sentinel) {
   if ($raw -match '^\d+$') { $target = [int]$raw; Log "target from sentinel: session $target" }
 }
 if ($null -eq $target) {
-  $disc = @($sessions | Where-Object { $_.State -eq 4 })
+  # Session 0 (the "Services" WinStation) is ALWAYS state 4 on Windows and can never be tscon'd, so it
+  # must not count as a candidate. Including it made auto-detect useless on this box in both directions:
+  # with no other disconnected session it picked SESSION 0 and ran tscon on it, and when the arcade's
+  # own session went disconnected there were suddenly TWO and the script refused ("need the worker
+  # sentinel") exactly when the recovery was wanted. Found 2026-08-06 while wiring the site's
+  # remote-desktop warning, which triggers this script from two new places.
+  $disc = @($sessions | Where-Object { $_.State -eq 4 -and $_.SessionId -ne 0 -and $_.pWinStationName -ne 'Services' })
   if ($disc.Count -eq 1) { $target = $disc[0].SessionId; Log "auto-detected single disconnected session $target" }
   elseif ($disc.Count -gt 1) { Log "REFUSING: multiple disconnected sessions ($(($disc | ForEach-Object SessionId) -join ',')); need the worker sentinel"; exit 2 }
 }

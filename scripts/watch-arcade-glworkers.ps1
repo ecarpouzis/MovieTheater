@@ -86,6 +86,23 @@
        Response: FORCE kill, no graceful wait -- the sentinel watcher died with the runtime, so the
        .stop file cannot be honoured and the 60 s wait is pure downtime.
 
+    Two more checks report rather than recycle -- both push to the SITE so the signal reaches a human
+    instead of only this log (PostSiteAlert; every post asserts a real 204, because an undeployed
+    endpoint answers 200 with the SPA):
+
+    H) PATCHED-ARTIFACT DRIFT (every 30 min): verify-patched-artifacts.ps1 -> an admin popup when one of
+       our hand-built/patched binaries has been reverted to stock. The report doubles as a heartbeat.
+
+    I) HOST SESSION (every cycle, posted on change + a 5-min heartbeat): is the session the emulators
+       render in attached to the PHYSICAL CONSOLE? An attached RDP client swaps the physical displays
+       for the RDP display (~32 Hz); a session left DISCONNECTED after someone closes their remote
+       desktop keeps a stalled DWM at a similar rate. Both halve capture/render throughput with NO
+       error anywhere, so players read it as a bad connection -- the site now warns them instead.
+       Response: when the session is DISCONNECTED and the pool is idle, trigger the existing
+       "MovieTheater - Reattach Console" recovery (tscon /dest:console) and report the result, so the
+       warning clears itself once the console is back. Never fires while a room is live (the capture
+       worker already reattaches at room start) and never moves an ACTIVE session.
+
     Registered as scheduled task "MovieTheater - Arcade GL Worker Watchdog" (logon trigger,
     same pattern as the worker tasks). Safe to run interactively too.
 #>
@@ -504,12 +521,94 @@ function HuskScan {
     }
 }
 
+# =================================================================================================
+# SITE PUSH CONFIG (checks H and I). Both alerts travel the same server-to-server channel the
+# gateway already owns: the SPA origin + the shared arcade secret, read from the gateway's own
+# production config so there is ONE place those live on this box.
+# =================================================================================================
+$script:siteCfg = $null
+function SiteAlertCfg {
+    if ($null -ne $script:siteCfg) { return $script:siteCfg }
+    $script:siteCfg = @{ Origin = $null; Secret = $null }
+    $gwCfg = 'F:\Work\MovieTheater\src\MovieTheater.ArcadeGateway\appsettings.Production.json'
+    if (Test-Path $gwCfg) {
+        try {
+            $g = Get-Content $gwCfg -Raw | ConvertFrom-Json
+            if ($g.SiteOrigin -and $g.ArcadeTokenSecret) {
+                $script:siteCfg.Origin = $g.SiteOrigin.TrimEnd('/')
+                $script:siteCfg.Secret = $g.ArcadeTokenSecret
+            }
+        } catch { }
+    }
+    if (-not $script:siteCfg.Origin) { Log "site push: no SiteOrigin/ArcadeTokenSecret in gateway config -- site alerts DISABLED (log-only)" }
+    return $script:siteCfg
+}
+
+# POST a JSON body to a site Internal endpoint. Returns $true only on a REAL 204.
+# ⚠ MUST assert 204: an UNDEPLOYED endpoint returns HTTP 200 with the SPA's index.html (YARP serves
+# the React app for unknown routes), so a plain "no exception" check passes while the alert is
+# silently swallowed. Verified live against prod. Shared by checks H and I.
+function PostSiteAlert([string]$path, [string]$bodyJson, [string]$who) {
+    $cfg = SiteAlertCfg
+    if (-not $cfg.Origin) { return $false }
+    try {
+        $resp = Invoke-WebRequest -Method Post -Uri ($cfg.Origin + $path) `
+            -Headers @{ "X-Arcade-Internal-Secret" = $cfg.Secret } `
+            -Body $bodyJson -ContentType 'application/json' -TimeoutSec 15 -UseBasicParsing
+        if ($resp.StatusCode -ne 204) {
+            Log ("{0}: site alert POST returned HTTP {1} (expected 204) -- endpoint probably NOT DEPLOYED and the SPA fallback answered; this alert is NOT live" -f $who, $resp.StatusCode)
+            return $false
+        }
+        return $true
+    } catch {
+        Log ("{0}: site alert POST failed ({1}) -- log-only this cycle" -f $who, $_.Exception.Message)
+        return $false
+    }
+}
+
+# =================================================================================================
+# WTS SESSION STATE (check I). Same enumeration reattach-console.ps1 uses -- deliberately, so the
+# thing that WARNS and the thing that RECOVERS agree about what they are looking at.
+# WTS_CONNECTSTATE_CLASS: 0 = Active, 4 = Disconnected.
+# =================================================================================================
+#
+# ⚠ CharSet.Unicode IS LOAD-BEARING, and its absence looks like nothing. Without it the DllImport
+# resolves to WTSEnumerateSessionsA, which returns ANSI strings, while the struct field is marshalled
+# as LPWStr -- so every WinStation name comes back as mojibake ("Console" reads as 潃獮汯e). The ints
+# survive, so a caller that only reads SessionId/State works fine and nothing ever errors. This check
+# compares the name against 'Console', so an ANSI/Unicode mismatch would classify the console itself
+# as a remote desktop and warn every player, forever. Verified live on Ziggy 2026-08-06.
+Add-Type @"
+using System; using System.Runtime.InteropServices;
+public static class WTSW {
+  [DllImport("wtsapi32.dll", SetLastError=true, CharSet=CharSet.Unicode)] public static extern int WTSEnumerateSessions(IntPtr h,int reserved,int ver,out IntPtr ppSessionInfo,out int count);
+  [DllImport("wtsapi32.dll")] public static extern void WTSFreeMemory(IntPtr p);
+  [StructLayout(LayoutKind.Sequential)] public struct WTS_SESSION_INFO { public int SessionId; [MarshalAs(UnmanagedType.LPWStr)] public string pWinStationName; public int State; }
+}
+"@
+function WtsSessions {
+    $pp = [IntPtr]::Zero; $cnt = 0
+    if ([WTSW]::WTSEnumerateSessions([IntPtr]::Zero, 0, 1, [ref]$pp, [ref]$cnt) -eq 0) { return $null }
+    $sz = [Runtime.InteropServices.Marshal]::SizeOf([type][WTSW+WTS_SESSION_INFO]); $list = @()
+    for ($i = 0; $i -lt $cnt; $i++) {
+        $cur = [IntPtr]($pp.ToInt64() + $i * $sz)
+        $list += [Runtime.InteropServices.Marshal]::PtrToStructure($cur, [type][WTSW+WTS_SESSION_INFO])
+    }
+    [WTSW]::WTSFreeMemory($pp)
+    return $list
+}
+
 Log "watchdog v2 started (coordinator port: $CoordinatorPort, interval: ${IntervalSec}s, worker ports: $($WorkerPorts -join ','), wedge stale: ${WedgeStaleSec}s, husk advise at: $HuskAdviseThreshold)"
 $strikes = @{}       # PID -> consecutive no-coordinator-connection strikes (check A)
 $wedgeStrikes = @{}  # PID -> consecutive busy-but-silent strikes (check C)
 $absentStrikes = @{} # port -> consecutive "no listener AND no runner" strikes (check F)
 $lastActedTimeout = [datetime]::MinValue  # newest coordinator work-timeout already acted on (check D)
 $script:lastArtifactCheck = $null         # last patched-artifact drift scan (check H, every 30 min)
+$script:lastSessionKind = $null           # last host-session reading posted to the site (check I)
+$script:lastSessionPost = [datetime]::MinValue   # last successful host-session post (change or heartbeat)
+$script:lastReattachRun = [datetime]::MinValue   # last time we triggered the console-reattach recovery
+$script:lastRoomsLive = -1                # previous cycle's live-room count (-1 = could not ask); check I edge
+$script:lastUnknownDetail = $null         # last "cannot read the arcade's session" reason logged (check I)
 $script:useFastNet = CalibrateNetTable $CoordinatorPort   # netstat vs Get-Net*: proven, or not used
 
 while ($true) {
@@ -530,7 +629,10 @@ while ($true) {
                     Log ("worker PID {0}: StartTime unreadable -- excluded from this cycle's checks" -f $proc.Id)
                     continue
                 }
-                [pscustomobject]@{ ProcessId = $proc.Id; CreationDate = $started }
+                # SessionId rides along for check I: the emulators render into a real interactive
+                # session, and WHICH session that is, is the only honest way to ask "is this box on
+                # its physical console right now" (see check I).
+                [pscustomobject]@{ ProcessId = $proc.Id; CreationDate = $started; SessionId = $proc.SessionId }
             }
         )
         $age = @{}
@@ -859,46 +961,141 @@ while ($true) {
                     # PUSH TO THE SITE so this raises a POPUP for admins instead of only landing in
                     # this log. Posted EVERY cycle, healthy or not: the report doubles as a heartbeat,
                     # and the site escalates on staleness -- a watchdog that has gone silent must not
-                    # look like a healthy one. Best-effort: a site outage must never break the watchdog.
-                    try {
-                        if (-not $script:artifactAlertCfg) {
-                            $script:artifactAlertCfg = @{ Url = $null; Secret = $null }
-                            $gwCfg = 'F:\Work\MovieTheater\src\MovieTheater.ArcadeGateway\appsettings.Production.json'
-                            if (Test-Path $gwCfg) {
-                                $g = Get-Content $gwCfg -Raw | ConvertFrom-Json
-                                if ($g.SiteOrigin -and $g.ArcadeTokenSecret) {
-                                    $script:artifactAlertCfg.Url = ($g.SiteOrigin.TrimEnd('/') + '/API/Arcade/Internal/PatchedArtifactAlert')
-                                    $script:artifactAlertCfg.Secret = $g.ArcadeTokenSecret
-                                }
-                            }
-                            if (-not $script:artifactAlertCfg.Url) { Log "check H: no SiteOrigin/ArcadeTokenSecret in gateway config -- site popups DISABLED (log-only)" }
-                        }
-                        if ($script:artifactAlertCfg.Url) {
-                            $body = @{ Ok = [bool]$res.ok; RawJson = $raw.Trim(); Findings = @(
-                                foreach ($f in $res.findings) {
-                                    @{ Id = $f.id; Status = $f.status; Path = $f.path; Detail = $f.detail; StockName = [bool]$f.stockName }
-                                }) } | ConvertTo-Json -Depth 5 -Compress
-                            # ⚠ MUST assert 204, not just "no exception". An UNDEPLOYED endpoint returns
-                            # HTTP 200 with the SPA's index.html (YARP serves the React app for unknown
-                            # routes), so Invoke-RestMethod succeeds and the alert is silently swallowed —
-                            # verified live against prod before the site was deployed. A delivery channel
-                            # for a silent-failure alarm must not itself fail silently.
-                            $postResp = Invoke-WebRequest -Method Post -Uri $script:artifactAlertCfg.Url `
-                                -Headers @{ "X-Arcade-Internal-Secret" = $script:artifactAlertCfg.Secret } `
-                                -Body $body -ContentType 'application/json' -TimeoutSec 15 -UseBasicParsing
-                            if ($postResp.StatusCode -ne 204) {
-                                Log ("check H: site alert POST returned HTTP {0} (expected 204) -- endpoint probably NOT DEPLOYED and the SPA fallback answered; admin popups are NOT live" -f $postResp.StatusCode)
-                            }
-                        }
-                    } catch {
-                        Log ("check H: site alert POST failed ({0}) -- findings above are log-only this cycle" -f $_.Exception.Message)
-                    }
+                    # look like a healthy one. Best-effort (PostSiteAlert swallows and logs): a site
+                    # outage must never break the watchdog.
+                    $body = @{ Ok = [bool]$res.ok; RawJson = $raw.Trim(); Findings = @(
+                        foreach ($f in $res.findings) {
+                            @{ Id = $f.id; Status = $f.status; Path = $f.path; Detail = $f.detail; StockName = [bool]$f.stockName }
+                        }) } | ConvertTo-Json -Depth 5 -Compress
+                    PostSiteAlert '/API/Arcade/Internal/PatchedArtifactAlert' $body 'check H' | Out-Null
                     } # end if ($usable) -- an unusable verifier run posts NOTHING (see above)
                 } else {
                     Log "check H skipped: verify-patched-artifacts.ps1 not found next to the watchdog"
                 }
             } catch {
                 Log ("check H error (artifact verify): {0}" -f $_.Exception.Message)
+            }
+        }
+
+        # -- I) HOST SESSION: a remote desktop left open (or closed without the console coming back) --
+        # The emulators render into a REAL interactive Windows session. Attach an RDP client to it and
+        # the physical displays are replaced by the RDP display (~32 Hz); close that client without
+        # logging off and the session sits DISCONNECTED with a stalled DWM at a similar rate. Either way
+        # window capture and everything downstream of it run at roughly half rate, with NO error
+        # anywhere -- to a player it is indistinguishable from a bad connection, which is exactly why
+        # this is worth telling them. The recovery (tscon /dest:console) already existed; nobody was
+        # reporting the state or driving the recovery outside of a room start.
+        #
+        # WHICH session is "the arcade's"? The workers' own SessionId -- not a guess, not the console
+        # session id, not "the single interactive session". If the workers are down we do not pretend
+        # to know: that is kind=unknown, which is never posted at all (see the push block below).
+        $sessions = WtsSessions
+        if ($null -eq $sessions) {
+            Log "check I: WTSEnumerateSessions failed -- host-session state not reported this cycle"
+        } else {
+            $arcadeSids = @($workers | ForEach-Object { [int]$_.SessionId } | Where-Object { $_ -gt 0 } | Sort-Object -Unique)
+            $target = $null
+            if ($arcadeSids.Count -gt 0) {
+                # More than one only if the pool is split across sessions (it is not, by design): take
+                # the lowest so the reading is stable rather than flapping between them.
+                $target = $sessions | Where-Object { $_.SessionId -eq $arcadeSids[0] } | Select-Object -First 1
+            }
+
+            $kind = 'unknown'; $degraded = $false
+            $detail = 'no arcade worker running -- cannot tell which session the arcade is in'
+            $sid = $null
+            if ($target) {
+                $sid = [int]$target.SessionId
+                $ws = [string]$target.pWinStationName
+                switch ([int]$target.State) {
+                    0 {
+                        if ($ws -eq 'Console') {
+                            $kind = 'console'
+                            $detail = "session $sid is ACTIVE on the physical console"
+                        } else {
+                            $kind = 'remote'; $degraded = $true
+                            $detail = "session $sid is being driven over remote desktop ($ws) -- the physical displays are replaced by the RDP display (~32 Hz)"
+                        }
+                    }
+                    4 {
+                        $kind = 'disconnected'; $degraded = $true
+                        $detail = "session $sid is DISCONNECTED ($ws) -- a remote desktop was closed and the console has not been restored; DWM is stalled"
+                    }
+                    default {
+                        # Connected/Shadow/Idle/Listen and friends: transitional. Do not warn on a state
+                        # we cannot interpret -- report it, but not as degraded.
+                        $detail = "session $sid is in WTS state $([int]$target.State) ($ws) -- not interpreted"
+                    }
+                }
+            }
+
+            # RECOVERY. A disconnected session is the case we can safely fix ourselves: tscon it back to
+            # the console. Two guards, both deliberate:
+            #   * only when NO room is live (the coordinator's own view, same $status check C uses). The
+            #     capture worker already reattaches at room START; moving a session out from under a
+            #     RUNNING room is unproven, and the banner covers the wait. If /status was unavailable
+            #     we do not know, and "I could not look" is never "nothing is playing".
+            #   * at most once every 5 minutes, so a tscon that cannot succeed (e.g. several disconnected
+            #     sessions, which reattach-console.ps1 refuses) becomes one line per 5 min, not a loop.
+            # reattach-console.ps1 has its own hard guard: it NEVER moves an Active session.
+            # -1 = "could not ask" (pre-0033 coordinator, or /status down). Tracked every cycle, not just
+            # while disconnected, so the just-went-idle EDGE below is always available.
+            $roomsLive = if ($null -ne $status) { @($status | Where-Object { $_.room }).Count } else { -1 }
+            $roomsJustFreed = ($script:lastRoomsLive -gt 0 -and $roomsLive -eq 0)
+            $script:lastRoomsLive = $roomsLive
+
+            $recovering = ((Get-Date) - $script:lastReattachRun).TotalMinutes -lt 2
+            if ($kind -eq 'disconnected') {
+                if ($roomsLive -lt 0) {
+                    Log "check I: session $sid disconnected, but the coordinator's /status is unavailable -- NOT reattaching (cannot prove nothing is playing)"
+                } elseif ($roomsLive -gt 0) {
+                    Log ("check I: session {0} disconnected, but {1} room(s) live -- deferring the console reattach until the pool is idle (the worker also reattaches at the next room start)" -f $sid, $roomsLive)
+                } elseif ($roomsJustFreed -or ((Get-Date) - $script:lastReattachRun).TotalMinutes -ge 5) {
+                    # The 5-minute floor exists so a tscon that CANNOT succeed becomes one line per 5 min
+                    # instead of a loop. A room ending is not that case: it is the block clearing, and the
+                    # whole point is to fix the picture the moment it becomes possible -- so the edge
+                    # bypasses the floor. (The site nudges the gateway on the same edge, usually first;
+                    # this is the backstop for when the site can't reach Ziggy or never saw the room.)
+                    $script:lastReattachRun = Get-Date
+                    $recovering = $true
+                    Log ("check I: session {0} DISCONNECTED and the pool is idle{1} -- triggering 'MovieTheater - Reattach Console'" -f $sid, $(if ($roomsJustFreed) { ' (last room just ended)' } else { '' }))
+                    try { & schtasks /Run /TN "MovieTheater - Reattach Console" 2>&1 | ForEach-Object { Log ("check I: schtasks: {0}" -f $_) } }
+                    catch { Log ("check I: could not trigger the reattach task ({0})" -f $_.Exception.Message) }
+                }
+            }
+
+            # PUSH TO THE SITE. On every CHANGE (so the lobby banner appears/clears within a cycle) plus
+            # a 5-minute heartbeat (so the site can tell "the console is fine" from "nobody has told us
+            # anything in an hour" -- it fails to silence past ArcadeHostSession.StaleAfter). A recovery
+            # is a change like any other: console-after-degraded is what flips the banner to "restored".
+            #
+            # 'unknown' is NEVER posted. It means we could not identify the arcade's session -- no worker
+            # was running (a recycle takes ~4 s and a cycle can land inside one), or the session is in a
+            # transitional WTS state. Posting it would report "not degraded", clearing a live warning and
+            # re-raising it a cycle later; a banner that blinks is a banner nobody trusts. The last real
+            # reading stands, and if the silence lasts, the site's own staleness window retires it.
+            $stateKey = "$kind|$recovering"
+            $changed = ($stateKey -ne $script:lastSessionKind)
+            if ($kind -eq 'unknown') {
+                # Logged when the reason changes, not every 30 s -- a worker pool that stays down would
+                # otherwise fill the log with the same line.
+                if ($detail -ne $script:lastUnknownDetail) {
+                    $script:lastUnknownDetail = $detail
+                    Log ("check I: {0} -- leaving the last reading standing (not posting 'unknown')" -f $detail)
+                }
+            }
+            elseif ($changed -or ((Get-Date) - $script:lastSessionPost).TotalMinutes -ge 5) {
+                if ($changed -and $null -ne $script:lastSessionKind) {
+                    Log ("check I: host session {0} -> {1} ({2})" -f ($script:lastSessionKind -split '\|')[0], $kind, $detail)
+                }
+                $body = @{ Degraded = [bool]$degraded; Kind = $kind; Detail = $detail; SessionId = $sid; Recovering = [bool]$recovering } |
+                    ConvertTo-Json -Depth 3 -Compress
+                if (PostSiteAlert '/API/Arcade/Internal/HostSessionAlert' $body 'check I') {
+                    $script:lastSessionPost = Get-Date
+                    $script:lastSessionKind = $stateKey
+                }
+                # A failed post deliberately leaves lastSessionKind alone: the next cycle retries the
+                # change instead of believing the site already knows about it.
             }
         }
 

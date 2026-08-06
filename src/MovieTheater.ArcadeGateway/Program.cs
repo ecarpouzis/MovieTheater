@@ -730,6 +730,99 @@ app.MapPost("/internal/save-import", async (HttpContext ctx) =>
     return Results.Json(new { ok = true, slot = meta.SlotId, kind = meta.Kind, sizeBytes = meta.SizeBytes });
 });
 
+// ── Console reattach: the EVENT-DRIVEN half of the remote-desktop warning ────────────────────────
+// The arcade renders into a real interactive Windows session. With a remote desktop attached (or
+// left DISCONNECTED after someone closes theirs) that session runs at ~32 Hz instead of 60, so every
+// room is choppy for reasons no log reports. The recovery is `tscon <id> /dest:console`, which needs
+// SeTcbPrivilege — hence the elevated on-demand task rather than a call from here.
+//
+// WHO CALLS THIS: the SITE, the moment its last live room ends while the host is reported degraded.
+// The alternative was waiting for Ziggy's watchdog to notice on its next 30 s cycle, which is a long
+// time to sit choppy after the thing blocking the fix (a live room) has gone away. The watchdog is
+// still the backstop — this only makes the common case immediate.
+//
+// WHY THE COORDINATOR IS RE-CHECKED HERE: the site's room list is its own in-memory bookkeeping, and
+// the emulator is the coordinator's. They disagree briefly at exactly the moment this fires (the
+// site's room ends before the worker finishes tearing down), and moving a session out from under a
+// LIVE room is unproven. The coordinator is localhost to us and is the authority, so the decision is
+// made on this side of the wire, not by the caller. "I could not ask" is never "nothing is playing".
+{
+    var reattachGate = new SemaphoreSlim(1, 1);
+    var lastReattachUtc = DateTime.MinValue;
+    // Own client: short timeout, localhost only. The coordinator answering slowly must not hold the
+    // site's call open — a missed reattach costs 30 s (the watchdog picks it up), a hung one costs more.
+    var coordClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+
+    app.MapPost("/internal/reattach-console", async (HttpContext ctx) =>
+    {
+        if (!InternalAuth(ctx)) return Results.Unauthorized();
+
+        await reattachGate.WaitAsync(ctx.RequestAborted);
+        try
+        {
+            // A floor, not a policy: several rooms can end within a second of each other, and a tscon
+            // that cannot succeed (reattach-console.ps1 refuses when several sessions are disconnected)
+            // must not be re-run per event. The watchdog retries on its own schedule regardless.
+            var since = DateTime.UtcNow - lastReattachUtc;
+            if (since < TimeSpan.FromSeconds(60))
+                return Results.Json(new { ran = false, reason = "throttled", secondsAgo = (int)since.TotalSeconds });
+
+            // Authority check: any worker holding a room means something is still playing.
+            try
+            {
+                using var sresp = await coordClient.GetAsync(coordinatorBase + "/status", ctx.RequestAborted);
+                if (!sresp.IsSuccessStatusCode)
+                    return Results.Json(new { ran = false, reason = "coordinator-status-unavailable" });
+                var doc = await sresp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>(ctx.RequestAborted);
+                int busy = 0;
+                if (doc.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    foreach (var w in doc.EnumerateArray())
+                        if (w.TryGetProperty("room", out var room) &&
+                            room.ValueKind == System.Text.Json.JsonValueKind.String &&
+                            !string.IsNullOrEmpty(room.GetString())) busy++;
+                if (busy > 0)
+                    return Results.Json(new { ran = false, reason = "rooms-live", rooms = busy });
+            }
+            catch (Exception ex)
+            {
+                app.Logger.LogWarning(ex, "reattach-console: could not read the coordinator's status — NOT reattaching");
+                return Results.Json(new { ran = false, reason = "coordinator-status-unavailable" });
+            }
+
+            // The task itself has the last word: reattach-console.ps1 never moves an ACTIVE session,
+            // so a run while somebody is genuinely attached is a logged no-op, not a kick.
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo("schtasks.exe")
+                {
+                    Arguments = "/Run /TN \"MovieTheater - Reattach Console\"",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                };
+                using var proc = System.Diagnostics.Process.Start(psi);
+                if (proc == null) return Results.Json(new { ran = false, reason = "spawn-failed" });
+                var stdout = await proc.StandardOutput.ReadToEndAsync();
+                var stderr = await proc.StandardError.ReadToEndAsync();
+                await proc.WaitForExitAsync(ctx.RequestAborted);
+                lastReattachUtc = DateTime.UtcNow;
+                app.Logger.LogInformation("reattach-console: triggered (exit {Exit}) {Out}{Err}",
+                    proc.ExitCode, stdout.Trim(), stderr.Trim());
+                // exit != 0 is reported, not hidden: the task may be unregistered on this box, and a
+                // recovery that never ran must not answer "ran".
+                return Results.Json(new { ran = proc.ExitCode == 0, exitCode = proc.ExitCode });
+            }
+            catch (Exception ex)
+            {
+                app.Logger.LogWarning(ex, "reattach-console: could not trigger the scheduled task");
+                return Results.Json(new { ran = false, reason = "trigger-failed" });
+            }
+        }
+        finally { reattachGate.Release(); }
+    });
+}
+
 app.Run();
 
 /// <summary>

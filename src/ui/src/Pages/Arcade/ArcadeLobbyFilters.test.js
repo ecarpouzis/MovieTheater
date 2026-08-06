@@ -41,6 +41,9 @@ vi.mock("../../MovieAPI", () => ({
       regions: [], variants: [], genres: [], ra: { achievements: 0, highScores: 0, speedruns: 0 },
     }),
     getArcadeRooms: () => ok([]),
+    // The host-health banner polls this; it already resolves to null on any failure, and null means
+    // "the host has told us nothing", which renders nothing. That is the state a lobby test wants.
+    getArcadeHostStatus: () => Promise.resolve(null),
     getArcadeRenderers: () => Promise.resolve({}),
     getArcadeRecentlyPlayed: () => Promise.resolve([]),
   },
