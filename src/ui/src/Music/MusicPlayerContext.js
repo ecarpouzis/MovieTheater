@@ -44,6 +44,50 @@ export function shuffled(tracks, rand = Math.random) {
   return out;
 }
 
+// ── Failure recovery (a stream that dies mid-song) ──────────────────────────
+// A transient failure used to end the listening session outright: the element errored, the bar said
+// "Playback failed.", and nothing retried, resumed or advanced. A stall was worse — nothing listened
+// for one at all, so the audio simply stopped making progress while the UI went on claiming it was
+// playing. Both are now recovered from, under a bound that always terminates.
+const RECOVERIES_PER_TRACK = 2;        // re-mints of the URL before this track is written off
+const RECOVERY_RESET_SEC = 30;         // …forgiven after this much uninterrupted progress
+const MAX_CONSECUTIVE_FAILURES = 3;    // tracks written off back-to-back before we stop entirely
+const STALL_GRACE_MS = 12000;          // silence from timeupdate that is no longer just buffering
+const STALL_POLL_MS = 2000;
+// Resume a shade EARLIER than where it died: the last second was being decoded when the stream
+// went, and landing exactly on it invites the same failure.
+const RESUME_REWIND_SEC = 1;
+
+/// Ask the stream host what it actually said. "Playback failed." is what the player showed for every
+/// distinct prod outage this vertical has had — a gateway that couldn't SEE the files, an expired or
+/// mis-signed token, a wrong ACAO — and told nobody which. The element itself won't say (a media
+/// error carries no status), but a HEAD against the same URL will, and the answers are diagnostic:
+/// 404 means the gateway can't reach the file, 403 means the token was refused, and a thrown fetch
+/// means the host didn't answer at all or its CORS headers are wrong (the element sets
+/// crossOrigin=anonymous, so a bad ACAO kills playback outright).
+export async function diagnoseStreamUrl(url, doFetch = fetch) {
+  if (!url) return null;
+  try {
+    const r = await doFetch(url, { method: "HEAD" });
+    if (r.status === 404) return "the stream host can't find the file (404)";
+    if (r.status === 403) return "the stream host refused the token (403)";
+    if (!r.ok) return `the stream host answered ${r.status}`;
+    return "the stream host answered, but the browser couldn't play it";
+  } catch {
+    return "the stream host didn't answer (it may be down, or its CORS headers are wrong)";
+  }
+}
+
+/// What to do about a track that just failed. Pure, exported and unit-tested because it is the part
+/// that must terminate: every path either makes progress (retry with a fresh URL, or move on) or
+/// stops, and no input combination loops. "stop" is the backstop for a dead gateway — without it, a
+/// server that fails everything would walk the whole queue at speed, briefly, and call it playback.
+export function recoveryDecision({ attempts, consecutiveFailures, hasNext }) {
+  if (attempts < RECOVERIES_PER_TRACK) return "retry";
+  if (consecutiveFailures + 1 >= MAX_CONSECUTIVE_FAILURES) return "stop";
+  return hasNext ? "skip" : "stop";
+}
+
 const VOLUME_KEY = "music.volume"; // arcade-style namespaced localStorage key
 const LYRICS_KEY = "music.lyrics"; // on-screen lyrics toggle, remembered across routes/reloads
 const QUEUE_KEY = "music.queue";   // { queue, index } — restored PAUSED on reload (§Phase 7)
@@ -80,6 +124,20 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // suddenly blasts music is exactly the behaviour nobody wants (and browsers would refuse it
   // anyway, with no gesture yet). One-shot: the next track change plays normally.
   const suppressAutoplayRef = useRef(false);
+  // ── Recovery bookkeeping (see recoveryDecision) ─────────────────────────────
+  // The live track, readable from handlers that are bound for the element's lifetime.
+  const currentRef = useRef(null);
+  // { sec, at } — where the playhead was, and when we last saw it move. Feeds the stall watchdog
+  // and tells a retry where to resume.
+  const progressRef = useRef({ sec: 0, at: 0 });
+  // { trackId, attempts, attemptedAtSec } — this track's spent recovery budget.
+  const recoveryRef = useRef({ trackId: null, attempts: 0, attemptedAtSec: 0 });
+  // Tracks written off back-to-back with no successful playback between them. Cleared by progress.
+  const consecutiveFailuresRef = useRef(0);
+  // Indirection for the mutual reference between loadTrack and failTrack.
+  const failTrackRef = useRef(() => {});
+  // The URL the element was last given, so a failure can ask the host what it actually said.
+  const lastUrlRef = useRef(null);
 
   const current = index >= 0 && index < queue.length ? queue[index] : null;
 
@@ -97,25 +155,34 @@ export function MusicPlayerProvider({ children, enabled = true }) {
 
   const isPlayable = useCallback((t) => trackIsPlayable(t, canTranscode), [canTranscode]);
 
-  // Load + play whenever the current track changes. The signed URL comes from Stream/Start;
-  // the <audio> element then streams straight off the gateway (Range requests, native decode).
-  useEffect(() => {
+  // Mirrors, so the failure handlers (which run from element events and an interval, never from
+  // render) can read the live track without every one of them re-binding on each change.
+  currentRef.current = current;
+
+  // Fetch a fresh signed URL and put it on the element. Shared by the track-change effect and by
+  // recovery, which differ only in where they resume from — a re-mint is exactly a load, and having
+  // two spellings of it is how the two paths would drift.
+  const loadTrack = useCallback((track, { resumeAt = 0, autoplay = true } = {}) => {
     const audio = audioRef.current;
-    if (!audio) return;
-    if (!current) {
-      audio.pause();
-      audio.removeAttribute("src");
-      return;
-    }
+    if (!audio || !track) return;
     const seq = ++loadSeqRef.current;
-    setError(null);
-    MovieAPI.startMusicTrack(current.id)
+    // Start the stall clock at the load: a track that never produces a single timeupdate (the
+    // gateway accepted the request and then said nothing) has to be recoverable too.
+    progressRef.current = { sec: resumeAt, at: Date.now() };
+    MovieAPI.startMusicTrack(track.id)
       .then((r) => (r.ok ? r.json() : r.json().catch(() => ({})).then((b) => Promise.reject(b))))
       .then((data) => {
         if (seq !== loadSeqRef.current) return; // superseded by a newer pick
+        setError(null);
+        lastUrlRef.current = data.url; // kept for diagnoseStreamUrl if this load dies
         audio.src = data.url;
-        if (suppressAutoplayRef.current) {
-          suppressAutoplayRef.current = false;
+        if (resumeAt > 0) {
+          // currentTime can only be set once the element knows the media's shape.
+          audio.addEventListener("loadedmetadata", () => {
+            try { audio.currentTime = resumeAt; } catch { /* unseekable: start over rather than fail */ }
+          }, { once: true });
+        }
+        if (!autoplay) {
           setPlaying(false);
           return;
         }
@@ -126,11 +193,49 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       })
       .catch((body) => {
         if (seq !== loadSeqRef.current) return;
-        setError(body?.message || "This track can't be played.");
-        setPlaying(false);
+        // A Start that refuses is the same class of failure as an element that errors: the track is
+        // not reaching the speakers. It goes through the same bounded recovery.
+        failTrackRef.current(body?.message || "This track can't be played.");
       });
+  }, []);
+
+  // Load + play whenever the current track changes. The signed URL comes from Stream/Start;
+  // the <audio> element then streams straight off the gateway (Range requests, native decode).
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (!current) {
+      audio.pause();
+      audio.removeAttribute("src");
+      return;
+    }
+    // A new pick is a clean slate: this track has spent none of its recovery budget.
+    recoveryRef.current = { trackId: current.id, attempts: 0, attemptedAtSec: 0 };
+    const autoplay = !suppressAutoplayRef.current;
+    suppressAutoplayRef.current = false;
+    loadTrack(current, { autoplay });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id]);
+
+  // The progress record behind both the stall watchdog and the recovery budget. A ref, not state:
+  // it updates ~4x/second and nothing renders from it.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+    const onTime = () => {
+      const sec = audio.currentTime || 0;
+      progressRef.current = { sec, at: Date.now() };
+      // A track that has genuinely got going clears the "everything is failing" count…
+      if (sec > 3) consecutiveFailuresRef.current = 0;
+      // …and one that has run cleanly for a while earns its recovery budget back, so a long track
+      // on a flaky link isn't written off for troubles it already recovered from. This can't spin:
+      // refunding requires progress, and a failure loop makes none.
+      const state = recoveryRef.current;
+      if (state.attempts > 0 && sec - state.attemptedAtSec > RECOVERY_RESET_SEC) state.attempts = 0;
+    };
+    audio.addEventListener("timeupdate", onTime);
+    return () => audio.removeEventListener("timeupdate", onTime);
+  }, []);
 
   // Restore volume once the element exists.
   useEffect(() => {
@@ -208,6 +313,78 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       return i; // end of queue: stay on the last track, paused
     });
   }, [queue.length]);
+
+  // Retry, skip, or give up — the single place a failed track is decided about. Element errors,
+  // refused Starts and detected stalls all arrive here, so there is exactly one policy.
+  const failTrack = useCallback((message) => {
+    const track = currentRef.current;
+    if (!track) return; // nothing loaded (e.g. the element erroring as stop() clears its src)
+    if (recoveryRef.current.trackId !== track.id) {
+      recoveryRef.current = { trackId: track.id, attempts: 0, attemptedAtSec: 0 };
+    }
+    const state = recoveryRef.current;
+    const hasNext = index + 1 < queue.length;
+
+    switch (recoveryDecision({
+      attempts: state.attempts,
+      consecutiveFailures: consecutiveFailuresRef.current,
+      hasNext,
+    })) {
+      case "retry":
+        state.attempts += 1;
+        state.attemptedAtSec = progressRef.current.sec;
+        // A fresh URL, resumed just behind where it died — a re-mint costs one round trip and is
+        // the only thing that helps when the old connection is what broke.
+        loadTrack(track, {
+          resumeAt: Math.max(0, progressRef.current.sec - RESUME_REWIND_SEC),
+          autoplay: true,
+        });
+        return;
+
+      case "skip":
+        // One unplayable file must not end the session. Say so, and move on.
+        consecutiveFailuresRef.current += 1;
+        setError("Skipped a track that wouldn't stream.");
+        next();
+        return;
+
+      default: {
+        // Out of road: either nowhere to skip to, or enough tracks have failed in a row that the
+        // problem is plainly the stream and not the file. This is the one place worth spending a
+        // round trip to find out WHICH, because this is the message the user is left staring at.
+        consecutiveFailuresRef.current += 1;
+        const audio = audioRef.current;
+        if (audio) audio.pause();
+        setError(message || "Playback stopped.");
+        setPlaying(false);
+        const url = lastUrlRef.current;
+        diagnoseStreamUrl(url).then((why) => {
+          if (why) setError(`Playback stopped — ${why}.`);
+        });
+      }
+    }
+  }, [index, queue.length, loadTrack, next]);
+
+  // Kept in a ref so loadTrack — defined earlier, and deliberately dependency-free — can reach it.
+  useEffect(() => { failTrackRef.current = failTrack; }, [failTrack]);
+
+  // Stall watchdog. There is no event for "the bytes stopped arriving and nobody said anything":
+  // `stalled`/`waiting` fire inconsistently across browsers, and not at all when a connection dies
+  // quietly. The honest test is that the playhead has not moved while the element still claims to be
+  // playing. The grace period is long enough that ordinary rebuffering never trips it.
+  useEffect(() => {
+    if (!current) return undefined;
+    const id = setInterval(() => {
+      const audio = audioRef.current;
+      if (!audio || audio.paused || audio.ended || audio.seeking) return;
+      if (Date.now() - progressRef.current.at < STALL_GRACE_MS) return;
+      // Re-arm before handing off, so a reload in flight isn't re-triggered on the next poll.
+      progressRef.current = { ...progressRef.current, at: Date.now() };
+      failTrackRef.current("Playback stopped — the stream isn't answering.");
+    }, STALL_POLL_MS);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.id]);
 
   const prev = useCallback(() => {
     const audio = audioRef.current;
@@ -336,9 +513,11 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   const onPlay = useCallback(() => setPlaying(true), []);
   const onPause = useCallback(() => setPlaying(false), []);
   const onEnded = useCallback(() => next(), [next]);
+  // The element gave up on this source. That used to end the listening session; now it goes through
+  // the same bounded recovery as everything else. The message is only reached once retries and a
+  // skip are exhausted — it says what actually happened rather than the bare "Playback failed."
   const onError = useCallback(() => {
-    setError("Playback failed.");
-    setPlaying(false);
+    failTrackRef.current("Playback failed — the stream isn't answering.");
   }, []);
 
   // OS lock-screen / media-key card. The shared hook only touches standard HTMLMediaElement

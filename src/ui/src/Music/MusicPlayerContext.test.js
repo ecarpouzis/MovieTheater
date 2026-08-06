@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { trackIsPlayable, shuffled } from "./MusicPlayerContext";
+import { trackIsPlayable, shuffled, recoveryDecision, diagnoseStreamUrl } from "./MusicPlayerContext";
 
 // The player used to gate on `!t.requiresTranscode` inline, in four separate places. That greyed
 // out every non-native codec even though the gateway has always had an ffmpeg route and
@@ -68,5 +68,84 @@ describe("shuffled", () => {
   it("survives empty and null input", () => {
     expect(shuffled([])).toEqual([]);
     expect(shuffled(null)).toEqual([]);
+  });
+});
+
+// A stream that dies mid-song used to end the session: the element errored, the bar said "Playback
+// failed.", and nothing retried, resumed or advanced. These pin the replacement policy — and above
+// all that it TERMINATES, since the failure path is the one place a retry loop could run forever.
+describe("recoveryDecision", () => {
+  const at = (over) => recoveryDecision({ attempts: 0, consecutiveFailures: 0, hasNext: true, ...over });
+
+  it("retries the same track while it still has budget", () => {
+    expect(at({ attempts: 0 })).toBe("retry");
+    expect(at({ attempts: 1 })).toBe("retry");
+  });
+
+  it("moves on once this track's retries are spent", () => {
+    expect(at({ attempts: 2 })).toBe("skip");
+    expect(at({ attempts: 99 })).toBe("skip");
+  });
+
+  it("stops instead of skipping when there is nowhere to skip to", () => {
+    expect(at({ attempts: 2, hasNext: false })).toBe("stop");
+  });
+
+  // The backstop for a dead gateway: without it, a server failing everything would walk the whole
+  // queue at speed and call that playback.
+  it("stops when enough tracks have failed back-to-back", () => {
+    expect(at({ attempts: 2, consecutiveFailures: 1 })).toBe("skip");
+    expect(at({ attempts: 2, consecutiveFailures: 2 })).toBe("stop");
+    expect(at({ attempts: 2, consecutiveFailures: 9 })).toBe("stop");
+  });
+
+  // Termination, stated as a property: from any state, repeatedly applying the decision reaches
+  // "stop" — retries are bounded per track and skips are bounded across tracks.
+  it("always terminates, even with an infinite queue", () => {
+    let attempts = 0;
+    let consecutiveFailures = 0;
+    const seen = [];
+    for (let step = 0; step < 50; step++) {
+      const d = recoveryDecision({ attempts, consecutiveFailures, hasNext: true });
+      seen.push(d);
+      if (d === "stop") break;
+      if (d === "retry") attempts += 1;
+      else { attempts = 0; consecutiveFailures += 1; } // skipped: a fresh track, one more failure
+    }
+    expect(seen).toContain("stop");
+  });
+});
+
+// Every prod outage this vertical has had showed the same four words — "Playback failed." — for four
+// different causes. A media error carries no status, so the status has to be asked for.
+describe("diagnoseStreamUrl", () => {
+  const answering = (status) => () => Promise.resolve({ status, ok: status >= 200 && status < 300 });
+
+  it("names a 404 as the host not finding the file", async () => {
+    expect(await diagnoseStreamUrl("http://x/s/t/MusicFile", answering(404))).toMatch(/can't find the file \(404\)/);
+  });
+
+  it("names a 403 as a refused token", async () => {
+    expect(await diagnoseStreamUrl("http://x/s/t/MusicFile", answering(403))).toMatch(/refused the token \(403\)/);
+  });
+
+  it("reports any other error status verbatim", async () => {
+    expect(await diagnoseStreamUrl("http://x/s/t/MusicFile", answering(500))).toMatch(/answered 500/);
+  });
+
+  // A thrown fetch is the CORS/host-down case, and it must not throw out of the diagnosis — this
+  // runs on the path where playback has ALREADY failed.
+  it("treats a thrown fetch as no answer rather than propagating", async () => {
+    const boom = () => Promise.reject(new TypeError("Failed to fetch"));
+    expect(await diagnoseStreamUrl("http://x/s/t/MusicFile", boom)).toMatch(/didn't answer/);
+  });
+
+  it("says nothing when there is no URL to ask about", async () => {
+    expect(await diagnoseStreamUrl(null, answering(200))).toBe(null);
+  });
+
+  // A host that serves the bytes fine points the finger back at the browser/codec.
+  it("distinguishes a healthy host from a playable file", async () => {
+    expect(await diagnoseStreamUrl("http://x/s/t/MusicFile", answering(200))).toMatch(/couldn't play it/);
   });
 });
