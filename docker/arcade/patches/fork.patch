@@ -6941,10 +6941,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..40ccaff
+index 0000000..c196f24
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,983 @@
+@@ -0,0 +1,1047 @@
 +package worker
 +
 +import (
@@ -7350,6 +7350,31 @@ index 0000000..40ccaff
 +	abrAutoMaxKbps = 25000
 +	// Used only when geometry is not yet known, which should not happen at the call site.
 +	abrAutoFallbackKbps = 8000
++
++	// GEOMETRY-FLAP HYSTERESIS. The per-tick derive above is correct and stays; what it needs is a
++	// confirmation before the ABR loop COMMITS a change. Measured 2026-08-02: Stuntman (PS2, lrps2)
++	// toggles its viewport 1280x896 <-> 1280x447 every 1-3 SECONDS (interlace field behaviour), so the
++	// derive faithfully produced 12373 <-> 6173 for the life of the room — and every one of those flips
++	// took the ceiling-change branch, which WIPES congestion memory. ABR relearned the wall from scratch
++	// every couple of seconds. Persona 3 FES did the same, briefly.
++	//
++	// K=5 ticks (= 5 seconds, the loop ticks at 1 Hz) because it must exceed the observed flap DWELL,
++	// not just the typical period: Stuntman's 2026-08-02 log mostly flips every 1-3s but shows one
++	// 11:58:13 -> 11:58:17 gap — a 4-second dwell that K=4 would have committed. A genuine mid-room
++	// resolution change (a render-profile switch, or a core settling — Sonic's 256x192 -> 320x224 at
++	// boot) then commits exactly once, five seconds late, which is invisible. Raising K costs nothing
++	// but lateness; lowering it below the flap dwell defeats it.
++	//
++	// While a flap is pending we HOLD the last committed ceiling, even when that is the wider/higher of
++	// the two. That does not endanger the link: the ceiling is a quality PERMISSION, not a target, and
++	// `servable`/starve/roomCap still govern what is actually sent — over-provisioning the narrow frames
++	// is the cheap side of the trade. The rejected alternative (commit the min of the flapping pair)
++	// parks a room that is mostly full-height at the half-height ceiling for its whole life.
++	//
++	// Not applied to the room's FIRST derive: startRoomAbr's opening ceilFn() read and the `abr: auto
++	// ceiling` line at room create are unchanged — there is nothing yet to hold, and a room must not
++	// spend its first four seconds sized by a fallback.
++	abrCeilCommitTicks = 5
 +)
 +
 +// autoCeilingKbps derives the room's bitrate ceiling from the frame we ACTUALLY encode, rather than
@@ -7473,6 +7498,11 @@ index 0000000..40ccaff
 +		// goroutine owns them, and a peer that leaves simply stops being iterated.
 +		rtt := map[svcPeer]*rttStat{}
 +		ticks := 0
++		// Geometry-flap hysteresis (see abrCeilCommitTicks): the derived ceiling value we are
++		// CONSIDERING but have not committed, and how many consecutive ticks it has been returned.
++		// pendCeil == 0 means "no change is proposed" — the steady state, and the only state an
++		// explicit lobby pick can ever be in (its ceilFn is fixed, so ceilFn() always == ceilKbps).
++		pendCeil, pendCeilTicks := 0, 0
 +
 +		// ── Phase-0 close-summary counters (observability only) ────────────────────────────────────
 +		// NOTHING below this comment is read by any ABR decision. They exist so that "it looked bad"
@@ -7491,6 +7521,11 @@ index 0000000..40ccaff
 +		congEpisodes := 0 // distinct congestion-memory episodes (0 -> non-zero transitions)
 +		congMaxHold := 0  // longest run of consecutive ticks a remembered wall was held
 +		congRun := 0
++		// Derived-ceiling changes that were PROPOSED and then withdrawn before abrCeilCommitTicks
++		// confirmed them — i.e. geometry flaps this room absorbed. Cheap, and it is the only way the
++		// hysteresis is visible from a log: a suppressed flap by construction emits nothing else.
++		// A Stuntman-class flapper scores one per oscillation; a stable room scores 0.
++		geomFlapsSuppressed := 0
 +		for range t.C {
 +			if r.Closed() {
 +				// Final RTT summary per peer BEFORE returning — a short session may never reach a
@@ -7514,10 +7549,12 @@ index 0000000..40ccaff
 +				log.Info().Msgf(
 +					"abr: summary room=%s system=%s open=%d ceil=%d codec=%s layers=%d ticks=%d "+
 +						"rampTicks=%s atCeilPct=%d cuts=%d cutsRamp=%d cutsSteady=%d "+
-+						"starves=%d starvesRamp=%d starvesSteady=%d congEpisodes=%d congMaxHoldTicks=%d",
++						"starves=%d starvesRamp=%d starvesSteady=%d congEpisodes=%d congMaxHoldTicks=%d "+
++						"geomFlapsSuppressed=%d",
 +					r.Id(), system, openKbps, ceilKbps, codec, layers, ticks,
 +					ramp, atCeilPct, cutsRamp+cutsSteady, cutsRamp, cutsSteady,
-+					starvesRamp+starvesSteady, starvesRamp, starvesSteady, congEpisodes, congMaxHold)
++					starvesRamp+starvesSteady, starvesRamp, starvesSteady, congEpisodes, congMaxHold,
++					geomFlapsSuppressed)
 +
 +				// Snapshot each peer BY VALUE before dispatching anything: the peer objects and these
 +				// maps die with this goroutine the instant it returns.
@@ -7575,14 +7612,41 @@ index 0000000..40ccaff
 +			// Re-read the ceiling: a mid-room geometry change moves it (see ceilFn). Widening it simply
 +			// gives the healthy branch somewhere to climb; narrowing it is enforced by the clamp below,
 +			// so a core that shrinks its frame cannot leave the room sending more than it should.
++			// A change is COMMITTED only after ceilFn() has returned the same new value for
++			// abrCeilCommitTicks consecutive ticks — see that constant for the Stuntman measurement and
++			// for why holding the pre-flap ceiling is safe. Until then the room keeps the ceiling it has
++			// AND its congestion memory, and nothing is logged. An explicit lobby pick never enters this
++			// branch at all (fixed ceilFn), so it costs one comparison per tick, exactly as before.
 +			if c := ceilFn(); c > 0 && c != ceilKbps {
-+				_, why := autoCeilingKbps(m)
-+				log.Info().Msgf("abr: ceiling %d -> %d kbps — %s", ceilKbps, c, why)
-+				ceilKbps = c
-+				floor = min(abrFloorKbps, ceilKbps)
-+				// Congestion memory was learned against the OLD frame size. A bigger frame at the same
-+				// bitrate is a different picture, so the remembered wall no longer describes this room.
-+				congKbps, congClear, congHold = 0, 0, 0
++				if c == pendCeil {
++					pendCeilTicks++
++				} else {
++					// A DIFFERENT candidate: the previous one never survived to commit. That is a flap
++					// (the derive moved on to a third value before confirming the second).
++					if pendCeil != 0 {
++						geomFlapsSuppressed++
++					}
++					pendCeil, pendCeilTicks = c, 1
++				}
++				if pendCeilTicks >= abrCeilCommitTicks {
++					_, why := autoCeilingKbps(m)
++					log.Info().Msgf("abr: ceiling %d -> %d kbps — %s", ceilKbps, c, why)
++					ceilKbps = c
++					floor = min(abrFloorKbps, ceilKbps)
++					// Congestion memory was learned against the OLD frame size. A bigger frame at the same
++					// bitrate is a different picture, so the remembered wall no longer describes this room.
++					// Unchanged semantics — this is simply now reached once per REAL change instead of
++					// once per flap, which is the whole point of the phase.
++					congKbps, congClear, congHold = 0, 0, 0
++					pendCeil, pendCeilTicks = 0, 0
++				}
++			} else if pendCeil != 0 {
++				// The derive came back to the committed ceiling (or, defensively, returned 0) before the
++				// candidate was confirmed: withdraw it. This is the Stuntman path — 12373 committed,
++				// 6173 proposed for a tick or three, then 12373 again — and the room keeps both its
++				// ceiling and its congestion memory across it.
++				geomFlapsSuppressed++
++				pendCeil, pendCeilTicks = 0, 0
 +			}
 +
 +			// Summary accounting for the rate we are HOLDING as this tick begins (cur only moves at
