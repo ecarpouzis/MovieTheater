@@ -31,6 +31,7 @@ const IngestReviewPage = lazy(() => import("./Pages/IngestReview/IngestReviewPag
 const RatePage = lazy(() => import("./Pages/Rate/RatePage"));
 const MusicPage = lazy(() => import("./Pages/Music/MusicPage"));
 const MusicNowPlayingPage = lazy(() => import("./Pages/Music/MusicNowPlayingPage"));
+const MusicPlaylistsPage = lazy(() => import("./Pages/Music/MusicPlaylistsPage"));
 
 const storedUsername = window.localStorage.getItem("Username");
 const storedCardStyle = window.localStorage.getItem("CardStyle");
@@ -154,6 +155,11 @@ function App() {
                 other /music route needs it, but kept exact so /music itself still matches above. */}
             <Route path="/music/now-playing" exact>
               <MusicNowPlayingPage userData={userData} />
+            </Route>
+            {/* Playlists get their own route rather than a strip above the browse grid, which grew
+                unboundedly and pushed the library down the page. */}
+            <Route path="/music/playlists" exact>
+              <MusicPlaylistsPage userData={userData} />
             </Route>
             <Route path="/arcade/room/:code" exact>
               <ArcadeRoomPage />

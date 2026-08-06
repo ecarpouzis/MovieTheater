@@ -103,6 +103,33 @@ function renameMusicPlaylist(id, name) {
   });
 }
 
+// Sharing (music-plan.md §2.4). A share is collaborative — members edit; only the owner may
+// delete the playlist or change who has access.
+function getMusicPlaylistShares(id) {
+  return fetch(`/API/Music/Playlist/${id}/Shares`, { method: "get" });
+}
+
+function shareMusicPlaylist(id, userIds) {
+  return fetch(`/API/Music/Playlist/${id}/Share`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userIds }),
+  });
+}
+
+function unshareMusicPlaylist(id, userIds) {
+  return fetch(`/API/Music/Playlist/${id}/Unshare`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userIds }),
+  });
+}
+
+// Accounts a playlist can be shared with (password-holders only — streaming is password-gated).
+function getMusicShareTargets() {
+  return fetch("/API/Music/ShareTargets", { method: "get" });
+}
+
 function deleteMusicPlaylist(id) {
   return fetch(`/API/Music/Playlist/${id}/Delete`, { method: "post" });
 }
@@ -1392,6 +1419,10 @@ const MovieAPI = {
   setMusicPlaylistItems,
   renameMusicPlaylist,
   deleteMusicPlaylist,
+  getMusicPlaylistShares,
+  shareMusicPlaylist,
+  unshareMusicPlaylist,
+  getMusicShareTargets,
 };
 
 export { MovieAPI };

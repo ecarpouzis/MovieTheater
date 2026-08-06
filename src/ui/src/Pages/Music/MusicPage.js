@@ -324,32 +324,19 @@ function MusicPage({ userData }) {
         </section>
       )}
 
-      {/* My playlists — only shown once there's at least one; created from any album or song row. */}
+      {/* Playlists live on their own route now (music-plan.md §2.4) — the strip that used to sit
+          here grew with every playlist and pushed the library down the page. This is just the way in. */}
       {playlists.length > 0 && !drilledIn && (
         <section className="music-section">
           <h2 className="music-section-head">
             Playlists <span className="music-count">{playlists.length}</span>
+            <button
+              className="music-playlist-btn music-playlists-link"
+              onClick={() => history.push("/music/playlists")}
+            >
+              Manage playlists →
+            </button>
           </h2>
-          <div className="music-playlist-grid">
-            {playlists.map((p) => (
-              <div className="music-playlist-card" key={p.id} data-testid="music-playlist-card">
-                <div className="music-playlist-card-name" title={p.name}>{p.name}</div>
-                <div className="music-playlist-card-sub" title={(p.trackTitles || []).join(", ")}>
-                  {p.count} track{p.count === 1 ? "" : "s"}
-                  {p.trackTitles && p.trackTitles.length > 0 ? ` · ${p.trackTitles.join(", ")}` : ""}
-                </div>
-                <div className="music-playlist-card-actions">
-                  <button className="music-playlist-btn" disabled={p.count === 0} onClick={() => playPlaylist(p.id)}>
-                    ▶ Play
-                  </button>
-                  <button className="music-playlist-btn" disabled={p.count === 0} onClick={() => playPlaylist(p.id, { shuffle: true })}>
-                    🔀 Shuffle
-                  </button>
-                  <button className="music-playlist-btn" onClick={() => setManagePlaylistId(p.id)}>Manage</button>
-                </div>
-              </div>
-            ))}
-          </div>
         </section>
       )}
 

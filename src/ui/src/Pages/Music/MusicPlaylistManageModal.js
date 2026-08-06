@@ -5,6 +5,7 @@ import Button from "antd/es/button";
 import Spin from "antd/es/spin";
 import message from "antd/es/message";
 import Popconfirm from "antd/es/popconfirm";
+import Select from "antd/es/select";
 import {
   DndContext,
   closestCenter,
@@ -58,6 +59,11 @@ export default function MusicPlaylistManageModal({ playlistId, open, onClose, on
   const [origName, setOrigName] = useState("");
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
+  // Sharing (music-plan.md §2.4). `access` carries who owns it and who it's shared with; a member
+  // sees the roster but only the owner gets the add/remove controls.
+  const [access, setAccess] = useState(null);
+  const [targets, setTargets] = useState([]);
+  const [pending, setPending] = useState([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -129,6 +135,42 @@ export default function MusicPlaylistManageModal({ playlistId, open, onClose, on
     }
   };
 
+  useEffect(() => {
+    if (!open || playlistId == null) { setAccess(null); setPending([]); return; }
+    MovieAPI.getMusicPlaylistShares(playlistId)
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(setAccess)
+      .catch(() => setAccess(null));
+    MovieAPI.getMusicShareTargets()
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list) => setTargets(list || []))
+      .catch(() => setTargets([]));
+  }, [open, playlistId]);
+
+  function applyShare(userIds) {
+    setBusy(true);
+    MovieAPI.shareMusicPlaylist(playlistId, userIds)
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(() => MovieAPI.getMusicPlaylistShares(playlistId).then((r) => r.json()).then(setAccess))
+      .then(() => { setPending([]); onChanged && onChanged(); })
+      .catch(() => message.error("Couldn't share that playlist."))
+      .finally(() => setBusy(false));
+  }
+
+  function revoke(userId) {
+    setBusy(true);
+    MovieAPI.unshareMusicPlaylist(playlistId, [userId])
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(() => MovieAPI.getMusicPlaylistShares(playlistId).then((r) => r.json()).then(setAccess))
+      .then(() => onChanged && onChanged())
+      .catch(() => message.error("Couldn't change access."))
+      .finally(() => setBusy(false));
+  }
+
+  const isOwner = access?.isOwner !== false;
+  const sharedIds = new Set((access?.shares || []).map((sh) => sh.userId));
+  const addable = targets.filter((t) => !sharedIds.has(t.id));
+
   return (
     <Modal open={open} onCancel={onClose} footer={null} width={560} title="Edit playlist" destroyOnHidden>
       {loading ? (
@@ -156,10 +198,52 @@ export default function MusicPlaylistManageModal({ playlistId, open, onClose, on
             </DndContext>
           )}
 
+          {access && (
+            <div className="mplman-share">
+              <div className="mplman-share-head">
+                Shared with
+                {!isOwner && access.ownerName ? ` · owned by ${access.ownerName}` : ""}
+              </div>
+              {(access.shares || []).length === 0 && (
+                <div className="mplman-share-empty">Nobody yet — this playlist is just yours.</div>
+              )}
+              <div className="mplman-share-list">
+                {(access.shares || []).map((sh) => (
+                  <span className="mplman-share-chip" key={sh.userId}>
+                    {sh.username}
+                    {isOwner && (
+                      <button className="mplman-share-x" disabled={busy}
+                              onClick={() => revoke(sh.userId)} aria-label={`Remove ${sh.username}`}>✕</button>
+                    )}
+                  </span>
+                ))}
+              </div>
+              {isOwner ? (
+                <div className="mplman-share-add">
+                  <Select
+                    mode="multiple" allowClear style={{ flex: "1 1 auto", minWidth: 0 }}
+                    placeholder="Add people…" value={pending} onChange={setPending}
+                    options={addable.map((t) => ({ value: t.id, label: t.username }))}
+                  />
+                  <Button disabled={busy || pending.length === 0} onClick={() => applyShare(pending)}>Share</Button>
+                </div>
+              ) : (
+                <div className="mplman-share-add">
+                  {/* A member's own exit. Leaving is theirs to do; removing anyone ELSE is the owner's. */}
+                  <Button danger disabled={busy} onClick={() => { revoke(access.meId ?? -1); onClose(); }}>
+                    Leave this playlist
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="mplman-actions">
-            <Popconfirm title="Delete this playlist?" okText="Delete" cancelText="Keep" onConfirm={remove}>
-              <Button danger disabled={busy}>Delete</Button>
-            </Popconfirm>
+            {isOwner && (
+              <Popconfirm title="Delete this playlist?" okText="Delete" cancelText="Keep" onConfirm={remove}>
+                <Button danger disabled={busy}>Delete</Button>
+              </Popconfirm>
+            )}
             <span className="mplman-spacer" />
             <Button onClick={onClose} disabled={busy}>Cancel</Button>
             <Button type="primary" loading={busy} onClick={save}>Save</Button>

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -348,6 +348,19 @@ namespace MovieTheater.Controllers
         private async Task<MusicPlaylist?> LoadOwnedPlaylistAsync(int id, int userId) =>
             await movieDb.MusicPlaylists.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
 
+        /// <summary>The playlist if this user may READ AND EDIT it — owner, or someone it was shared
+        /// with. Null (⇒ 404) otherwise, keeping the "you can't tell it exists" stance.</summary>
+        /// <remarks>
+        /// A share is collaborative: the point of sharing is a list several people add to, so every
+        /// content verb accepts a member. What stays with the OWNER is deleting the playlist and
+        /// deciding who else gets in (LoadOwnedPlaylistAsync) — both are irreversible for everyone
+        /// else holding a share, so a member must not be able to do them.
+        /// </remarks>
+        private async Task<MusicPlaylist?> LoadAccessiblePlaylistAsync(int id, int userId) =>
+            await movieDb.MusicPlaylists.FirstOrDefaultAsync(p =>
+                p.Id == id && (p.UserId == userId
+                    || movieDb.MusicPlaylistShares.Any(sh => sh.PlaylistId == p.Id && sh.UserId == userId)));
+
         /// <summary>Keeps the caller's order, drops ids that aren't real tracks (a stale client list
         /// must never be able to write a dangling FK).</summary>
         private async Task<List<int>> ValidateOrderedTracksAsync(IEnumerable<int>? requested)
@@ -405,10 +418,20 @@ namespace MovieTheater.Controllers
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
 
+            // Mine now means "mine, plus anything shared with me" — a member needs the playlist to
+            // appear somewhere, and the manager is that somewhere. isOwner drives which controls the
+            // card offers (delete and share management are the owner's alone).
             var playlists = await movieDb.MusicPlaylists.AsNoTracking()
-                .Where(p => p.UserId == userId.Value)
+                .Where(p => p.UserId == userId.Value
+                    || movieDb.MusicPlaylistShares.Any(sh => sh.PlaylistId == p.Id && sh.UserId == userId.Value))
                 .OrderByDescending(p => p.Id)
-                .Select(p => new { p.Id, p.Name, p.CreatedUtc })
+                .Select(p => new
+                {
+                    p.Id, p.Name, p.CreatedUtc,
+                    isOwner = p.UserId == userId.Value,
+                    ownerName = p.User.Username,
+                    sharedWith = movieDb.MusicPlaylistShares.Count(sh => sh.PlaylistId == p.Id),
+                })
                 .ToListAsync();
             if (playlists.Count == 0)
                 return Ok(Array.Empty<object>());
@@ -432,6 +455,9 @@ namespace MovieTheater.Controllers
                     name = p.Name,
                     createdUtc = p.CreatedUtc,
                     count = items.Count,
+                    p.isOwner,
+                    p.ownerName,
+                    p.sharedWith,
                     trackTitles = items.Take(3).Select(i => i.title).ToList(),
                     albumIds = items.Where(i => i.albumId != null).Select(i => i.albumId!.Value).Distinct().Take(4).ToList(),
                 };
@@ -444,7 +470,7 @@ namespace MovieTheater.Controllers
         {
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
-            var playlist = await LoadOwnedPlaylistAsync(id, userId.Value);
+            var playlist = await LoadAccessiblePlaylistAsync(id, userId.Value);
             if (playlist == null) return NotFound(new { message = "Playlist not found." });
 
             // Shaped like the album tracklist so the client can hand it straight to player.playTracks.
@@ -478,7 +504,7 @@ namespace MovieTheater.Controllers
         {
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
-            var playlist = await LoadOwnedPlaylistAsync(id, userId.Value);
+            var playlist = await LoadAccessiblePlaylistAsync(id, userId.Value);
             if (playlist == null) return NotFound(new { message = "Playlist not found." });
 
             var trackIds = await ValidateOrderedTracksAsync(request?.TrackIds);
@@ -500,7 +526,7 @@ namespace MovieTheater.Controllers
         {
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
-            var playlist = await LoadOwnedPlaylistAsync(id, userId.Value);
+            var playlist = await LoadAccessiblePlaylistAsync(id, userId.Value);
             if (playlist == null) return NotFound(new { message = "Playlist not found." });
 
             var trackIds = await ValidateOrderedTracksAsync(request?.TrackIds);
@@ -524,7 +550,7 @@ namespace MovieTheater.Controllers
         {
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
-            var playlist = await LoadOwnedPlaylistAsync(id, userId.Value);
+            var playlist = await LoadAccessiblePlaylistAsync(id, userId.Value);
             if (playlist == null) return NotFound(new { message = "Playlist not found." });
 
             var name = (request?.Name ?? "").Trim();
@@ -547,6 +573,114 @@ namespace MovieTheater.Controllers
             movieDb.MusicPlaylists.Remove(playlist);
             await movieDb.SaveChangesAsync();
             return Ok(new { deleted = true });
+        }
+
+        // ── Sharing (music-plan.md §2.4) ─────────────────────────────────────────────────────────
+        // A shared playlist is COLLABORATIVE: members add, reorder, rename. Only the owner may delete
+        // it or change who has access, because both are irreversible for every other member.
+        // "Leave" is a member's own exit and is therefore theirs, not the owner's.
+
+        public class ShareRequest
+        {
+            public List<int>? UserIds { get; set; }
+        }
+
+        /// <summary>People this playlist is shared with. Visible to anyone who has access, so members
+        /// can see who else is in — a collaborative list where you can't tell who else can edit it is
+        /// worse than not sharing at all.</summary>
+        [HttpGet("/API/Music/Playlist/{id}/Shares")]
+        public async Task<IActionResult> PlaylistShares(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var playlist = await LoadAccessiblePlaylistAsync(id, userId.Value);
+            if (playlist == null) return NotFound(new { message = "Playlist not found." });
+
+            var shares = await movieDb.MusicPlaylistShares.AsNoTracking()
+                .Where(sh => sh.PlaylistId == id)
+                .Select(sh => new { userId = sh.UserId, username = sh.User.Username, sharedUtc = sh.CreatedUtc })
+                .ToListAsync();
+            var owner = await movieDb.Users.AsNoTracking()
+                .Where(u => u.UserID == playlist.UserId)
+                .Select(u => u.Username).FirstOrDefaultAsync();
+
+            // meId so a member's "leave" knows which share to revoke without a second round-trip.
+            return Ok(new
+            {
+                ownerId = playlist.UserId,
+                ownerName = owner,
+                isOwner = playlist.UserId == userId.Value,
+                meId = userId.Value,
+                shares,
+            });
+        }
+
+        [HttpPost("/API/Music/Playlist/{id}/Share")]
+        public async Task<IActionResult> SharePlaylist(int id, [FromBody] ShareRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var playlist = await LoadOwnedPlaylistAsync(id, userId.Value);   // owner only
+            if (playlist == null) return NotFound(new { message = "Playlist not found." });
+
+            var wanted = (request?.UserIds ?? new List<int>())
+                .Where(u => u != userId.Value)                                // sharing with yourself is a no-op
+                .Distinct().ToList();
+            if (wanted.Count == 0) return Ok(new { added = 0 });
+
+            // Only real accounts, and never a second row for a pair that already exists (the unique
+            // index would throw; a repeated "share with Bob" should simply be idempotent).
+            var real = await movieDb.Users.Where(u => wanted.Contains(u.UserID)).Select(u => u.UserID).ToListAsync();
+            var already = await movieDb.MusicPlaylistShares
+                .Where(sh => sh.PlaylistId == id && real.Contains(sh.UserId))
+                .Select(sh => sh.UserId).ToListAsync();
+
+            var toAdd = real.Except(already).ToList();
+            foreach (var uid in toAdd)
+                movieDb.MusicPlaylistShares.Add(new MusicPlaylistShare
+                {
+                    PlaylistId = id, UserId = uid, CreatedUtc = DateTime.UtcNow,
+                });
+            await movieDb.SaveChangesAsync();
+            return Ok(new { added = toAdd.Count, alreadyShared = already.Count });
+        }
+
+        /// <summary>Revoke access. The OWNER may remove anyone; a MEMBER may remove only themselves,
+        /// which is how you leave a playlist someone shared with you.</summary>
+        [HttpPost("/API/Music/Playlist/{id}/Unshare")]
+        public async Task<IActionResult> UnsharePlaylist(int id, [FromBody] ShareRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var playlist = await LoadAccessiblePlaylistAsync(id, userId.Value);
+            if (playlist == null) return NotFound(new { message = "Playlist not found." });
+
+            var isOwner = playlist.UserId == userId.Value;
+            var targets = (request?.UserIds ?? new List<int>()).Distinct().ToList();
+            if (!isOwner && (targets.Count != 1 || targets[0] != userId.Value))
+                return Forbid();
+
+            var rows = await movieDb.MusicPlaylistShares
+                .Where(sh => sh.PlaylistId == id && targets.Contains(sh.UserId)).ToListAsync();
+            movieDb.MusicPlaylistShares.RemoveRange(rows);
+            await movieDb.SaveChangesAsync();
+            return Ok(new { removed = rows.Count });
+        }
+
+        /// <summary>Accounts a playlist can be shared with: password-holders, since streaming is
+        /// password-only (§3.1) and a passwordless account could never open the playlist anyway.
+        /// Usernames only — this is a picker, not a directory.</summary>
+        [HttpGet("/API/Music/ShareTargets")]
+        public async Task<IActionResult> ShareTargets()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var users = await movieDb.Users.AsNoTracking()
+                .Where(u => u.PasswordHash != null && u.UserID != userId.Value && u.Username != null)
+                .OrderBy(u => u.Username)
+                .Select(u => new { id = u.UserID, username = u.Username })
+                .ToListAsync();
+            return Ok(users);
         }
 
         // ── Admin: bulk album-art warm (music-plan.md §2.5) ──────────────────────────────────────────

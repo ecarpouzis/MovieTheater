@@ -459,6 +459,26 @@ namespace MovieTheater.Db
                 .HasForeignKey(p => p.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // One share per (playlist, user): the pair is the identity, so a repeat "share with Bob"
+            // is a no-op rather than a second row. Cascade from the playlist (deleting it should take
+            // its grants with it) but Restrict on User, for the same multiple-cascade-path reason as
+            // MusicPlaylist above.
+            modelBuilder.Entity<MusicPlaylistShare>()
+                .HasIndex(s => new { s.PlaylistId, s.UserId })
+                .IsUnique();
+            modelBuilder.Entity<MusicPlaylistShare>()
+                .HasIndex(s => s.UserId);
+            modelBuilder.Entity<MusicPlaylistShare>()
+                .HasOne(s => s.Playlist)
+                .WithMany()
+                .HasForeignKey(s => s.PlaylistId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<MusicPlaylistShare>()
+                .HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<MusicPlaylistItem>()
                 .HasIndex(i => new { i.PlaylistId, i.Position });
             modelBuilder.Entity<MusicPlaylistItem>()
@@ -530,6 +550,7 @@ namespace MovieTheater.Db
         public DbSet<MusicTrackLyrics> MusicTrackLyrics { get; set; }
         public DbSet<MusicPlaylist> MusicPlaylists { get; set; }
         public DbSet<MusicPlaylistItem> MusicPlaylistItems { get; set; }
+        public DbSet<MusicPlaylistShare> MusicPlaylistShares { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)
