@@ -69,6 +69,10 @@ export default function MusicPlaylistPickerModal({ open, tracks = [], defaultNam
       onCancel={onClose}
       footer={null}
       width={440}
+      // Above the album sheet (1500), because "＋ Playlist" opens this WITHOUT closing that — both
+      // are on screen at once, and at antd's default 1000 this would have opened behind it and read
+      // as a dead button. Still under the 1800 popup layer (antdPopupLayer.css).
+      zIndex={1600}
       title={count > 0 ? `Add ${count} ${count === 1 ? "track" : "tracks"} to a playlist` : "New playlist"}
       destroyOnHidden
     >

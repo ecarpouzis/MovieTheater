@@ -34,15 +34,27 @@ export default function MusicAlbumArt({
   const [failed, setFailed] = useState(false);
   useEffect(() => { setFailed(false); }, [albumId, hasArt]);
 
-  const showArt = hasArt && albumId != null && !failed;
+  // Ask whenever there IS an album — not only when the catalog already believes it has art.
+  //
+  // The image route fills art ON DEMAND (MusicImageController): a miss either answers instantly from
+  // its negative cache, or takes the single non-blocking remote slot and usually serves the artwork
+  // in that same request. Gating this on `hasArt` meant nothing ever asked for a newly ingested
+  // album's art, so the lazy fill could never run and the album stayed a tile forever — six freshly
+  // ingested albums showed initials while their covers sat one request away.
+  //
+  // Cheap when it misses: at most one remote lookup is in flight globally, every other miss is an
+  // immediate 404, and each album is only ever checked once (ArtCheckedUtc is a durable negative
+  // cache). getMusicAlbumArt's hasArt parameter is built for exactly this — it appends ?v= only once
+  // art is known, so a card that gains art later stops being served the browser-cached 404.
+  const showArt = albumId != null && !failed;
   const style = dominantColor
     ? { background: dominantColor }
     : { background: `hsl(${tileHue(title)}, 32%, 38%)` };
 
   if (showArt) {
     const src = thumb
-      ? MovieAPI.getMusicAlbumArtThumb(albumId, true)
-      : MovieAPI.getMusicAlbumArt(albumId, true);
+      ? MovieAPI.getMusicAlbumArtThumb(albumId, hasArt)
+      : MovieAPI.getMusicAlbumArt(albumId, hasArt);
     return (
       <img
         className={`${className} ${className}--art`}

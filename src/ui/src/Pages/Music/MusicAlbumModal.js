@@ -56,6 +56,11 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
       onCancel={onClose}
       footer={null}
       width={560}
+      // Above the nav bar (z-index 1300), the same call the arcade dialogs make. Harmless while this
+      // was a small card parked 100px down the page; the moment it became a full-height sheet its top
+      // ran under the fixed nav bar, which swallowed the ✕ — on a phone that left no way to close it
+      // at all. 1400-1600 is this app's dialog band (see antdPopupLayer.css).
+      zIndex={1500}
       destroyOnHidden
       /* Both classes are needed: the wrap carries the dialog, the root carries the mask, and BOTH
          have to stop above the play bar or the bar is either covered or dimmed-and-dead. */
