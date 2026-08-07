@@ -74,6 +74,17 @@
   animation: music-viz-toast-in 0.25s ease;
 }
 
+/* Preset names are "author - title". The title carries the identity, so it leads; the author is
+   the credit line under it. Same split in the toast, the control strip and every browser row. */
+.music-viz-toast-title { display: block; }
+
+.music-viz-toast-author {
+  display: block;
+  font-size: 12px;
+  opacity: 0.6;
+  margin-top: 1px;
+}
+
 @keyframes music-viz-toast-in {
   from { opacity: 0; transform: translate(-50%, 6px); }
   to   { opacity: 1; transform: translate(-50%, 0); }
@@ -104,7 +115,9 @@
 @media (hover: none) {
   .music-viz-controls { opacity: 1; z-index: 2; }
   .music-viz-controls button { font-size: 17px; padding: 7px 11px; }
-  .music-viz-controls select { font-size: 13px; padding: 5px 7px; }
+  /* The name button is text, not an icon — the thumb-sized icon rule above would blow it up. */
+  .music-viz-name { font-size: 12px; padding: 5px 8px; }
+  .music-viz-name-author { font-size: 10.5px; }
 }
 
 /* In fullscreen the pointer is permanently "over" the element, so hover can't be the reveal —
@@ -141,20 +154,212 @@
 
 .music-viz-controls button:hover { background: rgba(255, 255, 255, 0.15); }
 
-.music-viz-controls select {
+/* ── The preset name, which is also the browser's trigger ───────────────────
+   A <select> can't carry ~1,750 options usefully (and it can't be searched), so the picker became
+   a panel and this is the button that opens it. It takes the strip's spare width and shows what's
+   playing, because in a 1,750-preset library "what am I even looking at" is the first question. */
+.music-viz-name {
   flex: 1 1 auto;
   min-width: 0;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 5px;
-  font-size: 11.5px;
-  padding: 2px 4px;
+  text-align: left;
+  line-height: 1.15;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
 }
 
-.music-viz:fullscreen .music-viz-controls select { font-size: 13.5px; padding: 4px 8px; }
+.music-viz-name:hover { background: rgba(255, 255, 255, 0.18) !important; }
 
-.music-viz-controls option { color: #111; }
+.music-viz-name-title,
+.music-viz-name-author {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.music-viz-name-author { font-size: 10px; opacity: 0.55; }
+
+.music-viz:fullscreen .music-viz-name-author { font-size: 11.5px; }
+
+/* On/off states for the two toggles that live in the strip. */
+.music-viz-cycle { opacity: 0.45; }
+.music-viz-cycle--on { opacity: 1; background: rgba(255, 255, 255, 0.22); }
+.music-viz-fav--on { background: rgba(255, 255, 255, 0.22); }
+
+.music-viz-fav { opacity: 0.45; }
+.music-viz-fav--on { opacity: 1; color: #ffd166; }
+.music-viz-fav:disabled { opacity: 0.2; cursor: default; }
+
+/* ── Preset browser ─────────────────────────────────────────────────────────
+   Lives INSIDE .music-viz rather than beside it, so it comes along into fullscreen — that's the
+   mode where you're most likely to go looking for a preset. */
+.music-viz-browser {
+  position: absolute;
+  left: 8px;
+  bottom: 52px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  width: min(420px, calc(100% - 16px));
+  max-height: min(460px, calc(100% - 68px));
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(10, 12, 18, 0.88);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  overflow: hidden;
+  animation: music-viz-browser-in 0.16s ease;
+}
+
+@keyframes music-viz-browser-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.music-viz:fullscreen .music-viz-browser {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 84px;
+  width: min(520px, 80vw);
+  max-height: min(60vh, 620px);
+}
+
+.music-viz-browser-head {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.music-viz-browser-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 13px;
+}
+
+.music-viz-browser-search::placeholder { color: rgba(255, 255, 255, 0.4); }
+.music-viz-browser-search:focus { outline: none; border-color: rgba(255, 255, 255, 0.4); }
+
+.music-viz-browser-close {
+  flex: none;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 0 6px;
+  font-size: 14px;
+}
+
+.music-viz-browser-pools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 8px 8px 6px;
+}
+
+.music-viz-pool {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.music-viz-pool--on {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: transparent;
+  color: #10121a;
+}
+
+.music-viz-pool-count { font-size: 10px; opacity: 0.6; font-variant-numeric: tabular-nums; }
+
+.music-viz-browser-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 4px 6px;
+}
+
+.music-viz-row {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  border-radius: 7px;
+}
+
+.music-viz-row:hover { background: rgba(255, 255, 255, 0.07); }
+.music-viz-row--current { background: rgba(255, 255, 255, 0.14); }
+
+.music-viz-row-pick {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 6px 8px;
+  line-height: 1.2;
+}
+
+.music-viz-row-title,
+.music-viz-row-author {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.music-viz-row-title { font-size: 12.5px; }
+.music-viz-row-author { font-size: 10.5px; opacity: 0.5; }
+
+.music-viz-row-fav {
+  flex: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  opacity: 0;
+}
+
+.music-viz-row:hover .music-viz-row-fav,
+.music-viz-row-fav:focus-visible { opacity: 0.5; }
+.music-viz-row-fav--on,
+.music-viz-row:hover .music-viz-row-fav--on { opacity: 1; color: #ffd166; }
+
+.music-viz-browser-empty,
+.music-viz-browser-foot {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11.5px;
+}
+
+.music-viz-browser-empty { padding: 18px 10px; text-align: center; }
+
+.music-viz-browser-foot {
+  padding: 6px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Touch: no hover, so the star can't hide behind one, and rows need thumb-sized targets. */
+@media (hover: none) {
+  .music-viz-row-fav { opacity: 0.5; padding: 0 12px; font-size: 15px; }
+  .music-viz-row-pick { padding: 9px 8px; }
+  .music-viz-row-title { font-size: 13.5px; }
+}
 
 /* ── Overlay mode ──────────────────────────────────────────────────────────
    Opened from the persistent play bar (which is on every page), the visualizer takes over the

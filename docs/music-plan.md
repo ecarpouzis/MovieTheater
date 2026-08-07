@@ -371,6 +371,51 @@ moment you navigate. Exactly ONE of them mounts the component — Now Playing in
 the bar as a fixed overlay everywhere else (it measures its own height for the overlay's offset).
 Two butterchurn instances on one source would be a second GL context for no gain.
 
+**⚠ The preset library — rebuilt 2026-08-06. Presets are STATIC ASSETS now, not a bundled module.**
+`import("butterchurn-presets")` pulled a **646 kB** webpack bundle to get the **100-preset base
+pack**, and that was all the presets the site had. The same npm package also ships
+`presets/converted/` — **1,754 preset JSON files**, byte-identical to what the bundles hand back
+(verified by comparing `getPresets()[name]` against the file). So the build publishes those instead:
+
+- `scripts/build-butterchurn-presets.mjs` (a `prestart`/`prebuild` hook, same pattern as
+  `copy-libass.mjs`) writes `public/butterchurn/presets/<slug>.json` + an `index.json` catalogue.
+  **gitignored — derived from `node_modules`, never committed.** Docker gets it for free: the UI
+  image runs `npm install` before `npm run build`, so the hook regenerates inside the image.
+- The app fetches the ~176 kB index once per visualizer open and then **one ~5 kB preset at a time**
+  (`src/Music/butterchurnPresets.js`: cache + in-flight dedupe + LRU cap + prefetch of the cycle's
+  next pick). Net: **17× the presets, and the 646 kB chunk is gone.**
+- **Tiers come from pack membership**, which is the upstream author's own curation: base pack =
+  *Featured* (99), + Extra/Extra2/MD1 = *Classic* (394), + the rest of the corpus = *Everything*
+  (1,754). The 30-second auto-cycle draws from **Classic by default** — a random pick out of the
+  whole archive lands on a dud often enough to notice — while the picker still offers everything.
+  Favorites (localStorage) are a fourth pool and ignore tier entirely.
+- The `<select>` picker became a **searchable panel** (it lives *inside* `.music-viz`, so it comes
+  along into fullscreen), plus prev/next/random, a hold-this-preset toggle, per-preset stars, and
+  keyboard `← → R F L B //Esc`. Rendered rows are capped at 300; 1,750 `<div>`s is scroll jank.
+
+*Gotchas paid for here:*
+- **`warp` and `comp` are empty strings on every Milkdrop-1-era preset** (no custom shader —
+  butterchurn substitutes its default), and `pixel_eqs_str` is empty whenever there are no per-pixel
+  equations. A truthiness check in the publish step silently threw away **693 good presets**,
+  including 18 from the base pack. Test for *presence and type*, never truthiness.
+- **Slug collisions need a global set, not a per-base counter.** `_Geiss - Confetti (Kaleidoscope
+  Mix)` collides with `Geiss - Confetti (Kaleidoscope Mix)` and gets the suffixed `…-mix-2`, which
+  is *also* the natural slug of `_Geiss - Confetti (Kaleidoscope Mix) 2` — one file overwrote the
+  other and two index rows pointed at one preset. The build now fails loudly on a duplicate slug.
+- **A missing preset returns HTTP 200 + `index.html`** (SPA history fallback — the same trap as the
+  prod art-upload run). Every fetch is shape-checked before it reaches `loadPreset`, or a bad object
+  surfaces much later as "the visualizer broke".
+- Preset names are Winamp-era filenames (`$$$ Royal - …`, `!!!---flexi + …`, brackets, commas), so
+  the wire name is an ASCII slug and the display name lives in the index.
+
+**Quality gate:** `scripts/verify-butterchurn-presets.mjs` renders **every** preset in headless
+Chromium (SwiftShader — this asks whether shaders *compile* and equations *run*, a correctness
+question, and says nothing about frame rate) and writes `scripts/butterchurn-denylist.json`, which
+the publish step subtracts. It is chunked + resumable (`--limit`, results file as the cursor) and
+deliberately **conservative: a preset is condemned only if it throws or kills the GL context, never
+for looking dark** — it's driven by synthetic noise, not music, so a black frame is normal.
+Re-run it if `butterchurn-presets` is ever upgraded.
+
 ### Phase 7 — Long tail — ✅ PARTIAL 2026-08-04
 **Queue persistence — done.** `{queue, index}` is written to `music.queue` (capped at 500 entries)
 on every change and restored on provider mount **paused**; a one-shot ref suppresses autoplay for

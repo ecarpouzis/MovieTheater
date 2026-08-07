@@ -1,10 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  DEFAULT_POOL,
+  POOLS,
+  fetchPreset,
+  loadPresetIndex,
+  pickRandom,
+  prefetchPreset,
+  presetsInPool,
+  searchPresets,
+  splitPresetName,
+} from "./butterchurnPresets";
 import "./MusicVisualizer.css";
 
 // ── Milkdrop visualization (music-plan.md §2.8) ─────────────────────────────
-// Butterchurn is the real Milkdrop 2 preset engine in WebGL. Both packages are heavy, so they are
-// imported DYNAMICALLY here — that keeps them out of the main bundle and off the wire entirely for
-// anyone who never opens the visualizer.
+// Butterchurn is the real Milkdrop 2 preset engine in WebGL. The ENGINE is imported dynamically —
+// it's heavy, and it stays off the wire entirely for anyone who never opens the visualizer. The
+// PRESETS are not imported at all any more: they're static JSON under /butterchurn, fetched one at
+// a time (see butterchurnPresets.js). That swap is what took this from the 100-preset base pack to
+// the full ~1,750-preset corpus without adding a byte to the initial load.
 //
 // Mounting/unmounting this component must never interrupt playback: it only READS the shared audio
 // graph the context owns (source → analyser → destination), never rebuilds it and never closes the
@@ -13,6 +26,34 @@ import "./MusicVisualizer.css";
 const CYCLE_MS = 30000;    // auto-advance to another random preset every ~30s
 const IDLE_MS = 2500;      // fullscreen: hide the controls + cursor after this much stillness
 const TOAST_MS = 2400;     // fullscreen: how long the preset name stays up after a change
+const BROWSER_ROWS = 300;  // rendered rows cap — 1,750 <li>s is a scroll-jank machine
+
+const POOL_KEY = "music.viz.pool";
+const FAVORITES_KEY = "music.viz.favorites";
+const CYCLE_KEY = "music.viz.cycle";
+const PRESET_KEY = "music.viz.preset";
+
+function readStored(key, fallback) {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw === null ? fallback : raw;
+  } catch {
+    return fallback; // private mode
+  }
+}
+
+function writeStored(key, value) {
+  try { window.localStorage.setItem(key, value); } catch { /* private mode */ }
+}
+
+function readFavorites() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(FAVORITES_KEY) || "[]");
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
 
 // ── Render surface (the fullscreen-blur fix) ────────────────────────────────
 // Butterchurn NEVER touches the canvas element's width/height attributes, and its renderToScreen
@@ -41,7 +82,7 @@ export function surfaceSize(wrap) {
   };
 }
 
-// Both packages ship UMD bundles, and a UMD default export reaches ESM differently in dev
+// butterchurn ships a UMD bundle, and a UMD default export reaches ESM differently in dev
 // (unbundled, esbuild-prebundled) than in the production rollup build — the real object turns up at
 // the module, at .default, or at .default.default depending on which path you're on. Unwrap by
 // looking for the member we actually need instead of guessing the interop shape.
@@ -56,12 +97,21 @@ export default function MusicVisualizer({ player, onClose }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const vizRef = useRef(null);
-  const presetsRef = useRef(null);
   const rafRef = useRef(0);
+  // Every preset application is async now, so a fast ▶▶▶ can resolve out of order. Latest wins.
+  const applyTokenRef = useRef(0);
 
   const [status, setStatus] = useState("loading"); // loading | ready | unsupported | error
-  const [presetNames, setPresetNames] = useState([]);
-  const [presetName, setPresetName] = useState("");
+  const [presets, setPresets] = useState([]);
+  const [current, setCurrent] = useState(null);    // an index entry: { s, n, t }
+  const [pool, setPool] = useState(() => {
+    const stored = readStored(POOL_KEY, DEFAULT_POOL);
+    return POOLS.some((p) => p.id === stored) ? stored : DEFAULT_POOL;
+  });
+  const [favorites, setFavorites] = useState(readFavorites);
+  const [cycling, setCycling] = useState(() => readStored(CYCLE_KEY, "1") !== "0");
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [idle, setIdle] = useState(false);
 
@@ -70,12 +120,37 @@ export default function MusicVisualizer({ player, onClose }) {
   // is a useCallback with no deps, so it is the stable handle to depend on.
   const ensureAudioGraph = player?.ensureAudioGraph;
 
-  const loadPreset = useCallback((name, blend = 2.0) => {
-    const presets = presetsRef.current;
-    const viz = vizRef.current;
-    if (!presets || !viz || !presets[name]) return;
-    viz.loadPreset(presets[name], blend);
-    setPresetName(name);
+  // Mirrors so the boot effect can read the CURRENT pool/favorites for its first pick without
+  // taking them as dependencies — that would tear down and rebuild WebGL every time you switch pool.
+  const poolRef = useRef(pool);
+  const favoritesRef = useRef(favorites);
+  useEffect(() => { poolRef.current = pool; }, [pool]);
+  useEffect(() => { favoritesRef.current = favorites; }, [favorites]);
+
+  const poolList = useMemo(
+    () => presetsInPool(presets, pool, favorites),
+    [presets, pool, favorites]
+  );
+  // Counts for the pool chips. Memoised because this is four passes over ~1,750 entries and the
+  // browser re-renders on every keystroke in the search box.
+  const poolCounts = useMemo(
+    () => Object.fromEntries(POOLS.map((p) => [p.id, presetsInPool(presets, p.id, favorites).length])),
+    [presets, favorites]
+  );
+
+  /// Fetch a preset and hand it to butterchurn. The label updates immediately (optimistic) so the
+  /// UI never feels like it ignored the click; a failed fetch leaves the previous visuals running.
+  const applyPreset = useCallback((entry, blend = 2.0) => {
+    if (!entry) return;
+    const token = (applyTokenRef.current += 1);
+    setCurrent(entry);
+    fetchPreset(entry.s)
+      .then((preset) => {
+        if (applyTokenRef.current !== token || !vizRef.current) return;
+        vizRef.current.loadPreset(preset, blend);
+        writeStored(PRESET_KEY, entry.s);
+      })
+      .catch((err) => console.warn("[music] preset failed to load", entry.s, err));
   }, []);
 
   /// Point the backing store AND the renderer at the same device-pixel box. Safe before the
@@ -94,7 +169,8 @@ export default function MusicVisualizer({ player, onClose }) {
     return size;
   }, []);
 
-  // Boot: WebGL2 check → dynamic import → visualizer wired to the shared graph → rAF render loop.
+  // Boot: WebGL2 check → engine + catalogue in parallel → visualizer wired to the shared graph →
+  // first preset → rAF render loop.
   useEffect(() => {
     let cancelled = false;
 
@@ -113,16 +189,13 @@ export default function MusicVisualizer({ player, onClose }) {
 
     (async () => {
       try {
-        const [butterchurnModule, presetsModule] = await Promise.all([
+        const [butterchurnModule, index] = await Promise.all([
           import("butterchurn"),
-          import("butterchurn-presets"),
+          loadPresetIndex(),
         ]);
         if (cancelled) return;
 
         const butterchurn = unwrapModule(butterchurnModule, "createVisualizer");
-        const presetPack = unwrapModule(presetsModule, "getPresets");
-        const presets = typeof presetPack.getPresets === "function" ? presetPack.getPresets() : presetPack;
-        presetsRef.current = presets;
 
         const canvas = canvasRef.current;
         const wrap = wrapRef.current;
@@ -145,12 +218,24 @@ export default function MusicVisualizer({ player, onClose }) {
         visualizer.connectAudio(graph.source);
         vizRef.current = visualizer;
 
-        const names = Object.keys(presets);
-        setPresetNames(names);
-        const first = names[Math.floor(Math.random() * names.length)];
-        visualizer.loadPreset(presets[first], 0.0);
-        setPresetName(first);
+        setPresets(index);
         setStatus("ready");
+
+        // Reopen on whatever was last showing, so the visualizer feels like it has a memory;
+        // otherwise a random pick out of the active pool.
+        const remembered = readStored(PRESET_KEY, null);
+        const startList = presetsInPool(index, poolRef.current, favoritesRef.current);
+        const start =
+          index.find((p) => p.s === remembered) ||
+          pickRandom(startList.length ? startList : index, null);
+        if (start) {
+          setCurrent(start);
+          fetchPreset(start.s)
+            .then((preset) => {
+              if (!cancelled && vizRef.current) vizRef.current.loadPreset(preset, 0.0);
+            })
+            .catch((err) => console.warn("[music] first preset failed to load", start.s, err));
+        }
 
         const tick = () => {
           rafRef.current = window.requestAnimationFrame(tick);
@@ -158,8 +243,8 @@ export default function MusicVisualizer({ player, onClose }) {
         };
         rafRef.current = window.requestAnimationFrame(tick);
       } catch (err) {
-        // Surfaced, not swallowed: a preset pack that fails to parse or a WebGL context the browser
-        // refuses is otherwise invisible behind the friendly message.
+        // Surfaced, not swallowed: a preset index that never got published or a WebGL context the
+        // browser refuses is otherwise invisible behind the friendly message.
         console.error("[music] visualizer failed to start", err);
         if (!cancelled) setStatus("error");
       }
@@ -203,9 +288,10 @@ export default function MusicVisualizer({ player, onClose }) {
   }, [applySize]);
 
   // Fullscreen is a "watch it" mode: the chrome and the pointer get out of the way once the mouse
-  // stops, and come straight back on any movement.
+  // stops, and come straight back on any movement. The browser panel pins them open — you can't
+  // pick from a list that fades out from under the cursor.
   useEffect(() => {
-    if (!isFullscreen) {
+    if (!isFullscreen || browserOpen) {
       setIdle(false);
       return undefined;
     }
@@ -225,39 +311,101 @@ export default function MusicVisualizer({ player, onClose }) {
       wrap?.removeEventListener("pointerdown", wake);
       wrap?.removeEventListener("keydown", wake);
     };
-  }, [isFullscreen]);
+  }, [isFullscreen, browserOpen]);
 
-  // Random preset every ~30s, so leaving it open stays interesting.
+  // Auto-advance. The next preset is CHOSEN and PREFETCHED now rather than at fire time, so the
+  // 30-second change is instant instead of a visible fetch-then-blend. Re-arms on every change, so
+  // a manual pick also gets a full window before the next shuffle.
   useEffect(() => {
-    if (status !== "ready" || presetNames.length === 0) return undefined;
-    const timer = window.setInterval(() => {
-      loadPreset(presetNames[Math.floor(Math.random() * presetNames.length)]);
-    }, CYCLE_MS);
-    return () => window.clearInterval(timer);
-  }, [status, presetNames, loadPreset]);
+    if (status !== "ready" || !cycling || poolList.length < 2) return undefined;
+    const next = pickRandom(poolList, current?.s);
+    prefetchPreset(next?.s);
+    const timer = window.setTimeout(() => applyPreset(next), CYCLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [status, cycling, poolList, current, applyPreset]);
 
-  // The preset picker is hidden in fullscreen, so name changes announce themselves instead.
+  // The preset picker is out of the way in fullscreen, so name changes announce themselves instead.
   const [toast, setToast] = useState(false);
   useEffect(() => {
-    if (!isFullscreen || !presetName) return undefined;
+    if (!isFullscreen || !current) return undefined;
     setToast(true);
     const timer = window.setTimeout(() => setToast(false), TOAST_MS);
     return () => window.clearTimeout(timer);
-  }, [presetName, isFullscreen]);
+  }, [current, isFullscreen]);
 
-  const step = (delta) => {
-    if (presetNames.length === 0) return;
-    const at = presetNames.indexOf(presetName);
-    const next = (at + delta + presetNames.length) % presetNames.length;
-    loadPreset(presetNames[next]);
-  };
+  const step = useCallback((delta) => {
+    if (poolList.length === 0) return;
+    const at = poolList.findIndex((p) => p.s === current?.s);
+    // Not in the current pool (you just switched pools) — step from the start rather than nowhere.
+    const next = at < 0 ? poolList[delta > 0 ? 0 : poolList.length - 1]
+                        : poolList[(at + delta + poolList.length) % poolList.length];
+    applyPreset(next);
+  }, [poolList, current, applyPreset]);
 
-  const toggleFullscreen = () => {
+  const shuffle = useCallback(() => {
+    applyPreset(pickRandom(poolList, current?.s));
+  }, [poolList, current, applyPreset]);
+
+  const toggleFullscreen = useCallback(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
     if (document.fullscreenElement) document.exitFullscreen?.();
     else wrap.requestFullscreen?.().catch(() => {});
-  };
+  }, []);
+
+  const toggleCycling = useCallback(() => {
+    setCycling((on) => {
+      writeStored(CYCLE_KEY, on ? "0" : "1");
+      return !on;
+    });
+  }, []);
+
+  const choosePool = useCallback((id) => {
+    setPool(id);
+    writeStored(POOL_KEY, id);
+  }, []);
+
+  const toggleFavorite = useCallback((slug) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      writeStored(FAVORITES_KEY, JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+
+  // Keyboard: the visualizer is usually the only thing on screen, especially in fullscreen where
+  // there are no visible controls at all once the mouse rests. Typing in the search box is not a
+  // shortcut, so text fields are excluded.
+  useEffect(() => {
+    if (status !== "ready") return undefined;
+    const onKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const tag = e.target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || e.target?.isContentEditable) {
+        if (e.key === "Escape") setBrowserOpen(false);
+        return;
+      }
+      switch (e.key) {
+        case "ArrowRight": step(1); break;
+        case "ArrowLeft": step(-1); break;
+        case "r": case "R": shuffle(); break;
+        case "f": case "F": toggleFullscreen(); break;
+        case "l": case "L": toggleCycling(); break;
+        case "b": case "B": case "/": e.preventDefault(); setBrowserOpen((o) => !o); break;
+        case "Escape": setBrowserOpen(false); break;
+        default: break;
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [status, step, shuffle, toggleFullscreen, toggleCycling]);
+
+  const matches = useMemo(() => searchPresets(poolList, query), [poolList, query]);
+  const shown = matches.length > BROWSER_ROWS ? matches.slice(0, BROWSER_ROWS) : matches;
+  const currentName = current?.n || "";
+  const { author, title } = splitPresetName(currentName);
 
   const className = [
     "music-viz",
@@ -277,26 +425,138 @@ export default function MusicVisualizer({ player, onClose }) {
         </div>
       )}
 
-      {isFullscreen && toast && presetName && (
-        <div className="music-viz-toast" data-testid="music-visualizer-toast">{presetName}</div>
+      {isFullscreen && toast && currentName && (
+        <div className="music-viz-toast" data-testid="music-visualizer-toast">
+          <span className="music-viz-toast-title">{title}</span>
+          {author && <span className="music-viz-toast-author">{author}</span>}
+        </div>
+      )}
+
+      {browserOpen && status === "ready" && (
+        <div className="music-viz-browser" data-testid="music-visualizer-browser">
+          <div className="music-viz-browser-head">
+            <input
+              className="music-viz-browser-search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search presets — try “geiss”, “fractal”, “rovastar”"
+              aria-label="Search presets"
+              autoFocus
+            />
+            <button
+              className="music-viz-browser-close"
+              onClick={() => setBrowserOpen(false)}
+              title="Close preset browser"
+              aria-label="Close preset browser"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="music-viz-browser-pools" role="group" aria-label="Preset collection">
+            {POOLS.map((p) => (
+              <button
+                key={p.id}
+                className={`music-viz-pool${pool === p.id ? " music-viz-pool--on" : ""}`}
+                onClick={() => choosePool(p.id)}
+                aria-pressed={pool === p.id}
+              >
+                {p.label}
+                <span className="music-viz-pool-count">{poolCounts[p.id]}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="music-viz-browser-list" data-testid="music-visualizer-preset-list">
+            {shown.length === 0 && (
+              <div className="music-viz-browser-empty">
+                {pool === "favorites" && !query
+                  ? "No favorites yet — hit the ★ on a preset you like."
+                  : "Nothing matches that search."}
+              </div>
+            )}
+            {shown.map((entry) => {
+              const parts = splitPresetName(entry.n);
+              const isCurrent = entry.s === current?.s;
+              return (
+                <div
+                  key={entry.s}
+                  className={`music-viz-row${isCurrent ? " music-viz-row--current" : ""}`}
+                >
+                  <button
+                    className="music-viz-row-pick"
+                    onClick={() => applyPreset(entry)}
+                    title={entry.n}
+                  >
+                    <span className="music-viz-row-title">{parts.title}</span>
+                    {parts.author && <span className="music-viz-row-author">{parts.author}</span>}
+                  </button>
+                  <button
+                    className={`music-viz-row-fav${favorites.has(entry.s) ? " music-viz-row-fav--on" : ""}`}
+                    onClick={() => toggleFavorite(entry.s)}
+                    title={favorites.has(entry.s) ? "Remove from favorites" : "Add to favorites"}
+                    aria-label={favorites.has(entry.s) ? "Remove from favorites" : "Add to favorites"}
+                    aria-pressed={favorites.has(entry.s)}
+                  >
+                    ★
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="music-viz-browser-foot">
+            {matches.length.toLocaleString()} preset{matches.length === 1 ? "" : "s"}
+            {matches.length > shown.length && ` · showing the first ${BROWSER_ROWS} — keep typing to narrow it`}
+          </div>
+        </div>
       )}
 
       <div className="music-viz-controls">
-        <button onClick={() => step(-1)} title="Previous preset" aria-label="Previous preset">◀</button>
-        <select
-          value={presetName}
-          onChange={(e) => loadPreset(e.target.value)}
-          aria-label="Preset"
-          disabled={presetNames.length === 0}
+        <button onClick={() => step(-1)} title="Previous preset (←)" aria-label="Previous preset">◀</button>
+        <button onClick={() => step(1)} title="Next preset (→)" aria-label="Next preset">▶</button>
+        {/* Text glyphs, not emoji — the rest of the music UI (⏮ ⏸ ▶ ⏭ ◉ ♪ ☰ ✕) is monochrome, and
+            an emoji falls back to a tofu box anywhere the colour font is missing. */}
+        <button onClick={shuffle} title="Random preset (R)" aria-label="Random preset">⇄</button>
+
+        <button
+          className="music-viz-name"
+          onClick={() => setBrowserOpen((o) => !o)}
+          title={currentName ? `${currentName} — browse presets (B)` : "Browse presets (B)"}
+          aria-label="Browse presets"
+          aria-expanded={browserOpen}
+          data-testid="music-visualizer-browse"
         >
-          {presetNames.map((n) => (
-            <option key={n} value={n}>{n}</option>
-          ))}
-        </select>
-        <button onClick={() => step(1)} title="Next preset" aria-label="Next preset">▶</button>
+          <span className="music-viz-name-title">{title || "Presets"}</span>
+          {author && <span className="music-viz-name-author">{author}</span>}
+        </button>
+
+        {/* One glyph, two states: the pressed styling carries on/off, so there's no second symbol to
+            learn (and no "is the lock the on state or the off state?" moment). */}
+        <button
+          className={`music-viz-cycle${cycling ? " music-viz-cycle--on" : ""}`}
+          onClick={toggleCycling}
+          title={cycling ? "Changing preset every 30s — click to keep this one (L)" : "Holding this preset — click to resume auto-change (L)"}
+          aria-label={cycling ? "Stop changing presets automatically" : "Change presets automatically"}
+          aria-pressed={cycling}
+        >
+          ↻
+        </button>
+        <button
+          className={`music-viz-fav${current && favorites.has(current.s) ? " music-viz-fav--on" : ""}`}
+          onClick={() => current && toggleFavorite(current.s)}
+          disabled={!current}
+          title={current && favorites.has(current.s) ? "Remove from favorites" : "Add to favorites"}
+          aria-label={current && favorites.has(current.s) ? "Remove from favorites" : "Add to favorites"}
+          aria-pressed={!!current && favorites.has(current.s)}
+        >
+          ★
+        </button>
+
         <button
           onClick={toggleFullscreen}
-          title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          title={isFullscreen ? "Exit fullscreen (F)" : "Fullscreen (F)"}
           aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
         >
           {isFullscreen ? "⤡" : "⛶"}

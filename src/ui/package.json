@@ -20,8 +20,9 @@
   },
   "scripts": {
     "copy-libass": "node scripts/copy-libass.mjs",
-    "prestart": "node scripts/copy-libass.mjs",
-    "prebuild": "node scripts/copy-libass.mjs",
+    "build-butterchurn-presets": "node scripts/build-butterchurn-presets.mjs",
+    "prestart": "node scripts/copy-libass.mjs && node scripts/build-butterchurn-presets.mjs",
+    "prebuild": "node scripts/copy-libass.mjs && node scripts/build-butterchurn-presets.mjs",
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
