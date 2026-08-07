@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { trackIsPlayable, shuffled, recoveryDecision, diagnoseStreamUrl, withFavorite, outputChannelCount } from "./MusicPlayerContext";
+import { trackIsPlayable, shuffled, recoveryDecision, diagnoseStreamUrl, withFavorite, outputChannelCount, HOST_HEALTHY, mediaErrorReason, stallVerdict } from "./MusicPlayerContext";
 
 // The player used to gate on `!t.requiresTranscode` inline, in four separate places. That greyed
 // out every non-native codec even though the gateway has always had an ffmpeg route and
@@ -147,6 +147,69 @@ describe("diagnoseStreamUrl", () => {
   // A host that serves the bytes fine points the finger back at the browser/codec.
   it("distinguishes a healthy host from a playable file", async () => {
     expect(await diagnoseStreamUrl("http://x/s/t/MusicFile", answering(200))).toMatch(/couldn't play it/);
+  });
+
+  // The healthy answer is the one the failure path must be able to RECOGNISE, so it can decline to
+  // print it over an account the element already gave. Pinning the identity keeps the two in step.
+  it("returns the recognisable healthy-host sentence, not a lookalike", async () => {
+    expect(await diagnoseStreamUrl("http://x/s/t/MusicFile", answering(200))).toBe(HOST_HEALTHY);
+  });
+});
+
+// The element's own MediaError is first-hand; the HEAD probe is a guess. These four codes are the
+// difference between "your connection dropped" and "this file won't decode" — one sentence apiece.
+describe("mediaErrorReason", () => {
+  it("names each MediaError code", () => {
+    expect(mediaErrorReason({ code: 1 })).toMatch(/aborted/);
+    expect(mediaErrorReason({ code: 2 })).toMatch(/connection/);
+    expect(mediaErrorReason({ code: 3 })).toMatch(/decode/);
+    expect(mediaErrorReason({ code: 4 })).toMatch(/format/);
+  });
+
+  // Every non-answer has to be the same non-answer: the caller falls back to the probe on null, and
+  // an undefined-shaped object reaching it must not throw on the path where playback already failed.
+  it("says nothing when the element gave no error", () => {
+    expect(mediaErrorReason(null)).toBe(null);
+    expect(mediaErrorReason(undefined)).toBe(null);
+    expect(mediaErrorReason({})).toBe(null);
+    expect(mediaErrorReason({ code: 99 })).toBe(null);
+  });
+});
+
+// The bug this vertical actually had: leave an album playing, walk away, and a couple of minutes
+// later it had stopped itself. The stream was healthy the whole time — the phone's screen went off,
+// the page stopped running, and the watchdog read its own sleep as silence from the stream.
+describe("stallVerdict", () => {
+  const tick = (over) => stallVerdict({ hidden: false, sinceTickMs: 2000, sinceProgressMs: 0, loading: false, ...over });
+
+  it("waits while the playhead is still moving", () => {
+    expect(tick({ sinceProgressMs: 4000 })).toBe("wait");
+  });
+
+  it("fails a stream that has gone quiet with the network idle", () => {
+    expect(tick({ sinceProgressMs: 13000 })).toBe("fail");
+  });
+
+  // The regression that matters. A hidden page's clock measures how long the phone was asleep, and
+  // acting on it tears `src` off a perfectly healthy stream that nobody was watching.
+  it("never fails while the page is hidden, no matter how long the gap looks", () => {
+    expect(tick({ hidden: true, sinceProgressMs: 10 * 60 * 1000 })).toBe("rearm");
+    expect(tick({ hidden: true, sinceProgressMs: 10 * 60 * 1000, loading: true })).toBe("rearm");
+  });
+
+  // Same blind spot reached the other way: a renderer frozen by device sleep or a long GC never
+  // reports itself hidden, but its own ticks arrive late — which is the tell.
+  it("never fails on the first tick back from a frozen renderer", () => {
+    expect(tick({ sinceTickMs: 90000, sinceProgressMs: 90000 })).toBe("rearm");
+  });
+
+  // A big FLAC on a phone re-requests the rest of the file every time Chrome's media buffer drains.
+  // That is the browser working, and yanking the source out from under it is how a rebuffer became
+  // a dead session.
+  it("gives a still-loading element room to rebuffer", () => {
+    expect(tick({ sinceProgressMs: 20000, loading: true })).toBe("wait");
+    expect(tick({ sinceProgressMs: 20000, loading: false })).toBe("fail");
+    expect(tick({ sinceProgressMs: 50000, loading: true })).toBe("fail");
   });
 });
 

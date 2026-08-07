@@ -67,6 +67,15 @@ const RECOVERY_RESET_SEC = 30;         // …forgiven after this much uninterrup
 const MAX_CONSECUTIVE_FAILURES = 3;    // tracks written off back-to-back before we stop entirely
 const STALL_GRACE_MS = 12000;          // silence from timeupdate that is no longer just buffering
 const STALL_POLL_MS = 2000;
+// A rebuffer is not a stall. While the element still has the network open it IS fetching — a big
+// FLAC on a phone hits this every time Chrome's ~16 MiB media buffer runs dry and it re-requests
+// the rest of the file — and the browser recovers on its own if left alone. Only after this much
+// silence is a still-loading element considered genuinely stuck.
+const LOADING_STALL_GRACE_MS = 45000;
+// A tick that arrives this much later than it was scheduled means the PAGE wasn't running, not that
+// the stream stopped: a phone whose screen went off, a backgrounded tab, a throttled or frozen
+// renderer. See the watchdog for why that distinction is the whole bug.
+const TICK_LATE_MS = STALL_POLL_MS * 3;
 // Resume a shade EARLIER than where it died: the last second was being decoded when the stream
 // went, and landing exactly on it invites the same failure.
 const RESUME_REWIND_SEC = 1;
@@ -78,6 +87,11 @@ const RESUME_REWIND_SEC = 1;
 /// 404 means the gateway can't reach the file, 403 means the token was refused, and a thrown fetch
 /// means the host didn't answer at all or its CORS headers are wrong (the element sets
 /// crossOrigin=anonymous, so a bad ACAO kills playback outright).
+/// The one answer a HEAD can give that ISN'T diagnostic — the host is fine and the probe found
+/// nothing. Exported so the failure path can tell "the probe found the problem" from "the probe
+/// found nothing", because a healthy host must never overwrite what the element itself reported.
+export const HOST_HEALTHY = "the stream host answered, but the browser couldn't play it";
+
 export async function diagnoseStreamUrl(url, doFetch = fetch) {
   if (!url) return null;
   try {
@@ -85,9 +99,23 @@ export async function diagnoseStreamUrl(url, doFetch = fetch) {
     if (r.status === 404) return "the stream host can't find the file (404)";
     if (r.status === 403) return "the stream host refused the token (403)";
     if (!r.ok) return `the stream host answered ${r.status}`;
-    return "the stream host answered, but the browser couldn't play it";
+    return HOST_HEALTHY;
   } catch {
     return "the stream host didn't answer (it may be down, or its CORS headers are wrong)";
+  }
+}
+
+/// What the ELEMENT said. A MediaError is the only first-hand account of why playback died, and it
+/// was being thrown away in favour of the HEAD probe's guess — so a dropped connection, a bad
+/// decode and a format the browser won't take all produced the same sentence, and all three of them
+/// read as "the server is fine, no idea". Exported and pure so the wording is unit-testable.
+export function mediaErrorReason(mediaError) {
+  switch (mediaError?.code) {
+    case 1: return "the browser aborted the download";
+    case 2: return "the connection to the stream host dropped";
+    case 3: return "the browser couldn't decode the audio";
+    case 4: return "the browser can't play this file's format";
+    default: return null;
   }
 }
 
@@ -104,6 +132,17 @@ export function outputChannelCount(channels, maxChannelCount) {
   // undefined, or a bogus value) means stereo, which is also the safe pre-existing behaviour.
   if (!(channels > 2)) return 2;
   return Math.min(channels, max);
+}
+
+/// Should the stall watchdog act on this tick? Exported and pure because it is the load-bearing
+/// judgement in the player and its failure mode is invisible by ear: a watchdog that fires while the
+/// page is merely asleep kills healthy playback, and you only find out that it did because the music
+/// stopped while nobody was looking. See the watchdog itself for what each guard is protecting from.
+/// "rearm" means our clock measured something other than the stream and the grace period should
+/// start over; "fail" means the playhead really has gone quiet.
+export function stallVerdict({ hidden, sinceTickMs, sinceProgressMs, loading }) {
+  if (hidden || sinceTickMs > TICK_LATE_MS) return "rearm";
+  return sinceProgressMs >= (loading ? LOADING_STALL_GRACE_MS : STALL_GRACE_MS) ? "fail" : "wait";
 }
 
 export function recoveryDecision({ attempts, consecutiveFailures, hasNext }) {
@@ -428,7 +467,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
 
   // Retry, skip, or give up — the single place a failed track is decided about. Element errors,
   // refused Starts and detected stalls all arrive here, so there is exactly one policy.
-  const failTrack = useCallback((message) => {
+  const failTrack = useCallback((message, { firstHand = false } = {}) => {
     const track = currentRef.current;
     if (!track) return; // nothing loaded (e.g. the element erroring as stop() clears its src)
     if (recoveryRef.current.trackId !== track.id) {
@@ -471,7 +510,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         setPlaying(false);
         const url = lastUrlRef.current;
         diagnoseStreamUrl(url).then((why) => {
-          if (why) setError(`Playback stopped — ${why}.`);
+          if (!why) return;
+          // A healthy host has nothing to add to an account the element already gave first-hand —
+          // and overwriting "the connection dropped" with "the host answered fine" is what made a
+          // client-side bug read as a server outage. Only a probe that FOUND something speaks over it.
+          if (firstHand && why === HOST_HEALTHY) return;
+          setError(`Playback stopped — ${why}.`);
         });
       }
     }
@@ -483,16 +527,48 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // Stall watchdog. There is no event for "the bytes stopped arriving and nobody said anything":
   // `stalled`/`waiting` fire inconsistently across browsers, and not at all when a connection dies
   // quietly. The honest test is that the playhead has not moved while the element still claims to be
-  // playing. The grace period is long enough that ordinary rebuffering never trips it.
+  // playing.
+  //
+  // ⚠ The watchdog's clock is the thing it must be most careful about. It measures WALL time since
+  // the playhead last moved — but on a phone whose screen has gone off, the page stops running:
+  // `timeupdate` stops being delivered and this very interval stops firing, while the audio plays on
+  // perfectly. Wall time then measures how long the page was asleep, not how long the stream was
+  // silent. Reading that as a stall is how leaving an album playing and walking away reliably ended
+  // in "Playback stopped" a couple of minutes later: the watchdog tore `src` off a healthy stream,
+  // the re-mint couldn't restart on a backgrounded page, the recovery budget burned out, and the
+  // HEAD probe then truthfully reported that the host was fine — because nothing was ever wrong with
+  // it. Three guards keep the watchdog from firing on its own blind spots:
+  //
+  //   1. `document.hidden` — while the page is hidden we cannot trust our clock at all, so we do not
+  //      guess. A stream that really dies while hidden still fires the element's `error` event,
+  //      which goes through the same recovery; the watchdog is only for silent death.
+  //   2. A tick that came in late — the renderer was throttled or frozen (device sleep, heavy GC),
+  //      even if it never reported itself hidden. Same reasoning, caught a different way.
+  //   3. An element that is still LOADING is fetching, not stuck. Large files on slow links rebuffer
+  //      routinely; that earns a much longer grace than a connection that has gone quiet.
+  //
+  // In every skipped case the progress mark is re-armed, so the grace period starts fresh from the
+  // moment the page is running again rather than firing instantly on the first tick back.
   useEffect(() => {
     if (!current) return undefined;
+    let lastTick = Date.now();
     const id = setInterval(() => {
+      const now = Date.now();
+      const sinceTick = now - lastTick;
+      lastTick = now;
       const audio = audioRef.current;
       if (!audio || audio.paused || audio.ended || audio.seeking) return;
-      if (Date.now() - progressRef.current.at < STALL_GRACE_MS) return;
-      // Re-arm before handing off, so a reload in flight isn't re-triggered on the next poll.
-      progressRef.current = { ...progressRef.current, at: Date.now() };
-      failTrackRef.current("Playback stopped — the stream isn't answering.");
+      const verdict = stallVerdict({
+        hidden: document.hidden,
+        sinceTickMs: sinceTick,
+        sinceProgressMs: now - progressRef.current.at,
+        loading: audio.networkState === HTMLMediaElement.NETWORK_LOADING,
+      });
+      if (verdict === "wait") return;
+      // Re-arm before handing off, so a reload in flight isn't re-triggered on the next poll — and
+      // so a page that has just woken judges the stream from now rather than from before it slept.
+      progressRef.current = { ...progressRef.current, at: now };
+      if (verdict === "fail") failTrackRef.current("Playback stopped — the stream isn't answering.");
     }, STALL_POLL_MS);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -645,7 +721,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // the same bounded recovery as everything else. The message is only reached once retries and a
   // skip are exhausted — it says what actually happened rather than the bare "Playback failed."
   const onError = useCallback(() => {
-    failTrackRef.current("Playback failed — the stream isn't answering.");
+    const reason = mediaErrorReason(audioRef.current?.error);
+    if (reason) failTrackRef.current(`Playback stopped — ${reason}.`, { firstHand: true });
+    else failTrackRef.current("Playback failed — the stream isn't answering.");
   }, []);
 
   // OS lock-screen / media-key card. The shared hook only touches standard HTMLMediaElement
